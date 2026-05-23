@@ -1,7 +1,7 @@
 # ── Netlify configuration for EyeWall Analytics ──────────────
 
 [build]
-  command     = "npm install && npm run build"
+  command     = "npm install && npx vite build"
   publish     = "dist"
 
 [build.environment]
