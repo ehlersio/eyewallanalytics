@@ -4,6 +4,9 @@
   command     = "npm run build"
   publish     = "dist"
 
+[build.environment]
+  NODE_VERSION = "22"
+
 # Edge function handles all three NHL API proxy routes
 [[edge_functions]]
   path     = "/nhl-api/*"
