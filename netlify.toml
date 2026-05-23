@@ -1,11 +1,12 @@
 # ── Netlify configuration for EyeWall Analytics ──────────────
 
 [build]
-  command     = "npm run build"
+  command     = "npm install && npm run build"
   publish     = "dist"
 
 [build.environment]
   NODE_VERSION = "22"
+  NPM_FLAGS    = "--include=dev"
 
 # Edge function handles all three NHL API proxy routes
 [[edge_functions]]
