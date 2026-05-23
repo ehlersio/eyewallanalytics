@@ -1,0 +1,191 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap');
+
+:root {
+  --bg0: #080c14;
+  --bg1: #0c1120;
+  --bg2: #101827;
+  --bg3: #172035;
+  --bg4: #1e2a42;
+
+  --red: #cc2200;
+  --red-bright: #ff4422;
+  --red-dim: rgba(204, 34, 0, 0.15);
+  --red-border: rgba(204, 34, 0, 0.35);
+
+  --blue: #2244aa;
+  --blue-bright: #4477ee;
+  --blue-dim: rgba(34, 68, 170, 0.15);
+
+  --green: #3dba7e;
+  --amber: #f0a030;
+  --purple: #8866dd;
+
+  --text: #e4e8f0;
+  --text-muted: #8a99aa;
+  --text-dim: #808a94;
+
+  --border: rgba(255, 255, 255, 0.06);
+  --border-2: rgba(255, 255, 255, 0.12);
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-lg: 14px;
+
+  --font-display: 'Barlow Condensed', sans-serif;
+  --font-body: 'Barlow', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  --topbar-height: 54px;
+  --nav-height: 52px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg0);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font-family: var(--font-body); cursor: pointer; border: none; background: none; color: inherit; }
+a { color: inherit; text-decoration: none; }
+svg { display: block; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+
+/* Utility classes */
+.sec-label {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.card {
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.pill-red { background: var(--red-dim); color: var(--red-bright); border: 0.5px solid var(--red-border); }
+.pill-green { background: rgba(61,186,126,0.12); color: var(--green); }
+.pill-amber { background: rgba(240,160,48,0.12); color: var(--amber); }
+.pill-muted { background: var(--bg3); color: var(--text-muted); border: 0.5px solid var(--border-2); }
+
+.stat-value { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
+.stat-value.green { color: var(--green); }
+.stat-value.red { color: var(--red-bright); }
+.stat-value.amber { color: var(--amber); }
+
+/* Dual bar (team vs opponent) */
+.dual-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.07); display: flex; overflow: hidden; }
+.dual-bar .fill-red { background: var(--red); height: 100%; transition: width 0.4s ease; }
+.dual-bar .fill-blue { background: var(--blue-bright); height: 100%; transition: width 0.4s ease; }
+.dual-bar .fill-green { background: var(--green); height: 100%; transition: width 0.4s ease; }
+
+/* Responsive layout containers */
+.page { 
+  height: calc(100vh - var(--topbar-height) - var(--nav-height));
+  overflow-y: auto;
+  padding: 14px;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 12px;
+}
+
+@media (max-width: 700px) {
+  .two-col { grid-template-columns: 1fr; }
+  .hide-mobile { display: none !important; }
+  .page { padding: 10px; }
+}
+
+/* Loading skeleton */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--bg2) 25%, var(--bg3) 50%, var(--bg2) 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* Pulse for live dot */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--red-bright);
+  animation: pulse-dot 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* ── Shared popup backdrop (used by ScheduleView and PlayersView) ── */
+.popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  animation: fade-in 0.15s ease;
+}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+@media (min-width: 560px) {
+  .popup-backdrop { align-items: center; padding: 16px; }
+}
+@keyframes pop-in {
+  from { transform: scale(0.94) translateY(8px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* ── Focus styles for keyboard navigation (WCAG 2.4.7) ── */
+:focus-visible {
+  outline: 2px solid var(--red-bright);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+/* Remove focus ring for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+/* Ensure interactive elements have a minimum touch target of 44×44px (WCAG 2.5.5) */
+button, a, [role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+/* Exception for inline/decorative elements */
+.nav-tab, .drill-close, .pp-close, .gp-close {
+  min-height: unset;
+  min-width: unset;
+}

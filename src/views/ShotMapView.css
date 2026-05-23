@@ -1,0 +1,286 @@
+/* ── Score bar ── */
+.score-card { margin-bottom: 10px; }
+.score-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.score-team { display: flex; align-items: center; gap: 8px; }
+.score-abbr { font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: .04em; }
+.score-abbr.red  { color: var(--red-bright); }
+.score-abbr.muted { color: var(--text-muted); }
+.score-num { font-family: var(--font-display); font-size: 36px; font-weight: 700; line-height: 1; }
+.score-num.red   { color: var(--red-bright); }
+.score-num.muted { color: var(--text-muted); }
+.score-center { text-align: center; }
+.score-period { font-size: 11px; color: var(--amber); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.score-clock  { font-family: var(--font-mono); font-size: 22px; color: var(--text); line-height: 1.2; }
+.score-state  { font-size: 10px; color: var(--text-dim); }
+.no-game-msg { text-align: center; padding: 8px 0; font-size: 13px; color: var(--text-muted); }
+
+/* ── Metrics grid ── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+@media (max-width: 560px) { .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* ── Context banner ── */
+.context-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.context-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.context-pill.playoffs {
+  background: rgba(61,186,126,0.12);
+  color: var(--green);
+  border: 0.5px solid rgba(61,186,126,0.3);
+}
+.context-pill.regular {
+  background: var(--red-dim);
+  color: var(--red-bright);
+  border: 0.5px solid var(--red-border);
+}
+.context-game-label { font-size: 11px; color: var(--text-dim); }
+
+/* ── Period grid ── */
+.period-grid { display: flex; flex-direction: column; gap: 3px; }
+.period-grid-header, .period-grid-row {
+  display: grid;
+  grid-template-columns: 36px repeat(auto-fill, minmax(28px, 1fr));
+  gap: 4px;
+  font-size: 12px;
+  text-align: center;
+}
+.period-grid-header { font-size: 10px; color: var(--text-dim); }
+.period-grid-row span:first-child { text-align: left; font-size: 11px; font-weight: 600; }
+.period-grid-row.car span:first-child { color: var(--red-bright); }
+.period-total { font-weight: 700; color: var(--text); }
+
+/* ── Shot danger grid ── */
+.danger-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.danger-cell {
+  text-align: center;
+  padding: 10px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg3);
+  position: relative;
+}
+.danger-cell.clickable {
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.danger-cell.clickable:hover  { background: var(--bg2); transform: translateY(-1px); }
+.danger-cell.clickable:active { transform: translateY(0); }
+.danger-cell.clickable::after {
+  content: "›";
+  position: absolute;
+  bottom: 4px; right: 6px;
+  font-size: 10px; color: var(--text-dim); opacity: 0.5;
+}
+.danger-num {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.danger-cell.high .danger-num { color: var(--red-bright); }
+.danger-cell.med  .danger-num { color: var(--amber); }
+.danger-cell.lo   .danger-num { color: var(--text-muted); }
+.danger-label { font-size: 10px; color: var(--text-muted); margin-bottom: 2px; }
+.danger-sub   { font-size: 9px;  color: var(--text-dim); }
+
+/* ── Scorer rows ── */
+.scorer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 0.5px solid var(--border);
+}
+.scorer-name  { font-size: 13px; color: var(--text); flex: 1; }
+.scorer-stats { display: flex; gap: 4px; }
+.scorer-chip  {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+.scorer-chip.goal   { background: rgba(61,186,126,.15); color: var(--green); }
+.scorer-chip.assist { background: rgba(100,120,200,.15); color: #8899dd; }
+.scorer-chip.pts    { background: var(--bg3); color: var(--text-muted); }
+
+/* ── Goalie row ── */
+.goalie-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 12px;
+}
+.goalie-abbr  { font-family: var(--font-display); font-size: 12px; font-weight: 700; width: 32px; flex-shrink: 0; }
+.goalie-name  { flex: 1; color: var(--text); }
+.goalie-nums  { display: flex; gap: 10px; align-items: center; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+.goalie-svpct { font-weight: 600; color: var(--green); }
+
+/* ── Game-level team stat bars ── */
+.gm-stat-header {
+  display: grid;
+  grid-template-columns: 42px 1fr 42px;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 6px;
+}
+.gm-stat-row {
+  display: grid;
+  grid-template-columns: 42px 1fr 42px;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 7px;
+}
+.gm-stat-mid  { display: flex; flex-direction: column; gap: 3px; }
+.gm-stat-label { font-size: 10px; color: var(--text-muted); text-align: center; }
+.gm-stat-val  { font-family: var(--font-mono); font-size: 13px; font-weight: 500; text-align: center; }
+.gm-stat-val.red   { color: var(--red-bright); }
+.gm-stat-val.muted { color: var(--text-muted); }
+
+/* ── Event log ── */
+.event-log { display: flex; flex-direction: column; }
+.log-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 0.5px solid var(--border); font-size: 11px; }
+.log-time  { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); width: 52px; flex-shrink: 0; }
+.log-badge { font-size: 10px; font-weight: 500; padding: 2px 6px; border-radius: 3px; flex-shrink: 0; }
+.log-goal  { background: rgba(61,186,126,.15); color: var(--green); }
+.log-shot  { background: rgba(100,120,200,.15); color: #8899dd; }
+.log-pen   { background: rgba(240,160,48,.12); color: var(--amber); }
+.log-desc  { color: var(--text-muted); flex: 1; }
+
+/* ── Record / legacy ── */
+.record-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+.record-main { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--text); }
+.record-pts  { font-size: 12px; color: var(--amber); font-weight: 500; }
+
+/* ── Stat Drill-Down Popup ── */
+.drill-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 300;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;       /* centre vertically — avoids bottom-nav clipping */
+  justify-content: center;
+  padding: 16px 0 72px;      /* 72px bottom padding clears the nav bar */
+  box-sizing: border-box;
+}
+.drill-popup {
+  background: var(--bg1);
+  border-radius: 14px;
+  width: calc(100% - 32px);
+  max-width: 460px;
+  max-height: 100%;          /* constrained by overlay padding */
+  display: flex;
+  flex-direction: column;
+  border: 0.5px solid var(--border);
+  box-shadow: 0 8px 48px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
+.drill-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 16px 11px;
+  border-bottom: 0.5px solid var(--border);
+  flex-shrink: 0;
+}
+.drill-title {
+  font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--text);
+}
+.drill-close {
+  font-size: 18px; color: var(--text-dim); background: none; border: none;
+  cursor: pointer; padding: 2px 8px; border-radius: 6px; line-height: 1;
+}
+.drill-close:hover { background: var(--bg3); color: var(--text); }
+.drill-body { overflow-y: auto; flex: 1; }
+.drill-empty {
+  color: var(--text-dim); font-size: 13px;
+  padding: 24px 16px; text-align: center;
+}
+
+/* All rows + headers use matching CSS grid so columns line up perfectly */
+.drill-table { display: flex; flex-direction: column; }
+
+.drill-col-header {
+  display: grid;
+  padding: 5px 16px;
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-dim);
+  border-bottom: 0.5px solid var(--border);
+  background: var(--bg2);
+}
+.drill-row-grid {
+  display: grid;
+  padding: 7px 16px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.04);
+  align-items: center;
+}
+
+/* Shots/Hits: Name | P1 | P2 | P3 | OT | Total */
+.drill-col-header.shots,
+.drill-row-grid.shots {
+  grid-template-columns: 1fr 34px 34px 34px 34px 42px;
+}
+/* Faceoff: Name | Won | Lost | Win% */
+.drill-col-header.fo,
+.drill-row-grid.fo {
+  grid-template-columns: 1fr 46px 46px 52px;
+}
+
+/* All non-first children (the number columns) align right */
+.drill-col-header > *,
+.drill-row-grid > * { display: flex; align-items: center; }
+.drill-col-header > *:not(:first-child),
+.drill-row-grid > *:not(:first-child) { justify-content: flex-end; }
+
+/* Plain flex row (PP goals, faceoff period chips) */
+.drill-row {
+  padding: 8px 16px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.04);
+}
+
+.drill-name  { font-size: 13px; font-weight: 500; color: var(--text); min-width: 0; }
+.drill-val   { font-family: var(--font-mono); font-size: 12px; color: var(--text); }
+.drill-val.dim   { color: var(--text-dim); }
+.drill-val.total { font-weight: 700; }
+.drill-val.green { color: var(--green); font-weight: 600; }
+.drill-val.red   { color: var(--red-bright); font-weight: 600; }
+
+.drill-periods { display: flex; gap: 5px; flex-wrap: wrap; padding: 2px 16px 8px; }
+.period-chip {
+  font-size: 10px; padding: 2px 7px; border-radius: 4px;
+  background: var(--bg3); color: var(--text-muted);
+}
+.c-green { color: var(--green); }
+.c-red   { color: var(--red-bright); }
+.drill-assists { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+.drill-period-badge {
+  font-size: 11px; background: var(--bg3); color: var(--amber);
+  padding: 2px 7px; border-radius: 4px;
+}

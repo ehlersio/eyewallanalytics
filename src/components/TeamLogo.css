@@ -1,0 +1,19 @@
+.team-logo {
+  display: inline-block;
+  object-fit: contain;
+  flex-shrink: 0;
+  /* Slight drop shadow so white SVG logos are visible on dark backgrounds */
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+  vertical-align: middle;
+}
+
+.team-logo-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}

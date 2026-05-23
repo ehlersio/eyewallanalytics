@@ -1,0 +1,739 @@
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useWindowWidth } from '../hooks/useFetch';
+import './IceRink.css';
+
+// ─── Constants ───────────────────────────────────────────────
+// NHL ice: 200ft x 85ft. Origin (0,0) = center ice.
+// x: -100 (left goal) → +100 (right goal)
+// y: -42.5 (bottom boards) → +42.5 (top boards)
+const W  = 600;
+const H  = 255;
+const CX = W / 2;
+const CY = H / 2;
+
+// Convert NHL ice coords → SVG pixel coords
+function toSvg(x, y) {
+  return {
+    px: CX + (x / 100) * (W / 2),
+    py: CY - (y / 42.5) * (H / 2),
+  };
+}
+
+// Distance from goal mouth (right goal at x=89, y=0)
+function distFromGoal(x, y) {
+  const dx = Math.abs(x) - 89;
+  const dy = y;
+  return Math.sqrt(dx * dx + dy * dy).toFixed(1);
+}
+
+// Zone label from coordinates
+function zoneLabel(x) {
+  if (Math.abs(x) > 64) return 'Slot';
+  if (Math.abs(x) > 25) return 'Neutral zone';
+  return 'Defensive zone';
+}
+
+// Shot type display labels
+const TYPE_LABELS = {
+  'goal':         'Goal',
+  'shot-on-goal': 'Shot on goal',
+  'missed-shot':  'Missed shot',
+  'blocked-shot': 'Blocked shot',
+};
+
+// Shot type → dot style
+const SHOT_STYLE = {
+  'goal':         { r: 7,  fill: '#ff4422', stroke: '#fff',  strokeWidth: 2,   opacity: 1    },
+  'shot-on-goal': { r: 5,  fill: '#ff4422', stroke: 'none',  strokeWidth: 0,   opacity: 0.65 },
+  'missed-shot':  { r: 4,  fill: '#ff4422', stroke: 'none',  strokeWidth: 0,   opacity: 0.32 },
+  'blocked-shot': { r: 4,  fill: '#8899aa', stroke: 'none',  strokeWidth: 0,   opacity: 0.45 },
+};
+const OPP_SHOT_STYLE = {
+  'goal':         { r: 7,  fill: '#4477ee', stroke: '#fff',  strokeWidth: 2,   opacity: 1    },
+  'shot-on-goal': { r: 5,  fill: '#4477ee', stroke: 'none',  strokeWidth: 0,   opacity: 0.55 },
+  'missed-shot':  { r: 4,  fill: '#4477ee', stroke: 'none',  strokeWidth: 0,   opacity: 0.28 },
+  'blocked-shot': { r: 4,  fill: '#8899aa', stroke: 'none',  strokeWidth: 0,   opacity: 0.40 },
+};
+
+// ─── Main component ───────────────────────────────────────────
+export default function IceRink({ events = [], roster = {} }) {
+  const [halfRink,    setHalfRink]    = useState(false);
+  const [period,      setPeriod]      = useState('all');
+  const [viewMode,    setViewMode]    = useState('dots'); // 'dots' | 'heat'
+  const [heatTeam,    setHeatTeam]    = useState('both'); // 'car' | 'opp' | 'both'
+  const [hovered,     setHovered]     = useState(null);   // { event, svgX, svgY, screenX, screenY }
+  const [selected,    setSelected]    = useState(null);   // full event object for popup
+  const [zoom,        setZoom]        = useState(1);
+  const [pan,         setPan]         = useState({ x: 0, y: 0 });
+  const [isPanning,   setIsPanning]   = useState(false);
+  const panStart      = useRef(null);
+  const svgRef        = useRef(null);
+  const wrapRef       = useRef(null);
+  const width         = useWindowWidth();
+  const isMobile      = width < 600;
+  const showHalf      = isMobile || halfRink;
+
+  const MAX_ZOOM = 5;
+  const MIN_ZOOM = 1;
+
+  // Names are now embedded directly in each event via extractShotEvents+buildPlayerMap
+  // roster prop kept for future use but name lookup is no longer needed here
+  const playerNames = {};
+
+  // Derive which OT periods actually have events — only show those buttons
+  const otPeriods = useMemo(() => {
+    const seen = new Set(events.map(e => e.period).filter(p => p >= 4));
+    return [...seen].sort((a, b) => a - b); // [4, 5, 6, ...]
+  }, [events]);
+
+  // Filter events by selected period
+  // period state is 'all' | '1' | '2' | '3' | 'ot4' | 'ot5' | ...
+  const filtered = useMemo(() => {
+    if (period === 'all') return events;
+    if (period.startsWith('ot')) {
+      const p = parseInt(period.slice(2));  // 'ot4' -> 4
+      return events.filter(e => e.period === p);
+    }
+    return events.filter(e => e.period === parseInt(period));
+  }, [events, period]);
+
+  // Label for an OT period number: 4 -> 'OT', 5 -> 'OT2', 6 -> 'OT3', etc.
+  // (NHL playoffs: first OT is just "OT", subsequent ones are OT2, OT3...)
+  function otLabel(periodNum) {
+    return periodNum === 4 ? 'OT' : `OT${periodNum - 3}`;
+  }
+
+  // Normalize event coords so CAR always attacks right (positive x)
+  function normalizeCoords(e) {
+    let x = e.x, y = e.y;
+    if (e.isCanes  && x < 0) { x = -x; y = -y; }
+    if (!e.isCanes && x > 0) { x = -x; y = -y; }
+    return { x, y };
+  }
+
+  // ── Zoom helpers ──
+  function clampZoom(z) { return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z)); }
+
+  function zoomToward(delta, cx, cy) {
+    setZoom(prev => {
+      const next = clampZoom(prev + delta);
+      // Adjust pan so the point under cursor stays fixed
+      const scale = next / prev;
+      setPan(p => ({
+        x: cx - scale * (cx - p.x),
+        y: cy - scale * (cy - p.y),
+      }));
+      return next;
+    });
+  }
+
+  // Reset zoom/pan
+  function resetView() {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }
+
+  // Scroll-to-zoom on desktop
+  function handleWheel(e) {
+    e.preventDefault();
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+    zoomToward(e.deltaY < 0 ? 0.25 : -0.25, cx, cy);
+  }
+
+  // Mouse pan
+  function handleMouseDown(e) {
+    if (e.button !== 0) return;
+    setIsPanning(true);
+    panStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+  }
+  function handleMouseMove(e) {
+    if (!isPanning) return;
+    setPan({ x: e.clientX - panStart.current.x, y: e.clientY - panStart.current.y });
+  }
+  function handleMouseUp() { setIsPanning(false); }
+
+  // Touch pinch-zoom
+  const lastTouch = useRef(null);
+  function handleTouchStart(e) {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouch.current = { dist: Math.sqrt(dx*dx + dy*dy), zoom };
+    } else if (e.touches.length === 1) {
+      setIsPanning(true);
+      panStart.current = { x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y };
+    }
+  }
+  function handleTouchMove(e) {
+    if (e.touches.length === 2 && lastTouch.current) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const scale = dist / lastTouch.current.dist;
+      setZoom(clampZoom(lastTouch.current.zoom * scale));
+    } else if (e.touches.length === 1 && isPanning) {
+      setPan({ x: e.touches[0].clientX - panStart.current.x, y: e.touches[0].clientY - panStart.current.y });
+    }
+  }
+  function handleTouchEnd() {
+    setIsPanning(false);
+    lastTouch.current = null;
+  }
+
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [zoom, pan]);
+
+  // ── Render a single shot dot ──
+  function renderShot(e, isCanes, index) {
+    const { x, y } = normalizeCoords(e);
+    if (showHalf && x < 0) return null;
+
+    const { px, py } = toSvg(x, y);
+    const styles = isCanes ? SHOT_STYLE : OPP_SHOT_STYLE;
+    const s = styles[e.type] || styles['shot-on-goal'];
+    const isHov = hovered?.event?.id === e.id;
+    const isSel = selected?.id === e.id;
+
+    return (
+      <circle
+        key={`${e.id}-${index}`}
+        cx={px}
+        cy={py}
+        r={isHov || isSel ? s.r * 1.6 : s.r}
+        fill={s.fill}
+        stroke={isSel ? '#fff' : isHov ? 'rgba(255,255,255,0.6)' : s.stroke}
+        strokeWidth={isSel ? 2.5 : isHov ? 1.5 : s.strokeWidth}
+        opacity={isHov || isSel ? 1 : s.opacity}
+        style={{ cursor: 'pointer', transition: 'r 0.1s, opacity 0.1s' }}
+        onMouseEnter={ev => {
+          const rect = svgRef.current?.getBoundingClientRect();
+          setHovered({ event: e, screenX: ev.clientX, screenY: ev.clientY });
+        }}
+        onMouseLeave={() => setHovered(null)}
+        onClick={ev => {
+          ev.stopPropagation();
+          setSelected(prev => prev?.id === e.id ? null : e);
+          setHovered(null);
+        }}
+      />
+    );
+  }
+
+  const viewBox = showHalf ? `${CX} 0 ${W/2} ${H}` : `0 0 ${W} ${H}`;
+  const canesEvents = filtered.filter(e => e.isCanes);
+  const oppEvents   = filtered.filter(e => !e.isCanes);
+
+  return (
+    <div className="ice-rink-wrap" ref={wrapRef}>
+
+      {/* Toolbar */}
+      <div className="rink-toolbar">
+        <div className="rink-filters">
+          {/* Regular periods always shown */}
+          {['all','1','2','3'].map(p => (
+            <button key={p} className={`rink-btn ${period === p ? 'on' : ''}`}
+              onClick={() => setPeriod(p)}>
+              {p === 'all' ? 'All' : `P${p}`}
+            </button>
+          ))}
+          {/* OT periods — only rendered if that period has events */}
+          {otPeriods.map(p => (
+            <button key={`ot${p}`} className={`rink-btn ot-btn ${period === `ot${p}` ? 'on' : ''}`}
+              onClick={() => setPeriod(`ot${p}`)}>
+              {otLabel(p)}
+            </button>
+          ))}
+        </div>
+        <div className="rink-right-controls">
+          <button
+            className={`rink-btn ${viewMode === 'heat' ? 'on heat-on' : ''}`}
+            onClick={() => setViewMode(m => m === 'dots' ? 'heat' : 'dots')}
+            title="Toggle heatmap"
+          >
+            {viewMode === 'heat' ? '🔥 Heat' : '🔥 Heat'}
+          </button>
+          <button className="rink-btn rink-toggle" onClick={() => setHalfRink(h => !h)}>
+            {showHalf ? 'Full rink' : 'Half rink'}
+          </button>
+        </div>
+      </div>
+
+      {/* Zoom controls */}
+      <div className="zoom-bar">
+        <button className="zoom-btn" onClick={() => zoomToward(-0.5, 0, 0)} disabled={zoom <= MIN_ZOOM}>−</button>
+        <div className="zoom-track">
+          <div className="zoom-fill" style={{ width: `${((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100}%` }} />
+        </div>
+        <button className="zoom-btn" onClick={() => zoomToward(0.5, 0, 0)} disabled={zoom >= MAX_ZOOM}>+</button>
+        {zoom > 1 && (
+          <button className="zoom-reset" onClick={resetView}>Reset</button>
+        )}
+        <span className="zoom-label">{Math.round(zoom * 100)}%</span>
+      </div>
+
+      {/* Heat team selector — only in heat mode */}
+      {viewMode === 'heat' && (
+        <div className="heat-controls">
+          <span className="heat-label">Show:</span>
+          {[['car','CAR shots'],['opp','Opp shots'],['both','Both']].map(([val, lbl]) => (
+            <button
+              key={val}
+              className={`rink-btn ${heatTeam === val ? 'on' : ''}`}
+              onClick={() => setHeatTeam(val)}
+            >{lbl}</button>
+          ))}
+          <span className="heat-scale">
+            <span className="heat-scale-low">Low</span>
+            <span className="heat-scale-bar" />
+            <span className="heat-scale-high">High</span>
+          </span>
+        </div>
+      )}
+
+      {/* Legend — only in dots mode */}
+      {viewMode === 'dots' && (
+        <div className="rink-legend">
+          <div className="legend-item"><span className="leg-dot" style={{background:'#ff4422',opacity:0.65}} />CAR shot</div>
+          <div className="legend-item"><span className="leg-dot leg-goal" style={{background:'#ff4422'}} />CAR goal</div>
+          <div className="legend-item"><span className="leg-dot" style={{background:'#4477ee',opacity:0.55}} />Opp shot</div>
+          <div className="legend-item"><span className="leg-dot leg-goal" style={{background:'#4477ee'}} />Opp goal</div>
+          <div className="legend-item"><span className="leg-dot" style={{background:'#8899aa',opacity:0.45}} />Blocked</div>
+        </div>
+      )}
+
+      {/* SVG rink */}
+      <div
+        className="rink-svg-container"
+        style={{ cursor: isPanning ? 'grabbing' : zoom > 1 ? 'grab' : 'default' }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onClick={() => setSelected(null)}
+      >
+        <svg
+          ref={svgRef}
+          className="rink-svg"
+          viewBox={viewBox}
+          xmlns="http://www.w3.org/2000/svg"
+          style={{
+            transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+            transformOrigin: 'top left',
+            transition: isPanning ? 'none' : 'transform 0.1s ease',
+          }}
+        >
+          <RinkMarkings showHalf={showHalf} />
+          {viewMode === 'heat' && (
+            <HeatmapLayer
+              canesEvents={canesEvents}
+              oppEvents={oppEvents}
+              heatTeam={heatTeam}
+              showHalf={showHalf}
+              W={W} H={H} CX={CX} CY={CY}
+            />
+          )}
+          {viewMode === 'dots' && (
+            <>
+              {oppEvents.map((e, i)   => renderShot(e, false, i))}
+              {canesEvents.map((e, i) => renderShot(e, true,  i))}
+            </>
+          )}
+          {/* Always show goals on top even in heat mode */}
+          {viewMode === 'heat' && (
+            <>
+              {oppEvents.filter(e => e.type === 'goal').map((e, i)   => renderShot(e, false, i))}
+              {canesEvents.filter(e => e.type === 'goal').map((e, i) => renderShot(e, true,  i))}
+            </>
+          )}
+        </svg>
+      </div>
+
+      {/* Hover tooltip — dots mode, plus goals in heat mode */}
+      {(viewMode === 'dots' || (viewMode === 'heat' && hovered?.event?.type === 'goal')) && hovered && !selected && (
+        <HoverTooltip event={hovered.event} screenX={hovered.screenX} screenY={hovered.screenY} playerNames={playerNames} wrapRef={wrapRef} />
+      )}
+
+      {/* Click popup — dots mode + goals in heat mode */}
+      {(viewMode === 'dots' || viewMode === 'heat') && selected && (
+        <ShotPopup event={selected} playerNames={playerNames} onClose={() => setSelected(null)} />
+      )}
+
+      {events.length === 0 && (
+        <div className="rink-empty">Shot data appears here during and after games.</div>
+      )}
+    </div>
+  );
+}
+
+// ─── Heatmap layer ───────────────────────────────────────────
+// Renders a kernel density estimation as a canvas-based image inside the SVG.
+// Uses a 2D Gaussian kernel. Works entirely in-browser, no extra libraries.
+function HeatmapLayer({ canesEvents, oppEvents, heatTeam, showHalf, W, H, CX, CY }) {
+  const dataUrl = useMemo(() => {
+    // Pick which events to render
+    let pts = [];
+    if (heatTeam === 'car' || heatTeam === 'both') {
+      pts = pts.concat(canesEvents.map(e => ({ x: e.x, y: e.y, isCanes: true })));
+    }
+    if (heatTeam === 'opp' || heatTeam === 'both') {
+      pts = pts.concat(oppEvents.map(e => ({ x: e.x, y: e.y, isCanes: false })));
+    }
+    if (!pts.length) return null;
+
+    // Canvas size matches SVG viewBox
+    const cw = W, ch = H;
+    const canvas = document.createElement('canvas');
+    canvas.width  = cw;
+    canvas.height = ch;
+    const ctx = canvas.getContext('2d');
+
+    // Build a density grid using Gaussian kernel
+    const BANDWIDTH = 28; // px — controls blur radius; higher = smoother
+    const grid = new Float32Array(cw * ch);
+
+    pts.forEach(({ x, y, isCanes }) => {
+      // Normalize coords: CAR always attacks right
+      let nx = x, ny = y;
+      if (isCanes  && nx < 0) { nx = -nx; ny = -ny; }
+      if (!isCanes && nx > 0) { nx = -nx; ny = -ny; }
+      if (showHalf && nx < 0) return; // outside half-rink view
+
+      const px = CX + (nx / 100) * (W / 2);
+      const py = CY - (ny / 42.5) * (H / 2);
+
+      // Paint Gaussian kernel onto grid
+      const r = Math.ceil(BANDWIDTH * 2.5);
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          const gx = Math.round(px) + dx;
+          const gy = Math.round(py) + dy;
+          if (gx < 0 || gx >= cw || gy < 0 || gy >= ch) continue;
+          const dist2 = dx * dx + dy * dy;
+          const val   = Math.exp(-dist2 / (2 * BANDWIDTH * BANDWIDTH));
+          grid[gy * cw + gx] += val;
+        }
+      }
+    });
+
+    // Find max value for normalisation
+    let maxVal = 0;
+    for (let i = 0; i < grid.length; i++) if (grid[i] > maxVal) maxVal = grid[i];
+    if (maxVal === 0) return null;
+
+    // Write RGBA pixels using a hot colour scale
+    // Low → transparent, mid → amber, high → red
+    const imageData = ctx.createImageData(cw, ch);
+    const d = imageData.data;
+
+    // Apply power curve to density values to increase contrast:
+    // squash low values further, punch up high values
+    const powered = new Float32Array(grid.length);
+    for (let i = 0; i < grid.length; i++) {
+      powered[i] = Math.pow(grid[i] / maxVal, 0.55); // < 1 = boost mid/high contrast
+    }
+
+    for (let i = 0; i < powered.length; i++) {
+      const t = powered[i]; // 0..1 after power curve
+      if (t < 0.08) continue; // skip very low density — reduces noise on white rink
+
+      // Colour ramp designed for a white/light background:
+      // uses semi-opaque dark colours that are visible on white
+      // Low → deep blue, mid → gold/orange, high → bright red
+      let r2, g, b, a;
+      if (t < 0.3) {
+        const s = t / 0.3;
+        // Deep indigo → dark blue
+        r2 = Math.round(20  + 20  * s);
+        g  = Math.round(20  + 60  * s);
+        b  = Math.round(160 + 40  * s);
+        a  = Math.round(160 + 80  * s);
+      } else if (t < 0.6) {
+        const s = (t - 0.3) / 0.3;
+        // Blue → orange/gold
+        r2 = Math.round(40  + 215 * s);
+        g  = Math.round(80  + 80  * s);
+        b  = Math.round(200 - 200 * s);
+        a  = Math.round(230 + 15  * s);
+      } else if (t < 0.85) {
+        const s = (t - 0.6) / 0.25;
+        // Orange → deep red
+        r2 = 255;
+        g  = Math.round(160 - 140 * s);
+        b  = 0;
+        a  = 245;
+      } else {
+        const s = (t - 0.85) / 0.15;
+        // Deep red → near-black red for peak zones
+        r2 = Math.round(255 - 50  * s);
+        g  = Math.round(20  - 20  * s);
+        b  = 0;
+        a  = 255;
+      }
+      const base = i * 4;
+      d[base]     = r2;
+      d[base + 1] = g;
+      d[base + 2] = b;
+      d[base + 3] = Math.min(255, a);
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    // Smooth the pixelated grid with a blur pass
+    const blurCanvas = document.createElement('canvas');
+    blurCanvas.width  = cw;
+    blurCanvas.height = ch;
+    const blurCtx = blurCanvas.getContext('2d');
+    blurCtx.filter = `blur(${Math.round(BANDWIDTH * 0.55)}px)`;
+    blurCtx.drawImage(canvas, 0, 0);
+
+    return blurCanvas.toDataURL('image/png');
+  }, [canesEvents, oppEvents, heatTeam, showHalf]);
+
+  if (!dataUrl) return null;
+
+  return (
+    <image
+      href={dataUrl}
+      x={showHalf ? CX : 0}
+      y={0}
+      width={showHalf ? W / 2 : W}
+      height={H}
+      opacity={0.88}
+    />
+  );
+}
+
+// ─── Hover tooltip ────────────────────────────────────────────
+function HoverTooltip({ event: e, screenX, screenY, playerNames, wrapRef }) {
+  const ref = useRef(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    const wrap = wrapRef.current?.getBoundingClientRect();
+    const tip  = ref.current?.getBoundingClientRect();
+    if (!wrap || !tip) return;
+
+    let left = screenX - wrap.left + 12;
+    let top  = screenY - wrap.top  - tip.height / 2;
+
+    // Keep inside wrap
+    if (left + tip.width  > wrap.width  - 8) left = screenX - wrap.left - tip.width - 12;
+    if (top  < 4)                             top  = 4;
+    if (top  + tip.height > wrap.height - 4)  top  = wrap.height - tip.height - 4;
+
+    setPos({ top, left });
+  }, [screenX, screenY]);
+
+  const dist   = distFromGoal(e.x, e.y);
+  const isGoal = e.type === 'goal';
+
+  return (
+    <div ref={ref} className="hover-tip" style={{ top: pos.top, left: pos.left }}>
+      <div className={`tip-type tip-${e.isCanes ? 'car' : 'opp'}`}>
+        {isGoal ? '🚨 ' : ''}{TYPE_LABELS[e.type] || e.type}
+      </div>
+      {e.shooterName && <div className="tip-row"><span className="tip-label">{isGoal ? 'Scorer' : 'Shooter'}</span><span className="tip-val">{e.shooterName}</span></div>}
+      {isGoal && e.assist1Name && <div className="tip-row"><span className="tip-label">Assist</span><span className="tip-val">{e.assist1Name}{e.assist2Name ? `, ${e.assist2Name}` : ''}</span></div>}
+      <div className="tip-row">
+        <span className="tip-label">Period</span>
+        <span className="tip-val">
+          {e.period <= 3 ? `P${e.period}` : e.period === 4 ? 'OT' : `OT${e.period - 3}`} · {e.timeInPeriod}
+        </span>
+      </div>
+      <div className="tip-row"><span className="tip-label">Distance</span><span className="tip-val">{dist} ft</span></div>
+      {e.shotType && <div className="tip-row"><span className="tip-label">Type</span><span className="tip-val">{e.shotType}</span></div>}
+      {e.shotSpeed && <div className="tip-row"><span className="tip-label">Speed</span><span className="tip-val tip-speed">{e.shotSpeed} mph</span></div>}
+      <div className="tip-footer">Click for full details</div>
+    </div>
+  );
+}
+
+// ─── Click popup ─────────────────────────────────────────────
+function ShotPopup({ event: e, playerNames, onClose }) {
+  const shooterName = e.shooterName || (e.isCanes ? 'Unknown Cane' : 'Unknown');
+  const goalieName  = e.goalieName  || null;
+  const blockerName = e.blockerName || null;
+  const assists = [e.assist1Name, e.assist2Name].filter(Boolean);
+
+  const dist     = distFromGoal(e.x, e.y);
+  const angle    = Math.abs(Math.atan2(Math.abs(e.y), Math.abs(Math.abs(e.x) - 89)) * (180 / Math.PI)).toFixed(1);
+  const zone     = zoneLabel(e.x);
+  const isGoal   = e.type === 'goal';
+  const isCanes  = e.isCanes;
+
+  // Danger zone classification
+  let danger = 'Low danger';
+  const distNum = parseFloat(dist);
+  if (distNum < 15)                           danger = '🔴 High danger';
+  else if (distNum < 30 && parseFloat(angle) > 20) danger = '🟡 Medium danger';
+  else if (distNum < 25)                      danger = '🟡 Medium danger';
+
+  return (
+    <div className="shot-popup-backdrop" onClick={onClose}>
+      <div className="shot-popup" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className={`popup-header ${isGoal ? 'popup-goal' : ''} ${isCanes ? 'popup-car' : 'popup-opp'}`}>
+          <div className="popup-type-row">
+            <span className="popup-type-icon">{isGoal ? '🚨' : e.type === 'blocked-shot' ? '🛡' : e.type === 'missed-shot' ? '↗' : '🏒'}</span>
+            <span className="popup-type-label">{TYPE_LABELS[e.type] || e.type}</span>
+            <span className="popup-team-badge">{isCanes ? 'CAR' : 'OPP'}</span>
+          </div>
+          <button className="popup-close" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="popup-body">
+          {/* Time */}
+          <div className="popup-section">
+            <div className="popup-section-label">When</div>
+            <div className="popup-row">
+              <span className="popup-field">Period</span>
+              <span className="popup-value">{
+                e.period <= 3
+                  ? `Period ${e.period}`
+                  : e.period === 4 ? 'Overtime'
+                  : `OT${e.period - 3}`
+              }</span>
+            </div>
+            <div className="popup-row">
+              <span className="popup-field">Time</span>
+              <span className="popup-value">{e.timeInPeriod}</span>
+            </div>
+          </div>
+
+          {/* Players */}
+          <div className="popup-section">
+            <div className="popup-section-label">Players</div>
+            <div className="popup-row">
+              <span className="popup-field">{isGoal ? 'Goal scorer' : e.type === 'blocked-shot' ? 'Shot by' : 'Shot by'}</span>
+              <span className="popup-value popup-name">{shooterName}</span>
+            </div>
+            {isGoal && assists.length > 0 && (
+              <div className="popup-row">
+                <span className="popup-field">Assists</span>
+                <span className="popup-value popup-name">{assists.join(', ')}</span>
+              </div>
+            )}
+            {blockerName && (
+              <div className="popup-row">
+                <span className="popup-field">Blocked by</span>
+                <span className="popup-value popup-name">{blockerName}</span>
+              </div>
+            )}
+            {goalieName && (
+              <div className="popup-row">
+                <span className="popup-field">Goalie</span>
+                <span className="popup-value popup-name">{goalieName}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Location */}
+          <div className="popup-section">
+            <div className="popup-section-label">Location</div>
+            <div className="popup-row">
+              <span className="popup-field">Distance</span>
+              <span className="popup-value">{dist} ft from goal</span>
+            </div>
+            <div className="popup-row">
+              <span className="popup-field">Angle</span>
+              <span className="popup-value">{angle}°</span>
+            </div>
+            <div className="popup-row">
+              <span className="popup-field">Zone</span>
+              <span className="popup-value">{zone}</span>
+            </div>
+
+          </div>
+
+          {/* Shot details */}
+          <div className="popup-section">
+            <div className="popup-section-label">Shot details</div>
+            {e.shotType && (
+              <div className="popup-row">
+                <span className="popup-field">Shot type</span>
+                <span className="popup-value">{e.shotType}</span>
+              </div>
+            )}
+            {e.shotSpeed != null && (
+              <div className="popup-row">
+                <span className="popup-field">Shot speed</span>
+                <span className="popup-value popup-speed">{e.shotSpeed} mph</span>
+              </div>
+            )}
+            {e.shotSpeed == null && (
+              <div className="popup-row">
+                <span className="popup-field">Shot speed</span>
+                <span className="popup-value" style={{color:'var(--text-dim)',fontSize:11}}>Not tracked</span>
+              </div>
+            )}
+            <div className="popup-row">
+              <span className="popup-field">Danger</span>
+              <span className="popup-value">{danger}</span>
+            </div>
+            {e.zoneCode && (
+              <div className="popup-row">
+                <span className="popup-field">Zone code</span>
+                <span className="popup-value">{e.zoneCode === 'O' ? 'Offensive' : e.zoneCode === 'D' ? 'Defensive' : 'Neutral'}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Rink markings SVG ────────────────────────────────────────
+function RinkMarkings({ showHalf }) {
+  return (
+    <g>
+      <rect width={W} height={H} rx="28" ry="28" fill="#ddeef5" stroke="#b8ccd8" strokeWidth="1"/>
+      <rect x="8" y="8" width={W-16} height={H-16} rx="22" fill="none" stroke="#a0b8c8" strokeWidth="0.8"/>
+      <line x1={CX} y1="8" x2={CX} y2={H-8} stroke="#cc3333" strokeWidth="2" opacity="0.45"/>
+      <line x1={CX-W*0.25} y1="8" x2={CX-W*0.25} y2={H-8} stroke="#3355aa" strokeWidth="1.5" opacity="0.5"/>
+      <line x1={CX+W*0.25} y1="8" x2={CX+W*0.25} y2={H-8} stroke="#3355aa" strokeWidth="1.5" opacity="0.5"/>
+      <rect x="8"    y={CY-22} width="14" height="44" fill="none" stroke="#4466aa" strokeWidth="1.5"/>
+      <rect x={W-22} y={CY-22} width="14" height="44" fill="none" stroke="#cc2200" strokeWidth="1.5"/>
+      <path d={`M 22 ${CY-18} Q 46 ${CY-18} 46 ${CY} Q 46 ${CY+18} 22 ${CY+18}`} fill="rgba(100,150,220,0.15)" stroke="#4466aa" strokeWidth="0.8"/>
+      <path d={`M ${W-22} ${CY-18} Q ${W-46} ${CY-18} ${W-46} ${CY} Q ${W-46} ${CY+18} ${W-22} ${CY+18}`} fill="rgba(200,80,60,0.12)" stroke="#cc2200" strokeWidth="0.8"/>
+      <line x1="8"    y1={CY-32} x2="48"    y2={CY-22} stroke="#4466aa" strokeWidth="0.8" opacity="0.4"/>
+      <line x1="8"    y1={CY+32} x2="48"    y2={CY+22} stroke="#4466aa" strokeWidth="0.8" opacity="0.4"/>
+      <line x1={W-8}  y1={CY-32} x2={W-48}  y2={CY-22} stroke="#cc2200" strokeWidth="0.8" opacity="0.4"/>
+      <line x1={W-8}  y1={CY+32} x2={W-48}  y2={CY+22} stroke="#cc2200" strokeWidth="0.8" opacity="0.4"/>
+      <circle cx={CX} cy={CY} r="33" fill="none" stroke="#a0b8c8" strokeWidth="0.8"/>
+      <circle cx={CX} cy={CY} r="3" fill="#a0b8c8"/>
+      {[
+        {cx: CX-W*0.25, cy: CY-H*0.28},
+        {cx: CX-W*0.25, cy: CY+H*0.28},
+        {cx: CX+W*0.25, cy: CY-H*0.28},
+        {cx: CX+W*0.25, cy: CY+H*0.28},
+      ].map((c, i) => (
+        <g key={i}>
+          <circle cx={c.cx} cy={c.cy} r="3" fill="#cc4444" opacity="0.6"/>
+          <circle cx={c.cx} cy={c.cy} r="16" fill="none" stroke="#cc4444" strokeWidth="0.7" opacity="0.4"/>
+        </g>
+      ))}
+      {!showHalf && (
+        <>
+          <text x="52"    y="18" fontSize="9" fill="#4466aa" opacity="0.7" fontFamily="sans-serif">OPP zone</text>
+          <text x={W-85}  y="18" fontSize="9" fill="#cc2200" opacity="0.8" fontFamily="sans-serif">CAR zone</text>
+        </>
+      )}
+      {showHalf && (
+        <text x={CX+10} y="18" fontSize="9" fill="#cc2200" opacity="0.8" fontFamily="sans-serif">CAR offensive zone</text>
+      )}
+    </g>
+  );
+}
