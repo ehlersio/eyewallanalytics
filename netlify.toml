@@ -1,0 +1,40 @@
+# ── Netlify configuration for EyeWall Analytics ──────────────
+
+[build]
+  command     = "npm run build"
+  publish     = "dist"
+
+# Edge function handles all three NHL API proxy routes
+[[edge_functions]]
+  path     = "/nhl-api/*"
+  function = "nhl-proxy"
+
+[[edge_functions]]
+  path     = "/nhl-stats/*"
+  function = "nhl-proxy"
+
+[[edge_functions]]
+  path     = "/nhl-assets/*"
+  function = "nhl-proxy"
+
+# SPA fallback — send all unmatched routes to index.html
+# so React Router handles client-side navigation correctly
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
+    Permissions-Policy     = "camera=(), microphone=(), geolocation=()"
+
+# Long cache for hashed static assets Vite generates
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
