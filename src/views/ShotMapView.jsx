@@ -66,17 +66,19 @@ export default function ShotMapView() {
 
   const shotEvents = pbp ? extractShotEvents(pbp) : [];
 
+  const opp        = activeGame ? getOpponent(activeGame) : null;
+  const carScore   = activeGame ? getCarScore(activeGame) : null;
+  const oppScore   = activeGame ? getOppScore(activeGame) : null;
+  const oppAbbr    = opp?.abbrev;
+  const oppColor   = TEAM_COLORS[oppAbbr] || 'var(--text-muted)';
+  const gameHome   = activeGame ? isHomeGame(activeGame) : true;
+
   // ── Live situation: strength + on-ice players ─────────────
-  // situationCode: 4-digit string. Digit layout:
-  //   [0] away goalie in (1) or pulled (0)
-  //   [1] away skaters count (3-6)
-  //   [2] home skaters count (3-6)
-  //   [3] home goalie in (1) or pulled (0)
-  // e.g. "1551" = both goalies, 5v5 | "1541" = home PP (away 5, home 4)
+  // situationCode digits: [awayGoalie][awaySkaters][homeSkaters][homeGoalie]
+  // e.g. "1551" = 5v5 | "1541" = home PP (home 5, away 4)
   const currentSituation = useMemo(() => {
     if (!pbp?.plays?.length) return null;
     const plays = [...pbp.plays];
-    // Find the most recent play with a situationCode
     for (let i = plays.length - 1; i >= 0; i--) {
       const sc = plays[i].situationCode;
       if (sc && sc.length === 4) {
@@ -84,55 +86,40 @@ export default function ShotMapView() {
         const homeSkaters = parseInt(sc[2]);
         const awayGoalie  = sc[0] === '1';
         const homeGoalie  = sc[3] === '1';
-        const carIsHome   = gameHome;
-        const carSkaters  = carIsHome ? homeSkaters : awaySkaters;
-        const oppSkaters  = carIsHome ? awaySkaters : homeSkaters;
-        const carGoalie   = carIsHome ? homeGoalie  : awayGoalie;
-
+        const carSkaters  = gameHome ? homeSkaters : awaySkaters;
+        const oppSkaters  = gameHome ? awaySkaters : homeSkaters;
+        const carGoalie   = gameHome ? homeGoalie  : awayGoalie;
         let strength = 'EV';
-        if (carSkaters > oppSkaters)       strength = 'PP';
-        else if (carSkaters < oppSkaters)  strength = 'SH';
-        else if (carSkaters === oppSkaters && carSkaters < 5) strength = '4v4';
-        // Goalie pulled
-        if (!carGoalie)  strength = `${strength} (EN)`;
-
+        if (carSkaters > oppSkaters)                               strength = 'PP';
+        else if (carSkaters < oppSkaters)                          strength = 'SH';
+        else if (carSkaters === oppSkaters && carSkaters < 5)      strength = '4v4';
+        if (!carGoalie) strength = `${strength} (EN)`;
         return { carSkaters, oppSkaters, strength, code: sc };
       }
     }
     return null;
   }, [pbp, gameHome]);
 
-  // On-ice players from boxscore situation (live boxscore has current skaters)
+  // On-ice players from live boxscore situation
   const onIcePlayers = useMemo(() => {
     if (!boxscore?.situation || !pbp) return null;
-    const playerMap = buildPlayerMap(pbp);
+    const rawMap = buildPlayerMap(pbp);
     const strMap = {};
-    Object.entries(playerMap).forEach(([k, v]) => { strMap[String(k)] = v; });
+    Object.entries(rawMap).forEach(([k, v]) => { strMap[String(k)] = v; });
     const pName = id => { const n = strMap[String(id)]; return n?.trim() || null; };
-
-    const sit = boxscore.situation;
+    const sit    = boxscore.situation;
     const carKey = gameHome ? 'homeTeam' : 'awayTeam';
     const oppKey = gameHome ? 'awayTeam' : 'homeTeam';
-
-    const carOnIce = (sit[carKey]?.onIce || []).map(p => ({
+    const toPlayers = arr => (arr || []).map(p => ({
       name:     pName(p.playerId) || `#${p.sweaterNumber}`,
       number:   p.sweaterNumber,
       position: p.positionCode,
     }));
-    const oppOnIce = (sit[oppKey]?.onIce || []).map(p => ({
-      name:     pName(p.playerId) || `#${p.sweaterNumber}`,
-      number:   p.sweaterNumber,
-      position: p.positionCode,
-    }));
-
-    return { car: carOnIce, opp: oppOnIce };
+    return {
+      car: toPlayers(sit[carKey]?.onIce),
+      opp: toPlayers(sit[oppKey]?.onIce),
+    };
   }, [boxscore, pbp, gameHome]);
-  const opp        = activeGame ? getOpponent(activeGame) : null;
-  const carScore   = activeGame ? getCarScore(activeGame) : null;
-  const oppScore   = activeGame ? getOppScore(activeGame) : null;
-  const oppAbbr    = opp?.abbrev;
-  const oppColor   = TEAM_COLORS[oppAbbr] || 'var(--text-muted)';
-  const gameHome   = activeGame ? isHomeGame(activeGame) : true;
 
   // ── Compute game-level metrics from right-rail ──────────────
   const teamGameStats = rightRail?.teamGameStats || [];
