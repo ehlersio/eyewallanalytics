@@ -1,4 +1,4 @@
-import { cached, TTL } from './cache.js'
+import { cached, TTL, invalidate } from './cache.js'
 
 // NHL API utility
 // Proxy routes (configured in vite.config.js):
@@ -35,9 +35,13 @@ async function nhlFetch(url) {
 // ─── SCHEDULE ────────────────────────────────────────────────
 
 // Fetch ALL CAR games for the season (regular + playoffs together)
+// Short cache (20s) prevents hammering during rapid successive calls,
+// but stays fresh enough to detect live game state changes
 async function getAllGames() {
-  const data = await nhlFetch(`${BASE}/club-schedule-season/${CAR_ABBR}/${SEASON}`);
-  return data?.games || [];
+  return cached('allGames', async () => {
+    const data = await nhlFetch(`${BASE}/club-schedule-season/${CAR_ABBR}/${SEASON}`);
+    return data?.games || [];
+  }, TTL.SHORT / 3); // 20 seconds
 }
 
 // Regular season games only (gameType === 2)
@@ -386,7 +390,17 @@ export function extractRankings() { return null; }
 // ─── GAME DETAIL / SHOT EVENTS ───────────────────────────────
 
 export async function getGameDetail(gameId) {
-  return await nhlFetch(`${BASE}/gamecenter/${gameId}/play-by-play`);
+  return cached(`pbp:${gameId}`, () =>
+    nhlFetch(`${BASE}/gamecenter/${gameId}/play-by-play`),
+    TTL.GAME_DATA // 2 min for completed games; live polls bust this
+  );
+}
+
+// Call this to force-refresh live game data (bypasses cache)
+export function bustLiveGameCache(gameId) {
+  invalidate(`pbp:${gameId}`);
+  invalidate(`boxscore:${gameId}`);
+  invalidate('allGames');
 }
 
 export async function getGameLanding(gameId) {
@@ -396,7 +410,10 @@ export async function getGameLanding(gameId) {
 // Boxscore: player stats by game (goals, assists, shots, TOI, +/-, etc.)
 // Returns playerByGameStats.homeTeam/awayTeam.forwards/defensemen/goalies
 export async function getGameBoxscore(gameId) {
-  return await nhlFetch(`${BASE}/gamecenter/${gameId}/boxscore`);
+  return cached(`boxscore:${gameId}`, () =>
+    nhlFetch(`${BASE}/gamecenter/${gameId}/boxscore`),
+    TTL.GAME_DATA
+  );
 }
 
 // Right-rail: team-level game stats (shots, hits, faceoffs, PPs, etc.)
