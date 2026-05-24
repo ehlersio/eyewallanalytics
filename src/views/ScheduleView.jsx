@@ -771,64 +771,65 @@ function GameStatsPopup({ game, onClose }) {
               )}
 
               {/* Skater table with team toggle */}
-              {(carPlayers.length > 0 || oppPlayers.length > 0) && (
-                {/* ── Corsi / Fenwick / PDO / Puck Luck ── */}
-                {advStats && (
-                  <div className="gp-section">
-                    <div className="gp-section-label">
-                      Shot Attempts &amp; Puck Luck
-                      <span className="gp-help" title="Corsi = all shot attempts (goals+shots+misses+blocks). Fenwick excludes blocks. PDO = SH%+SV%×100, avg=100. Puck Luck = actual goals vs expected from shot share."> ⓘ</span>
+              {/* ── Corsi / Fenwick / PDO / Puck Luck ── */}
+              {advStats && (
+                <div className="gp-section">
+                  <div className="gp-section-label">
+                    Shot Attempts &amp; Puck Luck
+                    <span className="gp-help" title="Corsi = all shot attempts (goals+shots+misses+blocks). Fenwick excludes blocks. PDO = SH%+SV%×100, avg=100. Puck Luck = actual goals vs expected from shot share."> ⓘ</span>
+                  </div>
+                  <div className="gp-adv-grid">
+                    <div className="gp-adv-row header">
+                      <span></span><span className="red">CAR</span><span></span><span className="muted">OPP</span>
                     </div>
-                    <div className="gp-adv-grid">
-                      <div className="gp-adv-row header">
-                        <span></span><span className="red">CAR</span><span></span><span className="muted">OPP</span>
-                      </div>
-                      {[
-                        ['Corsi (CF)',   advStats.carCorsi,   advStats.oppCorsi,   'All shot attempts incl. blocked'],
-                        ['Fenwick (FF)', advStats.carFenwick, advStats.oppFenwick, 'Unblocked shot attempts (excl. blocks)'],
-                        ['Shots on Goal',advStats.car.goals+advStats.car.sog, advStats.opp.goals+advStats.opp.sog, 'Shots that reached the goalie'],
-                        ['Missed Shots', advStats.car.missed, advStats.opp.missed, 'Attempts that missed the net'],
-                        ['Blocked Shots',advStats.car.blocked,advStats.opp.blocked,'Attempts blocked by a skater'],
-                      ].map(([label, car, opp, help]) => {
-                        const tot = car + opp || 1;
-                        return (
-                          <div key={label} className="gp-adv-row" title={help}>
-                            <span className="gp-adv-label">{label}</span>
-                            <span className="red">{car}</span>
-                            <div className="gp-adv-bar">
-                              <div className="gp-adv-fill red"   style={{width:`${Math.round(car/tot*100)}%`}} />
-                              <div className="gp-adv-fill muted" style={{width:`${Math.round(opp/tot*100)}%`}} />
-                            </div>
-                            <span className="muted">{opp}</span>
+                    {[
+                      ['Corsi (CF)',   advStats.carCorsi,   advStats.oppCorsi,   'All shot attempts incl. blocked'],
+                      ['Fenwick (FF)', advStats.carFenwick, advStats.oppFenwick, 'Unblocked shot attempts (excl. blocks)'],
+                      ['Shots on Goal',advStats.car.goals+advStats.car.sog, advStats.opp.goals+advStats.opp.sog, 'Shots that reached the goalie'],
+                      ['Missed Shots', advStats.car.missed, advStats.opp.missed, 'Attempts that missed the net'],
+                      ['Blocked Shots',advStats.car.blocked,advStats.opp.blocked,'Attempts blocked by a skater'],
+                    ].map(([label, car, opp, help]) => {
+                      const tot = car + opp || 1;
+                      return (
+                        <div key={label} className="gp-adv-row" title={help}>
+                          <span className="gp-adv-label">{label}</span>
+                          <span className="red">{car}</span>
+                          <div className="gp-adv-bar">
+                            <div className="gp-adv-fill red"   style={{width:`${Math.round(car/tot*100)}%`}} />
+                            <div className="gp-adv-fill muted" style={{width:`${Math.round(opp/tot*100)}%`}} />
                           </div>
-                        );
-                      })}
-                      <div className="gp-adv-chips">
-                        <span className="gp-adv-chip" title="Corsi For% — CAR share of all shot attempts"
-                          style={{color: advStats.corsiForPct>=50?'var(--green)':'var(--red-bright)'}}>
-                          CF% {advStats.corsiForPct}%
+                          <span className="muted">{opp}</span>
+                        </div>
+                      );
+                    })}
+                    <div className="gp-adv-chips">
+                      <span className="gp-adv-chip" title="Corsi For% — CAR share of all shot attempts"
+                        style={{color: advStats.corsiForPct>=50?'var(--green)':'var(--red-bright)'}}>
+                        CF% {advStats.corsiForPct}%
+                      </span>
+                      <span className="gp-adv-chip" title="Fenwick For% — CAR share of unblocked attempts"
+                        style={{color: advStats.fenwickForPct>=50?'var(--green)':'var(--red-bright)'}}>
+                        FF% {advStats.fenwickForPct}%
+                      </span>
+                      {pdoStats && (
+                        <span className="gp-adv-chip" title={`PDO = SH%+SV%×100. Avg=100. ${pdoStats.luck}`}
+                          style={{color: pdoStats.pdo>102?'var(--amber)':pdoStats.pdo<98?'var(--blue-bright)':'var(--text-muted)'}}>
+                          PDO {pdoStats.pdo}
                         </span>
-                        <span className="gp-adv-chip" title="Fenwick For% — CAR share of unblocked attempts"
-                          style={{color: advStats.fenwickForPct>=50?'var(--green)':'var(--red-bright)'}}>
-                          FF% {advStats.fenwickForPct}%
+                      )}
+                      {luckStats && (
+                        <span className="gp-adv-chip" title={`Puck Luck: ${luckStats.label}. Expected ${luckStats.expectedGF}G from ${luckStats.fenwickForPct}% shot share.`}
+                          style={{color: luckStats.color}}>
+                          Luck {luckStats.luckDelta>=0?'+':''}{luckStats.luckDelta}G
                         </span>
-                        {pdoStats && (
-                          <span className="gp-adv-chip" title={`PDO = SH%+SV%×100. Avg=100. ${pdoStats.luck}`}
-                            style={{color: pdoStats.pdo>102?'var(--amber)':pdoStats.pdo<98?'var(--blue-bright)':'var(--text-muted)'}}>
-                            PDO {pdoStats.pdo}
-                          </span>
-                        )}
-                        {luckStats && (
-                          <span className="gp-adv-chip" title={`Puck Luck: ${luckStats.label}. Expected ${luckStats.expectedGF}G from ${luckStats.fenwickForPct}% shot share.`}
-                            style={{color: luckStats.color}}>
-                            Luck {luckStats.luckDelta>=0?'+':''}{luckStats.luckDelta}G
-                          </span>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
+              {/* Skater table with team toggle */}
+              {(carPlayers.length > 0 || oppPlayers.length > 0) && (
                 <div className="gp-section">
                   <div className="gp-skater-toggle">
                     <button
