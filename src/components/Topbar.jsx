@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getLiveGame, getCarScore, getOppScore, getOpponent } from '../utils/nhlApi';
+import { getLiveGame, getCarScore, getOppScore, getOpponent, getGameBoxscore } from '../utils/nhlApi';
 import TeamLogo from './TeamLogo';
 import { TEAM_COLORS } from '../utils/nhlApi';
 import './Topbar.css';
@@ -11,6 +11,7 @@ const SEASON_END    = new Date('2026-07-01'); // stop polling after season
 
 export default function Topbar() {
   const [liveGame, setLiveGame] = useState(null);
+  const [liveMeta, setLiveMeta]  = useState(null); // period + clock from boxscore
   const intervalRef = useRef(null);
 
   function scheduleNext(isLive) {
@@ -25,9 +26,21 @@ export default function Topbar() {
     try {
       const game = await getLiveGame();
       setLiveGame(game);
-      scheduleNext(!!game); // reschedule at appropriate rate
+      // Fetch boxscore to get live period + clock (not in schedule feed)
+      if (game?.id) {
+        try {
+          const bs = await getGameBoxscore(game.id);
+          setLiveMeta({
+            period: bs?.periodDescriptor,
+            clock:  bs?.clock,
+          });
+        } catch { /* ignore */ }
+      } else {
+        setLiveMeta(null);
+      }
+      scheduleNext(!!game);
     } catch {
-      // Swallow errors silently — don't spam console during network issues
+      // Swallow errors silently
     }
   }
 
@@ -40,8 +53,11 @@ export default function Topbar() {
   const opp      = liveGame ? getOpponent(liveGame) : null;
   const carScore = liveGame ? getCarScore(liveGame) : null;
   const oppScore = liveGame ? getOppScore(liveGame) : null;
-  const period   = liveGame?.periodDescriptor?.number;
-  const clock    = liveGame?.clock?.timeRemaining;
+  const pd     = liveMeta?.period;
+  const period = pd
+    ? (pd.periodType === 'REG' ? `P${pd.number}` : (pd.periodType || `P${pd.number}`))
+    : null;
+  const clock  = liveMeta?.clock?.timeRemaining || null;
 
   return (
     <header className="topbar">
@@ -70,7 +86,9 @@ export default function Topbar() {
             <span className="live-team-muted">{opp?.abbrev}</span>
             <TeamLogo abbr={opp?.abbrev} size={18} color={TEAM_COLORS[opp?.abbrev]} />
           </div>
-          <div className="live-clock">P{period} · {clock}</div>
+          {(period || clock) && (
+            <div className="live-clock">{period}{period && clock ? ' · ' : ''}{clock}</div>
+          )}
         </div>
       ) : (
         <div className="topbar-status">

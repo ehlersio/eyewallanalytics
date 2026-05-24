@@ -167,13 +167,25 @@
 
 /* ── Event log ── */
 .event-log { display: flex; flex-direction: column; }
-.log-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 0.5px solid var(--border); font-size: 11px; }
-.log-time  { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); width: 52px; flex-shrink: 0; }
-.log-badge { font-size: 10px; font-weight: 500; padding: 2px 6px; border-radius: 3px; flex-shrink: 0; }
-.log-goal  { background: rgba(61,186,126,.15); color: var(--green); }
-.log-shot  { background: rgba(100,120,200,.15); color: #8899dd; }
-.log-pen   { background: rgba(240,160,48,.12); color: var(--amber); }
-.log-desc  { color: var(--text-muted); flex: 1; }
+.log-row {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 7px 0; border-bottom: 0.5px solid var(--border);
+}
+.log-left  { display: flex; flex-direction: column; gap: 3px; min-width: 64px; flex-shrink: 0; }
+.log-right { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.log-time  { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); }
+.log-badge {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; padding: 2px 5px; border-radius: 3px;
+  background: var(--bg3); color: var(--text-muted); width: fit-content;
+}
+.log-badge.log-goal  { background: rgba(255,68,34,0.18);   color: var(--red-bright); }
+.log-badge.log-shot  { background: rgba(61,186,126,0.15);  color: var(--green); }
+.log-badge.log-pen   { background: rgba(240,160,48,0.15);  color: var(--amber); }
+.log-badge.log-hit   { background: rgba(68,119,238,0.15);  color: var(--blue-bright); }
+.log-badge.log-block { background: rgba(136,102,221,0.15); color: var(--purple); }
+.log-player { font-size: 12px; font-weight: 500; color: var(--text); }
+.log-sub    { font-size: 10px; color: var(--text-muted); line-height: 1.3; }
 
 /* ── Record / legacy ── */
 .record-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
@@ -284,3 +296,39 @@
   font-size: 11px; background: var(--bg3); color: var(--amber);
   padding: 2px 7px; border-radius: 4px;
 }
+
+/* ── On-Ice Panel ── */
+.onice-card { padding: 10px 12px; }
+.onice-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.onice-strength {
+  font-size: 11px; font-weight: 700; padding: 2px 8px;
+  border-radius: 4px; letter-spacing: 0.04em;
+}
+.strength-pp  { background: rgba(61,186,126,0.2); color: var(--green); }
+.strength-sh  { background: rgba(240,160,48,0.2);  color: var(--amber); }
+.strength-ev  { background: var(--bg3); color: var(--text-muted); }
+
+.onice-team   { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; }
+.onice-opp    { border-top: 0.5px solid var(--border); padding-top: 6px; margin-top: 2px; opacity: 0.75; }
+.onice-team-label {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  color: var(--text-dim); min-width: 28px; padding-top: 2px;
+}
+.car-label { color: var(--red-bright); opacity: 1; }
+.onice-lines  { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.onice-row    { display: flex; align-items: center; gap: 5px; }
+.onice-pos    { font-size: 9px; font-weight: 700; color: var(--text-dim); min-width: 10px; }
+.onice-names  { display: flex; flex-wrap: wrap; gap: 4px; }
+.onice-chip {
+  font-size: 11px; font-weight: 500; color: var(--text);
+  background: var(--bg3); padding: 1px 6px; border-radius: 4px;
+}
+.onice-goalie { background: var(--bg4); color: var(--text-muted); font-style: italic; }
+
+/* Situation pill in score bar */
+.situation-pill { font-size: 10px; padding: 2px 7px; }
+.pill-green { background: rgba(61,186,126,0.2); color: var(--green); border: 0.5px solid rgba(61,186,126,0.3); }
+.pill-amber { background: rgba(240,160,48,0.2);  color: var(--amber); border: 0.5px solid rgba(240,160,48,0.3); }

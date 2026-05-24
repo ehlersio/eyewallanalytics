@@ -260,9 +260,11 @@ export default function IceRink({ events = [], roster = {} }) {
           >
             {viewMode === 'heat' ? '🔥 Heat' : '🔥 Heat'}
           </button>
-          <button className="rink-btn rink-toggle" onClick={() => setHalfRink(h => !h)}>
-            {showHalf ? 'Full rink' : 'Half rink'}
-          </button>
+          {!isMobile && (
+            <button className="rink-btn rink-toggle" onClick={() => setHalfRink(h => !h)}>
+              {showHalf ? 'Full rink' : 'Half rink'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -391,8 +393,9 @@ function HeatmapLayer({ canesEvents, oppEvents, heatTeam, showHalf, W, H, CX, CY
     }
     if (!pts.length) return null;
 
-    // Canvas size matches SVG viewBox
-    const cw = W, ch = H;
+    // Canvas size: half-rink on mobile (W/2 × H), full rink otherwise
+    const cw = showHalf ? W / 2 : W;
+    const ch = H;
     const canvas = document.createElement('canvas');
     canvas.width  = cw;
     canvas.height = ch;
@@ -409,7 +412,10 @@ function HeatmapLayer({ canesEvents, oppEvents, heatTeam, showHalf, W, H, CX, CY
       if (!isCanes && nx > 0) { nx = -nx; ny = -ny; }
       if (showHalf && nx < 0) return; // outside half-rink view
 
-      const px = CX + (nx / 100) * (W / 2);
+      // When showing half-rink, offset x from 0 (not CX) since canvas is W/2 wide
+      const px = showHalf
+        ? ((nx / 100) * (W / 2))           // 0-based for half-rink canvas
+        : (CX + (nx / 100) * (W / 2));     // CX-based for full rink canvas
       const py = CY - (ny / 42.5) * (H / 2);
 
       // Paint Gaussian kernel onto grid
@@ -510,6 +516,7 @@ function HeatmapLayer({ canesEvents, oppEvents, heatTeam, showHalf, W, H, CX, CY
       width={showHalf ? W / 2 : W}
       height={H}
       opacity={0.88}
+      preserveAspectRatio="none"
     />
   );
 }

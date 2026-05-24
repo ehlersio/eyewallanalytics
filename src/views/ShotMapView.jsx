@@ -5,7 +5,7 @@ import {
   getRecentGames, getPlayoffGames, extractShotEvents,
   getCarScore, getOppScore, getOpponent, isHomeGame,
   getTeamStats, formatGameDate, getRoster, buildPlayerMap,
-  TEAM_COLORS, GAME_TYPE,
+  bustLiveGameCache, TEAM_COLORS, GAME_TYPE,
 } from '../utils/nhlApi';
 import IceRink from '../components/IceRink';
 import { StatBar, MetCard, MetCardSkeleton } from '../components/StatBar';
@@ -31,18 +31,28 @@ export default function ShotMapView() {
   // Determine context of the active game
   const activeIsPlayoff = activeGame?.gameType === GAME_TYPE.PLAYOFFS;
 
-  // Play-by-play for shot map
+  // Play-by-play for shot map — poll every 20s during live games
   const gameId = activeGame?.id;
-  const { data: pbp } = useFetch(
-    () => gameId ? getGameDetail(gameId) : Promise.resolve(null),
-    [gameId]
+  const LIVE_POLL_MS = 20_000; // 20s — NHL updates PBP roughly every 15-30s
+
+  const { data: pbp } = usePoll(
+    () => {
+      if (!gameId) return Promise.resolve(null);
+      if (isLive) bustLiveGameCache(gameId); // bypass cache for live data
+      return getGameDetail(gameId);
+    },
+    isLive ? LIVE_POLL_MS : 300_000, // poll fast when live, every 5min otherwise
+    [gameId, isLive]
   );
 
-  // Boxscore + right-rail for the game panel
-  const { data: boxscore } = useFetch(
+  // Boxscore — poll same rate as PBP during live
+  const { data: boxscore } = usePoll(
     () => gameId ? getGameBoxscore(gameId) : Promise.resolve(null),
-    [gameId]
+    isLive ? LIVE_POLL_MS : 300_000,
+    [gameId, isLive]
   );
+
+  // Right-rail changes rarely — fetch once per game
   const { data: rightRail } = useFetch(
     () => gameId ? getGameRightRail(gameId) : Promise.resolve(null),
     [gameId]
@@ -55,6 +65,68 @@ export default function ShotMapView() {
   const { data: roster } = useFetch(() => getRoster(CAR_ABBR));
 
   const shotEvents = pbp ? extractShotEvents(pbp) : [];
+
+  // ── Live situation: strength + on-ice players ─────────────
+  // situationCode: 4-digit string. Digit layout:
+  //   [0] away goalie in (1) or pulled (0)
+  //   [1] away skaters count (3-6)
+  //   [2] home skaters count (3-6)
+  //   [3] home goalie in (1) or pulled (0)
+  // e.g. "1551" = both goalies, 5v5 | "1541" = home PP (away 5, home 4)
+  const currentSituation = useMemo(() => {
+    if (!pbp?.plays?.length) return null;
+    const plays = [...pbp.plays];
+    // Find the most recent play with a situationCode
+    for (let i = plays.length - 1; i >= 0; i--) {
+      const sc = plays[i].situationCode;
+      if (sc && sc.length === 4) {
+        const awaySkaters = parseInt(sc[1]);
+        const homeSkaters = parseInt(sc[2]);
+        const awayGoalie  = sc[0] === '1';
+        const homeGoalie  = sc[3] === '1';
+        const carIsHome   = gameHome;
+        const carSkaters  = carIsHome ? homeSkaters : awaySkaters;
+        const oppSkaters  = carIsHome ? awaySkaters : homeSkaters;
+        const carGoalie   = carIsHome ? homeGoalie  : awayGoalie;
+
+        let strength = 'EV';
+        if (carSkaters > oppSkaters)       strength = 'PP';
+        else if (carSkaters < oppSkaters)  strength = 'SH';
+        else if (carSkaters === oppSkaters && carSkaters < 5) strength = '4v4';
+        // Goalie pulled
+        if (!carGoalie)  strength = `${strength} (EN)`;
+
+        return { carSkaters, oppSkaters, strength, code: sc };
+      }
+    }
+    return null;
+  }, [pbp, gameHome]);
+
+  // On-ice players from boxscore situation (live boxscore has current skaters)
+  const onIcePlayers = useMemo(() => {
+    if (!boxscore?.situation || !pbp) return null;
+    const playerMap = buildPlayerMap(pbp);
+    const strMap = {};
+    Object.entries(playerMap).forEach(([k, v]) => { strMap[String(k)] = v; });
+    const pName = id => { const n = strMap[String(id)]; return n?.trim() || null; };
+
+    const sit = boxscore.situation;
+    const carKey = gameHome ? 'homeTeam' : 'awayTeam';
+    const oppKey = gameHome ? 'awayTeam' : 'homeTeam';
+
+    const carOnIce = (sit[carKey]?.onIce || []).map(p => ({
+      name:     pName(p.playerId) || `#${p.sweaterNumber}`,
+      number:   p.sweaterNumber,
+      position: p.positionCode,
+    }));
+    const oppOnIce = (sit[oppKey]?.onIce || []).map(p => ({
+      name:     pName(p.playerId) || `#${p.sweaterNumber}`,
+      number:   p.sweaterNumber,
+      position: p.positionCode,
+    }));
+
+    return { car: carOnIce, opp: oppOnIce };
+  }, [boxscore, pbp, gameHome]);
   const opp        = activeGame ? getOpponent(activeGame) : null;
   const carScore   = activeGame ? getCarScore(activeGame) : null;
   const oppScore   = activeGame ? getOppScore(activeGame) : null;
@@ -285,13 +357,20 @@ export default function ShotMapView() {
               {isLive ? (
                 <>
                   <div className="score-period">
-                    {liveGame.periodDescriptor?.periodType === 'REG'
-                      ? `P${liveGame.periodDescriptor?.number}`
-                      : liveGame.periodDescriptor?.periodType}
+                    {pbp?.periodDescriptor
+                      ? (pbp.periodDescriptor.periodType === 'REG'
+                          ? `P${pbp.periodDescriptor.number}`
+                          : pbp.periodDescriptor.periodType || `P${pbp.periodDescriptor.number}`)
+                      : '—'}
                   </div>
-                  <div className="score-clock">{liveGame.clock?.timeRemaining}</div>
-                  <div className="score-state pill pill-red" style={{margin:'4px auto 0',width:'fit-content'}}>
-                    🔴 LIVE
+                  <div className="score-clock">{pbp?.clock?.timeRemaining || '—'}</div>
+                  <div style={{display:'flex',gap:6,alignItems:'center',justifyContent:'center',marginTop:4}}>
+                    <div className="score-state pill pill-red">🔴 LIVE</div>
+                    {currentSituation && currentSituation.strength !== 'EV' && (
+                      <div className={`pill situation-pill ${currentSituation.strength.startsWith('PP') ? 'pill-green' : 'pill-amber'}`}>
+                        {currentSituation.strength} {currentSituation.carSkaters}v{currentSituation.oppSkaters}
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (
@@ -369,11 +448,21 @@ export default function ShotMapView() {
             <IceRink events={shotEvents} roster={roster || {}} />
           </div>
 
+          {/* On-ice players — only shown during live games */}
+          {isLive && onIcePlayers && (
+            <OnIcePanel
+              car={onIcePlayers.car}
+              opp={onIcePlayers.opp}
+              oppAbbr={oppAbbr}
+              situation={currentSituation}
+            />
+          )}
+
           {/* Event log — live only */}
           {isLive && pbp?.plays?.length > 0 && (
             <div className="card">
               <div className="sec-label">Recent events</div>
-              <EventLog plays={pbp.plays} />
+              <EventLog plays={pbp.plays} playerMap={buildPlayerMap(pbp)} />
             </div>
           )}
         </div>
@@ -541,29 +630,151 @@ function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color }) {
   );
 }
 
-function EventLog({ plays }) {
+// ── On-Ice Players Panel ─────────────────────────────────────
+function OnIcePanel({ car, opp, oppAbbr, situation }) {
+  const fwd  = p => ['C','L','R','F'].includes(p.position);
+  const def  = p => p.position === 'D';
+  const goal = p => p.position === 'G';
+
+  const Row = ({ players, label }) => {
+    if (!players.length) return null;
+    return (
+      <div className="onice-row">
+        <span className="onice-pos">{label}</span>
+        <div className="onice-names">
+          {players.map((p, i) => (
+            <span key={i} className={`onice-chip ${goal(p) ? 'onice-goalie' : ''}`}>
+              {p.name.split(' ').pop()}{/* Last name only for space */}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const isPP  = situation?.strength?.startsWith('PP');
+  const isSH  = situation?.strength?.startsWith('SH');
+
+  return (
+    <div className="card onice-card">
+      <div className="onice-header">
+        <div className="sec-label" style={{marginBottom:0}}>On Ice</div>
+        {situation && (
+          <span className={`onice-strength ${isPP ? 'strength-pp' : isSH ? 'strength-sh' : 'strength-ev'}`}>
+            {situation.strength} {situation.carSkaters}v{situation.oppSkaters}
+          </span>
+        )}
+      </div>
+
+      <div className="onice-team">
+        <span className="onice-team-label car-label">CAR</span>
+        <div className="onice-lines">
+          <Row players={car.filter(fwd)}  label="F" />
+          <Row players={car.filter(def)}  label="D" />
+          <Row players={car.filter(goal)} label="G" />
+        </div>
+      </div>
+
+      <div className="onice-team onice-opp">
+        <span className="onice-team-label">{oppAbbr}</span>
+        <div className="onice-lines">
+          <Row players={opp.filter(fwd)}  label="F" />
+          <Row players={opp.filter(def)}  label="D" />
+          <Row players={opp.filter(goal)} label="G" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Event Log ─────────────────────────────────────────────────
+function EventLog({ plays, playerMap = {} }) {
+  const pName = id => {
+    if (!id) return null;
+    const n = playerMap[String(id)];
+    return n && n.trim() ? n : null;
+  };
+  const periodLabel = n => {
+    if (!n) return '—';
+    return n === 4 ? 'OT' : n === 5 ? 'SO' : `P${n}`;
+  };
+
   const relevant = [...plays]
     .reverse()
-    .filter(p => ['goal','shot-on-goal','penalty'].includes(p.typeDescKey))
-    .slice(0, 8);
-  const typeStyle = { 'goal':'log-goal', 'shot-on-goal':'log-shot', 'penalty':'log-pen' };
+    .filter(p => ['goal','shot-on-goal','penalty','hit','blocked-shot'].includes(p.typeDescKey))
+    .slice(0, 12);
+
+  const typeStyle = {
+    'goal':         'log-goal',
+    'shot-on-goal': 'log-shot',
+    'penalty':      'log-pen',
+    'hit':          'log-hit',
+    'blocked-shot': 'log-block',
+  };
+
+  const typeLabel = {
+    'goal':         'GOAL',
+    'shot-on-goal': 'SHOT',
+    'penalty':      'PENALTY',
+    'hit':          'HIT',
+    'blocked-shot': 'BLOCK',
+  };
+
   return (
     <div className="event-log">
-      {relevant.map((p, i) => (
-        <div key={i} className="log-row">
-          <span className="log-time">
-            {p.periodDescriptor?.number <= 3 ? `P${p.periodDescriptor?.number}` : 'OT'} {p.timeInPeriod}
-          </span>
-          <span className={`log-badge ${typeStyle[p.typeDescKey] || ''}`}>
-            {p.typeDescKey === 'shot-on-goal' ? 'shot' : p.typeDescKey}
-          </span>
-          <span className="log-desc">
-            {p.details?.scoringPlayerId
-              ? `#${p.details.scoringPlayerId}`
-              : p.typeDescKey}
-          </span>
-        </div>
-      ))}
+      {relevant.map((p, i) => {
+        const d    = p.details || {};
+        const per  = periodLabel(p.periodDescriptor?.number);
+        const time = p.timeInPeriod || '';
+        const type = p.typeDescKey;
+
+        let headline = null;
+        let sub      = null;
+
+        if (type === 'goal') {
+          const scorer  = pName(d.scoringPlayerId);
+          const a1      = pName(d.assist1PlayerId);
+          const a2      = pName(d.assist2PlayerId);
+          const assists = [a1, a2].filter(Boolean);
+          headline = scorer || '—';
+          sub = assists.length ? `Assists: ${assists.join(', ')}` : 'Unassisted';
+        } else if (type === 'shot-on-goal') {
+          headline = pName(d.shootingPlayerId) || '—';
+          sub = d.shotType ? d.shotType : null;
+        } else if (type === 'penalty') {
+          const committed = pName(d.committedByPlayerId);
+          const drawn     = pName(d.drawnByPlayerId);
+          headline = committed || '—';
+          const mins = d.duration != null ? `${d.duration} min` : '';
+          const desc = d.descKey ? d.descKey.replace(/-/g, ' ') : '';
+          sub = [mins, desc, drawn ? `drawn by ${drawn}` : ''].filter(Boolean).join(' · ');
+        } else if (type === 'hit') {
+          const hitter = pName(d.hittingPlayerId);
+          const hittee = pName(d.hitteePlayerId);
+          headline = hitter || '—';
+          sub = hittee ? `hit ${hittee}` : null;
+        } else if (type === 'blocked-shot') {
+          const blocker  = pName(d.blockingPlayerId);
+          const shooter  = pName(d.shootingPlayerId);
+          headline = blocker || '—';
+          sub = shooter ? `blocked ${shooter}` : null;
+        }
+
+        return (
+          <div key={i} className="log-row">
+            <div className="log-left">
+              <span className="log-time">{per} {time}</span>
+              <span className={`log-badge ${typeStyle[type] || ''}`}>
+                {typeLabel[type] || type}
+              </span>
+            </div>
+            <div className="log-right">
+              {headline && <span className="log-player">{headline}</span>}
+              {sub      && <span className="log-sub">{sub}</span>}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
