@@ -424,27 +424,25 @@ export async function getGameRightRail(gameId) {
 // Fetch completed game stats — uses landing as primary, with parallel fallbacks.
 // The landing endpoint layout varies by game; we search all known locations.
 export async function getCompletedGameStats(gameId) {
-  // Fetch all three in parallel — landing is the richest source
-  const [landing, boxscore, rightRail] = await Promise.all([
+  // Fetch all four in parallel — landing is richest, PBP needed for Corsi/Fenwick/PDO
+  const [landing, boxscore, rightRail, pbp] = await Promise.all([
     getGameLanding(gameId),
     getGameBoxscore(gameId),
     getGameRightRail(gameId),
+    getGameDetail(gameId),
   ]);
 
-  // playerByGameStats can sit at top level or under boxscore
   const pbg =
     landing?.boxscore?.playerByGameStats  ||
     landing?.playerByGameStats            ||
     boxscore?.playerByGameStats           || null;
 
-  // teamGameStats can sit at top level or under boxscore, or in right-rail
   const teamGameStats =
     landing?.teamGameStats                    ||
     landing?.boxscore?.teamGameStats          ||
     rightRail?.teamGameStats                  ||
     boxscore?.teamGameStats                   || [];
 
-  // scoring summary — prefer landing.summary, fall back to boxscore.summary
   const summary =
     landing?.summary ||
     boxscore?.summary || null;
@@ -455,7 +453,10 @@ export async function getCompletedGameStats(gameId) {
       playerByGameStats: pbg,
       linescore: landing?.boxscore?.linescore || boxscore?.linescore,
     },
-    rightRail: { teamGameStats },
+    rightRail:  { teamGameStats },
+    pbp,        // play-by-play — used for Corsi/Fenwick/PDO/PuckLuck
+    homeTeamId: landing?.homeTeam?.id || pbp?.homeTeam?.id,
+    awayTeamId: landing?.awayTeam?.id || pbp?.awayTeam?.id,
   };
 }
 

@@ -1333,3 +1333,30 @@
   .cal-opp-abbr { font-size: 10px; }
   .cal-dow { font-size: 9px; }
 }
+
+/* ── Advanced stats in game popup ── */
+.gp-adv-grid { display: flex; flex-direction: column; gap: 5px; }
+.gp-adv-row  { display: grid; grid-template-columns: 90px 28px 1fr 28px; gap: 6px; align-items: center; font-size: 12px; }
+.gp-adv-row.header { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 2px; }
+.gp-adv-label { font-size: 11px; color: var(--text-muted); }
+.gp-adv-bar   { height: 6px; border-radius: 3px; background: var(--bg3); display: flex; overflow: hidden; }
+.gp-adv-fill  { height: 100%; }
+.gp-adv-fill.red   { background: var(--red-bright); border-radius: 3px 0 0 3px; }
+.gp-adv-fill.muted { background: var(--text-dim);   border-radius: 0 3px 3px 0; }
+.gp-adv-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.gp-adv-chip  { font-size: 11px; font-weight: 600; background: var(--bg3); padding: 3px 8px; border-radius: 5px; cursor: help; }
+.gp-help      { font-size: 10px; color: var(--text-dim); cursor: help; margin-left: 4px; }
+
+/* Prediction tracking */
+.md-track-record { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+.md-score-pred   { text-align: center; margin: 10px 0 4px; }
+.md-score-pred-label { font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
+.md-score-pred-val   { font-family: var(--font-display); font-size: 20px; font-weight: 700; }
+.md-save-pred-btn {
+  margin-top: 8px;
+  background: var(--bg3); border: 0.5px solid var(--border);
+  color: var(--text-muted); font-size: 11px;
+  padding: 4px 12px; border-radius: 6px; cursor: pointer;
+  display: inline-block;
+}
+.md-save-pred-btn:hover { background: var(--bg4); color: var(--text); }

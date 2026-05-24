@@ -9,6 +9,7 @@ import {
 } from '../utils/nhlApi';
 import IceRink from '../components/IceRink';
 import { GoalPopup, PenaltyPopup, WinPopup, useGameEvents } from '../components/GameEvents';
+import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import { StatBar, MetCard, MetCardSkeleton } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
 import './ShotMapView.css';
@@ -454,15 +455,9 @@ export default function ShotMapView() {
         />
       </div>
 
-      {/* ── Shot volume stats (live/recent game) ── */}
+      {/* ── Shot Volume + Corsi/Fenwick/PDO ── */}
       {pbp?.plays && (
-        <div className="card shot-volume-section">
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
-            <div className="sec-label" style={{marginBottom:0}}>Shot Volume</div>
-            <span className="help-tip" title="Shot attempts = goals + shots on goal + missed shots + blocked shots at 5v5. SA differential = CAR attempts minus opponent attempts. A positive number means CAR is controlling play territorially.">ⓘ</span>
-          </div>
-          <ShotVolumeBar pbp={pbp} gameHome={gameHome} />
-        </div>
+        <AdvancedGamePanel pbp={pbp} gameHome={gameHome} isLive={isLive} boxscore={boxscore} />
       )}
 
       {/* ── Context label — reg season vs playoff ── */}
@@ -656,6 +651,7 @@ function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color }) {
   const svPct = savePctg != null
     ? (savePctg <= 1 ? savePctg.toFixed(3) : (savePctg / 100).toFixed(3))
     : '—';
+  const gsax = computeGSAx(shotsAgainst, saves);
   return (
     <div className="goalie-row">
       <span className="goalie-abbr" style={{color}}>{abbr}</span>
@@ -663,6 +659,15 @@ function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color }) {
       <div className="goalie-nums">
         <span>{saves ?? '—'}/{shotsAgainst ?? '—'}</span>
         <span className="goalie-svpct">{svPct}</span>
+        {gsax && (
+          <span
+            className="goalie-gsax"
+            style={{color: gsax.color}}
+            title={`GSAx ${gsax.label} — ${gsax.note}`}
+          >
+            GSAx {gsax.label}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -903,63 +908,97 @@ function StatDrillPopup({ drillStat, onClose }) {
 }
 
 
-// ── Shot Volume Bar ──────────────────────────────────────────
-function ShotVolumeBar({ pbp, gameHome }) {
+// ── Advanced Game Panel (Corsi / Fenwick / PDO / Puck Luck) ──
+function AdvancedGamePanel({ pbp, gameHome, isLive, boxscore }) {
   const plays = pbp?.plays || [];
-  const CAR_ID = 12;
-
-  // Count all shot attempts by type
-  const counts = { car: { sa:0, sog:0, miss:0, blk:0 }, opp: { sa:0, sog:0, miss:0, blk:0 } };
-  plays.forEach(p => {
-    const isCar = p.details?.eventOwnerTeamId === CAR_ID;
-    const side  = isCar ? 'car' : 'opp';
-    if (['goal','shot-on-goal'].includes(p.typeDescKey))  { counts[side].sog++; counts[side].sa++; }
-    if (p.typeDescKey === 'missed-shot')                  { counts[side].miss++; counts[side].sa++; }
-    if (p.typeDescKey === 'blocked-shot')                 { counts[side].blk++; counts[side].sa++; }
-  });
-
-  const totalSA = counts.car.sa + counts.opp.sa || 1;
-  const carPct  = Math.round((counts.car.sa / totalSA) * 100);
-  const diff    = counts.car.sa - counts.opp.sa;
-  const diffColor = diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red-bright)' : 'var(--text-muted)';
+  const sa    = computeShotAttempts(plays);
+  const pdo   = computePDO(plays);
+  const luck  = computePuckLuck(plays);
 
   const Row = ({ label, car, opp, help }) => {
-    const tot = car + opp || 1;
+    const tot = (Number(car)||0) + (Number(opp)||0) || 1;
+    const carN = Number(car)||0, oppN = Number(opp)||0;
     return (
       <div className="sv-row">
         <span className="sv-label" title={help}>{label}</span>
-        <span className="sv-num red">{car}</span>
+        <span className="sv-num red">{car ?? '—'}</span>
         <div className="sv-bar-wrap">
-          <div className="sv-fill red"  style={{width:`${Math.round(car/tot*100)}%`}} />
-          <div className="sv-fill muted" style={{width:`${Math.round(opp/tot*100)}%`}} />
+          <div className="sv-fill red"   style={{width:`${Math.round(carN/tot*100)}%`}} />
+          <div className="sv-fill muted" style={{width:`${Math.round(oppN/tot*100)}%`}} />
         </div>
-        <span className="sv-num muted">{opp}</span>
+        <span className="sv-num muted">{opp ?? '—'}</span>
       </div>
     );
   };
 
+  const StatChip = ({ label, value, color, help }) => (
+    <div className="adv-chip" title={help}>
+      <span className="adv-chip-label">{label}</span>
+      <span className="adv-chip-val" style={{color}}>{value}</span>
+    </div>
+  );
+
   return (
-    <div className="sv-wrap">
+    <div className="card shot-volume-section">
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+        <div className="sec-label" style={{marginBottom:0}}>Shot Attempts</div>
+        <span style={{fontSize:9,color:'var(--text-dim)',textAlign:'right'}}>
+          Corsi = all attempts · Fenwick excludes blocks
+        </span>
+      </div>
+
       <div className="sv-header">
         <span className="sv-team red">CAR</span>
-        <span className="sv-diff" style={{color: diffColor}}>
-          {diff > 0 ? '+' : ''}{diff} SA
+        <span className="sv-diff" style={{color: sa.corsiDiff >= 0 ? 'var(--green)' : 'var(--red-bright)'}}>
+          {sa.corsiDiff >= 0 ? '+' : ''}{sa.corsiDiff} CF
         </span>
         <span className="sv-team muted">OPP</span>
       </div>
-      <Row label="Shot Attempts"    car={counts.car.sa}   opp={counts.opp.sa}
-           help="Goals + shots on goal + missed shots + blocked shots" />
-      <Row label="Shots on Goal"    car={counts.car.sog}  opp={counts.opp.sog}
-           help="Only shots that reached the goalie" />
-      <Row label="Missed Shots"     car={counts.car.miss} opp={counts.opp.miss}
-           help="Shot attempts that missed the net" />
-      <Row label="Blocked Shots"    car={counts.car.blk}  opp={counts.opp.blk}
-           help="Shot attempts blocked by a skater before reaching the goalie" />
-      <div className="sv-corsi-note">
-        SA For%: <strong style={{color: carPct >= 50 ? 'var(--green)' : 'var(--red-bright)'}}>
-          {carPct}%
-        </strong>
-        <span className="sv-note-text"> (proxy for shot share / possession)</span>
+
+      <div className="sv-wrap">
+        <Row label="Corsi (CF)"
+             car={sa.carCorsi} opp={sa.oppCorsi}
+             help="All shot attempts: goals + shots + misses + blocks. True possession proxy." />
+        <Row label="Fenwick (FF)"
+             car={sa.carFenwick} opp={sa.oppFenwick}
+             help="Shot attempts excluding blocked shots. More predictive than Corsi." />
+        <Row label="Shots on Goal"
+             car={sa.car.goals + sa.car.sog} opp={sa.opp.goals + sa.opp.sog}
+             help="Shots that reached the goalie (goals + saves)" />
+        <Row label="Missed Shots"
+             car={sa.car.missed} opp={sa.opp.missed}
+             help="Attempts that missed the net" />
+        <Row label="Blocked Shots"
+             car={sa.car.blocked} opp={sa.opp.blocked}
+             help="Attempts blocked by a skater before reaching the goalie" />
+      </div>
+
+      {/* Corsi%, Fenwick%, PDO, Puck Luck chips */}
+      <div className="adv-chips-row">
+        <StatChip
+          label="CF%"
+          value={`${sa.corsiForPct}%`}
+          color={sa.corsiForPct >= 50 ? 'var(--green)' : 'var(--red-bright)'}
+          help="Corsi For%: CAR share of all shot attempts. ≥50% = controlling play."
+        />
+        <StatChip
+          label="FF%"
+          value={`${sa.fenwickForPct}%`}
+          color={sa.fenwickForPct >= 50 ? 'var(--green)' : 'var(--red-bright)'}
+          help="Fenwick For%: CAR share of unblocked attempts. Better predictor than Corsi."
+        />
+        <StatChip
+          label="PDO"
+          value={pdo.pdo}
+          color={pdo.pdo > 102 ? 'var(--amber)' : pdo.pdo < 98 ? 'var(--blue-bright)' : 'var(--text-muted)'}
+          help="PDO = SH% + SV% × 100. League avg = 100. Far from 100 suggests luck component."
+        />
+        <StatChip
+          label="Luck"
+          value={luck.luckDelta >= 0 ? `+${luck.luckDelta}G` : `${luck.luckDelta}G`}
+          color={luck.color}
+          help={`Puck Luck: actual goals vs expected from shot share. ${luck.label}`}
+        />
       </div>
     </div>
   );

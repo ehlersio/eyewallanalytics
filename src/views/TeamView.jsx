@@ -8,6 +8,7 @@ import {
 } from '../utils/nhlApi'
 import { CONTRACTS, DRAFT_PICKS, getCapSummary, CAP_CEILING, CURRENT_SEASON } from '../utils/carContracts'
 import { StatBar, MetCard } from '../components/StatBar'
+import { seasonPDO } from '../utils/advancedStats'
 import TeamLogo from '../components/TeamLogo'
 import { TEAM_COLORS } from '../utils/nhlApi'
 import './TeamView.css'
@@ -171,6 +172,7 @@ function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding
 
 // ── Advanced tab ─────────────────────────────────────────────
 function AdvancedTab({ corsiReg, ppReg, pkReg, scoreState, poAdv, inPlayoffs }) {
+  const pdoData = seasonPDO(corsiReg);
   const [showPO, setShowPO] = useState(inPlayoffs);
   function pct(v) { if (v == null) return '—'; return `${(v*100).toFixed(1)}%`; }
   function fmt(v, dec=2) { return v == null ? '—' : Number(v).toFixed(dec); }
@@ -195,16 +197,29 @@ function AdvancedTab({ corsiReg, ppReg, pkReg, scoreState, poAdv, inPlayoffs }) 
 
       {/* Shot differential */}
       <div className="card">
-        <div className="sec-label" style={{ marginBottom: 8 }}>Shot Differential</div>
+        <div className="sec-label" style={{ marginBottom: 8 }}>Shot Volume &amp; Possession</div>
         <div className="adv-explain">
-          Shot% = shots for ÷ (shots for + against). A proxy for possession dominance — league avg is 50%. True Corsi/Fenwick (all shot attempts incl. missed & blocked) is not available from the public NHL API.
+          True Corsi/Fenwick requires play-by-play aggregated across all games — the season-level API only provides shots on goal. Shot For% is a SOG-based proxy. Per-game shot volume gives a picture of territorial control.
         </div>
-        <AdvStatRow label="Shot For%" val={pct(corsi?.corsiForPct)} note="≥50% = outshooting opponents" />
-        <AdvStatRow label="Shots For/GP" val={corsi?.shotsForPerGame ? fmt(corsi.shotsForPerGame) : null} />
-        <AdvStatRow label="Shots Against/GP" val={corsi?.shotsAgainstPerGame ? fmt(corsi.shotsAgainstPerGame) : null} />
-        <AdvStatRow label="Goals For/GP" val={corsi?.goalsForPerGame ? fmt(corsi.goalsForPerGame) : null} />
-        <AdvStatRow label="Goals Against/GP" val={corsi?.goalsAgainstPerGame ? fmt(corsi.goalsAgainstPerGame) : null} />
+        <AdvStatRow label="Shot For% (proxy)" val={pct(corsi?.corsiForPct)} note="SOG for ÷ total SOG. ≥50% = outshooting opponents" />
+        <AdvStatRow label="Shots For/GP"       val={corsi?.shotsForPerGame     ? fmt(corsi.shotsForPerGame)     : null} />
+        <AdvStatRow label="Shots Against/GP"   val={corsi?.shotsAgainstPerGame ? fmt(corsi.shotsAgainstPerGame) : null} />
+        <AdvStatRow label="Goals For/GP"       val={corsi?.goalsForPerGame     ? fmt(corsi.goalsForPerGame)     : null} />
+        <AdvStatRow label="Goals Against/GP"   val={corsi?.goalsAgainstPerGame ? fmt(corsi.goalsAgainstPerGame) : null} />
       </div>
+
+      {/* PDO & Puck Luck */}
+      {pdoData && (
+        <div className="card">
+          <div className="sec-label" style={{ marginBottom: 8 }}>PDO &amp; Puck Luck</div>
+          <div className="adv-explain">
+            PDO = team shooting% + save% × 100. League average = 100. Values above 102 suggest positive puck luck likely to regress; below 98 suggest negative luck. Useful for identifying unsustainable streaks.
+          </div>
+          <AdvStatRow label="PDO" val={pdoData.pdo} note={pdoData.luck} />
+          <AdvStatRow label="Team SH%" val={`${pdoData.shPct}%`} note="Season shooting %" />
+          <AdvStatRow label="Team SV%" val={pdoData.svPct != null ? String(pdoData.svPct) : null} note="Season save %" />
+        </div>
+      )}
 
       {/* Power Play */}
       <div className="card">

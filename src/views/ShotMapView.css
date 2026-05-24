@@ -362,3 +362,25 @@
   border-top: 0.5px solid var(--border);
 }
 .sv-note-text { color: var(--text-dim); }
+
+/* ── Advanced Game Panel chips ── */
+.adv-chips-row {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-top: 10px; padding-top: 8px;
+  border-top: 0.5px solid var(--border);
+}
+.adv-chip {
+  display: flex; flex-direction: column; align-items: center;
+  background: var(--bg3); border-radius: 8px;
+  padding: 6px 10px; min-width: 52px;
+  cursor: help;
+}
+.adv-chip-label { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+.adv-chip-val   { font-family: var(--font-mono); font-size: 14px; font-weight: 700; margin-top: 2px; }
+
+/* GSAx on goalie row */
+.goalie-gsax {
+  font-size: 10px; font-weight: 600;
+  margin-left: 4px;
+  cursor: help;
+}
