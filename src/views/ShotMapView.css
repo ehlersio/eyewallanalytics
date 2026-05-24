@@ -332,3 +332,33 @@
 .situation-pill { font-size: 10px; padding: 2px 7px; }
 .pill-green { background: rgba(61,186,126,0.2); color: var(--green); border: 0.5px solid rgba(61,186,126,0.3); }
 .pill-amber { background: rgba(240,160,48,0.2);  color: var(--amber); border: 0.5px solid rgba(240,160,48,0.3); }
+
+/* ── Shot Volume Bar ── */
+.shot-volume-section { padding: 10px 12px; }
+.sv-wrap { display: flex; flex-direction: column; gap: 6px; }
+.sv-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 4px;
+}
+.sv-team    { font-size: 10px; font-weight: 700; text-transform: uppercase; min-width: 30px; }
+.sv-team.red   { color: var(--red-bright); }
+.sv-team.muted { color: var(--text-muted); text-align: right; }
+.sv-diff    { font-family: var(--font-mono); font-size: 13px; font-weight: 700; }
+.sv-row     { display: grid; grid-template-columns: 80px 28px 1fr 28px; gap: 6px; align-items: center; }
+.sv-label   { font-size: 10px; color: var(--text-muted); cursor: help; }
+.sv-num     { font-family: var(--font-mono); font-size: 12px; font-weight: 600; text-align: right; }
+.sv-num.red   { color: var(--red-bright); text-align: left; }
+.sv-num.muted { color: var(--text-muted); }
+.sv-bar-wrap {
+  height: 6px; border-radius: 3px; background: var(--bg3);
+  display: flex; overflow: hidden;
+}
+.sv-fill { height: 100%; transition: width 0.3s ease; }
+.sv-fill.red   { background: var(--red-bright); border-radius: 3px 0 0 3px; }
+.sv-fill.muted { background: var(--text-dim); border-radius: 0 3px 3px 0; }
+.sv-corsi-note {
+  font-size: 10px; color: var(--text-muted);
+  margin-top: 4px; padding-top: 6px;
+  border-top: 0.5px solid var(--border);
+}
+.sv-note-text { color: var(--text-dim); }

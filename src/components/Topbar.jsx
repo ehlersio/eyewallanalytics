@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getLiveGame, getCarScore, getOppScore, getOpponent, getGameBoxscore } from '../utils/nhlApi';
+import { getLiveGame, getCarScore, getOppScore, getOpponent, getGameDetail } from '../utils/nhlApi';
 import TeamLogo from './TeamLogo';
 import { TEAM_COLORS } from '../utils/nhlApi';
 import './Topbar.css';
@@ -26,13 +26,13 @@ export default function Topbar() {
     try {
       const game = await getLiveGame();
       setLiveGame(game);
-      // Fetch boxscore to get live period + clock (not in schedule feed)
+      // Fetch PBP to get live period + clock — same source as Shot Map for consistency
       if (game?.id) {
         try {
-          const bs = await getGameBoxscore(game.id);
+          const pbp = await getGameDetail(game.id);
           setLiveMeta({
-            period: bs?.periodDescriptor,
-            clock:  bs?.clock,
+            period: pbp?.periodDescriptor,
+            clock:  pbp?.clock,
           });
         } catch { /* ignore */ }
       } else {
@@ -54,8 +54,11 @@ export default function Topbar() {
   const carScore = liveGame ? getCarScore(liveGame) : null;
   const oppScore = liveGame ? getOppScore(liveGame) : null;
   const pd     = liveMeta?.period;
+  const isIntermission = liveMeta?.clock?.inIntermission;
   const period = pd
-    ? (pd.periodType === 'REG' ? `P${pd.number}` : (pd.periodType || `P${pd.number}`))
+    ? isIntermission
+      ? `${pd.number === 1 ? '1st' : pd.number === 2 ? '2nd' : '3rd'} INT`
+      : (pd.periodType === 'REG' ? `P${pd.number}` : (pd.periodType || `P${pd.number}`))
     : null;
   const clock  = liveMeta?.clock?.timeRemaining || null;
 

@@ -274,3 +274,13 @@
 .gd-legend { display: flex; gap: 12px; font-size: 10px; padding-top: 6px; }
 .gd-leg.pos { color: var(--green); }
 .gd-leg.neg { color: var(--red-bright); }
+
+/* Live game record badge */
+.record-live-badge {
+  display: block;
+  font-size: 10px;
+  color: var(--red-bright);
+  opacity: 0.8;
+  margin-top: 2px;
+  font-weight: 400;
+}

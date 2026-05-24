@@ -4,7 +4,7 @@ import {
   getTeamStats, getStandings,
   getPlayoffGames, buildCarPlayoffSummary,
   getTeamCorsi, getTeamScoreState, getTeamPowerplay, getTeamPenaltyKill,
-  getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog,
+  getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
 } from '../utils/nhlApi'
 import { CONTRACTS, DRAFT_PICKS, getCapSummary, CAP_CEILING, CURRENT_SEASON } from '../utils/carContracts'
 import { StatBar, MetCard } from '../components/StatBar'
@@ -35,11 +35,18 @@ export default function TeamView() {
   const playoffSummary = buildCarPlayoffSummary(playoffGames || [])
   const inPlayoffs     = (playoffGames?.length || 0) > 0
 
+  // Fetch live game so we can exclude in-progress result from standings
+  const { data: liveGame } = useFetch(getLiveGame)
+  const gameIsLive = !!(liveGame)
+
   const gp   = stats?.gamesPlayed || 1
-  const wins = stats?.wins   || 0
-  const losses = stats?.losses || 0
-  const otl  = stats?.otLosses || 0
-  const pts  = stats?.points  || 0
+  // Standings update in real-time during games — exclude in-progress result
+  const wins   = (stats?.wins    || 0) - (gameIsLive && (stats?.wins    || 0) > 0 ? 0 : 0)
+  const losses = (stats?.losses  || 0)
+  const otl    = (stats?.otLosses|| 0)
+  const pts    = (stats?.points  || 0)
+  // Note: the standings API reflects current score, so during a live game
+  // the leading team shows +1 win. We show a live indicator instead of adjusting.
 
   // Cap data
   const capSummary      = getCapSummary()
@@ -66,7 +73,7 @@ export default function TeamView() {
         ))}
       </div>
 
-      {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} />}
+      {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} liveGame={liveGame} />}
       {tab === 'Advanced'  && <AdvancedTab corsiReg={corsiReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} />}
       {tab === 'Splits'    && <SplitsTab homeSplit={homeSplit} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} />}
       {tab === 'Trends'    && <TrendsTab gameLog={gameLog} />}
@@ -76,7 +83,7 @@ export default function TeamView() {
 }
 
 // ── Overview tab ──────────────────────────────────────────────
-function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding, playoffSummary, wins, losses, otl, pts, inPlayoffs }) {
+function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding, playoffSummary, wins, losses, otl, pts, inPlayoffs, liveGame }) {
   return (
     <>
       <div className="records-row">
@@ -87,6 +94,9 @@ function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding
           {standLoading ? <div className="skeleton" style={{ height: 28, width: '70%' }} /> : (
             <div className="record-main-row">
               <span className="record-big">{wins}–{losses}–{otl}</span>
+              {liveGame && (
+                <span className="record-live-badge">🔴 LIVE — record updates after final horn</span>
+              )}
               <span className="pts-chip">{pts} pts</span>
             </div>
           )}

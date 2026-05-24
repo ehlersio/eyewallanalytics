@@ -8,6 +8,7 @@ import {
   bustLiveGameCache, TEAM_COLORS, GAME_TYPE,
 } from '../utils/nhlApi';
 import IceRink from '../components/IceRink';
+import { GoalPopup, PenaltyPopup, WinPopup, useGameEvents } from '../components/GameEvents';
 import { StatBar, MetCard, MetCardSkeleton } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
 import './ShotMapView.css';
@@ -120,6 +121,13 @@ export default function ShotMapView() {
       opp: toPlayers(sit[oppKey]?.onIce),
     };
   }, [boxscore, pbp, gameHome]);
+
+  // ── Game event animations ────────────────────────────────
+  const playerMapForEvents = pbp ? buildPlayerMap(pbp) : {};
+  const strMapForEvents = {};
+  Object.entries(playerMapForEvents).forEach(([k,v]) => { strMapForEvents[String(k)] = v; });
+  const { goalPopup, clearGoal, penaltyPopup, clearPenalty, winPopup, clearWin } =
+    useGameEvents(pbp, isLive, strMapForEvents, gameHome);
 
   // ── Compute game-level metrics from right-rail ──────────────
   const teamGameStats = rightRail?.teamGameStats || [];
@@ -335,30 +343,50 @@ export default function ShotMapView() {
       <div className="score-card card">
         {activeGame ? (
           <div className="score-inner">
-            <div className="score-team">
-              <TeamLogo abbr="CAR" size={30} />
-              <span className="score-abbr red">CAR</span>
-              <span className="score-num red">{carScore ?? '—'}</span>
+            {/* CAR side */}
+            <div className="score-team-wrap">
+              <div className="score-team">
+                <TeamLogo abbr="CAR" size={30} />
+                <span className="score-abbr red">CAR</span>
+                <span className="score-num red">{carScore ?? '—'}</span>
+              </div>
+              {/* CAR PP indicator */}
+              {isLive && currentSituation?.strength === 'PP' && (
+                <div className="pp-indicator car-pp">
+                  ⚡ Power Play
+                  {pbp?.clock?.secondsRemaining != null && (
+                    <span className="pp-time"> · {Math.floor(pbp.clock.secondsRemaining/60)}:{String(pbp.clock.secondsRemaining%60).padStart(2,'0')}</span>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Center — period/clock/state */}
             <div className="score-center">
               {isLive ? (
                 <>
-                  <div className="score-period">
-                    {pbp?.periodDescriptor
-                      ? (pbp.periodDescriptor.periodType === 'REG'
-                          ? `P${pbp.periodDescriptor.number}`
-                          : pbp.periodDescriptor.periodType || `P${pbp.periodDescriptor.number}`)
-                      : '—'}
-                  </div>
-                  <div className="score-clock">{pbp?.clock?.timeRemaining || '—'}</div>
-                  <div style={{display:'flex',gap:6,alignItems:'center',justifyContent:'center',marginTop:4}}>
-                    <div className="score-state pill pill-red">🔴 LIVE</div>
-                    {currentSituation && currentSituation.strength !== 'EV' && (
-                      <div className={`pill situation-pill ${currentSituation.strength.startsWith('PP') ? 'pill-green' : 'pill-amber'}`}>
-                        {currentSituation.strength} {currentSituation.carSkaters}v{currentSituation.oppSkaters}
+                  {/* Intermission display */}
+                  {pbp?.clock?.inIntermission ? (
+                    <>
+                      <div className="score-period">
+                        {pbp.periodDescriptor?.number === 1 ? '1st' :
+                         pbp.periodDescriptor?.number === 2 ? '2nd' : '3rd'} Intermission
                       </div>
-                    )}
-                  </div>
+                      <div className="score-clock">{pbp.clock.timeRemaining}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="score-period">
+                        {pbp?.periodDescriptor
+                          ? (pbp.periodDescriptor.periodType === 'REG'
+                              ? `P${pbp.periodDescriptor.number}`
+                              : pbp.periodDescriptor.periodType || `P${pbp.periodDescriptor.number}`)
+                          : '—'}
+                      </div>
+                      <div className="score-clock">{pbp?.clock?.timeRemaining || '—'}</div>
+                    </>
+                  )}
+                  <div className="score-state pill pill-red" style={{marginTop:4}}>🔴 LIVE</div>
                 </>
               ) : (
                 <>
@@ -369,10 +397,20 @@ export default function ShotMapView() {
                 </>
               )}
             </div>
-            <div className="score-team">
-              <span className="score-num muted">{oppScore ?? '—'}</span>
-              <span className="score-abbr muted">{oppAbbr}</span>
-              <TeamLogo abbr={oppAbbr} size={30} color={oppColor} />
+
+            {/* OPP side */}
+            <div className="score-team-wrap">
+              <div className="score-team">
+                <span className="score-num muted">{oppScore ?? '—'}</span>
+                <span className="score-abbr muted">{oppAbbr}</span>
+                <TeamLogo abbr={oppAbbr} size={30} color={oppColor} />
+              </div>
+              {/* Opponent PP indicator */}
+              {isLive && currentSituation?.strength === 'SH' && (
+                <div className="pp-indicator opp-pp">
+                  ⚡ {oppAbbr} Power Play
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -416,6 +454,17 @@ export default function ShotMapView() {
         />
       </div>
 
+      {/* ── Shot volume stats (live/recent game) ── */}
+      {pbp?.plays && (
+        <div className="card shot-volume-section">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+            <div className="sec-label" style={{marginBottom:0}}>Shot Volume</div>
+            <span className="help-tip" title="Shot attempts = goals + shots on goal + missed shots + blocked shots at 5v5. SA differential = CAR attempts minus opponent attempts. A positive number means CAR is controlling play territorially.">ⓘ</span>
+          </div>
+          <ShotVolumeBar pbp={pbp} gameHome={gameHome} />
+        </div>
+      )}
+
       {/* ── Context label — reg season vs playoff ── */}
       <div className="context-banner">
         <span className={`context-pill ${inPlayoffs ? 'playoffs' : 'regular'}`}>
@@ -436,7 +485,7 @@ export default function ShotMapView() {
           </div>
 
           {/* On-ice players — only shown during live games */}
-          {isLive && onIcePlayers && (
+          {isLive && onIcePlayers && onIcePlayers.car?.length > 0 && (
             <OnIcePanel
               car={onIcePlayers.car}
               opp={onIcePlayers.opp}
@@ -563,8 +612,7 @@ export default function ShotMapView() {
                 const oppVal = gameHome ? row.awayValue : row.homeValue;
                 // Detect percentage stats (faceoff %, PP %) — format as % if raw is a decimal
                 const catKey = (row.category || '').toLowerCase().replace(/[^a-z]/g, '');
-                const isPct  = catKey.includes('pct') || catKey.includes('pctg') ||
-                               catKey.includes('faceoff') || catKey.includes('powerplay');
+                const isPct  = catKey.includes('pct') || catKey.includes('pctg');
                 const fmtVal = v => {
                   if (v == null) return '—';
                   const n = parseFloat(v);
@@ -594,7 +642,10 @@ export default function ShotMapView() {
         </div>
       </div>
     </div>
-    {drillStat && <StatDrillPopup drillStat={drillStat} onClose={() => setDrillStat(null)} />}
+    {drillStat     && <StatDrillPopup drillStat={drillStat} onClose={() => setDrillStat(null)} />}
+    {goalPopup     && <GoalPopup    goal={goalPopup}       onDismiss={clearGoal}    />}
+    {penaltyPopup  && <PenaltyPopup penalty={penaltyPopup} onDismiss={clearPenalty} />}
+    {winPopup      && <WinPopup     score={winPopup.score} onDismiss={clearWin}     />}
     </>
   );
 }
@@ -846,6 +897,69 @@ function StatDrillPopup({ drillStat, onClose }) {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ── Shot Volume Bar ──────────────────────────────────────────
+function ShotVolumeBar({ pbp, gameHome }) {
+  const plays = pbp?.plays || [];
+  const CAR_ID = 12;
+
+  // Count all shot attempts by type
+  const counts = { car: { sa:0, sog:0, miss:0, blk:0 }, opp: { sa:0, sog:0, miss:0, blk:0 } };
+  plays.forEach(p => {
+    const isCar = p.details?.eventOwnerTeamId === CAR_ID;
+    const side  = isCar ? 'car' : 'opp';
+    if (['goal','shot-on-goal'].includes(p.typeDescKey))  { counts[side].sog++; counts[side].sa++; }
+    if (p.typeDescKey === 'missed-shot')                  { counts[side].miss++; counts[side].sa++; }
+    if (p.typeDescKey === 'blocked-shot')                 { counts[side].blk++; counts[side].sa++; }
+  });
+
+  const totalSA = counts.car.sa + counts.opp.sa || 1;
+  const carPct  = Math.round((counts.car.sa / totalSA) * 100);
+  const diff    = counts.car.sa - counts.opp.sa;
+  const diffColor = diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red-bright)' : 'var(--text-muted)';
+
+  const Row = ({ label, car, opp, help }) => {
+    const tot = car + opp || 1;
+    return (
+      <div className="sv-row">
+        <span className="sv-label" title={help}>{label}</span>
+        <span className="sv-num red">{car}</span>
+        <div className="sv-bar-wrap">
+          <div className="sv-fill red"  style={{width:`${Math.round(car/tot*100)}%`}} />
+          <div className="sv-fill muted" style={{width:`${Math.round(opp/tot*100)}%`}} />
+        </div>
+        <span className="sv-num muted">{opp}</span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="sv-wrap">
+      <div className="sv-header">
+        <span className="sv-team red">CAR</span>
+        <span className="sv-diff" style={{color: diffColor}}>
+          {diff > 0 ? '+' : ''}{diff} SA
+        </span>
+        <span className="sv-team muted">OPP</span>
+      </div>
+      <Row label="Shot Attempts"    car={counts.car.sa}   opp={counts.opp.sa}
+           help="Goals + shots on goal + missed shots + blocked shots" />
+      <Row label="Shots on Goal"    car={counts.car.sog}  opp={counts.opp.sog}
+           help="Only shots that reached the goalie" />
+      <Row label="Missed Shots"     car={counts.car.miss} opp={counts.opp.miss}
+           help="Shot attempts that missed the net" />
+      <Row label="Blocked Shots"    car={counts.car.blk}  opp={counts.opp.blk}
+           help="Shot attempts blocked by a skater before reaching the goalie" />
+      <div className="sv-corsi-note">
+        SA For%: <strong style={{color: carPct >= 50 ? 'var(--green)' : 'var(--red-bright)'}}>
+          {carPct}%
+        </strong>
+        <span className="sv-note-text"> (proxy for shot share / possession)</span>
       </div>
     </div>
   );
