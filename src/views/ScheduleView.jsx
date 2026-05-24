@@ -777,7 +777,7 @@ function GameStatsPopup({ game, onClose }) {
                 <div className="gp-section">
                   <div className="gp-section-label">
                     Shot Attempts &amp; Puck Luck
-                    <InfoTip text="Corsi = all shot attempts (goals+shots+misses+blocks). Fenwick excludes blocks. PDO = SH%+SV%×100, avg=100. Puck Luck = actual goals vs expected from shot share." />
+                    <InfoTip position="above" text="Corsi = all shot attempts (goals+shots+misses+blocks). Fenwick excludes blocks. PDO = SH%+SV%×100, avg=100. Puck Luck = actual goals vs expected from shot share." />
                   </div>
                   <div className="gp-adv-grid">
                     <div className="gp-adv-row header">
@@ -807,11 +807,11 @@ function GameStatsPopup({ game, onClose }) {
                       <span className="gp-adv-chip"
                         style={{color: advStats.corsiForPct>=50?'var(--green)':'var(--red-bright)'}}>
                         CF% {advStats.corsiForPct}%
-                      <InfoTip text="Corsi For% — CAR share of all shot attempts" /></span>
+                      <InfoTip text="Corsi For% — CAR share of all shot attempts" position="above" /></span>
                       <span className="gp-adv-chip"
                         style={{color: advStats.fenwickForPct>=50?'var(--green)':'var(--red-bright)'}}>
                         FF% {advStats.fenwickForPct}%
-                      <InfoTip text="Fenwick For% — CAR share of unblocked attempts" /></span>
+                      <InfoTip text="Fenwick For% — CAR share of unblocked attempts" position="above" /></span>
                       {pdoStats && (
                         <span className="gp-adv-chip" title={`PDO = SH%+SV%×100. Avg=100. ${pdoStats.luck}`}
                           style={{color: pdoStats.pdo>102?'var(--amber)':pdoStats.pdo<98?'var(--blue-bright)':'var(--text-muted)'}}>
@@ -822,7 +822,7 @@ function GameStatsPopup({ game, onClose }) {
                         <span className="gp-adv-chip"
                           style={{color: luckStats.color}}>
                           Luck {luckStats.luckDelta>=0?'+':''}{luckStats.luckDelta}G
-                        <InfoTip text="Puck Luck: ${luckStats.label}. Expected ${luckStats.expectedGF}G from ${luckStats.fenwickForPct}% shot share." /></span>
+                        <InfoTip text="Puck Luck: ${luckStats.label}. Expected ${luckStats.expectedGF}G from ${luckStats.fenwickForPct}% shot share." position="above" /></span>
                       )}
                     </div>
                   </div>
@@ -965,7 +965,7 @@ function SkaterTable({ players, goalies }) {
             {(() => { const gsax = computeGSAx(g.shotsAgainst, g.saves); return gsax ? (
               <span className="gp-goalie-stat">
                 <span className="gp-goalie-label">GSAx</span>
-                <span style={{color:gsax.color}}>{gsax.label} <InfoTip text={gsax.note} /></span>
+                <span style={{color:gsax.color}}>{gsax.label} <InfoTip text={gsax.note} position="above" /></span>
               </span>
             ) : null; })()}
           </div>

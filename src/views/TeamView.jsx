@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useFetch } from '../hooks/useFetch'
 import {
   getTeamStats, getStandings,
@@ -341,6 +341,32 @@ function SplitsTab({ homeSplit, stats, playoffSummary, inPlayoffs }) {
 }
 
 // ── Trends tab ───────────────────────────────────────────────
+
+// ── TapDot: result dot with tap-to-open label ─────────────────
+function TapDot({ label, text, children }) {
+  const [open, setOpen] = React.useState(false)
+  const ref = React.useRef(null)
+  React.useEffect(() => {
+    if (!open) return
+    const close = e => { if (!ref.current?.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('touchstart', close, { passive: true })
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('touchstart', close) }
+  }, [open])
+  return (
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}
+      onClick={e => { e.stopPropagation(); setOpen(o => !o) }}>
+      {children}
+      {open && (
+        <div className="tap-label-popup">
+          {label && <div className="tap-label-title">{label}</div>}
+          {text && <div className="tap-label-body">{text}</div>}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TrendsTab({ gameLog }) {
   if (!gameLog?.length) {
     return (
@@ -398,13 +424,14 @@ function TrendsTab({ gameLog }) {
         <div className="sec-label" style={{ marginBottom: 10 }}>Last {gameLog.length} games</div>
         <div className="result-dots">
           {gameLog.map((g, i) => (
-            <div
+            <TapDot
               key={i}
-              className={`result-dot ${g.result.toLowerCase()}`}
-              title={`${g.date?.slice(5,10)} vs ${g.opp}: ${g.result} ${g.carScore}–${g.oppScore}${g.home ? ' (Home)' : ' (Away)'}`}
+              text={`${g.date?.slice(5,10)} vs ${g.opp}: ${g.result} ${g.carScore}–${g.oppScore}${g.home ? ' (Home)' : ' (Away)'}`}
             >
-              {g.result === 'OTL' ? 'O' : g.result}
-            </div>
+              <div className={`result-dot ${g.result.toLowerCase()}`}>
+                {g.result === 'OTL' ? 'O' : g.result}
+              </div>
+            </TapDot>
           ))}
         </div>
       </div>
@@ -414,15 +441,17 @@ function TrendsTab({ gameLog }) {
         <div className="sec-label" style={{ marginBottom: 10 }}>Rolling 10-game win %</div>
         <div className="rolling-chart">
           {rolling.map((g, i) => (
-            <div key={i} className="rolling-bar-wrap" title={`Game ${i+1}: ${g.w10pct}% win rate`}>
+            <TapDot key={i} text={`Game ${i+1}: ${g.w10pct}% win rate`}>
+            <div className="rolling-bar-wrap">
               <div
                 className={`rolling-bar ${g.w10pct >= 60 ? 'hot' : g.w10pct >= 40 ? 'ok' : 'cold'}`}
                 style={{ height: `${g.w10pct}%` }}
               />
               {i % 5 === 0 && <div className="rolling-label">{i + 1}</div>}
             </div>
+            </TapDot>
           ))}
-          <div className="rolling-avg-line" style={{ bottom: '50%' }} title="50% win rate" />
+          <div className="rolling-avg-line" style={{ bottom: '50%' }} aria-label="50% win rate" />
         </div>
         <div className="rolling-legend">
           <span className="rl-hot">■ Hot (≥60%)</span>
@@ -441,7 +470,8 @@ function TrendsTab({ gameLog }) {
               const diff = g.carScore - g.oppScore
               const absPx = Math.min(Math.abs(diff) * 12, 48)
               return (
-                <div key={i} className="gd-bar-col" title={`${g.date?.slice(5,10)} vs ${g.opp}: ${diff > 0 ? '+' : ''}${diff}`}>
+                <TapDot key={i} text={`${g.date?.slice(5,10)} vs ${g.opp}: ${diff > 0 ? '+' : ''}${diff}`}>
+                <div className="gd-bar-col">
                   <div className="gd-top">
                     {diff > 0 && <div className="gd-bar pos" style={{ height: absPx }} />}
                   </div>
@@ -449,6 +479,7 @@ function TrendsTab({ gameLog }) {
                     {diff < 0 && <div className="gd-bar neg" style={{ height: absPx }} />}
                   </div>
                 </div>
+                </TapDot>
               )
             })}
           </div>

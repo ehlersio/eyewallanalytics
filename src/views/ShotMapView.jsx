@@ -671,7 +671,7 @@ function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color }) {
         {gsax && (
           <div className="goalie-stat-col">
             <span className="goalie-stat-label">
-              GSAx <InfoTip text={gsax.note} />
+              GSAx <InfoTip text={gsax.note} position="above" />
             </span>
             <span className="goalie-stat-val" style={{color: gsax.color}}>{gsax.label}</span>
           </div>
@@ -928,7 +928,7 @@ function AdvancedGamePanel({ pbp, gameHome, isLive, boxscore }) {
     const carN = Number(car)||0, oppN = Number(opp)||0;
     return (
       <div className="sv-row">
-        <div className="sv-label-wrap"><span className="sv-label">{label}</span><InfoTip text={help} /></div>
+        <div className="sv-label-wrap"><span className="sv-label">{label}</span><InfoTip text={help} position="above" /></div>
         <span className="sv-num red">{car ?? '—'}</span>
         <div className="sv-bar-wrap">
           <div className="sv-fill red"   style={{width:`${Math.round(carN/tot*100)}%`}} />
@@ -941,7 +941,7 @@ function AdvancedGamePanel({ pbp, gameHome, isLive, boxscore }) {
 
   const StatChip = ({ label, value, color, help }) => (
     <div className="adv-chip" onClick={e => e.stopPropagation()}>
-      <div style={{display:'flex',alignItems:'center',gap:2}}><span className="adv-chip-label">{label}</span><InfoTip text={help} /></div>
+      <div style={{display:'flex',alignItems:'center',gap:2}}><span className="adv-chip-label">{label}</span><InfoTip text={help} position="above" /></div>
       <span className="adv-chip-val" style={{color}}>{value}</span>
     </div>
   );

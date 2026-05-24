@@ -3,6 +3,7 @@ import { useFetch } from '../hooks/useFetch'
 import { getRoster, getPlayerStats, fetchPlayerRankings, getPlayoffGames, getStandings } from '../utils/nhlApi'
 import { findContract, contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING, CURRENT_SEASON } from '../utils/carContracts'
 import TeamLogo from '../components/TeamLogo'
+import InfoTip from '../components/InfoTip'
 import './PlayersView.css'
 
 const SEASON       = 20252026
@@ -351,33 +352,18 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
                     <div className="pp-value-badge" style={{ background: vl.color + '22', borderColor: vl.color + '55', color: vl.color }}>
                       <span>{vl.label}</span>
                       <span className="pp-value-score">{score} pts/$M</span>
-                      <span className="pp-value-tip" title={
-                        `Contract Value Score = Points per $1M of cap hit (projected to 82 games).
-
-Scale:
-≥8.0 = Exceptional value
-≥5.0 = Great value
-≥3.0 = Good value
-≥1.8 = Fair value
-≥1.0 = Below average
-<1.0 = Overpaid
-
-Example: A player with 30 pts in 82 games on a $5M cap hit = 6.0 pts/$M = Great value.
-A $9.75M player needs ~24+ pts just to hit "Good value" threshold.
-
-ELC contracts are excluded — their cap hit ($775K–$925K) doesn't reflect market value.`
-                      }>ⓘ</span>
+                      <InfoTip label="Contract Value Score" text="Points per $1M of cap hit (projected to 82 games). Scale: ≥8.0 Exceptional · ≥5.0 Great · ≥3.0 Good · ≥1.8 Fair · ≥1.0 Below avg · <1.0 Overpaid. ELC contracts excluded — mandated cap hit doesn't reflect market value." />
                     </div>
                   )}
                   {p60 != null && (
                     <div className="pp-adv-chip">P/60: <strong>{p60}</strong>
-                      <span className="pp-value-tip" title="Points per 60 minutes of ice time. Removes the effect of ice time differences — a player with 10 pts in 12 min/game is producing at a different rate than one with 10 pts in 22 min/game. League avg for top-6 forwards: ~2.0–3.5.">ⓘ</span>
+                      <InfoTip label="P/60" text="Points per 60 minutes of ice time. Removes ice time differences — a player with 10 pts in 12 min/game produces at a very different rate than 10 pts in 22 min/game. League avg for top-6 forwards: ~2.0–3.5." />
                     </div>
                   )}
                   {isELC && !isGoalie && (
                     <div className="pp-adv-chip" style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>
                       ELC — value score N/A
-                      <span className="pp-value-tip" title="Entry Level Contracts (ELC) have a league-mandated cap hit ($775K–$925K) that doesn't reflect a player's market value, so the pts/$M comparison isn't meaningful.">ⓘ</span>
+                      <InfoTip label="ELC Contract" text="Entry Level Contracts have a league-mandated cap hit ($775K–$925K) that doesn't reflect market value, so the pts/$M comparison isn't meaningful." />
                     </div>
                   )}
                   {isGoalie && (() => {
@@ -390,24 +376,14 @@ ELC contracts are excluded — their cap hit ($775K–$925K) doesn't reflect mar
                     if (!gScore || !gVl) return isELC ? (
                       <div className="pp-adv-chip" style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>
                         ELC — value score N/A
-                        <span className="pp-value-tip" title="ELC cap hits are league-mandated and don't reflect market value.">ⓘ</span>
+                        <InfoTip label="ELC Contract" text="ELC cap hits are league-mandated and don't reflect market value." />
                       </div>
                     ) : null
                     return (
                       <div className="pp-value-badge" style={{ background: gVl.color + '22', borderColor: gVl.color + '55', color: gVl.color }}>
                         <span>{gVl.label}</span>
                         <span className="pp-value-score">SV% {gScore > 0 ? '+' : ''}{gScore} vs avg/$M</span>
-                        <span className="pp-value-tip" title={`Goalie Value Score = (SV% points above league avg of .910) ÷ cap hit in $M.
-Positive = better than avg per dollar spent. Negative = paying for below-avg goaltending.
-
-Scale:
-≥+2.0 = Exceptional value
-≥+1.0 = Great value
-≥0.0  = Fair value
-≥-1.0 = Below average
-<-1.0 = Overpaid
-
-ELC goalies excluded.`}>ⓘ</span>
+                        <InfoTip label="Goalie Value Score" text="(SV% points above league avg .910) ÷ cap hit in $M. Positive = better than avg per dollar. Scale: ≥+2.0 Exceptional · ≥+1.0 Great · ≥0.0 Fair · ≥-1.0 Below avg · <-1.0 Overpaid. ELC goalies excluded." />
                       </div>
                     )
                   })()}
