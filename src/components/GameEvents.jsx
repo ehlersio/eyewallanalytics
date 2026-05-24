@@ -178,7 +178,12 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
     const oppAbbrev = gameHome ? pbp.awayTeam?.abbrev : pbp.homeTeam?.abbrev;
     if (carScore != null && oppScore != null && carScore > oppScore) {
       gameEndFired.current = true;
-      setWinPopup({ score: `CAR ${carScore} – ${oppAbbrev} ${oppScore}` });
+      // Only show once per session — survives tab navigation but clears on tab close
+      const sessionKey = `win_shown_${pbp.id || 'game'}`;
+      if (!sessionStorage.getItem(sessionKey)) {
+        sessionStorage.setItem(sessionKey, '1');
+        setWinPopup({ score: `CAR ${carScore} – ${oppAbbrev} ${oppScore}` });
+      }
     }
   }, [isLive, pbp]);
 

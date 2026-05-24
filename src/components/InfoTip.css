@@ -1,0 +1,64 @@
+/* ── InfoTip — tap-to-open popup ── */
+.info-tip-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.info-tip-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 0 3px;
+  line-height: 1;
+  min-height: unset; /* override global 44px min */
+  min-width: unset;
+  border-radius: 50%;
+  transition: color 0.15s;
+}
+.info-tip-btn:hover,
+.info-tip-btn:focus-visible { color: var(--text-muted); }
+
+.info-tip-popup {
+  position: absolute;
+  z-index: 250;
+  background: var(--bg1);
+  border: 0.5px solid var(--border-2);
+  border-radius: 10px;
+  padding: 12px 14px 10px;
+  width: 240px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+/* Position variants */
+.info-tip-below { top: calc(100% + 6px); left: 0; }
+.info-tip-above { bottom: calc(100% + 6px); left: 0; }
+.info-tip-left  { top: 0; right: calc(100% + 6px); }
+
+/* Keep popups on-screen — shift right if near left edge */
+.info-tip-below,
+.info-tip-above { max-width: min(240px, calc(100vw - 32px)); }
+
+.info-tip-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 5px;
+}
+.info-tip-body {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+.info-tip-close {
+  position: absolute;
+  top: 6px; right: 8px;
+  background: none; border: none;
+  font-size: 12px; color: var(--text-dim);
+  cursor: pointer; padding: 2px 4px;
+  min-height: unset; min-width: unset;
+}
+.info-tip-close:hover { color: var(--text); }

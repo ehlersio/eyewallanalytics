@@ -10,6 +10,7 @@ import {
 import IceRink from '../components/IceRink';
 import { GoalPopup, PenaltyPopup, WinPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
+import InfoTip from '../components/InfoTip';
 import { StatBar, MetCard, MetCardSkeleton } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
 import './ShotMapView.css';
@@ -653,20 +654,27 @@ function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color }) {
     : '—';
   const gsax = computeGSAx(shotsAgainst, saves);
   return (
-    <div className="goalie-row">
-      <span className="goalie-abbr" style={{color}}>{abbr}</span>
-      <span className="goalie-name">{name}</span>
-      <div className="goalie-nums">
-        <span>{saves ?? '—'}/{shotsAgainst ?? '—'}</span>
-        <span className="goalie-svpct">{svPct}</span>
+    <div className="goalie-card">
+      <div className="goalie-header">
+        <span className="goalie-abbr" style={{color}}>{abbr}</span>
+        <span className="goalie-name">{name}</span>
+      </div>
+      <div className="goalie-stats-grid">
+        <div className="goalie-stat-col">
+          <span className="goalie-stat-label">SV/SA</span>
+          <span className="goalie-stat-val">{saves ?? '—'}/{shotsAgainst ?? '—'}</span>
+        </div>
+        <div className="goalie-stat-col">
+          <span className="goalie-stat-label">SV%</span>
+          <span className="goalie-stat-val goalie-svpct">{svPct}</span>
+        </div>
         {gsax && (
-          <span
-            className="goalie-gsax"
-            style={{color: gsax.color}}
-            title={`GSAx ${gsax.label} — ${gsax.note}`}
-          >
-            GSAx {gsax.label}
-          </span>
+          <div className="goalie-stat-col">
+            <span className="goalie-stat-label">
+              GSAx <InfoTip text={gsax.note} />
+            </span>
+            <span className="goalie-stat-val" style={{color: gsax.color}}>{gsax.label}</span>
+          </div>
         )}
       </div>
     </div>
@@ -920,7 +928,7 @@ function AdvancedGamePanel({ pbp, gameHome, isLive, boxscore }) {
     const carN = Number(car)||0, oppN = Number(opp)||0;
     return (
       <div className="sv-row">
-        <span className="sv-label" title={help}>{label}</span>
+        <div className="sv-label-wrap"><span className="sv-label">{label}</span><InfoTip text={help} /></div>
         <span className="sv-num red">{car ?? '—'}</span>
         <div className="sv-bar-wrap">
           <div className="sv-fill red"   style={{width:`${Math.round(carN/tot*100)}%`}} />
@@ -932,8 +940,8 @@ function AdvancedGamePanel({ pbp, gameHome, isLive, boxscore }) {
   };
 
   const StatChip = ({ label, value, color, help }) => (
-    <div className="adv-chip" title={help}>
-      <span className="adv-chip-label">{label}</span>
+    <div className="adv-chip" onClick={e => e.stopPropagation()}>
+      <div style={{display:'flex',alignItems:'center',gap:2}}><span className="adv-chip-label">{label}</span><InfoTip text={help} /></div>
       <span className="adv-chip-val" style={{color}}>{value}</span>
     </div>
   );

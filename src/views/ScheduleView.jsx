@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import { savePrediction, getPredictionStats } from '../utils/predictionStore';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
+import InfoTip from '../components/InfoTip';
 import {
   getRegularSeasonGames, getPlayoffGames, getStandings,
   buildCarPlayoffSummary, getCompletedGameStats,
@@ -776,7 +777,7 @@ function GameStatsPopup({ game, onClose }) {
                 <div className="gp-section">
                   <div className="gp-section-label">
                     Shot Attempts &amp; Puck Luck
-                    <span className="gp-help" title="Corsi = all shot attempts (goals+shots+misses+blocks). Fenwick excludes blocks. PDO = SH%+SV%×100, avg=100. Puck Luck = actual goals vs expected from shot share."> ⓘ</span>
+                    <InfoTip text="Corsi = all shot attempts (goals+shots+misses+blocks). Fenwick excludes blocks. PDO = SH%+SV%×100, avg=100. Puck Luck = actual goals vs expected from shot share." />
                   </div>
                   <div className="gp-adv-grid">
                     <div className="gp-adv-row header">
@@ -791,7 +792,7 @@ function GameStatsPopup({ game, onClose }) {
                     ].map(([label, car, opp, help]) => {
                       const tot = car + opp || 1;
                       return (
-                        <div key={label} className="gp-adv-row" title={help}>
+                        <div key={label} className="gp-adv-row">
                           <span className="gp-adv-label">{label}</span>
                           <span className="red">{car}</span>
                           <div className="gp-adv-bar">
@@ -803,14 +804,14 @@ function GameStatsPopup({ game, onClose }) {
                       );
                     })}
                     <div className="gp-adv-chips">
-                      <span className="gp-adv-chip" title="Corsi For% — CAR share of all shot attempts"
+                      <span className="gp-adv-chip"
                         style={{color: advStats.corsiForPct>=50?'var(--green)':'var(--red-bright)'}}>
                         CF% {advStats.corsiForPct}%
-                      </span>
-                      <span className="gp-adv-chip" title="Fenwick For% — CAR share of unblocked attempts"
+                      <InfoTip text="Corsi For% — CAR share of all shot attempts" /></span>
+                      <span className="gp-adv-chip"
                         style={{color: advStats.fenwickForPct>=50?'var(--green)':'var(--red-bright)'}}>
                         FF% {advStats.fenwickForPct}%
-                      </span>
+                      <InfoTip text="Fenwick For% — CAR share of unblocked attempts" /></span>
                       {pdoStats && (
                         <span className="gp-adv-chip" title={`PDO = SH%+SV%×100. Avg=100. ${pdoStats.luck}`}
                           style={{color: pdoStats.pdo>102?'var(--amber)':pdoStats.pdo<98?'var(--blue-bright)':'var(--text-muted)'}}>
@@ -818,10 +819,10 @@ function GameStatsPopup({ game, onClose }) {
                         </span>
                       )}
                       {luckStats && (
-                        <span className="gp-adv-chip" title={`Puck Luck: ${luckStats.label}. Expected ${luckStats.expectedGF}G from ${luckStats.fenwickForPct}% shot share.`}
+                        <span className="gp-adv-chip"
                           style={{color: luckStats.color}}>
                           Luck {luckStats.luckDelta>=0?'+':''}{luckStats.luckDelta}G
-                        </span>
+                        <InfoTip text="Puck Luck: ${luckStats.label}. Expected ${luckStats.expectedGF}G from ${luckStats.fenwickForPct}% shot share." /></span>
                       )}
                     </div>
                   </div>
@@ -962,9 +963,9 @@ function SkaterTable({ players, goalies }) {
             <span className="gp-goalie-stat"><span className="gp-goalie-label">SV%</span>{fmtSvPct(g.savePctg)}</span>
             <span className="gp-goalie-stat"><span className="gp-goalie-label">TOI</span>{g.toi ?? "—"}</span>
             {(() => { const gsax = computeGSAx(g.shotsAgainst, g.saves); return gsax ? (
-              <span className="gp-goalie-stat" title={gsax.note}>
+              <span className="gp-goalie-stat">
                 <span className="gp-goalie-label">GSAx</span>
-                <span style={{color:gsax.color}}>{gsax.label}</span>
+                <span style={{color:gsax.color}}>{gsax.label} <InfoTip text={gsax.note} /></span>
               </span>
             ) : null; })()}
           </div>
@@ -1379,7 +1380,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
         <div>
           <span className="md-title">CAR vs {oppAbbr} — Matchup breakdown</span>
           {predStats.total > 0 && (
-            <div className="md-track-record" title={`${predStats.correct}/${predStats.total} correct · avg ${predStats.avgError} goal error`}>
+            <div className="md-track-record" >
               📊 {predStats.correct}/{predStats.total} correct ({predStats.pct}%)
             </div>
           )}

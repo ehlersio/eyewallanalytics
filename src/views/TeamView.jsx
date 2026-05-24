@@ -9,6 +9,7 @@ import {
 import { CONTRACTS, DRAFT_PICKS, getCapSummary, CAP_CEILING, CURRENT_SEASON } from '../utils/carContracts'
 import { StatBar, MetCard } from '../components/StatBar'
 import { seasonPDO } from '../utils/advancedStats'
+import InfoTip from '../components/InfoTip'
 import TeamLogo from '../components/TeamLogo'
 import { TEAM_COLORS } from '../utils/nhlApi'
 import './TeamView.css'
@@ -518,7 +519,7 @@ function CapTab({ capSummary, capPct, sortedContracts, picksByYear }) {
             <span className="picks-year">{year}</span>
             <div className="picks-chips">
               {picks.sort((a,b) => a.round - b.round).map((p, i) => (
-                <div key={i} className={`pick-chip r${p.round}`} title={p.note}>
+                <div key={i} className={`pick-chip r${p.round}`}>
                   <span className="pick-round">
                     {p.round === 1 ? '1st' : p.round === 2 ? '2nd' : p.round === 3 ? '3rd' : `${p.round}th`}
                   </span>
