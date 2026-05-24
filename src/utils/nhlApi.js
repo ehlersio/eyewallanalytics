@@ -95,8 +95,9 @@ export async function getLiveGame() {
 
 // Is a game finished?
 function isCompleted(game) {
-  return ['OFF', 'FINAL', 'F'].includes(game.gameState) ||
-    (game.homeTeam?.score !== undefined && game.awayTeam?.score !== undefined);
+  // Only trust explicit completed game states — never infer from score presence
+  // (scheduled games have score=0 which falsely triggered the old fallback)
+  return ['OFF', 'FINAL', 'F', 'FINAL_OVERTIME', 'FINAL_SHOOTOUT'].includes(game.gameState);
 }
 
 // ─── PLAYOFF SERIES ──────────────────────────────────────────

@@ -292,27 +292,30 @@
 /* ── TapDot popup (Trends chart labels) ── */
 .tap-label-popup {
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 300;
   background: var(--bg1);
   border: 0.5px solid var(--border-2);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 7px 28px 7px 10px; /* right padding for close btn */
   white-space: nowrap;
   font-size: 11px;
   color: var(--text-muted);
   box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  pointer-events: none;
+  cursor: default;
 }
-.tap-label-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 2px;
+.tap-label-body  { font-size: 11px; color: var(--text-muted); }
+.tap-label-close {
+  position: absolute;
+  top: 4px; right: 6px;
+  background: none; border: none;
+  font-size: 11px; color: var(--text-dim);
+  cursor: pointer; padding: 2px 3px;
+  min-height: unset; min-width: unset;
+  line-height: 1;
 }
-.tap-label-body {
-  font-size: 11px;
-  color: var(--text-muted);
-}
+.tap-label-close:hover { color: var(--text); }
+/* Result dot popup anchors below since dots are at top */
+.result-dot { position: relative; }

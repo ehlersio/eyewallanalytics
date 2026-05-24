@@ -342,29 +342,46 @@ function SplitsTab({ homeSplit, stats, playoffSummary, inPlayoffs }) {
 
 // ── Trends tab ───────────────────────────────────────────────
 
-// ── TapDot: result dot with tap-to-open label ─────────────────
-function TapDot({ label, text, children }) {
+// ── TapDot: chart element with tap-to-open label ──────────────
+// display:contents makes the outer wrapper invisible to flex/grid layout.
+// The popup is rendered inside the child element (which has position:relative).
+function TapDot({ text, children, popupClass = 'tap-label-popup' }) {
   const [open, setOpen] = React.useState(false)
   const ref = React.useRef(null)
+
   React.useEffect(() => {
     if (!open) return
     const close = e => { if (!ref.current?.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', close)
     document.addEventListener('touchstart', close, { passive: true })
-    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('touchstart', close) }
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('touchstart', close)
+    }
   }, [open])
-  return (
-    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}
-      onClick={e => { e.stopPropagation(); setOpen(o => !o) }}>
-      {children}
-      {open && (
-        <div className="tap-label-popup">
-          {label && <div className="tap-label-title">{label}</div>}
-          {text && <div className="tap-label-body">{text}</div>}
+
+  // Clone the single child and inject the popup + click handler into it
+  const child = React.Children.only(children)
+  return React.cloneElement(child, {
+    ref,
+    onClick: e => { e.stopPropagation(); setOpen(o => !o) },
+    style: { ...child.props.style, position: 'relative', cursor: 'pointer' },
+    children: [
+      ...(Array.isArray(child.props.children)
+        ? child.props.children
+        : [child.props.children]),
+      open && (
+        <div key="tap-popup" className={popupClass} onClick={e => e.stopPropagation()}>
+          <span className="tap-label-body">{text}</span>
+          <button
+            className="tap-label-close"
+            onMouseDown={e => { e.stopPropagation(); setOpen(false) }}
+            aria-label="Close"
+          >✕</button>
         </div>
-      )}
-    </div>
-  )
+      ),
+    ],
+  })
 }
 
 function TrendsTab({ gameLog }) {
