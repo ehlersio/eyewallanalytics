@@ -6,6 +6,14 @@ import { cached, TTL, invalidate } from './cache.js'
 //   /nhl-stats → https://api.nhle.com
 const BASE = '/nhl-api/v1';
 
+// Worker KV cache URL — set VITE_WORKER_URL in Cloudflare Pages environment variables
+// e.g. https://eyewall-poller.YOUR_SUBDOMAIN.workers.dev
+// When set, hot data (schedule, live PBP, boxscore, standings) is served from KV
+// instead of hitting the NHL API per user — dramatically reduces API load during games.
+const WORKER_URL = (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_WORKER_URL)
+  ? import.meta.env.VITE_WORKER_URL
+  : null;
+
 const CAR_TEAM_ID = 12;
 const CAR_ABBR    = 'CAR';
 
@@ -32,6 +40,20 @@ async function nhlFetch(url) {
   }
 }
 
+// Read from Worker KV cache — returns null if Worker unavailable or key missing
+async function kvFetch(key) {
+  if (!WORKER_URL) return null;
+  try {
+    const res = await fetch(`${WORKER_URL}/cache/${encodeURIComponent(key)}`, {
+      signal: AbortSignal.timeout(3000), // 3s — fall back to direct NHL if slow
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null; // Worker unavailable — fall through to direct NHL call
+  }
+}
+
 // ─── SCHEDULE ────────────────────────────────────────────────
 
 // Fetch ALL CAR games for the season (regular + playoffs together)
@@ -39,9 +61,13 @@ async function nhlFetch(url) {
 // but stays fresh enough to detect live game state changes
 async function getAllGames() {
   return cached('allGames', async () => {
+    // Try Worker KV first (pre-polled, zero per-user NHL calls)
+    const cached_kv = await kvFetch(`schedule:${CAR_ABBR}`);
+    if (cached_kv) return cached_kv;
+    // Fall back to direct NHL call
     const data = await nhlFetch(`${BASE}/club-schedule-season/${CAR_ABBR}/${SEASON}`);
     return data?.games || [];
-  }, TTL.SHORT / 3); // 20 seconds
+  }, TTL.SHORT / 3); // 20 seconds client-side cache
 }
 
 // Regular season games only (gameType === 2)
@@ -182,6 +208,9 @@ export async function getStandings() {
   return cached('standings', _getStandings, TTL.STANDINGS);
 }
 async function _getStandings() {
+  // Try Worker KV first
+  const kv = await kvFetch('standings');
+  if (kv) return kv;
   // standings/now redirects to a dated URL which breaks the proxy (CORS on redirect).
   // Use the final regular-season date directly — avoids the redirect entirely.
   // Try most recent season end first, then fall back.
@@ -391,10 +420,12 @@ export function extractRankings() { return null; }
 // ─── GAME DETAIL / SHOT EVENTS ───────────────────────────────
 
 export async function getGameDetail(gameId) {
-  return cached(`pbp:${gameId}`, () =>
-    nhlFetch(`${BASE}/gamecenter/${gameId}/play-by-play`),
-    TTL.GAME_DATA // 2 min for completed games; live polls bust this
-  );
+  return cached(`pbp:${gameId}`, async () => {
+    // Try Worker KV first
+    const kv = await kvFetch(`pbp:${gameId}`);
+    if (kv) return kv;
+    return nhlFetch(`${BASE}/gamecenter/${gameId}/play-by-play`);
+  }, TTL.GAME_DATA);
 }
 
 // Call this to force-refresh live game data (bypasses cache)
@@ -411,10 +442,11 @@ export async function getGameLanding(gameId) {
 // Boxscore: player stats by game (goals, assists, shots, TOI, +/-, etc.)
 // Returns playerByGameStats.homeTeam/awayTeam.forwards/defensemen/goalies
 export async function getGameBoxscore(gameId) {
-  return cached(`boxscore:${gameId}`, () =>
-    nhlFetch(`${BASE}/gamecenter/${gameId}/boxscore`),
-    TTL.GAME_DATA
-  );
+  return cached(`boxscore:${gameId}`, async () => {
+    const kv = await kvFetch(`boxscore:${gameId}`);
+    if (kv) return kv;
+    return nhlFetch(`${BASE}/gamecenter/${gameId}/boxscore`);
+  }, TTL.GAME_DATA);
 }
 
 // Right-rail: team-level game stats (shots, hits, faceoffs, PPs, etc.)
