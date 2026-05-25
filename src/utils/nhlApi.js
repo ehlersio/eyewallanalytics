@@ -608,7 +608,7 @@ export async function getTeamRecentGames(teamAbbr, count = 10, playoffsOnly = fa
 }
 
 export async function getTeamTopPlayers(teamAbbr, gameType = 2) {
-  return cached(`topPlayers:${teamAbbr}:${gameType}`, async () => {
+  return cached(`topPlayers:${teamAbbr}:${gameType}:v2`, async () => {
     const data = await nhlFetch(`${BASE}/club-stats/${teamAbbr}/${SEASON}/${gameType}`);
     const skaters = (data?.skaters || [])
       .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
@@ -621,13 +621,14 @@ export async function getTeamTopPlayers(teamAbbr, gameType = 2) {
         points:  p.points ?? 0,
         toi:     p.avgToi,
       }));
+    if (data?.goalies?.[0]) console.log('[getTeamTopPlayers] goalie fields:', Object.keys(data.goalies[0]), 'sample:', JSON.stringify(data.goalies[0]).slice(0,200));
     const goalies = (data?.goalies || [])
       .sort((a, b) => (b.wins ?? 0) - (a.wins ?? 0))
       .slice(0, 2)
       .map(g => ({
         name:         `${g.firstName?.default || ''} ${g.lastName?.default || ''}`.trim(),
         wins:         g.wins ?? 0,
-        savePct:      g.savePctg ?? null,
+        savePct:      g.savePctg ?? g.savePercentage ?? g.savePct ?? null,
         gaa:          g.goalsAgainstAvg ?? 0,
         shotsAgainst: g.shotsAgainst,
         saves:        g.saves,
