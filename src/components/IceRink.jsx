@@ -62,6 +62,8 @@ export default function IceRink({ events = [], roster = {} }) {
   const [viewMode,    setViewMode]    = useState('dots'); // 'dots' | 'heat'
   const [heatTeam,    setHeatTeam]    = useState('both'); // 'car' | 'opp' | 'both'
   const [selectedPlayer, setSelectedPlayer] = useState(null); // playerId string or null = all
+  const [filterOpen,    setFilterOpen]    = useState(false);
+  const filterRef = useRef(null);
   const [hovered,     setHovered]     = useState(null);   // { event, svgX, svgY, screenX, screenY }
   const [selected,    setSelected]    = useState(null);   // full event object for popup
   const [zoom,        setZoom]        = useState(1);
@@ -71,6 +73,18 @@ export default function IceRink({ events = [], roster = {} }) {
   const svgRef        = useRef(null);
   const wrapRef       = useRef(null);
   const width         = useWindowWidth();
+
+  // Close player filter dropdown on outside click
+  useEffect(() => {
+    if (!filterOpen) return;
+    const close = e => { if (!filterRef.current?.contains(e.target)) setFilterOpen(false); };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('touchstart', close, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('touchstart', close);
+    };
+  }, [filterOpen]);
   const isMobile      = width < 600;
   const showHalf      = isMobile || halfRink;
 
@@ -263,10 +277,43 @@ export default function IceRink({ events = [], roster = {} }) {
           ))}
         </div>
         <div className="rink-right-controls">
+          {/* Player filter popover */}
+          {carShooters.length > 0 && (
+            <div className="rink-filter-wrap" ref={filterRef}>
+              <button
+                className={`rink-btn rink-filter-btn${selectedPlayer ? ' on' : ''}`}
+                onClick={() => setFilterOpen(o => !o)}
+                aria-expanded={filterOpen}
+              >
+                {selectedPlayer
+                  ? <>{carShooters.find(s => s.id === selectedPlayer)?.name.split(' ').pop() || 'Player'} <span className="rink-filter-clear" onClick={e => { e.stopPropagation(); setSelectedPlayer(null); setFilterOpen(false); }}>✕</span></>
+                  : <>Player ▾</>
+                }
+              </button>
+              {filterOpen && (
+                <div className="rink-filter-dropdown" role="listbox">
+                  <button
+                    className={`rink-filter-option${selectedPlayer === null ? ' active' : ''}`}
+                    onClick={() => { setSelectedPlayer(null); setFilterOpen(false); }}
+                    role="option"
+                  >All players</button>
+                  {carShooters.map(s => (
+                    <button
+                      key={s.id}
+                      className={`rink-filter-option${selectedPlayer === s.id ? ' active' : ''}`}
+                      onClick={() => { setSelectedPlayer(s.id); setFilterOpen(false); }}
+                      role="option"
+                    >
+                      <span className="rink-filter-name">{s.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <button
             className={`rink-btn ${viewMode === 'heat' ? 'on heat-on' : ''}`}
             onClick={() => setViewMode(m => m === 'dots' ? 'heat' : 'dots')}
-            title="Toggle heatmap"
           >
             {viewMode === 'heat' ? '🔥 Heat' : '🔥 Heat'}
           </button>
@@ -277,25 +324,6 @@ export default function IceRink({ events = [], roster = {} }) {
           )}
         </div>
       </div>
-
-      {/* Player filter chips — shown when there are CAR shots with player data */}
-      {carShooters.length > 0 && (
-        <div className="rink-player-chips">
-          <button
-            className={`rink-chip${selectedPlayer === null ? ' active' : ''}`}
-            onClick={() => setSelectedPlayer(null)}
-          >All</button>
-          {carShooters.map(s => (
-            <button
-              key={s.id}
-              className={`rink-chip${selectedPlayer === s.id ? ' active' : ''}`}
-              onClick={() => setSelectedPlayer(prev => prev === s.id ? null : s.id)}
-            >
-              {s.name.split(' ').pop()}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Zoom controls */}
       <div className="zoom-bar">
