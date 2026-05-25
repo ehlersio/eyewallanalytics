@@ -3,6 +3,7 @@ import { getLiveGame, getCarScore, getOppScore, getOpponent, getGameDetail } fro
 import TeamLogo from './TeamLogo';
 import { TEAM_COLORS } from '../utils/nhlApi';
 import './Topbar.css';
+import AboutPopup from './AboutPopup';
 
 // Poll fast when live, slow when idle, stop when no games remain
 const POLL_LIVE_MS  = 30_000;   // 30s  — active game, keep score fresh
@@ -64,18 +65,7 @@ export default function Topbar() {
 
   return (
     <header className="topbar">
-      <div className="topbar-logo">
-        <img
-          src="/eyewall-logo.svg"
-          alt="EyeWall Analytics"
-          className="topbar-logoimg"
-          width="36" height="36"
-        />
-        <div>
-          <div className="topbar-name">EyeWall Analytics</div>
-          <div className="topbar-sub">Carolina Hurricanes</div>
-        </div>
-      </div>
+      <AboutPopup />
 
       {liveGame ? (
         <div className="topbar-live">

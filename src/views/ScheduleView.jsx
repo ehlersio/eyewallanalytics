@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import { savePrediction, getPredictionStats } from '../utils/predictionStore';
+import ScoutingTab from '../components/ScoutingTab';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import InfoTip from '../components/InfoTip';
 import {
@@ -1268,6 +1269,7 @@ function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds }) {
 // ── Matchup detail (upcoming games) ─────────────────────────
 
 function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) {
+  const [mdTab, setMdTab] = React.useState('prediction');
   const opp     = getOpponent(game);
   const oppAbbr = opp?.abbrev || 'OPP';
   const oppColor = TEAM_COLORS[oppAbbr] || '#7a8899';
@@ -1376,6 +1378,17 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
 
   return (
     <div className="matchup-detail card">
+      {/* Tab bar: Prediction vs Scouting */}
+      <div className="md-tabs">
+        <button className={`md-tab${mdTab === 'prediction' ? ' active' : ''}`}
+          onClick={() => setMdTab('prediction')}>Prediction</button>
+        <button className={`md-tab${mdTab === 'scouting' ? ' active' : ''}`}
+          onClick={() => setMdTab('scouting')}>Scouting</button>
+      </div>
+
+      {mdTab === 'scouting' ? (
+        <ScoutingTab oppAbbr={oppAbbr} oppStanding={oppStanding} carStanding={carStanding} />
+      ) : (<>
       <div className="md-header">
         <div>
           <span className="md-title">CAR vs {oppAbbr} — Matchup breakdown</span>
@@ -1502,6 +1515,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
           </div>
         ))}
       </div>
+      </>)}
     </div>
   );
 }

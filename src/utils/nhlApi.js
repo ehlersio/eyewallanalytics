@@ -552,6 +552,57 @@ export function getOppScore(game) {
     : game.homeTeam?.score;
 }
 
+// ─── OPPONENT SCOUTING ───────────────────────────────────────
+export async function getTeamRecentGames(teamAbbr, count = 10) {
+  return cached(`recentGames:${teamAbbr}:${count}`, async () => {
+    const data = await nhlFetch(`${BASE}/club-schedule-season/${teamAbbr}/${SEASON}`);
+    const games = (data?.games || [])
+      .filter(g => isCompleted(g))
+      .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate))
+      .slice(0, count);
+    return games.map(g => {
+      const home      = g.homeTeam?.abbrev === teamAbbr;
+      const teamScore = home ? (g.homeTeam?.score ?? 0) : (g.awayTeam?.score ?? 0);
+      const oppScore  = home ? (g.awayTeam?.score ?? 0) : (g.homeTeam?.score ?? 0);
+      const won       = teamScore > oppScore;
+      const opp       = home ? g.awayTeam?.abbrev : g.homeTeam?.abbrev;
+      return {
+        date: g.gameDate, opp, teamScore, oppScore, won, home,
+        result: won ? 'W' : (teamScore === oppScore - 1 && g.periodDescriptor?.number > 3 ? 'OTL' : 'L'),
+      };
+    });
+  }, TTL.SCHEDULE);
+}
+
+export async function getTeamTopPlayers(teamAbbr) {
+  return cached(`topPlayers:${teamAbbr}`, async () => {
+    const data = await nhlFetch(`${BASE}/club-stats/${teamAbbr}/${SEASON}/2`);
+    const skaters = (data?.skaters || [])
+      .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
+      .slice(0, 5)
+      .map(p => ({
+        name:    `${p.firstName?.default || ''} ${p.lastName?.default || ''}`.trim(),
+        pos:     p.positionCode,
+        goals:   p.goals ?? 0,
+        assists: p.assists ?? 0,
+        points:  p.points ?? 0,
+        toi:     p.avgToi,
+      }));
+    const goalies = (data?.goalies || [])
+      .sort((a, b) => (b.wins ?? 0) - (a.wins ?? 0))
+      .slice(0, 2)
+      .map(g => ({
+        name:         `${g.firstName?.default || ''} ${g.lastName?.default || ''}`.trim(),
+        wins:         g.wins ?? 0,
+        savePct:      g.savePctg ?? 0,
+        gaa:          g.goalsAgainstAvg ?? 0,
+        shotsAgainst: g.shotsAgainst,
+        saves:        g.saves,
+      }));
+    return { skaters, goalies };
+  }, TTL.PLAYER_STATS);
+}
+
 export const TEAM_COLORS = {
   CAR: '#cc2200', BOS: '#fcb514', NYR: '#0038a8', TBL: '#002868',
   FLA: '#041e42', WSH: '#c8102e', NYI: '#003087', NJD: '#ce1126',
