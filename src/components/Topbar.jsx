@@ -4,6 +4,7 @@ import TeamLogo from './TeamLogo';
 import { TEAM_COLORS } from '../utils/nhlApi';
 import './Topbar.css';
 import AboutPopup from './AboutPopup';
+import NotificationBell from './NotificationBell';
 
 // Poll fast when live, slow when idle, stop when no games remain
 const POLL_LIVE_MS  = 30_000;   // 30s  — active game, keep score fresh
