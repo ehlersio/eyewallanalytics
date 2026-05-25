@@ -62,18 +62,21 @@ export default function ScheduleView() {
 
   const carStanding    = standingMap[CAR_ABBR];
 
-  // Auto-record prediction outcomes for completed games
+  // Auto-record prediction outcomes for any completed games
   useEffect(() => {
-    const allGames = [...(recentGames || [])];
-    allGames.forEach(g => {
-      const isHome   = g.homeTeam?.abbrev === CAR_ABBR;
+    const allGames = [...(regGames || []), ...(playoffGames || [])];
+    const completed = allGames.filter(g =>
+      ['OFF','FINAL','F','FINAL_OVERTIME','FINAL_SHOOTOUT'].includes(g.gameState)
+    );
+    completed.forEach(g => {
+      const isHome    = g.homeTeam?.abbrev === CAR_ABBR;
       const carActual = isHome ? g.homeTeam?.score : g.awayTeam?.score;
       const oppActual = isHome ? g.awayTeam?.score : g.homeTeam?.score;
       if (carActual != null && oppActual != null && g.id) {
         recordOutcome(g.id, carActual, oppActual);
       }
     });
-  }, [recentGames]);
+  }, [regGames, playoffGames]);
   const playoffSeries  = buildCarPlayoffSummary(playoffGames || []);
   const poRecord       = playoffSeries.reduce((a, s) => ({
     w: a.w + s.carWins, l: a.l + s.oppWins
