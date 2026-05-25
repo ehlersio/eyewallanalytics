@@ -1385,8 +1385,8 @@
   background: linear-gradient(135deg, var(--bg2) 0%, rgba(204,34,0,0.06) 100%);
   border: 0.5px solid rgba(204,34,0,0.25);
   border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 12px;
+  padding: 16px 16px 12px; /* more top, less bottom */
+  margin-bottom: 16px; /* bigger gap before Scoring by Period */
 }
 .gp-summary-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -1404,14 +1404,26 @@
   letter-spacing: 0.04em;
 }
 .gp-summary-narrative {
-  font-size: 13px; line-height: 1.6;
+  font-size: 13px; line-height: 1.65;
   color: var(--text); margin: 0 0 12px;
 }
 .gp-summary-chips {
   display: flex; gap: 6px; flex-wrap: wrap;
+  align-items: center;
 }
 .gp-summary-chip {
   font-size: 11px; font-weight: 600;
   background: var(--bg3); color: var(--text-muted);
   padding: 3px 8px; border-radius: 6px;
 }
+.gp-summary-share {
+  margin-left: auto;
+  background: none;
+  border: 0.5px solid var(--border-2);
+  color: var(--text-muted);
+  font-size: 11px; font-weight: 600;
+  padding: 3px 10px; border-radius: 6px;
+  cursor: pointer; min-height: unset; min-width: unset;
+  transition: all 0.15s;
+}
+.gp-summary-share:hover { background: var(--bg3); color: var(--text); }

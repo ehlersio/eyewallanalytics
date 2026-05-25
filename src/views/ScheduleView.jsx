@@ -712,18 +712,38 @@ function GameStatsPopup({ game, onClose }) {
                 <span className="gp-summary-chip" style={{color: summary.cfPct >= 50 ? 'var(--green)' : 'var(--red-bright)'}}>
                   CF% {summary.cfPct}%
                 </span>
-                {summary.topScorer && (
-                  <span className="gp-summary-chip">🚨 {summary.topScorer.split(' ').pop()}</span>
+                {summary.topScorer && summary.topScorer !== 'Unknown' && (
+                  <span className="gp-summary-chip">🚨 {summary.topScorer}</span>
                 )}
-                {summary.carGoalie && (
+                {summary.carGoalie && summary.carGoalie.svPct != null && (
                   <span className="gp-summary-chip">
-                    🥅 {summary.carGoalie.name.split(' ').pop()} {summary.carGoalie.svPct}%
+                    🥅 {summary.carGoalie.name.split(' ').pop()}{' '}
+                    {typeof summary.carGoalie.svPct === 'number'
+                      ? (summary.carGoalie.svPct <= 1
+                          ? summary.carGoalie.svPct.toFixed(3)
+                          : (summary.carGoalie.svPct / 100).toFixed(3))
+                      : summary.carGoalie.svPct}
                   </span>
                 )}
                 <span className="gp-summary-chip" style={{color: summary.won ? 'var(--green)' : 'var(--red-bright)'}}>
                   {summary.won ? '✓ W' : '✗ L'} {summary.carScore}–{summary.oppScore}
                 </span>
               </div>
+              <button
+                className="gp-summary-share"
+                onClick={() => {
+                  const text = `CAR ${summary.carScore}–${summary.oppScore} ${summary.oppAbbr} | ${summary.narrative} — EyeWall Analytics eyewallanalytics.com`;
+                  if (navigator.share) {
+                    navigator.share({ title: 'EyeWall Analytics Game Summary', text }).catch(() => {});
+                  } else {
+                    navigator.clipboard.writeText(text).then(() =>
+                      alert('Summary copied to clipboard!')
+                    ).catch(() => {});
+                  }
+                }}
+              >
+                ↗ Share
+              </button>
             </div>
           )}
 
