@@ -90,6 +90,8 @@ export default function Topbar() {
           <span className="topbar-no-live">No game in progress</span>
         </div>
       )}
+
+      <NotificationBell />
     </header>
   );
 }
