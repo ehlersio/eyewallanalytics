@@ -627,7 +627,7 @@ export async function getTeamTopPlayers(teamAbbr, gameType = 2) {
       .map(g => ({
         name:         `${g.firstName?.default || ''} ${g.lastName?.default || ''}`.trim(),
         wins:         g.wins ?? 0,
-        savePct:      g.savePctg ?? 0,
+        savePct:      g.savePctg ?? null,
         gaa:          g.goalsAgainstAvg ?? 0,
         shotsAgainst: g.shotsAgainst,
         saves:        g.saves,

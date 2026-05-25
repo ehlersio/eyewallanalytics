@@ -76,23 +76,40 @@ function PlayerTable({ players, loading, color }) {
           <span className="scouting-pts" style={{color}}>{p.points}</span>
         </div>
       ))}
-      {players.goalies?.map((g, i) => {
-        const gsax = computeGSAx(g.shotsAgainst, g.saves);
-        const svFmt = g.savePct != null
-          ? (g.savePct <= 1 ? g.savePct.toFixed(3) : (g.savePct/100).toFixed(3))
-          : '—';
-        return (
-          <div key={`g${i}`} className="scouting-player-row scouting-goalie-row">
-            <span className="scouting-player-name">{g.name}</span>
-            <span style={{fontSize:10,color:'var(--text-dim)'}}>W{g.wins}</span>
-            <span style={{fontSize:10}}>{svFmt}</span>
-            <span style={{color: gsax?.color, fontSize:10}}>
-              {gsax ? gsax.label : '—'}
-              {gsax && <InfoTip text={gsax.note} position="above" />}
-            </span>
-          </div>
-        );
-      })}
+      {players.goalies?.length > 0 && (
+        <>
+          <div className="scouting-goalie-divider">Goalies</div>
+          {players.goalies.map((g, i) => {
+            const gsax  = computeGSAx(g.shotsAgainst, g.saves);
+            const svFmt = g.savePct != null && g.savePct > 0
+              ? (g.savePct <= 1 ? g.savePct.toFixed(3) : (g.savePct / 100).toFixed(3))
+              : '—';
+            return (
+              <div key={`g${i}`} className="scouting-goalie-row">
+                <span className="scouting-player-name scouting-goalie-name">{g.name}</span>
+                <div className="scouting-goalie-stats">
+                  <div className="scouting-goalie-stat">
+                    <span className="scouting-goalie-label">W</span>
+                    <span className="scouting-goalie-val">{g.wins}</span>
+                  </div>
+                  <div className="scouting-goalie-stat">
+                    <span className="scouting-goalie-label">SV%</span>
+                    <span className="scouting-goalie-val">{svFmt}</span>
+                  </div>
+                  <div className="scouting-goalie-stat">
+                    <span className="scouting-goalie-label">
+                      GSAx <InfoTip text={gsax?.note || 'Goals saved above expected vs league avg .900 SV%'} position="above" />
+                    </span>
+                    <span className="scouting-goalie-val" style={{color: gsax?.color}}>
+                      {gsax ? gsax.label : '—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 };
