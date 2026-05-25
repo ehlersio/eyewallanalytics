@@ -742,7 +742,7 @@ function GameStatsPopup({ game, onClose }) {
                   }
                 }}
               >
-                ↗ Share
+                ↗ Share summary
               </button>
             </div>
           )}

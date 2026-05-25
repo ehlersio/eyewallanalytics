@@ -88,6 +88,13 @@ export default function AboutPopup() {
             <span>Built with 🌀 for Canes Nation</span>
             <span className="about-version">Data via NHL API</span>
           </div>
+
+          <div className="about-contact">
+            For all inquiries:{' '}
+            <a href="mailto:matt@eyewallanalytics.com" className="about-email">
+              matt@eyewallanalytics.com
+            </a>
+          </div>
         </div>
       )}
     </div>
