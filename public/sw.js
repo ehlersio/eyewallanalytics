@@ -1,46 +1,52 @@
 /**
  * EyeWall Analytics — Service Worker
- * Receives Web Push notifications and displays them.
- *
- * Uses a payloadless push strategy:
- * 1. Worker sends a push with no body
- * 2. SW wakes up and fetches /api/notification to get the details
- * 3. SW displays the notification
- *
- * This avoids the complexity of RFC 8291 payload encryption.
+ * Receives Web Push and fetches notification details directly from the Worker.
  */
+
+// Worker URL — safe to hardcode, not a secret
+const WORKER_URL = 'https://eyewall-poller.billowing-queen-bf23.workers.dev';
+const SW_VERSION = '1.1'; // bump to force SW update
 
 self.addEventListener('install',  () => self.skipWaiting());
 self.addEventListener('activate', e  => e.waitUntil(self.clients.claim()));
 
-// ── Push received ─────────────────────────────────────────────
 self.addEventListener('push', e => {
-  const showNotification = async () => {
-    let data = { title: 'EyeWall Analytics', body: 'New update' };
-
-    // Try to get notification details from our API
-    try {
-      const res = await fetch('/api/notification', { cache: 'no-store' });
-      if (res.ok) data = await res.json();
-    } catch { /* use defaults */ }
-
-    const { title = 'EyeWall Analytics', body = '', tag, url = '/' } = data;
-
-    await self.registration.showNotification(title, {
-      body,
-      icon:     '/favicon-192.png',
-      badge:    '/favicon-32.png',
-      tag:      tag || 'eyewall',
-      renotify: true,
-      data:     { url },
-      vibrate:  [200, 100, 200],
-    });
-  };
-
   e.waitUntil(showNotification());
 });
 
-// ── Notification clicked ──────────────────────────────────────
+async function showNotification() {
+  // Fetch latest notification from Worker KV
+  let title = 'EyeWall Analytics';
+  let body  = 'New update from the Canes!';
+  let tag   = 'eyewall';
+  let url   = '/';
+
+  try {
+    const res = await fetch(`${WORKER_URL}/cache/latest-notification`, {
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const data = await res.json();
+      title = data.title || title;
+      body  = data.body  || body;
+      tag   = data.tag   || tag;
+      url   = data.url   || url;
+    }
+  } catch (err) {
+    console.error('[SW] Failed to fetch notification:', err);
+  }
+
+  return self.registration.showNotification(title, {
+    body,
+    icon:     '/favicon-192.png',
+    badge:    '/favicon-32.png',
+    tag,
+    renotify: true,
+    data:     { url },
+    vibrate:  [200, 100, 200],
+  });
+}
+
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   const targetUrl = e.notification.data?.url || '/';
