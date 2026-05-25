@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import { savePrediction, getPredictionStats } from '../utils/predictionStore';
 import ScoutingTab from '../components/ScoutingTab';
