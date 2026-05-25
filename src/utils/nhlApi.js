@@ -10,9 +10,9 @@ const BASE = '/nhl-api/v1';
 // e.g. https://eyewall-poller.YOUR_SUBDOMAIN.workers.dev
 // When set, hot data (schedule, live PBP, boxscore, standings) is served from KV
 // instead of hitting the NHL API per user — dramatically reduces API load during games.
-const WORKER_URL = (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_WORKER_URL)
-  ? import.meta.env.VITE_WORKER_URL
-  : null;
+// Vite replaces import.meta.env.VITE_* at build time with the literal string value.
+// Set VITE_WORKER_URL in Cloudflare Pages → Settings → Environment variables.
+const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
 
 const CAR_TEAM_ID = 12;
 const CAR_ABBR    = 'CAR';
