@@ -61,6 +61,7 @@ export default function IceRink({ events = [], roster = {} }) {
   const [period,      setPeriod]      = useState('all');
   const [viewMode,    setViewMode]    = useState('dots'); // 'dots' | 'heat'
   const [heatTeam,    setHeatTeam]    = useState('both'); // 'car' | 'opp' | 'both'
+  const [selectedPlayer, setSelectedPlayer] = useState(null); // playerId string or null = all
   const [hovered,     setHovered]     = useState(null);   // { event, svgX, svgY, screenX, screenY }
   const [selected,    setSelected]    = useState(null);   // full event object for popup
   const [zoom,        setZoom]        = useState(1);
@@ -228,8 +229,17 @@ export default function IceRink({ events = [], roster = {} }) {
   }
 
   const viewBox = showHalf ? `${CX} 0 ${W/2} ${H}` : `0 0 ${W} ${H}`;
-  const canesEvents = filtered.filter(e => e.isCanes);
-  const oppEvents   = filtered.filter(e => !e.isCanes);
+  const canesEvents = filtered.filter(e =>
+    e.isCanes && (selectedPlayer === null || String(e.shooterId) === selectedPlayer)
+  );
+  const oppEvents    = filtered.filter(e => !e.isCanes);
+  // Unique CAR shooters for player filter chips
+  const carShooters  = useMemo(() => {
+    const seen = new Set();
+    return filtered
+      .filter(e => e.isCanes && e.shooterId && !seen.has(e.shooterId) && seen.add(e.shooterId))
+      .map(e => ({ id: String(e.shooterId), name: e.shooterName || `#${e.shooterId}` }));
+  }, [filtered]);
 
   return (
     <div className="ice-rink-wrap" ref={wrapRef}>
@@ -240,7 +250,7 @@ export default function IceRink({ events = [], roster = {} }) {
           {/* Regular periods always shown */}
           {['all','1','2','3'].map(p => (
             <button key={p} className={`rink-btn ${period === p ? 'on' : ''}`}
-              onClick={() => setPeriod(p)}>
+              onClick={() => { setPeriod(p); setSelectedPlayer(null); }}>
               {p === 'all' ? 'All' : `P${p}`}
             </button>
           ))}
@@ -267,6 +277,25 @@ export default function IceRink({ events = [], roster = {} }) {
           )}
         </div>
       </div>
+
+      {/* Player filter chips — shown when there are CAR shots with player data */}
+      {carShooters.length > 0 && (
+        <div className="rink-player-chips">
+          <button
+            className={`rink-chip${selectedPlayer === null ? ' active' : ''}`}
+            onClick={() => setSelectedPlayer(null)}
+          >All</button>
+          {carShooters.map(s => (
+            <button
+              key={s.id}
+              className={`rink-chip${selectedPlayer === s.id ? ' active' : ''}`}
+              onClick={() => setSelectedPlayer(prev => prev === s.id ? null : s.id)}
+            >
+              {s.name.split(' ').pop()}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Zoom controls */}
       <div className="zoom-bar">

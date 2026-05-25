@@ -11,7 +11,6 @@ import IceRink from '../components/IceRink';
 import { GoalPopup, PenaltyPopup, WinPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import InfoTip from '../components/InfoTip';
-import PlayerHeatMap from '../components/PlayerHeatMap';
 import { StatBar, MetCard, MetCardSkeleton } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
 import './ShotMapView.css';
@@ -147,7 +146,6 @@ export default function ShotMapView() {
 
   // Stat drill-down state
   const [drillStat,     setDrillStat]     = useState(null);
-  const [selectedPlayer, setSelectedPlayer] = useState(null); // playerId or null (all) // { label, rows }
 
   // Build drill-down data from play-by-play
   const buildDrillDown = useCallback((statKey) => {
@@ -472,52 +470,6 @@ export default function ShotMapView() {
             <IceRink events={shotEvents} roster={roster || {}} />
           </div>
 
-          {/* Player heat map — only when we have PBP data */}
-          {pbp?.plays && shotEvents.length > 0 && (
-            <div className="card">
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
-                <div className="sec-label" style={{marginBottom:0}}>Shot heat map</div>
-                <InfoTip position="above"
-                  text="Yellow dots = goals. Red dots = other shots. Heat shows shot density. Select a player to see their shots only." />
-              </div>
-
-              {/* Player selector chips */}
-              <div className="hm-player-chips">
-                <button
-                  className={`hm-chip${!selectedPlayer ? ' active' : ''}`}
-                  onClick={() => setSelectedPlayer(null)}
-                >All CAR</button>
-                {(() => {
-                  const seen = new Set();
-                  const playerMap = pbp ? buildPlayerMap(pbp) : {};
-                  return shotEvents
-                    .filter(e => e.isCanes && e.shooterId && !seen.has(e.shooterId) && seen.add(e.shooterId))
-                    .map(e => {
-                      const name = playerMap[String(e.shooterId)] || e.shooterName;
-                      const lastName = name ? name.split(' ').pop() : `#${e.shooterId}`;
-                      return (
-                        <button key={e.shooterId}
-                          className={`hm-chip${selectedPlayer === e.shooterId ? ' active' : ''}`}
-                          onClick={() => setSelectedPlayer(
-                            selectedPlayer === e.shooterId ? null : e.shooterId
-                          )}>
-                          {lastName}
-                        </button>
-                      );
-                    });
-                })()}
-              </div>
-
-              <PlayerHeatMap
-                events={shotEvents}
-                playerId={selectedPlayer}
-                playerName={selectedPlayer && pbp
-                  ? (buildPlayerMap(pbp)[String(selectedPlayer)] || null)
-                  : null}
-                showAll={!selectedPlayer}
-              />
-            </div>
-          )}
 
           {/* On-ice players — only shown during live games */}
           {isLive && onIcePlayers && onIcePlayers.car?.length > 0 && (
