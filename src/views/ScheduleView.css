@@ -1379,3 +1379,39 @@
 }
 .md-tab:hover  { color: var(--text-muted); }
 .md-tab.active { color: var(--red-bright); border-bottom-color: var(--red-bright); }
+
+/* ── AI Game Summary Card ── */
+.gp-summary-card {
+  background: linear-gradient(135deg, var(--bg2) 0%, rgba(204,34,0,0.06) 100%);
+  border: 0.5px solid rgba(204,34,0,0.25);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.gp-summary-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.gp-summary-label {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-dim);
+}
+.gp-summary-badge {
+  font-size: 9px; font-weight: 700;
+  background: rgba(204,34,0,0.15);
+  color: var(--red-bright);
+  padding: 2px 7px; border-radius: 10px;
+  letter-spacing: 0.04em;
+}
+.gp-summary-narrative {
+  font-size: 13px; line-height: 1.6;
+  color: var(--text); margin: 0 0 12px;
+}
+.gp-summary-chips {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.gp-summary-chip {
+  font-size: 11px; font-weight: 600;
+  background: var(--bg3); color: var(--text-muted);
+  padding: 3px 8px; border-radius: 6px;
+}

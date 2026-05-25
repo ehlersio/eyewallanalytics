@@ -554,6 +554,17 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
 function GameStatsPopup({ game, onClose }) {
   const { data, loading } = useFetch(() => getCompletedGameStats(game.id), [game.id]);
   const [skaterTeam, setSkaterTeam] = useState('car');
+  const [summary, setSummary]       = useState(null);
+
+  // Fetch AI-generated summary from Worker KV
+  useEffect(() => {
+    const workerUrl = import.meta.env.VITE_WORKER_URL;
+    if (!workerUrl || !game?.id) return;
+    fetch(`${workerUrl}/cache/${encodeURIComponent(`summary:${game.id}`)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.narrative) setSummary(d); })
+      .catch(() => {});
+  }, [game?.id]);
 
   const opp      = getOpponent(game);
   const oppAbbr  = opp?.abbrev || 'OPP';
@@ -689,6 +700,33 @@ function GameStatsPopup({ game, onClose }) {
         </div>
 
         <div className="gp-body">
+          {/* ── AI Game Summary Card ── */}
+          {summary && (
+            <div className="gp-summary-card">
+              <div className="gp-summary-header">
+                <span className="gp-summary-label">Game Summary</span>
+                <span className="gp-summary-badge">⚡ EyeWall AI</span>
+              </div>
+              <p className="gp-summary-narrative">{summary.narrative}</p>
+              <div className="gp-summary-chips">
+                <span className="gp-summary-chip" style={{color: summary.cfPct >= 50 ? 'var(--green)' : 'var(--red-bright)'}}>
+                  CF% {summary.cfPct}%
+                </span>
+                {summary.topScorer && (
+                  <span className="gp-summary-chip">🚨 {summary.topScorer.split(' ').pop()}</span>
+                )}
+                {summary.carGoalie && (
+                  <span className="gp-summary-chip">
+                    🥅 {summary.carGoalie.name.split(' ').pop()} {summary.carGoalie.svPct}%
+                  </span>
+                )}
+                <span className="gp-summary-chip" style={{color: summary.won ? 'var(--green)' : 'var(--red-bright)'}}>
+                  {summary.won ? '✓ W' : '✗ L'} {summary.carScore}–{summary.oppScore}
+                </span>
+              </div>
+            </div>
+          )}
+
           {loading && (
             <div className="gp-loading">
               {Array.from({ length: 5 }).map((_, i) => (
