@@ -461,16 +461,6 @@ export default function ShotMapView() {
         <AdvancedGamePanel pbp={pbp} gameHome={gameHome} isLive={isLive} boxscore={boxscore} />
       )}
 
-      {/* ── Context label — reg season vs playoff ── */}
-      <div className="context-banner">
-        <span className={`context-pill ${inPlayoffs ? 'playoffs' : 'regular'}`}>
-          {inPlayoffs ? '🏒 Playoffs' : '📅 Regular season'}
-        </span>
-        <span className="context-game-label">
-          {activeIsPlayoff ? 'Playoff game' : 'Regular season game'}
-          {activeGame ? ` · ${isHomeGame(activeGame) ? 'Home' : 'Away'} vs ${oppAbbr}` : ''}
-        </span>
-      </div>
 
       <div className="two-col">
         {/* ── Left: rink + event log ── */}

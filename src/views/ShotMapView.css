@@ -374,14 +374,16 @@
 
 /* ── Advanced Game Panel chips ── */
 .adv-chips-row {
-  display: flex; gap: 8px; flex-wrap: wrap;
+  display: flex; gap: 8px; flex-wrap: nowrap;
+  justify-content: space-between;
   margin-top: 10px; padding-top: 8px;
   border-top: 0.5px solid var(--border);
 }
 .adv-chip {
   display: flex; flex-direction: column; align-items: center;
   background: var(--bg3); border-radius: 8px;
-  padding: 6px 10px; min-width: 52px;
+  padding: 6px 10px;
+  flex: 1;
   cursor: help;
 }
 .adv-chip-label { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
