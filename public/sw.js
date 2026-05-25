@@ -1,47 +1,57 @@
 /**
  * EyeWall Analytics — Service Worker
  * Receives Web Push notifications and displays them.
- * Lives at /sw.js (served from public/ folder).
+ *
+ * Uses a payloadless push strategy:
+ * 1. Worker sends a push with no body
+ * 2. SW wakes up and fetches /api/notification to get the details
+ * 3. SW displays the notification
+ *
+ * This avoids the complexity of RFC 8291 payload encryption.
  */
 
-const CACHE_NAME = 'eyewall-v1';
-
-// ── Install + activate ────────────────────────────────────────
 self.addEventListener('install',  () => self.skipWaiting());
 self.addEventListener('activate', e  => e.waitUntil(self.clients.claim()));
 
-// ── Push event — show notification ───────────────────────────
+// ── Push received ─────────────────────────────────────────────
 self.addEventListener('push', e => {
-  let data = {};
-  try { data = e.data?.json() || {}; } catch { data = { title: 'EyeWall Analytics', body: e.data?.text() || '' }; }
+  const showNotification = async () => {
+    let data = { title: 'EyeWall Analytics', body: 'New update' };
 
-  const { title = 'EyeWall Analytics', body = '', icon, badge, tag, url = '/', data: extraData } = data;
+    // Try to get notification details from our API
+    try {
+      const res = await fetch('/api/notification', { cache: 'no-store' });
+      if (res.ok) data = await res.json();
+    } catch { /* use defaults */ }
 
-  e.waitUntil(
-    self.registration.showNotification(title, {
+    const { title = 'EyeWall Analytics', body = '', tag, url = '/' } = data;
+
+    await self.registration.showNotification(title, {
       body,
-      icon:  icon  || '/favicon-192.png',
-      badge: badge || '/favicon-32.png',
-      tag,                          // same tag = replace previous (e.g. live score updates)
-      renotify: !!tag,              // buzz again even if replacing same-tag notification
-      data: { url, ...extraData },
-      vibrate: [200, 100, 200],     // short buzz pattern
-    })
-  );
+      icon:     '/favicon-192.png',
+      badge:    '/favicon-32.png',
+      tag:      tag || 'eyewall',
+      renotify: true,
+      data:     { url },
+      vibrate:  [200, 100, 200],
+    });
+  };
+
+  e.waitUntil(showNotification());
 });
 
-// ── Notification click — open/focus the app ───────────────────
+// ── Notification clicked ──────────────────────────────────────
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   const targetUrl = e.notification.data?.url || '/';
 
   e.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
-      // Focus existing tab if already open
-      const existing = clients.find(c => c.url.includes(self.location.origin));
-      if (existing) return existing.focus().then(c => c.navigate(targetUrl));
-      // Otherwise open a new tab
-      return self.clients.openWindow(targetUrl);
-    })
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then(clients => {
+        const existing = clients.find(c => c.url.includes(self.location.origin));
+        if (existing) return existing.focus().then(c => c.navigate(targetUrl));
+        return self.clients.openWindow(targetUrl);
+      })
   );
 });
