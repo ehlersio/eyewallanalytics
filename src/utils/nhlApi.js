@@ -586,11 +586,11 @@ export function getOppScore(game) {
 }
 
 // ─── OPPONENT SCOUTING ───────────────────────────────────────
-export async function getTeamRecentGames(teamAbbr, count = 10) {
-  return cached(`recentGames:${teamAbbr}:${count}`, async () => {
+export async function getTeamRecentGames(teamAbbr, count = 10, playoffsOnly = false) {
+  return cached(`recentGames:${teamAbbr}:${count}:${playoffsOnly}`, async () => {
     const data = await nhlFetch(`${BASE}/club-schedule-season/${teamAbbr}/${SEASON}`);
     const games = (data?.games || [])
-      .filter(g => isCompleted(g))
+      .filter(g => isCompleted(g) && (!playoffsOnly || g.gameType === 3))
       .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate))
       .slice(0, count);
     return games.map(g => {
@@ -607,9 +607,9 @@ export async function getTeamRecentGames(teamAbbr, count = 10) {
   }, TTL.SCHEDULE);
 }
 
-export async function getTeamTopPlayers(teamAbbr) {
-  return cached(`topPlayers:${teamAbbr}`, async () => {
-    const data = await nhlFetch(`${BASE}/club-stats/${teamAbbr}/${SEASON}/2`);
+export async function getTeamTopPlayers(teamAbbr, gameType = 2) {
+  return cached(`topPlayers:${teamAbbr}:${gameType}`, async () => {
+    const data = await nhlFetch(`${BASE}/club-stats/${teamAbbr}/${SEASON}/${gameType}`);
     const skaters = (data?.skaters || [])
       .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
       .slice(0, 5)

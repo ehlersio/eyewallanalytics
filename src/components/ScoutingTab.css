@@ -1,93 +1,112 @@
 /* ── Opponent Scouting Tab ── */
-.scouting-wrap {
-  display: flex; flex-direction: column; gap: 2px;
+.scouting-wrap { display: flex; flex-direction: column; gap: 2px; }
+
+.scouting-playoff-badge {
+  font-size: 10px; font-weight: 700;
+  color: var(--amber); background: rgba(240,160,48,0.1);
+  border-radius: 6px; padding: 4px 10px;
+  text-align: center; margin-bottom: 6px;
 }
 
-.scouting-header {
-  display: flex; align-items: center; gap: 12px;
-  padding: 4px 0 12px;
+/* Team headers */
+.scouting-teams-header {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: center; gap: 8px;
+  padding: 8px 0 12px;
   border-bottom: 0.5px solid var(--border);
   margin-bottom: 4px;
 }
-.scouting-team-name {
-  font-family: var(--font-display); font-size: 22px; font-weight: 900;
-  letter-spacing: 0.04em;
+.scouting-team-col {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
-.scouting-record { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.scouting-team-abbr {
+  font-family: var(--font-display); font-size: 18px; font-weight: 900;
+}
+.scouting-team-record { font-size: 11px; color: var(--text-muted); }
+.scouting-vs {
+  font-size: 11px; color: var(--text-dim); font-weight: 600;
+}
 
+/* Sections */
 .scouting-section { padding: 10px 0; border-bottom: 0.5px solid var(--border); }
 .scouting-section:last-child { border-bottom: none; }
 .scouting-section-label {
   font-size: 9px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.08em; color: var(--text-dim);
   margin-bottom: 8px;
-  display: flex; align-items: center; gap: 4px;
 }
 
-/* Stat grid */
-.scouting-stat-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+/* Comparison rows */
+.scouting-compare-header {
+  display: grid; grid-template-columns: 48px 1fr 48px;
+  text-align: center; font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-bottom: 6px; color: var(--text-dim);
 }
-.scouting-stat-cell {
-  background: var(--bg2); border-radius: 8px;
-  padding: 7px 8px; text-align: center;
+.scouting-compare-row {
+  display: grid; grid-template-columns: 48px 1fr 48px;
+  align-items: center; gap: 6px;
+  padding: 4px 0;
 }
-.scouting-stat-label {
-  font-size: 9px; color: var(--text-dim); text-transform: uppercase;
-  letter-spacing: 0.05em; margin-bottom: 3px;
-  display: flex; align-items: center; justify-content: center; gap: 2px;
+.scouting-compare-car  { font-family: var(--font-mono); font-size: 12px; font-weight: 700; text-align: left; }
+.scouting-compare-opp  { font-family: var(--font-mono); font-size: 12px; font-weight: 700; text-align: right; }
+.scouting-compare-mid  { display: flex; flex-direction: column; gap: 3px; }
+.scouting-compare-label {
+  font-size: 10px; color: var(--text-dim); text-align: center;
+  display: flex; align-items: center; justify-content: center; gap: 3px;
 }
-.scouting-stat-val {
-  font-family: var(--font-mono); font-size: 13px; font-weight: 700;
-  color: var(--text);
+.scouting-compare-bar {
+  height: 4px; border-radius: 2px; background: var(--bg3);
+  display: flex; overflow: hidden;
 }
+.scouting-bar-car { background: var(--red-bright); border-radius: 2px 0 0 2px; }
+.scouting-bar-opp { background: var(--text-dim); border-radius: 0 2px 2px 0; }
 
-/* Recent form dots */
-.scouting-form-dots {
-  display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;
+/* Recent form side by side */
+.scouting-form-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
 }
+.scouting-form-col { display: flex; flex-direction: column; gap: 5px; }
+.scouting-form-team { font-size: 10px; font-weight: 700; }
+.scouting-form-dots { display: flex; gap: 3px; flex-wrap: wrap; }
 .scouting-dot {
-  width: 26px; height: 26px; border-radius: 6px;
+  width: 22px; height: 22px; border-radius: 5px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 9px; font-weight: 700; cursor: default;
+  font-size: 8px; font-weight: 700; cursor: default;
 }
 .scouting-dot.w   { background: rgba(61,186,126,0.2); color: var(--green); }
 .scouting-dot.l   { background: rgba(204,34,0,0.2);   color: var(--red-bright); }
 .scouting-dot.otl { background: rgba(240,160,48,0.18); color: var(--amber); }
-.scouting-form-summary { font-size: 11px; color: var(--text-dim); }
+.scouting-form-summary { font-size: 10px; color: var(--text-dim); }
 
-/* Player table */
-.scouting-player-table { display: flex; flex-direction: column; gap: 0; }
+/* Players side by side */
+.scouting-players-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.scouting-players-col { display: flex; flex-direction: column; gap: 4px; }
+.scouting-players-team { font-size: 10px; font-weight: 700; margin-bottom: 2px; }
+
+.scouting-player-table { display: flex; flex-direction: column; }
 .scouting-player-header {
-  display: grid; grid-template-columns: 1fr 28px 28px 36px;
-  gap: 4px; padding: 3px 0;
-  font-size: 9px; color: var(--text-dim); text-transform: uppercase;
-  letter-spacing: 0.06em; border-bottom: 0.5px solid var(--border);
-  margin-bottom: 2px;
+  display: grid; grid-template-columns: 1fr 18px 18px 24px;
+  gap: 2px; padding: 2px 0;
+  font-size: 8px; color: var(--text-dim); text-transform: uppercase;
+  border-bottom: 0.5px solid var(--border); margin-bottom: 1px;
 }
 .scouting-player-row {
-  display: grid; grid-template-columns: 1fr 28px 28px 36px;
-  gap: 4px; padding: 5px 0; align-items: center;
+  display: grid; grid-template-columns: 1fr 18px 18px 24px;
+  gap: 2px; padding: 4px 0; align-items: center;
   border-bottom: 0.5px solid var(--border);
-  font-size: 12px; color: var(--text-muted);
+  font-size: 11px; color: var(--text-muted);
 }
 .scouting-player-row:last-child { border-bottom: none; }
-.scouting-player-name { color: var(--text); font-weight: 500; }
-.scouting-player-pos  { font-size: 9px; color: var(--text-dim); margin-left: 5px; }
-.scouting-pts { font-weight: 700; }
-
-/* Comparison grid */
-.scouting-compare-grid { display: flex; flex-direction: column; gap: 4px; }
-.scouting-compare-row {
-  display: grid; grid-template-columns: 52px 1fr 52px;
-  align-items: center; gap: 8px;
-  padding: 4px 0;
-  border-bottom: 0.5px solid var(--border);
+.scouting-goalie-row { background: rgba(255,255,255,0.02); }
+.scouting-player-name {
+  color: var(--text); font-weight: 500; font-size: 10px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.scouting-compare-row:last-child { border-bottom: none; }
-.scouting-compare-car  { font-family: var(--font-mono); font-size: 13px; font-weight: 700; text-align: left; }
-.scouting-compare-opp  { font-family: var(--font-mono); font-size: 13px; font-weight: 700; text-align: right; }
-.scouting-compare-label { font-size: 10px; color: var(--text-dim); text-align: center; }
+.scouting-player-pos { font-size: 8px; color: var(--text-dim); margin-left: 3px; }
+.scouting-pts { font-weight: 700; }
 
 .scouting-loading { font-size: 11px; color: var(--text-dim); padding: 8px 0; }
 .scouting-empty   { font-size: 11px; color: var(--text-dim); padding: 4px 0; }

@@ -1429,3 +1429,13 @@
   transition: all 0.15s;
 }
 .gp-summary-share:hover { background: var(--bg3); color: var(--text); }
+
+/* Prediction auto-save note */
+.md-pred-note {
+  font-size: 10px; color: var(--text-dim); text-align: center;
+  margin-top: 6px;
+}
+.md-score-pred-subtext {
+  font-size: 9px; color: var(--text-dim); text-align: center; margin-top: 2px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}

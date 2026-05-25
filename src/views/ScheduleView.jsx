@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useFetch } from '../hooks/useFetch';
-import { savePrediction, getPredictionStats } from '../utils/predictionStore';
+import { savePrediction, getPredictionStats, recordOutcome } from '../utils/predictionStore';
 import ScoutingTab from '../components/ScoutingTab';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import InfoTip from '../components/InfoTip';
@@ -61,6 +61,19 @@ export default function ScheduleView() {
   });
 
   const carStanding    = standingMap[CAR_ABBR];
+
+  // Auto-record prediction outcomes for completed games
+  useEffect(() => {
+    const allGames = [...(recentGames || [])];
+    allGames.forEach(g => {
+      const isHome   = g.homeTeam?.abbrev === CAR_ABBR;
+      const carActual = isHome ? g.homeTeam?.score : g.awayTeam?.score;
+      const oppActual = isHome ? g.awayTeam?.score : g.homeTeam?.score;
+      if (carActual != null && oppActual != null && g.id) {
+        recordOutcome(g.id, carActual, oppActual);
+      }
+    });
+  }, [recentGames]);
   const playoffSeries  = buildCarPlayoffSummary(playoffGames || []);
   const poRecord       = playoffSeries.reduce((a, s) => ({
     w: a.w + s.carWins, l: a.l + s.oppWins
@@ -1421,14 +1434,18 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   }
   const carFavoured = carModelPct >= 50;
 
-  // ── Score prediction ──────────────────────────────────────
-  // Simple: base on season GF/GP, adjust by matchup factors
-  const predCarScore = Math.round(carGpg * (carScore / (carScore + oppScore || 1) * 2));
-  const predOppScore = Math.round(oppGpg * (oppScore / (carScore + oppScore || 1) * 2));
-
-  // ── Top stat leaders from standings ──────────────────────
-  const carTopScorer = carStanding?.topScorer?.name || null;
-  const carGoalies   = carStanding?.goalieStatLeader?.name || null;
+  // ── Score prediction (Pythagorean expectation) ───────────
+  // Expected goals = geometric mean of team's attack rate vs opponent's defense rate.
+  // Home teams average ~0.15 more goals, away ~0.15 less.
+  const isHomeGame_  = game?.homeTeam?.abbrev === CAR_ABBR ||
+                       game?.homeTeam?.abbrev === 'CAR';
+  const homeAdj      = isHomeGame_ ? 0.12 : -0.12;
+  const rawCarExp    = Math.sqrt(Math.max(carGpg, 0.5) * Math.max(oppGag, 0.5));
+  const rawOppExp    = Math.sqrt(Math.max(oppGpg, 0.5) * Math.max(carGag, 0.5));
+  // Clamp to realistic NHL range (1.5 – 5.0 per team)
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const predCarScore = +(clamp(rawCarExp + homeAdj, 1.5, 5.0)).toFixed(1);
+  const predOppScore = +(clamp(rawOppExp - homeAdj, 1.5, 5.0)).toFixed(1);
 
   // ── Save prediction + track record ───────────────────────
   const predStats   = getPredictionStats();
@@ -1445,7 +1462,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       </div>
 
       {mdTab === 'scouting' ? (
-        <ScoutingTab oppAbbr={oppAbbr} oppStanding={oppStanding} carStanding={carStanding} />
+        <ScoutingTab oppAbbr={oppAbbr} oppStanding={oppStanding} carStanding={carStanding} isPlayoff={game?.gameType === 3} />
       ) : (<>
       <div className="md-header">
         <div>
@@ -1495,7 +1512,18 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
         </div>
       </div>
 
-      {/* Predicted score */}
+      {/* Predicted score — auto-saved when card opens */}
+      {React.useEffect(() => {
+        savePrediction({
+          gameId:            game?.id,
+          gameDate:          game?.gameDate,
+          opponent:          oppAbbr,
+          predictedCarWin:   carFavoured,
+          predictedCarPct:   carModelPct,
+          predictedCarScore: predCarScore,
+          predictedOppScore: predOppScore,
+        });
+      }, [game?.id])}
       <div className="md-score-pred">
         <div className="md-score-pred-label">Predicted score</div>
         <div className="md-score-pred-val">
@@ -1503,20 +1531,8 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
           <span style={{color:'var(--text-dim)'}}> – </span>
           <span style={{color:oppColor}}>{oppAbbr} {predOppScore}</span>
         </div>
-        <button
-          className="md-save-pred-btn"
-          onClick={() => savePrediction({
-            gameId:          game?.id,
-            gameDate:        game?.gameDate,
-            opponent:        oppAbbr,
-            predictedCarWin: carFavoured,
-            predictedCarPct: carModelPct,
-            predictedCarScore: predCarScore,
-            predictedOppScore: predOppScore,
-          })}
-        >
-          Save prediction
-        </button>
+        <div className="md-score-pred-subtext">Expected goals projection</div>
+        <div className="md-pred-note">Prediction auto-saved · {predStats.total > 0 ? `${predStats.correct}/${predStats.total} correct (${predStats.pct}%)` : 'No results yet'}</div>
       </div>
 
       {/* Odds row */}
