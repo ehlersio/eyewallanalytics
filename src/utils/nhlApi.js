@@ -532,6 +532,7 @@ export function extractShotEvents(playByPlay) {
         shotType:     d.shotType,
         zoneCode:     d.zoneCode,
         isCanes:      d.eventOwnerTeamId === CAR_TEAM_ID,
+        shooterId:    shooterId || null,
         // Player names resolved inline from rosterSpots
         shooterName:  shooterId            ? (playerMap[shooterId]            || null) : null,
         assist1Name:  d.assist1PlayerId    ? (playerMap[d.assist1PlayerId]    || null) : null,
