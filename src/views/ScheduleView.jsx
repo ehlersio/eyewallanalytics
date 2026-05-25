@@ -1348,6 +1348,33 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   const oppAbbr = opp?.abbrev || 'OPP';
   const oppColor = TEAM_COLORS[oppAbbr] || '#7a8899';
 
+  // Auto-save prediction — must be before any early returns (Rules of Hooks)
+  React.useEffect(() => {
+    if (!game?.id || !carStanding || !oppStanding) return;
+    const cgp   = carStanding.gamesPlayed || 1;
+    const ogp   = oppStanding.gamesPlayed || 1;
+    const cGpg  = (carStanding.goalFor     ?? 0) / cgp;
+    const oGpg  = (oppStanding.goalFor     ?? 0) / ogp;
+    const cGag  = (carStanding.goalAgainst ?? 0) / cgp;
+    const oGag  = (oppStanding.goalAgainst ?? 0) / ogp;
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const isHome_ = game.homeTeam?.abbrev === 'CAR';
+    const adj     = isHome_ ? 0.12 : -0.12;
+    const pCar    = +(clamp(Math.sqrt(Math.max(cGpg,0.5)*Math.max(oGag,0.5))+adj,1.5,5.0)).toFixed(1);
+    const pOpp    = +(clamp(Math.sqrt(Math.max(oGpg,0.5)*Math.max(cGag,0.5))-adj,1.5,5.0)).toFixed(1);
+    const cPts    = carStanding.points ?? 0;
+    const oPts    = oppStanding.points ?? 0;
+    savePrediction({
+      gameId:            game.id,
+      gameDate:          game.gameDate,
+      opponent:          oppAbbr,
+      predictedCarWin:   cPts >= oPts,
+      predictedCarPct:   Math.round(cPts / (cPts + oPts + 1) * 100),
+      predictedCarScore: pCar,
+      predictedOppScore: pOpp,
+    });
+  }, [game?.id]);
+
   // Guard: if standings data unavailable show a graceful message with debug info
   if (!carStanding || !oppStanding) {
     return (
@@ -1437,6 +1464,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   }
   const carFavoured = carModelPct >= 50;
 
+
   // ── Score prediction (Pythagorean expectation) ───────────
   // Expected goals = geometric mean of team's attack rate vs opponent's defense rate.
   // Home teams average ~0.15 more goals, away ~0.15 less.
@@ -1515,18 +1543,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
         </div>
       </div>
 
-      {/* Predicted score — auto-saved when card opens */}
-      {React.useEffect(() => {
-        savePrediction({
-          gameId:            game?.id,
-          gameDate:          game?.gameDate,
-          opponent:          oppAbbr,
-          predictedCarWin:   carFavoured,
-          predictedCarPct:   carModelPct,
-          predictedCarScore: predCarScore,
-          predictedOppScore: predOppScore,
-        });
-      }, [game?.id])}
+      {/* Predicted score — auto-saved when card opens (useEffect at top of component) */}
       <div className="md-score-pred">
         <div className="md-score-pred-label">Predicted score</div>
         <div className="md-score-pred-val">
