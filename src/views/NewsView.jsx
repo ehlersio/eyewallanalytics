@@ -4,8 +4,8 @@ import './NewsView.css';
 const WORKER_URL  = import.meta.env.VITE_WORKER_URL || '';
 const SOURCE_META = {
   canescountry: { label: 'Canes Country', color: '#ffffff', bg: '#cc2200' },
+  googlenews:   { label: 'Google News',   color: '#ffffff', bg: '#4285f4' },
   espn:         { label: 'ESPN',          color: '#ffffff', bg: '#cc0000' },
-  nhl:          { label: 'NHL.com',       color: '#ffffff', bg: '#000000' },
   sportsnet:    { label: 'Sportsnet',     color: '#000000', bg: '#d4a017' },
 };
 
