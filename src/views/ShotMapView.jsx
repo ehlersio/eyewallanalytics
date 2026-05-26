@@ -177,6 +177,11 @@ export default function ShotMapView() {
 
   // Stat drill-down state
   const [drillStat,     setDrillStat]     = useState(null);
+  const [showTopBtn,    setShowTopBtn]    = useState(false);
+  const [displayClock,  setDisplayClock]  = useState(null);
+  const pageRef    = useRef(null);
+  const clockRef   = useRef(null);
+  const lastSyncRef = useRef(null);
 
   // Build drill-down data from play-by-play
   const buildDrillDown = useCallback((statKey) => {
