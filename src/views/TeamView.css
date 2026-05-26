@@ -184,7 +184,8 @@
 .cap-bar-track { position: absolute; inset: 0; }
 .cap-bar-labels { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; margin-bottom: 2px; }
 .cap-committed  { color: var(--text-muted); }
-.cap-ceiling-label { font-size: 10px; color: var(--text-dim); margin-bottom: 12px; }
+.cap-ceiling-label { font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
+.cap-data-date     { font-size: 10px; color: var(--text-dim); margin-bottom: 12px; opacity: 0.7; }
 
 .cap-table { display: flex; flex-direction: column; gap: 1px; }
 .cap-table-header {

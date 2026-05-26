@@ -6,7 +6,7 @@ import {
   getTeamCorsi, getTeamRealtime, getTeamScoreState, getTeamPowerplay, getTeamPenaltyKill,
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
 } from '../utils/nhlApi'
-import { CONTRACTS, DRAFT_PICKS, getCapSummary, CAP_CEILING, CURRENT_SEASON } from '../utils/carContracts'
+import { CONTRACTS, DRAFT_PICKS, getCapSummary, CAP_CEILING, CURRENT_SEASON, CONTRACT_DATA_DATE } from '../utils/carContracts'
 import { StatBar, MetCard } from '../components/StatBar'
 import { seasonPDO } from '../utils/advancedStats'
 import InfoTip from '../components/InfoTip'
@@ -531,6 +531,7 @@ function CapTab({ capSummary, capPct, sortedContracts, picksByYear }) {
           </span>
         </div>
         <div className="cap-ceiling-label">Cap ceiling: ${(CAP_CEILING/1_000_000).toFixed(1)}M</div>
+        <div className="cap-data-date">Data as of {CONTRACT_DATA_DATE} · Source: PuckPedia</div>
         <div className="cap-table">
           <div className="cap-table-header">
             <span>Player</span><span>Pos</span><span>Cap Hit</span>

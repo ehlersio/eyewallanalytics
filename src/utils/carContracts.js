@@ -3,6 +3,9 @@
 // Cap figures are cap hit (AAV). Salary cap = $95,500,000.
 // yearsLeft = years remaining AFTER 2025-26 (0 = expires this summer)
 
+// Update this date whenever contracts.js is manually refreshed
+export const CONTRACT_DATA_DATE = 'May 2026';
+
 export const CAP_CEILING    = 95_500_000;
 export const CAP_FLOOR      = 65_000_000;
 export const MIN_SALARY     =    775_000;
