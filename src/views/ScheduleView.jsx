@@ -1502,6 +1502,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
 
   // Odds-implied probability if available (blend: 60% model, 40% market)
   const carImplied = odds ? oddsToImplied(odds.carOdds) : null;
+  const oppImplied = odds ? oddsToImplied(odds.oppOdds) : null;
 
   const total = carScore + oppScore || 1;
   let carModelPct = Math.round((carScore / total) * 100);
