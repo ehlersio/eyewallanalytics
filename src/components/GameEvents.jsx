@@ -13,10 +13,11 @@ function playGoalHorn() {
 // ── Goal Popup ───────────────────────────────────────────────
 export function GoalPopup({ data, onClose }) {
   useEffect(() => {
+    if (!data) return; // don't play horn if no data
     playGoalHorn();
     const t = setTimeout(onClose, 8000);
     return () => clearTimeout(t);
-  }, []);
+  }, [data]);
 
   if (!data) return null;
   return (

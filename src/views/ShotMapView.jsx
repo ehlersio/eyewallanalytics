@@ -14,6 +14,7 @@ import InfoTip from '../components/InfoTip';
 import { StatBar, MetCard, MetCardSkeleton } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
 import './ShotMapView.css';
+import { publishClock } from '../utils/liveClockStore';
 
 const CAR_ABBR = 'CAR';
 
@@ -159,7 +160,7 @@ export default function ShotMapView() {
   const playerMapForEvents = pbp ? buildPlayerMap(pbp) : {};
   const strMapForEvents = {};
   Object.entries(playerMapForEvents).forEach(([k,v]) => { strMapForEvents[String(k)] = v; });
-  const { goalPopup, clearGoal, penaltyPopup, clearPenalty, winPopup, clearWin } =
+  const { goalPopup, clearGoalPopup, penaltyPopup, clearPenaltyPopup, winPopup, clearWinPopup } =
     useGameEvents(pbp, isLive, strMapForEvents, gameHome);
 
   // ── Compute game-level metrics from right-rail ──────────────
@@ -694,9 +695,9 @@ export default function ShotMapView() {
       </div>
     </div>
     {drillStat     && <StatDrillPopup drillStat={drillStat} onClose={() => setDrillStat(null)} />}
-    {goalPopup     && <GoalPopup    goal={goalPopup}       onDismiss={clearGoal}    />}
-    {penaltyPopup  && <PenaltyPopup penalty={penaltyPopup} onDismiss={clearPenalty} />}
-    {winPopup      && <WinPopup     score={winPopup.score} onDismiss={clearWin}     />}
+    {goalPopup     && <GoalPopup    data={goalPopup}       onClose={clearGoalPopup}    />}
+    {penaltyPopup  && <PenaltyPopup data={penaltyPopup}    onClose={clearPenaltyPopup} />}
+    {winPopup      && <WinPopup     data={winPopup}        onClose={clearWinPopup}     />}
 
       {/* ── Back to top button ── */}
       {showTopBtn && (

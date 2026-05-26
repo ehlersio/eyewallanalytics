@@ -4,6 +4,7 @@ import TeamLogo from './TeamLogo';
 import { TEAM_COLORS } from '../utils/nhlApi';
 import './Topbar.css';
 import AboutPopup from './AboutPopup';
+import { subscribeClock } from '../utils/liveClockStore';
 import NotificationBell from './NotificationBell';
 
 const POLL_LIVE_MS = 10_000;      // 10s — matches ShotMapView
@@ -50,16 +51,14 @@ export default function Topbar() {
       const game = await getLiveGame();
       setLiveGame(game);
       if (game?.id) {
-        bustLiveGameCache(game.id); // force fresh data, bypass module cache
+        bustLiveGameCache(game.id); // bypass module cache
         const pbp = await getGameDetail(game.id).catch(() => null);
         if (pbp) {
           const meta = { period: pbp.periodDescriptor, clock: pbp.clock };
           setLiveMeta(meta);
-          // Resync countdown from fresh server data
           if (!pbp.clock?.inIntermission && pbp.clock?.timeRemaining) {
             startCountdown(pbp.clock.timeRemaining);
           } else {
-            // In intermission — just show static time, stop countdown
             if (clockRef.current) clearInterval(clockRef.current);
             setDisplayClock(pbp.clock?.timeRemaining || null);
           }
@@ -72,6 +71,20 @@ export default function Topbar() {
       scheduleNext(!!game);
     } catch { /* ignore */ }
   }
+
+  // Subscribe to clock published by ShotMapView (most authoritative source)
+  useEffect(() => {
+    const unsub = subscribeClock(({ timeRemaining, inIntermission }) => {
+      if (!timeRemaining) return;
+      if (inIntermission) {
+        if (clockRef.current) clearInterval(clockRef.current);
+        setDisplayClock(timeRemaining);
+      } else {
+        startCountdown(timeRemaining);
+      }
+    });
+    return unsub;
+  }, []);
 
   useEffect(() => {
     if (Date.now() > SEASON_END.getTime()) return;
