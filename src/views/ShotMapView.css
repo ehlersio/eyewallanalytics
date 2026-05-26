@@ -22,11 +22,24 @@
 /* ── Metrics grid ── */
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 8px;
   margin-bottom: 10px;
 }
-@media (max-width: 560px) { .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* Mobile: 3 on top row, 2 on bottom row */
+@media (max-width: 560px) {
+  .metrics-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  /* First 3 cards: each spans 2 of 6 columns */
+  .metrics-grid > :nth-child(1),
+  .metrics-grid > :nth-child(2),
+  .metrics-grid > :nth-child(3) { grid-column: span 2; }
+  /* Last 2 cards: each spans 3 of 6 columns */
+  .metrics-grid > :nth-child(4),
+  .metrics-grid > :nth-child(5) { grid-column: span 3; }
+}
 
 /* ── Context banner ── */
 .context-banner {
