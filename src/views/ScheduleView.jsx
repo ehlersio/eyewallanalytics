@@ -562,12 +562,29 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
         // Upcoming game
         const isSelected  = selectedGame?.id === game.id;
         const oppStanding = standingMap[opp?.abbrev] || standingMap[opp?.abbrev?.toLowerCase()];
+
+        // Quick win probability for the card chip (same model, lightweight)
+        let cardFavoured = null;
+        if (carStanding && oppStanding) {
+          const cgp = carStanding.gamesPlayed || 1;
+          const ogp = oppStanding.gamesPlayed || 1;
+          let cs = 0, os = 0;
+          if ((carStanding.goalFor ?? 0)/cgp > (oppStanding.goalFor ?? 0)/ogp) cs += 0.7; else os += 0.7;
+          if ((carStanding.goalAgainst ?? 0)/cgp < (oppStanding.goalAgainst ?? 0)/ogp) cs += 0.7; else os += 0.7;
+          if ((carStanding.shotsForPerGame||0) > (oppStanding.shotsForPerGame||0)) cs += 0.5; else os += 0.5;
+          if (game.homeTeam?.abbrev === 'CAR') cs += 0.25; else os += 0.25;
+          const t = cs + os || 1;
+          const pct = Math.round(cs / t * 100);
+          cardFavoured = { favoured: pct >= 50, pct };
+        }
+
         return (
           <div key={game.id}>
             <GameCard
               game={game}
               isCompleted={false}
               isSelected={isSelected}
+              cardFavoured={cardFavoured}
               onClick={() => setSelectedGame(isSelected ? null : game)}
             />
             {isSelected && oppStanding && carStanding && (
@@ -1301,7 +1318,7 @@ function SortBar({ sortOrder, setSortOrder, completedCount, upcomingCount, label
 
 // ── Shared game card ─────────────────────────────────────────
 
-function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds }) {
+function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, cardFavoured }) {
   const home     = isHomeGame(game);
   const opp      = getOpponent(game);
   const oppColor = TEAM_COLORS[opp?.abbrev] || '#7a8899';
@@ -1355,7 +1372,14 @@ function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds }) {
         </div>
       </div>
       {!isCompleted && (
-        <div className="gc-expand-hint">{isSelected ? '▲ Close' : '▼ Matchup breakdown'}</div>
+        <div className="gc-bottom-row">
+          {cardFavoured && (
+            <span className={`gc-favoured-chip ${cardFavoured.favoured ? 'fav' : 'dog'}`}>
+              {cardFavoured.favoured ? `✓ CAR ${cardFavoured.pct}%` : `⚠ ${opp?.abbrev} ${100 - cardFavoured.pct}%`}
+            </span>
+          )}
+          <span className="gc-expand-hint">{isSelected ? '▲ Close' : '▼ Matchup breakdown'}</span>
+        </div>
       )}
     </div>
   );
@@ -1595,12 +1619,6 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
           <span style={{ color: 'var(--red-bright)' }}>CAR</span>
           <span style={{ color: oppColor }}>{oppAbbr}</span>
         </div>
-        <div style={{ marginTop: 6 }}>
-          {carFavoured
-            ? <span className="pill pill-green">✓ CAR favoured</span>
-            : <span className="pill pill-red">⚠ {oppAbbr} favoured</span>
-          }
-        </div>
       </div>
 
       {/* Predicted score — auto-saved when card opens (useEffect at top of component) */}
@@ -1642,9 +1660,11 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
 
       {/* Stat comparison */}
       <div className="md-stats" style={{ marginTop: 12 }}>
-        <StatBar label="Points in standings"
-          leftPct={Math.round((carPts/(carPts+oppPts||1))*100)}
-          leftVal={`CAR ${carPts}`} rightVal={`${oppAbbr} ${oppPts}`} />
+        {!isPlayoff_ && (
+          <StatBar label="Points in standings"
+            leftPct={Math.round((carPts/(carPts+oppPts||1))*100)}
+            leftVal={`CAR ${carPts}`} rightVal={`${oppAbbr} ${oppPts}`} />
+        )}
         <StatBar label="Goals for / game"
           leftPct={Math.round((carGpg/(carGpg+oppGpg||1))*100)}
           leftVal={`CAR ${carGpg.toFixed(2)}`} rightVal={`${oppAbbr} ${oppGpg.toFixed(2)}`} />
