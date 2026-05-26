@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import { savePrediction, getPredictionStats, recordOutcome } from '../utils/predictionStore';
 import ScoutingTab from '../components/ScoutingTab';
+import InfoTip from '../components/InfoTip';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import InfoTip from '../components/InfoTip';
 import {
@@ -1446,44 +1447,83 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
     s => s.round === round && s.opponent?.abbrev === oppAbbr
   );
 
-  // ── Simple stat-based win prediction ─────────────────────
-  // Weight several factors, each contributing 0-1 points
+  // ── Multi-factor win prediction model ────────────────────
+  const isPlayoff_  = game?.gameType === 3;
+  const isHome_     = game?.homeTeam?.abbrev === 'CAR';
   let carScore = 0, oppScore = 0;
   const factors = [];
 
-  // 1. Points differential (season)
-  const ptsDiff = carPts - oppPts;
-  if (ptsDiff > 0) { carScore += Math.min(ptsDiff / 20, 1); factors.push({ label: 'Standings', carEdge: ptsDiff > 8 }); }
-  else             { oppScore += Math.min(-ptsDiff / 20, 1); factors.push({ label: 'Standings', carEdge: false }); }
-
-  // 2. Goals for advantage
-  if (carGpg > oppGpg) carScore += 0.6; else oppScore += 0.6;
+  // 1. Offence — GF/GP (weight: 0.7)
+  if (carGpg > oppGpg) carScore += 0.7; else oppScore += 0.7;
   factors.push({ label: 'Offence (GF/GP)', carEdge: carGpg >= oppGpg });
 
-  // 3. Goals against (lower is better)
-  if (carGag < oppGag) carScore += 0.6; else oppScore += 0.6;
+  // 2. Defence — GA/GP (weight: 0.7)
+  if (carGag < oppGag) carScore += 0.7; else oppScore += 0.7;
   factors.push({ label: 'Defence (GA/GP)', carEdge: carGag <= oppGag });
 
-  // 4. Power play vs penalty kill matchup
-  const ppEdge = carPP - (100 - oppPK); // positive = CAR PP better than opp PK
+  // 3. Possession proxy — shots for per game (weight: 0.5)
+  const carSF = carStanding.shotsForPerGame  || 0;
+  const oppSF = oppStanding.shotsForPerGame  || 0;
+  if (carSF > oppSF) carScore += 0.5; else oppScore += 0.5;
+  factors.push({ label: 'Possession (SOG/GP)', carEdge: carSF >= oppSF });
+
+  // 4. PP vs PK matchup (weight: 0.4)
+  const ppEdge = carPP - (100 - oppPK);
   if (ppEdge > 0) carScore += 0.4; else oppScore += 0.4;
   factors.push({ label: 'PP vs PK', carEdge: ppEdge >= 0 });
 
-  // 5. Win rate
-  if (carWin > oppWin) carScore += 0.4; else oppScore += 0.4;
-  factors.push({ label: 'Win rate', carEdge: carWin >= oppWin });
+  // 5. Standings points — regular season only (weight: 0.5)
+  if (!isPlayoff_) {
+    const ptsDiff = carPts - oppPts;
+    if (ptsDiff > 0) carScore += Math.min(ptsDiff / 20, 0.5);
+    else             oppScore += Math.min(-ptsDiff / 20, 0.5);
+    factors.push({ label: 'Standings', carEdge: carPts >= oppPts });
+  }
 
-  // Odds-implied probability if available
+  // 6. Recent form — streak (weight: 0.3)
+  const carStreak = carStanding.streakCode;
+  const oppStreak = oppStanding.streakCode;
+  if (carStreak === 'W') carScore += 0.3;
+  if (oppStreak === 'W') oppScore += 0.3;
+  if (carStreak || oppStreak) {
+    factors.push({ label: 'Recent form', carEdge: carStreak === 'W' && oppStreak !== 'W' });
+  }
+
+  // 7. Home ice (weight: 0.25)
+  if (isHome_) carScore += 0.25; else oppScore += 0.25;
+  factors.push({ label: 'Home ice', carEdge: isHome_ });
+
+  // 8. Playoff series record (playoffs only — weight: 1.0 if available)
+  if (isPlayoff_ && seriesEntry) {
+    const seriesLead = seriesEntry.carWins - seriesEntry.oppWins;
+    if (seriesLead > 0) carScore += Math.min(seriesLead * 0.5, 1.0);
+    else if (seriesLead < 0) oppScore += Math.min(-seriesLead * 0.5, 1.0);
+    factors.push({ label: 'Series lead', carEdge: seriesLead >= 0 });
+  }
+
+  // Odds-implied probability if available (blend: 60% model, 40% market)
   const carImplied = odds ? oddsToImplied(odds.carOdds) : null;
-  const oppImplied = odds ? oddsToImplied(odds.oppOdds) : null;
 
-  // Combined model: 70% our stats, 30% market odds (if available)
   const total = carScore + oppScore || 1;
   let carModelPct = Math.round((carScore / total) * 100);
   if (carImplied) {
-    carModelPct = Math.round(carModelPct * 0.7 + carImplied * 0.3);
+    carModelPct = Math.round(carModelPct * 0.6 + carImplied * 0.4);
   }
   const carFavoured = carModelPct >= 50;
+
+  const modelTooltip = [
+    'How we predict:',
+    `• GF/GP & GA/GP — offensive and defensive efficiency`,
+    `• SOG/GP — possession proxy (shot attempt share)`,
+    `• PP vs PK matchup — special teams edge`,
+    isPlayoff_ ? `• Series record — current series lead/deficit` : `• Standings points — season performance`,
+    `• Recent form — current streak`,
+    `• Home ice — ~0.25 goal advantage`,
+    carImplied ? `• Market odds — 40% weight when available` : null,
+    isPlayoff_ ? `
+Playoff mode: standings points excluded.` : null,
+  ].filter(Boolean).join('
+');
 
 
   // ── Score prediction (Pythagorean expectation) ───────────
@@ -1541,6 +1581,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       <div className="md-prediction">
         <div className="md-pred-label">
           <span>Predicted win probability</span>
+          <InfoTip text={modelTooltip} position="above" />
           {odds && <span className="md-pred-source">Stats + {odds.book} odds</span>}
           {!odds && <span className="md-pred-source">Based on season stats</span>}
         </div>
@@ -1575,6 +1616,9 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
         <div className="md-score-pred-subtext">Expected goals projection</div>
         <div className="md-pred-note">Prediction auto-saved · {predStats.total > 0 ? `${predStats.correct}/${predStats.total} correct (${predStats.pct}%)` : 'No results yet'}</div>
       </div>
+
+      {/* EyeWall AI Analysis */}
+      <PredictionAnalysis gameId={game?.id} oppAbbr={oppAbbr} oppColor={oppColor} />
 
       {/* Odds row */}
       {odds && (
@@ -1631,6 +1675,68 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
         ))}
       </div>
       </>)}
+    </div>
+  );
+}
+
+// ── EyeWall AI Prediction Analysis ───────────────────────────
+function PredictionAnalysis({ gameId, oppAbbr, oppColor }) {
+  const [analysis,  setAnalysis]  = useState(null);
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState(null);
+  const [requested, setRequested] = useState(false);
+
+  const workerUrl = import.meta.env.VITE_WORKER_URL;
+
+  // Auto-load if already cached — no button press needed
+  useEffect(() => {
+    if (!gameId || !workerUrl) return;
+    fetch(`${workerUrl}/cache/${encodeURIComponent(`prediction:${gameId}`)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.narrative) setAnalysis(d); })
+      .catch(() => {});
+  }, [gameId]);
+
+  const fetchAnalysis = async () => {
+    if (!workerUrl || !gameId) return;
+    setLoading(true);
+    setError(null);
+    setRequested(true);
+    try {
+      const res  = await fetch(`${workerUrl}/prediction/analyze?gameId=${gameId}`);
+      const data = await res.json();
+      if (data.narrative) setAnalysis(data);
+      else setError(data.error || 'Analysis unavailable');
+    } catch {
+      setError('Could not reach EyeWall AI');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!workerUrl) return null;
+
+  return (
+    <div className="md-ai-section">
+      <div className="md-ai-header">
+        <span className="md-ai-label">⚡ EyeWall AI</span>
+        <InfoTip
+          text="AI analysis synthesizes possession metrics, recent form, head-to-head record, and key matchup factors into a plain-English preview. Generated once and cached for all users."
+          position="above"
+        />
+      </div>
+
+      {analysis ? (
+        <div className="md-ai-narrative">{analysis.narrative}</div>
+      ) : loading ? (
+        <div className="md-ai-loading">Analyzing matchup…</div>
+      ) : error ? (
+        <div className="md-ai-error">{error}</div>
+      ) : (
+        <button className="md-ai-btn" onClick={fetchAnalysis}>
+          Get AI analysis
+        </button>
+      )}
     </div>
   );
 }
