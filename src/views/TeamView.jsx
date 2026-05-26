@@ -159,7 +159,7 @@ function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding
               ['PK%',        (stats.penaltyKillPct != null ? (stats.penaltyKillPct <= 1 ? (stats.penaltyKillPct*100).toFixed(1) : stats.penaltyKillPct.toFixed(1)) : '—') + '%'],
               ['SOG/GP',     stats.shotsForPerGame?.toFixed(1) ?? '—'],
               ['SA/GP',      stats.shotsAgainstPerGame?.toFixed(1) ?? '—'],
-              ['Blks/GP',    stats?.blockedShotsPerGame?.toFixed(1) ?? '—'],
+              ['Blks/GP',    realtimeReg?.blockedShots != null ? (realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1)).toFixed(1) : '—'],
             ].map(([label, val]) => (
               <div key={label} className="overview-stat-cell">
                 <div className="overview-stat-label">{label}</div>
@@ -207,8 +207,8 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, scoreState, poAdv, i
         <AdvStatRow label="Shot For% (proxy)" val={pct(corsi?.corsiForPct)} note="SOG for ÷ total SOG. ≥50% = outshooting opponents" />
         <AdvStatRow label="Shots For/GP"       val={corsi?.shotsForPerGame     ? fmt(corsi.shotsForPerGame)     : null} />
         <AdvStatRow label="Shots Against/GP"   val={corsi?.shotsAgainstPerGame ? fmt(corsi.shotsAgainstPerGame) : null} />
-        <AdvStatRow label="Blocked For/GP"     val={realtimeReg?.blockedShotsPerGame ? fmt(realtimeReg.blockedShotsPerGame) : (corsi?.blockedShotsPerGame ?? stats?.blockedShotsPerGame) ? fmt(corsi?.blockedShotsPerGame ?? stats?.blockedShotsPerGame) : null} note="Shots blocked by CAR skaters per game" />
-        <AdvStatRow label="Blocked Against/GP" val={realtimeReg?.blockedShotAttemptsPerGame ? fmt(realtimeReg.blockedShotAttemptsPerGame) : null} note="CAR shots blocked by opponents (from realtime stats)" />
+        <AdvStatRow label="Blocked For/GP"     val={realtimeReg?.blockedShots != null ? fmt(realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1)) : null} note="Shots blocked by CAR skaters per game" />
+        <AdvStatRow label="Blocked Against/GP" val={realtimeReg?.shotAttemptsBlocked != null ? fmt(realtimeReg.shotAttemptsBlocked / (realtimeReg.gamesPlayed || 1)) : null} note="CAR shots blocked by opponents per game" />
         <AdvStatRow label="Goals For/GP"       val={corsi?.goalsForPerGame     ? fmt(corsi.goalsForPerGame)     : null} />
         <AdvStatRow label="Goals Against/GP"   val={corsi?.goalsAgainstPerGame ? fmt(corsi.goalsAgainstPerGame) : null} />
       </div>
