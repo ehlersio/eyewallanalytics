@@ -283,6 +283,7 @@ export default function ShotMapView() {
 
   const gameSog      = getGameStat('sog');
   const gameHits     = getGameStat('hits');
+  const gameBlocked  = getGameStat('blocked');
   const gameFaceoff  = getGameStat('faceoff');
   const gamePP       = getGameStat('powerPlay');
 
@@ -497,6 +498,13 @@ export default function ShotMapView() {
           sub={gameHits.opp != null ? `Opp ${gameHits.opp}` : 'this game'}
           color={gameHits.car > gameHits.opp ? 'green' : null}
           onClick={pbp ? () => buildDrillDown('hits') : null}
+        />
+        <MetCard
+          label="Blocks"
+          value={gameBlocked.car ?? '—'}
+          sub={gameBlocked.opp != null ? `Opp ${gameBlocked.opp}` : 'this game'}
+          color={gameBlocked.car > gameBlocked.opp ? 'green' : null}
+          help="Shots blocked by CAR skaters"
         />
         <MetCard
           label="Faceoff %"

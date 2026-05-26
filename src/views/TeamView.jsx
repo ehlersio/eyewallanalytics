@@ -158,6 +158,7 @@ function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding
               ['PK%',        (stats.penaltyKillPct != null ? (stats.penaltyKillPct <= 1 ? (stats.penaltyKillPct*100).toFixed(1) : stats.penaltyKillPct.toFixed(1)) : '—') + '%'],
               ['SOG/GP',     stats.shotsForPerGame?.toFixed(1) ?? '—'],
               ['SA/GP',      stats.shotsAgainstPerGame?.toFixed(1) ?? '—'],
+              ['Blocks/GP',  stats.blockedShotsPerGame?.toFixed(1) ?? (stats.blockedShots && stats.gamesPlayed ? (stats.blockedShots / stats.gamesPlayed).toFixed(1) : '—')],
             ].map(([label, val]) => (
               <div key={label} className="overview-stat-cell">
                 <div className="overview-stat-label">{label}</div>
@@ -205,6 +206,7 @@ function AdvancedTab({ corsiReg, ppReg, pkReg, scoreState, poAdv, inPlayoffs }) 
         <AdvStatRow label="Shot For% (proxy)" val={pct(corsi?.corsiForPct)} note="SOG for ÷ total SOG. ≥50% = outshooting opponents" />
         <AdvStatRow label="Shots For/GP"       val={corsi?.shotsForPerGame     ? fmt(corsi.shotsForPerGame)     : null} />
         <AdvStatRow label="Shots Against/GP"   val={corsi?.shotsAgainstPerGame ? fmt(corsi.shotsAgainstPerGame) : null} />
+        <AdvStatRow label="Blocked Shots/GP"   val={corsi?.blockedShotsPerGame ? fmt(corsi.blockedShotsPerGame) : (corsi?.blockedShots && corsi?.gamesPlayed ? fmt(corsi.blockedShots / corsi.gamesPlayed) : null)} note="Shots blocked by CAR skaters per game" />
         <AdvStatRow label="Goals For/GP"       val={corsi?.goalsForPerGame     ? fmt(corsi.goalsForPerGame)     : null} />
         <AdvStatRow label="Goals Against/GP"   val={corsi?.goalsAgainstPerGame ? fmt(corsi.goalsAgainstPerGame) : null} />
       </div>

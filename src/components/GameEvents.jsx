@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import './GameEvents.css';
 
-// ── Goal horn ────────────────────────────────────────────────
+// ── Goal horn ─────────────────────────────────────────────────
 function playGoalHorn() {
   try {
     const audio = new Audio('/goal-horn.mp3');
@@ -10,10 +10,10 @@ function playGoalHorn() {
   } catch {}
 }
 
-// ── Goal Popup ───────────────────────────────────────────────
+// ── Goal Popup ────────────────────────────────────────────────
 export function GoalPopup({ data, onClose }) {
   useEffect(() => {
-    if (!data) return; // don't play horn if no data
+    if (!data) return;
     playGoalHorn();
     const t = setTimeout(onClose, 8000);
     return () => clearTimeout(t);
@@ -25,17 +25,11 @@ export function GoalPopup({ data, onClose }) {
       <div className="event-popup-inner">
         <div className="goal-siren">🚨</div>
         <div className="goal-title">GOAL!</div>
-        {data.scorer && data.scorer !== '—' && (
-          <div className="goal-scorer">{data.scorer}</div>
-        )}
+        {data.scorer && <div className="goal-scorer">{data.scorer}</div>}
         {data.assists?.length > 0 && (
-          <div className="goal-assists">
-            Assists: {data.assists.join(', ')}
-          </div>
+          <div className="goal-assists">Assists: {data.assists.join(', ')}</div>
         )}
-        {data.shotType && (
-          <div className="goal-shot">{data.shotType}</div>
-        )}
+        {data.shotType && <div className="goal-shot">{data.shotType}</div>}
         <div className="goal-period">{data.period}</div>
         <div className="event-dismiss">tap to dismiss</div>
       </div>
@@ -49,7 +43,6 @@ export function PenaltyPopup({ data, onClose }) {
 
   useEffect(() => {
     if (!data) return;
-    // initialise countdown from penalty duration in seconds
     const dur = typeof data.duration === 'number'
       ? data.duration * 60
       : parseInt(data.duration || '2') * 60;
@@ -61,12 +54,10 @@ export function PenaltyPopup({ data, onClose }) {
         return r - 1;
       });
     }, 1000);
-
     return () => clearInterval(interval);
   }, [data?.id]);
 
   if (!data) return null;
-
   const mins = Math.floor((remaining ?? 0) / 60);
   const secs = ((remaining ?? 0) % 60).toString().padStart(2, '0');
 
@@ -75,9 +66,7 @@ export function PenaltyPopup({ data, onClose }) {
       <div className="event-popup-inner">
         <div className="penalty-title">⚡ POWER PLAY</div>
         <div className="penalty-clock">{mins}:{secs}</div>
-        {data.player && data.player !== '—' && (
-          <div className="penalty-player">{data.player}</div>
-        )}
+        {data.player && <div className="penalty-player">{data.player}</div>}
         <div className="penalty-desc">{data.description}</div>
         <div className="penalty-sub">{data.duration} min · {data.period}</div>
         <div className="event-dismiss">tap to dismiss</div>
@@ -89,9 +78,10 @@ export function PenaltyPopup({ data, onClose }) {
 // ── Win Popup ─────────────────────────────────────────────────
 export function WinPopup({ data, onClose }) {
   useEffect(() => {
+    if (!data) return;
     const t = setTimeout(onClose, 12000);
     return () => clearTimeout(t);
-  }, []);
+  }, [data]);
 
   if (!data) return null;
   return (
@@ -114,8 +104,9 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
 
   const lastPlayIdx  = useRef(-1);
   const gameEndFired = useRef(false);
-  // Track which goal eventIds we've shown this session
   const shownGoals   = useRef(new Set());
+  // Track whether we were recently live (so we catch the final OT play)
+  const wasLiveRef   = useRef(false);
 
   const pName = id => {
     if (!id || !playerMap) return null;
@@ -124,12 +115,22 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
   };
   const periodLabel = n => n === 4 ? 'OT' : n === 5 ? 'SO' : `P${n}`;
 
-  // New plays → show events
+  // Track liveness — stay "active" for one extra cycle after game ends
+  // so the OT/final goal can be processed even after isLive flips false
   useEffect(() => {
-    if (!pbp?.plays?.length || !isLive) return;
+    if (isLive) wasLiveRef.current = true;
+  }, [isLive]);
+
+  // Process new plays — runs when PBP updates regardless of isLive
+  // so OT goals aren't missed when gameState flips to OFF
+  useEffect(() => {
+    if (!pbp?.plays?.length) return;
+    // Only process if we're live OR we were recently live (catch final play)
+    if (!isLive && !wasLiveRef.current) return;
+
     const plays = pbp.plays;
 
-    // On first load, skip all existing plays — only react to NEW plays going forward
+    // On first load: skip existing plays, watch only new ones going forward
     if (lastPlayIdx.current === -1) {
       lastPlayIdx.current = plays.length - 1;
       return;
@@ -143,7 +144,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
       const d   = play.details || {};
       const per = periodLabel(play.periodDescriptor?.number);
 
-      // CAR goal — only show once per unique event
+      // CAR goal — fire event, dedup by eventId
       if (play.typeDescKey === 'goal' && d.eventOwnerTeamId === 12) {
         const eventId = play.eventId || `goal-${play.sortOrder}`;
         if (!shownGoals.current.has(eventId)) {
@@ -152,7 +153,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
           const assists = [d.assist1PlayerId, d.assist2PlayerId]
             .filter(Boolean).map(pName).filter(Boolean);
           setGoalPopup({ scorer, assists, shotType: d.shotType || null, period: per });
-          return;
+          return; // one event at a time
         }
       }
 
@@ -170,27 +171,30 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
     }
   }, [pbp?.plays?.length, isLive]);
 
-  // Win detection
+  // Win detection — use PBP gameState directly, not isLive
+  // This catches wins in OT where isLive may already be false
   useEffect(() => {
-    if (!isLive || !pbp) return;
+    if (!pbp || gameEndFired.current) return;
+    if (!wasLiveRef.current) return; // only fire if we were in the game
+
     const state = pbp.gameState;
-    if (['OFF','FINAL','F'].includes(state) && !gameEndFired.current) {
+    if (!['OFF','FINAL','F','FINAL_OVERTIME','FINAL_SHOOTOUT'].includes(state)) return;
+
+    const sessionKey = `win_shown_${pbp.id || 'game'}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+
+    const homeScore = pbp.homeTeam?.score ?? 0;
+    const awayScore = pbp.awayTeam?.score ?? 0;
+    const carScore  = gameHome ? homeScore : awayScore;
+    const oppScore  = gameHome ? awayScore : homeScore;
+    const oppAbbrev = gameHome ? pbp.awayTeam?.abbrev : pbp.homeTeam?.abbrev;
+
+    if (carScore > oppScore) {
       gameEndFired.current = true;
-      const sessionKey = `win_shown_${pbp.id || 'game'}`;
-      if (sessionStorage.getItem(sessionKey)) return;
-
-      const homeScore = pbp.homeTeam?.score ?? 0;
-      const awayScore = pbp.awayTeam?.score ?? 0;
-      const carScore  = gameHome ? homeScore : awayScore;
-      const oppScore  = gameHome ? awayScore : homeScore;
-      const oppAbbrev = gameHome ? pbp.awayTeam?.abbrev : pbp.homeTeam?.abbrev;
-
-      if (carScore > oppScore) {
-        sessionStorage.setItem(sessionKey, '1');
-        setWinPopup({ score: `CAR ${carScore} – ${oppAbbrev} ${oppScore}` });
-      }
+      sessionStorage.setItem(sessionKey, '1');
+      setWinPopup({ score: `CAR ${carScore} – ${oppAbbrev} ${oppScore}` });
     }
-  }, [isLive, pbp]);
+  }, [pbp?.gameState, pbp?.plays?.length]);
 
   return {
     goalPopup,    clearGoalPopup:    () => setGoalPopup(null),
