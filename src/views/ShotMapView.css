@@ -417,3 +417,16 @@
   color: var(--red-bright);
   font-weight: 700;
 }
+
+/* ── Top button ── */
+.shotmap-top-btn {
+  position: fixed; bottom: 80px; right: 16px;
+  background: var(--bg1); border: 0.5px solid var(--border-2);
+  color: var(--text-muted); font-size: 12px; font-weight: 600;
+  padding: 8px 14px; border-radius: 20px;
+  cursor: pointer; z-index: 100;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  transition: all 0.15s;
+  min-height: unset; min-width: unset;
+}
+.shotmap-top-btn:hover { color: var(--text); background: var(--bg2); }

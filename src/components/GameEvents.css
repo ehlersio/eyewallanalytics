@@ -128,3 +128,7 @@
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.6; }
 }
+
+.penalty-title { font-size: 22px; font-weight: 900; color: var(--amber); margin-bottom: 6px; letter-spacing: 0.05em; }
+.penalty-clock { font-family: var(--font-mono); font-size: 42px; font-weight: 900; color: var(--amber); margin-bottom: 8px; }
+.penalty-sub   { font-size: 11px; color: var(--text-dim); margin-top: 4px; }

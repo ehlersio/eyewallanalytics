@@ -1,14 +1,14 @@
 /**
- * usePushNotifications — handles service worker registration,
- * permission request, and subscription management.
+ * usePushNotifications
  *
- * Returns:
- *   { supported, permission, subscribed, subscribe, unsubscribe, loading, error }
+ * Safari/iOS requirements:
+ * 1. requestPermission() + subscribe() must be called directly in a user gesture
+ * 2. iOS requires site added to Home Screen (PWA) for push to work
+ * 3. Same Web Push standard as Chrome/Firefox on iOS 16.4+
  */
 
 import { useState, useEffect, useCallback } from 'react';
 
-// Replace with your actual VAPID public key
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 const WORKER_URL       = import.meta.env.VITE_WORKER_URL       || '';
 
@@ -20,14 +20,13 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 export function usePushNotifications() {
-  const [supported,   setSupported]   = useState(false);
-  const [permission,  setPermission]  = useState('default');
-  const [subscribed,  setSubscribed]  = useState(false);
-  const [loading,     setLoading]     = useState(false);
-  const [error,       setError]       = useState(null);
-  const [swReg,       setSwReg]       = useState(null);
+  const [supported,  setSupported]  = useState(false);
+  const [permission, setPermission] = useState('default');
+  const [subscribed, setSubscribed] = useState(false);
+  const [loading,    setLoading]    = useState(false);
+  const [error,      setError]      = useState(null);
+  const [swReg,      setSwReg]      = useState(null);
 
-  // Register service worker + check existing subscription on mount
   useEffect(() => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       setSupported(false);
@@ -39,18 +38,23 @@ export function usePushNotifications() {
     navigator.serviceWorker.register('/sw.js', { scope: '/' })
       .then(reg => {
         setSwReg(reg);
+        // Wait for active SW
+        const sw = reg.active || reg.waiting || reg.installing;
+        if (sw && sw.state !== 'activated') {
+          sw.addEventListener('statechange', () => {
+            if (sw.state === 'activated') reg.pushManager.getSubscription().then(s => setSubscribed(!!s));
+          });
+        }
         return reg.pushManager.getSubscription();
       })
-      .then(existing => {
-        setSubscribed(!!existing);
-      })
+      .then(existing => { if (existing) setSubscribed(true); })
       .catch(err => {
-        console.warn('SW registration failed:', err);
-        setError('Service worker registration failed');
+        console.warn('[Push] SW registration failed:', err);
+        setSupported(false);
       });
   }, []);
 
-  // Subscribe to push notifications
+  // Must be called directly from a user gesture (button click)
   const subscribe = useCallback(async () => {
     if (!swReg || !VAPID_PUBLIC_KEY || !WORKER_URL) {
       setError('Push notifications not configured');
@@ -59,28 +63,29 @@ export function usePushNotifications() {
     setLoading(true);
     setError(null);
     try {
-      // Request permission
+      // requestPermission MUST be called synchronously in user gesture on Safari
       const perm = await Notification.requestPermission();
       setPermission(perm);
       if (perm !== 'granted') {
-        setError('Notification permission denied');
+        setError(perm === 'denied' ? 'Permission denied — enable in browser settings' : 'Permission not granted');
         return false;
       }
 
-      // Subscribe with VAPID
-      const sub = await swReg.pushManager.subscribe({
+      // Wait for active service worker (Safari can be slow)
+      const reg = await navigator.serviceWorker.ready;
+
+      const sub = await reg.pushManager.subscribe({
         userVisibleOnly:      true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
-      // Send subscription to Worker for storage
       const res = await fetch(`${WORKER_URL}/push/subscribe`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(sub.toJSON()),
       });
 
-      if (!res.ok) throw new Error('Failed to save subscription');
+      if (!res.ok) throw new Error('Failed to save subscription to server');
 
       setSubscribed(true);
       return true;
@@ -92,14 +97,13 @@ export function usePushNotifications() {
     }
   }, [swReg]);
 
-  // Unsubscribe
   const unsubscribe = useCallback(async () => {
     if (!swReg) return;
     setLoading(true);
     try {
-      const sub = await swReg.pushManager.getSubscription();
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
       if (sub) {
-        // Tell Worker to remove this subscription
         await fetch(`${WORKER_URL}/push/unsubscribe`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -45,12 +45,12 @@ async function kvFetch(key) {
   if (!WORKER_URL) return null;
   try {
     const res = await fetch(`${WORKER_URL}/cache/${encodeURIComponent(key)}`, {
-      signal: AbortSignal.timeout(3000), // 3s — fall back to direct NHL if slow
+      signal: AbortSignal.timeout(3000),
     });
-    if (!res.ok) return null;
+    if (!res.ok) return null; // 404 = not in KV yet, fall through to direct NHL
     return res.json();
   } catch {
-    return null; // Worker unavailable — fall through to direct NHL call
+    return null;
   }
 }
 
@@ -621,14 +621,13 @@ export async function getTeamTopPlayers(teamAbbr, gameType = 2) {
         points:  p.points ?? 0,
         toi:     p.avgToi,
       }));
-    if (data?.goalies?.[0]) console.log('[getTeamTopPlayers] goalie fields:', Object.keys(data.goalies[0]), 'sample:', JSON.stringify(data.goalies[0]).slice(0,200));
     const goalies = (data?.goalies || [])
       .sort((a, b) => (b.wins ?? 0) - (a.wins ?? 0))
       .slice(0, 2)
       .map(g => ({
         name:         `${g.firstName?.default || ''} ${g.lastName?.default || ''}`.trim(),
         wins:         g.wins ?? 0,
-        savePct:      g.savePctg ?? g.savePercentage ?? g.savePct ?? null,
+        savePct:      g.savePercentage ?? g.savePctg ?? null,
         gaa:          g.goalsAgainstAvg ?? 0,
         shotsAgainst: g.shotsAgainst,
         saves:        g.saves,

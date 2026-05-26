@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { usePoll, useFetch } from '../hooks/useFetch';
 import {
   getLiveGame, getGameDetail, getGameBoxscore, getGameRightRail,
@@ -36,7 +36,7 @@ export default function ShotMapView() {
 
   // Play-by-play for shot map — poll every 20s during live games
   const gameId = activeGame?.id;
-  const LIVE_POLL_MS = 20_000; // 20s — NHL updates PBP roughly every 15-30s
+  const LIVE_POLL_MS = 10_000; // 10s — faster live polling
 
   const { data: pbp } = usePoll(
     () => {
@@ -66,6 +66,37 @@ export default function ShotMapView() {
 
   // Roster for player name resolution in shot tooltips
   const { data: roster } = useFetch(() => getRoster(CAR_ABBR));
+
+  // ── Countdown clock — ticks every second between data pulls ──
+  useEffect(() => {
+    if (!isLive || !pbp?.clock?.timeRemaining) return;
+    const raw = pbp.clock.timeRemaining;
+    const [m, s] = raw.split(':').map(Number);
+    let totalSecs = m * 60 + (s || 0);
+    lastSyncRef.current = { totalSecs, syncTime: Date.now() };
+    setDisplayClock(raw);
+
+    if (clockRef.current) clearInterval(clockRef.current);
+    clockRef.current = setInterval(() => {
+      const elapsed   = Math.floor((Date.now() - lastSyncRef.current.syncTime) / 1000);
+      const remaining = Math.max(0, lastSyncRef.current.totalSecs - elapsed);
+      const mm = Math.floor(remaining / 60).toString().padStart(2, '0');
+      const ss = (remaining % 60).toString().padStart(2, '0');
+      setDisplayClock(`${mm}:${ss}`);
+      if (remaining === 0) clearInterval(clockRef.current);
+    }, 1000);
+
+    return () => { if (clockRef.current) clearInterval(clockRef.current); };
+  }, [pbp?.clock?.timeRemaining, isLive]);
+
+  // ── Scroll → show/hide top button ──
+  useEffect(() => {
+    const el = pageRef.current;
+    if (!el) return;
+    const onScroll = () => setShowTopBtn(el.scrollTop > 300);
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
 
   const shotEvents = pbp ? extractShotEvents(pbp) : [];
 
@@ -339,7 +370,7 @@ export default function ShotMapView() {
 
   return (
     <>
-    <div className="page">
+    <div className="page" ref={pageRef}>
 
       {/* ── Score bar ── */}
       <div className="score-card card">
@@ -374,7 +405,7 @@ export default function ShotMapView() {
                         {pbp.periodDescriptor?.number === 1 ? '1st' :
                          pbp.periodDescriptor?.number === 2 ? '2nd' : '3rd'} Intermission
                       </div>
-                      <div className="score-clock">{pbp.clock.timeRemaining}</div>
+                      <div className="score-clock">{displayClock || pbp.clock.timeRemaining}</div>
                     </>
                   ) : (
                     <>
@@ -385,7 +416,7 @@ export default function ShotMapView() {
                               : pbp.periodDescriptor.periodType || `P${pbp.periodDescriptor.number}`)
                           : '—'}
                       </div>
-                      <div className="score-clock">{pbp?.clock?.timeRemaining || '—'}</div>
+                      <div className="score-clock">{displayClock || pbp?.clock?.timeRemaining || '—'}</div>
                     </>
                   )}
                   <div className="score-state pill pill-red" style={{marginTop:4}}>🔴 LIVE</div>
@@ -448,7 +479,7 @@ export default function ShotMapView() {
           onClick={pbp ? () => buildDrillDown('faceoff') : null}
         />
         <MetCard
-          label={inPlayoffs ? 'PP % (season)' : 'PP %'}
+          label='PP %'
           value={teamStats?.powerPlayPct ? `${(teamStats.powerPlayPct * 100).toFixed(1)}%` : '—'}
           sub={ctxLabel}
           color="green"
@@ -763,7 +794,7 @@ function EventLog({ plays, playerMap = {} }) {
   };
 
   return (
-    <div className="event-log">
+    <div className="event-log" style={{maxHeight:'240px', overflowY:'auto'}}>
       {relevant.map((p, i) => {
         const d    = p.details || {};
         const per  = periodLabel(p.periodDescriptor?.number);
@@ -1033,3 +1064,10 @@ function humanLabel(raw) {
   if (LABEL_MAP[key]) return LABEL_MAP[key];
   return raw.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
 }
+      {showTopBtn && (
+        <button
+          className="shotmap-top-btn"
+          onClick={() => pageRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Back to top"
+        >↑ Top</button>
+      )}

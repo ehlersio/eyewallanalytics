@@ -1439,3 +1439,22 @@
   font-size: 9px; color: var(--text-dim); text-align: center; margin-top: 2px;
   text-transform: uppercase; letter-spacing: 0.06em;
 }
+
+/* Sweep badge */
+.series-sweep { font-size: 11px; font-weight: 700; color: var(--green); margin-left: 6px; }
+.series-swept { font-size: 11px; font-weight: 700; color: var(--text-dim); margin-left: 6px; }
+
+/* ── Combined round header improvements ── */
+.round-header-info {
+  display: flex; align-items: center; gap: 8px;
+}
+.round-series-opp {
+  font-size: 11px; font-weight: 600;
+}
+.round-section-right {
+  display: flex; align-items: center; gap: 6px;
+}
+.round-sweep-badge  { font-size: 14px; }
+.round-result-badge { font-size: 14px; }
+.round-result-badge.adv  { color: var(--green); }
+.round-result-badge.elim { color: var(--red-bright); }

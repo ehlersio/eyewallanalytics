@@ -105,3 +105,14 @@
   object-fit: contain;
   flex-shrink: 0;
 }
+
+/* ── Mobile: hide bell when live game showing to prevent crowding ── */
+@media (max-width: 480px) {
+  /* When live: shrink live indicator */
+  .topbar-live { padding: 4px 8px; gap: 5px; }
+  .live-clock  { display: none; }        /* hide clock on very small screens */
+  .live-score  { font-size: 12px; gap: 3px; }
+  /* Name/sub already hidden at 400px — also hide sub at 480px */
+  .topbar-sub  { display: none; }
+  .topbar-name { font-size: 13px; }
+}

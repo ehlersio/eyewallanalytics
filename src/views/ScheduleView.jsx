@@ -340,9 +340,9 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, standingMap, carSta
     );
   }
 
-  const isCompleted = g => ['OFF','FINAL','F'].includes(g.gameState);
+  const isCompletedGame = g => ['OFF','FINAL','F'].includes(g.gameState);
 
-  // Group all games by round number (decoded from game ID)
+  // Group games by round number
   const byRound = {};
   playoffGames.forEach(g => {
     const id = String(g.id);
@@ -352,7 +352,6 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, standingMap, carSta
     byRound[round].push(g);
   });
 
-  // Sort rounds descending so current/highest round is first
   const roundNums = Object.keys(byRound).map(Number).sort((a,b) => b - a);
   const maxRound  = roundNums[0] || 1;
 
@@ -361,96 +360,113 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, standingMap, carSta
     3: 'Conference Finals', 4: 'Stanley Cup Final',
   };
 
-  // Series cards sorted highest round first
-  const sortedSeries = [...playoffSeries].sort((a,b) => b.round - a.round);
+  // Build series map keyed by round
+  const seriesByRound = {};
+  playoffSeries.forEach(s => { seriesByRound[s.round] = s; });
 
-  // Collapsed state: older rounds (not the current/highest) are collapsed by default
-  const [collapsed, setCollapsed] = useState(() =>
+  // Collapsed: older rounds collapsed by default, current open
+  const [collapsed, setCollapsed] = React.useState(() =>
     Object.fromEntries(roundNums.map(r => [r, r < maxRound]))
   );
-  function toggleRound(r) {
-    setCollapsed(prev => ({ ...prev, [r]: !prev[r] }));
-  }
+  const toggleRound = r => setCollapsed(prev => ({ ...prev, [r]: !prev[r] }));
 
   return (
     <div>
-      {/* Series summary cards — current round first */}
-      {sortedSeries.map((series, i) => (
-        <SeriesCard key={i} series={series} />
-      ))}
-
-      {/* Games grouped by round, collapsible, current round open */}
       {roundNums.map(round => {
-        const roundGames = byRound[round];
-        const done    = roundGames.filter(isCompleted);
-        const pending = roundGames.filter(g => !isCompleted(g))
+        const roundGames  = byRound[round];
+        const done        = roundGames.filter(isCompletedGame);
+        const pending     = roundGames.filter(g => !isCompletedGame(g))
           .sort((a,b) => new Date(a.gameDate) - new Date(b.gameDate));
-
-        // Upcoming first, completed newest-first after
-        const sortedDone   = [...done].sort((a,b) => new Date(b.gameDate) - new Date(a.gameDate));
+        const sortedDone  = [...done].sort((a,b) => new Date(b.gameDate) - new Date(a.gameDate));
         const displayGames = [...pending, ...sortedDone];
         const isCollapsed  = collapsed[round];
+        const isCurrent    = round === maxRound;
+        const series       = seriesByRound[round];
         const winsCAR      = done.filter(g => getCarScore(g) > getOppScore(g)).length;
         const winsOpp      = done.filter(g => getCarScore(g) < getOppScore(g)).length;
-        const isCurrent    = round === maxRound;
 
         return (
           <div key={round} className="round-section">
+
+            {/* Collapsible header — contains series info */}
             <button
               className={`round-section-header ${isCurrent ? 'current' : 'older'}`}
               onClick={() => toggleRound(round)}
+              aria-expanded={!isCollapsed}
             >
               <div className="round-section-left">
                 <span className="round-collapse-icon">{isCollapsed ? '▶' : '▼'}</span>
-                <span className="round-section-label">
-                  {ROUND_LABELS[round] || `Round ${round}`}
-                </span>
+                <div className="round-header-info">
+                  <span className="round-section-label">
+                    {ROUND_LABELS[round] || `Round ${round}`}
+                  </span>
+                  {series && (
+                    <span className="round-series-opp" style={{ color: TEAM_COLORS[series.opponent?.abbrev] || 'var(--text-dim)' }}>
+                      vs {series.opponent?.abbrev}
+                    </span>
+                  )}
+                </div>
                 {isCurrent && pending.length > 0 && (
                   <span className="round-live-pill">In progress</span>
                 )}
               </div>
-              <span className="round-section-record">
-                {winsCAR}–{winsOpp}
-                {pending.length > 0 && ` · ${pending.length} upcoming`}
-              </span>
+              <div className="round-section-right">
+                <span className="round-section-record">{winsCAR}–{winsOpp}</span>
+                {series?.carWins === 4 && series?.oppWins === 0 && (
+                  <span className="round-sweep-badge">🧹</span>
+                )}
+                {series && !series.isActive && (
+                  <span className={`round-result-badge ${series.carAdvance ? 'adv' : 'elim'}`}>
+                    {series.carAdvance ? '✅' : '❌'}
+                  </span>
+                )}
+              </div>
             </button>
 
-            {!isCollapsed && displayGames.map(game => {
-              const completed  = isCompleted(game);
-              const isSelected = selectedGame?.id === game.id;
-              const opp        = getOpponent(game);
-              const oppStanding = standingMap[opp?.abbrev] || standingMap[opp?.abbrev?.toLowerCase()];
-              const gameOdds   = !completed ? findGameOdds(oddsData, game) : null;
-              const ml         = gameOdds ? extractMoneyline(gameOdds, isHomeGame(game)) : null;
+            {/* Expanded content: series card + game list */}
+            {!isCollapsed && (
+              <>
+                {/* Inline series card */}
+                {series && (
+                  <SeriesCard series={series} compact />
+                )}
 
-              return (
-                <div key={game.id}>
-                  <GameCard
-                    game={game}
-                    isCompleted={completed}
-                    isSelected={isSelected}
-                    isPlayoff
-                    odds={ml}
-                    onClick={() => {
-                      if (completed) {
-                        onGamePopup(game);
-                      } else {
-                        setSelectedGame(isSelected ? null : game);
-                      }
-                    }}
-                  />
-                  {isSelected && !completed && (
-                    <MatchupDetail
-                      game={game}
-                      oppStanding={oppStanding}
-                      carStanding={carStanding}
-                      odds={ml}
-                      playoffSeries={playoffSeries}
-                    />
-                  )}
-                </div>
-              );
-            })}
+                {/* Games */}
+                {displayGames.map(game => {
+                  const completed  = isCompletedGame(game);
+                  const isSelected = selectedGame?.id === game.id;
+                  const opp        = getOpponent(game);
+                  const oppStanding = standingMap[opp?.abbrev] || standingMap[opp?.abbrev?.toLowerCase()];
+                  const gameOdds   = !completed ? findGameOdds(oddsData, game) : null;
+                  const ml         = gameOdds ? extractMoneyline(gameOdds, isHomeGame(game)) : null;
+
+                  return (
+                    <div key={game.id}>
+                      <GameCard
+                        game={game}
+                        isCompleted={completed}
+                        isSelected={isSelected}
+                        isPlayoff
+                        odds={ml}
+                        onClick={() => {
+                          if (completed) { onGamePopup(game); }
+                          else { setSelectedGame(isSelected ? null : game); }
+                        }}
+                      />
+                      {isSelected && !completed && (
+                        <MatchupDetail
+                          game={game}
+                          oppStanding={oppStanding}
+                          carStanding={carStanding}
+                          odds={ml}
+                          playoffSeries={playoffSeries}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </>
+            )}
           </div>
         );
       })}
@@ -458,7 +474,6 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, standingMap, carSta
   );
 }
 
-// ── Regular season tab ───────────────────────────────────────
 
 function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup, sortOrder, setSortOrder }) {
   if (loading) return <LoadingCards count={4} />;
@@ -1206,6 +1221,12 @@ function SeriesCard({ series }) {
           </span>
         </div>
         <span className="series-games-played">{total} game{total !== 1 ? 's' : ''} played</span>
+        {series.carWins === 4 && series.oppWins === 0 && (
+          <span className="series-sweep">🧹 Sweep!</span>
+        )}
+        {series.oppWins === 4 && series.carWins === 0 && (
+          <span className="series-swept">🧹 Swept</span>
+        )}
       </div>
       <div className="series-body">
 

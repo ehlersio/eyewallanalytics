@@ -763,36 +763,59 @@ function ShotPopup({ event: e, playerNames, onClose }) {
 function RinkMarkings({ showHalf }) {
   return (
     <g>
-      <rect width={W} height={H} rx="28" ry="28" fill="#ddeef5" stroke="#b8ccd8" strokeWidth="1"/>
-      <rect x="8" y="8" width={W-16} height={H-16} rx="22" fill="none" stroke="#a0b8c8" strokeWidth="0.8"/>
-      <line x1={CX} y1="8" x2={CX} y2={H-8} stroke="#cc3333" strokeWidth="2" opacity="0.45"/>
-      <line x1={CX-W*0.25} y1="8" x2={CX-W*0.25} y2={H-8} stroke="#3355aa" strokeWidth="1.5" opacity="0.5"/>
-      <line x1={CX+W*0.25} y1="8" x2={CX+W*0.25} y2={H-8} stroke="#3355aa" strokeWidth="1.5" opacity="0.5"/>
-      <rect x="8"    y={CY-22} width="14" height="44" fill="none" stroke="#4466aa" strokeWidth="1.5"/>
-      <rect x={W-22} y={CY-22} width="14" height="44" fill="none" stroke="#cc2200" strokeWidth="1.5"/>
-      <path d={`M 22 ${CY-18} Q 46 ${CY-18} 46 ${CY} Q 46 ${CY+18} 22 ${CY+18}`} fill="rgba(100,150,220,0.15)" stroke="#4466aa" strokeWidth="0.8"/>
-      <path d={`M ${W-22} ${CY-18} Q ${W-46} ${CY-18} ${W-46} ${CY} Q ${W-46} ${CY+18} ${W-22} ${CY+18}`} fill="rgba(200,80,60,0.12)" stroke="#cc2200" strokeWidth="0.8"/>
-      <line x1="8"    y1={CY-32} x2="48"    y2={CY-22} stroke="#4466aa" strokeWidth="0.8" opacity="0.4"/>
-      <line x1="8"    y1={CY+32} x2="48"    y2={CY+22} stroke="#4466aa" strokeWidth="0.8" opacity="0.4"/>
-      <line x1={W-8}  y1={CY-32} x2={W-48}  y2={CY-22} stroke="#cc2200" strokeWidth="0.8" opacity="0.4"/>
-      <line x1={W-8}  y1={CY+32} x2={W-48}  y2={CY+22} stroke="#cc2200" strokeWidth="0.8" opacity="0.4"/>
-      <circle cx={CX} cy={CY} r="33" fill="none" stroke="#a0b8c8" strokeWidth="0.8"/>
-      <circle cx={CX} cy={CY} r="3" fill="#a0b8c8"/>
-      {[
-        {cx: CX-W*0.25, cy: CY-H*0.28},
-        {cx: CX-W*0.25, cy: CY+H*0.28},
-        {cx: CX+W*0.25, cy: CY-H*0.28},
-        {cx: CX+W*0.25, cy: CY+H*0.28},
-      ].map((c, i) => (
-        <g key={i}>
-          <circle cx={c.cx} cy={c.cy} r="3" fill="#cc4444" opacity="0.6"/>
-          <circle cx={c.cx} cy={c.cy} r="16" fill="none" stroke="#cc4444" strokeWidth="0.7" opacity="0.4"/>
-        </g>
-      ))}
+            {/* ── Rink surface ── */}
+      <rect width={W} height={H} rx={28} ry={28} fill="#d6eaf5" stroke="#9ab8cc" strokeWidth="1.5"/>
+
+      {/* ── Center line (red) ── */}
+      <line x1={CX} y1="0" x2={CX} y2={H} stroke="#cc2200" strokeWidth="3" opacity="0.5"/>
+
+      {/* ── Blue lines ── */}
+      <line x1={CX-75} y1="0" x2={CX-75} y2={H} stroke="#2255aa" strokeWidth="3" opacity="0.55"/>
+      <line x1={CX+75} y1="0" x2={CX+75} y2={H} stroke="#2255aa" strokeWidth="3" opacity="0.55"/>
+
+      {/* ── Goal lines ── */}
+      <line x1="33" y1="10" x2="33" y2={H-10} stroke="#cc2200" strokeWidth="1.5" opacity="0.6"/>
+      <line x1={W-33} y1="10" x2={W-33} y2={H-10} stroke="#cc2200" strokeWidth="1.5" opacity="0.6"/>
+
+      {/* ── Goal creases ── */}
+      {/* Left crease: semicircle centered on goal line */}
+      <path d={`M 33 ${CY-24} L 51 ${CY-24} A 24 24 0 0 1 51 ${CY+24} L 33 ${CY+24}`}
+        fill="rgba(68,119,238,0.12)" stroke="#2255aa" strokeWidth="1"/>
+      {/* Right crease */}
+      <path d={`M ${W-33} ${CY-24} L ${W-51} ${CY-24} A 24 24 0 0 0 ${W-51} ${CY+24} L ${W-33} ${CY+24}`}
+        fill="rgba(204,34,0,0.10)" stroke="#cc2200" strokeWidth="1"/>
+
+      {/* ── Goal frames ── */}
+      <rect x="19" y={CY-12} width="14" height="24" fill="none" stroke="#2255aa" strokeWidth="1.5"/>
+      <rect x={W-33} y={CY-12} width="14" height="24" fill="none" stroke="#cc2200" strokeWidth="1.5"/>
+
+      {/* ── Center face-off circle ── */}
+      <circle cx={CX} cy={CY} r="60" fill="none" stroke="#9ab8cc" strokeWidth="1.2" opacity="0.7"/>
+      <circle cx={CX} cy={CY} r="3" fill="#cc2200"/>
+
+      {/* ── Defensive zone face-off circles (left = OPP zone) ── */}
+      <circle cx="93" cy={CY-58} r="3" fill="#cc3333"/>
+      <circle cx="93" cy={CY+58} r="3" fill="#cc3333"/>
+      <circle cx="93" cy={CY-58} r="60" fill="none" stroke="#cc3333" strokeWidth="1.2" opacity="0.4"/>
+      <circle cx="93" cy={CY+58} r="60" fill="none" stroke="#cc3333" strokeWidth="1.2" opacity="0.4"/>
+
+      {/* ── Offensive zone face-off circles (right = CAR zone) ── */}
+      <circle cx={W-93} cy={CY-58} r="3" fill="#cc3333"/>
+      <circle cx={W-93} cy={CY+58} r="3" fill="#cc3333"/>
+      <circle cx={W-93} cy={CY-58} r="60" fill="none" stroke="#cc3333" strokeWidth="1.2" opacity="0.4"/>
+      <circle cx={W-93} cy={CY+58} r="60" fill="none" stroke="#cc3333" strokeWidth="1.2" opacity="0.4"/>
+
+      {/* ── Neutral zone face-off dots (no circles, just dots) ── */}
+      <circle cx={CX-75+15} cy={CY-58} r="3" fill="#cc3333" opacity="0.7"/>
+      <circle cx={CX-75+15} cy={CY+58} r="3" fill="#cc3333" opacity="0.7"/>
+      <circle cx={CX+75-15} cy={CY-58} r="3" fill="#cc3333" opacity="0.7"/>
+      <circle cx={CX+75-15} cy={CY+58} r="3" fill="#cc3333" opacity="0.7"/>
+
+      {/* ── Zone labels ── */}
       {!showHalf && (
         <>
-          <text x="52"    y="18" fontSize="9" fill="#4466aa" opacity="0.7" fontFamily="sans-serif">OPP zone</text>
-          <text x={W-85}  y="18" fontSize="9" fill="#cc2200" opacity="0.8" fontFamily="sans-serif">CAR zone</text>
+          <text x="52"   y="18" fontSize="9" fill="#2255aa" opacity="0.6" fontFamily="sans-serif">OPP zone</text>
+          <text x={W-82} y="18" fontSize="9" fill="#cc2200" opacity="0.7" fontFamily="sans-serif">CAR zone</text>
         </>
       )}
       {showHalf && (
