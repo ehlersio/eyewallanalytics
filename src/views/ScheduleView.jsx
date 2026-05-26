@@ -4,7 +4,6 @@ import { savePrediction, getPredictionStats, recordOutcome } from '../utils/pred
 import ScoutingTab from '../components/ScoutingTab';
 import InfoTip from '../components/InfoTip';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
-import InfoTip from '../components/InfoTip';
 import {
   getRegularSeasonGames, getPlayoffGames, getStandings,
   buildCarPlayoffSummary, getCompletedGameStats,
@@ -1513,17 +1512,15 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
 
   const modelTooltip = [
     'How we predict:',
-    `• GF/GP & GA/GP — offensive and defensive efficiency`,
-    `• SOG/GP — possession proxy (shot attempt share)`,
-    `• PP vs PK matchup — special teams edge`,
-    isPlayoff_ ? `• Series record — current series lead/deficit` : `• Standings points — season performance`,
-    `• Recent form — current streak`,
-    `• Home ice — ~0.25 goal advantage`,
-    carImplied ? `• Market odds — 40% weight when available` : null,
-    isPlayoff_ ? `
-Playoff mode: standings points excluded.` : null,
-  ].filter(Boolean).join('
-');
+    '• GF/GP & GA/GP — offensive and defensive efficiency',
+    '• SOG/GP — possession proxy (shot attempt share)',
+    '• PP vs PK matchup — special teams edge',
+    isPlayoff_ ? '• Series record — current series lead/deficit' : '• Standings points — season performance',
+    '• Recent form — current streak',
+    '• Home ice — ~0.25 goal advantage',
+    carImplied ? '• Market odds — 40% weight when available' : null,
+    isPlayoff_ ? 'Playoff mode: standings points excluded.' : null,
+  ].filter(Boolean).join('\n');
 
 
   // ── Score prediction (Pythagorean expectation) ───────────
