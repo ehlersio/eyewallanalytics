@@ -5,6 +5,7 @@ import ShotMapView from './views/ShotMapView'
 import ScheduleView from './views/ScheduleView'
 import PlayersView from './views/PlayersView'
 import TeamView from './views/TeamView'
+import NewsView from './views/NewsView'
 import './App.css'
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
             <Route path="/schedule" element={<ScheduleView />} />
             <Route path="/players"  element={<PlayersView />} />
             <Route path="/team"     element={<TeamView />} />
+            <Route path="/news"     element={<NewsView />} />
           </Routes>
         </main>
         <BottomNav />

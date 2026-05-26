@@ -6,6 +6,7 @@ const TABS = [
   { to: '/schedule', icon: '📅', label: 'Schedule'  },
   { to: '/players',  icon: '👤', label: 'Players'   },
   { to: '/team',     icon: '📊', label: 'Team'      },
+  { to: '/news',     icon: '📰', label: 'News'      },
 ];
 
 export default function BottomNav() {
