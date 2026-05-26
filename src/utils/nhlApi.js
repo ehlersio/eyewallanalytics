@@ -706,7 +706,8 @@ export async function getTeamRealtime(gameTypeId = 2) {
     const exp = encodeURIComponent(
       `teamId=${CAR_TEAM_ID} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
     );
-    const url = `/nhl-stats/stats/rest/en/team/realtime?isAggregate=false&isGame=false&sort=wins&limit=1&cayenneExp=${exp}`;
+    // Note: realtime report uses 'blockedShots' as sort field, not 'wins'
+    const url = `/nhl-stats/stats/rest/en/team/realtime?isAggregate=false&isGame=false&sort=blockedShots&sortDirection=DESC&limit=1&cayenneExp=${exp}`;
     const d   = await nhlFetch(url);
     const t   = d?.data?.[0] || null;
     if (t) console.log('[EyeWall] realtime keys:', Object.keys(t));
