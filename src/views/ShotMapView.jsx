@@ -669,6 +669,15 @@ export default function ShotMapView() {
     {goalPopup     && <GoalPopup    goal={goalPopup}       onDismiss={clearGoal}    />}
     {penaltyPopup  && <PenaltyPopup penalty={penaltyPopup} onDismiss={clearPenalty} />}
     {winPopup      && <WinPopup     score={winPopup.score} onDismiss={clearWin}     />}
+
+      {/* ── Back to top button ── */}
+      {showTopBtn && (
+        <button
+          className="shotmap-top-btn"
+          onClick={() => pageRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Back to top"
+        >↑ Top</button>
+      )}
     </>
   );
 }
@@ -1069,10 +1078,3 @@ function humanLabel(raw) {
   if (LABEL_MAP[key]) return LABEL_MAP[key];
   return raw.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
 }
-      {showTopBtn && (
-        <button
-          className="shotmap-top-btn"
-          onClick={() => pageRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
-          aria-label="Back to top"
-        >↑ Top</button>
-      )}
