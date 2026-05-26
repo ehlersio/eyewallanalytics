@@ -71,8 +71,8 @@
 .gc-expand-hint {
   font-size: 10px;
   color: var(--text-dim);
-  text-align: center;
-  margin-top: 4px;
+  text-align: right;
+  flex: 1;
 }
 
 /* Matchup detail panel */

@@ -448,6 +448,17 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, standingMap, carSta
                         isSelected={isSelected}
                         isPlayoff
                         odds={ml}
+                        cardFavoured={!completed && carStanding && oppStanding ? (() => {
+                          const cgp = carStanding.gamesPlayed || 1;
+                          const ogp = oppStanding?.gamesPlayed || 1;
+                          let cs = 0, os = 0;
+                          if ((carStanding.goalFor??0)/cgp > (oppStanding.goalFor??0)/ogp) cs+=0.7; else os+=0.7;
+                          if ((carStanding.goalAgainst??0)/cgp < (oppStanding.goalAgainst??0)/ogp) cs+=0.7; else os+=0.7;
+                          if ((carStanding.shotsForPerGame||0) > (oppStanding.shotsForPerGame||0)) cs+=0.5; else os+=0.5;
+                          if (game.homeTeam?.abbrev === 'CAR') cs+=0.25; else os+=0.25;
+                          const t = cs+os||1; const pct = Math.round(cs/t*100);
+                          return { favoured: pct>=50, pct };
+                        })() : null}
                         onClick={() => {
                           if (completed) { onGamePopup(game); }
                           else { setSelectedGame(isSelected ? null : game); }
