@@ -699,6 +699,17 @@ export async function getTeamCorsi(gameTypeId = 2) {
   };
 }
 
+// Realtime stats: blocked shots, hits, giveaways, takeaways
+export async function getTeamRealtime(gameTypeId = 2) {
+  return cached(`teamRealtime:${gameTypeId}`, async () => {
+    const url = teamStatsUrl('realtime', gameTypeId);
+    const d   = await nhlFetch(url);
+    const t   = d?.data?.[0] || null;
+    if (t) console.log('[EyeWall] realtime keys:', Object.keys(t));
+    return t;
+  }, TTL.ADVANCED);
+}
+
 // Score-state splits — endpoint broken, returns null gracefully
 export async function getTeamScoreState(gameTypeId = 2) {
   return null; // team/goalsForAgainst endpoint unavailable

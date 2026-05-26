@@ -3,7 +3,7 @@ import { useFetch } from '../hooks/useFetch'
 import {
   getTeamStats, getStandings,
   getPlayoffGames, buildCarPlayoffSummary,
-  getTeamCorsi, getTeamScoreState, getTeamPowerplay, getTeamPenaltyKill,
+  getTeamCorsi, getTeamRealtime, getTeamScoreState, getTeamPowerplay, getTeamPenaltyKill,
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
 } from '../utils/nhlApi'
 import { CONTRACTS, DRAFT_PICKS, getCapSummary, CAP_CEILING, CURRENT_SEASON } from '../utils/carContracts'
@@ -26,6 +26,7 @@ export default function TeamView() {
 
   // Advanced stats
   const { data: corsiReg   } = useFetch(() => getTeamCorsi(2))
+  const { data: realtimeReg } = useFetch(() => getTeamRealtime(2))
   const { data: ppReg      } = useFetch(() => getTeamPowerplay(2))
   const { data: pkReg      } = useFetch(() => getTeamPenaltyKill(2))
   const { data: scoreState } = useFetch(() => getTeamScoreState(2))
@@ -75,8 +76,8 @@ export default function TeamView() {
         ))}
       </div>
 
-      {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} />}
-      {tab === 'Advanced'  && <AdvancedTab corsiReg={corsiReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} />}
+      {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} realtimeReg={realtimeReg} />}
+      {tab === 'Advanced'  && <AdvancedTab corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} />}
       {tab === 'Splits'    && <SplitsTab homeSplit={homeSplit} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} />}
       {tab === 'Trends'    && <TrendsTab gameLog={gameLog} />}
       {tab === 'Cap & Picks' && <CapTab capSummary={capSummary} capPct={capPct} sortedContracts={sortedContracts} picksByYear={picksByYear} />}
@@ -85,8 +86,7 @@ export default function TeamView() {
 }
 
 // ── Overview tab ──────────────────────────────────────────────
-function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding, playoffSummary, wins, losses, otl, pts, inPlayoffs, liveGame, corsiReg }) {
-  if (corsiReg) console.log('[EyeWall] corsiReg keys:', Object.keys(corsiReg));
+function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding, playoffSummary, wins, losses, otl, pts, inPlayoffs, liveGame, corsiReg, realtimeReg }) {
   return (
     <>
       <div className="records-row">
@@ -159,7 +159,7 @@ function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding
               ['PK%',        (stats.penaltyKillPct != null ? (stats.penaltyKillPct <= 1 ? (stats.penaltyKillPct*100).toFixed(1) : stats.penaltyKillPct.toFixed(1)) : '—') + '%'],
               ['SOG/GP',     stats.shotsForPerGame?.toFixed(1) ?? '—'],
               ['SA/GP',      stats.shotsAgainstPerGame?.toFixed(1) ?? '—'],
-              ['Blks/GP',    (corsiReg?.blockedShotsForPerGame ?? corsiReg?.blockedShotsPerGame)?.toFixed(1) ?? '—'],
+              ['Blks/GP',    realtimeReg?.blockedShotsPerGame?.toFixed(1) ?? '—'],
             ].map(([label, val]) => (
               <div key={label} className="overview-stat-cell">
                 <div className="overview-stat-label">{label}</div>
@@ -174,7 +174,7 @@ function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding
 }
 
 // ── Advanced tab ─────────────────────────────────────────────
-function AdvancedTab({ corsiReg, ppReg, pkReg, scoreState, poAdv, inPlayoffs }) {
+function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, scoreState, poAdv, inPlayoffs }) {
   const pdoData = seasonPDO(corsiReg);
   const [showPO, setShowPO] = useState(inPlayoffs);
   function pct(v) { if (v == null) return '—'; return `${(v*100).toFixed(1)}%`; }
@@ -207,8 +207,8 @@ function AdvancedTab({ corsiReg, ppReg, pkReg, scoreState, poAdv, inPlayoffs }) 
         <AdvStatRow label="Shot For% (proxy)" val={pct(corsi?.corsiForPct)} note="SOG for ÷ total SOG. ≥50% = outshooting opponents" />
         <AdvStatRow label="Shots For/GP"       val={corsi?.shotsForPerGame     ? fmt(corsi.shotsForPerGame)     : null} />
         <AdvStatRow label="Shots Against/GP"   val={corsi?.shotsAgainstPerGame ? fmt(corsi.shotsAgainstPerGame) : null} />
-        <AdvStatRow label="Blocked For/GP"  val={corsi?.blockedShotsForPerGame     ? fmt(corsi.blockedShotsForPerGame)     : null} note="Shots blocked by CAR skaters per game" />
-        <AdvStatRow label="Blocked Against/GP" val={corsi?.blockedShotsAgainstPerGame ? fmt(corsi.blockedShotsAgainstPerGame) : null} note="CAR shots blocked by opponents per game" />
+        <AdvStatRow label="Blocked For/GP"      val={realtimeReg?.blockedShotsPerGame        ? fmt(realtimeReg.blockedShotsPerGame)        : null} note="Shots blocked by CAR skaters per game" />
+        <AdvStatRow label="Blocked Against/GP"  val={realtimeReg?.blockedShotAttemptsPerGame ? fmt(realtimeReg.blockedShotAttemptsPerGame) : null} note="CAR shots blocked by opponents per game" />
         <AdvStatRow label="Goals For/GP"       val={corsi?.goalsForPerGame     ? fmt(corsi.goalsForPerGame)     : null} />
         <AdvStatRow label="Goals Against/GP"   val={corsi?.goalsAgainstPerGame ? fmt(corsi.goalsAgainstPerGame) : null} />
       </div>
