@@ -129,6 +129,12 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
     if (!pbp?.plays?.length || !isLive) return;
     const plays = pbp.plays;
 
+    // On first load, skip all existing plays — only react to NEW plays going forward
+    if (lastPlayIdx.current === -1) {
+      lastPlayIdx.current = plays.length - 1;
+      return;
+    }
+
     const newPlays = plays.slice(lastPlayIdx.current + 1);
     lastPlayIdx.current = plays.length - 1;
     if (newPlays.length === 0) return;
