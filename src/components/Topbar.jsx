@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getLiveGame, getCarScore, getOppScore, getOpponent, getGameDetail } from '../utils/nhlApi';
+import { getLiveGame, getCarScore, getOppScore, getOpponent, getGameDetail, bustLiveGameCache } from '../utils/nhlApi';
 import TeamLogo from './TeamLogo';
 import { TEAM_COLORS } from '../utils/nhlApi';
 import './Topbar.css';
@@ -50,6 +50,7 @@ export default function Topbar() {
       const game = await getLiveGame();
       setLiveGame(game);
       if (game?.id) {
+        bustLiveGameCache(game.id); // force fresh data, bypass module cache
         const pbp = await getGameDetail(game.id).catch(() => null);
         if (pbp) {
           const meta = { period: pbp.periodDescriptor, clock: pbp.clock };

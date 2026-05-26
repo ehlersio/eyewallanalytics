@@ -328,14 +328,42 @@ export default function ShotMapView() {
     setDrillStat({ label, rows, type: 'shots' });
   }, [dangerCounts]);
 
-  // ── Top CAR scorers from boxscore ────────────────────────────
-  const pbgKey     = gameHome ? 'homeTeam' : 'awayTeam';
-  const playerByGame = boxscore?.playerByGameStats?.[pbgKey];
-  const allSkaters = [
-    ...(playerByGame?.forwards   || []),
-    ...(playerByGame?.defensemen || []),
-  ].sort((a, b) => (b.points || 0) - (a.points || 0) || (b.goals || 0) - (a.goals || 0));
-  const topScorers = allSkaters.filter(p => (p.points || 0) > 0).slice(0, 4);
+  // ── Top CAR scorers — built from PBP goals (always current, no boxscore lag) ──
+  const topScorers = useMemo(() => {
+    if (!pbp?.plays) return [];
+    const playerMap = buildPlayerMap(pbp);
+    const pName = id => { const n = playerMap[String(id)]; return n?.trim() || null; };
+    const byPlayer = {};
+    pbp.plays
+      .filter(p => p.typeDescKey === 'goal' && p.details?.eventOwnerTeamId === 12)
+      .forEach(p => {
+        const d = p.details || {};
+        // Count goals
+        const sid = String(d.scoringPlayerId);
+        if (sid && sid !== 'undefined') {
+          if (!byPlayer[sid]) byPlayer[sid] = { name: pName(d.scoringPlayerId), goals: 0, assists: 0 };
+          byPlayer[sid].goals++;
+          byPlayer[sid].points = (byPlayer[sid].goals || 0) + (byPlayer[sid].assists || 0);
+        }
+        // Count assists
+        [d.assist1PlayerId, d.assist2PlayerId].filter(Boolean).forEach(aid => {
+          const as = String(aid);
+          if (!byPlayer[as]) byPlayer[as] = { name: pName(aid), goals: 0, assists: 0 };
+          byPlayer[as].assists++;
+          byPlayer[as].points = (byPlayer[as].goals || 0) + (byPlayer[as].assists || 0);
+        });
+      });
+    return Object.values(byPlayer)
+      .filter(p => p.name)
+      .sort((a, b) => b.points - a.points || b.goals - a.goals)
+      .slice(0, 4)
+      .map(p => ({
+        name: { default: p.name },
+        goals: p.goals,
+        assists: p.assists,
+        points: p.points,
+      }));
+  }, [pbp?.plays?.length]);
 
   // ── Goalies ──────────────────────────────────────────────────
   // Pick the goalie who actually played — filter by toi > 0 or shotsAgainst > 0.
