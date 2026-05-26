@@ -702,7 +702,11 @@ export async function getTeamCorsi(gameTypeId = 2) {
 // Realtime stats: blocked shots, hits, giveaways, takeaways
 export async function getTeamRealtime(gameTypeId = 2) {
   return cached(`teamRealtime:${gameTypeId}`, async () => {
-    const url = teamStatsUrl('realtime', gameTypeId);
+    const s   = STATS_SEASON;
+    const exp = encodeURIComponent(
+      `teamId=${CAR_TEAM_ID} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
+    );
+    const url = `/nhl-stats/stats/rest/en/team/realtime?isAggregate=false&isGame=false&sort=wins&limit=1&cayenneExp=${exp}`;
     const d   = await nhlFetch(url);
     const t   = d?.data?.[0] || null;
     if (t) console.log('[EyeWall] realtime keys:', Object.keys(t));
