@@ -253,6 +253,7 @@ async function _getTeamStats(teamAbbr = CAR_ABBR) {
     penaltyKillPct:      (team.penaltyKillPct ?? 80) / 100,
     shotsForPerGame:     team.shotsForPerGame     ?? 31.2,
     shotsAgainstPerGame: team.shotsAgainstPerGame ?? 28.4,
+    blockedShotsPerGame: team.blockedShots != null ? team.blockedShots / gp : null,
     divisionName:        team.divisionName,
     conferenceName:      team.conferenceName,
     streakCode:          team.streakCode,
@@ -703,10 +704,12 @@ export async function getTeamCorsi(gameTypeId = 2) {
 export async function getTeamRealtime(gameTypeId = 2) {
   return cached(`teamRealtime:${gameTypeId}`, async () => {
     const s   = STATS_SEASON;
+    // Try multiple known report names that include blocked shots
+    // The NHL stats API 'realtime' report includes blockedShots, hits, giveaways, takeaways
+    // Use same franchiseId filter as working team/summary endpoint
     const exp = encodeURIComponent(
-      `teamId=${CAR_TEAM_ID} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
+      `franchiseId=${FRANCHISE_CAR} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
     );
-    // Note: realtime report uses 'blockedShots' as sort field, not 'wins'
     const url = `/nhl-stats/stats/rest/en/team/realtime?isAggregate=false&isGame=false&sort=blockedShots&sortDirection=DESC&limit=1&cayenneExp=${exp}`;
     const d   = await nhlFetch(url);
     const t   = d?.data?.[0] || null;
