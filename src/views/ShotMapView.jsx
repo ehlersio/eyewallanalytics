@@ -14,7 +14,7 @@ import InfoTip from '../components/InfoTip';
 import { StatBar, MetCard, MetCardSkeleton } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
 import './ShotMapView.css';
-import { publishClock } from '../utils/liveClockStore';
+import { publishClock, getClockDisplay } from '../utils/liveClockStore';
 
 const CAR_ABBR = 'CAR';
 
@@ -68,27 +68,22 @@ export default function ShotMapView() {
   // Roster for player name resolution in shot tooltips
   const { data: roster } = useFetch(() => getRoster(CAR_ABBR));
 
-  // ── Countdown clock — ticks every second between data pulls ──
+  // ── Publish clock to shared store when PBP updates ──────────
   useEffect(() => {
     if (!isLive || !pbp?.clock?.timeRemaining) return;
-    const raw = pbp.clock.timeRemaining;
-    const [m, s] = raw.split(':').map(Number);
-    let totalSecs = m * 60 + (s || 0);
-    lastSyncRef.current = { totalSecs, syncTime: Date.now() };
-    setDisplayClock(raw);
+    publishClock(pbp.clock.timeRemaining, pbp.clock.inIntermission);
+  }, [pbp?.clock?.timeRemaining, pbp?.clock?.inIntermission, isLive]);
 
+  // ── Tick display from shared store (same math as Topbar → no drift) ──
+  useEffect(() => {
+    if (!isLive) return;
     if (clockRef.current) clearInterval(clockRef.current);
     clockRef.current = setInterval(() => {
-      const elapsed   = Math.floor((Date.now() - lastSyncRef.current.syncTime) / 1000);
-      const remaining = Math.max(0, lastSyncRef.current.totalSecs - elapsed);
-      const mm = Math.floor(remaining / 60).toString().padStart(2, '0');
-      const ss = (remaining % 60).toString().padStart(2, '0');
-      setDisplayClock(`${mm}:${ss}`);
-      if (remaining === 0) clearInterval(clockRef.current);
-    }, 1000);
-
+      const r = getClockDisplay();
+      if (r) setDisplayClock(r.display);
+    }, 250); // 250ms for smooth display without jank
     return () => { if (clockRef.current) clearInterval(clockRef.current); };
-  }, [pbp?.clock?.timeRemaining, isLive]);
+  }, [isLive]);
 
   // ── Scroll → show/hide top button ──
   useEffect(() => {

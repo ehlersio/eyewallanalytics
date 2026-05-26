@@ -1,23 +1,46 @@
 /**
- * liveClockStore — tiny pub/sub for sharing live clock state
- * between ShotMapView (which polls PBP) and Topbar.
+ * liveClockStore — shared live game clock
  *
- * ShotMapView publishes timeRemaining + inIntermission whenever it gets fresh PBP.
- * Topbar subscribes and uses that data to drive its own countdown.
- * This eliminates the independent Topbar PBP fetch entirely.
+ * ShotMapView publishes the authoritative clock value when it gets fresh PBP.
+ * Both Topbar and ShotMapView derive the current display time from the same
+ * sync point using Date.now() arithmetic — no independent intervals to drift.
+ *
+ * Usage:
+ *   Publisher: publishClock('14:32', false)
+ *   Consumer:  const { mm, ss } = getClockDisplay()  — call this in a 1s interval
  */
 
+let _sync = null; // { totalSecs, syncTime, inIntermission, raw }
 let _subscribers = [];
-let _lastClock = null;
 
 export function publishClock(timeRemaining, inIntermission) {
-  _lastClock = { timeRemaining, inIntermission, ts: Date.now() };
-  _subscribers.forEach(fn => fn(_lastClock));
+  if (!timeRemaining) return;
+  const [m, s] = timeRemaining.split(':').map(Number);
+  _sync = {
+    totalSecs:      m * 60 + (s || 0),
+    syncTime:       Date.now(),
+    inIntermission: !!inIntermission,
+    raw:            timeRemaining,
+  };
+  _subscribers.forEach(fn => fn(_sync));
+}
+
+export function getClockDisplay() {
+  if (!_sync) return null;
+  if (_sync.inIntermission) return { display: _sync.raw, inIntermission: true };
+  const elapsed   = Math.floor((Date.now() - _sync.syncTime) / 1000);
+  const remaining = Math.max(0, _sync.totalSecs - elapsed);
+  const mm = Math.floor(remaining / 60).toString().padStart(2, '0');
+  const ss = (remaining % 60).toString().padStart(2, '0');
+  return { display: `${mm}:${ss}`, inIntermission: false, remaining };
 }
 
 export function subscribeClock(fn) {
   _subscribers.push(fn);
-  // Immediately deliver last known value if available
-  if (_lastClock) fn(_lastClock);
+  if (_sync) fn(_sync); // deliver last known immediately
   return () => { _subscribers = _subscribers.filter(s => s !== fn); };
+}
+
+export function clearClock() {
+  _sync = null;
 }

@@ -4,7 +4,7 @@ import TeamLogo from './TeamLogo';
 import { TEAM_COLORS } from '../utils/nhlApi';
 import './Topbar.css';
 import AboutPopup from './AboutPopup';
-import { subscribeClock } from '../utils/liveClockStore';
+import { subscribeClock, getClockDisplay } from '../utils/liveClockStore';
 import NotificationBell from './NotificationBell';
 
 const POLL_LIVE_MS = 10_000;      // 10s — matches ShotMapView
@@ -18,26 +18,8 @@ export default function Topbar() {
 
   const intervalRef  = useRef(null);
   const clockRef     = useRef(null);
-  const lastSyncRef  = useRef(null);
 
-  // ── Countdown tick ──────────────────────────────────────────
-  function startCountdown(timeRemaining) {
-    if (!timeRemaining) return;
-    const [m, s]  = timeRemaining.split(':').map(Number);
-    const totalSecs = m * 60 + (s || 0);
-    lastSyncRef.current = { totalSecs, syncTime: Date.now() };
-    setDisplayClock(timeRemaining);
-
-    if (clockRef.current) clearInterval(clockRef.current);
-    clockRef.current = setInterval(() => {
-      const elapsed   = Math.floor((Date.now() - lastSyncRef.current.syncTime) / 1000);
-      const remaining = Math.max(0, lastSyncRef.current.totalSecs - elapsed);
-      const mm = Math.floor(remaining / 60).toString().padStart(2, '0');
-      const ss = (remaining % 60).toString().padStart(2, '0');
-      setDisplayClock(`${mm}:${ss}`);
-      if (remaining === 0) clearInterval(clockRef.current);
-    }, 1000);
-  }
+  // Clock display is derived from shared liveClockStore — no local countdown needed
 
   // ── Live poll ───────────────────────────────────────────────
   function scheduleNext(isLive) {
@@ -54,14 +36,8 @@ export default function Topbar() {
         bustLiveGameCache(game.id); // bypass module cache
         const pbp = await getGameDetail(game.id).catch(() => null);
         if (pbp) {
-          const meta = { period: pbp.periodDescriptor, clock: pbp.clock };
-          setLiveMeta(meta);
-          if (!pbp.clock?.inIntermission && pbp.clock?.timeRemaining) {
-            startCountdown(pbp.clock.timeRemaining);
-          } else {
-            if (clockRef.current) clearInterval(clockRef.current);
-            setDisplayClock(pbp.clock?.timeRemaining || null);
-          }
+          setLiveMeta({ period: pbp.periodDescriptor, clock: pbp.clock });
+          // Clock display handled by shared store — no local countdown needed
         }
       } else {
         setLiveMeta(null);
@@ -72,18 +48,14 @@ export default function Topbar() {
     } catch { /* ignore */ }
   }
 
-  // Subscribe to clock published by ShotMapView (most authoritative source)
+  // Tick from shared clock store — same source as ShotMapView, guaranteed in sync
   useEffect(() => {
-    const unsub = subscribeClock(({ timeRemaining, inIntermission }) => {
-      if (!timeRemaining) return;
-      if (inIntermission) {
-        if (clockRef.current) clearInterval(clockRef.current);
-        setDisplayClock(timeRemaining);
-      } else {
-        startCountdown(timeRemaining);
-      }
-    });
-    return unsub;
+    if (clockRef.current) clearInterval(clockRef.current);
+    clockRef.current = setInterval(() => {
+      const r = getClockDisplay();
+      setDisplayClock(r ? r.display : null);
+    }, 250);
+    return () => clearInterval(clockRef.current);
   }, []);
 
   useEffect(() => {
