@@ -6,63 +6,91 @@ import './Topbar.css';
 import AboutPopup from './AboutPopup';
 import NotificationBell from './NotificationBell';
 
-// Poll fast when live, slow when idle, stop when no games remain
-const POLL_LIVE_MS  = 30_000;   // 30s  — active game, keep score fresh
-const POLL_IDLE_MS  = 5 * 60_000; // 5min — waiting for a game to start
-const SEASON_END    = new Date('2026-07-01'); // stop polling after season
+const POLL_LIVE_MS = 10_000;      // 10s — matches ShotMapView
+const POLL_IDLE_MS = 5 * 60_000;  // 5min — no game active
+const SEASON_END   = new Date('2026-07-01');
 
 export default function Topbar() {
-  const [liveGame, setLiveGame] = useState(null);
-  const [liveMeta, setLiveMeta]  = useState(null); // period + clock from boxscore
-  const intervalRef = useRef(null);
+  const [liveGame,    setLiveGame]    = useState(null);
+  const [liveMeta,    setLiveMeta]    = useState(null);
+  const [displayClock, setDisplayClock] = useState(null);
 
+  const intervalRef  = useRef(null);
+  const clockRef     = useRef(null);
+  const lastSyncRef  = useRef(null);
+
+  // ── Countdown tick ──────────────────────────────────────────
+  function startCountdown(timeRemaining) {
+    if (!timeRemaining) return;
+    const [m, s]  = timeRemaining.split(':').map(Number);
+    const totalSecs = m * 60 + (s || 0);
+    lastSyncRef.current = { totalSecs, syncTime: Date.now() };
+    setDisplayClock(timeRemaining);
+
+    if (clockRef.current) clearInterval(clockRef.current);
+    clockRef.current = setInterval(() => {
+      const elapsed   = Math.floor((Date.now() - lastSyncRef.current.syncTime) / 1000);
+      const remaining = Math.max(0, lastSyncRef.current.totalSecs - elapsed);
+      const mm = Math.floor(remaining / 60).toString().padStart(2, '0');
+      const ss = (remaining % 60).toString().padStart(2, '0');
+      setDisplayClock(`${mm}:${ss}`);
+      if (remaining === 0) clearInterval(clockRef.current);
+    }, 1000);
+  }
+
+  // ── Live poll ───────────────────────────────────────────────
   function scheduleNext(isLive) {
     clearInterval(intervalRef.current);
-    // If past season end date, don't poll at all
     if (Date.now() > SEASON_END.getTime()) return;
-    const ms = isLive ? POLL_LIVE_MS : POLL_IDLE_MS;
-    intervalRef.current = setInterval(checkLive, ms);
+    intervalRef.current = setInterval(checkLive, isLive ? POLL_LIVE_MS : POLL_IDLE_MS);
   }
 
   async function checkLive() {
     try {
       const game = await getLiveGame();
       setLiveGame(game);
-      // Fetch PBP to get live period + clock — same source as Shot Map for consistency
       if (game?.id) {
-        try {
-          const pbp = await getGameDetail(game.id);
-          setLiveMeta({
-            period: pbp?.periodDescriptor,
-            clock:  pbp?.clock,
-          });
-        } catch { /* ignore */ }
+        const pbp = await getGameDetail(game.id).catch(() => null);
+        if (pbp) {
+          const meta = { period: pbp.periodDescriptor, clock: pbp.clock };
+          setLiveMeta(meta);
+          // Resync countdown from fresh server data
+          if (!pbp.clock?.inIntermission && pbp.clock?.timeRemaining) {
+            startCountdown(pbp.clock.timeRemaining);
+          } else {
+            // In intermission — just show static time, stop countdown
+            if (clockRef.current) clearInterval(clockRef.current);
+            setDisplayClock(pbp.clock?.timeRemaining || null);
+          }
+        }
       } else {
         setLiveMeta(null);
+        setDisplayClock(null);
+        if (clockRef.current) clearInterval(clockRef.current);
       }
       scheduleNext(!!game);
-    } catch {
-      // Swallow errors silently
-    }
+    } catch { /* ignore */ }
   }
 
   useEffect(() => {
-    if (Date.now() > SEASON_END.getTime()) return; // season over, skip entirely
+    if (Date.now() > SEASON_END.getTime()) return;
     checkLive();
-    return () => clearInterval(intervalRef.current);
+    return () => {
+      clearInterval(intervalRef.current);
+      clearInterval(clockRef.current);
+    };
   }, []);
 
   const opp      = liveGame ? getOpponent(liveGame) : null;
   const carScore = liveGame ? getCarScore(liveGame) : null;
   const oppScore = liveGame ? getOppScore(liveGame) : null;
-  const pd     = liveMeta?.period;
+  const pd       = liveMeta?.period;
   const isIntermission = liveMeta?.clock?.inIntermission;
   const period = pd
     ? isIntermission
       ? `${pd.number === 1 ? '1st' : pd.number === 2 ? '2nd' : '3rd'} INT`
       : (pd.periodType === 'REG' ? `P${pd.number}` : (pd.periodType || `P${pd.number}`))
     : null;
-  const clock  = liveMeta?.clock?.timeRemaining || null;
 
   return (
     <header className="topbar">
@@ -80,8 +108,10 @@ export default function Topbar() {
             <span className="live-team-muted">{opp?.abbrev}</span>
             <TeamLogo abbr={opp?.abbrev} size={18} color={TEAM_COLORS[opp?.abbrev]} />
           </div>
-          {(period || clock) && (
-            <div className="live-clock">{period}{period && clock ? ' · ' : ''}{clock}</div>
+          {(period || displayClock) && (
+            <div className="live-clock">
+              {period}{period && displayClock ? ' · ' : ''}{displayClock}
+            </div>
           )}
         </div>
       ) : (
