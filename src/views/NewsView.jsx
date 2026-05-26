@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import './NewsView.css';
 
 const WORKER_URL  = import.meta.env.VITE_WORKER_URL || '';
+const PAGE_SIZE   = 10;
+
 const SOURCE_META = {
   canescountry: { label: 'Canes Country', color: '#ffffff', bg: '#cc2200' },
   googlenews:   { label: 'Google News',   color: '#ffffff', bg: '#4285f4' },
@@ -12,20 +14,19 @@ const SOURCE_META = {
 function timeAgo(isoDate) {
   if (!isoDate) return '';
   const diff = (Date.now() - new Date(isoDate)) / 1000;
-  if (diff < 60)       return 'just now';
-  if (diff < 3600)     return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400)    return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 604800)   return `${Math.floor(diff / 86400)}d ago`;
+  if (diff < 60)     return 'just now';
+  if (diff < 3600)   return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400)  return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
   return new Date(isoDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function SourceBadge({ sourceId }) {
-  const meta = SOURCE_META[sourceId] || { label: sourceId, color: '#fff', bg: '#555' };
+function SourceBadge({ sourceId, label, color, bg }) {
+  const meta = SOURCE_META[sourceId] || { label: label || sourceId, color: color || '#fff', bg: bg || '#555' };
   return (
-    <span
-      className="news-source-badge"
-      style={{ background: meta.bg, color: meta.color }}
-    >{meta.label}</span>
+    <span className="news-source-badge" style={{ background: meta.bg, color: meta.color }}>
+      {meta.label}
+    </span>
   );
 }
 
@@ -33,7 +34,6 @@ function ArticleCard({ item }) {
   const handleClick = () => {
     if (item.url) window.open(item.url, '_blank', 'noopener,noreferrer');
   };
-
   return (
     <article className="news-card card" onClick={handleClick} role="link" tabIndex={0}
       onKeyDown={e => e.key === 'Enter' && handleClick()}
@@ -45,11 +45,11 @@ function ArticleCard({ item }) {
       )}
       <div className="news-card-body">
         <div className="news-card-meta">
-          <SourceBadge sourceId={item.source} />
+          <SourceBadge sourceId={item.source} label={item.sourceName} />
           <span className="news-card-time">{timeAgo(item.publishedAt)}</span>
         </div>
         <h3 className="news-card-title">{item.title}</h3>
-        {item.excerpt && (
+        {item.excerpt && item.excerpt !== item.sourceName && (
           <p className="news-card-excerpt">{item.excerpt}</p>
         )}
       </div>
@@ -59,11 +59,12 @@ function ArticleCard({ item }) {
 }
 
 export default function NewsView() {
-  const [articles, setArticles] = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState(null);
+  const [articles,  setArticles]  = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState(null);
   const [lastFetch, setLastFetch] = useState(null);
-  const [filter,   setFilter]   = useState('all');
+  const [filter,    setFilter]    = useState('all');
+  const [page,      setPage]      = useState(1);
 
   const fetchArticles = useCallback(async () => {
     if (!WORKER_URL) { setError('Worker URL not configured'); setLoading(false); return; }
@@ -75,6 +76,7 @@ export default function NewsView() {
       const data = await res.json();
       setArticles(Array.isArray(data) ? data : []);
       setLastFetch(new Date());
+      setPage(1);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -84,10 +86,22 @@ export default function NewsView() {
 
   useEffect(() => { fetchArticles(); }, [fetchArticles]);
 
-  const sources = ['all', ...Object.keys(SOURCE_META)];
+  // Reset page when filter changes
+  useEffect(() => { setPage(1); }, [filter]);
+
+  // Build filter chips from actual data (not just SOURCE_META keys)
+  const availableSources = useMemo(() => {
+    const seen = new Set();
+    articles.forEach(a => seen.add(a.source));
+    return ['all', ...Object.keys(SOURCE_META).filter(k => seen.has(k))];
+  }, [articles]);
+
   const filtered = filter === 'all'
     ? articles
     : articles.filter(a => a.source === filter);
+
+  const totalPages  = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated   = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="news-view page">
@@ -97,7 +111,7 @@ export default function NewsView() {
           <div>
             <div className="news-title">🌀 Canes News</div>
             {lastFetch && (
-              <div className="news-updated">Updated {timeAgo(lastFetch.toISOString())}</div>
+              <div className="news-updated">Updated {timeAgo(lastFetch.toISOString())} · {articles.length} articles</div>
             )}
           </div>
           <button className="news-refresh-btn" onClick={fetchArticles} disabled={loading}
@@ -106,15 +120,15 @@ export default function NewsView() {
           </button>
         </div>
 
-        {/* Source filter chips */}
+        {/* Source filter chips — built from actual data */}
         <div className="news-filter-chips">
-          {sources.map(s => (
+          {availableSources.map(s => (
             <button
               key={s}
               className={`news-chip ${filter === s ? 'active' : ''}`}
               onClick={() => setFilter(s)}
             >
-              {s === 'all' ? 'All' : (SOURCE_META[s]?.label || s)}
+              {s === 'all' ? `All (${articles.length})` : (SOURCE_META[s]?.label || s)}
             </button>
           ))}
         </div>
@@ -144,18 +158,37 @@ export default function NewsView() {
       {!loading && !error && filtered.length === 0 && (
         <div className="news-empty card">
           <div className="news-error-icon">📰</div>
-          <div>No articles found{filter !== 'all' ? ` from ${SOURCE_META[filter]?.label}` : ''}.</div>
+          <div>No articles found{filter !== 'all' ? ` from ${SOURCE_META[filter]?.label || filter}` : ''}.</div>
         </div>
       )}
 
-      {!loading && !error && filtered.length > 0 && (
-        <div className="news-feed">
-          {filtered.map(item => <ArticleCard key={item.id} item={item} />)}
-        </div>
+      {!loading && !error && paginated.length > 0 && (
+        <>
+          <div className="news-feed">
+            {paginated.map(item => <ArticleCard key={item.id} item={item} />)}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="news-pagination">
+              <button
+                className="news-page-btn"
+                onClick={() => { setPage(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                disabled={page === 1}
+              >← Prev</button>
+              <span className="news-page-info">{page} / {totalPages}</span>
+              <button
+                className="news-page-btn"
+                onClick={() => { setPage(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                disabled={page === totalPages}
+              >Next →</button>
+            </div>
+          )}
+        </>
       )}
 
       <div className="news-footer">
-        Articles from NHL.com, ESPN, Sportsnet, and Canes Country.
+        Articles from Canes Country, Google News, ESPN, and Sportsnet.
         Tap any article to read the full story.
       </div>
     </div>
