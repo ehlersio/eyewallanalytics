@@ -5,7 +5,7 @@ const WORKER_URL  = import.meta.env.VITE_WORKER_URL || '';
 const SOURCE_META = {
   nhl:          { label: 'NHL.com',       color: '#ffffff', bg: '#000000' },
   espn:         { label: 'ESPN',          color: '#ffffff', bg: '#cc0000' },
-  sportsnet:    { label: 'Sportsnet',     color: '#000000', bg: '#d4a017' },
+  athletic:     { label: 'The Athletic',  color: '#ffffff', bg: '#1a1a1a' },
   canescountry: { label: 'Canes Country', color: '#ffffff', bg: '#cc2200' },
 };
 
