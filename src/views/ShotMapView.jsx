@@ -379,7 +379,7 @@ export default function ShotMapView() {
     return played[0] || null;
   }
 
-  const carGoalie = activeGoalie(boxscore?.playerByGameStats?.[pbgKey]?.goalies || []);
+  const carGoalie = activeGoalie(boxscore?.playerByGameStats?.[gameHome ? 'homeTeam' : 'awayTeam']?.goalies || []);
   const oppGoalie = activeGoalie(boxscore?.playerByGameStats?.[oppKey]?.goalies  || []);
 
   // ── Context label for top metrics ───────────────────────────
