@@ -235,6 +235,23 @@ export default function ShotMapView() {
       const rows = Object.values(byPlayer).sort((a, b) => b.total - a.total);
       setDrillStat({ label: 'CAR Hits', rows, type: 'hits' });
 
+    } else if (statKey === 'blocked') {
+      const blocks = plays.filter(p =>
+        p.typeDescKey === 'blocked-shot' &&
+        p.details?.eventOwnerTeamId === carId
+      );
+      const byPlayer = {};
+      blocks.forEach(p => {
+        const id  = p.details?.blockingPlayerId;
+        const per = periodLabel(p.periodDescriptor?.number);
+        const key = id || 'unknown';
+        if (!byPlayer[key]) byPlayer[key] = { name: pName(id), periods: {}, total: 0 };
+        byPlayer[key].periods[per] = (byPlayer[key].periods[per] || 0) + 1;
+        byPlayer[key].total++;
+      });
+      const rows = Object.values(byPlayer).sort((a, b) => b.total - a.total);
+      setDrillStat({ label: 'CAR Blocked Shots', rows, type: 'hits' });
+
     } else if (statKey === 'faceoff') {
       const fos = plays.filter(p => p.typeDescKey === 'faceoff');
       const byPlayer = {};
@@ -505,6 +522,7 @@ export default function ShotMapView() {
           sub={gameBlocked.opp != null ? `Opp ${gameBlocked.opp}` : 'this game'}
           color={gameBlocked.car > gameBlocked.opp ? 'green' : null}
           help="Shots blocked by CAR skaters"
+          onClick={pbp ? () => buildDrillDown('blocked') : null}
         />
         <MetCard
           label="Faceoff %"
