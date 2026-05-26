@@ -3,10 +3,10 @@ import './NewsView.css';
 
 const WORKER_URL  = import.meta.env.VITE_WORKER_URL || '';
 const SOURCE_META = {
-  nhl:          { label: 'NHL.com',       color: '#ffffff', bg: '#000000' },
+  nhl:          { label: 'NHL News',      color: '#ffffff', bg: '#000000' },
   espn:         { label: 'ESPN',          color: '#ffffff', bg: '#cc0000' },
-  athletic:     { label: 'The Athletic',  color: '#ffffff', bg: '#1a1a1a' },
   canescountry: { label: 'Canes Country', color: '#ffffff', bg: '#cc2200' },
+  puckpedia:    { label: 'PuckPedia',     color: '#ffffff', bg: '#2255aa' },
 };
 
 function timeAgo(isoDate) {
