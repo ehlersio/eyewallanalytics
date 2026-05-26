@@ -448,17 +448,7 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, standingMap, carSta
                         isSelected={isSelected}
                         isPlayoff
                         odds={ml}
-                        cardFavoured={!completed && carStanding && oppStanding ? (() => {
-                          const cgp = carStanding.gamesPlayed || 1;
-                          const ogp = oppStanding?.gamesPlayed || 1;
-                          let cs = 0, os = 0;
-                          if ((carStanding.goalFor??0)/cgp > (oppStanding.goalFor??0)/ogp) cs+=0.7; else os+=0.7;
-                          if ((carStanding.goalAgainst??0)/cgp < (oppStanding.goalAgainst??0)/ogp) cs+=0.7; else os+=0.7;
-                          if ((carStanding.shotsForPerGame||0) > (oppStanding.shotsForPerGame||0)) cs+=0.5; else os+=0.5;
-                          if (game.homeTeam?.abbrev === 'CAR') cs+=0.25; else os+=0.25;
-                          const t = cs+os||1; const pct = Math.round(cs/t*100);
-                          return { favoured: pct>=50, pct };
-                        })() : null}
+                        cardFavoured={!completed ? computeWinPct(carStanding, oppStanding, game, playoffSeries) : null}
                         onClick={() => {
                           if (completed) { onGamePopup(game); }
                           else { setSelectedGame(isSelected ? null : game); }
@@ -574,20 +564,7 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
         const isSelected  = selectedGame?.id === game.id;
         const oppStanding = standingMap[opp?.abbrev] || standingMap[opp?.abbrev?.toLowerCase()];
 
-        // Quick win probability for the card chip (same model, lightweight)
-        let cardFavoured = null;
-        if (carStanding && oppStanding) {
-          const cgp = carStanding.gamesPlayed || 1;
-          const ogp = oppStanding.gamesPlayed || 1;
-          let cs = 0, os = 0;
-          if ((carStanding.goalFor ?? 0)/cgp > (oppStanding.goalFor ?? 0)/ogp) cs += 0.7; else os += 0.7;
-          if ((carStanding.goalAgainst ?? 0)/cgp < (oppStanding.goalAgainst ?? 0)/ogp) cs += 0.7; else os += 0.7;
-          if ((carStanding.shotsForPerGame||0) > (oppStanding.shotsForPerGame||0)) cs += 0.5; else os += 0.5;
-          if (game.homeTeam?.abbrev === 'CAR') cs += 0.25; else os += 0.25;
-          const t = cs + os || 1;
-          const pct = Math.round(cs / t * 100);
-          cardFavoured = { favoured: pct >= 50, pct };
-        }
+        const cardFavoured = computeWinPct(carStanding, oppStanding, game, null);
 
         return (
           <div key={game.id}>
@@ -1396,6 +1373,60 @@ function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, car
   );
 }
 
+// ── Shared win probability model ─────────────────────────────
+// Used by both GameCard chip and MatchupDetail probability bar.
+// Returns { pct: number, favoured: bool }
+function computeWinPct(carStanding, oppStanding, game, playoffSeries) {
+  if (!carStanding || !oppStanding) return null;
+  const isPlayoff = game?.gameType === 3;
+  const isHome    = game?.homeTeam?.abbrev === 'CAR';
+  const cgp = carStanding.gamesPlayed || 1;
+  const ogp = oppStanding.gamesPlayed || 1;
+  const carGpg = (carStanding.goalFor     ?? 0) / cgp;
+  const oppGpg = (oppStanding.goalFor     ?? 0) / ogp;
+  const carGag = (carStanding.goalAgainst ?? 0) / cgp;
+  const oppGag = (oppStanding.goalAgainst ?? 0) / ogp;
+  const carSF  = carStanding.shotsForPerGame || 0;
+  const oppSF  = oppStanding.shotsForPerGame || 0;
+  const carPP  = typeof carStanding.powerPlayPct === 'number'
+    ? (carStanding.powerPlayPct <= 1 ? carStanding.powerPlayPct * 100 : carStanding.powerPlayPct) : 22;
+  const oppPK  = typeof oppStanding.penaltyKillPct === 'number'
+    ? (oppStanding.penaltyKillPct <= 1 ? oppStanding.penaltyKillPct * 100 : oppStanding.penaltyKillPct) : 80;
+
+  let cs = 0, os = 0;
+  if (carGpg > oppGpg) cs += 0.7; else os += 0.7;
+  if (carGag < oppGag) cs += 0.7; else os += 0.7;
+  if (carSF  > oppSF)  cs += 0.5; else os += 0.5;
+  if ((carPP - (100 - oppPK)) > 0) cs += 0.4; else os += 0.4;
+  if (!isPlayoff) {
+    const ptsDiff = (carStanding.points ?? 0) - (oppStanding.points ?? 0);
+    if (ptsDiff > 0) cs += Math.min(ptsDiff / 20, 0.5);
+    else             os += Math.min(-ptsDiff / 20, 0.5);
+  }
+  if (carStanding.streakCode === 'W') cs += 0.3;
+  if (oppStanding.streakCode === 'W') os += 0.3;
+  if (isHome) cs += 0.25; else os += 0.25;
+
+  // Playoff series record
+  if (isPlayoff && playoffSeries) {
+    const oppAbbr = isHome ? game.awayTeam?.abbrev : game.homeTeam?.abbrev;
+    const round   = (() => {
+      const id = String(game.id);
+      return (id.length === 10 && id.slice(4,6) === '03') ? parseInt(id[7], 10) : null;
+    })();
+    const s = playoffSeries.find(s => s.round === round && s.opponent?.abbrev === oppAbbr);
+    if (s) {
+      const lead = s.carWins - s.oppWins;
+      if (lead > 0) cs += Math.min(lead * 0.5, 1.0);
+      else if (lead < 0) os += Math.min(-lead * 0.5, 1.0);
+    }
+  }
+
+  const t = cs + os || 1;
+  const pct = Math.round(cs / t * 100);
+  return { pct, favoured: pct >= 50 };
+}
+
 // ── Matchup detail (upcoming games) ─────────────────────────
 
 function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) {
@@ -1481,69 +1512,35 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
     s => s.round === round && s.opponent?.abbrev === oppAbbr
   );
 
-  // ── Multi-factor win prediction model ────────────────────
+  // ── Win probability — uses shared model (matches game card chip) ──
   const isPlayoff_  = game?.gameType === 3;
   const isHome_     = game?.homeTeam?.abbrev === 'CAR';
-  let carScore = 0, oppScore = 0;
-  const factors = [];
 
-  // 1. Offence — GF/GP (weight: 0.7)
-  if (carGpg > oppGpg) carScore += 0.7; else oppScore += 0.7;
-  factors.push({ label: 'Offence (GF/GP)', carEdge: carGpg >= oppGpg });
-
-  // 2. Defence — GA/GP (weight: 0.7)
-  if (carGag < oppGag) carScore += 0.7; else oppScore += 0.7;
-  factors.push({ label: 'Defence (GA/GP)', carEdge: carGag <= oppGag });
-
-  // 3. Possession proxy — shots for per game (weight: 0.5)
-  const carSF = carStanding.shotsForPerGame  || 0;
-  const oppSF = oppStanding.shotsForPerGame  || 0;
-  if (carSF > oppSF) carScore += 0.5; else oppScore += 0.5;
-  factors.push({ label: 'Possession (SOG/GP)', carEdge: carSF >= oppSF });
-
-  // 4. PP vs PK matchup (weight: 0.4)
-  const ppEdge = carPP - (100 - oppPK);
-  if (ppEdge > 0) carScore += 0.4; else oppScore += 0.4;
-  factors.push({ label: 'PP vs PK', carEdge: ppEdge >= 0 });
-
-  // 5. Standings points — regular season only (weight: 0.5)
-  if (!isPlayoff_) {
-    const ptsDiff = carPts - oppPts;
-    if (ptsDiff > 0) carScore += Math.min(ptsDiff / 20, 0.5);
-    else             oppScore += Math.min(-ptsDiff / 20, 0.5);
-    factors.push({ label: 'Standings', carEdge: carPts >= oppPts });
-  }
-
-  // 6. Recent form — streak (weight: 0.3)
+  // Re-derive factors for display (mirrors computeWinPct logic)
+  const carSF    = carStanding.shotsForPerGame || 0;
+  const oppSF    = oppStanding.shotsForPerGame || 0;
+  const ppEdge   = carPP - (100 - oppPK);
   const carStreak = carStanding.streakCode;
   const oppStreak = oppStanding.streakCode;
-  if (carStreak === 'W') carScore += 0.3;
-  if (oppStreak === 'W') oppScore += 0.3;
-  if (carStreak || oppStreak) {
-    factors.push({ label: 'Recent form', carEdge: carStreak === 'W' && oppStreak !== 'W' });
-  }
+  const factors  = [
+    { label: 'Offence (GF/GP)',    carEdge: carGpg >= oppGpg },
+    { label: 'Defence (GA/GP)',    carEdge: carGag <= oppGag },
+    { label: 'Possession (SOG/GP)', carEdge: carSF >= oppSF },
+    { label: 'PP vs PK',           carEdge: ppEdge >= 0 },
+    ...(!isPlayoff_ ? [{ label: 'Standings', carEdge: carPts >= oppPts }] : []),
+    ...((carStreak || oppStreak) ? [{ label: 'Recent form', carEdge: carStreak === 'W' && oppStreak !== 'W' }] : []),
+    { label: 'Home ice',           carEdge: isHome_ },
+    ...(isPlayoff_ && seriesEntry ? [{ label: 'Series lead', carEdge: (seriesEntry.carWins - seriesEntry.oppWins) >= 0 }] : []),
+  ];
 
-  // 7. Home ice (weight: 0.25)
-  if (isHome_) carScore += 0.25; else oppScore += 0.25;
-  factors.push({ label: 'Home ice', carEdge: isHome_ });
-
-  // 8. Playoff series record (playoffs only — weight: 1.0 if available)
-  if (isPlayoff_ && seriesEntry) {
-    const seriesLead = seriesEntry.carWins - seriesEntry.oppWins;
-    if (seriesLead > 0) carScore += Math.min(seriesLead * 0.5, 1.0);
-    else if (seriesLead < 0) oppScore += Math.min(-seriesLead * 0.5, 1.0);
-    factors.push({ label: 'Series lead', carEdge: seriesLead >= 0 });
-  }
-
-  // Odds-implied probability if available (blend: 60% model, 40% market)
+  // Get model win % from shared function
+  const winResult  = computeWinPct(carStanding, oppStanding, game, playoffSeries);
   const carImplied = odds ? oddsToImplied(odds.carOdds) : null;
   const oppImplied = odds ? oddsToImplied(odds.oppOdds) : null;
 
-  const total = carScore + oppScore || 1;
-  let carModelPct = Math.round((carScore / total) * 100);
-  if (carImplied) {
-    carModelPct = Math.round(carModelPct * 0.6 + carImplied * 0.4);
-  }
+  // Blend with market odds if available (60/40)
+  let carModelPct = winResult?.pct ?? 50;
+  if (carImplied) carModelPct = Math.round(carModelPct * 0.6 + carImplied * 0.4);
   const carFavoured = carModelPct >= 50;
 
   const modelTooltip = [
