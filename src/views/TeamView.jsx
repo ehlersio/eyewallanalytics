@@ -86,6 +86,7 @@ export default function TeamView() {
 
 // ── Overview tab ──────────────────────────────────────────────
 function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding, playoffSummary, wins, losses, otl, pts, inPlayoffs, liveGame, corsiReg }) {
+  if (corsiReg) console.log('[EyeWall] corsiReg keys:', Object.keys(corsiReg));
   return (
     <>
       <div className="records-row">
