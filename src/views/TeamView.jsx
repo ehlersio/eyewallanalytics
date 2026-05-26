@@ -75,7 +75,7 @@ export default function TeamView() {
         ))}
       </div>
 
-      {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} liveGame={liveGame} />}
+      {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} />}
       {tab === 'Advanced'  && <AdvancedTab corsiReg={corsiReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} />}
       {tab === 'Splits'    && <SplitsTab homeSplit={homeSplit} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} />}
       {tab === 'Trends'    && <TrendsTab gameLog={gameLog} />}
@@ -85,7 +85,7 @@ export default function TeamView() {
 }
 
 // ── Overview tab ──────────────────────────────────────────────
-function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding, playoffSummary, wins, losses, otl, pts, inPlayoffs, liveGame }) {
+function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding, playoffSummary, wins, losses, otl, pts, inPlayoffs, liveGame, corsiReg }) {
   return (
     <>
       <div className="records-row">

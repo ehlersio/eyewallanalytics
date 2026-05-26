@@ -236,9 +236,12 @@ export default function ShotMapView() {
       setDrillStat({ label: 'CAR Hits', rows, type: 'hits' });
 
     } else if (statKey === 'blocked') {
+      // eventOwnerTeamId = the shooting team whose shot was blocked
+      // So CAR blockers = plays where opponent is shooting (eventOwnerTeamId !== carId)
       const blocks = plays.filter(p =>
         p.typeDescKey === 'blocked-shot' &&
-        p.details?.eventOwnerTeamId === carId
+        p.details?.eventOwnerTeamId !== carId &&
+        p.details?.blockingPlayerId != null
       );
       const byPlayer = {};
       blocks.forEach(p => {
