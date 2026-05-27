@@ -103,7 +103,7 @@ export default function Topbar() {
       ) : (
         <div className="topbar-status">
           <span className="status-dot-idle" />
-          <span className="topbar-no-live">No game in progress</span>
+          <span className="topbar-no-live">Off season</span>
         </div>
       )}
 
