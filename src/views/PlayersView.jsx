@@ -187,7 +187,7 @@ function PlayerCard({ player: p, onClick }) {
 function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
   const { data: stats, loading } = useFetch(() => getPlayerStats(p.id), [p.id])
   const [imgErr, setImgErr]     = useState(false)
-  const [ppTab, setPpTab]       = useState('stats') // 'stats' | 'heatmap'
+  const [ppTab, setPpTab]       = useState('stats') // 'stats' | 'analytics' | 'heatmap'
   const name = `${p.firstName?.default || ''} ${p.lastName?.default || ''}`.trim()
 
   // Fetch season shot data from Worker KV
@@ -200,6 +200,17 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
       : Promise.resolve(null),
     [p.id]
   )
+
+  // Fetch MoneyPuck analytics from Worker KV
+  const { data: mpAll } = useFetch(
+    () => workerUrl
+      ? fetch(`${workerUrl}/cache/${encodeURIComponent('moneypuck:skaters')}`)
+          .then(r => r.ok ? r.json() : null)
+          .catch(() => null)
+      : Promise.resolve(null),
+    []
+  )
+  const mpData = mpAll?.[String(p.id)] || null
 
   // Extract stats for each context in display order
   const seasonPO  = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 3)
@@ -409,6 +420,7 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
         {/* ── Tab toggle ── */}
         <div className="pp-tabs">
           <button className={`pp-tab ${ppTab === 'stats' ? 'active' : ''}`} onClick={() => setPpTab('stats')}>📊 Stats</button>
+          <button className={`pp-tab ${ppTab === 'analytics' ? 'active' : ''}`} onClick={() => setPpTab('analytics')}>🧮 Analytics</button>
           <button className={`pp-tab ${ppTab === 'heatmap' ? 'active' : ''}`} onClick={() => setPpTab('heatmap')}>🎯 Heat Map</button>
         </div>
 
@@ -441,6 +453,11 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
         {/* ── Heat map tab ── */}
         {ppTab === 'heatmap' && (
           <PlayerHeatMap shotData={shotData} playerName={name} isGoalie={p.positionCode === 'G'} />
+        )}
+
+        {/* ── Analytics tab ── */}
+        {ppTab === 'analytics' && (
+          <PlayerAnalytics mpData={mpData} playerName={name} isGoalie={p.positionCode === 'G'} position={p.positionCode} />
         )}
       </div>
     </div>
@@ -660,6 +677,114 @@ function PlayerHeatMap({ shotData, playerName, isGoalie }) {
       <div className="pp-heatmap-rink">
         <IceRink events={filtered} roster={{}} hidePlayerFilter />
       </div>
+    </div>
+  );
+}
+
+// ── Player Analytics (WAR + Percentiles) ─────────────────────
+function PercentileBar({ label, pct, note, na }) {
+  if (na || pct == null) {
+    return (
+      <div className="pa-row">
+        <span className="pa-label">{label}</span>
+        <span className="pa-na">N/A</span>
+      </div>
+    );
+  }
+
+  // Color: red < 33, amber 33-66, green > 66
+  const color = pct >= 67 ? '#4ade80' : pct >= 34 ? '#fbbf24' : '#f87171';
+  const tier  = pct >= 90 ? 'Elite' : pct >= 75 ? 'Great' : pct >= 50 ? 'Above avg'
+              : pct >= 25 ? 'Below avg' : 'Poor';
+
+  return (
+    <div className="pa-row">
+      <span className="pa-label" title={note}>{label}</span>
+      <div className="pa-bar-wrap">
+        <div className="pa-bar-track">
+          <div className="pa-bar-fill" style={{ width: `${pct}%`, background: color }} />
+        </div>
+        <span className="pa-pct" style={{ color }}>{pct}th</span>
+        <span className="pa-tier" style={{ color }}>{tier}</span>
+      </div>
+    </div>
+  );
+}
+
+function PlayerAnalytics({ mpData, playerName, isGoalie, position }) {
+  if (isGoalie) {
+    return (
+      <div className="pp-heatmap-empty">
+        <div className="pp-heatmap-icon">🥅</div>
+        <div>Analytics tab is for skaters only.</div>
+        <div className="pp-heatmap-sub">Goalie analytics coming soon.</div>
+      </div>
+    );
+  }
+
+  if (!mpData) {
+    return (
+      <div className="pp-heatmap-empty">
+        <div className="pp-heatmap-icon">🧮</div>
+        <div>Analytics data not yet available.</div>
+        <div className="pp-heatmap-sub">Updates daily from MoneyPuck.</div>
+      </div>
+    );
+  }
+
+  const { war, percentiles, gp, xGF_pct, goals60, a1_60, ppToi, pkToi, gameScore } = mpData;
+  const pos     = ['C','L','R','F'].includes(position) ? 'F' : 'D';
+  const posLabel = pos === 'F' ? 'forwards' : 'defensemen';
+  const p       = percentiles || {};
+
+  // WAR color
+  const warColor = war >= 2 ? '#4ade80' : war >= 0.5 ? '#fbbf24' : '#f87171';
+  const warLabel = war >= 4 ? 'MVP candidate' : war >= 2 ? 'Top player'
+    : war >= 0.5 ? 'Solid contributor' : war >= -0.5 ? 'Replacement level' : 'Below replacement';
+
+  return (
+    <div className="pa-wrap">
+
+      {/* WAR summary */}
+      <div className="pa-war-card">
+        <div className="pa-war-main">
+          <span className="pa-war-num" style={{ color: warColor }}>{war > 0 ? '+' : ''}{war}</span>
+          <span className="pa-war-label">WAR</span>
+        </div>
+        <div className="pa-war-meta">
+          <span style={{ color: warColor }}>{warLabel}</span>
+          <span className="pa-war-sub">{gp} GP · Game Score {gameScore}</span>
+          <span className="pa-war-sub" style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
+            Approximate — based on xGoals model, not full RAPM
+          </span>
+        </div>
+      </div>
+
+      {/* Context stats */}
+      <div className="pa-context">
+        {xGF_pct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{xGF_pct}%</span><span>EV xGF%</span></div>}
+        {goals60 != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{goals60}</span><span>G/60</span></div>}
+        {a1_60   != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{a1_60}</span><span>A1/60</span></div>}
+        {ppToi   != null && ppToi > 0 && <div className="pa-ctx-item"><span className="pa-ctx-val">{ppToi}m</span><span>PP TOI</span></div>}
+        {pkToi   != null && pkToi > 0 && <div className="pa-ctx-item"><span className="pa-ctx-val">{pkToi}m</span><span>PK TOI</span></div>}
+      </div>
+
+      {/* Percentile rankings */}
+      <div className="pa-section-label">Percentile rankings vs all NHL {posLabel}</div>
+      <div className="pa-bars">
+        <PercentileBar label="EV Offence"    pct={p.evOff?.pct}     note={p.evOff?.note} />
+        <PercentileBar label="EV Defence"    pct={p.evDef?.pct}     note={p.evDef?.note} />
+        <PercentileBar label="Power Play"    pct={p.pp?.pct}        note={p.pp?.note}    na={!ppToi || ppToi < 5} />
+        <PercentileBar label="Penalty Kill"  pct={p.pk?.pct}        note={p.pk?.note}    na={!pkToi || pkToi < 5} />
+        <PercentileBar label="Finishing"     pct={p.finishing?.pct} note={p.finishing?.note} />
+        <PercentileBar label="Goals"         pct={p.goals?.pct}     note={p.goals?.note} />
+        <PercentileBar label="1st Assists"   pct={p.a1?.pct}        note={p.a1?.note} />
+        <PercentileBar label="Penalties"     pct={p.penalties?.pct} note={p.penalties?.note} />
+        <PercentileBar label="Competition"   pct={p.comp?.pct}      note={p.comp?.note} />
+        <PercentileBar label="Teammates"     pct={p.teammates?.pct} note={p.teammates?.note} />
+      </div>
+
+      <div className="pa-source">Data: MoneyPuck.com · Updates nightly</div>
     </div>
   );
 }

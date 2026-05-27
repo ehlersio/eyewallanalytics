@@ -386,3 +386,52 @@
   border-color: var(--red-bright);
 }
 .pp-heatmap-rink { border-radius: 8px; overflow: hidden; width: 100%; }
+
+/* ── Player Analytics ── */
+.pa-wrap { padding: 12px 0 16px; }
+
+.pa-war-card {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--bg2); border-radius: 10px;
+  padding: 14px 16px; margin-bottom: 12px;
+}
+.pa-war-main { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.pa-war-num  { font-size: 32px; font-weight: 800; font-family: var(--font-mono); line-height: 1; }
+.pa-war-label { font-size: 11px; font-weight: 700; color: var(--text-dim); letter-spacing: 0.08em; margin-top: 2px; }
+.pa-war-meta { display: flex; flex-direction: column; gap: 3px; font-size: 13px; font-weight: 600; }
+.pa-war-sub  { font-size: 11px; color: var(--text-dim); font-weight: 400; }
+
+.pa-context {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.pa-ctx-item {
+  display: flex; flex-direction: column; align-items: center;
+  background: var(--bg2); border-radius: 8px;
+  padding: 6px 10px; font-size: 10px; color: var(--text-dim);
+  gap: 2px; min-width: 44px;
+}
+.pa-ctx-val { font-size: 14px; font-weight: 700; font-family: var(--font-mono); color: var(--text); }
+
+.pa-section-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.pa-bars { display: flex; flex-direction: column; gap: 6px; }
+.pa-row  { display: flex; align-items: center; gap: 8px; }
+.pa-label {
+  font-size: 11px; color: var(--text-muted);
+  width: 90px; flex-shrink: 0;
+}
+.pa-na { font-size: 11px; color: var(--text-dim); font-style: italic; }
+.pa-bar-wrap { flex: 1; display: flex; align-items: center; gap: 6px; }
+.pa-bar-track {
+  flex: 1; height: 6px; background: var(--bg3);
+  border-radius: 3px; overflow: hidden;
+}
+.pa-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.pa-pct  { font-size: 11px; font-weight: 700; font-family: var(--font-mono); width: 32px; text-align: right; flex-shrink: 0; }
+.pa-tier { font-size: 10px; width: 72px; flex-shrink: 0; }
+
+.pa-source { font-size: 10px; color: var(--text-dim); margin-top: 14px; text-align: center; }
