@@ -1,23 +1,31 @@
 {
   "name": "canes-analytics",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "node node_modules/vite/bin/vite.js build",
-    "preview": "node node_modules/vite/bin/vite.js preview"
+    "dev":      "vite",
+    "build":    "node node_modules/vite/bin/vite.js build",
+    "preview":  "node node_modules/vite/bin/vite.js preview",
+    "test":     "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react":            "^18.3.1",
+    "react-dom":        "^18.3.1",
     "react-router-dom": "^6.23.1",
-    "d3": "^7.9.0",
-    "date-fns": "^3.6.0",
-    "lucide-react": "^0.383.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "vite": "^5.3.1",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0"
+    "d3":               "^7.9.0",
+    "date-fns":         "^3.6.0",
+    "lucide-react":     "^0.383.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react":    "^4.3.1",
+    "@vitest/coverage-v8":     "^1.6.0",
+    "vite":                    "^5.3.1",
+    "vitest":                  "^1.6.0",
+    "@types/react":            "^18.3.3",
+    "@types/react-dom":        "^18.3.0"
   }
 }
