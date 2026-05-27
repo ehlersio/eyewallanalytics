@@ -1,6 +1,6 @@
 # EyeWall Analytics
 
-> Carolina Hurricanes advanced stats and analytics — live shot maps, possession metrics, push notifications, and AI-generated game summaries.
+> Carolina Hurricanes advanced stats and analytics — live shot maps, possession metrics, push notifications, AI-generated game summaries, player heat maps, and WAR/percentile rankings.
 
 **Live at:** [eyewallanalytics.com](https://eyewallanalytics.com)  
 **Contact:** matt@eyewallanalytics.com  
@@ -10,7 +10,7 @@
 
 ## Overview
 
-EyeWall Analytics is a React PWA delivering real-time and historical Carolina Hurricanes data entirely from the public NHL API. It combines live polling, a Cloudflare Worker caching layer, Web Push notifications, and Claude AI game summaries into a mobile-first experience for Canes fans who want to go deeper than the box score.
+EyeWall Analytics is a React PWA delivering real-time and historical Carolina Hurricanes data entirely from the public NHL API and MoneyPuck. It combines live polling, a Cloudflare Worker caching layer, Web Push notifications, Claude AI game summaries, player shot heat maps, and MoneyPuck-powered WAR/percentile analytics into a mobile-first experience for Canes fans who want to go deeper than the box score.
 
 ---
 
@@ -21,13 +21,15 @@ EyeWall Analytics is a React PWA delivering real-time and historical Carolina Hu
 | Frontend | React 18 + Vite, react-router-dom v6 |
 | Styling | CSS custom properties (design tokens), no CSS framework |
 | Charts | D3 v7, SVG-based IceRink component |
-| Hosting | Cloudflare Pages (auto-deploys from GitHub `main`) |
+| Hosting | Cloudflare Pages (auto-deploys from `main`; `dev` branch → preview) |
 | API Proxy | Cloudflare Pages Functions (`functions/`) |
 | Cache Layer | Cloudflare Worker + KV (`eyewall-poller`) |
 | Push Notifications | Web Push API (VAPID), Service Worker |
 | AI Summaries | Anthropic Claude Haiku via Worker |
+| Analytics Data | MoneyPuck.com CSV (fetched nightly by Worker) |
 | Data Source | NHL public API (no authentication required) |
 | Cap Data | Static `carContracts.js` (source: PuckPedia) |
+| Testing | Vitest (unit tests), GitHub Actions CI |
 
 ---
 
@@ -40,6 +42,7 @@ canes-analytics-starter/
 │   ├── sw.js                     # Service worker (Web Push handler)
 │   ├── manifest.json             # PWA manifest (Add to Home Screen)
 │   ├── goal-horn.mp3             # CAR goal horn audio
+│   ├── _headers                  # Cloudflare cache control headers
 │   ├── eyewall-logo.svg/.png     # App logo
 │   └── favicon-*.png / .ico      # Favicons
 ├── functions/                    # Cloudflare Pages Functions (API proxy)
@@ -50,10 +53,11 @@ canes-analytics-starter/
 ├── src/
 │   ├── App.jsx                   # Router, layout, BottomNav
 │   ├── views/
-│   │   ├── ShotMapView.jsx/.css  # Live shot map, metrics, events
+│   │   ├── ShotMapView.jsx/.css  # Live shot map, metrics, live insights
 │   │   ├── ScheduleView.jsx/.css # Season + playoff schedule, predictions
 │   │   ├── TeamView.jsx/.css     # 5-tab team analytics
-│   │   └── PlayersView.jsx/.css  # Roster, player cards, contracts
+│   │   ├── PlayersView.jsx/.css  # Roster, player cards, analytics, heat maps
+│   │   └── NewsView.jsx/.css     # News feed (5 sources, filters, pagination)
 │   ├── components/
 │   │   ├── Topbar.jsx/.css       # Live score, countdown clock, bells
 │   │   ├── IceRink.jsx/.css      # SVG rink, heat map, player filter
@@ -74,6 +78,10 @@ canes-analytics-starter/
 │       ├── carContracts.js       # Static CAR contract + draft pick data
 │       ├── predictionStore.js    # localStorage game prediction tracker
 │       └── liveClockStore.js     # Shared pub/sub for synced countdown clock
+├── src/utils/*.test.js           # Vitest unit tests
+├── .github/workflows/ci.yml      # GitHub Actions: test + build on push
+├── SMOKE_TESTS.md                # Manual pre-merge checklist
+└── .env.local.example            # Environment variable template
 ```
 
 ---
@@ -99,6 +107,11 @@ A separate Cloudflare Worker polls the NHL API every 60 seconds and writes to KV
 | `push:gameover:{id}` | Game-over dedup flag | 24hr |
 | `summary:{gameId}` | AI game summary card | 30 days |
 | `latest-notification` | Last push payload (SW fetch) | 5 min |
+| `news:CAR` | Aggregated news articles (5 sources) | 30 min |
+| `shots:CAR:{playerId}` | Season shot coordinates per player | 8 months |
+| `shots:CAR:index` | Player shot count index | 8 months |
+| `shots:done:{gameId}` | Shot aggregation dedup flag | 8 months |
+| `moneypuck:skaters` | WAR + percentile analytics for all CAR players | 4 hrs |
 
 ### Worker Endpoints
 
@@ -110,17 +123,25 @@ A separate Cloudflare Worker polls the NHL API every 60 seconds and writes to KV
 | `POST /push/unsubscribe` | Remove a push subscription |
 | `GET /poll?secret=` | Manual poll trigger |
 | `GET /push/test?secret=` | Send test notification |
+| `GET /news/refresh?secret=` | Force news feed refresh |
 | `GET /summary/generate?secret=&force=1` | Generate AI summary for most recent game |
+| `GET /shots/backfill?secret=&batch=5` | Backfill shot data for completed games (batched) |
+| `GET /moneypuck/refresh?secret=` | Force refresh MoneyPuck analytics |
+| `GET /social/test?secret=&post=1` | Preview (or post) test X/social post |
 
 ### Environment Variables
 
 | Variable | Where | Notes |
 |----------|-------|-------|
-| `POLL_SECRET` | Worker | Protects `/poll` and `/push/test` endpoints |
+| `POLL_SECRET` | Worker | Protects manual trigger endpoints |
 | `VAPID_PUBLIC_KEY` | Worker + Pages | Web Push VAPID public key |
 | `VAPID_PRIVATE_KEY` | Worker (encrypted) | Web Push VAPID private key |
 | `VAPID_SUBJECT` | Worker | `mailto:matt@eyewallanalytics.com` |
 | `ANTHROPIC_API_KEY` | Worker (encrypted) | Claude API for game summaries |
+| `X_CONSUMER_KEY` | Worker (encrypted) | X/Twitter API key (posting ready, needs Basic tier) |
+| `X_CONSUMER_SECRET` | Worker (encrypted) | X/Twitter API secret |
+| `X_ACCESS_TOKEN` | Worker (encrypted) | X/Twitter access token |
+| `X_ACCESS_SECRET` | Worker (encrypted) | X/Twitter access secret |
 | `VITE_WORKER_URL` | Pages (build-time) | Worker base URL |
 | `VITE_VAPID_PUBLIC_KEY` | Pages (build-time) | Web Push public key for browser |
 
@@ -128,101 +149,162 @@ A separate Cloudflare Worker polls the NHL API every 60 seconds and writes to KV
 
 ## Features
 
-### Shot Map (Live)
+### Shot Map (Live + Post-game)
 - SVG ice rink drawn to NHL spec (200×85ft at 3px/ft)
 - Shot dots: CAR red, opponent blue, goals highlighted
 - Heat map mode: Gaussian KDE density overlay
-- Player filter: dropdown selector — filters dots + heat map to one player
+- Player filter: dropdown — filters dots + heat map to one player
 - Period filter: P1 / P2 / P3 / OT
 - Full rink / half rink toggle
 - Live polling: 10s during games, 5min otherwise
-- Countdown clock: ticks in real-time between polls, resyncs on each fetch
+- Countdown clock: ticks in real-time between polls
+
+### Live Insights Panel
+Auto-generated contextual callouts from PBP data, shown during live games and as post-game "Game Insights":
+- Shot advantage by period (e.g. "CAR dominated P2 shots 18–6")
+- Momentum indicator (last 10 shot attempts)
+- Top scorer callout (2+ point games)
+- PK performance (perfect kills highlighted)
+- Score situation alerts (tied game, big lead, late deficit)
+- Empty net detection
 
 ### Metrics Row (5 cards)
 - **Shots on Goal** — CAR vs opponent, drill-down by player
 - **Hits** — CAR vs opponent, drill-down by player
-- **Blocks** — CAR blocks vs opponent, drill-down by player  
+- **Blocks** — CAR blocks vs opponent
 - **Faceoff %** — game faceoff win percentage
-- **PP %** — season power play percentage
-
-### Advanced Stats Panel
-- Corsi For% (CF%) — all shot attempts share
-- Fenwick For% (FF%) — unblocked attempt share
-- PDO — shooting% + save% × 100 (league avg = 100)
-- Puck Luck — actual goals vs expected from shot share
-- GSAx — goals saved above expected vs .900 baseline
-
-### CAR Scoring / Recent Events
-- Scorer list built from PBP goals (no boxscore lag)
-- Scrollable event log: goals, penalties, hits, blocks
-- Assist attribution from PBP play details
-
-### Game Events (Live)
-- 🚨 **Goal popup** — scorer + assists, CAR goal horn audio, 8s auto-dismiss
-- ⚡ **Penalty popup** — power play countdown timer from penalty duration
-- 🏆 **Win popup** — confetti, 12s auto-dismiss, once per session
-- All events detected from PBP delta — first load skipped to prevent false triggers
-- OT goals captured even after `isLive` flips false
+- **PP %** — season (or playoff) power play percentage
 
 ### Schedule Page
 
 **Regular Season**
 - Game cards with result, score, opponent
-- Upcoming games: matchup detail with score prediction and scouting tab
-- Completed games: full stats popup with scoring by period, goalie stats
+- Win probability chip on upcoming games (model + market odds blended 60/40)
+- Matchup detail: score prediction, win probability bar with factor breakdown, AI analysis
 
 **Playoffs**
-- Collapsible round sections (current round open, older collapsed)
-- Series card embedded in each round header
-- 🧹 Sweep badge for 4-0 series results
-- Game list within each round
-
-**Matchup Detail**
-- **Prediction tab**: Pythagorean expectation model (√(attack × defense) ± home/away adj), auto-saved on card open, track record displayed
-- **Scouting tab**: both teams side-by-side — stat comparison bars, recent form dots, top skaters, goalies with GSAx
+- Collapsible round sections
+- Series card with game-by-game results
+- 🧹 Sweep badge
+- Series record factored into win probability
 
 **AI Game Summary Card** (completed games)
 - Claude Haiku generates 3-sentence narrative on game completion
 - Stat chips: CF%, GWG scorer, goalie SV%, result
-- Share button: Web Share API (mobile) / clipboard (desktop)
 
 ### Team Page (5 tabs)
-- **Overview**: W-L-OTL, points, goals, PP%, PK%, SOG, blocks, live badge
-- **Advanced**: Corsi proxy, PDO, Puck Luck, blocked shots for/against, PP/PK net%
-- **Splits**: Home vs away, playoff vs regular season
-- **Trends**: Rolling result dots, goal differential, form bars
-- **Cap**: Salary cap bar, full contract table (cap hit, type, expiry), draft picks by year
+
+**Overview** — W-L-OTL, points, goals, PP%, PK%, SOG, blocked shots
+
+**Advanced** — Color-coded stats with league average benchmarks (▲/▼ indicators):
+- Corsi For% (CF%) — approximated from SOG + blocked shots
+- Fenwick For% (FF%) — SOG-based
+- PDO, SH%, SV%
+- PP%, Net PP%, PK%, Net PK%, Faceoff Win%
+- Goals For/Against per game
+
+**Splits** — Home vs Away detailed breakdown with toggle for Playoffs (when applicable):
+- Scoring, Shot Volume, Special Teams, Efficiency, Results
+- Green = better split
+
+**Trends** — Rolling result dots, goal differential chart
+
+**Cap** — Salary cap bar, contract table, draft picks
 
 ### Players Page
-- Full roster with positions and jersey numbers
-- Player popup: season stats, contract details, cap hit visualization
-- Contract value rating based on points per million
+
+Each player popup has three tabs:
+
+**📊 Stats** — Season/career stats, contract details, contract value rating, P/60
+
+**🧮 Analytics** — MoneyPuck-powered, updated nightly:
+- **WAR** (Wins Above Replacement) — simplified xGoals-based model
+- **Percentile rankings** vs all NHL forwards or defensemen:
+  - EV Offence (on-ice xGF% at 5-on-5)
+  - EV Defence (on-ice xGA/60, inverted)
+  - Power Play (xGF/60 on PP — N/A if insufficient PP time)
+  - Penalty Kill (xGA/60 on PK — N/A if insufficient PK time)
+  - Finishing (goals above xGoals per 60)
+  - Goals (goals per 60)
+  - 1st Assists (primary assists per 60)
+  - Penalties (discipline: drawn minus taken)
+  - Competition (quality of opponents faced)
+  - Teammates (on-ice vs off-ice xGF% delta)
+- Color-coded bars: green ≥67th, amber 33–66th, red ≤33rd
+
+**🎯 Heat Map** — Season shot locations on the rink:
+- All shots aggregated across completed games
+- Filter chips: All / Goals / SOG / Missed
+- Summary: Goals, SOG, missed, total, SH%
+- Data builds up game by game via Worker shot aggregation
+
+### News Page
+- 5 sources: Canes Country (Atom), Google News RSS, ESPN, Sportsnet, Reddit r/canes
+- Source filter chips (built from actual article data)
+- Pagination (10 per page)
+- Reddit posts show upvote count and comment count
+- Reddit posts include preview images when available
 
 ### Push Notifications (Web Push)
-- Browser permission opt-in via bell icon in Topbar
-- Notifications: CAR goal, game start, opponent penalty (PP), Canes win
-- Payloadless push strategy — SW fetches payload from Worker KV on receipt
+- Notifications: CAR goal, game start, opponent penalty (PP), Canes win/loss
+- Payloadless push — SW fetches payload from Worker KV on receipt
 - iOS: requires Add to Home Screen (PWA) for push to work
-- VAPID-authenticated delivery to Chrome (FCM) and Firefox (Mozilla Push)
 
-### Topbar
-- Live score with team logos
-- Countdown clock (shared `liveClockStore` — pixel-perfect sync with Shot Map clock)
-- 🔔 Notification bell with opt-in popup
-- Logo tap → About popup with Buy Me a Coffee link
+### Social Posting (X/Twitter — ready, awaiting Basic tier)
+- Posts after each game with score, AI summary snippet, hashtags, app link
+- Hashtags: #LetsGoCanes #Canes #NHL #CarolinaHurricanes #SoundTheSiren + opponent + context
+- OAuth 1.0a signing built into Worker (no external library)
+- Test endpoint: `/social/test?secret=&post=1`
+
+---
+
+## Win Probability Model
+
+8-factor model used on both game card chips and matchup detail:
+
+| Factor | Weight | Notes |
+|--------|--------|-------|
+| GF/GP | 0.7 | Offensive efficiency |
+| GA/GP | 0.7 | Defensive efficiency |
+| SOG/GP | 0.5 | Possession proxy |
+| PP vs PK | 0.4 | Special teams edge |
+| Standings pts | 0.5 | Regular season only |
+| Recent form/streak | 0.3 | Win/loss streak |
+| Home ice | 0.25 | Venue advantage |
+| Series record | up to 1.0 | Playoffs only |
+
+Blended 60/40 with market odds when available. Same function used by both game card chip and matchup detail bar — results are always consistent.
+
+---
+
+## MoneyPuck Analytics
+
+The Worker fetches `https://moneypuck.com/moneypuck/playerData/seasonSummary/2025/regular/skaters.csv` nightly and computes analytics for all CAR players. The CSV has 154 columns per player across multiple situations (`5on5`, `powerPlay`, `penaltyKill`, `all`).
+
+**WAR methodology** (simplified approximation — not full prior-informed RAPM):
+1. On-ice xGF/60 and xGA/60 at 5-on-5 compared to positional league average
+2. Multiply by EV ice time to get goals above average
+3. Add penalty impact (0.11 goals per penalty minute, from TopDownHockey methodology)
+4. Add individual finishing (goals vs xGoals)
+5. Convert to wins using ~5.4 goals per win
+6. Add replacement level baseline (~+0.5 per 82 games)
+
+**Note:** This is clearly labeled as an approximation. True RAPM requires shift-level ridge regression (~600k rows/season) which is beyond browser/Worker compute capacity.
 
 ---
 
 ## Data Sources
 
-| Data | Source | Endpoint |
-|------|--------|----------|
-| Schedule, scores, PBP | NHL API | `api-web.nhle.com/v1` |
-| Team stats, standings | NHL Stats API | `api.nhle.com/stats/rest/en` |
-| Team logos, player headshots | NHL Assets | `assets.nhle.com` |
-| Salary cap, contracts | Static file | `src/utils/carContracts.js` |
-| Draft picks | Static file | `src/utils/carContracts.js` |
-| Game summaries | Claude Haiku (Anthropic) | Via Worker on game completion |
+| Data | Source | Update frequency |
+|------|--------|-----------------|
+| Schedule, scores, PBP | NHL API (`api-web.nhle.com/v1`) | Live (60s poll) |
+| Team stats, standings | NHL Stats API (`api.nhle.com/stats/rest/en`) | Every 5–10 min |
+| Team logos, headshots | NHL Assets (`assets.nhle.com`) | Cached |
+| Salary cap, contracts | Static `carContracts.js` (PuckPedia) | Manual |
+| Game summaries | Claude Haiku (Anthropic) | On game completion |
+| Shot heat map data | Aggregated from NHL PBP | After each game |
+| WAR + percentiles | MoneyPuck.com CSV | Nightly |
+| News | Canes Country, Google News, ESPN, Sportsnet, r/canes | 30 min |
 
 **Cap data last updated:** May 2026 · Source: PuckPedia
 
@@ -237,40 +319,74 @@ npm install
 # Start dev server (http://localhost:5173)
 npm run dev
 
+# Run unit tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
 # Build for production
 npm run build
 ```
 
-**Environment variables for local dev** — create `.env.local` in project root:
+**Environment variables** — copy `.env.local.example` to `.env.local`:
 
 ```
 VITE_WORKER_URL=https://eyewall-poller.billowing-queen-bf23.workers.dev
 VITE_VAPID_PUBLIC_KEY=BHuReh0oBGitFpWQpzEkxM-0m2XHxDX3hqfvX6lpA-IfKSivoB892Jvs64Uz7oNOF-NvDIpPeeBAcWwsIRpnKX4
 ```
 
-The Vite dev server proxies NHL API calls via `vite.config.js`. KV cache reads go directly to the live Worker URL.
+---
+
+## Development Workflow
+
+```
+dev branch → dev.eyewallanalytics.pages.dev (preview)
+main branch → eyewallanalytics.com (production)
+```
+
+1. Work on `dev` branch
+2. Test locally with `npm run dev`
+3. Push to `dev` → verify on preview URL
+4. Run through `SMOKE_TESTS.md` checklist
+5. Merge to `main` → production deploys automatically
 
 ---
 
 ## Deployment
 
-Cloudflare Pages auto-deploys on every push to `main`.
-
-**Build settings:**
-- Build command: `npm install && node node_modules/vite/bin/vite.js build`
-- Build output: `dist`
-- Root directory: *(blank)*
-
-**To force a deploy without code changes:**
-```bash
-git commit --allow-empty -m "Trigger Cloudflare build"
-git push
-```
+**To update the app:** push to `dev`, verify, merge to `main`.
 
 **To update the Worker:**
 1. Edit `eyewall-worker/worker.js`
 2. Paste into Cloudflare Workers dashboard editor → Deploy
-3. Or use Wrangler CLI: `wrangler deploy`
+
+**To backfill shot data** (after a gap or new season):
+```
+GET /shots/backfill?secret=POLL_SECRET&batch=5
+```
+Call repeatedly until `remaining: 0`.
+
+**To refresh MoneyPuck analytics:**
+```
+GET /moneypuck/refresh?secret=POLL_SECRET
+```
+
+---
+
+## Testing
+
+```bash
+npm test          # Run all tests once
+npm run test:watch  # Watch mode
+```
+
+Test files:
+- `src/utils/prediction.test.js` — win probability model (7 tests)
+- `src/utils/news.test.js` — HTML stripping, time formatting, URL cleaning (16 tests)
+- `src/utils/advancedStats.test.js` — Corsi, PDO, GSAx, Puck Luck (15 tests)
+
+CI runs `npm test` + `npm run build` on every push to `main` or `dev` via GitHub Actions.
 
 ---
 
@@ -278,56 +394,24 @@ git push
 
 | Stat | Formula | Context |
 |------|---------|---------|
-| **CF%** | CAR shot attempts ÷ total shot attempts | ≥50% = controlling play |
-| **FF%** | CAR unblocked attempts ÷ total unblocked | More predictive than CF% |
-| **PDO** | (SH% + SV%) × 100 | League avg = 100; far from 100 = luck component |
+| **CF%** | CAR shot attempts ÷ total (SOG + missed + blocked) | ≥50% = controlling play |
+| **FF%** | CAR unblocked attempts ÷ total unblocked | Excludes shot-blocking luck |
+| **PDO** | (SH% + SV%) × 100 | League avg = 100; far from 100 = luck |
 | **Puck Luck** | Actual GF − expected GF from shot share | Positive = scoring above shot quality |
 | **GSAx** | Saves − (shots × .900) | Goals saved vs league-average goaltending |
-
----
-
-## Score Prediction Model
-
-Game predictions use a Pythagorean expectation model:
-
-```
-Expected CAR goals = √(CAR GF/GP × OPP GA/GP) ± 0.12 (home/away)
-Expected OPP goals = √(OPP GF/GP × CAR GA/GP) ∓ 0.12 (home/away)
-```
-
-Clamped to realistic NHL range (1.5–5.0 goals). Predictions are auto-saved when a matchup card opens and outcomes auto-recorded when completed games load. Track record displayed inline.
-
----
-
-## Salary Cap Data
-
-Contract data is manually maintained in `src/utils/carContracts.js`. To update:
-
-1. Check PuckPedia or official NHL transactions
-2. Edit the `CONTRACTS` array (cap hit in dollars, e.g. `7_500_000`)
-3. Update draft picks in `DRAFT_PICKS`
-4. Update `CONTRACT_DATA_DATE` to current month/year
-5. Commit and push — deploys automatically
-
-**Note:** PuckPedia API access is being evaluated. If viable, the static file will be replaced with live Worker-cached data.
-
----
-
-## Push Notification VAPID Keys
-
-VAPID keys are generated once and stored permanently. The public key is baked into the Vite build; the private key lives as an encrypted Worker secret.
-
-**Do not regenerate VAPID keys** unless all existing push subscriptions are acceptable to invalidate — they are tied to the public key and will stop working if the key changes.
+| **WAR** | Goals above average ÷ goals per win | Approximate — xGoals model, not full RAPM |
+| **xGF%** | On-ice expected goals for ÷ total | Possession quality metric |
 
 ---
 
 ## Known Limitations
 
-- **Cron minimum:** Cloudflare free Workers allow 1-minute cron intervals. Live data is 0–60s behind the NHL API at any moment.
-- **Cap data:** NHL API does not expose salary data. Static file requires manual updates.
+- **Cron minimum:** 1-minute polling intervals — live data is 0–60s behind NHL API.
+- **Cap data:** NHL API doesn't expose salary. Static file requires manual updates.
 - **iOS push:** Requires Add to Home Screen — browser-tab Safari cannot receive Web Push.
-- **OT clock:** NHL API doesn't stream clock data during overtime stoppages.
-- **32-team expansion:** Currently CAR-only. Expansion planned — most infrastructure is already parameterized.
+- **WAR approximation:** True RAPM requires shift-level ridge regression not feasible in Workers. Current WAR uses xGoals above average as a proxy.
+- **32-team expansion:** Currently CAR-only. Infrastructure is parameterized for expansion.
+- **X/Twitter posting:** Code is built and tested. Requires Basic tier ($100/mo) to post.
 
 ---
 
@@ -335,10 +419,10 @@ VAPID keys are generated once and stored permanently. The public key is baked in
 
 - [ ] 32-team expansion (team picker, parameterize CAR-specific code)
 - [ ] PuckPedia API integration (pending access approval)
+- [ ] X/Twitter auto-posting (when Basic tier active)
+- [ ] Threads/Instagram posting (pending Meta developer access)
 - [ ] Weekly digest card
-- [ ] Season-level true Corsi/Fenwick (PBP aggregation across all games)
-- [ ] Historic player heat maps on player card
-- [ ] Social posting automation
+- [ ] True RAPM (would require separate Python compute service)
 
 ---
 
