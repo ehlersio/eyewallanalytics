@@ -550,8 +550,8 @@ export default function ShotMapView() {
         <AdvancedGamePanel pbp={pbp} gameHome={gameHome} isLive={isLive} boxscore={boxscore} />
       )}
 
-      {/* ── Live Insights ── */}
-      {isLive && pbp?.plays?.length > 0 && (
+      {/* ── Game Insights ── */}
+      {pbp?.plays?.length > 0 && (
         <LiveInsights
           pbp={pbp}
           boxscore={boxscore}
@@ -560,9 +560,11 @@ export default function ShotMapView() {
           oppScore={oppScore}
           oppAbbr={oppAbbr}
           topScorers={topScorers}
+          isLive={isLive}
         />
       )}
 
+      <div className="two-col">
         {/* ── Left: rink + event log ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div className="card">
@@ -1018,7 +1020,7 @@ function StatDrillPopup({ drillStat, onClose }) {
 
 // ── Advanced Game Panel (Corsi / Fenwick / PDO / Puck Luck) ──
 // ── Live Insights ────────────────────────────────────────────
-function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers }) {
+function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers, isLive }) {
   const insights = useMemo(() => {
     const plays   = pbp?.plays || [];
     const carTeam = gameHome ? pbp?.homeTeam?.id : pbp?.awayTeam?.id;
@@ -1028,36 +1030,46 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     const periodShots = {};
     plays.forEach(p => {
       if (!['shot-on-goal','goal'].includes(p.typeDescKey)) return;
-      const per  = p.periodDescriptor?.number || 1;
+      const per   = p.periodDescriptor?.number || 1;
       const isCar = p.details?.eventOwnerTeamId === carTeam;
       if (!periodShots[per]) periodShots[per] = { car: 0, opp: 0 };
       if (isCar) periodShots[per].car++; else periodShots[per].opp++;
     });
+
+    // During live: show current period. Post-game: show best/worst period
     const currentPeriod = pbp?.periodDescriptor?.number;
-    if (currentPeriod && periodShots[currentPeriod]) {
-      const ps = periodShots[currentPeriod];
+    const periodsToCheck = isLive && currentPeriod
+      ? [currentPeriod]
+      : Object.keys(periodShots).map(Number);
+
+    periodsToCheck.forEach(per => {
+      const ps = periodShots[per];
+      if (!ps) return;
       const diff = ps.car - ps.opp;
-      const periodLabel = currentPeriod <= 3 ? `P${currentPeriod}` : 'OT';
-      if (Math.abs(diff) >= 4) {
+      const periodLabel = per <= 3 ? `P${per}` : 'OT';
+      const threshold = isLive ? 4 : 6;
+      if (Math.abs(diff) >= threshold) {
         results.push({
           icon: diff > 0 ? '🎯' : '😬',
           text: diff > 0
-            ? `CAR leads shots ${ps.car}–${ps.opp} in ${periodLabel}`
-            : `${oppAbbr} leads shots ${ps.opp}–${ps.car} in ${periodLabel}`,
+            ? `CAR dominated ${periodLabel} shots ${ps.car}–${ps.opp}`
+            : `${oppAbbr} dominated ${periodLabel} shots ${ps.opp}–${ps.car}`,
           type: diff > 0 ? 'good' : 'warn',
         });
       }
-    }
+    });
 
-    // ── Momentum — last 10 shot attempts ─────────────────────
-    const recentAttempts = plays
-      .filter(p => ['shot-on-goal','goal','missed-shot','blocked-shot'].includes(p.typeDescKey))
-      .slice(-10);
-    if (recentAttempts.length >= 6) {
-      const carRecent = recentAttempts.filter(p => p.details?.eventOwnerTeamId === carTeam).length;
-      const oppRecent = recentAttempts.length - carRecent;
-      if (carRecent >= 7) results.push({ icon: '🌀', text: `CAR on a roll — ${carRecent} of last ${recentAttempts.length} shot attempts`, type: 'good' });
-      else if (oppRecent >= 7) results.push({ icon: '🧱', text: `${oppAbbr} pressing — ${oppRecent} of last ${recentAttempts.length} shot attempts`, type: 'warn' });
+    // ── Momentum — last 10 shot attempts (live only) ──────────
+    if (isLive) {
+      const recentAttempts = plays
+        .filter(p => ['shot-on-goal','goal','missed-shot','blocked-shot'].includes(p.typeDescKey))
+        .slice(-10);
+      if (recentAttempts.length >= 6) {
+        const carRecent = recentAttempts.filter(p => p.details?.eventOwnerTeamId === carTeam).length;
+        const oppRecent = recentAttempts.length - carRecent;
+        if (carRecent >= 7) results.push({ icon: '🌀', text: `CAR on a roll — ${carRecent} of last ${recentAttempts.length} shot attempts`, type: 'good' });
+        else if (oppRecent >= 7) results.push({ icon: '🧱', text: `${oppAbbr} pressing — ${oppRecent} of last ${recentAttempts.length} shot attempts`, type: 'warn' });
+      }
     }
 
     // ── Top scorer callout ────────────────────────────────────
@@ -1068,7 +1080,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
           leader.goals > 0 ? `${leader.goals}G` : null,
           leader.assists > 0 ? `${leader.assists}A` : null,
         ].filter(Boolean).join(', ');
-        results.push({ icon: '⭐', text: `${leader.name} leading with ${pts} (${leader.points} pts)`, type: 'good' });
+        results.push({ icon: '⭐', text: `${leader.name} led CAR with ${pts} (${leader.points} pts)`, type: 'good' });
       }
     }
 
@@ -1079,41 +1091,65 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     const ppGoalsAgainst = plays.filter(p =>
       p.typeDescKey === 'goal' &&
       p.details?.eventOwnerTeamId !== carTeam &&
-      p.details?.situationCode?.startsWith('5v4') ||
-      p.details?.situationCode?.startsWith('5v3')
+      (p.details?.situationCode?.startsWith('5v4') ||
+       p.details?.situationCode?.startsWith('5v3'))
     ).length;
-    if (carPens >= 2 && ppGoalsAgainst === 0 && carPens >= oppPens) {
-      results.push({ icon: '🛡️', text: `CAR PK holding firm — killed ${carPens} penalties`, type: 'good' });
+    if (carPens >= 2 && ppGoalsAgainst === 0) {
+      results.push({ icon: '🛡️', text: `CAR PK went ${carPens}-for-${carPens} — perfect penalty kill`, type: 'good' });
+    } else if (ppGoalsAgainst >= 2) {
+      results.push({ icon: '😤', text: `PK struggled — allowed ${ppGoalsAgainst} power play goals`, type: 'warn' });
     }
 
-    // ── Score situation callouts ──────────────────────────────
-    const diff = (carScore ?? 0) - (oppScore ?? 0);
-    if (diff === 0 && (carScore ?? 0) > 0) {
-      results.push({ icon: '⚡', text: `Tied ${carScore}–${oppScore} — anyone's game`, type: 'neutral' });
-    } else if (diff >= 3) {
-      results.push({ icon: '🏒', text: `CAR up ${diff} — dominant performance`, type: 'good' });
-    } else if (diff <= -2 && currentPeriod >= 3) {
-      results.push({ icon: '🚨', text: `CAR down ${Math.abs(diff)} in P${currentPeriod} — need a push`, type: 'warn' });
+    // ── Score situation (live only) ──────────────────────────
+    if (isLive) {
+      const diff = (carScore ?? 0) - (oppScore ?? 0);
+      if (diff === 0 && (carScore ?? 0) > 0) {
+        results.push({ icon: '⚡', text: `Tied ${carScore}–${oppScore} — anyone's game`, type: 'neutral' });
+      } else if (diff >= 3) {
+        results.push({ icon: '🏒', text: `CAR up ${diff} — dominant performance`, type: 'good' });
+      } else if (diff <= -2 && currentPeriod >= 3) {
+        results.push({ icon: '🚨', text: `CAR down ${Math.abs(diff)} in P${currentPeriod} — need a push`, type: 'warn' });
+      }
     }
 
-    // ── Empty net ─────────────────────────────────────────────
-    const situation = pbp?.situation;
-    if (situation?.awayTeam?.situationDescriptions?.includes('EN') ||
-        situation?.homeTeam?.situationDescriptions?.includes('EN')) {
-      const carEN = gameHome
-        ? situation?.awayTeam?.situationDescriptions?.includes('EN')
-        : situation?.homeTeam?.situationDescriptions?.includes('EN');
-      results.push({ icon: carEN ? '🥅' : '😤', text: carEN ? `${oppAbbr} has pulled their goalie` : 'CAR goalie pulled', type: carEN ? 'good' : 'warn' });
+    // ── Final result callout (completed games) ────────────────
+    if (!isLive && carScore != null && oppScore != null) {
+      const won  = carScore > oppScore;
+      const diff = Math.abs(carScore - oppScore);
+      // Total shots
+      const carTot = Object.values(periodShots).reduce((s, p) => s + p.car, 0);
+      const oppTot = Object.values(periodShots).reduce((s, p) => s + p.opp, 0);
+      if (carTot !== oppTot) {
+        results.push({
+          icon: won ? '✅' : '📉',
+          text: won
+            ? `CAR won ${carScore}–${oppScore} and outshot ${oppAbbr} ${carTot}–${oppTot}`
+            : `CAR lost ${carScore}–${oppScore} despite ${carTot > oppTot ? `outshooting ${oppAbbr} ${carTot}–${oppTot}` : `being outshot ${oppTot}–${carTot}`}`,
+          type: won ? 'good' : 'warn',
+        });
+      }
     }
 
-    return results.slice(0, 4); // max 4 insights at once
-  }, [pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers]);
+    // ── Empty net (live only) ─────────────────────────────────
+    if (isLive) {
+      const situation = pbp?.situation;
+      if (situation?.awayTeam?.situationDescriptions?.includes('EN') ||
+          situation?.homeTeam?.situationDescriptions?.includes('EN')) {
+        const carEN = gameHome
+          ? situation?.awayTeam?.situationDescriptions?.includes('EN')
+          : situation?.homeTeam?.situationDescriptions?.includes('EN');
+        results.push({ icon: carEN ? '🥅' : '😤', text: carEN ? `${oppAbbr} has pulled their goalie` : 'CAR goalie pulled', type: carEN ? 'good' : 'warn' });
+      }
+    }
+
+    return results.slice(0, 4);
+  }, [pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers, isLive]);
 
   if (!insights.length) return null;
 
   return (
     <div className="card live-insights">
-      <div className="sec-label">🔴 Live Insights</div>
+      <div className="sec-label">{isLive ? '🔴 Live Insights' : '📊 Game Insights'}</div>
       <div className="insights-list">
         {insights.map((ins, i) => (
           <div key={i} className={`insight-row insight-${ins.type}`}>
