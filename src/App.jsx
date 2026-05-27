@@ -1,4 +1,6 @@
-// EyeWall Analytics v1.0 — build 2026-05-26b
+// EyeWall Analytics v1.1
+const APP_VERSION = '1.1.0';
+export { APP_VERSION };
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Topbar from './components/Topbar'
 import BottomNav from './components/BottomNav'
