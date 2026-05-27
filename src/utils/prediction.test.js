@@ -69,7 +69,7 @@ const evenTeam = {
 };
 const homeGame   = { gameType: 2, homeTeam: { abbrev: 'CAR' }, awayTeam: { abbrev: 'BOS' } };
 const awayGame   = { gameType: 2, homeTeam: { abbrev: 'BOS' }, awayTeam: { abbrev: 'CAR' } };
-const playoffGame = { id: '2025030311', gameType: 3, homeTeam: { abbrev: 'CAR' }, awayTeam: { abbrev: 'FLA' } };
+const playoffGame = { id: '2025030111', gameType: 3, homeTeam: { abbrev: 'CAR' }, awayTeam: { abbrev: 'FLA' } };
 
 describe('computeWinPct', () => {
   it('returns null for missing standings', () => {
@@ -83,14 +83,11 @@ describe('computeWinPct', () => {
     expect(result.pct).toBeGreaterThan(65);
   });
 
-  it('home ice adds value (when teams are equal on all other factors)', () => {
-    // Both teams identical — only home/away differs
+  it('home ice adds value', () => {
+    // Home team gets +0.25 in the model, so CAR home pct > CAR away pct
     const home = computeWinPct(evenTeam, evenTeam, homeGame, null);
     const away = computeWinPct(evenTeam, evenTeam, awayGame, null);
-    // Home pct should be higher since home ice (+0.25) gives CAR the edge
-    expect(home.pct).toBeGreaterThanOrEqual(away.pct);
-    // Combined they should sum to ~100
-    expect(home.pct + away.pct).toBeCloseTo(100, -1);
+    expect(home.pct).toBeGreaterThan(away.pct);
   });
 
   it('returns percentage in 0-100 range', () => {

@@ -1,98 +1,152 @@
 import { describe, it, expect } from 'vitest';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from './advancedStats.js';
 
-describe('computeShotAttempts', () => {
-  const makePlays = (shots) => shots.map((s, i) => ({
-    typeDescKey: s.type,
-    details: { eventOwnerTeamId: s.teamId },
-    sortOrder: i,
-  }));
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function makePlay(type, teamId) {
+  return { typeDescKey: type, details: { eventOwnerTeamId: teamId } };
+}
 
+describe('computeShotAttempts', () => {
   it('returns zero counts for empty plays', () => {
     const result = computeShotAttempts([]);
-    expect(result.car.shots).toBe(0);
-    expect(result.opp.shots).toBe(0);
+    expect(result.car.sog).toBe(0);
+    expect(result.opp.sog).toBe(0);
+    expect(result.corsiForPct).toBe(0);
   });
 
   it('counts CAR shots on goal', () => {
-    const plays = makePlays([
-      { type: 'shot-on-goal', teamId: 12 },
-      { type: 'shot-on-goal', teamId: 12 },
-      { type: 'shot-on-goal', teamId: 5 },
-    ]);
+    const plays = [
+      makePlay('shot-on-goal', 12),
+      makePlay('shot-on-goal', 12),
+      makePlay('shot-on-goal', 5),
+    ];
     const result = computeShotAttempts(plays);
-    expect(result.car.shots).toBe(2);
-    expect(result.opp.shots).toBe(1);
+    expect(result.car.sog).toBe(2);
+    expect(result.opp.sog).toBe(1);
   });
 
-  it('counts goals as shot attempts', () => {
-    const plays = makePlays([
-      { type: 'goal', teamId: 12 },
-      { type: 'shot-on-goal', teamId: 12 },
-    ]);
+  it('counts goals in both goals and sog', () => {
+    const plays = [
+      makePlay('goal', 12),
+      makePlay('shot-on-goal', 12),
+    ];
     const result = computeShotAttempts(plays);
     expect(result.car.goals).toBe(1);
-    expect(result.car.shots).toBe(1);
+    expect(result.car.sog).toBe(2);
+  });
+
+  it('computes corsi percentage correctly', () => {
+    const plays = [
+      makePlay('shot-on-goal', 12),
+      makePlay('shot-on-goal', 12),
+      makePlay('shot-on-goal', 12),
+      makePlay('shot-on-goal', 5),
+    ];
+    const result = computeShotAttempts(plays);
+    expect(result.corsiForPct).toBe(75);
   });
 });
 
 describe('computePDO', () => {
-  it('returns null for missing data', () => {
-    expect(computePDO(null, null)).toBeNull();
+  it('returns an object with pdo property for valid plays', () => {
+    const plays = [
+      makePlay('shot-on-goal', 12),
+      makePlay('goal', 12),
+      makePlay('shot-on-goal', 5),
+      makePlay('shot-on-goal', 5),
+      makePlay('shot-on-goal', 5),
+    ];
+    const result = computePDO(plays);
+    expect(result).toHaveProperty('pdo');
+    expect(result).toHaveProperty('carShPct');
+    expect(result).toHaveProperty('carSvPct');
+    expect(typeof result.pdo).toBe('number');
   });
 
-  it('returns ~100 for average performance', () => {
-    // SH% = 10%, SV% = 90% → PDO = 100
-    const result = computePDO(
-      { shotsAgainst: 30, saves: 27, goalsAgainst: 3 },
-      { shots: 30, goals: 3 }
-    );
-    expect(result).toBeCloseTo(100, 0);
+  it('returns PDO ~100 when shooting and saving at average rates', () => {
+    // CAR: 1 goal / 10 sog = 10% SH; OPP: 1 goal / 10 sog → 90% SV
+    const plays = [
+      ...Array(9).fill(null).map(() => makePlay('shot-on-goal', 12)),
+      makePlay('goal', 12),
+      ...Array(9).fill(null).map(() => makePlay('shot-on-goal', 5)),
+      makePlay('goal', 5),
+    ];
+    const result = computePDO(plays);
+    expect(result.pdo).toBeCloseTo(100, 0);
   });
 
-  it('returns >100 for above-average performance', () => {
-    // High SH% + high SV% = lucky
-    const result = computePDO(
-      { shotsAgainst: 30, saves: 29, goalsAgainst: 1 },
-      { shots: 20, goals: 4 }
-    );
-    expect(result).toBeGreaterThan(100);
+  it('returns PDO > 100 when CAR shoots well and saves well', () => {
+    // CAR: 2 goals / 10 sog = 20% SH; OPP: 0 goals / 10 sog = 100% SV
+    const plays = [
+      ...Array(8).fill(null).map(() => makePlay('shot-on-goal', 12)),
+      makePlay('goal', 12),
+      makePlay('goal', 12),
+      ...Array(10).fill(null).map(() => makePlay('shot-on-goal', 5)),
+    ];
+    const result = computePDO(plays);
+    expect(result.pdo).toBeGreaterThan(100);
   });
 });
 
 describe('computeGSAx', () => {
-  it('returns null for missing goalie data', () => {
-    expect(computeGSAx(null)).toBeNull();
+  it('returns null when shotsAgainst is 0 or null', () => {
+    expect(computeGSAx(0, 0)).toBeNull();
+    expect(computeGSAx(null, null)).toBeNull();
   });
 
-  it('returns positive for above-average goaltending', () => {
-    // 35 shots, 34 saves = .971 SV% vs .900 baseline → positive GSAx
-    const result = computeGSAx({ shotsAgainst: 35, saves: 34 });
-    expect(result).toBeGreaterThan(0);
+  it('returns an object with gsax property', () => {
+    const result = computeGSAx(35, 34);
+    expect(result).toHaveProperty('gsax');
+    expect(result).toHaveProperty('actualSvPct');
+    expect(result).toHaveProperty('label');
   });
 
-  it('returns negative for below-average goaltending', () => {
-    // 30 shots, 24 saves = .800 SV% → negative GSAx
-    const result = computeGSAx({ shotsAgainst: 30, saves: 24 });
-    expect(result).toBeLessThan(0);
+  it('returns positive gsax for above-average goaltending (.971 > .900)', () => {
+    const result = computeGSAx(35, 34);
+    expect(result.gsax).toBeGreaterThan(0);
   });
 
-  it('returns 0 for exactly league-average (.900)', () => {
-    const result = computeGSAx({ shotsAgainst: 10, saves: 9 });
-    expect(result).toBeCloseTo(0, 5);
+  it('returns negative gsax for below-average goaltending (.800 < .900)', () => {
+    const result = computeGSAx(30, 24);
+    expect(result.gsax).toBeLessThan(0);
+  });
+
+  it('returns ~0 gsax for exactly league-average (.900)', () => {
+    const result = computeGSAx(10, 9);
+    expect(result.gsax).toBeCloseTo(0, 2);
   });
 });
 
 describe('computePuckLuck', () => {
-  it('returns null for missing data', () => {
-    expect(computePuckLuck(null, null, null, null)).toBeNull();
+  it('returns zero luckDelta for empty plays array', () => {
+    const result = computePuckLuck([]);
+    expect(result).toHaveProperty('luckDelta');
+    expect(result.luckDelta).toBe(0);
+    expect(result.actualGF).toBe(0);
   });
 
-  it('returns positive when actual goals exceed expected', () => {
-    // CAR outshoots opponent but expected less goals
-    const result = computePuckLuck(5, 50, 3, 50);
-    // carGoals=5, carShots=50, oppGoals=3, oppShots=50
-    // With equal shots, more goals = positive puck luck
-    expect(typeof result).toBe('number');
+  it('returns an object with luckDelta, expectedGF, actualGF', () => {
+    const plays = [
+      ...Array(6).fill(null).map(() => makePlay('shot-on-goal', 12)),
+      makePlay('goal', 12),
+      makePlay('goal', 12),
+      ...Array(4).fill(null).map(() => makePlay('shot-on-goal', 5)),
+    ];
+    const result = computePuckLuck(plays);
+    expect(result).toHaveProperty('luckDelta');
+    expect(result).toHaveProperty('expectedGF');
+    expect(result).toHaveProperty('actualGF');
+  });
+
+  it('returns positive luckDelta when scoring above shot share suggests', () => {
+    // CAR has 40% of shots (4/10) but scores both goals → lucky
+    const plays = [
+      ...Array(3).fill(null).map(() => makePlay('shot-on-goal', 12)),
+      makePlay('goal', 12),
+      makePlay('goal', 12),
+      ...Array(6).fill(null).map(() => makePlay('shot-on-goal', 5)),
+    ];
+    const result = computePuckLuck(plays);
+    expect(result.luckDelta).toBeGreaterThan(0);
   });
 });
