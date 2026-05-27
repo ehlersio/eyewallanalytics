@@ -300,3 +300,89 @@
   cursor: help; flex-shrink: 0;
 }
 .pp-value-tip:hover { opacity: 1; }
+
+/* ── Player popup tabs ── */
+.pp-tabs {
+  display: flex;
+  border-bottom: 0.5px solid var(--border);
+  margin: 0 -16px;
+  padding: 0 16px;
+}
+.pp-tab {
+  flex: 1;
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.pp-tab.active {
+  color: var(--red-bright);
+  border-bottom-color: var(--red-bright);
+}
+
+/* ── Player heat map ── */
+.pp-heatmap { padding: 12px 0; }
+.pp-heatmap-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.pp-heatmap-icon { font-size: 28px; }
+.pp-heatmap-sub  { font-size: 11px; color: var(--text-dim); }
+
+.pp-heatmap-summary {
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0 12px;
+  border-bottom: 0.5px solid var(--border);
+  margin-bottom: 10px;
+}
+.pp-heatmap-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.pp-heatmap-num {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+.pp-heatmap-num.goal-col { color: #f87171; }
+.pp-heatmap-num.sog-col  { color: #4ade80; }
+
+.pp-heatmap-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.pp-heatmap-chip {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 0.5px solid var(--border);
+  background: var(--bg2);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.pp-heatmap-chip.active {
+  background: var(--red-bright);
+  color: #fff;
+  border-color: var(--red-bright);
+}
+.pp-heatmap-rink { border-radius: 8px; overflow: hidden; }

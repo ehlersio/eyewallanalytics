@@ -4,6 +4,7 @@ import { getRoster, getPlayerStats, fetchPlayerRankings, getPlayoffGames, getSta
 import { findContract, contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING, CURRENT_SEASON } from '../utils/carContracts'
 import TeamLogo from '../components/TeamLogo'
 import InfoTip from '../components/InfoTip'
+import IceRink from '../components/IceRink'
 import './PlayersView.css'
 
 const SEASON       = 20252026
@@ -185,8 +186,20 @@ function PlayerCard({ player: p, onClick }) {
 
 function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
   const { data: stats, loading } = useFetch(() => getPlayerStats(p.id), [p.id])
-  const [imgErr, setImgErr] = useState(false)
-  const name     = `${p.firstName?.default || ''} ${p.lastName?.default || ''}`.trim()
+  const [imgErr, setImgErr]     = useState(false)
+  const [ppTab, setPpTab]       = useState('stats') // 'stats' | 'heatmap'
+  const name = `${p.firstName?.default || ''} ${p.lastName?.default || ''}`.trim()
+
+  // Fetch season shot data from Worker KV
+  const workerUrl = import.meta.env.VITE_WORKER_URL || ''
+  const { data: shotData } = useFetch(
+    () => workerUrl
+      ? fetch(`${workerUrl}/cache/${encodeURIComponent(`shots:CAR:${p.id}`)}`)
+          .then(r => r.ok ? r.json() : null)
+          .catch(() => null)
+      : Promise.resolve(null),
+    [p.id]
+  )
 
   // Extract stats for each context in display order
   const seasonPO  = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 3)
@@ -393,7 +406,14 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
           </div>
         )}
 
-        {/* ── Stat sections ── */}
+        {/* ── Tab toggle ── */}
+        <div className="pp-tabs">
+          <button className={`pp-tab ${ppTab === 'stats' ? 'active' : ''}`} onClick={() => setPpTab('stats')}>📊 Stats</button>
+          <button className={`pp-tab ${ppTab === 'heatmap' ? 'active' : ''}`} onClick={() => setPpTab('heatmap')}>🎯 Heat Map</button>
+        </div>
+
+        {/* ── Stats tab ── */}
+        {ppTab === 'stats' && (
         <div className="pp-body">
           {loading && (
             <div className="pp-loading">
@@ -416,6 +436,12 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
             <div className="pp-no-stats">No stats available for this player yet.</div>
           )}
         </div>
+        )}
+
+        {/* ── Heat map tab ── */}
+        {ppTab === 'heatmap' && (
+          <PlayerHeatMap shotData={shotData} playerName={name} isGoalie={p.positionCode === 'G'} />
+        )}
       </div>
     </div>
   )
@@ -549,4 +575,91 @@ function RosterSkeleton() {
       ))}
     </div>
   )
+}
+
+// ── Player Heat Map ───────────────────────────────────────────
+function PlayerHeatMap({ shotData, playerName, isGoalie }) {
+  const [filter, setFilter] = useState('all');
+
+  if (isGoalie) {
+    return (
+      <div className="pp-heatmap-empty">
+        <div className="pp-heatmap-icon">🥅</div>
+        <div>Shot heat maps are for skaters only.</div>
+      </div>
+    );
+  }
+
+  if (!shotData) {
+    return (
+      <div className="pp-heatmap-empty">
+        <div className="pp-heatmap-icon">🎯</div>
+        <div>No season shot data yet.</div>
+        <div className="pp-heatmap-sub">Data builds up as games complete.</div>
+      </div>
+    );
+  }
+
+  const shots = shotData.shots || [];
+
+  // Convert compact format to IceRink event format
+  const typeMap = { g: 'goal', s: 'shot-on-goal', m: 'missed-shot', b: 'blocked-shot' };
+  const allEvents = shots.map((s, i) => ({
+    id:         i,
+    x:          s.x,
+    y:          s.y,
+    type:       typeMap[s.t] || 'shot-on-goal',
+    period:     s.p,
+    shotType:   s.st,
+    isCanes:    true,
+    shooterId:  'player', // single player — always show
+  }));
+
+  const filtered = filter === 'all'   ? allEvents
+    : filter === 'goals'  ? allEvents.filter(e => e.type === 'goal')
+    : filter === 'sog'    ? allEvents.filter(e => e.type === 'shot-on-goal')
+    : filter === 'missed' ? allEvents.filter(e => e.type === 'missed-shot')
+    : allEvents;
+
+  const goals   = allEvents.filter(e => e.type === 'goal').length;
+  const sog     = allEvents.filter(e => e.type === 'shot-on-goal').length;
+  const missed  = allEvents.filter(e => e.type === 'missed-shot').length;
+  const blocked = allEvents.filter(e => e.type === 'blocked-shot').length;
+  const total   = allEvents.length;
+  const sh      = (goals + sog) > 0 ? ((goals / (goals + sog)) * 100).toFixed(1) : '—';
+
+  return (
+    <div className="pp-heatmap">
+      {/* Summary stats */}
+      <div className="pp-heatmap-summary">
+        <div className="pp-heatmap-stat"><span className="pp-heatmap-num goal-col">{goals}</span><span>Goals</span></div>
+        <div className="pp-heatmap-stat"><span className="pp-heatmap-num sog-col">{sog}</span><span>SOG</span></div>
+        <div className="pp-heatmap-stat"><span className="pp-heatmap-num">{missed}</span><span>Missed</span></div>
+        <div className="pp-heatmap-stat"><span className="pp-heatmap-num">{total}</span><span>Total</span></div>
+        <div className="pp-heatmap-stat"><span className="pp-heatmap-num">{sh}%</span><span>SH%</span></div>
+        {shotData.games && <div className="pp-heatmap-stat"><span className="pp-heatmap-num">{shotData.games}</span><span>Games</span></div>}
+      </div>
+
+      {/* Filter chips */}
+      <div className="pp-heatmap-filters">
+        {[
+          { key: 'all',    label: `All (${total})` },
+          { key: 'goals',  label: `Goals (${goals})` },
+          { key: 'sog',    label: `SOG (${sog})` },
+          { key: 'missed', label: `Missed (${missed})` },
+        ].map(f => (
+          <button
+            key={f.key}
+            className={`pp-heatmap-chip ${filter === f.key ? 'active' : ''}`}
+            onClick={() => setFilter(f.key)}
+          >{f.label}</button>
+        ))}
+      </div>
+
+      {/* Rink */}
+      <div className="pp-heatmap-rink">
+        <IceRink events={filtered} roster={{}} />
+      </div>
+    </div>
+  );
 }
