@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import './NewsView.css';
 
 const WORKER_URL  = import.meta.env.VITE_WORKER_URL || '';
@@ -66,21 +66,29 @@ export default function NewsView() {
   const [filter,    setFilter]    = useState('all');
   const [page,      setPage]      = useState(1);
 
+  const fetchingRef = useRef(false);
+
   const fetchArticles = useCallback(async () => {
     if (!WORKER_URL) { setError('Worker URL not configured'); setLoading(false); return; }
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
     setLoading(true);
     setError(null);
     try {
       const res  = await fetch(`${WORKER_URL}/cache/${encodeURIComponent('news:CAR')}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('News not yet available — check back soon');
       const data = await res.json();
-      setArticles(Array.isArray(data) ? data : []);
+      const arr = Array.isArray(data) ? data : [];
+      setArticles(arr);
+      setFilter('all');
+      setPage(1);
       setLastFetch(new Date());
       setPage(1);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
   }, []);
 
@@ -89,19 +97,22 @@ export default function NewsView() {
   // Reset page when filter changes
   useEffect(() => { setPage(1); }, [filter]);
 
-  // Build filter chips from actual data (not just SOURCE_META keys)
+  // Build filter chips from actual article data
   const availableSources = useMemo(() => {
-    const seen = new Set();
-    articles.forEach(a => seen.add(a.source));
+    const seen = new Set(articles.map(a => a.source));
     return ['all', ...Object.keys(SOURCE_META).filter(k => seen.has(k))];
   }, [articles]);
 
-  const filtered = filter === 'all'
-    ? articles
-    : articles.filter(a => a.source === filter);
+  const filtered = useMemo(() =>
+    filter === 'all' ? articles : articles.filter(a => a.source === filter),
+    [articles, filter]
+  );
 
-  const totalPages  = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated   = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated  = useMemo(() =>
+    filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filtered, page]
+  );
 
   return (
     <div className="news-view page">

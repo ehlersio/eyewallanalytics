@@ -1,3 +1,4 @@
+// EyeWall Analytics v1.0 — build 2026-05-26b
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Topbar from './components/Topbar'
 import BottomNav from './components/BottomNav'
