@@ -550,8 +550,19 @@ export default function ShotMapView() {
         <AdvancedGamePanel pbp={pbp} gameHome={gameHome} isLive={isLive} boxscore={boxscore} />
       )}
 
+      {/* ── Live Insights ── */}
+      {isLive && pbp?.plays?.length > 0 && (
+        <LiveInsights
+          pbp={pbp}
+          boxscore={boxscore}
+          gameHome={gameHome}
+          carScore={carScore}
+          oppScore={oppScore}
+          oppAbbr={oppAbbr}
+          topScorers={topScorers}
+        />
+      )}
 
-      <div className="two-col">
         {/* ── Left: rink + event log ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div className="card">
@@ -1006,6 +1017,115 @@ function StatDrillPopup({ drillStat, onClose }) {
 
 
 // ── Advanced Game Panel (Corsi / Fenwick / PDO / Puck Luck) ──
+// ── Live Insights ────────────────────────────────────────────
+function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers }) {
+  const insights = useMemo(() => {
+    const plays   = pbp?.plays || [];
+    const carTeam = gameHome ? pbp?.homeTeam?.id : pbp?.awayTeam?.id;
+    const results = [];
+
+    // ── Shot advantage by period ──────────────────────────────
+    const periodShots = {};
+    plays.forEach(p => {
+      if (!['shot-on-goal','goal'].includes(p.typeDescKey)) return;
+      const per  = p.periodDescriptor?.number || 1;
+      const isCar = p.details?.eventOwnerTeamId === carTeam;
+      if (!periodShots[per]) periodShots[per] = { car: 0, opp: 0 };
+      if (isCar) periodShots[per].car++; else periodShots[per].opp++;
+    });
+    const currentPeriod = pbp?.periodDescriptor?.number;
+    if (currentPeriod && periodShots[currentPeriod]) {
+      const ps = periodShots[currentPeriod];
+      const diff = ps.car - ps.opp;
+      const periodLabel = currentPeriod <= 3 ? `P${currentPeriod}` : 'OT';
+      if (Math.abs(diff) >= 4) {
+        results.push({
+          icon: diff > 0 ? '🎯' : '😬',
+          text: diff > 0
+            ? `CAR leads shots ${ps.car}–${ps.opp} in ${periodLabel}`
+            : `${oppAbbr} leads shots ${ps.opp}–${ps.car} in ${periodLabel}`,
+          type: diff > 0 ? 'good' : 'warn',
+        });
+      }
+    }
+
+    // ── Momentum — last 10 shot attempts ─────────────────────
+    const recentAttempts = plays
+      .filter(p => ['shot-on-goal','goal','missed-shot','blocked-shot'].includes(p.typeDescKey))
+      .slice(-10);
+    if (recentAttempts.length >= 6) {
+      const carRecent = recentAttempts.filter(p => p.details?.eventOwnerTeamId === carTeam).length;
+      const oppRecent = recentAttempts.length - carRecent;
+      if (carRecent >= 7) results.push({ icon: '🌀', text: `CAR on a roll — ${carRecent} of last ${recentAttempts.length} shot attempts`, type: 'good' });
+      else if (oppRecent >= 7) results.push({ icon: '🧱', text: `${oppAbbr} pressing — ${oppRecent} of last ${recentAttempts.length} shot attempts`, type: 'warn' });
+    }
+
+    // ── Top scorer callout ────────────────────────────────────
+    if (topScorers.length > 0) {
+      const leader = topScorers[0];
+      if (leader.points >= 2) {
+        const pts = [
+          leader.goals > 0 ? `${leader.goals}G` : null,
+          leader.assists > 0 ? `${leader.assists}A` : null,
+        ].filter(Boolean).join(', ');
+        results.push({ icon: '⭐', text: `${leader.name} leading with ${pts} (${leader.points} pts)`, type: 'good' });
+      }
+    }
+
+    // ── PK performance ───────────────────────────────────────
+    const penalties = plays.filter(p => p.typeDescKey === 'penalty');
+    const carPens   = penalties.filter(p => p.details?.eventOwnerTeamId === carTeam).length;
+    const oppPens   = penalties.filter(p => p.details?.eventOwnerTeamId !== carTeam).length;
+    const ppGoalsAgainst = plays.filter(p =>
+      p.typeDescKey === 'goal' &&
+      p.details?.eventOwnerTeamId !== carTeam &&
+      p.details?.situationCode?.startsWith('5v4') ||
+      p.details?.situationCode?.startsWith('5v3')
+    ).length;
+    if (carPens >= 2 && ppGoalsAgainst === 0 && carPens >= oppPens) {
+      results.push({ icon: '🛡️', text: `CAR PK holding firm — killed ${carPens} penalties`, type: 'good' });
+    }
+
+    // ── Score situation callouts ──────────────────────────────
+    const diff = (carScore ?? 0) - (oppScore ?? 0);
+    if (diff === 0 && (carScore ?? 0) > 0) {
+      results.push({ icon: '⚡', text: `Tied ${carScore}–${oppScore} — anyone's game`, type: 'neutral' });
+    } else if (diff >= 3) {
+      results.push({ icon: '🏒', text: `CAR up ${diff} — dominant performance`, type: 'good' });
+    } else if (diff <= -2 && currentPeriod >= 3) {
+      results.push({ icon: '🚨', text: `CAR down ${Math.abs(diff)} in P${currentPeriod} — need a push`, type: 'warn' });
+    }
+
+    // ── Empty net ─────────────────────────────────────────────
+    const situation = pbp?.situation;
+    if (situation?.awayTeam?.situationDescriptions?.includes('EN') ||
+        situation?.homeTeam?.situationDescriptions?.includes('EN')) {
+      const carEN = gameHome
+        ? situation?.awayTeam?.situationDescriptions?.includes('EN')
+        : situation?.homeTeam?.situationDescriptions?.includes('EN');
+      results.push({ icon: carEN ? '🥅' : '😤', text: carEN ? `${oppAbbr} has pulled their goalie` : 'CAR goalie pulled', type: carEN ? 'good' : 'warn' });
+    }
+
+    return results.slice(0, 4); // max 4 insights at once
+  }, [pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers]);
+
+  if (!insights.length) return null;
+
+  return (
+    <div className="card live-insights">
+      <div className="sec-label">🔴 Live Insights</div>
+      <div className="insights-list">
+        {insights.map((ins, i) => (
+          <div key={i} className={`insight-row insight-${ins.type}`}>
+            <span className="insight-icon">{ins.icon}</span>
+            <span className="insight-text">{ins.text}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AdvancedGamePanel({ pbp, gameHome, isLive, boxscore }) {
   const plays = pbp?.plays || [];
   const sa    = computeShotAttempts(plays);
