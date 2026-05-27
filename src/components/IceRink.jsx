@@ -56,7 +56,7 @@ const OPP_SHOT_STYLE = {
 };
 
 // ─── Main component ───────────────────────────────────────────
-export default function IceRink({ events = [], roster = {} }) {
+export default function IceRink({ events = [], roster = {}, hidePlayerFilter = false }) {
   const [halfRink,    setHalfRink]    = useState(false);
   const [period,      setPeriod]      = useState('all');
   const [viewMode,    setViewMode]    = useState('dots'); // 'dots' | 'heat'
@@ -278,7 +278,7 @@ export default function IceRink({ events = [], roster = {} }) {
         </div>
         <div className="rink-right-controls">
           {/* Player filter popover */}
-          {carShooters.length > 0 && (
+          {carShooters.length > 0 && !hidePlayerFilter && (
             <div className="rink-filter-wrap" ref={filterRef}>
               <button
                 className={`rink-btn rink-filter-btn${selectedPlayer ? ' on' : ''}`}

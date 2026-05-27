@@ -658,7 +658,7 @@ function PlayerHeatMap({ shotData, playerName, isGoalie }) {
 
       {/* Rink */}
       <div className="pp-heatmap-rink">
-        <IceRink events={filtered} roster={{}} />
+        <IceRink events={filtered} roster={{}} hidePlayerFilter />
       </div>
     </div>
   );
