@@ -4,7 +4,7 @@ import {
   getLiveGame, getGameDetail, getGameBoxscore, getGameRightRail,
   getRecentGames, getPlayoffGames, extractShotEvents,
   getCarScore, getOppScore, getOpponent, isHomeGame,
-  getTeamStats, formatGameDate, getRoster, buildPlayerMap,
+  getTeamStats, getTeamPlayoffStats, formatGameDate, getRoster, buildPlayerMap,
   bustLiveGameCache, TEAM_COLORS, GAME_TYPE,
 } from '../utils/nhlApi';
 import IceRink from '../components/IceRink';
@@ -64,6 +64,15 @@ export default function ShotMapView() {
 
   // Team stats — we fetch once; we pick the right context (reg vs playoff) below
   const { data: teamStats, loading: statsLoading } = useFetch(() => getTeamStats(CAR_ABBR));
+
+  // Playoff-specific PP% when in playoffs
+  const { data: poAdv } = useFetch(
+    () => inPlayoffs ? getTeamPlayoffStats() : Promise.resolve(null),
+    [inPlayoffs]
+  );
+  const ppPct = inPlayoffs && poAdv?.pp?.powerPlayPct
+    ? poAdv.pp.powerPlayPct
+    : teamStats?.powerPlayPct;
 
   // Roster for player name resolution in shot tooltips
   const { data: roster } = useFetch(() => getRoster(CAR_ABBR));
@@ -537,9 +546,9 @@ export default function ShotMapView() {
           onClick={pbp ? () => buildDrillDown('faceoff') : null}
         />
         <MetCard
-          label='PP %'
-          value={teamStats?.powerPlayPct ? `${(teamStats.powerPlayPct * 100).toFixed(1)}%` : '—'}
-          sub={ctxLabel}
+          label={inPlayoffs ? 'PP % (PO)' : 'PP %'}
+          value={ppPct ? `${(ppPct * 100).toFixed(1)}%` : '—'}
+          sub={inPlayoffs ? 'Playoff avg' : 'Season avg'}
           color="green"
           onClick={pbp ? () => buildDrillDown('pp') : null}
         />

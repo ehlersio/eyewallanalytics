@@ -38,6 +38,9 @@ export default function TeamView() {
   const playoffSummary = buildCarPlayoffSummary(playoffGames || [])
   const inPlayoffs     = (playoffGames?.length || 0) > 0
 
+  // Playoff home/away splits — only fetch when in playoffs (inPlayoffs must be defined first)
+  const { data: homeSplitPO } = useFetch(() => inPlayoffs ? getTeamHomeSplit(3) : Promise.resolve(null), [inPlayoffs])
+
   // Fetch live game so we can exclude in-progress result from standings
   const { data: liveGame } = useFetch(getLiveGame)
   const gameIsLive = !!(liveGame)
@@ -77,8 +80,8 @@ export default function TeamView() {
       </div>
 
       {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} realtimeReg={realtimeReg} />}
-      {tab === 'Advanced'  && <AdvancedTab corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} />}
-      {tab === 'Splits'    && <SplitsTab homeSplit={homeSplit} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} />}
+      {tab === 'Advanced'  && <AdvancedTab corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} homeSplit={homeSplit} />}
+      {tab === 'Splits'    && <SplitsTab homeSplit={homeSplit} homeSplitPO={homeSplitPO} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} ppReg={ppReg} pkReg={pkReg} corsiReg={corsiReg} />}
       {tab === 'Trends'    && <TrendsTab gameLog={gameLog} />}
       {tab === 'Cap & Picks' && <CapTab capSummary={capSummary} capPct={capPct} sortedContracts={sortedContracts} picksByYear={picksByYear} />}
     </div>
@@ -174,7 +177,7 @@ function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding
 }
 
 // ── Advanced tab ─────────────────────────────────────────────
-function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, scoreState, poAdv, inPlayoffs }) {
+function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, scoreState, poAdv, inPlayoffs, homeSplit }) {
   const pdoData = seasonPDO(corsiReg);
   const [showPO, setShowPO] = useState(inPlayoffs);
   function pct(v) { if (v == null) return '—'; return `${(v*100).toFixed(1)}%`; }
@@ -185,6 +188,37 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, scoreState, poAdv, i
   const corsi = showPO ? poAdv?.corsi : corsiReg
   const pp    = showPO ? poAdv?.pp    : ppReg
   const pk    = showPO ? poAdv?.pk    : pkReg
+
+  // League average benchmarks (2024-25 season approximations)
+  const LEAGUE_AVG = {
+    corsiForPct:     0.500,
+    fenwickForPct:   0.500,
+    satForPerGame:   58.0,
+    shotsForPerGame: 30.5,
+    shotsAgainstPerGame: 30.5,
+    blockedForPerGame:   9.5,
+    blockedAgainstPerGame: 9.5,
+    goalsForPerGame:     3.05,
+    goalsAgainstPerGame: 3.05,
+    pdo:             100,
+    shPct:           10.5,
+    svPct:           90.0,
+    ppPct:           20.0,
+    netPpPct:        19.5,
+    pkPct:           80.0,
+    netPkPct:        79.5,
+  };
+
+  // Returns 'good', 'bad', or null based on whether higher is better
+  function rateVal(val, avg, higherIsBetter = true) {
+    if (val == null || avg == null) return null;
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    if (isNaN(num)) return null;
+    const diff = num - avg;
+    const pctDiff = Math.abs(diff) / avg;
+    if (pctDiff < 0.02) return null; // within 2% of average — neutral
+    return (diff > 0) === higherIsBetter ? 'good' : 'bad';
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -202,15 +236,48 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, scoreState, poAdv, i
       <div className="card">
         <div className="sec-label" style={{ marginBottom: 8 }}>Shot Volume &amp; Possession</div>
         <div className="adv-explain">
-          True Corsi/Fenwick requires play-by-play aggregated across all games — the season-level API only provides shots on goal. Shot For% is a SOG-based proxy. Per-game shot volume gives a picture of territorial control.
+          {corsi?.isProxyCorsi === false
+            ? 'Corsi For% (CF%) approximates all shot attempts using shots on goal + blocked shots from the NHL realtime report. Fenwick For% (FF%) uses shots on goal only, excluding blocked shots. Both measure territorial control — ≥50% means CAR is generating more attempts than opponents.'
+            : 'Shot For% is a SOG-based proxy. Realtime blocked shot data unavailable for this game type.'}
         </div>
-        <AdvStatRow label="Shot For% (proxy)" val={pct(corsi?.corsiForPct)} note="SOG for ÷ total SOG. ≥50% = outshooting opponents" />
-        <AdvStatRow label="Shots For/GP"       val={corsi?.shotsForPerGame     ? fmt(corsi.shotsForPerGame)     : null} />
-        <AdvStatRow label="Shots Against/GP"   val={corsi?.shotsAgainstPerGame ? fmt(corsi.shotsAgainstPerGame) : null} />
-        <AdvStatRow label="Blocked For/GP"     val={realtimeReg?.blockedShots != null ? fmt(realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1)) : null} note="Shots blocked by CAR skaters per game" />
-        <AdvStatRow label="Blocked Against/GP" val={realtimeReg?.shotAttemptsBlocked != null ? fmt(realtimeReg.shotAttemptsBlocked / (realtimeReg.gamesPlayed || 1)) : null} note="CAR shots blocked by opponents per game" />
-        <AdvStatRow label="Goals For/GP"       val={corsi?.goalsForPerGame     ? fmt(corsi.goalsForPerGame)     : null} />
-        <AdvStatRow label="Goals Against/GP"   val={corsi?.goalsAgainstPerGame ? fmt(corsi.goalsAgainstPerGame) : null} />
+        {corsi?.isProxyCorsi === false ? (
+          <>
+            <AdvStatRow label="Corsi For% (CF%)"  val={pct(corsi?.corsiForPct)}
+              rating={rateVal(corsi?.corsiForPct, LEAGUE_AVG.corsiForPct)} avg="50.0%"
+              note="All shot attempts for ÷ total. ≥50% = territorial control" />
+            <AdvStatRow label="Fenwick For% (FF%)" val={pct(corsi?.fenwickForPct)}
+              rating={rateVal(corsi?.fenwickForPct, LEAGUE_AVG.fenwickForPct)} avg="50.0%"
+              note="Unblocked attempts for ÷ total. Filters out shot-blocking luck" />
+            <AdvStatRow label="Shot Attempts For/GP" val={corsi?.satForPerGame ? fmt(corsi.satForPerGame) : null}
+              rating={rateVal(corsi?.satForPerGame, LEAGUE_AVG.satForPerGame)} avg={LEAGUE_AVG.satForPerGame.toFixed(1)} />
+            <AdvStatRow label="Shot Attempts Against/GP" val={corsi?.satAgainstPerGame ? fmt(corsi.satAgainstPerGame) : null}
+              rating={rateVal(corsi?.satAgainstPerGame, LEAGUE_AVG.satForPerGame, false)} avg={LEAGUE_AVG.satForPerGame.toFixed(1)} />
+          </>
+        ) : (
+          <AdvStatRow label="Shot For% (proxy)" val={pct(corsi?.corsiForPct)}
+            rating={rateVal(corsi?.corsiForPct, LEAGUE_AVG.corsiForPct)} avg="50.0%"
+            note="SOG for ÷ total SOG. ≥50% = outshooting opponents" />
+        )}
+        <AdvStatRow label="Shots For/GP" val={corsi?.shotsForPerGame ? fmt(corsi.shotsForPerGame) : null}
+          rating={rateVal(corsi?.shotsForPerGame, LEAGUE_AVG.shotsForPerGame)} avg={LEAGUE_AVG.shotsForPerGame.toFixed(1)} />
+        <AdvStatRow label="Shots Against/GP" val={corsi?.shotsAgainstPerGame ? fmt(corsi.shotsAgainstPerGame) : null}
+          rating={rateVal(corsi?.shotsAgainstPerGame, LEAGUE_AVG.shotsAgainstPerGame, false)} avg={LEAGUE_AVG.shotsAgainstPerGame.toFixed(1)} />
+        <AdvStatRow label="Blocked For/GP"
+          val={realtimeReg?.blockedShots != null ? fmt(realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1)) : null}
+          rating={rateVal(realtimeReg?.blockedShots != null ? realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1) : null, LEAGUE_AVG.blockedForPerGame)}
+          avg={LEAGUE_AVG.blockedForPerGame.toFixed(1)} note="Shots blocked by CAR skaters per game" />
+        <AdvStatRow label="Blocked Against/GP"
+          val={realtimeReg?.shotAttemptsBlocked != null ? fmt(realtimeReg.shotAttemptsBlocked / (realtimeReg.gamesPlayed || 1)) : null}
+          rating={rateVal(realtimeReg?.shotAttemptsBlocked != null ? realtimeReg.shotAttemptsBlocked / (realtimeReg.gamesPlayed || 1) : null, LEAGUE_AVG.blockedAgainstPerGame, false)}
+          avg={LEAGUE_AVG.blockedAgainstPerGame.toFixed(1)} note="CAR shots blocked by opponents per game" />
+        {corsi?.possessionPct != null && (
+          <AdvStatRow label="Puck Possession%" val={pct(corsi.possessionPct / 100)}
+            rating={rateVal(corsi.possessionPct / 100, 0.5)} avg="50.0%" note="Time with puck ÷ total play time" />
+        )}
+        <AdvStatRow label="Goals For/GP" val={corsi?.goalsForPerGame ? fmt(corsi.goalsForPerGame) : null}
+          rating={rateVal(corsi?.goalsForPerGame, LEAGUE_AVG.goalsForPerGame)} avg={LEAGUE_AVG.goalsForPerGame.toFixed(2)} />
+        <AdvStatRow label="Goals Against/GP" val={corsi?.goalsAgainstPerGame ? fmt(corsi.goalsAgainstPerGame) : null}
+          rating={rateVal(corsi?.goalsAgainstPerGame, LEAGUE_AVG.goalsAgainstPerGame, false)} avg={LEAGUE_AVG.goalsAgainstPerGame.toFixed(2)} />
       </div>
 
       {/* PDO & Puck Luck */}
@@ -220,9 +287,15 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, scoreState, poAdv, i
           <div className="adv-explain">
             PDO = team shooting% + save% × 100. League average = 100. Values above 102 suggest positive puck luck likely to regress; below 98 suggest negative luck. Useful for identifying unsustainable streaks.
           </div>
-          <AdvStatRow label="PDO" val={pdoData.pdo} note={pdoData.luck} />
-          <AdvStatRow label="Team SH%" val={`${pdoData.shPct}%`} note="Season shooting %" />
-          <AdvStatRow label="Team SV%" val={pdoData.svPct != null ? String(pdoData.svPct) : null} note="Season save %" />
+          <AdvStatRow label="PDO" val={pdoData.pdo} note={pdoData.luck}
+            rating={rateVal(parseFloat(pdoData.pdo), LEAGUE_AVG.pdo)} avg="100" />
+          <AdvStatRow label="Team SH%" val={`${pdoData.shPct}%`} note="Season shooting %"
+            rating={rateVal(parseFloat(pdoData.shPct), LEAGUE_AVG.shPct)} avg={`${LEAGUE_AVG.shPct}%`} />
+          <AdvStatRow label="Team SV%" 
+            val={pdoData.svPct != null ? (pdoData.svPct / 100).toFixed(3) : null}
+            note="Season save %"
+            rating={rateVal(pdoData.svPct != null ? pdoData.svPct : null, LEAGUE_AVG.svPct)}
+            avg=".900" />
         </div>
       )}
 
@@ -230,17 +303,24 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, scoreState, poAdv, i
       <div className="card">
         <div className="sec-label" style={{ marginBottom: 8 }}>Power Play</div>
         <div className="adv-explain">Net PP% excludes goals where the opposing team was also shorthanded simultaneously.</div>
-        <AdvStatRow label="PP%" val={pp ? pct(pp.powerPlayPct) : null} note="League avg ~20%" />
-        <AdvStatRow label="Net PP%" val={pp ? pct(pp.powerPlayNetPct) : null} />
-        <AdvStatRow label="Faceoff Win%" val={pp ? pct(pp.faceoffWinPct) : null} note="League avg ~50%" />
+        <AdvStatRow label="PP%" val={pp ? pct(pp.powerPlayPct) : null}
+          rating={pp ? rateVal(pp.powerPlayPct, LEAGUE_AVG.ppPct / 100) : null} avg={`${LEAGUE_AVG.ppPct}%`}
+          note="League avg ~20%" />
+        <AdvStatRow label="Net PP%" val={pp ? pct(pp.powerPlayNetPct) : null}
+          rating={pp ? rateVal(pp.powerPlayNetPct, LEAGUE_AVG.netPpPct / 100) : null} avg={`${LEAGUE_AVG.netPpPct}%`} />
+        <AdvStatRow label="Faceoff Win%" val={pp ? pct(pp.faceoffWinPct) : null}
+          rating={pp ? rateVal(pp.faceoffWinPct, 0.5) : null} avg="50.0%" note="League avg ~50%" />
       </div>
 
       {/* Penalty Kill */}
       <div className="card">
         <div className="sec-label" style={{ marginBottom: 8 }}>Penalty Kill</div>
         <div className="adv-explain">Net PK% excludes goals while both teams were shorthanded simultaneously.</div>
-        <AdvStatRow label="PK%" val={pk ? pct(pk.penaltyKillPct) : null} note="League avg ~80%" />
-        <AdvStatRow label="Net PK%" val={pk ? pct(pk.penaltyKillNetPct) : null} />
+        <AdvStatRow label="PK%" val={pk ? pct(pk.penaltyKillPct) : null}
+          rating={pk ? rateVal(pk.penaltyKillPct, LEAGUE_AVG.pkPct / 100) : null} avg={`${LEAGUE_AVG.pkPct}%`}
+          note="League avg ~80%" />
+        <AdvStatRow label="Net PK%" val={pk ? pct(pk.penaltyKillNetPct) : null}
+          rating={pk ? rateVal(pk.penaltyKillNetPct, LEAGUE_AVG.netPkPct / 100) : null} avg={`${LEAGUE_AVG.netPkPct}%`} />
         <AdvStatRow label="Team Shutouts" val={pk?.teamShutouts} />
       </div>
 
@@ -258,90 +338,153 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, scoreState, poAdv, i
 }
 
 // ── Splits tab ───────────────────────────────────────────────
-function SplitsTab({ homeSplit, stats, playoffSummary, inPlayoffs }) {
-  const home = homeSplit?.home
-  const away = homeSplit?.away
+function SplitsTab({ homeSplit, homeSplitPO, stats, playoffSummary, inPlayoffs, ppReg, pkReg, corsiReg }) {
+  const [showPO, setShowPO] = React.useState(false);
+
+  const split = showPO ? homeSplitPO : homeSplit;
+  const home  = split?.home;
+  const away  = split?.away;
 
   function rec(d) {
-    if (!d) return '—'
-    return `${d.wins||0}–${d.losses||0}–${d.otLosses||0}`
+    if (!d) return '—';
+    return `${d.wins||0}–${d.losses||0}–${d.otLosses||0}`;
   }
-  function gpg(d) {
-    if (!d) return '—'
-    // team/summary uses goalsFor (total) or goalsForPerGame
-    if (d.goalsForPerGame != null) return d.goalsForPerGame.toFixed(2)
-    if (d.goalsFor != null && d.gamesPlayed) return (d.goalsFor/d.gamesPlayed).toFixed(2)
-    if (d.goalFor  != null && d.gamesPlayed) return (d.goalFor /d.gamesPlayed).toFixed(2)
-    return '—'
+  function fmtNum(v, dec = 2) { return v == null ? '—' : Number(v).toFixed(dec); }
+  // homeSplit data has percentages as 0-1 decimals (raw from team/summary API)
+  function fmtPct(v) { return v == null ? '—' : `${(v * 100).toFixed(1)}%`; }
+
+  function SplitRow({ label, hVal, aVal, better = 'higher', fmt = fmtNum, note }) {
+    if (hVal == null && aVal == null) return null;
+    const hNum = typeof hVal === 'number' ? hVal : null;
+    const aNum = typeof aVal === 'number' ? aVal : null;
+    const hBetter = hNum != null && aNum != null
+      ? (better === 'higher' ? hNum >= aNum : hNum <= aNum)
+      : false;
+    const aBetter = hNum != null && aNum != null ? !hBetter : false;
+    return (
+      <div className="split-adv-row">
+        <span className={`split-adv-val ${hBetter ? 'good' : ''}`}>{fmt(hVal)}</span>
+        <span className="split-adv-label">
+          {label}
+          {note && <span className="adv-stat-note"> · {note}</span>}
+        </span>
+        <span className={`split-adv-val right ${aBetter ? 'good' : ''}`}>{fmt(aVal)}</span>
+      </div>
+    );
   }
-  function gapg(d) {
-    if (!d) return '—'
-    if (d.goalsAgainstPerGame != null) return d.goalsAgainstPerGame.toFixed(2)
-    if (d.goalsAgainst != null && d.gamesPlayed) return (d.goalsAgainst/d.gamesPlayed).toFixed(2)
-    if (d.goalAgainst  != null && d.gamesPlayed) return (d.goalAgainst /d.gamesPlayed).toFixed(2)
-    return '—'
+
+  function Section({ title, children }) {
+    const rows = React.Children.toArray(children).filter(Boolean);
+    if (!rows.length) return null;
+    return (
+      <div className="split-adv-section">
+        <div className="split-adv-section-title">{title}</div>
+        {rows}
+      </div>
+    );
   }
+
+  const gamesLabel = showPO ? 'Playoffs' : 'Regular Season';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-      {/* Home vs Away */}
-      <div className="card">
-        <div className="sec-label" style={{ marginBottom: 10 }}>Home vs Away — Regular Season</div>
-        <div className="split-compare">
-          <div className="split-col home-col">
-            <div className="split-header">🏠 Home (Lenovo Center)</div>
-            <div className="split-record">{rec(home)}</div>
-            <div className="split-stats">
-              <SplitStat label="GF/GP"  val={gpg(home)} />
-              <SplitStat label="GA/GP"  val={gapg(home)} />
-              <SplitStat label="Points" val={home?.points ?? '—'} />
-            </div>
-          </div>
-          <div className="split-divider">vs</div>
-          <div className="split-col away-col">
-            <div className="split-header">✈ Away</div>
-            <div className="split-record">{rec(away)}</div>
-            <div className="split-stats">
-              <SplitStat label="GF/GP"  val={gpg(away)} />
-              <SplitStat label="GA/GP"  val={gapg(away)} />
-              <SplitStat label="Points" val={away?.points ?? '—'} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Reg vs Playoff */}
-      {inPlayoffs && stats && (
-        <div className="card">
-          <div className="sec-label" style={{ marginBottom: 10 }}>Regular Season vs Playoffs</div>
-          <div className="split-compare">
-            <div className="split-col">
-              <div className="split-header">📅 Regular Season</div>
-              <div className="split-record">{stats.wins||0}–{stats.losses||0}–{stats.otLosses||0}</div>
-              <div className="split-stats">
-                <SplitStat label="GF/GP" val={(stats.goalsForPerGame??0).toFixed(2)} />
-                <SplitStat label="GA/GP" val={(stats.goalsAgainstPerGame??0).toFixed(2)} />
-                <SplitStat label="PP%"   val={stats.powerPlayPct != null ? `${(stats.powerPlayPct*100).toFixed(1)}%` : '—'} />
-              </div>
-            </div>
-            <div className="split-divider">vs</div>
-            <div className="split-col">
-              <div className="split-header">🏒 Playoffs</div>
-              <div className="split-record">
-                {playoffSummary.reduce((s,x) => s+x.carWins, 0)}–
-                {playoffSummary.reduce((s,x) => s+x.oppWins, 0)}
-              </div>
-              <div className="split-stats">
-                <SplitStat label="Series" val={`${playoffSummary.filter(s=>s.carAdvance).length}–${playoffSummary.filter(s=>s.eliminated).length}`} />
-                <SplitStat label="Games"  val={`${playoffSummary.reduce((s,x)=>s+x.games.length,0)}`} />
-              </div>
-            </div>
-          </div>
+      {/* Toggle */}
+      {inPlayoffs && (
+        <div className="adv-toggle">
+          <button className={`adv-toggle-btn ${!showPO ? 'active' : ''}`} onClick={() => setShowPO(false)}>📅 Regular Season</button>
+          <button className={`adv-toggle-btn ${showPO ? 'active' : ''}`}  onClick={() => setShowPO(true)}>🏒 Playoffs</button>
         </div>
       )}
+
+      {/* Combined record + advanced stats card */}
+      <div className="card">
+        <div className="sec-label" style={{ marginBottom: 10 }}>Home vs Away — {gamesLabel}</div>
+
+        {/* Record header */}
+        <div className="split-adv-header">
+          <span>🏠 Home</span>
+          <span />
+          <span>✈ Away</span>
+        </div>
+        <div className="split-adv-row" style={{ fontWeight: 700, fontSize: 14 }}>
+          <span className="split-adv-val">{rec(home)}</span>
+          <span className="split-adv-label" style={{ color: 'var(--text-dim)', fontSize: 11 }}>Record</span>
+          <span className="split-adv-val right">{rec(away)}</span>
+        </div>
+        <div className="split-adv-row">
+          <span className="split-adv-val">{home?.gamesPlayed ?? '—'}</span>
+          <span className="split-adv-label">GP</span>
+          <span className="split-adv-val right">{away?.gamesPlayed ?? '—'}</span>
+        </div>
+        <div className="split-adv-row">
+          <span className="split-adv-val">
+            {home?.points != null && home?.gamesPlayed
+              ? `${((home.points / (home.gamesPlayed * 2)) * 100).toFixed(1)}%` : '—'}
+          </span>
+          <span className="split-adv-label">Pt%</span>
+          <span className="split-adv-val right">
+            {away?.points != null && away?.gamesPlayed
+              ? `${((away.points / (away.gamesPlayed * 2)) * 100).toFixed(1)}%` : '—'}
+          </span>
+        </div>
+
+        <Section title="Scoring">
+          <SplitRow label="GF/GP" hVal={home?.goalsForPerGame}     aVal={away?.goalsForPerGame}     better="higher" />
+          <SplitRow label="GA/GP" hVal={home?.goalsAgainstPerGame} aVal={away?.goalsAgainstPerGame} better="lower" />
+        </Section>
+
+        <Section title="Shot Volume">
+          <SplitRow label="SOG/GP"    hVal={home?.shotsForPerGame}     aVal={away?.shotsForPerGame}     better="higher" fmt={v => fmtNum(v, 1)} />
+          <SplitRow label="SOG-A/GP"  hVal={home?.shotsAgainstPerGame} aVal={away?.shotsAgainstPerGame} better="lower"  fmt={v => fmtNum(v, 1)} />
+          <SplitRow label="Shot For%"
+            hVal={home?.shotsForPerGame != null && home?.shotsAgainstPerGame != null
+              ? home.shotsForPerGame / (home.shotsForPerGame + home.shotsAgainstPerGame) : null}
+            aVal={away?.shotsForPerGame != null && away?.shotsAgainstPerGame != null
+              ? away.shotsForPerGame / (away.shotsForPerGame + away.shotsAgainstPerGame) : null}
+            better="higher" fmt={fmtPct} note="SOG proxy" />
+        </Section>
+
+        <Section title="Special Teams">
+          {/* powerPlayPct in team/summary is already 0-1 decimal */}
+          <SplitRow label="PP%"
+            hVal={home?.powerPlayPct}
+            aVal={away?.powerPlayPct}
+            better="higher" fmt={fmtPct} />
+          <SplitRow label="PK%"
+            hVal={home?.penaltyKillPct}
+            aVal={away?.penaltyKillPct}
+            better="higher" fmt={fmtPct} />
+          <SplitRow label="Faceoff%"
+            hVal={home?.faceoffWinPct}
+            aVal={away?.faceoffWinPct}
+            better="higher" fmt={fmtPct} />
+        </Section>
+
+        <Section title="Efficiency">
+          <SplitRow label="SH%"
+            hVal={home?.shotsForPerGame && home?.goalsForPerGame != null
+              ? home.goalsForPerGame / home.shotsForPerGame : null}
+            aVal={away?.shotsForPerGame && away?.goalsForPerGame != null
+              ? away.goalsForPerGame / away.shotsForPerGame : null}
+            better="higher" fmt={fmtPct} note="shooting %" />
+          <SplitRow label="SV%"
+            hVal={home?.shotsAgainstPerGame && home?.goalsAgainstPerGame != null
+              ? 1 - (home.goalsAgainstPerGame / home.shotsAgainstPerGame) : null}
+            aVal={away?.shotsAgainstPerGame && away?.goalsAgainstPerGame != null
+              ? 1 - (away.goalsAgainstPerGame / away.shotsAgainstPerGame) : null}
+            better="higher" fmt={v => v != null ? v.toFixed(3) : '—'} />
+          <SplitRow label="PDO"
+            hVal={home?.shotsForPerGame && home?.goalsForPerGame != null && home?.shotsAgainstPerGame && home?.goalsAgainstPerGame != null
+              ? ((home.goalsForPerGame / home.shotsForPerGame) + (1 - home.goalsAgainstPerGame / home.shotsAgainstPerGame)) * 100 : null}
+            aVal={away?.shotsForPerGame && away?.goalsForPerGame != null && away?.shotsAgainstPerGame && away?.goalsAgainstPerGame != null
+              ? ((away.goalsForPerGame / away.shotsForPerGame) + (1 - away.goalsAgainstPerGame / away.shotsAgainstPerGame)) * 100 : null}
+            better="higher" fmt={v => fmtNum(v, 1)} note="SH%+SV%×100" />
+        </Section>
+
+      </div>
     </div>
-  )
+  );
 }
 
 // ── Trends tab ───────────────────────────────────────────────
@@ -589,16 +732,25 @@ function CapTab({ capSummary, capPct, sortedContracts, picksByYear }) {
 }
 
 // ── Shared sub-components ────────────────────────────────────
-function AdvStatRow({ label, val, note }) {
+function AdvStatRow({ label, val, note, rating, avg }) {
+  const indicator = rating === 'good' ? '▲' : rating === 'bad' ? '▼' : null;
   return (
     <div className="adv-stat-row">
       <span className="adv-stat-label">
         {label}
         {note && <span className="adv-stat-note"> · {note}</span>}
       </span>
-      <span className="adv-stat-val">{val ?? '—'}</span>
+      <span className="adv-stat-right">
+        {indicator && (
+          <span className={`adv-stat-indicator ${rating}`}>{indicator}</span>
+        )}
+        <span className={`adv-stat-val ${rating || ''}`}>{val ?? '—'}</span>
+        {avg != null && val && val !== '—' && (
+          <span className="adv-stat-avg">avg {avg}</span>
+        )}
+      </span>
     </div>
-  )
+  );
 }
 
 function SplitStat({ label, val }) {

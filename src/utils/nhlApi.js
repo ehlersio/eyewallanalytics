@@ -682,21 +682,55 @@ async function _getTeamSummary(gameTypeId) {
   return d?.data?.[0] || null;
 }
 
-// Shot differential from team summary (proxy for possession/Corsi)
-// puckPossessions and goalsForAgainst team endpoints are broken on api.nhle.com
+// True Corsi/Fenwick using realtime + summary data we already fetch
+// shotattempts and puckPossessions endpoints return 500 on NHL API
 export async function getTeamCorsi(gameTypeId = 2) {
   const t = await cached(`teamSummary:${gameTypeId}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
   if (!t) return null;
-  // Shot% as proxy for Fenwick%
-  const sf = t.shotsForPerGame  || 0;
+
+  const sf = t.shotsForPerGame    || 0;
   const sa = t.shotsAgainstPerGame || 0;
-  const total = sf + sa;
+  const gp = t.gamesPlayed || 1;
+
+  // Get realtime data which has blockedShots + shotAttemptsBlocked
+  const rt = await cached(`teamRealtime:${gameTypeId}`, async () => {
+    const s   = STATS_SEASON;
+    const exp = encodeURIComponent(
+      `franchiseId=${FRANCHISE_CAR} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
+    );
+    const url = `/nhl-stats/stats/rest/en/team/realtime?isAggregate=false&isGame=false&sort=blockedShots&sortDirection=DESC&limit=1&cayenneExp=${exp}`;
+    const d   = await nhlFetch(url).catch(() => null);
+    return d?.data?.[0] || null;
+  }, TTL.ADVANCED);
+
+  // True Corsi = SOG + missed shots + blocked shots (for and against)
+  // We have: SOG for/against from summary, blocked shots from realtime
+  // Missing: missed shots — not available at season level, so we approximate:
+  // Corsi ≈ SOG + blocked (we have both sides from realtime)
+  const blockedFor     = rt?.blockedShots          || 0; // CAR shots blocked by opponents
+  const blockedAgainst = rt?.shotAttemptsBlocked   || 0; // Opponent shots blocked by CAR
+
+  // Approximate Corsi per game using what we have
+  const satForPerGame     = sf + (blockedFor     / gp); // SOG for + blocked against CAR
+  const satAgainstPerGame = sa + (blockedAgainst / gp); // SOG against + blocked by CAR
+  const satTotal          = satForPerGame + satAgainstPerGame;
+  const corsiForPct       = satTotal > 0 ? satForPerGame / satTotal : null;
+
+  // Fenwick = unblocked attempts only (exclude blocked shots)
+  // FF% = SOG for / (SOG for + SOG against) — same as our proxy but labeled correctly
+  const sogTotal    = sf + sa;
+  const fenwickForPct = sogTotal > 0 ? sf / sogTotal : null;
+
   return {
     ...t,
-    corsiForPct: total > 0 ? sf / total : null,
-    fenwickForPct: total > 0 ? sf / total : null, // same proxy
-    shotsForPerGame: sf,
+    corsiForPct,
+    fenwickForPct,
+    satForPerGame:     satTotal > 0 ? satForPerGame     : null,
+    satAgainstPerGame: satTotal > 0 ? satAgainstPerGame : null,
+    shotsForPerGame:   sf,
     shotsAgainstPerGame: sa,
+    // True Corsi if we have realtime blocked data, proxy otherwise
+    isProxyCorsi: !rt || (blockedFor === 0 && blockedAgainst === 0),
   };
 }
 

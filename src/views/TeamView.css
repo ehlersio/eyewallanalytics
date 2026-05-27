@@ -320,3 +320,98 @@
 .tap-label-close:hover { color: var(--text); }
 /* Result dot popup anchors below since dots are at top */
 .result-dot { position: relative; }
+
+/* ── Advanced stat rating indicators ── */
+.adv-stat-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.adv-stat-indicator { font-size: 10px; font-weight: 700; }
+.adv-stat-indicator.good { color: #4ade80; }
+.adv-stat-indicator.bad  { color: #f87171; }
+.adv-stat-val.good { color: #4ade80; }
+.adv-stat-val.bad  { color: #f87171; }
+.adv-stat-avg { font-size: 10px; color: var(--text-dim); white-space: nowrap; }
+
+/* ── Improved adv-stat-row alignment ── */
+.adv-stat-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-width: 120px;
+  justify-content: flex-end;
+}
+.adv-stat-val {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 52px;
+  text-align: right;
+}
+.adv-stat-avg {
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  min-width: 48px;
+  text-align: right;
+}
+.adv-stat-indicator { font-size: 10px; font-weight: 700; flex-shrink: 0; }
+
+/* ── Home/Away advanced grid ── */
+.ha-grid-header, .ha-grid-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 80px;
+  padding: 6px 0;
+  font-size: 12px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.04);
+  align-items: center;
+}
+.ha-grid-header { color: var(--text-dim); font-weight: 600; font-size: 11px; padding-bottom: 6px; }
+.ha-grid-header span:not(:first-child), .ha-val { text-align: right; font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+.ha-label { color: var(--text-muted); font-size: 12px; }
+.ha-val.good    { color: #4ade80; }
+.ha-val.neutral { color: var(--text); }
+
+/* ── Advanced splits layout ── */
+.split-adv-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  padding: 8px 0 6px;
+  text-align: center;
+}
+.split-adv-header span:first-child { text-align: left; }
+.split-adv-header span:last-child  { text-align: right; }
+
+.split-adv-section { margin-top: 10px; }
+.split-adv-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  padding: 4px 0 2px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.06);
+  margin-bottom: 2px;
+}
+.split-adv-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 60px;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 0.5px solid rgba(255,255,255,0.03);
+  gap: 4px;
+}
+.split-adv-val {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.split-adv-val.right { text-align: right; }
+.split-adv-val.good  { color: #4ade80; }
+.split-adv-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+}

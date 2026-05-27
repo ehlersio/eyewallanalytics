@@ -147,6 +147,7 @@ export default function ScheduleView() {
           onGamePopup={setPopupGame}
           sortOrder={regSort}
           setSortOrder={setRegSort}
+          oddsData={oddsData}
         />
       )}
 
@@ -448,7 +449,13 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, standingMap, carSta
                         isSelected={isSelected}
                         isPlayoff
                         odds={ml}
-                        cardFavoured={!completed ? computeWinPct(carStanding, oppStanding, game, playoffSeries) : null}
+                        cardFavoured={!completed ? (() => {
+                          const wr = computeWinPct(carStanding, oppStanding, game, playoffSeries);
+                          if (!wr) return null;
+                          let pct = wr.pct;
+                          if (ml) pct = Math.round(pct * 0.6 + oddsToImplied(ml.carOdds) * 0.4);
+                          return { pct, favoured: pct >= 50 };
+                        })() : null}
                         onClick={() => {
                           if (completed) { onGamePopup(game); }
                           else { setSelectedGame(isSelected ? null : game); }
@@ -476,7 +483,7 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, standingMap, carSta
 }
 
 
-function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup, sortOrder, setSortOrder }) {
+function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup, sortOrder, setSortOrder, oddsData }) {
   if (loading) return <LoadingCards count={4} />;
 
   if (!games.length) {
@@ -564,7 +571,14 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
         const isSelected  = selectedGame?.id === game.id;
         const oppStanding = standingMap[opp?.abbrev] || standingMap[opp?.abbrev?.toLowerCase()];
 
-        const cardFavoured = computeWinPct(carStanding, oppStanding, game, null);
+        const gameOdds    = !completed ? findGameOdds(oddsData, game) : null;
+        const winResult   = computeWinPct(carStanding, oppStanding, game, null);
+        let blendedPct    = winResult?.pct ?? 50;
+        if (gameOdds) {
+          const carImplied = oddsToImplied(gameOdds.carOdds);
+          blendedPct = Math.round(blendedPct * 0.6 + carImplied * 0.4);
+        }
+        const cardFavoured = winResult ? { pct: blendedPct, favoured: blendedPct >= 50 } : null;
 
         return (
           <div key={game.id}>
@@ -576,7 +590,7 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
               onClick={() => setSelectedGame(isSelected ? null : game)}
             />
             {isSelected && oppStanding && carStanding && (
-              <MatchupDetail game={game} oppStanding={oppStanding} carStanding={carStanding} />
+              <MatchupDetail game={game} oppStanding={oppStanding} carStanding={carStanding} odds={gameOdds} />
             )}
           </div>
         );
