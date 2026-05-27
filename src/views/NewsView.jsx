@@ -9,6 +9,7 @@ const SOURCE_META = {
   googlenews:   { label: 'Google News',   color: '#ffffff', bg: '#4285f4' },
   espn:         { label: 'ESPN',          color: '#ffffff', bg: '#cc0000' },
   sportsnet:    { label: 'Sportsnet',     color: '#000000', bg: '#d4a017' },
+  reddit:       { label: 'r/canes',       color: '#ffffff', bg: '#ff4500' },
 };
 
 function timeAgo(isoDate) {
@@ -50,7 +51,11 @@ function ArticleCard({ item }) {
         </div>
         <h3 className="news-card-title">{item.title}</h3>
         {item.excerpt && item.excerpt !== item.sourceName && (
-          <p className="news-card-excerpt">{item.excerpt}</p>
+          <p className="news-card-excerpt">
+            {item.source === 'reddit' && item.score != null
+              ? `▲ ${item.score.toLocaleString()} · 💬 ${item.comments} · ${item.excerpt}`
+              : item.excerpt}
+          </p>
         )}
       </div>
       <div className="news-card-arrow">→</div>
