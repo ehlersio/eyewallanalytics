@@ -443,3 +443,5 @@
   min-height: unset; min-width: unset;
 }
 .shotmap-top-btn:hover { color: var(--text); background: var(--bg2); }
+
+/* v1.1 */
