@@ -95,23 +95,39 @@ export function findContract(playerId, lastName) {
   return null;
 }
 
-// ─── Contract value score ─────────────────────────────────────
-// Points per $M of cap hit, projected to 82 games.
-// ELC contracts (note: 'ELC' or capHit < $1.2M) are excluded —
-// their tiny cap hit makes the metric nonsensical vs market deals.
-// Scale for market-rate skaters:
-//   >= 8.0 pts/$M  → Exceptional value  (e.g. Slavin calibre deal)
-//   >= 5.0         → Great value
-//   >= 3.0         → Good value         (typical star contract)
-//   >= 1.8         → Fair value
-//   >= 1.0         → Below average
-//    < 1.0         → Overpaid
-export function contractValue(points, gamesPlayed, capHit, isELC) {
+// ─── Contract value score (skaters) ──────────────────────────
+// Blended score: 60% points/$M + 40% WAR/$M (scaled to same range).
+// If WAR is unavailable, falls back to points/$M only.
+// ELC contracts are excluded — their tiny cap hit makes the metric
+// nonsensical vs market-rate deals.
+//
+// WAR scaling: WAR/$M is multiplied by 6 to bring it onto the same
+// axis as points/$M. A player with 3.0 WAR on a $4M deal scores
+// ~4.5 on this axis — comparable to 18 pts/$M before blending.
+//
+// Blended scale (market-rate skaters):
+//   >= 8.0  → Exceptional value
+//   >= 5.0  → Great value
+//   >= 3.0  → Good value
+//   >= 1.8  → Fair value
+//   >= 1.0  → Below average
+//    < 1.0  → Overpaid
+export function contractValue(points, gamesPlayed, capHit, isELC, war = null) {
   if (!capHit || !gamesPlayed) return null;
   if (isELC || capHit < 1_200_000) return null;
-  const p82  = (points / gamesPlayed) * 82;
-  const pPerM = p82 / (capHit / 1_000_000);
-  return Math.round(pPerM * 10) / 10;
+
+  const capM     = capHit / 1_000_000;
+  const p82      = (points / gamesPlayed) * 82;
+  const pointsPerM = p82 / capM;
+
+  if (war != null && !isNaN(war)) {
+    const warPerM   = war / capM;
+    const warScaled = warPerM * 6;
+    const blended   = (pointsPerM * 0.6) + (warScaled * 0.4);
+    return { score: Math.round(blended * 10) / 10, method: 'blended' };
+  }
+
+  return { score: Math.round(pointsPerM * 10) / 10, method: 'points' };
 }
 
 // ─── Points per 60 ───────────────────────────────────────────
@@ -129,30 +145,35 @@ export function calcPDO(shootingPctg, onIceSavePctg) {
   return Math.round((sh + sv) * 10) / 10;
 }
 
-// ─── Goalie contract value ───────────────────────────────────
-// For goalies we use SV% relative to league average ($910 = league avg).
-// A goalie playing above avg on a reasonable contract is good value.
-// capHit in dollars, svPctg as decimal (0.xxx)
-export function goalieContractValue(svPctg, gamesPlayed, capHit, isELC) {
-  if (!capHit || !gamesPlayed || svPctg == null) return null;
+// ─── Goalie contract value (GSAX/$M) ─────────────────────────
+// Goals saved above expected per $1M of cap hit.
+// GSAX already accounts for shot quality and volume, making it a
+// more honest measure than raw SV% vs league average.
+// A positive GSAX means the goalie saved more goals than an average
+// goalie would have faced the same shots — negative means they allowed
+// more. Dividing by cap hit tells you how much of that value you're
+// getting per dollar spent.
+//
+// Scale:
+//   >= 4.0  → Exceptional value  (elite goalie on reasonable deal)
+//   >= 2.0  → Great value
+//   >= 0.0  → Fair value
+//   >= -2.0 → Below average
+//    < -2.0 → Overpaid
+export function goalieContractValue(gsax, gamesPlayed, capHit, isELC) {
+  if (!capHit || !gamesPlayed || gsax == null) return null;
   if (isELC || capHit < 1_200_000) return null;
-  // Normalise SV% to 0-100 scale
-  const sv = svPctg <= 1 ? svPctg * 1000 : svPctg; // e.g. 0.912 → 912
-  const leagueAvg = 910; // approx NHL starter average
-  const svAboveAvg = sv - leagueAvg; // e.g. 915 → +5, 905 → -5
-  // Cap hit per game as a proxy for "what you're paying"
-  const capPerGame = capHit / 82;
-  // Simple score: SV points above avg per $1M spent
-  const score = (svAboveAvg / (capHit / 1_000_000));
+  const capM = capHit / 1_000_000;
+  const score = gsax / capM;
   return Math.round(score * 10) / 10;
 }
 
 export function goalieValueLabel(score) {
   if (score == null) return null;
-  if (score >=  2.0) return { label: 'Exceptional value', color: '#3dba7e' };
-  if (score >=  1.0) return { label: 'Great value',       color: '#5ab4f0' };
+  if (score >=  4.0) return { label: 'Exceptional value', color: '#3dba7e' };
+  if (score >=  2.0) return { label: 'Great value',       color: '#5ab4f0' };
   if (score >=  0.0) return { label: 'Fair value',        color: '#a0c878' };
-  if (score >= -1.0) return { label: 'Below average',     color: '#f0c030' };
+  if (score >= -2.0) return { label: 'Below average',     color: '#f0c030' };
   return               { label: 'Overpaid',               color: '#e04040' };
 }
 

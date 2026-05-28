@@ -102,12 +102,17 @@ const GOALIE_STATS = [
 
 export default function PlayersView() {
   const { data: roster,      loading: rosterLoading } = useFetch(() => getRoster('CAR'))
-  const { data: skaterStats, loading: statsLoading  } = useFetch(() => getTeamSkaterStatsFromDB('CAR', 20252026, 2))
   const { data: poGames }   = useFetch(getPlayoffGames)
   const { data: standings } = useFetch(getStandings)
   const [selected, setSelected] = useState(null)
-  const [view, setView]         = useState('roster') // 'roster' | 'stats'
+  const [view, setView]         = useState('roster')
+  const [gameType, setGameType] = useState(2)
   const inPlayoffs = (poGames?.length || 0) > 0
+
+  const { data: skaterStats, loading: statsLoading } = useFetch(
+    () => getTeamSkaterStatsFromDB('CAR', 20252026, gameType),
+    [gameType]
+  )
 
   return (
     <div className="page">
@@ -126,10 +131,16 @@ export default function PlayersView() {
       </div>
 
       {view === 'stats' && (
-        <SkaterStatsTable skaters={skaterStats || []} loading={statsLoading} onSelect={(id) => {
-          const p = roster?.all?.find(r => r.id === id);
-          if (p) setSelected(p);
-        }} />
+        <>
+          <div className="players-tabs" style={{ marginTop: 8, marginBottom: 4 }}>
+            <button className={`players-tab ${gameType === 2 ? 'active' : ''}`} onClick={() => setGameType(2)}>Regular Season</button>
+            <button className={`players-tab ${gameType === 3 ? 'active' : ''}`} onClick={() => setGameType(3)}>🏆 Playoffs</button>
+          </div>
+          <SkaterStatsTable skaters={skaterStats || []} loading={statsLoading} gameType={gameType} onSelect={(id) => {
+            const p = roster?.all?.find(r => r.id === id);
+            if (p) setSelected(p);
+          }} />
+        </>
       )}
 
       {view === 'roster' && (
@@ -380,20 +391,28 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
               const pts   = regStats?.points ?? 0
               const gp    = regStats?.gamesPlayed ?? 0
               const isELC = contract.note === 'ELC' || contract.capHit < 1_200_000
-              const score = !isGoalie && gp > 0 ? contractValue(pts, gp, contract.capHit, isELC) : null
+              const war   = mpData?.war ?? null
+              const result = !isGoalie && gp > 0 ? contractValue(pts, gp, contract.capHit, isELC, war) : null
+              const score = result?.score ?? null
+              const method = result?.method ?? 'points'
               const vl    = valueLabel(score)
               const p60   = !isGoalie && regStats?.avgToi
                 ? pointsPer60(pts, (regStats.avgToi?.includes?.(':')
                     ? regStats.avgToi.split(':').reduce((m,s,i) => i===0 ? +s*60 : m + +s, 0)
                     : Number(regStats.avgToi)) * gp)
                 : null
+              const valueTooltip = method === 'blended'
+                ? `Blended score: 60% points per $1M (projected to 82 GP) + 40% WAR per $1M (scaled). WAR captures two-way value points miss — defensive specialists and shutdown players score higher here than on a pure points basis. Scale: ≥8.0 Exceptional · ≥5.0 Great · ≥3.0 Good · ≥1.8 Fair · ≥1.0 Below avg · <1.0 Overpaid. ELC contracts excluded.`
+                : `Points per $1M of cap hit (projected to 82 games). WAR data unavailable for this player — using points only. Scale: ≥8.0 Exceptional · ≥5.0 Great · ≥3.0 Good · ≥1.8 Fair · ≥1.0 Below avg · <1.0 Overpaid. ELC contracts excluded.`
               return (
                 <div className="pp-value-row">
                   {score != null && vl && (
                     <div className="pp-value-badge" style={{ background: vl.color + '22', borderColor: vl.color + '55', color: vl.color }}>
                       <span>{vl.label}</span>
-                      <span className="pp-value-score">{score} pts/$M</span>
-                      <InfoTip label="Contract Value Score" text="Points per $1M of cap hit (projected to 82 games). Scale: ≥8.0 Exceptional · ≥5.0 Great · ≥3.0 Good · ≥1.8 Fair · ≥1.0 Below avg · <1.0 Overpaid. ELC contracts excluded — mandated cap hit doesn't reflect market value." />
+                      <span className="pp-value-score">
+                        {score} {method === 'blended' ? 'blended/$M' : 'pts/$M'}
+                      </span>
+                      <InfoTip label="Contract Value Score" text={valueTooltip} />
                     </div>
                   )}
                   {p60 != null && (
@@ -404,15 +423,14 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
                   {isELC && !isGoalie && (
                     <div className="pp-adv-chip" style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>
                       ELC — value score N/A
-                      <InfoTip label="ELC Contract" text="Entry Level Contracts have a league-mandated cap hit ($775K–$925K) that doesn't reflect market value, so the pts/$M comparison isn't meaningful." />
+                      <InfoTip label="ELC Contract" text="Entry Level Contracts have a league-mandated cap hit ($775K–$925K) that doesn't reflect market value, so the blended value comparison isn't meaningful." />
                     </div>
                   )}
                   {isGoalie && (() => {
-                    const gStats = stats?.seasonTotals?.find(s => s.season === 20252026 && s.gameTypeId === 2)
-                    const svPctg = gStats?.savePctg
-                    const gGp    = gStats?.gamesPlayed ?? 0
+                    const gsax   = goalieData?.gsax ?? null
+                    const gGp    = goalieData?.gp ?? 0
                     const isELC  = contract.note === 'ELC' || contract.capHit < 1_200_000
-                    const gScore = goalieContractValue(svPctg, gGp, contract.capHit, isELC)
+                    const gScore = goalieContractValue(gsax, gGp, contract.capHit, isELC)
                     const gVl    = goalieValueLabel(gScore)
                     if (!gScore || !gVl) return isELC ? (
                       <div className="pp-adv-chip" style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>
@@ -423,8 +441,8 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
                     return (
                       <div className="pp-value-badge" style={{ background: gVl.color + '22', borderColor: gVl.color + '55', color: gVl.color }}>
                         <span>{gVl.label}</span>
-                        <span className="pp-value-score">SV% {gScore > 0 ? '+' : ''}{gScore} vs avg/$M</span>
-                        <InfoTip label="Goalie Value Score" text="(SV% points above league avg .910) ÷ cap hit in $M. Positive = better than avg per dollar. Scale: ≥+2.0 Exceptional · ≥+1.0 Great · ≥0.0 Fair · ≥-1.0 Below avg · <-1.0 Overpaid. ELC goalies excluded." />
+                        <span className="pp-value-score">GSAX {gScore > 0 ? '+' : ''}{gScore}/$M</span>
+                        <InfoTip label="Goalie Value Score" text="Goals saved above expected (GSAX) per $1M of cap hit. GSAX accounts for shot quality and volume — a positive number means the goalie saved more goals than an average goalie would have on the same shots. Dividing by cap hit shows how much of that value you're getting per dollar. Scale: ≥4.0 Exceptional · ≥2.0 Great · ≥0.0 Fair · ≥-2.0 Below avg · <-2.0 Overpaid. ELC goalies excluded." />
                       </div>
                     )
                   })()}
@@ -746,7 +764,6 @@ function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position })
 
     return (
       <div className="pa-wrap">
-        {/* GSAX headline */}
         <div className="pa-war-card">
           <div className="pa-war-main">
             <span className="pa-war-num" style={{ color: gsaxColor }}>{gsax > 0 ? '+' : ''}{gsax}</span>
@@ -761,7 +778,6 @@ function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position })
           </div>
         </div>
 
-        {/* Save % context */}
         <div className="pa-context">
           {evSvPct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{evSvPct}%</span><span>5on5 SV%</span></div>}
           {hdSvPct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{hdSvPct}%</span><span>HD SV%</span></div>}
@@ -769,7 +785,6 @@ function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position })
           {pkSvPct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{pkSvPct}%</span><span>PK SV%</span></div>}
         </div>
 
-        {/* Percentile bars */}
         <div className="pa-section-label">Percentile rankings vs all NHL goalies</div>
         <div className="pa-bars">
           <PercentileBar label="GSAX"            pct={p.gsax?.pct}   note={p.gsax?.note} />
@@ -871,7 +886,7 @@ const COLS = [
   { key: 'shootingPct',    label: 'S%',       fmt: v => v != null ? `${(v*100).toFixed(1)}%` : '—', sortable: true, align: 'right' },
 ];
 
-function SkaterStatsTable({ skaters, loading, onSelect }) {
+function SkaterStatsTable({ skaters, loading, gameType = 2, onSelect }) {
   const [sortKey, setSortKey] = useState('points');
   const [sortDir, setSortDir] = useState('desc');
 
@@ -898,7 +913,13 @@ function SkaterStatsTable({ skaters, loading, onSelect }) {
     </div>
   );
 
-  if (!skaters?.length) return <div className="drill-empty">No stats available.</div>;
+  if (!skaters?.length) return (
+    <div className="drill-empty">
+      {gameType === 3
+        ? 'No playoff stats yet — data populates once Carolina advances.'
+        : 'No stats available.'}
+    </div>
+  );
 
   return (
     <div className="sst-wrap">
