@@ -116,3 +116,5 @@
   .topbar-sub  { display: none; }
   .topbar-name { font-size: 13px; }
 }
+
+.clock-stopped-tb { color: #fbbf24; font-size: 10px; margin-left: 3px; }

@@ -177,6 +177,7 @@ export default function ShotMapView() {
   const [debugGoalPopup,    setDebugGoalPopup]    = useState(null);
   const [debugPenaltyPopup, setDebugPenaltyPopup] = useState(null);
   const [debugWinPopup,     setDebugWinPopup]     = useState(null);
+  const [debugSituation,    setDebugSituation]    = useState(null);
 
   const handleDebugTap = () => {
     const next = debugTaps + 1;
@@ -508,12 +509,9 @@ export default function ShotMapView() {
                 <span className="score-num red">{carScore ?? '—'}</span>
               </div>
               {/* CAR PP indicator */}
-              {isLive && currentSituation?.strength === 'PP' && (
+              {(isLive || debugSituation) && (debugSituation?.team === 'CAR' || currentSituation?.strength === 'PP') && (
                 <div className="pp-indicator car-pp">
-                  ⚡ Power Play
-                  {pbp?.clock?.secondsRemaining != null && (
-                    <span className="pp-time"> · {Math.floor(pbp.clock.secondsRemaining/60)}:{String(pbp.clock.secondsRemaining%60).padStart(2,'0')}</span>
-                  )}
+                  ⚡ {(debugSituation?.carSkaters === 5 && debugSituation?.oppSkaters === 3) ? '5v3 ' : currentSituation && currentSituation.carSkaters !== 5 ? `${currentSituation.carSkaters}v${currentSituation.oppSkaters} ` : ''}Power Play
                 </div>
               )}
             </div>
@@ -542,7 +540,7 @@ export default function ShotMapView() {
                       </div>
                       <div className="score-clock">
                         {displayClock || pbp?.clock?.timeRemaining || '—'}
-                        {!clockRunning && <span className="clock-stopped"> ·⏸</span>}
+                        {!clockRunning && <span className="clock-stopped">⏸</span>}
                       </div>
                     </>
                   )}
@@ -566,11 +564,17 @@ export default function ShotMapView() {
                 <TeamLogo abbr={oppAbbr} size={30} color={oppColor} />
               </div>
               {/* Opponent PP indicator */}
-              {isLive && currentSituation?.strength === 'SH' && (
+              {(isLive || debugSituation) && (debugSituation?.team === 'OPP' || currentSituation?.strength === 'SH') && (
                 <div className="pp-indicator opp-pp">
-                  ⚡ {oppAbbr} Power Play
+                  ⚡ {currentSituation && currentSituation.oppSkaters < 4 ? `${currentSituation.oppSkaters}v${currentSituation.carSkaters} ` : ''}{oppAbbr || 'OPP'} Power Play
                 </div>
               )}
+              {/* 4v4 or 3v3 (both teams penalized) */}
+              {(isLive && currentSituation?.strength === '4v4') || debugSituation?.strength === '4v4' ? (
+                <div className="pp-indicator" style={{ background: 'rgba(148,163,184,0.15)', color: 'var(--text-muted)', border: '0.5px solid rgba(148,163,184,0.3)' }}>
+                  {debugSituation?.carSkaters || currentSituation?.carSkaters}v{debugSituation?.oppSkaters || currentSituation?.oppSkaters} — Coincidental
+                </div>
+              ) : null}
             </div>
           </div>
         ) : (
@@ -825,17 +829,42 @@ export default function ShotMapView() {
         <div className="debug-panel-sub">Tap to fire each game event</div>
         <div className="debug-panel-btns">
           <button className="debug-btn goal" onClick={() => {
-            setDebugGoalPopup({ scorer: 'Sebastian Aho', assists: ['Andrei Svechnikov', 'Jaccob Slavin'], shotType: 'Wrist', period: 'P2' });
+            setDebugGoalPopup({ scorer: 'Sebastian Aho', assists: ['Andrei Svechnikov', 'Jaccob Slavin'], shotType: 'Wrist', period: 'P2', time: '14:32' });
             setDebugOpen(false);
           }}>🚨 CAR Goal</button>
           <button className="debug-btn penalty" onClick={() => {
-            setDebugPenaltyPopup({ id: 'debug-1', player: 'Brad Marchand', description: 'Hooking', duration: 2, period: 'P2' });
+            setDebugPenaltyPopup({ id: 'debug-1', player: 'Brad Marchand', description: 'Hooking', duration: 2, period: 'P2', time: '08:17' });
             setDebugOpen(false);
           }}>⚡ PP Notification</button>
           <button className="debug-btn win" onClick={() => {
             setDebugWinPopup({ score: 'CAR 4 – BOS 2' });
             setDebugOpen(false);
           }}>🏆 Win Popup</button>
+          <button className="debug-btn pp-car" onClick={() => {
+            setDebugSituation({ strength: 'PP', team: 'CAR' });
+            setDebugOpen(false);
+            setTimeout(() => setDebugSituation(null), 15000);
+          }}>🟢 CAR Power Play (5v4)</button>
+          <button className="debug-btn pp-car" onClick={() => {
+            setDebugSituation({ strength: 'PP', team: 'CAR', carSkaters: 5, oppSkaters: 3 });
+            setDebugOpen(false);
+            setTimeout(() => setDebugSituation(null), 15000);
+          }}>🟢🟢 CAR 5v3 Power Play</button>
+          <button className="debug-btn pp-opp" onClick={() => {
+            setDebugSituation({ strength: 'PP', team: 'OPP' });
+            setDebugOpen(false);
+            setTimeout(() => setDebugSituation(null), 15000);
+          }}>🟡 Opp Power Play (4v5)</button>
+          <button className="debug-btn close" style={{ background: 'rgba(148,163,184,0.15)', color: 'var(--text-muted)' }} onClick={() => {
+            setDebugSituation({ strength: '4v4', carSkaters: 4, oppSkaters: 4 });
+            setDebugOpen(false);
+            setTimeout(() => setDebugSituation(null), 15000);
+          }}>⚪ 4v4 Coincidental</button>
+          <button className="debug-btn close" style={{ background: 'rgba(148,163,184,0.15)', color: 'var(--text-muted)' }} onClick={() => {
+            setDebugSituation({ strength: '4v4', carSkaters: 3, oppSkaters: 3 });
+            setDebugOpen(false);
+            setTimeout(() => setDebugSituation(null), 15000);
+          }}>⚪ 3v3 OT</button>
           <button className="debug-btn close" onClick={() => setDebugOpen(false)}>✕ Close</button>
         </div>
         <div className="debug-panel-note">Also fires push notification via /push/test</div>

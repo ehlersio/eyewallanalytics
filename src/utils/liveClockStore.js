@@ -31,7 +31,16 @@ export function publishClock(timeRemaining, inIntermission, running = true) {
 
 export function getClockDisplay() {
   if (!_sync) return null;
-  if (_sync.inIntermission) return { display: _sync.raw, inIntermission: true, running: false };
+
+  // Intermission: clock counts down continuously (break timer, not game clock)
+  // Don't freeze — let it tick normally from the last synced value
+  if (_sync.inIntermission) {
+    const elapsed   = Math.floor((Date.now() - _sync.syncTime) / 1000);
+    const remaining = Math.max(0, _sync.totalSecs - elapsed);
+    const mm = Math.floor(remaining / 60).toString().padStart(2, '0');
+    const ss = (remaining % 60).toString().padStart(2, '0');
+    return { display: `${mm}:${ss}`, inIntermission: true, running: true };
+  }
 
   // If clock is stopped (stoppage in play), freeze at last known time
   if (!_sync.running) {

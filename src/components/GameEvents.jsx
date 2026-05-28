@@ -23,14 +23,14 @@ export function GoalPopup({ data, onClose }) {
   return (
     <div className="game-event-overlay" onClick={onClose}>
       <div className="goal-popup">
-        <div className="goal-siren">🚨</div>
-        <div className="goal-title">GOAL!</div>
+        <div className="goal-light">🚨</div>
+        <div className="goal-word">GOAL!</div>
         {data.scorer && <div className="goal-scorer">{data.scorer}</div>}
         {data.assists?.length > 0 && (
           <div className="goal-assists">Assists: {data.assists.join(', ')}</div>
         )}
-        {data.shotType && <div className="goal-shot">{data.shotType}</div>}
-        <div className="goal-period">{data.period}</div>
+        {data.shotType && <div className="goal-shot-type">{data.shotType}</div>}
+        <div className="goal-period">{data.time ? `${data.period} · ${data.time}` : data.period}</div>
         <div className="event-dismiss">tap to dismiss</div>
       </div>
     </div>
@@ -49,13 +49,42 @@ export function PenaltyPopup({ data, onClose }) {
   return (
     <div className="game-event-overlay" onClick={onClose}>
       <div className="penalty-popup">
-        <div className="penalty-title">⚡ POWER PLAY</div>
+        <div className="penalty-words">
+          <span>CHEATERS</span>
+          <span>NEVER</span>
+          <span>WIN</span>
+        </div>
+        <div className="penalty-divider" />
         {data.player && <div className="penalty-player">{data.player}</div>}
         <div className="penalty-desc">{data.description}</div>
-        <div className="penalty-sub">{data.duration} min · {data.period}</div>
+        <div className="penalty-duration">{data.duration} min · {data.time ? `${data.period} ${data.time}` : data.period}</div>
         <div className="event-dismiss">tap to dismiss</div>
       </div>
     </div>
+  );
+}
+
+// ── Confetti ──────────────────────────────────────────────────
+function Confetti() {
+  const pieces = Array.from({ length: 60 }, (_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    color: ['#cc2233','#ffffff','#c8a951','#4ade80','#60a5fa'][i % 5],
+    width: `${6 + Math.random() * 8}px`,
+    height: `${10 + Math.random() * 8}px`,
+    delay: `${Math.random() * 2}s`,
+    duration: `${2 + Math.random() * 2}s`,
+  }));
+  return (
+    <>
+      {pieces.map(p => (
+        <div key={p.id} className="confetti-piece" style={{
+          left: p.left, background: p.color,
+          width: p.width, height: p.height,
+          animationDelay: p.delay, animationDuration: p.duration,
+        }} />
+      ))}
+    </>
   );
 }
 
@@ -70,9 +99,10 @@ export function WinPopup({ data, onClose }) {
   if (!data) return null;
   return (
     <div className="game-event-overlay win-overlay" onClick={onClose}>
+      <Confetti />
       <div className="win-popup">
-        <div className="win-trophy">🏆</div>
-        <div className="win-title">CANES WIN!</div>
+        <div className="win-logo">🏆</div>
+        <div className="win-text">CANES WIN!</div>
         <div className="win-score">{data.score}</div>
         <div className="event-dismiss">tap to dismiss</div>
       </div>
@@ -135,18 +165,25 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
     for (const play of newPlays) {
       const d   = play.details || {};
       const per = periodLabel(play.periodDescriptor?.number);
+      const time = play.timeInPeriod || null;
 
       // CAR goal — fire event, dedup by eventId
+      // Also re-fire if scorer/assists changed (goal review)
       if (play.typeDescKey === 'goal' && d.eventOwnerTeamId === 12) {
         const eventId = play.eventId || `goal-${play.sortOrder}`;
-        if (!shownGoals.current.has(eventId)) {
-          shownGoals.current.add(eventId);
+        const scorer  = pName(d.scoringPlayerId);
+        const assists = [d.assist1PlayerId, d.assist2PlayerId]
+          .filter(Boolean).map(pName).filter(Boolean);
+        const goalSig = `${eventId}:${scorer}:${assists.join(',')}`;
+        if (!shownGoals.current.has(goalSig)) {
+          // Remove any prior sig for this eventId (goal review — different players)
+          shownGoals.current = new Set(
+            [...shownGoals.current].filter(s => !s.startsWith(`${eventId}:`))
+          );
+          shownGoals.current.add(goalSig);
           if (gameId) sessionStorage.setItem(`goals_${gameId}`, JSON.stringify([...shownGoals.current]));
-          const scorer  = pName(d.scoringPlayerId);
-          const assists = [d.assist1PlayerId, d.assist2PlayerId]
-            .filter(Boolean).map(pName).filter(Boolean);
-          setGoalPopup({ scorer, assists, shotType: d.shotType || null, period: per });
-          return; // one event at a time
+          setGoalPopup({ scorer, assists, shotType: d.shotType || null, period: per, time });
+          return;
         }
       }
 
@@ -158,6 +195,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
           description: d.descKey ? d.descKey.replace(/-/g, ' ') : 'Penalty',
           duration:    d.duration || 2,
           period:      per,
+          time,
         });
         return;
       }

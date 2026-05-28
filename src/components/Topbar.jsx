@@ -15,6 +15,7 @@ export default function Topbar() {
   const [liveGame,    setLiveGame]    = useState(null);
   const [liveMeta,    setLiveMeta]    = useState(null);
   const [displayClock, setDisplayClock] = useState(null);
+  const [clockRunning, setClockRunning] = useState(true);
 
   const intervalRef  = useRef(null);
   const clockRef     = useRef(null);
@@ -53,7 +54,12 @@ export default function Topbar() {
     if (clockRef.current) clearInterval(clockRef.current);
     clockRef.current = setInterval(() => {
       const r = getClockDisplay();
-      setDisplayClock(r ? r.display : null);
+      if (r) {
+        setDisplayClock(r.display);
+        setClockRunning(r.running !== false);
+      } else {
+        setDisplayClock(null);
+      }
     }, 250);
     return () => clearInterval(clockRef.current);
   }, []);
@@ -97,6 +103,7 @@ export default function Topbar() {
           {(period || displayClock) && (
             <div className="live-clock">
               {period}{period && displayClock ? ' · ' : ''}{displayClock}
+              {displayClock && !clockRunning && <span className="clock-stopped-tb">⏸</span>}
             </div>
           )}
         </div>
