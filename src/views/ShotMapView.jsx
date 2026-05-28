@@ -310,11 +310,57 @@ export default function ShotMapView() {
     }
   }, [pbp, roster, opp]);
 
-  const gameSog      = getGameStat('sog');
-  const gameHits     = getGameStat('hits');
-  const gameBlocked  = getGameStat('blocked');
-  const gameFaceoff  = getGameStat('faceoff');
-  const gamePP       = getGameStat('powerPlay');
+  // ── Live MetCard stats from PBP (updates every poll) ─────────
+  // These replace rightRail.teamGameStats which only fetches once
+  const liveStats = useMemo(() => {
+    const plays  = pbp?.plays || [];
+    const carId  = gameHome ? pbp?.homeTeam?.id : pbp?.awayTeam?.id;
+
+    let carSOG = 0, oppSOG = 0;
+    let carHits = 0, oppHits = 0;
+    let carBlocks = 0, oppBlocks = 0;
+    let carFOW = 0, carFOL = 0;
+
+    plays.forEach(p => {
+      const isCar = p.details?.eventOwnerTeamId === carId;
+      switch (p.typeDescKey) {
+        case 'shot-on-goal': isCar ? carSOG++ : oppSOG++; break;
+        case 'goal':         isCar ? carSOG++ : oppSOG++; break;
+        case 'hit':          isCar ? carHits++ : oppHits++; break;
+        case 'blocked-shot':
+          // eventOwnerTeamId = the shooting team; blocker is the other team
+          isCar ? oppBlocks++ : carBlocks++; break;
+        case 'faceoff':
+          if (p.details?.winningPlayerId) {
+            const winTeam = p.details?.eventOwnerTeamId;
+            winTeam === carId ? carFOW++ : carFOL++;
+          }
+          break;
+      }
+    });
+
+    // PP stats from boxscore (more reliable for PP%)
+    const bs       = boxscore?.playerByGameStats;
+    const ppRaw    = getGameStat('powerPlay');
+
+    return {
+      sog:     { car: carSOG,   opp: oppSOG },
+      hits:    { car: carHits,  opp: oppHits },
+      blocked: { car: carBlocks, opp: oppBlocks },
+      faceoff: {
+        car: carFOW + carFOL > 0 ? carFOW / (carFOW + carFOL) * 100 : null,
+        opp: null,
+      },
+      pp: ppRaw, // keep using rightRail for PP% since it's a season stat
+    };
+  }, [pbp, boxscore, gameHome]);
+
+  // Fall back to rightRail when no PBP available (pre-game)
+  const gameSog      = pbp?.plays?.length ? liveStats.sog     : getGameStat('sog');
+  const gameHits     = pbp?.plays?.length ? liveStats.hits    : getGameStat('hits');
+  const gameBlocked  = pbp?.plays?.length ? liveStats.blocked : getGameStat('blocked');
+  const gameFaceoff  = pbp?.plays?.length ? liveStats.faceoff : getGameStat('faceoff');
+  const gamePP       = getGameStat('powerPlay'); // always from rightRail (season stat)
 
   // ── Shot danger breakdown from coordinate data ──────────────
   const dangerCounts = useMemo(() => {

@@ -17,18 +17,26 @@ async function showNotification() {
   let tag   = 'eyewall';
   let url   = '/';
 
-  try {
-    const res = await fetch(`${WORKER_URL}/cache/latest-notification`, {
-      cache: 'no-store',
-    });
-    if (res.ok) {
-      const data = await res.json();
-      title = data.title || title;
-      body  = data.body  || body;
-      tag   = data.tag   || tag;
-      url   = data.url   || url;
-    }
-  } catch { /* use defaults */ }
+  // Retry up to 3 times with 300ms delay — KV has eventual consistency lag
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 300));
+      const res = await fetch(`${WORKER_URL}/cache/latest-notification`, {
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.tag && data.tag !== 'eyewall') {
+          // Got real data (not default)
+          title = data.title || title;
+          body  = data.body  || body;
+          tag   = data.tag   || tag;
+          url   = data.url   || url;
+          break;
+        }
+      }
+    } catch { /* continue */ }
+  }
 
   return self.registration.showNotification(title, {
     body,
