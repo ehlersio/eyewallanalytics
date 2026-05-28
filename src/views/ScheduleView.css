@@ -1343,7 +1343,7 @@
 .gp-adv-fill  { height: 100%; }
 .gp-adv-fill.red   { background: var(--red-bright); border-radius: 3px 0 0 3px; }
 .gp-adv-fill.muted { background: var(--text-dim);   border-radius: 0 3px 3px 0; }
-.gp-adv-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.gp-adv-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; justify-content: center; }
 .gp-adv-chip  { font-size: 11px; font-weight: 600; background: var(--bg3); padding: 3px 8px; border-radius: 5px; cursor: help; }
 .gp-help      { font-size: 10px; color: var(--text-dim); cursor: help; margin-left: 4px; }
 
@@ -1512,3 +1512,22 @@
 .gc-favoured-chip.dog {
   background: rgba(204,34,0,0.12); color: var(--red-bright);
 }
+
+/* ── Game popup scroll-to-top button ── */
+.game-popup { position: relative; }
+.gsp-top-btn {
+  position: sticky;
+  top: 8px;
+  float: right;
+  margin: 8px 12px 0 0;
+  padding: 5px 12px;
+  background: var(--bg3);
+  border: 0.5px solid var(--border);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  z-index: 10;
+}
+.gsp-top-btn:hover { color: var(--text); background: var(--bg2); }

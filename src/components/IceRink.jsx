@@ -43,16 +43,16 @@ const TYPE_LABELS = {
 
 // Shot type → dot style
 const SHOT_STYLE = {
-  'goal':         { r: 7,  fill: '#ff4422', stroke: '#fff',  strokeWidth: 2,   opacity: 1    },
-  'shot-on-goal': { r: 5,  fill: '#ff4422', stroke: 'none',  strokeWidth: 0,   opacity: 0.65 },
-  'missed-shot':  { r: 4,  fill: '#ff4422', stroke: 'none',  strokeWidth: 0,   opacity: 0.32 },
-  'blocked-shot': { r: 4,  fill: '#8899aa', stroke: 'none',  strokeWidth: 0,   opacity: 0.45 },
+  'goal':         { r: 7,  fill: '#ff4422', stroke: '#333',   strokeWidth: 2,   opacity: 1    },
+  'shot-on-goal': { r: 5,  fill: '#ff4422', stroke: 'none',   strokeWidth: 0,   opacity: 0.65 },
+  'missed-shot':  { r: 4,  fill: '#ff4422', stroke: 'none',   strokeWidth: 0,   opacity: 0.32 },
+  'blocked-shot': { r: 4,  fill: '#8899aa', stroke: 'none',   strokeWidth: 0,   opacity: 0.45 },
 };
 const OPP_SHOT_STYLE = {
-  'goal':         { r: 7,  fill: '#4477ee', stroke: '#fff',  strokeWidth: 2,   opacity: 1    },
-  'shot-on-goal': { r: 5,  fill: '#4477ee', stroke: 'none',  strokeWidth: 0,   opacity: 0.55 },
-  'missed-shot':  { r: 4,  fill: '#4477ee', stroke: 'none',  strokeWidth: 0,   opacity: 0.28 },
-  'blocked-shot': { r: 4,  fill: '#8899aa', stroke: 'none',  strokeWidth: 0,   opacity: 0.40 },
+  'goal':         { r: 7,  fill: '#4477ee', stroke: '#333',   strokeWidth: 2,   opacity: 1    },
+  'shot-on-goal': { r: 5,  fill: '#4477ee', stroke: 'none',   strokeWidth: 0,   opacity: 0.55 },
+  'missed-shot':  { r: 4,  fill: '#4477ee', stroke: 'none',   strokeWidth: 0,   opacity: 0.28 },
+  'blocked-shot': { r: 4,  fill: '#8899aa', stroke: 'none',   strokeWidth: 0,   opacity: 0.40 },
 };
 
 // ─── Main component ───────────────────────────────────────────
@@ -332,7 +332,7 @@ export default function IceRink({ events = [], roster = {}, hidePlayerFilter = f
           <div className="zoom-fill" style={{ width: `${((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100}%` }} />
         </div>
         <button className="zoom-btn" onClick={() => zoomToward(0.5, 0, 0)} disabled={zoom >= MAX_ZOOM}>+</button>
-        {zoom > 1 && (
+        {(zoom > 1 || pan.x !== 0 || pan.y !== 0) && (
           <button className="zoom-reset" onClick={resetView}>Reset</button>
         )}
         <span className="zoom-label">{Math.round(zoom * 100)}%</span>

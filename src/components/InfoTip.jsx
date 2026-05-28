@@ -1,46 +1,43 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import './InfoTip.css';
 
-/**
- * Tap-to-open info popup — mobile-friendly replacement for title= tooltips.
- *
- * Props:
- *   text      — the help text to display
- *   label     — optional title shown bold above the text
- *   position  — 'auto' (default) | 'below' | 'above' | 'left'
- *
- * 'auto' measures available space after mount and picks the best position.
- */
 export default function InfoTip({ label, text, position = 'auto' }) {
-  const [open, setOpen] = useState(false);
-  const [pos,  setPos]  = useState('below');
-  const wrapRef   = useRef(null);
-  const popupRef  = useRef(null);
+  const [open,  setOpen]  = useState(false);
+  const [style, setStyle] = useState({ visibility: 'hidden' });
+  const wrapRef  = useRef(null);
+  const popupRef = useRef(null);
 
-  // Compute best position based on remaining viewport space
-  const calcPos = useCallback(() => {
-    if (position !== 'auto' || !wrapRef.current) {
-      setPos(position === 'auto' ? 'below' : position);
-      return;
-    }
-    const rect   = wrapRef.current.getBoundingClientRect();
+  // useLayoutEffect runs synchronously after DOM paint — dimensions are real
+  useLayoutEffect(() => {
+    if (!open || !popupRef.current || !wrapRef.current) return;
+
+    const wrap   = wrapRef.current.getBoundingClientRect();
+    const popup  = popupRef.current.getBoundingClientRect();
     const vw     = window.innerWidth;
     const vh     = window.innerHeight;
-    const popH   = 120; // estimated popup height
-    const popW   = 240; // popup width
-    const spaceB = vh - rect.bottom;
-    const spaceT = rect.top;
-    const spaceR = vw - rect.left;
+    const popW   = popup.width  || 220;
+    const popH   = popup.height || 120;
+    const margin = 10;
 
-    if (spaceB >= popH)       setPos('below');
-    else if (spaceT >= popH)  setPos('above');
-    else if (spaceR >= popW)  setPos('below'); // fallback below with overflow scroll
-    else                      setPos('above');
-  }, [position]);
+    // Vertical: prefer above the trigger if it fits, else below
+    const spaceAbove = wrap.top;
+    const spaceBelow = vh - wrap.bottom;
+    const useAbove   = position === 'above'
+      || (position !== 'below' && spaceAbove >= popH + 8 && spaceBelow < popH + 8);
+    const top = useAbove
+      ? wrap.top - popH - 8
+      : wrap.bottom + 8;
+
+    // Horizontal: center on trigger, clamped within viewport
+    let left = wrap.left + wrap.width / 2 - popW / 2;
+    left = Math.max(margin, Math.min(left, vw - popW - margin));
+
+    setStyle({ position: 'fixed', top, left, transform: 'none', visibility: 'visible' });
+  }, [open, position]);
 
   const handleOpen = (e) => {
     e.stopPropagation();
-    if (!open) calcPos();
+    if (!open) setStyle({ visibility: 'hidden' }); // hide until positioned
     setOpen(o => !o);
   };
 
@@ -68,8 +65,9 @@ export default function InfoTip({ label, text, position = 'auto' }) {
       {open && (
         <div
           ref={popupRef}
-          className={`info-tip-popup info-tip-${pos}`}
+          className="info-tip-popup"
           role="tooltip"
+          style={style}
           onClick={e => e.stopPropagation()}
         >
           {label && <div className="info-tip-title">{label}</div>}

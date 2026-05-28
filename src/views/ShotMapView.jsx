@@ -131,12 +131,13 @@ export default function ShotMapView() {
         const carSkaters  = gameHome ? homeSkaters : awaySkaters;
         const oppSkaters  = gameHome ? awaySkaters : homeSkaters;
         const carGoalie   = gameHome ? homeGoalie  : awayGoalie;
+        const oppGoalie   = gameHome ? awayGoalie  : homeGoalie;
         let strength = 'EV';
         if (carSkaters > oppSkaters)                               strength = 'PP';
         else if (carSkaters < oppSkaters)                          strength = 'SH';
         else if (carSkaters === oppSkaters && carSkaters < 5)      strength = '4v4';
         if (!carGoalie) strength = `${strength} (EN)`;
-        return { carSkaters, oppSkaters, strength, code: sc };
+        return { carSkaters, oppSkaters, strength, code: sc, carEN: !carGoalie, oppEN: !oppGoalie };
       }
     }
     return null;
@@ -313,17 +314,24 @@ export default function ShotMapView() {
       setDrillStat({ label: 'CAR Faceoffs', rows, type: 'faceoff' });
 
     } else if (statKey === 'pp') {
-      // Power play goals and opportunities from plays
-      const ppGoals = plays.filter(p =>
-        p.typeDescKey === 'goal' &&
-        p.details?.eventOwnerTeamId === carId &&
-        p.details?.situationCode?.toString().startsWith('1')
-      );
+      // Power play goals — CAR goals scored while CAR had more skaters than opponent
+      const ppGoals = plays.filter(p => {
+        if (p.typeDescKey !== 'goal') return false;
+        if (p.details?.eventOwnerTeamId !== carId) return false;
+        const sc = p.situationCode; // 4-digit string on the play, not details
+        if (!sc || sc.length < 4) return false;
+        const awayS = parseInt(sc[1]);
+        const homeS = parseInt(sc[2]);
+        const carS  = gameHome ? homeS : awayS;
+        const oppS  = gameHome ? awayS : homeS;
+        return carS > oppS; // CAR had more skaters = PP goal
+      });
       const rows = ppGoals.map(p => ({
         name: pName(p.details?.scoringPlayerId),
         period: periodLabel(p.periodDescriptor?.number),
+        time: p.timeInPeriod || null,
         assists: [p.details?.assist1PlayerId, p.details?.assist2PlayerId]
-          .filter(Boolean).map(pName).filter(n => n !== 'Unknown'),
+          .filter(Boolean).map(pName).filter(n => n !== '—'),
         total: 1,
         periods: {},
       }));
@@ -341,7 +349,10 @@ export default function ShotMapView() {
     let carHits = 0, oppHits = 0;
     let carBlocks = 0, oppBlocks = 0;
     let carFOW = 0, carFOL = 0;
+    let carPPGoals = 0, carPPOpps = 0; // track PP goals and opportunities
 
+    // Track power play opportunities from penalty events
+    const activePP = new Set(); // sortOrder when PP started
     plays.forEach(p => {
       const isCar = p.details?.eventOwnerTeamId === carId;
       switch (p.typeDescKey) {
@@ -349,7 +360,6 @@ export default function ShotMapView() {
         case 'goal':         isCar ? carSOG++ : oppSOG++; break;
         case 'hit':          isCar ? carHits++ : oppHits++; break;
         case 'blocked-shot':
-          // eventOwnerTeamId = the shooting team; blocker is the other team
           isCar ? oppBlocks++ : carBlocks++; break;
         case 'faceoff':
           if (p.details?.winningPlayerId) {
@@ -357,7 +367,25 @@ export default function ShotMapView() {
             winTeam === carId ? carFOW++ : carFOL++;
           }
           break;
+        case 'penalty':
+          // Opponent penalty = CAR PP opportunity
+          if (!isCar) carPPOpps++;
+          break;
       }
+    });
+
+    // CAR PP goals = goals scored while CAR had more skaters
+    plays.forEach(p => {
+      if (p.typeDescKey !== 'goal') return;
+      const isCar = p.details?.eventOwnerTeamId === carId;
+      if (!isCar) return;
+      const sc = p.situationCode;
+      if (!sc || sc.length < 4) return;
+      const awayS = parseInt(sc[1]);
+      const homeS = parseInt(sc[2]);
+      const carS  = gameHome ? homeS : awayS;
+      const oppS  = gameHome ? awayS : homeS;
+      if (carS > oppS) carPPGoals++;
     });
 
     // PP stats from boxscore (more reliable for PP%)
@@ -372,7 +400,7 @@ export default function ShotMapView() {
         car: carFOW + carFOL > 0 ? carFOW / (carFOW + carFOL) * 100 : null,
         opp: null,
       },
-      pp: ppRaw, // keep using rightRail for PP% since it's a season stat
+      pp: { gamePPGoals: carPPGoals, gamePPOpps: carPPOpps },
     };
   }, [pbp, boxscore, gameHome]);
 
@@ -514,6 +542,9 @@ export default function ShotMapView() {
                   ⚡ {(debugSituation?.carSkaters === 5 && debugSituation?.oppSkaters === 3) ? '5v3 ' : currentSituation && currentSituation.carSkaters !== 5 ? `${currentSituation.carSkaters}v${currentSituation.oppSkaters} ` : ''}Power Play
                 </div>
               )}
+              {(isLive || debugSituation?.carEN) && (currentSituation?.carEN || debugSituation?.carEN) && (
+                <div className="pp-indicator en-indicator car-en">🥅 CAR Empty Net</div>
+              )}
             </div>
 
             {/* Center — period/clock/state */}
@@ -568,6 +599,9 @@ export default function ShotMapView() {
                 <div className="pp-indicator opp-pp">
                   ⚡ {currentSituation && currentSituation.oppSkaters < 4 ? `${currentSituation.oppSkaters}v${currentSituation.carSkaters} ` : ''}{oppAbbr || 'OPP'} Power Play
                 </div>
+              )}
+              {(isLive || debugSituation?.oppEN) && (currentSituation?.oppEN || debugSituation?.oppEN) && (
+                <div className="pp-indicator en-indicator opp-en">🥅 {oppAbbr || 'OPP'} Empty Net</div>
               )}
               {/* 4v4 or 3v3 (both teams penalized) */}
               {(isLive && currentSituation?.strength === '4v4') || debugSituation?.strength === '4v4' ? (
@@ -631,13 +665,24 @@ export default function ShotMapView() {
           color={parsePct(gameFaceoff.car) > 50 ? 'green' : null}
           onClick={pbp ? () => buildDrillDown('faceoff') : null}
         />
-        <MetCard
-          label={inPlayoffs ? 'PP % (PO)' : 'PP %'}
-          value={ppPct ? `${(ppPct * 100).toFixed(1)}%` : '—'}
-          sub={inPlayoffs ? 'Playoff avg' : 'Season avg'}
-          color="green"
-          onClick={pbp ? () => buildDrillDown('pp') : null}
-        />
+        {(() => {
+          const gpp = liveStats?.pp;
+          const hasGamePP = gpp?.gamePPOpps > 0;
+          const gamePPPct = hasGamePP ? gpp.gamePPGoals / gpp.gamePPOpps * 100 : null;
+          const avgPct    = ppPct ? (ppPct * 100).toFixed(1) : null;
+          const avgLabel  = inPlayoffs ? 'PO avg' : 'Szn avg';
+          return (
+            <MetCard
+              label="PP %"
+              value={gamePPPct != null ? `${gamePPPct.toFixed(1)}%` : (avgPct ? `${avgPct}%` : '—')}
+              sub={gamePPPct != null
+                ? `${gpp.gamePPGoals}/${gpp.gamePPOpps} · ${avgLabel} ${avgPct}%`
+                : `${avgLabel}${avgPct ? ` ${avgPct}%` : ''}`}
+              color={gamePPPct != null && avgPct && gamePPPct >= parseFloat(avgPct) ? 'green' : null}
+              onClick={pbp ? () => buildDrillDown('pp') : null}
+            />
+          );
+        })()}
       </div>
 
       {/* ── Shot Volume + Corsi/Fenwick/PDO ── */}
@@ -865,6 +910,16 @@ export default function ShotMapView() {
             setDebugOpen(false);
             setTimeout(() => setDebugSituation(null), 15000);
           }}>⚪ 3v3 OT</button>
+          <button className="debug-btn" style={{ background: 'rgba(250,190,30,0.1)', color: '#fbbf24' }} onClick={() => {
+            setDebugSituation({ carEN: true });
+            setDebugOpen(false);
+            setTimeout(() => setDebugSituation(null), 15000);
+          }}>🥅 CAR Empty Net</button>
+          <button className="debug-btn" style={{ background: 'rgba(250,190,30,0.1)', color: '#fbbf24' }} onClick={() => {
+            setDebugSituation({ oppEN: true });
+            setDebugOpen(false);
+            setTimeout(() => setDebugSituation(null), 15000);
+          }}>🥅 Opp Empty Net</button>
           <button className="debug-btn close" onClick={() => setDebugOpen(false)}>✕ Close</button>
         </div>
         <div className="debug-panel-note">Also fires push notification via /push/test</div>

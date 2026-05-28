@@ -605,6 +605,8 @@ function GameStatsPopup({ game, onClose }) {
   const { data, loading } = useFetch(() => getCompletedGameStats(game.id), [game.id]);
   const [skaterTeam, setSkaterTeam] = useState('car');
   const [summary, setSummary]       = useState(null);
+  const [showTop, setShowTop]       = useState(false);
+  const modalRef = useRef(null);
 
   // Fetch AI-generated summary from Worker KV
   useEffect(() => {
@@ -639,21 +641,22 @@ function GameStatsPopup({ game, onClose }) {
   const shootout   = bs?.summary?.shootout || [];
   const starsList  = bs?.summary?.threeStars || [];
 
-  // Boxscore player stats
+  // Boxscore player stats — use isCarHome from actual API data, fallback to schedule
   const pbg        = bs?.playerByGameStats;
-  const carKey     = home ? 'homeTeam' : 'awayTeam';
-  const oppKey     = home ? 'awayTeam' : 'homeTeam';
+  const carIsHome  = data ? isCarHome : home; // use schedule until data arrives
+  const carKey     = carIsHome ? 'homeTeam' : 'awayTeam';
+  const oppKey     = carIsHome ? 'awayTeam' : 'homeTeam';
   const carPlayers = pbg ? [
-    ...(pbg[carKey]?.forwards   || []),
-    ...(pbg[carKey]?.defensemen || []),
-  ] : [];
+    ...(pbg[carKey]?.forwards || []),
+    ...(pbg[carKey]?.defense  || pbg[carKey]?.defensemen || []),
+  ].map(p => ({ ...p, shots: p.sog ?? 0 })) : [];
   const carGoalies = pbg?.[carKey]?.goalies || [];
 
   // Opponent skaters + goalies
   const oppPlayers_raw = pbg ? [
-    ...(pbg[oppKey]?.forwards   || []),
-    ...(pbg[oppKey]?.defensemen || []),
-  ] : [];
+    ...(pbg[oppKey]?.forwards || []),
+    ...(pbg[oppKey]?.defense  || pbg[oppKey]?.defensemen || []),
+  ].map(p => ({ ...p, shots: p.sog ?? 0 })) : [];
   const oppPlayers = [...oppPlayers_raw]
     .sort((a, b) => (b.points || 0) - (a.points || 0) || (b.goals || 0) - (a.goals || 0));
   const oppGoalies = pbg?.[oppKey]?.goalies || [];
@@ -725,7 +728,13 @@ function GameStatsPopup({ game, onClose }) {
 
   return (
     <div className="popup-backdrop" onClick={onClose}>
-      <div className="game-popup" onClick={e => e.stopPropagation()}>
+      <div className="game-popup" ref={modalRef} onClick={e => e.stopPropagation()}
+        onScroll={e => setShowTop(e.target.scrollTop > 200)}>
+        {showTop && (
+          <button className="gsp-top-btn" onClick={() => modalRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}>
+            ↑ Top
+          </button>
+        )}
 
         {/* Header */}
         <div className={`gp-header ${won ? 'gp-win' : 'gp-loss'}`}>
@@ -922,16 +931,17 @@ function GameStatsPopup({ game, onClose }) {
                         FF% {advStats.fenwickForPct}%
                       <InfoTip text="Fenwick For% — CAR share of unblocked attempts" position="above" /></span>
                       {pdoStats && (
-                        <span className="gp-adv-chip" title={`PDO = SH%+SV%×100. Avg=100. ${pdoStats.luck}`}
+                        <span className="gp-adv-chip"
                           style={{color: pdoStats.pdo>102?'var(--amber)':pdoStats.pdo<98?'var(--blue-bright)':'var(--text-muted)'}}>
                           PDO {pdoStats.pdo}
+                          <InfoTip text={`PDO = SH%+SV%×100. League avg=100. ${pdoStats.luck}`} position="above" />
                         </span>
                       )}
                       {luckStats && (
                         <span className="gp-adv-chip"
                           style={{color: luckStats.color}}>
                           Luck {luckStats.luckDelta>=0?'+':''}{luckStats.luckDelta}G
-                        <InfoTip text="Puck Luck: ${luckStats.label}. Expected ${luckStats.expectedGF}G from ${luckStats.fenwickForPct}% shot share." position="above" /></span>
+                        <InfoTip text={`Puck Luck: ${luckStats.label}. Expected ${luckStats.expectedGF}G from ${luckStats.fenwickForPct}% shot share.`} position="above" /></span>
                       )}
                     </div>
                   </div>
@@ -1054,7 +1064,7 @@ function SkaterTable({ players, goalies }) {
               <span>{p.assists ?? 0}</span>
               <span className={(p.points ?? 0) > 0 ? "gp-pts-highlight" : ""}>{p.points ?? 0}</span>
               <span style={{ color: pmColor }}>{pmStr}</span>
-              <span>{p.shots ?? p.sog ?? 0}</span>
+              <span>{p.shots ?? 0}</span>
               <span>{p.hits ?? 0}</span>
               <span>{p.blockedShots ?? p.blocks ?? 0}</span>
               <span className="gp-toi">{p.toi ?? "—"}</span>
