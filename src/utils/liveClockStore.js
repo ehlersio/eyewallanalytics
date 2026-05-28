@@ -5,21 +5,25 @@
  * Both Topbar and ShotMapView derive the current display time from the same
  * sync point using Date.now() arithmetic — no independent intervals to drift.
  *
+ * When the game clock is stopped (stoppage in play, faceoff pending, etc.)
+ * the clock freezes at the last known value instead of counting down.
+ *
  * Usage:
- *   Publisher: publishClock('14:32', false)
- *   Consumer:  const { mm, ss } = getClockDisplay()  — call this in a 1s interval
+ *   Publisher: publishClock('14:32', false, true)  // time, intermission, running
+ *   Consumer:  const { display } = getClockDisplay()  — call in a 1s interval
  */
 
-let _sync = null; // { totalSecs, syncTime, inIntermission, raw }
+let _sync = null; // { totalSecs, syncTime, inIntermission, running, raw }
 let _subscribers = [];
 
-export function publishClock(timeRemaining, inIntermission) {
+export function publishClock(timeRemaining, inIntermission, running = true) {
   if (!timeRemaining) return;
   const [m, s] = timeRemaining.split(':').map(Number);
   _sync = {
     totalSecs:      m * 60 + (s || 0),
     syncTime:       Date.now(),
     inIntermission: !!inIntermission,
+    running:        running !== false, // default true if not provided
     raw:            timeRemaining,
   };
   _subscribers.forEach(fn => fn(_sync));
@@ -27,12 +31,18 @@ export function publishClock(timeRemaining, inIntermission) {
 
 export function getClockDisplay() {
   if (!_sync) return null;
-  if (_sync.inIntermission) return { display: _sync.raw, inIntermission: true };
+  if (_sync.inIntermission) return { display: _sync.raw, inIntermission: true, running: false };
+
+  // If clock is stopped (stoppage in play), freeze at last known time
+  if (!_sync.running) {
+    return { display: _sync.raw, inIntermission: false, running: false, stopped: true };
+  }
+
   const elapsed   = Math.floor((Date.now() - _sync.syncTime) / 1000);
   const remaining = Math.max(0, _sync.totalSecs - elapsed);
   const mm = Math.floor(remaining / 60).toString().padStart(2, '0');
   const ss = (remaining % 60).toString().padStart(2, '0');
-  return { display: `${mm}:${ss}`, inIntermission: false, remaining };
+  return { display: `${mm}:${ss}`, inIntermission: false, running: true, remaining };
 }
 
 export function subscribeClock(fn) {

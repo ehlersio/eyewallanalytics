@@ -80,7 +80,7 @@ export default function ShotMapView() {
   // ── Publish clock to shared store when PBP updates ──────────
   useEffect(() => {
     if (!isLive || !pbp?.clock?.timeRemaining) return;
-    publishClock(pbp.clock.timeRemaining, pbp.clock.inIntermission);
+    publishClock(pbp.clock.timeRemaining, pbp.clock.inIntermission, pbp.clock.running !== false);
   }, [pbp?.clock?.timeRemaining, pbp?.clock?.inIntermission, isLive]);
 
   // ── Tick display from shared store (same math as Topbar → no drift) ──
@@ -89,8 +89,11 @@ export default function ShotMapView() {
     if (clockRef.current) clearInterval(clockRef.current);
     clockRef.current = setInterval(() => {
       const r = getClockDisplay();
-      if (r) setDisplayClock(r.display);
-    }, 250); // 250ms for smooth display without jank
+      if (r) {
+        setDisplayClock(r.display);
+        setClockRunning(r.running !== false);
+      }
+    }, 250);
     return () => { if (clockRef.current) clearInterval(clockRef.current); };
   }, [isLive]);
 
@@ -200,6 +203,7 @@ export default function ShotMapView() {
   const [drillStat,     setDrillStat]     = useState(null);
   const [showTopBtn,    setShowTopBtn]    = useState(false);
   const [displayClock,  setDisplayClock]  = useState(null);
+  const [clockRunning,  setClockRunning]  = useState(true);
   const pageRef    = useRef(null);
   const clockRef   = useRef(null);
   const lastSyncRef = useRef(null);
@@ -536,7 +540,10 @@ export default function ShotMapView() {
                               : pbp.periodDescriptor.periodType || `P${pbp.periodDescriptor.number}`)
                           : '—'}
                       </div>
-                      <div className="score-clock">{displayClock || pbp?.clock?.timeRemaining || '—'}</div>
+                      <div className="score-clock">
+                        {displayClock || pbp?.clock?.timeRemaining || '—'}
+                        {!clockRunning && <span className="clock-stopped"> ·⏸</span>}
+                      </div>
                     </>
                   )}
                   <div className="score-state pill pill-red" style={{marginTop:4}}>🔴 LIVE</div>
