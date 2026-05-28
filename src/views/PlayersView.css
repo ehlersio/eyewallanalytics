@@ -79,6 +79,18 @@
 @media (min-width: 560px) {
   .player-popup { border-radius: var(--radius-lg); animation: pop-in 0.2s cubic-bezier(0.34,1.2,0.64,1); }
 }
+.pp-heatmap-chip {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  min-height: unset;
+  border: 0.5px solid var(--border);
+  background: var(--bg2);
+  color: var(--text-muted);
+  cursor: pointer;
+}
 
 /* ── Popup header ── */
 .pp-header {

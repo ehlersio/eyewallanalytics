@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useFetch } from '../hooks/useFetch'
 import { getRoster, getPlayerStats, fetchPlayerRankings, getPlayoffGames, getStandings } from '../utils/nhlApi'
-import { getPlayerAnalytics, getGoalieAnalytics, getPlayerShots, getTeamSkaterStatsFromDB } from '../utils/supabaseClient'
+import { getPlayerAnalytics, getGoalieAnalytics, getPlayerShots, getGoalieShots, getTeamSkaterStatsFromDB } from '../utils/supabaseClient'
 import { findContract, contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING, CURRENT_SEASON } from '../utils/carContracts'
 import TeamLogo from '../components/TeamLogo'
 import InfoTip from '../components/InfoTip'
@@ -126,7 +126,7 @@ export default function PlayersView() {
 
       {/* View toggle */}
       <div className="players-tabs">
-        <button className={`players-tab ${view === 'roster' ? 'active' : ''}`} onClick={() => setView('roster')}>🃏 Roster</button>
+        <button className={`players-tab ${view === 'roster' ? 'active' : ''}`} onClick={() => setView('roster')}>Roster</button>
         <button className={`players-tab ${view === 'stats'  ? 'active' : ''}`} onClick={() => setView('stats')}>📊 Stats</button>
       </div>
 
@@ -219,11 +219,18 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
   const [imgErr, setImgErr]     = useState(false)
   const [ppTab, setPpTab]       = useState('stats') // 'stats' | 'analytics' | 'heatmap'
   const name = `${p.firstName?.default || ''} ${p.lastName?.default || ''}`.trim()
+  const isGoalie = p.positionCode === 'G'
 
   // Fetch season shot data from Supabase
   const { data: shotData } = useFetch(
     () => getPlayerShots(p.id),
     [p.id]
+  )
+
+  // Fetch goalie shot data from Supabase (shots faced)
+  const { data: goalieShotData } = useFetch(
+    () => isGoalie ? getGoalieShots(p.id) : Promise.resolve(null),
+    [p.id, isGoalie]
   )
 
   // Fetch MoneyPuck analytics from Supabase
@@ -246,7 +253,6 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
   const careerPO  = stats?.careerTotals?.playoffs
   const careerReg = stats?.careerTotals?.regularSeason
 
-  const isGoalie  = p.positionCode === 'G'
   // Fetch rankings — wait for both stats and standings to be ready
   const { data: rankings } = useFetch(
     () => (stats && standings?.length)
@@ -487,7 +493,7 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
 
         {/* ── Heat map tab ── */}
         {ppTab === 'heatmap' && (
-          <PlayerHeatMap shotData={shotData} playerName={name} isGoalie={p.positionCode === 'G'} />
+          <PlayerHeatMap shotData={shotData} goalieShotData={goalieShotData} playerName={name} isGoalie={isGoalie} />
         )}
 
         {/* ── Analytics tab ── */}
@@ -630,17 +636,204 @@ function RosterSkeleton() {
 }
 
 // ── Player Heat Map ───────────────────────────────────────────
-function PlayerHeatMap({ shotData, playerName, isGoalie }) {
+function PlayerHeatMap({ shotData, goalieShotData, playerName, isGoalie }) {
   const [filter, setFilter] = useState('all');
+  const [mapMode, setMapMode] = useState('dots'); // 'dots' | 'zones'
 
+  // ── Goalie heat map ──────────────────────────────────────────
   if (isGoalie) {
+    if (!goalieShotData) {
+      return (
+        <div className="pp-heatmap-empty">
+          <div className="pp-heatmap-icon">🥅</div>
+          <div>No shot data yet.</div>
+          <div className="pp-heatmap-sub">Data builds up as games complete.</div>
+        </div>
+      );
+    }
+
+    const shots = goalieShotData.shots || [];
+    const goals   = shots.filter(s => s.t === 'g').length;
+    const saves   = shots.filter(s => s.t === 's').length;
+    const total   = goals + saves;
+    const svPct   = total > 0 ? (saves / total).toFixed(3) : '—';
+
+    // Zone definitions — NHL coords: x=0 centre ice, goal at x≈89, y=0 centre
+    // We flip to shooter perspective: shots come from positive x toward goalie
+    const ZONES = [
+      { id: 'slot_hi',   label: 'High slot',    test: s => Math.abs(s.y) <= 22 && s.x >= 55 && s.x < 75 },
+      { id: 'slot_lo',   label: 'Low slot',     test: s => Math.abs(s.y) <= 22 && s.x >= 75 },
+      { id: 'left_hi',   label: 'Left circle',  test: s => s.y < -10 && s.x >= 55 && s.x < 80 },
+      { id: 'right_hi',  label: 'Right circle', test: s => s.y > 10  && s.x >= 55 && s.x < 80 },
+      { id: 'left_lo',   label: 'Left wing',    test: s => s.y < -22 && s.x >= 55 },
+      { id: 'right_lo',  label: 'Right wing',   test: s => s.y > 22  && s.x >= 55 },
+      { id: 'perimeter', label: 'Perimeter',    test: s => s.x < 55 },
+    ];
+
+    const zoneStats = ZONES.map(z => {
+      const zShots  = shots.filter(s => z.test(s));
+      const zGoals  = zShots.filter(s => s.t === 'g').length;
+      const zSaves  = zShots.filter(s => s.t === 's').length;
+      const zTotal  = zGoals + zSaves;
+      const zSvPct  = zTotal >= 5 ? (zSaves / zTotal) : null;
+      return { ...z, goals: zGoals, saves: zSaves, total: zTotal, svPct: zSvPct };
+    });
+
+    function svColor(pct) {
+      if (pct == null) return 'transparent';
+      if (pct >= 0.960) return '#1D9E75';
+      if (pct >= 0.930) return '#5DCAA5';
+      if (pct >= 0.900) return '#FAC775';
+      if (pct >= 0.860) return '#EF9F27';
+      return '#E24B4A';
+    }
+
+    // SVG viewBox 0 0 300 230
+    // Goal line at y=30, blue line at y=155 — all zones fit between them
+    const ZONE_RECTS = {
+      slot_hi:   { x: 105, y: 45,  w: 90, h: 48 },
+      slot_lo:   { x: 105, y: 93,  w: 90, h: 45 },
+      left_hi:   { x: 35,  y: 40,  w: 70, h: 53 },
+      right_hi:  { x: 195, y: 40,  w: 70, h: 53 },
+      left_lo:   { x: 25,  y: 93,  w: 80, h: 45 },
+      right_lo:  { x: 195, y: 93,  w: 80, h: 45 },
+      perimeter: { x: 25,  y: 138, w: 250,h: 40 },
+    };
+
+    const dotFiltered = filter === 'goals' ? shots.filter(s => s.t === 'g')
+      : filter === 'saves' ? shots.filter(s => s.t === 's')
+      : shots.filter(s => s.t === 'g' || s.t === 's');
+
+    // Convert NHL coords to SVG coords (shooter perspective, goal at top y=30)
+    // NHL offensive zone: x 55–89, y -42.5 to +42.5
+    function toSvg(nx, ny) {
+      const svgX = 150 + (ny / 42.5) * 125;
+      const svgY = 30  + ((89 - nx) / 34) * 148;
+      return { sx: Math.round(svgX), sy: Math.round(svgY) };
+    }
+
     return (
-      <div className="pp-heatmap-empty">
-        <div className="pp-heatmap-icon">🥅</div>
-        <div>Shot heat maps are for skaters only.</div>
+      <div className="pp-heatmap">
+        {/* Summary */}
+        <div className="pp-heatmap-summary">
+          <div className="pp-heatmap-stat"><span className="pp-heatmap-num goal-col">{goals}</span><span>Goals</span></div>
+          <div className="pp-heatmap-stat"><span className="pp-heatmap-num sog-col">{saves}</span><span>Saves</span></div>
+          <div className="pp-heatmap-stat"><span className="pp-heatmap-num">{total}</span><span>Shots faced</span></div>
+          <div className="pp-heatmap-stat"><span className="pp-heatmap-num">{svPct}</span><span>SV%</span></div>
+        </div>
+
+        {/* Mode toggle */}
+        <div className="pp-heatmap-filters" style={{ marginBottom: 6 }}>
+          <button className={`pp-heatmap-chip ${mapMode === 'dots' ? 'active' : ''}`} onClick={() => setMapMode('dots')}>Dot map</button>
+          <button className={`pp-heatmap-chip ${mapMode === 'zones' ? 'active' : ''}`} onClick={() => setMapMode('zones')}>Zone SV%</button>
+        </div>
+
+        {/* Filter chips — dots only */}
+        {mapMode === 'dots' && (
+          <div className="pp-heatmap-filters">
+            {[
+              { key: 'all',   label: `All (${total})` },
+              { key: 'goals', label: `Goals (${goals})` },
+              { key: 'saves', label: `Saves (${saves})` },
+            ].map(f => (
+              <button key={f.key} className={`pp-heatmap-chip ${filter === f.key ? 'active' : ''}`}
+                onClick={() => setFilter(f.key)}>{f.label}</button>
+            ))}
+          </div>
+        )}
+
+        {/* Zone legend */}
+        {mapMode === 'zones' && (
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 6, fontSize: 11 }}>
+            {[['#1D9E75','.960+'],['#5DCAA5','.930+'],['#FAC775','.900+'],['#EF9F27','.860+'],['#E24B4A','<.860']].map(([c,l]) => (
+              <span key={l} style={{ display:'flex', alignItems:'center', gap:4, color:'var(--text-muted)' }}>
+                <span style={{ width:10, height:10, borderRadius:2, background:c, display:'inline-block' }}></span>{l}
+              </span>
+            ))}
+            <span style={{ color:'var(--text-dim)', marginLeft:'auto' }}>min 5 shots</span>
+          </div>
+        )}
+
+        {/* Rink SVG */}
+        <div className="pp-heatmap-rink">
+          <svg viewBox="0 0 300 230" width="100%" xmlns="http://www.w3.org/2000/svg" style={{ display:'block' }}>
+            {/* Rink half — same ice color as IceRink component */}
+            <rect x="20" y="10" width="260" height="205" rx="12"
+              fill="#d6eaf5" stroke="#9ab8cc" strokeWidth="1" />
+            {/* Net — above goal line, red to match CAR goal in IceRink */}
+            <rect x="133" y="10" width="34" height="14" rx="2" fill="rgba(204,34,0,0.08)"
+              stroke="#cc2200" strokeWidth="1.5" />
+            {/* Goal line */}
+            <line x1="35" y1="24" x2="265" y2="24" stroke="#E24B4A" strokeWidth="1.5" opacity="0.7" />
+            {/* Crease — arc opens downward (away from net, into offensive zone) */}
+            <path d="M 128 24 A 22 18 0 0 0 172 24" fill="#378ADD" fillOpacity="0.2" stroke="#378ADD" strokeWidth="1" />
+            {/* Blue line */}
+            <line x1="20" y1="178" x2="280" y2="178" stroke="#378ADD" strokeWidth="1.5" opacity="0.5" />
+            {/* Faceoff dots */}
+            <circle cx="90" cy="88" r="3.5" fill="#E24B4A" opacity="0.5" />
+            <circle cx="210" cy="88" r="3.5" fill="#E24B4A" opacity="0.5" />
+            <circle cx="90" cy="88" r="30" fill="none" stroke="#E24B4A" strokeWidth="0.7" opacity="0.25" />
+            <circle cx="210" cy="88" r="30" fill="none" stroke="#E24B4A" strokeWidth="0.7" opacity="0.25" />
+
+            {mapMode === 'zones' ? (
+              <>
+                {zoneStats.map(z => {
+                  const r = ZONE_RECTS[z.id];
+                  const col = svColor(z.svPct);
+                  return (
+                    <g key={z.id}>
+                      <rect x={r.x} y={r.y} width={r.w} height={r.h} rx="3"
+                        fill={col} opacity={z.svPct != null ? 0.55 : 0.08}
+                        stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
+                      {z.svPct != null && (
+                        <>
+                          <text x={r.x + r.w/2} y={r.y + r.h/2 - 4} textAnchor="middle"
+                            fontSize="12" fontWeight="700" fill="#111"
+                            style={{ filter: 'drop-shadow(0px 0px 2px rgba(255,255,255,0.9))' }}>
+                            .{Math.round(z.svPct * 1000)}
+                          </text>
+                          <text x={r.x + r.w/2} y={r.y + r.h/2 + 11} textAnchor="middle"
+                            fontSize="9" fontWeight="600" fill="#333"
+                            style={{ filter: 'drop-shadow(0px 0px 2px rgba(255,255,255,0.9))' }}>
+                            {z.total} shots
+                          </text>
+                        </>
+                      )}
+                      {z.svPct == null && z.total > 0 && (
+                        <text x={r.x + r.w/2} y={r.y + r.h/2 + 4} textAnchor="middle"
+                          fontSize="9" fontWeight="600" fill="#333"
+                          style={{ filter: 'drop-shadow(0px 0px 2px rgba(255,255,255,0.9))' }}>
+                          {z.total} shots
+                        </text>
+                      )}
+                    </g>
+                  );
+                })}
+              </>
+            ) : (
+              <>
+                {dotFiltered.map((s, i) => {
+                  const { sx, sy } = toSvg(s.x, s.y || 0);
+                  if (sy < 10 || sy > 225 || sx < 10 || sx > 290) return null;
+                  return (
+                    <circle key={i} cx={sx} cy={sy} r={s.t === 'g' ? 4.5 : 3.5}
+                      fill={s.t === 'g' ? '#E24B4A' : '#1D9E75'}
+                      opacity={s.t === 'g' ? 0.85 : 0.45} />
+                  );
+                })}
+              </>
+            )}
+
+            <text x="150" y="224" textAnchor="middle" fontSize="9" fill="var(--text-dim)">
+              Shooter perspective · green = save · red = goal
+            </text>
+          </svg>
+        </div>
       </div>
     );
   }
+
+  // ── Skater heat map (unchanged) ──────────────────────────────
 
   if (!shotData) {
     return (

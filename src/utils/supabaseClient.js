@@ -123,6 +123,35 @@ export async function getGoalieAnalytics(season = 20252026) {
   return result;
 }
 
+// ── Goalie shot events (shots faced) ─────────────────────────
+// Returns all shots the goalie faced — team='OPP' rows where
+// goalie_id matches the player. Used for the goalie heat map.
+export async function getGoalieShots(goalieId, season = 20252026) {
+  const rows = await sbFetch(
+    `shot_events?goalie_id=eq.${goalieId}&season=eq.${season}&team=eq.OPP` +
+    `&select=x,y,event_type,period,shot_type&limit=2000`
+  );
+
+  if (!rows.length) return null;
+
+  const typeMap = {
+    'goal':         'g',
+    'shot-on-goal': 's',
+    'missed-shot':  'm',
+    'blocked-shot': 'b',
+  };
+
+  return {
+    shots: rows.map(r => ({
+      x:  r.x,
+      y:  r.y,
+      t:  typeMap[r.event_type] || 's',
+      p:  r.period,
+      st: r.shot_type,
+    })),
+  };
+}
+
 // ── Team skater stats ─────────────────────────────────────────
 export async function getTeamSkaterStatsFromDB(team = 'CAR', season = 20252026, gameType = 2) {
   const [seasonRows, playerRows] = await Promise.all([
