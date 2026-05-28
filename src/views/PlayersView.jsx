@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useFetch } from '../hooks/useFetch'
 import { getRoster, getPlayerStats, fetchPlayerRankings, getPlayoffGames, getStandings } from '../utils/nhlApi'
-import { getPlayerAnalytics, getPlayerShots, getTeamSkaterStatsFromDB } from '../utils/supabaseClient'
+import { getPlayerAnalytics, getGoalieAnalytics, getPlayerShots, getTeamSkaterStatsFromDB } from '../utils/supabaseClient'
 import { findContract, contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING, CURRENT_SEASON } from '../utils/carContracts'
 import TeamLogo from '../components/TeamLogo'
 import InfoTip from '../components/InfoTip'
@@ -102,17 +102,12 @@ const GOALIE_STATS = [
 
 export default function PlayersView() {
   const { data: roster,      loading: rosterLoading } = useFetch(() => getRoster('CAR'))
+  const { data: skaterStats, loading: statsLoading  } = useFetch(() => getTeamSkaterStatsFromDB('CAR', 20252026, 2))
   const { data: poGames }   = useFetch(getPlayoffGames)
   const { data: standings } = useFetch(getStandings)
   const [selected, setSelected] = useState(null)
   const [view, setView]         = useState('roster') // 'roster' | 'stats'
-  const [gameType, setGameType] = useState(2)         // 2=regular, 3=playoffs
   const inPlayoffs = (poGames?.length || 0) > 0
-
-  const { data: skaterStats, loading: statsLoading } = useFetch(
-    () => getTeamSkaterStatsFromDB('CAR', 20252026, gameType),
-    [gameType]
-  )
 
   return (
     <div className="page">
@@ -131,22 +126,10 @@ export default function PlayersView() {
       </div>
 
       {view === 'stats' && (
-        <>
-          <div className="players-tabs" style={{ marginTop: 8, marginBottom: 4 }}>
-            <button
-              className={`players-tab ${gameType === 2 ? 'active' : ''}`}
-              onClick={() => setGameType(2)}
-            >Regular Season</button>
-            <button
-              className={`players-tab ${gameType === 3 ? 'active' : ''}`}
-              onClick={() => setGameType(3)}
-            >🏆 Playoffs</button>
-          </div>
-          <SkaterStatsTable skaters={skaterStats || []} loading={statsLoading} gameType={gameType} onSelect={(id) => {
-            const p = roster?.all?.find(r => r.id === id);
-            if (p) setSelected(p);
-          }} />
-        </>
+        <SkaterStatsTable skaters={skaterStats || []} loading={statsLoading} onSelect={(id) => {
+          const p = roster?.all?.find(r => r.id === id);
+          if (p) setSelected(p);
+        }} />
       )}
 
       {view === 'roster' && (
@@ -238,6 +221,13 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
     []
   )
   const mpData = mpAll?.[String(p.id)] || null
+
+  // Fetch goalie analytics from Supabase
+  const { data: goalieAll } = useFetch(
+    () => getGoalieAnalytics(),
+    []
+  )
+  const goalieData = goalieAll?.[String(p.id)] || null
 
   // Extract stats for each context in display order
   const seasonPO  = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 3)
@@ -484,7 +474,7 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
 
         {/* ── Analytics tab ── */}
         {ppTab === 'analytics' && (
-          <PlayerAnalytics mpData={mpData} playerName={name} isGoalie={p.positionCode === 'G'} position={p.positionCode} />
+          <PlayerAnalytics mpData={mpData} goalieData={goalieData} playerName={name} isGoalie={p.positionCode === 'G'} position={p.positionCode} />
         )}
       </div>
     </div>
@@ -738,13 +728,59 @@ function PercentileBar({ label, pct, note, na }) {
   );
 }
 
-function PlayerAnalytics({ mpData, playerName, isGoalie, position }) {
+function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position }) {
   if (isGoalie) {
+    if (!goalieData) {
+      return (
+        <div className="pp-heatmap-empty">
+          <div className="pp-heatmap-icon">🥅</div>
+          <div>Analytics data not yet available.</div>
+          <div className="pp-heatmap-sub">Updates daily from MoneyPuck.</div>
+        </div>
+      );
+    }
+
+    const { gsax, gsax60, gp, evSvPct, hdSvPct, mdSvPct, pkSvPct, percentiles: p } = goalieData;
+    const gsaxColor = gsax >= 5 ? '#4ade80' : gsax >= 0 ? '#fbbf24' : '#f87171';
+    const gsaxLabel = gsax >= 10 ? 'Elite' : gsax >= 5 ? 'Above average' : gsax >= 0 ? 'Average' : 'Below average';
+
     return (
-      <div className="pp-heatmap-empty">
-        <div className="pp-heatmap-icon">🥅</div>
-        <div>Analytics tab is for skaters only.</div>
-        <div className="pp-heatmap-sub">Goalie analytics coming soon.</div>
+      <div className="pa-wrap">
+        {/* GSAX headline */}
+        <div className="pa-war-card">
+          <div className="pa-war-main">
+            <span className="pa-war-num" style={{ color: gsaxColor }}>{gsax > 0 ? '+' : ''}{gsax}</span>
+            <span className="pa-war-label">GSAX</span>
+          </div>
+          <div className="pa-war-meta">
+            <span style={{ color: gsaxColor }}>{gsaxLabel}</span>
+            <span className="pa-war-sub">{gp} GP · {gsax60 != null ? `${gsax60 > 0 ? '+' : ''}${gsax60} per 60` : ''}</span>
+            <span className="pa-war-sub" style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
+              Goals saved above expected — flurry-adjusted xGoals model
+            </span>
+          </div>
+        </div>
+
+        {/* Save % context */}
+        <div className="pa-context">
+          {evSvPct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{evSvPct}%</span><span>5on5 SV%</span></div>}
+          {hdSvPct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{hdSvPct}%</span><span>HD SV%</span></div>}
+          {mdSvPct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{mdSvPct}%</span><span>MD SV%</span></div>}
+          {pkSvPct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{pkSvPct}%</span><span>PK SV%</span></div>}
+        </div>
+
+        {/* Percentile bars */}
+        <div className="pa-section-label">Percentile rankings vs all NHL goalies</div>
+        <div className="pa-bars">
+          <PercentileBar label="GSAX"            pct={p.gsax?.pct}   note={p.gsax?.note} />
+          <PercentileBar label="GSAX/60"         pct={p.gsax60?.pct} note={p.gsax60?.note} />
+          <PercentileBar label="5-on-5 SV%"      pct={p.evSv?.pct}   note={p.evSv?.note} />
+          <PercentileBar label="High Danger SV%" pct={p.hdSv?.pct}   note={p.hdSv?.note} />
+          <PercentileBar label="Med Danger SV%"  pct={p.mdSv?.pct}   note={p.mdSv?.note} />
+          <PercentileBar label="PK SV%"          pct={p.pkSv?.pct}   note={p.pkSv?.note} />
+        </div>
+
+        <div className="pa-source">Data: MoneyPuck.com · Updates nightly</div>
       </div>
     );
   }
@@ -835,7 +871,7 @@ const COLS = [
   { key: 'shootingPct',    label: 'S%',       fmt: v => v != null ? `${(v*100).toFixed(1)}%` : '—', sortable: true, align: 'right' },
 ];
 
-function SkaterStatsTable({ skaters, loading, gameType = 2, onSelect }) {
+function SkaterStatsTable({ skaters, loading, onSelect }) {
   const [sortKey, setSortKey] = useState('points');
   const [sortDir, setSortDir] = useState('desc');
 
@@ -862,13 +898,7 @@ function SkaterStatsTable({ skaters, loading, gameType = 2, onSelect }) {
     </div>
   );
 
-  if (!skaters?.length) return (
-    <div className="drill-empty">
-      {gameType === 3
-        ? 'No playoff stats yet — data populates once Carolina advances.'
-        : 'No stats available.'}
-    </div>
-  );
+  if (!skaters?.length) return <div className="drill-empty">No stats available.</div>;
 
   return (
     <div className="sst-wrap">

@@ -90,6 +90,39 @@ export async function getPlayerShots(playerId, season = 20252026) {
   };
 }
 
+// ── Goalie analytics ──────────────────────────────────────────
+export async function getGoalieAnalytics(season = 20252026) {
+  const rows = await sbFetch(
+    `goalie_seasons?season=eq.${season}&game_type=eq.2` +
+    `&gsax=not.is.null` +
+    `&select=player_id,team,games_played,gsax,gsax_per60,` +
+    `ev_sv_pct,hd_sv_pct,md_sv_pct,pk_sv_pct,` +
+    `pct_gsax,pct_gsax60,pct_ev_sv,pct_hd_sv,pct_md_sv,pct_pk_sv`
+  );
+
+  const result = {};
+  for (const r of rows) {
+    result[String(r.player_id)] = {
+      gsax:    r.gsax,
+      gsax60:  r.gsax_per60,
+      gp:      r.games_played,
+      evSvPct: r.ev_sv_pct != null ? Math.round(r.ev_sv_pct * 1000) / 10 : null,
+      hdSvPct: r.hd_sv_pct != null ? Math.round(r.hd_sv_pct * 1000) / 10 : null,
+      mdSvPct: r.md_sv_pct != null ? Math.round(r.md_sv_pct * 1000) / 10 : null,
+      pkSvPct: r.pk_sv_pct != null ? Math.round(r.pk_sv_pct * 1000) / 10 : null,
+      percentiles: {
+        gsax:   { pct: r.pct_gsax,   label: 'GSAX',            note: 'Goals saved above expected (flurry-adjusted)' },
+        gsax60: { pct: r.pct_gsax60, label: 'GSAX/60',         note: 'Goals saved above expected per 60 minutes' },
+        evSv:   { pct: r.pct_ev_sv,  label: '5-on-5 SV%',      note: 'Save percentage at even strength' },
+        hdSv:   { pct: r.pct_hd_sv,  label: 'High Danger SV%', note: 'Best quality-adjusted save metric' },
+        mdSv:   { pct: r.pct_md_sv,  label: 'Med Danger SV%',  note: 'Save % on medium danger shots' },
+        pkSv:   { pct: r.pct_pk_sv,  label: 'PK SV%',          note: 'Save % on penalty kill' },
+      },
+    };
+  }
+  return result;
+}
+
 // ── Team skater stats ─────────────────────────────────────────
 export async function getTeamSkaterStatsFromDB(team = 'CAR', season = 20252026, gameType = 2) {
   const [seasonRows, playerRows] = await Promise.all([
