@@ -46,8 +46,8 @@ export async function getPlayerAnalytics(season = 20252026) {
       percentiles: {
         evOff:     { pct: r.pct_ev_off,     label: 'EV Offence',   note: 'On-ice xGF% at 5-on-5' },
         evDef:     { pct: r.pct_ev_def,     label: 'EV Defence',   note: 'On-ice xGA/60 at 5-on-5' },
-        pp:        { pct: r.pct_pp,         label: 'Power Play',   note: 'PP xGF/60' },
-        pk:        { pct: r.pct_pk,         label: 'Penalty Kill', note: 'PK xGA/60' },
+        pp:        { pct: r.pct_pp,         label: 'Power Play',   note: 'On-ice xGoals% on the power play — share of expected goals going CAR\'s way at 5on4' },
+        pk:        { pct: r.pct_pk,         label: 'Penalty Kill', note: 'On-ice xGoals% while shorthanded — higher means suppressing danger and generating more offence even at 4on5' },
         finishing: { pct: r.pct_finishing,  label: 'Finishing',    note: 'Goals above xGoals per 60' },
         goals:     { pct: r.pct_goals,      label: 'Goals',        note: 'Goals per 60 min' },
         a1:        { pct: r.pct_a1,         label: '1st Assists',  note: 'Primary assists per 60 min' },
@@ -124,8 +124,6 @@ export async function getGoalieAnalytics(season = 20252026) {
 }
 
 // ── Goalie shot events (shots faced) ─────────────────────────
-// Returns all shots the goalie faced — team='OPP' rows where
-// goalie_id matches the player. Used for the goalie heat map.
 export async function getGoalieShots(goalieId, season = 20252026) {
   const rows = await sbFetch(
     `shot_events?goalie_id=eq.${goalieId}&season=eq.${season}&team=eq.OPP` +

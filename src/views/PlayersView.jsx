@@ -1045,8 +1045,8 @@ function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position })
       <div className="pa-bars">
         <PercentileBar label="EV Offence"    pct={p.evOff?.pct}     note={p.evOff?.note} />
         <PercentileBar label="EV Defence"    pct={p.evDef?.pct}     note={p.evDef?.note} />
-        <PercentileBar label="Power Play"    pct={p.pp?.pct}        note={p.pp?.note}    na={!ppToi || ppToi < 5} />
-        <PercentileBar label="Penalty Kill"  pct={p.pk?.pct}        note={p.pk?.note}    na={!pkToi || pkToi < 5} />
+        <PercentileBar label="Power Play"    pct={p.pp?.pct}        note={p.pp?.note} />
+        <PercentileBar label="Penalty Kill"  pct={p.pk?.pct}        note={p.pk?.note} />
         <PercentileBar label="Finishing"     pct={p.finishing?.pct} note={p.finishing?.note} />
         <PercentileBar label="Goals"         pct={p.goals?.pct}     note={p.goals?.note} />
         <PercentileBar label="1st Assists"   pct={p.a1?.pct}        note={p.a1?.note} />
