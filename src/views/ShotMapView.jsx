@@ -167,6 +167,22 @@ export default function ShotMapView() {
   const { goalPopup, clearGoalPopup, penaltyPopup, clearPenaltyPopup, winPopup, clearWinPopup } =
     useGameEvents(pbp, isLive, strMapForEvents, gameHome);
 
+  // ── Debug panel (5 taps on score bar, dev only) ──────────────
+  const [debugOpen,  setDebugOpen]  = useState(false);
+  const [debugTaps,  setDebugTaps]  = useState(0);
+  const debugTapRef = useRef(null);
+  const [debugGoalPopup,    setDebugGoalPopup]    = useState(null);
+  const [debugPenaltyPopup, setDebugPenaltyPopup] = useState(null);
+  const [debugWinPopup,     setDebugWinPopup]     = useState(null);
+
+  const handleDebugTap = () => {
+    const next = debugTaps + 1;
+    setDebugTaps(next);
+    clearTimeout(debugTapRef.current);
+    if (next >= 5) { setDebugOpen(o => !o); setDebugTaps(0); return; }
+    debugTapRef.current = setTimeout(() => setDebugTaps(0), 2000);
+  };
+
   // ── Compute game-level metrics from right-rail ──────────────
   const teamGameStats = rightRail?.teamGameStats || [];
   function getGameStat(category) {
@@ -310,11 +326,57 @@ export default function ShotMapView() {
     }
   }, [pbp, roster, opp]);
 
-  const gameSog      = getGameStat('sog');
-  const gameHits     = getGameStat('hits');
-  const gameBlocked  = getGameStat('blocked');
-  const gameFaceoff  = getGameStat('faceoff');
-  const gamePP       = getGameStat('powerPlay');
+  // ── Live MetCard stats from PBP (updates every poll) ─────────
+  // These replace rightRail.teamGameStats which only fetches once
+  const liveStats = useMemo(() => {
+    const plays  = pbp?.plays || [];
+    const carId  = gameHome ? pbp?.homeTeam?.id : pbp?.awayTeam?.id;
+
+    let carSOG = 0, oppSOG = 0;
+    let carHits = 0, oppHits = 0;
+    let carBlocks = 0, oppBlocks = 0;
+    let carFOW = 0, carFOL = 0;
+
+    plays.forEach(p => {
+      const isCar = p.details?.eventOwnerTeamId === carId;
+      switch (p.typeDescKey) {
+        case 'shot-on-goal': isCar ? carSOG++ : oppSOG++; break;
+        case 'goal':         isCar ? carSOG++ : oppSOG++; break;
+        case 'hit':          isCar ? carHits++ : oppHits++; break;
+        case 'blocked-shot':
+          // eventOwnerTeamId = the shooting team; blocker is the other team
+          isCar ? oppBlocks++ : carBlocks++; break;
+        case 'faceoff':
+          if (p.details?.winningPlayerId) {
+            const winTeam = p.details?.eventOwnerTeamId;
+            winTeam === carId ? carFOW++ : carFOL++;
+          }
+          break;
+      }
+    });
+
+    // PP stats from boxscore (more reliable for PP%)
+    const bs       = boxscore?.playerByGameStats;
+    const ppRaw    = getGameStat('powerPlay');
+
+    return {
+      sog:     { car: carSOG,   opp: oppSOG },
+      hits:    { car: carHits,  opp: oppHits },
+      blocked: { car: carBlocks, opp: oppBlocks },
+      faceoff: {
+        car: carFOW + carFOL > 0 ? carFOW / (carFOW + carFOL) * 100 : null,
+        opp: null,
+      },
+      pp: ppRaw, // keep using rightRail for PP% since it's a season stat
+    };
+  }, [pbp, boxscore, gameHome]);
+
+  // Fall back to rightRail when no PBP available (pre-game)
+  const gameSog      = pbp?.plays?.length ? liveStats.sog     : getGameStat('sog');
+  const gameHits     = pbp?.plays?.length ? liveStats.hits    : getGameStat('hits');
+  const gameBlocked  = pbp?.plays?.length ? liveStats.blocked : getGameStat('blocked');
+  const gameFaceoff  = pbp?.plays?.length ? liveStats.faceoff : getGameStat('faceoff');
+  const gamePP       = getGameStat('powerPlay'); // always from rightRail (season stat)
 
   // ── Shot danger breakdown from coordinate data ──────────────
   const dangerCounts = useMemo(() => {
@@ -382,9 +444,8 @@ export default function ShotMapView() {
     return Object.values(byPlayer)
       .filter(p => p.name)
       .sort((a, b) => b.points - a.points || b.goals - a.goals)
-      .slice(0, 4)
       .map(p => ({
-        name: { default: p.name },
+        name: p.name,
         goals: p.goals,
         assists: p.assists,
         points: p.points,
@@ -432,7 +493,7 @@ export default function ShotMapView() {
     <div className="page" ref={pageRef}>
 
       {/* ── Score bar ── */}
-      <div className="score-card card">
+      <div className="score-card card" onClick={handleDebugTap} style={{ userSelect: 'none' }}>
         {activeGame ? (
           <div className="score-inner">
             {/* CAR side */}
@@ -512,6 +573,20 @@ export default function ShotMapView() {
         )}
       </div>
 
+      {/* ── Live / Game Insights (below score) ── */}
+      {pbp?.plays?.length > 0 && (
+        <LiveInsights
+          pbp={pbp}
+          boxscore={boxscore}
+          gameHome={gameHome}
+          carScore={carScore}
+          oppScore={oppScore}
+          oppAbbr={oppAbbr}
+          topScorers={topScorers}
+          isLive={isLive}
+        />
+      )}
+
       {/* ── Game metrics row ── */}
       <div className="metrics-grid">
         <MetCard
@@ -559,18 +634,28 @@ export default function ShotMapView() {
         <AdvancedGamePanel pbp={pbp} gameHome={gameHome} isLive={isLive} boxscore={boxscore} />
       )}
 
-      {/* ── Game Insights ── */}
-      {pbp?.plays?.length > 0 && (
-        <LiveInsights
-          pbp={pbp}
-          boxscore={boxscore}
-          gameHome={gameHome}
-          carScore={carScore}
-          oppScore={oppScore}
-          oppAbbr={oppAbbr}
-          topScorers={topScorers}
-          isLive={isLive}
-        />
+      {/* ── Shot Quality — below Shot Attempts ── */}
+      {dangerCounts.total > 0 && (
+        <div className="card danger-quality-card">
+          <div className="sec-label">CAR shot quality</div>
+          <div className="danger-grid">
+            <div className="danger-cell high clickable" onClick={() => buildDangerDrill('hi')}>
+              <div className="danger-num">{dangerCounts.hi}</div>
+              <div className="danger-label">🔴 High danger</div>
+              <div className="danger-sub">&lt;15 ft</div>
+            </div>
+            <div className="danger-cell med clickable" onClick={() => buildDangerDrill('med')}>
+              <div className="danger-num">{dangerCounts.med}</div>
+              <div className="danger-label">🟡 Medium</div>
+              <div className="danger-sub">15–30 ft</div>
+            </div>
+            <div className="danger-cell lo clickable" onClick={() => buildDangerDrill('lo')}>
+              <div className="danger-num">{dangerCounts.lo}</div>
+              <div className="danger-label">⚪ Low</div>
+              <div className="danger-sub">&gt;30 ft</div>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="two-col">
@@ -628,37 +713,13 @@ export default function ShotMapView() {
             </div>
           )}
 
-          {/* Shot danger breakdown — derived from shot map coords */}
-          {dangerCounts.total > 0 && (
-            <div className="card">
-              <div className="sec-label">CAR shot quality</div>
-              <div className="danger-grid">
-                <div className="danger-cell high clickable" onClick={() => buildDangerDrill('hi')}>
-                  <div className="danger-num">{dangerCounts.hi}</div>
-                  <div className="danger-label">🔴 High danger</div>
-                  <div className="danger-sub">&lt;15 ft</div>
-                </div>
-                <div className="danger-cell med clickable" onClick={() => buildDangerDrill('med')}>
-                  <div className="danger-num">{dangerCounts.med}</div>
-                  <div className="danger-label">🟡 Medium</div>
-                  <div className="danger-sub">15–30 ft</div>
-                </div>
-                <div className="danger-cell lo clickable" onClick={() => buildDangerDrill('lo')}>
-                  <div className="danger-num">{dangerCounts.lo}</div>
-                  <div className="danger-label">⚪ Low</div>
-                  <div className="danger-sub">&gt;30 ft</div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Top point-getters in this game */}
           {topScorers.length > 0 && (
             <div className="card">
               <div className="sec-label">CAR scoring — this game</div>
               {topScorers.map((p, i) => (
                 <div key={i} className="scorer-row">
-                  <span className="scorer-name">{p.name?.default || `#${p.sweaterNumber}`}</span>
+                  <span className="scorer-name">{p.name || `#${p.sweaterNumber}`}</span>
                   <div className="scorer-stats">
                     {p.goals > 0 && <span className="scorer-chip goal">{p.goals}G</span>}
                     {p.assists > 0 && <span className="scorer-chip assist">{p.assists}A</span>}
@@ -744,6 +805,41 @@ export default function ShotMapView() {
     {goalPopup     && <GoalPopup    data={goalPopup}       onClose={clearGoalPopup}    />}
     {penaltyPopup  && <PenaltyPopup data={penaltyPopup}    onClose={clearPenaltyPopup} />}
     {winPopup      && <WinPopup     data={winPopup}        onClose={clearWinPopup}     />}
+
+    {/* ── Debug popups ── */}
+    {debugGoalPopup    && <GoalPopup    data={debugGoalPopup}    onClose={() => setDebugGoalPopup(null)}    />}
+    {debugPenaltyPopup && <PenaltyPopup data={debugPenaltyPopup} onClose={() => setDebugPenaltyPopup(null)} />}
+    {debugWinPopup     && <WinPopup     data={debugWinPopup}     onClose={() => setDebugWinPopup(null)}     />}
+
+    {/* ── Debug panel (5 taps on score bar) ── */}
+    {debugOpen && (
+      <div className="debug-panel" onClick={e => e.stopPropagation()}>
+        <div className="debug-panel-title">🛠 Event Debug</div>
+        <div className="debug-panel-sub">Tap to fire each game event</div>
+        <div className="debug-panel-btns">
+          <button className="debug-btn goal" onClick={() => {
+            setDebugGoalPopup({ scorer: 'Sebastian Aho', assists: ['Andrei Svechnikov', 'Jaccob Slavin'], shotType: 'Wrist', period: 'P2' });
+            setDebugOpen(false);
+          }}>🚨 CAR Goal</button>
+          <button className="debug-btn penalty" onClick={() => {
+            setDebugPenaltyPopup({ id: 'debug-1', player: 'Brad Marchand', description: 'Hooking', duration: 2, period: 'P2' });
+            setDebugOpen(false);
+          }}>⚡ PP Notification</button>
+          <button className="debug-btn win" onClick={() => {
+            setDebugWinPopup({ score: 'CAR 4 – BOS 2' });
+            setDebugOpen(false);
+          }}>🏆 Win Popup</button>
+          <button className="debug-btn close" onClick={() => setDebugOpen(false)}>✕ Close</button>
+        </div>
+        <div className="debug-panel-note">Also fires push notification via /push/test</div>
+        <button className="debug-btn push" onClick={async () => {
+          const url = import.meta.env.VITE_WORKER_URL;
+          if (!url) return;
+          const res = await fetch(`${url}/push/test?secret=eyewall-2026`).catch(() => null);
+          alert(res?.ok ? '✅ Push sent!' : '❌ Push failed');
+        }}>📲 Test Push Notification</button>
+      </div>
+    )}
 
       {/* ── Back to top button ── */}
       {showTopBtn && (

@@ -21,8 +21,8 @@ export function GoalPopup({ data, onClose }) {
 
   if (!data) return null;
   return (
-    <div className="event-popup goal-popup" onClick={onClose}>
-      <div className="event-popup-inner">
+    <div className="game-event-overlay" onClick={onClose}>
+      <div className="goal-popup">
         <div className="goal-siren">🚨</div>
         <div className="goal-title">GOAL!</div>
         {data.scorer && <div className="goal-scorer">{data.scorer}</div>}
@@ -39,33 +39,17 @@ export function GoalPopup({ data, onClose }) {
 
 // ── Penalty Popup ─────────────────────────────────────────────
 export function PenaltyPopup({ data, onClose }) {
-  const [remaining, setRemaining] = useState(null);
-
   useEffect(() => {
     if (!data) return;
-    const dur = typeof data.duration === 'number'
-      ? data.duration * 60
-      : parseInt(data.duration || '2') * 60;
-    setRemaining(dur);
-
-    const interval = setInterval(() => {
-      setRemaining(r => {
-        if (r <= 1) { clearInterval(interval); onClose(); return 0; }
-        return r - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
+    const t = setTimeout(onClose, 12000);
+    return () => clearTimeout(t);
   }, [data?.id]);
 
   if (!data) return null;
-  const mins = Math.floor((remaining ?? 0) / 60);
-  const secs = ((remaining ?? 0) % 60).toString().padStart(2, '0');
-
   return (
-    <div className="event-popup penalty-popup" onClick={onClose}>
-      <div className="event-popup-inner">
+    <div className="game-event-overlay" onClick={onClose}>
+      <div className="penalty-popup">
         <div className="penalty-title">⚡ POWER PLAY</div>
-        <div className="penalty-clock">{mins}:{secs}</div>
         {data.player && <div className="penalty-player">{data.player}</div>}
         <div className="penalty-desc">{data.description}</div>
         <div className="penalty-sub">{data.duration} min · {data.period}</div>
@@ -85,8 +69,8 @@ export function WinPopup({ data, onClose }) {
 
   if (!data) return null;
   return (
-    <div className="event-popup win-popup" onClick={onClose}>
-      <div className="event-popup-inner">
+    <div className="game-event-overlay win-overlay" onClick={onClose}>
+      <div className="win-popup">
         <div className="win-trophy">🏆</div>
         <div className="win-title">CANES WIN!</div>
         <div className="win-score">{data.score}</div>
@@ -102,9 +86,16 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
   const [penaltyPopup, setPenaltyPopup] = useState(null);
   const [winPopup,     setWinPopup]     = useState(null);
 
-  const lastPlayIdx  = useRef(-1);
+  const gameId = pbp?.id ? String(pbp.id) : null;
+
+  // Persist lastPlayIdx to sessionStorage so manual refreshes don't retrigger old events
+  const lastPlayIdx  = useRef(
+    gameId ? parseInt(sessionStorage.getItem(`lastPlay_${gameId}`) || '-1', 10) : -1
+  );
   const gameEndFired = useRef(false);
-  const shownGoals   = useRef(new Set());
+  const shownGoals   = useRef(new Set(
+    gameId ? JSON.parse(sessionStorage.getItem(`goals_${gameId}`) || '[]') : []
+  ));
   // Track whether we were recently live (so we catch the final OT play)
   const wasLiveRef   = useRef(false);
 
@@ -138,6 +129,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
 
     const newPlays = plays.slice(lastPlayIdx.current + 1);
     lastPlayIdx.current = plays.length - 1;
+    if (gameId) sessionStorage.setItem(`lastPlay_${gameId}`, String(lastPlayIdx.current));
     if (newPlays.length === 0) return;
 
     for (const play of newPlays) {
@@ -149,6 +141,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
         const eventId = play.eventId || `goal-${play.sortOrder}`;
         if (!shownGoals.current.has(eventId)) {
           shownGoals.current.add(eventId);
+          if (gameId) sessionStorage.setItem(`goals_${gameId}`, JSON.stringify([...shownGoals.current]));
           const scorer  = pName(d.scoringPlayerId);
           const assists = [d.assist1PlayerId, d.assist2PlayerId]
             .filter(Boolean).map(pName).filter(Boolean);
