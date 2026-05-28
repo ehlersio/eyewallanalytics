@@ -100,7 +100,7 @@ function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding
           {standLoading ? <div className="skeleton" style={{ height: 28, width: '70%' }} /> : (
             <div className="record-main-row">
               <span className="record-big">{wins}–{losses}–{otl}</span>
-              {liveGame && (
+              {liveGame && !inPlayoffs && (
                 <span className="record-live-badge">🔴 LIVE — record updates after final horn</span>
               )}
               <span className="pts-chip">{pts} pts</span>
@@ -129,6 +129,9 @@ function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding
                   {playoffSummary.reduce((s,x) => s+x.carWins, 0)}–
                   {playoffSummary.reduce((s,x) => s+x.oppWins, 0)}
                 </span>
+                {liveGame && (
+                  <span className="record-live-badge">🔴 LIVE — record updates after final horn</span>
+                )}
               </div>
             )}
             <div className="po-series-list">

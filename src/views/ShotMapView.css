@@ -496,3 +496,8 @@
 .debug-btn.win     { background: rgba(74,222,128,0.2); color: #4ade80; }
 .debug-btn.push    { background: var(--bg3); color: var(--text); width: 100%; }
 .debug-btn.close   { background: var(--bg3); color: var(--text-dim); text-align: center; }
+
+/* ── Clock stoppage indicator ── */
+.clock-stopped { color: #fbbf24; font-size: 12px; margin-left: 4px; }
+.debug-btn.pp-car  { background: rgba(74,222,128,0.2); color: #4ade80; }
+.debug-btn.pp-opp  { background: rgba(250,190,30,0.2);  color: #fbbf24; }
