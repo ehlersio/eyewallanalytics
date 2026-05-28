@@ -24,36 +24,15 @@
 .info-tip-btn:focus-visible { color: var(--text-muted); outline: none; }
 
 .info-tip-popup {
-  position: absolute;
-  z-index: 400;
+  position: fixed; /* set by JS; hidden until positioned */
+  z-index: 9999;
   background: var(--bg1);
   border: 0.5px solid var(--border-2);
   border-radius: 10px;
   padding: 12px 14px 10px;
-  /* Fixed width — never wider than viewport minus margin */
   width: 220px;
-  max-width: min(220px, calc(100vw - 24px));
+  max-width: calc(100vw - 20px);
   box-shadow: 0 8px 32px rgba(0,0,0,0.55);
-  /* Prevent the popup from being clipped by parent overflow:hidden */
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-/* Override transform for edge-aware positions */
-.info-tip-below { top:  calc(100% + 8px); }
-.info-tip-above { bottom: calc(100% + 8px); }
-
-/* Left-anchored fallback when near left edge */
-.info-tip-left-anchor { left: 0; transform: none; }
-
-/* Ensure popup stays within viewport horizontally via JS-free trick:
-   clamp position using viewport units where transform can't reach */
-@media (max-width: 360px) {
-  .info-tip-popup {
-    left: 0;
-    transform: none;
-    right: auto;
-  }
 }
 
 .info-tip-title {

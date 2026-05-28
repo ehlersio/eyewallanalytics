@@ -466,10 +466,12 @@ export async function getCompletedGameStats(gameId) {
     getGameDetail(gameId),
   ]);
 
+  // Prefer boxscore for playerByGameStats — landing only includes notable/scoring players
+  // Boxscore has all skaters with full stats
   const pbg =
+    boxscore?.playerByGameStats           ||
     landing?.boxscore?.playerByGameStats  ||
-    landing?.playerByGameStats            ||
-    boxscore?.playerByGameStats           || null;
+    landing?.playerByGameStats            || null;
 
   const teamGameStats =
     landing?.teamGameStats                    ||
