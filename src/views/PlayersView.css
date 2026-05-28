@@ -435,3 +435,84 @@
 .pa-tier { font-size: 10px; width: 72px; flex-shrink: 0; }
 
 .pa-source { font-size: 10px; color: var(--text-dim); margin-top: 14px; text-align: center; }
+
+/* ── Players view tabs ── */
+.players-tabs {
+  display: flex;
+  border-bottom: 0.5px solid var(--border);
+  margin: 0 -14px 14px;
+  padding: 0 14px;
+}
+.players-tab {
+  flex: 1;
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.players-tab.active {
+  color: var(--red-bright);
+  border-bottom-color: var(--red-bright);
+}
+
+/* ── Skater stats table ── */
+.sst-wrap { margin-bottom: 12px; }
+.sst-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+  border: 0.5px solid var(--border);
+}
+.sst-table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 680px;
+  font-size: 12px;
+}
+.sst-th {
+  background: var(--bg2);
+  padding: 8px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  border-bottom: 0.5px solid var(--border);
+  white-space: nowrap;
+  position: relative;
+  user-select: none;
+}
+.sst-th.sorted { color: var(--text); }
+.sst-th.sticky, .sst-td.sticky {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--bg2);
+  border-right: 0.5px solid var(--border);
+}
+.sst-th.left, .sst-td.left   { text-align: left; padding-left: 10px; }
+.sst-th.right, .sst-td.right { text-align: right; padding-right: 8px; }
+.sst-th.center, .sst-td.center { text-align: center; }
+.sst-sort-icon { font-size: 10px; }
+
+.sst-row { cursor: pointer; transition: background 0.1s; }
+.sst-row:hover { background: var(--bg3); }
+.sst-row.even .sst-td:not(.sticky) { background: rgba(255,255,255,0.015); }
+.sst-td {
+  padding: 8px 6px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.04);
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-family: var(--font-mono);
+}
+.sst-td.sticky { color: var(--text); font-family: inherit; font-weight: 600; }
+.sst-td.bold { color: var(--text); font-weight: 700; }
+.sst-hint {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: center;
+  margin-top: 6px;
+}

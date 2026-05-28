@@ -66,6 +66,23 @@ export default function AboutPopup() {
 
           <div className="about-divider" />
 
+          <div className="about-social">
+            <a href="https://www.instagram.com/eyewallanalytics" target="_blank" rel="noopener noreferrer" className="about-social-link" aria-label="Instagram">
+              <i className="fa-brands fa-instagram" />
+            </a>
+            <a href="https://x.com/eyewallstats" target="_blank" rel="noopener noreferrer" className="about-social-link" aria-label="X / Twitter">
+              <i className="fa-brands fa-x-twitter" />
+            </a>
+            <a href="https://www.reddit.com/user/eyewallanalytics" target="_blank" rel="noopener noreferrer" className="about-social-link" aria-label="Reddit">
+              <i className="fa-brands fa-reddit-alien" />
+            </a>
+            <a href="https://www.facebook.com/profile.php?id=61590095322617" target="_blank" rel="noopener noreferrer" className="about-social-link" aria-label="Facebook">
+              <i className="fa-brands fa-facebook" />
+            </a>
+          </div>
+
+          <div className="about-divider" />
+
           <div className="about-support">
             <p className="about-support-text">
               EyeWall Analytics is a passion project. If you find it useful,

@@ -272,6 +272,30 @@ const FALLBACK_STATS = {
 
 // ─── ROSTER ──────────────────────────────────────────────────
 
+export async function getTeamSkaterStats(gameTypeId = 2) {
+  return cached(`teamSkaterStats:${gameTypeId}`, () => _getTeamSkaterStats(gameTypeId), TTL.PLAYER_STATS);
+}
+async function _getTeamSkaterStats(gameTypeId = 2) {
+  const season = '20252026';
+  const exp    = encodeURIComponent(`seasonId=${season} and gameTypeId=${gameTypeId} and teamAbbrevs="CAR"`);
+  const sort   = encodeURIComponent(JSON.stringify([{property:'points',direction:'DESC'},{property:'goals',direction:'DESC'},{property:'playerId',direction:'ASC'}]));
+
+  const [summary, scoring] = await Promise.all([
+    nhlFetch(`/nhl-stats/stats/rest/en/skater/summary?isAggregate=false&isGame=false&sort=${sort}&start=0&limit=100&cayenneExp=${exp}`),
+    nhlFetch(`/nhl-stats/stats/rest/en/skater/scoringpergame?isAggregate=false&isGame=false&sort=${sort}&start=0&limit=100&cayenneExp=${exp}`),
+  ]);
+
+  const scoringMap = {};
+  (scoring?.data || []).forEach(p => { scoringMap[p.playerId] = p; });
+
+  return (summary?.data || []).map(p => ({
+    ...p,
+    primaryAssists:   scoringMap[p.playerId]?.totalPrimaryAssists   ?? null,
+    secondaryAssists: scoringMap[p.playerId]?.totalSecondaryAssists ?? null,
+  }));
+}
+
+
 export async function getRoster(teamAbbr = CAR_ABBR) {
   return cached(`roster:${teamAbbr}`, () => _getRoster(teamAbbr), TTL.SCHEDULE);
 }

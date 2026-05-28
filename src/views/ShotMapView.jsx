@@ -231,60 +231,52 @@ export default function ShotMapView() {
 
     const periodLabel = n => n === 4 ? 'OT' : n === 5 ? 'SO' : `P${n}`;
 
-    if (statKey === 'sog') {
-      // Shots on goal by CAR
-      const shots = plays.filter(p =>
-        (p.typeDescKey === 'shot-on-goal' || p.typeDescKey === 'goal') &&
-        (p.details?.eventOwnerTeamId === carId)
-      );
+    // Helper: build per-player period breakdown for a filtered set of plays
+    function buildPlayerRows(filteredPlays, getPlayerId) {
       const byPlayer = {};
-      shots.forEach(p => {
-        const id = p.details?.shootingPlayerId || p.details?.scoringPlayerId;
+      filteredPlays.forEach(p => {
+        const id  = getPlayerId(p);
         const per = periodLabel(p.periodDescriptor?.number);
         const key = id || 'unknown';
         if (!byPlayer[key]) byPlayer[key] = { name: pName(id), periods: {}, total: 0 };
         byPlayer[key].periods[per] = (byPlayer[key].periods[per] || 0) + 1;
         byPlayer[key].total++;
       });
-      const rows = Object.values(byPlayer).sort((a, b) => b.total - a.total);
-      setDrillStat({ label: 'CAR Shots on Goal', rows, type: 'shots' });
+      return Object.values(byPlayer).sort((a, b) => b.total - a.total);
+    }
+
+    if (statKey === 'sog') {
+      const carRows = buildPlayerRows(
+        plays.filter(p => (p.typeDescKey === 'shot-on-goal' || p.typeDescKey === 'goal') && p.details?.eventOwnerTeamId === carId),
+        p => p.details?.shootingPlayerId || p.details?.scoringPlayerId
+      );
+      const oppRows = buildPlayerRows(
+        plays.filter(p => (p.typeDescKey === 'shot-on-goal' || p.typeDescKey === 'goal') && p.details?.eventOwnerTeamId !== carId),
+        p => p.details?.shootingPlayerId || p.details?.scoringPlayerId
+      );
+      setDrillStat({ label: 'Shots on Goal', carRows, oppRows, type: 'shots' });
 
     } else if (statKey === 'hits') {
-      const hits = plays.filter(p =>
-        p.typeDescKey === 'hit' && p.details?.hittingPlayerId != null &&
-        p.details?.eventOwnerTeamId === carId
+      const carRows = buildPlayerRows(
+        plays.filter(p => p.typeDescKey === 'hit' && p.details?.eventOwnerTeamId === carId),
+        p => p.details?.hittingPlayerId
       );
-      const byPlayer = {};
-      hits.forEach(p => {
-        const id  = p.details?.hittingPlayerId;
-        const per = periodLabel(p.periodDescriptor?.number);
-        const key = id || 'unknown';
-        if (!byPlayer[key]) byPlayer[key] = { name: pName(id), periods: {}, total: 0 };
-        byPlayer[key].periods[per] = (byPlayer[key].periods[per] || 0) + 1;
-        byPlayer[key].total++;
-      });
-      const rows = Object.values(byPlayer).sort((a, b) => b.total - a.total);
-      setDrillStat({ label: 'CAR Hits', rows, type: 'hits' });
+      const oppRows = buildPlayerRows(
+        plays.filter(p => p.typeDescKey === 'hit' && p.details?.eventOwnerTeamId !== carId),
+        p => p.details?.hittingPlayerId
+      );
+      setDrillStat({ label: 'Hits', carRows, oppRows, type: 'shots' });
 
     } else if (statKey === 'blocked') {
-      // eventOwnerTeamId = the shooting team whose shot was blocked
-      // So CAR blockers = plays where opponent is shooting (eventOwnerTeamId !== carId)
-      const blocks = plays.filter(p =>
-        p.typeDescKey === 'blocked-shot' &&
-        p.details?.eventOwnerTeamId !== carId &&
-        p.details?.blockingPlayerId != null
+      const carRows = buildPlayerRows(
+        plays.filter(p => p.typeDescKey === 'blocked-shot' && p.details?.eventOwnerTeamId !== carId && p.details?.blockingPlayerId != null),
+        p => p.details?.blockingPlayerId
       );
-      const byPlayer = {};
-      blocks.forEach(p => {
-        const id  = p.details?.blockingPlayerId;
-        const per = periodLabel(p.periodDescriptor?.number);
-        const key = id || 'unknown';
-        if (!byPlayer[key]) byPlayer[key] = { name: pName(id), periods: {}, total: 0 };
-        byPlayer[key].periods[per] = (byPlayer[key].periods[per] || 0) + 1;
-        byPlayer[key].total++;
-      });
-      const rows = Object.values(byPlayer).sort((a, b) => b.total - a.total);
-      setDrillStat({ label: 'CAR Blocked Shots', rows, type: 'hits' });
+      const oppRows = buildPlayerRows(
+        plays.filter(p => p.typeDescKey === 'blocked-shot' && p.details?.eventOwnerTeamId === carId && p.details?.blockingPlayerId != null),
+        p => p.details?.blockingPlayerId
+      );
+      setDrillStat({ label: 'Blocked Shots', carRows, oppRows, type: 'shots' });
 
     } else if (statKey === 'faceoff') {
       const fos = plays.filter(p => p.typeDescKey === 'faceoff');
@@ -336,6 +328,24 @@ export default function ShotMapView() {
         periods: {},
       }));
       setDrillStat({ label: 'CAR Power Play Goals', rows, type: 'ppgoals' });
+    } else if (statKey === 'penalties') {
+      const penPlays = plays.filter(p => p.typeDescKey === 'penalty');
+      const buildPenRows = (teamId) => penPlays
+        .filter(p => p.details?.eventOwnerTeamId === teamId)
+        .map(p => ({
+          name:        pName(p.details?.committedByPlayerId || p.details?.drawnByPlayerId),
+          description: (p.details?.descKey || 'penalty').replace(/-/g, ' '),
+          penaltyType: p.details?.typeCode || '—',
+          duration:    p.details?.duration ?? 2,
+          period:      periodLabel(p.periodDescriptor?.number),
+          time:        p.timeInPeriod || '—',
+        }));
+      setDrillStat({
+        label: 'Penalties',
+        carRows:  buildPenRows(carId),
+        oppRows:  buildPenRows(oppId),
+        type: 'penalties',
+      });
     }
   }, [pbp, roster, opp]);
 
@@ -349,7 +359,8 @@ export default function ShotMapView() {
     let carHits = 0, oppHits = 0;
     let carBlocks = 0, oppBlocks = 0;
     let carFOW = 0, carFOL = 0;
-    let carPPGoals = 0, carPPOpps = 0; // track PP goals and opportunities
+    let carPPGoals = 0, carPPOpps = 0;
+    let carPens = 0, oppPens = 0; // track PP goals and opportunities
 
     // Track power play opportunities from penalty events
     const activePP = new Set(); // sortOrder when PP started
@@ -370,6 +381,7 @@ export default function ShotMapView() {
         case 'penalty':
           // Opponent penalty = CAR PP opportunity
           if (!isCar) carPPOpps++;
+          isCar ? carPens++ : oppPens++;
           break;
       }
     });
@@ -393,14 +405,12 @@ export default function ShotMapView() {
     const ppRaw    = getGameStat('powerPlay');
 
     return {
-      sog:     { car: carSOG,   opp: oppSOG },
-      hits:    { car: carHits,  opp: oppHits },
-      blocked: { car: carBlocks, opp: oppBlocks },
-      faceoff: {
-        car: carFOW + carFOL > 0 ? carFOW / (carFOW + carFOL) * 100 : null,
-        opp: null,
-      },
-      pp: { gamePPGoals: carPPGoals, gamePPOpps: carPPOpps },
+      sog:      { car: carSOG,    opp: oppSOG },
+      hits:     { car: carHits,   opp: oppHits },
+      blocked:  { car: carBlocks, opp: oppBlocks },
+      faceoff:  { car: carFOW + carFOL > 0 ? carFOW / (carFOW + carFOL) * 100 : null, opp: null },
+      penalties:{ car: carPens,   opp: oppPens },
+      pp:       { gamePPGoals: carPPGoals, gamePPOpps: carPPOpps },
     };
   }, [pbp, boxscore, gameHome]);
 
@@ -666,6 +676,22 @@ export default function ShotMapView() {
           onClick={pbp ? () => buildDrillDown('faceoff') : null}
         />
         {(() => {
+          const pens = liveStats?.penalties;
+          const carP = pens?.car ?? 0;
+          const oppP = pens?.opp ?? 0;
+          // Fewer penalties = better; amber if equal, green if fewer, red if more
+          const color = carP < oppP ? 'green' : carP > oppP ? null : null;
+          return (
+            <MetCard
+              label="Penalties"
+              value={carP ?? '—'}
+              sub={`Opp ${oppP ?? '—'}`}
+              color={color}
+              onClick={pbp ? () => buildDrillDown('penalties') : null}
+            />
+          );
+        })()}
+        {(() => {
           const gpp = liveStats?.pp;
           const hasGamePP = gpp?.gamePPOpps > 0;
           const gamePPPct = hasGamePP ? gpp.gamePPGoals / gpp.gamePPOpps * 100 : null;
@@ -857,7 +883,7 @@ export default function ShotMapView() {
         </div>
       </div>
     </div>
-    {drillStat     && <StatDrillPopup drillStat={drillStat} onClose={() => setDrillStat(null)} />}
+    {drillStat     && <StatDrillPopup drillStat={drillStat} onClose={() => setDrillStat(null)} oppAbbr={oppAbbr} />}
     {goalPopup     && <GoalPopup    data={goalPopup}       onClose={clearGoalPopup}    />}
     {penaltyPopup  && <PenaltyPopup data={penaltyPopup}    onClose={clearPenaltyPopup} />}
     {winPopup      && <WinPopup     data={winPopup}        onClose={clearWinPopup}     />}
@@ -1130,9 +1156,24 @@ function EventLog({ plays, playerMap = {} }) {
 
 
 // ── Stat Drill-Down Popup ───────────────────────────────────
-function StatDrillPopup({ drillStat, onClose }) {
+function StatDrillPopup({ drillStat, onClose, oppAbbr }) {
+  const [tab, setTab] = useState('car');
   if (!drillStat) return null;
   const periods = ['P1', 'P2', 'P3', 'OT'];
+
+  // Support both old shape (rows) and new shape (carRows/oppRows)
+  const carRows = drillStat.carRows ?? drillStat.rows ?? [];
+  const oppRows = drillStat.oppRows ?? [];
+  const hasOpp  = oppRows.length > 0 || drillStat.oppRows !== undefined;
+  const rows    = tab === 'car' ? carRows : oppRows;
+  const teamLabel = tab === 'car' ? 'CAR' : (oppAbbr || 'OPP');
+
+  // Period totals for shots/hits type
+  const periodTotals = periods.reduce((acc, p) => {
+    acc[p] = rows.reduce((sum, r) => sum + (r.periods?.[p] || 0), 0);
+    return acc;
+  }, {});
+  const grandTotal = rows.reduce((sum, r) => sum + (r.total || 0), 0);
 
   return (
     <div className="drill-overlay" onClick={onClose}>
@@ -1141,9 +1182,22 @@ function StatDrillPopup({ drillStat, onClose }) {
           <span className="drill-title">{drillStat.label}</span>
           <button className="drill-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
+
+        {/* CAR / OPP tab toggle */}
+        {hasOpp && (
+          <div className="drill-tabs">
+            <button className={`drill-tab ${tab === 'car' ? 'active' : ''}`} onClick={() => setTab('car')}>
+              <TeamLogo abbr="CAR" size={18} /> CAR
+            </button>
+            <button className={`drill-tab ${tab === 'opp' ? 'active' : ''}`} onClick={() => setTab('opp')}>
+              <TeamLogo abbr={oppAbbr} size={18} /> {oppAbbr || 'OPP'}
+            </button>
+          </div>
+        )}
+
         <div className="drill-body">
-          {drillStat.rows.length === 0 && (
-            <div className="drill-empty">No data available for this game.</div>
+          {rows.length === 0 && (
+            <div className="drill-empty">No {teamLabel} data for this game.</div>
           )}
 
           {drillStat.type === 'faceoff' && (
@@ -1151,7 +1205,7 @@ function StatDrillPopup({ drillStat, onClose }) {
               <div className="drill-col-header fo">
                 <span>Player</span><span>Won</span><span>Lost</span><span>Win%</span>
               </div>
-              {drillStat.rows.map((r, i) => (
+              {rows.map((r, i) => (
                 <div key={i}>
                   <div className="drill-row-grid fo">
                     <span className="drill-name">{r.name}</span>
@@ -1175,13 +1229,13 @@ function StatDrillPopup({ drillStat, onClose }) {
 
           {drillStat.type === 'ppgoals' && (
             <div className="drill-table">
-              {drillStat.rows.map((r, i) => (
+              {rows.map((r, i) => (
                 <div key={i} className="drill-row">
                   <div style={{display:'flex', alignItems:'center', gap:8}}>
                     <span className="drill-name">{r.name}</span>
-                    <span className="drill-period-badge">{r.period}</span>
+                    <span className="drill-period-badge">{r.time ? `${r.period} · ${r.time}` : r.period}</span>
                   </div>
-                  {r.assists.length > 0 && (
+                  {r.assists?.length > 0 && (
                     <div className="drill-assists">Assists: {r.assists.join(', ')}</div>
                   )}
                 </div>
@@ -1189,12 +1243,12 @@ function StatDrillPopup({ drillStat, onClose }) {
             </div>
           )}
 
-          {(drillStat.type === 'shots' || drillStat.type === 'hits') && (
+          {(drillStat.type === 'shots') && (
             <div className="drill-table">
               <div className="drill-col-header shots">
                 <span>Player</span><span>P1</span><span>P2</span><span>P3</span><span>OT</span><span>Total</span>
               </div>
-              {drillStat.rows.map((r, i) => (
+              {rows.map((r, i) => (
                 <div key={i} className="drill-row-grid shots">
                   <span className="drill-name">{r.name}</span>
                   {periods.map(p => (
@@ -1205,6 +1259,63 @@ function StatDrillPopup({ drillStat, onClose }) {
                   <span className="drill-val total">{r.total}</span>
                 </div>
               ))}
+              {/* Period totals row */}
+              {grandTotal > 0 && (
+                <div className="drill-row-grid shots drill-totals-row">
+                  <span className="drill-name drill-totals-label">Total</span>
+                  {periods.map(p => (
+                    <span key={p} className={`drill-val total ${periodTotals[p] ? '' : 'dim'}`}>
+                      {periodTotals[p] || '—'}
+                    </span>
+                  ))}
+                  <span className="drill-val total">{grandTotal}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {drillStat.type === 'penalties' && (
+            <div className="drill-table">
+              {rows.length === 0
+                ? <div className="drill-empty">No {teamLabel} penalties.</div>
+                : rows.map((r, i) => {
+                    const minor = r.duration <= 2;
+                    const color = tab === 'car' ? '#f87171' : '#4ade80';
+                    return (
+                      <div key={i} className="drill-row pen-row">
+                        <div className="pen-row-top">
+                          <span className="drill-name">{r.name}</span>
+                          <span className="pen-badge" style={{ background: minor ? 'rgba(251,191,36,0.15)' : 'rgba(248,113,113,0.2)', color: minor ? '#fbbf24' : '#f87171' }}>
+                            {r.duration} min
+                          </span>
+                          <span className="pen-period">{r.period} · {r.time}</span>
+                        </div>
+                        <div className="pen-row-bottom">
+                          <span className="pen-desc">{r.description}</span>
+                          {r.penaltyType && r.penaltyType !== '—' && (
+                            <span className="pen-type">{r.penaltyType}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+              }
+              {/* Period totals for penalties */}
+              {rows.length > 0 && (() => {
+                const penByPeriod = rows.reduce((acc, r) => {
+                  acc[r.period] = (acc[r.period] || 0) + 1;
+                  return acc;
+                }, {});
+                return (
+                  <div className="drill-totals-row pen-totals">
+                    <span className="drill-totals-label">Totals</span>
+                    {['P1','P2','P3','OT'].filter(p => penByPeriod[p]).map(p => (
+                      <span key={p} className="period-chip">{p}: {penByPeriod[p]}</span>
+                    ))}
+                    <span className="drill-val total">{rows.length} total</span>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>

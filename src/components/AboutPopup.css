@@ -112,3 +112,28 @@
   text-decoration: none;
 }
 .about-email:hover { color: var(--text); text-decoration: underline; }
+
+/* ── Social links ── */
+.about-social {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 4px 0;
+}
+.about-social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--bg3);
+  text-decoration: none;
+  font-size: 20px;
+  transition: background 0.15s, transform 0.1s;
+}
+.about-social-link:hover { background: var(--bg2); transform: translateY(-2px); }
+.fa-instagram  { color: #e1306c; }
+.fa-x-twitter  { color: var(--text); }
+.fa-reddit-alien { color: #ff4500; }
+.fa-facebook   { color: #1877f2; }

@@ -22,23 +22,16 @@
 /* ── Metrics grid ── */
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-bottom: 10px;
 }
 
-/* Mobile: 3 on top row, 2 on bottom row */
-@media (max-width: 560px) {
+/* Wider screens: still 3 per row (2 rows of 3) */
+@media (min-width: 560px) {
   .metrics-grid {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
-  /* First 3 cards: each spans 2 of 6 columns */
-  .metrics-grid > :nth-child(1),
-  .metrics-grid > :nth-child(2),
-  .metrics-grid > :nth-child(3) { grid-column: span 2; }
-  /* Last 2 cards: each spans 3 of 6 columns */
-  .metrics-grid > :nth-child(4),
-  .metrics-grid > :nth-child(5) { grid-column: span 3; }
 }
 
 /* ── Context banner ── */
@@ -506,3 +499,36 @@
 .en-indicator { font-size: 11px !important; }
 .car-en { background: rgba(248,113,113,0.15) !important; color: #f87171 !important; border-color: rgba(248,113,113,0.3) !important; }
 .opp-en { background: rgba(74,222,128,0.15) !important; color: #4ade80 !important; border-color: rgba(74,222,128,0.3) !important; }
+
+/* ── Drill popup tabs ── */
+.drill-tabs {
+  display: flex;
+  border-bottom: 0.5px solid var(--border);
+  padding: 0 16px;
+}
+.drill-tab {
+  flex: 1; padding: 8px 0; font-size: 12px; font-weight: 600;
+  color: var(--text-dim); background: none; border: none;
+  border-bottom: 2px solid transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.drill-tab.active { color: var(--red-bright); border-bottom-color: var(--red-bright); }
+
+/* ── Totals row ── */
+.drill-totals-row {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 4px;
+  font-weight: 700;
+}
+.drill-totals-label { font-size: 11px; color: var(--text-dim); }
+
+/* ── Penalty rows ── */
+.pen-row { padding: 8px 16px; border-bottom: 0.5px solid rgba(255,255,255,0.04); }
+.pen-row-top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+.pen-row-bottom { display: flex; align-items: center; gap: 8px; }
+.pen-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+.pen-period { font-size: 10px; color: var(--text-dim); margin-left: auto; }
+.pen-desc { font-size: 11px; color: var(--text-muted); text-transform: capitalize; }
+.pen-type { font-size: 10px; color: var(--text-dim); padding: 1px 5px; background: var(--bg3); border-radius: 4px; }
+.pen-totals { display: flex; align-items: center; gap: 8px; padding: 8px 16px; flex-wrap: wrap; }
