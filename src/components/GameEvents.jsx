@@ -21,8 +21,8 @@ export function GoalPopup({ data, onClose }) {
 
   if (!data) return null;
   return (
-    <div className="event-popup goal-popup" onClick={onClose}>
-      <div className="event-popup-inner">
+    <div className="game-event-overlay" onClick={onClose}>
+      <div className="goal-popup">
         <div className="goal-siren">🚨</div>
         <div className="goal-title">GOAL!</div>
         {data.scorer && <div className="goal-scorer">{data.scorer}</div>}
@@ -47,8 +47,8 @@ export function PenaltyPopup({ data, onClose }) {
 
   if (!data) return null;
   return (
-    <div className="event-popup penalty-popup" onClick={onClose}>
-      <div className="event-popup-inner">
+    <div className="game-event-overlay" onClick={onClose}>
+      <div className="penalty-popup">
         <div className="penalty-title">⚡ POWER PLAY</div>
         {data.player && <div className="penalty-player">{data.player}</div>}
         <div className="penalty-desc">{data.description}</div>
@@ -69,8 +69,8 @@ export function WinPopup({ data, onClose }) {
 
   if (!data) return null;
   return (
-    <div className="event-popup win-popup" onClick={onClose}>
-      <div className="event-popup-inner">
+    <div className="game-event-overlay win-overlay" onClick={onClose}>
+      <div className="win-popup">
         <div className="win-trophy">🏆</div>
         <div className="win-title">CANES WIN!</div>
         <div className="win-score">{data.score}</div>
