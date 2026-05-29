@@ -1,6 +1,6 @@
 # EyeWall Analytics
 
-> Carolina Hurricanes advanced stats and analytics — live shot maps, possession metrics, push notifications, AI-generated game summaries, player heat maps, and WAR/percentile rankings.
+> Carolina Hurricanes advanced stats and analytics — live shot maps, momentum tracking, push notifications, AI-generated game summaries, player heat maps, goalie analytics, and WAR/percentile rankings.
 
 **Live at:** [eyewallanalytics.com](https://eyewallanalytics.com)  
 **Contact:** matt@eyewallanalytics.com  
@@ -166,10 +166,12 @@ A separate Cloudflare Worker polls the NHL API every 60 seconds and writes to KV
 - Countdown clock: ticks in real-time between polls
 
 ### Momentum Card
-- Rolling shot attempt share (Corsi%) over selectable window (5m / 10m / full game)
-- Waveform showing momentum swings across all periods with period dividers
+- Zone-weighted territorial score combining shot attempts, offensive zone faceoff wins, OZ hits and takeaways — inspired by NHL Edge Ice Tilt
+- Zone location matters: OZ shot counts more than a neutral zone attempt; OZ faceoff win scores as 0.6; OZ hit/takeaway as 0.4–0.5
+- Selectable window: 5m / 10m / full game
+- Waveform showing momentum swings across all periods with period dividers (canvas, DPR-aware for retina)
 - Compact momentum bar in topbar during live games (publishes via `liveClockStore`)
-- Auto-collapses "EyeWall Analytics" text in topbar during live games to make room
+- "EyeWall Analytics" text hides in topbar during live games (logo only) to make room
 
 ### Live Insights Panel
 Auto-generated contextual callouts from PBP data, shown during live games and as post-game "Game Insights":
@@ -229,26 +231,24 @@ Auto-generated contextual callouts from PBP data, shown during live games and as
 Each player popup has three tabs:
 
 **📊 Stats** — Season/career stats, contract details, contract value rating, P/60
+- Regular Season / Playoffs toggle on stats table
+- **Skater contract value** — blended score: 60% points/$M (proj. to 82GP) + 40% WAR/$M (×6 scale factor); falls back to points-only when WAR unavailable; badge shows method (`blended/$M` vs `pts/$M`)
+- **Goalie contract value** — GSAX/$M (goals saved above expected per $1M cap hit); scale: ≥4.0 Exceptional → <−2.0 Overpaid
+- ELC contracts excluded from value scoring
 
 **🧮 Analytics** — MoneyPuck-powered, updated nightly:
-- **WAR** (Wins Above Replacement) — simplified xGoals-based model
-- **Percentile rankings** vs all NHL forwards or defensemen:
-  - EV Offence (on-ice xGF% at 5-on-5)
-  - EV Defence (on-ice xGA/60, inverted)
-  - Power Play (xGF/60 on PP — N/A if insufficient PP time)
-  - Penalty Kill (xGA/60 on PK — N/A if insufficient PK time)
-  - Finishing (goals above xGoals per 60)
-  - Goals (goals per 60)
-  - 1st Assists (primary assists per 60)
-  - Penalties (discipline: drawn minus taken)
-  - Competition (quality of opponents faced)
-  - Teammates (on-ice vs off-ice xGF% delta)
-- Color-coded bars: green ≥67th, amber 33–66th, red ≤33rd
+- **Skaters** — WAR headline + 10 percentile bars vs position group (EV offence/defence, PP, PK, finishing, goals, 1st assists, penalties, competition, teammates)
+- PP/PK use `onIce_xGoalsPercentage` at 5on4/4on5 (min 300s ice time); N/A for non-PP/PK players
+- **Goalies** — GSAX headline (flurry-adjusted, +/− color coded), GSAX/60, 5on5/HD/MD/PK SV% chips, 6 percentile bars vs all NHL goalies (min 10 GP)
 
 **🎯 Heat Map** — Shot location maps per player:
 - **Skaters** — CAR shot locations; filter by all/goals/SOG/missed; summary stats
-- **Goalies** — shots faced (team='OPP' in `shot_events`); dot map + zone SV% toggle; shooter perspective; color-coded zones (green = strong, red = weak)
+- **Goalies** — shots faced (team='OPP' in `shot_events`); dot map + zone SV% toggle; shooter perspective; color-coded zones (green = strong, red = weak); SV% shown as decimal; min 5 shots per zone
 - Data sourced from Supabase `shot_events` table (nightly pipeline, includes `goalie_id`)
+
+**Goalie GSAX in Shot Map** — real season GSAX shown in goalie cards on the Shot Map page; falls back to estimated game-level GSAx for opposing goalies not in Supabase
+
+**Scouting Tab (Schedule Page)** — goalie GSAX sourced from Supabase (same real data); `playerId` added to `getTeamTopPlayers` goalie objects to enable the lookup
 
 ### News Page
 - 5 sources: Canes Country (Atom), Google News RSS, ESPN, Sportsnet, Reddit r/canes
@@ -256,6 +256,15 @@ Each player popup has three tabs:
 - Pagination (10 per page)
 - Reddit posts show upvote count and comment count
 - Reddit posts include preview images when available
+
+### Game Event Popups
+In-app popups triggered by live PBP events — all auto-dismiss, tap to close early:
+- **🏒 Puck Drop** — fires once at game start (P1, first play); text: "Pucks in deep. Pucks on net. Win the battles. Here we go, boys!" — 6s
+- **🚨 CAR Goal** — scorer, assists, shot type, period/time; plays goal horn — 8s
+- **⚡ Opponent Penalty** — player, infraction, duration; "CHEATERS NEVER WIN" — 12s
+- **🏆 Canes Win** — confetti animation, final score — 12s
+- All deduped via `sessionStorage` so page refresh doesn't retrigger
+- Debug panel (5 taps on score bar) fires all four popups
 
 ### Push Notifications (Web Push)
 - Notifications: CAR goal, game start, opponent penalty (PP), Canes win/loss
@@ -452,7 +461,8 @@ CI runs `npm test` + `npm run build` on every push to `main` or `dev` via GitHub
 | **WAR** | Goals above average ÷ goals per win | Approximate — xGoals model, not full RAPM |
 | **xGF%** | On-ice expected goals for ÷ total | Possession quality metric |
 | **GSAX/$M** | Season GSAX ÷ cap hit in $M | Goalie contract value — quality-adjusted |
-| **Blended value** | (Points/$M × 0.6) + (WAR/$M scaled × 0.4) | Skater contract value — rewards two-way play |
+| **Blended value** | (Points/$M × 0.6) + (WAR/$M × 6 × 0.4) | Skater contract value — rewards two-way play |
+| **Momentum%** | Weighted zone events: shots (1.0/0.7), OZ faceoff wins (0.6), OZ hits/takeaways (0.4–0.5) | Inspired by NHL Edge Ice Tilt; zone location weighted |
 
 ---
 
@@ -478,6 +488,7 @@ CI runs `npm test` + `npm run build` on every push to `main` or `dev` via GitHub
 - [ ] Weekly digest card
 - [ ] True RAPM (would require separate Python compute service)
 - [ ] Year-over-year player comparison view (data already stored by season)
+- [ ] NHL EDGE zone time endpoint integration (`/v1/edge/team-zone-time-details/{team-id}/now`) for live territorial data to improve Momentum card further
 
 ---
 

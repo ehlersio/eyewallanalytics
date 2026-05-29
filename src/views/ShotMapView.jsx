@@ -102,8 +102,10 @@ export default function ShotMapView() {
   useEffect(() => {
     if (!isLive || !pbp?.plays?.length) return;
     const plays = pbp.plays;
+    const CAR_ID = 12;
+    const WINDOW_MINS = 5;
+    const windowSecs = WINDOW_MINS * 60;
 
-    // Get current game time in seconds from start
     function playTimeSeconds(play) {
       const period = play.periodDescriptor?.number || 1;
       const t = play.timeInPeriod || '00:00';
@@ -111,47 +113,44 @@ export default function ShotMapView() {
       return (period - 1) * 1200 + m * 60 + (s || 0);
     }
 
-    const SHOT_TYPES = new Set(['goal', 'shot-on-goal', 'missed-shot', 'blocked-shot']);
-    const CAR_ID = 12;
-    const WINDOW_MINS = 5;
-    const windowSecs = WINDOW_MINS * 60;
+    function weightedScore(play, isCAR) {
+      const d    = play.details || {};
+      const zone = d.zoneCode;
+      const type = play.typeDescKey;
+      const owned = isCAR ? d.eventOwnerTeamId === CAR_ID : (d.eventOwnerTeamId && d.eventOwnerTeamId !== CAR_ID);
+      if (type === 'faceoff') {
+        const won = d.eventOwnerTeamId === (isCAR ? CAR_ID : d.eventOwnerTeamId);
+        return zone === 'O' && owned ? 0.6 : 0;
+      }
+      if (!owned) return 0;
+      if (type === 'shot-on-goal' || type === 'goal')         return zone === 'O' ? 1.0 : 0.5;
+      if (type === 'missed-shot'  || type === 'blocked-shot') return zone === 'O' ? 0.7 : 0.3;
+      if (type === 'hit'      && zone === 'O') return 0.4;
+      if (type === 'takeaway' && zone === 'O') return 0.5;
+      return 0;
+    }
 
-    // Find current game time
     const lastPlay = plays[plays.length - 1];
     const nowSecs = playTimeSeconds(lastPlay);
     const cutoff = nowSecs - windowSecs;
 
-    // Count shot attempts in window
-    let carShots = 0, oppShots = 0;
+    let carScore = 0, oppScore = 0, carShots = 0, oppShots = 0;
     plays.forEach(p => {
-      if (!SHOT_TYPES.has(p.typeDescKey)) return;
       const t = playTimeSeconds(p);
       if (t < cutoff) return;
-      if (p.details?.eventOwnerTeamId === CAR_ID) carShots++;
-      else oppShots++;
+      carScore += weightedScore(p, true);
+      oppScore += weightedScore(p, false);
+      const SHOT_TYPES = new Set(['goal', 'shot-on-goal', 'missed-shot', 'blocked-shot']);
+      if (SHOT_TYPES.has(p.typeDescKey)) {
+        if (p.details?.eventOwnerTeamId === CAR_ID) carShots++;
+        else oppShots++;
+      }
     });
 
-    const total = carShots + oppShots || 1;
-    const carPct = Math.round((carShots / total) * 100);
+    const total = carScore + oppScore || 1;
+    const carPct = Math.round((carScore / total) * 100);
 
-    // Build waveform — rolling 3-min Corsi% sampled every minute
-    const wavePoints = [];
-    const SAMPLE_SECS = 60;
-    const WAVE_WINDOW = 180;
-    for (let t = WAVE_WINDOW; t <= nowSecs + SAMPLE_SECS; t += SAMPLE_SECS) {
-      let wCar = 0, wOpp = 0;
-      plays.forEach(p => {
-        if (!SHOT_TYPES.has(p.typeDescKey)) return;
-        const pt = playTimeSeconds(p);
-        if (pt < t - WAVE_WINDOW || pt > t) return;
-        if (p.details?.eventOwnerTeamId === CAR_ID) wCar++;
-        else wOpp++;
-      });
-      const wTotal = wCar + wOpp || 1;
-      wavePoints.push(Math.round((wCar / wTotal) * 100));
-    }
-
-    publishMomentum({ carPct, oppPct: 100 - carPct, carShots, oppShots, window: WINDOW_MINS, wavePoints, nowSecs });
+    publishMomentum({ carPct, oppPct: 100 - carPct, carShots, oppShots, window: WINDOW_MINS, nowSecs });
   }, [pbp?.plays?.length, isLive]);
 
   // ── Tick display from shared store (same math as Topbar → no drift) ──
@@ -1635,7 +1634,30 @@ function MomentumCard({ pbp, gameHome, isLive, oppAbbr }) {
   const [window, setWindow] = useState(5);
   const plays = pbp?.plays || [];
   const CAR_ID = 12;
-  const SHOT_TYPES = new Set(['goal', 'shot-on-goal', 'missed-shot', 'blocked-shot']);
+
+  // Event weights — combines shot attempts with zone entries proxy
+  // zoneCode: O = offensive, N = neutral, D = defensive (from the event owner's perspective)
+  function eventScore(play, teamId) {
+    const d    = play.details || {};
+    const zone = d.zoneCode;           // O, N, D
+    const type = play.typeDescKey;
+    const isOwner = d.eventOwnerTeamId === teamId;
+
+    if (type === 'faceoff') {
+      // Faceoff winner is in details.winningPlayerId's team
+      const won = d.winningPlayerId && play.details?.eventOwnerTeamId === teamId;
+      if (zone === 'O' && won)  return  0.6;  // won OZ faceoff — territorial
+      if (zone === 'D' && !won) return -0.3;  // lost DZ faceoff — pressure against
+      return 0;
+    }
+    if (!isOwner) return 0; // remaining events only score for the owning team
+    if (type === 'shot-on-goal' || type === 'goal')    return zone === 'O' ? 1.0 : 0.5;
+    if (type === 'missed-shot'  || type === 'blocked-shot') return zone === 'O' ? 0.7 : 0.3;
+    if (type === 'hit'      && zone === 'O') return  0.4;
+    if (type === 'takeaway' && zone === 'O') return  0.5;
+    if (type === 'giveaway' && zone === 'D') return -0.3;
+    return 0;
+  }
 
   function playTimeSecs(play) {
     const period = play.periodDescriptor?.number || 1;
@@ -1647,28 +1669,62 @@ function MomentumCard({ pbp, gameHome, isLive, oppAbbr }) {
 
   function computeWindow(mins) {
     const cutoff = mins === 0 ? 0 : nowSecs - mins * 60;
-    let car = 0, opp = 0;
+    let car = 0, opp = 0, carEvents = 0, oppEvents = 0;
     plays.forEach(p => {
-      if (!SHOT_TYPES.has(p.typeDescKey)) return;
       const t = playTimeSecs(p);
       if (t < cutoff) return;
-      if (p.details?.eventOwnerTeamId === CAR_ID) car++; else opp++;
+      const cs = eventScore(p, CAR_ID);
+      const os = eventScore(p, -1); // opp = any non-CAR team
+      // Recalculate for opp by checking if owner is not CAR
+      const oppOwned = p.details?.eventOwnerTeamId && p.details.eventOwnerTeamId !== CAR_ID;
+      const d = p.details || {};
+      const zone = d.zoneCode;
+      const type = p.typeDescKey;
+      let oppScore = 0;
+      if (type === 'faceoff') {
+        const oppWon = d.winningPlayerId && d.eventOwnerTeamId !== CAR_ID;
+        if (zone === 'O' && oppWon)  oppScore =  0.6;
+        if (zone === 'D' && !oppWon) oppScore = -0.3;
+      } else if (oppOwned) {
+        if (type === 'shot-on-goal' || type === 'goal')         oppScore = zone === 'O' ? 1.0 : 0.5;
+        if (type === 'missed-shot'  || type === 'blocked-shot') oppScore = zone === 'O' ? 0.7 : 0.3;
+        if (type === 'hit'      && zone === 'O') oppScore =  0.4;
+        if (type === 'takeaway' && zone === 'O') oppScore =  0.5;
+        if (type === 'giveaway' && zone === 'D') oppScore = -0.3;
+      }
+      if (cs > 0) { car += cs; carEvents++; }
+      if (oppScore > 0) { opp += oppScore; oppEvents++; }
     });
     const total = car + opp || 1;
-    return { car, opp, carPct: Math.round(car / total * 100) };
+    return { car: carEvents, opp: oppEvents, carPct: Math.round(car / total * 100) };
   }
 
-  // Waveform — rolling 3-min Corsi% sampled every 60s
+  // Waveform — rolling 3-min weighted score sampled every 60s
   const wavePoints = useMemo(() => {
     const pts = [];
     const WAVE_WIN = 180, STEP = 60;
     for (let t = WAVE_WIN; t <= nowSecs + STEP; t += STEP) {
       let wc = 0, wo = 0;
       plays.forEach(p => {
-        if (!SHOT_TYPES.has(p.typeDescKey)) return;
         const pt = playTimeSecs(p);
         if (pt < t - WAVE_WIN || pt > t) return;
-        if (p.details?.eventOwnerTeamId === CAR_ID) wc++; else wo++;
+        const d = p.details || {};
+        const zone = d.zoneCode;
+        const type = p.typeDescKey;
+        const isCAR = d.eventOwnerTeamId === CAR_ID;
+        const isOpp = d.eventOwnerTeamId && d.eventOwnerTeamId !== CAR_ID;
+        const score =
+          (type === 'shot-on-goal' || type === 'goal')         ? (zone === 'O' ? 1.0 : 0.5) :
+          (type === 'missed-shot'  || type === 'blocked-shot') ? (zone === 'O' ? 0.7 : 0.3) :
+          type === 'hit'      && zone === 'O' ? 0.4 :
+          type === 'takeaway' && zone === 'O' ? 0.5 : 0;
+        if (type === 'faceoff') {
+          if (zone === 'O' && d.eventOwnerTeamId === CAR_ID) wc += 0.6;
+          if (zone === 'O' && isOpp) wo += 0.6;
+        } else {
+          if (isCAR) wc += score;
+          if (isOpp) wo += score;
+        }
       });
       const wt = wc + wo || 1;
       pts.push(Math.round(wc / wt * 100));
@@ -1771,12 +1827,14 @@ function MomentumCard({ pbp, gameHome, isLive, oppAbbr }) {
     }
   }, [wavePoints]);
 
+  const tooltipText = 'Weighted territorial score combining shot attempts, zone faceoff wins, offensive zone hits and takeaways — inspired by NHL Edge Ice Tilt. Zone location matters: an offensive zone shot counts more than a neutral zone attempt. Above 50% = CAR controlling play.';
+
   return (
     <div className="card momentum-card" style={{ marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <div className="sec-label" style={{ marginBottom: 0 }}>
           Momentum
-          <InfoTip text="Rolling shot attempt share (Corsi%) over the selected time window. Above 50% = CAR controlling play. Waveform shows momentum swings across the full game." position="above" />
+          <InfoTip text={tooltipText} position="above" />
         </div>
         <div style={{ display: 'flex', gap: 4 }}>
           {[5, 10, 0].map(w => (
@@ -1805,8 +1863,8 @@ function MomentumCard({ pbp, gameHome, isLive, oppAbbr }) {
           <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'var(--border-2)' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-dim)', marginTop: 3 }}>
-          <span>{car} attempts</span>
-          <span>{opp} attempts</span>
+          <span>{car} events</span>
+          <span>{opp} events</span>
         </div>
       </div>
 
@@ -1826,7 +1884,7 @@ function MomentumCard({ pbp, gameHome, isLive, oppAbbr }) {
           {oppAbbr} above neutral
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-dim)', marginLeft: 'auto' }}>
-          Season CF%: {totalGame.carPct}%
+          Game: {totalGame.carPct}%
         </div>
       </div>
     </div>
