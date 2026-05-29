@@ -10,11 +10,12 @@ import {
 import IceRink from '../components/IceRink';
 import { GoalPopup, PenaltyPopup, WinPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
+import { getGoalieAnalytics } from '../utils/supabaseClient';
 import InfoTip from '../components/InfoTip';
 import { StatBar, MetCard, MetCardSkeleton } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
 import './ShotMapView.css';
-import { publishClock, getClockDisplay } from '../utils/liveClockStore';
+import { publishClock, getClockDisplay, publishMomentum } from '../utils/liveClockStore';
 
 const CAR_ABBR = 'CAR';
 
@@ -77,11 +78,70 @@ export default function ShotMapView() {
   // Roster for player name resolution in shot tooltips
   const { data: roster } = useFetch(() => getRoster(CAR_ABBR));
 
+  // Season GSAX from Supabase for goalie cards
+  const { data: goalieAnalytics } = useFetch(() => getGoalieAnalytics());
+
   // ── Publish clock to shared store when PBP updates ──────────
   useEffect(() => {
     if (!isLive || !pbp?.clock?.timeRemaining) return;
     publishClock(pbp.clock.timeRemaining, pbp.clock.inIntermission, pbp.clock.running !== false);
   }, [pbp?.clock?.timeRemaining, pbp?.clock?.inIntermission, isLive]);
+
+  // ── Publish momentum to shared store when PBP updates ───────
+  useEffect(() => {
+    if (!isLive || !pbp?.plays?.length) return;
+    const plays = pbp.plays;
+
+    // Get current game time in seconds from start
+    function playTimeSeconds(play) {
+      const period = play.periodDescriptor?.number || 1;
+      const t = play.timeInPeriod || '00:00';
+      const [m, s] = t.split(':').map(Number);
+      return (period - 1) * 1200 + m * 60 + (s || 0);
+    }
+
+    const SHOT_TYPES = new Set(['goal', 'shot-on-goal', 'missed-shot', 'blocked-shot']);
+    const CAR_ID = 12;
+    const WINDOW_MINS = 5;
+    const windowSecs = WINDOW_MINS * 60;
+
+    // Find current game time
+    const lastPlay = plays[plays.length - 1];
+    const nowSecs = playTimeSeconds(lastPlay);
+    const cutoff = nowSecs - windowSecs;
+
+    // Count shot attempts in window
+    let carShots = 0, oppShots = 0;
+    plays.forEach(p => {
+      if (!SHOT_TYPES.has(p.typeDescKey)) return;
+      const t = playTimeSeconds(p);
+      if (t < cutoff) return;
+      if (p.details?.eventOwnerTeamId === CAR_ID) carShots++;
+      else oppShots++;
+    });
+
+    const total = carShots + oppShots || 1;
+    const carPct = Math.round((carShots / total) * 100);
+
+    // Build waveform — rolling 3-min Corsi% sampled every minute
+    const wavePoints = [];
+    const SAMPLE_SECS = 60;
+    const WAVE_WINDOW = 180;
+    for (let t = WAVE_WINDOW; t <= nowSecs + SAMPLE_SECS; t += SAMPLE_SECS) {
+      let wCar = 0, wOpp = 0;
+      plays.forEach(p => {
+        if (!SHOT_TYPES.has(p.typeDescKey)) return;
+        const pt = playTimeSeconds(p);
+        if (pt < t - WAVE_WINDOW || pt > t) return;
+        if (p.details?.eventOwnerTeamId === CAR_ID) wCar++;
+        else wOpp++;
+      });
+      const wTotal = wCar + wOpp || 1;
+      wavePoints.push(Math.round((wCar / wTotal) * 100));
+    }
+
+    publishMomentum({ carPct, oppPct: 100 - carPct, carShots, oppShots, window: WINDOW_MINS, wavePoints, nowSecs });
+  }, [pbp?.plays?.length, isLive]);
 
   // ── Tick display from shared store (same math as Topbar → no drift) ──
   useEffect(() => {
@@ -268,12 +328,28 @@ export default function ShotMapView() {
       setDrillStat({ label: 'Hits', carRows, oppRows, type: 'shots' });
 
     } else if (statKey === 'blocked') {
+      // Build set of CAR player IDs from rosterSpots to verify blocker team
+      const carPlayerIds = new Set(
+        (pbp?.rosterSpots || [])
+          .filter(s => s.teamId === carId)
+          .map(s => s.playerId)
+      );
       const carRows = buildPlayerRows(
-        plays.filter(p => p.typeDescKey === 'blocked-shot' && p.details?.eventOwnerTeamId !== carId && p.details?.blockingPlayerId != null),
+        plays.filter(p =>
+          p.typeDescKey === 'blocked-shot' &&
+          p.details?.eventOwnerTeamId !== carId &&
+          p.details?.blockingPlayerId != null &&
+          carPlayerIds.has(p.details.blockingPlayerId)
+        ),
         p => p.details?.blockingPlayerId
       );
       const oppRows = buildPlayerRows(
-        plays.filter(p => p.typeDescKey === 'blocked-shot' && p.details?.eventOwnerTeamId === carId && p.details?.blockingPlayerId != null),
+        plays.filter(p =>
+          p.typeDescKey === 'blocked-shot' &&
+          p.details?.eventOwnerTeamId === carId &&
+          p.details?.blockingPlayerId != null &&
+          !carPlayerIds.has(p.details.blockingPlayerId)
+        ),
         p => p.details?.blockingPlayerId
       );
       setDrillStat({ label: 'Blocked Shots', carRows, oppRows, type: 'shots' });
@@ -716,6 +792,11 @@ export default function ShotMapView() {
         <AdvancedGamePanel pbp={pbp} gameHome={gameHome} isLive={isLive} boxscore={boxscore} />
       )}
 
+      {/* ── Momentum ── */}
+      {pbp?.plays?.length > 0 && (
+        <MomentumCard pbp={pbp} gameHome={gameHome} isLive={isLive} oppAbbr={oppAbbr} />
+      )}
+
       {/* ── Shot Quality — below Shot Attempts ── */}
       {dangerCounts.total > 0 && (
         <div className="card danger-quality-card">
@@ -824,6 +905,7 @@ export default function ShotMapView() {
                   shotsAgainst={carGoalie.shotsAgainst}
                   savePctg={carGoalie.savePctg}
                   color="var(--red-bright)"
+                  seasonData={goalieAnalytics?.[String(carGoalie.playerId)] || null}
                 />
               )}
               {oppGoalie && (
@@ -834,6 +916,7 @@ export default function ShotMapView() {
                   shotsAgainst={oppGoalie.shotsAgainst}
                   savePctg={oppGoalie.savePctg}
                   color={oppColor}
+                  seasonData={goalieAnalytics?.[String(oppGoalie.playerId)] || null}
                 />
               )}
             </div>
@@ -972,11 +1055,19 @@ export default function ShotMapView() {
 
 // ── Sub-components ────────────────────────────────────────────
 
-function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color }) {
+function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color, seasonData }) {
   const svPct = savePctg != null
     ? (savePctg <= 1 ? savePctg.toFixed(3) : (savePctg / 100).toFixed(3))
     : '—';
-  const gsax = computeGSAx(shotsAgainst, saves);
+  const gameGsax = computeGSAx(shotsAgainst, saves);
+
+  const seasonGsax = seasonData?.gsax ?? null;
+  const seasonGp   = seasonData?.gp ?? null;
+  const gsaxColor  = seasonGsax == null ? 'var(--text-muted)'
+    : seasonGsax >= 5  ? 'var(--green)'
+    : seasonGsax >= 0  ? 'var(--text-muted)'
+    : 'var(--red-bright)';
+
   return (
     <div className="goalie-card">
       <div className="goalie-header">
@@ -992,14 +1083,23 @@ function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color }) {
           <span className="goalie-stat-label">SV%</span>
           <span className="goalie-stat-val goalie-svpct">{svPct}</span>
         </div>
-        {gsax && (
+        {seasonGsax != null ? (
           <div className="goalie-stat-col">
             <span className="goalie-stat-label">
-              GSAx <InfoTip text={gsax.note} position="above" />
+              GSAX <InfoTip text={`Regular season goals saved above expected (MoneyPuck flurry-adjusted xGoals model). Shown year-round as the larger sample is more reliable than playoff sample sizes. Positive = saving more goals than an average goalie on the same shots. ${seasonGp ? `${seasonGp} GP this season.` : ''}`} position="above" />
             </span>
-            <span className="goalie-stat-val" style={{color: gsax.color}}>{gsax.label}</span>
+            <span className="goalie-stat-val" style={{color: gsaxColor}}>
+              {seasonGsax > 0 ? '+' : ''}{seasonGsax}
+            </span>
           </div>
-        )}
+        ) : gameGsax ? (
+          <div className="goalie-stat-col">
+            <span className="goalie-stat-label">
+              GSAx <InfoTip text={gameGsax.note} position="above" />
+            </span>
+            <span className="goalie-stat-val" style={{color: gameGsax.color}}>{gameGsax.label}</span>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -1454,21 +1554,268 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
 
   if (!insights.length) return null;
 
+  return <LiveInsightsCard insights={insights} isLive={isLive} />;
+}
+
+function LiveInsightsCard({ insights, isLive }) {
+  const [expanded, setExpanded] = useState(true);
+  const timerRef = useRef(null);
+
+  // Reset expansion and start collapse timer whenever insights change (live only)
+  const insightKey = insights.map(i => i.text).join('|');
+  useEffect(() => {
+    if (!isLive) return;
+    setExpanded(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setExpanded(false), 8000);
+    return () => clearTimeout(timerRef.current);
+  }, [insightKey, isLive]);
+
+  const handleTap = () => {
+    if (!isLive) return;
+    setExpanded(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setExpanded(false), 8000);
+  };
+
   return (
-    <div className="card live-insights">
-      <div className="sec-label">{isLive ? '🔴 Live Insights' : '📊 Game Insights'}</div>
-      <div className="insights-list">
-        {insights.map((ins, i) => (
-          <div key={i} className={`insight-row insight-${ins.type}`}>
-            <span className="insight-icon">{ins.icon}</span>
-            <span className="insight-text">{ins.text}</span>
-          </div>
-        ))}
+    <div
+      className={`card live-insights${isLive && !expanded ? ' insights-collapsed' : ''}`}
+      onClick={handleTap}
+    >
+      <div className={`insights-header${expanded ? '' : ' insights-header-collapsed'}`}>
+        <span className="sec-label" style={{ marginBottom: 0 }}>
+          {isLive ? '🔴 Live Insights' : '📊 Game Insights'}
+        </span>
+        {isLive && !expanded && (
+          <span className="insights-peek">
+            {insights[0]?.icon} {insights[0]?.text}
+          </span>
+        )}
+        {isLive && (
+          <span className="insights-chevron" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+            ›
+          </span>
+        )}
+      </div>
+      {expanded && (
+        <div className="insights-list">
+          {insights.map((ins, i) => (
+            <div key={i} className={`insight-row insight-${ins.type}`}>
+              <span className="insight-icon">{ins.icon}</span>
+              <span className="insight-text">{ins.text}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Momentum Card ─────────────────────────────────────────────
+function MomentumCard({ pbp, gameHome, isLive, oppAbbr }) {
+  const [window, setWindow] = useState(5);
+  const plays = pbp?.plays || [];
+  const CAR_ID = 12;
+  const SHOT_TYPES = new Set(['goal', 'shot-on-goal', 'missed-shot', 'blocked-shot']);
+
+  function playTimeSecs(play) {
+    const period = play.periodDescriptor?.number || 1;
+    const [m, s] = (play.timeInPeriod || '00:00').split(':').map(Number);
+    return (period - 1) * 1200 + m * 60 + (s || 0);
+  }
+
+  const nowSecs = plays.length ? playTimeSecs(plays[plays.length - 1]) : 0;
+
+  function computeWindow(mins) {
+    const cutoff = mins === 0 ? 0 : nowSecs - mins * 60;
+    let car = 0, opp = 0;
+    plays.forEach(p => {
+      if (!SHOT_TYPES.has(p.typeDescKey)) return;
+      const t = playTimeSecs(p);
+      if (t < cutoff) return;
+      if (p.details?.eventOwnerTeamId === CAR_ID) car++; else opp++;
+    });
+    const total = car + opp || 1;
+    return { car, opp, carPct: Math.round(car / total * 100) };
+  }
+
+  // Waveform — rolling 3-min Corsi% sampled every 60s
+  const wavePoints = useMemo(() => {
+    const pts = [];
+    const WAVE_WIN = 180, STEP = 60;
+    for (let t = WAVE_WIN; t <= nowSecs + STEP; t += STEP) {
+      let wc = 0, wo = 0;
+      plays.forEach(p => {
+        if (!SHOT_TYPES.has(p.typeDescKey)) return;
+        const pt = playTimeSecs(p);
+        if (pt < t - WAVE_WIN || pt > t) return;
+        if (p.details?.eventOwnerTeamId === CAR_ID) wc++; else wo++;
+      });
+      const wt = wc + wo || 1;
+      pts.push(Math.round(wc / wt * 100));
+    }
+    return pts;
+  }, [plays.length]);
+
+  const { car, opp, carPct } = computeWindow(window);
+  const totalGame = useMemo(() => computeWindow(0), [plays.length]);
+
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !wavePoints.length) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const W = rect.width * dpr;
+    const H = rect.height * dpr;
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    const lW = rect.width;
+    const lH = rect.height;
+    const mid = lH / 2;
+
+    ctx.clearRect(0, 0, lW, lH);
+
+    const pts = wavePoints.length;
+    const step = pts > 1 ? lW / (pts - 1) : lW;
+
+    // CAR area above midline
+    ctx.beginPath();
+    ctx.moveTo(0, mid);
+    wavePoints.forEach((v, i) => {
+      const x = i * step;
+      const y = mid - ((Math.max(50, v) - 50) / 50) * (mid - 6);
+      ctx.lineTo(x, y);
+    });
+    ctx.lineTo(lW, mid);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(204,34,0,0.18)';
+    ctx.fill();
+
+    // OPP area below midline
+    ctx.beginPath();
+    ctx.moveTo(0, mid);
+    wavePoints.forEach((v, i) => {
+      const x = i * step;
+      const y = mid + ((Math.max(0, 50 - v)) / 50) * (mid - 6);
+      ctx.lineTo(x, y);
+    });
+    ctx.lineTo(lW, mid);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(136,135,128,0.12)';
+    ctx.fill();
+
+    // CAR line
+    ctx.beginPath();
+    wavePoints.forEach((v, i) => {
+      const x = i * step;
+      const y = mid - ((v - 50) / 50) * (mid - 6);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = 'var(--red-bright, #cc2200)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Period dividers
+    const totalMinutes = Math.ceil(nowSecs / 60);
+    [20, 40].forEach(min => {
+      if (min * 60 > nowSecs) return;
+      const x = (min / totalMinutes) * lW;
+      ctx.beginPath();
+      ctx.moveTo(x, 0); ctx.lineTo(x, lH);
+      ctx.strokeStyle = 'rgba(136,135,128,0.25)';
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+
+    // 50% midline
+    ctx.beginPath();
+    ctx.moveTo(0, mid); ctx.lineTo(lW, mid);
+    ctx.strokeStyle = 'rgba(136,135,128,0.2)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    // Current position dot
+    if (pts > 0) {
+      const lastX = (pts - 1) * step;
+      const lastV = wavePoints[pts - 1];
+      const lastY = mid - ((lastV - 50) / 50) * (mid - 6);
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#cc2200';
+      ctx.fill();
+    }
+  }, [wavePoints]);
+
+  return (
+    <div className="card momentum-card" style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <div className="sec-label" style={{ marginBottom: 0 }}>
+          Momentum
+          <InfoTip text="Rolling shot attempt share (Corsi%) over the selected time window. Above 50% = CAR controlling play. Waveform shows momentum swings across the full game." position="above" />
+        </div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {[5, 10, 0].map(w => (
+            <button key={w}
+              className={`rink-btn${window === w ? ' on' : ''}`}
+              style={{ padding: '2px 8px', fontSize: 10, minHeight: 'unset', minWidth: 'unset' }}
+              onClick={() => setWindow(w)}>
+              {w === 0 ? 'Full' : `${w}m`}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 500, marginBottom: 5 }}>
+          <span style={{ color: 'var(--red-bright)' }}>CAR {carPct}%</span>
+          <span style={{ color: 'var(--text-muted)' }}>{100 - carPct}% {oppAbbr}</span>
+        </div>
+        <div style={{ height: 8, background: 'var(--bg3)', borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
+          <div style={{
+            position: 'absolute', left: 0, top: 0, bottom: 0,
+            width: `${carPct}%`,
+            background: carPct >= 50 ? 'var(--red-bright)' : 'var(--text-dim)',
+            borderRadius: 4, transition: 'width 0.4s ease'
+          }} />
+          <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'var(--border-2)' }} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-dim)', marginTop: 3 }}>
+          <span>{car} attempts</span>
+          <span>{opp} attempts</span>
+        </div>
+      </div>
+
+      <canvas ref={canvasRef}
+        style={{ width: '100%', height: 80, display: 'block' }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--text-dim)', marginTop: 3 }}>
+        <span>P1</span><span>P2</span><span>P3{nowSecs > 3600 ? '+' : ''}</span><span>Now</span>
+      </div>
+
+      <div style={{ display: 'flex', gap: 14, marginTop: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red-bright)', opacity: 0.7 }} />
+          CAR above neutral
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--text-dim)', opacity: 0.5 }} />
+          {oppAbbr} above neutral
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-dim)', marginLeft: 'auto' }}>
+          Season CF%: {totalGame.carPct}%
+        </div>
       </div>
     </div>
   );
 }
 
+// ── Advanced Game Panel ───────────────────────────────────────
 function AdvancedGamePanel({ pbp, gameHome, isLive, boxscore }) {
   const plays = pbp?.plays || [];
   const sa    = computeShotAttempts(plays);

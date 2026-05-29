@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import './AboutPopup.css';
 
-export default function AboutPopup() {
+export default function AboutPopup({ isLive = false }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -25,10 +25,12 @@ export default function AboutPopup() {
         aria-expanded={open}
       >
         <img src="/eyewall-logo.svg" alt="" className="topbar-logoimg" width="36" height="36" />
-        <div>
-          <div className="topbar-name">EyeWall Analytics</div>
-          <div className="topbar-sub">Carolina Hurricanes</div>
-        </div>
+        {!isLive && (
+          <div>
+            <div className="topbar-name">EyeWall Analytics</div>
+            <div className="topbar-sub">Carolina Hurricanes</div>
+          </div>
+        )}
       </button>
 
       {open && (

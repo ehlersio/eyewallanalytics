@@ -442,6 +442,7 @@
 
 /* ── Live Insights ── */
 .live-insights { margin-bottom: 10px; }
+.live-insights.insights-collapsed { cursor: pointer; }
 .insights-list {
   display: grid;
   grid-template-columns: 1fr;
@@ -462,6 +463,33 @@
 .insight-neutral { background: rgba(148,163,184,0.10); color: var(--text); border-left: 3px solid #94a3b8; }
 .insight-icon { font-size: 16px; flex-shrink: 0; }
 .insight-text { line-height: 1.35; }
+.insights-peek {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.insights-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.insights-header-collapsed { margin-bottom: 0; }
+.insights-chevron {
+  font-size: 16px;
+  color: var(--text-dim);
+  line-height: 1;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  margin-left: auto;
+}
 
 /* ── Debug panel ── */
 .debug-panel {

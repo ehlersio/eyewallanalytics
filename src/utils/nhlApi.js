@@ -114,7 +114,36 @@ export async function getRecentGames(count = 6) {
 }
 
 // Live game if one is in progress
+// DEV: add ?mockGame=GAME_ID to URL to simulate a live game with a completed game's data
 export async function getLiveGame() {
+  // ── Dev mock ─────────────────────────────────────────────────
+  if (import.meta.env.DEV) {
+    const params = new URLSearchParams(window.location.search);
+    const mockId = params.get('mockGame');
+    if (mockId) {
+      const games = await getAllGames();
+      // Try to find it in the schedule first
+      let mockGame = games.find(g => String(g.id) === String(mockId));
+      // If not in schedule, fetch it directly from the NHL API
+      if (!mockGame) {
+        const data = await nhlFetch(`${BASE}/gamecenter/${mockId}/landing`);
+        if (data) {
+          mockGame = {
+            id:        data.id || Number(mockId),
+            gameType:  data.gameType || 2,
+            gameDate:  data.gameDate || new Date().toISOString().slice(0, 10),
+            gameState: 'LIVE',
+            homeTeam:  data.homeTeam,
+            awayTeam:  data.awayTeam,
+          };
+        }
+      }
+      if (mockGame) {
+        return { ...mockGame, gameState: 'LIVE' };
+      }
+    }
+  }
+  // ── Normal live detection ─────────────────────────────────────
   const games = await getAllGames();
   return games.find(g => g.gameState === 'LIVE' || g.gameState === 'CRIT') || null;
 }

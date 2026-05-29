@@ -4,7 +4,7 @@ import TeamLogo from './TeamLogo';
 import { TEAM_COLORS } from '../utils/nhlApi';
 import './Topbar.css';
 import AboutPopup from './AboutPopup';
-import { subscribeClock, getClockDisplay } from '../utils/liveClockStore';
+import { subscribeClock, getClockDisplay, getMomentum, subscribeMomentum } from '../utils/liveClockStore';
 import NotificationBell from './NotificationBell';
 
 const POLL_LIVE_MS = 10_000;      // 10s — matches ShotMapView
@@ -16,6 +16,7 @@ export default function Topbar() {
   const [liveMeta,    setLiveMeta]    = useState(null);
   const [displayClock, setDisplayClock] = useState(null);
   const [clockRunning, setClockRunning] = useState(true);
+  const [momentum,    setMomentum]    = useState(null);
 
   const intervalRef  = useRef(null);
   const clockRef     = useRef(null);
@@ -64,6 +65,12 @@ export default function Topbar() {
     return () => clearInterval(clockRef.current);
   }, []);
 
+  // Subscribe to momentum store
+  useEffect(() => {
+    const unsub = subscribeMomentum(data => setMomentum(data));
+    return unsub;
+  }, []);
+
   useEffect(() => {
     if (Date.now() > SEASON_END.getTime()) return;
     checkLive();
@@ -86,35 +93,52 @@ export default function Topbar() {
 
   return (
     <header className="topbar">
-      <AboutPopup />
+      <div className="topbar-row">
+        <AboutPopup isLive={!!liveGame} />
 
-      {liveGame ? (
-        <div className="topbar-live">
-          <div className="live-dot" />
-          <div className="live-score">
-            <TeamLogo abbr="CAR" size={18} />
-            <span className="live-team-red">CAR</span>
-            <span className="live-num">{carScore}</span>
-            <span className="live-sep">–</span>
-            <span className="live-num">{oppScore}</span>
-            <span className="live-team-muted">{opp?.abbrev}</span>
-            <TeamLogo abbr={opp?.abbrev} size={18} color={TEAM_COLORS[opp?.abbrev]} />
-          </div>
-          {(period || displayClock) && (
-            <div className="live-clock">
-              {period}{period && displayClock ? ' · ' : ''}{displayClock}
-              {displayClock && !clockRunning && <span className="clock-stopped-tb">⏸</span>}
+        {liveGame ? (
+          <div className="topbar-live">
+            <div className="live-dot" />
+            <div className="live-score">
+              <TeamLogo abbr="CAR" size={18} />
+              <span className="live-team-red">CAR</span>
+              <span className="live-num">{carScore}</span>
+              <span className="live-sep">–</span>
+              <span className="live-num">{oppScore}</span>
+              <span className="live-team-muted">{opp?.abbrev}</span>
+              <TeamLogo abbr={opp?.abbrev} size={18} color={TEAM_COLORS[opp?.abbrev]} />
             </div>
-          )}
-        </div>
-      ) : (
-        <div className="topbar-status">
-          <span className="status-dot-idle" />
-          <span className="topbar-no-live">Off season</span>
+            {(period || displayClock) && (
+              <div className="live-clock">
+                {period}{period && displayClock ? ' · ' : ''}{displayClock}
+                {displayClock && !clockRunning && <span className="clock-stopped-tb">⏸</span>}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="topbar-status">
+            <span className="status-dot-idle" />
+            <span className="topbar-no-live">Off season</span>
+          </div>
+        )}
+
+        <NotificationBell />
+      </div>
+
+      {liveGame && momentum && (
+        <div className="topbar-momentum">
+          <div className="tb-mom-labels">
+            <span className="tb-mom-car">CAR</span>
+            <span className="tb-mom-window">{momentum.window}m</span>
+            <span className="tb-mom-opp">{opp?.abbrev}</span>
+          </div>
+          <div className="tb-mom-track">
+            <div className="tb-mom-center" />
+            <div className="tb-mom-fill-car" style={{ width: `${Math.max(0, momentum.carPct - 50)}%` }} />
+            <div className="tb-mom-fill-opp" style={{ width: `${Math.max(0, 50 - momentum.carPct)}%` }} />
+          </div>
         </div>
       )}
-
-      <NotificationBell />
     </header>
   );
 }

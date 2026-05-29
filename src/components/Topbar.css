@@ -1,16 +1,23 @@
 .topbar {
-  height: var(--topbar-height);
+  height: auto;
+  min-height: var(--topbar-height);
   background: var(--bg1);
   border-bottom: 0.5px solid var(--red-border);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   padding: 0 16px;
-  gap: 12px;
   flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: 100;
+}
+
+.topbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: var(--topbar-height);
 }
 
 .topbar-logo {
@@ -118,3 +125,49 @@
 }
 
 .clock-stopped-tb { color: #fbbf24; font-size: 10px; margin-left: 3px; }
+
+/* ── Topbar momentum bar ── */
+.topbar-momentum {
+  padding: 0 0 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.tb-mom-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.tb-mom-car    { color: var(--red-bright); font-weight: 600; }
+.tb-mom-opp    { color: var(--text-dim); }
+.tb-mom-window { color: var(--text-dim); }
+.tb-mom-track {
+  height: 3px;
+  background: var(--bg3);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+.tb-mom-center {
+  position: absolute;
+  left: 50%; top: 0; bottom: 0;
+  width: 1px;
+  background: var(--border-2);
+}
+.tb-mom-fill-car {
+  position: absolute;
+  right: 50%; top: 0; bottom: 0;
+  background: var(--red-bright);
+  border-radius: 2px 0 0 2px;
+  transition: width 0.5s ease;
+}
+.tb-mom-fill-opp {
+  position: absolute;
+  left: 50%; top: 0; bottom: 0;
+  background: var(--text-dim);
+  border-radius: 0 2px 2px 0;
+  opacity: 0.5;
+  transition: width 0.5s ease;
+}

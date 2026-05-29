@@ -16,6 +16,27 @@
 let _sync = null; // { totalSecs, syncTime, inIntermission, running, raw }
 let _subscribers = [];
 
+// ── Momentum store ────────────────────────────────────────────
+// ShotMapView publishes rolling shot attempt differential.
+// Topbar reads it to show compact momentum bar during live games.
+let _momentum = null; // { carPct, oppPct, carShots, oppShots, window, waveData }
+let _momentumSubscribers = [];
+
+export function publishMomentum(data) {
+  _momentum = data;
+  _momentumSubscribers.forEach(fn => fn(data));
+}
+
+export function getMomentum() {
+  return _momentum;
+}
+
+export function subscribeMomentum(fn) {
+  _momentumSubscribers.push(fn);
+  if (_momentum) fn(_momentum);
+  return () => { _momentumSubscribers = _momentumSubscribers.filter(s => s !== fn); };
+}
+
 export function publishClock(timeRemaining, inIntermission, running = true) {
   if (!timeRemaining) return;
   const [m, s] = timeRemaining.split(':').map(Number);
