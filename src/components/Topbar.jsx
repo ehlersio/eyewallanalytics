@@ -4,7 +4,7 @@ import TeamLogo from './TeamLogo';
 import { TEAM_COLORS } from '../utils/nhlApi';
 import './Topbar.css';
 import AboutPopup from './AboutPopup';
-import { subscribeClock, getClockDisplay, getMomentum, subscribeMomentum } from '../utils/liveClockStore';
+import { subscribeClock, getClockDisplay, getMomentum, subscribeMomentum, subscribeMockLiveGame } from '../utils/liveClockStore';
 import NotificationBell from './NotificationBell';
 
 const POLL_LIVE_MS = 10_000;      // 10s — matches ShotMapView
@@ -17,6 +17,7 @@ export default function Topbar() {
   const [displayClock, setDisplayClock] = useState(null);
   const [clockRunning, setClockRunning] = useState(true);
   const [momentum,    setMomentum]    = useState(null);
+  const [mockLiveGame, setMockLiveGame] = useState(null);
 
   const intervalRef  = useRef(null);
   const clockRef     = useRef(null);
@@ -65,9 +66,27 @@ export default function Topbar() {
     return () => clearInterval(clockRef.current);
   }, []);
 
+  // Also subscribe directly so dev mock clock updates immediately
+  useEffect(() => {
+    const unsub = subscribeClock(() => {
+      const r = getClockDisplay();
+      if (r) {
+        setDisplayClock(r.display);
+        setClockRunning(r.running !== false);
+      }
+    });
+    return unsub;
+  }, []);
+
   // Subscribe to momentum store
   useEffect(() => {
     const unsub = subscribeMomentum(data => setMomentum(data));
+    return unsub;
+  }, []);
+
+  // Subscribe to dev mock live game
+  useEffect(() => {
+    const unsub = subscribeMockLiveGame(game => setMockLiveGame(game));
     return unsub;
   }, []);
 
@@ -80,10 +99,11 @@ export default function Topbar() {
     };
   }, []);
 
-  const opp      = liveGame ? getOpponent(liveGame) : null;
-  const carScore = liveGame ? getCarScore(liveGame) : null;
-  const oppScore = liveGame ? getOppScore(liveGame) : null;
-  const pd       = liveMeta?.period;
+  const activeLiveGame = mockLiveGame || liveGame;
+  const opp      = activeLiveGame ? getOpponent(activeLiveGame) : null;
+  const carScore = activeLiveGame ? getCarScore(activeLiveGame) : null;
+  const oppScore = activeLiveGame ? getOppScore(activeLiveGame) : null;
+  const pd       = liveMeta?.period || mockLiveGame?._period;
   const isIntermission = liveMeta?.clock?.inIntermission;
   const period = pd
     ? isIntermission
@@ -94,9 +114,9 @@ export default function Topbar() {
   return (
     <header className="topbar">
       <div className="topbar-row">
-        <AboutPopup isLive={!!liveGame} />
+        <AboutPopup isLive={!!activeLiveGame} />
 
-        {liveGame ? (
+        {activeLiveGame ? (
           <div className="topbar-live">
             <div className="live-dot" />
             <div className="live-score">
@@ -108,7 +128,7 @@ export default function Topbar() {
               <span className="live-team-muted">{opp?.abbrev}</span>
               <TeamLogo abbr={opp?.abbrev} size={18} color={TEAM_COLORS[opp?.abbrev]} />
             </div>
-            {(period || displayClock) && (
+            {(period || displayClock) && activeLiveGame?.gameState !== 'FINAL' && (
               <div className="live-clock">
                 {period}{period && displayClock ? ' · ' : ''}{displayClock}
                 {displayClock && !clockRunning && <span className="clock-stopped-tb">⏸</span>}
@@ -125,7 +145,7 @@ export default function Topbar() {
         <NotificationBell />
       </div>
 
-      {liveGame && momentum && (
+      {activeLiveGame && momentum && (
         <div className="topbar-momentum">
           <div className="tb-mom-labels">
             <span className="tb-mom-car">CAR</span>

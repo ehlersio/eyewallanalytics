@@ -84,3 +84,29 @@ export function subscribeClock(fn) {
 export function clearClock() {
   _sync = null;
 }
+
+// ── Mock live game store (dev replay) ────────────────────────
+// DevReplayView publishes a mock game object so Topbar shows
+// the live score/period without its own getLiveGame poll.
+let _mockLiveGame = null;
+let _mockLiveGameSubscribers = [];
+
+export function publishMockLiveGame(game) {
+  _mockLiveGame = game;
+  _mockLiveGameSubscribers.forEach(fn => fn(game));
+  // Also sync the clock store period display if period info attached
+  if (game?._clock?.timeRemaining) {
+    publishClock(game._clock.timeRemaining, false, game._clock.running !== false);
+  }
+}
+
+export function clearMockLiveGame() {
+  _mockLiveGame = null;
+  _mockLiveGameSubscribers.forEach(fn => fn(null));
+}
+
+export function subscribeMockLiveGame(fn) {
+  _mockLiveGameSubscribers.push(fn);
+  if (_mockLiveGame) fn(_mockLiveGame);
+  return () => { _mockLiveGameSubscribers = _mockLiveGameSubscribers.filter(s => s !== fn); };
+}

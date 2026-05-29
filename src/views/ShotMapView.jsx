@@ -16,12 +16,17 @@ import { StatBar, MetCard, MetCardSkeleton } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
 import './ShotMapView.css';
 import { publishClock, getClockDisplay, publishMomentum } from '../utils/liveClockStore';
+import { useDevGame } from '../utils/DevGameContext';
 
 const CAR_ABBR = 'CAR';
 
 export default function ShotMapView() {
+  // ── Dev replay injection ──────────────────────────────────────
+  const devGame = useDevGame();
+
   // Live game polling
-  const { data: liveGame }  = usePoll(getLiveGame, 30000);
+  const { data: liveGameReal } = usePoll(getLiveGame, 30000);
+  const liveGame = devGame?.liveGame ?? liveGameReal;
 
   // Most recent completed game as fallback
   const { data: recentGames } = useFetch(getRecentGames);
@@ -38,24 +43,30 @@ export default function ShotMapView() {
 
   // Play-by-play for shot map — poll every 20s during live games
   const gameId = activeGame?.id;
-  const LIVE_POLL_MS = 10_000; // 10s — faster live polling
+  const LIVE_POLL_MS = 10_000;
 
-  const { data: pbp } = usePoll(
+  const { data: pbpReal } = usePoll(
     () => {
+      if (devGame) return Promise.resolve(null); // dev provides pbp directly
       if (!gameId) return Promise.resolve(null);
-      if (isLive) bustLiveGameCache(gameId); // bypass cache for live data
+      if (isLive) bustLiveGameCache(gameId);
       return getGameDetail(gameId);
     },
-    isLive ? LIVE_POLL_MS : 300_000, // poll fast when live, every 5min otherwise
-    [gameId, isLive]
+    isLive ? LIVE_POLL_MS : 300_000,
+    [gameId, isLive, !!devGame]
   );
+  const pbp = devGame?.pbp ?? pbpReal;
 
   // Boxscore — poll same rate as PBP during live
-  const { data: boxscore } = usePoll(
-    () => gameId ? getGameBoxscore(gameId) : Promise.resolve(null),
+  const { data: boxscoreReal } = usePoll(
+    () => {
+      if (devGame) return Promise.resolve(null);
+      return gameId ? getGameBoxscore(gameId) : Promise.resolve(null);
+    },
     isLive ? LIVE_POLL_MS : 300_000,
-    [gameId, isLive]
+    [gameId, isLive, !!devGame]
   );
+  const boxscore = devGame?.boxscore ?? boxscoreReal;
 
   // Right-rail changes rarely — fetch once per game
   const { data: rightRail } = useFetch(

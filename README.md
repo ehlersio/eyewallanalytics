@@ -24,9 +24,12 @@ EyeWall Analytics is a React PWA delivering real-time and historical Carolina Hu
 | Hosting | Cloudflare Pages (auto-deploys from `main`; `dev` branch → preview) |
 | API Proxy | Cloudflare Pages Functions (`functions/`) |
 | Cache Layer | Cloudflare Worker + KV (`eyewall-poller`) |
+| Database | Supabase (player/team/goalie stats, shot events) |
+| Data Pipeline | Python (`eyewall-pipeline`) — NHL API + MoneyPuck → Supabase |
+| Pipeline CI | GitHub Actions nightly cron (3 AM ET) |
 | Push Notifications | Web Push API (VAPID), Service Worker |
 | AI Summaries | Anthropic Claude Haiku via Worker |
-| Analytics Data | MoneyPuck.com CSV (fetched nightly by Worker) |
+| Analytics Data | MoneyPuck.com CSV (fetched nightly by pipeline) |
 | Data Source | NHL public API (no authentication required) |
 | Cap Data | Static `carContracts.js` (source: PuckPedia) |
 | Testing | Vitest (unit tests), GitHub Actions CI |
@@ -53,11 +56,12 @@ canes-analytics-starter/
 ├── src/
 │   ├── App.jsx                   # Router, layout, BottomNav
 │   ├── views/
-│   │   ├── ShotMapView.jsx/.css  # Live shot map, metrics, live insights
+│   │   ├── ShotMapView.jsx/.css  # Live shot map, metrics, live insights, momentum
 │   │   ├── ScheduleView.jsx/.css # Season + playoff schedule, predictions
 │   │   ├── TeamView.jsx/.css     # 5-tab team analytics
 │   │   ├── PlayersView.jsx/.css  # Roster, player cards, analytics, heat maps
-│   │   └── NewsView.jsx/.css     # News feed (5 sources, filters, pagination)
+│   │   ├── NewsView.jsx/.css     # News feed (5 sources, filters, pagination)
+│   │   └── DevReplayView.jsx/.css # Dev-only live game replay scrubber (/dev)
 │   ├── components/
 │   │   ├── Topbar.jsx/.css       # Live score, countdown clock, bells
 │   │   ├── IceRink.jsx/.css      # SVG rink, heat map, player filter
@@ -77,7 +81,9 @@ canes-analytics-starter/
 │       ├── cache.js              # Module-level TTL cache, in-flight dedup
 │       ├── carContracts.js       # Static CAR contract + draft pick data
 │       ├── predictionStore.js    # localStorage game prediction tracker
-│       └── liveClockStore.js     # Shared pub/sub for synced countdown clock
+│       ├── supabaseClient.js     # Supabase read-only client + data fetchers
+│       ├── DevGameContext.js     # Dev-only context for live game injection
+│       └── liveClockStore.js     # Shared pub/sub for synced clock + momentum
 ├── src/utils/*.test.js           # Vitest unit tests
 ├── .github/workflows/ci.yml      # GitHub Actions: test + build on push
 ├── SMOKE_TESTS.md                # Manual pre-merge checklist
@@ -159,6 +165,12 @@ A separate Cloudflare Worker polls the NHL API every 60 seconds and writes to KV
 - Live polling: 10s during games, 5min otherwise
 - Countdown clock: ticks in real-time between polls
 
+### Momentum Card
+- Rolling shot attempt share (Corsi%) over selectable window (5m / 10m / full game)
+- Waveform showing momentum swings across all periods with period dividers
+- Compact momentum bar in topbar during live games (publishes via `liveClockStore`)
+- Auto-collapses "EyeWall Analytics" text in topbar during live games to make room
+
 ### Live Insights Panel
 Auto-generated contextual callouts from PBP data, shown during live games and as post-game "Game Insights":
 - Shot advantage by period (e.g. "CAR dominated P2 shots 18–6")
@@ -167,6 +179,7 @@ Auto-generated contextual callouts from PBP data, shown during live games and as
 - PK performance (perfect kills highlighted)
 - Score situation alerts (tied game, big lead, late deficit)
 - Empty net detection
+- **Auto-collapse** during live games (expands on new insight, collapses after 8s, tap to re-expand)
 
 ### Metrics Row (5 cards)
 - **Shots on Goal** — CAR vs opponent, drill-down by player
@@ -232,11 +245,10 @@ Each player popup has three tabs:
   - Teammates (on-ice vs off-ice xGF% delta)
 - Color-coded bars: green ≥67th, amber 33–66th, red ≤33rd
 
-**🎯 Heat Map** — Season shot locations on the rink:
-- All shots aggregated across completed games
-- Filter chips: All / Goals / SOG / Missed
-- Summary: Goals, SOG, missed, total, SH%
-- Data builds up game by game via Worker shot aggregation
+**🎯 Heat Map** — Shot location maps per player:
+- **Skaters** — CAR shot locations; filter by all/goals/SOG/missed; summary stats
+- **Goalies** — shots faced (team='OPP' in `shot_events`); dot map + zone SV% toggle; shooter perspective; color-coded zones (green = strong, red = weak)
+- Data sourced from Supabase `shot_events` table (nightly pipeline, includes `goalie_id`)
 
 ### News Page
 - 5 sources: Canes Country (Atom), Google News RSS, ESPN, Sportsnet, Reddit r/canes
@@ -277,9 +289,31 @@ Blended 60/40 with market odds when available. Same function used by both game c
 
 ---
 
+## Data Pipeline (`eyewall-pipeline`)
+
+A separate Python pipeline runs nightly via GitHub Actions (3 AM ET) and populates Supabase with NHL and MoneyPuck data.
+
+**Repo:** `github.com/ehlersio/eyewall-pipeline`
+
+| Module | Description |
+|--------|-------------|
+| `run.py` | Orchestrator — runs all three modules |
+| `nhl_stats.py` | Rosters, skater/goalie/team stats, game log → Supabase |
+| `moneypuck.py` | WAR + percentiles (skaters), GSAX + danger-zone SV% (goalies) → Supabase |
+| `shot_events.py` | Shot coordinates from PBP → `shot_events` table (CAR shots + shots against with `goalie_id`) |
+| `db.py` | Supabase client + upsert helper |
+
+**Supabase tables:** `players`, `player_seasons`, `goalie_seasons`, `team_seasons`, `shot_events`, `game_log`
+
+All tables store both regular season (`game_type=2`) and playoff (`game_type=3`) data. Historical seasons are preserved — new seasons add rows without overwriting.
+
+---
+
 ## MoneyPuck Analytics
 
-The Worker fetches `https://moneypuck.com/moneypuck/playerData/seasonSummary/2025/regular/skaters.csv` nightly and computes analytics for all CAR players. The CSV has 154 columns per player across multiple situations (`5on5`, `powerPlay`, `penaltyKill`, `all`).
+The pipeline fetches `skaters.csv` and `goalies.csv` from MoneyPuck nightly and computes analytics for all NHL players, stored in Supabase.
+
+**Skater analytics** (`player_seasons` table):
 
 **WAR methodology** (simplified approximation — not full prior-informed RAPM):
 1. On-ice xGF/60 and xGA/60 at 5-on-5 compared to positional league average
@@ -289,7 +323,15 @@ The Worker fetches `https://moneypuck.com/moneypuck/playerData/seasonSummary/202
 5. Convert to wins using ~5.4 goals per win
 6. Add replacement level baseline (~+0.5 per 82 games)
 
-**Note:** This is clearly labeled as an approximation. True RAPM requires shift-level ridge regression (~600k rows/season) which is beyond browser/Worker compute capacity.
+PP/PK percentiles use `onIce_xGoalsPercentage` at 5on4/4on5 respectively (min 300s ice time).
+
+**Goalie analytics** (`goalie_seasons` table):
+- **GSAX** — flurry-adjusted xGoals minus actual goals against (positive = better than expected)
+- **GSAX/60** — rate-adjusted
+- **5on5 SV%**, **High/Medium danger SV%**, **PK SV%** — from MoneyPuck situation splits
+- All metrics include percentile rankings vs all NHL goalies (min 10 GP)
+
+**Note:** Skater WAR is clearly labeled as an approximation. True RAPM requires shift-level ridge regression (~600k rows/season) which is beyond browser/Worker compute capacity.
 
 ---
 
@@ -302,8 +344,10 @@ The Worker fetches `https://moneypuck.com/moneypuck/playerData/seasonSummary/202
 | Team logos, headshots | NHL Assets (`assets.nhle.com`) | Cached |
 | Salary cap, contracts | Static `carContracts.js` (PuckPedia) | Manual |
 | Game summaries | Claude Haiku (Anthropic) | On game completion |
-| Shot heat map data | Aggregated from NHL PBP | After each game |
-| WAR + percentiles | MoneyPuck.com CSV | Nightly |
+| Player/goalie/team stats | NHL API → Supabase via pipeline | Nightly (3 AM ET) |
+| Shot events (all NHL at CAR) | NHL PBP → Supabase via pipeline | Nightly |
+| Skater WAR + percentiles | MoneyPuck.com CSV → Supabase | Nightly |
+| Goalie GSAX + percentiles | MoneyPuck.com CSV → Supabase | Nightly |
 | News | Canes Country, Google News, ESPN, Sportsnet, r/canes | 30 min |
 
 **Cap data last updated:** May 2026 · Source: PuckPedia
@@ -329,7 +373,12 @@ npm run test:watch
 npm run build
 ```
 
-**Environment variables** — copy `.env.local.example` to `.env.local`:
+**Dev tools** — visit `http://localhost:5173/dev` for the live game replay scrubber:
+- Load any completed game by ID or pick from recent CAR games
+- Scrub through the game or play at 10s–5m/s speed
+- Period markers on the scrubber for quick jumps (P2, P3, OT)
+- All live UI responds: topbar score/period/clock, momentum card, live insights, win popup
+- Dev-only — completely absent from production build (`import.meta.env.DEV` guard)
 
 ```
 VITE_WORKER_URL=https://eyewall-poller.billowing-queen-bf23.workers.dev
@@ -398,9 +447,12 @@ CI runs `npm test` + `npm run build` on every push to `main` or `dev` via GitHub
 | **FF%** | CAR unblocked attempts ÷ total unblocked | Excludes shot-blocking luck |
 | **PDO** | (SH% + SV%) × 100 | League avg = 100; far from 100 = luck |
 | **Puck Luck** | Actual GF − expected GF from shot share | Positive = scoring above shot quality |
-| **GSAx** | Saves − (shots × .900) | Goals saved vs league-average goaltending |
+| **GSAx** | Saves − (shots × .900) | Game-level estimate; real GSAX used from Supabase when available |
+| **GSAX** | Flurry-adjusted xGoals − actual goals against | MoneyPuck model; accounts for shot quality and volume |
 | **WAR** | Goals above average ÷ goals per win | Approximate — xGoals model, not full RAPM |
 | **xGF%** | On-ice expected goals for ÷ total | Possession quality metric |
+| **GSAX/$M** | Season GSAX ÷ cap hit in $M | Goalie contract value — quality-adjusted |
+| **Blended value** | (Points/$M × 0.6) + (WAR/$M scaled × 0.4) | Skater contract value — rewards two-way play |
 
 ---
 
@@ -412,6 +464,8 @@ CI runs `npm test` + `npm run build` on every push to `main` or `dev` via GitHub
 - **WAR approximation:** True RAPM requires shift-level ridge regression not feasible in Workers. Current WAR uses xGoals above average as a proxy.
 - **32-team expansion:** Currently CAR-only. Infrastructure is parameterized for expansion.
 - **X/Twitter posting:** Code is built and tested. Requires Basic tier ($100/mo) to post.
+- **Opponent goalie GSAX:** Only CAR goalies have Supabase GSAX; opposing goalies fall back to estimated game-level GSAx.
+- **Playoff analytics:** MoneyPuck only provides regular season data. PP/PK percentiles and WAR reflect regular season only.
 
 ---
 
@@ -423,6 +477,7 @@ CI runs `npm test` + `npm run build` on every push to `main` or `dev` via GitHub
 - [ ] Threads/Instagram posting (pending Meta developer access)
 - [ ] Weekly digest card
 - [ ] True RAPM (would require separate Python compute service)
+- [ ] Year-over-year player comparison view (data already stored by season)
 
 ---
 

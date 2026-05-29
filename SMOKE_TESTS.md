@@ -43,8 +43,68 @@ Run through this before merging `dev` → `main`.
 - [ ] Topbar shows live score
 - [ ] Countdown clock ticks in real time
 - [ ] Topbar and Shot Map clocks are in sync
+- [ ] Topbar shows period (e.g. P2)
+- [ ] "EyeWall Analytics" text hides in topbar during live game (logo only)
+- [ ] Momentum bar appears in topbar below score row
 - [ ] Shot dots appear on the rink
 - [ ] MetCards update between polls
+- [ ] Live Insights card collapses after ~8 seconds
+- [ ] Tapping collapsed Live Insights card re-expands it
+- [ ] Chevron rotates on expand/collapse
+
+## Momentum Card
+- [ ] Momentum card appears below Shot Attempts card
+- [ ] Bar shows CAR vs OPP shot attempt share
+- [ ] 5m / 10m / Full window buttons update the bar
+- [ ] Waveform renders (no blur on retina screens)
+- [ ] Period divider lines visible on waveform
+
+## Players — Analytics Tab
+- [ ] Skater analytics tab loads for a forward (shows WAR, 10 percentile bars)
+- [ ] Power Play and Penalty Kill bars show a value (not N/A) for PP/PK players
+- [ ] PP/PK bars show N/A for players with no special teams time
+- [ ] Goalie analytics tab loads (shows GSAX, 6 percentile bars)
+- [ ] GSAX headline shows correct sign (+/-)
+
+## Players — Heat Map Tab
+- [ ] Skater heat map renders shot dots
+- [ ] Goalie heat map renders in dot map mode
+- [ ] Goalie heat map zone SV% toggle works
+- [ ] Zone colors visible against ice background
+- [ ] Zone text (SV% + shot count) readable
+- [ ] SV% displayed as decimal (e.g. 0.918 not 91.8%)
+
+## Players — Contract Value
+- [ ] Skater value badge shows "blended/$M" when WAR data available
+- [ ] Skater value badge shows "pts/$M" fallback for players without WAR
+- [ ] Goalie value badge shows "GSAX +X/$M" format
+- [ ] ELC players show "ELC — value score N/A"
+- [ ] Tooltip explains blended methodology
+
+## Players — Stats Tab
+- [ ] Regular Season / Playoffs toggle appears
+- [ ] Switching to Playoffs shows playoff stats or "No playoff stats yet" message
+
+## Shot Map — Goalies
+- [ ] Goalie card shows GSAX (real value) for CAR goalies
+- [ ] GSAX tooltip mentions "regular season" and GP count
+- [ ] Opposing goalie falls back to estimated GSAx
+
+## Blocks Drill-Down
+- [ ] Tapping Blocks MetCard shows drill-down
+- [ ] CAR table contains only CAR players (no OPP players in list)
+
+## Dev Replay (/dev — local only)
+- [ ] `/dev` route loads without error
+- [ ] Recent CAR games appear as quick-pick buttons
+- [ ] Loading a game ID populates the scrubber
+- [ ] Scrubbing updates score in topbar
+- [ ] Play button advances the game
+- [ ] Period markers (P2, P3) appear below scrubber and are clickable
+- [ ] Topbar shows period and clock
+- [ ] Win popup fires when scrubbing to end of a CAR win
+- [ ] Clock shows correctly (no phantom OT after regulation games)
+- [ ] `/dev` route returns 404 or blank on production
 
 ## Notifications
 - [ ] Bell icon visible in Topbar
