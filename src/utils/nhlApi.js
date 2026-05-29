@@ -681,6 +681,7 @@ export async function getTeamTopPlayers(teamAbbr, gameType = 2) {
       .sort((a, b) => (b.wins ?? 0) - (a.wins ?? 0))
       .slice(0, 2)
       .map(g => ({
+        playerId:     g.playerId,
         name:         `${g.firstName?.default || ''} ${g.lastName?.default || ''}`.trim(),
         wins:         g.wins ?? 0,
         savePct:      g.savePercentage ?? g.savePctg ?? null,

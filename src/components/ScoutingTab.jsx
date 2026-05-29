@@ -4,6 +4,7 @@ import {
   TEAM_COLORS,
 } from '../utils/nhlApi';
 import { computeGSAx } from '../utils/advancedStats';
+import { getGoalieAnalytics } from '../utils/supabaseClient';
 import TeamLogo from './TeamLogo';
 import InfoTip from './InfoTip';
 import './ScoutingTab.css';
@@ -58,7 +59,7 @@ function CompareRow({ label, carVal, oppVal, higherBetter = true, fmt = v => v?.
 
 
 // Player table for one team
-function PlayerTable({ players, loading, color }) {
+function PlayerTable({ players, loading, color, goalieAnalytics }) {
   if (loading) return <div className="scouting-loading">Loading…</div>;
   if (!players?.skaters?.length) return <div className="scouting-empty">No data</div>;
   return (
@@ -80,7 +81,20 @@ function PlayerTable({ players, loading, color }) {
         <>
           <div className="scouting-goalie-divider">Goalies</div>
           {players.goalies.map((g, i) => {
-            const gsax  = computeGSAx(g.shotsAgainst, g.saves);
+            // Use real GSAX from Supabase if available, fall back to estimate
+            const seasonData  = goalieAnalytics?.[String(g.playerId)] || null;
+            const realGsax    = seasonData?.gsax ?? null;
+            const realGp      = seasonData?.gp ?? null;
+            const estGsax     = computeGSAx(g.shotsAgainst, g.saves);
+            const gsaxColor   = realGsax != null
+              ? realGsax >= 5 ? 'var(--green)' : realGsax >= 0 ? 'var(--text-muted)' : 'var(--red-bright)'
+              : estGsax?.color;
+            const gsaxLabel   = realGsax != null
+              ? `${realGsax > 0 ? '+' : ''}${realGsax}`
+              : estGsax?.label ?? '—';
+            const gsaxNote    = realGsax != null
+              ? `Regular season goals saved above expected (MoneyPuck flurry-adjusted model). ${realGp ? `${realGp} GP this season.` : ''}`
+              : (estGsax?.note || 'Goals saved above expected vs league avg .900 SV%');
             const svFmt = g.savePct != null && g.savePct > 0
               ? (g.savePct <= 1 ? g.savePct.toFixed(3) : (g.savePct / 100).toFixed(3))
               : '—';
@@ -98,10 +112,10 @@ function PlayerTable({ players, loading, color }) {
                   </div>
                   <div className="scouting-goalie-stat">
                     <span className="scouting-goalie-label">
-                      GSAx <InfoTip text={gsax?.note || 'Goals saved above expected vs league avg .900 SV%'} position="above" />
+                      GSAX <InfoTip text={gsaxNote} position="above" />
                     </span>
-                    <span className="scouting-goalie-val" style={{color: gsax?.color}}>
-                      {gsax ? gsax.label : '—'}
+                    <span className="scouting-goalie-val" style={{color: gsaxColor}}>
+                      {gsaxLabel}
                     </span>
                   </div>
                 </div>
@@ -135,6 +149,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
   );
   const { data: carStats } = useFetch(() => getTeamStats('CAR'), ['CAR']);
   const { data: oppStats } = useFetch(() => getTeamStats(oppAbbr), [oppAbbr]);
+  const { data: goalieAnalytics } = useFetch(() => getGoalieAnalytics());
 
 
   const pctFmt  = v => v != null ? `${(v * 100).toFixed(1)}%` : '—';
@@ -230,11 +245,11 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
         <div className="scouting-players-row">
           <div className="scouting-players-col">
             <div className="scouting-players-team" style={{color: carColor}}>CAR</div>
-            <PlayerTable players={carTopPlayers} loading={carPlayersLoading} color={carColor} />
+            <PlayerTable players={carTopPlayers} loading={carPlayersLoading} color={carColor} goalieAnalytics={goalieAnalytics} />
           </div>
           <div className="scouting-players-col">
             <div className="scouting-players-team" style={{color: oppColor}}>{oppAbbr}</div>
-            <PlayerTable players={oppTopPlayers} loading={oppPlayersLoading} color={oppColor} />
+            <PlayerTable players={oppTopPlayers} loading={oppPlayersLoading} color={oppColor} goalieAnalytics={goalieAnalytics} />
           </div>
         </div>
       </div>
