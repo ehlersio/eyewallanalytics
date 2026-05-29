@@ -8,7 +8,7 @@ import {
   bustLiveGameCache, TEAM_COLORS, GAME_TYPE,
 } from '../utils/nhlApi';
 import IceRink from '../components/IceRink';
-import { GoalPopup, PenaltyPopup, WinPopup, useGameEvents } from '../components/GameEvents';
+import { GoalPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import { getGoalieAnalytics } from '../utils/supabaseClient';
 import InfoTip from '../components/InfoTip';
@@ -239,7 +239,7 @@ export default function ShotMapView() {
   const playerMapForEvents = pbp ? buildPlayerMap(pbp) : {};
   const strMapForEvents = {};
   Object.entries(playerMapForEvents).forEach(([k,v]) => { strMapForEvents[String(k)] = v; });
-  const { goalPopup, clearGoalPopup, penaltyPopup, clearPenaltyPopup, winPopup, clearWinPopup } =
+  const { goalPopup, clearGoalPopup, penaltyPopup, clearPenaltyPopup, winPopup, clearWinPopup, puckDropPopup, clearPuckDropPopup } =
     useGameEvents(pbp, isLive, strMapForEvents, gameHome);
 
   // ── Debug panel (5 taps on score bar, dev only) ──────────────
@@ -249,6 +249,7 @@ export default function ShotMapView() {
   const [debugGoalPopup,    setDebugGoalPopup]    = useState(null);
   const [debugPenaltyPopup, setDebugPenaltyPopup] = useState(null);
   const [debugWinPopup,     setDebugWinPopup]     = useState(null);
+  const [debugPuckDropPopup, setDebugPuckDropPopup] = useState(null);
   const [debugSituation,    setDebugSituation]    = useState(null);
 
   const handleDebugTap = () => {
@@ -978,6 +979,7 @@ export default function ShotMapView() {
       </div>
     </div>
     {drillStat     && <StatDrillPopup drillStat={drillStat} onClose={() => setDrillStat(null)} oppAbbr={oppAbbr} />}
+    {puckDropPopup && <PuckDropPopup data={puckDropPopup}  onClose={clearPuckDropPopup} />}
     {goalPopup     && <GoalPopup    data={goalPopup}       onClose={clearGoalPopup}    />}
     {penaltyPopup  && <PenaltyPopup data={penaltyPopup}    onClose={clearPenaltyPopup} />}
     {winPopup      && <WinPopup     data={winPopup}        onClose={clearWinPopup}     />}
@@ -986,6 +988,7 @@ export default function ShotMapView() {
     {debugGoalPopup    && <GoalPopup    data={debugGoalPopup}    onClose={() => setDebugGoalPopup(null)}    />}
     {debugPenaltyPopup && <PenaltyPopup data={debugPenaltyPopup} onClose={() => setDebugPenaltyPopup(null)} />}
     {debugWinPopup     && <WinPopup     data={debugWinPopup}     onClose={() => setDebugWinPopup(null)}     />}
+    {debugPuckDropPopup && <PuckDropPopup data={debugPuckDropPopup} onClose={() => setDebugPuckDropPopup(null)} />}
 
     {/* ── Debug panel (5 taps on score bar) ── */}
     {debugOpen && (
@@ -997,6 +1000,10 @@ export default function ShotMapView() {
             setDebugGoalPopup({ scorer: 'Sebastian Aho', assists: ['Andrei Svechnikov', 'Jaccob Slavin'], shotType: 'Wrist', period: 'P2', time: '14:32' });
             setDebugOpen(false);
           }}>🚨 CAR Goal</button>
+          <button className="debug-btn" style={{ background: 'rgba(204,34,0,0.15)', color: 'var(--red-bright)' }} onClick={() => {
+            setDebugPuckDropPopup({ gameId: 'debug' });
+            setDebugOpen(false);
+          }}>🏒 Puck Drop</button>
           <button className="debug-btn penalty" onClick={() => {
             setDebugPenaltyPopup({ id: 'debug-1', player: 'Brad Marchand', description: 'Hooking', duration: 2, period: 'P2', time: '08:17' });
             setDebugOpen(false);

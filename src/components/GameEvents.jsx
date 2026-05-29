@@ -1,6 +1,31 @@
 import { useState, useEffect, useRef } from 'react';
 import './GameEvents.css';
 
+// ── Puck Drop Popup ───────────────────────────────────────────
+export function PuckDropPopup({ data, onClose }) {
+  useEffect(() => {
+    if (!data) return;
+    const t = setTimeout(onClose, 6000);
+    return () => clearTimeout(t);
+  }, [data]);
+
+  if (!data) return null;
+  return (
+    <div className="game-event-overlay" onClick={onClose}>
+      <div className="puck-drop-popup">
+        <div className="puck-drop-siren">🚨</div>
+        <div className="puck-drop-title">PUCK DROP</div>
+        <div className="puck-drop-text">
+          Pucks in deep. Pucks on net.<br />
+          Win the battles.<br />
+          Here we go, boys!
+        </div>
+        <div className="event-dismiss">tap to dismiss</div>
+      </div>
+    </div>
+  );
+}
+
 // ── Goal horn ─────────────────────────────────────────────────
 function playGoalHorn() {
   try {
@@ -115,8 +140,10 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
   const [goalPopup,    setGoalPopup]    = useState(null);
   const [penaltyPopup, setPenaltyPopup] = useState(null);
   const [winPopup,     setWinPopup]     = useState(null);
+  const [puckDropPopup, setPuckDropPopup] = useState(null);
 
   const gameId = pbp?.id ? String(pbp.id) : null;
+  const puckDropFired = useRef(false);
 
   // Persist lastPlayIdx to sessionStorage so manual refreshes don't retrigger old events
   const lastPlayIdx  = useRef(
@@ -202,6 +229,19 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
     }
   }, [pbp?.plays?.length, isLive]);
 
+  // Puck drop detection — fires once when game goes live in P1
+  useEffect(() => {
+    if (!isLive || puckDropFired.current) return;
+    if (!pbp?.plays?.length) return;
+    const period = pbp.periodDescriptor?.number;
+    if (period !== 1) return; // only fire at game start, not OT
+    const sessionKey = `puckdrop_shown_${gameId}`;
+    if (gameId && sessionStorage.getItem(sessionKey)) return;
+    puckDropFired.current = true;
+    if (gameId) sessionStorage.setItem(sessionKey, '1');
+    setPuckDropPopup({ gameId });
+  }, [isLive, pbp?.plays?.length]);
+
   // Win detection — use PBP gameState directly, not isLive
   // This catches wins in OT where isLive may already be false
   useEffect(() => {
@@ -228,8 +268,9 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
   }, [pbp?.gameState, pbp?.plays?.length]);
 
   return {
-    goalPopup,    clearGoalPopup:    () => setGoalPopup(null),
-    penaltyPopup, clearPenaltyPopup: () => setPenaltyPopup(null),
-    winPopup,     clearWinPopup:     () => setWinPopup(null),
+    goalPopup,     clearGoalPopup:     () => setGoalPopup(null),
+    penaltyPopup,  clearPenaltyPopup:  () => setPenaltyPopup(null),
+    winPopup,      clearWinPopup:      () => setWinPopup(null),
+    puckDropPopup, clearPuckDropPopup: () => setPuckDropPopup(null),
   };
 }
