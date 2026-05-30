@@ -306,15 +306,32 @@ A separate Python pipeline runs nightly via GitHub Actions (3 AM ET) and populat
 
 | Module | Description |
 |--------|-------------|
-| `run.py` | Orchestrator — runs all three modules |
+| `run.py` | Orchestrator — runs all modules in dependency order |
 | `nhl_stats.py` | Rosters, skater/goalie/team stats, game log → Supabase |
-| `moneypuck.py` | WAR + percentiles (skaters), GSAX + danger-zone SV% (goalies) → Supabase |
-| `shot_events.py` | Shot coordinates from PBP → `shot_events` table (CAR shots + shots against with `goalie_id`) |
-| `db.py` | Supabase client + upsert helper |
+| `shot_events.py` | League-wide shot coordinates from PBP → `shot_events` table |
+| `shift_data.py` | League-wide shift charts → `shift_events` table |
+| `zone_starts.py` | Per-player OZ/DZ/NZ start counts from PBP faceoffs → `zone_starts` table |
+| `rapm.py` | 3-year rolling ridge regression RAPM → `player_seasons.rapm` |
+| `moneypuck.py` | WAR (RAPM-derived EV + PP/PK/finishing) + percentiles + goalie GSAX → Supabase |
 
-**Supabase tables:** `players`, `player_seasons`, `goalie_seasons`, `team_seasons`, `shot_events`, `game_log`
+**Run order:** `nhl_stats → shot_events → shift_data → zone_starts → rapm → moneypuck`
+
+**Supabase tables:** `players`, `player_seasons`, `goalie_seasons`, `team_seasons`, `shot_events`, `shift_events`, `zone_starts`, `game_log`, `rapm_validation`
 
 All tables store both regular season (`game_type=2`) and playoff (`game_type=3`) data. Historical seasons are preserved — new seasons add rows without overwriting.
+
+### RAPM methodology (beta)
+
+True Regularized Adjusted Plus-Minus via ridge regression:
+
+- **Pool:** 3-year rolling window (~420k 5v5 shot events across all 32 teams)
+- **Formulation:** Signed xG — positive for reference team, negative for opponent. Measures xG *differential* so forwards and defensemen are treated symmetrically.
+- **Zone-start adjustment:** Players with DZ-heavy deployment get upward weight. `weight = 1.0 + (0.50 - OZS%) × 0.5`
+- **Score-state adjustment:** Pending (requires `home_team` column in `shot_events` for non-CAR games)
+- **Ridge alpha:** 2500 (standard starting point — will be tuned after 3+ full seasons)
+- **Minimum sample:** 150 minutes EV ice time across 3-season pool
+- **Validation:** Quarterly correlation vs Evolving Hockey public RAPM (target r ≥ 0.85)
+- **Labeled beta in UI** — zone-start data still being refined; defensive defensemen may be slightly undervalued in current model
 
 ---
 
@@ -324,13 +341,15 @@ The pipeline fetches `skaters.csv` and `goalies.csv` from MoneyPuck nightly and 
 
 **Skater analytics** (`player_seasons` table):
 
-**WAR methodology** (simplified approximation — not full prior-informed RAPM):
-1. On-ice xGF/60 and xGA/60 at 5-on-5 compared to positional league average
-2. Multiply by EV ice time to get goals above average
-3. Add penalty impact (0.11 goals per penalty minute, from TopDownHockey methodology)
-4. Add individual finishing (goals vs xGoals)
-5. Convert to wins using ~5.4 goals per win
-6. Add replacement level baseline (~+0.5 per 82 games)
+**WAR methodology** (RAPM-derived, beta):
+1. **EV component** — 5v5 RAPM coefficient × EV ice time hours (ridge regression, 3-year rolling pool)
+2. **PP component** — PP xGF/60 above average × PP ice time (MoneyPuck)
+3. **PK component** — PK xGA/60 below average × PK ice time (MoneyPuck)
+4. **Finishing** — goals above xGoals × 0.3 (individual finishing luck/skill)
+5. **Penalties** — penalty minutes × 0.11 goals × 0.3
+6. Convert to wins: sum ÷ 5.4 + 0.5 (replacement level)
+
+Falls back to xGoals-above-average for players without RAPM data (rare).
 
 PP/PK percentiles use `onIce_xGoalsPercentage` at 5on4/4on5 respectively (min 300s ice time).
 
@@ -339,8 +358,6 @@ PP/PK percentiles use `onIce_xGoalsPercentage` at 5on4/4on5 respectively (min 30
 - **GSAX/60** — rate-adjusted
 - **5on5 SV%**, **High/Medium danger SV%**, **PK SV%** — from MoneyPuck situation splits
 - All metrics include percentile rankings vs all NHL goalies (min 10 GP)
-
-**Note:** Skater WAR is clearly labeled as an approximation. True RAPM requires shift-level ridge regression (~600k rows/season) which is beyond browser/Worker compute capacity.
 
 ---
 
@@ -458,7 +475,8 @@ CI runs `npm test` + `npm run build` on every push to `main` or `dev` via GitHub
 | **Puck Luck** | Actual GF − expected GF from shot share | Positive = scoring above shot quality |
 | **GSAx** | Saves − (shots × .900) | Game-level estimate; real GSAX used from Supabase when available |
 | **GSAX** | Flurry-adjusted xGoals − actual goals against | MoneyPuck model; accounts for shot quality and volume |
-| **WAR** | Goals above average ÷ goals per win | Approximate — xGoals model, not full RAPM |
+| **WAR** | RAPM EV component × EV hours ÷ 5.4 + PP/PK/finishing + 0.5 | Beta — RAPM-derived EV, xGoals PP/PK |
+| **RAPM** | Ridge regression marginal xG/60 at 5v5 | Beta — zone-start adjusted, score-state pending |
 | **xGF%** | On-ice expected goals for ÷ total | Possession quality metric |
 | **GSAX/$M** | Season GSAX ÷ cap hit in $M | Goalie contract value — quality-adjusted |
 | **Blended value** | (Points/$M × 0.6) + (WAR/$M × 6 × 0.4) | Skater contract value — rewards two-way play |
@@ -471,7 +489,8 @@ CI runs `npm test` + `npm run build` on every push to `main` or `dev` via GitHub
 - **Cron minimum:** 1-minute polling intervals — live data is 0–60s behind NHL API.
 - **Cap data:** NHL API doesn't expose salary. Static file requires manual updates.
 - **iOS push:** Requires Add to Home Screen — browser-tab Safari cannot receive Web Push.
-- **WAR approximation:** True RAPM requires shift-level ridge regression not feasible in Workers. Current WAR uses xGoals above average as a proxy.
+- **WAR/RAPM beta:** 5v5 RAPM-derived WAR is a meaningful improvement over raw on-ice numbers but zone-start adjustment is still being refined. Score-state adjustment pending (requires `home_team` in league-wide `shot_events`). Defensive defensemen with heavy DZ deployment may be slightly undervalued. Validated periodically vs Evolving Hockey public RAPM.
+- **Cross-team players:** Players traded mid-season have RAPM coefficients reflecting their entire 3-year history, not just their current team's system. Values will converge over time as current-team data accumulates.
 - **32-team expansion:** Currently CAR-only. Infrastructure is parameterized for expansion.
 - **X/Twitter posting:** Code is built and tested. Requires Basic tier ($100/mo) to post.
 - **Opponent goalie GSAX:** Only CAR goalies have Supabase GSAX; opposing goalies fall back to estimated game-level GSAx.
@@ -486,9 +505,11 @@ CI runs `npm test` + `npm run build` on every push to `main` or `dev` via GitHub
 - [ ] X/Twitter auto-posting (when Basic tier active)
 - [ ] Threads/Instagram posting (pending Meta developer access)
 - [ ] Weekly digest card
-- [ ] True RAPM (would require separate Python compute service)
+- [ ] RAPM score-state adjustment (add `home_team` to league-wide `shot_events`)
+- [ ] RAPM alpha tuning via cross-validation (after 3+ full seasons of data)
+- [ ] RAPM validation chip in UI (`r=X.XX vs EH`) surfacing `rapm_validation` table
 - [ ] Year-over-year player comparison view (data already stored by season)
-- [ ] NHL EDGE zone time endpoint integration (`/v1/edge/team-zone-time-details/{team-id}/now`) for live territorial data to improve Momentum card further
+- [ ] NHL EDGE zone time endpoint integration for live Momentum card improvement
 
 ---
 

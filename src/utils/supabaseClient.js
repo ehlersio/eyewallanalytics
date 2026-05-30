@@ -44,16 +44,16 @@ export async function getPlayerAnalytics(season = 20252026) {
       ppToi:      r.pp_xgf60 != null ? 1 : 0, // presence flag — actual TOI not stored
       pkToi:      r.pk_xga60_inv != null ? 1 : 0,
       percentiles: {
-        evOff:     { pct: r.pct_ev_off,     label: 'EV Offence',   note: 'On-ice xGF% at 5-on-5' },
-        evDef:     { pct: r.pct_ev_def,     label: 'EV Defence',   note: 'On-ice xGA/60 at 5-on-5' },
-        pp:        { pct: r.pct_pp,         label: 'Power Play',   note: 'On-ice xGoals% on the power play — share of expected goals going CAR\'s way at 5on4' },
-        pk:        { pct: r.pct_pk,         label: 'Penalty Kill', note: 'On-ice xGoals% while shorthanded — higher means suppressing danger and generating more offence even at 4on5' },
-        finishing: { pct: r.pct_finishing,  label: 'Finishing',    note: 'Goals above xGoals per 60' },
-        goals:     { pct: r.pct_goals,      label: 'Goals',        note: 'Goals per 60 min' },
-        a1:        { pct: r.pct_a1,         label: '1st Assists',  note: 'Primary assists per 60 min' },
-        penalties: { pct: r.pct_penalties,  label: 'Penalties',    note: 'Penalty discipline' },
-        comp:      { pct: r.pct_competition,label: 'Competition',  note: 'Quality of competition faced' },
-        teammates: { pct: r.pct_teammates,  label: 'Teammates',    note: 'On-ice vs off-ice xGF% delta' },
+        evOff:     { pct: r.pct_ev_off,      label: 'EV Offence',   note: 'On-ice expected goals for % at 5-on-5. Measures how often your team generates quality chances when this player is on the ice. Above 50% = your team outshoots in quality. Percentile vs all NHL players at same position.' },
+        evDef:     { pct: r.pct_ev_def,      label: 'EV Defence',   note: 'On-ice expected goals against per 60 at 5-on-5 (lower is better, inverted so higher = better defender). How many quality chances does the opponent generate when this player is on the ice? Percentile vs all NHL players at same position.' },
+        pp:        { pct: r.pct_pp,          label: 'Power Play',   note: 'Power play expected goals for per 60 minutes. Measures offensive contribution on the man advantage. N/A = not enough PP ice time for a reliable number (min 300 seconds). Percentile vs all NHL players at same position.' },
+        pk:        { pct: r.pct_pk,          label: 'Penalty Kill', note: 'Penalty kill expected goals against per 60 minutes (lower is better, inverted). How well does this player suppress scoring chances while killing a penalty? Note: this metric does not adjust for the quality of opposing power plays — players who kill penalties against elite PP units (like McDavid\'s) will appear worse than players with lighter usage. N/A = not enough PK ice time (min 300 seconds). Percentile vs all NHL players at same position.' },
+        finishing: { pct: r.pct_finishing,   label: 'Finishing',    note: 'Goals scored above what their shot quality predicts per 60 minutes. Positive = consistently beats goalies beyond expectations. Negative = getting unlucky or taking poor shot selections. Filters out shot quality so only pure shooting talent remains. Percentile vs all NHL players at same position.' },
+        goals:     { pct: r.pct_goals,       label: 'Goals',        note: 'Goals scored per 60 minutes of ice time. Removes the effect of playing time — a player with 10 goals in 12 min/game scores at a very different rate than 10 goals in 22 min/game. Percentile vs all NHL players at same position.' },
+        a1:        { pct: r.pct_a1,          label: '1st Assists',  note: 'Primary (first) assists per 60 minutes. First assists directly set up the goal and are more meaningful than secondary assists. A high rate reflects strong playmaking. Percentile vs all NHL players at same position.' },
+        penalties: { pct: r.pct_penalties,   label: 'Penalties',    note: 'Penalty discipline: penalties drawn minus penalties taken, per 60 minutes. Higher is better — drawing penalties gives your team a power play; taking them gives the opponent one. Percentile vs all NHL players at same position.' },
+        comp:      { pct: r.pct_competition, label: 'Competition',  note: 'Quality of opponents faced — average on-ice rating of opposing players. High percentile = plays against the toughest competition in the league. Good stats against tough competition are more impressive than the same stats against easy matchups.' },
+        teammates: { pct: r.pct_teammates,   label: 'Teammates',    note: 'Team performance with this player on ice vs. off ice (xGF% delta). Positive = team generates better shot quality with them on the ice. Filters out team quality so you can see an individual\'s actual effect on their linemates.' },
       },
     };
   }
@@ -61,16 +61,18 @@ export async function getPlayerAnalytics(season = 20252026) {
 }
 
 // ── Player shot events ────────────────────────────────────────
-// Returns shot data for one player in the shape the heat map expects.
+// Returns shot data for one CAR player's shots.
+// car_game=true ensures we only get shots from CAR games.
+// team=CAR ensures we get the shooter (not opponent) rows.
 export async function getPlayerShots(playerId, season = 20252026) {
   const rows = await sbFetch(
     `shot_events?player_id=eq.${playerId}&season=eq.${season}` +
-    `&select=x,y,event_type,period,time_in_period,shot_type&limit=1000`
+    `&car_game=eq.true&team=eq.CAR` +
+    `&select=x,y,event_type,period,time_in_period,shot_type&limit=2000`
   );
 
   if (!rows.length) return null;
 
-  // Convert to compact format matching existing heat map component
   const typeMap = {
     'goal':         'g',
     'shot-on-goal': 's',
@@ -86,7 +88,39 @@ export async function getPlayerShots(playerId, season = 20252026) {
       p:  r.period,
       st: r.shot_type,
     })),
-    games: null, // we don't store this separately
+    games: null,
+  };
+}
+
+// ── Goalie shot events ────────────────────────────────────────
+// Returns shots faced by a specific goalie (for heat map).
+// car_game=true + goalie_id filter = shots against CAR goalies.
+// For opposing goalies: no car_game filter, just goalie_id.
+export async function getGoalieShots(goalieId, season = 20252026) {
+  const rows = await sbFetch(
+    `shot_events?goalie_id=eq.${goalieId}&season=eq.${season}` +
+    `&car_game=eq.true` +
+    `&select=x,y,event_type,period,time_in_period,shot_type,team&limit=2000`
+  );
+
+  if (!rows.length) return null;
+
+  const typeMap = {
+    'goal':         'g',
+    'shot-on-goal': 's',
+    'missed-shot':  'm',
+    'blocked-shot': 'b',
+  };
+
+  return {
+    shots: rows.map(r => ({
+      x:  r.x,
+      y:  r.y,
+      t:  typeMap[r.event_type] || 's',
+      p:  r.period,
+      st: r.shot_type,
+    })),
+    games: null,
   };
 }
 
@@ -111,43 +145,16 @@ export async function getGoalieAnalytics(season = 20252026) {
       mdSvPct: r.md_sv_pct != null ? Math.round(r.md_sv_pct * 1000) / 10 : null,
       pkSvPct: r.pk_sv_pct != null ? Math.round(r.pk_sv_pct * 1000) / 10 : null,
       percentiles: {
-        gsax:   { pct: r.pct_gsax,   label: 'GSAX',            note: 'Goals saved above expected (flurry-adjusted)' },
-        gsax60: { pct: r.pct_gsax60, label: 'GSAX/60',         note: 'Goals saved above expected per 60 minutes' },
-        evSv:   { pct: r.pct_ev_sv,  label: '5-on-5 SV%',      note: 'Save percentage at even strength' },
-        hdSv:   { pct: r.pct_hd_sv,  label: 'High Danger SV%', note: 'Best quality-adjusted save metric' },
-        mdSv:   { pct: r.pct_md_sv,  label: 'Med Danger SV%',  note: 'Save % on medium danger shots' },
-        pkSv:   { pct: r.pct_pk_sv,  label: 'PK SV%',          note: 'Save % on penalty kill' },
+        gsax:   { pct: r.pct_gsax,   label: 'GSAX',            note: 'Goals saved above expected — total goals saved vs what an average goalie would save on the same shots (MoneyPuck flurry-adjusted xGoals model). Positive = saving more than expected. The most complete single goalie metric. Percentile vs all NHL goalies (min 10 GP).' },
+        gsax60: { pct: r.pct_gsax60, label: 'GSAX/60',         note: 'Goals saved above expected per 60 minutes. Rate-adjusts GSAX so goalies with different workloads can be compared fairly. Useful for backups or goalies who missed time. Percentile vs all NHL goalies (min 10 GP).' },
+        evSv:   { pct: r.pct_ev_sv,  label: '5-on-5 SV%',      note: 'Save percentage at even strength (5-on-5 only). Removes special teams situations which can skew overall SV%. The most stable indicator of true goaltending ability. Percentile vs all NHL goalies (min 10 GP).' },
+        hdSv:   { pct: r.pct_hd_sv,  label: 'High Danger SV%', note: 'Save percentage on high-danger shots — those taken within ~15 feet of the net, typically the most dangerous scoring chances. The hardest shots to stop; a strong HD SV% is the best quality-adjusted goalie metric. Percentile vs all NHL goalies (min 10 GP).' },
+        mdSv:   { pct: r.pct_md_sv,  label: 'Med Danger SV%',  note: 'Save percentage on medium-danger shots (15-30 feet from net). Complements high-danger SV% for a fuller picture of save quality across different shot locations. Percentile vs all NHL goalies (min 10 GP).' },
+        pkSv:   { pct: r.pct_pk_sv,  label: 'PK SV%',          note: 'Save percentage while the team is killing a penalty (shorthanded). Penalty kill goaltending requires different positioning and reflexes — some goalies are significantly better in this situation than at even strength. Percentile vs all NHL goalies (min 10 GP).' },
       },
     };
   }
   return result;
-}
-
-// ── Goalie shot events (shots faced) ─────────────────────────
-export async function getGoalieShots(goalieId, season = 20252026) {
-  const rows = await sbFetch(
-    `shot_events?goalie_id=eq.${goalieId}&season=eq.${season}&team=eq.OPP` +
-    `&select=x,y,event_type,period,shot_type&limit=2000`
-  );
-
-  if (!rows.length) return null;
-
-  const typeMap = {
-    'goal':         'g',
-    'shot-on-goal': 's',
-    'missed-shot':  'm',
-    'blocked-shot': 'b',
-  };
-
-  return {
-    shots: rows.map(r => ({
-      x:  r.x,
-      y:  r.y,
-      t:  typeMap[r.event_type] || 's',
-      p:  r.period,
-      st: r.shot_type,
-    })),
-  };
 }
 
 // ── Team skater stats ─────────────────────────────────────────

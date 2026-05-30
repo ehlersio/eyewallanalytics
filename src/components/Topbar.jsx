@@ -4,7 +4,7 @@ import TeamLogo from './TeamLogo';
 import { TEAM_COLORS } from '../utils/nhlApi';
 import './Topbar.css';
 import AboutPopup from './AboutPopup';
-import { subscribeClock, getClockDisplay, getMomentum, subscribeMomentum, subscribeMockLiveGame } from '../utils/liveClockStore';
+import { subscribeClock, getClockDisplay, publishClock, getMomentum, subscribeMomentum, subscribeMockLiveGame } from '../utils/liveClockStore';
 import NotificationBell from './NotificationBell';
 
 const POLL_LIVE_MS = 10_000;      // 10s — matches ShotMapView
@@ -40,7 +40,14 @@ export default function Topbar() {
         const pbp = await getGameDetail(game.id).catch(() => null);
         if (pbp) {
           setLiveMeta({ period: pbp.periodDescriptor, clock: pbp.clock });
-          // Clock display handled by shared store — no local countdown needed
+          // Publish clock to shared store so display updates immediately
+          if (pbp.clock?.timeRemaining) {
+            publishClock(
+              pbp.clock.timeRemaining,
+              pbp.clock.inIntermission,
+              pbp.clock.running !== false
+            );
+          }
         }
       } else {
         setLiveMeta(null);

@@ -408,7 +408,7 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
                     : Number(regStats.avgToi)) * gp)
                 : null
               const valueTooltip = method === 'blended'
-                ? `Blended score: 60% points per $1M (projected to 82 GP) + 40% WAR per $1M (scaled). WAR captures two-way value points miss — defensive specialists and shutdown players score higher here than on a pure points basis. Scale: ≥8.0 Exceptional · ≥5.0 Great · ≥3.0 Good · ≥1.8 Fair · ≥1.0 Below avg · <1.0 Overpaid. ELC contracts excluded.`
+                ? `Blended score: 60% points per $1M (projected to 82 GP) + 40% WAR per $1M (scaled). WAR uses 5v5 RAPM (beta) + PP/PK/finishing components — captures two-way value points miss. Defensive specialists and shutdown players score higher here than on a pure points basis. Scale: ≥8.0 Exceptional · ≥5.0 Great · ≥3.0 Good · ≥1.8 Fair · ≥1.0 Below avg · <1.0 Overpaid. ELC contracts excluded.`
                 : `Points per $1M of cap hit (projected to 82 games). WAR data unavailable for this player — using points only. Scale: ≥8.0 Exceptional · ≥5.0 Great · ≥3.0 Good · ≥1.8 Fair · ≥1.0 Below avg · <1.0 Overpaid. ELC contracts excluded.`
               return (
                 <div className="pp-value-row">
@@ -912,22 +912,28 @@ function PlayerHeatMap({ shotData, goalieShotData, playerName, isGoalie }) {
 // ── Player Analytics (WAR + Percentiles) ─────────────────────
 function PercentileBar({ label, pct, note, na }) {
   if (na || pct == null) {
+    const naNote = note || `${label} data unavailable — player may not have enough ice time in this situation to generate a reliable percentile.`;
     return (
       <div className="pa-row">
-        <span className="pa-label">{label}</span>
+        <span className="pa-label">
+          {label}
+          {naNote && <InfoTip text={naNote} position="above" />}
+        </span>
         <span className="pa-na">N/A</span>
       </div>
     );
   }
 
-  // Color: red < 33, amber 33-66, green > 66
   const color = pct >= 67 ? '#4ade80' : pct >= 34 ? '#fbbf24' : '#f87171';
   const tier  = pct >= 90 ? 'Elite' : pct >= 75 ? 'Great' : pct >= 50 ? 'Above avg'
               : pct >= 25 ? 'Below avg' : 'Poor';
 
   return (
     <div className="pa-row">
-      <span className="pa-label" title={note}>{label}</span>
+      <span className="pa-label">
+        {label}
+        {note && <InfoTip text={note} position="above" />}
+      </span>
       <div className="pa-bar-wrap">
         <div className="pa-bar-track">
           <div className="pa-bar-fill" style={{ width: `${pct}%`, background: color }} />
@@ -1020,13 +1026,16 @@ function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position })
       <div className="pa-war-card">
         <div className="pa-war-main">
           <span className="pa-war-num" style={{ color: warColor }}>{war > 0 ? '+' : ''}{war}</span>
-          <span className="pa-war-label">WAR</span>
+          <span className="pa-war-label">
+            WAR
+            <InfoTip text="Wins Above Replacement (beta). EV component uses 5v5 RAPM — ridge regression across 3 seasons of league-wide shift and shot data, controlling for teammates and opponents. PP/PK and finishing components are xGoals-based from MoneyPuck. RAPM is 5v5 only; special teams remain approximate. Zone-start adjustment in development — defensive defensemen may be slightly undervalued in current model. Validated periodically vs Evolving Hockey public RAPM." position="above" />
+          </span>
         </div>
         <div className="pa-war-meta">
           <span style={{ color: warColor }}>{warLabel}</span>
           <span className="pa-war-sub">{gp} GP · Game Score {gameScore}</span>
           <span className="pa-war-sub" style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
-            Approximate — based on xGoals model, not full RAPM
+            5v5 RAPM (beta) + PP/PK/finishing components
           </span>
         </div>
       </div>
@@ -1045,8 +1054,8 @@ function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position })
       <div className="pa-bars">
         <PercentileBar label="EV Offence"    pct={p.evOff?.pct}     note={p.evOff?.note} />
         <PercentileBar label="EV Defence"    pct={p.evDef?.pct}     note={p.evDef?.note} />
-        <PercentileBar label="Power Play"    pct={p.pp?.pct}        note={p.pp?.note} />
-        <PercentileBar label="Penalty Kill"  pct={p.pk?.pct}        note={p.pk?.note} />
+        <PercentileBar label="Power Play"    pct={p.pp?.pct}        note={p.pp?.note}    na={p.pp?.pct == null} />
+        <PercentileBar label="Penalty Kill"  pct={p.pk?.pct}        note={p.pk?.note}    na={p.pk?.pct == null} />
         <PercentileBar label="Finishing"     pct={p.finishing?.pct} note={p.finishing?.note} />
         <PercentileBar label="Goals"         pct={p.goals?.pct}     note={p.goals?.note} />
         <PercentileBar label="1st Assists"   pct={p.a1?.pct}        note={p.a1?.note} />
