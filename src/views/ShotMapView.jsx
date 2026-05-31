@@ -11,6 +11,7 @@ import IceRink from '../components/IceRink';
 import { GoalPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import { getGoalieAnalytics, getGameXG } from '../utils/supabaseClient';
+import { CAR_PP_UNITS, inferPPUnit } from '../utils/ppUnits';
 import InfoTip from '../components/InfoTip';
 import { StatBar, MetCard, MetCardSkeleton } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
@@ -294,6 +295,7 @@ export default function ShotMapView() {
     const rosterMap = roster || {};
     const carId = 12; // CAR team ID
     const oppId = opp?.id || null;
+    const season = 20252026; // update each season
 
     // Build a string-keyed map from rosterSpots so lookups always work
     // regardless of whether event IDs come back as numbers or strings
@@ -399,28 +401,212 @@ export default function ShotMapView() {
       setDrillStat({ label: 'CAR Faceoffs', rows, type: 'faceoff' });
 
     } else if (statKey === 'pp') {
-      // Power play goals — CAR goals scored while CAR had more skaters than opponent
-      const ppGoals = plays.filter(p => {
-        if (p.typeDescKey !== 'goal') return false;
-        if (p.details?.eventOwnerTeamId !== carId) return false;
-        const sc = p.situationCode; // 4-digit string on the play, not details
+      // ── Rich PP Analysis ────────────────────────────────────
+      // Parse all plays into discrete PP opportunities
+      const carId   = 12;
+      const isCarPP = (sc) => {
         if (!sc || sc.length < 4) return false;
-        const awayS = parseInt(sc[1]);
-        const homeS = parseInt(sc[2]);
+        const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
         const carS  = gameHome ? homeS : awayS;
         const oppS  = gameHome ? awayS : homeS;
-        return carS > oppS; // CAR had more skaters = PP goal
+        return carS > oppS;
+      };
+
+      // Walk plays and group into PP windows
+      const opportunities = [];
+      let current = null;
+
+      plays.forEach(p => {
+        const sc        = p.situationCode;
+        const onPP      = isCarPP(sc);
+        const sortOrder = p.sortOrder || 0;
+        const periodNum = p.periodDescriptor?.number || 1;
+        const timeSecs  = (() => {
+          const [m, s] = (p.timeInPeriod || '0:00').split(':').map(Number);
+          return m * 60 + (s || 0);
+        })();
+
+        if (onPP && !current) {
+          // PP started
+          current = {
+            id:        opportunities.length,
+            period:    periodNum,
+            startTime: timeSecs,
+            endTime:   timeSecs,
+            startLabel: p.timeInPeriod || '—',
+            endLabel:   p.timeInPeriod || '—',
+            plays:     [],
+            scored:    false,
+          };
+          opportunities.push(current);
+        }
+        if (onPP && current) {
+          current.plays.push(p);
+          current.endTime  = timeSecs;
+          current.endLabel = p.timeInPeriod || '—';
+        }
+        if (!onPP && current) {
+          // PP ended
+          current = null;
+        }
       });
-      const rows = ppGoals.map(p => ({
-        name: pName(p.details?.scoringPlayerId),
-        period: periodLabel(p.periodDescriptor?.number),
-        time: p.timeInPeriod || null,
-        assists: [p.details?.assist1PlayerId, p.details?.assist2PlayerId]
-          .filter(Boolean).map(pName).filter(n => n !== '—'),
-        total: 1,
-        periods: {},
-      }));
-      setDrillStat({ label: 'CAR Power Play Goals', rows, type: 'ppgoals' });
+
+      // Merge opportunities that are < 5s apart (split by goal then immediate resumption)
+      const merged = [];
+      opportunities.forEach(opp => {
+        const prev = merged[merged.length - 1];
+        if (prev && opp.period === prev.period && opp.startTime - prev.endTime < 5) {
+          prev.plays.push(...opp.plays);
+          prev.endTime  = opp.endTime;
+          prev.endLabel = opp.endLabel;
+        } else {
+          merged.push(opp);
+        }
+      });
+
+      // Enrich each opportunity
+      const shotTypes  = ['shot-on-goal', 'goal', 'missed-shot', 'blocked-shot'];
+      const ppOpps = merged.map((opp, idx) => {
+        const shots    = opp.plays.filter(p => shotTypes.includes(p.typeDescKey));
+        const sog      = opp.plays.filter(p => ['shot-on-goal','goal'].includes(p.typeDescKey));
+        const goals    = opp.plays.filter(p => p.typeDescKey === 'goal' && p.details?.eventOwnerTeamId === carId);
+        const duration = opp.endTime - opp.startTime;
+
+        // xG from shot coordinates
+        const xg = shots.reduce((sum, p) => {
+          const d = p.details || {};
+          const x = d.xCoord, y = d.yCoord;
+          if (x == null || y == null) return sum + 0.08;
+          const absX = Math.abs(x);
+          const dist = Math.sqrt(Math.pow(absX - 89, 2) + y * y);
+          const angle = Math.abs(Math.atan2(Math.abs(y), Math.max(89 - absX, 1)) * 180 / Math.PI);
+          const raw = Math.min(Math.exp(-dist / 15) * Math.max(Math.cos(angle * Math.PI / 180), 0.2), 1);
+          return sum + Math.max(raw * 0.55, 0.02);
+        }, 0);
+
+        // Players who appeared (from rosterSpots + event details)
+        const playerIds = new Set();
+        opp.plays.forEach(p => {
+          const d = p.details || {};
+          [d.shootingPlayerId, d.scoringPlayerId, d.hittingPlayerId,
+           d.assist1PlayerId, d.assist2PlayerId, d.blockingPlayerId
+          ].filter(Boolean).forEach(id => {
+            // Only include CAR players (heuristic: player in rosterSpots with carId)
+            playerIds.add(id);
+          });
+        });
+
+        // Shot type breakdown
+        const shotTypeCounts = {};
+        shots.forEach(p => {
+          const st = p.details?.shotType || 'Unknown';
+          shotTypeCounts[st] = (shotTypeCounts[st] || 0) + 1;
+        });
+
+        // Zone entry approximation: first shot attempt within 12s of PP start
+        const firstShot = shots.find(p => {
+          const [m, s] = (p.timeInPeriod || '0:00').split(':').map(Number);
+          return (m * 60 + (s || 0)) - opp.startTime <= 12;
+        });
+        const quickEntry = !!firstShot;
+
+        // Goal details
+        const goalDetails = goals.map(p => ({
+          scorer:  pName(p.details?.scoringPlayerId),
+          assists: [p.details?.assist1PlayerId, p.details?.assist2PlayerId]
+            .filter(Boolean).map(pName).filter(n => n !== '—'),
+          time:    p.timeInPeriod,
+          shotType: p.details?.shotType || null,
+        }));
+
+        // Shot locations for mini-rink — all CAR PP shots, marked as isCanes
+        const shotEvents = shots.map(p => ({
+          x:        p.details?.xCoord,
+          y:        p.details?.yCoord,
+          type:     p.typeDescKey,
+          t:        p.typeDescKey === 'goal' ? 'g'
+                  : p.typeDescKey === 'shot-on-goal' ? 's'
+                  : p.typeDescKey === 'missed-shot'  ? 'm' : 'b',
+          isCanes:  true,  // all PP shots are CAR → red dots
+          id:       p.sortOrder || Math.random(),
+          period:   opp.period,
+          timeInPeriod: p.timeInPeriod || '0:00',
+        })).filter(e => e.x != null && e.y != null);
+
+        return {
+          idx,
+          period:    periodLabel(opp.period),
+          startTime: opp.startLabel,
+          endTime:   opp.endLabel,
+          duration,
+          scored:    goals.length > 0,
+          goals:     goalDetails,
+          sog:       sog.length,
+          shots:     shots.length,
+          xg:        parseFloat(xg.toFixed(2)),
+          shotTypeCounts,
+          quickEntry,
+          shotEvents,
+          playerIds: [...playerIds],
+          rawPlays:  opp.plays, // kept for unit detection below, not rendered
+        };
+      });
+
+      // ── PP Units from known config ───────────────────────────
+      // Use hardcoded unit configs rather than inferring from incomplete
+      // event data — play-by-play only captures players who touched the puck.
+      const carRosterIds = new Set(
+        (pbp.rosterSpots || [])
+          .filter(s => s.teamId === carId)
+          .map(s => s.playerId)
+      );
+      const goalieIds = new Set(
+        (pbp.rosterSpots || [])
+          .filter(s => s.teamId === carId && s.positionCode === 'G')
+          .map(s => s.playerId)
+      );
+
+      ppOpps.forEach(opp => {
+        const skaterIds = new Set();
+        (opp.rawPlays || []).forEach(p => {
+          const d = p.details || {};
+          [d.shootingPlayerId, d.scoringPlayerId,
+           d.assist1PlayerId, d.assist2PlayerId,
+           d.hittingPlayerId,
+          ].filter(Boolean).forEach(id => {
+            if (carRosterIds.has(id) && !goalieIds.has(id)) skaterIds.add(id);
+          });
+        });
+        opp.carSkaterIds = [...skaterIds];
+        opp.unit = inferPPUnit(season, opp.carSkaterIds);
+      });
+
+      // Build display unit arrays from config for the chips at the top
+      const unitConfig = CAR_PP_UNITS[season];
+      const ppUnit1 = unitConfig?.pp1
+        .map(id => pName(id)).filter(n => n !== '—') ?? [];
+      const ppUnit2 = unitConfig?.pp2
+        .map(id => pName(id)).filter(n => n !== '—') ?? [];
+
+      // Summary totals
+      const totalGoals = ppOpps.filter(o => o.scored).length;
+      const totalSOG   = ppOpps.reduce((s, o) => s + o.sog, 0);
+      const totalXG    = parseFloat(ppOpps.reduce((s, o) => s + o.xg, 0).toFixed(2));
+
+      setDrillStat({
+        label: 'CAR Power Play Analysis',
+        type: 'ppanalysis',
+        ppOpps,
+        summary: {
+          goals: totalGoals,
+          opps:  ppOpps.length,
+          sog:   totalSOG,
+          xg:    totalXG,
+        },
+        ppUnit1,
+        ppUnit2,
+        rosterSpots: pbp.rosterSpots || [],
+      });
     } else if (statKey === 'penalties') {
       const penPlays = plays.filter(p => p.typeDescKey === 'penalty');
       const buildPenRows = (teamId) => penPlays
@@ -1395,7 +1581,7 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr }) {
         )}
 
         <div className="drill-body">
-          {rows.length === 0 && (
+          {rows.length === 0 && drillStat.type !== 'ppanalysis' && (
             <div className="drill-empty">No {teamLabel} data for this game.</div>
           )}
 
@@ -1426,20 +1612,8 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr }) {
             </div>
           )}
 
-          {drillStat.type === 'ppgoals' && (
-            <div className="drill-table">
-              {rows.map((r, i) => (
-                <div key={i} className="drill-row">
-                  <div style={{display:'flex', alignItems:'center', gap:8}}>
-                    <span className="drill-name">{r.name}</span>
-                    <span className="drill-period-badge">{r.time ? `${r.period} · ${r.time}` : r.period}</span>
-                  </div>
-                  {r.assists?.length > 0 && (
-                    <div className="drill-assists">Assists: {r.assists.join(', ')}</div>
-                  )}
-                </div>
-              ))}
-            </div>
+          {drillStat.type === 'ppanalysis' && (
+            <PPAnalysisPanel drillStat={drillStat} />
           )}
 
           {(drillStat.type === 'shots') && (
@@ -1518,6 +1692,175 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr }) {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ── PP Analysis Panel ─────────────────────────────────────────
+function PPAnalysisPanel({ drillStat }) {
+  const [openIdx, setOpenIdx] = useState(null);
+  const { ppOpps, summary, ppUnit1, ppUnit2 } = drillStat;
+
+  if (!ppOpps?.length) {
+    return <div className="drill-empty">No CAR power plays this game.</div>;
+  }
+
+  const toggle = idx => setOpenIdx(o => o === idx ? null : idx);
+
+  const pctColor = (goals, opps) => {
+    const pct = goals / opps;
+    return pct >= 0.25 ? 'var(--green)' : pct > 0 ? 'var(--text-muted)' : 'var(--red-bright)';
+  };
+
+  const outcomeIcon = opp => opp.scored ? '⚡' : opp.sog >= 3 ? '🎯' : opp.shots === 0 ? '❌' : '🔲';
+  const outcomeLabel = opp => opp.scored ? 'GOAL' : opp.sog >= 3 ? 'Shots' : opp.shots === 0 ? 'No shots' : 'No score';
+  const outcomeClass = opp => opp.scored ? 'pp-outcome goal' : opp.sog >= 3 ? 'pp-outcome shots' : 'pp-outcome none';
+
+  return (
+    <div className="pp-analysis">
+
+      {/* ── Summary bar ───────────────────────────────────── */}
+      <div className="pp-summary-row">
+        <div className="pp-summary-stat">
+          <span className="pp-summary-val" style={{ color: pctColor(summary.goals, summary.opps) }}>
+            {summary.goals}/{summary.opps}
+          </span>
+          <span className="pp-summary-label">PP Goals</span>
+        </div>
+        <div className="pp-summary-divider" />
+        <div className="pp-summary-stat">
+          <span className="pp-summary-val">{summary.opps > 0 ? `${Math.round(summary.goals / summary.opps * 100)}%` : '—'}</span>
+          <span className="pp-summary-label">PP%</span>
+        </div>
+        <div className="pp-summary-divider" />
+        <div className="pp-summary-stat">
+          <span className="pp-summary-val">{summary.sog}</span>
+          <span className="pp-summary-label">SOG</span>
+        </div>
+        <div className="pp-summary-divider" />
+        <div className="pp-summary-stat">
+          <span className="pp-summary-val">{summary.xg}</span>
+          <span className="pp-summary-label">
+            xG <InfoTip text="Expected goals on PP shots — estimated from shot distance and angle. Higher = better quality looks." position="above" />
+          </span>
+        </div>
+      </div>
+
+      {/* ── PP Units ──────────────────────────────────────── */}
+      {ppUnit1?.length > 0 && (
+        <div className="pp-unit-row">
+          <span className="pp-unit-label">PP1</span>
+          <div className="pp-unit-chips">
+            {ppUnit1.map((name, i) => (
+              <span key={i} className="pp-unit-chip pp1">{name.split(' ').pop()}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {ppUnit2?.length > 0 && (
+        <div className="pp-unit-row">
+          <span className="pp-unit-label">PP2</span>
+          <div className="pp-unit-chips">
+            {ppUnit2.map((name, i) => (
+              <span key={i} className="pp-unit-chip pp2">{name.split(' ').pop()}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {(ppUnit1?.length > 0 || ppUnit2?.length > 0) && (
+        <div className="pp-unit-note">
+          Units inferred from play-by-play — players who didn't touch the puck may not appear. Some PPs may be untagged if there wasn't enough data to identify the unit.
+        </div>
+      )}
+
+      {/* ── Per-opportunity breakdown ─────────────────────── */}
+      <div className="pp-opps-list">
+        {ppOpps.map((opp, i) => (
+          <div key={i} className="pp-opp-item">
+            {/* Collapsed header — always visible */}
+            <div className="pp-opp-header" onClick={() => toggle(i)}>
+              <div className="pp-opp-left">
+                <span className="pp-opp-num">PP {i + 1}</span>
+                {opp.unit && (
+                  <span className={`pp-unit-badge pp${opp.unit}`}>PP{opp.unit}</span>
+                )}
+                <span className="pp-opp-time">{opp.period} · {opp.startTime}</span>
+                {opp.quickEntry && <span className="pp-entry-badge">⚡ Quick entry</span>}
+              </div>
+              <div className="pp-opp-right">
+                <span className={outcomeClass(opp)}>{outcomeIcon(opp)} {outcomeLabel(opp)}</span>
+                <span className="pp-opp-sog">{opp.sog} SOG</span>
+                <span className="pp-opp-chevron">{openIdx === i ? '▲' : '▼'}</span>
+              </div>
+            </div>
+
+            {/* Expanded detail */}
+            {openIdx === i && (
+              <div className="pp-opp-detail">
+
+                {/* Goal details */}
+                {opp.goals.map((g, gi) => (
+                  <div key={gi} className="pp-goal-row">
+                    <span className="pp-goal-icon">🚨</span>
+                    <div>
+                      <span className="pp-goal-scorer">{g.scorer}</span>
+                      {g.shotType && <span className="pp-goal-shottype">{g.shotType}</span>}
+                      {g.assists.length > 0 && (
+                        <div className="pp-goal-assists">Assists: {g.assists.join(', ')}</div>
+                      )}
+                    </div>
+                    <span className="pp-goal-time">{g.time}</span>
+                  </div>
+                ))}
+
+                {/* Shot stats row */}
+                <div className="pp-detail-stats">
+                  <div className="pp-detail-stat">
+                    <span className="pp-detail-val">{opp.sog}</span>
+                    <span className="pp-detail-label">SOG</span>
+                  </div>
+                  <div className="pp-detail-stat">
+                    <span className="pp-detail-val">{opp.shots}</span>
+                    <span className="pp-detail-label">Attempts</span>
+                  </div>
+                  <div className="pp-detail-stat">
+                    <span className="pp-detail-val">{opp.xg}</span>
+                    <span className="pp-detail-label">xG</span>
+                  </div>
+                  <div className="pp-detail-stat">
+                    <span className="pp-detail-val">{opp.duration}s</span>
+                    <span className="pp-detail-label">Duration</span>
+                  </div>
+                </div>
+
+                {/* Shot type breakdown */}
+                {Object.keys(opp.shotTypeCounts).length > 0 && (
+                  <div className="pp-shottype-row">
+                    {Object.entries(opp.shotTypeCounts).map(([type, count]) => (
+                      <span key={type} className="pp-shottype-chip">
+                        {type} ×{count}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Mini shot map */}
+                {opp.shotEvents.length > 0 && (
+                  <div className="pp-mini-rink">
+                    <div className="pp-mini-rink-label">Shot locations</div>
+                    <IceRink
+                      events={opp.shotEvents}
+                      roster={{}}
+                      readOnly
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

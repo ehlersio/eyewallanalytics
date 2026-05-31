@@ -56,7 +56,7 @@ const OPP_SHOT_STYLE = {
 };
 
 // ─── Main component ───────────────────────────────────────────
-export default function IceRink({ events = [], roster = {}, hidePlayerFilter = false }) {
+export default function IceRink({ events = [], roster = {}, hidePlayerFilter = false, readOnly = false }) {
   const [halfRink,    setHalfRink]    = useState(false);
   const [period,      setPeriod]      = useState('all');
   const [viewMode,    setViewMode]    = useState('dots'); // 'dots' | 'heat'
@@ -222,18 +222,17 @@ export default function IceRink({ events = [], roster = {}, hidePlayerFilter = f
         key={`${e.id}-${index}`}
         cx={px}
         cy={py}
-        r={isHov || isSel ? s.r * 1.6 : s.r}
+        r={!readOnly && (isHov || isSel) ? s.r * 1.6 : s.r}
         fill={s.fill}
-        stroke={isSel ? '#fff' : isHov ? 'rgba(255,255,255,0.6)' : s.stroke}
-        strokeWidth={isSel ? 2.5 : isHov ? 1.5 : s.strokeWidth}
-        opacity={isHov || isSel ? 1 : s.opacity}
-        style={{ cursor: 'pointer', transition: 'r 0.1s, opacity 0.1s' }}
-        onMouseEnter={ev => {
-          const rect = svgRef.current?.getBoundingClientRect();
+        stroke={!readOnly && isSel ? '#fff' : !readOnly && isHov ? 'rgba(255,255,255,0.6)' : s.stroke}
+        strokeWidth={!readOnly && isSel ? 2.5 : !readOnly && isHov ? 1.5 : s.strokeWidth}
+        opacity={!readOnly && (isHov || isSel) ? 1 : s.opacity}
+        style={{ cursor: readOnly ? 'default' : 'pointer', transition: 'r 0.1s, opacity 0.1s' }}
+        onMouseEnter={readOnly ? undefined : ev => {
           setHovered({ event: e, screenX: ev.clientX, screenY: ev.clientY });
         }}
-        onMouseLeave={() => setHovered(null)}
-        onClick={ev => {
+        onMouseLeave={readOnly ? undefined : () => setHovered(null)}
+        onClick={readOnly ? undefined : ev => {
           ev.stopPropagation();
           setSelected(prev => prev?.id === e.id ? null : e);
           setHovered(null);
@@ -259,6 +258,7 @@ export default function IceRink({ events = [], roster = {}, hidePlayerFilter = f
     <div className="ice-rink-wrap" ref={wrapRef}>
 
       {/* Toolbar */}
+      {!readOnly && (
       <div className="rink-toolbar">
         <div className="rink-filters">
           {/* Regular periods always shown */}
@@ -324,8 +324,10 @@ export default function IceRink({ events = [], roster = {}, hidePlayerFilter = f
           )}
         </div>
       </div>
+      )}
 
       {/* Zoom controls */}
+      {!readOnly && (
       <div className="zoom-bar">
         <button className="zoom-btn" onClick={() => zoomToward(-0.5, 0, 0)} disabled={zoom <= MIN_ZOOM}>−</button>
         <div className="zoom-track">
@@ -337,9 +339,10 @@ export default function IceRink({ events = [], roster = {}, hidePlayerFilter = f
         )}
         <span className="zoom-label">{Math.round(zoom * 100)}%</span>
       </div>
+      )}
 
       {/* Heat team selector — only in heat mode */}
-      {viewMode === 'heat' && (
+      {!readOnly && viewMode === 'heat' && (
         <div className="heat-controls">
           <span className="heat-label">Show:</span>
           {[['car','CAR shots'],['opp','Opp shots'],['both','Both']].map(([val, lbl]) => (
@@ -357,8 +360,8 @@ export default function IceRink({ events = [], roster = {}, hidePlayerFilter = f
         </div>
       )}
 
-      {/* Legend — only in dots mode */}
-      {viewMode === 'dots' && (
+      {/* Legend — only in dots mode, not readOnly */}
+      {!readOnly && viewMode === 'dots' && (
         <div className="rink-legend">
           <div className="legend-item"><span className="leg-dot" style={{background:'#ff4422',opacity:0.65}} />CAR shot</div>
           <div className="legend-item"><span className="leg-dot leg-goal" style={{background:'#ff4422'}} />CAR goal</div>
@@ -419,12 +422,12 @@ export default function IceRink({ events = [], roster = {}, hidePlayerFilter = f
       </div>
 
       {/* Hover tooltip — dots mode, plus goals in heat mode */}
-      {(viewMode === 'dots' || (viewMode === 'heat' && hovered?.event?.type === 'goal')) && hovered && !selected && (
+      {!readOnly && (viewMode === 'dots' || (viewMode === 'heat' && hovered?.event?.type === 'goal')) && hovered && !selected && (
         <HoverTooltip event={hovered.event} screenX={hovered.screenX} screenY={hovered.screenY} playerNames={playerNames} wrapRef={wrapRef} />
       )}
 
       {/* Click popup — dots mode + goals in heat mode */}
-      {(viewMode === 'dots' || viewMode === 'heat') && selected && (
+      {!readOnly && (viewMode === 'dots' || viewMode === 'heat') && selected && (
         <ShotPopup event={selected} playerNames={playerNames} onClose={() => setSelected(null)} />
       )}
 
@@ -813,8 +816,8 @@ function RinkMarkings({ showHalf }) {
       {/* ── Zone labels ── */}
       {!showHalf && (
         <>
-          <text x="52"   y="18" fontSize="9" fill="#2255aa" opacity="0.6" fontFamily="sans-serif">OPP zone</text>
-          <text x={W-82} y="18" fontSize="9" fill="#cc2200" opacity="0.7" fontFamily="sans-serif">CAR zone</text>
+          <text x="22"   y="18" fontSize="9" fill="#2255aa" opacity="0.6" fontFamily="sans-serif">OPP offensive zone</text>
+          <text x={W-108} y="18" fontSize="9" fill="#cc2200" opacity="0.7" fontFamily="sans-serif">CAR offensive zone</text>
         </>
       )}
       {showHalf && (
