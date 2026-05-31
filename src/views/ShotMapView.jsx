@@ -25,7 +25,6 @@ const CAR_ABBR = 'CAR';
 export default function ShotMapView() {
   // ── Dev replay injection ──────────────────────────────────────
   const devGame = useDevGame();
-  useWakeLock(isLive); // keep screen on during live games
 
   // Live game polling
   const { data: liveGameReal } = usePoll(getLiveGame, 30000);
@@ -36,6 +35,7 @@ export default function ShotMapView() {
   const lastGame  = recentGames?.[0] || null;
   const activeGame = liveGame || lastGame;
   const isLive     = !!liveGame;
+  useWakeLock(isLive); // keep screen on during live games — must be after isLive is defined
 
   // Are we currently in playoffs? Check if any playoff games exist this season
   const { data: playoffGames } = useFetch(getPlayoffGames);
