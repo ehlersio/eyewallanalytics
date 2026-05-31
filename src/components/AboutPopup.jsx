@@ -46,7 +46,7 @@ export default function AboutPopup({ isLive = false }) {
           </div>
 
           <p className="about-desc">
-            Real-time shot maps, advanced stats, and game intelligence for Canes fans
+            Real-time shot maps, advanced stats, and game intelligence for Huge Caniacs
             who want to go deeper than the box score. Live Corsi, Fenwick, PDO,
             puck luck, on-ice tracking, and more — all from public NHL data.
           </p>

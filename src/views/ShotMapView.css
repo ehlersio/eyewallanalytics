@@ -499,29 +499,52 @@
   background: var(--bg1);
   border: 1.5px solid var(--red-bright);
   border-radius: var(--radius);
-  padding: 16px;
-  width: min(320px, 90vw);
+  padding: 14px;
+  width: min(420px, 94vw);
   z-index: 999;
   box-shadow: 0 8px 32px rgba(0,0,0,0.6);
 }
+.debug-panel-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.debug-close-btn {
+  background: var(--bg3); border: none; color: var(--text-dim);
+  font-size: 13px; padding: 4px 8px; border-radius: 6px; cursor: pointer;
+  flex-shrink: 0; margin-left: 8px;
+  min-height: unset; min-width: unset;
+}
+.debug-close-btn:hover { color: var(--text); }
 .debug-panel-title { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
-.debug-panel-sub   { font-size: 11px; color: var(--text-dim); margin-bottom: 12px; }
-.debug-panel-note  { font-size: 10px; color: var(--text-dim); margin: 10px 0 6px; }
-.debug-panel-btns  { display: flex; flex-direction: column; gap: 8px; }
+.debug-panel-sub   { font-size: 11px; color: var(--text-dim); }
+/* Two-column layout: sections side by side */
+.debug-panel-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+}
+.debug-col { display: flex; flex-direction: column; gap: 6px; }
+.debug-section-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-dim);
+  margin-bottom: 2px;
+}
+.debug-panel-btns  { display: flex; flex-direction: column; gap: 5px; }
 .debug-btn {
-  padding: 10px 14px; border-radius: 8px; font-size: 13px;
+  padding: 7px 10px; border-radius: 7px; font-size: 11px;
   font-weight: 600; cursor: pointer; border: none; text-align: left;
+  min-height: unset; min-width: unset; width: 100%;
 }
 .debug-btn.goal    { background: rgba(200,30,30,0.2); color: #f87171; }
 .debug-btn.penalty { background: rgba(250,190,30,0.2); color: #fbbf24; }
 .debug-btn.win     { background: rgba(74,222,128,0.2); color: #4ade80; }
-.debug-btn.push    { background: var(--bg3); color: var(--text); width: 100%; }
-.debug-btn.close   { background: var(--bg3); color: var(--text-dim); text-align: center; }
+.debug-btn.push    { background: var(--bg3); color: var(--text); }
+.debug-btn.close   { background: var(--bg3); color: var(--text-dim); }
+.debug-btn.pp-car  { background: rgba(74,222,128,0.2); color: #4ade80; }
+.debug-btn.pp-opp  { background: rgba(250,190,30,0.2); color: #fbbf24; }
 
 /* ── Clock stoppage indicator ── */
 .clock-stopped { color: #fbbf24; font-size: 12px; margin-left: 4px; }
-.debug-btn.pp-car  { background: rgba(74,222,128,0.2); color: #4ade80; }
-.debug-btn.pp-opp  { background: rgba(250,190,30,0.2);  color: #fbbf24; }
 
 /* ── Empty net indicator ── */
 .en-indicator { font-size: 11px !important; }

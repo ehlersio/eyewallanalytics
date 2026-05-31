@@ -257,6 +257,7 @@ export default function ShotMapView() {
   const [debugWinPopup,     setDebugWinPopup]     = useState(null);
   const [debugPuckDropPopup, setDebugPuckDropPopup] = useState(null);
   const [debugSituation,    setDebugSituation]    = useState(null);
+  const [debugInsight,      setDebugInsight]      = useState(null); // injected Live Insight row
 
   const handleDebugTap = () => {
     const next = debugTaps + 1;
@@ -950,6 +951,7 @@ export default function ShotMapView() {
           oppAbbr={oppAbbr}
           topScorers={topScorers}
           isLive={isLive}
+          debugInsight={debugInsight}
         />
       )}
 
@@ -1259,70 +1261,57 @@ export default function ShotMapView() {
 
     {/* ── Debug panel (5 taps on score bar) ── */}
     {debugOpen && (
-      <div className="debug-panel" onClick={e => e.stopPropagation()}>
-        <div className="debug-panel-title">🛠 Event Debug</div>
-        <div className="debug-panel-sub">Tap to fire each game event</div>
-        <div className="debug-panel-btns">
-          <button className="debug-btn goal" onClick={() => {
-            setDebugGoalPopup({ scorer: 'Sebastian Aho', assists: ['Andrei Svechnikov', 'Jaccob Slavin'], shotType: 'Wrist', period: 'P2', time: '14:32' });
-            setDebugOpen(false);
-          }}>🚨 CAR Goal</button>
-          <button className="debug-btn" style={{ background: 'rgba(204,34,0,0.15)', color: 'var(--red-bright)' }} onClick={() => {
-            setDebugPuckDropPopup({ gameId: 'debug' });
-            setDebugOpen(false);
-          }}>🏒 Puck Drop</button>
-          <button className="debug-btn penalty" onClick={() => {
-            setDebugPenaltyPopup({ id: 'debug-1', player: 'Brad Marchand', description: 'Hooking', duration: 2, period: 'P2', time: '08:17' });
-            setDebugOpen(false);
-          }}>⚡ PP Notification</button>
-          <button className="debug-btn win" onClick={() => {
-            setDebugWinPopup({ score: 'CAR 4 – BOS 2' });
-            setDebugOpen(false);
-          }}>🏆 Win Popup</button>
-          <button className="debug-btn pp-car" onClick={() => {
-            setDebugSituation({ strength: 'PP', team: 'CAR' });
-            setDebugOpen(false);
-            setTimeout(() => setDebugSituation(null), 15000);
-          }}>🟢 CAR Power Play (5v4)</button>
-          <button className="debug-btn pp-car" onClick={() => {
-            setDebugSituation({ strength: 'PP', team: 'CAR', carSkaters: 5, oppSkaters: 3 });
-            setDebugOpen(false);
-            setTimeout(() => setDebugSituation(null), 15000);
-          }}>🟢🟢 CAR 5v3 Power Play</button>
-          <button className="debug-btn pp-opp" onClick={() => {
-            setDebugSituation({ strength: 'PP', team: 'OPP' });
-            setDebugOpen(false);
-            setTimeout(() => setDebugSituation(null), 15000);
-          }}>🟡 Opp Power Play (4v5)</button>
-          <button className="debug-btn close" style={{ background: 'rgba(148,163,184,0.15)', color: 'var(--text-muted)' }} onClick={() => {
-            setDebugSituation({ strength: '4v4', carSkaters: 4, oppSkaters: 4 });
-            setDebugOpen(false);
-            setTimeout(() => setDebugSituation(null), 15000);
-          }}>⚪ 4v4 Coincidental</button>
-          <button className="debug-btn close" style={{ background: 'rgba(148,163,184,0.15)', color: 'var(--text-muted)' }} onClick={() => {
-            setDebugSituation({ strength: '4v4', carSkaters: 3, oppSkaters: 3 });
-            setDebugOpen(false);
-            setTimeout(() => setDebugSituation(null), 15000);
-          }}>⚪ 3v3 OT</button>
-          <button className="debug-btn" style={{ background: 'rgba(250,190,30,0.1)', color: '#fbbf24' }} onClick={() => {
-            setDebugSituation({ carEN: true });
-            setDebugOpen(false);
-            setTimeout(() => setDebugSituation(null), 15000);
-          }}>🥅 CAR Empty Net</button>
-          <button className="debug-btn" style={{ background: 'rgba(250,190,30,0.1)', color: '#fbbf24' }} onClick={() => {
-            setDebugSituation({ oppEN: true });
-            setDebugOpen(false);
-            setTimeout(() => setDebugSituation(null), 15000);
-          }}>🥅 Opp Empty Net</button>
-          <button className="debug-btn close" onClick={() => setDebugOpen(false)}>✕ Close</button>
+      <div className="debug-panel">
+        <div className="debug-panel-header">
+          <div>
+            <div className="debug-panel-title">🛠 Event Debug</div>
+            <div className="debug-panel-sub">Tap to fire game events</div>
+          </div>
+          <button className="debug-close-btn" onClick={() => setDebugOpen(false)}>✕</button>
         </div>
-        <div className="debug-panel-note">Also fires push notification via /push/test</div>
-        <button className="debug-btn push" onClick={async () => {
-          const url = import.meta.env.VITE_WORKER_URL;
-          if (!url) return;
-          const res = await fetch(`${url}/push/test?secret=eyewall-2026`).catch(() => null);
-          alert(res?.ok ? '✅ Push sent!' : '❌ Push failed');
-        }}>📲 Test Push Notification</button>
+
+        <div className="debug-panel-cols">
+          {/* Left: Popups + Insights */}
+          <div className="debug-col">
+            <div className="debug-section-label">Popups</div>
+            <div className="debug-panel-btns">
+              <button className="debug-btn goal" onClick={() => setDebugGoalPopup({ scorer: 'Sebastian Aho', assists: ['Andrei Svechnikov', 'Jaccob Slavin'], shotType: 'Wrist', period: 'P2', time: '14:32' })}>🚨 CAR Goal</button>
+              <button className="debug-btn" style={{ background: 'rgba(204,34,0,0.15)', color: 'var(--red-bright)' }} onClick={() => setDebugPuckDropPopup({ gameId: 'debug' })}>🏒 Puck Drop</button>
+              <button className="debug-btn penalty" onClick={() => setDebugPenaltyPopup({ id: 'debug-1', player: 'Brad Marchand', description: 'Hooking', duration: 2, period: 'P2', time: '08:17' })}>⚡ PP Alert</button>
+              <button className="debug-btn win" onClick={() => setDebugWinPopup({ score: 'CAR 4 – BOS 2' })}>🏆 Win Popup</button>
+            </div>
+            <div className="debug-section-label">Insights</div>
+            <div className="debug-panel-btns">
+              <button className="debug-btn goal" onClick={() => { setDebugInsight({ icon: '✅', text: 'CAR challenge (offside) succeeded — call overturned', type: 'good' }); setTimeout(() => setDebugInsight(null), 10000); }}>✅ Won</button>
+              <button className="debug-btn penalty" onClick={() => { setDebugInsight({ icon: '❌', text: 'CAR challenge (goal interference) failed — 2-min penalty', type: 'warn' }); setTimeout(() => setDebugInsight(null), 10000); }}>❌ Lost</button>
+              <button className="debug-btn pp-opp" onClick={() => { setDebugInsight({ icon: '😤', text: 'FLA challenge succeeded — call overturned', type: 'warn' }); setTimeout(() => setDebugInsight(null), 10000); }}>😤 Opp Won</button>
+              <button className="debug-btn pp-car" onClick={() => { setDebugInsight({ icon: '🎥', text: '1 league-initiated video review this game', type: 'neutral' }); setTimeout(() => setDebugInsight(null), 10000); }}>🎥 Review</button>
+            </div>
+          </div>
+
+          {/* Right: Situation + Push */}
+          <div className="debug-col">
+            <div className="debug-section-label">Situation</div>
+            <div className="debug-panel-btns">
+              <button className="debug-btn pp-car" onClick={() => { setDebugSituation({ strength: 'PP', team: 'CAR' }); setTimeout(() => setDebugSituation(null), 15000); }}>🟢 5v4 PP</button>
+              <button className="debug-btn pp-car" onClick={() => { setDebugSituation({ strength: 'PP', team: 'CAR', carSkaters: 5, oppSkaters: 3 }); setTimeout(() => setDebugSituation(null), 15000); }}>🟢🟢 5v3 PP</button>
+              <button className="debug-btn pp-opp" onClick={() => { setDebugSituation({ strength: 'PP', team: 'OPP' }); setTimeout(() => setDebugSituation(null), 15000); }}>🟡 Opp PP</button>
+              <button className="debug-btn close" style={{ background: 'rgba(148,163,184,0.15)', color: 'var(--text-muted)' }} onClick={() => { setDebugSituation({ strength: '4v4', carSkaters: 4, oppSkaters: 4 }); setTimeout(() => setDebugSituation(null), 15000); }}>⚪ 4v4</button>
+              <button className="debug-btn close" style={{ background: 'rgba(148,163,184,0.15)', color: 'var(--text-muted)' }} onClick={() => { setDebugSituation({ strength: '4v4', carSkaters: 3, oppSkaters: 3 }); setTimeout(() => setDebugSituation(null), 15000); }}>⚪ 3v3 OT</button>
+              <button className="debug-btn" style={{ background: 'rgba(250,190,30,0.1)', color: '#fbbf24' }} onClick={() => { setDebugSituation({ carEN: true }); setTimeout(() => setDebugSituation(null), 15000); }}>🥅 CAR EN</button>
+              <button className="debug-btn" style={{ background: 'rgba(250,190,30,0.1)', color: '#fbbf24' }} onClick={() => { setDebugSituation({ oppEN: true }); setTimeout(() => setDebugSituation(null), 15000); }}>🥅 Opp EN</button>
+            </div>
+            <div className="debug-section-label">Push</div>
+            <div className="debug-panel-btns">
+              <button className="debug-btn push" onClick={async () => {
+                const url = import.meta.env.VITE_WORKER_URL;
+                if (!url) return;
+                const res = await fetch(`${url}/push/test?secret=eyewall-2026`).catch(() => null);
+                alert(res?.ok ? '✅ Push sent!' : '❌ Push failed');
+              }}>📲 Test Push</button>
+            </div>
+          </div>
+        </div>
       </div>
     )}
 
@@ -1869,7 +1858,7 @@ function PPAnalysisPanel({ drillStat }) {
 
 // ── Advanced Game Panel (Corsi / Fenwick / PDO / Puck Luck) ──
 // ── Live Insights ────────────────────────────────────────────
-function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers, isLive }) {
+function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers, isLive, debugInsight }) {
   const insights = useMemo(() => {
     const plays   = pbp?.plays || [];
     const carTeam = gameHome ? pbp?.homeTeam?.id : pbp?.awayTeam?.id;
@@ -1967,6 +1956,59 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       results.push({ icon: '😤', text: `PK struggled — allowed ${ppGoalsAgainst} power play goals`, type: 'warn' });
     }
 
+    // ── Coach's challenges & video reviews ───────────────────
+    const stoppages = plays.filter(p =>
+      p.typeDescKey === 'stoppage' && p.details?.reason?.startsWith('chlg-')
+    );
+    const leagueReviews = plays.filter(p =>
+      p.typeDescKey === 'stoppage' && p.details?.reason === 'video-review'
+    );
+
+    stoppages.forEach(chlg => {
+      const reason = chlg.details.reason; // e.g. 'chlg-hm-goal-interference'
+      const isHome = reason.includes('-hm-');
+      const isCar  = (isHome && gameHome) || (!isHome && !gameHome);
+      const type   = reason.includes('goal-interference') ? 'goal interference'
+                   : reason.includes('off-side')          ? 'offside'
+                   : reason.includes('missed-stoppage')   ? 'missed stoppage'
+                   : 'call';
+
+      // Check if the next nearby penalty is an unsuccessful challenge
+      const unsuccessful = plays.find(p =>
+        p.typeDescKey === 'penalty' &&
+        p.sortOrder > chlg.sortOrder &&
+        p.sortOrder < chlg.sortOrder + 8 &&
+        p.details?.descKey === 'delaying-game-unsuccessful-challenge'
+      );
+      const succeeded = !unsuccessful;
+
+      if (isCar) {
+        results.push({
+          icon: succeeded ? '✅' : '❌',
+          text: succeeded
+            ? `CAR challenge (${type}) succeeded — call overturned`
+            : `CAR challenge (${type}) failed — 2-min penalty`,
+          type: succeeded ? 'good' : 'warn',
+        });
+      } else {
+        results.push({
+          icon: succeeded ? '😤' : '🛡️',
+          text: succeeded
+            ? `${oppAbbr} challenge (${type}) succeeded — call overturned`
+            : `${oppAbbr} challenge (${type}) failed`,
+          type: succeeded ? 'warn' : 'good',
+        });
+      }
+    });
+
+    if (leagueReviews.length > 0) {
+      results.push({
+        icon: '🎥',
+        text: `${leagueReviews.length} league-initiated video review${leagueReviews.length > 1 ? 's' : ''} this game`,
+        type: 'neutral',
+      });
+    }
+
     // ── Score situation (live only) ──────────────────────────
     if (isLive) {
       const diff = (carScore ?? 0) - (oppScore ?? 0);
@@ -2009,12 +2051,13 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       }
     }
 
-    return results.slice(0, 4);
+    return results.slice(0, 5);
   }, [pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers, isLive]);
 
-  if (!insights.length) return null;
+  if (!insights.length && !debugInsight) return null;
+  const displayInsights = debugInsight ? [debugInsight, ...insights].slice(0, 5) : insights;
 
-  return <LiveInsightsCard insights={insights} isLive={isLive} />;
+  return <LiveInsightsCard insights={displayInsights} isLive={isLive} />;
 }
 
 function LiveInsightsCard({ insights, isLive }) {
