@@ -13,12 +13,12 @@
   --red-border: rgba(204, 34, 0, 0.35);
 
   --blue: #2244aa;
-  --blue-bright: #4477ee;
+  --blue-bright: #4d80f0;  /* was #4477ee — lightened to meet WCAG AA 4.5:1 on bg2 */
   --blue-dim: rgba(34, 68, 170, 0.15);
 
   --green: #3dba7e;
   --amber: #f0a030;
-  --purple: #8866dd;
+  --purple: #9977ee;  /* was #8866dd — lightened to meet WCAG AA 4.5:1 on bg2 */
 
   --text: #e4e8f0;
   --text-muted: #8a99aa;
