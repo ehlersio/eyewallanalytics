@@ -1009,7 +1009,7 @@ function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position })
     );
   }
 
-  const { war, percentiles, gp, xGF_pct, goals60, a1_60, ppToi, pkToi, gameScore } = mpData;
+  const { war, percentiles, gp, xGF_pct, xGF60, xGA60, goals60, a1_60, ppToi, pkToi, gameScore } = mpData;
   const pos     = ['C','L','R','F'].includes(position) ? 'F' : 'D';
   const posLabel = pos === 'F' ? 'forwards' : 'defensemen';
   const p       = percentiles || {};
@@ -1043,6 +1043,8 @@ function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position })
       {/* Context stats */}
       <div className="pa-context">
         {xGF_pct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{xGF_pct}%</span><span>EV xGF%</span></div>}
+        {xGF60   != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{xGF60}</span><span>xGF/60</span></div>}
+        {xGA60   != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{xGA60}</span><span>xGA/60</span></div>}
         {goals60 != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{goals60}</span><span>G/60</span></div>}
         {a1_60   != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{a1_60}</span><span>A1/60</span></div>}
         {ppToi   != null && ppToi > 0 && <div className="pa-ctx-item"><span className="pa-ctx-val">{ppToi}m</span><span>PP TOI</span></div>}

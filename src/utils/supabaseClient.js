@@ -157,6 +157,20 @@ export async function getGoalieAnalytics(season = 20252026) {
   return result;
 }
 
+// ── Game-level xG (MoneyPuck) ─────────────────────────────────
+// Returns two rows (CAR + OPP) for a completed game.
+// MoneyPuck data available ~2-4h post-game — returns null for live games.
+// Frontend falls back to coordinate-estimate xG when this returns null.
+export async function getGameXG(gameId) {
+  if (!gameId) return null;
+  const rows = await sbFetch(
+    `game_xg?game_id=eq.${gameId}&situation=eq.5on5` +
+    `&select=team,xgf,xga,xgf_pct`
+  );
+  if (!rows?.length) return null;
+  return rows;
+}
+
 // ── Team skater stats ─────────────────────────────────────────
 export async function getTeamSkaterStatsFromDB(team = 'CAR', season = 20252026, gameType = 2) {
   const [seasonRows, playerRows] = await Promise.all([

@@ -10,7 +10,7 @@ import {
 import IceRink from '../components/IceRink';
 import { GoalPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
-import { getGoalieAnalytics } from '../utils/supabaseClient';
+import { getGoalieAnalytics, getGameXG } from '../utils/supabaseClient';
 import InfoTip from '../components/InfoTip';
 import { StatBar, MetCard, MetCardSkeleton } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
@@ -91,6 +91,12 @@ export default function ShotMapView() {
 
   // Season GSAX from Supabase for goalie cards
   const { data: goalieAnalytics } = useFetch(() => getGoalieAnalytics());
+
+  // Game-level xG from MoneyPuck (available ~2-4h post-game, not during live)
+  const { data: gameXGData } = useFetch(
+    () => gameId && !isLive ? getGameXG(gameId) : Promise.resolve(null),
+    [gameId, isLive]
+  );
 
   // ── Publish clock to shared store when PBP updates ──────────
   useEffect(() => {
@@ -487,6 +493,37 @@ export default function ShotMapView() {
       if (carS > oppS) carPPGoals++;
     });
 
+    // xG — simple distance+angle model from shot coordinates
+    // Higher weight for closer shots and better angles
+    function shotXG(play) {
+      const d = play.details || {};
+      const x = d.xCoord, y = d.yCoord;
+      if (x == null || y == null) return 0.05; // no coords: league avg ~5%
+      // Distance from net (net at x=±89, y=0)
+      const absX = Math.abs(x);
+      const dist  = Math.sqrt(Math.pow(absX - 89, 2) + y * y);
+      // Angle from centre (0 = straight on, 90 = behind net)
+      const angle = Math.abs(Math.atan2(Math.abs(y), Math.max(89 - absX, 1)) * 180 / Math.PI);
+      // Base xG from distance (logistic-ish curve)
+      const distFactor = Math.exp(-dist / 15);
+      // Angle penalty: straight-on shots are more dangerous
+      const angleFactor = Math.cos(angle * Math.PI / 180);
+      // Shot type bonus
+      const shotBonus = d.shotType === 'Deflected' || d.shotType === 'Tip-In' ? 1.4
+        : d.shotType === 'Backhand' ? 0.8 : 1.0;
+      const raw = Math.min(distFactor * Math.max(angleFactor, 0.2) * shotBonus, 1);
+      // Scale so league avg shot is ~8%
+      return Math.round(Math.max(raw * 0.55, 0.02) * 100) / 100;
+    }
+
+    let carXG = 0, oppXG = 0;
+    plays.forEach(p => {
+      if (!['shot-on-goal','goal','missed-shot'].includes(p.typeDescKey)) return;
+      const isCar = p.details?.eventOwnerTeamId === carId;
+      const xg = shotXG(p);
+      if (isCar) carXG += xg; else oppXG += xg;
+    });
+
     // PP stats from boxscore (more reliable for PP%)
     const bs       = boxscore?.playerByGameStats;
     const ppRaw    = getGameStat('powerPlay');
@@ -498,6 +535,7 @@ export default function ShotMapView() {
       faceoff:  { car: carFOW + carFOL > 0 ? carFOW / (carFOW + carFOL) * 100 : null, opp: null },
       penalties:{ car: carPens,   opp: oppPens },
       pp:       { gamePPGoals: carPPGoals, gamePPOpps: carPPOpps },
+      xg:       { car: parseFloat(carXG.toFixed(2)), opp: parseFloat(oppXG.toFixed(2)) },
     };
   }, [pbp, boxscore, gameHome]);
 
@@ -782,16 +820,17 @@ export default function ShotMapView() {
           const gpp = liveStats?.pp;
           const hasGamePP = gpp?.gamePPOpps > 0;
           const gamePPPct = hasGamePP ? gpp.gamePPGoals / gpp.gamePPOpps * 100 : null;
-          const avgPct    = ppPct ? (ppPct * 100).toFixed(1) : null;
+          const avgPct    = ppPct ? (ppPct <= 1 ? (ppPct * 100).toFixed(1) : parseFloat(ppPct).toFixed(1)) : null;
           const avgLabel  = inPlayoffs ? 'PO avg' : 'Szn avg';
+          // Show '—' until there's at least one PP opportunity this game (mirrors FO% behavior)
           return (
             <MetCard
               label="PP %"
-              value={gamePPPct != null ? `${gamePPPct.toFixed(1)}%` : (avgPct ? `${avgPct}%` : '—')}
-              sub={gamePPPct != null
-                ? `${gpp.gamePPGoals}/${gpp.gamePPOpps} · ${avgLabel} ${avgPct}%`
+              value={hasGamePP ? `${gamePPPct.toFixed(1)}%` : '—'}
+              sub={hasGamePP
+                ? `${gpp.gamePPGoals}/${gpp.gamePPOpps} · ${avgLabel} ${avgPct ?? '—'}%`
                 : `${avgLabel}${avgPct ? ` ${avgPct}%` : ''}`}
-              color={gamePPPct != null && avgPct && gamePPPct >= parseFloat(avgPct) ? 'green' : null}
+              color={hasGamePP && avgPct && gamePPPct >= parseFloat(avgPct) ? 'green' : null}
               onClick={pbp ? () => buildDrillDown('pp') : null}
             />
           );
@@ -942,6 +981,49 @@ export default function ShotMapView() {
                 <span />
                 <span style={{color:oppColor}}>{oppAbbr}</span>
               </div>
+
+              {/* Shot attempts (Corsi) + xG — from PBP, prepended to right-rail stats */}
+              {pbp?.plays?.length > 0 && (() => {
+                const sa = computeShotAttempts(pbp.plays);
+
+                // xG source: MoneyPuck (post-game, 5v5) → coordinate estimate (live fallback)
+                const xgCar    = gameXGData?.find(r => r.team === 'CAR');
+                const xgOpp    = gameXGData?.find(r => r.team === oppAbbr);
+                const mpXG     = xgCar != null && xgOpp != null;
+                const carXG    = mpXG ? xgCar.xgf : (liveStats?.xg?.car ?? 0);
+                const oppXG    = mpXG ? xgOpp.xgf : (liveStats?.xg?.opp ?? 0);
+                const xgHelp   = mpXG
+                  ? 'MoneyPuck 5v5 expected goals — their full xG model including shot quality, traffic, and pre-shot movement. Available a few hours after game end.'
+                  : 'xG estimated from shot distance and angle (live estimate). Replaced by MoneyPuck\'s full model once the game ends.';
+
+                const rows = [
+                  { label: 'Shot Attempts (CF)', carN: sa.carCorsi, oppN: sa.oppCorsi,
+                    help: 'Corsi: all shot attempts including misses and blocks. Best possession proxy.' },
+                  { label: `xG${mpXG ? ' 5v5' : ' (est)'}`, carN: carXG, oppN: oppXG,
+                    isDecimal: true, help: xgHelp },
+                ];
+                return rows.map(({ label, carN, oppN, isDecimal, help }) => {
+                  const total = (carN || 0) + (oppN || 0) || 1;
+                  const fmt   = v => v == null ? '—' : isDecimal ? v.toFixed(2) : v;
+                  return (
+                    <div key={label} className="gm-stat-row">
+                      <span className="gm-stat-val red">{fmt(carN)}</span>
+                      <div className="gm-stat-mid">
+                        <div className="gm-stat-label">
+                          {label}
+                          <InfoTip text={help} position="above" />
+                        </div>
+                        <div className="dual-bar">
+                          <div className="fill-red"  style={{width:`${Math.round((carN||0)/total*100)}%`}} />
+                          <div className="fill-blue" style={{width:`${Math.round((oppN||0)/total*100)}%`}} />
+                        </div>
+                      </div>
+                      <span className="gm-stat-val muted">{fmt(oppN)}</span>
+                    </div>
+                  );
+                });
+              })()}
+
               {teamGameStats.slice(0, 6).map((row, i) => {
                 const carVal = gameHome ? row.homeValue : row.awayValue;
                 const oppVal = gameHome ? row.awayValue : row.homeValue;
@@ -1512,13 +1594,31 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     const penalties = plays.filter(p => p.typeDescKey === 'penalty');
     const carPens   = penalties.filter(p => p.details?.eventOwnerTeamId === carTeam).length;
     const oppPens   = penalties.filter(p => p.details?.eventOwnerTeamId !== carTeam).length;
-    const ppGoalsAgainst = plays.filter(p =>
-      p.typeDescKey === 'goal' &&
-      p.details?.eventOwnerTeamId !== carTeam &&
-      (p.details?.situationCode?.startsWith('5v4') ||
-       p.details?.situationCode?.startsWith('5v3'))
-    ).length;
-    if (carPens >= 2 && ppGoalsAgainst === 0) {
+    // situationCode lives on the play itself, not inside details
+    const ppGoalsAgainst = plays.filter(p => {
+      if (p.typeDescKey !== 'goal') return false;
+      if (p.details?.eventOwnerTeamId === carTeam) return false;
+      const sc = p.situationCode;
+      if (!sc || sc.length < 4) return false;
+      // OPP PP = OPP has more skaters than CAR
+      // situationCode: [awayGoalie][awaySkaters][homeSkaters][homeGoalie]
+      const awayS = parseInt(sc[1]);
+      const homeS = parseInt(sc[2]);
+      const carS  = gameHome ? homeS : awayS;
+      const oppS  = gameHome ? awayS : homeS;
+      return oppS > carS;
+    }).length;
+
+    // Only show "perfect PK" after OPP PP has expired — don't fire while penalty is still active
+    const lastPlay = plays[plays.length - 1];
+    const lastSc   = lastPlay?.situationCode;
+    const oppCurrentlyOnPP = lastSc && lastSc.length === 4 && (() => {
+      const awayS = parseInt(lastSc[1]);
+      const homeS = parseInt(lastSc[2]);
+      return gameHome ? awayS > homeS : homeS > awayS;
+    })();
+
+    if (carPens >= 2 && ppGoalsAgainst === 0 && !oppCurrentlyOnPP) {
       results.push({ icon: '🛡️', text: `CAR PK went ${carPens}-for-${carPens} — perfect penalty kill`, type: 'good' });
     } else if (ppGoalsAgainst >= 2) {
       results.push({ icon: '😤', text: `PK struggled — allowed ${ppGoalsAgainst} power play goals`, type: 'warn' });
