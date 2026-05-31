@@ -26,6 +26,8 @@
   gap: 8px;
   margin-bottom: 10px;
 }
+.metrics-grid.metrics-grid-4 { grid-template-columns: repeat(4, 1fr); margin-bottom: 8px; }
+.metrics-grid.metrics-grid-3 { grid-template-columns: repeat(3, 1fr); margin-bottom: 10px; }
 
 /* Wider screens: still 3 per row (2 rows of 3) */
 @media (min-width: 560px) {
