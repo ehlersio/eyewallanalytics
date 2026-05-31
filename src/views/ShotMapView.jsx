@@ -2022,7 +2022,7 @@ function PPAnalysisPanel({ drillStat }) {
                   </div>
                   <div className="pp-detail-stat">
                     <span className="pp-detail-val">{opp.shots}</span>
-                    <span className="pp-detail-label">Attempts</span>
+                    <span className="pp-detail-label">SA</span>
                   </div>
                   <div className="pp-detail-stat">
                     <span className="pp-detail-val">{opp.xg}</span>
@@ -2030,7 +2030,7 @@ function PPAnalysisPanel({ drillStat }) {
                   </div>
                   <div className="pp-detail-stat">
                     <span className="pp-detail-val">{opp.duration}s</span>
-                    <span className="pp-detail-label">Duration</span>
+                    <span className="pp-detail-label" style={{display:'flex',alignItems:'center',gap:2}}>Duration <InfoTip text="Duration — time in seconds between the first and last tracked play of this opportunity. Scores early = shorter duration. May be shorter than the full 2-minute penalty if there were no events near the start or end." position="above" /></span>
                   </div>
                 </div>
 
@@ -2188,10 +2188,10 @@ function PKAnalysisPanel({ drillStat }) {
                 {/* Stat chips */}
                 <div className="pp-detail-stats">
                   <div className="pp-detail-stat"><span className="pp-detail-val">{opp.sog}</span><span className="pp-detail-label">SOG vs</span></div>
-                  <div className="pp-detail-stat"><span className="pp-detail-val">{opp.shots}</span><span className="pp-detail-label">Attempts</span></div>
+                  <div className="pp-detail-stat"><span className="pp-detail-val">{opp.shots}</span><span className="pp-detail-label">SA</span></div>
                   <div className="pp-detail-stat"><span className="pp-detail-val">{opp.xgAgainst}</span><span className="pp-detail-label">xGA</span></div>
                   <div className="pp-detail-stat"><span className="pp-detail-val">{opp.blockerList.reduce((s, b) => s + b.count, 0)}</span><span className="pp-detail-label">Blocks</span></div>
-                  <div className="pp-detail-stat"><span className="pp-detail-val">{opp.duration}s</span><span className="pp-detail-label">Duration</span></div>
+                  <div className="pp-detail-stat"><span className="pp-detail-val">{opp.duration}s</span><span className="pp-detail-label" style={{display:'flex',alignItems:'center',gap:2}}>Duration <InfoTip text="Duration — time in seconds between the first and last tracked play of this opportunity. Scores early = shorter duration. May be shorter than the full 2-minute penalty if there were no events near the start or end." position="above" /></span></div>
                 </div>
 
                 {/* Blockers */}
