@@ -18,12 +18,14 @@ import TeamLogo from '../components/TeamLogo';
 import './ShotMapView.css';
 import { publishClock, getClockDisplay, publishMomentum } from '../utils/liveClockStore';
 import { useDevGame } from '../utils/DevGameContext';
+import { useWakeLock } from '../hooks/useWakeLock';
 
 const CAR_ABBR = 'CAR';
 
 export default function ShotMapView() {
   // ── Dev replay injection ──────────────────────────────────────
   const devGame = useDevGame();
+  useWakeLock(isLive); // keep screen on during live games
 
   // Live game polling
   const { data: liveGameReal } = usePoll(getLiveGame, 30000);
