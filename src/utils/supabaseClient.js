@@ -130,7 +130,7 @@ export async function getGoalieAnalytics(season = 20252026) {
   const rows = await sbFetch(
     `goalie_seasons?season=eq.${season}&game_type=eq.2` +
     `&gsax=not.is.null` +
-    `&select=player_id,team,games_played,gsax,gsax_per60,` +
+    `&select=player_id,team,games_played,gsax,gsax_per60,qs_pct,qs,` +
     `ev_sv_pct,hd_sv_pct,md_sv_pct,pk_sv_pct,` +
     `pct_gsax,pct_gsax60,pct_ev_sv,pct_hd_sv,pct_md_sv,pct_pk_sv`
   );
@@ -141,6 +141,8 @@ export async function getGoalieAnalytics(season = 20252026) {
       gsax:    r.gsax,
       gsax60:  r.gsax_per60,
       gp:      r.games_played,
+      qsPct:   r.qs_pct ?? null,
+      qs:      r.qs ?? null,
       evSvPct: r.ev_sv_pct != null ? Math.round(r.ev_sv_pct * 1000) / 10 : null,
       hdSvPct: r.hd_sv_pct != null ? Math.round(r.hd_sv_pct * 1000) / 10 : null,
       mdSvPct: r.md_sv_pct != null ? Math.round(r.md_sv_pct * 1000) / 10 : null,

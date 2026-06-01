@@ -86,6 +86,10 @@ const GOALIE_STATS = [
     tip: 'Goals allowed per 60 minutes of play.',
     calc: 'GAA = (Goals Against / Minutes Played) × 60',
     why: 'Context-dependent — a goalie on a weak team will face more shots. Best read alongside SV%.' },
+  { key: 'qualityStartPct', label: 'QS%', group: 'Performance',
+    tip: 'Percentage of starts where the goalie posted a quality start — SV% ≥ .917, or ≥ .885 when facing 20 or fewer shots.',
+    calc: 'QS% = Quality Starts / Games Started',
+    why: 'Measures consistency. A "quality start" means the goalie gave his team a reasonable chance to win based on historical win rates at those SV% thresholds. League average is roughly 55%. Elite starters exceed 65%.' },
   { key: 'shotsAgainst',   label: 'SA',  group: 'Performance',
     tip: 'Shots on goal faced. Indicates workload.', why: 'High SA means the team gives up many chances; context for SV%.' },
   { key: 'saves',          label: 'SV',  group: 'Performance',
@@ -478,7 +482,12 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
 
           {!loading && sections.map(({ label, stats: s, highlight }) => {
             if (!s) return null
-            const groups = groupStats(statDefs, s, isGoalie)
+            // Inject QS% from analytics data into the goalie stats object
+            // so it renders naturally in the Performance group via groupStats
+            const enriched = (isGoalie && goalieData?.qsPct != null)
+              ? { ...s, qualityStartPct: goalieData.qsPct }
+              : s
+            const groups = groupStats(statDefs, enriched, isGoalie)
             if (!groups.length) return null
             return (
               <StatSection key={label} label={label} groups={groups} highlight={highlight} isGoalie={isGoalie} />
@@ -601,6 +610,9 @@ function groupStats(defs, stats, isGoalie) {
       fmt = isNaN(n) ? '—' : (n <= 1 ? n.toFixed(3) : (n / 100).toFixed(3))
     } else if (def.key === 'goalsAgainstAvg' || def.key === 'gaa') {
       fmt = parseFloat(raw).toFixed(2)
+    } else if (def.key === 'qualityStartPct') {
+      const n = parseFloat(raw)
+      fmt = isNaN(n) ? '—' : `${(n * 100).toFixed(1)}%`
     } else if (def.key === 'plusMinus') {
       const n = parseInt(raw)
       fmt = isNaN(n) ? '—' : (n >= 0 ? `+${n}` : `${n}`)

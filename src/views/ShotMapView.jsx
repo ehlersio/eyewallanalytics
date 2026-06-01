@@ -1355,6 +1355,7 @@ export default function ShotMapView() {
                   saves={carGoalie.saves}
                   shotsAgainst={carGoalie.shotsAgainst}
                   savePctg={carGoalie.savePctg}
+                  toi={carGoalie.toi}
                   color="var(--red-bright)"
                   seasonData={goalieAnalytics?.[String(carGoalie.playerId)] || null}
                 />
@@ -1366,6 +1367,7 @@ export default function ShotMapView() {
                   saves={oppGoalie.saves}
                   shotsAgainst={oppGoalie.shotsAgainst}
                   savePctg={oppGoalie.savePctg}
+                  toi={oppGoalie.toi}
                   color={oppColor}
                   seasonData={goalieAnalytics?.[String(oppGoalie.playerId)] || null}
                 />
@@ -1542,7 +1544,7 @@ export default function ShotMapView() {
 
 // ── Sub-components ────────────────────────────────────────────
 
-function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color, seasonData }) {
+function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, toi, color, seasonData }) {
   const svPct = savePctg != null
     ? (savePctg <= 1 ? savePctg.toFixed(3) : (savePctg / 100).toFixed(3))
     : '—';
@@ -1554,6 +1556,17 @@ function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color, seasonDat
     : seasonGsax >= 5  ? 'var(--green)'
     : seasonGsax >= 0  ? 'var(--text-muted)'
     : 'var(--red-bright)';
+
+  // GAA — goals allowed * 60 / TOI minutes
+  // toi arrives as "MM:SS" string from the NHL API boxscore
+  const gaa = (() => {
+    if (saves == null || shotsAgainst == null || !toi) return null;
+    const [mm, ss] = toi.split(':').map(Number);
+    const toiMins = mm + (ss || 0) / 60;
+    if (toiMins < 1) return null; // avoid absurd values for backups with no ice
+    const goalsAllowed = shotsAgainst - saves;
+    return (goalsAllowed / toiMins * 60).toFixed(2);
+  })();
 
   return (
     <div className="goalie-card">
@@ -1570,6 +1583,14 @@ function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color, seasonDat
           <span className="goalie-stat-label">SV%</span>
           <span className="goalie-stat-val goalie-svpct">{svPct}</span>
         </div>
+        {gaa != null && (
+          <div className="goalie-stat-col">
+            <span className="goalie-stat-label">
+              GAA <InfoTip text="Goals against average for this game — goals allowed per 60 minutes of ice time." position="above" />
+            </span>
+            <span className="goalie-stat-val">{gaa}</span>
+          </div>
+        )}
         {seasonGsax != null ? (
           <div className="goalie-stat-col">
             <span className="goalie-stat-label">
