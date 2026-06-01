@@ -171,6 +171,59 @@ export async function getGameXG(gameId) {
   return rows;
 }
 
+// ── Game log insights ─────────────────────────────────────────
+// Returns team-specific situational stats for Live Insights.
+// Requires car_scored_first boolean in game_log (added by nhl_stats.py).
+export async function getGameLogInsights(oppAbbr, season = 20252026) {
+  const rows = await sbFetch(
+    `game_log?season=eq.${season}&select=game_id,opponent,car_score,opp_score,` +
+    `car_scored_first,home_team&order=game_id.asc`
+  ).catch(() => null);
+
+  if (!rows?.length) return null;
+
+  const completed = rows.filter(r => r.car_score != null && r.opp_score != null);
+  const wins      = completed.filter(r => r.car_score > r.opp_score);
+  const total     = completed.length;
+
+  // When CAR scored first
+  const scoredFirst      = completed.filter(r => r.car_scored_first);
+  const scoredFirstWins  = scoredFirst.filter(r => r.car_score > r.opp_score);
+  const scoredFirstWinPct = scoredFirst.length > 0
+    ? Math.round(scoredFirstWins.length / scoredFirst.length * 100) : null;
+
+  // When CAR did NOT score first
+  const didntScoreFirst     = completed.filter(r => r.car_scored_first === false);
+  const didntScoreFirstWins = didntScoreFirst.filter(r => r.car_score > r.opp_score);
+  const didntScoreFirstWinPct = didntScoreFirst.length > 0
+    ? Math.round(didntScoreFirstWins.length / didntScoreFirst.length * 100) : null;
+
+  // Head-to-head vs this opponent (regular season)
+  const vsOpp      = completed.filter(r => r.opponent === oppAbbr);
+  const vsOppWins  = vsOpp.filter(r => r.car_score > r.opp_score);
+  const vsOppRecord = vsOpp.length > 0
+    ? { w: vsOppWins.length, l: vsOpp.length - vsOppWins.length, gp: vsOpp.length }
+    : null;
+
+  // Series record (playoffs — game_type filter would be better but game_log uses season)
+  // Approximate: look for consecutive games vs same opponent near the end of season
+  const recentVsOpp = vsOpp.slice(-7); // last 7 games vs this opp (covers a series)
+  const seriesWins  = recentVsOpp.filter(r => r.car_score > r.opp_score).length;
+  const seriesRecord = recentVsOpp.length >= 2
+    ? { w: seriesWins, l: recentVsOpp.length - seriesWins, gp: recentVsOpp.length }
+    : null;
+
+  return {
+    total,
+    wins: wins.length,
+    scoredFirstWinPct,
+    scoredFirstGames:  scoredFirst.length,
+    didntScoreFirstWinPct,
+    vsOppRecord,
+    seriesRecord,
+  };
+}
+
 // ── Team skater stats ─────────────────────────────────────────
 export async function getTeamSkaterStatsFromDB(team = 'CAR', season = 20252026, gameType = 2) {
   const [seasonRows, playerRows] = await Promise.all([
