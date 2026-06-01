@@ -1,43 +1,56 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import './InfoTip.css';
 
 export default function InfoTip({ label, text, position = 'auto' }) {
   const [open,  setOpen]  = useState(false);
   const [style, setStyle] = useState({ visibility: 'hidden' });
-  const wrapRef  = useRef(null);
-  const popupRef = useRef(null);
+  const wrapRef   = useRef(null);
+  const popupRef  = useRef(null);
+  const passRef   = useRef(0); // 0 = not started, 1 = pass1 done, 2 = done
 
-  // useLayoutEffect runs synchronously after DOM paint — dimensions are real
   useLayoutEffect(() => {
     if (!open || !popupRef.current || !wrapRef.current) return;
 
     const wrap   = wrapRef.current.getBoundingClientRect();
     const popup  = popupRef.current.getBoundingClientRect();
-    const vw     = window.innerWidth;
-    const vh     = window.innerHeight;
-    const popW   = popup.width  || 220;
-    const popH   = popup.height || 120;
+    const vw     = window.visualViewport?.width  ?? window.innerWidth;
+    const vh     = window.visualViewport?.height ?? window.innerHeight;
+    const popW   = popup.width || 220;
     const margin = 10;
 
-    // Vertical: prefer above the trigger if it fits, else below
-    const spaceAbove = wrap.top;
-    const spaceBelow = vh - wrap.bottom;
-    const useAbove   = position === 'above'
-      || (position !== 'below' && spaceAbove >= popH + 8 && spaceBelow < popH + 8);
-    const top = useAbove
-      ? wrap.top - popH - 8
-      : wrap.bottom + 8;
-
-    // Horizontal: center on trigger, clamped within viewport
-    let left = wrap.left + wrap.width / 2 - popW / 2;
+    const triggerCenter = wrap.left + wrap.width / 2;
+    let left = triggerCenter > vw / 2
+      ? wrap.right - popW
+      : triggerCenter - popW / 2;
     left = Math.max(margin, Math.min(left, vw - popW - margin));
 
-    setStyle({ position: 'fixed', top, left, transform: 'none', visibility: 'visible' });
-  }, [open, position]);
+    if (passRef.current === 0) {
+      // Pass 1: position at final left but off-screen vertically so text
+      // reflows at real width before we measure height
+      passRef.current = 1;
+      setStyle({ position: 'fixed', top: -9999, left, visibility: 'hidden' });
+    } else if (passRef.current === 1) {
+      // Pass 2: text has wrapped — popH is now accurate
+      passRef.current = 2;
+      const popH = popup.height;
+      if (!popH) return;
+
+      const spaceAbove = wrap.top;
+      const spaceBelow = vh - wrap.bottom;
+      const useAbove   = position === 'above'
+        || (position !== 'below' && spaceAbove >= popH + 8 && spaceBelow < popH + 8);
+      let top = useAbove ? wrap.top - popH - 8 : wrap.bottom + 8;
+      top = Math.max(margin, Math.min(top, vh - popH - margin));
+
+      setStyle({ position: 'fixed', top, left, visibility: 'visible' });
+    }
+    // passRef === 2: fully positioned, do nothing
+  }, [open, style.left]); // style.left changes after pass 1 → triggers pass 2
 
   const handleOpen = (e) => {
     e.stopPropagation();
-    if (!open) setStyle({ visibility: 'hidden' }); // hide until positioned
+    passRef.current = 0;
+    setStyle({ position: 'fixed', top: -9999, left: -9999, visibility: 'hidden' });
     setOpen(o => !o);
   };
 

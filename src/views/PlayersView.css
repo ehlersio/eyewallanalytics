@@ -428,6 +428,7 @@
 }
 .pa-ctx-val { font-size: 14px; font-weight: 700; font-family: var(--font-mono); color: var(--text); }
 .pa-ctx-label { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
+.pa-ctx-label .info-tip-popup { white-space: normal; }
 
 .pa-section-label {
   font-size: 10px; font-weight: 700; text-transform: uppercase;
