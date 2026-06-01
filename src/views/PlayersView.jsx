@@ -977,11 +977,31 @@ function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position })
           </div>
         </div>
 
-        <div className="pa-context">
-          {evSvPct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{evSvPct}%</span><span>5on5 SV%</span></div>}
-          {hdSvPct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{hdSvPct}%</span><span>HD SV%</span></div>}
-          {mdSvPct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{mdSvPct}%</span><span>MD SV%</span></div>}
-          {pkSvPct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{pkSvPct}%</span><span>PK SV%</span></div>}
+        <div className="pa-context pa-context-centered">
+          {evSvPct != null && (
+            <div className="pa-ctx-item">
+              <span className="pa-ctx-val">{evSvPct}%</span>
+              <span className="pa-ctx-label">5on5 SV% <InfoTip text="Save percentage at even strength (5-on-5 only). Removes special teams situations which can skew overall SV%. The most stable indicator of true goaltending ability." position="above" /></span>
+            </div>
+          )}
+          {hdSvPct != null && (
+            <div className="pa-ctx-item">
+              <span className="pa-ctx-val">{hdSvPct}%</span>
+              <span className="pa-ctx-label">HD SV% <InfoTip text="Save percentage on high-danger shots — taken within ~15 feet of the net. The hardest shots to stop; the best quality-adjusted goalie metric." position="above" /></span>
+            </div>
+          )}
+          {mdSvPct != null && (
+            <div className="pa-ctx-item">
+              <span className="pa-ctx-val">{mdSvPct}%</span>
+              <span className="pa-ctx-label">MD SV% <InfoTip text="Save percentage on medium-danger shots (15–30 feet from net). Complements HD SV% for a fuller picture of save quality across shot locations." position="above" /></span>
+            </div>
+          )}
+          {pkSvPct != null && (
+            <div className="pa-ctx-item">
+              <span className="pa-ctx-val">{pkSvPct}%</span>
+              <span className="pa-ctx-label">PK SV% <InfoTip text="Save percentage while shorthanded. Penalty kill goaltending requires different positioning — some goalies are significantly better or worse in this situation than at even strength." position="above" /></span>
+            </div>
+          )}
         </div>
 
         <div className="pa-section-label">Percentile rankings vs all NHL goalies</div>
@@ -1009,10 +1029,18 @@ function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position })
     );
   }
 
-  const { war, percentiles, gp, xGF_pct, xGF60, xGA60, goals60, a1_60, ppToi, pkToi, gameScore } = mpData;
+  const { war, percentiles, gp, xGF_pct, xGF60, goals60, a1_60, ppToi, pkToi, gameScore } = mpData;
   const pos     = ['C','L','R','F'].includes(position) ? 'F' : 'D';
   const posLabel = pos === 'F' ? 'forwards' : 'defensemen';
   const p       = percentiles || {};
+
+  // Format decimal minutes as M:SS (e.g. 47.3 → "47:18")
+  const fmtToi = (mins) => {
+    if (mins == null) return null;
+    const m = Math.floor(mins);
+    const s = Math.round((mins - m) * 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
 
   // WAR color
   const warColor = war >= 2 ? '#4ade80' : war >= 0.5 ? '#fbbf24' : '#f87171';
@@ -1042,13 +1070,42 @@ function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position })
 
       {/* Context stats */}
       <div className="pa-context">
-        {xGF_pct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{xGF_pct}%</span><span>EV xGF%</span></div>}
-        {xGF60   != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{xGF60}</span><span>xGF/60</span></div>}
-        {xGA60   != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{xGA60}</span><span>xGA/60</span></div>}
-        {goals60 != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{goals60}</span><span>G/60</span></div>}
-        {a1_60   != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{a1_60}</span><span>A1/60</span></div>}
-        {ppToi   != null && ppToi > 0 && <div className="pa-ctx-item"><span className="pa-ctx-val">{ppToi}m</span><span>PP TOI</span></div>}
-        {pkToi   != null && pkToi > 0 && <div className="pa-ctx-item"><span className="pa-ctx-val">{pkToi}m</span><span>PK TOI</span></div>}
+        {xGF_pct != null && (
+          <div className="pa-ctx-item">
+            <span className="pa-ctx-val">{xGF_pct}%</span>
+            <span className="pa-ctx-label">EV xGF% <InfoTip text="On-ice expected goals for % at 5-on-5. The share of total shot quality generated while this player is on the ice — above 50% means CAR outshoots opponents in quality with him on the ice. Team metric, not individual." position="above" /></span>
+          </div>
+        )}
+        {xGF60 != null && (
+          <div className="pa-ctx-item">
+            <span className="pa-ctx-val">{xGF60}</span>
+            <span className="pa-ctx-label">xGF/60 <InfoTip text="Individual expected goals generated per 60 minutes — the shot quality this player personally produces, based on shot location and type. Measures how dangerous their own shots are, independent of linemates." position="above" /></span>
+          </div>
+        )}
+        {goals60 != null && (
+          <div className="pa-ctx-item">
+            <span className="pa-ctx-val">{goals60}</span>
+            <span className="pa-ctx-label">G/60 <InfoTip text="Goals scored per 60 minutes of ice time. Rate-adjusts for playing time so a player with 15 min/game and one with 22 min/game can be compared fairly." position="above" /></span>
+          </div>
+        )}
+        {a1_60 != null && (
+          <div className="pa-ctx-item">
+            <span className="pa-ctx-val">{a1_60}</span>
+            <span className="pa-ctx-label">A1/60 <InfoTip text="Primary (first) assists per 60 minutes. First assists directly set up the goal scorer and are more meaningful than secondary assists, which can be coincidental." position="above" /></span>
+          </div>
+        )}
+        {ppToi != null && ppToi > 0 && (
+          <div className="pa-ctx-item">
+            <span className="pa-ctx-val">{fmtToi(ppToi)}</span>
+            <span className="pa-ctx-label">PP TOI <InfoTip text="Power play ice time this season. Presence here means the player has enough PP time for a reliable PP metric — see the Power Play percentile bar below." position="above" /></span>
+          </div>
+        )}
+        {pkToi != null && pkToi > 0 && (
+          <div className="pa-ctx-item">
+            <span className="pa-ctx-val">{fmtToi(pkToi)}</span>
+            <span className="pa-ctx-label">PK TOI <InfoTip text="Penalty kill ice time this season. Presence here means the player has enough PK time for a reliable PK metric — see the Penalty Kill percentile bar below." position="above" /></span>
+          </div>
+        )}
       </div>
 
       {/* Percentile rankings */}
