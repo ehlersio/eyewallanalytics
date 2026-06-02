@@ -22,14 +22,29 @@ async function sbFetch(path) {
 // Returns analytics object keyed by player_id (string), matching
 // the shape the app already expects from moneypuck:skaters KV.
 export async function getPlayerAnalytics(season = 20252026) {
-  const rows = await sbFetch(
-    `player_seasons?season=eq.${season}&game_type=eq.2` +
-    `&war=not.is.null` +
-    `&select=player_id,team,war,ev_off_pct,ev_def_inv,pp_xgf60,pk_xga60_inv,pp_icetime,pk_icetime,` +
+  // Fetch reg season analytics + playoff defensive stats in parallel
+  const DEF_COLS = `player_id,hits,blocked_shots,takeaways,giveaways`;
+  const ANA_COLS = `player_id,team,war,ev_off_pct,ev_def_inv,pp_xgf60,pk_xga60_inv,pp_icetime,pk_icetime,` +
     `finishing,goals_per60,a1_per60,xgf_per60,penalties_per60,competition,teammates,game_score,` +
     `pct_ev_off,pct_ev_def,pct_pp,pct_pk,pct_finishing,pct_goals,pct_a1,` +
-    `pct_penalties,pct_competition,pct_teammates,games_played`
-  );
+    `pct_penalties,pct_competition,pct_teammates,games_played,` +
+    `xga_per60,hdca_per60,hits,blocked_shots,takeaways,giveaways`;
+
+  const [rows, poRows] = await Promise.all([
+    sbFetch(`player_seasons?season=eq.${season}&game_type=eq.2&war=not.is.null&select=${ANA_COLS}`),
+    sbFetch(`player_seasons?season=eq.${season}&game_type=eq.3&select=${DEF_COLS}`).catch(() => []),
+  ]);
+
+  // Build playoff defensive map: player_id → { hits, blocked_shots, takeaways, giveaways }
+  const poDefMap = {};
+  for (const r of (poRows || [])) {
+    poDefMap[String(r.player_id)] = {
+      hits:         r.hits         ?? null,
+      blockedShots: r.blocked_shots ?? null,
+      takeaways:    r.takeaways    ?? null,
+      giveaways:    r.giveaways    ?? null,
+    };
+  }
 
   // Transform into the shape PlayerAnalytics component expects
   const result = {};
@@ -40,10 +55,19 @@ export async function getPlayerAnalytics(season = 20252026) {
       gameScore:  r.game_score,
       xGF_pct:    r.ev_off_pct != null ? Math.round(r.ev_off_pct * 1000) / 10 : null,
       xGF60:      r.xgf_per60 != null ? Math.round(r.xgf_per60 * 100) / 100 : null,
+      xGA60:      r.xga_per60 != null ? Math.round(r.xga_per60 * 100) / 100 : null,
+      hdca60:     r.hdca_per60 != null ? Math.round(r.hdca_per60 * 10) / 10 : null,
       goals60:    r.goals_per60,
       a1_60:      r.a1_per60,
       ppToi:      r.pp_icetime ?? null,
       pkToi:      r.pk_icetime ?? null,
+      // Regular season defensive (from realtime)
+      hits:         r.hits         ?? null,
+      blockedShots: r.blocked_shots ?? null,
+      takeaways:    r.takeaways    ?? null,
+      giveaways:    r.giveaways    ?? null,
+      // Playoff defensive — separate object so frontend can inject per section
+      poDef: poDefMap[String(r.player_id)] || null,
       percentiles: {
         evOff:     { pct: r.pct_ev_off,      label: 'EV Offence',   note: 'On-ice expected goals for % at 5-on-5. Measures how often your team generates quality chances when this player is on the ice. Above 50% = your team outshoots in quality. Percentile vs all NHL players at same position.' },
         evDef:     { pct: r.pct_ev_def,      label: 'EV Defence',   note: 'On-ice expected goals against per 60 at 5-on-5 (lower is better, inverted so higher = better defender). How many quality chances does the opponent generate when this player is on the ice? Percentile vs all NHL players at same position.' },

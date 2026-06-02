@@ -65,6 +65,20 @@ const SKATER_STATS = [
     tip: 'Percentage of faceoffs won. Relevant mainly for centres.',
     calc: 'FO% = (Faceoffs Won / Total Faceoffs) × 100',
     why: 'Winning faceoffs gives your team puck possession. A rate above 50% is above average.' },
+
+  // Defensive
+  { key: 'hits',               label: 'Hits',        group: 'Defensive',
+    tip: 'Body checks delivered. Counted when a player legally separates an opponent from the puck.',
+    why: 'Physical play disrupts opponents and can shift momentum, though elite defensive players aren\'t always hitters.' },
+  { key: 'blockedShots',       label: 'Blocks',      group: 'Defensive',
+    tip: 'Shots blocked by this player — positioned between the shooter and the net.',
+    why: 'Shot blocking is a tangible defensive contribution, especially valued in the playoffs where teams tighten defensively.' },
+  { key: 'takeaways',          label: 'TK',          group: 'Defensive',
+    tip: 'Takeaways — times this player stripped the puck from an opponent.',
+    why: 'Takeaways generate possession and transition chances. A high ratio of TK to GV signals a net-positive puck-battle player.' },
+  { key: 'giveaways',          label: 'GV',          group: 'Defensive',
+    tip: 'Giveaways — times this player lost the puck to an opponent.',
+    why: 'Giveaways lead to odd-man rushes and scoring chances against. Lower is better — compare to TK for full picture.' },
 ]
 
 const GOALIE_STATS = [
@@ -483,10 +497,32 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
           {!loading && sections.map(({ label, stats: s, highlight }) => {
             if (!s) return null
             // Inject QS% from analytics data into the goalie stats object
-            // so it renders naturally in the Performance group via groupStats
-            const enriched = (isGoalie && goalieData?.qsPct != null)
+            // so it renders naturally in the Performance group via groupStats.
+            // Also inject defensive stats from mpData for skaters:
+            //   - Regular season (gameTypeId=2): from realtime via mpData
+            //   - Playoffs (gameTypeId=3): from mpData.poDef
+            let enriched = (isGoalie && goalieData?.qsPct != null)
               ? { ...s, qualityStartPct: goalieData.qsPct }
               : s
+            if (!isGoalie && mpData) {
+              if (s?.gameTypeId === 2) {
+                enriched = {
+                  ...enriched,
+                  hits:         mpData.hits         ?? undefined,
+                  blockedShots: mpData.blockedShots  ?? undefined,
+                  takeaways:    mpData.takeaways     ?? undefined,
+                  giveaways:    mpData.giveaways     ?? undefined,
+                }
+              } else if (s?.gameTypeId === 3 && mpData.poDef) {
+                enriched = {
+                  ...enriched,
+                  hits:         mpData.poDef.hits         ?? undefined,
+                  blockedShots: mpData.poDef.blockedShots  ?? undefined,
+                  takeaways:    mpData.poDef.takeaways     ?? undefined,
+                  giveaways:    mpData.poDef.giveaways     ?? undefined,
+                }
+              }
+            }
             const groups = groupStats(statDefs, enriched, isGoalie)
             if (!groups.length) return null
             return (
@@ -1041,7 +1077,7 @@ function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position })
     );
   }
 
-  const { war, percentiles, gp, xGF_pct, xGF60, goals60, a1_60, ppToi, pkToi, gameScore } = mpData;
+  const { war, percentiles, gp, xGF_pct, xGF60, xGA60, hdca60, goals60, a1_60, ppToi, pkToi, gameScore } = mpData;
   const pos     = ['C','L','R','F'].includes(position) ? 'F' : 'D';
   const posLabel = pos === 'F' ? 'forwards' : 'defensemen';
   const p       = percentiles || {};
@@ -1092,6 +1128,18 @@ function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position })
           <div className="pa-ctx-item">
             <span className="pa-ctx-val">{xGF60}</span>
             <span className="pa-ctx-label">xGF/60 <InfoTip text="Individual expected goals generated per 60 minutes — the shot quality this player personally produces, based on shot location and type. Measures how dangerous their own shots are, independent of linemates." position="above" /></span>
+          </div>
+        )}
+        {xGA60 != null && (
+          <div className="pa-ctx-item">
+            <span className="pa-ctx-val" style={{ color: xGA60 < 2.0 ? 'var(--green)' : xGA60 > 2.8 ? 'var(--red-bright)' : 'inherit' }}>{xGA60}</span>
+            <span className="pa-ctx-label">xGA/60 <InfoTip text="On-ice expected goals against per 60 minutes at 5-on-5. Measures how many quality chances opponents generate while this player is on the ice — lower is better. Team metric reflecting the full line's defensive performance." position="above" /></span>
+          </div>
+        )}
+        {hdca60 != null && (
+          <div className="pa-ctx-item">
+            <span className="pa-ctx-val" style={{ color: hdca60 < 7 ? 'var(--green)' : hdca60 > 10 ? 'var(--red-bright)' : 'inherit' }}>{hdca60}</span>
+            <span className="pa-ctx-label">HDCA/60 <InfoTip text="High-danger chances against per 60 minutes at 5-on-5. Shots from the slot and crease — the most likely to result in goals. Lower is better." position="above" /></span>
           </div>
         )}
         {goals60 != null && (
