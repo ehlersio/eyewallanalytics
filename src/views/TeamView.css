@@ -131,7 +131,7 @@
 
 /* Rolling chart */
 .rolling-chart {
-  height: 80px;
+  height: 90px;
   display: flex;
   align-items: flex-end;
   gap: 3px;
@@ -153,6 +153,45 @@
 .rl-hot  { color: var(--green); }
 .rl-ok   { color: var(--amber); }
 .rl-cold { color: var(--red-bright); }
+
+/* Rank badge on overview stat cells */
+.overview-stat-rank {
+  font-size: 10px; font-weight: 700; font-family: var(--font-mono);
+  margin-top: 2px; display: block;
+}
+.overview-stat-rank sup { font-size: 7px; }
+
+/* Always-visible bar labels */
+.rolling-bar-label {
+  font-size: 10px; font-family: var(--font-mono);
+  color: var(--text-dim); text-align: center;
+  line-height: 1; margin-bottom: 2px;
+  min-height: 12px; display: flex; align-items: flex-end; justify-content: center;
+}
+.rolling-bar-label-bot {
+  font-size: 10px; font-family: var(--font-mono);
+  text-align: center; line-height: 1; margin-top: 2px;
+  min-height: 12px; display: flex; align-items: flex-start; justify-content: center;
+}
+
+/* Dual-bar chart (GF/GA and PP/PK) */
+.rolling-chart-dual { height: 120px; align-items: center; }
+.rolling-bar-dual {
+  display: flex; gap: 1px; height: 60px;
+  align-items: flex-end; width: 100%;
+}
+.rolling-bar.gf-bar { background: var(--red-bright); flex: 1; }
+.rolling-bar.ga-bar { background: var(--blue-bright); flex: 1; }
+.rolling-bar.pp-bar { background: var(--amber); flex: 1; }
+.rolling-bar.pk-bar { background: var(--green); flex: 1; }
+
+/* GD chart inline labels */
+.gd-bar-inline-label {
+  font-size: 8px; font-family: var(--font-mono);
+  text-align: center; line-height: 1;
+}
+.gd-bar-inline-label.pos { color: var(--green); margin-bottom: 1px; }
+.gd-bar-inline-label.neg { color: var(--red-bright); margin-top: 1px; }
 
 /* Goal diff bars */
 .gd-bars {
@@ -290,35 +329,8 @@
 .adv-stat-row .amber { color: var(--amber); }
 .adv-stat-row .blue  { color: var(--blue-bright); }
 
-/* ── TapDot popup (Trends chart labels) ── */
-.tap-label-popup {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 300;
-  background: var(--bg1);
-  border: 0.5px solid var(--border-2);
-  border-radius: 8px;
-  padding: 7px 28px 7px 10px; /* right padding for close btn */
-  white-space: nowrap;
-  font-size: 11px;
-  color: var(--text-muted);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  cursor: default;
-}
-.tap-label-body  { font-size: 11px; color: var(--text-muted); }
-.tap-label-close {
-  position: absolute;
-  top: 4px; right: 6px;
-  background: none; border: none;
-  font-size: 11px; color: var(--text-dim);
-  cursor: pointer; padding: 2px 3px;
-  min-height: unset; min-width: unset;
-  line-height: 1;
-}
-.tap-label-close:hover { color: var(--text); }
-/* Result dot popup anchors below since dots are at top */
+/* ── TapDot popup (Trends chart labels) — removed, using inline labels ── */
+/* Result dot */
 .result-dot { position: relative; }
 
 /* ── Advanced stat rating indicators ── */

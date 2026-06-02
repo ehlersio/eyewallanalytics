@@ -851,6 +851,48 @@ export async function getTeamPlayoffStats() {
   return { corsi, scoreState, pp, pk };
 }
 
+// All-team season summary for league rank computation
+// Returns array of all NHL teams' season stats for the given game type.
+export async function getAllTeamStats(gameTypeId = 2) {
+  return cached(`allTeamStats:${gameTypeId}`, async () => {
+    const s   = STATS_SEASON;
+    const exp = encodeURIComponent(`gameTypeId=${gameTypeId} and seasonId=${s}`);
+    const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false&sort=wins&limit=50&cayenneExp=${exp}`;
+    const d   = await nhlFetch(url);
+    return d?.data || [];
+  }, TTL.ADVANCED);
+}
+
+// Compute CAR's rank for each season stat across all NHL teams.
+// Returns an object keyed by stat name → { rank, total } e.g. { goalsForPG: { rank: 1, total: 32 } }
+export async function getTeamSeasonRankings(gameTypeId = 2) {
+  const all = await getAllTeamStats(gameTypeId);
+  if (!all?.length) return null;
+  // This endpoint only has teamId, not abbreviation — use CAR_TEAM_ID (12)
+  const car = all.find(t => t.teamId === CAR_TEAM_ID);
+  if (!car) return null;
+  const total = all.length;
+
+  function rank(field, higherIsBetter = true) {
+    const val = car[field];
+    if (val == null) return null;
+    const sorted = [...all]
+      .filter(t => t[field] != null)
+      .sort((a, b) => higherIsBetter ? b[field] - a[field] : a[field] - b[field]);
+    const r = sorted.findIndex(t => t.teamId === CAR_TEAM_ID) + 1;
+    return r > 0 ? { rank: r, total } : null;
+  }
+
+  return {
+    goalsForPG:      rank('goalsForPerGame',      true),
+    goalsAgainstPG:  rank('goalsAgainstPerGame',  false),
+    ppPct:           rank('powerPlayPct',          true),
+    pkPct:           rank('penaltyKillPct',        true),
+    shotsForPG:      rank('shotsForPerGame',       true),
+    shotsAgainstPG:  rank('shotsAgainstPerGame',  false),
+  };
+}
+
 // Rolling game-by-game results for trend chart
 // Returns the last N completed games with GF, GA, shots, outcome
 export async function getTeamGameLog(count = 20) {
