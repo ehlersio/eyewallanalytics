@@ -514,6 +514,15 @@ function TrendsTab({ gameLog }) {
   React.useEffect(() => {
     getCarGameLog().then(setDbGameLog).catch(() => {})
   }, [])
+
+  // Build a map from gameId → dbGame for score-first and PP/PK lookup
+  // Must be declared before any early returns to satisfy Rules of Hooks
+  const dbGameMap = useMemo(() => {
+    const m = {}
+    dbGameLog?.forEach(g => { m[g.gameId] = g })
+    return m
+  }, [dbGameLog])
+
   if (!gameLog?.length) {
     return (
       <div className="card empty-state">
@@ -522,32 +531,6 @@ function TrendsTab({ gameLog }) {
       </div>
     )
   }
-
-  // Rolling 10-game win %
-  const rolling = gameLog.map((g, i) => {
-    const window = gameLog.slice(Math.max(0, i - 9), i + 1)
-    const w10pct = Math.round((window.filter(x => x.won).length / window.length) * 100)
-    return { ...g, w10pct }
-  })
-
-  // Current streak
-  let streak = 0, streakType = ''
-  for (let i = gameLog.length - 1; i >= 0; i--) {
-    const g = gameLog[i]
-    if (i === gameLog.length - 1) { streakType = g.won ? 'W' : 'L'; streak = 1 }
-    else if ((g.won && streakType === 'W') || (!g.won && streakType === 'L')) streak++
-    else break
-  }
-
-  const last10  = gameLog.slice(-10)
-  const last10W = last10.filter(g => g.won).length
-
-  // Build a map from gameId → dbGame for score-first and PP/PK lookup
-  const dbGameMap = useMemo(() => {
-    const m = {}
-    dbGameLog?.forEach(g => { m[g.gameId] = g })
-    return m
-  }, [dbGameLog])
 
   // Score-first rolling 10-game rate — aligned to gameLog (last 20 games)
   const gameLogWithSF = gameLog.map(g => ({
@@ -599,6 +582,25 @@ function TrendsTab({ gameLog }) {
     const w = gameLog.slice(Math.max(0, i - 4), i + 1)
     return parseFloat((w.reduce((s, x) => s + x.oppScore, 0) / w.length).toFixed(1))
   })
+
+  // Rolling 10-game win %
+  const rolling = gameLog.map((g, i) => {
+    const window = gameLog.slice(Math.max(0, i - 9), i + 1)
+    const w10pct = Math.round((window.filter(x => x.won).length / window.length) * 100)
+    return { ...g, w10pct }
+  })
+
+  // Current streak
+  let streak = 0, streakType = ''
+  for (let i = gameLog.length - 1; i >= 0; i--) {
+    const g = gameLog[i]
+    if (i === gameLog.length - 1) { streakType = g.won ? 'W' : 'L'; streak = 1 }
+    else if ((g.won && streakType === 'W') || (!g.won && streakType === 'L')) streak++
+    else break
+  }
+
+  const last10  = gameLog.slice(-10)
+  const last10W = last10.filter(g => g.won).length
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

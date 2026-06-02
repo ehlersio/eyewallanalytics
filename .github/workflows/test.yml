@@ -1,0 +1,107 @@
+name: Test
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main, staging]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ── Checkout ────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Node setup with npm cache ───────────────────────────
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # ── Install dependencies ────────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── Vitest unit tests ───────────────────────────────────
+      # Run these first — fast feedback, no server needed
+      - name: Unit tests (Vitest)
+        run: npm test
+
+      # ── Start dev server in background ─────────────────────
+      # Vite proxies NHL API and Supabase calls, so Cypress
+      # needs the dev server running, not just a static build.
+      - name: Start dev server
+        run: npm run dev &
+        env:
+          NODE_ENV: test
+
+      # ── Wait for dev server to be ready ────────────────────
+      - name: Wait for dev server
+        run: npx wait-on http://localhost:5173 --timeout 30000
+
+      # ── Cypress e2e tests ───────────────────────────────────
+      - name: E2E tests (Cypress)
+        uses: cypress-io/github-action@v6
+        with:
+          # Don't install — we already ran npm ci above
+          install: false
+          # Don't start a server — we started it above
+          start: ''
+          wait-on: 'http://localhost:5173'
+          wait-on-timeout: 30
+          browser: chrome
+          headless: true
+          # Record to Cypress Cloud if CYPRESS_RECORD_KEY is set
+          # (optional — remove this block if not using Cypress Cloud)
+          record: ${{ secrets.CYPRESS_RECORD_KEY != '' }}
+        env:
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          # Pass Supabase anon key so Cypress env block can read it
+          CYPRESS_SUPABASE_ANON: sb_publishable_e_zwr1UA7GnHq4OuQSas5Q_kO8bQ_Ct
+
+      # ── Generate HTML report ────────────────────────────────
+      - name: Generate test report
+        if: always()
+        run: |
+          npx mochawesome-merge cypress/reports/json/*.json > cypress/reports/merged.json
+          npx marge cypress/reports/merged.json --reportDir cypress/reports/html --inline
+        continue-on-error: true
+
+      # ── Upload HTML report ──────────────────────────────────
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-report
+          path: cypress/reports/html/merged.html
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # ── Upload Cypress screenshots on failure ───────────────
+      # If a test fails, you'll see a screenshot of exactly what
+      # the browser saw in the Actions run artifacts.
+      - name: Upload failure screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # ── Upload Cypress videos (always) ──────────────────────
+      # Full recordings of every test run — useful for debugging
+      # flaky tests. Remove this step if you don't need videos.
+      - name: Upload test videos
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-videos
+          path: cypress/videos
+          if-no-files-found: ignore
+          retention-days: 3
