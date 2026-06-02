@@ -227,7 +227,34 @@ export async function getGameLogInsights(oppAbbr, season = 20252026) {
   };
 }
 
-// ── Team skater stats ─────────────────────────────────────────
+// ── CAR game log (with PP/PK) ─────────────────────────────────
+// Returns per-game results including PP/PK stats for trend charts.
+export async function getCarGameLog(count = 120, season = 20252026) {
+  const rows = await sbFetch(
+    `game_log?season=eq.${season}&order=game_id.asc` +
+    `&select=game_id,game_date,opponent,car_score,opp_score,home_team,` +
+    `car_scored_first,pp_goals,pp_opps,pk_goals_against,pk_opps,game_type` +
+    `&limit=${count}`
+  ).catch(() => null);
+  if (!rows?.length) return null;
+  return rows.map(r => ({
+    gameId:          r.game_id,
+    date:            r.game_date,
+    opp:             r.opponent,
+    carScore:        r.car_score,
+    oppScore:        r.opp_score,
+    home:            r.home_team === 'CAR',
+    won:             r.car_score > r.opp_score,
+    ot:              false, // not stored in game_log currently
+    result:          r.car_score > r.opp_score ? 'W' : 'L',
+    isPlayoff:       r.game_type === 3,
+    scoredFirst:     r.car_scored_first,
+    ppGoals:         r.pp_goals,
+    ppOpps:          r.pp_opps,
+    pkGoalsAgainst:  r.pk_goals_against,
+    pkOpps:          r.pk_opps,
+  }));
+}
 export async function getTeamSkaterStatsFromDB(team = 'CAR', season = 20252026, gameType = 2) {
   const [seasonRows, playerRows] = await Promise.all([
     sbFetch(

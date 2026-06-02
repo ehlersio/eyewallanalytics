@@ -5,7 +5,9 @@ import {
   getPlayoffGames, buildCarPlayoffSummary,
   getTeamCorsi, getTeamRealtime, getTeamScoreState, getTeamPowerplay, getTeamPenaltyKill,
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
+  getTeamSeasonRankings,
 } from '../utils/nhlApi'
+import { getCarGameLog } from '../utils/supabaseClient'
 import { CONTRACTS, DRAFT_PICKS, getCapSummary, CAP_CEILING, CURRENT_SEASON, CONTRACT_DATA_DATE } from '../utils/carContracts'
 import { StatBar, MetCard } from '../components/StatBar'
 import { seasonPDO } from '../utils/advancedStats'
@@ -33,6 +35,7 @@ export default function TeamView() {
   const { data: homeSplit  } = useFetch(() => getTeamHomeSplit(2))
   const { data: poAdv      } = useFetch(getTeamPlayoffStats)
   const { data: gameLog    } = useFetch(() => getTeamGameLog(20))
+  const { data: rankings   } = useFetch(() => getTeamSeasonRankings(2))
 
   const carStanding    = standings?.find(t => t.teamAbbrev?.default === 'CAR')
   const playoffSummary = buildCarPlayoffSummary(playoffGames || [])
@@ -79,7 +82,7 @@ export default function TeamView() {
         ))}
       </div>
 
-      {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} realtimeReg={realtimeReg} />}
+      {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} realtimeReg={realtimeReg} rankings={rankings} />}
       {tab === 'Advanced'  && <AdvancedTab corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} homeSplit={homeSplit} />}
       {tab === 'Splits'    && <SplitsTab homeSplit={homeSplit} homeSplitPO={homeSplitPO} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} ppReg={ppReg} pkReg={pkReg} corsiReg={corsiReg} />}
       {tab === 'Trends'    && <TrendsTab gameLog={gameLog} />}
@@ -89,7 +92,19 @@ export default function TeamView() {
 }
 
 // ── Overview tab ──────────────────────────────────────────────
-function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding, playoffSummary, wins, losses, otl, pts, inPlayoffs, liveGame, corsiReg, realtimeReg }) {
+function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding, playoffSummary, wins, losses, otl, pts, inPlayoffs, liveGame, corsiReg, realtimeReg, rankings }) {
+
+  function RankBadge({ r }) {
+    if (!r) return null;
+    const color = r.rank <= 5 ? 'var(--green)' : r.rank <= 15 ? 'var(--text-muted)' : 'var(--red-bright)';
+    const suffix = r.rank === 1 ? 'st' : r.rank === 2 ? 'nd' : r.rank === 3 ? 'rd' : 'th';
+    return (
+      <span className="overview-stat-rank" style={{ color }}>
+        {r.rank}<sup>{suffix}</sup>
+      </span>
+    );
+  }
+
   return (
     <>
       <div className="records-row">
@@ -159,17 +174,18 @@ function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding
           <div className="sec-label" style={{ marginBottom: 10 }}>Season stats</div>
           <div className="overview-stat-grid">
             {[
-              ['Goals/GP',   (stats.goalsForPerGame??0).toFixed(2)],
-              ['GA/GP',      (stats.goalsAgainstPerGame??0).toFixed(2)],
-              ['PP%',        (stats.powerPlayPct != null ? (stats.powerPlayPct <= 1 ? (stats.powerPlayPct*100).toFixed(1) : stats.powerPlayPct.toFixed(1)) : '—') + '%'],
-              ['PK%',        (stats.penaltyKillPct != null ? (stats.penaltyKillPct <= 1 ? (stats.penaltyKillPct*100).toFixed(1) : stats.penaltyKillPct.toFixed(1)) : '—') + '%'],
-              ['SOG/GP',     stats.shotsForPerGame?.toFixed(1) ?? '—'],
-              ['SA/GP',      stats.shotsAgainstPerGame?.toFixed(1) ?? '—'],
-              ['Blks/GP',    realtimeReg?.blockedShots != null ? (realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1)).toFixed(1) : '—'],
-            ].map(([label, val]) => (
+              ['Goals/GP',  (stats.goalsForPerGame??0).toFixed(2),   rankings?.goalsForPG],
+              ['GA/GP',     (stats.goalsAgainstPerGame??0).toFixed(2), rankings?.goalsAgainstPG],
+              ['PP%',       (stats.powerPlayPct != null ? (stats.powerPlayPct <= 1 ? (stats.powerPlayPct*100).toFixed(1) : stats.powerPlayPct.toFixed(1)) : '—') + '%', rankings?.ppPct],
+              ['PK%',       (stats.penaltyKillPct != null ? (stats.penaltyKillPct <= 1 ? (stats.penaltyKillPct*100).toFixed(1) : stats.penaltyKillPct.toFixed(1)) : '—') + '%', rankings?.pkPct],
+              ['SOG/GP',    stats.shotsForPerGame?.toFixed(1) ?? '—', rankings?.shotsForPG],
+              ['SA/GP',     stats.shotsAgainstPerGame?.toFixed(1) ?? '—', rankings?.shotsAgainstPG],
+              ['Blks/GP',   realtimeReg?.blockedShots != null ? (realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1)).toFixed(1) : '—', null],
+            ].map(([label, val, rank]) => (
               <div key={label} className="overview-stat-cell">
                 <div className="overview-stat-label">{label}</div>
                 <div className="overview-stat-val">{val}</div>
+                <RankBadge r={rank} />
               </div>
             ))}
           </div>
@@ -492,49 +508,12 @@ function SplitsTab({ homeSplit, homeSplitPO, stats, playoffSummary, inPlayoffs, 
 
 // ── Trends tab ───────────────────────────────────────────────
 
-// ── TapDot: chart element with tap-to-open label ──────────────
-// display:contents makes the outer wrapper invisible to flex/grid layout.
-// The popup is rendered inside the child element (which has position:relative).
-function TapDot({ text, children, popupClass = 'tap-label-popup' }) {
-  const [open, setOpen] = React.useState(false)
-  const ref = React.useRef(null)
+function TrendsTab({ gameLog }) {
+  const [dbGameLog, setDbGameLog] = React.useState(null)
 
   React.useEffect(() => {
-    if (!open) return
-    const close = e => { if (!ref.current?.contains(e.target)) setOpen(false) }
-    document.addEventListener('mousedown', close)
-    document.addEventListener('touchstart', close, { passive: true })
-    return () => {
-      document.removeEventListener('mousedown', close)
-      document.removeEventListener('touchstart', close)
-    }
-  }, [open])
-
-  // Clone the single child and inject the popup + click handler into it
-  const child = React.Children.only(children)
-  return React.cloneElement(child, {
-    ref,
-    onClick: e => { e.stopPropagation(); setOpen(o => !o) },
-    style: { ...child.props.style, position: 'relative', cursor: 'pointer' },
-    children: [
-      ...(Array.isArray(child.props.children)
-        ? child.props.children
-        : [child.props.children]),
-      open && (
-        <div key="tap-popup" className={popupClass} onClick={e => e.stopPropagation()}>
-          <span className="tap-label-body">{text}</span>
-          <button
-            className="tap-label-close"
-            onMouseDown={e => { e.stopPropagation(); setOpen(false) }}
-            aria-label="Close"
-          >✕</button>
-        </div>
-      ),
-    ],
-  })
-}
-
-function TrendsTab({ gameLog }) {
+    getCarGameLog().then(setDbGameLog).catch(() => {})
+  }, [])
   if (!gameLog?.length) {
     return (
       <div className="card empty-state">
@@ -544,7 +523,7 @@ function TrendsTab({ gameLog }) {
     )
   }
 
-  // Rolling 10-game win % 
+  // Rolling 10-game win %
   const rolling = gameLog.map((g, i) => {
     const window = gameLog.slice(Math.max(0, i - 9), i + 1)
     const w10pct = Math.round((window.filter(x => x.won).length / window.length) * 100)
@@ -560,8 +539,66 @@ function TrendsTab({ gameLog }) {
     else break
   }
 
-  const last10 = gameLog.slice(-10)
+  const last10  = gameLog.slice(-10)
   const last10W = last10.filter(g => g.won).length
+
+  // Build a map from gameId → dbGame for score-first and PP/PK lookup
+  const dbGameMap = useMemo(() => {
+    const m = {}
+    dbGameLog?.forEach(g => { m[g.gameId] = g })
+    return m
+  }, [dbGameLog])
+
+  // Score-first rolling 10-game rate — aligned to gameLog (last 20 games)
+  const gameLogWithSF = gameLog.map(g => ({
+    ...g,
+    scoredFirst: dbGameMap[g.gameId]?.scoredFirst ?? null,
+  }))
+
+  const rollingScoreFirst = gameLogWithSF.map((g, i) => {
+    const w = gameLogWithSF.slice(Math.max(0, i - 9), i + 1)
+    const withData = w.filter(x => x.scoredFirst != null)
+    return withData.length >= 3
+      ? Math.round(withData.filter(x => x.scoredFirst).length / withData.length * 100)
+      : null
+  })
+
+  const hasSF = rollingScoreFirst.some(v => v != null)
+
+  // PP/PK rolling aligned to gameLog games
+  const gameLogWithPPPK = gameLog.map(g => ({
+    ...g,
+    ppGoals:        dbGameMap[g.gameId]?.ppGoals ?? null,
+    ppOpps:         dbGameMap[g.gameId]?.ppOpps  ?? null,
+    pkGoalsAgainst: dbGameMap[g.gameId]?.pkGoalsAgainst ?? null,
+    pkOpps:         dbGameMap[g.gameId]?.pkOpps  ?? null,
+  }))
+
+  const rollingPP = gameLogWithPPPK.map((g, i) => {
+    const w = gameLogWithPPPK.slice(Math.max(0, i - 4), i + 1).filter(x => x.ppOpps != null)
+    const goals = w.reduce((s, x) => s + (x.ppGoals || 0), 0)
+    const opps  = w.reduce((s, x) => s + (x.ppOpps  || 0), 0)
+    return opps > 0 ? Math.round(goals / opps * 100) : null
+  })
+
+  const rollingPK = gameLogWithPPPK.map((g, i) => {
+    const w = gameLogWithPPPK.slice(Math.max(0, i - 4), i + 1).filter(x => x.pkOpps != null)
+    const ga   = w.reduce((s, x) => s + (x.pkGoalsAgainst || 0), 0)
+    const opps = w.reduce((s, x) => s + (x.pkOpps         || 0), 0)
+    return opps > 0 ? Math.round((1 - ga / opps) * 100) : null
+  })
+
+  const hasPPPK = rollingPP.some(v => v != null)
+
+  const rollingGF = gameLog.map((g, i) => {
+    const w = gameLog.slice(Math.max(0, i - 4), i + 1)
+    return parseFloat((w.reduce((s, x) => s + x.carScore, 0) / w.length).toFixed(1))
+  })
+
+  const rollingGA = gameLog.map((g, i) => {
+    const w = gameLog.slice(Math.max(0, i - 4), i + 1)
+    return parseFloat((w.reduce((s, x) => s + x.oppScore, 0) / w.length).toFixed(1))
+  })
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -591,41 +628,149 @@ function TrendsTab({ gameLog }) {
         <div className="sec-label" style={{ marginBottom: 10 }}>Last {gameLog.length} games</div>
         <div className="result-dots">
           {gameLog.map((g, i) => (
-            <TapDot
+            <div
               key={i}
-              text={`${g.date?.slice(5,10)} vs ${g.opp}: ${g.result} ${g.carScore}–${g.oppScore}${g.home ? ' (Home)' : ' (Away)'}`}
+              className={`result-dot ${g.result.toLowerCase()}`}
+              title={`${g.date?.slice(5,10)} vs ${g.opp}: ${g.result} ${g.carScore}–${g.oppScore}${g.home ? ' (Home)' : ' (Away)'}`}
             >
-              <div className={`result-dot ${g.result.toLowerCase()}`}>
-                {g.result === 'OTL' ? 'O' : g.result}
-              </div>
-            </TapDot>
+              {g.result === 'OTL' ? 'O' : g.result}
+            </div>
           ))}
         </div>
       </div>
 
-      {/* Rolling 10-game win % chart */}
+      {/* Rolling 10-game win % */}
       <div className="card">
-        <div className="sec-label" style={{ marginBottom: 10 }}>Rolling 10-game win %</div>
+        <div className="sec-label" style={{ marginBottom: 10 }}>Win % — rolling 10-game window</div>
         <div className="rolling-chart">
           {rolling.map((g, i) => (
-            <TapDot key={i} text={`Game ${i+1}: ${g.w10pct}% win rate`}>
-            <div className="rolling-bar-wrap">
+            <div key={i} className="rolling-bar-wrap">
+              <div className="rolling-bar-label">{g.w10pct}%</div>
               <div
                 className={`rolling-bar ${g.w10pct >= 60 ? 'hot' : g.w10pct >= 40 ? 'ok' : 'cold'}`}
                 style={{ height: `${g.w10pct}%` }}
+                title={`Game ${i+1}: ${g.w10pct}% win rate`}
               />
               {i % 5 === 0 && <div className="rolling-label">{i + 1}</div>}
             </div>
-            </TapDot>
           ))}
-          <div className="rolling-avg-line" style={{ bottom: '50%' }} aria-label="50% win rate" />
+          <div className="rolling-avg-line" style={{ bottom: '50%' }} aria-label="50% reference" title="50% win rate reference" />
         </div>
         <div className="rolling-legend">
           <span className="rl-hot">■ Hot (≥60%)</span>
           <span className="rl-ok">■ Average (40–60%)</span>
           <span className="rl-cold">■ Cold (&lt;40%)</span>
+          <span style={{ color: 'var(--text-dim)', marginLeft: 'auto', fontSize: 9 }}>— 50% ref · each bar = 1 game</span>
         </div>
       </div>
+
+      {/* Goals For / Against rolling 5-game avg */}
+      <div className="card">
+        <div className="sec-label" style={{ marginBottom: 10 }}>Goals — rolling 5-game average</div>
+        <div className="rolling-chart rolling-chart-dual">
+          {gameLog.map((g, i) => {
+            const gf = rollingGF[i]
+            const ga = rollingGA[i]
+            const maxVal = 6
+            return (
+              <div key={i} className="rolling-bar-wrap">
+                <div className="rolling-bar-label" style={{ color: 'var(--red-bright)' }}>{gf}</div>
+                <div className="rolling-bar-dual">
+                  <div
+                    className="rolling-bar gf-bar"
+                    style={{ height: `${Math.min(gf / maxVal * 100, 100)}%` }}
+                    title={`GF avg: ${gf}`}
+                  />
+                  <div
+                    className="rolling-bar ga-bar"
+                    style={{ height: `${Math.min(ga / maxVal * 100, 100)}%` }}
+                    title={`GA avg: ${ga}`}
+                  />
+                </div>
+                <div className="rolling-bar-label-bot" style={{ color: 'var(--blue-bright)' }}>{ga}</div>
+                {i % 5 === 0 && <div className="rolling-label">{i + 1}</div>}
+              </div>
+            )
+          })}
+        </div>
+        <div className="rolling-legend">
+          <span style={{ color: 'var(--red-bright)' }}>■ Goals For</span>
+          <span style={{ color: 'var(--blue-bright)', marginLeft: 12 }}>■ Goals Against</span>
+        </div>
+      </div>
+
+      {/* Score-first rolling rate */}
+      {hasSF && (
+        <div className="card">
+          <div className="sec-label" style={{ marginBottom: 10 }}>
+            Score-first rate — rolling 10-game window
+            <InfoTip text="How often CAR has scored the first goal of the game, rolling 10-game window. Each bar = one game; bar height = % of the last 10 games where CAR scored first. CAR wins ~74% of games when scoring first this season." position="above" />
+          </div>
+          <div className="rolling-chart">
+            {gameLogWithSF.map((g, i) => {
+              const val = rollingScoreFirst[i]
+              if (val == null) return (
+                <div key={i} className="rolling-bar-wrap">
+                  <div className="rolling-bar-label" style={{ opacity: 0 }}>0%</div>
+                  <div className="rolling-bar" style={{ height: '100%', background: 'rgba(255,255,255,0.04)', borderRadius: 2 }} />
+                  {i % 5 === 0 && <div className="rolling-label">{i + 1}</div>}
+                </div>
+              )
+              return (
+                <div key={i} className="rolling-bar-wrap">
+                  <div className="rolling-bar-label">{val}%</div>
+                  <div
+                    className={`rolling-bar ${val >= 60 ? 'hot' : val >= 40 ? 'ok' : 'cold'}`}
+                    style={{ height: `${val}%` }}
+                    title={`Game ${i+1}: scored first ${val}% of last 10`}
+                  />
+                  {i % 5 === 0 && <div className="rolling-label">{i + 1}</div>}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* PP / PK rolling efficiency */}
+      {hasPPPK && (
+        <div className="card">
+          <div className="sec-label" style={{ marginBottom: 10 }}>PP% / PK% — rolling 5-game window</div>
+          <div className="rolling-chart">
+            {gameLogWithPPPK.map((g, i) => {
+              const pp = rollingPP[i]
+              const pk = rollingPK[i]
+              return (
+                <div key={i} className="rolling-bar-wrap">
+                  <div className="rolling-bar-label" style={{ color: 'var(--amber)' }}>{pp != null ? `${pp}%` : ''}</div>
+                  <div className="rolling-bar-dual">
+                    {pp != null && (
+                      <div
+                        className="rolling-bar pp-bar"
+                        style={{ height: `${Math.min(pp / 40 * 100, 100)}%` }}
+                        title={`PP%: ${pp}%`}
+                      />
+                    )}
+                    {pk != null && (
+                      <div
+                        className="rolling-bar pk-bar"
+                        style={{ height: `${Math.min(pk / 100 * 100, 100)}%` }}
+                        title={`PK%: ${pk}%`}
+                      />
+                    )}
+                  </div>
+                  <div className="rolling-bar-label-bot" style={{ color: 'var(--green)' }}>{pk != null ? `${pk}%` : ''}</div>
+                  {i % 5 === 0 && <div className="rolling-label">{i + 1}</div>}
+                </div>
+              )
+            })}
+          </div>
+          <div className="rolling-legend">
+            <span style={{ color: 'var(--amber)' }}>■ PP%</span>
+            <span style={{ color: 'var(--green)', marginLeft: 12 }}>■ PK%</span>
+          </div>
+        </div>
+      )}
 
       {/* Score differential trend */}
       <div className="card">
@@ -634,19 +779,27 @@ function TrendsTab({ gameLog }) {
           <div className="gd-baseline-line" />
           <div className="gd-bars">
             {gameLog.map((g, i) => {
-              const diff = g.carScore - g.oppScore
+              const diff  = g.carScore - g.oppScore
               const absPx = Math.min(Math.abs(diff) * 12, 48)
               return (
-                <TapDot key={i} text={`${g.date?.slice(5,10)} vs ${g.opp}: ${diff > 0 ? '+' : ''}${diff}`}>
-                <div className="gd-bar-col">
+                <div key={i} className="gd-bar-col" title={`${g.date?.slice(5,10)} vs ${g.opp}: ${diff > 0 ? '+' : ''}${diff}`}>
                   <div className="gd-top">
-                    {diff > 0 && <div className="gd-bar pos" style={{ height: absPx }} />}
+                    {diff > 0 && (
+                      <>
+                        <div className="gd-bar-inline-label pos">+{diff}</div>
+                        <div className="gd-bar pos" style={{ height: absPx }} />
+                      </>
+                    )}
                   </div>
                   <div className="gd-bot">
-                    {diff < 0 && <div className="gd-bar neg" style={{ height: absPx }} />}
+                    {diff < 0 && (
+                      <>
+                        <div className="gd-bar neg" style={{ height: absPx }} />
+                        <div className="gd-bar-inline-label neg">{diff}</div>
+                      </>
+                    )}
                   </div>
                 </div>
-                </TapDot>
               )
             })}
           </div>
