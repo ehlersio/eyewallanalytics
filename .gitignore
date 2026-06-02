@@ -23,3 +23,8 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Cypress artifacts
+cypress/screenshots/
+cypress/videos/
+cypress/reports/

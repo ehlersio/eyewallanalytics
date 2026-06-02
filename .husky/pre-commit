@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run Vitest unit tests before every commit.
+# Fast (~2s) — catches logic regressions before they hit the repo.
+echo "Running unit tests..."
+npm test
+
+# Exit code from npm test is passed through — non-zero aborts the commit.
