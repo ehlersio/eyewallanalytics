@@ -19,6 +19,9 @@ import './ShotMapView.css';
 import { publishClock, getClockDisplay, publishMomentum } from '../utils/liveClockStore';
 import { useDevGame } from '../utils/DevGameContext';
 import { useWakeLock } from '../hooks/useWakeLock';
+import PeriodSummary from '../components/PeriodSummary';
+import { usePeriodSummary, useGameSummary } from '../hooks/usePeriodSummary';
+import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 
 const CAR_ABBR = 'CAR';
 
@@ -259,6 +262,33 @@ export default function ShotMapView() {
   Object.entries(playerMapForEvents).forEach(([k,v]) => { strMapForEvents[String(k)] = v; });
   const { goalPopup, clearGoalPopup, penaltyPopup, clearPenaltyPopup, winPopup, clearWinPopup, puckDropPopup, clearPuckDropPopup } =
     useGameEvents(pbp, isLive, strMapForEvents, gameHome);
+
+  // ── Period summaries ──────────────────────────────────────────
+  const CAR_TEAM_ID = 12;
+  const { summaries: periodSummaries, newSummary, dismissNewSummary, updateSummaryNarrative } =
+    usePeriodSummary({ pbp, isLive, gameId, carTeamId: CAR_TEAM_ID });
+  const { gameSummary, updateGameNarrative } = useGameSummary({
+    pbp, isLive, gameId, carTeamId: CAR_TEAM_ID, summaries: periodSummaries,
+  });
+  const homeAbbr = activeGame?.homeTeam?.abbrev || 'CAR';
+  const awayAbbr = activeGame?.awayTeam?.abbrev || 'OPP';
+  const [viewingSummaryPeriod, setViewingSummaryPeriod] = useState(null);
+
+  // Derive the live summary object so narrative updates reflect immediately
+  const viewingSummary = viewingSummaryPeriod === null ? null
+    : viewingSummaryPeriod === 'game' ? gameSummary
+    : periodSummaries.find(s => s.period === viewingSummaryPeriod) || null;
+
+  // Sync summaries + game summary to context so bell can access them
+  const { setSummaries: setCtxSummaries, registerOpenHandler } = usePeriodSummaryContext();
+  useEffect(() => {
+    const all = gameSummary ? [gameSummary, ...periodSummaries] : periodSummaries;
+    setCtxSummaries(all);
+  }, [periodSummaries, gameSummary, setCtxSummaries]);
+  useEffect(() => {
+    registerOpenHandler((s) => setViewingSummaryPeriod(s.isGameSummary ? 'game' : s.period));
+    return () => registerOpenHandler(null);
+  }, [registerOpenHandler]);
 
   // ── Debug panel (5 taps on score bar, dev only) ──────────────
   const [debugOpen,  setDebugOpen]  = useState(false);
@@ -1038,6 +1068,35 @@ export default function ShotMapView() {
     <>
     <div className="page" ref={pageRef}>
 
+      {/* ── Period summary auto-popup ── */}
+      {newSummary && !viewingSummary && (
+        <PeriodSummary
+          summary={newSummary}
+          onDismiss={dismissNewSummary}
+          onNarrativeReady={updateSummaryNarrative}
+          carAbbr={CAR_ABBR}
+          oppAbbr={oppAbbr}
+          homeAbbr={homeAbbr}
+          awayAbbr={awayAbbr}
+        />
+      )}
+
+      {/* ── Period summary viewer (from bell) ── */}
+      {viewingSummary && (
+        <PeriodSummary
+          summary={viewingSummary}
+          onDismiss={() => setViewingSummaryPeriod(null)}
+          onNarrativeReady={viewingSummary.isGameSummary
+            ? (_, text) => updateGameNarrative(text)
+            : updateSummaryNarrative}
+          carAbbr={CAR_ABBR}
+          oppAbbr={oppAbbr}
+          homeAbbr={homeAbbr}
+          awayAbbr={awayAbbr}
+          readOnly
+        />
+      )}
+
       {/* ── Score bar ── */}
       <div className="score-card card" onClick={handleDebugTap} style={{ userSelect: 'none' }}>
         {activeGame ? (
@@ -1355,7 +1414,6 @@ export default function ShotMapView() {
                   saves={carGoalie.saves}
                   shotsAgainst={carGoalie.shotsAgainst}
                   savePctg={carGoalie.savePctg}
-                  toi={carGoalie.toi}
                   color="var(--red-bright)"
                   seasonData={goalieAnalytics?.[String(carGoalie.playerId)] || null}
                 />
@@ -1367,7 +1425,6 @@ export default function ShotMapView() {
                   saves={oppGoalie.saves}
                   shotsAgainst={oppGoalie.shotsAgainst}
                   savePctg={oppGoalie.savePctg}
-                  toi={oppGoalie.toi}
                   color={oppColor}
                   seasonData={goalieAnalytics?.[String(oppGoalie.playerId)] || null}
                 />
@@ -1544,7 +1601,7 @@ export default function ShotMapView() {
 
 // ── Sub-components ────────────────────────────────────────────
 
-function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, toi, color, seasonData }) {
+function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color, seasonData }) {
   const svPct = savePctg != null
     ? (savePctg <= 1 ? savePctg.toFixed(3) : (savePctg / 100).toFixed(3))
     : '—';
@@ -1556,17 +1613,6 @@ function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, toi, color, seas
     : seasonGsax >= 5  ? 'var(--green)'
     : seasonGsax >= 0  ? 'var(--text-muted)'
     : 'var(--red-bright)';
-
-  // GAA — goals allowed * 60 / TOI minutes
-  // toi arrives as "MM:SS" string from the NHL API boxscore
-  const gaa = (() => {
-    if (saves == null || shotsAgainst == null || !toi) return null;
-    const [mm, ss] = toi.split(':').map(Number);
-    const toiMins = mm + (ss || 0) / 60;
-    if (toiMins < 1) return null; // avoid absurd values for backups with no ice
-    const goalsAllowed = shotsAgainst - saves;
-    return (goalsAllowed / toiMins * 60).toFixed(2);
-  })();
 
   return (
     <div className="goalie-card">
@@ -1583,14 +1629,6 @@ function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, toi, color, seas
           <span className="goalie-stat-label">SV%</span>
           <span className="goalie-stat-val goalie-svpct">{svPct}</span>
         </div>
-        {gaa != null && (
-          <div className="goalie-stat-col">
-            <span className="goalie-stat-label">
-              GAA <InfoTip text="Goals against average for this game — goals allowed per 60 minutes of ice time." position="above" />
-            </span>
-            <span className="goalie-stat-val">{gaa}</span>
-          </div>
-        )}
         {seasonGsax != null ? (
           <div className="goalie-stat-col">
             <span className="goalie-stat-label">

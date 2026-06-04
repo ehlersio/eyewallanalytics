@@ -17,7 +17,7 @@ console.log('\n🧹 Cleaning reports...')
 run('npm run cypress:clean')
 
 console.log('\n🧪 Running tests...')
-const testCode = run('npm run cypress:run')
+const testCode = run('npx cypress run --headless --config numTestsKeptInMemory=0')
 
 console.log('\n📊 Generating report...')
 run('npm run cypress:report')

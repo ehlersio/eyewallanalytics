@@ -12,8 +12,8 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "cypress:open": "cypress open",
-    "cypress:run":    "cypress run --headless",
-    "cypress:clean":  "npx rimraf cypress/reports cypress/screenshots",
+    "cypress:run": "cypress run --headless",
+    "cypress:clean": "npx rimraf cypress/reports cypress/screenshots",
     "cypress:report": "node scripts/generate-report.mjs",
     "cypress:full": "node scripts/cypress-full.mjs",
     "prepare": "husky"
@@ -21,6 +21,7 @@
   "dependencies": {
     "d3": "^7.9.0",
     "date-fns": "^3.6.0",
+    "html-to-image": "^1.11.13",
     "lucide-react": "^0.383.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

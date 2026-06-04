@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import './NotificationBell.css';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const { supported, permission, subscribed, subscribe, unsubscribe, loading, error } =
     usePushNotifications();
+  const { summaries, openSummary } = usePeriodSummaryContext();
 
   // Don't render at all if browser doesn't support push
   if (!supported) return null;
@@ -19,24 +21,30 @@ export default function NotificationBell() {
     }
   };
 
+  const handleOpenSummary = (summary) => {
+    setOpen(false);
+    openSummary(summary);
+  };
+
+  // Show a dot on the bell if there are summaries available
+  const hasSummaries = summaries.length > 0;
+
   return (
     <div className="notif-wrap">
       <button
-        className={`notif-bell ${subscribed ? 'notif-active' : ''}`}
+        className='notif-bell notif-active'
         onClick={() => setOpen(o => !o)}
-        aria-label={subscribed ? 'Notification settings' : 'Enable notifications'}
-        title={subscribed ? 'Notifications on' : 'Get notified of goals & game events'}
+        aria-label={'Game Center'}
+        title={'Game Center'}
       >
-        {subscribed ? '🔔' : '🔕'}
+        {'⚡'}
       </button>
 
       {open && (
         <div className="notif-popup">
           <button className="notif-close" onClick={() => setOpen(false)} aria-label="Close">✕</button>
 
-          <div className="notif-title">
-            {subscribed ? '🔔 Notifications on' : '🔕 Notifications off'}
-          </div>
+          <div className="notif-title">⚡ Game Center</div>
 
           <p className="notif-desc">
             {subscribed
@@ -67,7 +75,7 @@ export default function NotificationBell() {
           )}
 
           <div className="notif-events">
-            <div className="notif-event-label">You\'ll be notified for:</div>
+            <div className="notif-event-label">🔔 Push Notifications</div>
             {[
               ['🚨', 'Canes goal scored'],
               ['🏒', 'Game starts'],
@@ -81,6 +89,30 @@ export default function NotificationBell() {
               </div>
             ))}
           </div>
+
+          {/* Period summaries section */}
+          {hasSummaries && (
+            <div className="notif-summaries-section">
+              <div className="notif-summaries-label">📋 Game Center</div>
+              {summaries.map(s => (
+                <button
+                  key={s.period}
+                  className={`notif-summary-chip ${s.isGameSummary ? 'notif-summary-chip-game' : ''}`}
+                  onClick={() => handleOpenSummary(s)}
+                >
+                  <span className="notif-summary-chip-period">
+                    {s.isGameSummary ? 'FINAL' : s.periodShort}
+                  </span>
+                  <span className="notif-summary-chip-score">
+                    {s.carGoals !== undefined
+                      ? `CAR ${s.carGoals}–${s.oppGoals}`
+                      : 'View summary'}
+                  </span>
+                  <span className="notif-summary-chip-arrow">›</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
