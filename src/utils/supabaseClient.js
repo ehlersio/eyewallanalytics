@@ -184,6 +184,102 @@ export async function getGoalieAnalytics(season = 20252026) {
   return result;
 }
 
+// ── Line combinations ─────────────────────────────────────────
+// Returns inferred forward lines and D pairs for a team, sorted by rank.
+// unit_type 'F' = forward line (3 players), 'D' = defence pair (2 players).
+// xgf_pct is null when the unit has too few 5v5 chances for a reliable number.
+// Position sort order: LW → C → RW
+// NHL API returns 'L', 'C', 'R' as positionCode — but DB values can be null
+// for edge cases (mid-season callups, etc.). We always use carLines.js as the
+// authoritative position source and enrich inferred players before sorting.
+const FWD_ORDER = { L: 0, LW: 0, C: 1, R: 2, RW: 2 };
+
+function buildStaticPosMap(staticData) {
+  // Returns Map<playerName -> pos> from static line data
+  const map = new Map();
+  for (const line of (staticData?.lines || [])) {
+    for (const p of line.players) map.set(p.name, p.pos);
+  }
+  return map;
+}
+
+function sortForwardLine(players, posMap) {
+  return [...players]
+    .map(p => ({ ...p, pos: posMap?.get(p.name) ?? p.pos }))  // enrich from static map
+    .sort((a, b) => {
+      const ao = FWD_ORDER[a.pos] ?? 1;
+      const bo = FWD_ORDER[b.pos] ?? 1;
+      return ao - bo;
+    });
+}
+
+export async function getTeamLines(team = 'CAR', season = 20252026, gameType = 2) {
+  // Always load static data upfront so we can use it as position authority
+  let staticData = null;
+  if (team === 'CAR') {
+    try {
+      const { getStaticLines } = await import('./carLines.js');
+      staticData = getStaticLines(gameType);
+    } catch (_) {}
+  }
+  const posMap = buildStaticPosMap(staticData);
+
+  // Try live inferred data from Supabase
+  const rows = await sbFetch(
+    `line_combinations?team=eq.${team}&season=eq.${season}` +
+    `&order=unit_type.asc,rank.asc` +
+    `&select=unit_type,rank,name_a,name_b,name_c,pos_a,pos_b,pos_c,toi_secs,xgf_pct`
+  ).catch(() => []);
+
+  const inferredLines = rows.filter(r => r.unit_type === 'F').map(r => ({
+    rank:     r.rank,
+    players:  sortForwardLine([
+      { name: r.name_a, pos: r.pos_a },
+      { name: r.name_b, pos: r.pos_b },
+      { name: r.name_c, pos: r.pos_c },
+    ].filter(p => p.name), posMap),
+    toiMins:  r.toi_secs != null ? Math.round(r.toi_secs / 60) : null,
+    xgfPct:   r.xgf_pct != null  ? Math.round(r.xgf_pct * 1000) / 10 : null,
+    isStatic: false,
+  }));
+
+  const inferredPairs = rows.filter(r => r.unit_type === 'D').map(r => ({
+    rank:     r.rank,
+    players:  [
+      { name: r.name_a, pos: r.pos_a },
+      { name: r.name_b, pos: r.pos_b },
+    ].filter(p => p.name),
+    toiMins:  r.toi_secs != null ? Math.round(r.toi_secs / 60) : null,
+    xgfPct:   r.xgf_pct != null  ? Math.round(r.xgf_pct * 1000) / 10 : null,
+    isStatic: false,
+  }));
+
+  // If inference has all 4 lines, use it
+  if (inferredLines.length >= 4) {
+    return { lines: inferredLines, pairs: inferredPairs, isInferred: true };
+  }
+
+  // Fall back to static — overlay inferred xGF%/TOI by rank
+  if (staticData) {
+    const inferredByRank    = Object.fromEntries(inferredLines.map(l => [l.rank, l]));
+    const inferredPairsByRank = Object.fromEntries(inferredPairs.map(p => [p.rank, p]));
+
+    const lines = staticData.lines.map(sl => {
+      const inf = inferredByRank[sl.rank];
+      return { ...sl, toiMins: inf?.toiMins ?? sl.toiMins, xgfPct: inf?.xgfPct ?? sl.xgfPct, isStatic: !inf };
+    });
+    const pairs = staticData.pairs.map(sp => {
+      const inf = inferredPairsByRank[sp.rank];
+      return { ...sp, toiMins: inf?.toiMins ?? sp.toiMins, xgfPct: inf?.xgfPct ?? sp.xgfPct, isStatic: !inf };
+    });
+
+    return { lines, pairs, isInferred: false };
+  }
+
+  if (!inferredLines.length && !inferredPairs.length) return null;
+  return { lines: inferredLines, pairs: inferredPairs, isInferred: true };
+}
+
 // ── Game-level xG (MoneyPuck) ─────────────────────────────────
 // Returns two rows (CAR + OPP) for a completed game.
 // MoneyPuck data available ~2-4h post-game — returns null for live games.

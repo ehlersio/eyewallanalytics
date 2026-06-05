@@ -54,9 +54,16 @@ describe('Schedule view', () => {
       cy.get('.md-tab').contains('Prediction').should('have.class', 'active')
     })
 
-    it('shows AI analysis button for current series', () => {
+    it('shows AI analysis section for current series', () => {
       cy.contains('Matchup breakdown').first().click()
-      cy.contains('Get AI analysis').should('exist')
+      // Either the cached narrative is shown, or the button to trigger it —
+      // both mean the EyeWall AI section is present and working
+      cy.get('.md-ai-section').should('exist')
+      cy.get('.md-ai-section').then($el => {
+        const hasNarrative = $el.find('.md-ai-narrative').length > 0
+        const hasButton    = $el.find('.md-ai-btn').length > 0
+        expect(hasNarrative || hasButton).to.be.true
+      })
     })
 
     it('Prediction tab shows win probability bar', () => {
@@ -107,6 +114,102 @@ describe('Schedule view', () => {
       cy.get('.md-tab').contains('Scouting').click()
       cy.get('.scouting-export-btn').should('exist')
       cy.get('.scouting-export-btn').should('contain', 'Save Scouting Card')
+    })
+
+    // ── Lines section ────────────────────────────────────────
+    it('Scouting tab shows CAR lines section', () => {
+      cy.contains('Matchup breakdown').first().click()
+      cy.get('.md-tab').contains('Scouting').click()
+      cy.get('.scouting-section-label').contains('CAR lines').should('exist')
+    })
+
+    it('Scouting tab shows 4 forward lines', () => {
+      cy.contains('Matchup breakdown').first().click()
+      cy.get('.md-tab').contains('Scouting').click()
+      cy.get('.sc-line-unit').should('have.length.gte', 4)
+    })
+
+    it('Scouting tab shows Line 1 label', () => {
+      cy.contains('Matchup breakdown').first().click()
+      cy.get('.md-tab').contains('Scouting').click()
+      cy.get('.sc-line-label').contains('Line 1').should('exist')
+    })
+
+    it('Scouting tab shows line 1 players Svechnikov, Aho, Jarvis', () => {
+      cy.contains('Matchup breakdown').first().click()
+      cy.get('.md-tab').contains('Scouting').click()
+      // Get the first line unit and verify all three players appear
+      cy.get('.sc-line-unit').first().within(() => {
+        cy.contains('Svechnikov').should('exist')
+        cy.contains('Aho').should('exist')
+        cy.contains('Jarvis').should('exist')
+      })
+    })
+
+    it('Scouting tab shows line 1 players in LW / C / RW order', () => {
+      cy.contains('Matchup breakdown').first().click()
+      cy.get('.md-tab').contains('Scouting').click()
+      cy.get('.sc-line-unit').first().find('.sc-line-player').then($players => {
+        expect($players).to.have.length(3)
+        // Position labels should be LW, C, RW in that order
+        expect($players.eq(0).find('.sc-line-pos').text()).to.eq('LW')
+        expect($players.eq(1).find('.sc-line-pos').text()).to.eq('C')
+        expect($players.eq(2).find('.sc-line-pos').text()).to.eq('RW')
+      })
+    })
+
+    it('Scouting tab shows xGF% label on each line', () => {
+      cy.contains('Matchup breakdown').first().click()
+      cy.get('.md-tab').contains('Scouting').click()
+      cy.get('.sc-line-xgf-label').should('have.length.gte', 4)
+      cy.get('.sc-line-xgf-label').first().should('contain', 'xGF%')
+    })
+
+    it('Scouting tab shows TOI label on lines with inferred data', () => {
+      cy.contains('Matchup breakdown').first().click()
+      cy.get('.md-tab').contains('Scouting').click()
+      // At least some lines should have "min together" TOI label
+      cy.get('.sc-line-toi').should('have.length.gte', 1)
+      cy.get('.sc-line-toi').first().contains(/min together/).should('exist')
+    })
+
+    it('Scouting tab shows Defence pairs subheader', () => {
+      cy.contains('Matchup breakdown').first().click()
+      cy.get('.md-tab').contains('Scouting').click()
+      cy.get('.sc-lines-subheader').contains('Defence pairs').should('exist')
+    })
+
+    it('Scouting tab shows 3 defence pairs', () => {
+      cy.contains('Matchup breakdown').first().click()
+      cy.get('.md-tab').contains('Scouting').click()
+      cy.get('.sc-lines-group-d .sc-line-unit').should('have.length', 3)
+    })
+
+    it('Scouting tab shows Slavin in defence pairs', () => {
+      cy.contains('Matchup breakdown').first().click()
+      cy.get('.md-tab').contains('Scouting').click()
+      // Slavin appears somewhere in the D pairs section (rank may vary by TOI)
+      cy.get('.sc-lines-group-d').contains('Slavin').should('exist')
+    })
+
+    it('Prediction tab shows top line edge factor', () => {
+      cy.contains('Matchup breakdown').first().click()
+      cy.get('.md-factor').contains('Top line').should('exist')
+    })
+
+    it('Prediction tab shows top line card with xGF%', () => {
+      cy.contains('Matchup breakdown').first().click()
+      cy.get('.md-topline-card').should('exist')
+      cy.get('.md-topline-xgf').should('exist')
+    })
+
+    it('Prediction tab top line card shows Svechnikov, Aho, Jarvis', () => {
+      cy.contains('Matchup breakdown').first().click()
+      cy.get('.md-topline-card').within(() => {
+        cy.contains('Svechnikov').should('exist')
+        cy.contains('Aho').should('exist')
+        cy.contains('Jarvis').should('exist')
+      })
     })
 
     it('clicking a completed round expands it', () => {

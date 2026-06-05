@@ -4,6 +4,7 @@ import { savePrediction, getPredictionStats, recordOutcome } from '../utils/pred
 import ScoutingTab from '../components/ScoutingTab';
 import InfoTip from '../components/InfoTip';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
+import { getTeamLines } from '../utils/supabaseClient';
 import {
   getRegularSeasonGames, getPlayoffGames, getStandings,
   buildCarPlayoffSummary, getCompletedGameStats,
@@ -1454,11 +1455,42 @@ function computeWinPct(carStanding, oppStanding, game, playoffSeries) {
 
 // ── Matchup detail (upcoming games) ─────────────────────────
 
+// ── Top line callout for Prediction tab ──────────────────────
+function TopLineCard({ carLines }) {
+  const line = carLines?.lines?.[0];
+  if (!line) return null;
+  const xgf = line.xgfPct;
+  const good = xgf != null && xgf >= 50;
+  return (
+    <div className="md-topline-card">
+      <div className="md-topline-header">
+        <span className="md-topline-label">CAR Line 1 · 5v5 this season</span>
+        {xgf != null && (
+          <span className={`md-topline-xgf ${good ? 'good' : 'bad'}`}>
+            {xgf.toFixed(1)}% xGF
+          </span>
+        )}
+      </div>
+      <div className="md-topline-players">
+        {line.players.map((p, i) => (
+          <span key={i} className="md-topline-player">
+            {p.name}<span className="md-topline-pos">{p.pos}</span>
+          </span>
+        ))}
+      </div>
+      {line.toiMins != null && (
+        <div className="md-topline-toi">{line.toiMins}m together · inferred from shift data</div>
+      )}
+    </div>
+  );
+}
+
 function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) {
   const [mdTab, setMdTab] = React.useState('prediction');
   const opp     = getOpponent(game);
   const oppAbbr = opp?.abbrev || 'OPP';
   const oppColor = TEAM_COLORS[oppAbbr] || '#7a8899';
+  const { data: carLines } = useFetch(() => getTeamLines('CAR'), ['CAR']);
 
   // Auto-save prediction — must be before any early returns (Rules of Hooks)
   React.useEffect(() => {
@@ -1547,6 +1579,8 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   const ppEdge   = carPP - (100 - oppPK);
   const carStreak = carStanding.streakCode;
   const oppStreak = oppStanding.streakCode;
+  const topLine    = carLines?.lines?.[0] ?? null;
+  const topLineXgf = topLine?.xgfPct ?? null;
   const factors  = [
     { label: 'Offence (GF/GP)',    carEdge: carGpg >= oppGpg },
     { label: 'Defence (GA/GP)',    carEdge: carGag <= oppGag },
@@ -1556,6 +1590,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
     ...((carStreak || oppStreak) ? [{ label: 'Recent form', carEdge: carStreak === 'W' && oppStreak !== 'W' }] : []),
     { label: 'Home ice',           carEdge: isHome_ },
     ...(isPlayoff_ && seriesEntry ? [{ label: 'Series lead', carEdge: (seriesEntry.carWins - seriesEntry.oppWins) >= 0 }] : []),
+    ...(topLineXgf != null ? [{ label: 'Top line (5v5 xGF%)', carEdge: topLineXgf >= 50 }] : []),
   ];
 
   // Get model win % from shared function
@@ -1576,6 +1611,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
     isPlayoff_ ? '• Series record — current series lead/deficit' : '• Standings points — season performance',
     '• Recent form — current streak',
     '• Home ice — ~0.25 goal advantage',
+    topLineXgf != null ? `• Top line 5v5 xGF% — ${topLineXgf.toFixed(1)}% this season` : null,
     carImplied ? '• Market odds — 40% weight when available' : null,
     isPlayoff_ ? 'Playoff mode: standings points excluded.' : null,
   ].filter(Boolean).join('\n');
@@ -1725,6 +1761,9 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
           </div>
         ))}
       </div>
+
+      {/* Top line card */}
+      <TopLineCard carLines={carLines} />
 
       {/* Prediction export card */}
       <PredictionExportSection

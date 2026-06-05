@@ -1550,3 +1550,56 @@
 }
 .md-export-btn:hover    { background: var(--bg3); }
 .md-export-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Top line card (Prediction tab) ─────────────────────────── */
+.md-topline-card {
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 10px 0 4px;
+}
+.md-topline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+.md-topline-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-dim);
+}
+.md-topline-xgf {
+  font-size: 13px;
+  font-weight: 800;
+  font-family: var(--font-mono, monospace);
+}
+.md-topline-xgf.good { color: var(--green); }
+.md-topline-xgf.bad  { color: var(--red-bright); }
+.md-topline-players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 6px;
+}
+.md-topline-player {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.md-topline-pos {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+.md-topline-toi {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
+}

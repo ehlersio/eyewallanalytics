@@ -5,7 +5,7 @@ import {
   TEAM_COLORS,
 } from '../utils/nhlApi';
 import { computeGSAx } from '../utils/advancedStats';
-import { getGoalieAnalytics } from '../utils/supabaseClient';
+import { getGoalieAnalytics, getTeamLines } from '../utils/supabaseClient';
 import TeamLogo from './TeamLogo';
 import InfoTip from './InfoTip';
 import './ScoutingTab.css';
@@ -346,10 +346,113 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
 }
 
 
+// ── Line combinations section ──────────────────────────────────────────────
+
+// Position display: NHL API codes → readable labels
+const POS_LABEL = { L: 'LW', LW: 'LW', C: 'C', R: 'RW', RW: 'RW', D: 'D' };
+
+const XGF_TIP =
+  'Expected Goals For % (xGF%) — share of total expected goals generated while this unit ' +
+  'was on the ice at 5-on-5. Above 50% means CAR outchanced the opponent when these players ' +
+  'were together. Based on shot location and type, not just shot count.';
+
+const TOI_TIP =
+  'Minutes this unit has played together at 5-on-5 this season. More minutes = more reliable ' +
+  'xGF% number. Units with fewer minutes may reflect recent line shuffles.';
+
+const LINES_TIP =
+  'Forward lines and defence pairs inferred from 5-on-5 shift co-occurrence data. ' +
+  'When inference data is complete, xGF% and TOI are live from this season. ' +
+  'Static lineups (shown when inference is unavailable) reflect the most recent known lines.';
+
+function XgfBadge({ pct }) {
+  if (pct == null) return <span className="sc-line-xgf sc-line-xgf-null">—</span>;
+  const good = pct >= 50;
+  return (
+    <span className={`sc-line-xgf ${good ? 'sc-line-xgf-good' : 'sc-line-xgf-bad'}`}>
+      {pct.toFixed(1)}%
+    </span>
+  );
+}
+
+function LineUnit({ unit, label, color, isDefence }) {
+  const toiLabel = unit.toiMins != null ? `${unit.toiMins} min together` : null;
+  return (
+    <div className={`sc-line-unit${unit.isStatic ? ' sc-line-static' : ''}`}>
+      <div className="sc-line-header">
+        <span className="sc-line-label" style={{ color }}>{label}</span>
+        <div className="sc-line-meta">
+          {toiLabel && (
+            <span className="sc-line-toi">
+              {toiLabel}
+              <InfoTip text={TOI_TIP} position="above" />
+            </span>
+          )}
+          <span className="sc-line-xgf-wrap">
+            <span className="sc-line-xgf-label">xGF%</span>
+            <XgfBadge pct={unit.xgfPct} />
+            <InfoTip text={XGF_TIP} position="above" />
+          </span>
+        </div>
+      </div>
+      <div className="sc-line-players">
+        {unit.players.map((p, i) => (
+          <span key={i} className="sc-line-player">
+            <span className="sc-line-pos">{POS_LABEL[p.pos] || p.pos}</span>
+            {p.name}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LinesSection({ lines, color, isPlayoff }) {
+  if (!lines) return null;
+  const { lines: fLines, pairs: dPairs, isInferred } = lines;
+  const lineLabels = ['Line 1', 'Line 2', 'Line 3', 'Line 4'];
+  const pairLabels = ['Pair 1', 'Pair 2', 'Pair 3'];
+  const hasAnyStatic = [...(fLines || []), ...(dPairs || [])].some(u => u.isStatic);
+  return (
+    <div className="scouting-section">
+      <div className="scouting-section-label">
+        CAR lines
+        {isPlayoff && <span className="sc-lines-playoff-badge">Playoffs</span>}
+        <InfoTip text={LINES_TIP} position="above" />
+      </div>
+      {hasAnyStatic && (
+        <div className="sc-lines-note">
+          ⚡ Live xGF% where available · lineup from known line combinations
+        </div>
+      )}
+      <div className="sc-lines-note sc-lines-opponent-note">
+        Opponent lines available when 32-team data is enabled
+      </div>
+      {fLines.length > 0 && (
+        <div className="sc-lines-group">
+          {fLines.map((u, i) => (
+            <LineUnit key={i} unit={u} label={lineLabels[i] || `Line ${u.rank}`} color={color} />
+          ))}
+        </div>
+      )}
+      {dPairs.length > 0 && (
+        <div className="sc-lines-group sc-lines-group-d">
+          <div className="sc-lines-subheader">Defence pairs</div>
+          {dPairs.map((u, i) => (
+            <LineUnit key={i} unit={u} label={pairLabels[i] || `Pair ${u.rank}`} color={color} isDefence />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayoff }) {
   const gameType = isPlayoff ? 3 : 2;
   const carColor = 'var(--red-bright)';
   const oppColor = TEAM_COLORS[oppAbbr] || 'var(--text-muted)';
+
   const canvasRef = useRef(null);
   const [exporting, setExporting] = useState(false);
   const [canvasMounted, setCanvasMounted] = useState(false);
@@ -378,6 +481,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
     [oppAbbr, 'po', isPlayoff]
   );
   const { data: goalieAnalytics } = useFetch(() => getGoalieAnalytics());
+  const { data: carLines } = useFetch(() => getTeamLines('CAR', 20252026, gameType), ['CAR', gameType]);
 
   // Use playoff stats when available, fall back to regular season
   const compCarStats = isPlayoff ? (carPoStats || carStats) : carStats;
@@ -528,6 +632,11 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
           </div>
         </div>
       </div>
+
+      {/* Line combinations */}
+      {carLines && (
+        <LinesSection lines={carLines} color={carColor} isPlayoff={isPlayoff} />
+      )}
 
       {/* Export button */}
       <div className="scouting-section scouting-export-row">
