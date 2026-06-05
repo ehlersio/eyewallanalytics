@@ -40,13 +40,16 @@ export default function Topbar() {
         const pbp = await getGameDetail(game.id).catch(() => null);
         if (pbp) {
           setLiveMeta({ period: pbp.periodDescriptor, clock: pbp.clock });
-          // Publish clock to shared store so display updates immediately
-          if (pbp.clock?.timeRemaining) {
-            publishClock(
-              pbp.clock.timeRemaining,
-              pbp.clock.inIntermission,
-              pbp.clock.running !== false
-            );
+          // Publish clock — fall back to raw string if structured data missing
+          const tr = pbp.clock?.timeRemaining;
+          if (tr) {
+            publishClock(tr, pbp.clock.inIntermission, pbp.clock.running !== false);
+          } else if (pbp.clock?.secondsRemaining != null) {
+            // Some API responses use secondsRemaining instead
+            const sec = pbp.clock.secondsRemaining;
+            const mm = String(Math.floor(sec / 60)).padStart(2, '0');
+            const ss = String(sec % 60).padStart(2, '0');
+            publishClock(`${mm}:${ss}`, pbp.clock.inIntermission, pbp.clock.running !== false);
           }
         }
       } else {

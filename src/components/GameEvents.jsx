@@ -153,6 +153,9 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
   const shownGoals   = useRef(new Set(
     gameId ? JSON.parse(sessionStorage.getItem(`goals_${gameId}`) || '[]') : []
   ));
+  const shownPenalties = useRef(new Set(
+    gameId ? JSON.parse(sessionStorage.getItem(`penalties_${gameId}`) || '[]') : []
+  ));
   // Track whether we were recently live (so we catch the final OT play)
   const wasLiveRef   = useRef(false);
 
@@ -216,15 +219,20 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
 
       // Opponent penalty → CAR power play
       if (play.typeDescKey === 'penalty' && d.eventOwnerTeamId !== 12) {
-        setPenaltyPopup({
-          id:          play.eventId || play.sortOrder,
-          player:      pName(d.committedByPlayerId),
-          description: d.descKey ? d.descKey.replace(/-/g, ' ') : 'Penalty',
-          duration:    d.duration || 2,
-          period:      per,
-          time,
-        });
-        return;
+        const penId = String(play.eventId || play.sortOrder);
+        if (!shownPenalties.current.has(penId)) {
+          shownPenalties.current.add(penId);
+          if (gameId) sessionStorage.setItem(`penalties_${gameId}`, JSON.stringify([...shownPenalties.current]));
+          setPenaltyPopup({
+            id:          penId,
+            player:      pName(d.committedByPlayerId),
+            description: d.descKey ? d.descKey.replace(/-/g, ' ') : 'Penalty',
+            duration:    d.duration || 2,
+            period:      per,
+            time,
+          });
+          return;
+        }
       }
     }
   }, [pbp?.plays?.length, isLive]);

@@ -1,7 +1,7 @@
 // cypress/support/e2e.js
 // Runs before every test file.
 
-// ── Console error tracking ────────────────────────────────────
+// ── Console error tracking ────────────────────────────────────────────────
 // Collect console errors so tests can assert no unexpected errors occurred.
 // Excludes known benign warnings (React StrictMode double-invoke, hot reload noise).
 const IGNORED_ERRORS = [
@@ -21,7 +21,7 @@ Cypress.on('window:before:load', (win) => {
   })
 })
 
-// ── Custom commands ───────────────────────────────────────────
+// ── Custom commands ───────────────────────────────────────────────────────
 
 // Wait for the loading skeleton to disappear and real content to appear.
 // Uses a generous timeout since NHL API + Supabase calls can be slow.

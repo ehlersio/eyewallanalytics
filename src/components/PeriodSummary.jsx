@@ -434,6 +434,7 @@ export default function PeriodSummary({
   const canvasRef = useRef(null);
   const [exporting, setExporting] = useState(false);
   const [captionCopied, setCaptionCopied] = useState(false);
+  const [canvasMounted, setCanvasMounted] = useState(false);
 
   // Generate AI narrative on mount
   useEffect(() => {
@@ -452,6 +453,10 @@ export default function PeriodSummary({
 
   const handleExport = async () => {
     setExporting(true);
+    if (!canvasMounted) {
+      setCanvasMounted(true);
+      await new Promise(r => setTimeout(r, 100));
+    }
     try {
       const { toPng } = await import('html-to-image');
       const node = canvasRef.current;
@@ -460,7 +465,6 @@ export default function PeriodSummary({
         width: 1080,
         height: 1080,
         skipFonts: true,
-        // Silently replace any cross-origin images (team logos) with transparent
         imagePlaceholder: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
         style: { position: 'static', left: '0', top: '0' },
       });
@@ -615,14 +619,16 @@ export default function PeriodSummary({
         </div>
       </div>
 
-      {/* Off-screen canvas for image export */}
-      <ShareCanvas
-        summary={summary}
-        carAbbr={carAbbr}
-        oppAbbr={oppAbbr}
-        homeAbbr={homeAbbr}
-        canvasRef={canvasRef}
-      />
+      {/* Off-screen canvas for image export — only mounted on first export click */}
+      {canvasMounted && (
+        <ShareCanvas
+          summary={summary}
+          carAbbr={carAbbr}
+          oppAbbr={oppAbbr}
+          homeAbbr={homeAbbr}
+          canvasRef={canvasRef}
+        />
+      )}
     </>
   );
 }

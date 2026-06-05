@@ -1,6 +1,7 @@
+import { useState, useRef } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import {
-  getTeamStats, getTeamRecentGames, getTeamTopPlayers,
+  getTeamStats, getTeamStatsPlayoff, getTeamRecentGames, getTeamTopPlayers,
   TEAM_COLORS,
 } from '../utils/nhlApi';
 import { computeGSAx } from '../utils/advancedStats';
@@ -96,8 +97,14 @@ function PlayerTable({ players, loading, color, goalieAnalytics }) {
               ? `Regular season goals saved above expected (MoneyPuck flurry-adjusted model). ${realGp ? `${realGp} GP this season.` : ''}`
               : (estGsax?.note || 'Goals saved above expected vs league avg .900 SV%');
             const svFmt = g.savePct != null && g.savePct > 0
-              ? (g.savePct <= 1 ? g.savePct.toFixed(3) : (g.savePct / 100).toFixed(3))
+              ? (g.savePct <= 1 ? g.savePct.toFixed(4) : (g.savePct / 100).toFixed(4))
               : '—';
+            const gaaVal = g.gaa != null ? g.gaa.toFixed(2) : '—';
+            const gaaColor = g.gaa != null
+              ? g.gaa < 2.0 ? 'var(--green)'
+              : g.gaa > 3.0 ? 'var(--red-bright)'
+              : 'var(--text-muted)'
+              : 'var(--text-muted)';
             return (
               <div key={`g${i}`} className="scouting-goalie-row">
                 <span className="scouting-player-name scouting-goalie-name">{g.name}</span>
@@ -105,6 +112,10 @@ function PlayerTable({ players, loading, color, goalieAnalytics }) {
                   <div className="scouting-goalie-stat">
                     <span className="scouting-goalie-label">W</span>
                     <span className="scouting-goalie-val">{g.wins}</span>
+                  </div>
+                  <div className="scouting-goalie-stat">
+                    <span className="scouting-goalie-label">GAA</span>
+                    <span className="scouting-goalie-val" style={{color: gaaColor}}>{gaaVal}</span>
                   </div>
                   <div className="scouting-goalie-stat">
                     <span className="scouting-goalie-label">SV%</span>
@@ -129,12 +140,220 @@ function PlayerTable({ players, loading, color, goalieAnalytics }) {
 };
 
 
+// ── Goalie matchup card ──────────────────────────────────────
+function GoalieMatchupCard({ carPlayers, oppPlayers, oppAbbr, oppColor }) {
+  const carGoalie = carPlayers?.goalies?.[0];
+  const oppGoalie = oppPlayers?.goalies?.[0];
+  if (!carGoalie && !oppGoalie) return null;
+
+  const renderGoalie = (g, isCAR, teamColor) => {
+    if (!g) return <div className="gmc-goalie"><span className="scouting-empty">No data</span></div>;
+    const sv = g.savePct != null && g.savePct > 0
+      ? (g.savePct <= 1 ? g.savePct.toFixed(4) : (g.savePct / 100).toFixed(4)) : '—';
+    const gaa = g.gaa != null ? g.gaa.toFixed(2) : '—';
+    const gaaColor = g.gaa != null
+      ? g.gaa < 2.0 ? 'var(--green)'
+      : g.gaa > 3.0 ? 'var(--red-bright)'
+      : 'var(--text-muted)' : 'var(--text-muted)';
+    return (
+      <div className={`gmc-goalie${isCAR ? ' gmc-car' : ''}`}>
+        <div className="gmc-goalie-name" style={{color: teamColor}}>{g.name}</div>
+        <div className="gmc-stats-row">
+          <div className="gmc-stat"><div className="gmc-stat-val">{g.wins}</div><div className="gmc-stat-label">W</div></div>
+          <div className="gmc-stat"><div className="gmc-stat-val" style={{color: gaaColor}}>{gaa}</div><div className="gmc-stat-label">GAA</div></div>
+          <div className="gmc-stat"><div className="gmc-stat-val">{sv}</div><div className="gmc-stat-label">SV%</div></div>
+        </div>
+      </div>
+    );
+  };
+  return (
+    <div className="scouting-section">
+      <div className="scouting-section-label">Goalie matchup</div>
+      <div className="gmc-row">
+        {renderGoalie(carGoalie, true, 'var(--red-bright)')}
+        <div className="gmc-vs">vs</div>
+        {renderGoalie(oppGoalie, false, oppColor)}
+      </div>
+    </div>
+  );
+}
+
+// ── Team total projection ────────────────────────────────────
+function TeamTotalCard({ carStats, oppStats, oppAbbr, isPlayoff }) {
+  if (!carStats || !oppStats) return null;
+  const carExp = (carStats.goalsForPerGame + oppStats.goalsAgainstPerGame) / 2;
+  const oppExp = (oppStats.goalsForPerGame + carStats.goalsAgainstPerGame) / 2;
+  const total  = +(carExp + oppExp).toFixed(1);
+  return (
+    <div className="scouting-section">
+      <div className="scouting-section-label">
+        Team total projection
+        <InfoTip text="Average of each team's GF/GP and opponent's GA/GP. Informational only." position="above" />
+      </div>
+      <div className="ttc-wrap">
+        <div className="ttc-score">
+          <span style={{color:'var(--red-bright)'}}>CAR {+carExp.toFixed(1)}</span>
+          <span className="ttc-dash">–</span>
+          <span>{+oppExp.toFixed(1)} {oppAbbr}</span>
+        </div>
+        <div className="ttc-total">Projected total goals: <strong>{total}</strong></div>
+        <div className="ttc-meta">Based on {isPlayoff ? 'playoff' : 'regular season'} GF/GP + GA/GP</div>
+      </div>
+    </div>
+  );
+}
+
+// ── Share canvas (off-screen 1080×1080) ──────────────────────
+function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPlayers,
+  carRecentGames, oppRecentGames, oppAbbr, oppColor, isPlayoff }) {
+  if (!carStats || !oppStats) return null;
+
+  const carGoalie  = carPlayers?.goalies?.[0];
+  const oppGoalie  = oppPlayers?.goalies?.[0];
+  const logoUrl    = abbr => `/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
+  const gpgFmt     = v => v?.toFixed(2) ?? '—';
+  const pctFmt     = v => v != null ? `${(v * 100).toFixed(1)}%` : '—';
+
+  // Team total projection
+  const carExp = ((carStats.goalsForPerGame ?? 0) + (oppStats.goalsAgainstPerGame ?? 0)) / 2;
+  const oppExp = ((oppStats.goalsForPerGame ?? 0) + (carStats.goalsAgainstPerGame ?? 0)) / 2;
+  const projTotal = +(carExp + oppExp).toFixed(1);
+
+  // Recent form last 5
+  const formDots = (games, isCar) => (games || []).slice(0, 5).reverse().map((g, i) => {
+    const color = g.result === 'W' ? '#4ade80' : g.result === 'OTL' ? '#fb923c' : '#ce1126';
+    return (
+      <div key={i} style={{
+        width: 20, height: 20, borderRadius: 4, background: color + '33',
+        border: `1px solid ${color}`, display:'flex', alignItems:'center',
+        justifyContent:'center', fontSize: 8, fontWeight: 700, color,
+      }}>
+        {g.result === 'OTL' ? 'O' : g.result}
+      </div>
+    );
+  });
+
+  return (
+    <div className="sc-canvas" ref={canvasRef}>
+      {/* Header */}
+      <div className="sc-header">
+        <img src="/eyewall-logo.svg" alt="EyeWall" className="sc-logo" onError={e=>{e.target.style.display='none';}} />
+        <span className="sc-badge">{isPlayoff ? 'Playoff ' : ''}Scouting Report</span>
+      </div>
+
+      {/* Teams */}
+      <div className="sc-teams">
+        <div className="sc-team">
+          <img src={logoUrl('CAR')} alt="CAR" className="sc-team-logo" onError={e=>{e.target.style.display='none';}} />
+          <span className="sc-team-abbr car">CAR</span>
+        </div>
+        <span className="sc-vs">vs</span>
+        <div className="sc-team">
+          <img src={logoUrl(oppAbbr)} alt={oppAbbr} className="sc-team-logo" onError={e=>{e.target.style.display='none';}} />
+          <span className="sc-team-abbr" style={{color: oppColor}}>{oppAbbr}</span>
+        </div>
+      </div>
+
+      {/* Stats comparison */}
+      <div className="sc-stats">
+        {[
+          { label: 'Goals For / GP',    car: gpgFmt(carStats.goalsForPerGame),    opp: gpgFmt(oppStats.goalsForPerGame),    carBetter: (carStats.goalsForPerGame??0) > (oppStats.goalsForPerGame??0) },
+          { label: 'Goals Against / GP',car: gpgFmt(carStats.goalsAgainstPerGame),opp: gpgFmt(oppStats.goalsAgainstPerGame),carBetter: (carStats.goalsAgainstPerGame??99) < (oppStats.goalsAgainstPerGame??99) },
+          { label: 'Power Play %',      car: pctFmt(carStats.powerPlayPct),       opp: pctFmt(oppStats.powerPlayPct),       carBetter: (carStats.powerPlayPct??0) > (oppStats.powerPlayPct??0) },
+          { label: 'Penalty Kill %',    car: pctFmt(carStats.penaltyKillPct),     opp: pctFmt(oppStats.penaltyKillPct),     carBetter: (carStats.penaltyKillPct??0) > (oppStats.penaltyKillPct??0) },
+          { label: 'Shots For / GP',    car: (carStats.shotsForPerGame??0).toFixed(1), opp: (oppStats.shotsForPerGame??0).toFixed(1), carBetter: (carStats.shotsForPerGame??0) > (oppStats.shotsForPerGame??0) },
+        ].map((r, i) => (
+          <div key={i} className="sc-stat-row">
+            <span className={`sc-stat-val ${r.carBetter ? 'good' : 'muted'}`}>{r.car}</span>
+            <span className="sc-stat-label">{r.label}</span>
+            <span className={`sc-stat-val ${!r.carBetter ? 'good-opp' : 'muted'}`}>{r.opp}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Team total + recent form side by side */}
+      <div style={{display:'flex', gap:20, padding:'0 52px 14px'}}>
+        {/* Team total */}
+        <div style={{flex:1, background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'12px 14px'}}>
+          <div style={{fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
+            color:'rgba(255,255,255,0.25)', marginBottom:6}}>Projected Total Goals</div>
+          <div style={{fontSize:22, fontWeight:800, marginBottom:3}}>
+            <span style={{color:'#ce1126'}}>CAR {+carExp.toFixed(1)}</span>
+            <span style={{color:'rgba(255,255,255,0.2)'}}> – </span>
+            <span style={{color: oppColor}}>{+oppExp.toFixed(1)} {oppAbbr}</span>
+          </div>
+          <div style={{fontSize:12, color:'rgba(255,255,255,0.4)'}}>Total: <strong style={{color:'rgba(255,255,255,0.7)'}}>{projTotal}</strong></div>
+        </div>
+
+        {/* Recent form */}
+        <div style={{flex:1, background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'12px 14px'}}>
+          <div style={{fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
+            color:'rgba(255,255,255,0.25)', marginBottom:8}}>Recent Form (last 5)</div>
+          <div style={{display:'flex', flexDirection:'column', gap:6}}>
+            <div style={{display:'flex', alignItems:'center', gap:6}}>
+              <span style={{fontSize:10, fontWeight:700, color:'#ce1126', width:28}}>CAR</span>
+              <div style={{display:'flex', gap:3}}>{formDots(carRecentGames, true)}</div>
+            </div>
+            <div style={{display:'flex', alignItems:'center', gap:6}}>
+              <span style={{fontSize:10, fontWeight:700, color: oppColor, width:28}}>{oppAbbr}</span>
+              <div style={{display:'flex', gap:3}}>{formDots(oppRecentGames, false)}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top players + goalies */}
+      <div style={{display:'flex', gap:16, padding:'0 52px 14px'}}>
+        {[
+          { label: 'CAR', color: '#ce1126', players: carPlayers },
+          { label: oppAbbr, color: oppColor, players: oppPlayers },
+        ].map(({ label, color, players }) => (
+          <div key={label} style={{flex:1, background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'12px 14px'}}>
+            <div style={{fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
+              color: color, marginBottom:8}}>{label} {isPlayoff ? 'Playoff ' : ''}Leaders</div>
+            {players?.skaters?.slice(0,5).map((p, i) => (
+              <div key={i} style={{display:'flex', justifyContent:'space-between', alignItems:'center',
+                fontSize:11, padding:'3px 0', borderBottom:'0.5px solid rgba(255,255,255,0.05)'}}>
+                <span style={{color:'rgba(255,255,255,0.7)', fontWeight:500}}>{p.name}</span>
+                <span style={{color: color, fontWeight:700}}>{p.points}pts</span>
+              </div>
+            ))}
+            {players?.goalies?.[0] && (
+              <div style={{marginTop:6, padding:'4px 0', borderTop:'0.5px solid rgba(255,255,255,0.08)'}}>
+                <div style={{fontSize:10, color:'rgba(255,255,255,0.5)', marginBottom:2}}>
+                  {players.goalies[0].name}
+                </div>
+                <div style={{display:'flex', gap:10, fontSize:11}}>
+                  <span>W {players.goalies[0].wins}</span>
+                  <span style={{color: players.goalies[0].gaa < 2.5 ? '#4ade80' : players.goalies[0].gaa > 3.2 ? '#ce1126' : 'rgba(255,255,255,0.5)'}}>
+                    GAA {players.goalies[0].gaa?.toFixed(2) ?? '—'}
+                  </span>
+                  <span>SV% {players.goalies[0].savePct?.toFixed(4) ?? '—'}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Footer */}
+      <div className="sc-footer">
+        <span>eyewallanalytics.com</span>
+        <span>#LetsGoCanes</span>
+      </div>
+    </div>
+  );
+}
+
+
 export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayoff }) {
   const gameType = isPlayoff ? 3 : 2;
   const carColor = 'var(--red-bright)';
   const oppColor = TEAM_COLORS[oppAbbr] || 'var(--text-muted)';
+  const canvasRef = useRef(null);
+  const [exporting, setExporting] = useState(false);
+  const [canvasMounted, setCanvasMounted] = useState(false);
 
-  // Fetch both teams' data
   const { data: carRecentGames } = useFetch(
     () => getTeamRecentGames('CAR', 10, isPlayoff), ['CAR', isPlayoff]
   );
@@ -149,15 +368,49 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
   );
   const { data: carStats } = useFetch(() => getTeamStats('CAR'), ['CAR']);
   const { data: oppStats } = useFetch(() => getTeamStats(oppAbbr), [oppAbbr]);
+  // Playoff stats — used for Season Comparison when in playoffs
+  const { data: carPoStats } = useFetch(
+    () => isPlayoff ? getTeamStatsPlayoff('CAR') : Promise.resolve(null),
+    ['CAR', 'po', isPlayoff]
+  );
+  const { data: oppPoStats } = useFetch(
+    () => isPlayoff ? getTeamStatsPlayoff(oppAbbr) : Promise.resolve(null),
+    [oppAbbr, 'po', isPlayoff]
+  );
   const { data: goalieAnalytics } = useFetch(() => getGoalieAnalytics());
 
+  // Use playoff stats when available, fall back to regular season
+  const compCarStats = isPlayoff ? (carPoStats || carStats) : carStats;
+  const compOppStats = isPlayoff ? (oppPoStats || oppStats) : oppStats;
 
-  const pctFmt  = v => v != null ? `${(v * 100).toFixed(1)}%` : '—';
-  const gpgFmt  = v => v?.toFixed(2) ?? '—';
-  const carGp   = carStanding?.gamesPlayed || 1;
-  const oppGp   = oppStanding?.gamesPlayed || 1;
+  const pctFmt = v => v != null ? `${(v * 100).toFixed(1)}%` : '—';
+  const gpgFmt = v => v?.toFixed(2) ?? '—';
+
+  const handleExport = async () => {
+    setExporting(true);
+    if (!canvasMounted) {
+      setCanvasMounted(true);
+      await new Promise(r => setTimeout(r, 100));
+    }
+    try {
+      const { toPng } = await import('html-to-image');
+      const node = canvasRef.current;
+      if (!node) return;
+      const dataUrl = await toPng(node, {
+        width: 1080, height: 1080, skipFonts: true,
+        imagePlaceholder: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+        style: { position: 'static', left: '0', top: '0' },
+      });
+      const link = document.createElement('a');
+      link.download = `EyeWall-Scouting-CAR-vs-${oppAbbr}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (e) { console.error('Scouting export failed:', e); }
+    finally { setExporting(false); }
+  };
 
   return (
+    <>
     <div className="scouting-wrap">
       {isPlayoff && (
         <div className="scouting-playoff-badge">🏒 Playoff stats · {SEASON_LABEL}</div>
@@ -186,29 +439,51 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
         </div>
       </div>
 
-      {/* Key stat comparisons */}
-      {(carStats || oppStats) && (
+      {/* Season/Playoff comparison — uses playoff stats when isPlayoff */}
+      {(compCarStats || compOppStats) && (
         <div className="scouting-section">
-          <div className="scouting-section-label">Season comparison</div>
+          <div className="scouting-section-label">
+            {isPlayoff ? 'Playoff' : 'Season'} comparison
+          </div>
           <div className="scouting-compare-header">
             <span style={{color: carColor}}>CAR</span>
             <span />
             <span style={{color: oppColor}}>{oppAbbr}</span>
           </div>
-          <CompareRow label="GF/GP" carVal={carStats?.goalsForPerGame} oppVal={oppStats?.goalsForPerGame} fmt={gpgFmt}
+          <CompareRow label="GF/GP" carVal={compCarStats?.goalsForPerGame} oppVal={compOppStats?.goalsForPerGame} fmt={gpgFmt}
             tip="Goals for per game — higher is better" />
-          <CompareRow label="GA/GP" carVal={carStats?.goalsAgainstPerGame} oppVal={oppStats?.goalsAgainstPerGame} fmt={gpgFmt}
+          <CompareRow label="GA/GP" carVal={compCarStats?.goalsAgainstPerGame} oppVal={compOppStats?.goalsAgainstPerGame} fmt={gpgFmt}
             higherBetter={false} tip="Goals against per game — lower is better" />
-          <CompareRow label="PP%" carVal={carStats?.powerPlayPct} oppVal={oppStats?.powerPlayPct} fmt={pctFmt}
+          <CompareRow label="PP%" carVal={compCarStats?.powerPlayPct} oppVal={compOppStats?.powerPlayPct} fmt={pctFmt}
             tip="Power play percentage" />
-          <CompareRow label="PK%" carVal={carStats?.penaltyKillPct} oppVal={oppStats?.penaltyKillPct} fmt={pctFmt}
+          <CompareRow label="PK%" carVal={compCarStats?.penaltyKillPct} oppVal={compOppStats?.penaltyKillPct} fmt={pctFmt}
             tip="Penalty kill percentage" />
-          <CompareRow label="SF/GP" carVal={carStats?.shotsForPerGame} oppVal={oppStats?.shotsForPerGame}
+          <CompareRow label="SF/GP" carVal={compCarStats?.shotsForPerGame} oppVal={compOppStats?.shotsForPerGame}
             fmt={v => v?.toFixed(1) ?? '—'} tip="Shots for per game — possession proxy" />
+          {isPlayoff && compCarStats?.faceoffWinPct != null && (
+            <CompareRow label="FO Win%" carVal={compCarStats?.faceoffWinPct} oppVal={compOppStats?.faceoffWinPct}
+              fmt={pctFmt} tip="Faceoff win percentage in playoffs" />
+          )}
         </div>
       )}
 
-      {/* Recent form — side by side */}
+      {/* Goalie matchup */}
+      <GoalieMatchupCard
+        carPlayers={carTopPlayers}
+        oppPlayers={oppTopPlayers}
+        oppAbbr={oppAbbr}
+        oppColor={oppColor}
+      />
+
+      {/* Team total projection */}
+      <TeamTotalCard
+        carStats={compCarStats}
+        oppStats={compOppStats}
+        oppAbbr={oppAbbr}
+        isPlayoff={isPlayoff}
+      />
+
+      {/* Recent form */}
       <div className="scouting-section">
         <div className="scouting-section-label">Recent form (last {isPlayoff ? 'playoff ' : ''}10)</div>
         <div className="scouting-form-row">
@@ -237,7 +512,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
         </div>
       </div>
 
-      {/* Top players — side by side */}
+      {/* Top players */}
       <div className="scouting-section">
         <div className="scouting-section-label">
           {isPlayoff ? 'Playoff ' : ''}Top skaters &amp; goalies
@@ -253,7 +528,31 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
           </div>
         </div>
       </div>
+
+      {/* Export button */}
+      <div className="scouting-section scouting-export-row">
+        <button className="scouting-export-btn" onClick={handleExport} disabled={exporting}>
+          {exporting ? '⏳ Saving…' : '📸 Save Scouting Card'}
+        </button>
+      </div>
     </div>
+
+    {/* Off-screen canvas for export — only mounted when user clicks Save */}
+    {canvasMounted && (
+    <ScoutingShareCanvas
+        canvasRef={canvasRef}
+        carStats={compCarStats}
+        oppStats={compOppStats}
+        carPlayers={carTopPlayers}
+        oppPlayers={oppTopPlayers}
+        carRecentGames={carRecentGames}
+        oppRecentGames={oppRecentGames}
+        oppAbbr={oppAbbr}
+        oppColor={oppColor}
+        isPlayoff={isPlayoff}
+      />
+    )}
+    </>
   );
 }
 

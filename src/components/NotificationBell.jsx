@@ -9,8 +9,9 @@ export default function NotificationBell() {
     usePushNotifications();
   const { summaries, openSummary } = usePeriodSummaryContext();
 
-  // Don't render at all if browser doesn't support push
-  if (!supported) return null;
+  // Always render the button — gating on `supported` causes it to flash
+  // away on navigation while usePushNotifications() initializes.
+  // Only hide the notification toggle inside the drawer if unsupported.
 
   const handleToggle = async () => {
     if (subscribed) {
@@ -60,7 +61,7 @@ export default function NotificationBell() {
 
           {error && <p className="notif-error">{error}</p>}
 
-          {permission !== 'denied' && (
+          {supported && permission !== 'denied' && (
             <button
               className={`notif-toggle-btn ${subscribed ? 'notif-off-btn' : 'notif-on-btn'}`}
               onClick={handleToggle}
@@ -74,6 +75,7 @@ export default function NotificationBell() {
             </button>
           )}
 
+          {supported && (
           <div className="notif-events">
             <div className="notif-event-label">🔔 Push Notifications</div>
             {[
@@ -89,6 +91,7 @@ export default function NotificationBell() {
               </div>
             ))}
           </div>
+          )}
 
           {/* Period summaries section */}
           {hasSummaries && (

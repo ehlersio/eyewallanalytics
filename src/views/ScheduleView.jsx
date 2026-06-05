@@ -17,6 +17,7 @@ import {
 } from '../utils/nhlApi';
 import TeamLogo from '../components/TeamLogo';
 import './ScheduleView.css';
+import PredictionExportSection from '../components/PredictionShareCanvas';
 
 const TABS = ['Playoffs', 'Regular Season'];
 const CAR_ABBR = 'CAR';
@@ -1724,12 +1725,32 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
           </div>
         ))}
       </div>
+
+      {/* Prediction export card */}
+      <PredictionExportSection
+        carModelPct={carModelPct}
+        predCarScore={predCarScore}
+        predOppScore={predOppScore}
+        carGpg={carGpg}
+        oppGpg={oppGpg}
+        carGag={carGag}
+        oppGag={oppGag}
+        carWin={carWin}
+        oppWin={oppWin}
+        carPP={carPP}
+        oppPK={oppPK}
+        factors={factors}
+        odds={odds}
+        oppAbbr={oppAbbr}
+        oppColor={oppColor}
+        isPlayoff={isPlayoff_}
+        seriesEntry={seriesEntry}
+        gameId={game?.id}
+      />
       </>)}
     </div>
   );
 }
-
-// ── EyeWall AI Prediction Analysis ───────────────────────────
 function PredictionAnalysis({ gameId, oppAbbr, oppColor }) {
   const [analysis,  setAnalysis]  = useState(null);
   const [loading,   setLoading]   = useState(false);

@@ -256,6 +256,38 @@ async function _getStandings() {
 export async function getTeamStats(teamAbbr = CAR_ABBR) {
   return cached(`teamStats:${teamAbbr}`, () => _getTeamStats(teamAbbr), TTL.TEAM_STATS);
 }
+
+// Playoff team stats — uses NHL stats REST API with gameTypeId=3
+// Returns same shape as getTeamStats for drop-in use in ScoutingTab
+export async function getTeamStatsPlayoff(teamAbbr = CAR_ABBR) {
+  return cached(`teamStatsPlayoff:${teamAbbr}`, async () => {
+    const exp = encodeURIComponent(`gameTypeId=3 and seasonId<=${SEASON} and seasonId>=${SEASON}`);
+    const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false&sort=shotsForPerGame&sortDirection=DESC&limit=32&cayenneExp=${exp}`;
+    const data = await nhlFetch(url);
+    const team = (data?.data || []).find(t => t.teamFullName && (
+      (teamAbbr === 'CAR' && t.teamFullName.includes('Carolina')) ||
+      (teamAbbr === 'VGK' && t.teamFullName.includes('Vegas')) ||
+      t.teamAbbrevs === teamAbbr ||
+      t.teamFullName.toLowerCase().includes(teamAbbr.toLowerCase())
+    ));
+    if (!team) return null;
+    const gp = team.gamesPlayed || 1;
+    return {
+      gamesPlayed:         gp,
+      wins:                team.wins                ?? 0,
+      losses:              team.losses              ?? 0,
+      goalsForPerGame:     team.goalsForPerGame      ?? 0,
+      goalsAgainstPerGame: team.goalsAgainstPerGame  ?? 0,
+      // PP/PK already 0–1 scale in this endpoint
+      powerPlayPct:        team.powerPlayPct         ?? 0,
+      penaltyKillPct:      team.penaltyKillPct       ?? 0,
+      shotsForPerGame:     team.shotsForPerGame       ?? 0,
+      shotsAgainstPerGame: team.shotsAgainstPerGame   ?? 0,
+      faceoffWinPct:       team.faceoffWinPct         ?? null,
+      _raw: team,
+    };
+  }, TTL.TEAM_STATS);
+}
 async function _getTeamStats(teamAbbr = CAR_ABBR) {
   const standings = await getStandings();
   const team = standings.find(t => t.teamAbbrev?.default === teamAbbr);
@@ -299,7 +331,51 @@ const FALLBACK_STATS = {
   divisionName: 'Metropolitan', _raw: null,
 };
 
-// ─── ROSTER ──────────────────────────────────────────────────
+// ─── TEAM SEASON RANKINGS ────────────────────────────────────
+// Returns CAR's league rank (1 = best) for key stats.
+// gameTypeId: 2 = regular season, 3 = playoffs
+export async function getTeamSeasonRankings(gameTypeId = 2) {
+  return cached(`teamSeasonRankings:${gameTypeId}`, () => _getTeamSeasonRankings(gameTypeId), TTL.TEAM_STATS);
+}
+async function _getTeamSeasonRankings(gameTypeId = 2) {
+  try {
+    const exp = encodeURIComponent(
+      `gameTypeId=${gameTypeId} and seasonId<=${SEASON} and seasonId>=${SEASON}`
+    );
+    const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false` +
+      `&sort=shotsForPerGame&sortDirection=DESC&limit=40&cayenneExp=${exp}`;
+    const data = await nhlFetch(url);
+    const teams = data?.data || [];
+    if (!teams.length) return null;
+
+    // Find CAR (Carolina Hurricanes)
+    const car = teams.find(t => t.teamFullName?.includes('Carolina'));
+    if (!car) return null;
+
+    // Rank helper — 1 = best. higherBetter: sort desc; lowerBetter: sort asc
+    const rank = (field, higherBetter = true) => {
+      const sorted = [...teams]
+        .filter(t => t[field] != null)
+        .sort((a, b) => higherBetter ? b[field] - a[field] : a[field] - b[field]);
+      const pos = sorted.findIndex(t => t.teamFullName?.includes('Carolina'));
+      return pos === -1 ? null : pos + 1;
+    };
+
+    return {
+      goalsForPG:      rank('goalsForPerGame',     true),
+      goalsAgainstPG:  rank('goalsAgainstPerGame', false),  // lower = better
+      ppPct:           rank('powerPlayPct',         true),
+      pkPct:           rank('penaltyKillPct',       true),
+      shotsForPG:      rank('shotsForPerGame',      true),
+      shotsAgainstPG:  rank('shotsAgainstPerGame',  false), // lower = better
+    };
+  } catch (e) {
+    console.warn('getTeamSeasonRankings failed:', e.message);
+    return null;
+  }
+}
+
+
 
 export async function getTeamSkaterStats(gameTypeId = 2) {
   return cached(`teamSkaterStats:${gameTypeId}`, () => _getTeamSkaterStats(gameTypeId), TTL.PLAYER_STATS);
@@ -685,7 +761,7 @@ export async function getTeamTopPlayers(teamAbbr, gameType = 2) {
         name:         `${g.firstName?.default || ''} ${g.lastName?.default || ''}`.trim(),
         wins:         g.wins ?? 0,
         savePct:      g.savePercentage ?? g.savePctg ?? null,
-        gaa:          g.goalsAgainstAvg ?? 0,
+        gaa:          g.goalsAgainstAverage ?? g.goalsAgainstAvg ?? 0,
         shotsAgainst: g.shotsAgainst,
         saves:        g.saves,
       }));
@@ -849,48 +925,6 @@ export async function getTeamPlayoffStats() {
     getTeamPenaltyKill(3),
   ]);
   return { corsi, scoreState, pp, pk };
-}
-
-// All-team season summary for league rank computation
-// Returns array of all NHL teams' season stats for the given game type.
-export async function getAllTeamStats(gameTypeId = 2) {
-  return cached(`allTeamStats:${gameTypeId}`, async () => {
-    const s   = STATS_SEASON;
-    const exp = encodeURIComponent(`gameTypeId=${gameTypeId} and seasonId=${s}`);
-    const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false&sort=wins&limit=50&cayenneExp=${exp}`;
-    const d   = await nhlFetch(url);
-    return d?.data || [];
-  }, TTL.ADVANCED);
-}
-
-// Compute CAR's rank for each season stat across all NHL teams.
-// Returns an object keyed by stat name → { rank, total } e.g. { goalsForPG: { rank: 1, total: 32 } }
-export async function getTeamSeasonRankings(gameTypeId = 2) {
-  const all = await getAllTeamStats(gameTypeId);
-  if (!all?.length) return null;
-  // This endpoint only has teamId, not abbreviation — use CAR_TEAM_ID (12)
-  const car = all.find(t => t.teamId === CAR_TEAM_ID);
-  if (!car) return null;
-  const total = all.length;
-
-  function rank(field, higherIsBetter = true) {
-    const val = car[field];
-    if (val == null) return null;
-    const sorted = [...all]
-      .filter(t => t[field] != null)
-      .sort((a, b) => higherIsBetter ? b[field] - a[field] : a[field] - b[field]);
-    const r = sorted.findIndex(t => t.teamId === CAR_TEAM_ID) + 1;
-    return r > 0 ? { rank: r, total } : null;
-  }
-
-  return {
-    goalsForPG:      rank('goalsForPerGame',      true),
-    goalsAgainstPG:  rank('goalsAgainstPerGame',  false),
-    ppPct:           rank('powerPlayPct',          true),
-    pkPct:           rank('penaltyKillPct',        true),
-    shotsForPG:      rank('shotsForPerGame',       true),
-    shotsAgainstPG:  rank('shotsAgainstPerGame',  false),
-  };
 }
 
 // Rolling game-by-game results for trend chart

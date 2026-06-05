@@ -1531,3 +1531,22 @@
   z-index: 10;
 }
 .gsp-top-btn:hover { color: var(--text); background: var(--bg2); }
+
+/* ── Prediction export button ────────────────────────────────── */
+.md-export-btn {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-align: center;
+}
+.md-export-btn:hover    { background: var(--bg3); }
+.md-export-btn:disabled { opacity: 0.5; cursor: not-allowed; }
