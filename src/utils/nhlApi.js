@@ -965,23 +965,43 @@ async function _getTeamGameLog(count = 20) {
 
 
 // ─── ODDS (The Odds API) ─────────────────────────────────────
-// Free tier: 500 requests/month. Get a key at https://the-odds-api.com
-// Add your key to a .env file as: VITE_ODDS_API_KEY=your_key_here
-// Without a key, this returns null gracefully.
+// Odds are fetched by the Cloudflare Worker and cached in KV for 5 minutes.
+// This means The Odds API is called at most once per 5 minutes across ALL users,
+// regardless of how many people have the schedule view open.
+//
+// Free tier: 500 requests/month. With Worker caching that's ~3,000 user sessions
+// per month before the quota is touched. Without it, one active user burns ~1,400/month.
+//
+// Worker env var: ODDS_API_KEY (set in Cloudflare Worker dashboard)
+// Frontend env var: VITE_ODDS_API_KEY — only used as direct fallback when Worker
+// is unavailable (local dev without Worker).
 
 const ODDS_BASE = 'https://api.the-odds-api.com/v4';
 const ODDS_KEY  = import.meta.env.VITE_ODDS_API_KEY || null;
 
-// Fetch NHL moneyline odds for upcoming games
+// Fetch NHL moneyline odds for upcoming games.
+// Reads from Worker KV cache first; falls back to direct API call only in local dev.
 // Returns array of { homeTeam, awayTeam, commence_time, bookmakers }
 export async function getNhlOdds() {
-  if (!ODDS_KEY) return null;
-  try {
-    const url = `${ODDS_BASE}/sports/icehockey_nhl/odds/?apiKey=${ODDS_KEY}&regions=us&markets=h2h&oddsFormat=american`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch { return null; }
+  return cached('nhlOdds', async () => {
+    // Try Worker KV cache first (served to all users, refreshed every 5min by Worker)
+    if (WORKER_URL) {
+      try {
+        const res = await fetch(`${WORKER_URL}/cache/odds:nhl`, {
+          signal: AbortSignal.timeout(3000),
+        });
+        if (res.ok) return await res.json();
+      } catch { /* fall through to direct call */ }
+    }
+    // Direct fallback — only used in local dev when Worker isn't running
+    if (!ODDS_KEY) return null;
+    try {
+      const url = `${ODDS_BASE}/sports/icehockey_nhl/odds/?apiKey=${ODDS_KEY}&regions=us&markets=h2h&oddsFormat=american`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch { return null; }
+  }, 5 * 60 * 1000); // 5 min client-side cache — matches Worker KV TTL
 }
 
 // Find odds for a specific game by matching team names
