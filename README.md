@@ -30,6 +30,7 @@ EyeWall Analytics is a React PWA delivering real-time and historical Carolina Hu
 | Push Notifications | Web Push API (VAPID), Service Worker |
 | AI Summaries | Anthropic Claude Haiku (period/game summaries via Vite proxy in dev; Worker in prod) |
 | Analytics Data | MoneyPuck.com CSV (fetched nightly by pipeline) |
+| User Analytics | PostHog (anonymous event tracking, cookieless) |
 | Data Source | NHL public API (no authentication required) |
 | Cap Data | Static `carContracts.js` (source: PuckPedia) |
 | Accessibility | WCAG 2.1 AA compliant (Section 508) |
@@ -68,6 +69,12 @@ canes-analytics-starter/
 │   │   ├── IceRink.jsx/.css      # SVG rink, heat map, player filter, readOnly mode
 │   │   ├── GameEvents.jsx/.css   # Goal/penalty/win/puck drop popups
 │   │   ├── ScoutingTab.jsx/.css  # Opponent scouting (side-by-side)
+│   │   ├── MatchupDetail.jsx      # Prediction + Scouting tab detail view
+│   │   ├── CalendarView.jsx       # Calendar month view for schedule
+│   │   ├── GameCard.jsx           # Game card + series card components
+│   │   ├── GameStatsPopup.jsx     # Completed game stats popup (shell)
+│   │   ├── GameStatsComponents.jsx # PeriodTable, SkaterTable, GoalsList
+│   │   ├── PredictionShareCanvas.jsx # 1080×1080 prediction export card
 │   │   ├── NotificationBell.jsx  # ⚡ Game Center — push notification opt-in + period summary chips
 │   │   ├── PeriodSummary.jsx/.css # Period and game summary popup + share image canvas
 │   │   ├── AboutPopup.jsx/.css   # Logo tap → about + BMC link
@@ -89,7 +96,8 @@ canes-analytics-starter/
 │       ├── ppUnits.js            # PP/PK unit configs by season (inferPPUnit, inferPKUnit)
 │       ├── PeriodSummaryContext.jsx # React context bridging ShotMapView → Game Center bell
 │       ├── DevGameContext.js     # Dev-only context for live game injection
-│       └── liveClockStore.js     # Shared pub/sub for synced clock + momentum
+│       ├── liveClockStore.js     # Shared pub/sub for synced clock + momentum
+│       └── analytics.js          # PostHog wrapper (capture, identify)
 ├── src/utils/__tests__/          # Vitest unit tests
 │   ├── advancedStats.test.js     # Corsi, PDO, GSAx, Puck Luck (15 tests)
 │   ├── periodSummary.test.js     # HDC formula, strengthLabel, corsiColor, rosterMap (30 tests)
@@ -164,6 +172,7 @@ A separate Cloudflare Worker polls the NHL API every 60 seconds and writes to KV
 | Variable | Where | Notes |
 |----------|-------|-------|
 | `POLL_SECRET` | Worker | Protects manual trigger endpoints |
+| `ODDS_API_KEY` | Worker | The Odds API key — free tier 500 req/month, game-window gated |
 | `VAPID_PUBLIC_KEY` | Worker + Pages | Web Push VAPID public key |
 | `VAPID_PRIVATE_KEY` | Worker (encrypted) | Web Push VAPID private key |
 | `VAPID_SUBJECT` | Worker | `mailto:matt@eyewallanalytics.com` |
@@ -175,6 +184,7 @@ A separate Cloudflare Worker polls the NHL API every 60 seconds and writes to KV
 | `X_ACCESS_SECRET` | Worker (encrypted) | X/Twitter access secret |
 | `VITE_WORKER_URL` | Pages (build-time) | Worker base URL |
 | `VITE_VAPID_PUBLIC_KEY` | Pages (build-time) | Web Push public key for browser |
+| `VITE_POSTHOG_KEY` | Pages (build-time) + `.env.local` | PostHog project API key (`phc_...`) |
 
 ---
 
@@ -318,6 +328,7 @@ npm run build      # Production build
 VITE_WORKER_URL=https://eyewall-poller.billowing-queen-bf23.workers.dev
 VITE_VAPID_PUBLIC_KEY=BHuReh0oBGitFpWQpzEkxM-0m2XHxDX3hqfvX6lpA-IfKSivoB892Jvs64Uz7oNOF-NvDIpPeeBAcWwsIRpnKX4
 VITE_ANTHROPIC_API_KEY=sk-ant-...   # Claude API key for period summary AI narratives (dev only)
+VITE_POSTHOG_KEY=phc_...             # PostHog project API key (optional locally — analytics disabled in dev)
 ```
 
 > The `VITE_ANTHROPIC_API_KEY` is injected server-side by the Vite proxy at `/anthropic` — it never appears in the client bundle. In production, period summary AI calls are handled by the same Cloudflare Worker that powers AI game summaries, using the existing `ANTHROPIC_API_KEY` Worker secret.
@@ -364,7 +375,7 @@ npm test            # Run all tests once
 npm run test:watch  # Watch mode
 ```
 
-**83 tests across 4 files:**
+**137 tests across 8 files:**
 
 | File | Coverage | Tests |
 |------|----------|-------|
@@ -383,15 +394,15 @@ npm run cypress:full    # Clean → run → generate HTML report (always generat
 
 **HTML report:** `cypress/reports/html/merged.html`
 
-**169 tests across 8 specs:**
+**213 tests across 8 specs:**
 
 | Spec | What it tests | Tests |
 |------|--------------|-------|
 | `navigation.cy.js` | All routes, bottom nav | 7 |
-| `news.cy.js` | Source filter chips, article list, refresh, attribution | 15 |
+| `news.cy.js` | Source filter chips (dynamic), article list, refresh, attribution | 16 |
 | `period-summary.cy.js` | Game Center (⚡) drawer, period summary popup, final game summary | 23 |
 | `players.cy.js` | Roster, skater card (all tabs, defensive stats, GSAX), goalie card (dual rankings, GSAX analytics) | 30 |
-| `schedule.cy.js` | Playoffs rounds, regular season list, stats popup | 3 |
+| `schedule.cy.js` | Playoffs rounds, Prediction/Scouting tabs, CAR lines, stats popup | 47 |
 | `shot-map.cy.js` | All sections: insights, shot attempts, momentum, rink controls | 31 |
 | `team.cy.js` | All 5 tabs including trends charts and cap table | 19 |
 | `viewports.cy.js` | 4 viewports (375/430/768/1280px) × all 5 views | 44 |
@@ -417,6 +428,28 @@ CI runs Vitest + Cypress headless on every push to `main` or `staging`. GitHub A
 | **Blended value** | (Points/$M × 0.6) + (WAR/$M × 6 × 0.4) | Skater contract value |
 | **Momentum%** | Weighted zone events: shots (1.0/0.7), OZ faceoff wins (0.6), OZ hits/takeaways (0.4–0.5) | Inspired by NHL Edge Ice Tilt |
 | **High Danger Chances** | Shot attempts (incl. blocked) within 15ft of net: `dist(|x|-89, y) < 15` | Matches Shot Map formula |
+
+---
+
+
+## Performance (Lighthouse Mobile)
+
+Latest scores against `eyewallanalytics.com`:
+
+| Metric | Score |
+|--------|-------|
+| First Contentful Paint | 3.3s |
+| Largest Contentful Paint | 6.2s |
+| Total Blocking Time | 60ms |
+| Cumulative Layout Shift | 0 |
+| Speed Index | 4.6s |
+
+Key optimisations applied:
+- Font Awesome CDN replaced with inline SVGs (saved 19 KiB render-blocking CSS)
+- Google Fonts `@import` replaced with `<link display=optional>` (eliminates CLS)
+- Preconnect hints for Google Fonts, Supabase, and Worker
+- Route-level lazy loading — only `ShotMapView` loads on initial paint
+- `min-height` on `.two-col` prevents layout shift during data load
 
 ---
 
@@ -447,6 +480,8 @@ CI runs Vitest + Cypress headless on every push to `main` or `staging`. GitHub A
 - [ ] X/Twitter auto-posting (when Basic tier active)
 - [ ] Year-over-year player comparison view
 - [ ] NHL EDGE zone time endpoint for live Momentum card improvement
+- [ ] PostHog funnel analysis — identify drop-off between Prediction view → AI analysis → export
+- [ ] Capacitor PWA wrapper for App Store / Play Store distribution
 
 ---
 
