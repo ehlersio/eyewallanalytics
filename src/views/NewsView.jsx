@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import './NewsView.css';
+import { capture } from '../utils/analytics';
 
 const WORKER_URL  = import.meta.env.VITE_WORKER_URL || '';
 const PAGE_SIZE   = 10;
@@ -32,7 +33,10 @@ function SourceBadge({ sourceId, label, color, bg }) {
 
 function ArticleCard({ item }) {
   const handleClick = () => {
-    if (item.url) window.open(item.url, '_blank', 'noopener,noreferrer');
+    if (item.url) {
+      capture('news_article_clicked', { source: item.source, title: item.title?.slice(0, 60) });
+      window.open(item.url, '_blank', 'noopener,noreferrer');
+    }
   };
   return (
     <article className="news-card card" onClick={handleClick} role="link" tabIndex={0}
@@ -141,7 +145,7 @@ export default function NewsView() {
             <button
               key={s}
               className={`news-chip ${filter === s ? 'active' : ''}`}
-              onClick={() => setFilter(s)}
+              onClick={() => { setFilter(s); if (s !== 'all') capture('news_filter_changed', { source: s }); }}
             >
               {s === 'all' ? `All (${articles.length})` : (SOURCE_META[s]?.label || s)}
             </button>

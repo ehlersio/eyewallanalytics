@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import { savePrediction, getPredictionStats, recordOutcome } from '../utils/predictionStore';
+import { capture } from '../utils/analytics';
 import ScoutingTab from '../components/ScoutingTab';
 import InfoTip from '../components/InfoTip';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
@@ -132,6 +133,13 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       predictedCarScore: pCar,
       predictedOppScore: pOpp,
     });
+    capture('prediction_viewed', {
+      gameId:      game.id,
+      opponent:    oppAbbr,
+      isPlayoff:   game.gameType === 3,
+      predictedWin: cPts >= oPts,
+      carPct:      Math.round(cPts / (cPts + oPts + 1) * 100),
+    });
   }, [game?.id]);
 
   // Guard: if standings data unavailable show a graceful message with debug info
@@ -257,7 +265,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
         <button className={`md-tab${mdTab === 'prediction' ? ' active' : ''}`}
           onClick={() => setMdTab('prediction')}>Prediction</button>
         <button className={`md-tab${mdTab === 'scouting' ? ' active' : ''}`}
-          onClick={() => setMdTab('scouting')}>Scouting</button>
+          onClick={() => { setMdTab('scouting'); capture('scouting_tab_viewed', { gameId: game?.id, opponent: oppAbbr, isPlayoff: game?.gameType === 3 }); }}>Scouting</button>
       </div>
 
       {mdTab === 'scouting' ? (
@@ -425,6 +433,7 @@ function PredictionAnalysis({ gameId, oppAbbr, oppColor }) {
     setLoading(true);
     setError(null);
     setRequested(true);
+    capture('ai_analysis_requested', { gameId });
     try {
       const res  = await fetch(`${workerUrl}/prediction/analyze?gameId=${gameId}`);
       const data = await res.json();

@@ -9,6 +9,7 @@ import { getGoalieAnalytics, getTeamLines } from '../utils/supabaseClient';
 import TeamLogo from './TeamLogo';
 import InfoTip from './InfoTip';
 import './ScoutingTab.css';
+import { capture } from '../utils/analytics';
 
 // Recent form dots
 function FormDots({ games }) {
@@ -593,6 +594,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
       link.download = `EyeWall-Scouting-CAR-vs-${oppAbbr}.png`;
       link.href = dataUrl;
       link.click();
+      capture('scouting_card_exported', { opponent: oppAbbr, isPlayoff: !!isPlayoff });
     } catch (e) { console.error('Scouting export failed:', e); }
     finally { setExporting(false); }
   };

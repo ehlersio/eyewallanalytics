@@ -45,6 +45,13 @@
 }
 .about-close:hover { color: var(--text); background: var(--bg3); }
 
+.about-privacy {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 8px 0 0;
+  line-height: 1.5;
+}
 .about-logo-row {
   display: flex; align-items: center; gap: 12px;
   margin-bottom: 14px;

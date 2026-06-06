@@ -7,6 +7,7 @@ import {
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import TeamLogo from '../components/TeamLogo';
 import InfoTip from '../components/InfoTip';
+import { capture } from '../utils/analytics';
 
 const CAR_ABBR = 'CAR';
 
@@ -21,6 +22,10 @@ function GameStatsPopup({ game, onClose }) {
   const modalRef = useRef(null);
 
   // Fetch AI-generated summary from Worker KV
+  useEffect(() => {
+    capture('game_stats_opened', { gameId: game?.id, opponent: getOpponent(game)?.abbrev });
+  }, []);
+
   useEffect(() => {
     const workerUrl = import.meta.env.VITE_WORKER_URL;
     if (!workerUrl || !game?.id) return;

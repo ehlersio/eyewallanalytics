@@ -1,10 +1,11 @@
 // EyeWall Analytics v1.1
-import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { lazy, Suspense, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import Topbar from './components/Topbar'
 import BottomNav from './components/BottomNav'
 import ShotMapView from './views/ShotMapView'
 import { PeriodSummaryProvider } from './utils/PeriodSummaryContext'
+import { capture } from './utils/analytics'
 import './App.css'
 
 // Lazy-load all non-initial routes — reduces initial bundle by ~64 KiB
@@ -23,13 +24,32 @@ const ViewFallback = () => (
   </div>
 );
 
+// Tracks route changes as pageviews
+function PageTracker() {
+  const location = useLocation();
+  useEffect(() => {
+    const names = {
+      '/':         'Shot Map',
+      '/schedule': 'Schedule',
+      '/players':  'Players',
+      '/team':     'Team',
+      '/news':     'News',
+    };
+    capture('$pageview', {
+      path:      location.pathname,
+      page_name: names[location.pathname] || location.pathname,
+    });
+  }, [location.pathname]);
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <PeriodSummaryProvider>
         <div className="app-shell">
-          {/* Skip-to-content for keyboard/screen reader users */}
           <a href="#main-content" className="skip-link">Skip to main content</a>
+          <PageTracker />
           <Topbar />
           <main id="main-content" className="app-main" aria-label="Main content">
             <Suspense fallback={<ViewFallback />}>

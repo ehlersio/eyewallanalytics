@@ -144,6 +144,11 @@ export default function AboutPopup({ isLive = false }) {
               matt@eyewallanalytics.com
             </a>
           </div>
+
+          <div className="about-privacy">
+            EyeWall uses anonymous analytics (PostHog) to understand which
+            features are most useful. No personal data is sold or shared.
+          </div>
         </div>
       )}
     </div>

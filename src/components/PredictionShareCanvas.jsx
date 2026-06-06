@@ -9,6 +9,7 @@
 //   <PredictionExportSection ... />
 
 import { useRef, useState, useEffect } from 'react';
+import { capture } from '../utils/analytics';
 import './PredictionCanvas.css';
 
 const BLANK_GIF = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -239,6 +240,12 @@ export default function PredictionExportSection({
       link.download = `EyeWall-Prediction-CAR-vs-${oppAbbr}.png`;
       link.href = dataUrl;
       link.click();
+      capture('prediction_card_exported', {
+        opponent: oppAbbr,
+        carPct:   carModelPct,
+        hasOdds:  !!odds,
+        hasAI:    !!aiNarrative,
+      });
     } catch (e) {
       console.error('Prediction export failed:', e);
     } finally {
