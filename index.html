@@ -28,7 +28,14 @@
     <meta property="og:image"       content="/eyewall-logo.png" />
     <meta property="og:type"        content="website" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <!-- Preconnect to external origins for faster initial requests -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://mqgasjzywoibdgxjjkux.supabase.co" />
+    <link rel="preconnect" href="https://eyewall-poller.billowing-queen-bf23.workers.dev" />
+
+    <!-- Google Fonts — display=swap prevents render blocking -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" />
   </head>
   <body>
     <div id="root"></div>
