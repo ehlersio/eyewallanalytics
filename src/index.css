@@ -117,11 +117,6 @@ svg { display: block; }
   align-items: start;
 }
 
-@font-face {
-  font-family: 'Barlow Condensed';
-  font-display: optional;
-}
-
 @media (max-width: 700px) {
   .two-col { grid-template-columns: 1fr; }
   .hide-mobile { display: none !important; }
