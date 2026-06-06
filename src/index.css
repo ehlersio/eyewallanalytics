@@ -113,6 +113,8 @@ svg { display: block; }
   display: grid;
   grid-template-columns: 1fr 260px;
   gap: 12px;
+  min-height: 400px;  /* prevents CLS from content loading in */
+  align-items: start;
 }
 
 @font-face {
