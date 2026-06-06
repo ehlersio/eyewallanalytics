@@ -72,8 +72,10 @@ async function getAllGames() {
 
 // Regular season games only (gameType === 2)
 export async function getRegularSeasonGames() {
-  const games = await getAllGames();
-  return games.filter(g => g.gameType === GAME_TYPE.REGULAR);
+  return cached('regularSeasonGames', async () => {
+    const games = await getAllGames();
+    return games.filter(g => g.gameType === GAME_TYPE.REGULAR);
+  }, TTL.SCHEDULE);
 }
 
 // Playoff games only (gameType === 3)
@@ -159,13 +161,15 @@ function isCompleted(game) {
 
 // Get the current playoff bracket/series overview
 export async function getPlayoffBracket() {
-  return await nhlFetch(`${BASE}/playoff-bracket/${SEASON}`);
+  return cached('playoffBracket', () => nhlFetch(`${BASE}/playoff-bracket/${SEASON}`), TTL.PLAYOFF_GAMES);
 }
 
 // Get all playoff series with results
 export async function getPlayoffSeries() {
-  const data = await nhlFetch(`${BASE}/playoff-series/carousel/${SEASON}`);
-  return data?.rounds || [];
+  return cached('playoffSeries', async () => {
+    const data = await nhlFetch(`${BASE}/playoff-series/carousel/${SEASON}`);
+    return data?.rounds || [];
+  }, TTL.PLAYOFF_GAMES);
 }
 
 // Decode the playoff round from an NHL game ID.
@@ -566,7 +570,11 @@ export function bustLiveGameCache(gameId) {
 }
 
 export async function getGameLanding(gameId) {
-  return await nhlFetch(`${BASE}/gamecenter/${gameId}/landing`);
+  return cached(`landing:${gameId}`, async () => {
+    const kv = await kvFetch(`landing:${gameId}`);
+    if (kv) return kv;
+    return nhlFetch(`${BASE}/gamecenter/${gameId}/landing`);
+  }, TTL.GAME_DATA);
 }
 
 // Boxscore: player stats by game (goals, assists, shots, TOI, +/-, etc.)
@@ -581,12 +589,15 @@ export async function getGameBoxscore(gameId) {
 
 // Right-rail: team-level game stats (shots, hits, faceoffs, PPs, etc.)
 export async function getGameRightRail(gameId) {
-  return await nhlFetch(`${BASE}/gamecenter/${gameId}/right-rail`);
+  return cached(`rightRail:${gameId}`, () => nhlFetch(`${BASE}/gamecenter/${gameId}/right-rail`), TTL.GAME_DATA);
 }
 
 // Fetch completed game stats — uses landing as primary, with parallel fallbacks.
 // The landing endpoint layout varies by game; we search all known locations.
 export async function getCompletedGameStats(gameId) {
+  return cached(`completedStats:${gameId}`, () => _getCompletedGameStats(gameId), TTL.GAME_DATA);
+}
+async function _getCompletedGameStats(gameId) {
   // Fetch all four in parallel — landing is richest, PBP needed for Corsi/Fenwick/PDO
   const [landing, boxscore, rightRail, pbp] = await Promise.all([
     getGameLanding(gameId),
@@ -965,32 +976,23 @@ async function _getTeamGameLog(count = 20) {
 
 
 // ─── ODDS (The Odds API) ─────────────────────────────────────
-// Odds are fetched by the Cloudflare Worker and cached in KV for 5 minutes.
-// The frontend ONLY reads from Worker KV — it never calls The Odds API directly.
-// This hard limit prevents accidental quota burn from direct browser calls.
-//
-// Free tier: 500 requests/month. Worker polls every 5min = ~288 calls/day max.
-// With the KV cache, all user page loads cost zero API quota.
-//
-// Worker env var: ODDS_API_KEY (set in Cloudflare Worker dashboard)
-// VITE_ODDS_API_KEY is intentionally NOT used here — remove it from .env to
-// prevent any accidental direct calls.
+// Free tier: 500 requests/month. Get a key at https://the-odds-api.com
+// Add your key to a .env file as: VITE_ODDS_API_KEY=your_key_here
+// Without a key, this returns null gracefully.
 
+const ODDS_BASE = 'https://api.the-odds-api.com/v4';
+const ODDS_KEY  = import.meta.env.VITE_ODDS_API_KEY || null;
+
+// Fetch NHL moneyline odds for upcoming games
+// Returns array of { homeTeam, awayTeam, commence_time, bookmakers }
 export async function getNhlOdds() {
-  if (!WORKER_URL) return null;
-  return cached('nhlOdds', async () => {
-    try {
-      const res = await fetch(`${WORKER_URL}/cache/odds:nhl`, {
-        signal: AbortSignal.timeout(4000),
-      });
-      if (res.ok) return await res.json();
-      // Worker returned 404 (KV key not yet populated) or other error —
-      // return null gracefully rather than falling back to direct API call
-      return null;
-    } catch {
-      return null;
-    }
-  }, 5 * 60 * 1000); // 5 min client-side cache matches Worker KV TTL
+  if (!ODDS_KEY) return null;
+  try {
+    const url = `${ODDS_BASE}/sports/icehockey_nhl/odds/?apiKey=${ODDS_KEY}&regions=us&markets=h2h&oddsFormat=american`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
 }
 
 // Find odds for a specific game by matching team names
