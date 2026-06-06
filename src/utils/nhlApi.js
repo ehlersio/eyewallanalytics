@@ -59,7 +59,7 @@ async function kvFetch(key) {
 // Fetch ALL CAR games for the season (regular + playoffs together)
 // Short cache (20s) prevents hammering during rapid successive calls,
 // but stays fresh enough to detect live game state changes
-async function getAllGames() {
+export async function getAllGames() {
   return cached('allGames', async () => {
     // Try Worker KV first (pre-polled, zero per-user NHL calls)
     const cached_kv = await kvFetch(`schedule:${CAR_ABBR}`);

@@ -5,6 +5,7 @@ node_modules/
 dist/
 
 # Local environment — never commit secrets
+.env
 .env.local
 .env.*.local
 
@@ -23,6 +24,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
 
 # Cypress artifacts
 cypress/screenshots/
