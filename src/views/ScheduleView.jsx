@@ -1725,11 +1725,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
           </div>
         </div>
       )}
-      {!odds && (
-        <div className="md-note">
-          💡 Add a free Odds API key to <code>.env</code> to show live moneylines.
-        </div>
-      )}
+      {/* Odds unavailable — show nothing, no prompt needed */}
 
       {/* Stat comparison */}
       <div className="md-stats" style={{ marginTop: 12 }}>

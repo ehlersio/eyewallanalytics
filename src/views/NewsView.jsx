@@ -6,10 +6,9 @@ const PAGE_SIZE   = 10;
 
 const SOURCE_META = {
   canescountry: { label: 'Canes Country', color: '#ffffff', bg: '#cc2200' },
-  googlenews:   { label: 'Google News',   color: '#ffffff', bg: '#4285f4' },
   espn:         { label: 'ESPN',          color: '#ffffff', bg: '#cc0000' },
   sportsnet:    { label: 'Sportsnet',     color: '#000000', bg: '#d4a017' },
-  reddit:       { label: 'r/canes',       color: '#ffffff', bg: '#ff4500' },
+  thescore:     { label: 'The Score',     color: '#ffffff', bg: '#e8000d' },
 };
 
 function timeAgo(isoDate) {
@@ -204,7 +203,7 @@ export default function NewsView() {
       )}
 
       <div className="news-footer">
-        Articles from Canes Country, Google News, ESPN, and Sportsnet.
+        Articles from Canes Country, ESPN, Sportsnet, and The Score.
         Tap any article to read the full story.
       </div>
     </div>

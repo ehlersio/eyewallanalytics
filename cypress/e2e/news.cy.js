@@ -27,12 +27,24 @@ describe('News view', () => {
 
   // ── Source filter chips ────────────────────────────────────
   describe('Source filter chips', () => {
-    it('renders All, Canes Country, ESPN, Sportsnet chips', () => {
-      cy.get('.news-chip').should('have.length', 4)
+    it('renders All chip plus at least one source chip', () => {
+      // Chips are built dynamically from articles actually returned —
+      // a source with no articles won't get a chip. Always at least "All" + 1.
+      cy.get('.news-chip').should('have.length.gte', 2)
       cy.get('.news-chip').contains(/All/i).should('exist')
-      cy.get('.news-chip').contains('Canes Country').should('exist')
-      cy.get('.news-chip').contains('ESPN').should('exist')
-      cy.get('.news-chip').contains('Sportsnet').should('exist')
+    })
+
+    it('renders expected source chips when sources are available', () => {
+      // Wait for articles to load and chips to populate (chips build from fetched data)
+      cy.get('.news-chip', { timeout: 10000 }).should('have.length.gte', 2)
+      cy.get('.news-chip').then($chips => {
+        const text = [...$chips].map(c => c.textContent).join(' ')
+        const hasCanes     = /Canes Country/i.test(text)
+        const hasESPN      = /ESPN/i.test(text)
+        const hasSportsnet = /Sportsnet/i.test(text)
+        const hasTheScore  = /The Score/i.test(text)
+        expect(hasCanes || hasESPN || hasSportsnet || hasTheScore).to.be.true
+      })
     })
 
     it('All chip is active by default', () => {
@@ -68,8 +80,8 @@ describe('News view', () => {
       cy.contains(/Hurricanes|Carolina|CAR|NHL|Stanley/i, { timeout: 8000 }).should('exist')
     })
 
-    it('articles show source badge (ESPN, CANES COUNTRY, or SPORTSNET)', () => {
-      cy.contains(/ESPN|CANES COUNTRY|SPORTSNET/i).should('exist')
+    it('articles show source badge (ESPN, CANES COUNTRY, SPORTSNET, or THE SCORE)', () => {
+      cy.contains(/ESPN|CANES COUNTRY|SPORTSNET|THE SCORE/i).should('exist')
     })
 
     it('articles show a relative timestamp', () => {
@@ -92,7 +104,7 @@ describe('News view', () => {
 
   // ── Footer ─────────────────────────────────────────────────
   it('shows attribution footer', () => {
-    cy.contains(/Canes Country|Google News|ESPN|Sportsnet/i).should('exist')
+    cy.contains(/Canes Country|ESPN|Sportsnet|The Score/i).should('exist')
     cy.contains(/Tap any article/i).should('exist')
   })
 })
