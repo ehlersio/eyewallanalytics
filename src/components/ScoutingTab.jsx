@@ -205,7 +205,7 @@ function TeamTotalCard({ carStats, oppStats, oppAbbr, isPlayoff }) {
 
 // ── Share canvas (off-screen 1080×1080) ──────────────────────
 function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPlayers,
-  carRecentGames, oppRecentGames, oppAbbr, oppColor, isPlayoff }) {
+  carRecentGames, oppRecentGames, oppAbbr, oppColor, isPlayoff, carLines }) {
   if (!carStats || !oppStats) return null;
 
   const carGoalie  = carPlayers?.goalies?.[0];
@@ -309,21 +309,21 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
           { label: oppAbbr, color: oppColor, players: oppPlayers },
         ].map(({ label, color, players }) => (
           <div key={label} style={{flex:1, background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'12px 14px'}}>
-            <div style={{fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
+            <div style={{fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
               color: color, marginBottom:8}}>{label} {isPlayoff ? 'Playoff ' : ''}Leaders</div>
             {players?.skaters?.slice(0,5).map((p, i) => (
               <div key={i} style={{display:'flex', justifyContent:'space-between', alignItems:'center',
-                fontSize:11, padding:'3px 0', borderBottom:'0.5px solid rgba(255,255,255,0.05)'}}>
-                <span style={{color:'rgba(255,255,255,0.7)', fontWeight:500}}>{p.name}</span>
+                fontSize:13, padding:'4px 0', borderBottom:'0.5px solid rgba(255,255,255,0.05)'}}>
+                <span style={{color:'rgba(255,255,255,0.8)', fontWeight:500}}>{p.name}</span>
                 <span style={{color: color, fontWeight:700}}>{p.points}pts</span>
               </div>
             ))}
             {players?.goalies?.[0] && (
               <div style={{marginTop:6, padding:'4px 0', borderTop:'0.5px solid rgba(255,255,255,0.08)'}}>
-                <div style={{fontSize:10, color:'rgba(255,255,255,0.5)', marginBottom:2}}>
+                <div style={{fontSize:12, color:'rgba(255,255,255,0.55)', marginBottom:3}}>
                   {players.goalies[0].name}
                 </div>
-                <div style={{display:'flex', gap:10, fontSize:11}}>
+                <div style={{display:'flex', gap:10, fontSize:12}}>
                   <span>W {players.goalies[0].wins}</span>
                   <span style={{color: players.goalies[0].gaa < 2.5 ? '#4ade80' : players.goalies[0].gaa > 3.2 ? '#ce1126' : 'rgba(255,255,255,0.5)'}}>
                     GAA {players.goalies[0].gaa?.toFixed(2) ?? '—'}
@@ -335,6 +335,90 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
           </div>
         ))}
       </div>
+
+      {/* Line projections — CAR only, two-column: forward lines left, D pairs right */}
+      {carLines?.lines?.length > 0 && (
+        <div style={{padding:'0 52px 12px'}}>
+          <div style={{fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
+            color:'rgba(255,255,255,0.25)', marginBottom:8}}>
+            CAR Lines · 5v5 {isPlayoff ? '(Playoffs)' : 'This Season'}
+          </div>
+          <div style={{display:'flex', gap:12}}>
+
+            {/* Left column — forward lines */}
+            <div style={{flex:3, display:'flex', flexDirection:'column', gap:5}}>
+              {carLines.lines.slice(0, 4).map((line, i) => {
+                const xgf  = line.xgfPct;
+                const good = xgf != null && xgf >= 50;
+                const POS_LABEL = { L: 'LW', LW: 'LW', C: 'C', R: 'RW', RW: 'RW', D: 'D' };
+                return (
+                  <div key={i} style={{display:'flex', alignItems:'center', gap:8,
+                    padding:'6px 10px', background:'rgba(255,255,255,0.03)',
+                    borderRadius:7, border:'0.5px solid rgba(255,255,255,0.06)'}}>
+                    <span style={{fontSize:11, fontWeight:700, color:'#ce1126', minWidth:42, flexShrink:0}}>
+                      Line {i + 1}
+                    </span>
+                    <div style={{flex:1, display:'flex', gap:10, flexWrap:'wrap'}}>
+                      {line.players.map((p, j) => (
+                        <span key={j} style={{fontSize:12, color:'rgba(255,255,255,0.8)',
+                          display:'flex', gap:3, alignItems:'baseline'}}>
+                          <span style={{fontSize:10, color:'rgba(255,255,255,0.3)', fontWeight:700,
+                            textTransform:'uppercase'}}>
+                            {POS_LABEL[p.pos] || p.pos}
+                          </span>
+                          {p.name}
+                        </span>
+                      ))}
+                    </div>
+                    <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end', flexShrink:0}}>
+                      <span style={{fontSize:13, fontWeight:800,
+                        color: xgf != null ? (good ? '#4ade80' : '#ce1126') : 'rgba(255,255,255,0.25)'}}>
+                        {xgf != null ? `${xgf.toFixed(1)}%` : '—'}
+                      </span>
+                      <span style={{fontSize:9, color:'rgba(255,255,255,0.25)', letterSpacing:'0.05em'}}>xGF%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Right column — D pairs */}
+            {carLines.pairs?.length > 0 && (
+              <div style={{flex:2, display:'flex', flexDirection:'column', gap:5}}>
+                {carLines.pairs.slice(0, 3).map((pair, i) => {
+                  const xgf  = pair.xgfPct;
+                  const good = xgf != null && xgf >= 50;
+                  return (
+                    <div key={i} style={{display:'flex', alignItems:'center', gap:8,
+                      padding:'6px 10px', background:'rgba(255,255,255,0.03)',
+                      borderRadius:7, border:'0.5px solid rgba(255,255,255,0.06)'}}>
+                      <span style={{fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.4)',
+                        minWidth:38, flexShrink:0}}>
+                        Pair {i + 1}
+                      </span>
+                      <div style={{flex:1, display:'flex', flexDirection:'column', gap:2}}>
+                        {pair.players.map((p, j) => (
+                          <span key={j} style={{fontSize:12, color:'rgba(255,255,255,0.75)'}}>
+                            {p.name}
+                          </span>
+                        ))}
+                      </div>
+                      <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end', flexShrink:0}}>
+                        <span style={{fontSize:13, fontWeight:800,
+                          color: xgf != null ? (good ? '#4ade80' : '#ce1126') : 'rgba(255,255,255,0.25)'}}>
+                          {xgf != null ? `${xgf.toFixed(1)}%` : '—'}
+                        </span>
+                        <span style={{fontSize:9, color:'rgba(255,255,255,0.25)', letterSpacing:'0.05em'}}>xGF%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="sc-footer">
@@ -659,6 +743,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
         oppAbbr={oppAbbr}
         oppColor={oppColor}
         isPlayoff={isPlayoff}
+        carLines={carLines}
       />
     )}
     </>

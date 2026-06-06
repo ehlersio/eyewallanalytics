@@ -17,7 +17,7 @@ const BLANK_GIF = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAA
 function PredictionCanvas({
   canvasRef, carModelPct, predCarScore, predOppScore,
   carGpg, oppGpg, carGag, oppGag, carWin, oppWin, carPP, oppPK,
-  factors, odds, oppAbbr, oppColor, isPlayoff, seriesEntry, aiNarrative,
+  factors, odds, oppAbbr, oppColor, isPlayoff, seriesEntry, aiNarrative, carLines,
 }) {
   // Don't render until all required numeric props are available
   if (carGpg == null || oppGpg == null || carGag == null || oppGag == null ||
@@ -139,6 +139,37 @@ function PredictionCanvas({
         </div>
       </div>
 
+      {/* Line 1 */}
+      {carLines?.lines?.[0] && (() => {
+        const line = carLines.lines[0];
+        const xgf  = line.xgfPct;
+        const good = xgf != null && xgf >= 50;
+        const POS_LABEL = { L: 'LW', LW: 'LW', C: 'C', R: 'RW', RW: 'RW' };
+        return (
+          <div className="pred-canvas-line1">
+            <div className="pred-canvas-line1-header">
+              <span className="pred-canvas-line1-label">CAR Line 1 · 5v5</span>
+              {xgf != null && (
+                <span className={`pred-canvas-line1-xgf ${good ? 'good' : 'bad'}`}>
+                  {xgf.toFixed(1)}% xGF
+                </span>
+              )}
+              {line.toiMins != null && (
+                <span className="pred-canvas-line1-toi">{line.toiMins}m together</span>
+              )}
+            </div>
+            <div className="pred-canvas-line1-players">
+              {line.players.map((p, i) => (
+                <span key={i} className="pred-canvas-line1-player">
+                  <span className="pred-canvas-line1-pos">{POS_LABEL[p.pos] || p.pos}</span>
+                  {p.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Odds */}
       {odds && (
         <div className="pred-canvas-odds">
@@ -167,7 +198,7 @@ function PredictionCanvas({
 export default function PredictionExportSection({
   carModelPct, predCarScore, predOppScore,
   carGpg, oppGpg, carGag, oppGag, carWin, oppWin, carPP, oppPK,
-  factors, odds, oppAbbr, oppColor, isPlayoff, seriesEntry, gameId,
+  factors, odds, oppAbbr, oppColor, isPlayoff, seriesEntry, gameId, carLines,
 }) {
   const canvasRef = useRef(null);
   const [exporting, setExporting] = useState(false);
@@ -228,6 +259,7 @@ export default function PredictionExportSection({
           carWin={carWin} oppWin={oppWin} carPP={carPP} oppPK={oppPK}
           factors={factors} odds={odds} oppAbbr={oppAbbr} oppColor={oppColor}
           isPlayoff={isPlayoff} seriesEntry={seriesEntry} aiNarrative={aiNarrative}
+          carLines={carLines}
         />
       )}
     </>

@@ -396,7 +396,7 @@
 }
 
 .ps-canvas-brand {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -404,7 +404,7 @@
 }
 
 .ps-canvas-period {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -430,21 +430,21 @@
   gap: 4px;
 }
 .ps-canvas-team-abbr {
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 800;
   letter-spacing: 0.1em;
   color: rgba(255,255,255,0.4);
 }
 .ps-canvas-team-abbr.car { color: #ce1126; }
 .ps-canvas-score-num {
-  font-size: 64px;
+  font-size: 77px;
   font-weight: 900;
   color: #fff;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 .ps-canvas-divider {
-  font-size: 36px;
+  font-size: 43px;
   color: rgba(255,255,255,0.2);
   margin-top: 16px;
 }
@@ -467,14 +467,14 @@
   gap: 4px;
 }
 .ps-canvas-stat-val {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 800;
   color: #fff;
 }
 .ps-canvas-stat-val.good { color: #4ade80; }
 .ps-canvas-stat-val.bad  { color: #ce1126; }
 .ps-canvas-stat-label {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -504,12 +504,12 @@
 }
 .ps-canvas-goal-dot.opp { background: rgba(255,255,255,0.2); }
 .ps-canvas-goal-text {
-  font-size: 14px;
+  font-size: 17px;
   color: rgba(255,255,255,0.7);
   flex: 1;
 }
 .ps-canvas-goal-time {
-  font-size: 12px;
+  font-size: 14px;
   color: rgba(255,255,255,0.3);
   font-variant-numeric: tabular-nums;
 }
@@ -522,7 +522,7 @@
   border-radius: 0 8px 8px 0;
 }
 .ps-canvas-narrative-text {
-  font-size: 14px;
+  font-size: 17px;
   color: rgba(255,255,255,0.6);
   line-height: 1.6;
 }
@@ -537,13 +537,13 @@
   justify-content: space-between;
 }
 .ps-canvas-footer-brand {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.12em;
   color: rgba(255,255,255,0.2);
 }
 .ps-canvas-footer-tag {
-  font-size: 12px;
+  font-size: 14px;
   color: rgba(255,255,255,0.2);
 }
 
@@ -730,7 +730,7 @@
 }
 
 .ps-canvas-goals-label {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -739,7 +739,7 @@
 }
 
 .ps-canvas-narrative-label {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -776,7 +776,7 @@
 }
 
 .ps-canvas-section-label {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -792,7 +792,7 @@
 }
 
 .ps-canvas-insight-chip {
-  font-size: 13px;
+  font-size: 16px;
   color: rgba(255,255,255,0.55);
   background: rgba(255,255,255,0.04);
   border-radius: 8px;
@@ -803,7 +803,7 @@
 }
 
 .ps-canvas-strength {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
   padding: 2px 5px;
@@ -915,7 +915,7 @@
   gap: 6px;
   text-align: center;
 }
-.ps-canvas-star-rank { font-size: 14px; }
+.ps-canvas-star-rank { font-size: 17px; }
 .ps-canvas-star-img {
   width: 52px;
   height: 52px;
@@ -924,12 +924,12 @@
   border: 1.5px solid rgba(255,255,255,0.1);
 }
 .ps-canvas-star-name {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: rgba(255,255,255,0.8);
 }
 .ps-canvas-star-team {
-  font-size: 10px;
+  font-size: 12px;
   color: rgba(255,255,255,0.35);
 }
 
@@ -942,7 +942,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 800;
   color: #fff;
 }
@@ -981,7 +981,7 @@
 }
 
 .ps-canvas-score-num-sm {
-  font-size: 44px;
+  font-size: 53px;
   font-weight: 900;
   color: #fff;
   line-height: 1;
@@ -989,7 +989,7 @@
 }
 
 .ps-canvas-divider-sm {
-  font-size: 24px;
+  font-size: 29px;
   color: rgba(255,255,255,0.2);
 }
 
@@ -1013,7 +1013,7 @@
 }
 
 .ps-canvas-goals-col-header {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1032,7 +1032,7 @@
 }
 
 .ps-canvas-goal-compact-name {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   color: rgba(255,255,255,0.85);
   white-space: nowrap;
@@ -1042,7 +1042,7 @@
 }
 
 .ps-canvas-goal-compact-meta {
-  font-size: 11px;
+  font-size: 13px;
   color: rgba(255,255,255,0.35);
   white-space: nowrap;
   flex-shrink: 0;

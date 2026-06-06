@@ -196,8 +196,8 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef }) {
         <span className="ps-canvas-period">{summary.periodLabel} Summary</span>
       </div>
 
-      {/* Score + AI narrative side by side (game) or centered score (period) */}
-      {isGame && summary.aiNarrative ? (
+      {/* Score + AI narrative side by side — same layout for both period and game cards */}
+      {summary.aiNarrative ? (
         <div className="ps-canvas-score-narrative-row">
           {/* Score — compact left column */}
           <div className="ps-canvas-score-compact">
@@ -292,23 +292,38 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef }) {
               </div>
             </div>
           ) : (
-            summary.goals.slice(0, 4).map((g, i) => (
-              <div key={i} className="ps-canvas-goal-row">
-                <div className={`ps-canvas-goal-dot ${g.isCar ? '' : 'opp'}`} />
-                <div className="ps-canvas-goal-text">
-                  <span style={{fontWeight:700}}>{g.scorerName || (g.isCar ? carAbbr : oppAbbr)}</span>
-                  {g.assists?.length > 0 && (
-                    <span style={{opacity:0.5}}> · {g.assists.map(a=>a.name?.default).filter(Boolean).join(', ')}</span>
-                  )}
-                </div>
-                <div style={{display:'flex',gap:6,alignItems:'center',flexShrink:0}}>
-                  <span className={`ps-canvas-strength ${strengthLabel(g.strength)}`}>
-                    {strengthLabel(g.strength).toUpperCase()}
-                  </span>
-                  <div className="ps-canvas-goal-time">{g.time}</div>
-                </div>
+            /* Period cards: two-column compact layout — matches game card style */
+            <div className="ps-canvas-goals-two-col">
+              <div className="ps-canvas-goals-col">
+                <div className="ps-canvas-goals-col-header car">{carAbbr}</div>
+                {summary.goals.filter(g => g.isCar).slice(0, 5).map((g, i) => (
+                  <div key={i} className="ps-canvas-goal-compact">
+                    <span className="ps-canvas-goal-compact-name">
+                      {g.scorerName?.split(' ').pop() || carAbbr}
+                    </span>
+                    <span className="ps-canvas-goal-compact-meta">
+                      {g.time}
+                      {strengthLabel(g.strength) !== 'ev' && (
+                        <span className={`ps-canvas-strength ${strengthLabel(g.strength)}`}>
+                          {' '}{strengthLabel(g.strength).toUpperCase()}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))
+              <div className="ps-canvas-goals-col">
+                <div className="ps-canvas-goals-col-header">{oppAbbr}</div>
+                {summary.goals.filter(g => !g.isCar).slice(0, 5).map((g, i) => (
+                  <div key={i} className="ps-canvas-goal-compact">
+                    <span className="ps-canvas-goal-compact-name">
+                      {g.scorerName?.split(' ').pop() || oppAbbr}
+                    </span>
+                    <span className="ps-canvas-goal-compact-meta">{g.time}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -334,14 +349,6 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef }) {
               {summary.carTK > summary.carGV ? '✓' : '✗'} Takeaways {summary.carTK} · Giveaways {summary.carGV}
             </div>
           )}
-        </div>
-      )}
-
-      {/* AI narrative — period only (game has it next to score) */}
-      {!isGame && summary.aiNarrative && (
-        <div className="ps-canvas-narrative">
-          <div className="ps-canvas-narrative-label">⚡ EyeWall AI</div>
-          <div className="ps-canvas-narrative-text">{summary.aiNarrative}</div>
         </div>
       )}
 

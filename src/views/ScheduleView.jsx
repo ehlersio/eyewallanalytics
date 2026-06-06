@@ -1459,8 +1459,9 @@ function computeWinPct(carStanding, oppStanding, game, playoffSeries) {
 function TopLineCard({ carLines }) {
   const line = carLines?.lines?.[0];
   if (!line) return null;
-  const xgf = line.xgfPct;
+  const xgf  = line.xgfPct;
   const good = xgf != null && xgf >= 50;
+  const POS_LABEL = { L: 'LW', LW: 'LW', C: 'C', R: 'RW', RW: 'RW', D: 'D' };
   return (
     <div className="md-topline-card">
       <div className="md-topline-header">
@@ -1474,7 +1475,8 @@ function TopLineCard({ carLines }) {
       <div className="md-topline-players">
         {line.players.map((p, i) => (
           <span key={i} className="md-topline-player">
-            {p.name}<span className="md-topline-pos">{p.pos}</span>
+            <span className="md-topline-pos">{POS_LABEL[p.pos] || p.pos}</span>
+            {p.name}
           </span>
         ))}
       </div>
@@ -1490,7 +1492,8 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   const opp     = getOpponent(game);
   const oppAbbr = opp?.abbrev || 'OPP';
   const oppColor = TEAM_COLORS[oppAbbr] || '#7a8899';
-  const { data: carLines } = useFetch(() => getTeamLines('CAR'), ['CAR']);
+  const gameType = playoffSeries ? 3 : 2;
+  const { data: carLines } = useFetch(() => getTeamLines('CAR', 20252026, gameType), ['CAR', gameType]);
 
   // Auto-save prediction — must be before any early returns (Rules of Hooks)
   React.useEffect(() => {
@@ -1573,14 +1576,15 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   const isPlayoff_  = game?.gameType === 3;
   const isHome_     = game?.homeTeam?.abbrev === 'CAR';
 
+  const topLine    = carLines?.lines?.[0] ?? null;
+  const topLineXgf = topLine?.xgfPct ?? null;
+
   // Re-derive factors for display (mirrors computeWinPct logic)
   const carSF    = carStanding.shotsForPerGame || 0;
   const oppSF    = oppStanding.shotsForPerGame || 0;
   const ppEdge   = carPP - (100 - oppPK);
   const carStreak = carStanding.streakCode;
   const oppStreak = oppStanding.streakCode;
-  const topLine    = carLines?.lines?.[0] ?? null;
-  const topLineXgf = topLine?.xgfPct ?? null;
   const factors  = [
     { label: 'Offence (GF/GP)',    carEdge: carGpg >= oppGpg },
     { label: 'Defence (GA/GP)',    carEdge: carGag <= oppGag },
@@ -1785,6 +1789,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
         isPlayoff={isPlayoff_}
         seriesEntry={seriesEntry}
         gameId={game?.id}
+        carLines={carLines}
       />
       </>)}
     </div>
