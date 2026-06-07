@@ -3,7 +3,23 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { getGameLanding } from '../utils/nhlApi';
 import { computeShotAttempts } from '../utils/advancedStats';
 
+const WORKER_URL = typeof import.meta !== 'undefined'
+  ? import.meta.env?.VITE_WORKER_URL
+  : null;
+
 const SESSION_KEY = 'eyewall_period_summaries';
+
+// Fetch a cached narrative from Worker KV — returns string or null
+async function fetchCachedNarrative(gameId, period) {
+  if (!WORKER_URL || !gameId) return null;
+  try {
+    const key = `narrative:${period}:${gameId}`;
+    const res = await fetch(`${WORKER_URL}/cache/${encodeURIComponent(key)}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.narrative || null;
+  } catch { return null; }
+}
 
 function loadStored(gameId) {
   try {
@@ -37,7 +53,7 @@ function buildRosterMap(pbp) {
   return map;
 }
 
-function buildSummary(period, plays, carTeamId, landingData, pbp) {
+function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlayoff = false) {
   const periodPlays = plays.filter(p => p.periodDescriptor?.number === period);
   const rosterMap = buildRosterMap(pbp);
 
@@ -125,8 +141,14 @@ function buildSummary(period, plays, carTeamId, landingData, pbp) {
 
   return {
     period,
-    periodLabel: period === 4 ? 'OT' : period === 5 ? 'SO' : `Period ${period}`,
-    periodShort: period === 4 ? 'OT' : period === 5 ? 'SO' : `P${period}`,
+    // Period label — playoff OT periods are full 20min (OT, 2OT, 3OT...)
+    // Regular season: period 4 = OT (5min 3v3), period 5 = SO
+    periodLabel: period <= 3 ? `Period ${period}`
+      : isPlayoff ? (period === 4 ? 'OT' : `${period - 3}OT`)
+      : period === 4 ? 'OT' : 'SO',
+    periodShort: period <= 3 ? `P${period}`
+      : isPlayoff ? (period === 4 ? 'OT' : `${period - 3}OT`)
+      : period === 4 ? 'OT' : 'SO',
     generatedAt: Date.now(),
     // Shot stats
     carCorsi:     shotStats.carCorsi,
@@ -151,13 +173,14 @@ function buildSummary(period, plays, carTeamId, landingData, pbp) {
     awayScore, homeScore,
     // Three stars
     threeStars,
-    // AI
+    // AI — check Worker KV cache first before showing loading state
     aiNarrative: null,
     aiLoading: true,
+    gameId,
   };
 }
 
-export function usePeriodSummary({ pbp, isLive, gameId, carTeamId }) {
+export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = false }) {
   const [summaries, setSummaries] = useState([]);
   const [newSummary, setNewSummary] = useState(null);
   const lastProcessedPeriod = useRef(0);
@@ -192,7 +215,15 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId }) {
     buildingRef.current.add(period);
     try {
       const landing = await fetchLanding();
-      const summary = buildSummary(period, plays, carTeamId, landing, pbp);
+      const summary = buildSummary(period, plays, carTeamId, landing, pbp, gameId, isPlayoff);
+
+      // Pre-fetch cached narrative from Worker KV — if found, skip the AI loading state
+      const cachedNarrative = await fetchCachedNarrative(gameId, String(period));
+      if (cachedNarrative) {
+        summary.aiNarrative = cachedNarrative;
+        summary.aiLoading   = false;
+      }
+
       setSummaries(prev => {
         const next = [...prev.filter(s => s.period !== period), summary]
           .sort((a, b) => a.period - b.period);
@@ -257,7 +288,7 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId }) {
 // ── Full game summary ─────────────────────────────────────────
 // Built once when all periods are complete (completed games on load,
 // live games when gameState goes FINAL).
-function buildGameSummary(plays, carTeamId, landingData, pbp) {
+function buildGameSummary(plays, carTeamId, landingData, pbp, gameId) {
   const rosterMap = buildRosterMap(pbp);
   const shotStats = computeShotAttempts(plays, carTeamId);
 
@@ -346,6 +377,7 @@ function buildGameSummary(plays, carTeamId, landingData, pbp) {
     threeStars: landingData?.summary?.threeStars || [],
     // AI
     aiNarrative: null, aiLoading: true,
+    gameId,
   };
 }
 
@@ -388,12 +420,22 @@ export function useGameSummary({ pbp, isLive, gameId, carTeamId }) {
     const plays = pbp?.plays || [];
     const periods = [...new Set(plays.map(p => p.periodDescriptor?.number).filter(Boolean))];
     const hasGameEnd = plays.some(p => p.typeDescKey === 'game-end');
-    if (!hasGameEnd || periods.length < 3) return;
+    // Require at least 3 regulation periods to have played — OT periods are additive
+    const regulationPeriods = periods.filter(p => p <= 3);
+    if (!hasGameEnd || regulationPeriods.length < 3) return;
     builtRef.current = true;
     (async () => {
       let landing = null;
       try { landing = await getGameLanding(gameId); } catch {}
-      const summary = buildGameSummary(plays, carTeamId, landing, pbp);
+      const summary = buildGameSummary(plays, carTeamId, landing, pbp, gameId);
+
+      // Pre-fetch cached narrative from Worker KV
+      const cachedNarrative = await fetchCachedNarrative(gameId, 'game');
+      if (cachedNarrative) {
+        summary.aiNarrative = cachedNarrative;
+        summary.aiLoading   = false;
+      }
+
       setGameSummary(summary);
       saveStoredGame(gameId, summary);
     })();

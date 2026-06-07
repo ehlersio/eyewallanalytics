@@ -27,10 +27,70 @@ function corsiColor(pct) {
   return '';
 }
 
-async function generateNarrative(summary, carAbbr, oppAbbr) {
-  const goalsSummary = summary.goals.map(g =>
+// Fetch narrative from Worker — generates once, cached in KV for all users.
+// Falls back to direct /api/ai if Worker URL not configured (dev environments).
+async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false) {
+  const workerUrl = typeof import.meta !== 'undefined'
+    ? import.meta.env?.VITE_WORKER_URL
+    : null;
+
+  const periodKey = summary.isGameSummary ? 'game' : String(summary.period);
+
+  // Build the stats payload the Worker needs to generate the prompt
+  const statsPayload = {
+    carAbbr,
+    oppAbbr,
+    isPlayoff,
+    periodLabel:    summary.periodLabel,
+    corsiForPct:    summary.corsiForPct,
+    carSOG:         summary.carSOG,
+    oppSOG:         summary.oppSOG,
+    carGoals:       summary.carGoals,
+    oppGoals:       summary.oppGoals,
+    carHits:        summary.carHits,
+    carFOPct:       summary.carFOPct,
+    carHDCF:        summary.carHDCF,
+    oppHDCF:        summary.oppHDCF,
+    penaltyCount:   summary.penalties?.length ?? 0,
+    carPenaltyCount: summary.penalties?.filter(p => p.isCar).length ?? 0,
+    bestPeriod:     summary.bestPeriod,
+    worstPeriod:    summary.worstPeriod,
+    goals: (summary.goals || []).map(g => ({
+      isCar:      g.isCar,
+      scorerName: g.scorerName,
+      time:       g.time,
+      period:     g.period,
+      strength:   g.strength,
+    })),
+  };
+
+  // ── Path 1: Worker endpoint (production) ─────────────────────
+  if (workerUrl && summary.gameId) {
+    try {
+      const res = await fetch(
+        `${workerUrl}/summary/narrative?gameId=${summary.gameId}&period=${periodKey}`,
+        {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(statsPayload),
+        }
+      );
+      if (!res.ok) throw new Error(`Worker ${res.status}`);
+      const data = await res.json();
+      if (data.narrative) return data.narrative;
+    } catch (e) {
+      console.warn('Worker narrative failed, falling back to direct AI:', e.message);
+    }
+  }
+
+  // ── Path 2: Direct /api/ai fallback (dev / no Worker URL) ────
+  const goalsSummary = (summary.goals || []).map(g =>
     `${g.isCar ? carAbbr : oppAbbr} goal by ${g.scorerName || 'unknown'} at ${g.period ? `P${g.period} ` : ''}${g.time} (${(g.strength || 'EV').toUpperCase()})`
   ).join('; ') || 'no goals';
+
+  const playoffNote = isPlayoff
+    ? '\n\nNote: This is a PLAYOFF game. Do not mention points, standings, or "escaping with a point". Overtime is full 20-minute periods, not 3v3. Focus on possession, goaltending, and series context.'
+    : '';
 
   const prompt = summary.isGameSummary
     ? `You are EyeWall, an analytics assistant for Carolina Hurricanes fans.
@@ -38,7 +98,7 @@ Write a sharp 3-4 sentence final game summary for ${carAbbr} vs ${oppAbbr}.
 Tone: analytical, knowledgeable fan. No fluff. No bullet points.
 
 Game stats:
-- Final: ${carAbbr} ${summary.carGoals} – ${summary.oppGoals} ${oppAbbr}
+- Final: ${carAbbr} ${summary.carGoals} - ${summary.oppGoals} ${oppAbbr}
 - Game Corsi For%: ${summary.corsiForPct}%
 - CAR shots: ${summary.carSOG}, OPP shots: ${summary.oppSOG}
 - CAR high danger chances: ${summary.carHDCF} vs OPP ${summary.oppHDCF}
@@ -47,7 +107,7 @@ Game stats:
 - CAR hits: ${summary.carHits}, CAR faceoffs: ${summary.carFOPct}%
 - Goals: ${goalsSummary}
 
-Summarize how the game went, key turning points, and whether the result matched the underlying play. Under 80 words.`
+Summarize how the game went, key turning points, and whether the result matched the underlying play. Under 80 words.${playoffNote}`
     : `You are EyeWall, an analytics assistant for Carolina Hurricanes fans.
 Write a tight 2-3 sentence period summary for ${summary.periodLabel} of a ${carAbbr} vs ${oppAbbr} game.
 Tone: sharp, analytical, knowledgeable fan. No fluff. No bullet points. Just sentences.
@@ -57,19 +117,19 @@ Stats:
 - CAR shots on goal: ${summary.carSOG}, OPP shots on goal: ${summary.oppSOG}
 - CAR goals: ${summary.carGoals}, OPP goals: ${summary.oppGoals}
 - CAR hits: ${summary.carHits}
-- Penalties: ${summary.penalties.length} total (${summary.penalties.filter(p => p.isCar).length} against CAR)
+- Penalties: ${summary.penalties?.length ?? 0} total (${summary.penalties?.filter(p => p.isCar).length ?? 0} against CAR)
 - Goals: ${goalsSummary}
 
-Focus on what mattered most — possession dominance, momentum, key goals. Under 60 words.`;
+Focus on what mattered most — possession dominance, momentum, key goals. Under 60 words.${playoffNote}`;
 
   try {
     const res = await fetch(AI_ENDPOINT, {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }],
+      body:    JSON.stringify({
+        model:      'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        messages:   [{ role: 'user', content: prompt }],
       }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -437,16 +497,17 @@ export default function PeriodSummary({
   homeAbbr = 'CAR',
   awayAbbr = 'OPP',
   readOnly = false,
+  isPlayoff = false,
 }) {
   const canvasRef = useRef(null);
   const [exporting, setExporting] = useState(false);
   const [captionCopied, setCaptionCopied] = useState(false);
   const [canvasMounted, setCanvasMounted] = useState(false);
 
-  // Generate AI narrative on mount
+  // Generate AI narrative on mount — Worker generates once and caches in KV for all users.
   useEffect(() => {
     if (!summary || summary.aiNarrative || !summary.aiLoading) return;
-    generateNarrative(summary, carAbbr, oppAbbr).then(text => {
+    generateNarrative(summary, carAbbr, oppAbbr, isPlayoff).then(text => {
       if (text && onNarrativeReady) onNarrativeReady(summary.period, text);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps

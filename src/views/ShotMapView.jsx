@@ -47,7 +47,7 @@ export default function ShotMapView() {
   }, [liveStateRef.current.isLive, liveStateRef.current.nextGameTime]);
 
   // Live game polling — interval adapts to game state
-  const { data: liveGameReal } = usePoll(getLiveGame, scheduleInterval);
+  const { data: liveGameReal, refetch: refetchLive } = usePoll(getLiveGame, scheduleInterval);
   const liveGame = devGame?.liveGame ?? liveGameReal;
   const isLive   = !!liveGame;
 
@@ -73,6 +73,15 @@ export default function ShotMapView() {
   const lastGame   = recentGames?.[0] || null;
   const activeGame = liveGame || lastGame;
   useWakeLock(isLive); // keep screen on during live games
+
+  // ── App resume: refetch live data and clear stale popups ─────
+  // Refs let the visibilitychange handler access the latest clear functions
+  // without needing to re-register the listener every render.
+  const clearGoalPopupRef    = useRef(null);
+  const clearPenaltyPopupRef = useRef(null);
+  const clearWinPopupRef     = useRef(null);
+  const clearPuckDropRef     = useRef(null);
+  const refetchLiveRef       = useRef(null);
 
   // Are we currently in playoffs? Check if any playoff games exist this season
   const { data: playoffGames } = useFetch(getPlayoffGames);
@@ -297,10 +306,33 @@ export default function ShotMapView() {
   const { goalPopup, clearGoalPopup, penaltyPopup, clearPenaltyPopup, winPopup, clearWinPopup, puckDropPopup, clearPuckDropPopup } =
     useGameEvents(pbp, isLive, strMapForEvents, gameHome);
 
+  // Keep refs current so the visibility handler always calls the latest versions
+  useEffect(() => { clearGoalPopupRef.current    = clearGoalPopup;    }, [clearGoalPopup]);
+  useEffect(() => { clearPenaltyPopupRef.current = clearPenaltyPopup; }, [clearPenaltyPopup]);
+  useEffect(() => { clearWinPopupRef.current     = clearWinPopup;     }, [clearWinPopup]);
+  useEffect(() => { clearPuckDropRef.current     = clearPuckDropPopup;}, [clearPuckDropPopup]);
+  useEffect(() => { refetchLiveRef.current       = refetchLive;       }, [refetchLive]);
+
+  // Visibility change — fires when user returns to the app from another tab/app.
+  // Refetch live game immediately (browser may have throttled polling while hidden)
+  // and clear any popups that may have fired from stale pre-background PBP data.
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState !== 'visible') return;
+      refetchLiveRef.current?.();
+      clearGoalPopupRef.current?.();
+      clearPenaltyPopupRef.current?.();
+      clearWinPopupRef.current?.();
+      clearPuckDropRef.current?.();
+    }
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []); // register once — refs handle stale closure
+
   // ── Period summaries ──────────────────────────────────────────
   const CAR_TEAM_ID = 12;
   const { summaries: periodSummaries, newSummary, dismissNewSummary, updateSummaryNarrative } =
-    usePeriodSummary({ pbp, isLive, gameId, carTeamId: CAR_TEAM_ID });
+    usePeriodSummary({ pbp, isLive, gameId, carTeamId: CAR_TEAM_ID, isPlayoff: inPlayoffs });
   const { gameSummary, updateGameNarrative } = useGameSummary({
     pbp, isLive, gameId, carTeamId: CAR_TEAM_ID, summaries: periodSummaries,
   });
@@ -385,7 +417,7 @@ export default function ShotMapView() {
       return name && name.trim() ? name : `#${id}`;
     };
 
-    const periodLabel = n => n === 4 ? 'OT' : n === 5 ? 'SO' : `P${n}`;
+    const periodLabel = n => n <= 3 ? `P${n}` : inPlayoffs ? (n === 4 ? "OT" : `${n - 3}OT`) : n === 4 ? "OT" : "SO";
 
     // Helper: build per-player period breakdown for a filtered set of plays
     function buildPlayerRows(filteredPlays, getPlayerId) {
@@ -1006,7 +1038,7 @@ export default function ShotMapView() {
   // ── Danger zone drill-down builder ─────────────────────────
   const buildDangerDrill = useCallback((zone) => {
     if (!dangerCounts.hiShots) return;
-    const periodLabel = n => n === 4 ? 'OT' : n === 5 ? 'SO' : `P${n}`;
+    const periodLabel = n => n <= 3 ? `P${n}` : inPlayoffs ? (n === 4 ? "OT" : `${n - 3}OT`) : n === 4 ? "OT" : "SO";
     const shotSets = {
       hi:  { shots: dangerCounts.hiShots,  label: '🔴 High Danger Shots (<15 ft)' },
       med: { shots: dangerCounts.medShots, label: '🟡 Medium Danger Shots (15–30 ft)' },
@@ -1063,21 +1095,32 @@ export default function ShotMapView() {
   }, [pbp?.plays?.length]);
 
   // ── Goalies ──────────────────────────────────────────────────
-  // Pick the goalie who actually played — filter by toi > 0 or shotsAgainst > 0.
-  // The boxscore lists all rostered goalies; backup who didn't dress has 0s.
-  const oppKey     = gameHome ? 'awayTeam' : 'homeTeam';
+  // Return ALL goalies who played (toi > 0 or shotsAgainst > 0), sorted by TOI desc.
+  // In a goalie change game this gives us both goalies; normally just one.
+  const oppKey = gameHome ? 'awayTeam' : 'homeTeam';
 
-  function activeGoalie(goalies = []) {
-    // Prefer the one with shots against > 0, then toi, then fall back to first
-    const played = goalies.filter(g =>
-      (g.shotsAgainst != null && g.shotsAgainst > 0) ||
-      (g.toi && g.toi !== '00:00' && g.toi !== '0:00')
-    );
-    return played[0] || null;
+  function activateGoalies(goalies = []) {
+    return goalies
+      .filter(g =>
+        (g.shotsAgainst != null && g.shotsAgainst > 0) ||
+        (g.toi && g.toi !== '00:00' && g.toi !== '0:00')
+      )
+      .sort((a, b) => {
+        // Sort by TOI descending so starter appears first
+        const toSecs = toi => {
+          if (!toi) return 0;
+          const [m, s] = toi.split(':').map(Number);
+          return (m || 0) * 60 + (s || 0);
+        };
+        return toSecs(b.toi) - toSecs(a.toi);
+      });
   }
 
-  const carGoalie = activeGoalie(boxscore?.playerByGameStats?.[gameHome ? 'homeTeam' : 'awayTeam']?.goalies || []);
-  const oppGoalie = activeGoalie(boxscore?.playerByGameStats?.[oppKey]?.goalies  || []);
+  const carGoalies = activateGoalies(boxscore?.playerByGameStats?.[gameHome ? 'homeTeam' : 'awayTeam']?.goalies || []);
+  const oppGoalies = activateGoalies(boxscore?.playerByGameStats?.[oppKey]?.goalies || []);
+  // Keep single-goalie references for components that expect one
+  const carGoalie  = carGoalies[0] || null;
+  const oppGoalie  = oppGoalies[0] || null;
 
   // ── Context label for top metrics ───────────────────────────
   // Use playoff team stats if in playoffs, otherwise regular season
@@ -1112,6 +1155,7 @@ export default function ShotMapView() {
           oppAbbr={oppAbbr}
           homeAbbr={homeAbbr}
           awayAbbr={awayAbbr}
+          isPlayoff={inPlayoffs}
         />
       )}
 
@@ -1128,6 +1172,7 @@ export default function ShotMapView() {
           homeAbbr={homeAbbr}
           awayAbbr={awayAbbr}
           readOnly
+          isPlayoff={inPlayoffs}
         />
       )}
 
@@ -1161,19 +1206,30 @@ export default function ShotMapView() {
                   {pbp?.clock?.inIntermission ? (
                     <>
                       <div className="score-period">
-                        {pbp.periodDescriptor?.number === 1 ? '1st' :
-                         pbp.periodDescriptor?.number === 2 ? '2nd' : '3rd'} Intermission
+                        {(() => {
+                          const n = pbp.periodDescriptor?.number;
+                          if (n === 1) return '1st';
+                          if (n === 2) return '2nd';
+                          if (n === 3) return '3rd';
+                          // OT intermissions: after OT1=period4, OT2=period5, etc.
+                          return `OT${n - 3}`;
+                        })()} Intermission
                       </div>
                       <div className="score-clock">{displayClock || pbp.clock.timeRemaining}</div>
                     </>
                   ) : (
                     <>
                       <div className="score-period">
-                        {pbp?.periodDescriptor
-                          ? (pbp.periodDescriptor.periodType === 'REG'
-                              ? `P${pbp.periodDescriptor.number}`
-                              : pbp.periodDescriptor.periodType || `P${pbp.periodDescriptor.number}`)
-                          : '—'}
+                        {(() => {
+                          const n = pbp?.periodDescriptor?.number;
+                          const t = pbp?.periodDescriptor?.periodType;
+                          if (!n) return '—';
+                          if (n <= 3) return `P${n}`;
+                          // Playoffs: OT1=4, OT2=5, OT3=6 — all full 20min periods
+                          // Regular season: period 4 = OT (5min 3v3), period 5 = SO
+                          if (inPlayoffs) return n === 4 ? 'OT' : `${n - 3}OT`;
+                          return n === 4 ? 'OT' : 'SO';
+                        })()}
                       </div>
                       <div className="score-clock">
                         {displayClock || pbp?.clock?.timeRemaining || '—'}
@@ -1209,8 +1265,8 @@ export default function ShotMapView() {
               {(isLive || debugSituation?.oppEN) && (currentSituation?.oppEN || debugSituation?.oppEN) && (
                 <div className="pp-indicator en-indicator opp-en">🥅 {oppAbbr || 'OPP'} Empty Net</div>
               )}
-              {/* 4v4 or 3v3 (both teams penalized) */}
-              {(isLive && currentSituation?.strength === '4v4') || debugSituation?.strength === '4v4' ? (
+              {/* 4v4 or 3v3 (both teams penalized) — regular season only, playoffs use full strength */}
+              {!inPlayoffs && ((isLive && currentSituation?.strength === '4v4') || debugSituation?.strength === '4v4') ? (
                 <div className="pp-indicator" style={{ background: 'rgba(148,163,184,0.15)', color: 'var(--text-muted)', border: '0.5px solid rgba(148,163,184,0.3)' }}>
                   {debugSituation?.carSkaters || currentSituation?.carSkaters}v{debugSituation?.oppSkaters || currentSituation?.oppSkaters} — Coincidental
                 </div>
@@ -1438,31 +1494,45 @@ export default function ShotMapView() {
           )}
 
           {/* Goalie comparison */}
-          {(carGoalie || oppGoalie) && (
+          {(carGoalies.length > 0 || oppGoalies.length > 0) && (
             <div className="card">
               <div className="sec-label">Goalies</div>
-              {carGoalie && (
-                <GoalieRow
-                  name={carGoalie.name?.default || `#${carGoalie.sweaterNumber}`}
-                  abbr="CAR"
-                  saves={carGoalie.saves}
-                  shotsAgainst={carGoalie.shotsAgainst}
-                  savePctg={carGoalie.savePctg}
-                  color="var(--red-bright)"
-                  seasonData={goalieAnalytics?.[String(carGoalie.playerId)] || null}
-                />
-              )}
-              {oppGoalie && (
-                <GoalieRow
-                  name={oppGoalie.name?.default || `#${oppGoalie.sweaterNumber}`}
-                  abbr={oppAbbr}
-                  saves={oppGoalie.saves}
-                  shotsAgainst={oppGoalie.shotsAgainst}
-                  savePctg={oppGoalie.savePctg}
-                  color={oppColor}
-                  seasonData={goalieAnalytics?.[String(oppGoalie.playerId)] || null}
-                />
-              )}
+              {carGoalies.map((g, i) => (
+                <div key={g.playerId || i}>
+                  {i === 1 && (
+                    <div style={{ fontSize: 10, color: 'var(--text-dim)', textAlign: 'center', margin: '2px 0', letterSpacing: '0.05em' }}>
+                      — goalie change —
+                    </div>
+                  )}
+                  <GoalieRow
+                    name={g.name?.default || `#${g.sweaterNumber}`}
+                    abbr="CAR"
+                    saves={g.saves}
+                    shotsAgainst={g.shotsAgainst}
+                    savePctg={g.savePctg}
+                    color="var(--red-bright)"
+                    seasonData={goalieAnalytics?.[String(g.playerId)] || null}
+                  />
+                </div>
+              ))}
+              {oppGoalies.map((g, i) => (
+                <div key={g.playerId || i}>
+                  {i === 1 && (
+                    <div style={{ fontSize: 10, color: 'var(--text-dim)', textAlign: 'center', margin: '2px 0', letterSpacing: '0.05em' }}>
+                      — goalie change —
+                    </div>
+                  )}
+                  <GoalieRow
+                    name={g.name?.default || `#${g.sweaterNumber}`}
+                    abbr={oppAbbr}
+                    saves={g.saves}
+                    shotsAgainst={g.shotsAgainst}
+                    savePctg={g.savePctg}
+                    color={oppColor}
+                    seasonData={goalieAnalytics?.[String(g.playerId)] || null}
+                  />
+                </div>
+              ))}
             </div>
           )}
 
