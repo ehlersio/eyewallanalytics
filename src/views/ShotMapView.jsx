@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { usePoll, useFetch } from '../hooks/useFetch';
 import {
-  getLiveGame, getGameDetail, getGameBoxscore, getGameRightRail,
+  getLiveGame, getAllGames, getGameDetail, getGameBoxscore, getGameRightRail,
   getRecentGames, getPlayoffGames, extractShotEvents,
   getCarScore, getOppScore, getOpponent, isHomeGame,
   getTeamStats, getTeamPlayoffStats, formatGameDate, getRoster, buildPlayerMap,
@@ -29,16 +29,50 @@ export default function ShotMapView() {
   // ── Dev replay injection ──────────────────────────────────────
   const devGame = useDevGame();
 
-  // Live game polling
-  const { data: liveGameReal } = usePoll(getLiveGame, 30000);
+  // ── Adaptive polling interval for live game detection ─────────
+  // We use a ref to persist last known state between renders so the interval
+  // calculation never creates a circular dependency on liveGameReal itself.
+  // getAllGames covers both completed and upcoming games — recentGames only
+  // returns completed, so we'd never find a future game time from it.
+  const liveStateRef = useRef({ isLive: false, nextGameTime: null });
+
+  const scheduleInterval = useMemo(() => {
+    const { isLive: wasLive, nextGameTime } = liveStateRef.current;
+    if (wasLive) return 20_000;                         // live game — 20s
+    if (!nextGameTime) return 30 * 60_000;              // offseason / no data — 30min
+    const minsToGame = (nextGameTime - Date.now()) / 60_000;
+    if (minsToGame < 180) return 60_000;                // within 3hrs of puck drop — 1min
+    return 5 * 60_000;                                  // between games — 5min
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveStateRef.current.isLive, liveStateRef.current.nextGameTime]);
+
+  // Live game polling — interval adapts to game state
+  const { data: liveGameReal } = usePoll(getLiveGame, scheduleInterval);
   const liveGame = devGame?.liveGame ?? liveGameReal;
+  const isLive   = !!liveGame;
+
+  // All games (completed + scheduled) — used to find next upcoming game time
+  // for the adaptive interval. useFetch fires once; nhlApi.js caches the result.
+  const { data: allGames } = useFetch(getAllGames);
+
+  // Update liveStateRef whenever live status or schedule changes
+  useEffect(() => {
+    const now = Date.now();
+    const nextGame = allGames?.find(g =>
+      g.startTimeUTC && new Date(g.startTimeUTC).getTime() > now &&
+      !['OFF', 'FINAL', 'F', 'FINAL_OVERTIME', 'FINAL_SHOOTOUT'].includes(g.gameState)
+    );
+    liveStateRef.current = {
+      isLive,
+      nextGameTime: nextGame ? new Date(nextGame.startTimeUTC).getTime() : null,
+    };
+  }, [isLive, allGames]);
 
   // Most recent completed game as fallback
   const { data: recentGames } = useFetch(getRecentGames);
-  const lastGame  = recentGames?.[0] || null;
+  const lastGame   = recentGames?.[0] || null;
   const activeGame = liveGame || lastGame;
-  const isLive     = !!liveGame;
-  useWakeLock(isLive); // keep screen on during live games — must be after isLive is defined
+  useWakeLock(isLive); // keep screen on during live games
 
   // Are we currently in playoffs? Check if any playoff games exist this season
   const { data: playoffGames } = useFetch(getPlayoffGames);
