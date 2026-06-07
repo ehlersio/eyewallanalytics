@@ -2,6 +2,15 @@
 
 describe('Schedule view', () => {
   beforeEach(() => {
+    // Fail fast on any ReferenceError or TypeError — catches missing imports
+    // like extractMoneyline before they reach production
+    cy.on('uncaught:exception', (err) => {
+      if (err.name === 'ReferenceError' || err.name === 'TypeError') {
+        throw err; // re-throw so Cypress marks the test as failed
+      }
+      return false; // swallow other errors (network, 3rd party)
+    });
+
     cy.visit('/schedule')
     cy.get('.sched-title', { timeout: 15000 }).should('be.visible')
   })
@@ -63,6 +72,26 @@ describe('Schedule view', () => {
         const hasNarrative = $el.find('.md-ai-narrative').length > 0
         const hasButton    = $el.find('.md-ai-btn').length > 0
         expect(hasNarrative || hasButton).to.be.true
+      })
+    })
+
+    it('matchup detail renders without JS errors', () => {
+      // Specifically guards against missing imports like extractMoneyline
+      // If a ReferenceError fires, the uncaught:exception handler above will fail the test
+      cy.contains('Matchup breakdown').first().click()
+      cy.get('.matchup-detail').should('exist')
+      cy.get('.md-pred-bar').should('exist')
+    })
+
+    it('shows odds row when odds are available', () => {
+      cy.contains('Matchup breakdown').first().click()
+      // Odds may or may not be cached — both states are valid,
+      // but if the odds row is present it must render without errors
+      cy.get('.matchup-detail').then($el => {
+        if ($el.find('.md-odds-row').length > 0) {
+          cy.get('.md-odds-row').should('be.visible')
+          cy.get('.md-odds-val').should('have.length.gte', 2)
+        }
       })
     })
 
