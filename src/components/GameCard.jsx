@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   isHomeGame, getOpponent, getCarScore, getOppScore,
-  formatGameDate, formatGameTime, TEAM_COLORS,
+  formatGameDate, formatGameTime, TEAM_COLORS, TEAM_CONFIG,
 } from '../utils/nhlApi';
 import TeamLogo from '../components/TeamLogo';
 import { extractMoneyline, fmtOdds } from '../utils/nhlApi';
@@ -32,9 +32,9 @@ function SeriesCard({ series }) {
         {/* CAR column: logo+name+score in a row, pips underneath */}
         <div className="series-side">
           <div className="series-row">
-            <TeamLogo abbr="CAR" size={30} />
-            <span className="series-abbr" style={{ color: 'var(--red-bright)' }}>CAR</span>
-            <span className="series-city">Carolina</span>
+            <TeamLogo abbr={TEAM_CONFIG.abbr} size={30} />
+            <span className="series-abbr" style={{ color: 'var(team-primary)' }}>{TEAM_CONFIG.abbr}</span>
+            <span className="series-city">{TEAM_CONFIG.fullNameFragment}</span>
             <span className="series-wins">{series.carWins}</span>
           </div>
           <div className="series-pips">
@@ -129,7 +129,7 @@ function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, car
         {isCompleted && <span className="gc-tap-hint">Tap for stats →</span>}
         {!isCompleted && odds && (
           <div className="gc-odds">
-            <span className="gc-odds-car" title="CAR moneyline">{fmtOdds(odds.carOdds)}</span>
+            <span className="gc-odds-car" title="${TEAM_CONFIG.abbr} moneyline">{fmtOdds(odds.carOdds)}</span>
             <span className="gc-odds-sep">/</span>
             <span className="gc-odds-opp" title="OPP moneyline">{fmtOdds(odds.oppOdds)}</span>
             <span className="gc-odds-book">{odds.book}</span>
@@ -138,10 +138,10 @@ function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, car
       </div>
       <div className="gc-matchup">
         <div className="gc-team-block">
-          <TeamLogo abbr="CAR" size={32} />
+          <TeamLogo abbr={TEAM_CONFIG.abbr} size={32} />
           <div className="gc-team-text">
-            <span className="gc-abbr" style={{ color: 'var(--red-bright)' }}>CAR</span>
-            <span className="gc-full">Carolina Hurricanes</span>
+            <span className="gc-abbr" style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
+            <span className="gc-full">{TEAM_CONFIG.displayName}</span>
           </div>
         </div>
         <div className="gc-vs">{home ? 'vs' : '@'}</div>
@@ -157,7 +157,7 @@ function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, car
         <div className="gc-bottom-row">
           {cardFavoured && (
             <span className={`gc-favoured-chip ${cardFavoured.favoured ? 'fav' : 'dog'}`}>
-              {cardFavoured.favoured ? `✓ CAR ${cardFavoured.pct}%` : `⚠ ${opp?.abbrev} ${100 - cardFavoured.pct}%`}
+              {cardFavoured.favoured ? `✓ ${TEAM_CONFIG.abbr} ${cardFavoured.pct}%` : `⚠ ${opp?.abbrev} ${100 - cardFavoured.pct}%`}
             </span>
           )}
           <span className="gc-expand-hint">{isSelected ? '▲ Close' : '▼ Matchup breakdown'}</span>

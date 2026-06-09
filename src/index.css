@@ -102,6 +102,27 @@ svg { display: block; }
 .dual-bar .fill-blue { background: var(--blue-bright); height: 100%; transition: width 0.4s ease; }
 .dual-bar .fill-green { background: var(--green); height: 100%; transition: width 0.4s ease; }
 
+/* Team-primary utility classes — set by JS via --team-primary on :root */
+.team-primary-text {
+  color: var(--team-primary);
+}
+
+.gp-adv-fill.team-primary-fill {
+  background: var(--team-primary);
+  opacity: 0.85;
+}
+
+.fill-team-primary {
+  background: var(--team-primary);
+  opacity: 0.85;
+}
+
+/* Keep fill-opp for the opponent side of dual bars */
+.fill-opp {
+  background: var(--blue-bright);
+  opacity: 0.7;
+}
+
 /* Responsive layout containers */
 .page { 
   height: calc(100vh - var(--topbar-height) - var(--nav-height));

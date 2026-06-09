@@ -390,9 +390,9 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
                 <span className="result-tap-hint">Tap for stats →</span>
               </div>
               <div className="result-score">
-                <TeamLogo abbr="CAR" size={20} />
-                <span className="result-abbr red">CAR</span>
-                <span className="result-num red">{carScore ?? '—'}</span>
+                <TeamLogo abbr={TEAM_CONFIG.abbr} size={20} />
+                <span className="result-abbr team-primary-text">{TEAM_CONFIG.abbr}</span>
+                <span className="result-num team-primary-text">{carScore ?? '—'}</span>
                 <span className="result-sep">–</span>
                 <span className="result-num muted">{oppScore ?? '—'}</span>
                 <span className="result-abbr muted">{opp?.abbrev}</span>

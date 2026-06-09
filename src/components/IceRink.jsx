@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useWindowWidth } from '../hooks/useFetch';
+import { TEAM_CONFIG } from '../utils/teamConfig';
 import './IceRink.css';
 
 // ─── Constants ───────────────────────────────────────────────
@@ -41,12 +42,12 @@ const TYPE_LABELS = {
   'blocked-shot': 'Blocked shot',
 };
 
-// Shot type → dot style
+// Shot type → dot style (fill is set dynamically in renderShot for the team side)
 const SHOT_STYLE = {
-  'goal':         { r: 7,  fill: '#ff4422', stroke: '#333',   strokeWidth: 2,   opacity: 1    },
-  'shot-on-goal': { r: 5,  fill: '#ff4422', stroke: 'none',   strokeWidth: 0,   opacity: 0.65 },
-  'missed-shot':  { r: 4,  fill: '#ff4422', stroke: 'none',   strokeWidth: 0,   opacity: 0.32 },
-  'blocked-shot': { r: 4,  fill: '#8899aa', stroke: 'none',   strokeWidth: 0,   opacity: 0.45 },
+  'goal':         { r: 7,  stroke: '#333',   strokeWidth: 2,   opacity: 1    },
+  'shot-on-goal': { r: 5,  stroke: 'none',   strokeWidth: 0,   opacity: 0.65 },
+  'missed-shot':  { r: 4,  stroke: 'none',   strokeWidth: 0,   opacity: 0.32 },
+  'blocked-shot': { r: 4,  fill: '#8899aa',  stroke: 'none',   strokeWidth: 0,   opacity: 0.45 },
 };
 const OPP_SHOT_STYLE = {
   'goal':         { r: 7,  fill: '#4477ee', stroke: '#333',   strokeWidth: 2,   opacity: 1    },
@@ -222,6 +223,12 @@ export default function IceRink({ events = [], roster = {}, hidePlayerFilter = f
     const { px, py } = toSvg(x, y);
     const styles = isCanes ? SHOT_STYLE : OPP_SHOT_STYLE;
     const s = styles[e.type] || styles['shot-on-goal'];
+    // For the team's own shots, use the CSS variable for team primary color.
+    // SVG fill can't read CSS vars directly, so we use currentColor trick via a
+    // data attribute on the SVG, or just read the computed value at render time.
+    // Simplest reliable approach: inline style with the CSS variable string —
+    // modern browsers resolve CSS vars in SVG fill when set via style attribute.
+    const teamFill = isCanes && !s.fill ? 'var(--team-primary)' : s.fill;
     const isHov = hovered?.event?.id === e.id;
     const isSel = selected?.id === e.id;
 
@@ -231,7 +238,7 @@ export default function IceRink({ events = [], roster = {}, hidePlayerFilter = f
         cx={px}
         cy={py}
         r={!readOnly && (isHov || isSel) ? s.r * 1.6 : s.r}
-        fill={s.fill}
+        fill={teamFill}
         stroke={!readOnly && isSel ? '#fff' : !readOnly && isHov ? 'rgba(255,255,255,0.6)' : s.stroke}
         strokeWidth={!readOnly && isSel ? 2.5 : !readOnly && isHov ? 1.5 : s.strokeWidth}
         opacity={!readOnly && (isHov || isSel) ? 1 : s.opacity}
@@ -353,7 +360,7 @@ export default function IceRink({ events = [], roster = {}, hidePlayerFilter = f
       {!readOnly && viewMode === 'heat' && (
         <div className="heat-controls">
           <span className="heat-label">Show:</span>
-          {[['car','CAR shots'],['opp','Opp shots'],['both','Both']].map(([val, lbl]) => (
+          {[['car',`${TEAM_CONFIG.abbr} shots`],['opp','Opp shots'],['both','Both']].map(([val, lbl]) => (
             <button
               key={val}
               className={`rink-btn ${heatTeam === val ? 'on' : ''}`}
@@ -371,8 +378,8 @@ export default function IceRink({ events = [], roster = {}, hidePlayerFilter = f
       {/* Legend — only in dots mode, not readOnly */}
       {!readOnly && viewMode === 'dots' && (
         <div className="rink-legend">
-          <div className="legend-item"><span className="leg-dot" style={{background:'#ff4422',opacity:0.65}} />CAR shot</div>
-          <div className="legend-item"><span className="leg-dot leg-goal" style={{background:'#ff4422'}} />CAR goal</div>
+          <div className="legend-item"><span className="leg-dot" style={{background:'var(--team-primary)',opacity:0.65}} />{TEAM_CONFIG.abbr} shot</div>
+          <div className="legend-item"><span className="leg-dot leg-goal" style={{background:'var(--team-primary)'}} />{TEAM_CONFIG.abbr} goal</div>
           <div className="legend-item"><span className="leg-dot" style={{background:'#4477ee',opacity:0.55}} />Opp shot</div>
           <div className="legend-item"><span className="leg-dot leg-goal" style={{background:'#4477ee'}} />Opp goal</div>
           <div className="legend-item"><span className="leg-dot" style={{background:'#8899aa',opacity:0.45}} />Blocked</div>
@@ -642,7 +649,7 @@ function HoverTooltip({ event: e, screenX, screenY, playerNames, wrapRef }) {
 
 // ─── Click popup ─────────────────────────────────────────────
 function ShotPopup({ event: e, playerNames, onClose }) {
-  const shooterName = e.shooterName || (e.isCanes ? 'Unknown Cane' : 'Unknown');
+  const shooterName = e.shooterName || (e.isCanes ? `Unknown ${TEAM_CONFIG.abbr}` : 'Unknown');
   const goalieName  = e.goalieName  || null;
   const blockerName = e.blockerName || null;
   const assists = [e.assist1Name, e.assist2Name].filter(Boolean);
@@ -669,7 +676,7 @@ function ShotPopup({ event: e, playerNames, onClose }) {
           <div className="popup-type-row">
             <span className="popup-type-icon">{isGoal ? '🚨' : e.type === 'blocked-shot' ? '🛡' : e.type === 'missed-shot' ? '↗' : '🏒'}</span>
             <span className="popup-type-label">{TYPE_LABELS[e.type] || e.type}</span>
-            <span className="popup-team-badge">{isCanes ? 'CAR' : 'OPP'}</span>
+            <span className="popup-team-badge">{isCanes ? TEAM_CONFIG.abbr : 'OPP'}</span>
           </div>
           <button className="popup-close" onClick={onClose}>✕</button>
         </div>
@@ -831,12 +838,12 @@ function RinkMarkings({ showHalf, flipPerspective = false }) {
       {!showHalf && (
         <>
           <text x="22"   y="18" fontSize="9" fill="#2255aa" opacity="0.6" fontFamily="sans-serif">OPP offensive zone</text>
-          <text x={W-108} y="18" fontSize="9" fill="#cc2200" opacity="0.7" fontFamily="sans-serif">CAR offensive zone</text>
+          <text x={W-108} y="18" fontSize="9" fill="var(--team-primary)" opacity="0.7" fontFamily="sans-serif">{TEAM_CONFIG.abbr} offensive zone</text>
         </>
       )}
       {showHalf && (
-        <text x={CX+10} y="18" fontSize="9" fill={flipPerspective ? '#2255aa' : '#cc2200'} opacity="0.8" fontFamily="sans-serif">
-          {flipPerspective ? 'OPP offensive zone' : 'CAR offensive zone'}
+        <text x={CX+10} y="18" fontSize="9" fill={flipPerspective ? '#2255aa' : 'var(--team-primary)'} opacity="0.8" fontFamily="sans-serif">
+          {flipPerspective ? 'OPP offensive zone' : `${TEAM_CONFIG.abbr} offensive zone`}
         </text>
       )}
     </g>

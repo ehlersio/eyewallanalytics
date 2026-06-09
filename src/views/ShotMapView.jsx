@@ -1183,8 +1183,8 @@ export default function ShotMapView() {
             <div className="score-team-wrap">
               <div className="score-team">
                 <TeamLogo abbr={CAR_ABBR} size={30} />
-                <span className="score-abbr red">{CAR_ABBR}</span>
-                <span className="score-num red">{carScore ?? '—'}</span>
+                <span className="score-abbr team-primary-text">{CAR_ABBR}</span>
+                <span className="score-num team-primary-text">{carScore ?? '—'}</span>
               </div>
               {/* CAR PP indicator */}
               {(isLive || debugSituation) && (debugSituation?.team === CAR_ABBR || currentSituation?.strength === 'PP') && (
@@ -1510,7 +1510,7 @@ export default function ShotMapView() {
                     saves={g.saves}
                     shotsAgainst={g.shotsAgainst}
                     savePctg={g.savePctg}
-                    color="var(--red-bright)"
+                    color="var(--team-primary)"
                     seasonData={goalieAnalytics?.[String(g.playerId)] || null}
                   />
                 </div>
@@ -1541,7 +1541,7 @@ export default function ShotMapView() {
             <div className="card">
               <div className="sec-label">Team stats — this game</div>
               <div className="gm-stat-header">
-                <span style={{color:'var(--red-bright)'}}>{CAR_ABBR}</span>
+                <span style={{color:'var(--team-primary)'}}>{CAR_ABBR}</span>
                 <span />
                 <span style={{color:oppColor}}>{oppAbbr}</span>
               </div>
@@ -1571,14 +1571,14 @@ export default function ShotMapView() {
                   const fmt   = v => v == null ? '—' : isDecimal ? v.toFixed(2) : v;
                   return (
                     <div key={label} className="gm-stat-row">
-                      <span className="gm-stat-val red">{fmt(carN)}</span>
+                      <span className="gm-stat-val team-primary-text">{fmt(carN)}</span>
                       <div className="gm-stat-mid">
                         <div className="gm-stat-label">
                           {label}
                           <InfoTip text={help} position="above" />
                         </div>
                         <div className="dual-bar">
-                          <div className="fill-red"  style={{width:`${Math.round((carN||0)/total*100)}%`}} />
+                          <div className="fill-team-primary" style={{width:`${Math.round((carN||0)/total*100)}%`}} />
                           <div className="fill-blue" style={{width:`${Math.round((oppN||0)/total*100)}%`}} />
                         </div>
                       </div>
@@ -1606,12 +1606,12 @@ export default function ShotMapView() {
                 const total  = carN + oppN || 1;
                 return (
                   <div key={i} className="gm-stat-row">
-                    <span className="gm-stat-val red">{fmtVal(carVal)}</span>
+                    <span className="gm-stat-val team-primary-text">{fmtVal(carVal)}</span>
                     <div className="gm-stat-mid">
                       <div className="gm-stat-label">{humanLabel(row.category)}</div>
                       <div className="dual-bar">
-                        <div className="fill-red"  style={{width:`${Math.round(carN/total*100)}%`}} />
-                        <div className="fill-blue" style={{width:`${Math.round(oppN/total*100)}%`}} />
+                        <div className="fill-team-primary" style={{width:`${Math.round(carN/total*100)}%`}} />
+                        <div className="fill-blue"         style={{width:`${Math.round(oppN/total*100)}%`}} />
                       </div>
                     </div>
                     <span className="gm-stat-val muted">{fmtVal(oppVal)}</span>
@@ -1915,7 +1915,7 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
   const oppRows = drillStat.oppRows ?? [];
   const hasOpp  = oppRows.length > 0 || drillStat.oppRows !== undefined;
   const rows    = tab === 'car' ? carRows : oppRows;
-  const teamLabel = tab === 'car' ? 'CAR' : (oppAbbr || 'OPP');
+  const teamLabel = tab === 'car' ? CAR_ABBR : (oppAbbr || 'OPP');
 
   // Derive periods dynamically from actual data so OT2, OT3, SO etc. all appear.
   // Collect every period key that appears in any row, sort numerically by period number.
@@ -3087,7 +3087,7 @@ function MomentumCard({ pbp, gameHome, isLive, oppAbbr }) {
       const y = mid - ((v - 50) / 50) * (mid - 6);
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
-    ctx.strokeStyle = 'var(--red-bright, #cc2200)';
+    ctx.strokeStyle = 'var(--team-primary, #cc2200)';
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
@@ -3119,7 +3119,7 @@ function MomentumCard({ pbp, gameHome, isLive, oppAbbr }) {
       const lastY = mid - ((lastV - 50) / 50) * (mid - 6);
       ctx.beginPath();
       ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
-      ctx.fillStyle = '#cc2200';
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--team-primary').trim() || '#cc2200';
       ctx.fill();
     }
   }, [wavePoints]);
@@ -3147,14 +3147,14 @@ function MomentumCard({ pbp, gameHome, isLive, oppAbbr }) {
 
       <div style={{ marginBottom: 10 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 500, marginBottom: 5 }}>
-          <span style={{ color: 'var(--red-bright)' }}>CAR {carPct}%</span>
+          <span style={{ color: 'var(--team-primary)' }}>{CAR_ABBR} {carPct}%</span>
           <span style={{ color: 'var(--text-muted)' }}>{100 - carPct}% {oppAbbr}</span>
         </div>
         <div style={{ height: 8, background: 'var(--bg3)', borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
           <div style={{
             position: 'absolute', left: 0, top: 0, bottom: 0,
             width: `${carPct}%`,
-            background: carPct >= 50 ? 'var(--red-bright)' : 'var(--text-dim)',
+            background: carPct >= 50 ? 'var(--team-primary)' : 'var(--text-dim)',
             borderRadius: 4, transition: 'width 0.4s ease'
           }} />
           <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'var(--border-2)' }} />
@@ -3173,7 +3173,7 @@ function MomentumCard({ pbp, gameHome, isLive, oppAbbr }) {
 
       <div style={{ display: 'flex', gap: 14, marginTop: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red-bright)', opacity: 0.7 }} />
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--team-primary)', opacity: 0.7 }} />
           {CAR_ABBR} above neutral
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
@@ -3201,10 +3201,10 @@ function AdvancedGamePanel({ pbp, gameHome, isLive, boxscore }) {
     return (
       <div className="sv-row">
         <div className="sv-label-wrap"><span className="sv-label">{label}</span><InfoTip text={help} position="above" /></div>
-        <span className="sv-num red">{car ?? '—'}</span>
+        <span className="sv-num team-primary-text">{car ?? '—'}</span>
         <div className="sv-bar-wrap">
-          <div className="sv-fill red"   style={{width:`${Math.round(carN/tot*100)}%`}} />
-          <div className="sv-fill muted" style={{width:`${Math.round(oppN/tot*100)}%`}} />
+          <div className="sv-fill team-primary-fill" style={{width:`${Math.round(carN/tot*100)}%`}} />
+          <div className="sv-fill muted"             style={{width:`${Math.round(oppN/tot*100)}%`}} />
         </div>
         <span className="sv-num muted">{opp ?? '—'}</span>
       </div>
@@ -3228,7 +3228,7 @@ function AdvancedGamePanel({ pbp, gameHome, isLive, boxscore }) {
       </div>
 
       <div className="sv-header">
-        <span className="sv-team red">{CAR_ABBR}</span>
+        <span className="sv-team team-primary-text">{CAR_ABBR}</span>
         <span className="sv-diff" style={{color: sa.corsiDiff >= 0 ? 'var(--green)' : 'var(--red-bright)'}}>
           {sa.corsiDiff >= 0 ? '+' : ''}{sa.corsiDiff} CF
         </span>
@@ -3258,13 +3258,13 @@ function AdvancedGamePanel({ pbp, gameHome, isLive, boxscore }) {
         <StatChip
           label="CF%"
           value={`${sa.corsiForPct}%`}
-          color={sa.corsiForPct >= 50 ? 'var(--green)' : 'var(--red-bright)'}
+          color={sa.corsiForPct >= 50 ? 'var(--green)' : 'var(--team-primary)'}
           help={`Corsi For%: ${CAR_ABBR} share of all shot attempts. ≥50% = controlling play.`}
         />
         <StatChip
           label="FF%"
           value={`${sa.fenwickForPct}%`}
-          color={sa.fenwickForPct >= 50 ? 'var(--green)' : 'var(--red-bright)'}
+          color={sa.fenwickForPct >= 50 ? 'var(--green)' : 'var(--team-primary)'}
           help={`Fenwick For%: ${CAR_ABBR} share of unblocked attempts. Better predictor than Corsi.`}
         />
         <StatChip

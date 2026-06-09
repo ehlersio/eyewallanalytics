@@ -26,7 +26,7 @@ function PeriodTable({ scoring, home, carAbbr, oppAbbr }) {
         <span>T</span>
       </div>
       <div className="period-row car-row">
-        <span style={{ color: 'var(--red-bright)', fontWeight: 600 }}>CAR</span>
+        <span style={{ color: 'var(--team-primary)', fontWeight: 600 }}>{carAbbr}</span>
         {periods.map(p => <span key={p.label}>{p.carG}</span>)}
         <span className="period-total">{carTotal}</span>
       </div>
@@ -156,7 +156,7 @@ function GoalsList({ scoring, carAbbr, oppAbbr, oppColor }) {
     <div className="goals-two-col">
       {/* Column headers — single row, no border */}
       <div className="goals-header-row">
-        <span className="goals-col-header" style={{ color: 'var(--red-bright)' }}>{carAbbr}</span>
+        <span className="goals-col-header" style={{ color: 'var(--team-primary)' }}>{carAbbr}</span>
         <span />
         <span className="goals-col-header right" style={{ color: oppColor || 'var(--text-muted)' }}>{oppAbbr}</span>
       </div>
@@ -216,7 +216,7 @@ function GoalEntry({ goal: g, isCar, side }) {
   }
 
   const chip  = strengthChip(g.strength || g.situationCode);
-  const color = isCar ? 'var(--red-bright)' : 'var(--blue-bright)';
+  const color = isCar ? 'var(--team-primary)' : 'var(--blue-bright)';
   const align = side === 'right' ? 'right' : 'left';
 
   return (

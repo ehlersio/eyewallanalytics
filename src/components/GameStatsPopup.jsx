@@ -8,8 +8,9 @@ import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '.
 import TeamLogo from '../components/TeamLogo';
 import InfoTip from '../components/InfoTip';
 import { capture } from '../utils/analytics';
+import { TEAM_CONFIG } from '../utils/teamConfig';
 
-const CAR_ABBR = 'CAR';
+const CAR_ABBR = TEAM_CONFIG.abbr;
 
 // ── Game stats popup ─────────────────────────────────────────
 import { PeriodTable, SkaterTable, GoalsList } from '../components/GameStatsComponents';
@@ -46,7 +47,7 @@ function GameStatsPopup({ game, onClose }) {
   // Pull team stats from right-rail
   const rr         = data?.rightRail;
   const pbpPlays   = data?.pbp?.plays || [];
-  const isCarHome  = data?.homeTeamId === 12;
+  const isCarHome  = data?.homeTeamId === TEAM_CONFIG.teamId;
   const advStats   = pbpPlays.length ? computeShotAttempts(pbpPlays) : null;
   const pdoStats   = pbpPlays.length ? computePDO(pbpPlays) : null;
   const luckStats  = pbpPlays.length ? computePuckLuck(pbpPlays) : null;
@@ -157,9 +158,9 @@ function GameStatsPopup({ game, onClose }) {
         <div className={`gp-header ${won ? 'gp-win' : 'gp-loss'}`}>
           <div className="gp-header-inner">
             <div className="gp-team-col">
-              <TeamLogo abbr="CAR" size={36} />
-              <span className="gp-abbr" style={{ color: 'var(--red-bright)' }}>CAR</span>
-              <span className="gp-score-big" style={{ color: 'var(--red-bright)' }}>{carScore ?? '—'}</span>
+              <TeamLogo abbr={TEAM_CONFIG.abbr} size={36} />
+              <span className="gp-abbr" style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
+              <span className="gp-score-big" style={{ color: 'var(--team-primary)' }}>{carScore ?? '—'}</span>
             </div>
             <div className="gp-center-col">
               <div className={`gp-result-badge ${won ? 'win' : 'loss'}`}>{won ? 'W' : 'L'}</div>
@@ -208,7 +209,7 @@ function GameStatsPopup({ game, onClose }) {
               <button
                 className="gp-summary-share"
                 onClick={() => {
-                  const text = `CAR ${summary.carScore}–${summary.oppScore} ${summary.oppAbbr} | ${summary.narrative} — EyeWall Analytics eyewallanalytics.com`;
+                  const text = `${TEAM_CONFIG.abbr} ${summary.carScore}–${summary.oppScore} ${summary.oppAbbr} | ${summary.narrative} — EyeWall Analytics eyewallanalytics.com`;
                   if (navigator.share) {
                     navigator.share({ title: 'EyeWall Analytics Game Summary', text }).catch(() => {});
                   } else {
@@ -274,7 +275,7 @@ function GameStatsPopup({ game, onClose }) {
                 <div className="gp-section">
                   <div className="gp-section-label">Team stats</div>
                   <div className="gp-team-stat-header">
-                    <span style={{ color: 'var(--red-bright)' }}>CAR</span>
+                    <span style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
                     <span />
                     <span style={{ color: oppColor }}>{oppAbbr}</span>
                   </div>
@@ -291,12 +292,12 @@ function GameStatsPopup({ game, onClose }) {
                     const carPct = Math.round((carNum / total) * 100);
                     return (
                       <div key={i} className="gp-stat-row">
-                        <span className="gp-stat-val car">{carDisplay}</span>
+                        <span className="gp-stat-val team-primary-text">{carDisplay}</span>
                         <div className="gp-stat-center">
                           <div className="gp-stat-label">{label}</div>
                           <div className="dual-bar">
-                            <div className="fill-red"  style={{ width: `${carPct}%` }} />
-                            <div className="fill-blue" style={{ width: `${100 - carPct}%` }} />
+                            <div className="fill-team-primary" style={{ width: `${carPct}%` }} />
+                            <div className="fill-opp"          style={{ width: `${100 - carPct}%` }} />
                           </div>
                         </div>
                         <span className="gp-stat-val opp">{oppDisplay}</span>
@@ -316,7 +317,7 @@ function GameStatsPopup({ game, onClose }) {
                   </div>
                   <div className="gp-adv-grid">
                     <div className="gp-adv-row header">
-                      <span></span><span className="red">CAR</span><span></span><span className="muted">OPP</span>
+                      <span></span><span className="team-primary-text">{TEAM_CONFIG.abbr}</span><span></span><span className="muted">OPP</span>
                     </div>
                     {[
                       ['Corsi (CF)',   advStats.carCorsi,   advStats.oppCorsi,   'All shot attempts incl. blocked'],
@@ -329,9 +330,9 @@ function GameStatsPopup({ game, onClose }) {
                       return (
                         <div key={label} className="gp-adv-row">
                           <span className="gp-adv-label">{label}</span>
-                          <span className="red">{car}</span>
+                          <span className="team-primary-text">{car}</span>
                           <div className="gp-adv-bar">
-                            <div className="gp-adv-fill red"   style={{width:`${Math.round(car/tot*100)}%`}} />
+                            <div className="gp-adv-fill team-primary-fill" style={{width:`${Math.round(car/tot*100)}%`}} />
                             <div className="gp-adv-fill muted" style={{width:`${Math.round(opp/tot*100)}%`}} />
                           </div>
                           <span className="muted">{opp}</span>
@@ -340,13 +341,13 @@ function GameStatsPopup({ game, onClose }) {
                     })}
                     <div className="gp-adv-chips">
                       <span className="gp-adv-chip"
-                        style={{color: advStats.corsiForPct>=50?'var(--green)':'var(--red-bright)'}}>
+                        style={{color: advStats.corsiForPct>=50?'var(--green)':'var(--team-primary)'}}>
                         CF% {advStats.corsiForPct}%
-                      <InfoTip text="Corsi For% — CAR share of all shot attempts" position="above" /></span>
+                      <InfoTip text={`Corsi For% — ${TEAM_CONFIG.abbr} share of all shot attempts`} position="above" /></span>
                       <span className="gp-adv-chip"
-                        style={{color: advStats.fenwickForPct>=50?'var(--green)':'var(--red-bright)'}}>
+                        style={{color: advStats.fenwickForPct>=50?'var(--green)':'var(--team-primary)'}}>
                         FF% {advStats.fenwickForPct}%
-                      <InfoTip text="Fenwick For% — CAR share of unblocked attempts" position="above" /></span>
+                      <InfoTip text={`Fenwick For% — ${TEAM_CONFIG.abbr} share of unblocked attempts`} position="above" /></span>
                       {pdoStats && (
                         <span className="gp-adv-chip"
                           style={{color: pdoStats.pdo>102?'var(--amber)':pdoStats.pdo<98?'var(--blue-bright)':'var(--text-muted)'}}>
@@ -373,8 +374,8 @@ function GameStatsPopup({ game, onClose }) {
                       className={"skater-toggle-btn" + (skaterTeam === "car" ? " active-car" : "")}
                       onClick={() => setSkaterTeam("car")}
                     >
-                      <TeamLogo abbr="CAR" size={14} />
-                      CAR Skaters
+                      <TeamLogo abbr={TEAM_CONFIG.abbr} size={14} />
+                      {TEAM_CONFIG.abbr} Skaters
                     </button>
                     <button
                       className={"skater-toggle-btn" + (skaterTeam === "opp" ? " active-opp" : "")}

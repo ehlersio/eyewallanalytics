@@ -112,7 +112,7 @@ function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding
       <div className="records-row">
         <div className="card record-block">
           <div className="record-block-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <TeamLogo abbr="CAR" size={14} /> Regular Season
+            <TeamLogo abbr={TEAM_CONFIG.abbr} size={14} /> Regular Season
           </div>
           {standLoading ? <div className="skeleton" style={{ height: 28, width: '70%' }} /> : (
             <div className="record-main-row">
@@ -258,7 +258,7 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, scoreState, poAdv, i
         <div className="sec-label" style={{ marginBottom: 8 }}>Shot Volume &amp; Possession</div>
         <div className="adv-explain">
           {corsi?.isProxyCorsi === false
-            ? 'Corsi For% (CF%) approximates all shot attempts using shots on goal + blocked shots from the NHL realtime report. Fenwick For% (FF%) uses shots on goal only, excluding blocked shots. Both measure territorial control — ≥50% means CAR is generating more attempts than opponents.'
+            ? `Corsi For% (CF%) approximates all shot attempts using shots on goal + blocked shots from the NHL realtime report. Fenwick For% (FF%) uses shots on goal only, excluding blocked shots. Both measure territorial control — ≥50% means ${TEAM_CONFIG.abbr} is generating more attempts than opponents.`
             : 'Shot For% is a SOG-based proxy. Realtime blocked shot data unavailable for this game type.'}
         </div>
         {corsi?.isProxyCorsi === false ? (
@@ -286,11 +286,11 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, scoreState, poAdv, i
         <AdvStatRow label="Blocked For/GP"
           val={realtimeReg?.blockedShots != null ? fmt(realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1)) : null}
           rating={rateVal(realtimeReg?.blockedShots != null ? realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1) : null, LEAGUE_AVG.blockedForPerGame)}
-          avg={LEAGUE_AVG.blockedForPerGame.toFixed(1)} note="Shots blocked by CAR skaters per game" />
+          avg={LEAGUE_AVG.blockedForPerGame.toFixed(1)} note={`Shots blocked by ${TEAM_CONFIG.abbr} skaters per game`} />
         <AdvStatRow label="Blocked Against/GP"
           val={realtimeReg?.shotAttemptsBlocked != null ? fmt(realtimeReg.shotAttemptsBlocked / (realtimeReg.gamesPlayed || 1)) : null}
           rating={rateVal(realtimeReg?.shotAttemptsBlocked != null ? realtimeReg.shotAttemptsBlocked / (realtimeReg.gamesPlayed || 1) : null, LEAGUE_AVG.blockedAgainstPerGame, false)}
-          avg={LEAGUE_AVG.blockedAgainstPerGame.toFixed(1)} note="CAR shots blocked by opponents per game" />
+          avg={LEAGUE_AVG.blockedAgainstPerGame.toFixed(1)} note={`${TEAM_CONFIG.abbr} shots blocked by opponents per game`} />
         {corsi?.possessionPct != null && (
           <AdvStatRow label="Puck Possession%" val={pct(corsi.possessionPct / 100)}
             rating={rateVal(corsi.possessionPct / 100, 0.5)} avg="50.0%" note="Time with puck ÷ total play time" />
@@ -708,7 +708,7 @@ function TrendsTab({ gameLog }) {
         <div className="card">
           <div className="sec-label" style={{ marginBottom: 10 }}>
             Score-first rate — rolling 10-game window
-            <InfoTip text="How often CAR has scored the first goal of the game, rolling 10-game window. Each bar = one game; bar height = % of the last 10 games where CAR scored first. CAR wins ~74% of games when scoring first this season." position="above" />
+            <InfoTip text={`How often ${TEAM_CONFIG.abbr} has scored the first goal of the game, rolling 10-game window. Each bar = one game; bar height = % of the last 10 games where ${TEAM_CONFIG.abbr} scored first.`} position="above" />
           </div>
           <div className="rolling-chart">
             {gameLogWithSF.map((g, i) => {

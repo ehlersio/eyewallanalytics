@@ -83,3 +83,38 @@
   font-size: 12px; color: var(--text-muted);
 }
 .notif-check { margin-left: auto; color: var(--green); font-size: 12px; }
+
+/* My Team section */
+.notif-my-team {
+  margin-bottom: 12px;
+}
+
+.notif-team-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 4px;
+}
+
+.notif-team-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.notif-change-team-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--team-primary);
+  color: var(--team-primary);
+  background: transparent;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.notif-change-team-btn:hover {
+  background: rgba(var(--team-primary-rgb, 204, 0, 0), 0.1);
+}

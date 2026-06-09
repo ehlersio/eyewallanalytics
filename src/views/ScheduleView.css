@@ -136,6 +136,11 @@
 .result-num.muted { color: var(--text-muted); }
 .result-sep  { color: var(--text-dim); }
 .result-venue { font-size: 10px; color: var(--text-dim); margin-left: auto; font-family: var(--font-body); }
+.result-abbr.team-primary-text,
+.result-num.team-primary-text {
+  color: var(--team-primary);
+  font-weight: 600;
+}
 
 /* ── Tab switcher ── */
 .sched-tabs {
@@ -1100,9 +1105,8 @@
 }
 .skater-toggle-btn:hover { color: var(--text); }
 .skater-toggle-btn.active-car {
-  background: var(--red-dim);
-  border-color: var(--red-border);
-  color: var(--red-bright);
+  border-color: var(--team-primary);
+  color: var(--team-primary);
 }
 .skater-toggle-btn.active-opp {
   background: var(--blue-dim);

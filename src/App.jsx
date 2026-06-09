@@ -7,7 +7,7 @@ import ShotMapView from './views/ShotMapView'
 import { PeriodSummaryProvider } from './utils/PeriodSummaryContext'
 import { capture } from './utils/analytics'
 import './App.css'
-import { hasTeamConfig } from './utils/teamConfig'
+import { hasTeamConfig, TEAM_CONFIG } from './utils/teamConfig'
 import TeamPicker from './components/TeamPicker'
 
 // Lazy-load all non-initial routes — reduces initial bundle by ~64 KiB
@@ -46,6 +46,13 @@ function PageTracker() {
 }
 
 export default function App() {
+  // In App component body, before the return:
+  useEffect(() => {
+    if (TEAM_CONFIG.primaryColor) {
+      document.documentElement.style.setProperty('--team-primary', TEAM_CONFIG.primaryColor);
+    }
+  }, []); // runs once on mount; full reload on team change means this always reflects current team  
+
   // Show team picker on first launch (no team saved yet).
   // After selection, reload so all modules re-initialize with the chosen team.
   const [needsTeam, setNeedsTeam] = useState(() => !hasTeamConfig());

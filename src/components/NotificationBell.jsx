@@ -1,13 +1,23 @@
 import { useState } from 'react';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
+import { TEAM_CONFIG } from '../utils/teamConfig';
+import TeamLogo from '../components/TeamLogo';
 import './NotificationBell.css';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
+  const [showTeamPicker, setShowTeamPicker] = useState(false);
   const { supported, permission, subscribed, subscribe, unsubscribe, loading, error } =
     usePushNotifications();
   const { summaries, openSummary } = usePeriodSummaryContext();
+
+  const handleChangeTeam = () => {
+    setOpen(false);
+    // Clear stored team and reload — App.jsx will render TeamPicker on next load
+    localStorage.removeItem('eyewall:team');
+    window.location.reload();
+  };
 
   // Always render the button — gating on `supported` causes it to flash
   // away on navigation while usePushNotifications() initializes.
@@ -35,22 +45,34 @@ export default function NotificationBell() {
       <button
         className='notif-bell notif-active'
         onClick={() => setOpen(o => !o)}
-        aria-label={'Game Center'}
-        title={'Game Center'}
+        aria-label={'Settings'}
+        title={'Settings'}
       >
-        {'⚡'}
+        {'⚙️'}
       </button>
 
       {open && (
         <div className="notif-popup">
           <button className="notif-close" onClick={() => setOpen(false)} aria-label="Close">✕</button>
 
-          <div className="notif-title">⚡ Game Center</div>
+          <div className="notif-title">⚙️ Settings</div>
+
+          {/* My Team section */}
+          <div className="notif-my-team">
+            <div className="notif-event-label">🏒 My Team</div>
+            <div className="notif-team-row">
+              <TeamLogo abbr={TEAM_CONFIG.abbr} size={28} />
+              <span className="notif-team-name">{TEAM_CONFIG.displayName}</span>
+              <button className="notif-change-team-btn" onClick={handleChangeTeam}>
+                Change
+              </button>
+            </div>
+          </div>
 
           <p className="notif-desc">
             {subscribed
-              ? 'You\'ll get notified when the Canes score a goal, start a game, or win.'
-              : 'Get instant alerts on your phone when the Canes score, start a game, or win — even when the app is closed.'}
+              ? `You'll get notified when the ${TEAM_CONFIG.displayName} score a goal, start a game, or win.`
+              : `Get instant alerts on your phone when the ${TEAM_CONFIG.displayName} score, start a game, or win — even when the app is closed.`}
           </p>
 
           {permission === 'denied' && (
@@ -79,9 +101,9 @@ export default function NotificationBell() {
           <div className="notif-events">
             <div className="notif-event-label">🔔 Push Notifications</div>
             {[
-              ['🚨', 'Canes goal scored'],
+              ['🚨', `${TEAM_CONFIG.displayName} goal scored`],
               ['🏒', 'Game starts'],
-              ['🏆', 'Canes win'],
+              ['🏆', `${TEAM_CONFIG.displayName} win`],
               ['😤', 'Opponent penalty (PP!)'],
             ].map(([icon, label]) => (
               <div key={label} className="notif-event-row">
@@ -96,7 +118,7 @@ export default function NotificationBell() {
           {/* Period summaries section */}
           {hasSummaries && (
             <div className="notif-summaries-section">
-              <div className="notif-summaries-label">📋 Game Center</div>
+              <div className="notif-summaries-label">📋 Game Summaries</div>
               {summaries.map(s => (
                 <button
                   key={s.period}
@@ -108,7 +130,7 @@ export default function NotificationBell() {
                   </span>
                   <span className="notif-summary-chip-score">
                     {s.carGoals !== undefined
-                      ? `CAR ${s.carGoals}–${s.oppGoals}`
+                      ? `${TEAM_CONFIG.abbr} ${s.carGoals}–${s.oppGoals}`
                       : 'View summary'}
                   </span>
                   <span className="notif-summary-chip-arrow">›</span>
