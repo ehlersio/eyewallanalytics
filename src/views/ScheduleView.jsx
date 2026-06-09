@@ -5,7 +5,7 @@ import {
   getRegularSeasonGames, getPlayoffGames, getStandings,
   buildCarPlayoffSummary, formatGameDate, formatGameTime,
   getOpponent, isHomeGame, getCarScore, getOppScore,
-  TEAM_COLORS, getNhlOdds, findGameOdds,
+  TEAM_COLORS, getNhlOdds, findGameOdds, extractMoneyline, oddsToImplied,
 } from '../utils/nhlApi';
 import TeamLogo from '../components/TeamLogo';
 import { CalendarView } from '../components/CalendarView';

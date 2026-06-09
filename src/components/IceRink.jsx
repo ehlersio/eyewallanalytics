@@ -56,7 +56,7 @@ const OPP_SHOT_STYLE = {
 };
 
 // ─── Main component ───────────────────────────────────────────
-export default function IceRink({ events = [], roster = {}, hidePlayerFilter = false, readOnly = false }) {
+export default function IceRink({ events = [], roster = {}, hidePlayerFilter = false, readOnly = false, flipPerspective = false }) {
   const [halfRink,    setHalfRink]    = useState(false);
   const [period,      setPeriod]      = useState('all');
   const [viewMode,    setViewMode]    = useState('dots'); // 'dots' | 'heat'
@@ -118,11 +118,19 @@ export default function IceRink({ events = [], roster = {}, hidePlayerFilter = f
     return periodNum === 4 ? 'OT' : `OT${periodNum - 3}`;
   }
 
-  // Normalize event coords so CAR always attacks right (positive x)
+  // Normalize event coords so CAR always attacks right (positive x).
+  // When flipPerspective=true (e.g. PK mini-rink), OPP attacks right instead,
+  // so the half-rink shows the OPP offensive zone (CAR's defensive zone).
   function normalizeCoords(e) {
     let x = e.x, y = e.y;
-    if (e.isCanes  && x < 0) { x = -x; y = -y; }
-    if (!e.isCanes && x > 0) { x = -x; y = -y; }
+    if (!flipPerspective) {
+      if (e.isCanes  && x < 0) { x = -x; y = -y; }
+      if (!e.isCanes && x > 0) { x = -x; y = -y; }
+    } else {
+      // Flip: OPP attacks right, CAR attacks left
+      if (!e.isCanes && x < 0) { x = -x; y = -y; }
+      if (e.isCanes  && x > 0) { x = -x; y = -y; }
+    }
     return { x, y };
   }
 
@@ -395,13 +403,14 @@ export default function IceRink({ events = [], roster = {}, hidePlayerFilter = f
             transition: isPanning ? 'none' : 'transform 0.1s ease',
           }}
         >
-          <RinkMarkings showHalf={showHalf} />
+          <RinkMarkings showHalf={showHalf} flipPerspective={flipPerspective} />
           {viewMode === 'heat' && (
             <HeatmapLayer
               canesEvents={canesEvents}
               oppEvents={oppEvents}
               heatTeam={heatTeam}
               showHalf={showHalf}
+              flipPerspective={flipPerspective}
               W={W} H={H} CX={CX} CY={CY}
             />
           )}
@@ -441,7 +450,7 @@ export default function IceRink({ events = [], roster = {}, hidePlayerFilter = f
 // ─── Heatmap layer ───────────────────────────────────────────
 // Renders a kernel density estimation as a canvas-based image inside the SVG.
 // Uses a 2D Gaussian kernel. Works entirely in-browser, no extra libraries.
-function HeatmapLayer({ canesEvents, oppEvents, heatTeam, showHalf, W, H, CX, CY }) {
+function HeatmapLayer({ canesEvents, oppEvents, heatTeam, showHalf, flipPerspective = false, W, H, CX, CY }) {
   const dataUrl = useMemo(() => {
     // Pick which events to render
     let pts = [];
@@ -466,10 +475,15 @@ function HeatmapLayer({ canesEvents, oppEvents, heatTeam, showHalf, W, H, CX, CY
     const grid = new Float32Array(cw * ch);
 
     pts.forEach(({ x, y, isCanes }) => {
-      // Normalize coords: CAR always attacks right
+      // Normalize coords: respect flipPerspective same as normalizeCoords()
       let nx = x, ny = y;
-      if (isCanes  && nx < 0) { nx = -nx; ny = -ny; }
-      if (!isCanes && nx > 0) { nx = -nx; ny = -ny; }
+      if (!flipPerspective) {
+        if (isCanes  && nx < 0) { nx = -nx; ny = -ny; }
+        if (!isCanes && nx > 0) { nx = -nx; ny = -ny; }
+      } else {
+        if (!isCanes && nx < 0) { nx = -nx; ny = -ny; }
+        if (isCanes  && nx > 0) { nx = -nx; ny = -ny; }
+      }
       if (showHalf && nx < 0) return; // outside half-rink view
 
       // When showing half-rink, offset x from 0 (not CX) since canvas is W/2 wide
@@ -564,7 +578,7 @@ function HeatmapLayer({ canesEvents, oppEvents, heatTeam, showHalf, W, H, CX, CY
     blurCtx.drawImage(canvas, 0, 0);
 
     return blurCanvas.toDataURL('image/png');
-  }, [canesEvents, oppEvents, heatTeam, showHalf]);
+  }, [canesEvents, oppEvents, heatTeam, showHalf, flipPerspective]);
 
   if (!dataUrl) return null;
 
@@ -763,7 +777,7 @@ function ShotPopup({ event: e, playerNames, onClose }) {
 }
 
 // ─── Rink markings SVG ────────────────────────────────────────
-function RinkMarkings({ showHalf }) {
+function RinkMarkings({ showHalf, flipPerspective = false }) {
   return (
     <g>
             {/* ── Rink surface ── */}
@@ -821,7 +835,9 @@ function RinkMarkings({ showHalf }) {
         </>
       )}
       {showHalf && (
-        <text x={CX+10} y="18" fontSize="9" fill="#cc2200" opacity="0.8" fontFamily="sans-serif">CAR offensive zone</text>
+        <text x={CX+10} y="18" fontSize="9" fill={flipPerspective ? '#2255aa' : '#cc2200'} opacity="0.8" fontFamily="sans-serif">
+          {flipPerspective ? 'OPP offensive zone' : 'CAR offensive zone'}
+        </text>
       )}
     </g>
   );
