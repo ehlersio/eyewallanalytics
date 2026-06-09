@@ -1,6 +1,4 @@
 // cypress/e2e/navigation.cy.js
-// Verifies every route loads without crashing and the nav bar works.
-
 describe('Navigation', () => {
   beforeEach(() => {
     cy.visit('/')
@@ -10,14 +8,13 @@ describe('Navigation', () => {
   it('loads the home page (Shot Map)', () => {
     cy.url().should('include', '/')
     cy.get('.topbar').should('be.visible')
-    cy.contains('Carolina Hurricanes').should('exist')
+    cy.team().then(t => cy.contains(t.displayName).should('exist'))
   })
 
   it('bottom nav renders all 5 tabs', () => {
-    const tabs = ['Shot Map', 'Schedule', 'Players', 'Team', 'News']
-    tabs.forEach(tab => {
+    ['Shot Map', 'Schedule', 'Players', 'Team', 'News'].forEach(tab =>
       cy.contains(tab).should('exist')
-    })
+    )
   })
 
   it('navigates to Schedule', () => {
@@ -45,8 +42,7 @@ describe('Navigation', () => {
   })
 
   it('can navigate between all tabs without crashing', () => {
-    const routes = ['/schedule', '/players', '/team', '/news', '/']
-    routes.forEach(route => {
+    ['/schedule', '/players', '/team', '/news', '/'].forEach(route => {
       cy.visit(route)
       cy.get('.topbar', { timeout: 10000 }).should('exist')
       cy.get('body').should('not.contain', 'Something went wrong')

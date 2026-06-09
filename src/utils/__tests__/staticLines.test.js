@@ -1,13 +1,13 @@
-// src/utils/__tests__/carLines.test.js
+// src/utils/__tests__/staticLines.test.js
 // Unit tests for:
-//   - carLines.js  static line data shape and correctness
+//   - staticLines.js  static line data shape and correctness
 //   - supabaseClient.js  sortForwardLine + buildStaticPosMap (pure logic only)
 //
 // No network calls — all logic is extracted inline to mirror the
 // production implementation without importing the full module.
 
 import { describe, it, expect } from 'vitest'
-import { CAR_STATIC_LINES, getStaticLines } from '../carLines.js'
+import { CAR_STATIC_LINES, getStaticLines } from '../staticLines.js'
 
 // ── Pure helpers mirrored from supabaseClient.js ──────────────
 // Kept here so we can test the sort logic without Supabase imports.
@@ -91,19 +91,24 @@ describe('CAR_STATIC_LINES shape', () => {
 
 describe('getStaticLines', () => {
   it('returns regular season lines for gameType 2', () => {
-    const data = getStaticLines(2)
+    const data = getStaticLines('CAR', 2)
     expect(data).toBe(CAR_STATIC_LINES.regular)
   })
 
   it('returns regular season lines for gameType 3 when no playoff override', () => {
-    // playoff is null in carLines.js — falls back to regular
-    const data = getStaticLines(3)
+    // playoff is null in staticLines.js — falls back to regular
+    const data = getStaticLines('CAR', 3)
     expect(data).toBe(CAR_STATIC_LINES.regular)
   })
 
   it('defaults to regular season when no gameType passed', () => {
-    const data = getStaticLines()
+    const data = getStaticLines('CAR')
     expect(data).toBe(CAR_STATIC_LINES.regular)
+  })
+
+  it('returns null for a team with no static data', () => {
+    const data = getStaticLines('COL', 2)
+    expect(data).toBeNull()
   })
 })
 
@@ -261,7 +266,7 @@ describe('buildStaticPosMap', () => {
 
 // ── static lines are already in LW/C/RW order ────────────────
 
-describe('carLines.js static data — players already in LW/C/RW order', () => {
+describe('staticLines.js static data — players already in LW/C/RW order', () => {
   it('every forward line has LW first, C second, RW third', () => {
     const EXPECTED_ORDER = ['L', 'C', 'R']
     for (const line of CAR_STATIC_LINES.regular.lines) {

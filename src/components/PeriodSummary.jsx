@@ -222,12 +222,12 @@ function GoalCarousel({ goals, carAbbr }) {
 // ── Share canvas (1080×1080, off-screen) ─────────────────────
 // Shared stat definitions — used by both the popup grid and the share canvas
 // so they're always in sync
-function getPeriodStats(summary) {
+function getPeriodStats(summary, carAbbr) {
   return [
     { val: `${summary.corsiForPct}%`,  label: `${carAbbr} Corsi For%`,    color: corsiColor(summary.corsiForPct) },
     { val: `${summary.carSOG}–${summary.oppSOG}`, label: 'Shots on Goal' },
     { val: `${summary.fenwickForPct}%`, label: `${carAbbr} Fenwick For%`, color: corsiColor(summary.fenwickForPct) },
-    { val: summary.carHits,             label: 'CAR Hits' },
+    { val: summary.carHits,             label: `${carAbbr} Hits` },
     { val: summary.carFOPct != null ? `${summary.carFOPct}%` : '—', label: 'Faceoff Win%' },
     { val: `${summary.carHDCF ?? 0}–${summary.oppHDCF ?? 0}`, label: 'High Danger Chances',
       color: (summary.carHDCF ?? 0) > (summary.oppHDCF ?? 0) ? 'good' : (summary.carHDCF ?? 0) < (summary.oppHDCF ?? 0) ? 'bad' : '' },
@@ -238,7 +238,7 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef }) {
   const carIsHome = homeAbbr === carAbbr;
   const carScore = carIsHome ? summary.homeScore : summary.awayScore;
   const oppScore = carIsHome ? summary.awayScore : summary.homeScore;
-  const stats = getPeriodStats(summary);
+  const stats = getPeriodStats(summary, carAbbr);
   const logoUrl = (abbr) => `/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
   const dominatedBy = summary.corsiForPct >= 55 ? carAbbr : summary.corsiForPct <= 45 ? oppAbbr : null;
   const carPenalties = summary.penalties.filter(p => p.isCar).length;
@@ -599,7 +599,7 @@ export default function PeriodSummary({
 
           {/* Stat grid — same source as canvas for consistency */}
           <div className="ps-stat-grid">
-            {getPeriodStats(summary).map((s, i) => (
+            {getPeriodStats(summary, carAbbr).map((s, i) => (
               <div key={i} className="ps-stat-cell">
                 <div className={`ps-stat-val ${s.color || ''}`}>{s.val}</div>
                 <div className="ps-stat-label">{s.label}</div>

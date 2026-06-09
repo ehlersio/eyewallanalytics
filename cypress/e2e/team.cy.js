@@ -1,21 +1,23 @@
 // cypress/e2e/team.cy.js
-
 describe('Team view', () => {
   beforeEach(() => {
-    cy.visit('/team')
-    cy.contains('Carolina Hurricanes').should('be.visible')
+    cy.team().then(t => {
+      cy.visit('/team')
+      cy.contains(t.displayName).should('be.visible')
+    })
   })
 
-  // ── Tab navigation ─────────────────────────────────────────
-  it('renders all 5 tab buttons', () => {
-    const tabs = ['Overview', 'Advanced', 'Splits', 'Trends', 'Cap & Picks']
-    tabs.forEach(tab => cy.contains(tab).should('be.visible'))
+  it('renders all expected tab buttons', () => {
+    ['Overview', 'Advanced', 'Splits', 'Trends'].forEach(tab =>
+      cy.contains(tab).should('be.visible')
+    )
+    cy.team().then(t => {
+      if (t.abbr === 'CAR') cy.contains('Cap & Picks').should('be.visible')
+    })
   })
 
-  // ── Overview ───────────────────────────────────────────────
   describe('Overview tab', () => {
     it('shows season record', () => {
-      // Record should appear inside the overview section, not just anywhere on page
       cy.contains('Season stats').should('be.visible')
       cy.contains(/\d+–\d+–\d+/).should('be.visible')
     })
@@ -23,12 +25,8 @@ describe('Team view', () => {
     it('shows season stats with league ranks', () => {
       cy.contains('Season stats').should('be.visible')
       cy.contains(/Goals\/GP|GA\/GP|PP%|PK%/).should('be.visible')
-      // Rank badge must show a number followed by an ordinal suffix —
-      // guards against the r.rank bug where only "th" rendered with no number
       cy.get('.overview-stat-rank').first().then($el => {
-        const text = $el.text().trim()
-        // Should be e.g. "3rd", "12th", "1st" — number + suffix, not just "th"
-        expect(text).to.match(/^\d+(st|nd|rd|th)$/)
+        expect($el.text().trim()).to.match(/^\d+(st|nd|rd|th)$/)
       })
     })
 
@@ -41,7 +39,6 @@ describe('Team view', () => {
     })
   })
 
-  // ── Advanced ───────────────────────────────────────────────
   describe('Advanced tab', () => {
     beforeEach(() => cy.contains('Advanced').click())
 
@@ -71,7 +68,6 @@ describe('Team view', () => {
     })
   })
 
-  // ── Splits ─────────────────────────────────────────────────
   describe('Splits tab', () => {
     beforeEach(() => cy.contains('Splits').click())
 
@@ -84,11 +80,8 @@ describe('Team view', () => {
     })
   })
 
-  // ── Trends ─────────────────────────────────────────────────
   describe('Trends tab', () => {
-    beforeEach(() => {
-      cy.contains('Trends').click()
-    })
+    beforeEach(() => cy.contains('Trends').click())
 
     it('renders quick stats cards', () => {
       cy.contains(/Current streak|W\d|L\d/i, { timeout: 8000 }).should('exist')
@@ -109,33 +102,42 @@ describe('Team view', () => {
       cy.contains(/Goal differential/i, { timeout: 8000 }).should('exist')
     })
 
-    it('renders score-first rate chart when data available', () => {
+    it('renders score-first rate chart', () => {
       cy.contains(/Score.first rate/i, { timeout: 12000 }).should('exist')
     })
   })
 
-  // ── Cap & Picks ────────────────────────────────────────────
   describe('Cap & Picks tab', () => {
-    beforeEach(() => cy.contains('Cap & Picks').click())
+    beforeEach(() => {
+      cy.team().then(t => {
+        if (t.abbr !== 'CAR') return
+        cy.contains('Cap & Picks').click()
+      })
+    })
 
     it('renders salary cap bar', () => {
-      cy.contains(/cap/i, { timeout: 8000 }).should('exist')
-      cy.contains(/\$\d+M|\d+M/).should('exist')
+      cy.team().then(t => {
+        if (t.abbr !== 'CAR') return
+        cy.contains(/cap/i, { timeout: 8000 }).should('exist')
+        cy.contains(/\$\d+M|\d+M/).should('exist')
+      })
     })
 
     it('renders contract table with player names', () => {
-      // Check table structure — salary format and UFA/RFA status
-      // Using Aho as a known long-term CAR contract anchor
-      cy.contains('Aho', { timeout: 8000 }).should('exist')
-      cy.contains(/UFA|RFA/).should('exist')
-      // Salary values should be present in $X.XM format
-      cy.contains(/\$\d+\.\d+M/).should('exist')
+      cy.team().then(t => {
+        if (t.abbr !== 'CAR') return
+        cy.contains(t.skater, { timeout: 8000 }).should('exist')
+        cy.contains(/UFA|RFA/).should('exist')
+        cy.contains(/\$\d+\.\d+M/).should('exist')
+      })
     })
 
     it('renders draft picks section', () => {
-      // Label may say "Future Draft Picks Owned" or "Draft Picks"
-      cy.contains(/Draft Picks/i, { timeout: 8000 }).should('exist')
-      cy.contains(/1st|2nd|3rd/).should('exist')
+      cy.team().then(t => {
+        if (t.abbr !== 'CAR') return
+        cy.contains(/Draft Picks/i, { timeout: 8000 }).should('exist')
+        cy.contains(/1st|2nd|3rd/).should('exist')
+      })
     })
   })
 })

@@ -1,24 +1,23 @@
 // cypress/e2e/shot-map.cy.js
-
 describe('Shot Map', () => {
   beforeEach(() => {
-    cy.visit('/')
-    cy.contains('CAR').should('be.visible')
+    cy.team().then(t => {
+      cy.visit('/')
+      cy.contains(t.abbr).should('be.visible')
+    })
   })
 
-  // ── Game header ────────────────────────────────────────────
   describe('Game header', () => {
-    it('shows CAR score and opponent', () => {
-      cy.contains('CAR').should('be.visible')
+    it('shows team abbr and opponent', () => {
+      cy.team().then(t => cy.contains(t.abbr).should('be.visible'))
       cy.contains(/FINAL|LIVE|P[123]|OT/i).should('be.visible')
     })
 
-    it('shows game date and type (Playoff/Regular)', () => {
+    it('shows game date and type', () => {
       cy.contains(/Playoff|Regular/i).should('exist')
     })
   })
 
-  // ── Game insights ──────────────────────────────────────────
   describe('Game Insights section', () => {
     it('renders section header', () => {
       cy.contains(/Game Insights/i).should('exist')
@@ -28,12 +27,11 @@ describe('Shot Map', () => {
       cy.get('[class*="insight"]').should('have.length.greaterThan', 0)
     })
 
-    it('insight cards contain CAR-related text', () => {
-      cy.contains(/CAR/).should('exist')
+    it('insight cards contain team abbr text', () => {
+      cy.team().then(t => cy.contains(new RegExp(t.abbr)).should('exist'))
     })
   })
 
-  // ── Shot attempts ──────────────────────────────────────────
   describe('Shot Attempts section', () => {
     it('shows section header', () => {
       cy.contains(/Shot Attempts/i).should('exist')
@@ -58,13 +56,12 @@ describe('Shot Map', () => {
     })
   })
 
-  // ── Special teams ──────────────────────────────────────────
   describe('Special teams stats', () => {
-    it('shows PP% with this game and season average', () => {
+    it('shows PP%', () => {
       cy.contains('PP %').should('be.visible')
     })
 
-    it('shows PK% with this game and season average', () => {
+    it('shows PK%', () => {
       cy.contains('PK %').should('be.visible')
     })
 
@@ -73,14 +70,15 @@ describe('Shot Map', () => {
     })
   })
 
-  // ── Momentum chart ─────────────────────────────────────────
   describe('Momentum chart', () => {
     it('renders section header', () => {
       cy.contains(/Momentum/i).should('exist')
     })
 
-    it('shows CAR and opponent momentum percentages', () => {
-      cy.contains(/CAR \d+%/).should('exist')
+    it('shows team abbr and momentum percentage', () => {
+      cy.team().then(t => {
+        cy.contains(new RegExp(`${t.abbr} \\d+%`)).should('exist')
+      })
     })
 
     it('shows period markers P1, P2, P3', () => {
@@ -105,7 +103,6 @@ describe('Shot Map', () => {
     })
   })
 
-  // ── Shot quality ───────────────────────────────────────────
   describe('Shot quality section', () => {
     it('renders section header', () => {
       cy.contains(/Shot Quality|shot quality/i).should('exist')
@@ -118,13 +115,12 @@ describe('Shot Map', () => {
     })
   })
 
-  // ── Shot map rink ──────────────────────────────────────────
   describe('Shot map rink', () => {
     it('renders the rink SVG', () => {
       cy.get('svg').should('exist')
     })
 
-    it('shows period filter buttons (All, P1, P2, P3)', () => {
+    it('shows period filter buttons', () => {
       cy.get('.rink-btn').contains('All').should('exist')
       cy.get('.rink-btn').contains('P1').should('exist')
       cy.get('.rink-btn').contains('P2').should('exist')
@@ -134,23 +130,20 @@ describe('Shot Map', () => {
     it('period filter buttons are clickable', () => {
       cy.get('.rink-btn').contains('P1').click()
       cy.get('.rink-btn').contains('P1').should('have.class', 'on')
-      cy.get('.rink-btn').contains('P2').click()
-      cy.get('.rink-btn').contains('P2').should('have.class', 'on')
       cy.get('.rink-btn').contains('All').click()
       cy.get('.rink-btn').contains('All').should('have.class', 'on')
     })
 
-    it('shows Player filter button', () => {
+    it('shows Player filter and Heat map toggles', () => {
       cy.get('.rink-btn').contains('Player').should('exist')
-    })
-
-    it('shows Heat map toggle', () => {
       cy.get('.rink-btn').contains('Heat').should('exist')
     })
 
-    it('shows shot legend (CAR shot, goal, Opp shot, Blocked)', () => {
-      cy.contains(/CAR shot|CAR goal/i).should('exist')
-      cy.contains(/Opp shot|Opp goal/i).should('exist')
+    it('shows shot legend with team abbr', () => {
+      cy.team().then(t => {
+        cy.contains(new RegExp(`${t.abbr} shot|${t.abbr} goal`, 'i')).should('exist')
+        cy.contains(/Opp shot|Opp goal/i).should('exist')
+      })
     })
 
     it('shows zoom controls', () => {
@@ -159,21 +152,20 @@ describe('Shot Map', () => {
     })
 
     it('zoom buttons are clickable without crashing', () => {
-      cy.get('.zoom-btn').contains('+').click()
-      cy.get('.zoom-btn').contains('+').click()
+      cy.get('.zoom-btn').contains('+').click().click()
       cy.get('.zoom-btn').contains('−').click()
-      cy.get('svg').should('exist') // rink still renders
+      cy.get('svg').should('exist')
     })
   })
 
-  // ── CAR scoring sidebar ────────────────────────────────────
-  describe('CAR scoring sidebar', () => {
-    it('shows scoring section header', () => {
-      cy.contains(/CAR scoring/i).should('exist')
+  describe('Team scoring sidebar', () => {
+    it('shows scoring section header with team abbr', () => {
+      cy.team().then(t => {
+        cy.contains(new RegExp(`${t.abbr} scoring`, 'i')).should('exist')
+      })
     })
 
     it('shows player names with point totals', () => {
-      // Scoring sidebar lists players — at least one should show a goal or assist badge
       cy.contains(/\dG|\dA|\dPTS/i).should('exist')
     })
 

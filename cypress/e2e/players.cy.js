@@ -1,12 +1,10 @@
 // cypress/e2e/players.cy.js
-
 describe('Players view', () => {
   beforeEach(() => {
     cy.visit('/players')
     cy.contains('Forwards', { timeout: 8000 }).should('exist')
   })
 
-  // ── Roster ─────────────────────────────────────────────────
   describe('Roster tab', () => {
     it('renders the roster grid with forwards', () => {
       cy.contains('Forwards').should('exist')
@@ -21,21 +19,24 @@ describe('Players view', () => {
       cy.contains('Goalies').should('exist')
     })
 
-    it('renders known CAR players', () => {
-      cy.contains('Aho').should('exist')
-      cy.contains('Andersen').should('exist')
+    it('renders known team players', () => {
+      cy.team().then(t => {
+        cy.contains(t.skater).should('exist')
+        cy.contains(t.goalie).should('exist')
+      })
     })
   })
 
-  // ── Skater card ────────────────────────────────────────────
-  describe('Skater card (Aho)', () => {
+  describe('Skater card', () => {
     beforeEach(() => {
-      cy.contains('Aho').first().click()
-      cy.contains(/Cap Hit|AAV/i, { timeout: 8000 }).should('exist')
+      cy.team().then(t => {
+        cy.contains(t.skater).first().click()
+        cy.contains(/Cap Hit|AAV/i, { timeout: 8000 }).should('exist')
+      })
     })
 
     it('shows player name and position', () => {
-      cy.contains('Aho').should('exist')
+      cy.team().then(t => cy.contains(t.skater).should('exist'))
       cy.contains(/Centre|Forward|C|LW|RW/i).should('exist')
     })
 
@@ -72,7 +73,7 @@ describe('Players view', () => {
       cy.contains('TOI').should('exist')
     })
 
-    it('Stats tab shows defensive stats for regular season', () => {
+    it('Stats tab shows defensive stats', () => {
       cy.contains('Defensive', { timeout: 8000 }).should('exist')
       cy.contains(/Hits|Blocks|TK|GV/).should('exist')
     })
@@ -105,17 +106,17 @@ describe('Players view', () => {
     })
 
     it('closes when X is clicked', () => {
-      cy.get('button[aria-label="Close"], [class*="pp-close"]')
-        .first().click({ force: true })
+      cy.get('button[aria-label="Close"], [class*="pp-close"]').first().click({ force: true })
       cy.contains('Forwards', { timeout: 6000 }).should('exist')
     })
   })
 
-  // ── Goalie card ────────────────────────────────────────────
-  describe('Goalie card (Andersen)', () => {
+  describe('Goalie card', () => {
     beforeEach(() => {
-      cy.contains('Andersen').first().click()
-      cy.contains(/Cap Hit|AAV/i, { timeout: 8000 }).should('exist')
+      cy.team().then(t => {
+        cy.contains(t.goalie).first().click()
+        cy.contains(/Cap Hit|AAV/i, { timeout: 8000 }).should('exist')
+      })
     })
 
     it('shows Goalie position badge', () => {
@@ -133,14 +134,14 @@ describe('Players view', () => {
       cy.contains('League').should('exist')
     })
 
-    it('Stats tab shows Record group (GP, W, L, GS)', () => {
+    it('Stats tab shows Record group', () => {
       cy.contains('GP').should('exist')
       cy.contains(/^W$/).should('exist')
       cy.contains(/^L$/).should('exist')
       cy.contains('GS').should('exist')
     })
 
-    it('Stats tab shows Performance group (SV%, GAA, QS%)', () => {
+    it('Stats tab shows Performance group', () => {
       cy.contains('SV%').should('exist')
       cy.contains('GAA').should('exist')
       cy.contains(/QS%|OS%/i).should('exist')
@@ -148,11 +149,8 @@ describe('Players view', () => {
 
     it('Analytics tab shows GSAX and goalie-specific metrics', () => {
       cy.get('.pp-tab').contains('Analytics').click()
-      // GSAX is the primary goalie analytics metric (Goals Saved Above Expected)
       cy.contains('GSAX', { timeout: 10000 }).should('exist')
-      // Save percentage breakdowns
       cy.contains(/5on5 SV%|HD SV%/i).should('exist')
-      // Percentile rankings
       cy.contains(/Percentile/i).should('exist')
     })
 
@@ -166,18 +164,17 @@ describe('Players view', () => {
     })
   })
 
-  // ── Stats table ────────────────────────────────────────────
   describe('Stats table', () => {
     it('renders the Stats table tab', () => {
       cy.contains('Stats').click()
-      cy.contains('Aho').should('exist')
+      cy.team().then(t => cy.contains(t.skater).should('exist'))
       cy.contains('GP').should('exist')
     })
 
     it('stats table has sortable columns', () => {
       cy.contains('Stats').click()
       cy.contains('G').click()
-      cy.contains('Aho').should('exist')
+      cy.team().then(t => cy.contains(t.skater).should('exist'))
     })
 
     it('can toggle between regular season and playoffs', () => {

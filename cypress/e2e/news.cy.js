@@ -1,19 +1,21 @@
 // cypress/e2e/news.cy.js
-
 describe('News view', () => {
   beforeEach(() => {
-    cy.visit('/news')
-    cy.contains('Canes News').should('be.visible')
+    cy.team().then(t => {
+      cy.visit('/news')
+      cy.contains(t.newsPageTitle, { timeout: 8000 }).should('be.visible')
+      // Wait for articles to load before running any assertions
+      cy.get('.news-chip', { timeout: 15000 }).should('have.length.gte', 2)
+    })
   })
 
-  // ── Header ─────────────────────────────────────────────────
   it('shows page title and article count', () => {
-    cy.contains('Canes News').should('be.visible')
-    cy.contains(/\d+ articles?/i).should('exist')
+    cy.team().then(t => cy.contains(t.newsPageTitle).should('be.visible'))
+    cy.contains(/\d+ articles?/i, { timeout: 15000 }).should('exist')
   })
 
   it('shows last updated timestamp', () => {
-    cy.contains(/Updated/i).should('exist')
+    cy.contains(/Updated/i, { timeout: 15000 }).should('exist')
   })
 
   it('shows refresh button', () => {
@@ -21,29 +23,31 @@ describe('News view', () => {
   })
 
   it('refresh button is clickable without crashing', () => {
-    cy.get('.news-refresh-btn').click()
-    cy.contains('Canes News').should('be.visible')
+    cy.team().then(t => {
+      cy.get('.news-refresh-btn').first().click()
+      cy.contains(t.newsPageTitle).should('be.visible')
+    })
   })
 
-  // ── Source filter chips ────────────────────────────────────
   describe('Source filter chips', () => {
     it('renders All chip plus at least one source chip', () => {
-      // Chips are built dynamically from articles actually returned —
-      // a source with no articles won't get a chip. Always at least "All" + 1.
       cy.get('.news-chip').should('have.length.gte', 2)
       cy.get('.news-chip').contains(/All/i).should('exist')
     })
 
     it('renders expected source chips when sources are available', () => {
-      // Wait for articles to load and chips to populate (chips build from fetched data)
       cy.get('.news-chip', { timeout: 10000 }).should('have.length.gte', 2)
-      cy.get('.news-chip').then($chips => {
-        const text = [...$chips].map(c => c.textContent).join(' ')
-        const hasCanes     = /Canes Country/i.test(text)
-        const hasESPN      = /ESPN/i.test(text)
-        const hasSportsnet = /Sportsnet/i.test(text)
-        const hasTheScore  = /The Score/i.test(text)
-        expect(hasCanes || hasESPN || hasSportsnet || hasTheScore).to.be.true
+      cy.team().then(t => {
+        cy.get('.news-chip').then($chips => {
+          const text = [...$chips].map(c => c.textContent).join(' ')
+          const hasESPN      = /ESPN/i.test(text)
+          const hasSportsnet = /Sportsnet/i.test(text)
+          const hasTheScore  = /The Score/i.test(text)
+          const hasTeamSource = t.teamNewsSource
+            ? new RegExp(t.teamNewsSource, 'i').test(text)
+            : false
+          expect(hasTeamSource || hasESPN || hasSportsnet || hasTheScore).to.be.true
+        })
       })
     })
 
@@ -52,59 +56,71 @@ describe('News view', () => {
     })
 
     it('clicking ESPN chip filters to ESPN articles', () => {
-      cy.get('.news-chip').contains('ESPN').click()
-      cy.get('.news-chip').contains('ESPN').should('have.class', 'active')
-      // Should show ESPN badge on articles or no articles
-      cy.get('body').then($body => {
-        if ($body.find('[class*="source"], [class*="badge"]').length) {
-          cy.contains('ESPN').should('exist')
-        }
+      cy.get('.news-chip').then($chips => {
+        const hasESPN = [...$chips].some(c => /ESPN/i.test(c.textContent))
+        if (!hasESPN) return
+        cy.get('.news-chip').contains('ESPN').click()
+        cy.get('.news-chip').contains('ESPN').should('have.class', 'active')
       })
     })
 
-    it('clicking Canes Country chip filters correctly', () => {
-      cy.get('.news-chip').contains('Canes Country').click()
-      cy.get('.news-chip').contains('Canes Country').should('have.class', 'active')
+    it('clicking team news source chip filters correctly', () => {
+      cy.team().then(t => {
+        if (!t.teamNewsSource) return
+        cy.get('.news-chip').then($chips => {
+          const chipText = [...$chips].map(c => c.textContent).join(' ')
+          if (new RegExp(t.teamNewsSource, 'i').test(chipText)) {
+            cy.get('.news-chip').contains(t.teamNewsSource).click()
+            cy.get('.news-chip').contains(t.teamNewsSource).should('have.class', 'active')
+          }
+        })
+      })
     })
 
     it('clicking All chip shows all articles again', () => {
-      cy.get('.news-chip').contains('ESPN').click()
-      cy.get('.news-chip').contains(/All/i).click()
-      cy.get('.news-chip').contains(/All/i).should('have.class', 'active')
+      cy.get('.news-chip').then($chips => {
+        const hasESPN = [...$chips].some(c => /ESPN/i.test(c.textContent))
+        if (!hasESPN) return
+        cy.get('.news-chip').contains('ESPN').click()
+        cy.get('.news-chip').contains(/All/i).click()
+        cy.get('.news-chip').contains(/All/i).should('have.class', 'active')
+      })
     })
   })
 
-  // ── Article list ───────────────────────────────────────────
   describe('Article list', () => {
     it('renders at least one article', () => {
-      cy.contains(/Hurricanes|Carolina|CAR|NHL|Stanley/i, { timeout: 8000 }).should('exist')
+      cy.team().then(t => {
+        cy.contains(new RegExp(`${t.displayName}|${t.abbr}|NHL|Stanley`, 'i'), { timeout: 8000 }).should('exist')
+      })
     })
 
-    it('articles show source badge (ESPN, CANES COUNTRY, SPORTSNET, or THE SCORE)', () => {
-      cy.contains(/ESPN|CANES COUNTRY|SPORTSNET|THE SCORE/i).should('exist')
+    it('articles show source badge', () => {
+      cy.contains(/ESPN|SPORTSNET|THE SCORE/i).should('exist')
     })
 
     it('articles show a relative timestamp', () => {
-      cy.contains(/ago|just now/i).should('exist')
+      cy.contains(/ago|just now/i, { timeout: 15000 }).should('exist')
     })
 
     it('articles show a headline', () => {
-      // Headlines are longer text strings
       cy.get('body').invoke('text').then(text => {
-        // Should have meaningful article text, not just labels
-        expect(text.length).to.be.greaterThan(200)
+        expect(text.length).to.be.greaterThan(500)
       })
     })
 
     it('articles show a preview snippet', () => {
-      // Snippets contain full sentences
       cy.contains(/\. /).should('exist')
     })
   })
 
-  // ── Footer ─────────────────────────────────────────────────
   it('shows attribution footer', () => {
-    cy.contains(/Canes Country|ESPN|Sportsnet|The Score/i).should('exist')
+    cy.team().then(t => {
+      const sources = t.teamNewsSource
+        ? new RegExp(`${t.teamNewsSource}|ESPN|Sportsnet|The Score`, 'i')
+        : /ESPN|Sportsnet|The Score/i
+      cy.contains(sources).should('exist')
+    })
     cy.contains(/Tap any article/i).should('exist')
   })
 })

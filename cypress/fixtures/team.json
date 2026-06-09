@@ -1,0 +1,14 @@
+{
+  "abbr": "CAR",
+  "displayName": "Carolina Hurricanes",
+  "division": "Metropolitan",
+  "newsPageTitle": "Carolina Hurricanes",
+  "teamNewsSource": "Canes Country",
+  "line1": {
+    "players": ["Svechnikov", "Aho", "Jarvis"],
+    "positions": ["LW", "C", "RW"]
+  },
+  "defence1": "Slavin",
+  "skater": "Aho",
+  "goalie": "Andersen"
+}

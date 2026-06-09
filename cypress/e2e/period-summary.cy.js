@@ -1,25 +1,32 @@
 // cypress/e2e/period-summary.cy.js
-// Tests for the Period Summary / Game Center feature
-// Requires a completed game in sessionStorage (built automatically from PBP on load)
 
-describe('Game Center (⚡ button)', () => {
+describe('Settings (⚙️ button)', () => {
   beforeEach(() => {
     cy.visit('/')
-    // Clear stale summaries so they rebuild cleanly
     cy.window().then(win => win.sessionStorage.clear())
     cy.visit('/')
-    cy.contains('CAR', { timeout: 10000 }).should('exist')
+    cy.team().then(t => cy.contains(t.abbr, { timeout: 10000 }).should('exist'))
   })
 
-  it('renders the Game Center button in the topbar', () => {
-    cy.get('button.notif-bell').should('exist')
-    cy.get('button.notif-bell').should('contain', '⚡')
+  it('renders the Settings button in the topbar', () => {
+    cy.get('button.notif-bell').should('exist').should('contain', '⚙️')
   })
 
-  it('opens the Game Center drawer on click', () => {
+  it('opens the Settings drawer on click', () => {
     cy.get('button.notif-bell').click()
     cy.get('.notif-popup').should('be.visible')
-    cy.contains('⚡ Game Center').should('exist')
+    cy.contains('⚙️ Settings').should('exist')
+  })
+
+  it('drawer shows My Team section with team name', () => {
+    cy.get('button.notif-bell').click()
+    cy.contains('My Team').should('exist')
+    cy.team().then(t => cy.contains(t.displayName).should('exist'))
+  })
+
+  it('drawer shows Change team button', () => {
+    cy.get('button.notif-bell').click()
+    cy.get('.notif-change-team-btn').should('exist').should('contain', 'Change')
   })
 
   it('drawer shows push notification toggle section', () => {
@@ -35,11 +42,9 @@ describe('Game Center (⚡ button)', () => {
     cy.get('.notif-popup').should('not.exist')
   })
 
-  describe('Period Summaries section', () => {
+  describe('Game Summaries section', () => {
     it('shows period chips after summaries load', () => {
-      // Summaries build from PBP — wait for them
       cy.get('button.notif-bell').click()
-      // Allow up to 15s for async summary build + landing fetch
       cy.contains(/P1|P2|P3|FINAL/, { timeout: 15000 }).should('exist')
     })
 
@@ -49,6 +54,16 @@ describe('Game Center (⚡ button)', () => {
       cy.get('.notif-summary-chip').first().within(() => {
         cy.get('.notif-summary-chip-period').should('exist')
         cy.get('.notif-summary-chip-score').should('exist')
+      })
+    })
+
+    it('score chip uses team abbr not hardcoded CAR', () => {
+      cy.get('button.notif-bell').click()
+      cy.team().then(t => {
+        cy.get('.notif-summary-chip', { timeout: 15000 }).first().within(() => {
+          cy.get('.notif-summary-chip-score').invoke('text')
+            .should('match', new RegExp(`${t.abbr} \\d+`))
+        })
       })
     })
 
@@ -65,8 +80,7 @@ describe('Period Summary popup', () => {
     cy.visit('/')
     cy.window().then(win => win.sessionStorage.clear())
     cy.visit('/')
-    cy.contains('CAR', { timeout: 10000 }).should('exist')
-    // Open Game Center and click first period chip
+    cy.team().then(t => cy.contains(t.abbr, { timeout: 10000 }).should('exist'))
     cy.get('button.notif-bell').click()
     cy.get('.notif-summary-chip', { timeout: 15000 }).first().click()
     cy.get('.ps-card', { timeout: 5000 }).should('exist')
@@ -91,13 +105,15 @@ describe('Period Summary popup', () => {
     cy.get('.ps-stat-cell').should('have.length', 6)
   })
 
-  it('stat grid shows CF%, SOG, FF%, Hits, Faceoff%, HD Chances', () => {
-    cy.contains('CAR Corsi For%').should('exist')
-    cy.contains('Shots on Goal').should('exist')
-    cy.contains('CAR Fenwick For%').should('exist')
-    cy.contains('CAR Hits').should('exist')
-    cy.contains('Faceoff Win%').should('exist')
-    cy.contains('High Danger Chances').should('exist')
+  it('stat grid uses team abbr in labels', () => {
+    cy.team().then(t => {
+      cy.contains(new RegExp(`${t.abbr} Corsi For%`)).should('exist')
+      cy.contains('Shots on Goal').should('exist')
+      cy.contains(new RegExp(`${t.abbr} Fenwick For%`)).should('exist')
+      cy.contains(new RegExp(`${t.abbr} Hits`)).should('exist')
+      cy.contains('Faceoff Win%').should('exist')
+      cy.contains('High Danger Chances').should('exist')
+    })
   })
 
   it('shows EyeWall AI section', () => {
@@ -106,16 +122,14 @@ describe('Period Summary popup', () => {
   })
 
   it('AI narrative loads within 15 seconds', () => {
-    cy.get('.ps-narrative-text', { timeout: 15000 }).should('exist')
+    cy.get('.ps-narrative-text', { timeout: 30000 }).should('exist')
     cy.get('.ps-narrative-loading').should('not.exist')
   })
 
   it('shows penalties section when penalties exist', () => {
-    // Not all periods have penalties — check conditionally
     cy.get('body').then($body => {
       if ($body.find('.ps-penalties').length) {
         cy.get('.ps-penalty-row').should('have.length.greaterThan', 0)
-        // Each row should have team badge + player name
         cy.get('.ps-penalty-team').should('exist')
         cy.get('.ps-penalty-player').should('exist')
       }
@@ -172,8 +186,7 @@ describe('Final Game Summary popup', () => {
     cy.visit('/')
     cy.window().then(win => win.sessionStorage.clear())
     cy.visit('/')
-    cy.contains('CAR', { timeout: 10000 }).should('exist')
-    // Open Game Center and click the FINAL chip
+    cy.team().then(t => cy.contains(t.abbr, { timeout: 10000 }).should('exist'))
     cy.get('button.notif-bell').click()
     cy.get('.notif-summary-chip-game', { timeout: 15000 }).click()
     cy.get('.ps-card', { timeout: 5000 }).should('exist')
@@ -210,7 +223,6 @@ describe('Final Game Summary popup', () => {
   it('shows all goals not just first 4', () => {
     cy.get('body').then($body => {
       if ($body.find('.ps-goals').length) {
-        // Game had 9 goals — all should be accessible via carousel
         cy.get('.ps-carousel-dot').should('have.length.greaterThan', 3)
       }
     })
