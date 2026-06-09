@@ -15,13 +15,21 @@ describe('Team view', () => {
   // ── Overview ───────────────────────────────────────────────
   describe('Overview tab', () => {
     it('shows season record', () => {
+      // Record should appear inside the overview section, not just anywhere on page
+      cy.contains('Season stats').should('be.visible')
       cy.contains(/\d+–\d+–\d+/).should('be.visible')
     })
 
     it('shows season stats with league ranks', () => {
       cy.contains('Season stats').should('be.visible')
       cy.contains(/Goals\/GP|GA\/GP|PP%|PK%/).should('be.visible')
-      cy.contains(/st|nd|rd|th/).should('be.visible')
+      // Rank badge must show a number followed by an ordinal suffix —
+      // guards against the r.rank bug where only "th" rendered with no number
+      cy.get('.overview-stat-rank').first().then($el => {
+        const text = $el.text().trim()
+        // Should be e.g. "3rd", "12th", "1st" — number + suffix, not just "th"
+        expect(text).to.match(/^\d+(st|nd|rd|th)$/)
+      })
     })
 
     it('shows playoff bracket when in playoffs', () => {
@@ -79,14 +87,6 @@ describe('Team view', () => {
   // ── Trends ─────────────────────────────────────────────────
   describe('Trends tab', () => {
     beforeEach(() => {
-      // Suppress the "Rendered more hooks than during previous render" React error
-      // This is a known issue with TrendsTab's useMemo when navigating between tabs —
-      // tracked separately. Tests still verify correct rendering when it works.
-      cy.on('uncaught:exception', (err) => {
-        if (err.message.includes('more hooks than during the previous render')) {
-          return false
-        }
-      })
       cy.contains('Trends').click()
     })
 
@@ -124,8 +124,12 @@ describe('Team view', () => {
     })
 
     it('renders contract table with player names', () => {
+      // Check table structure — salary format and UFA/RFA status
+      // Using Aho as a known long-term CAR contract anchor
       cy.contains('Aho', { timeout: 8000 }).should('exist')
       cy.contains(/UFA|RFA/).should('exist')
+      // Salary values should be present in $X.XM format
+      cy.contains(/\$\d+\.\d+M/).should('exist')
     })
 
     it('renders draft picks section', () => {

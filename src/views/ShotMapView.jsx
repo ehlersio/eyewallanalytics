@@ -1293,6 +1293,7 @@ export default function ShotMapView() {
           isLive={isLive}
           debugInsight={debugInsight}
           gameLogInsights={gameLogInsights}
+          isPlayoff={inPlayoffs}
         />
       )}
 
@@ -1623,7 +1624,7 @@ export default function ShotMapView() {
         </div>
       </div>
     </div>
-    {drillStat     && <StatDrillPopup drillStat={drillStat} onClose={() => setDrillStat(null)} oppAbbr={oppAbbr} />}
+    {drillStat     && <StatDrillPopup drillStat={drillStat} onClose={() => setDrillStat(null)} oppAbbr={oppAbbr} isPlayoff={inPlayoffs} />}
     {puckDropPopup && <PuckDropPopup data={puckDropPopup}  onClose={clearPuckDropPopup} />}
     {goalPopup     && <GoalPopup    data={goalPopup}       onClose={clearGoalPopup}    />}
     {penaltyPopup  && <PenaltyPopup data={penaltyPopup}    onClose={clearPenaltyPopup} />}
@@ -1906,10 +1907,9 @@ function EventLog({ plays, playerMap = {} }) {
 
 
 // ── Stat Drill-Down Popup ───────────────────────────────────
-function StatDrillPopup({ drillStat, onClose, oppAbbr }) {
+function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
   const [tab, setTab] = useState('car');
   if (!drillStat) return null;
-  const periods = ['P1', 'P2', 'P3', 'OT'];
 
   // Support both old shape (rows) and new shape (carRows/oppRows)
   const carRows = drillStat.carRows ?? drillStat.rows ?? [];
@@ -1917,6 +1917,36 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr }) {
   const hasOpp  = oppRows.length > 0 || drillStat.oppRows !== undefined;
   const rows    = tab === 'car' ? carRows : oppRows;
   const teamLabel = tab === 'car' ? 'CAR' : (oppAbbr || 'OPP');
+
+  // Derive periods dynamically from actual data so OT2, OT3, SO etc. all appear.
+  // Collect every period key that appears in any row, sort numerically by period number.
+  const periodLabel = n => {
+    if (!n) return n;
+    const num = parseInt(n.replace(/[^0-9]/g, ''), 10);
+    if (isNaN(num) || num <= 3) return n; // already labelled P1/P2/P3
+    if (isPlayoff) return num === 4 ? 'OT' : `${num - 3}OT`;
+    return num === 4 ? 'OT' : 'SO';
+  };
+
+  // Map a period label back to a sortable number
+  // P1→1, P2→2, P3→3, OT→4, SO→5, 2OT→5, 3OT→6 etc.
+  function periodSortKey(label) {
+    if (!label) return 99;
+    if (label === 'SO') return 5;
+    if (label === 'OT') return 4;
+    const m = label.match(/^(\d+)OT$/);
+    if (m) return 3 + parseInt(m[1], 10);
+    const digits = parseInt(label.replace(/[^0-9]/g, ''), 10);
+    return isNaN(digits) ? 99 : digits;
+  }
+
+  const allPeriodKeys = [...new Set(
+    [...carRows, ...oppRows].flatMap(r => Object.keys(r.periods || {}))
+  )].sort((a, b) => periodSortKey(a) - periodSortKey(b));
+  // Fall back to standard periods if no data yet
+  const periods = allPeriodKeys.length > 0
+    ? allPeriodKeys
+    : ['P1', 'P2', 'P3'];
 
   // Period totals for shots/hits type
   const periodTotals = periods.reduce((acc, p) => {
@@ -1987,11 +2017,17 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr }) {
 
           {(drillStat.type === 'shots') && (
             <div className="drill-table">
-              <div className="drill-col-header shots">
-                <span>Player</span><span>P1</span><span>P2</span><span>P3</span><span>OT</span><span>Total</span>
+              <div
+                className="drill-col-header shots"
+                style={{ gridTemplateColumns: `1fr ${periods.map(() => '34px').join(' ')} 42px` }}
+              >
+                <span>Player</span>
+                {periods.map(p => <span key={p}>{periodLabel(p)}</span>)}
+                <span>Total</span>
               </div>
               {rows.map((r, i) => (
-                <div key={i} className="drill-row-grid shots">
+                <div key={i} className="drill-row-grid shots"
+                  style={{ gridTemplateColumns: `1fr ${periods.map(() => '34px').join(' ')} 42px` }}>
                   <span className="drill-name">{r.name}</span>
                   {periods.map(p => (
                     <span key={p} className={`drill-val ${r.periods[p] ? '' : 'dim'}`}>
@@ -2003,7 +2039,8 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr }) {
               ))}
               {/* Period totals row */}
               {grandTotal > 0 && (
-                <div className="drill-row-grid shots drill-totals-row">
+                <div className="drill-row-grid shots drill-totals-row"
+                  style={{ gridTemplateColumns: `1fr ${periods.map(() => '34px').join(' ')} 42px` }}>
                   <span className="drill-name drill-totals-label">Total</span>
                   {periods.map(p => (
                     <span key={p} className={`drill-val total ${periodTotals[p] ? '' : 'dim'}`}>
@@ -2051,7 +2088,16 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr }) {
                 return (
                   <div className="drill-totals-row pen-totals">
                     <span className="drill-totals-label">Totals</span>
-                    {['P1','P2','P3','OT'].filter(p => penByPeriod[p]).map(p => (
+                    {Object.keys(penByPeriod).sort((a, b) => {
+                      const sk = l => {
+                        if (l === 'SO') return 5;
+                        if (l === 'OT') return 4;
+                        const m = l.match(/^(\d+)OT$/);
+                        if (m) return 3 + parseInt(m[1], 10);
+                        return parseInt(l.replace(/[^0-9]/g, ''), 10) || 99;
+                      };
+                      return sk(a) - sk(b);
+                    }).map(p => (
                       <span key={p} className="period-chip">{p}: {penByPeriod[p]}</span>
                     ))}
                     <span className="drill-val total">{rows.length} total</span>
@@ -2382,11 +2428,16 @@ function PKAnalysisPanel({ drillStat }) {
                   </div>
                 )}
 
-                {/* Mini shot map — OPP shots against */}
+                {/* Mini shot map — OPP shots against, shown from OPP offensive zone perspective */}
                 {opp.shotEvents.length > 0 && (
                   <div className="pp-mini-rink">
                     <div className="pp-mini-rink-label">OPP shot locations</div>
-                    <IceRink events={opp.shotEvents} roster={{}} readOnly />
+                    <IceRink
+                      events={opp.shotEvents}
+                      roster={{}}
+                      readOnly
+                      flipPerspective
+                    />
                   </div>
                 )}
               </div>
@@ -2402,7 +2453,7 @@ function PKAnalysisPanel({ drillStat }) {
 // ── Advanced Game Panel (Corsi / Fenwick / PDO / Puck Luck) ──
 
 // ── Live Insights ────────────────────────────────────────────
-function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers, isLive, debugInsight, gameLogInsights }) {
+function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers, isLive, debugInsight, gameLogInsights, isPlayoff = false }) {
   const insights = useMemo(() => {
     const plays   = pbp?.plays || [];
     const carTeam = gameHome ? pbp?.homeTeam?.id : pbp?.awayTeam?.id;
@@ -2428,7 +2479,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       const ps = periodShots[per];
       if (!ps) return;
       const diff = ps.car - ps.opp;
-      const periodLabel = per <= 3 ? `P${per}` : 'OT';
+      const periodLabel = per <= 3 ? `P${per}` : isPlayoff ? (per === 4 ? 'OT' : `${per - 3}OT`) : per === 4 ? 'OT' : 'SO';
       const threshold = isLive ? 4 : 6;
       if (Math.abs(diff) >= threshold) {
         results.push({
@@ -2561,7 +2612,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     completedPeriods.forEach(per => {
       const ps = periodShots[per];
       if (!ps) return;
-      const periodLabel = per <= 3 ? `P${per}` : 'OT';
+      const periodLabel = per <= 3 ? `P${per}` : isPlayoff ? (per === 4 ? 'OT' : `${per - 3}OT`) : per === 4 ? 'OT' : 'SO';
       // ≤8 OPP shot attempts in a period is strong suppression (league avg ~12)
       if (ps.opp <= 8 && ps.car >= 5) {
         results.push({
@@ -2584,7 +2635,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     completedPeriods.forEach(per => {
       const ps = periodSOG[per];
       if (!ps) return;
-      const periodLabel = per <= 3 ? `P${per}` : 'OT';
+      const periodLabel = per <= 3 ? `P${per}` : isPlayoff ? (per === 4 ? 'OT' : `${per - 3}OT`) : per === 4 ? 'OT' : 'SO';
       // ≤5 OPP SOG in a completed period is excellent (league avg ~8-9)
       if (ps.opp <= 5 && ps.car >= 4) {
         results.push({

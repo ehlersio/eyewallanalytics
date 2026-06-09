@@ -96,11 +96,11 @@ function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding
 
   function RankBadge({ r }) {
     if (!r) return null;
-    const color = r.rank <= 5 ? 'var(--green)' : r.rank <= 15 ? 'var(--text-muted)' : 'var(--red-bright)';
-    const suffix = r.rank === 1 ? 'st' : r.rank === 2 ? 'nd' : r.rank === 3 ? 'rd' : 'th';
+    const color = r <= 5 ? 'var(--green)' : r <= 15 ? 'var(--text-muted)' : 'var(--red-bright)';
+    const suffix = r === 1 ? 'st' : r === 2 ? 'nd' : r === 3 ? 'rd' : 'th';
     return (
       <span className="overview-stat-rank" style={{ color }}>
-        {r.rank}<sup>{suffix}</sup>
+        {r}<sup>{suffix}</sup>
       </span>
     );
   }

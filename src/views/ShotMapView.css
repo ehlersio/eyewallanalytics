@@ -275,7 +275,8 @@
 /* Shots/Hits: Name | P1 | P2 | P3 | OT | Total */
 .drill-col-header.shots,
 .drill-row-grid.shots {
-  grid-template-columns: 1fr 34px 34px 34px 34px 42px;
+  /* grid-template-columns set dynamically via inline style in StatDrillPopup
+     to accommodate variable number of OT periods */
 }
 /* Faceoff: Name | Won | Lost | Win% */
 .drill-col-header.fo,
