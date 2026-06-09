@@ -7,18 +7,18 @@ import InfoTip from '../components/InfoTip';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import { getTeamLines } from '../utils/supabaseClient';
 import {
-  getOpponent, isHomeGame, TEAM_COLORS,
+  getOpponent, isHomeGame, TEAM_COLORS, TEAM_CONFIG,
   getStandings, findGameOdds, oddsToImplied, fmtOdds,
 } from '../utils/nhlApi';
 import { StatBar } from '../components/StatBar';
 import PredictionExportSection from '../components/PredictionShareCanvas';
 
-const CAR_ABBR = 'CAR';
+const CAR_ABBR = TEAM_CONFIG.abbr;
 
 function computeWinPct(carStanding, oppStanding, game, playoffSeries) {
   if (!carStanding || !oppStanding) return null;
   const isPlayoff = game?.gameType === 3;
-  const isHome    = game?.homeTeam?.abbrev === 'CAR';
+  const isHome    = game?.homeTeam?.abbrev === TEAM_CONFIG.abbr;
   const cgp = carStanding.gamesPlayed || 1;
   const ogp = oppStanding.gamesPlayed || 1;
   const carGpg = (carStanding.goalFor     ?? 0) / cgp;
@@ -78,7 +78,7 @@ function TopLineCard({ carLines }) {
   return (
     <div className="md-topline-card">
       <div className="md-topline-header">
-        <span className="md-topline-label">CAR Line 1 · 5v5 this season</span>
+        <span className="md-topline-label">{TEAM_CONFIG.abbr} Line 1 · 5v5 this season</span>
         {xgf != null && (
           <span className={`md-topline-xgf ${good ? 'good' : 'bad'}`}>
             {xgf.toFixed(1)}% xGF
@@ -106,7 +106,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   const oppAbbr = opp?.abbrev || 'OPP';
   const oppColor = TEAM_COLORS[oppAbbr] || '#7a8899';
   const gameType = playoffSeries ? 3 : 2;
-  const { data: carLines } = useFetch(() => getTeamLines('CAR', 20252026, gameType), ['CAR', gameType]);
+  const { data: carLines } = useFetch(() => getTeamLines(TEAM_CONFIG.abbr, 20252026, gameType), [TEAM_CONFIG.abbr, gameType]);
 
   // Auto-save prediction — must be before any early returns (Rules of Hooks)
   React.useEffect(() => {
@@ -118,7 +118,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
     const cGag  = (carStanding.goalAgainst ?? 0) / cgp;
     const oGag  = (oppStanding.goalAgainst ?? 0) / ogp;
     const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-    const isHome_ = game.homeTeam?.abbrev === 'CAR';
+    const isHome_ = game.homeTeam?.abbrev === TEAM_CONFIG.abbr;
     const adj     = isHome_ ? 0.12 : -0.12;
     const pCar    = +(clamp(Math.sqrt(Math.max(cGpg,0.5)*Math.max(oGag,0.5))+adj,1.5,5.0)).toFixed(1);
     const pOpp    = +(clamp(Math.sqrt(Math.max(oGpg,0.5)*Math.max(cGag,0.5))-adj,1.5,5.0)).toFixed(1);
@@ -148,13 +148,13 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       <div className="matchup-detail card">
         <div className="md-note">
           📊 Loading standings data…
-          {!carStanding && ' CAR standings not found.'}
+          {!carStanding && ` ${TEAM_CONFIG.abbr} standings not found.`}
           {!oppStanding && ` ${oppAbbr} standings not found.`}
         </div>
         {odds && (
           <div className="md-odds-row" style={{ marginTop: 12 }}>
             <div className="md-odds-item">
-              <span className="md-odds-team" style={{ color: 'var(--red-bright)' }}>CAR</span>
+              <span className="md-odds-team" style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
               <span className={`md-odds-val ${odds.carOdds < 0 ? 'fav' : 'dog'}`}>{fmtOdds(odds.carOdds)}</span>
               <span className="md-odds-implied">{oddsToImplied(odds.carOdds)}% implied</span>
             </div>
@@ -194,7 +194,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
 
   // ── Win probability — uses shared model (matches game card chip) ──
   const isPlayoff_  = game?.gameType === 3;
-  const isHome_     = game?.homeTeam?.abbrev === 'CAR';
+  const isHome_     = game?.homeTeam?.abbrev === TEAM_CONFIG.abbr;
 
   const topLine    = carLines?.lines?.[0] ?? null;
   const topLineXgf = topLine?.xgfPct ?? null;
@@ -244,8 +244,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   // ── Score prediction (Pythagorean expectation) ───────────
   // Expected goals = geometric mean of team's attack rate vs opponent's defense rate.
   // Home teams average ~0.15 more goals, away ~0.15 less.
-  const isHomeGame_  = game?.homeTeam?.abbrev === CAR_ABBR ||
-                       game?.homeTeam?.abbrev === 'CAR';
+  const isHomeGame_  = game?.homeTeam?.abbrev === TEAM_CONFIG.abbr;
   const homeAdj      = isHomeGame_ ? 0.12 : -0.12;
   const rawCarExp    = Math.sqrt(Math.max(carGpg, 0.5) * Math.max(oppGag, 0.5));
   const rawOppExp    = Math.sqrt(Math.max(oppGpg, 0.5) * Math.max(carGag, 0.5));
@@ -273,7 +272,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       ) : (<>
       <div className="md-header">
         <div>
-          <span className="md-title">CAR vs {oppAbbr} — Matchup breakdown</span>
+          <span className="md-title">{TEAM_CONFIG.abbr} vs {oppAbbr} — Matchup breakdown</span>
           {predStats.total > 0 && (
             <div className="md-track-record" >
               📊 {predStats.correct}/{predStats.total} correct ({predStats.pct}%)
@@ -285,7 +284,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       {/* Series score if in playoffs */}
       {seriesEntry && (
         <div className="md-series-score">
-          <span style={{ color: 'var(--red-bright)' }}>CAR {seriesEntry.carWins}</span>
+          <span style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr} {seriesEntry.carWins}</span>
           <span style={{ color: 'var(--text-dim)' }}> – </span>
           <span style={{ color: oppColor }}>{seriesEntry.oppWins} {oppAbbr}</span>
           <span className="md-series-label">in this series</span>
@@ -309,7 +308,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
           </div>
         </div>
         <div className="md-pred-teams">
-          <span style={{ color: 'var(--red-bright)' }}>CAR</span>
+          <span style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
           <span style={{ color: oppColor }}>{oppAbbr}</span>
         </div>
       </div>
@@ -318,7 +317,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       <div className="md-score-pred">
         <div className="md-score-pred-label">Predicted score</div>
         <div className="md-score-pred-val">
-          <span style={{color:'var(--red-bright)'}}>CAR {predCarScore}</span>
+          <span style={{color:'var(--team-primary)'}}>{TEAM_CONFIG.abbr} {predCarScore}</span>
           <span style={{color:'var(--text-dim)'}}> – </span>
           <span style={{color:oppColor}}>{oppAbbr} {predOppScore}</span>
         </div>
@@ -333,7 +332,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       {odds && (
         <div className="md-odds-row">
           <div className="md-odds-item">
-            <span className="md-odds-team" style={{ color: 'var(--red-bright)' }}>CAR</span>
+            <span className="md-odds-team" style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
             <span className={`md-odds-val ${odds.carOdds < 0 ? 'fav' : 'dog'}`}>{fmtOdds(odds.carOdds)}</span>
             <span className="md-odds-implied">{carImplied}% implied</span>
           </div>
@@ -352,22 +351,22 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
         {!isPlayoff_ && (
           <StatBar label="Points in standings"
             leftPct={Math.round((carPts/(carPts+oppPts||1))*100)}
-            leftVal={`CAR ${carPts}`} rightVal={`${oppAbbr} ${oppPts}`} />
+            leftVal={`${TEAM_CONFIG.abbr} ${carPts}`} rightVal={`${oppAbbr} ${oppPts}`} />
         )}
         <StatBar label="Goals for / game"
           leftPct={Math.round((carGpg/(carGpg+oppGpg||1))*100)}
-          leftVal={`CAR ${carGpg.toFixed(2)}`} rightVal={`${oppAbbr} ${oppGpg.toFixed(2)}`} />
+          leftVal={`${TEAM_CONFIG.abbr} ${carGpg.toFixed(2)}`} rightVal={`${oppAbbr} ${oppGpg.toFixed(2)}`} />
         <StatBar label="Goals against / game"
           leftPct={Math.round((oppGag/(carGag+oppGag||1))*100)}
-          leftVal={`CAR ${carGag.toFixed(2)}`} rightVal={`${oppAbbr} ${oppGag.toFixed(2)}`}
+          leftVal={`${TEAM_CONFIG.abbr} ${carGag.toFixed(2)}`} rightVal={`${oppAbbr} ${oppGag.toFixed(2)}`}
           leftColor="green" />
         <StatBar label="Win rate"
           leftPct={Math.round((carWin/(carWin+oppWin||1))*100)}
-          leftVal={`CAR ${(carWin*100).toFixed(0)}%`} rightVal={`${oppAbbr} ${(oppWin*100).toFixed(0)}%`}
+          leftVal={`${TEAM_CONFIG.abbr} ${(carWin*100).toFixed(0)}%`} rightVal={`${oppAbbr} ${(oppWin*100).toFixed(0)}%`}
           leftColor="green" />
         <StatBar label="PP% vs opp PK%"
           leftPct={Math.round((carPP/(carPP+(100-oppPK)||1))*100)}
-          leftVal={`CAR PP ${carPP.toFixed(1)}%`} rightVal={`${oppAbbr} PK ${oppPK.toFixed(1)}%`}
+          leftVal={`${TEAM_CONFIG.abbr} PP ${carPP.toFixed(1)}%`} rightVal={`${oppAbbr} PK ${oppPK.toFixed(1)}%`}
           leftColor={carPP > (100-oppPK) ? 'green' : 'red'} />
       </div>
 
@@ -377,7 +376,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
           <div key={i} className={`md-factor ${f.carEdge ? 'car-edge' : 'opp-edge'}`}>
             <span>{f.carEdge ? '✓' : '✗'}</span>
             <span>{f.label}</span>
-            <span>{f.carEdge ? 'CAR' : oppAbbr}</span>
+            <span>{f.carEdge ? TEAM_CONFIG.abbr : oppAbbr}</span>
           </div>
         ))}
       </div>

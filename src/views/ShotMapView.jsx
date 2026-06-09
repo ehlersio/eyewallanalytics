@@ -11,7 +11,7 @@ import IceRink from '../components/IceRink';
 import { GoalPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import { getGoalieAnalytics, getGameXG, getGameLogInsights } from '../utils/supabaseClient';
-import { CAR_PP_UNITS, inferPPUnit, CAR_PK_UNITS, inferPKUnit } from '../utils/ppUnits';
+import { inferPPUnit, inferPKUnit, PP_UNITS_BY_TEAM, PK_UNITS_BY_TEAM } from '../utils/ppUnits';
 import InfoTip from '../components/InfoTip';
 import { StatBar, MetCard, MetCardSkeleton } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
@@ -686,11 +686,11 @@ export default function ShotMapView() {
           });
         });
         opp.carSkaterIds = [...skaterIds];
-        opp.unit = inferPPUnit(season, opp.carSkaterIds);
+        opp.unit = inferPPUnit(TEAM_CONFIG.abbr, season, opp.carSkaterIds);
       });
 
       // Build display unit arrays from config for the chips at the top
-      const unitConfig = CAR_PP_UNITS[season];
+      const unitConfig = (PP_UNITS_BY_TEAM[TEAM_CONFIG.abbr] || {})[season];
       const ppUnit1 = unitConfig?.pp1
         .map(id => pName(id)).filter(n => n !== '—') ?? [];
       const ppUnit2 = unitConfig?.pp2
@@ -866,10 +866,10 @@ export default function ShotMapView() {
           });
         });
         opp.carSkaterIds = [...skaterIds];
-        opp.unit = inferPKUnit(season, opp.carSkaterIds);
+        opp.unit = inferPKUnit(TEAM_CONFIG.abbr, season, opp.carSkaterIds);
       });
 
-      const unitConfig = CAR_PK_UNITS[season];
+      const unitConfig = (PK_UNITS_BY_TEAM[TEAM_CONFIG.abbr] || {})[season];
       const pkUnit1 = unitConfig?.pk1.map(id => pName(id)).filter(n => n !== '—') ?? [];
       const pkUnit2 = unitConfig?.pk2.map(id => pName(id)).filter(n => n !== '—') ?? [];
 

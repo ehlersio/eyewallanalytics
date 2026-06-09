@@ -44,13 +44,16 @@ async function nhlFetch(url) {
   }
 }
 
-// Read from Worker KV cache — returns null if Worker unavailable or key missing
+// Read from Worker KV cache — appends ?team= so the Worker resolves the right config.
+// Returns null if Worker unavailable or key missing.
 async function kvFetch(key) {
   if (!WORKER_URL) return null;
   try {
-    const res = await fetch(`${WORKER_URL}/cache/${encodeURIComponent(key)}`, {
-      signal: AbortSignal.timeout(3000),
-    });
+    const teamParam = encodeURIComponent(TEAM_CONFIG.abbr);
+    const res = await fetch(
+      `${WORKER_URL}/cache/${encodeURIComponent(key)}?team=${teamParam}`,
+      { signal: AbortSignal.timeout(3000) }
+    );
     if (!res.ok) return null; // 404 = not in KV yet, fall through to direct NHL
     return res.json();
   } catch {

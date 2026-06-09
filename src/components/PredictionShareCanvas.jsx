@@ -10,6 +10,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { capture } from '../utils/analytics';
+import { TEAM_CONFIG } from '../utils/teamConfig';
 import './PredictionCanvas.css';
 
 const BLANK_GIF = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -45,15 +46,15 @@ function PredictionCanvas({
       {/* Teams + win probability */}
       <div className="pred-canvas-matchup">
         <div className="pred-canvas-team">
-          <img src={logoUrl('CAR')} alt="CAR" className="pred-canvas-team-logo"
+          <img src={logoUrl(TEAM_CONFIG.abbr)} alt={TEAM_CONFIG.abbr} className="pred-canvas-team-logo"
             onError={e=>{e.target.style.display='none';}} />
-          <div className="pred-canvas-team-abbr car">CAR</div>
+          <div className="pred-canvas-team-abbr car">{TEAM_CONFIG.abbr}</div>
         </div>
 
         <div className="pred-canvas-center">
           {seriesEntry && (
             <div className="pred-canvas-series">
-              Series: <span style={{color:'#ce1126'}}>{seriesEntry.carWins}</span>
+              Series: <span style={{color:'var(--team-primary)'}}>{seriesEntry.carWins}</span>
               {' – '}
               <span style={{color: oppColor}}>{seriesEntry.oppWins}</span>
             </div>
@@ -67,7 +68,7 @@ function PredictionCanvas({
             </div>
           </div>
           <div className="pred-canvas-bar-labels">
-            <span style={{color:'#ce1126'}}>CAR</span>
+            <span style={{color:'var(--team-primary)'}}>{TEAM_CONFIG.abbr}</span>
             <span style={{color: oppColor}}>{oppAbbr}</span>
           </div>
         </div>
@@ -84,7 +85,7 @@ function PredictionCanvas({
         <div className="pred-canvas-score">
           <div className="pred-canvas-score-label">Projected Score</div>
           <div className="pred-canvas-score-val">
-            <span style={{color:'#ce1126'}}>CAR {predCarScore}</span>
+            <span style={{color:'var(--team-primary)'}}>{TEAM_CONFIG.abbr} {predCarScore}</span>
             <span style={{color:'rgba(255,255,255,0.2)'}}> – </span>
             <span style={{color: oppColor}}>{predOppScore} {oppAbbr}</span>
           </div>
@@ -134,7 +135,7 @@ function PredictionCanvas({
             <div key={i} className={`pred-canvas-factor ${f.carEdge ? 'car' : 'opp'}`}>
               <span>{f.carEdge ? '✓' : '✗'}</span>
               <span>{f.label}</span>
-              <span>{f.carEdge ? 'CAR' : oppAbbr}</span>
+              <span>{f.carEdge ? TEAM_CONFIG.abbr : oppAbbr}</span>
             </div>
           ))}
         </div>
@@ -149,7 +150,7 @@ function PredictionCanvas({
         return (
           <div className="pred-canvas-line1">
             <div className="pred-canvas-line1-header">
-              <span className="pred-canvas-line1-label">CAR Line 1 · 5v5</span>
+              <span className="pred-canvas-line1-label">{TEAM_CONFIG.abbr} Line 1 · 5v5</span>
               {xgf != null && (
                 <span className={`pred-canvas-line1-xgf ${good ? 'good' : 'bad'}`}>
                   {xgf.toFixed(1)}% xGF
@@ -175,7 +176,7 @@ function PredictionCanvas({
       {odds && (
         <div className="pred-canvas-odds">
           <div className="pred-canvas-odds-item">
-            <span className="pred-canvas-odds-team car">CAR</span>
+            <span className="pred-canvas-odds-team car">{TEAM_CONFIG.abbr}</span>
             <span className="pred-canvas-odds-val">{odds.carOdds > 0 ? `+${odds.carOdds}` : odds.carOdds}</span>
           </div>
           <div className="pred-canvas-odds-book">{odds.book}</div>
@@ -189,7 +190,7 @@ function PredictionCanvas({
       {/* Footer */}
       <div className="pred-canvas-footer">
         <span>eyewallanalytics.com</span>
-        <span>#LetsGoCanes</span>
+        <span>{TEAM_CONFIG.hashtags?.[0] || `#${TEAM_CONFIG.abbr}`}</span>
       </div>
     </div>
   );
@@ -211,7 +212,7 @@ export default function PredictionExportSection({
     if (!gameId) return;
     const workerUrl = import.meta.env.VITE_WORKER_URL;
     if (!workerUrl) return;
-    fetch(`${workerUrl}/cache/${encodeURIComponent(`prediction:${gameId}`)}`)
+    fetch(`${workerUrl}/cache/${encodeURIComponent(`prediction:${gameId}`)}?team=${TEAM_CONFIG.abbr}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.narrative) setAiNarrative(d.narrative); })
       .catch(() => {});
@@ -237,7 +238,7 @@ export default function PredictionExportSection({
         style: { position: 'static', left: '0', top: '0' },
       });
       const link = document.createElement('a');
-      link.download = `EyeWall-Prediction-CAR-vs-${oppAbbr}.png`;
+      link.download = `EyeWall-Prediction-${TEAM_CONFIG.abbr}-vs-${oppAbbr}.png`;
       link.href = dataUrl;
       link.click();
       capture('prediction_card_exported', {

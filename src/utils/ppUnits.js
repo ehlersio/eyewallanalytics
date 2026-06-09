@@ -1,58 +1,68 @@
 /**
- * ppUnits.js — Known CAR special teams unit configurations by season.
+ * ppUnits.js — Special teams unit configurations by team and season.
  *
  * Player IDs match NHL API / Supabase players table.
- * Update each season when units change.
+ * Used in ShotMapView to infer which PP/PK unit is on the ice during live games.
  *
- * PP1: Jarvis, Aho, Ehlers, Gostisbehere, Svechnikov
- * PP2: Hall, Stankoven, Ehlers, Blake, K'Andre Miller
+ * Teams without an entry will have inferPPUnit / inferPKUnit return null —
+ * the UI handles this gracefully by omitting the unit indicator.
  *
- * PK1: Staal, Martinook, Slavin, Chatfield
- * PK2: Aho, Jarvis, K'Andre Miller, Walker
+ * To add a team: add a key matching their NHL API abbreviation with
+ * a season map in the same format as CAR below.
  */
-export const CAR_PP_UNITS = {
-  20252026: {
-    pp1: [
-      8482093, // Seth Jarvis
-      8478427, // Sebastian Aho
-      8477940, // Nikolaj Ehlers
-      8476906, // Shayne Gostisbehere
-      8480830, // Andrei Svechnikov
-    ],
-    pp2: [
-      8475791, // Taylor Hall
-      8482702, // Logan Stankoven
-      8477940, // Nikolaj Ehlers
-      8482809, // Jackson Blake
-      8480817, // K'Andre Miller
-    ],
+
+// ── Power play units ─────────────────────────────────────────
+const PP_UNITS = {
+  CAR: {
+    20252026: {
+      pp1: [
+        8482093, // Seth Jarvis
+        8478427, // Sebastian Aho
+        8477940, // Nikolaj Ehlers
+        8476906, // Shayne Gostisbehere
+        8480830, // Andrei Svechnikov
+      ],
+      pp2: [
+        8475791, // Taylor Hall
+        8482702, // Logan Stankoven
+        8477940, // Nikolaj Ehlers
+        8482809, // Jackson Blake
+        8480817, // K'Andre Miller
+      ],
+    },
   },
+  // Add other teams here as needed:
+  // COL: { 20252026: { pp1: [...], pp2: [...] } },
 };
 
-export const CAR_PK_UNITS = {
-  20252026: {
-    pk1: [
-      8473533, // Jordan Staal
-      8476921, // Jordan Martinook
-      8476958, // Jaccob Slavin
-      8478970, // Jalen Chatfield
-    ],
-    pk2: [
-      8478427, // Sebastian Aho
-      8482093, // Seth Jarvis
-      8480817, // K'Andre Miller
-      8480336, // Sean Walker
-    ],
+// ── Penalty kill units ───────────────────────────────────────
+const PK_UNITS = {
+  CAR: {
+    20252026: {
+      pk1: [
+        8473533, // Jordan Staal
+        8476921, // Jordan Martinook
+        8476958, // Jaccob Slavin
+        8478970, // Jalen Chatfield
+      ],
+      pk2: [
+        8478427, // Sebastian Aho
+        8482093, // Seth Jarvis
+        8480817, // K'Andre Miller
+        8480336, // Sean Walker
+      ],
+    },
   },
+  // COL: { 20252026: { pk1: [...], pk2: [...] } },
 };
 
 /**
- * Given a season and a set of player IDs seen in a PP opportunity,
+ * Given a team, season, and set of player IDs seen in a PP opportunity,
  * returns 1 (PP1), 2 (PP2), or null if no confident match.
  * Requires at least 2 overlapping players to assign a unit.
  */
-export function inferPPUnit(season, playerIds) {
-  const units = CAR_PP_UNITS[season];
+export function inferPPUnit(teamAbbr, season, playerIds) {
+  const units = PP_UNITS[teamAbbr]?.[season];
   if (!units || !playerIds?.length) return null;
 
   const pp1Overlap = playerIds.filter(id => units.pp1.includes(id)).length;
@@ -64,12 +74,12 @@ export function inferPPUnit(season, playerIds) {
 }
 
 /**
- * Given a season and a set of player IDs seen in a PK opportunity,
+ * Given a team, season, and set of player IDs seen in a PK opportunity,
  * returns 1 (PK1), 2 (PK2), or null if no confident match.
  * Requires at least 2 overlapping players to assign a unit.
  */
-export function inferPKUnit(season, playerIds) {
-  const units = CAR_PK_UNITS[season];
+export function inferPKUnit(teamAbbr, season, playerIds) {
+  const units = PK_UNITS[teamAbbr]?.[season];
   if (!units || !playerIds?.length) return null;
 
   const pk1Overlap = playerIds.filter(id => units.pk1.includes(id)).length;
@@ -79,3 +89,11 @@ export function inferPKUnit(season, playerIds) {
   if (pk2Overlap >= 2) return 2;
   return null;
 }
+
+// Legacy named exports — kept for any existing imports
+export const CAR_PP_UNITS = PP_UNITS.CAR;
+export const CAR_PK_UNITS = PK_UNITS.CAR;
+
+// Full map exports — used in ShotMapView for unitConfig chip display
+export const PP_UNITS_BY_TEAM = PP_UNITS;
+export const PK_UNITS_BY_TEAM = PK_UNITS;

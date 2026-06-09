@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import {
   getTeamStats, getTeamStatsPlayoff, getTeamRecentGames, getTeamTopPlayers,
-  TEAM_COLORS,
+  TEAM_COLORS, TEAM_CONFIG,
 } from '../utils/nhlApi';
 import { computeGSAx } from '../utils/advancedStats';
 import { getGoalieAnalytics, getTeamLines } from '../utils/supabaseClient';
@@ -171,7 +171,7 @@ function GoalieMatchupCard({ carPlayers, oppPlayers, oppAbbr, oppColor }) {
     <div className="scouting-section">
       <div className="scouting-section-label">Goalie matchup</div>
       <div className="gmc-row">
-        {renderGoalie(carGoalie, true, 'var(--red-bright)')}
+        {renderGoalie(carGoalie, true, 'var(--team-primary)')}
         <div className="gmc-vs">vs</div>
         {renderGoalie(oppGoalie, false, oppColor)}
       </div>
@@ -193,7 +193,7 @@ function TeamTotalCard({ carStats, oppStats, oppAbbr, isPlayoff }) {
       </div>
       <div className="ttc-wrap">
         <div className="ttc-score">
-          <span style={{color:'var(--red-bright)'}}>CAR {+carExp.toFixed(1)}</span>
+          <span style={{color:'var(--team-primary)'}}>{TEAM_CONFIG.abbr} {+carExp.toFixed(1)}</span>
           <span className="ttc-dash">–</span>
           <span>{+oppExp.toFixed(1)} {oppAbbr}</span>
         </div>
@@ -245,7 +245,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
       {/* Teams */}
       <div className="sc-teams">
         <div className="sc-team">
-          <img src={logoUrl('CAR')} alt="CAR" className="sc-team-logo" onError={e=>{e.target.style.display='none';}} />
+          <img src={logoUrl(TEAM_CONFIG.abbr)} alt={TEAM_CONFIG.abbr} className="sc-team-logo" onError={e=>{e.target.style.display='none';}} />
           <span className="sc-team-abbr car">CAR</span>
         </div>
         <span className="sc-vs">vs</span>
@@ -279,7 +279,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
           <div style={{fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
             color:'rgba(255,255,255,0.25)', marginBottom:6}}>Projected Total Goals</div>
           <div style={{fontSize:22, fontWeight:800, marginBottom:3}}>
-            <span style={{color:'#ce1126'}}>CAR {+carExp.toFixed(1)}</span>
+            <span style={{color: TEAM_CONFIG.primaryColor || '#ce1126'}}>{TEAM_CONFIG.abbr} {+carExp.toFixed(1)}</span>
             <span style={{color:'rgba(255,255,255,0.2)'}}> – </span>
             <span style={{color: oppColor}}>{+oppExp.toFixed(1)} {oppAbbr}</span>
           </div>
@@ -292,7 +292,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
             color:'rgba(255,255,255,0.25)', marginBottom:8}}>Recent Form (last 5)</div>
           <div style={{display:'flex', flexDirection:'column', gap:6}}>
             <div style={{display:'flex', alignItems:'center', gap:6}}>
-              <span style={{fontSize:10, fontWeight:700, color:'#ce1126', width:28}}>CAR</span>
+              <span style={{fontSize:10, fontWeight:700, color: TEAM_CONFIG.primaryColor || '#ce1126', width:28}}>{TEAM_CONFIG.abbr}</span>
               <div style={{display:'flex', gap:3}}>{formDots(carRecentGames, true)}</div>
             </div>
             <div style={{display:'flex', alignItems:'center', gap:6}}>
@@ -306,7 +306,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
       {/* Top players + goalies */}
       <div style={{display:'flex', gap:16, padding:'0 52px 14px'}}>
         {[
-          { label: 'CAR', color: '#ce1126', players: carPlayers },
+          { label: TEAM_CONFIG.abbr, color: TEAM_CONFIG.primaryColor || 'var(--team-primary)', players: carPlayers },
           { label: oppAbbr, color: oppColor, players: oppPlayers },
         ].map(({ label, color, players }) => (
           <div key={label} style={{flex:1, background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'12px 14px'}}>
@@ -356,7 +356,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
                   <div key={i} style={{display:'flex', alignItems:'center', gap:8,
                     padding:'6px 10px', background:'rgba(255,255,255,0.03)',
                     borderRadius:7, border:'0.5px solid rgba(255,255,255,0.06)'}}>
-                    <span style={{fontSize:11, fontWeight:700, color:'#ce1126', minWidth:42, flexShrink:0}}>
+                    <span style={{fontSize:11, fontWeight:700, color: TEAM_CONFIG.primaryColor || '#ce1126', minWidth:42, flexShrink:0}}>
                       Line {i + 1}
                     </span>
                     <div style={{flex:1, display:'flex', gap:10, flexWrap:'wrap'}}>
@@ -424,7 +424,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
       {/* Footer */}
       <div className="sc-footer">
         <span>eyewallanalytics.com</span>
-        <span>#LetsGoCanes</span>
+        <span>{TEAM_CONFIG.hashtags?.[0] || `#${TEAM_CONFIG.abbr}`}</span>
       </div>
     </div>
   );
@@ -438,7 +438,7 @@ const POS_LABEL = { L: 'LW', LW: 'LW', C: 'C', R: 'RW', RW: 'RW', D: 'D' };
 
 const XGF_TIP =
   'Expected Goals For % (xGF%) — share of total expected goals generated while this unit ' +
-  'was on the ice at 5-on-5. Above 50% means CAR outchanced the opponent when these players ' +
+  'was on the ice at 5-on-5. Above 50% means your team outchanced the opponent when these players ' +
   'were together. Based on shot location and type, not just shot count.';
 
 const TOI_TIP =
@@ -492,7 +492,7 @@ function LineUnit({ unit, label, color, isDefence }) {
   );
 }
 
-function LinesSection({ lines, color, isPlayoff }) {
+function LinesSection({ lines, color, isPlayoff, abbr }) {
   if (!lines) return null;
   const { lines: fLines, pairs: dPairs, isInferred } = lines;
   const lineLabels = ['Line 1', 'Line 2', 'Line 3', 'Line 4'];
@@ -501,7 +501,7 @@ function LinesSection({ lines, color, isPlayoff }) {
   return (
     <div className="scouting-section">
       <div className="scouting-section-label">
-        CAR lines
+        {abbr} lines
         {isPlayoff && <span className="sc-lines-playoff-badge">Playoffs</span>}
         <InfoTip text={LINES_TIP} position="above" />
       </div>
@@ -535,7 +535,7 @@ function LinesSection({ lines, color, isPlayoff }) {
 
 export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayoff }) {
   const gameType = isPlayoff ? 3 : 2;
-  const carColor = 'var(--red-bright)';
+  const carColor = 'var(--team-primary)';
   const oppColor = TEAM_COLORS[oppAbbr] || 'var(--text-muted)';
 
   const canvasRef = useRef(null);
@@ -543,30 +543,29 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
   const [canvasMounted, setCanvasMounted] = useState(false);
 
   const { data: carRecentGames } = useFetch(
-    () => getTeamRecentGames('CAR', 10, isPlayoff), ['CAR', isPlayoff]
+    () => getTeamRecentGames(TEAM_CONFIG.abbr, 10, isPlayoff), [TEAM_CONFIG.abbr, isPlayoff]
   );
   const { data: oppRecentGames } = useFetch(
     () => getTeamRecentGames(oppAbbr, 10, isPlayoff), [oppAbbr, isPlayoff]
   );
   const { data: carTopPlayers, loading: carPlayersLoading } = useFetch(
-    () => getTeamTopPlayers('CAR', gameType), ['CAR', gameType]
+    () => getTeamTopPlayers(TEAM_CONFIG.abbr, gameType), [TEAM_CONFIG.abbr, gameType]
   );
   const { data: oppTopPlayers, loading: oppPlayersLoading } = useFetch(
     () => getTeamTopPlayers(oppAbbr, gameType), [oppAbbr, gameType]
   );
-  const { data: carStats } = useFetch(() => getTeamStats('CAR'), ['CAR']);
+  const { data: carStats } = useFetch(() => getTeamStats(TEAM_CONFIG.abbr), [TEAM_CONFIG.abbr]);
   const { data: oppStats } = useFetch(() => getTeamStats(oppAbbr), [oppAbbr]);
-  // Playoff stats — used for Season Comparison when in playoffs
   const { data: carPoStats } = useFetch(
-    () => isPlayoff ? getTeamStatsPlayoff('CAR') : Promise.resolve(null),
-    ['CAR', 'po', isPlayoff]
+    () => isPlayoff ? getTeamStatsPlayoff(TEAM_CONFIG.abbr) : Promise.resolve(null),
+    [TEAM_CONFIG.abbr, 'po', isPlayoff]
   );
   const { data: oppPoStats } = useFetch(
     () => isPlayoff ? getTeamStatsPlayoff(oppAbbr) : Promise.resolve(null),
     [oppAbbr, 'po', isPlayoff]
   );
   const { data: goalieAnalytics } = useFetch(() => getGoalieAnalytics());
-  const { data: carLines } = useFetch(() => getTeamLines('CAR', 20252026, gameType), ['CAR', gameType]);
+  const { data: carLines } = useFetch(() => getTeamLines(TEAM_CONFIG.abbr, 20252026, gameType), [TEAM_CONFIG.abbr, gameType]);
 
   // Use playoff stats when available, fall back to regular season
   const compCarStats = isPlayoff ? (carPoStats || carStats) : carStats;
@@ -591,7 +590,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
         style: { position: 'static', left: '0', top: '0' },
       });
       const link = document.createElement('a');
-      link.download = `EyeWall-Scouting-CAR-vs-${oppAbbr}.png`;
+      link.download = `EyeWall-Scouting-${TEAM_CONFIG.abbr}-vs-${oppAbbr}.png`;
       link.href = dataUrl;
       link.click();
       capture('scouting_card_exported', { opponent: oppAbbr, isPlayoff: !!isPlayoff });
@@ -609,8 +608,8 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
       {/* Team headers */}
       <div className="scouting-teams-header">
         <div className="scouting-team-col">
-          <TeamLogo abbr="CAR" size={32} />
-          <span className="scouting-team-abbr" style={{color: carColor}}>CAR</span>
+          <TeamLogo abbr={TEAM_CONFIG.abbr} size={32} />
+          <span className="scouting-team-abbr" style={{color: carColor}}>{TEAM_CONFIG.abbr}</span>
           {carStanding && (
             <span className="scouting-team-record">
               {carStanding.wins}–{carStanding.losses}–{carStanding.otLosses || 0}
@@ -636,7 +635,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
             {isPlayoff ? 'Playoff' : 'Season'} comparison
           </div>
           <div className="scouting-compare-header">
-            <span style={{color: carColor}}>CAR</span>
+            <span style={{color: carColor}}>{TEAM_CONFIG.abbr}</span>
             <span />
             <span style={{color: oppColor}}>{oppAbbr}</span>
           </div>
@@ -678,7 +677,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
         <div className="scouting-section-label">Recent form (last {isPlayoff ? 'playoff ' : ''}10)</div>
         <div className="scouting-form-row">
           <div className="scouting-form-col">
-            <div className="scouting-form-team" style={{color: carColor}}>CAR</div>
+            <div className="scouting-form-team" style={{color: carColor}}>{TEAM_CONFIG.abbr}</div>
             <FormDots games={carRecentGames} />
             {carRecentGames && (
               <div className="scouting-form-summary">
@@ -709,7 +708,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
         </div>
         <div className="scouting-players-row">
           <div className="scouting-players-col">
-            <div className="scouting-players-team" style={{color: carColor}}>CAR</div>
+            <div className="scouting-players-team" style={{color: carColor}}>{TEAM_CONFIG.abbr}</div>
             <PlayerTable players={carTopPlayers} loading={carPlayersLoading} color={carColor} goalieAnalytics={goalieAnalytics} />
           </div>
           <div className="scouting-players-col">
@@ -721,7 +720,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
 
       {/* Line combinations */}
       {carLines && (
-        <LinesSection lines={carLines} color={carColor} isPlayoff={isPlayoff} />
+        <LinesSection lines={carLines} color={carColor} isPlayoff={isPlayoff} abbr={TEAM_CONFIG.abbr} />
       )}
 
       {/* Export button */}

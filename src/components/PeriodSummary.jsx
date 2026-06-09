@@ -1,5 +1,6 @@
 // components/PeriodSummary.jsx
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { TEAM_CONFIG } from '../utils/teamConfig';
 import './PeriodSummary.css';
 
 // Brightcove embed — autoplay=false prevents simultaneous playback
@@ -102,7 +103,7 @@ Game stats:
 - Game Corsi For%: ${summary.corsiForPct}%
 - CAR shots: ${summary.carSOG}, OPP shots: ${summary.oppSOG}
 - CAR high danger chances: ${summary.carHDCF} vs OPP ${summary.oppHDCF}
-- Best period for CAR: P${summary.bestPeriod?.period} (${summary.bestPeriod?.corsiForPct}% CF)
+- Best period for ${carAbbr}: P${summary.bestPeriod?.period} (${summary.bestPeriod?.corsiForPct}% CF)
 - Worst period: P${summary.worstPeriod?.period} (${summary.worstPeriod?.corsiForPct}% CF)
 - CAR hits: ${summary.carHits}, CAR faceoffs: ${summary.carFOPct}%
 - Goals: ${goalsSummary}
@@ -113,7 +114,7 @@ Write a tight 2-3 sentence period summary for ${summary.periodLabel} of a ${carA
 Tone: sharp, analytical, knowledgeable fan. No fluff. No bullet points. Just sentences.
 
 Stats:
-- CAR Corsi For%: ${summary.corsiForPct}%
+- ${carAbbr} Corsi For%: ${summary.corsiForPct}%
 - CAR shots on goal: ${summary.carSOG}, OPP shots on goal: ${summary.oppSOG}
 - CAR goals: ${summary.carGoals}, OPP goals: ${summary.oppGoals}
 - CAR hits: ${summary.carHits}
@@ -223,9 +224,9 @@ function GoalCarousel({ goals, carAbbr }) {
 // so they're always in sync
 function getPeriodStats(summary) {
   return [
-    { val: `${summary.corsiForPct}%`,  label: 'CAR Corsi For%',    color: corsiColor(summary.corsiForPct) },
+    { val: `${summary.corsiForPct}%`,  label: `${carAbbr} Corsi For%`,    color: corsiColor(summary.corsiForPct) },
     { val: `${summary.carSOG}–${summary.oppSOG}`, label: 'Shots on Goal' },
-    { val: `${summary.fenwickForPct}%`, label: 'CAR Fenwick For%', color: corsiColor(summary.fenwickForPct) },
+    { val: `${summary.fenwickForPct}%`, label: `${carAbbr} Fenwick For%`, color: corsiColor(summary.fenwickForPct) },
     { val: summary.carHits,             label: 'CAR Hits' },
     { val: summary.carFOPct != null ? `${summary.carFOPct}%` : '—', label: 'Faceoff Win%' },
     { val: `${summary.carHDCF ?? 0}–${summary.oppHDCF ?? 0}`, label: 'High Danger Chances',
@@ -239,7 +240,7 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef }) {
   const oppScore = carIsHome ? summary.awayScore : summary.homeScore;
   const stats = getPeriodStats(summary);
   const logoUrl = (abbr) => `/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
-  const dominatedBy = summary.corsiForPct >= 55 ? 'CAR' : summary.corsiForPct <= 45 ? oppAbbr : null;
+  const dominatedBy = summary.corsiForPct >= 55 ? carAbbr : summary.corsiForPct <= 45 ? oppAbbr : null;
   const carPenalties = summary.penalties.filter(p => p.isCar).length;
   const oppPenalties = summary.penalties.filter(p => !p.isCar).length;
   const carGoals = summary.goals.filter(g => g.isCar);
@@ -393,8 +394,8 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef }) {
         <div className="ps-canvas-insights">
           {dominatedBy && (
             <div className="ps-canvas-insight-chip">
-              <span className={dominatedBy === 'CAR' ? 'good' : 'bad'}>
-                {dominatedBy === 'CAR' ? '↑' : '↓'}
+              <span className={dominatedBy === carAbbr ? 'good' : 'bad'}>
+                {dominatedBy === carAbbr ? '↑' : '↓'}
               </span>
               {' '}{dominatedBy} dominated possession
             </div>
@@ -492,9 +493,9 @@ export default function PeriodSummary({
   summary,
   onDismiss,
   onNarrativeReady,
-  carAbbr = 'CAR',
+  carAbbr = TEAM_CONFIG.abbr,
   oppAbbr = 'OPP',
-  homeAbbr = 'CAR',
+  homeAbbr = TEAM_CONFIG.abbr,
   awayAbbr = 'OPP',
   readOnly = false,
   isPlayoff = false,

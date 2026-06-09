@@ -190,7 +190,7 @@ export async function getGoalieAnalytics(season = 20252026) {
 // xgf_pct is null when the unit has too few 5v5 chances for a reliable number.
 // Position sort order: LW → C → RW
 // NHL API returns 'L', 'C', 'R' as positionCode — but DB values can be null
-// for edge cases (mid-season callups, etc.). We always use carLines.js as the
+// for edge cases (mid-season callups, etc.). We always use staticLines.js as the
 // authoritative position source and enrich inferred players before sorting.
 const FWD_ORDER = { L: 0, LW: 0, C: 1, R: 2, RW: 2 };
 
@@ -218,7 +218,7 @@ export async function getTeamLines(team = 'CAR', season = 20252026, gameType = 2
   let staticData = null;
   if (team === 'CAR') {
     try {
-      const { getStaticLines } = await import('./carLines.js');
+      const { getStaticLines } = await import('./staticLines.js');
       staticData = getStaticLines(gameType);
     } catch (_) {}
   }
