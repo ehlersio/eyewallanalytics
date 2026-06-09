@@ -14,11 +14,15 @@ const BASE = '/nhl-api/v1';
 // Set VITE_WORKER_URL in Cloudflare Pages → Settings → Environment variables.
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
 
-const CAR_TEAM_ID = 12;
-const CAR_ABBR    = 'CAR';
+// Team configuration — driven by user selection, stored in localStorage.
+// All 32 teams and the get/set helpers live in teamConfig.js.
+// Re-exported here so existing imports of TEAM_CONFIG from nhlApi.js keep working.
+export { TEAM_CONFIG, ALL_TEAMS, getTeamConfig, setTeamConfig, hasTeamConfig } from './teamConfig'
+import { TEAM_CONFIG } from './teamConfig'
 
-// ✅ Current season: 2025-26
-const SEASON = '20252026';
+// Convenience aliases — used throughout this file
+const TEAM_ABBR = TEAM_CONFIG.abbr;
+const TEAM_ID   = TEAM_CONFIG.teamId;
 
 // gameType values from NHL API:
 //   1 = Preseason, 2 = Regular season, 3 = Playoffs
@@ -62,10 +66,10 @@ async function kvFetch(key) {
 export async function getAllGames() {
   return cached('allGames', async () => {
     // Try Worker KV first (pre-polled, zero per-user NHL calls)
-    const cached_kv = await kvFetch(`schedule:${CAR_ABBR}`);
+    const cached_kv = await kvFetch(`schedule:${TEAM_ABBR}`);
     if (cached_kv) return cached_kv;
     // Fall back to direct NHL call
-    const data = await nhlFetch(`${BASE}/club-schedule-season/${CAR_ABBR}/${SEASON}`);
+    const data = await nhlFetch(`${BASE}/club-schedule-season/${TEAM_ABBR}/${TEAM_CONFIG.season}`);
     return data?.games || [];
   }, TTL.SHORT / 3); // 20 seconds client-side cache
 }
@@ -161,13 +165,13 @@ function isCompleted(game) {
 
 // Get the current playoff bracket/series overview
 export async function getPlayoffBracket() {
-  return cached('playoffBracket', () => nhlFetch(`${BASE}/playoff-bracket/${SEASON}`), TTL.PLAYOFF_GAMES);
+  return cached('playoffBracket', () => nhlFetch(`${BASE}/playoff-bracket/${TEAM_CONFIG.season}`), TTL.PLAYOFF_GAMES);
 }
 
 // Get all playoff series with results
 export async function getPlayoffSeries() {
   return cached('playoffSeries', async () => {
-    const data = await nhlFetch(`${BASE}/playoff-series/carousel/${SEASON}`);
+    const data = await nhlFetch(`${BASE}/playoff-series/carousel/${TEAM_CONFIG.season}`);
     return data?.rounds || [];
   }, TTL.PLAYOFF_GAMES);
 }
@@ -257,19 +261,19 @@ async function _getStandings() {
 
 // Get team stats, shaped consistently for our components
 // gameType: 2 = regular season stats, 3 = playoff stats
-export async function getTeamStats(teamAbbr = CAR_ABBR) {
+export async function getTeamStats(teamAbbr = TEAM_ABBR) {
   return cached(`teamStats:${teamAbbr}`, () => _getTeamStats(teamAbbr), TTL.TEAM_STATS);
 }
 
 // Playoff team stats — uses NHL stats REST API with gameTypeId=3
 // Returns same shape as getTeamStats for drop-in use in ScoutingTab
-export async function getTeamStatsPlayoff(teamAbbr = CAR_ABBR) {
+export async function getTeamStatsPlayoff(teamAbbr = TEAM_ABBR) {
   return cached(`teamStatsPlayoff:${teamAbbr}`, async () => {
-    const exp = encodeURIComponent(`gameTypeId=3 and seasonId<=${SEASON} and seasonId>=${SEASON}`);
+    const exp = encodeURIComponent(`gameTypeId=3 and seasonId<=${TEAM_CONFIG.season} and seasonId>=${TEAM_CONFIG.season}`);
     const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false&sort=shotsForPerGame&sortDirection=DESC&limit=32&cayenneExp=${exp}`;
     const data = await nhlFetch(url);
     const team = (data?.data || []).find(t => t.teamFullName && (
-      (teamAbbr === 'CAR' && t.teamFullName.includes('Carolina')) ||
+      (teamAbbr === TEAM_ABBR && t.teamFullName.includes(TEAM_CONFIG.fullNameFragment)) ||
       (teamAbbr === 'VGK' && t.teamFullName.includes('Vegas')) ||
       t.teamAbbrevs === teamAbbr ||
       t.teamFullName.toLowerCase().includes(teamAbbr.toLowerCase())
@@ -292,7 +296,7 @@ export async function getTeamStatsPlayoff(teamAbbr = CAR_ABBR) {
     };
   }, TTL.TEAM_STATS);
 }
-async function _getTeamStats(teamAbbr = CAR_ABBR) {
+async function _getTeamStats(teamAbbr = TEAM_ABBR) {
   const standings = await getStandings();
   const team = standings.find(t => t.teamAbbrev?.default === teamAbbr);
 
@@ -344,7 +348,7 @@ export async function getTeamSeasonRankings(gameTypeId = 2) {
 async function _getTeamSeasonRankings(gameTypeId = 2) {
   try {
     const exp = encodeURIComponent(
-      `gameTypeId=${gameTypeId} and seasonId<=${SEASON} and seasonId>=${SEASON}`
+      `gameTypeId=${gameTypeId} and seasonId<=${TEAM_CONFIG.season} and seasonId>=${TEAM_CONFIG.season}`
     );
     const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false` +
       `&sort=shotsForPerGame&sortDirection=DESC&limit=40&cayenneExp=${exp}`;
@@ -352,8 +356,8 @@ async function _getTeamSeasonRankings(gameTypeId = 2) {
     const teams = data?.data || [];
     if (!teams.length) return null;
 
-    // Find CAR (Carolina Hurricanes)
-    const car = teams.find(t => t.teamFullName?.includes('Carolina'));
+    // Find our team
+    const car = teams.find(t => t.teamFullName?.includes(TEAM_CONFIG.fullNameFragment));
     if (!car) return null;
 
     // Rank helper — 1 = best. higherBetter: sort desc; lowerBetter: sort asc
@@ -361,7 +365,7 @@ async function _getTeamSeasonRankings(gameTypeId = 2) {
       const sorted = [...teams]
         .filter(t => t[field] != null)
         .sort((a, b) => higherBetter ? b[field] - a[field] : a[field] - b[field]);
-      const pos = sorted.findIndex(t => t.teamFullName?.includes('Carolina'));
+      const pos = sorted.findIndex(t => t.teamFullName?.includes(TEAM_CONFIG.fullNameFragment));
       return pos === -1 ? null : pos + 1;
     };
 
@@ -385,8 +389,7 @@ export async function getTeamSkaterStats(gameTypeId = 2) {
   return cached(`teamSkaterStats:${gameTypeId}`, () => _getTeamSkaterStats(gameTypeId), TTL.PLAYER_STATS);
 }
 async function _getTeamSkaterStats(gameTypeId = 2) {
-  const season = '20252026';
-  const exp    = encodeURIComponent(`seasonId=${season} and gameTypeId=${gameTypeId} and teamAbbrevs="CAR"`);
+  const exp    = encodeURIComponent(`seasonId=${TEAM_CONFIG.season} and gameTypeId=${gameTypeId} and teamAbbrevs="${TEAM_ABBR}"`);
   const sort   = encodeURIComponent(JSON.stringify([{property:'points',direction:'DESC'},{property:'goals',direction:'DESC'},{property:'playerId',direction:'ASC'}]));
 
   const [summary, scoring] = await Promise.all([
@@ -405,11 +408,11 @@ async function _getTeamSkaterStats(gameTypeId = 2) {
 }
 
 
-export async function getRoster(teamAbbr = CAR_ABBR) {
+export async function getRoster(teamAbbr = TEAM_ABBR) {
   return cached(`roster:${teamAbbr}`, () => _getRoster(teamAbbr), TTL.SCHEDULE);
 }
-async function _getRoster(teamAbbr = CAR_ABBR) {
-  const data = await nhlFetch(`${BASE}/roster/${teamAbbr}/${SEASON}`);
+async function _getRoster(teamAbbr = TEAM_ABBR) {
+  const data = await nhlFetch(`${BASE}/roster/${teamAbbr}/${TEAM_CONFIG.season}`);
   if (!data) return { forwards: [], defensemen: [], goalies: [], all: [] };
 
   const forwards   = data.forwards   || [];
@@ -429,25 +432,23 @@ async function _getPlayerStats(playerId) {
 // limit=-1 returns ALL results (no pagination needed).
 // Proxied through /nhl-stats → https://api.nhle.com
 async function fetchSkaterLeaders(gameTypeId = 2) {
-  const season = '20252026';
   const sort   = encodeURIComponent(JSON.stringify([
     { property: 'points',   direction: 'DESC' },
     { property: 'goals',    direction: 'DESC' },
     { property: 'playerId', direction: 'ASC'  },
   ]));
-  const exp = encodeURIComponent(`seasonId=${season} and gameTypeId=${gameTypeId}`);
+  const exp = encodeURIComponent(`seasonId=${TEAM_CONFIG.season} and gameTypeId=${gameTypeId}`);
   // limit=-1 returns all players in one call — no pagination required
   const url = `/nhl-stats/stats/rest/en/skater/summary?isAggregate=false&isGame=false&sort=${sort}&start=0&limit=-1&cayenneExp=${exp}`;
   return await nhlFetch(url);
 }
 
 async function fetchGoalieLeaders(gameTypeId = 2) {
-  const season = '20252026';
   // Goalie endpoint only accepts seasonId in cayenneExp (not gameTypeId).
   // We fetch the regular season data (gameTypeId=2 is the default/only accepted).
   // For playoff ranking we still use the reg season leaderboard as context —
   // playoff goalie samples are too small for meaningful rank comparisons.
-  const exp = encodeURIComponent(`seasonId=${season} and gameTypeId=2`);
+  const exp = encodeURIComponent(`seasonId=${TEAM_CONFIG.season} and gameTypeId=2`);
   const url = `/nhl-stats/stats/rest/en/goalie/summary?limit=100&sort=wins&cayenneExp=${exp}`;
   const data = await nhlFetch(url);
   // Sort client-side by savePctg descending for SV%-based ranking
@@ -674,7 +675,7 @@ export function extractShotEvents(playByPlay) {
         teamId:       d.eventOwnerTeamId,
         shotType:     d.shotType,
         zoneCode:     d.zoneCode,
-        isCanes:      d.eventOwnerTeamId === CAR_TEAM_ID,
+        isCanes:      d.eventOwnerTeamId === TEAM_ID,
         shooterId:    shooterId || null,
         // Player names resolved inline from rosterSpots
         shooterName:  shooterId            ? (playerMap[shooterId]            || null) : null,
@@ -707,23 +708,23 @@ export function formatGameTime(utcStr) {
 
 export function getOpponent(game) {
   if (!game) return null;
-  return game.homeTeam?.abbrev === CAR_ABBR ? game.awayTeam : game.homeTeam;
+  return game.homeTeam?.abbrev === TEAM_ABBR ? game.awayTeam : game.homeTeam;
 }
 
 export function isHomeGame(game) {
-  return game?.homeTeam?.abbrev === CAR_ABBR;
+  return game?.homeTeam?.abbrev === TEAM_ABBR;
 }
 
 export function getCarScore(game) {
   if (!game) return null;
-  return game.homeTeam?.abbrev === CAR_ABBR
+  return game.homeTeam?.abbrev === TEAM_ABBR
     ? game.homeTeam?.score
     : game.awayTeam?.score;
 }
 
 export function getOppScore(game) {
   if (!game) return null;
-  return game.homeTeam?.abbrev === CAR_ABBR
+  return game.homeTeam?.abbrev === TEAM_ABBR
     ? game.awayTeam?.score
     : game.homeTeam?.score;
 }
@@ -731,7 +732,7 @@ export function getOppScore(game) {
 // ─── OPPONENT SCOUTING ───────────────────────────────────────
 export async function getTeamRecentGames(teamAbbr, count = 10, playoffsOnly = false) {
   return cached(`recentGames:${teamAbbr}:${count}:${playoffsOnly}`, async () => {
-    const data = await nhlFetch(`${BASE}/club-schedule-season/${teamAbbr}/${SEASON}`);
+    const data = await nhlFetch(`${BASE}/club-schedule-season/${teamAbbr}/${TEAM_CONFIG.season}`);
     const games = (data?.games || [])
       .filter(g => isCompleted(g) && (!playoffsOnly || g.gameType === 3))
       .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate))
@@ -752,7 +753,7 @@ export async function getTeamRecentGames(teamAbbr, count = 10, playoffsOnly = fa
 
 export async function getTeamTopPlayers(teamAbbr, gameType = 2) {
   return cached(`topPlayers:${teamAbbr}:${gameType}:v2`, async () => {
-    const data = await nhlFetch(`${BASE}/club-stats/${teamAbbr}/${SEASON}/${gameType}`);
+    const data = await nhlFetch(`${BASE}/club-stats/${teamAbbr}/${TEAM_CONFIG.season}/${gameType}`);
     const skaters = (data?.skaters || [])
       .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
       .slice(0, 5)
@@ -793,9 +794,10 @@ export const TEAM_COLORS = {
 };
 
 // ─── Team advanced stats ──────────────────────────────────────
-const TEAM_ID_CAR  = 12; // NHL team ID for CAR (used in team/summary)
-const FRANCHISE_CAR = 26; // Franchise ID (Whalers/Hurricanes) for puckPossessions, goalsForAgainst
-const STATS_SEASON = '20252026';
+// Convenience aliases — advanced stats endpoints use teamId and franchiseId directly
+const TEAM_ID_ADV   = TEAM_CONFIG.teamId;
+const FRANCHISE_ID  = TEAM_CONFIG.franchiseId;
+const STATS_SEASON  = TEAM_CONFIG.season;
 
 // Build URL for team stat endpoints.
 // Key: cayenneExp must use seasonId<=X and seasonId>=X (double-bound) not seasonId=X
@@ -803,18 +805,18 @@ const STATS_SEASON = '20252026';
 function teamStatsUrl(report, gameTypeId = 2) {
   const s = STATS_SEASON;
   const exp = encodeURIComponent(
-    `franchiseId=${FRANCHISE_CAR} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
+    `franchiseId=${FRANCHISE_ID} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
   );
   return `/nhl-stats/stats/rest/en/team/${report}?isAggregate=false&isGame=false&sort=wins&limit=1&cayenneExp=${exp}`;
 }
 
-// Find CAR from an array of team records
-function findCAR(data) {
+// Find the configured team from an array of team records
+function findTeam(data) {
   return data?.find(t =>
-    t.teamAbbrevs === 'CAR' ||
-    t.teamAbbrev  === 'CAR' ||
-    t.teamId === TEAM_ID_CAR ||
-    t.franchiseId === FRANCHISE_CAR
+    t.teamAbbrevs === TEAM_ABBR ||
+    t.teamAbbrev  === TEAM_ABBR ||
+    t.teamId      === TEAM_ID_ADV ||
+    t.franchiseId === FRANCHISE_ID
   ) || null;
 }
 
@@ -839,7 +841,7 @@ export async function getTeamCorsi(gameTypeId = 2) {
   const rt = await cached(`teamRealtime:${gameTypeId}`, async () => {
     const s   = STATS_SEASON;
     const exp = encodeURIComponent(
-      `franchiseId=${FRANCHISE_CAR} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
+      `franchiseId=${FRANCHISE_ID} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
     );
     const url = `/nhl-stats/stats/rest/en/team/realtime?isAggregate=false&isGame=false&sort=blockedShots&sortDirection=DESC&limit=1&cayenneExp=${exp}`;
     const d   = await nhlFetch(url).catch(() => null);
@@ -885,7 +887,7 @@ export async function getTeamRealtime(gameTypeId = 2) {
     // The NHL stats API 'realtime' report includes blockedShots, hits, giveaways, takeaways
     // Use same franchiseId filter as working team/summary endpoint
     const exp = encodeURIComponent(
-      `franchiseId=${FRANCHISE_CAR} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
+      `franchiseId=${FRANCHISE_ID} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
     );
     const url = `/nhl-stats/stats/rest/en/team/realtime?isAggregate=false&isGame=false&sort=blockedShots&sortDirection=DESC&limit=1&cayenneExp=${exp}`;
     const d   = await nhlFetch(url);
@@ -922,8 +924,8 @@ async function _getTeamHomeSplit(gameTypeId = 2) {
     nhlFetch(`/nhl-stats/stats/rest/en/team/summary?limit=50&sort=wins&cayenneExp=${awayExp}`),
   ]);
   return {
-    home: findCAR(home?.data) || null,
-    away: findCAR(away?.data) || null,
+    home: findTeam(home?.data) || null,
+    away: findTeam(away?.data) || null,
   };
 }
 
@@ -944,7 +946,7 @@ export async function getTeamGameLog(count = 20) {
   return cached(`gameLog:${count}`, () => _getTeamGameLog(count), TTL.SCHEDULE);
 }
 async function _getTeamGameLog(count = 20) {
-  const games = await nhlFetch(`${BASE}/club-schedule-season/${CAR_ABBR}/${SEASON}`);
+  const games = await nhlFetch(`${BASE}/club-schedule-season/${TEAM_ABBR}/${TEAM_CONFIG.season}`);
   const allGames = games?.games || [];
   const completed = allGames
     .filter(g => ['OFF','FINAL','F'].includes(g.gameState))
@@ -953,7 +955,7 @@ async function _getTeamGameLog(count = 20) {
     .reverse(); // chronological
 
   return completed.map(g => {
-    const home    = g.homeTeam?.abbrev === CAR_ABBR;
+    const home    = g.homeTeam?.abbrev === TEAM_ABBR;
     const carScore = home ? (g.homeTeam?.score ?? 0) : (g.awayTeam?.score ?? 0);
     const oppScore = home ? (g.awayTeam?.score ?? 0) : (g.homeTeam?.score ?? 0);
     const opp      = home ? g.awayTeam?.abbrev : g.homeTeam?.abbrev;
@@ -1009,7 +1011,8 @@ export function findGameOdds(oddsData, game) {
     const away = od.away_team?.toLowerCase() || '';
     const combined = home + ' ' + away;
     // Match by city/name fragment — "Carolina" or "Hurricanes"
-    return combined.includes('carolina') &&
+    const teamFragment = TEAM_CONFIG.fullNameFragment.toLowerCase();
+    return combined.includes(teamFragment) &&
            (combined.includes(oppName) || combined.includes(oppAbbr));
   }) || null;
 }
@@ -1026,9 +1029,12 @@ export function extractMoneyline(oddsEntry, isHome) {
   const market = book.markets?.find(m => m.key === 'h2h');
   if (!market?.outcomes?.length) return null;
 
-  const carOut = market.outcomes.find(o =>
-    o.name?.toLowerCase().includes('carolina') || o.name?.toLowerCase().includes('hurricanes')
-  );
+  const teamFragment  = TEAM_CONFIG.fullNameFragment.toLowerCase();
+  const teamDisplay   = TEAM_CONFIG.displayName.toLowerCase();
+  const carOut = market.outcomes.find(o => {
+    const name = o.name?.toLowerCase() || '';
+    return name.includes(teamFragment) || name.includes(teamDisplay);
+  });
   const oppOut = market.outcomes.find(o => o !== carOut);
 
   if (!carOut || !oppOut) return null;

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useFetch } from '../hooks/useFetch'
-import { getRoster, getPlayerStats, fetchPlayerRankings, getPlayoffGames, getStandings } from '../utils/nhlApi'
+import { getRoster, getPlayerStats, fetchPlayerRankings, getPlayoffGames, getStandings, TEAM_CONFIG } from '../utils/nhlApi'
 import { getPlayerAnalytics, getGoalieAnalytics, getPlayerShots, getGoalieShots, getTeamSkaterStatsFromDB } from '../utils/supabaseClient'
 import { findContract, contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING, CURRENT_SEASON } from '../utils/carContracts'
 import TeamLogo from '../components/TeamLogo'
@@ -8,8 +8,8 @@ import InfoTip from '../components/InfoTip'
 import IceRink from '../components/IceRink'
 import './PlayersView.css'
 
-const SEASON       = 20252026
-const SEASON_LABEL = '2025–26'
+const SEASON       = Number(TEAM_CONFIG.season.slice(0, 4) + TEAM_CONFIG.season.slice(4)) // e.g. 20252026
+const SEASON_LABEL = `${TEAM_CONFIG.season.slice(0, 4)}–${TEAM_CONFIG.season.slice(6)}`   // e.g. '2025–26'
 
 // ─── Stat definitions with tooltips ──────────────────────────
 
@@ -119,7 +119,7 @@ const GOALIE_STATS = [
 // ─── Main component ───────────────────────────────────────────
 
 export default function PlayersView() {
-  const { data: roster,      loading: rosterLoading } = useFetch(() => getRoster('CAR'))
+  const { data: roster,      loading: rosterLoading } = useFetch(() => getRoster(TEAM_CONFIG.abbr))
   const { data: poGames }   = useFetch(getPlayoffGames)
   const { data: standings } = useFetch(getStandings)
   const [selected, setSelected] = useState(null)
@@ -128,7 +128,7 @@ export default function PlayersView() {
   const inPlayoffs = (poGames?.length || 0) > 0
 
   const { data: skaterStats, loading: statsLoading } = useFetch(
-    () => getTeamSkaterStatsFromDB('CAR', 20252026, gameType),
+    () => getTeamSkaterStatsFromDB(TEAM_CONFIG.abbr, SEASON, gameType),
     [gameType]
   )
 
@@ -136,7 +136,7 @@ export default function PlayersView() {
     <div className="page">
       <div className="players-header">
         <h2 className="view-title">
-          <TeamLogo abbr="CAR" size={22} />
+          <TeamLogo abbr={TEAM_CONFIG.abbr} size={22} />
           Roster
         </h2>
         <p className="players-sub">Tap a player for detailed stats &amp; rankings</p>
@@ -241,7 +241,7 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
 
   // Fetch season shot data from Supabase
   const { data: shotData } = useFetch(
-    () => getPlayerShots(p.id),
+    () => getPlayerShots(p.id, undefined, TEAM_CONFIG.abbr),
     [p.id]
   )
 
@@ -274,7 +274,7 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
   // Fetch rankings — wait for both stats and standings to be ready
   const { data: rankings } = useFetch(
     () => (stats && standings?.length)
-      ? fetchPlayerRankings(p.id, isGoalie, inPlayoffs, p.teamAbbrev || 'CAR', standings)
+      ? fetchPlayerRankings(p.id, isGoalie, inPlayoffs, p.teamAbbrev || TEAM_CONFIG.abbr, standings)
       : Promise.resolve(null),
     [p.id, !!stats, !!standings?.length, inPlayoffs]
   )
@@ -411,7 +411,7 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
               </div>
             </div>
             {(() => {
-              const regStats = stats?.seasonTotals?.find(s => s.season === 20252026 && s.gameTypeId === 2)
+              const regStats = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 2)
               const pts   = regStats?.points ?? 0
               const gp    = regStats?.gamesPlayed ?? 0
               const isELC = contract.note === 'ELC' || contract.capHit < 1_200_000
@@ -1237,7 +1237,7 @@ function SkaterStatsTable({ skaters, loading, gameType = 2, onSelect }) {
   if (!skaters?.length) return (
     <div className="drill-empty">
       {gameType === 3
-        ? 'No playoff stats yet — data populates once Carolina advances.'
+        ? `No playoff stats yet — data populates once ${TEAM_CONFIG.displayName} advances.`
         : 'No stats available.'}
     </div>
   );

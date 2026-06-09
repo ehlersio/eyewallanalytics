@@ -1,5 +1,5 @@
 // EyeWall Analytics v1.1
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import Topbar from './components/Topbar'
 import BottomNav from './components/BottomNav'
@@ -7,6 +7,8 @@ import ShotMapView from './views/ShotMapView'
 import { PeriodSummaryProvider } from './utils/PeriodSummaryContext'
 import { capture } from './utils/analytics'
 import './App.css'
+import { hasTeamConfig } from './utils/teamConfig'
+import TeamPicker from './components/TeamPicker'
 
 // Lazy-load all non-initial routes — reduces initial bundle by ~64 KiB
 const ScheduleView  = lazy(() => import('./views/ScheduleView'));
@@ -44,6 +46,22 @@ function PageTracker() {
 }
 
 export default function App() {
+  // Show team picker on first launch (no team saved yet).
+  // After selection, reload so all modules re-initialize with the chosen team.
+  const [needsTeam, setNeedsTeam] = useState(() => !hasTeamConfig());
+
+  if (needsTeam) {
+    return (
+      <TeamPicker
+        onSelect={() => {
+          // Full page reload — ensures TEAM_CONFIG (module-level constant) re-reads
+          // the newly saved localStorage value across all imported modules.
+          window.location.reload();
+        }}
+      />
+    );
+  }
+
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <PeriodSummaryProvider>

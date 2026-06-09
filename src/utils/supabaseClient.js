@@ -89,10 +89,10 @@ export async function getPlayerAnalytics(season = 20252026) {
 // Returns shot data for one CAR player's shots.
 // car_game=true ensures we only get shots from CAR games.
 // team=CAR ensures we get the shooter (not opponent) rows.
-export async function getPlayerShots(playerId, season = 20252026) {
+export async function getPlayerShots(playerId, season = 20252026, team = 'CAR') {
   const rows = await sbFetch(
     `shot_events?player_id=eq.${playerId}&season=eq.${season}` +
-    `&car_game=eq.true&team=eq.CAR` +
+    `&car_game=eq.true&team=eq.${team}` +   // ← was hardcoded CAR
     `&select=x,y,event_type,period,time_in_period,shot_type&limit=2000`
   );
 

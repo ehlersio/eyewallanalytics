@@ -2,7 +2,8 @@
 // Corsi, Fenwick, PDO, Puck Luck, GSAx
 // All computable from public NHL API data
 
-const CAR_TEAM_ID = 12;
+import { TEAM_CONFIG } from './teamConfig';
+const CAR_TEAM_ID = TEAM_CONFIG.teamId;
 
 // ── Shot attempt classification ───────────────────────────────
 // Corsi  = goals + shots on goal + missed shots + blocked shots

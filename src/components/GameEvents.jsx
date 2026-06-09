@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import './GameEvents.css';
+import { TEAM_CONFIG } from '../utils/nhlApi';
 
 // ── Puck Drop Popup ───────────────────────────────────────────
 export function PuckDropPopup({ data, onClose }) {
@@ -199,7 +200,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
 
       // CAR goal — fire event, dedup by eventId
       // Also re-fire if scorer/assists changed (goal review)
-      if (play.typeDescKey === 'goal' && d.eventOwnerTeamId === 12) {
+      if (play.typeDescKey === 'goal' && d.eventOwnerTeamId === TEAM_CONFIG.teamId) {
         const eventId = play.eventId || `goal-${play.sortOrder}`;
         const scorer  = pName(d.scoringPlayerId);
         const assists = [d.assist1PlayerId, d.assist2PlayerId]
@@ -218,7 +219,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
       }
 
       // Opponent penalty → CAR power play
-      if (play.typeDescKey === 'penalty' && d.eventOwnerTeamId !== 12) {
+      if (play.typeDescKey === 'penalty' && d.eventOwnerTeamId !== TEAM_CONFIG.teamId) {
         const penId = String(play.eventId || play.sortOrder);
         if (!shownPenalties.current.has(penId)) {
           shownPenalties.current.add(penId);
@@ -271,7 +272,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
     if (carScore > oppScore) {
       gameEndFired.current = true;
       sessionStorage.setItem(sessionKey, '1');
-      setWinPopup({ score: `CAR ${carScore} – ${oppAbbrev} ${oppScore}` });
+      setWinPopup({ score: `${TEAM_CONFIG.abbr} ${carScore} – ${oppAbbrev} ${oppScore}` });
     }
   }, [pbp?.gameState, pbp?.plays?.length]);
 

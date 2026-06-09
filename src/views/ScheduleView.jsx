@@ -6,6 +6,7 @@ import {
   buildCarPlayoffSummary, formatGameDate, formatGameTime,
   getOpponent, isHomeGame, getCarScore, getOppScore,
   TEAM_COLORS, getNhlOdds, findGameOdds, extractMoneyline, oddsToImplied,
+  TEAM_CONFIG,
 } from '../utils/nhlApi';
 import TeamLogo from '../components/TeamLogo';
 import { CalendarView } from '../components/CalendarView';
@@ -15,7 +16,7 @@ import { MatchupDetail, computeWinPct } from '../components/MatchupDetail';
 import './ScheduleView.css';
 
 const TABS = ['Playoffs', 'Regular Season'];
-const CAR_ABBR = 'CAR';
+const CAR_ABBR = TEAM_CONFIG.abbr;
 
 export default function ScheduleView() {
   const [tab, setTab]                   = useState('Playoffs');

@@ -5,7 +5,7 @@ import {
   getPlayoffGames, buildCarPlayoffSummary,
   getTeamCorsi, getTeamRealtime, getTeamScoreState, getTeamPowerplay, getTeamPenaltyKill,
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
-  getTeamSeasonRankings,
+  getTeamSeasonRankings, TEAM_CONFIG,
 } from '../utils/nhlApi'
 import { getCarGameLog } from '../utils/supabaseClient'
 import { CONTRACTS, DRAFT_PICKS, getCapSummary, CAP_CEILING, CURRENT_SEASON, CONTRACT_DATA_DATE } from '../utils/carContracts'
@@ -16,13 +16,15 @@ import TeamLogo from '../components/TeamLogo'
 import { TEAM_COLORS } from '../utils/nhlApi'
 import './TeamView.css'
 
-const TABS = ['Overview', 'Advanced', 'Splits', 'Trends', 'Cap & Picks']
+const TABS = ['Overview', 'Advanced', 'Splits', 'Trends',
+  ...(TEAM_CONFIG.abbr === 'CAR' ? ['Cap & Picks'] : [])
+]
 
 export default function TeamView() {
   const [tab, setTab] = useState('Overview')
 
   // Core data
-  const { data: stats,        loading: statsLoading  } = useFetch(() => getTeamStats('CAR'))
+  const { data: stats,        loading: statsLoading  } = useFetch(() => getTeamStats(TEAM_CONFIG.abbr))
   const { data: standings,    loading: standLoading  } = useFetch(getStandings)
   const { data: playoffGames, loading: poLoading     } = useFetch(getPlayoffGames)
 
@@ -37,7 +39,7 @@ export default function TeamView() {
   const { data: gameLog    } = useFetch(() => getTeamGameLog(20))
   const { data: rankings   } = useFetch(() => getTeamSeasonRankings(2))
 
-  const carStanding    = standings?.find(t => t.teamAbbrev?.default === 'CAR')
+  const carStanding    = standings?.find(t => t.teamAbbrev?.default === TEAM_CONFIG.abbr)
   const playoffSummary = buildCarPlayoffSummary(playoffGames || [])
   const inPlayoffs     = (playoffGames?.length || 0) > 0
 
@@ -70,10 +72,10 @@ export default function TeamView() {
   return (
     <div className="page">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-        <TeamLogo abbr="CAR" size={28} />
-        <h2 className="view-title" style={{ margin: 0 }}>Carolina Hurricanes</h2>
+        <TeamLogo abbr={TEAM_CONFIG.abbr} size={28} />
+        <h2 className="view-title" style={{ margin: 0 }}>{TEAM_CONFIG.displayName}</h2>
       </div>
-      <p className="view-sub">2025–26 season</p>
+      <p className="view-sub">{TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} season</p>
 
       {/* Tab bar */}
       <div className="team-tabs">

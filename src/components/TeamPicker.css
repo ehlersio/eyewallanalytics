@@ -1,0 +1,120 @@
+.team-picker-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: var(--bg, #0d0d0f);
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+    padding: 48px 16px 96px;
+}
+
+.team-picker-inner {
+    width: 100%;
+    max-width: 720px;
+    padding-bottom: 48px;
+}
+
+.team-picker-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.team-picker-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text, #f0f0f0);
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+}
+
+.team-picker-sub {
+    font-size: 0.875rem;
+    color: var(--text-dim, #888);
+    margin: 0;
+}
+
+.team-picker-divisions {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    margin-bottom: 48px;
+}
+
+.team-picker-division-label {
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim, #888);
+    margin-bottom: 12px;
+}
+
+.team-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.team-picker-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 8px 12px;
+    border: 1px solid var(--border, #2a2a2e);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, transform 0.1s;
+    background: transparent;
+}
+
+.team-picker-tile:hover {
+    transform: translateY(-2px);
+}
+
+.team-picker-tile:active {
+    transform: translateY(0);
+}
+
+.team-picker-abbr {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--text-dim, #888);
+    line-height: 1;
+}
+
+.team-picker-name {
+    font-size: 0.6875rem;
+    color: var(--text-dim, #888);
+    line-height: 1;
+    text-align: center;
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    .team-picker-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+    }
+
+    .team-picker-tile {
+        padding: 10px 4px 8px;
+    }
+
+    .team-picker-title {
+        font-size: 1.375rem;
+        }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .team-picker-tile {
+        transition: none;
+    }
+}
+      

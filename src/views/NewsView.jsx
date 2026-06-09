@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import './NewsView.css';
 import { capture } from '../utils/analytics';
+import { TEAM_CONFIG } from '../utils/nhlApi';
 
 const WORKER_URL  = import.meta.env.VITE_WORKER_URL || '';
 const PAGE_SIZE   = 10;
@@ -79,11 +80,16 @@ export default function NewsView() {
   const fetchArticles = useCallback(async () => {
     if (!WORKER_URL) { setError('Worker URL not configured'); setLoading(false); return; }
     if (fetchingRef.current) return;
+    if (TEAM_CONFIG.abbr !== 'CAR') {
+      setError(`News for ${TEAM_CONFIG.displayName} is coming soon.`);
+      setLoading(false);
+      return;
+    }
     fetchingRef.current = true;
     setLoading(true);
     setError(null);
     try {
-      const res  = await fetch(`${WORKER_URL}/cache/${encodeURIComponent('news:CAR')}`, { cache: 'no-store' });
+      const res  = await fetch(`${WORKER_URL}/cache/${encodeURIComponent(`news:${TEAM_CONFIG.abbr}`)}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('News not yet available — check back soon');
       const data = await res.json();
       const arr = Array.isArray(data) ? data : [];
@@ -128,7 +134,7 @@ export default function NewsView() {
       <div className="news-header card">
         <div className="news-header-row">
           <div>
-            <div className="news-title">🌀 Canes News</div>
+            <div className="news-title">{TEAM_CONFIG.displayName} News</div>
             {lastFetch && (
               <div className="news-updated">Updated {timeAgo(lastFetch.toISOString())} · {articles.length} articles</div>
             )}
