@@ -147,9 +147,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
   const puckDropFired = useRef(false);
 
   // Persist lastPlayIdx to sessionStorage so manual refreshes don't retrigger old events
-  const lastPlayIdx  = useRef(
-    gameId ? parseInt(sessionStorage.getItem(`lastPlay_${gameId}`) || '-1', 10) : -1
-  );
+  const lastPlayIdx = useRef(-1);
   const gameEndFired = useRef(false);
   const shownGoals   = useRef(new Set(
     gameId ? JSON.parse(sessionStorage.getItem(`goals_${gameId}`) || '[]') : []
@@ -172,6 +170,14 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
   useEffect(() => {
     if (isLive) wasLiveRef.current = true;
   }, [isLive]);
+
+  // Reset on game change — new game ID means fresh state
+  useEffect(() => {
+    wasLiveRef.current = false;
+    lastPlayIdx.current = gameId
+      ? parseInt(sessionStorage.getItem(`lastPlay_${gameId}`) || '-1', 10)
+      : -1;
+  }, [gameId]);
 
   // Process new plays — runs when PBP updates regardless of isLive
   // so OT goals aren't missed when gameState flips to OFF
@@ -214,7 +220,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
           shownGoals.current.add(goalSig);
           if (gameId) sessionStorage.setItem(`goals_${gameId}`, JSON.stringify([...shownGoals.current]));
           setGoalPopup({ scorer, assists, shotType: d.shotType || null, period: per, time });
-          return;
+          continue;
         }
       }
 
@@ -232,7 +238,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
             period:      per,
             time,
           });
-          return;
+          continue;
         }
       }
     }

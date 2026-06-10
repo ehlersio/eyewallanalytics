@@ -268,10 +268,21 @@ export default function ShotMapView() {
         const carGoalie   = gameHome ? homeGoalie  : awayGoalie;
         const oppGoalie   = gameHome ? awayGoalie  : homeGoalie;
         let strength = 'EV';
-        if (carSkaters > oppSkaters)                               strength = 'PP';
-        else if (carSkaters < oppSkaters)                          strength = 'SH';
-        else if (carSkaters === oppSkaters && carSkaters < 5)      strength = '4v4';
-        if (!carGoalie) strength = `${strength} (EN)`;
+        if (!oppGoalie && carSkaters === oppSkaters - 1) {
+          // Opponent pulled goalie — extra attacker, not a real PP
+          strength = 'OPP EN';
+        } else if (!carGoalie && oppSkaters === carSkaters - 1) {
+          // CAR pulled goalie
+          strength = 'CAR EN';
+        } else if (carSkaters > oppSkaters) {
+          strength = 'PP';
+        } else if (carSkaters < oppSkaters) {
+          strength = 'SH';
+        } else if (carSkaters === oppSkaters && carSkaters < 5) {
+          strength = '4v4';
+        }
+        // Legacy EN tag for other edge cases (e.g. 6v6 both pulled)
+        if (!carGoalie && strength === 'EV') strength = 'CAR EN';
         return { carSkaters, oppSkaters, strength, code: sc, carEN: !carGoalie, oppEN: !oppGoalie };
       }
     }
@@ -516,9 +527,11 @@ export default function ShotMapView() {
       const isCarPP = (sc) => {
         if (!sc || sc.length < 4) return false;
         const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
+        const awayG = sc[0] === '1',   homeG = sc[3] === '1';
         const carS  = gameHome ? homeS : awayS;
         const oppS  = gameHome ? awayS : homeS;
-        return carS > oppS;
+        const carG  = gameHome ? homeG : awayG;
+        return carS > oppS && carG;
       };
 
       // Walk plays and group into PP windows
@@ -739,9 +752,11 @@ export default function ShotMapView() {
       const isOppPP = (sc) => {
         if (!sc || sc.length < 4) return false;
         const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
+        const awayG = sc[0] === '1',   homeG = sc[3] === '1';
         const carS  = gameHome ? homeS : awayS;
         const oppS  = gameHome ? awayS : homeS;
-        return oppS > carS;
+        const oppG  = gameHome ? awayG : homeG;
+        return oppS > carS && oppG;
       };
 
       // Walk plays and group into PK windows
@@ -902,6 +917,7 @@ export default function ShotMapView() {
     let carFOW = 0, carFOL = 0;
     let carPPGoals = 0, carPPOpps = 0;
     let carPens = 0, oppPens = 0; // track PP goals and opportunities
+    let carPKOpps = 0, carPKGoalsAgainst = 0;
 
     // Track power play opportunities from penalty events
     const activePP = new Set(); // sortOrder when PP started
@@ -927,18 +943,47 @@ export default function ShotMapView() {
       }
     });
 
-    // CAR PP goals = goals scored while CAR had more skaters
+    // CAR PP goals = goals scored while CAR had more skaters (and CAR goalie still in)
     plays.forEach(p => {
       if (p.typeDescKey !== 'goal') return;
       const isCar = p.details?.eventOwnerTeamId === carId;
       if (!isCar) return;
       const sc = p.situationCode;
       if (!sc || sc.length < 4) return;
-      const awayS = parseInt(sc[1]);
-      const homeS = parseInt(sc[2]);
+      const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
+      const awayG = sc[0] === '1',   homeG = sc[3] === '1';
       const carS  = gameHome ? homeS : awayS;
       const oppS  = gameHome ? awayS : homeS;
-      if (carS > oppS) carPPGoals++;
+      const carG  = gameHome ? homeG : awayG;
+      if (carS > oppS && carG) carPPGoals++;
+    });
+
+    // PK goals against — OPP scoring while on PP (OPP goalie still in)
+    plays.forEach(p => {
+      if (p.typeDescKey !== 'goal') return;
+      const sc = p.situationCode;
+      if (!sc || sc.length < 4) return;
+      const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
+      const awayG = sc[0] === '1',   homeG = sc[3] === '1';
+      const carS  = gameHome ? homeS : awayS;
+      const oppS  = gameHome ? awayS : homeS;
+      const oppG  = gameHome ? awayG : homeG;
+      if (oppS > carS && oppG && p.details?.eventOwnerTeamId !== carId) carPKGoalsAgainst++;
+    });
+
+    // Count distinct OPP PP windows as PK opportunities
+    let onOppPP = false;
+    plays.forEach(p => {
+      const sc = p.situationCode;
+      if (!sc || sc.length < 4) return;
+      const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
+      const awayG = sc[0] === '1',   homeG = sc[3] === '1';
+      const carS  = gameHome ? homeS : awayS;
+      const oppS  = gameHome ? awayS : homeS;
+      const oppG  = gameHome ? awayG : homeG;
+      const isOppPP = oppS > carS && oppG;
+      if (isOppPP && !onOppPP) { carPKOpps++; onOppPP = true; }
+      if (!isOppPP) onOppPP = false;
     });
 
     // xG — simple distance+angle model from shot coordinates
@@ -975,31 +1020,6 @@ export default function ShotMapView() {
     // PP stats from boxscore (more reliable for PP%)
     const bs       = boxscore?.playerByGameStats;
     const ppRaw    = getGameStat('powerPlay');
-
-    // PK stats — OPP PP opps = CAR PK opps
-    let carPKOpps = 0, carPKGoalsAgainst = 0;
-    plays.forEach(p => {
-      if (p.typeDescKey !== 'goal') return;
-      const sc = p.situationCode;
-      if (!sc || sc.length < 4) return;
-      const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
-      const carS  = gameHome ? homeS : awayS;
-      const oppS  = gameHome ? awayS : homeS;
-      // OPP on PP = CAR killing penalty
-      if (oppS > carS && p.details?.eventOwnerTeamId !== carId) carPKGoalsAgainst++;
-    });
-    // Count distinct OPP PP windows as PK opportunities
-    let onOppPP = false;
-    plays.forEach(p => {
-      const sc = p.situationCode;
-      if (!sc || sc.length < 4) return;
-      const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
-      const carS  = gameHome ? homeS : awayS;
-      const oppS  = gameHome ? awayS : homeS;
-      const isOppPP = oppS > carS;
-      if (isOppPP && !onOppPP) { carPKOpps++; onOppPP = true; }
-      if (!isOppPP) onOppPP = false;
-    });
 
     return {
       sog:      { car: carSOG,    opp: oppSOG },
@@ -1188,7 +1208,8 @@ export default function ShotMapView() {
                 <span className="score-num team-primary-text">{carScore ?? '—'}</span>
               </div>
               {/* CAR PP indicator */}
-              {(isLive || debugSituation) && (debugSituation?.team === CAR_ABBR || currentSituation?.strength === 'PP') && (
+              {(isLive || debugSituation) && (debugSituation?.team === CAR_ABBR || 
+                (currentSituation?.strength === 'PP' && !currentSituation?.carEN)) && (
                 <div className="pp-indicator car-pp">
                   ⚡ {(debugSituation?.carSkaters === 5 && debugSituation?.oppSkaters === 3) ? '5v3 ' : currentSituation && currentSituation.carSkaters !== 5 ? `${currentSituation.carSkaters}v${currentSituation.oppSkaters} ` : ''}Power Play
                 </div>
@@ -1257,9 +1278,12 @@ export default function ShotMapView() {
                 <TeamLogo abbr={oppAbbr} size={30} color={oppColor} />
               </div>
               {/* Opponent PP indicator */}
-              {(isLive || debugSituation) && (debugSituation?.team === 'OPP' || currentSituation?.strength === 'SH') && (
+              {(isLive || debugSituation) && (debugSituation?.team === 'OPP' || 
+                (currentSituation?.strength === 'SH' && !currentSituation?.oppEN)) && (
                 <div className="pp-indicator opp-pp">
-                  ⚡ {currentSituation && currentSituation.oppSkaters < 4 ? `${currentSituation.oppSkaters}v${currentSituation.carSkaters} ` : ''}{oppAbbr || 'OPP'} Power Play
+                  ⚡ {currentSituation && currentSituation.oppSkaters < 4 
+                    ? `${currentSituation.oppSkaters}v${currentSituation.carSkaters} ` 
+                    : ''}{oppAbbr || 'OPP'} Power Play
                 </div>
               )}
               {(isLive || debugSituation?.oppEN) && (currentSituation?.oppEN || debugSituation?.oppEN) && (
@@ -2531,9 +2555,11 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       // situationCode: [awayGoalie][awaySkaters][homeSkaters][homeGoalie]
       const awayS = parseInt(sc[1]);
       const homeS = parseInt(sc[2]);
+      const awayG = sc[0] === '1', homeG = sc[3] === '1';
       const carS  = gameHome ? homeS : awayS;
       const oppS  = gameHome ? awayS : homeS;
-      return oppS > carS;
+      const oppG  = gameHome ? awayG : homeG;
+      return oppS > carS && oppG;
     }).length;
 
     // Only show "perfect PK" after OPP PP has expired — don't fire while penalty is still active
@@ -2798,9 +2824,11 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       const sc = p.situationCode;
       if (!sc || sc.length < 4) return false;
       const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
+      const awayG = sc[0] === '1',   homeG = sc[3] === '1';
       const carS  = gameHome ? homeS : awayS;
       const oppS  = gameHome ? awayS : homeS;
-      return oppS > carS;
+      const oppG  = gameHome ? awayG : homeG;
+      return oppS > carS && oppG;
     });
     const totalCarPens = plays.filter(p =>
       p.typeDescKey === 'penalty' && p.details?.eventOwnerTeamId === carTeam
