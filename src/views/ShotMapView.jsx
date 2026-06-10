@@ -23,7 +23,8 @@ import PeriodSummary from '../components/PeriodSummary';
 import { usePeriodSummary, useGameSummary } from '../hooks/usePeriodSummary';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 
-const CAR_ABBR = TEAM_CONFIG.abbr;
+const CAR_ABBR    = TEAM_CONFIG.abbr;
+const WINDOW_MINS = 3; // rolling window for momentum calculation
 
 export default function ShotMapView() {
   // ── Dev replay injection ──────────────────────────────────────
