@@ -7,7 +7,7 @@ import {
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
   getTeamSeasonRankings, TEAM_CONFIG,
 } from '../utils/nhlApi'
-import { getCarGameLog } from '../utils/supabaseClient'
+import { getTeamGameLog as getDbTeamGameLog } from '../utils/supabaseClient'
 import { CONTRACTS, DRAFT_PICKS, getCapSummary, CAP_CEILING, CURRENT_SEASON, CONTRACT_DATA_DATE } from '../utils/carContracts'
 import { StatBar, MetCard } from '../components/StatBar'
 import { seasonPDO } from '../utils/advancedStats'
@@ -514,7 +514,7 @@ function TrendsTab({ gameLog }) {
   const [dbGameLog, setDbGameLog] = React.useState(null)
 
   React.useEffect(() => {
-    getCarGameLog().then(setDbGameLog).catch(() => {})
+    getDbTeamGameLog(120, TEAM_CONFIG.season, TEAM_CONFIG.abbr).then(setDbGameLog).catch(() => {})
   }, [])
 
   // Build a map from gameId → dbGame for score-first and PP/PK lookup
