@@ -37,6 +37,35 @@
   --nav-height: 52px;
 }
 
+/* ── Light mode token overrides ── */
+[data-theme="light"] {
+  --bg0: #f4f6fa;
+  --bg1: #edf0f5;
+  --bg2: #e6eaf2;
+  --bg3: #d8dde8;
+  --bg4: #c8cedb;
+
+  --red: #b81c00;
+  --red-bright: #cc2200;
+  --red-dim: rgba(184, 28, 0, 0.10);
+  --red-border: rgba(184, 28, 0, 0.25);
+
+  --blue: #1a3a99;
+  --blue-bright: #1a3a99;
+  --blue-dim: rgba(26, 58, 153, 0.10);
+
+  --green: #1e8f57;
+  --amber: #b87400;
+  --purple: #6644cc;
+
+  --text: #0d1117;
+  --text-muted: #4a5568;
+  --text-dim: #6b7280;
+
+  --border: rgba(0, 0, 0, 0.08);
+  --border-2: rgba(0, 0, 0, 0.14);
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body, #root {
@@ -101,6 +130,8 @@ svg { display: block; }
 .dual-bar .fill-red { background: var(--red); height: 100%; transition: width 0.4s ease; }
 .dual-bar .fill-blue { background: var(--blue-bright); height: 100%; transition: width 0.4s ease; }
 .dual-bar .fill-green { background: var(--green); height: 100%; transition: width 0.4s ease; }
+
+[data-theme="light"] .dual-bar { background: rgba(0,0,0,0.07); }
 
 /* Team-primary utility classes — set by JS via --team-primary on :root */
 .team-primary-text {

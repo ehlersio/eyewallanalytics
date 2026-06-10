@@ -222,7 +222,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
 
   // Recent form last 5
   const formDots = (games, isCar) => (games || []).slice(0, 5).reverse().map((g, i) => {
-    const color = g.result === 'W' ? '#4ade80' : g.result === 'OTL' ? '#fb923c' : '#ce1126';
+    const color = g.result === 'W' ? '#4ade80' : g.result === 'OTL' ? '#fb923c' : '#ef384c';
     return (
       <div key={i} style={{
         width: 20, height: 20, borderRadius: 4, background: color + '33',
@@ -279,7 +279,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
           <div style={{fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
             color:'rgba(255,255,255,0.25)', marginBottom:6}}>Projected Total Goals</div>
           <div style={{fontSize:22, fontWeight:800, marginBottom:3}}>
-            <span style={{color: TEAM_CONFIG.primaryColor || '#ce1126'}}>{TEAM_CONFIG.abbr} {+carExp.toFixed(1)}</span>
+            <span style={{color: TEAM_CONFIG.displayColor}}>{TEAM_CONFIG.abbr} {+carExp.toFixed(1)}</span>
             <span style={{color:'rgba(255,255,255,0.2)'}}> – </span>
             <span style={{color: oppColor}}>{+oppExp.toFixed(1)} {oppAbbr}</span>
           </div>
@@ -292,7 +292,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
             color:'rgba(255,255,255,0.25)', marginBottom:8}}>Recent Form (last 5)</div>
           <div style={{display:'flex', flexDirection:'column', gap:6}}>
             <div style={{display:'flex', alignItems:'center', gap:6}}>
-              <span style={{fontSize:10, fontWeight:700, color: TEAM_CONFIG.primaryColor || '#ce1126', width:28}}>{TEAM_CONFIG.abbr}</span>
+              <span style={{fontSize:10, fontWeight:700, color: TEAM_CONFIG.displayColor, width:28}}>{TEAM_CONFIG.abbr}</span>
               <div style={{display:'flex', gap:3}}>{formDots(carRecentGames, true)}</div>
             </div>
             <div style={{display:'flex', alignItems:'center', gap:6}}>
@@ -306,7 +306,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
       {/* Top players + goalies */}
       <div style={{display:'flex', gap:16, padding:'0 52px 14px'}}>
         {[
-          { label: TEAM_CONFIG.abbr, color: TEAM_CONFIG.primaryColor || 'var(--team-primary)', players: carPlayers },
+          { label: TEAM_CONFIG.abbr, color: TEAM_CONFIG.displayColor, players: carPlayers },
           { label: oppAbbr, color: oppColor, players: oppPlayers },
         ].map(({ label, color, players }) => (
           <div key={label} style={{flex:1, background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'12px 14px'}}>
@@ -326,7 +326,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
                 </div>
                 <div style={{display:'flex', gap:10, fontSize:12}}>
                   <span>W {players.goalies[0].wins}</span>
-                  <span style={{color: players.goalies[0].gaa < 2.5 ? '#4ade80' : players.goalies[0].gaa > 3.2 ? '#ce1126' : 'rgba(255,255,255,0.5)'}}>
+                  <span style={{color: players.goalies[0].gaa < 2.5 ? '#4ade80' : players.goalies[0].gaa > 3.2 ? '#ef384c' : 'rgba(255,255,255,0.5)'}}>
                     GAA {players.goalies[0].gaa?.toFixed(2) ?? '—'}
                   </span>
                   <span>SV% {players.goalies[0].savePct?.toFixed(4) ?? '—'}</span>
@@ -356,7 +356,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
                   <div key={i} style={{display:'flex', alignItems:'center', gap:8,
                     padding:'6px 10px', background:'rgba(255,255,255,0.03)',
                     borderRadius:7, border:'0.5px solid rgba(255,255,255,0.06)'}}>
-                    <span style={{fontSize:11, fontWeight:700, color: TEAM_CONFIG.primaryColor || '#ce1126', minWidth:42, flexShrink:0}}>
+                    <span style={{fontSize:11, fontWeight:700, color: TEAM_CONFIG.displayColor, minWidth:42, flexShrink:0}}>
                       Line {i + 1}
                     </span>
                     <div style={{flex:1, display:'flex', gap:10, flexWrap:'wrap'}}>
@@ -373,7 +373,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
                     </div>
                     <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end', flexShrink:0}}>
                       <span style={{fontSize:13, fontWeight:800,
-                        color: xgf != null ? (good ? '#4ade80' : '#ce1126') : 'rgba(255,255,255,0.25)'}}>
+                        color: xgf != null ? (good ? '#4ade80' : '#ef384c') : 'rgba(255,255,255,0.25)'}}>
                         {xgf != null ? `${xgf.toFixed(1)}%` : '—'}
                       </span>
                       <span style={{fontSize:9, color:'rgba(255,255,255,0.25)', letterSpacing:'0.05em'}}>xGF%</span>
@@ -406,7 +406,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
                       </div>
                       <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end', flexShrink:0}}>
                         <span style={{fontSize:13, fontWeight:800,
-                          color: xgf != null ? (good ? '#4ade80' : '#ce1126') : 'rgba(255,255,255,0.25)'}}>
+                          color: xgf != null ? (good ? '#4ade80' : '#ef384c') : 'rgba(255,255,255,0.25)'}}>
                           {xgf != null ? `${xgf.toFixed(1)}%` : '—'}
                         </span>
                         <span style={{fontSize:9, color:'rgba(255,255,255,0.25)', letterSpacing:'0.05em'}}>xGF%</span>

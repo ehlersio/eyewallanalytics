@@ -54,7 +54,7 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--red-bright);
-  background: rgba(206, 17, 38, 0.12);
+  background: rgba(var(--team-primary-rgb), 0.12);
   padding: 4px 10px;
   border-radius: 20px;
 }
@@ -262,7 +262,7 @@
   flex-shrink: 0;
 }
 .ps-penalty-team.car {
-  background: rgba(206,17,38,0.15);
+  background: rgba(var(--team-primary-rgb), 0.15);
   color: var(--red-bright);
 }
 .ps-penalty-team.opp {
@@ -273,8 +273,8 @@
 /* AI Narrative */
 .ps-narrative {
   margin: 0 14px;
-  background: linear-gradient(135deg, rgba(206,17,38,0.06), rgba(74,144,226,0.04));
-  border: 0.5px solid rgba(206,17,38,0.2);
+  background: linear-gradient(135deg, rgba(var(--team-primary-rgb), 0.06), rgba(74,144,226,0.04));
+  border: 0.5px solid rgba(var(--team-primary-rgb), 0.2);
   border-radius: 12px;
   padding: 14px;
 }
@@ -408,8 +408,8 @@
   font-weight: 800;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: var(--red-bright, #ce1126);
-  background: rgba(206,17,38,0.15);
+  color: var(--team-canvas);
+  background: rgba(var(--team-canvas-rgb), 0.15);
   padding: 6px 16px;
   border-radius: 20px;
 }
@@ -435,7 +435,7 @@
   letter-spacing: 0.1em;
   color: rgba(255,255,255,0.4);
 }
-.ps-canvas-team-abbr.car { color: #ce1126; }
+.ps-canvas-team-abbr.car { color: var(--team-canvas); }
 .ps-canvas-score-num {
   font-size: 77px;
   font-weight: 900;
@@ -472,7 +472,7 @@
   color: #fff;
 }
 .ps-canvas-stat-val.good { color: #4ade80; }
-.ps-canvas-stat-val.bad  { color: #ce1126; }
+.ps-canvas-stat-val.bad  { color: var(--team-canvas); }
 .ps-canvas-stat-label {
   font-size: 12px;
   font-weight: 700;
@@ -499,7 +499,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #ce1126;
+  background: var(--team-canvas);
   flex-shrink: 0;
 }
 .ps-canvas-goal-dot.opp { background: rgba(255,255,255,0.2); }
@@ -516,8 +516,8 @@
 
 .ps-canvas-narrative {
   margin: 0 52px 24px;
-  background: rgba(206,17,38,0.06);
-  border-left: 3px solid #ce1126;
+  background: rgba(var(--team-canvas-rgb), 0.06);
+  border-left: 3px solid var(--team-canvas);
   padding: 14px 18px;
   border-radius: 0 8px 8px 0;
 }
@@ -637,7 +637,7 @@
   cursor: pointer;
   transition: transform 0.15s, background 0.15s;
 }
-.ps-carousel-dot.car { background: rgba(206,17,38,0.4); }
+.ps-carousel-dot.car { background: rgba(var(--team-primary-rgb), 0.4); }
 .ps-carousel-dot.opp { background: rgba(255,255,255,0.15); }
 .ps-carousel-dot.active { transform: scale(1.4); }
 .ps-carousel-dot.active.car { background: var(--red-bright); }
@@ -743,7 +743,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #ce1126;
+  color: var(--team-canvas);
   margin-bottom: 6px;
 }
 
@@ -763,8 +763,8 @@
 }
 
 .ps-canvas-narrative {
-  background: rgba(206,17,38,0.08);
-  border-left: 3px solid #ce1126;
+  background: rgba(var(--team-canvas-rgb), 0.08);
+  border-left: 3px solid var(--team-canvas);
 }
 
 /* ── Share canvas additions ───────────────────────────────────── */
@@ -869,8 +869,8 @@
 
 /* ── Game summary chip in bell drawer ────────────────────────── */
 .notif-summary-chip-game {
-  border: 0.5px solid rgba(206,17,38,0.3);
-  background: rgba(206,17,38,0.06);
+  border: 0.5px solid rgba(var(--team-primary-rgb), 0.3);
+  background: rgba(var(--team-primary-rgb), 0.06);
 }
 .notif-summary-chip-game .notif-summary-chip-period {
   color: var(--red-bright);
@@ -937,8 +937,8 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: rgba(206,17,38,0.2);
-  border: 1.5px solid rgba(206,17,38,0.4);
+  background: rgba(var(--team-canvas-rgb), 0.2);
+  border: 1.5px solid rgba(var(--team-canvas-rgb), 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1022,7 +1022,7 @@
   padding-bottom: 4px;
   border-bottom: 0.5px solid rgba(255,255,255,0.08);
 }
-.ps-canvas-goals-col-header.car { color: #ce1126; }
+.ps-canvas-goals-col-header.car { color: var(--team-canvas); }
 
 .ps-canvas-goal-compact {
   display: flex;

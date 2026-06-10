@@ -54,7 +54,7 @@ function PredictionCanvas({
         <div className="pred-canvas-center">
           {seriesEntry && (
             <div className="pred-canvas-series">
-              Series: <span style={{color:'var(--team-primary)'}}>{seriesEntry.carWins}</span>
+              Series: <span style={{color:'var(--team-canvas)'}}>{seriesEntry.carWins}</span>
               {' – '}
               <span style={{color: oppColor}}>{seriesEntry.oppWins}</span>
             </div>
@@ -68,7 +68,7 @@ function PredictionCanvas({
             </div>
           </div>
           <div className="pred-canvas-bar-labels">
-            <span style={{color:'var(--team-primary)'}}>{TEAM_CONFIG.abbr}</span>
+            <span style={{color:'var(--team-canvas)'}}>{TEAM_CONFIG.abbr}</span>
             <span style={{color: oppColor}}>{oppAbbr}</span>
           </div>
         </div>
@@ -85,7 +85,7 @@ function PredictionCanvas({
         <div className="pred-canvas-score">
           <div className="pred-canvas-score-label">Projected Score</div>
           <div className="pred-canvas-score-val">
-            <span style={{color:'var(--team-primary)'}}>{TEAM_CONFIG.abbr} {predCarScore}</span>
+            <span style={{color:'var(--team-canvas)'}}>{TEAM_CONFIG.abbr} {predCarScore}</span>
             <span style={{color:'rgba(255,255,255,0.2)'}}> – </span>
             <span style={{color: oppColor}}>{predOppScore} {oppAbbr}</span>
           </div>

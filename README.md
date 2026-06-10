@@ -1,6 +1,6 @@
 # EyeWall Analytics
 
-> Carolina Hurricanes advanced stats and analytics — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, and WAR/percentile rankings.
+> Advanced NHL analytics for all 32 teams — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, and WAR/percentile rankings.
 
 **Live at:** [eyewallanalytics.com](https://eyewallanalytics.com)  
 **Contact:** matt@eyewallanalytics.com  
@@ -10,7 +10,9 @@
 
 ## Overview
 
-EyeWall Analytics is a React PWA delivering real-time and historical Carolina Hurricanes data entirely from the public NHL API and MoneyPuck. It combines live polling, a Cloudflare Worker caching layer, Web Push notifications, Claude AI period and game summaries, player shot heat maps, MoneyPuck-powered WAR/percentile analytics, and true RAPM via ridge regression into a mobile-first experience for Canes fans who want to go deeper than the box score.
+EyeWall Analytics is a React PWA delivering real-time and historical NHL data entirely from the public NHL API and MoneyPuck. It combines live polling, a Cloudflare Worker caching layer, Web Push notifications, Claude AI period and game summaries, player shot heat maps, MoneyPuck-powered WAR/percentile analytics, and true RAPM via ridge regression into a mobile-first experience for hockey fans who want to go deeper than the box score.
+
+Users select their team on first launch — all views, colors, and data scope to the selected team. The team and theme preference are persisted to `localStorage` and applied on every subsequent load.
 
 ---
 
@@ -56,7 +58,9 @@ canes-analytics-starter/
 │   ├── nhl-assets/[[path]].js    # → https://assets.nhle.com (logos, headshots)
 │   └── api/notification.js       # Push notification payload proxy
 ├── src/
-│   ├── App.jsx                   # Router, layout, BottomNav, PeriodSummaryProvider
+│   ├── App.jsx                   # Router, layout, BottomNav, PeriodSummaryProvider, theme init
+│   ├── index.css                 # Global design tokens (:root dark mode + [data-theme="light"] overrides)
+│   ├── light-mode-overrides.css  # Per-component light mode overrides (scoped to [data-theme="light"])
 │   ├── views/
 │   │   ├── ShotMapView.jsx/.css  # Live shot map, metrics, live insights, PP/PK, period summaries
 │   │   ├── ScheduleView.jsx/.css # Season + playoff schedule, predictions
@@ -75,7 +79,7 @@ canes-analytics-starter/
 │   │   ├── GameStatsPopup.jsx     # Completed game stats popup (shell)
 │   │   ├── GameStatsComponents.jsx # PeriodTable, SkaterTable, GoalsList
 │   │   ├── PredictionShareCanvas.jsx # 1080×1080 prediction export card
-│   │   ├── NotificationBell.jsx  # ⚡ Game Center — push notification opt-in + period summary chips
+│   │   ├── NotificationBell.jsx  # ⚙️ Settings — push notification opt-in, theme toggle, period summary chips
 │   │   ├── PeriodSummary.jsx/.css # Period and game summary popup + share image canvas
 │   │   ├── AboutPopup.jsx/.css   # Logo tap → about + BMC link
 │   │   ├── TeamLogo.jsx/.css     # NHL team logo renderer
@@ -94,6 +98,9 @@ canes-analytics-starter/
 │       ├── predictionStore.js    # localStorage game prediction tracker
 │       ├── supabaseClient.js     # Supabase read-only client + data fetchers
 │       ├── ppUnits.js            # PP/PK unit configs by season (inferPPUnit, inferPKUnit)
+│       ├── teamConfig.js         # All 32 team configs — primaryColor + displayColor + team picker
+│       ├── themeConfig.js        # Light/dark mode persistence (localStorage eyewall:theme)
+│       ├── applyTeamTheme.js     # Sets --team-primary, --team-primary-rgb, --team-canvas, --team-canvas-rgb on :root
 │       ├── PeriodSummaryContext.jsx # React context bridging ShotMapView → Game Center bell
 │       ├── DevGameContext.js     # Dev-only context for live game injection
 │       ├── liveClockStore.js     # Shared pub/sub for synced clock + momentum
@@ -109,7 +116,7 @@ canes-analytics-starter/
 │   │   ├── news.cy.js            # News view, source filters (15 tests)
 │   │   ├── period-summary.cy.js  # Game Center, period/game summary popups (23 tests)
 │   │   ├── players.cy.js         # Roster, skater card, goalie card (30 tests)
-│   │   ├── schedule.cy.js        # Schedule view (3 tests)
+│   │   ├── schedule.cy.js        # Schedule view (47 tests)
 │   │   ├── shot-map.cy.js        # Shot Map all sections + rink controls (31 tests)
 │   │   ├── team.cy.js            # All 5 team tabs (19 tests)
 │   │   └── viewports.cy.js       # 4 viewports × 5 views (44 tests)
@@ -121,6 +128,36 @@ canes-analytics-starter/
 ├── SMOKE_TESTS.md                # Manual pre-merge checklist
 └── .env.local.example            # Environment variable template
 ```
+
+---
+
+## Team Selection & Theming
+
+### Team picker
+On first launch the user selects their team from all 32 NHL teams. The selection is stored in `localStorage` under `eyewall:team` and read by `getTeamConfig()` on every load. All views, API calls, and color tokens scope to the selected team automatically.
+
+### Color tokens
+`applyTeamTheme(team, mode)` is called once on mount and again on any team or theme change. It sets four CSS custom properties on `:root`:
+
+| Token | Value | Used for |
+|-------|-------|----------|
+| `--team-primary` | `displayColor` (dark) or `primaryColor` (light) | All in-app UI accents |
+| `--team-primary-rgb` | RGB components of `--team-primary` | `rgba()` tints in CSS |
+| `--team-canvas` | Always `displayColor` | Export card accents (always dark bg) |
+| `--team-canvas-rgb` | RGB components of `--team-canvas` | `rgba()` tints in export CSS |
+
+### Color fields per team (teamConfig.js)
+
+| Field | Description |
+|-------|-------------|
+| `primaryColor` | Canonical brand hex — used in light mode and as the reference color |
+| `displayColor` | WCAG AA-compliant variant for dark mode (≥4.5:1 on `--bg2` / `#101827`). Equals `primaryColor` for the 9 teams that already pass. |
+
+### Light / dark mode
+The user's preference is stored in `localStorage` under `eyewall:theme` and read by `getTheme()` on mount. The toggle lives in the Settings drawer (⚙️). `setTheme(mode)` persists the choice and sets `data-theme` on `<html>`, which triggers the `[data-theme="light"]` token overrides in `index.css` and `light-mode-overrides.css`.
+
+### Export cards (social share images)
+`PredictionShareCanvas`, `PeriodSummary` share canvas, and `ScoutingTab` share canvas all use `--team-canvas` / `--team-canvas-rgb` for accents. Their backgrounds are hardcoded dark (`#1a1a2e`) regardless of app theme — export cards are always rendered for social sharing and should look consistent.
 
 ---
 
@@ -177,7 +214,7 @@ A separate Cloudflare Worker polls the NHL API every 60 seconds and writes to KV
 | `VAPID_PRIVATE_KEY` | Worker (encrypted) | Web Push VAPID private key |
 | `VAPID_SUBJECT` | Worker | `mailto:matt@eyewallanalytics.com` |
 | `ANTHROPIC_API_KEY` | Worker (encrypted) | Claude API for Worker-generated game summaries |
-| `VITE_ANTHROPIC_API_KEY` | `.env.local` (dev only) | Claude API for period summary narratives via Vite proxy — **never committed** |
+| `VITE_ANTHROPIC_API_KEY` | `.env.local` (dev only) | Claude API for period summary AI narratives via Vite proxy — **never committed** |
 | `X_CONSUMER_KEY` | Worker (encrypted) | X/Twitter API key |
 | `X_CONSUMER_SECRET` | Worker (encrypted) | X/Twitter API secret |
 | `X_ACCESS_TOKEN` | Worker (encrypted) | X/Twitter access token |
@@ -192,44 +229,39 @@ A separate Cloudflare Worker polls the NHL API every 60 seconds and writes to KV
 
 ### Shot Map (Live + Post-game)
 - SVG ice rink drawn to NHL spec (200×85ft at 3px/ft)
-- Shot dots: CAR red, opponent blue, goals highlighted
+- Shot dots: team primary color, opponent blue, goals highlighted
 - Heat map mode: Gaussian KDE density overlay
 - Player filter: dropdown — filters dots + heat map to one player
 - Period filter: P1 / P2 / P3 / OT
 - Full rink / half rink toggle
 - Live polling: 10s during games, 5min otherwise
 - Countdown clock: ticks in real-time between polls
-- Zone labels: "CAR offensive zone" / "OPP offensive zone"
+- Zone labels: offensive / defensive zone relative to selected team
 - Screen wake lock: prevents device sleep during live games (Screen Wake Lock API)
 
-### ⚡ Game Center (Period Summaries)
+### ⚙️ Settings Drawer
+The ⚙️ gear icon in the top-right corner opens the Settings drawer. It contains:
+- **My Team** — displays current team with logo; Change button clears `eyewall:team` and reloads to team picker
+- **Appearance** — light/dark mode toggle; preference persisted to `localStorage` under `eyewall:theme`
+- **Push Notifications** — opt-in/out toggle with event list
+- **Game Summaries** — period and game summary chips when available
 
-The ⚡ button in the top-right corner is the Game Center hub — it combines push notification management with period and full-game summaries in a single drawer.
+### ⚡ Game Center (Period Summaries)
 
 **Automatic period summaries** are built at the end of each period during live games (detected via `pbp.clock.inIntermission` transition) and for all periods of completed games on page load. Each summary is persisted to `sessionStorage` keyed by `gameId` so it survives page refreshes and component remounts.
 
 **Per-period summary card:**
 - Score at end of period with team logos
-- 6-stat grid: CAR Corsi For%, Shots on Goal, CAR Fenwick For%, CAR Hits, Faceoff Win%, High Danger Chances (CAR vs OPP)
-- High Danger Chances uses the same formula as the Shot Map: `dist < 15ft` strict, includes blocked shots
+- 6-stat grid: CF%, SOG, FF%, Hits, Faceoff Win%, High Danger Chances (team vs OPP)
 - EyeWall AI narrative (Claude Haiku) — 2-3 sentences generated via Vite proxy in dev, Cloudflare Worker in prod
-- Goals carousel — swipe left/right through each goal; Brightcove video highlight embedded per goal (`autoplay=false`); goal dot colors: red=CAR, grey=OPP
-- Penalties — collapsed to 3 with "Show more" toggle; includes player name, infraction type, duration, and time
-- Share image export (1080×1080 PNG via `html-to-image`) — includes EyeWall logo, score, 6 stats, goals, AI narrative
+- Goals carousel — swipe left/right through each goal; Brightcove video highlight embedded per goal
+- Penalties — collapsed to 3 with "Show more" toggle
+- Share image export (1080×1080 PNG via `html-to-image`) — always renders on dark background with `--team-canvas` color
 - Copy Caption button — pre-formatted post text for Instagram/X
 
-**Full game summary card** (FINAL chip — built once when `game-end` play is detected):
-- Score + AI narrative side by side (score left, narrative right) — maximizes vertical space
-- Same 6-stat grid (game totals)
-- Two-column goals layout: CAR goals left, OPP goals right — all goals shown, last name + period + time
-- Period breakdown bar chart: CF% per period color-coded (green ≥55%, red ≤45%)
-- Three stars with player headshots (proxied via `/nhl-assets/` to avoid CORS during export)
-- AI narrative: 3-4 sentences covering turning points and whether result matched underlying play
-
-**Game Center drawer (⚡ bell):**
-- Push notification toggle (same functionality as before, now labeled "🔔 Push Notifications")
-- Period summary chips below: P1/P2/P3 with period-end goal score; FINAL chip styled distinctly in red
-- Tapping any chip closes the drawer and opens that summary
+**Full game summary card** (FINAL chip):
+- Score + AI narrative, same 6-stat grid (game totals)
+- Two-column goals layout, period breakdown bar chart, three stars with headshots
 
 ### Momentum Card
 - Zone-weighted territorial score combining shot attempts, offensive zone faceoff wins, OZ hits and takeaways
@@ -238,21 +270,14 @@ The ⚡ button in the top-right corner is the Game Center hub — it combines pu
 - Compact momentum bar in topbar during live games
 
 ### Live Insights Panel
-Auto-generated contextual callouts from PBP data:
-- Shot advantage by period, momentum indicator, top scorer callout, PK performance
-- Coach's challenge and video review detection via `stoppage` reason codes
-- Score situation alerts, empty net detection
-- Auto-collapse during live games (expands on new insight, collapses after 8s)
+Auto-generated contextual callouts from PBP data — shot advantage, momentum, top scorer, PK performance, score situation alerts, empty net detection.
 
 ### Metrics Row (7 cards, 2 rows)
 - **SOG, Hits, Blocks, Penalties** (top row)
 - **Faceoff %, PP %, PK %** (bottom row) — PP/PK cards tap to open full drill-down analysis
 
 ### Power Play / Penalty Kill Analysis
-- Summary bar, unit chips (PP1/PP2, PK1/PK2), per-opportunity breakdown, shot type breakdown, mini shot map
-
-### xG — Expected Goals
-- Live games: coordinate-estimate model; completed games: MoneyPuck 5v5 xG from Supabase
+Summary bar, unit chips (PP1/PP2, PK1/PK2), per-opportunity breakdown, shot type breakdown, mini shot map.
 
 ### Schedule Page
 - Regular season game cards with win probability chips
@@ -260,18 +285,16 @@ Auto-generated contextual callouts from PBP data:
 - AI Game Summary card on completed games (Claude Haiku via Worker)
 
 ### Team Page (5 tabs)
-- **Overview, Advanced, Splits, Trends, Cap & Picks**
+**Overview, Advanced, Splits, Trends, Cap & Picks**
 
 ### Players Page
-- Skater and goalie cards with Stats, Analytics (WAR/GSAX), and Heat Map tabs
-- Dual goalie rankings by SV% and GAA
+Skater and goalie cards with Stats, Analytics (WAR/GSAX), and Heat Map tabs. Dual goalie rankings by SV% and GAA.
 
 ### Game Event Popups
-- Puck Drop, CAR Goal (with goal horn), Opponent Penalty, Canes Win — all deduped via `sessionStorage`
+Puck Drop, Goal (with goal horn), Opponent Penalty, Win — all deduped via `sessionStorage`.
 
 ### Push Notifications
-- Events: CAR goal, game start, opponent penalty (PP), Canes win
-- Payloadless push — SW fetches payload from Worker KV on receipt
+Events: goal, game start, opponent penalty (PP), win. Payloadless push — SW fetches payload from Worker KV on receipt.
 
 ---
 
@@ -288,22 +311,36 @@ Auto-generated contextual callouts from PBP data:
 | Module | Description |
 |--------|-------------|
 | `run.py` | Orchestrator |
-| `nhl_stats.py` | Rosters, skater/goalie/team stats, game log → Supabase |
+| `nhl_stats.py` | Rosters, skater/goalie/team stats, game log → Supabase (all 32 teams) |
 | `shot_events.py` | League-wide shot coordinates from PBP |
-| `shift_data.py` | League-wide shift charts (parallelized, 10 workers) |
+| `shift_data.py` | League-wide shift charts — JSON API + HTML fallback, RPC distinct lookup |
 | `zone_starts.py` | Per-player OZ/DZ/NZ start counts (parallelized, 8 workers) |
-| `rapm.py` | 3-year rolling ridge regression RAPM |
+| `score_state.py` | Per-player score-state ice time distribution across 3-season pool |
+| `rapm.py` | 3-year rolling ridge regression RAPM with score-state normalization |
 | `moneypuck.py` | WAR + percentiles + goalie GSAX + game-level xG |
-| `validate_rapm.py` | RAPM quality checks — CAR players expected top 40%; non-CAR players (low-sample, 2-5 games vs CAR) expected above bottom quartile only |
+| `validate_rapm.py` | RAPM quality checks — league-wide, uniform 60th percentile threshold |
 
-**Supabase tables:** `players`, `player_seasons`, `goalie_seasons`, `team_seasons`, `shot_events`, `shift_events`, `zone_starts`, `game_log`, `game_xg`, `rapm_validation`, `skipped_games`
+**Supabase tables:** `players`, `player_seasons`, `goalie_seasons`, `team_seasons`, `shot_events`, `shift_events`, `zone_starts`, `game_log`, `game_xg`, `rapm_validation`, `skipped_games`, `player_score_state_dist`
+
+### Pipeline run order (full refresh)
+
+```
+python nhl_stats.py        # game_log, player/team seasons
+python shot_events.py      # shot events league-wide
+python shift_data.py       # shifts — JSON API + HTML fallback
+python zone_starts.py      # zone starts
+python moneypuck.py        # goalie QS
+python score_state.py      # score-state distributions (before rapm)
+python rapm.py             # RAPM regression
+python validate_rapm.py    # sanity check
+```
 
 ### RAPM methodology (beta)
 
 - **Pool:** 3-year rolling window (~420k 5v5 shot events, all 32 teams)
-- **Formulation:** Signed xG differential; zone-start adjusted; score-state pending
+- **Formulation:** Signed xG differential; zone-start adjusted; score-state normalized via `player_score_state_dist`
 - **Ridge alpha:** 2500; **min sample:** 150 min EV ice time across 3-season pool
-- **Validation:** `validate_rapm.py` — CAR players (reliable 82-game estimates) vs non-CAR players (low-sample, 2–5 games vs CAR per season, high variance expected)
+- **Known limitations:** Draisaitl/Makar rank anomaly due to dominant linemate collinearity; injury-shortened seasons produce high-variance estimates — both documented in `validate_rapm.py`
 
 ---
 
@@ -331,7 +368,7 @@ VITE_ANTHROPIC_API_KEY=sk-ant-...   # Claude API key for period summary AI narra
 VITE_POSTHOG_KEY=phc_...             # PostHog project API key (optional locally — analytics disabled in dev)
 ```
 
-> The `VITE_ANTHROPIC_API_KEY` is injected server-side by the Vite proxy at `/anthropic` — it never appears in the client bundle. In production, period summary AI calls are handled by the same Cloudflare Worker that powers AI game summaries, using the existing `ANTHROPIC_API_KEY` Worker secret.
+> The `VITE_ANTHROPIC_API_KEY` is injected server-side by the Vite proxy at `/anthropic` — it never appears in the client bundle. In production, period summary AI calls are handled by the same Cloudflare Worker that powers AI game summaries.
 
 **Dev tools** — visit `http://localhost:5173/dev` for the live game replay scrubber.
 
@@ -375,7 +412,7 @@ npm test            # Run all tests once
 npm run test:watch  # Watch mode
 ```
 
-**137 tests across 8 files:**
+**137 tests across 4 files:**
 
 | File | Coverage | Tests |
 |------|----------|-------|
@@ -400,7 +437,7 @@ npm run cypress:full    # Clean → run → generate HTML report (always generat
 |------|--------------|-------|
 | `navigation.cy.js` | All routes, bottom nav | 7 |
 | `news.cy.js` | Source filter chips (dynamic), article list, refresh, attribution | 16 |
-| `period-summary.cy.js` | Game Center (⚡) drawer, period summary popup, final game summary | 23 |
+| `period-summary.cy.js` | Game Center (⚙️) drawer, period summary popup, final game summary | 23 |
 | `players.cy.js` | Roster, skater card (all tabs, defensive stats, GSAX), goalie card (dual rankings, GSAX analytics) | 30 |
 | `schedule.cy.js` | Playoffs rounds, Prediction/Scouting tabs, CAR lines, stats popup | 47 |
 | `shot-map.cy.js` | All sections: insights, shot attempts, momentum, rink controls | 31 |
@@ -409,20 +446,24 @@ npm run cypress:full    # Clean → run → generate HTML report (always generat
 
 CI runs Vitest + Cypress headless on every push to `main` or `staging`. GitHub Actions uploads HTML report as artifact (14-day retention) and screenshots on failure (7-day retention).
 
+### Pending Cypress additions
+- Theme toggle: verify `data-theme` attribute flips on toggle, persists across navigation
+- `viewports.cy.js`: run smoke pass in light mode to catch any rendering regressions
+
 ---
 
 ## Advanced Stats Definitions
 
 | Stat | Formula | Context |
-|------|---------|---------|
-| **CF%** | CAR shot attempts ÷ total (SOG + missed + blocked) | ≥50% = controlling play |
-| **FF%** | CAR unblocked attempts ÷ total unblocked | Excludes shot-blocking luck |
+|------|---------|---------| 
+| **CF%** | Team shot attempts ÷ total (SOG + missed + blocked) | ≥50% = controlling play |
+| **FF%** | Team unblocked attempts ÷ total unblocked | Excludes shot-blocking luck |
 | **PDO** | (SH% + SV%) × 100 | League avg = 100; far from 100 = luck |
 | **Puck Luck** | Actual GF − expected GF from shot share | Positive = scoring above shot quality |
 | **GSAx** | Saves − (shots × .900) | Game-level estimate |
 | **GSAX** | Flurry-adjusted xGoals − actual goals against | MoneyPuck model |
 | **WAR** | RAPM EV component × EV hours ÷ 5.4 + PP/PK/finishing + 0.5 | Beta — RAPM-derived EV |
-| **RAPM** | Ridge regression marginal xG/60 at 5v5 | Beta — zone-start adjusted |
+| **RAPM** | Ridge regression marginal xG/60 at 5v5 | Beta — zone-start + score-state adjusted |
 | **xGF%** | On-ice expected goals for ÷ total | Possession quality metric |
 | **GSAX/$M** | Season GSAX ÷ cap hit in $M | Goalie contract value |
 | **Blended value** | (Points/$M × 0.6) + (WAR/$M × 6 × 0.4) | Skater contract value |
@@ -430,7 +471,6 @@ CI runs Vitest + Cypress headless on every push to `main` or `staging`. GitHub A
 | **High Danger Chances** | Shot attempts (incl. blocked) within 15ft of net: `dist(|x|-89, y) < 15` | Matches Shot Map formula |
 
 ---
-
 
 ## Performance (Lighthouse Mobile)
 
@@ -458,31 +498,36 @@ Key optimisations applied:
 - **Cron minimum:** 1-minute polling intervals — live data is 0–60s behind NHL API.
 - **Cap data:** NHL API doesn't expose salary. Static file requires manual updates.
 - **iOS push:** Requires Add to Home Screen — browser-tab Safari cannot receive Web Push.
-- **WAR/RAPM beta:** Score-state adjustment pending. Zone-start OZS% still being refined.
+- **WAR/RAPM beta:** Zone-start OZS% still being refined.
 - **RAPM non-CAR players:** Non-CAR players only appear in 2–5 games vs CAR per season. Their RAPM estimates have high variance — validation thresholds are relaxed accordingly.
-- **Period summary AI (prod):** In production, period summary narratives should be routed through the Cloudflare Worker rather than a direct browser call. Currently uses the same `ANTHROPIC_API_KEY` Worker secret.
-- **Period summary sessionStorage:** Summaries persist for the current game session only. Clearing storage or loading a new game clears all summaries.
+- **RAPM linemate collinearity:** Draisaitl and Makar rank anomalously low due to dominant co-deployment. Documented in `validate_rapm.py` — treat as known artifact, not pipeline error.
+- **Period summary AI (prod):** In production, period summary narratives should be routed through the Cloudflare Worker rather than a direct browser call.
+- **Period summary sessionStorage:** Summaries persist for the current game session only.
 - **X/Twitter posting:** Code is built and tested. Requires Basic tier ($100/mo) to post.
+- **STATIC_LINES / PP_UNITS / PK_UNITS:** Only have CAR entries. Add other teams' data as needed; graceful null fallback exists for teams without entries.
+- **TEAM_NEWS_SOURCES in worker.js:** Only has CAR entry. Generic NHL sources serve all teams.
 
 ---
 
 ## Offseason Roadmap
 
-- [ ] Route period summary AI narrative calls through Cloudflare Worker in production (currently proxied via Vite dev server only)
+- [ ] Cypress: theme toggle persistence test + light mode viewport smoke pass
+- [ ] Route period summary AI narrative calls through Cloudflare Worker in production
 - [ ] `app_config` Supabase table for season constant — eliminate hardcoded `20252026`
 - [ ] `pp_units` / `pk_units` Supabase table — replace static `ppUnits.js`
-- [ ] RAPM score-state adjustment (add `home_team` to league-wide `shot_events`)
+- [ ] `score_state.py` backfill for 20242025 and 20232024 seasons (run `--season` flag)
 - [ ] RAPM alpha tuning via cross-validation (after 3+ full seasons)
 - [ ] RAPM validation chip in UI surfacing `rapm_validation` table
-- [ ] Update `SMOKE_TESTS.md` with period summary, Game Center, share image test cases
-- [ ] 32-team expansion (team picker, parameterize CAR-specific code)
+- [ ] Update `SMOKE_TESTS.md` with period summary, Game Center, share image, theme toggle test cases
+- [ ] Expand `STATIC_LINES` / `PP_UNITS` / `PK_UNITS` for additional teams
 - [ ] PuckPedia API integration (pending access approval)
 - [ ] X/Twitter auto-posting (when Basic tier active)
 - [ ] Year-over-year player comparison view
 - [ ] NHL EDGE zone time endpoint for live Momentum card improvement
 - [ ] PostHog funnel analysis — identify drop-off between Prediction view → AI analysis → export
 - [ ] Capacitor PWA wrapper for App Store / Play Store distribution
+- [ ] Game summary auto-open on `FINAL` state (`useEffect` watching `pbp?.gameState`)
 
 ---
 
-*Built with 🌀 for Canes Nation*
+*Built with 🌀 for hockey fans*

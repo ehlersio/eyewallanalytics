@@ -39,6 +39,24 @@ Run through this before merging `dev` → `main`.
 - [ ] Canes Country articles have clean titles (no HTML tags)
 - [ ] Google News articles show outlet name in badge
 
+## Settings — Appearance
+- [ ] Tapping the ⚙️ icon opens the Settings drawer
+- [ ] Appearance section shows current mode (🌙 Dark or ☀️ Light)
+- [ ] Tapping "Light mode" switches the app to light mode immediately
+- [ ] Tapping "Dark mode" switches the app back to dark mode immediately
+- [ ] Closing and reopening the drawer shows the correct current mode label
+- [ ] Reloading the page preserves the selected theme
+- [ ] Navigating between all 5 tabs preserves the selected theme
+
+### Light mode visual checks
+- [ ] All five views render without "Something went wrong"
+- [ ] No white-on-white or black-on-black text visible on any view
+- [ ] `tab-badge` (LIVE chip) text is legible — verify amber background reads correctly (see known issue below)
+- [ ] `scorer-chip.assist` in Schedule popup is legible (dark blue, not washed out)
+- [ ] `dual-bar` rows have a visible dark-alpha background (not invisible on white)
+- [ ] No horizontal overflow on Shot Map, Players, or Team views
+- [ ] Export cards (Prediction share, Period Summary share, Scouting share) still render on a dark background regardless of app theme
+
 ## Live Game (when a game is in progress)
 - [ ] Topbar shows live score
 - [ ] Countdown clock ticks in real time
@@ -109,3 +127,12 @@ Run through this before merging `dev` → `main`.
 ## Notifications
 - [ ] Bell icon visible in Topbar
 - [ ] Tapping bell shows opt-in prompt
+- [ ] Push notification opt-in and opt-out complete without error
+
+---
+
+## Known Issues (do not flag as regressions)
+- `tab-badge` light mode: `color: #fff` override applied — verify the LIVE chip on amber background looks correct; may need reverting to `color: #000`
+- News chips CI test: flaky in CI, passes locally
+- Schedule AI section: timeout flaky in CI, passes locally
+- `GET /cache/odds:nhl 404` in console when no game is in window: expected

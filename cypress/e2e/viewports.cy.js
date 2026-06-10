@@ -83,5 +83,71 @@ VIEWPORTS.forEach(({ label, width, height }) => {
         cy.contains('Heat Map').should('exist')
       })
     })
+
+    // ── Light mode smoke (new) ──────────────────────────────────────────
+
+    it('every route loads without errors in light mode', () => {
+      cy.team().then(t => {
+        const routes = [
+          { path: '/',         checks: [t.abbr] },
+          { path: '/schedule', checks: [t.abbr] },
+          { path: '/players',  checks: ['Forwards', t.skater] },
+          { path: '/team',     checks: [t.displayName, 'Overview'] },
+          { path: '/news',     checks: ['EyeWall Analytics'] },
+        ]
+        routes.forEach(({ path, checks }) => {
+          cy.visit(path, {
+            onBeforeLoad(win) {
+              win.localStorage.setItem('eyewall:theme', 'light')
+            },
+          })
+          cy.get('html').should('have.attr', 'data-theme', 'light')
+          checks.forEach(check => cy.contains(check, { timeout: 8000 }).should('exist'))
+          cy.get('body').should('not.contain', 'Something went wrong')
+          cy.assertNoErrors()
+        })
+      })
+    })
+
+    it('no horizontal overflow on Shot Map in light mode', () => {
+      cy.visit('/', {
+        onBeforeLoad(win) {
+          win.localStorage.setItem('eyewall:theme', 'light')
+        },
+      })
+      cy.get('html').should('have.attr', 'data-theme', 'light')
+      cy.window().then(win => {
+        expect(win.document.documentElement.scrollWidth)
+          .to.be.lte(win.innerWidth + 2)
+      })
+    })
+
+    it('no horizontal overflow on Players in light mode', () => {
+      cy.visit('/players', {
+        onBeforeLoad(win) {
+          win.localStorage.setItem('eyewall:theme', 'light')
+        },
+      })
+      cy.contains('Forwards', { timeout: 8000 }).should('exist')
+      cy.window().then(win => {
+        expect(win.document.documentElement.scrollWidth)
+          .to.be.lte(win.innerWidth + 2)
+      })
+    })
+
+    it('no horizontal overflow on Team in light mode', () => {
+      cy.team().then(t => {
+        cy.visit('/team', {
+          onBeforeLoad(win) {
+            win.localStorage.setItem('eyewall:theme', 'light')
+          },
+        })
+        cy.contains(t.displayName, { timeout: 8000 }).should('exist')
+        cy.window().then(win => {
+          expect(win.document.documentElement.scrollWidth)
+            .to.be.lte(win.innerWidth + 2)
+        })
+      })
+    })
   })
 })

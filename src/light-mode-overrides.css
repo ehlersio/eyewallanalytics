@@ -1,0 +1,169 @@
+/* ─────────────────────────────────────────────────────────────────
+   Light mode overrides — appended to the bottom of each CSS file.
+   All selectors are scoped to [data-theme="light"] so they only
+   fire when the user has chosen light mode. Dark mode is unchanged.
+   ───────────────────────────────────────────────────────────────── */
+
+
+/* ════════════════════════════════════════════════════════════════
+   ScheduleView.css additions
+   ════════════════════════════════════════════════════════════════ */
+
+/* tab-badge: "LIVE" chip has color:#000 hardcoded — swap to #fff on dark bg,
+   keep #000 on light (it already works there) */
+[data-theme="light"] .tab-badge {
+  color: #fff;
+}
+
+/* cal-playoff-badge: color:#000 hardcoded — fine on light, needs #fff on dark.
+   Inverse: on light mode it's already correct, so no override needed.
+   BUT the existing rule is color:#000 unconditionally, which is wrong in dark.
+   We fix dark mode via the existing :root, so light needs no change here. */
+
+/* md-pred-fill text: color:#fff hardcoded — fine on both modes (dark bg fill) */
+
+/* gp-skater-row dividers */
+[data-theme="light"] .gp-skater-row {
+  border-bottom-color: rgba(0,0,0,0.06);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ShotMapView.css additions
+   ════════════════════════════════════════════════════════════════ */
+
+/* Row dividers that use rgba(255,255,255,0.04) — invisible on light */
+[data-theme="light"] .drill-row-grid,
+[data-theme="light"] .drill-row,
+[data-theme="light"] .pen-row {
+  border-bottom-color: rgba(0,0,0,0.06);
+}
+
+/* scorer-chip assist: hardcoded #8899dd — works on dark, too light on light bg */
+[data-theme="light"] .scorer-chip.assist {
+  background: rgba(68,85,200,0.12);
+  color: #3344aa;
+}
+
+/* pc-num badge: rgba(0,0,0,0.65) bg is fine on both modes */
+
+/* debug panel — dev-only, keep dark regardless */
+[data-theme="light"] .debug-panel {
+  background: #1a1a2e;
+  color: #e4e8f0;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   PlayersView.css additions
+   ════════════════════════════════════════════════════════════════ */
+
+/* Row dividers */
+[data-theme="light"] .stat-row,
+[data-theme="light"] .sst-td,
+[data-theme="light"] .sst-row.even .sst-td:not(.sticky) {
+  border-bottom-color: rgba(0,0,0,0.06);
+  background: transparent;
+}
+
+[data-theme="light"] .sst-row.even .sst-td:not(.sticky) {
+  background: rgba(0,0,0,0.02);
+}
+
+/* pc-num badge: rgba(0,0,0,0.65) bg works in both modes */
+
+/* pp-header gradient: red tint is fine in both modes via token */
+
+/* Popup shadow on light */
+[data-theme="light"] .player-popup {
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.15);
+}
+
+[data-theme="light"] .stat-tip-popup {
+  box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   TeamView.css additions
+   ════════════════════════════════════════════════════════════════ */
+
+/* adv-stat-row, score-state-row, cap-row, split-adv-* dividers */
+[data-theme="light"] .adv-stat-row,
+[data-theme="light"] .score-state-row,
+[data-theme="light"] .cap-row,
+[data-theme="light"] .ha-grid-row,
+[data-theme="light"] .split-adv-row {
+  border-bottom-color: rgba(0,0,0,0.06);
+}
+
+[data-theme="light"] .split-adv-section-title {
+  border-bottom-color: rgba(0,0,0,0.08);
+}
+
+/* rolling-avg-line: rgba(255,255,255,0.2) invisible on light */
+[data-theme="light"] .rolling-avg-line {
+  background: rgba(0,0,0,0.15);
+}
+
+/* adv-stat-indicator / adv-stat-val good/bad — #4ade80 and #f87171
+   are readable on both backgrounds, no change needed */
+
+/* ha-val good: #4ade80 readable on light bg — fine */
+
+/* ════════════════════════════════════════════════════════════════
+   NotificationBell.css additions
+   ════════════════════════════════════════════════════════════════ */
+
+/* Popup shadow on light */
+[data-theme="light"] .notif-popup {
+  box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   NewsView.css additions
+   ════════════════════════════════════════════════════════════════ */
+
+/* news-chip.active: hardcoded rgba(204,34,0,...) — works on both modes
+   since it uses semantic red values */
+
+/* ════════════════════════════════════════════════════════════════
+   PeriodSummary.css — IN-APP popup/carousel section only
+   (ps-canvas-* is the export image — intentionally kept dark)
+   ════════════════════════════════════════════════════════════════ */
+
+/* Popup backdrop */
+[data-theme="light"] .ps-backdrop {
+  background: rgba(0,0,0,0.5);
+}
+
+/* Red tints using hardcoded rgba(206,17,38,...) → team-primary-rgb */
+[data-theme="light"] .ps-header-badge {
+  background: rgba(var(--team-primary-rgb), 0.12);
+}
+
+[data-theme="light"] .ps-stat-row-highlight,
+[data-theme="light"] .ps-insight-car {
+  background: rgba(var(--team-primary-rgb), 0.08);
+  border-left-color: var(--team-primary);
+}
+
+/* rgba(255,255,255,0.08) dividers in popup */
+[data-theme="light"] .ps-section-divider,
+[data-theme="light"] .ps-row-divider {
+  border-color: rgba(0,0,0,0.08);
+}
+
+/* Carousel dots */
+[data-theme="light"] .ps-carousel-dot.opp {
+  background: rgba(0,0,0,0.15);
+}
+[data-theme="light"] .ps-carousel-dot.active.opp {
+  background: rgba(0,0,0,0.4);
+}
+[data-theme="light"] .ps-carousel-dot.car {
+  background: rgba(var(--team-primary-rgb), 0.4);
+}
+
+/* rgba(255,255,255,0.04) card backgrounds in popup */
+[data-theme="light"] .ps-factor-card {
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.06);
+}

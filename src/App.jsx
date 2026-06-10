@@ -9,6 +9,8 @@ import { capture } from './utils/analytics'
 import './App.css'
 import { hasTeamConfig, TEAM_CONFIG } from './utils/teamConfig'
 import TeamPicker from './components/TeamPicker'
+import { applyTeamTheme } from './utils/applyTeamTheme';
+import { getTheme } from './utils/themeConfig';
 
 // Lazy-load all non-initial routes — reduces initial bundle by ~64 KiB
 const ScheduleView  = lazy(() => import('./views/ScheduleView'));
@@ -48,9 +50,7 @@ function PageTracker() {
 export default function App() {
   // In App component body, before the return:
   useEffect(() => {
-    if (TEAM_CONFIG.primaryColor) {
-      document.documentElement.style.setProperty('--team-primary', TEAM_CONFIG.primaryColor);
-    }
+    applyTeamTheme(TEAM_CONFIG, getTheme());
   }, []); // runs once on mount; full reload on team change means this always reflects current team  
 
   // Show team picker on first launch (no team saved yet).

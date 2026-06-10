@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import posthog from 'posthog-js'
 import './index.css'
+import './light-mode-overrides.css'
 import App from './App.jsx'
 
 // Initialise PostHog — only in production builds (not local dev)

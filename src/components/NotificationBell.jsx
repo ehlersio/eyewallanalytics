@@ -2,26 +2,30 @@ import { useState } from 'react';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import { TEAM_CONFIG } from '../utils/teamConfig';
+import { getTheme, setTheme } from '../utils/themeConfig';
+import { applyTeamTheme } from '../utils/applyTeamTheme';
 import TeamLogo from '../components/TeamLogo';
 import './NotificationBell.css';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const [showTeamPicker, setShowTeamPicker] = useState(false);
+  const [theme, setThemeState] = useState(getTheme);
   const { supported, permission, subscribed, subscribe, unsubscribe, loading, error } =
     usePushNotifications();
   const { summaries, openSummary } = usePeriodSummaryContext();
 
   const handleChangeTeam = () => {
     setOpen(false);
-    // Clear stored team and reload — App.jsx will render TeamPicker on next load
     localStorage.removeItem('eyewall:team');
     window.location.reload();
   };
 
-  // Always render the button — gating on `supported` causes it to flash
-  // away on navigation while usePushNotifications() initializes.
-  // Only hide the notification toggle inside the drawer if unsupported.
+  const handleThemeToggle = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    applyTeamTheme(TEAM_CONFIG, next);
+    setThemeState(next);
+  };
 
   const handleToggle = async () => {
     if (subscribed) {
@@ -37,7 +41,6 @@ export default function NotificationBell() {
     openSummary(summary);
   };
 
-  // Show a dot on the bell if there are summaries available
   const hasSummaries = summaries.length > 0;
 
   return (
@@ -65,6 +68,17 @@ export default function NotificationBell() {
               <span className="notif-team-name">{TEAM_CONFIG.displayName}</span>
               <button className="notif-change-team-btn" onClick={handleChangeTeam}>
                 Change
+              </button>
+            </div>
+          </div>
+
+          {/* Appearance section */}
+          <div className="notif-my-team">
+            <div className="notif-event-label">🎨 Appearance</div>
+            <div className="notif-team-row">
+              <span className="notif-team-name">{theme === 'dark' ? '🌙 Dark' : '☀️ Light'}</span>
+              <button className="notif-change-team-btn" onClick={handleThemeToggle}>
+                {theme === 'dark' ? 'Light mode' : 'Dark mode'}
               </button>
             </div>
           </div>
