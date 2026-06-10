@@ -86,9 +86,8 @@ export async function getPlayerAnalytics(season = 20252026) {
 }
 
 // ── Player shot events ────────────────────────────────────────
-// Returns shot data for one CAR player's shots.
-// car_game=true ensures we only get shots from CAR games.
-// team=CAR ensures we get the shooter (not opponent) rows.
+// Returns shot data for one player. car_game=true scopes to games
+// involving the selected team, team= filters to shooter rows only.
 export async function getPlayerShots(playerId, season = 20252026, team = 'CAR') {
   const rows = await sbFetch(
     `shot_events?player_id=eq.${playerId}&season=eq.${season}` +
@@ -119,8 +118,8 @@ export async function getPlayerShots(playerId, season = 20252026, team = 'CAR') 
 
 // ── Goalie shot events ────────────────────────────────────────
 // Returns shots faced by a specific goalie (for heat map).
-// car_game=true + goalie_id filter = shots against CAR goalies.
-// For opposing goalies: no car_game filter, just goalie_id.
+// car_game=true scopes to games involving the selected team.
+// goalie_id filter identifies the specific goalie's starts.
 export async function getGoalieShots(goalieId, season = 20252026) {
   const rows = await sbFetch(
     `shot_events?goalie_id=eq.${goalieId}&season=eq.${season}` +
@@ -216,12 +215,10 @@ function sortForwardLine(players, posMap) {
 export async function getTeamLines(team = 'CAR', season = 20252026, gameType = 2) {
   // Always load static data upfront so we can use it as position authority
   let staticData = null;
-  if (team === 'CAR') {
-    try {
-      const { getStaticLines } = await import('./staticLines.js');
-      staticData = getStaticLines(gameType);
-    } catch (_) {}
-  }
+  try {
+    const { getStaticLines } = await import('./staticLines.js');
+    staticData = getStaticLines(team, gameType);
+  } catch (_) {}
   const posMap = buildStaticPosMap(staticData);
 
   // Try live inferred data from Supabase
@@ -297,41 +294,41 @@ export async function getGameXG(gameId) {
 // ── Game log insights ─────────────────────────────────────────
 // Returns team-specific situational stats for Live Insights.
 // Requires car_scored_first boolean in game_log (added by nhl_stats.py).
-export async function getGameLogInsights(oppAbbr, season = 20252026) {
+export async function getGameLogInsights(oppAbbr, season = 20252026, teamAbbr = 'CAR') {
   const rows = await sbFetch(
-    `game_log?season=eq.${season}&select=game_id,opponent,car_score,opp_score,` +
-    `car_scored_first,home_team&order=game_id.asc`
+    `game_log?season=eq.${season}&team=eq.${teamAbbr}` +
+    `&select=game_id,opponent,team_score,opp_score,` +
+    `team_scored_first,home_team&order=game_id.asc`
   ).catch(() => null);
 
   if (!rows?.length) return null;
 
-  const completed = rows.filter(r => r.car_score != null && r.opp_score != null);
-  const wins      = completed.filter(r => r.car_score > r.opp_score);
+  const completed = rows.filter(r => r.team_score != null && r.opp_score != null);
+  const wins      = completed.filter(r => r.team_score > r.opp_score);
   const total     = completed.length;
 
-  // When CAR scored first
-  const scoredFirst      = completed.filter(r => r.car_scored_first);
-  const scoredFirstWins  = scoredFirst.filter(r => r.car_score > r.opp_score);
+  // When team scored first
+  const scoredFirst      = completed.filter(r => r.team_scored_first);
+  const scoredFirstWins  = scoredFirst.filter(r => r.team_score > r.opp_score);
   const scoredFirstWinPct = scoredFirst.length > 0
     ? Math.round(scoredFirstWins.length / scoredFirst.length * 100) : null;
 
-  // When CAR did NOT score first
-  const didntScoreFirst     = completed.filter(r => r.car_scored_first === false);
-  const didntScoreFirstWins = didntScoreFirst.filter(r => r.car_score > r.opp_score);
+  // When team did NOT score first
+  const didntScoreFirst     = completed.filter(r => r.team_scored_first === false);
+  const didntScoreFirstWins = didntScoreFirst.filter(r => r.team_score > r.opp_score);
   const didntScoreFirstWinPct = didntScoreFirst.length > 0
     ? Math.round(didntScoreFirstWins.length / didntScoreFirst.length * 100) : null;
 
   // Head-to-head vs this opponent (regular season)
   const vsOpp      = completed.filter(r => r.opponent === oppAbbr);
-  const vsOppWins  = vsOpp.filter(r => r.car_score > r.opp_score);
+  const vsOppWins  = vsOpp.filter(r => r.team_score > r.opp_score);
   const vsOppRecord = vsOpp.length > 0
     ? { w: vsOppWins.length, l: vsOpp.length - vsOppWins.length, gp: vsOpp.length }
     : null;
 
-  // Series record (playoffs — game_type filter would be better but game_log uses season)
-  // Approximate: look for consecutive games vs same opponent near the end of season
-  const recentVsOpp = vsOpp.slice(-7); // last 7 games vs this opp (covers a series)
-  const seriesWins  = recentVsOpp.filter(r => r.car_score > r.opp_score).length;
+  // Series record (playoffs — last 7 games vs same opponent covers a series)
+  const recentVsOpp = vsOpp.slice(-7);
+  const seriesWins  = recentVsOpp.filter(r => r.team_score > r.opp_score).length;
   const seriesRecord = recentVsOpp.length >= 2
     ? { w: seriesWins, l: recentVsOpp.length - seriesWins, gp: recentVsOpp.length }
     : null;
@@ -347,13 +344,11 @@ export async function getGameLogInsights(oppAbbr, season = 20252026) {
   };
 }
 
-// ── CAR game log (with PP/PK) ─────────────────────────────────
-// Returns per-game results including PP/PK stats for trend charts.
-export async function getCarGameLog(count = 120, season = 20252026) {
+export async function getTeamGameLog(count = 120, season = 20252026, teamAbbr = 'CAR') {
   const rows = await sbFetch(
-    `game_log?season=eq.${season}&order=game_id.asc` +
-    `&select=game_id,game_date,opponent,car_score,opp_score,home_team,` +
-    `car_scored_first,pp_goals,pp_opps,pk_goals_against,pk_opps,game_type` +
+    `game_log?season=eq.${season}&team=eq.${teamAbbr}&order=game_id.asc` +
+    `&select=game_id,game_date,opponent,team_score,opp_score,home_team,` +
+    `team_scored_first,pp_goals,pp_opps,pk_goals_against,pk_opps,game_type` +
     `&limit=${count}`
   ).catch(() => null);
   if (!rows?.length) return null;
@@ -361,14 +356,14 @@ export async function getCarGameLog(count = 120, season = 20252026) {
     gameId:          r.game_id,
     date:            r.game_date,
     opp:             r.opponent,
-    carScore:        r.car_score,
+    carScore:        r.team_score,
     oppScore:        r.opp_score,
-    home:            r.home_team === 'CAR',
-    won:             r.car_score > r.opp_score,
-    ot:              false, // not stored in game_log currently
-    result:          r.car_score > r.opp_score ? 'W' : 'L',
+    home:            r.home_team === teamAbbr,
+    won:             r.team_score > r.opp_score,
+    ot:              false,
+    result:          r.team_score > r.opp_score ? 'W' : 'L',
     isPlayoff:       r.game_type === 3,
-    scoredFirst:     r.car_scored_first,
+    scoredFirst:     r.team_scored_first,
     ppGoals:         r.pp_goals,
     ppOpps:          r.pp_opps,
     pkGoalsAgainst:  r.pk_goals_against,
