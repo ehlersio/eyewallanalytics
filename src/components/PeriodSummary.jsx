@@ -447,6 +447,13 @@ export default function PeriodSummary({
 
   // Generate AI narrative on mount — Worker generates once and caches in KV for all users.
   useEffect(() => {
+    console.log('PeriodSummary effect:', {
+      hasSummary: !!summary,
+      isGameSummary: summary?.isGameSummary,
+      aiLoading: summary?.aiLoading,
+      aiNarrative: summary?.aiNarrative,
+      gameId: summary?.gameId,
+    });
     if (!summary || summary.aiNarrative) return;
     if (!summary.isGameSummary && !summary.aiLoading) return;
     generateNarrative(summary, carAbbr, oppAbbr, isPlayoff).then(result => {
