@@ -58,7 +58,7 @@ export default function AboutPopup({ isLive = false }) {
         {!isLive && (
           <div>
             <div className="topbar-name">EyeWall Analytics</div>
-            <div className="topbar-sub">Carolina Hurricanes</div>
+            <div className="topbar-sub">Hockey Intelligence</div>
           </div>
         )}
       </button>
@@ -71,14 +71,12 @@ export default function AboutPopup({ isLive = false }) {
             <img src="/eyewall-logo.svg" alt="EyeWall Analytics" width="48" height="48" />
             <div>
               <div className="about-title">EyeWall Analytics</div>
-              <div className="about-subtitle">Carolina Hurricanes Intelligence</div>
+              <div className="about-subtitle">Hockey Intelligence</div>
             </div>
           </div>
 
           <p className="about-desc">
-            Real-time shot maps, advanced stats, and game intelligence for Huge Caniacs
-            who want to go deeper than the box score. Live Corsi, Fenwick, PDO,
-            puck luck, on-ice tracking, and more — all from public NHL data.
+            Advanced NHL analytics for all 32 teams — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, and WAR/percentile rankings.
           </p>
 
           <div className="about-stats-row">
