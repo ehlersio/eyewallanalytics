@@ -447,7 +447,8 @@ export default function PeriodSummary({
 
   // Generate AI narrative on mount — Worker generates once and caches in KV for all users.
   useEffect(() => {
-    if (!summary || summary.aiNarrative || !summary.aiLoading) return;
+    if (!summary || summary.aiNarrative) return;
+    if (!summary.isGameSummary && !summary.aiLoading) return;
     generateNarrative(summary, carAbbr, oppAbbr, isPlayoff).then(result => {
       if (!result) return;
       const text = typeof result === 'string' ? result : result.narrative;
