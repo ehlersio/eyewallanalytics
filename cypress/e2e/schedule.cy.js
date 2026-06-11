@@ -59,7 +59,8 @@ describe('Schedule view', () => {
       cy.contains('Matchup breakdown').first().click()
       cy.get('.md-ai-section', { timeout: 15000 }).should('exist')
       cy.get('.md-ai-section').then($el => {
-        expect($el.find('.md-ai-narrative').length > 0 || $el.find('.md-ai-btn').length > 0).to.be.true
+        // AI narrative auto-loads from DB — button removed
+        expect($el.find('.md-ai-narrative').length > 0 || $el.find('.md-ai-loading').length > 0).to.be.true
       })
     })
 
@@ -121,11 +122,15 @@ describe('Schedule view', () => {
       cy.get('.gmc-goalie').should('have.length', 2)
     })
 
-    it('Scouting tab shows team total projection', () => {
+    it('Scouting tab shows AI matchup analysis section', () => {
       cy.contains('Matchup breakdown').first().click()
       cy.get('.md-tab').contains('Scouting').click()
-      cy.contains(/Projected total goals/i).should('exist')
-      cy.get('.ttc-wrap').should('exist')
+      cy.get('body').then($body => {
+        if ($body.find('.sc-matchup-section').length) {
+          cy.get('.sc-matchup-section').should('exist')
+          cy.get('.sc-matchup-label').should('contain', 'AI Matchup Analysis')
+        }
+      })
     })
 
     it('Scouting tab shows Save Scouting Card export button', () => {

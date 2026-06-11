@@ -207,14 +207,25 @@ export default function PredictionExportSection({
   const [canvasMounted, setCanvasMounted] = useState(false);
   const [aiNarrative, setAiNarrative] = useState(null);
 
-  // Load cached AI narrative from Worker — same cache-first fetch as PredictionAnalysis
+  // DB-first: fetch pre-generated prediction narrative, fall back to Worker cache.
   useEffect(() => {
     if (!gameId) return;
-    const workerUrl = import.meta.env.VITE_WORKER_URL;
-    if (!workerUrl) return;
-    fetch(`${workerUrl}/cache/${encodeURIComponent(`prediction:${gameId}`)}?team=${TEAM_CONFIG.abbr}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.narrative) setAiNarrative(d.narrative); })
+    const SUPABASE_URL  = import.meta.env.VITE_SUPABASE_URL  || 'https://mqgasjzywoibdgxjjkux.supabase.co';
+    const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON || 'sb_publishable_e_zwr1UA7GnHq4OuQSas5Q_kO8bQ_Ct';
+    fetch(
+      `${SUPABASE_URL}/rest/v1/game_predictions?game_id=eq.${gameId}&select=prediction_text&limit=1`,
+      { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } }
+    )
+      .then(r => r.ok ? r.json() : [])
+      .then(rows => {
+        if (rows?.[0]?.prediction_text) { setAiNarrative(rows[0].prediction_text); return; }
+        const workerUrl = import.meta.env.VITE_WORKER_URL;
+        if (!workerUrl) return;
+        fetch(`${workerUrl}/cache/${encodeURIComponent(`prediction:${gameId}`)}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(d => { if (d?.narrative) setAiNarrative(d.narrative); })
+          .catch(() => {});
+      })
       .catch(() => {});
   }, [gameId]);
 

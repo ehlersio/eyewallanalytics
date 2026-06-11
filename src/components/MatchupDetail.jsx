@@ -5,7 +5,7 @@ import { capture } from '../utils/analytics';
 import ScoutingTab from '../components/ScoutingTab';
 import InfoTip from '../components/InfoTip';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
-import { getTeamLines } from '../utils/supabaseClient';
+import { getTeamLines, getGamePrediction } from '../utils/supabaseClient';
 import {
   getOpponent, isHomeGame, TEAM_COLORS, TEAM_CONFIG,
   getStandings, findGameOdds, oddsToImplied, fmtOdds,
@@ -256,7 +256,6 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   // ── Save prediction + track record ───────────────────────
   const predStats   = getPredictionStats();
   const { useEffect } = window.React || {};
-
   return (
     <div className="matchup-detail card">
       {/* Tab bar: Prediction vs Scouting */}
@@ -268,7 +267,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       </div>
 
       {mdTab === 'scouting' ? (
-        <ScoutingTab oppAbbr={oppAbbr} oppStanding={oppStanding} carStanding={carStanding} isPlayoff={game?.gameType === 3} />
+        <ScoutingTab oppAbbr={oppAbbr} oppStanding={oppStanding} carStanding={carStanding} isPlayoff={game?.gameType === 3} gameId={game?.id} />
       ) : (<>
       <div className="md-header">
         <div>
@@ -412,62 +411,67 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
 }
 function PredictionAnalysis({ gameId, oppAbbr, oppColor }) {
   const [analysis,  setAnalysis]  = useState(null);
-  const [loading,   setLoading]   = useState(false);
+  const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
-  const [requested, setRequested] = useState(false);
 
   const workerUrl = import.meta.env.VITE_WORKER_URL;
 
-  // Auto-load if already cached — no button press needed
+  // DB-first: fetch pre-generated prediction from pipeline.
+  // Falls back to Worker on-demand generation if DB has nothing.
   useEffect(() => {
-    if (!gameId || !workerUrl) return;
-    fetch(`${workerUrl}/cache/${encodeURIComponent(`prediction:${gameId}`)}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.narrative) setAnalysis(d); })
-      .catch(() => {});
+    if (!gameId) return;
+    setLoading(true);
+    getGamePrediction(gameId)
+      .then(data => {
+        if (data?.text) {
+          setAnalysis(data.text);
+          setLoading(false);
+          return;
+        }
+        // Nothing in DB — try Worker cache then on-demand
+        if (!workerUrl) { setLoading(false); return; }
+        fetch(`${workerUrl}/cache/${encodeURIComponent(`prediction:${gameId}`)}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(d => {
+            if (d?.narrative) { setAnalysis(d.narrative); return; }
+            // Not cached — generate on demand
+            return fetch(`${workerUrl}/prediction/analyze?gameId=${gameId}`)
+              .then(r => r.json())
+              .then(d => { if (d?.narrative) setAnalysis(d.narrative); else setError(d?.error || null); });
+          })
+          .catch(() => {})
+          .finally(() => setLoading(false));
+      })
+      .catch(() => setLoading(false));
   }, [gameId]);
 
-  const fetchAnalysis = async () => {
-    if (!workerUrl || !gameId) return;
-    setLoading(true);
-    setError(null);
-    setRequested(true);
-    capture('ai_analysis_requested', { gameId });
-    try {
-      const res  = await fetch(`${workerUrl}/prediction/analyze?gameId=${gameId}`);
-      const data = await res.json();
-      if (data.narrative) setAnalysis(data);
-      else setError(data.error || 'Analysis unavailable');
-    } catch {
-      setError('Could not reach EyeWall AI');
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="md-ai-section">
+        <div className="md-ai-header">
+          <span className="md-ai-label">⚡ EyeWall AI</span>
+        </div>
+        <div className="md-ai-loading">Loading analysis…</div>
+      </div>
+    );
+  }
 
-  if (!workerUrl) return null;
+  if (!analysis && !workerUrl) return null;
 
   return (
     <div className="md-ai-section">
       <div className="md-ai-header">
         <span className="md-ai-label">⚡ EyeWall AI</span>
         <InfoTip
-          text="AI analysis synthesizes possession metrics, recent form, head-to-head record, and key matchup factors into a plain-English preview. Generated once and cached for all users."
+          text="AI analysis synthesizes possession metrics, recent form, head-to-head record, and key matchup factors into a plain-English preview. Generated nightly by the EyeWall pipeline."
           position="above"
         />
       </div>
-
       {analysis ? (
-        <div className="md-ai-narrative">{analysis.narrative}</div>
-      ) : loading ? (
-        <div className="md-ai-loading">Analyzing matchup…</div>
+        <div className="md-ai-narrative">{analysis}</div>
       ) : error ? (
         <div className="md-ai-error">{error}</div>
-      ) : (
-        <button className="md-ai-btn" onClick={fetchAnalysis}>
-          Get AI analysis
-        </button>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import {
   TEAM_COLORS, TEAM_CONFIG,
 } from '../utils/nhlApi';
 import { computeGSAx } from '../utils/advancedStats';
-import { getGoalieAnalytics, getTeamLines } from '../utils/supabaseClient';
+import { getGoalieAnalytics, getTeamLines, getScoutingBlurb, getGameMatchup } from '../utils/supabaseClient';
 import TeamLogo from './TeamLogo';
 import InfoTip from './InfoTip';
 import './ScoutingTab.css';
@@ -206,7 +206,7 @@ function TeamTotalCard({ carStats, oppStats, oppAbbr, isPlayoff }) {
 
 // ── Share canvas (off-screen 1080×1080) ──────────────────────
 function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPlayers,
-  carRecentGames, oppRecentGames, oppAbbr, oppColor, isPlayoff, carLines }) {
+  carRecentGames, oppRecentGames, oppAbbr, oppColor, isPlayoff, carLines, matchupText }) {
   if (!carStats || !oppStats) return null;
 
   const carGoalie  = carPlayers?.goalies?.[0];
@@ -265,43 +265,26 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
           { label: 'Shots For / GP',    car: (carStats.shotsForPerGame??0).toFixed(1), opp: (oppStats.shotsForPerGame??0).toFixed(1), carBetter: (carStats.shotsForPerGame??0) > (oppStats.shotsForPerGame??0) },
         ].map((r, i) => (
           <div key={i} className="sc-stat-row">
-            <span className={`sc-stat-val ${r.carBetter ? 'good' : 'muted'}`}>{r.car}</span>
-            <span className="sc-stat-label">{r.label}</span>
-            <span className={`sc-stat-val ${!r.carBetter ? 'good-opp' : 'muted'}`}>{r.opp}</span>
+            <span className={`sc-stat-val ${r.carBetter ? 'good' : 'muted'}`} style={{fontSize:17}}>{r.car}</span>
+            <span className="sc-stat-label" style={{fontSize:11}}>{r.label}</span>
+            <span className={`sc-stat-val ${!r.carBetter ? 'good-opp' : 'muted'}`} style={{fontSize:17}}>{r.opp}</span>
           </div>
         ))}
       </div>
 
-      {/* Team total + recent form side by side */}
-      <div style={{display:'flex', gap:20, padding:'0 52px 14px'}}>
-        {/* Team total */}
-        <div style={{flex:1, background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'12px 14px'}}>
+      {/* AI Matchup Analysis — replaces team total + recent form */}
+      {matchupText && (
+        <div style={{margin:'0 52px 14px', padding:'12px 16px',
+          background:'rgba(255,255,255,0.04)', borderRadius:10,
+          borderLeft:`3px solid ${TEAM_CONFIG.displayColor}`}}>
           <div style={{fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
-            color:'rgba(255,255,255,0.25)', marginBottom:6}}>Projected Total Goals</div>
-          <div style={{fontSize:22, fontWeight:800, marginBottom:3}}>
-            <span style={{color: TEAM_CONFIG.displayColor}}>{TEAM_CONFIG.abbr} {+carExp.toFixed(1)}</span>
-            <span style={{color:'rgba(255,255,255,0.2)'}}> – </span>
-            <span style={{color: oppColor}}>{+oppExp.toFixed(1)} {oppAbbr}</span>
-          </div>
-          <div style={{fontSize:12, color:'rgba(255,255,255,0.4)'}}>Total: <strong style={{color:'rgba(255,255,255,0.7)'}}>{projTotal}</strong></div>
-        </div>
-
-        {/* Recent form */}
-        <div style={{flex:1, background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'12px 14px'}}>
-          <div style={{fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
-            color:'rgba(255,255,255,0.25)', marginBottom:8}}>Recent Form (last 5)</div>
-          <div style={{display:'flex', flexDirection:'column', gap:6}}>
-            <div style={{display:'flex', alignItems:'center', gap:6}}>
-              <span style={{fontSize:10, fontWeight:700, color: TEAM_CONFIG.displayColor, width:28}}>{TEAM_CONFIG.abbr}</span>
-              <div style={{display:'flex', gap:3}}>{formDots(carRecentGames, true)}</div>
-            </div>
-            <div style={{display:'flex', alignItems:'center', gap:6}}>
-              <span style={{fontSize:10, fontWeight:700, color: oppColor, width:28}}>{oppAbbr}</span>
-              <div style={{display:'flex', gap:3}}>{formDots(oppRecentGames, false)}</div>
-            </div>
+            color: TEAM_CONFIG.displayColor, marginBottom:8}}>⚡ AI Matchup Analysis</div>
+          <div style={{fontSize:12, lineHeight:1.55, color:'rgba(255,255,255,0.65)',
+            display:'-webkit-box', WebkitLineClamp:7, WebkitBoxOrient:'vertical', overflow:'hidden'}}>
+            {matchupText}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Top players + goalies */}
       <div style={{display:'flex', gap:16, padding:'0 52px 14px'}}>
@@ -533,7 +516,7 @@ function LinesSection({ lines, color, isPlayoff, abbr }) {
 }
 
 
-export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayoff }) {
+export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayoff, gameId }) {
   const gameType = isPlayoff ? 3 : 2;
   const carColor = 'var(--team-primary)';
   const oppColor = TEAM_COLORS[oppAbbr] || 'var(--text-muted)';
@@ -566,6 +549,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
   );
   const { data: goalieAnalytics } = useFetch(() => getGoalieAnalytics());
   const { data: carLines } = useFetch(() => getTeamLines(TEAM_CONFIG.abbr, 20252026, gameType), [TEAM_CONFIG.abbr, gameType]);
+  const { data: matchupData } = useFetch(() => getGameMatchup(gameId), [gameId]);
 
   // Use playoff stats when available, fall back to regular season
   const compCarStats = isPlayoff ? (carPoStats || carStats) : carStats;
@@ -601,6 +585,15 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
   return (
     <>
     <div className="scouting-wrap">
+      {/* AI Matchup Analysis */}
+      {matchupData?.text && (
+        <div className="sc-matchup-section">
+          <div className="sc-matchup-label">⚡ AI Matchup Analysis</div>
+          <div className="sc-matchup-text">{matchupData.text}</div>
+          <div className="sc-matchup-footer">Generated by EyeWall AI · Updates nightly</div>
+        </div>
+      )}
+
       {isPlayoff && (
         <div className="scouting-playoff-badge">🏒 Playoff stats · {SEASON_LABEL}</div>
       )}
@@ -745,6 +738,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
         oppColor={oppColor}
         isPlayoff={isPlayoff}
         carLines={carLines}
+        matchupText={matchupData?.text || null}
       />
     )}
     </>

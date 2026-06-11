@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useFetch } from '../hooks/useFetch'
 import { getRoster, getPlayerStats, fetchPlayerRankings, getPlayoffGames, getStandings, TEAM_CONFIG } from '../utils/nhlApi'
-import { getPlayerAnalytics, getGoalieAnalytics, getPlayerShots, getGoalieShots, getTeamSkaterStatsFromDB } from '../utils/supabaseClient'
+import { getPlayerAnalytics, getGoalieAnalytics, getPlayerShots, getGoalieShots, getTeamSkaterStatsFromDB, getScoutingBlurb } from '../utils/supabaseClient'
 import { findContract, contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING, CURRENT_SEASON } from '../utils/carContracts'
 import TeamLogo from '../components/TeamLogo'
 import InfoTip from '../components/InfoTip'
@@ -235,7 +235,13 @@ function PlayerCard({ player: p, onClick }) {
 function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
   const { data: stats, loading } = useFetch(() => getPlayerStats(p.id), [p.id])
   const [imgErr, setImgErr]     = useState(false)
-  const [ppTab, setPpTab]       = useState('stats') // 'stats' | 'analytics' | 'heatmap'
+  const [ppTab, setPpTab]       = useState('stats') // 'stats' | 'analytics' | 'heatmap' | 'scout'
+
+  // Fetch scouting blurb from Supabase
+  const { data: scoutData } = useFetch(
+    () => getScoutingBlurb(p.id, SEASON),
+    [p.id]
+  )
   const name = `${p.firstName?.default || ''} ${p.lastName?.default || ''}`.trim()
   const isGoalie = p.positionCode === 'G'
 
@@ -481,6 +487,7 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
           <button className={`pp-tab ${ppTab === 'stats' ? 'active' : ''}`} onClick={() => setPpTab('stats')}>📊 Stats</button>
           <button className={`pp-tab ${ppTab === 'analytics' ? 'active' : ''}`} onClick={() => setPpTab('analytics')}>🧮 Analytics</button>
           <button className={`pp-tab ${ppTab === 'heatmap' ? 'active' : ''}`} onClick={() => setPpTab('heatmap')}>🎯 Heat Map</button>
+          <button className={`pp-tab ${ppTab === 'scout' ? 'active' : ''}`} onClick={() => setPpTab('scout')}>🔍 Scout</button>
         </div>
 
         {/* ── Stats tab ── */}
@@ -544,6 +551,11 @@ function PlayerPopup({ player: p, inPlayoffs, standings, onClose }) {
         {/* ── Analytics tab ── */}
         {ppTab === 'analytics' && (
           <PlayerAnalytics mpData={mpData} goalieData={goalieData} playerName={name} isGoalie={p.positionCode === 'G'} position={p.positionCode} />
+        )}
+
+        {/* ── Scout tab ── */}
+        {ppTab === 'scout' && (
+          <ScoutingBlurb data={scoutData} playerName={name} />
         )}
       </div>
     </div>
@@ -1186,6 +1198,54 @@ function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position })
       <div className="pa-source">Data: MoneyPuck.com · Updates nightly</div>
     </div>
   );
+}
+
+// ── Scouting Blurb ───────────────────────────────────────────
+function ScoutingBlurb({ data, playerName }) {
+  if (data === undefined) {
+    // Still loading
+    return (
+      <div className="scout-wrap">
+        <div className="scout-loading">
+          {[95, 88, 72, 90, 65].map((w, i) => (
+            <div key={i} className="skeleton" style={{ height: 11, width: `${w}%`, marginBottom: 10, borderRadius: 4 }} />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (!data?.blurb) {
+    return (
+      <div className="scout-wrap">
+        <div className="scout-empty">
+          <div className="scout-empty-icon">📋</div>
+          <div>No scouting report yet for {playerName}.</div>
+          <div className="scout-empty-sub">Reports generate nightly — check back after the next pipeline run.</div>
+        </div>
+      </div>
+    )
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return null
+    const d = new Date(iso)
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  return (
+    <div className="scout-wrap">
+      <div className="scout-header">
+        <span className="scout-label">Scouting Report</span>
+        <span className="scout-season">2025–26</span>
+      </div>
+      <div className="scout-blurb">{data.blurb}</div>
+      <div className="scout-footer">
+        AI-generated · Updated nightly
+        {data.generatedAt && ` · ${fmtDate(data.generatedAt)}`}
+      </div>
+    </div>
+  )
 }
 
 // ── Skater Stats Table ────────────────────────────────────────

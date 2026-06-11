@@ -7,12 +7,23 @@ import './PeriodSummary.css';
 const BRIGHTCOVE_URL = (id) =>
   `https://players.brightcove.net/6415718365001/EXtG1xJ7H_default/index.html?videoId=${id}&autoplay=false`;
 
-// Dev:  Vite proxy at /anthropic injects the API key server-side
-// Prod: Cloudflare Pages Function at /api/ai injects the API key server-side
-//       (requires ANTHROPIC_API_KEY env var in Cloudflare Pages dashboard)
-const AI_ENDPOINT = import.meta.env.DEV
-  ? '/anthropic/v1/messages'
-  : '/api/ai';
+// Supabase fetch — inline to avoid circular imports with supabaseClient
+const SUPABASE_URL  = import.meta.env.VITE_SUPABASE_URL  || 'https://mqgasjzywoibdgxjjkux.supabase.co';
+const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON || 'sb_publishable_e_zwr1UA7GnHq4OuQSas5Q_kO8bQ_Ct';
+
+async function fetchGameSummaryFromDB(gameId, team) {
+  if (!gameId || !team) return null;
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/game_summaries?game_id=eq.${gameId}&team=eq.${team}&select=summary_text,card_text&limit=1`,
+      { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } }
+    );
+    if (!r.ok) return null;
+    const rows = await r.json();
+    if (!rows?.[0]?.summary_text) return null;
+    return { text: rows[0].summary_text, cardText: rows[0].card_text || null };
+  } catch { return null; }
+}
 
 function strengthLabel(strength) {
   if (!strength) return 'ev';
@@ -28,14 +39,21 @@ function corsiColor(pct) {
   return '';
 }
 
-// Fetch narrative from Worker — generates once, cached in KV for all users.
-// Falls back to direct /api/ai if Worker URL not configured (dev environments).
+// Fetch narrative — DB-first for game summaries, then Worker, then direct AI.
+// Period summaries are not stored in DB (only full game summaries are), so
+// periods always go straight to Worker → direct AI.
 async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false) {
   const workerUrl = typeof import.meta !== 'undefined'
     ? import.meta.env?.VITE_WORKER_URL
     : null;
 
   const periodKey = summary.isGameSummary ? 'game' : String(summary.period);
+
+  // ── Path 0: DB lookup (game summaries only) ───────────────────
+  if (summary.isGameSummary && summary.gameId) {
+    const dbResult = await fetchGameSummaryFromDB(summary.gameId, carAbbr);
+    if (dbResult?.text) return { narrative: dbResult.text, cardNarrative: dbResult.cardText };
+  }
 
   // Build the stats payload the Worker needs to generate the prompt
   const statsPayload = {
@@ -78,68 +96,14 @@ async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false) {
       );
       if (!res.ok) throw new Error(`Worker ${res.status}`);
       const data = await res.json();
-      if (data.narrative) return data.narrative;
+      if (data.narrative) return { narrative: data.narrative, cardNarrative: data.cardNarrative || null };
     } catch (e) {
       console.warn('Worker narrative failed, falling back to direct AI:', e.message);
     }
   }
 
-  // ── Path 2: Direct /api/ai fallback (dev / no Worker URL) ────
-  const goalsSummary = (summary.goals || []).map(g =>
-    `${g.isCar ? carAbbr : oppAbbr} goal by ${g.scorerName || 'unknown'} at ${g.period ? `P${g.period} ` : ''}${g.time} (${(g.strength || 'EV').toUpperCase()})`
-  ).join('; ') || 'no goals';
-
-  const playoffNote = isPlayoff
-    ? '\n\nNote: This is a PLAYOFF game. Do not mention points, standings, or "escaping with a point". Overtime is full 20-minute periods, not 3v3. Focus on possession, goaltending, and series context.'
-    : '';
-
-  const prompt = summary.isGameSummary
-    ? `You are EyeWall, an analytics assistant for Carolina Hurricanes fans.
-Write a sharp 3-4 sentence final game summary for ${carAbbr} vs ${oppAbbr}.
-Tone: analytical, knowledgeable fan. No fluff. No bullet points.
-
-Game stats:
-- Final: ${carAbbr} ${summary.carGoals} - ${summary.oppGoals} ${oppAbbr}
-- Game Corsi For%: ${summary.corsiForPct}%
-- CAR shots: ${summary.carSOG}, OPP shots: ${summary.oppSOG}
-- CAR high danger chances: ${summary.carHDCF} vs OPP ${summary.oppHDCF}
-- Best period for ${carAbbr}: P${summary.bestPeriod?.period} (${summary.bestPeriod?.corsiForPct}% CF)
-- Worst period: P${summary.worstPeriod?.period} (${summary.worstPeriod?.corsiForPct}% CF)
-- CAR hits: ${summary.carHits}, CAR faceoffs: ${summary.carFOPct}%
-- Goals: ${goalsSummary}
-
-Summarize how the game went, key turning points, and whether the result matched the underlying play. Under 80 words.${playoffNote}`
-    : `You are EyeWall, an analytics assistant for Carolina Hurricanes fans.
-Write a tight 2-3 sentence period summary for ${summary.periodLabel} of a ${carAbbr} vs ${oppAbbr} game.
-Tone: sharp, analytical, knowledgeable fan. No fluff. No bullet points. Just sentences.
-
-Stats:
-- ${carAbbr} Corsi For%: ${summary.corsiForPct}%
-- CAR shots on goal: ${summary.carSOG}, OPP shots on goal: ${summary.oppSOG}
-- CAR goals: ${summary.carGoals}, OPP goals: ${summary.oppGoals}
-- CAR hits: ${summary.carHits}
-- Penalties: ${summary.penalties?.length ?? 0} total (${summary.penalties?.filter(p => p.isCar).length ?? 0} against CAR)
-- Goals: ${goalsSummary}
-
-Focus on what mattered most — possession dominance, momentum, key goals. Under 60 words.${playoffNote}`;
-
-  try {
-    const res = await fetch(AI_ENDPOINT, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        model:      'claude-haiku-4-5-20251001',
-        max_tokens: 300,
-        messages:   [{ role: 'user', content: prompt }],
-      }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    return data.content?.[0]?.text?.trim() || null;
-  } catch (e) {
-    console.warn('AI narrative failed:', e.message);
-    return null;
-  }
+  // No Worker URL configured — narrative unavailable
+  return null; // callers check for null
 }
 
 // ── Goal Carousel ─────────────────────────────────────────────
@@ -234,7 +198,7 @@ function getPeriodStats(summary, carAbbr) {
   ];
 }
 
-function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef }) {
+function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarrative }) {
   const carIsHome = homeAbbr === carAbbr;
   const carScore = carIsHome ? summary.homeScore : summary.awayScore;
   const oppScore = carIsHome ? summary.awayScore : summary.homeScore;
@@ -257,48 +221,23 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef }) {
         <span className="ps-canvas-period">{summary.periodLabel} Summary</span>
       </div>
 
-      {/* Score + AI narrative side by side — same layout for both period and game cards */}
-      {summary.aiNarrative ? (
-        <div className="ps-canvas-score-narrative-row">
-          {/* Score — compact left column */}
-          <div className="ps-canvas-score-compact">
-            <div className="ps-canvas-team-compact">
-              <img src={logoUrl(carAbbr)} alt={carAbbr} className="ps-canvas-team-logo-sm"
-                onError={e=>{e.target.style.display='none';}} />
-              <div className="ps-canvas-team-abbr car">{carAbbr}</div>
-              <div className="ps-canvas-score-num-sm">{carScore ?? '–'}</div>
-            </div>
-            <div className="ps-canvas-divider-sm">–</div>
-            <div className="ps-canvas-team-compact">
-              <img src={logoUrl(oppAbbr)} alt={oppAbbr} className="ps-canvas-team-logo-sm"
-                onError={e=>{e.target.style.display='none';}} />
-              <div className="ps-canvas-team-abbr">{oppAbbr}</div>
-              <div className="ps-canvas-score-num-sm">{oppScore ?? '–'}</div>
-            </div>
-          </div>
-          {/* AI narrative — right column */}
-          <div className="ps-canvas-narrative-inline">
-            <div className="ps-canvas-narrative-label">⚡ EyeWall AI</div>
-            <div className="ps-canvas-narrative-text">{summary.aiNarrative}</div>
+      {/* Score + AI narrative — score compact left, narrative fills right */}
+      <div className="ps-canvas-score-ai-row">
+        <div className="ps-canvas-score-compact-v2">
+          <div className="ps-canvas-score-compact-team car">{carAbbr}</div>
+          <div className="ps-canvas-score-compact-num">{carScore ?? '–'}</div>
+          <div className="ps-canvas-score-compact-div">–</div>
+          <div className="ps-canvas-score-compact-num">{oppScore ?? '–'}</div>
+          <div className="ps-canvas-score-compact-team">{oppAbbr}</div>
+        </div>
+        <div className="ps-canvas-score-ai-divider" />
+        <div className="ps-canvas-narrative-full">
+          <div className="ps-canvas-narrative-full-label">⚡ EyeWall AI</div>
+          <div className="ps-canvas-narrative-full-text">
+            {cardNarrative || summary.cardNarrative || summary.aiNarrative || 'Analysis generating…'}
           </div>
         </div>
-      ) : (
-        <div className="ps-canvas-score">
-          <div className="ps-canvas-team">
-            <img src={logoUrl(carAbbr)} alt={carAbbr} className="ps-canvas-team-logo"
-              onError={e=>{e.target.style.display='none';}} />
-            <div className="ps-canvas-team-abbr car">{carAbbr}</div>
-            <div className="ps-canvas-score-num">{carScore ?? '–'}</div>
-          </div>
-          <div className="ps-canvas-divider">–</div>
-          <div className="ps-canvas-team">
-            <img src={logoUrl(oppAbbr)} alt={oppAbbr} className="ps-canvas-team-logo"
-              onError={e=>{e.target.style.display='none';}} />
-            <div className="ps-canvas-team-abbr">{oppAbbr}</div>
-            <div className="ps-canvas-score-num">{oppScore ?? '–'}</div>
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* Stats grid */}
       <div className="ps-canvas-stats">
@@ -504,12 +443,17 @@ export default function PeriodSummary({
   const [exporting, setExporting] = useState(false);
   const [captionCopied, setCaptionCopied] = useState(false);
   const [canvasMounted, setCanvasMounted] = useState(false);
+  const [cardNarrative, setCardNarrative] = useState(summary?.cardNarrative || null);
 
   // Generate AI narrative on mount — Worker generates once and caches in KV for all users.
   useEffect(() => {
     if (!summary || summary.aiNarrative || !summary.aiLoading) return;
-    generateNarrative(summary, carAbbr, oppAbbr, isPlayoff).then(text => {
+    generateNarrative(summary, carAbbr, oppAbbr, isPlayoff).then(result => {
+      if (!result) return;
+      const text = typeof result === 'string' ? result : result.narrative;
+      const card = typeof result === 'string' ? null : result.cardNarrative;
       if (text && onNarrativeReady) onNarrativeReady(summary.period, text);
+      if (card) setCardNarrative(card);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [summary?.period]);
@@ -696,6 +640,7 @@ export default function PeriodSummary({
           oppAbbr={oppAbbr}
           homeAbbr={homeAbbr}
           canvasRef={canvasRef}
+          cardNarrative={cardNarrative}
         />
       )}
     </>

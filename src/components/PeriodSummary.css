@@ -392,7 +392,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 36px 52px 16px;
+  padding: 24px 52px 12px;
 }
 
 .ps-canvas-brand {
@@ -419,7 +419,7 @@
   align-items: center;
   justify-content: center;
   gap: 24px;
-  padding: 16px 52px 16px;
+  padding: 10px 52px 10px;
   border-bottom: 0.5px solid rgba(255,255,255,0.08);
 }
 
@@ -437,7 +437,7 @@
 }
 .ps-canvas-team-abbr.car { color: var(--team-canvas); }
 .ps-canvas-score-num {
-  font-size: 77px;
+  font-size: 64px;
   font-weight: 900;
   color: #fff;
   line-height: 1;
@@ -452,22 +452,22 @@
 .ps-canvas-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  padding: 14px 52px 14px;
+  gap: 10px;
+  padding: 10px 52px 10px;
 }
 
 .ps-canvas-stat {
   background: rgba(255,255,255,0.04);
   border: 0.5px solid rgba(255,255,255,0.06);
   border-radius: 10px;
-  padding: 12px 8px;
+  padding: 8px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 .ps-canvas-stat-val {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 800;
   color: #fff;
 }
@@ -482,10 +482,10 @@
 }
 
 .ps-canvas-goals {
-  padding: 0 52px 20px;
+  padding: 0 52px 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .ps-canvas-goal-row {
   display: flex;
@@ -529,7 +529,7 @@
 
 .ps-canvas-footer {
   position: absolute;
-  bottom: 40px;
+  bottom: 20px;
   left: 52px;
   right: 52px;
   display: flex;
@@ -897,7 +897,7 @@
 
 /* ── Canvas three stars ──────────────────────────────────────── */
 .ps-canvas-three-stars {
-  padding: 0 52px 10px;
+  padding: 0 52px 6px;
 }
 .ps-canvas-stars-row {
   display: flex;
@@ -908,11 +908,11 @@
   background: rgba(255,255,255,0.04);
   border: 0.5px solid rgba(255,255,255,0.07);
   border-radius: 12px;
-  padding: 14px 10px;
+  padding: 10px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   text-align: center;
 }
 .ps-canvas-star-rank { font-size: 17px; }
@@ -947,56 +947,78 @@
   color: #fff;
 }
 
-/* ── Game canvas: score + narrative side by side ─────────────── */
-.ps-canvas-score-narrative-row {
+/* ── Game canvas: score + narrative side by side (redesigned) ── */
+.ps-canvas-score-ai-row {
   display: flex;
-  gap: 0;
-  padding: 12px 52px 12px;
+  align-items: stretch;
+  padding: 0 52px;
   border-bottom: 0.5px solid rgba(255,255,255,0.08);
-  align-items: center;
+  min-height: 280px;
 }
 
-.ps-canvas-score-compact {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  flex-shrink: 0;
-  width: 260px;
-}
-
-.ps-canvas-team-compact {
+.ps-canvas-score-compact-v2 {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
-  min-width: 80px;
+  flex-shrink: 0;
+  width: 160px;
+  padding: 14px 0;
 }
 
-.ps-canvas-team-logo-sm {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
+.ps-canvas-score-compact-team {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.4);
 }
+.ps-canvas-score-compact-team.car { color: var(--team-canvas); }
 
-.ps-canvas-score-num-sm {
-  font-size: 53px;
+.ps-canvas-score-compact-num {
+  font-size: 58px;
   font-weight: 900;
   color: #fff;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
-.ps-canvas-divider-sm {
-  font-size: 29px;
+.ps-canvas-score-compact-div {
+  font-size: 22px;
   color: rgba(255,255,255,0.2);
+  line-height: 1;
+  margin: 2px 0;
 }
 
-.ps-canvas-narrative-inline {
+.ps-canvas-score-ai-divider {
+  width: 0.5px;
+  background: rgba(255,255,255,0.08);
+  margin: 14px 24px 14px 24px;
+  flex-shrink: 0;
+}
+
+.ps-canvas-narrative-full {
   flex: 1;
-  padding-left: 24px;
-  border-left: 0.5px solid rgba(255,255,255,0.08);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 14px 0;
+}
+
+.ps-canvas-narrative-full-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--team-canvas);
+  margin-bottom: 8px;
+}
+
+.ps-canvas-narrative-full-text {
+  font-size: 16px;
+  line-height: 1.65;
+  color: rgba(255,255,255,0.7);
+
 }
 
 /* ── Game canvas: two-column goals ───────────────────────────── */
@@ -1046,4 +1068,31 @@
   color: rgba(255,255,255,0.35);
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* ── Game summary canvas: full-width AI narrative band ─────── */
+.ps-canvas-ai-band {
+  margin: 0 52px 0;
+  padding: 12px 18px;
+  background: rgba(var(--team-canvas-rgb), 0.06);
+  border-left: 3px solid var(--team-canvas);
+  border-radius: 0 8px 8px 0;
+  border-bottom: 0.5px solid rgba(255,255,255,0.06);
+}
+.ps-canvas-ai-band-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--team-canvas);
+  margin-bottom: 5px;
+}
+.ps-canvas-ai-band-text {
+  font-size: 15px;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.65);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }

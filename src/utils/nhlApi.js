@@ -755,18 +755,19 @@ export async function getTeamRecentGames(teamAbbr, count = 10, playoffsOnly = fa
 }
 
 export async function getTeamTopPlayers(teamAbbr, gameType = 2) {
-  return cached(`topPlayers:${teamAbbr}:${gameType}:v2`, async () => {
+  return cached(`topPlayers:${teamAbbr}:${gameType}:v3`, async () => {
     const data = await nhlFetch(`${BASE}/club-stats/${teamAbbr}/${TEAM_CONFIG.season}/${gameType}`);
     const skaters = (data?.skaters || [])
       .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
       .slice(0, 5)
       .map(p => ({
-        name:    `${p.firstName?.default || ''} ${p.lastName?.default || ''}`.trim(),
-        pos:     p.positionCode,
-        goals:   p.goals ?? 0,
-        assists: p.assists ?? 0,
-        points:  p.points ?? 0,
-        toi:     p.avgToi,
+        playerId: p.playerId,
+        name:     `${p.firstName?.default || ''} ${p.lastName?.default || ''}`.trim(),
+        pos:      p.positionCode,
+        goals:    p.goals ?? 0,
+        assists:  p.assists ?? 0,
+        points:   p.points ?? 0,
+        toi:      p.avgToi,
       }));
     const goalies = (data?.goalies || [])
       .sort((a, b) => (b.wins ?? 0) - (a.wins ?? 0))
@@ -776,9 +777,9 @@ export async function getTeamTopPlayers(teamAbbr, gameType = 2) {
         name:         `${g.firstName?.default || ''} ${g.lastName?.default || ''}`.trim(),
         wins:         g.wins ?? 0,
         savePct:      g.savePercentage ?? g.savePctg ?? null,
-        gaa:          g.goalsAgainstAverage ?? g.goalsAgainstAvg ?? 0,
-        shotsAgainst: g.shotsAgainst,
-        saves:        g.saves,
+        gaa:          g.goalsAgainstAverage ?? g.goalsAgainstAvg ?? null,
+        shotsAgainst: g.shotsAgainst ?? null,
+        saves:        g.saves ?? null,
       }));
     return { skaters, goalies };
   }, TTL.PLAYER_STATS);

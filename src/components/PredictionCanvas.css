@@ -63,7 +63,7 @@
   display: flex; gap: 20px; padding: 14px 52px;
   border-bottom: 0.5px solid rgba(255,255,255,0.06);
 }
-.pred-canvas-score, .pred-canvas-total { flex: 1; }
+.pred-canvas-score, .pred-canvas-total { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
 .pred-canvas-score-label { font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
                            text-transform: uppercase; color: rgba(255,255,255,0.25); margin-bottom: 6px; }
 .pred-canvas-score-val  { font-size: 26px; font-weight: 800; }
@@ -135,8 +135,8 @@
   margin-bottom: 5px;
 }
 .pred-canvas-ai-text {
-  font-size: 16px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.55;
   color: rgba(255,255,255,0.65);
 }
 

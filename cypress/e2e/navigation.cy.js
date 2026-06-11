@@ -8,7 +8,7 @@ describe('Navigation', () => {
   it('loads the home page (Shot Map)', () => {
     cy.url().should('include', '/')
     cy.get('.topbar').should('be.visible')
-    cy.team().then(t => cy.contains(t.displayName).should('exist'))
+    cy.contains('Hockey Intelligence').should('exist')
   })
 
   it('bottom nav renders all 5 tabs', () => {

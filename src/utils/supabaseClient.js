@@ -370,6 +370,49 @@ export async function getTeamGameLog(count = 120, season = 20252026, teamAbbr = 
     pkOpps:          r.pk_opps,
   }));
 }
+// ── Game matchup analysis ────────────────────────────────────
+// Returns the AI-generated line/player matchup analysis, or null if none exists.
+export async function getGameMatchup(gameId) {
+  if (!gameId) return null;
+  const rows = await sbFetch(
+    `game_predictions?game_id=eq.${gameId}&select=matchup_text,generated_at&limit=1`
+  ).catch(e => { console.warn('[getGameMatchup] sbFetch error:', e.message); return null; });
+  if (!rows?.length || !rows[0]?.matchup_text) return null;
+  return { text: rows[0].matchup_text, generatedAt: rows[0].generated_at };
+}
+
+// ── Game prediction ───────────────────────────────────────────
+// Returns the AI-generated pre-game prediction narrative, or null if none exists.
+export async function getGamePrediction(gameId) {
+  if (!gameId) return null;
+  const rows = await sbFetch(
+    `game_predictions?game_id=eq.${gameId}&select=prediction_text,generated_at&limit=1`
+  ).catch(() => []);
+  if (!rows?.length) return null;
+  return { text: rows[0].prediction_text, generatedAt: rows[0].generated_at };
+}
+
+// ── Game summary ──────────────────────────────────────────────
+// Returns the AI-generated post-game summary for a team, or null if none exists.
+export async function getGameSummary(gameId, team) {
+  if (!gameId || !team) return null;
+  const rows = await sbFetch(
+    `game_summaries?game_id=eq.${gameId}&team=eq.${team}&select=summary_text,card_text,generated_at&limit=1`
+  ).catch(() => []);
+  if (!rows?.length) return null;
+  return { text: rows[0].summary_text, cardText: rows[0].card_text || null, generatedAt: rows[0].generated_at };
+}
+
+// ── Player scouting blurb ─────────────────────────────────────
+// Returns the AI-generated scouting blurb for a player, or null if none exists.
+export async function getScoutingBlurb(playerId, season = 20252026) {
+  const rows = await sbFetch(
+    `player_scouting?player_id=eq.${playerId}&season=eq.${season}&select=scouting_text,generated_at&limit=1`
+  ).catch(() => []);
+  if (!rows?.length) return null;
+  return { blurb: rows[0].scouting_text, generatedAt: rows[0].generated_at };
+}
+
 export async function getTeamSkaterStatsFromDB(team = 'CAR', season = 20252026, gameType = 2) {
   const [seasonRows, playerRows] = await Promise.all([
     sbFetch(

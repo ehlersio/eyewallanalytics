@@ -185,17 +185,17 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow: hidden;
 }
-.sc-header       { display: flex; align-items: center; justify-content: space-between; padding: 30px 52px 14px; }
+.sc-header       { display: flex; align-items: center; justify-content: space-between; padding: 20px 52px 8px; }
 .sc-logo         { width: 80px; height: 80px; object-fit: contain; }
 .sc-badge        { font-size: 13px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
                    color: var(--team-canvas); background: rgba(var(--team-canvas-rgb), 0.12); padding: 6px 16px; border-radius: 20px; }
-.sc-teams        { display: flex; align-items: center; justify-content: center; gap: 24px;
-                   padding: 8px 52px 20px; border-bottom: 0.5px solid rgba(255,255,255,0.07); }
-.sc-team         { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.sc-team-logo    { width: 56px; height: 56px; object-fit: contain; }
-.sc-team-abbr    { font-size: 22px; font-weight: 800; color: rgba(255,255,255,0.7); }
+.sc-teams        { display: flex; align-items: center; justify-content: center; gap: 20px;
+                   padding: 4px 52px 10px; border-bottom: 0.5px solid rgba(255,255,255,0.07); }
+.sc-team         { display: flex; flex-direction: row; align-items: center; gap: 10px; }
+.sc-team-logo    { width: 36px; height: 36px; object-fit: contain; }
+.sc-team-abbr    { font-size: 20px; font-weight: 800; color: rgba(255,255,255,0.7); }
 .sc-team-abbr.car { color: var(--team-canvas); }
-.sc-vs           { font-size: 24px; color: rgba(255,255,255,0.2); }
+.sc-vs           { font-size: 18px; color: rgba(255,255,255,0.2); }
 .sc-stats        { padding: 14px 52px 10px; display: flex; flex-direction: column; gap: 10px; }
 .sc-stat-row     { display: flex; align-items: center; gap: 12px; }
 .sc-stat-label   { flex: 1; text-align: center; font-size: 14px; color: rgba(255,255,255,0.35);
@@ -214,7 +214,7 @@
 .sc-goalie-name  { font-size: 17px; font-weight: 700; margin-bottom: 6px; color: rgba(255,255,255,0.7); }
 .sc-goalie-name.car { color: var(--team-canvas); }
 .sc-goalie-stats { display: flex; gap: 14px; font-size: 14px; color: rgba(255,255,255,0.45); }
-.sc-footer       { display: flex; justify-content: space-between; padding: 12px 52px 32px;
+.sc-footer       { display: flex; justify-content: space-between; padding: 8px 52px 20px;
                    font-size: 13px; color: rgba(255,255,255,0.2); margin-top: auto; }
 /* ── Line combinations section ────────────────────────────────── */
 .sc-lines-note {
@@ -320,4 +320,30 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   min-width: 18px;
+}
+
+/* ── AI Matchup Analysis section ── */
+.sc-matchup-section {
+  padding: 12px 0 14px;
+  border-bottom: 0.5px solid var(--border);
+  margin-bottom: 4px;
+}
+.sc-matchup-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--team-primary, var(--red-bright));
+  margin-bottom: 8px;
+}
+.sc-matchup-text {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+.sc-matchup-footer {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 8px;
 }
