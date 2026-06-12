@@ -86,7 +86,7 @@ async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false) {
       strength:   g.strength,
     })),
   };
-
+  console.log('generateNarrative called:', { workerUrl, gameId: summary.gameId, periodKey });
   // ── Path 1: Worker endpoint (production) ─────────────────────
   if (workerUrl && summary.gameId) {
     try {
