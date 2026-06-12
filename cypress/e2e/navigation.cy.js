@@ -1,4 +1,26 @@
 // cypress/e2e/navigation.cy.js
+
+// ── Multi-team smoke — all routes load for representative teams ───────────
+describe('Navigation smoke tests (multi-team)', () => {
+  const SAMPLE_TEAMS = ['CAR', 'VGK', 'TOR', 'CHI', 'BOS', 'EDM']
+
+  SAMPLE_TEAMS.forEach(abbr => {
+    it(`all routes load without crashing for ${abbr}`, () => {
+      const routes = ['/', '/schedule', '/players', '/team', '/news']
+      routes.forEach(path => {
+        cy.visit(path, {
+          onBeforeLoad(win) {
+            win.localStorage.setItem('eyewall:team', JSON.stringify({ abbr }))
+          },
+        })
+        cy.get('.topbar', { timeout: 10000 }).should('exist')
+        cy.get('body').should('not.contain', 'Something went wrong')
+        cy.assertNoErrors()
+      })
+    })
+  })
+})
+
 describe('Navigation', () => {
   beforeEach(() => {
     cy.visit('/')

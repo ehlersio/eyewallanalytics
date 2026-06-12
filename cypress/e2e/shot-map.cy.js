@@ -1,4 +1,24 @@
 // cypress/e2e/shot-map.cy.js
+
+// ── Multi-team smoke ──────────────────────────────────────────────────────
+describe('Shot Map smoke tests (multi-team)', () => {
+  const SAMPLE_TEAMS = ['CAR', 'VGK', 'TOR', 'CHI', 'BOS', 'EDM']
+
+  SAMPLE_TEAMS.forEach(abbr => {
+    it(`shot map loads without crashing for ${abbr}`, () => {
+      cy.visit('/', {
+        onBeforeLoad(win) {
+          win.localStorage.setItem('eyewall:team', JSON.stringify({ abbr }))
+        },
+      })
+      cy.get('.topbar', { timeout: 10000 }).should('exist')
+      cy.contains(abbr).should('be.visible')
+      cy.get('svg').should('exist')
+      cy.assertNoErrors()
+    })
+  })
+})
+
 describe('Shot Map', () => {
   beforeEach(() => {
     cy.team().then(t => {

@@ -16,16 +16,40 @@ Cypress.on('window:before:load', (win) => {
   })
 })
 
-// ── Team fixture ──────────────────────────────────────────────
-// cy.team() returns the fixture. Use inside tests as:
-//   cy.team().then(t => cy.contains(t.displayName))
-Cypress.Commands.add('team', () => cy.fixture('team'))
+// ── Team fixtures ─────────────────────────────────────────────
+// cy.team()        — returns the default CAR fixture (backward compat)
+// cy.team('VGK')   — returns the fixture for a specific team
+// cy.teams()       — returns all 32 teams
+// cy.fullTeams()   — returns only teams with full line data
+Cypress.Commands.add('team', (abbr) => {
+  return cy.fixture('teams').then(teams => {
+    const match = abbr
+      ? teams.find(t => t.abbr === abbr)
+      : teams.find(t => t.abbr === 'CAR')
+    if (!match) throw new Error(`No fixture found for team: ${abbr}`)
+    return match
+  })
+})
+
+Cypress.Commands.add('teams', () => cy.fixture('teams'))
+
+Cypress.Commands.add('fullTeams', () =>
+  cy.fixture('teams').then(teams => teams.filter(t => t.line1))
+)
 
 // ── Pre-set localStorage so TeamPicker never blocks tests ─────
+// Uses CAR by default; individual tests can call setTeam() to switch
+Cypress.Commands.add('setTeam', (abbr) => {
+  cy.window().then(win => {
+    win.localStorage.setItem('eyewall:team', JSON.stringify({ abbr }))
+  })
+})
+
 beforeEach(() => {
-  cy.fixture('team').then(team => {
+  cy.fixture('teams').then(teams => {
+    const car = teams.find(t => t.abbr === 'CAR')
     cy.window().then(win => {
-      win.localStorage.setItem('eyewall:team', JSON.stringify({ abbr: team.abbr }))
+      win.localStorage.setItem('eyewall:team', JSON.stringify({ abbr: car.abbr }))
     })
   })
 })
