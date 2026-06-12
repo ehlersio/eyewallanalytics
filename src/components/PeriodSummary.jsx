@@ -19,9 +19,7 @@ async function fetchGameSummaryFromDB(gameId, team) {
       { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } }
     );
     if (!r.ok) return null;
-    console.log('Supabase status:', r.status);
     const rows = await r.json();
-    console.log('Supabase rows:', rows);
     if (!rows?.[0]?.summary_text) return null;
     return { text: rows[0].summary_text, cardText: rows[0].card_text || null };
   } catch { return null; }
@@ -53,9 +51,7 @@ async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false) {
 
   // ── Path 0: DB lookup (game summaries only) ───────────────────
   if (summary.isGameSummary && summary.gameId) {
-    console.log('Attempting DB fetch for', summary.gameId, carAbbr);
     const dbResult = await fetchGameSummaryFromDB(summary.gameId, carAbbr);
-    console.log('DB result:', dbResult);
     if (dbResult?.text) return { narrative: dbResult.text, cardNarrative: dbResult.cardText };
   }
 
@@ -86,7 +82,6 @@ async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false) {
       strength:   g.strength,
     })),
   };
-  console.log('generateNarrative called:', { workerUrl, gameId: summary.gameId, periodKey });
   // ── Path 1: Worker endpoint (production) ─────────────────────
   if (workerUrl && summary.gameId) {
     try {
@@ -451,13 +446,6 @@ export default function PeriodSummary({
 
   // Generate AI narrative on mount — Worker generates once and caches in KV for all users.
   useEffect(() => {
-    console.log('PeriodSummary effect:', {
-      hasSummary: !!summary,
-      isGameSummary: summary?.isGameSummary,
-      aiLoading: summary?.aiLoading,
-      aiNarrative: summary?.aiNarrative,
-      gameId: summary?.gameId,
-    });
     if (!summary || summary.aiNarrative) return;
     if (!summary.isGameSummary && !summary.aiLoading) return;
     generateNarrative(summary, carAbbr, oppAbbr, isPlayoff).then(result => {
