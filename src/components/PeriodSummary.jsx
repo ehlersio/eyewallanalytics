@@ -51,7 +51,9 @@ async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false) {
 
   // ── Path 0: DB lookup (game summaries only) ───────────────────
   if (summary.isGameSummary && summary.gameId) {
+    console.log('Attempting DB fetch for', summary.gameId, carAbbr);
     const dbResult = await fetchGameSummaryFromDB(summary.gameId, carAbbr);
+    console.log('DB result:', dbResult);
     if (dbResult?.text) return { narrative: dbResult.text, cardNarrative: dbResult.cardText };
   }
 
