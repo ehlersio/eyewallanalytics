@@ -19,7 +19,9 @@ async function fetchGameSummaryFromDB(gameId, team) {
       { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } }
     );
     if (!r.ok) return null;
+    console.log('Supabase status:', r.status);
     const rows = await r.json();
+    console.log('Supabase rows:', rows);
     if (!rows?.[0]?.summary_text) return null;
     return { text: rows[0].summary_text, cardText: rows[0].card_text || null };
   } catch { return null; }
