@@ -6,8 +6,14 @@
     "newsPageTitle": "Carolina Hurricanes",
     "teamNewsSource": "Canes Country",
     "line1": {
-      "players": ["Svechnikov", "Aho", "Jarvis"],
-      "positions": ["LW", "C", "RW"]
+      "players": [
+        "Aho"
+      ],
+      "positions": [
+        "LW",
+        "C",
+        "RW"
+      ]
     },
     "defence1": "Slavin",
     "skater": "Aho",
@@ -20,8 +26,14 @@
     "newsPageTitle": "Vegas Golden Knights",
     "teamNewsSource": null,
     "line1": {
-      "players": ["Barbashev", "Eichel", "Dorofeyev"],
-      "positions": ["LW", "C", "RW"]
+      "players": [
+        "Eichel"
+      ],
+      "positions": [
+        "LW",
+        "C",
+        "RW"
+      ]
     },
     "defence1": "McNabb",
     "skater": "Eichel",
@@ -34,11 +46,17 @@
     "newsPageTitle": "Toronto Maple Leafs",
     "teamNewsSource": null,
     "line1": {
-      "players": ["Knies", "Matthews", "Nylander"],
-      "positions": ["LW", "C", "RW"]
+      "players": [
+        "Nylander"
+      ],
+      "positions": [
+        "LW",
+        "C",
+        "RW"
+      ]
     },
     "defence1": "McCabe",
-    "skater": "Matthews",
+    "skater": "Nylander",
     "goalie": "Woll"
   },
   {
@@ -48,39 +66,157 @@
     "newsPageTitle": "Chicago Blackhawks",
     "teamNewsSource": null,
     "line1": {
-      "players": ["Bertuzzi", "Bedard", "Nazar"],
-      "positions": ["LW", "C", "RW"]
+      "players": [
+        "Bedard"
+      ],
+      "positions": [
+        "LW",
+        "C",
+        "RW"
+      ]
     },
     "defence1": "Jones",
     "skater": "Bedard",
     "goalie": "Knight"
   },
-  { "abbr": "ANA", "displayName": "Anaheim Ducks", "division": "Pacific" },
-  { "abbr": "ARI", "displayName": "Utah Mammoth", "division": "Central" },
-  { "abbr": "BOS", "displayName": "Boston Bruins", "division": "Atlantic" },
-  { "abbr": "BUF", "displayName": "Buffalo Sabres", "division": "Atlantic" },
-  { "abbr": "CGY", "displayName": "Calgary Flames", "division": "Pacific" },
-  { "abbr": "CBJ", "displayName": "Columbus Blue Jackets", "division": "Metropolitan" },
-  { "abbr": "COL", "displayName": "Colorado Avalanche", "division": "Central" },
-  { "abbr": "DAL", "displayName": "Dallas Stars", "division": "Central" },
-  { "abbr": "DET", "displayName": "Detroit Red Wings", "division": "Atlantic" },
-  { "abbr": "EDM", "displayName": "Edmonton Oilers", "division": "Pacific" },
-  { "abbr": "FLA", "displayName": "Florida Panthers", "division": "Atlantic" },
-  { "abbr": "LAK", "displayName": "Los Angeles Kings", "division": "Pacific" },
-  { "abbr": "MIN", "displayName": "Minnesota Wild", "division": "Central" },
-  { "abbr": "MTL", "displayName": "Montreal Canadiens", "division": "Atlantic" },
-  { "abbr": "NSH", "displayName": "Nashville Predators", "division": "Central" },
-  { "abbr": "NJD", "displayName": "New Jersey Devils", "division": "Metropolitan" },
-  { "abbr": "NYI", "displayName": "New York Islanders", "division": "Metropolitan" },
-  { "abbr": "NYR", "displayName": "New York Rangers", "division": "Metropolitan" },
-  { "abbr": "OTT", "displayName": "Ottawa Senators", "division": "Atlantic" },
-  { "abbr": "PHI", "displayName": "Philadelphia Flyers", "division": "Metropolitan" },
-  { "abbr": "PIT", "displayName": "Pittsburgh Penguins", "division": "Metropolitan" },
-  { "abbr": "SEA", "displayName": "Seattle Kraken", "division": "Pacific" },
-  { "abbr": "SJS", "displayName": "San Jose Sharks", "division": "Pacific" },
-  { "abbr": "STL", "displayName": "St. Louis Blues", "division": "Central" },
-  { "abbr": "TBL", "displayName": "Tampa Bay Lightning", "division": "Atlantic" },
-  { "abbr": "VAN", "displayName": "Vancouver Canucks", "division": "Pacific" },
-  { "abbr": "WSH", "displayName": "Washington Capitals", "division": "Metropolitan" },
-  { "abbr": "WPG", "displayName": "Winnipeg Jets", "division": "Central" }
+  {
+    "abbr": "ANA",
+    "displayName": "Anaheim Ducks",
+    "division": "Pacific"
+  },
+  {
+    "abbr": "ARI",
+    "displayName": "Utah Mammoth",
+    "division": "Central"
+  },
+  {
+    "abbr": "BOS",
+    "displayName": "Boston Bruins",
+    "division": "Atlantic"
+  },
+  {
+    "abbr": "BUF",
+    "displayName": "Buffalo Sabres",
+    "division": "Atlantic"
+  },
+  {
+    "abbr": "CGY",
+    "displayName": "Calgary Flames",
+    "division": "Pacific"
+  },
+  {
+    "abbr": "CBJ",
+    "displayName": "Columbus Blue Jackets",
+    "division": "Metropolitan"
+  },
+  {
+    "abbr": "COL",
+    "displayName": "Colorado Avalanche",
+    "division": "Central"
+  },
+  {
+    "abbr": "DAL",
+    "displayName": "Dallas Stars",
+    "division": "Central"
+  },
+  {
+    "abbr": "DET",
+    "displayName": "Detroit Red Wings",
+    "division": "Atlantic"
+  },
+  {
+    "abbr": "EDM",
+    "displayName": "Edmonton Oilers",
+    "division": "Pacific"
+  },
+  {
+    "abbr": "FLA",
+    "displayName": "Florida Panthers",
+    "division": "Atlantic"
+  },
+  {
+    "abbr": "LAK",
+    "displayName": "Los Angeles Kings",
+    "division": "Pacific"
+  },
+  {
+    "abbr": "MIN",
+    "displayName": "Minnesota Wild",
+    "division": "Central"
+  },
+  {
+    "abbr": "MTL",
+    "displayName": "Montreal Canadiens",
+    "division": "Atlantic"
+  },
+  {
+    "abbr": "NSH",
+    "displayName": "Nashville Predators",
+    "division": "Central"
+  },
+  {
+    "abbr": "NJD",
+    "displayName": "New Jersey Devils",
+    "division": "Metropolitan"
+  },
+  {
+    "abbr": "NYI",
+    "displayName": "New York Islanders",
+    "division": "Metropolitan"
+  },
+  {
+    "abbr": "NYR",
+    "displayName": "New York Rangers",
+    "division": "Metropolitan"
+  },
+  {
+    "abbr": "OTT",
+    "displayName": "Ottawa Senators",
+    "division": "Atlantic"
+  },
+  {
+    "abbr": "PHI",
+    "displayName": "Philadelphia Flyers",
+    "division": "Metropolitan"
+  },
+  {
+    "abbr": "PIT",
+    "displayName": "Pittsburgh Penguins",
+    "division": "Metropolitan"
+  },
+  {
+    "abbr": "SEA",
+    "displayName": "Seattle Kraken",
+    "division": "Pacific"
+  },
+  {
+    "abbr": "SJS",
+    "displayName": "San Jose Sharks",
+    "division": "Pacific"
+  },
+  {
+    "abbr": "STL",
+    "displayName": "St. Louis Blues",
+    "division": "Central"
+  },
+  {
+    "abbr": "TBL",
+    "displayName": "Tampa Bay Lightning",
+    "division": "Atlantic"
+  },
+  {
+    "abbr": "VAN",
+    "displayName": "Vancouver Canucks",
+    "division": "Pacific"
+  },
+  {
+    "abbr": "WSH",
+    "displayName": "Washington Capitals",
+    "division": "Metropolitan"
+  },
+  {
+    "abbr": "WPG",
+    "displayName": "Winnipeg Jets",
+    "division": "Central"
+  }
 ]

@@ -76,37 +76,46 @@ export default function NewsView() {
   const [page,      setPage]      = useState(1);
 
   const fetchingRef = useRef(false);
+  const retryRef    = useRef(null);
 
-  const fetchArticles = useCallback(async () => {
+  const fetchArticles = useCallback(async (isRetry = false) => {
     if (!WORKER_URL) { setError('Worker URL not configured'); setLoading(false); return; }
-    if (fetchingRef.current) return;
-    if (TEAM_CONFIG.abbr !== 'CAR') {
-      setError(`News for ${TEAM_CONFIG.displayName} is coming soon.`);
-      setLoading(false);
-      return;
-    }
+    if (fetchingRef.current && !isRetry) return;
     fetchingRef.current = true;
-    setLoading(true);
+    if (!isRetry) setLoading(true);
     setError(null);
     try {
-      const res  = await fetch(`${WORKER_URL}/cache/${encodeURIComponent(`news:${TEAM_CONFIG.abbr}`)}`, { cache: 'no-store' });
+      const res  = await fetch(`${WORKER_URL}/news?team=${TEAM_CONFIG.abbr}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('News not yet available — check back soon');
       const data = await res.json();
       const arr = Array.isArray(data) ? data : [];
+      if (arr.length === 0 && !isRetry) {
+        // Cold cache — worker is populating in background. Retry in 4s.
+        retryRef.current = setTimeout(() => {
+          fetchingRef.current = false;
+          fetchArticles(true);
+        }, 4000);
+        // Leave loading spinner up during retry wait
+        return;
+      }
       setArticles(arr);
       setFilter('all');
       setPage(1);
       setLastFetch(new Date());
-      setPage(1);
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
-      fetchingRef.current = false;
+      if (isRetry || fetchingRef.current) {
+        setLoading(false);
+        fetchingRef.current = false;
+      }
     }
-  }, []);
+  }, [TEAM_CONFIG.abbr]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { fetchArticles(); }, [fetchArticles]);
+  useEffect(() => {
+    fetchArticles();
+    return () => { if (retryRef.current) clearTimeout(retryRef.current); };
+  }, [fetchArticles]);
 
   // Reset page when filter changes
   useEffect(() => { setPage(1); }, [filter]);
@@ -114,7 +123,7 @@ export default function NewsView() {
   // Build filter chips from actual article data
   const availableSources = useMemo(() => {
     const seen = new Set(articles.map(a => a.source));
-    return ['all', ...Object.keys(SOURCE_META).filter(k => seen.has(k))];
+    return ['all', ...Array.from(seen)];
   }, [articles]);
 
   const filtered = useMemo(() =>
@@ -213,7 +222,7 @@ export default function NewsView() {
       )}
 
       <div className="news-footer">
-        Articles from Canes Country, ESPN, Sportsnet, and The Score.
+        Articles from team blogs, ESPN, Sportsnet, Bleacher Report, The Athletic, and Reddit.
         Tap any article to read the full story.
       </div>
     </div>

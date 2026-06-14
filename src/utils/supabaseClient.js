@@ -31,8 +31,8 @@ export async function getPlayerAnalytics(season = 20252026) {
     `xga_per60,hdca_per60,hits,blocked_shots,takeaways,giveaways`;
 
   const [rows, poRows] = await Promise.all([
-    sbFetch(`player_seasons?season=eq.${season}&game_type=eq.2&war=not.is.null&select=${ANA_COLS}`),
-    sbFetch(`player_seasons?season=eq.${season}&game_type=eq.3&select=${DEF_COLS}`).catch(() => []),
+    sbFetch(`player_seasons?season=eq.${season}&game_type=eq.2&war=not.is.null&select=${ANA_COLS}&limit=2000`),
+    sbFetch(`player_seasons?season=eq.${season}&game_type=eq.3&select=${DEF_COLS}&limit=2000`).catch(() => []),
   ]);
 
   // Build playoff defensive map: player_id → { hits, blocked_shots, takeaways, giveaways }
@@ -414,6 +414,27 @@ export async function getScoutingBlurb(playerId, season = 20252026) {
 }
 
 export async function getTeamSkaterStatsFromDB(team = 'CAR', season = 20252026, gameType = 2) {
+  // Supabase caps responses at 1000 rows server-side. The players table has 1346+
+  // rows so we paginate with Range headers to get all of them.
+  async function fetchAllPlayers() {
+    const pageSize = 1000;
+    const headers = { ...HEADERS, 'Range-Unit': 'items' };
+    const all = [];
+    let offset = 0;
+    while (true) {
+      const r = await fetch(
+        `${SUPABASE_URL}/rest/v1/players?select=id,name,position`,
+        { headers: { ...headers, 'Range': `${offset}-${offset + pageSize - 1}` } }
+      );
+      const rows = await r.json();
+      if (!Array.isArray(rows) || rows.length === 0) break;
+      all.push(...rows);
+      if (rows.length < pageSize) break;
+      offset += pageSize;
+    }
+    return all;
+  }
+
   const [seasonRows, playerRows] = await Promise.all([
     sbFetch(
       `player_seasons?team=eq.${team}&season=eq.${season}&game_type=eq.${gameType}` +
@@ -421,7 +442,7 @@ export async function getTeamSkaterStatsFromDB(team = 'CAR', season = 20252026, 
       `points,plus_minus,pim,pp_goals,sh_goals,gw_goals,shots,shooting_pct,` +
       `toi_per_game&order=points.desc.nullslast`
     ),
-    sbFetch(`players?select=id,name,position`),
+    fetchAllPlayers(),
   ]);
 
   const playerMap = {};
