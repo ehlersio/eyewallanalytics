@@ -49,6 +49,7 @@ const PP_UNITS = {
       ],
     },
   },
+};
 
 // ── Penalty kill units ───────────────────────────────────────
 const PK_UNITS = {
@@ -84,6 +85,7 @@ const PK_UNITS = {
       ],
     },
   },
+};
 
 /**
  * Given a team, season, and set of player IDs seen in a PP opportunity,
