@@ -94,7 +94,7 @@
   flex-shrink: 0;
 }
 
-.lv-legend-bar--playoff { background: #1D9E75; }
+.lv-legend-bar--playoff { background: var(--green); }
 .lv-legend-bar--wc      { background: #5B8FD4; }
 
 /* ── Conference sections ── */
@@ -201,7 +201,7 @@
 }
 
 .lv-row--you .lv-td {
-  background: rgba(29, 158, 117, 0.07);
+  background: color-mix(in srgb, var(--row-accent, var(--green)) 8%, transparent);
 }
 
 .lv-row--you .lv-td--team {
@@ -226,8 +226,8 @@
 .lv-you-badge {
   font-size: 9px;
   font-weight: 700;
-  color: #1D9E75;
-  background: rgba(29, 158, 117, 0.15);
+  color: var(--row-accent, var(--green));
+  background: color-mix(in srgb, var(--row-accent, var(--green)) 15%, transparent);
   padding: 1px 4px;
   border-radius: 3px;
   letter-spacing: 0.04em;
@@ -256,7 +256,7 @@
   display: inline-block;
 }
 
-.l10-dot--w { background: #1D9E75; }
+.l10-dot--w { background: var(--green); }
 .l10-dot--o { background: #5B8FD4; }
 .l10-dot--l { background: var(--border-2); }
 
@@ -308,7 +308,7 @@
 }
 
 .lv-leaders-row--you {
-  background: rgba(29, 158, 117, 0.08);
+  background: color-mix(in srgb, var(--row-accent, var(--green)) 8%, transparent);
 }
 
 .lv-leaders-rank {
@@ -348,6 +348,11 @@
   width: 100%;
   overflow-x: auto;
   padding-bottom: 0.5rem;
+  --bkt-line: rgba(255, 255, 255, 0.25); /* dark mode connector lines */
+}
+
+[data-theme="light"] .bkt-root {
+  --bkt-line: rgba(0, 0, 0, 0.22);
 }
 
 .bkt-bracket {
@@ -406,7 +411,8 @@
 }
 
 .bkt-card--primary {
-  border: 1px solid #1D9E75;
+  border: 1px solid; /* color set inline via PRIMARY_COLOR */
+  background: var(--bg2);
 }
 
 .bkt-card--final {
@@ -430,8 +436,8 @@
   letter-spacing: 0.02em;
 }
 
-.bkt-abbr--lit     { opacity: 1; }
-.bkt-abbr--primary { color: #1D9E75; opacity: 1; }
+.bkt-abbr--lit { opacity: 1; }
+.bkt-abbr--dim { opacity: 0.3; }
 
 .bkt-dots {
   display: flex;
@@ -447,8 +453,8 @@
   flex-shrink: 0;
 }
 
-.bkt-dot--won     { background: var(--text-muted); border-color: var(--text-muted); }
-.bkt-dot--primary { background: #1D9E75;            border-color: #1D9E75; }
+/* dot fill is applied inline via style={{ background, borderColor }} using TEAM_COLORS */
+.bkt-dot--won { background: var(--text-muted); border-color: var(--text-muted); }
 
 .bkt-series-label {
   font-size: 9px;
@@ -490,7 +496,7 @@
   letter-spacing: 0.03em;
 }
 
-.bkt-winner-line--primary { color: #1D9E75; }
+/* winner-line color is applied inline via style={{ color }} using TEAM_COLORS */
 
 /* ── Empty / loading / error ── */
 

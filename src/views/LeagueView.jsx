@@ -11,6 +11,7 @@ import {
   getPlayoffBracket,
   TEAM_CONFIG,
 } from '../utils/nhlApi';
+import { ALL_TEAMS } from '../utils/teamConfig';
 import './LeagueView.css';
 
 const PRIMARY = TEAM_CONFIG.abbr;
@@ -52,7 +53,10 @@ function StandingsRow({ entry, rank }) {
   const clinchColor = CLINCH_COLOR[entry.clinchIndicator] ?? null;
 
   return (
-    <tr className={`lv-row${isPrimary ? ' lv-row--you' : ''}`}>
+    <tr
+      className={`lv-row${isPrimary ? ' lv-row--you' : ''}`}
+      style={isPrimary ? { '--row-accent': PRIMARY_COLOR } : undefined}
+    >
       <td className="lv-td lv-td--rank">{rank}</td>
       <td
         className="lv-td lv-td--team"
@@ -60,7 +64,7 @@ function StandingsRow({ entry, rank }) {
       >
         <span className="lv-team-cell">
           <span className="lv-team-abbrev">{abbrev}</span>
-          {isPrimary && <span className="lv-you-badge">YOU</span>}
+          {isPrimary && <span className="lv-you-badge" style={{ color: PRIMARY_COLOR, background: `${PRIMARY_COLOR}26` }}>YOU</span>}
           {entry.clinchIndicator && (
             <span className="lv-clinch-badge">{entry.clinchIndicator.toUpperCase()}</span>
           )}
@@ -211,7 +215,7 @@ function LeadersCard({ title, statLabel, rows, formatStat }) {
         const stat      = p.value ?? 0;
 
         return (
-          <div key={p.playerId ?? i} className={`lv-leaders-row${isPrimary ? ' lv-leaders-row--you' : ''}`}>
+          <div key={p.playerId ?? i} className={`lv-leaders-row${isPrimary ? ' lv-leaders-row--you' : ''}`} style={isPrimary ? { '--row-accent': PRIMARY_COLOR } : undefined}>
             <span className="lv-leaders-rank">{i + 1}</span>
             <span className="lv-leaders-name">{name}</span>
             <span className="lv-leaders-team">{abbrev}</span>
@@ -246,41 +250,49 @@ function LeadersPanel({ scoring, goals, gaa, svp }) {
 
 // ─── Bracket Panel (Phase 2) ──────────────────────────────────────────────────
 
-// Offseason fallback: completed 20252026 bracket (CAR over VGK).
-// Bump OFFSEASON_BRACKET next October once 20262027 data is wired.
+// WCAG AA-compliant team display colors, sourced from teamConfig.js (displayColor).
+// These are pre-verified to meet ≥4.5:1 contrast on --bg2 (#101827).
+const TEAM_COLORS = Object.fromEntries(ALL_TEAMS.map(t => [t.abbr, t.displayColor]));
+
+// Primary team display color for YOU-row highlights and bracket card accent.
+const PRIMARY_COLOR = TEAM_CONFIG.displayColor;
+
+// Last completed playoff bracket — shown during offseason when the API returns no data.
+// Update this once per year alongside MP_SEASON (next bump: October 2026 → 20262027 season).
 const OFFSEASON_BRACKET = {
   east: [
     { round: 1, series: [
-      { top: 'CAR', bottom: 'NYR', topWins: 4, bottomWins: 2 },
-      { top: 'FLA', bottom: 'TBL', topWins: 4, bottomWins: 2 },
-      { top: 'BOS', bottom: 'OTT', topWins: 4, bottomWins: 3 },
-      { top: 'WSH', bottom: 'PHI', topWins: 4, bottomWins: 1 },
+      { top: 'CAR', bottom: 'OTT', topWins: 4, bottomWins: 0 },
+      { top: 'PHI', bottom: 'PIT', topWins: 4, bottomWins: 2 },
+      { top: 'MTL', bottom: 'TBL', topWins: 4, bottomWins: 3 },
+      { top: 'BUF', bottom: 'BOS', topWins: 4, bottomWins: 2 },
     ]},
     { round: 2, series: [
-      { top: 'CAR', bottom: 'FLA', topWins: 4, bottomWins: 3 },
-      { top: 'BOS', bottom: 'WSH', topWins: 4, bottomWins: 2 },
+      { top: 'CAR', bottom: 'PHI', topWins: 4, bottomWins: 0 },
+      { top: 'MTL', bottom: 'BUF', topWins: 4, bottomWins: 3 },
     ]},
     { round: 3, series: [
-      { top: 'CAR', bottom: 'BOS', topWins: 4, bottomWins: 1 },
+      { top: 'CAR', bottom: 'MTL', topWins: 4, bottomWins: 1 },
     ]},
   ],
   west: [
     { round: 1, series: [
-      { top: 'VGK', bottom: 'LAK', topWins: 4, bottomWins: 2 },
-      { top: 'DAL', bottom: 'WPG', topWins: 4, bottomWins: 2 },
-      { top: 'EDM', bottom: 'MIN', topWins: 4, bottomWins: 1 },
-      { top: 'COL', bottom: 'STL', topWins: 4, bottomWins: 2 },
+      { top: 'VGK', bottom: 'UTA', topWins: 4, bottomWins: 2 },
+      { top: 'ANA', bottom: 'EDM', topWins: 4, bottomWins: 2 },
+      { top: 'MIN', bottom: 'DAL', topWins: 4, bottomWins: 2 },
+      { top: 'COL', bottom: 'LAK', topWins: 4, bottomWins: 0 },
     ]},
     { round: 2, series: [
-      { top: 'VGK', bottom: 'DAL', topWins: 4, bottomWins: 3 },
-      { top: 'EDM', bottom: 'COL', topWins: 4, bottomWins: 2 },
+      { top: 'VGK', bottom: 'ANA', topWins: 4, bottomWins: 2 },
+      { top: 'COL', bottom: 'MIN', topWins: 4, bottomWins: 1 },
     ]},
     { round: 3, series: [
-      { top: 'VGK', bottom: 'EDM', topWins: 4, bottomWins: 3 },
+      { top: 'VGK', bottom: 'COL', topWins: 4, bottomWins: 0 },
     ]},
   ],
-  final: { top: 'CAR', bottom: 'VGK', topWins: 4, bottomWins: 1 },
+  final: { top: 'CAR', bottom: 'VGK', topWins: 4, bottomWins: 2 },
 };
+
 
 /**
  * Normalise one raw series from either known NHL API shape into
@@ -311,7 +323,7 @@ function normaliseSeries(raw) {
 /**
  * Parse NHL API bracketData into { east, west, final }.
  * Logs raw shape in dev so you can verify field names on first load.
- * Returns null if shape is unrecognised → triggers OFFSEASON_BRACKET fallback.
+ * Returns null if shape is unrecognised or data is absent (offseason empty state).
  */
 function parseBracketData(raw) {
   if (!raw) return null;
@@ -352,18 +364,14 @@ function parseBracketData(raw) {
 
 // ── Dot row ──
 
-function WinDots({ wins, isPrimary }) {
+function WinDots({ wins, color }) {
   return (
     <span className="bkt-dots" aria-hidden="true">
       {Array.from({ length: 4 }).map((_, i) => (
         <span
           key={i}
-          className={[
-            'bkt-dot',
-            i < wins
-              ? isPrimary ? 'bkt-dot--primary' : 'bkt-dot--won'
-              : '',
-          ].filter(Boolean).join(' ')}
+          className="bkt-dot"
+          style={i < wins && color ? { background: color, borderColor: color } : undefined}
         />
       ))}
     </span>
@@ -372,37 +380,47 @@ function WinDots({ wins, isPrimary }) {
 
 // ── Series card ──
 
+function TeamAbbr({ abbrev, isWinner, isEliminated }) {
+  const color = TEAM_COLORS[abbrev];
+  return (
+    <span
+      className={['bkt-abbr', isEliminated ? 'bkt-abbr--dim' : ''].filter(Boolean).join(' ')}
+      style={!isEliminated && color ? { color } : undefined}
+    >
+      {abbrev}
+    </span>
+  );
+}
+
 function SeriesCard({ series }) {
   if (!series) return <div className="bkt-card bkt-card--empty" />;
 
   const { top, bottom, topWins, bottomWins } = series;
-  const topIsPrimary    = top    === PRIMARY;
-  const bottomIsPrimary = bottom === PRIMARY;
-  const isPrimary       = topIsPrimary || bottomIsPrimary;
-  const dash            = '\u2013';
+  const isPrimary  = top === PRIMARY || bottom === PRIMARY;
+  const isComplete = topWins === 4 || bottomWins === 4;
+  const dash       = '\u2013';
 
   let label = null;
   if (topWins + bottomWins > 0) {
-    if      (topWins    === 4)            label = `${top} wins 4${dash}${bottomWins}`;
-    else if (bottomWins === 4)            label = `${bottom} wins 4${dash}${topWins}`;
-    else if (topWins    === bottomWins)   label = `Tied ${topWins}${dash}${bottomWins}`;
-    else if (topWins    >  bottomWins)    label = `${top} leads ${topWins}${dash}${bottomWins}`;
-    else                                  label = `${bottom} leads ${bottomWins}${dash}${topWins}`;
+    if      (topWins    === 4)          label = `${top} wins 4${dash}${bottomWins}`;
+    else if (bottomWins === 4)          label = `${bottom} wins 4${dash}${topWins}`;
+    else if (topWins    === bottomWins) label = `Tied ${topWins}${dash}${bottomWins}`;
+    else if (topWins    >  bottomWins)  label = `${top} leads ${topWins}${dash}${bottomWins}`;
+    else                                label = `${bottom} leads ${bottomWins}${dash}${topWins}`;
   }
 
   return (
-    <div className={['bkt-card', isPrimary ? 'bkt-card--primary' : ''].filter(Boolean).join(' ')}>
+    <div
+      className={['bkt-card', isPrimary ? 'bkt-card--primary' : ''].filter(Boolean).join(' ')}
+      style={isPrimary ? { borderColor: PRIMARY_COLOR } : undefined}
+    >
       <div className="bkt-team-row">
-        <span className={['bkt-abbr', topWins === 4 || topIsPrimary ? 'bkt-abbr--lit' : '', topIsPrimary ? 'bkt-abbr--primary' : ''].filter(Boolean).join(' ')}>
-          {top}
-        </span>
-        <WinDots wins={topWins} isPrimary={topIsPrimary} />
+        <TeamAbbr abbrev={top} isEliminated={isComplete && topWins !== 4} />
+        <WinDots wins={topWins} color={TEAM_COLORS[top]} />
       </div>
       <div className="bkt-team-row">
-        <span className={['bkt-abbr', bottomWins === 4 || bottomIsPrimary ? 'bkt-abbr--lit' : '', bottomIsPrimary ? 'bkt-abbr--primary' : ''].filter(Boolean).join(' ')}>
-          {bottom}
-        </span>
-        <WinDots wins={bottomWins} isPrimary={bottomIsPrimary} />
+        <TeamAbbr abbrev={bottom} isEliminated={isComplete && bottomWins !== 4} />
+        <WinDots wins={bottomWins} color={TEAM_COLORS[bottom]} />
       </div>
       {label && <div className="bkt-series-label">{label}</div>}
     </div>
@@ -411,14 +429,30 @@ function SeriesCard({ series }) {
 
 // ── Connector SVG (scales with flex height via preserveAspectRatio="none") ──
 
-function Connector({ count, direction }) {
-  // Pairs of series feed into one series in the next round.
-  // Each slot is given a notional 100-unit height.
+function Connector({ count, direction, straight }) {
+  // straight=true: single horizontal line (used for Conf Finals ↔ Cup Final)
+  // otherwise: bracket pairs — each slot is a notional 100-unit height
+  const xIn  = direction === 'left' ? 20 : 0;
+  const xOut = direction === 'left' ? 0  : 20;
+  const xMid = 10;
+  const stroke = 'var(--bkt-line)';
+  const sw = '1';
+
+  if (straight) {
+    return (
+      <svg
+        className="bkt-connector"
+        viewBox="0 0 20 100"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <line x1={xIn} y1={50} x2={xOut} y2={50} stroke={stroke} strokeWidth={sw} />
+      </svg>
+    );
+  }
+
   const pairs = Math.ceil(count / 2);
   const totalH = count * 100;
-  const xIn  = direction === 'left' ? 20 : 0;
-  const xMid = 10;
-  const xOut = direction === 'left' ? 0  : 20;
 
   return (
     <svg
@@ -433,10 +467,10 @@ function Connector({ count, direction }) {
         const midY = (topY + botY) / 2;
         return (
           <g key={i}>
-            <line x1={xIn}  y1={topY} x2={xMid} y2={topY} stroke="var(--border)"  strokeWidth="0.5" />
-            <line x1={xIn}  y1={botY} x2={xMid} y2={botY} stroke="var(--border)"  strokeWidth="0.5" />
-            <line x1={xMid} y1={topY} x2={xMid} y2={botY} stroke="var(--border)"  strokeWidth="0.5" />
-            <line x1={xMid} y1={midY} x2={xOut} y2={midY} stroke="var(--border)"  strokeWidth="0.5" />
+            <line x1={xIn}  y1={topY} x2={xMid} y2={topY} stroke={stroke} strokeWidth={sw} />
+            <line x1={xIn}  y1={botY} x2={xMid} y2={botY} stroke={stroke} strokeWidth={sw} />
+            <line x1={xMid} y1={topY} x2={xMid} y2={botY} stroke={stroke} strokeWidth={sw} />
+            <line x1={xMid} y1={midY} x2={xOut} y2={midY} stroke={stroke} strokeWidth={sw} />
           </g>
         );
       })}
@@ -468,10 +502,8 @@ function RoundCol({ round, label }) {
 function CupFinalCol({ series }) {
   if (!series) return null;
   const { top, bottom, topWins, bottomWins } = series;
-  const winner         = topWins === 4 ? top : bottomWins === 4 ? bottom : null;
-  const topIsPrimary   = top    === PRIMARY;
-  const bottomIsPrimary = bottom === PRIMARY;
-  const dash           = '\u2013';
+  const winner      = topWins === 4 ? top : bottomWins === 4 ? bottom : null;
+  const isComplete  = topWins === 4 || bottomWins === 4;
 
   return (
     <div className="bkt-final-col">
@@ -479,16 +511,16 @@ function CupFinalCol({ series }) {
       <div className="bkt-final-center">
         <div className="bkt-card bkt-card--final">
           <div className="bkt-team-row">
-            <span className={['bkt-abbr', topWins === 4 ? 'bkt-abbr--lit' : '', topIsPrimary ? 'bkt-abbr--primary' : ''].filter(Boolean).join(' ')}>{top}</span>
-            <WinDots wins={topWins} isPrimary={topIsPrimary} />
+            <TeamAbbr abbrev={top} isEliminated={isComplete && topWins !== 4} />
+            <WinDots wins={topWins} color={TEAM_COLORS[top]} />
           </div>
           <div className="bkt-team-row">
-            <span className={['bkt-abbr', bottomWins === 4 ? 'bkt-abbr--lit' : '', bottomIsPrimary ? 'bkt-abbr--primary' : ''].filter(Boolean).join(' ')}>{bottom}</span>
-            <WinDots wins={bottomWins} isPrimary={bottomIsPrimary} />
+            <TeamAbbr abbrev={bottom} isEliminated={isComplete && bottomWins !== 4} />
+            <WinDots wins={bottomWins} color={TEAM_COLORS[bottom]} />
           </div>
           {winner && (
-            <div className={['bkt-winner-line', winner === PRIMARY ? 'bkt-winner-line--primary' : ''].join(' ')}>
-              {winner} champion
+            <div className="bkt-winner-line" style={{ color: TEAM_COLORS[winner] ?? 'var(--text)' }}>
+              {winner} champion 🏆
             </div>
           )}
         </div>
@@ -501,9 +533,19 @@ function CupFinalCol({ series }) {
 
 function BracketPanel({ data }) {
   const bracket = useMemo(() => {
-    const parsed = parseBracketData(data);
-    return parsed ?? OFFSEASON_BRACKET;
+    // Live API data takes priority. If it returns nothing (offseason 404,
+    // post-Final cleanup, or any other gap), fall back to the last completed
+    // bracket — always better than a blank screen.
+    return parseBracketData(data) ?? OFFSEASON_BRACKET;
   }, [data]);
+
+  if (!bracket) {
+    return (
+      <div className="lv-empty">
+        <p className="lv-empty-msg">Playoff bracket will appear here once the postseason begins.</p>
+      </div>
+    );
+  }
 
   const { east, west, final } = bracket;
 
@@ -521,14 +563,14 @@ function BracketPanel({ data }) {
           </React.Fragment>
         ))}
 
-        {/* Connector: last East round → Cup Final */}
-        <Connector count={1} direction="right" />
+        {/* Connector: Conf Finals → Cup Final (straight horizontal) */}
+        <Connector count={1} direction="right" straight />
 
         {/* Cup Final */}
         <CupFinalCol series={final} />
 
-        {/* Connector: Cup Final → last West round */}
-        <Connector count={1} direction="left" />
+        {/* Connector: Cup Final → Conf Finals (straight horizontal) */}
+        <Connector count={1} direction="left" straight />
 
         {/* West rounds — right side, reversed so deepest round is innermost */}
         {[...west].reverse().map((round, ri) => {
