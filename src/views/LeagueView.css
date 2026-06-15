@@ -1,0 +1,429 @@
+/* LeagueView.css */
+
+/* ── Layout ── */
+
+.league-view {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 14px 0;
+}
+
+.league-content {
+  padding-bottom: 24px;
+}
+
+/* ── Tab bar ── */
+
+.league-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  border-bottom: 0.5px solid var(--border);
+  padding-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.league-tab {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  border: 0.5px solid transparent;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.league-tab--active {
+  background: var(--red-dim);
+  color: var(--red-bright);
+  border-color: var(--red-border);
+}
+
+/* ── Filter row ── */
+
+.lv-filter-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.lv-filter-btn {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 0.5px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.lv-filter-btn--active {
+  background: var(--bg2);
+  color: var(--text);
+  border-color: var(--border-2);
+  font-weight: 500;
+}
+
+/* ── Legend ── */
+
+.lv-legend {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.lv-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.lv-legend-bar {
+  width: 3px;
+  height: 14px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.lv-legend-bar--playoff { background: #1D9E75; }
+.lv-legend-bar--wc      { background: #5B8FD4; }
+
+/* ── Conference sections ── */
+
+.lv-conf-section {
+  margin-bottom: 1.5rem;
+}
+
+.lv-conf-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: var(--font-display);
+  margin-bottom: 8px;
+}
+
+/* ── Division cards ── */
+
+.lv-div-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.lv-div-card {
+  background: var(--bg1);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.lv-div-card--wide {
+  grid-column: 1 / -1;
+}
+
+.lv-div-card--wc {
+  margin-top: 12px;
+}
+
+.lv-div-card__header {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  border-bottom: 0.5px solid var(--border);
+  background: var(--bg2);
+}
+
+/* ── Standings table ── */
+
+.lv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.lv-th {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  padding: 5px 8px;
+  text-align: right;
+  border-bottom: 0.5px solid var(--border);
+  white-space: nowrap;
+  background: var(--bg2);
+}
+
+.lv-th--team {
+  text-align: left;
+}
+
+.lv-td {
+  padding: 5px 8px;
+  text-align: right;
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-family: var(--font-mono);
+}
+
+.lv-td--rank {
+  color: var(--text-dim);
+  font-size: 11px;
+  min-width: 20px;
+  text-align: center;
+  font-family: inherit;
+}
+
+.lv-td--team {
+  text-align: left;
+  color: var(--text);
+  padding-left: 6px;
+  font-family: inherit;
+}
+
+.lv-td--pts {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.lv-row:not(:last-child) .lv-td {
+  border-bottom: 0.5px solid rgba(255,255,255,0.04);
+}
+
+.lv-row--you .lv-td {
+  background: rgba(29, 158, 117, 0.07);
+}
+
+.lv-row--you .lv-td--team {
+  font-weight: 600;
+}
+
+/* ── Team cell ── */
+
+.lv-team-cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.lv-team-abbrev {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.lv-you-badge {
+  font-size: 9px;
+  font-weight: 700;
+  color: #1D9E75;
+  background: rgba(29, 158, 117, 0.15);
+  padding: 1px 4px;
+  border-radius: 3px;
+  letter-spacing: 0.04em;
+  font-family: var(--font-display);
+}
+
+.lv-clinch-badge {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+}
+
+/* ── L10 dots ── */
+
+.l10-dots {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.l10-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.l10-dot--w { background: #1D9E75; }
+.l10-dot--o { background: #5B8FD4; }
+.l10-dot--l { background: var(--border-2); }
+
+/* ── Leaders ── */
+
+.lv-leaders-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.lv-leaders-card {
+  background: var(--bg1);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.lv-leaders-card__header {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  border-bottom: 0.5px solid var(--border);
+  background: var(--bg2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lv-leaders-card__stat-label {
+  font-weight: 700;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-family: var(--font-display);
+}
+
+.lv-leaders-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.04);
+  gap: 6px;
+}
+
+.lv-leaders-row:last-child {
+  border-bottom: none;
+}
+
+.lv-leaders-row--you {
+  background: rgba(29, 158, 117, 0.08);
+}
+
+.lv-leaders-rank {
+  color: var(--text-dim);
+  min-width: 16px;
+  font-size: 11px;
+}
+
+.lv-leaders-name {
+  flex: 1;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lv-leaders-team {
+  color: var(--text-dim);
+  font-size: 11px;
+  min-width: 28px;
+  text-align: right;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.lv-leaders-stat {
+  font-weight: 700;
+  color: var(--text);
+  min-width: 36px;
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+/* ── Bracket (Phase 2 stub) ── */
+
+.lv-bracket-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.04);
+  font-size: 13px;
+}
+
+.lv-bracket-team {
+  min-width: 36px;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--text-muted);
+}
+
+.lv-bracket-team--you {
+  color: #1D9E75;
+}
+
+.lv-bracket-wins {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+
+.lv-phase-note {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Empty / loading / error ── */
+
+.lv-empty {
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.lv-empty-msg {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.lv-skeleton-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.lv-skeleton-row {
+  height: 14px;
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  animation: lv-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes lv-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+.lv-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 1.5rem 0;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 600px) {
+  .lv-div-grid,
+  .lv-leaders-grid {
+    grid-template-columns: 1fr;
+  }
+}

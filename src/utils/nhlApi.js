@@ -168,7 +168,15 @@ function isCompleted(game) {
 
 // Get the current playoff bracket/series overview
 export async function getPlayoffBracket() {
-  return cached('playoffBracket', () => nhlFetch(`${BASE}/playoff-bracket/${TEAM_CONFIG.season}`), TTL.PLAYOFF_GAMES);
+  return cached('playoffBracket', async () => {
+    try {
+      const res = await fetch(`${BASE}/playoff-bracket/${TEAM_CONFIG.season}`);
+      if (!res.ok) return null; // 404 expected during offseason — no log
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }, TTL.PLAYOFF_GAMES);
 }
 
 // Get all playoff series with results
@@ -177,6 +185,34 @@ export async function getPlayoffSeries() {
     const data = await nhlFetch(`${BASE}/playoff-series/carousel/${TEAM_CONFIG.season}`);
     return data?.rounds || [];
   }, TTL.PLAYOFF_GAMES);
+}
+
+// ─── LEAGUE LEADERS ──────────────────────────────────────────
+
+// Skater scoring leaders (points) for the given season + game type.
+// gameType: "2" = regular season, "3" = playoffs
+export async function getScoringLeaders(season = TEAM_CONFIG.season, limit = 10, gameType = '2') {
+  return cached(`scoringLeaders:${season}:${gameType}`, async () => {
+    const data = await nhlFetch(`${BASE}/skater-stats-leaders/${season}/${gameType}?categories=points&limit=${limit}`);
+    return data?.points ?? [];
+  }, TTL.STANDINGS);
+}
+
+// Goal leaders
+export async function getGoalLeaders(season = TEAM_CONFIG.season, limit = 10, gameType = '2') {
+  return cached(`goalLeaders:${season}:${gameType}`, async () => {
+    const data = await nhlFetch(`${BASE}/skater-stats-leaders/${season}/${gameType}?categories=goals&limit=${limit}`);
+    return data?.goals ?? [];
+  }, TTL.STANDINGS);
+}
+
+// Goalie leaders — category: "savePctg" or "goalsAgainstAverage"
+// NOTE: the URL param must be "goalsAgainstAverage" (not "goalsAgainstAvg")
+export async function getGoalieLeaders(category = 'savePctg', season = TEAM_CONFIG.season, limit = 10, gameType = '2') {
+  return cached(`goalieLeaders:${category}:${season}:${gameType}`, async () => {
+    const data = await nhlFetch(`${BASE}/goalie-stats-leaders/${season}/${gameType}?categories=${category}&limit=${limit}`);
+    return data?.[category] ?? [];
+  }, TTL.STANDINGS);
 }
 
 // Decode the playoff round from an NHL game ID.

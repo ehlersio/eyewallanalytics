@@ -1,0 +1,296 @@
+// cypress/e2e/league.cy.js
+
+// ── Offseason guard ───────────────────────────────────────────
+// Mirrors the pattern in schedule.cy.js.
+// Playoff bracket is only available April–June; tests that depend on it
+// are skipped automatically outside those months.
+const month = new Date().getMonth() + 1 // 1 = Jan, 12 = Dec
+const OFFSEASON = Cypress.env('OFFSEASON') !== undefined
+  ? Cypress.env('OFFSEASON') === true || Cypress.env('OFFSEASON') === 'true'
+  : month < 4 || month >= 6
+
+function liveSeriesIt(title, fn) {
+  it(title, function () {
+    if (OFFSEASON) this.skip()
+    fn()
+  })
+}
+
+// ── Smoke tests — all 32 teams ────────────────────────────────
+// Verifies the League page loads without JS errors for a sample of teams.
+
+describe('League page smoke tests (all teams)', () => {
+  it('league page loads for a sample of teams without JS errors', () => {
+    cy.fixture('teams').then(teams => {
+      const sample = teams.filter(t =>
+        ['CAR', 'VGK', 'TOR', 'CHI', 'BOS', 'EDM', 'NYR', 'MTL'].includes(t.abbr)
+      )
+      sample.forEach(team => {
+        cy.visit('/league', {
+          onBeforeLoad(win) {
+            win.localStorage.setItem('eyewall:team', JSON.stringify({ abbr: team.abbr }))
+          }
+        })
+        cy.get('.league-view', { timeout: 15000 }).should('be.visible')
+        cy.assertNoErrors()
+      })
+    })
+  })
+})
+
+// ── Full feature tests ────────────────────────────────────────
+
+describe('League page — CAR', () => {
+  beforeEach(() => {
+    cy.on('uncaught:exception', (err) => {
+      if (err.name === 'ReferenceError' || err.name === 'TypeError') throw err
+      return false
+    })
+    cy.setTeam('CAR')
+    cy.visit('/league')
+    cy.get('.league-view', { timeout: 15000 }).should('be.visible')
+  })
+
+  // ── Tab bar ──────────────────────────────────────────────────
+
+  it('renders all three tab buttons', () => {
+    cy.get('.league-tab').should('have.length', 3)
+    cy.get('.league-tab').eq(0).should('contain', 'Standings')
+    cy.get('.league-tab').eq(1).should('contain', 'Playoff bracket')
+    cy.get('.league-tab').eq(2).should('contain', 'Leaders')
+  })
+
+  it('Standings tab is active by default', () => {
+    cy.get('.league-tab').eq(0).should('have.class', 'league-tab--active')
+  })
+
+  it('clicking Leaders makes it the active tab', () => {
+    cy.get('.league-tab').contains('Leaders').click()
+    cy.get('.league-tab').contains('Leaders').should('have.class', 'league-tab--active')
+    cy.get('.league-tab').contains('Standings').should('not.have.class', 'league-tab--active')
+  })
+
+  it('clicking Playoff bracket makes it the active tab', () => {
+    cy.get('.league-tab').contains('Playoff bracket').click()
+    cy.get('.league-tab').contains('Playoff bracket').should('have.class', 'league-tab--active')
+  })
+
+  // ── Standings tab ─────────────────────────────────────────────
+
+  describe('Standings tab', () => {
+    it('shows the four filter buttons', () => {
+      cy.get('.lv-filter-btn').should('have.length', 4)
+      cy.get('.lv-filter-btn').eq(0).should('contain', 'By division')
+      cy.get('.lv-filter-btn').eq(1).should('contain', 'By conference')
+      cy.get('.lv-filter-btn').eq(2).should('contain', 'League')
+      cy.get('.lv-filter-btn').eq(3).should('contain', 'Wild card')
+    })
+
+    it('"By division" is active by default', () => {
+      cy.get('.lv-filter-btn').eq(0).should('have.class', 'lv-filter-btn--active')
+    })
+
+    it('shows Eastern and Western conference labels in division view', () => {
+      cy.contains('Eastern Conference').should('exist')
+      cy.contains('Western Conference').should('exist')
+    })
+
+    it('shows 32 teams total across all division tables', () => {
+      cy.get('.lv-row').should('have.length', 32)
+    })
+
+    it('shows CAR highlighted with YOU badge', () => {
+      cy.get('.lv-row--you').should('exist')
+      cy.get('.lv-you-badge').should('contain', 'YOU')
+    })
+
+    it('shows column headers GP W L OTL PTS L10 STRK', () => {
+      cy.get('.lv-th').should('contain', 'GP')
+      cy.get('.lv-th').should('contain', 'PTS')
+      cy.get('.lv-th').should('contain', 'L10')
+      cy.get('.lv-th').should('contain', 'STRK')
+    })
+
+    it('shows L10 dot indicators', () => {
+      cy.get('.l10-dots').first().should('be.visible')
+      cy.get('.l10-dot').should('have.length.greaterThan', 0)
+    })
+
+    it('switching to By conference view shows conference labels', () => {
+      cy.get('.lv-filter-btn').contains('By conference').click()
+      cy.get('.lv-filter-btn').contains('By conference').should('have.class', 'lv-filter-btn--active')
+      cy.get('.lv-conf-label').should('have.length.gte', 2)
+      cy.contains('Eastern Conference').should('exist')
+      cy.contains('Western Conference').should('exist')
+    })
+
+    it('conference view shows 32 teams', () => {
+      cy.get('.lv-filter-btn').contains('By conference').click()
+      cy.get('.lv-row').should('have.length', 32)
+    })
+
+    it('switching to League view shows a single table with 32 rows', () => {
+      cy.get('.lv-filter-btn').contains('League').click()
+      cy.get('.lv-row').should('have.length', 32)
+      // Only one card (no division sub-headers)
+      cy.get('.lv-div-card').should('have.length', 1)
+    })
+
+    it('League view rows are sorted by points descending (rank 1 at top)', () => {
+      cy.get('.lv-filter-btn').contains('League').click()
+      cy.get('.lv-td--rank').first().should('contain', '1')
+    })
+
+    it('switching to Wild card view shows division leaders and wild card race sections', () => {
+      cy.get('.lv-filter-btn').contains('Wild card').click()
+      cy.contains(/Division leaders/i).should('exist')
+      cy.contains(/Wild card race/i).should('exist')
+    })
+
+    it('wild card view shows exactly 2 wild card race tables (one per conference)', () => {
+      cy.get('.lv-filter-btn').contains('Wild card').click()
+      cy.get('.lv-div-card--wc').should('have.length', 2)
+    })
+
+    it('legend shows clinch and wild card indicators', () => {
+      cy.get('.lv-legend').should('be.visible')
+      cy.contains(/Clinched/i).should('exist')
+      cy.contains(/Wild card position/i).should('exist')
+    })
+  })
+
+  // ── Playoff bracket tab ───────────────────────────────────────
+
+  describe('Playoff bracket tab', () => {
+    beforeEach(() => cy.get('.league-tab').contains('Playoff bracket').click())
+
+    it('shows bracket panel content area', () => {
+      cy.get('.league-content').should('be.visible')
+    })
+
+    // Offseason: bracket unavailable — empty state should show
+    it('offseason: shows empty state message when no bracket data', () => {
+      if (!OFFSEASON) {
+        cy.log('In-season — skipping offseason empty-state check')
+        return
+      }
+      cy.contains(/Playoff bracket will appear here/i).should('exist')
+    })
+
+    liveSeriesIt('in-season: shows series rows with team abbreviations', () => {
+      cy.get('.lv-bracket-row').should('have.length.gte', 1)
+      cy.get('.lv-bracket-team').first().invoke('text').should('match', /^[A-Z]{2,3}$/)
+    })
+
+    liveSeriesIt('in-season: CAR series is highlighted if they are in playoffs', () => {
+      cy.get('.lv-bracket-team--you').should('exist')
+    })
+  })
+
+  // ── Leaders tab ───────────────────────────────────────────────
+
+  describe('Leaders tab', () => {
+    beforeEach(() => cy.get('.league-tab').contains('Leaders').click())
+
+    it('shows four leader cards', () => {
+      cy.get('.lv-leaders-card', { timeout: 10000 }).should('have.length', 4)
+    })
+
+    it('shows Points card', () => {
+      cy.get('.lv-leaders-card').contains('Points').should('exist')
+    })
+
+    it('shows Goals card', () => {
+      cy.get('.lv-leaders-card').contains('Goals').should('exist')
+    })
+
+    it('shows Goals against avg. card', () => {
+      cy.get('.lv-leaders-card').contains('Goals against avg.').should('exist')
+    })
+
+    it('shows Save percentage card', () => {
+      cy.get('.lv-leaders-card').contains('Save percentage').should('exist')
+    })
+
+    it('each card shows 10 player rows', () => {
+      cy.get('.lv-leaders-card', { timeout: 10000 }).each($card => {
+        cy.wrap($card).find('.lv-leaders-row').should('have.length', 10)
+      })
+    })
+
+    it('Points leader shows a numeric stat value', () => {
+      cy.get('.lv-leaders-card').contains('Points').parents('.lv-leaders-card')
+        .find('.lv-leaders-stat').first()
+        .invoke('text')
+        .should('match', /^\d+$/)
+    })
+
+    it('Goals leader shows a numeric stat value', () => {
+      cy.get('.lv-leaders-card').contains('Goals').parents('.lv-leaders-card')
+        .find('.lv-leaders-stat').first()
+        .invoke('text')
+        .should('match', /^\d+$/)
+    })
+
+    it('GAA leader shows a decimal stat value', () => {
+      cy.get('.lv-leaders-card').contains('Goals against avg.').parents('.lv-leaders-card')
+        .find('.lv-leaders-stat').first()
+        .invoke('text')
+        .should('match', /^\d+\.\d{2}$/)
+    })
+
+    it('SV% leader shows a decimal stat value like .920', () => {
+      cy.get('.lv-leaders-card').contains('Save percentage').parents('.lv-leaders-card')
+        .find('.lv-leaders-stat').first()
+        .invoke('text')
+        .should('match', /^\.\d{3}$/)
+    })
+
+    it('each row shows a team abbreviation', () => {
+      cy.get('.lv-leaders-card').first().find('.lv-leaders-team').first()
+        .invoke('text')
+        .should('match', /^[A-Z]{2,3}$/)
+    })
+
+    it('each row shows a player name', () => {
+      cy.get('.lv-leaders-card').first().find('.lv-leaders-name').first()
+        .invoke('text')
+        .should('match', /[A-Za-z]/)
+    })
+
+    it('highlights CAR player with lv-leaders-row--you class if they appear', () => {
+      // CAR may or may not have a player in the top 10 — just assert the
+      // class is applied correctly when present, without asserting presence
+      cy.get('.lv-leaders-card').first().find('.lv-leaders-row').then($rows => {
+        const youRows = $rows.filter('.lv-leaders-row--you')
+        if (youRows.length > 0) {
+          cy.wrap(youRows.first()).find('.lv-leaders-team').should('contain', 'CAR')
+        }
+      })
+    })
+  })
+})
+
+// ── Bottom nav ────────────────────────────────────────────────
+
+describe('League bottom nav link', () => {
+  beforeEach(() => {
+    cy.setTeam('CAR')
+    cy.visit('/')
+  })
+
+  it('League tab is present in bottom nav', () => {
+    cy.get('.nav-tab').contains('League').should('exist')
+  })
+
+  it('clicking League nav tab navigates to /league', () => {
+    cy.get('.nav-tab').contains('League').click()
+    cy.url().should('include', '/league')
+    cy.get('.league-view', { timeout: 15000 }).should('be.visible')
+  })
+
+  it('League nav tab is marked active when on /league', () => {
+    cy.visit('/league')
+    cy.get('.nav-tab').filter(':contains("League")').should('have.class', 'active')
+  })
+})

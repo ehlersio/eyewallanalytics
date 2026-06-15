@@ -17,6 +17,7 @@ const ScheduleView  = lazy(() => import('./views/ScheduleView'));
 const PlayersView   = lazy(() => import('./views/PlayersView'));
 const TeamView      = lazy(() => import('./views/TeamView'));
 const NewsView      = lazy(() => import('./views/NewsView'));
+const LeagueView    = lazy(() => import('./views/LeagueView'));
 
 const DevReplayView = import.meta.env.DEV
   ? lazy(() => import('./views/DevReplayView'))
@@ -38,6 +39,7 @@ function PageTracker() {
       '/players':  'Players',
       '/team':     'Team',
       '/news':     'News',
+      '/league':   'League',
     };
     capture('$pageview', {
       path:      location.pathname,
@@ -84,6 +86,7 @@ export default function App() {
                 <Route path="/players"  element={<PlayersView />} />
                 <Route path="/team"     element={<TeamView />} />
                 <Route path="/news"     element={<NewsView />} />
+                <Route path="/league"   element={<LeagueView />} />
                 {import.meta.env.DEV && DevReplayView && (
                   <Route path="/dev" element={<DevReplayView />} />
                 )}
