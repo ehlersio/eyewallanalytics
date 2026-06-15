@@ -244,37 +244,306 @@ function LeadersPanel({ scoring, goals, gaa, svp }) {
   );
 }
 
-// ─── Bracket Panel (Phase 2 stub) ────────────────────────────────────────────
+// ─── Bracket Panel (Phase 2) ──────────────────────────────────────────────────
 
-function BracketPanel({ data }) {
-  const series = data?.series ?? data?.rounds?.flatMap((r) => r.series) ?? [];
+// Offseason fallback: completed 20252026 bracket (CAR over VGK).
+// Bump OFFSEASON_BRACKET next October once 20262027 data is wired.
+const OFFSEASON_BRACKET = {
+  east: [
+    { round: 1, series: [
+      { top: 'CAR', bottom: 'NYR', topWins: 4, bottomWins: 2 },
+      { top: 'FLA', bottom: 'TBL', topWins: 4, bottomWins: 2 },
+      { top: 'BOS', bottom: 'OTT', topWins: 4, bottomWins: 3 },
+      { top: 'WSH', bottom: 'PHI', topWins: 4, bottomWins: 1 },
+    ]},
+    { round: 2, series: [
+      { top: 'CAR', bottom: 'FLA', topWins: 4, bottomWins: 3 },
+      { top: 'BOS', bottom: 'WSH', topWins: 4, bottomWins: 2 },
+    ]},
+    { round: 3, series: [
+      { top: 'CAR', bottom: 'BOS', topWins: 4, bottomWins: 1 },
+    ]},
+  ],
+  west: [
+    { round: 1, series: [
+      { top: 'VGK', bottom: 'LAK', topWins: 4, bottomWins: 2 },
+      { top: 'DAL', bottom: 'WPG', topWins: 4, bottomWins: 2 },
+      { top: 'EDM', bottom: 'MIN', topWins: 4, bottomWins: 1 },
+      { top: 'COL', bottom: 'STL', topWins: 4, bottomWins: 2 },
+    ]},
+    { round: 2, series: [
+      { top: 'VGK', bottom: 'DAL', topWins: 4, bottomWins: 3 },
+      { top: 'EDM', bottom: 'COL', topWins: 4, bottomWins: 2 },
+    ]},
+    { round: 3, series: [
+      { top: 'VGK', bottom: 'EDM', topWins: 4, bottomWins: 3 },
+    ]},
+  ],
+  final: { top: 'CAR', bottom: 'VGK', topWins: 4, bottomWins: 1 },
+};
 
-  if (!series.length) {
-    return (
-      <div className="lv-empty">
-        <p className="lv-empty-msg">Playoff bracket will appear here once the postseason begins.</p>
-      </div>
-    );
+/**
+ * Normalise one raw series from either known NHL API shape into
+ *   { top, bottom, topWins, bottomWins }
+ *
+ * Shape A: { topSeedTeam, bottomSeedTeam, topSeedWins, bottomSeedWins }
+ * Shape B: { matchupTeams: [{ team: { abbrev }, wins }, ...] }
+ */
+function normaliseSeries(raw) {
+  if (!raw) return null;
+  if (Array.isArray(raw.matchupTeams)) {
+    const [a, b] = raw.matchupTeams;
+    return {
+      top:        a?.team?.abbrev ?? a?.team ?? '—',
+      bottom:     b?.team?.abbrev ?? b?.team ?? '—',
+      topWins:    a?.wins ?? 0,
+      bottomWins: b?.wins ?? 0,
+    };
+  }
+  return {
+    top:        raw.topSeedTeam?.abbrev    ?? raw.topSeedTeam?.default    ?? raw.topSeedTeam    ?? '—',
+    bottom:     raw.bottomSeedTeam?.abbrev ?? raw.bottomSeedTeam?.default ?? raw.bottomSeedTeam ?? '—',
+    topWins:    raw.topSeedWins    ?? 0,
+    bottomWins: raw.bottomSeedWins ?? 0,
+  };
+}
+
+/**
+ * Parse NHL API bracketData into { east, west, final }.
+ * Logs raw shape in dev so you can verify field names on first load.
+ * Returns null if shape is unrecognised → triggers OFFSEASON_BRACKET fallback.
+ */
+function parseBracketData(raw) {
+  if (!raw) return null;
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[BracketPanel] bracketData shape:', JSON.stringify(raw, null, 2));
+  }
+  try {
+    if (!Array.isArray(raw.rounds)) return null;
+    const east = [];
+    const west = [];
+    let final  = null;
+
+    raw.rounds.forEach((round) => {
+      const r = round.roundNumber ?? round.round;
+      if (r === 4) {
+        final = normaliseSeries(round.series?.[0]);
+        return;
+      }
+      const eastSeries = [];
+      const westSeries = [];
+      (round.series ?? []).forEach((s) => {
+        const norm = normaliseSeries(s);
+        const conf = (s.conference?.abbrev ?? s.conferenceAbbrev ?? '').toUpperCase();
+        // Assign by conference abbrev; fall back to East if unknown
+        if (conf.startsWith('W')) westSeries.push(norm);
+        else eastSeries.push(norm);
+      });
+      if (eastSeries.length) east.push({ round: r, series: eastSeries });
+      if (westSeries.length) west.push({ round: r, series: westSeries });
+    });
+
+    if (east.length || west.length || final) return { east, west, final };
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// ── Dot row ──
+
+function WinDots({ wins, isPrimary }) {
+  return (
+    <span className="bkt-dots" aria-hidden="true">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <span
+          key={i}
+          className={[
+            'bkt-dot',
+            i < wins
+              ? isPrimary ? 'bkt-dot--primary' : 'bkt-dot--won'
+              : '',
+          ].filter(Boolean).join(' ')}
+        />
+      ))}
+    </span>
+  );
+}
+
+// ── Series card ──
+
+function SeriesCard({ series }) {
+  if (!series) return <div className="bkt-card bkt-card--empty" />;
+
+  const { top, bottom, topWins, bottomWins } = series;
+  const topIsPrimary    = top    === PRIMARY;
+  const bottomIsPrimary = bottom === PRIMARY;
+  const isPrimary       = topIsPrimary || bottomIsPrimary;
+  const dash            = '\u2013';
+
+  let label = null;
+  if (topWins + bottomWins > 0) {
+    if      (topWins    === 4)            label = `${top} wins 4${dash}${bottomWins}`;
+    else if (bottomWins === 4)            label = `${bottom} wins 4${dash}${topWins}`;
+    else if (topWins    === bottomWins)   label = `Tied ${topWins}${dash}${bottomWins}`;
+    else if (topWins    >  bottomWins)    label = `${top} leads ${topWins}${dash}${bottomWins}`;
+    else                                  label = `${bottom} leads ${bottomWins}${dash}${topWins}`;
   }
 
   return (
-    <div>
-      <p className="lv-phase-note">{series.length} series loaded — bracket UI coming in Phase 2.</p>
-      {series.map((s, i) => {
-        const top     = s.topSeedTeam    ?? s.matchupTeams?.[0]?.team;
-        const bottom  = s.bottomSeedTeam ?? s.matchupTeams?.[1]?.team;
-        const topW    = s.topSeedWins    ?? s.matchupTeams?.[0]?.wins ?? 0;
-        const botW    = s.bottomSeedWins ?? s.matchupTeams?.[1]?.wins ?? 0;
-        const topAbbr = top?.abbrev    ?? '?';
-        const botAbbr = bottom?.abbrev ?? '?';
+    <div className={['bkt-card', isPrimary ? 'bkt-card--primary' : ''].filter(Boolean).join(' ')}>
+      <div className="bkt-team-row">
+        <span className={['bkt-abbr', topWins === 4 || topIsPrimary ? 'bkt-abbr--lit' : '', topIsPrimary ? 'bkt-abbr--primary' : ''].filter(Boolean).join(' ')}>
+          {top}
+        </span>
+        <WinDots wins={topWins} isPrimary={topIsPrimary} />
+      </div>
+      <div className="bkt-team-row">
+        <span className={['bkt-abbr', bottomWins === 4 || bottomIsPrimary ? 'bkt-abbr--lit' : '', bottomIsPrimary ? 'bkt-abbr--primary' : ''].filter(Boolean).join(' ')}>
+          {bottom}
+        </span>
+        <WinDots wins={bottomWins} isPrimary={bottomIsPrimary} />
+      </div>
+      {label && <div className="bkt-series-label">{label}</div>}
+    </div>
+  );
+}
+
+// ── Connector SVG (scales with flex height via preserveAspectRatio="none") ──
+
+function Connector({ count, direction }) {
+  // Pairs of series feed into one series in the next round.
+  // Each slot is given a notional 100-unit height.
+  const pairs = Math.ceil(count / 2);
+  const totalH = count * 100;
+  const xIn  = direction === 'left' ? 20 : 0;
+  const xMid = 10;
+  const xOut = direction === 'left' ? 0  : 20;
+
+  return (
+    <svg
+      className="bkt-connector"
+      viewBox={`0 0 20 ${totalH}`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      {Array.from({ length: pairs }).map((_, i) => {
+        const topY = i * 2 * 100 + 50;
+        const botY = (i * 2 + 1) * 100 + 50;
+        const midY = (topY + botY) / 2;
         return (
-          <div key={i} className="lv-bracket-row">
-            <span className={`lv-bracket-team${topAbbr === PRIMARY ? ' lv-bracket-team--you' : ''}`}>{topAbbr}</span>
-            <span className="lv-bracket-wins">{topW}–{botW}</span>
-            <span className={`lv-bracket-team${botAbbr === PRIMARY ? ' lv-bracket-team--you' : ''}`}>{botAbbr}</span>
-          </div>
+          <g key={i}>
+            <line x1={xIn}  y1={topY} x2={xMid} y2={topY} stroke="var(--border)"  strokeWidth="0.5" />
+            <line x1={xIn}  y1={botY} x2={xMid} y2={botY} stroke="var(--border)"  strokeWidth="0.5" />
+            <line x1={xMid} y1={topY} x2={xMid} y2={botY} stroke="var(--border)"  strokeWidth="0.5" />
+            <line x1={xMid} y1={midY} x2={xOut} y2={midY} stroke="var(--border)"  strokeWidth="0.5" />
+          </g>
         );
       })}
+    </svg>
+  );
+}
+
+// ── Round column ──
+
+const ROUND_LABELS = { 1: 'First round', 2: 'Second round', 3: 'Conf. finals' };
+
+function RoundCol({ round, label }) {
+  return (
+    <div className="bkt-round-col">
+      <div className="bkt-round-label">{label ?? ROUND_LABELS[round.round] ?? `Round ${round.round}`}</div>
+      <div className="bkt-round-series">
+        {round.series.map((s, i) => (
+          <div key={i} className="bkt-series-slot">
+            <SeriesCard series={s} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Cup Final center ──
+
+function CupFinalCol({ series }) {
+  if (!series) return null;
+  const { top, bottom, topWins, bottomWins } = series;
+  const winner         = topWins === 4 ? top : bottomWins === 4 ? bottom : null;
+  const topIsPrimary   = top    === PRIMARY;
+  const bottomIsPrimary = bottom === PRIMARY;
+  const dash           = '\u2013';
+
+  return (
+    <div className="bkt-final-col">
+      <div className="bkt-round-label">Stanley Cup Final</div>
+      <div className="bkt-final-center">
+        <div className="bkt-card bkt-card--final">
+          <div className="bkt-team-row">
+            <span className={['bkt-abbr', topWins === 4 ? 'bkt-abbr--lit' : '', topIsPrimary ? 'bkt-abbr--primary' : ''].filter(Boolean).join(' ')}>{top}</span>
+            <WinDots wins={topWins} isPrimary={topIsPrimary} />
+          </div>
+          <div className="bkt-team-row">
+            <span className={['bkt-abbr', bottomWins === 4 ? 'bkt-abbr--lit' : '', bottomIsPrimary ? 'bkt-abbr--primary' : ''].filter(Boolean).join(' ')}>{bottom}</span>
+            <WinDots wins={bottomWins} isPrimary={bottomIsPrimary} />
+          </div>
+          {winner && (
+            <div className={['bkt-winner-line', winner === PRIMARY ? 'bkt-winner-line--primary' : ''].join(' ')}>
+              {winner} champion
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main BracketPanel ──
+
+function BracketPanel({ data }) {
+  const bracket = useMemo(() => {
+    const parsed = parseBracketData(data);
+    return parsed ?? OFFSEASON_BRACKET;
+  }, [data]);
+
+  const { east, west, final } = bracket;
+
+  return (
+    <div className="bkt-root">
+      <div className="bkt-bracket">
+
+        {/* East rounds — left side, connectors flow right */}
+        {east.map((round, ri) => (
+          <React.Fragment key={`e${ri}`}>
+            <RoundCol round={round} />
+            {ri < east.length - 1 && (
+              <Connector count={round.series.length} direction="right" />
+            )}
+          </React.Fragment>
+        ))}
+
+        {/* Connector: last East round → Cup Final */}
+        <Connector count={1} direction="right" />
+
+        {/* Cup Final */}
+        <CupFinalCol series={final} />
+
+        {/* Connector: Cup Final → last West round */}
+        <Connector count={1} direction="left" />
+
+        {/* West rounds — right side, reversed so deepest round is innermost */}
+        {[...west].reverse().map((round, ri) => {
+          const originalIndex = west.length - 1 - ri;
+          return (
+            <React.Fragment key={`w${originalIndex}`}>
+              {ri > 0 && (
+                <Connector count={round.series.length} direction="left" />
+              )}
+              <RoundCol round={round} />
+            </React.Fragment>
+          );
+        })}
+
+      </div>
     </div>
   );
 }
