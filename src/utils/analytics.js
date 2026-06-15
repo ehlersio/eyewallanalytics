@@ -9,6 +9,7 @@
 import posthog from 'posthog-js';
 
 export function capture(event, properties = {}) {
+  if (import.meta.env.MODE !== 'production') return;
   try {
     posthog.capture(event, properties);
   } catch (e) {

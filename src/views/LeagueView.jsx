@@ -2,6 +2,7 @@
 // Place in src/views/ alongside LeagueView.css
 
 import React, { useState, useMemo } from 'react';
+import { capture } from '../utils/analytics';
 import { useFetch } from '../hooks/useFetch';
 import {
   getStandings,
@@ -128,7 +129,7 @@ function StandingsPanel({ entries }) {
           <button
             key={f.id}
             className={`lv-filter-btn${filter === f.id ? ' lv-filter-btn--active' : ''}`}
-            onClick={() => setFilter(f.id)}
+            onClick={() => { setFilter(f.id); capture('league_standings_filter', { filter: f.id }); }}
           >
             {f.label}
           </button>
@@ -652,7 +653,7 @@ export default function LeagueView() {
             role="tab"
             aria-selected={activeTab === tab.id}
             className={`league-tab${activeTab === tab.id ? ' league-tab--active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => { setActiveTab(tab.id); capture('league_tab_viewed', { tab: tab.id }); }}
           >
             {tab.label}
           </button>

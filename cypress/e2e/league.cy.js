@@ -7,7 +7,7 @@
 const month = new Date().getMonth() + 1 // 1 = Jan, 12 = Dec
 const OFFSEASON = Cypress.env('OFFSEASON') !== undefined
   ? Cypress.env('OFFSEASON') === true || Cypress.env('OFFSEASON') === 'true'
-  : month < 4 || month >= 6
+  : month < 4 || month > 6
 
 function liveSeriesIt(title, fn) {
   it(title, function () {
@@ -168,22 +168,55 @@ describe('League page — CAR', () => {
       cy.get('.league-content').should('be.visible')
     })
 
-    // Offseason: bracket unavailable — empty state should show
-    it('offseason: shows empty state message when no bracket data', () => {
-      if (!OFFSEASON) {
-        cy.log('In-season — skipping offseason empty-state check')
-        return
-      }
-      cy.contains(/Playoff bracket will appear here/i).should('exist')
+    // Offseason: API returns null → OFFSEASON_BRACKET fallback always shows.
+    // We never show the empty-state message unless we're mid-playoffs with a
+    // genuinely bad API response — not testable in e2e, so we assert the bracket.
+    it('shows bracket root with round columns', () => {
+      cy.get('.bkt-root', { timeout: 10000 }).should('be.visible')
+      cy.get('.bkt-bracket').should('exist')
+      cy.get('.bkt-round-col').should('have.length.gte', 2)
     })
 
-    liveSeriesIt('in-season: shows series rows with team abbreviations', () => {
-      cy.get('.lv-bracket-row').should('have.length.gte', 1)
-      cy.get('.lv-bracket-team').first().invoke('text').should('match', /^[A-Z]{2,3}$/)
+    it('shows series cards with team abbreviations', () => {
+      cy.get('.bkt-card').should('have.length.gte', 1)
+      cy.get('.bkt-abbr').first().invoke('text').should('match', /^[A-Z]{2,3}$/)
     })
 
-    liveSeriesIt('in-season: CAR series is highlighted if they are in playoffs', () => {
-      cy.get('.lv-bracket-team--you').should('exist')
+    it('shows win dot indicators', () => {
+      cy.get('.bkt-dots').should('have.length.gte', 1)
+      cy.get('.bkt-dot').should('have.length.gte', 4)
+    })
+
+    it('shows series status labels', () => {
+      cy.get('.bkt-series-label').first().invoke('text')
+        .should('match', /wins|leads|Tied/i)
+    })
+
+    it('shows Stanley Cup Final column', () => {
+      cy.get('.bkt-final-col').should('exist')
+      cy.get('.bkt-card--final').should('exist')
+    })
+
+    it('shows champion line with trophy when series is complete', () => {
+      cy.get('.bkt-winner-line').should('exist')
+      cy.get('.bkt-winner-line').invoke('text').should('include', '🏆')
+    })
+
+    it('PRIMARY team card has primary border accent', () => {
+      cy.get('.bkt-card--primary').should('exist')
+    })
+
+    it('round headers are visible', () => {
+      cy.get('.bkt-round-label').should('have.length.gte', 2)
+      cy.get('.bkt-round-label').first().invoke('text')
+        .should('match', /First round|Second round|Conf\. finals|Stanley Cup Final/i)
+    })
+
+    liveSeriesIt('in-season: live bracket loads without fallback data', () => {
+      // If API returns data, parseBracketData should succeed and we still
+      // see the same bracket UI — just with live series results
+      cy.get('.bkt-root').should('be.visible')
+      cy.get('.bkt-card').should('have.length.gte', 1)
     })
   })
 
