@@ -90,6 +90,76 @@ const STATIC_LINES = {
 
   // Add other teams here as needed. Teams without an entry return null,
   // which causes the lines section to be hidden rather than show stale data.
+  VGK: {
+    // 2025–26 playoff lines (SCF vs CAR)
+    regular: {
+      lines: [
+        {
+          rank: 1,
+          players: [
+            { name: 'Ivan Barbashev', pos: 'L' },
+            { name: 'Jack Eichel',    pos: 'C' },
+            { name: 'Pavel Dorofeyev', pos: 'R' },
+          ],
+          toiMins: null, xgfPct: null, isStatic: true,
+        },
+        {
+          rank: 2,
+          players: [
+            { name: 'William Carrier', pos: 'L' },
+            { name: 'Tomas Hertl',     pos: 'C' },
+            { name: 'Mark Stone',      pos: 'R' },
+          ],
+          toiMins: null, xgfPct: null, isStatic: true,
+        },
+        {
+          rank: 3,
+          players: [
+            { name: 'Brandon Pirri',  pos: 'L' },
+            { name: 'Nicolas Roy',    pos: 'C' },
+            { name: 'Keegan Kolesar', pos: 'R' },
+          ],
+          toiMins: null, xgfPct: null, isStatic: true,
+        },
+        {
+          rank: 4,
+          players: [
+            { name: 'Anthony Mantha', pos: 'L' },
+            { name: 'Paul Cotter',    pos: 'C' },
+            { name: 'Brett Howden',   pos: 'R' },
+          ],
+          toiMins: null, xgfPct: null, isStatic: true,
+        },
+      ],
+      pairs: [
+        {
+          rank: 1,
+          players: [
+            { name: 'Alex Pietrangelo', pos: 'D' },
+            { name: 'Noah Hanifin',     pos: 'D' },
+          ],
+          toiMins: null, xgfPct: null, isStatic: true,
+        },
+        {
+          rank: 2,
+          players: [
+            { name: 'Shea Theodore', pos: 'D' },
+            { name: 'Brayden McNabb', pos: 'D' },
+          ],
+          toiMins: null, xgfPct: null, isStatic: true,
+        },
+        {
+          rank: 3,
+          players: [
+            { name: 'Nicolas Hague',    pos: 'D' },
+            { name: 'Zach Whitecloud',  pos: 'D' },
+          ],
+          toiMins: null, xgfPct: null, isStatic: true,
+        },
+      ],
+    },
+    playoff: null, // use regular season lines as fallback
+  },
 };
 
 /**

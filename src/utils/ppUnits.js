@@ -31,9 +31,24 @@ const PP_UNITS = {
       ],
     },
   },
-  // Add other teams here as needed:
-  // COL: { 20252026: { pp1: [...], pp2: [...] } },
-};
+  VGK: {
+    20252026: {
+      pp1: [
+        8480801, // Jack Eichel
+        8481533, // Pavel Dorofeyev
+        8478476, // Mark Stone
+        8480785, // Shea Theodore
+        8476925, // Ivan Barbashev
+      ],
+      pp2: [
+        8475793, // Tomas Hertl
+        8479987, // Nicolas Roy
+        8480746, // Noah Hanifin
+        8477936, // William Carrier
+        8480768, // Chandler Stephenson
+      ],
+    },
+  },
 
 // ── Penalty kill units ───────────────────────────────────────
 const PK_UNITS = {
@@ -53,8 +68,22 @@ const PK_UNITS = {
       ],
     },
   },
-  // COL: { 20252026: { pk1: [...], pk2: [...] } },
-};
+  VGK: {
+    20252026: {
+      pk1: [
+        8480801, // Jack Eichel
+        8479987, // Nicolas Roy
+        8480785, // Shea Theodore
+        8476483, // Brayden McNabb
+      ],
+      pk2: [
+        8476925, // Ivan Barbashev
+        8477936, // William Carrier
+        8481000, // Nicolas Hague
+        8480034, // Zach Whitecloud
+      ],
+    },
+  },
 
 /**
  * Given a team, season, and set of player IDs seen in a PP opportunity,
