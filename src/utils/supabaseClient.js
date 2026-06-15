@@ -293,7 +293,7 @@ export async function getGameXG(gameId) {
 
 // ── Game log insights ─────────────────────────────────────────
 // Returns team-specific situational stats for Live Insights.
-// Requires car_scored_first boolean in game_log (added by nhl_stats.py).
+// Requires team_scored_first boolean in game_log (added by nhl_stats.py).
 export async function getGameLogInsights(oppAbbr, season = 20252026, teamAbbr = 'CAR') {
   const rows = await sbFetch(
     `game_log?season=eq.${season}&team=eq.${teamAbbr}` +

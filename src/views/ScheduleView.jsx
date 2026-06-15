@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import { recordOutcome } from '../utils/predictionStore';
 import {
-  getRegularSeasonGames, getPlayoffGames, getStandings,
+  getRegularSeasonGames, getPlayoffGames, getPlayoffSeries, getStandings,
   buildCarPlayoffSummary, formatGameDate, formatGameTime,
   getOpponent, isHomeGame, getCarScore, getOppScore,
   TEAM_COLORS, getNhlOdds, findGameOdds, extractMoneyline, oddsToImplied,
@@ -46,6 +46,7 @@ export default function ScheduleView() {
   const { data: regGames,     loading: regLoading } = useFetch(getRegularSeasonGames);
   const { data: standings }                          = useFetch(getStandings);
   const { data: oddsData }                           = useFetch(getNhlOdds);
+  const { data: playoffRounds }                      = useFetch(getPlayoffSeries);
 
   const standingMap = {};
   if (standings) standings.forEach(t => {
@@ -82,7 +83,7 @@ export default function ScheduleView() {
   return (
     <div className="page" ref={pageRef}>
       <div className="sched-header">
-        <h2 className="sched-title">2025–26 Schedule</h2>
+        <h2 className="sched-title">{TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} Schedule</h2>
         {carStanding && (
           <div className="sched-record">
             Regular season: <strong>{carStanding.wins}–{carStanding.losses}–{carStanding.otLosses}</strong>
@@ -93,7 +94,10 @@ export default function ScheduleView() {
       </div>
 
       <div className="sched-tabs">
-        {TABS.map(t => (
+        {TABS
+          // Hide the Playoffs tab entirely during offseason (no rounds scheduled yet)
+          .filter(t => t !== 'Playoffs' || (playoffRounds?.length > 0 || (playoffGames?.length > 0)))
+          .map(t => (
           <button key={t} className={`sched-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
             {t}
             {t === 'Playoffs' && poRecord.w > 0 && (
@@ -124,6 +128,7 @@ export default function ScheduleView() {
           loading={poLoading}
           playoffGames={playoffGames || []}
           playoffSeries={playoffSeries}
+          playoffRounds={playoffRounds || []}
           standingMap={standingMap}
           carStanding={carStanding}
           selectedGame={selectedGame}
@@ -163,15 +168,27 @@ export default function ScheduleView() {
 
 // ── Calendar view ────────────────────────────────────────────
 
-function PlayoffsTab({ loading, playoffGames, playoffSeries, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup, oddsData }) {
+function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup, oddsData }) {
   if (loading) return <LoadingCards count={3} />;
 
   if (!playoffGames.length) {
+    // League-wide rounds exist but this team has no games → missed playoffs
+    if (playoffRounds.length > 0) {
+      return (
+        <div className="card empty-state">
+          <div className="empty-icon">🏒</div>
+          <div className="empty-title">{TEAM_CONFIG.abbr} did not qualify for the playoffs</div>
+          <div className="empty-sub">Better luck next season. Go {TEAM_CONFIG.abbr}!</div>
+        </div>
+      );
+    }
+    // No league-wide rounds either → offseason, tab should already be hidden
+    // but render a fallback just in case
     return (
       <div className="card empty-state">
         <div className="empty-icon">🏒</div>
-        <div className="empty-title">Playoff data not yet available</div>
-        <div className="empty-sub">Check back once the 2025–26 playoffs begin.</div>
+        <div className="empty-title">Playoffs not yet started</div>
+        <div className="empty-sub">Check back once the {TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} playoffs begin.</div>
       </div>
     );
   }
@@ -323,11 +340,16 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
   if (loading) return <LoadingCards count={4} />;
 
   if (!games.length) {
+    const isOffseason = new Date() > new Date('2026-07-01');
     return (
       <div className="card empty-state">
         <div className="empty-icon">📅</div>
         <div className="empty-title">Regular season complete</div>
-        <div className="empty-sub">Final record shown above. Playoffs are underway.</div>
+        <div className="empty-sub">
+          {isOffseason
+            ? 'Final record shown above. See you next season.'
+            : 'Final record shown above. Playoffs are underway.'}
+        </div>
       </div>
     );
   }
