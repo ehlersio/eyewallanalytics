@@ -1,5 +1,25 @@
 // cypress/e2e/news.cy.js
+const WORKER_URL = Cypress.env('WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev';
+
 describe('News view', () => {
+  before(() => {
+    // Prime the Worker cache before any test runs.
+    // Retries up to 5x with 4s gaps — covers the cold-cache 4s retry in NewsView.
+    cy.team().then(t => {
+      const prime = (attempts) => {
+        cy.request({ url: `${WORKER_URL}/news?team=${t.abbr}`, failOnStatusCode: false })
+          .then(res => {
+            const articles = Array.isArray(res.body) ? res.body : [];
+            if (articles.length === 0 && attempts > 0) {
+              cy.wait(4000);
+              prime(attempts - 1);
+            }
+          });
+      };
+      prime(5);
+    });
+  });
+
   beforeEach(() => {
     cy.team().then(t => {
       cy.visit('/news')
