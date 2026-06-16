@@ -89,7 +89,15 @@ export default function NewsView() {
       if (!res.ok) throw new Error('News not yet available — check back soon');
       const data = await res.json();
       const arr = Array.isArray(data) ? data : [];
-      if (arr.length === 0 && !isRetry) {
+      // Deduplicate by id — Worker may return duplicates if multiple sources
+      // return the same article URL
+      const seen = new Set();
+      const deduped = arr.filter(a => {
+        if (seen.has(a.id)) return false;
+        seen.add(a.id);
+        return true;
+      });
+      if (deduped.length === 0 && !isRetry) {
         // Cold cache — worker is populating in background. Retry in 4s.
         retryRef.current = setTimeout(() => {
           fetchingRef.current = false;
@@ -98,7 +106,7 @@ export default function NewsView() {
         // Leave loading spinner up during retry wait
         return;
       }
-      setArticles(arr);
+      setArticles(deduped);
       setFilter('all');
       setPage(1);
       setLastFetch(new Date());
@@ -199,7 +207,7 @@ export default function NewsView() {
       {!loading && !error && paginated.length > 0 && (
         <>
           <div className="news-feed">
-            {paginated.map(item => <ArticleCard key={item.id} item={item} />)}
+            {paginated.map((item, i) => <ArticleCard key={`${item.id}-${i}`} item={item} />)}
           </div>
 
           {/* Pagination */}

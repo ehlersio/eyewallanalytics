@@ -169,7 +169,7 @@
 }
 
 .lv-td {
-  padding: 5px 8px;
+  padding: 5px 4px;
   text-align: right;
   color: var(--text-muted);
   white-space: nowrap;
@@ -179,7 +179,7 @@
 .lv-td--rank {
   color: var(--text-dim);
   font-size: 11px;
-  min-width: 20px;
+  min-width: 18px;
   text-align: center;
   font-family: inherit;
 }
@@ -188,7 +188,9 @@
   text-align: left;
   color: var(--text);
   padding-left: 6px;
+  padding-right: 4px;
   font-family: inherit;
+  max-width: 90px;
 }
 
 .lv-td--pts {
@@ -224,11 +226,11 @@
 }
 
 .lv-you-badge {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   color: var(--row-accent, var(--green));
   background: color-mix(in srgb, var(--row-accent, var(--green)) 15%, transparent);
-  padding: 1px 4px;
+  padding: 1px 3px;
   border-radius: 3px;
   letter-spacing: 0.04em;
   font-family: var(--font-display);
@@ -683,3 +685,75 @@
 }
 
 /* Export button — defined in PredictionCanvas.css */
+
+/* ── Power Rankings sparkline ───────────────────────────────── */
+.pr-narrative-card-top {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.pr-narrative-card-top > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.pr-sparkline {
+  flex-shrink: 0;
+  width: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pr-sparkline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.pr-sparkline-label {
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+.pr-sparkline-trend {
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.pr-sparkline-period {
+  font-size: 8px;
+  font-weight: 400;
+  color: var(--text-dim);
+}
+
+.pr-sparkline-svg {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 200 / 56;
+  overflow: visible;
+}
+
+.pr-sparkline-dates {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  color: var(--text-dim);
+}
+
+.pr-sparkline-empty {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: 4px 0;
+}
+
+@media (max-width: 420px) {
+  .pr-narrative-card-top {
+    flex-direction: column;
+  }
+  .pr-sparkline {
+    width: 100%;
+  }
+}

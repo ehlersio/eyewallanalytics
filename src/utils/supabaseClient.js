@@ -408,6 +408,18 @@ export async function getPowerRankingsNarrative(teamAbbr, season = SEASON) {
   return rows?.[0] ?? null;
 }
 
+// Fetches rank history for the sparkline — last 28 days.
+// Returns array of { generated_date, rank } oldest-first.
+export async function getPowerRankingsHistory(teamAbbr, season = SEASON) {
+  const rows = await sbFetch(
+    `power_rankings_narratives` +
+    `?team=eq.${teamAbbr}&season=eq.${season}` +
+    `&order=generated_date.desc&limit=28` +
+    `&select=generated_date,rank`
+  ).catch(() => []);
+  return (rows || []).reverse(); // oldest first for charting
+}
+
 // ── Game matchup analysis ────────────────────────────────────
 // Returns the AI-generated line/player matchup analysis, or null if none exists.
 export async function getGameMatchup(gameId) {

@@ -12,8 +12,9 @@ import {
   getPlayoffBracket,
   TEAM_CONFIG,
 } from '../utils/nhlApi';
-import { getTeamSeasonData, getPowerRankingsNarrative } from '../utils/supabaseClient';
+import { getTeamSeasonData, getPowerRankingsNarrative, getPowerRankingsHistory } from '../utils/supabaseClient';
 import { ALL_TEAMS } from '../utils/teamConfig';
+import TeamLogo from '../components/TeamLogo';
 import './LeagueView.css';
 import '../components/PredictionCanvas.css';
 
@@ -66,8 +67,7 @@ function StandingsRow({ entry, rank }) {
         style={clinchColor ? { borderLeft: `2.5px solid ${clinchColor}` } : undefined}
       >
         <span className="lv-team-cell">
-          <span className="lv-team-abbrev">{abbrev}</span>
-          {isPrimary && <span className="lv-you-badge" style={{ color: PRIMARY_COLOR, background: `${PRIMARY_COLOR}26` }}>YOU</span>}
+          <span className="lv-team-abbrev" style={{ color: TEAM_COLORS[abbrev] ?? 'var(--text)' }}>{abbrev}</span>
           {entry.clinchIndicator && (
             <span className="lv-clinch-badge">{entry.clinchIndicator.toUpperCase()}</span>
           )}
@@ -81,7 +81,14 @@ function StandingsRow({ entry, rank }) {
       <td className="lv-td">
         <L10Dots wins={entry.l10Wins ?? 0} losses={entry.l10Losses ?? 0} otl={entry.l10OtLosses ?? 0} />
       </td>
-      <td className="lv-td">{entry.streakCode ?? '—'}</td>
+      <td className="lv-td">
+        {(() => {
+          if (!entry.streakCode || !entry.streakCount) return '—';
+          const code = entry.streakCode === 'W' ? 'W' : 'L';
+          const color = code === 'W' ? 'var(--green)' : 'var(--red-bright)';
+          return <span style={{ color, fontWeight: 600 }}>{code}{entry.streakCount}</span>;
+        })()}
+      </td>
     </tr>
   );
 }
@@ -741,9 +748,114 @@ function MovementArrow({ current, prior }) {
   return              <span className="pr-mvmt pr-mvmt--down">▼{Math.abs(diff)}</span>;
 }
 
+// ─── Rank Sparkline ───────────────────────────────────────────────────────────
+
+function RankSparkline({ history, primaryColor }) {
+  if (!history?.length) {
+    return (
+      <div className="pr-sparkline-empty">
+        <span>Rank trend data accumulates nightly</span>
+      </div>
+    );
+  }
+
+  const W = 200;
+  const H = 56;
+  const PAD = 14; // extra padding so labels don't clip
+
+  // With a single point, show a horizontal line at that rank
+  const single = history.length === 1;
+  const ranks = history.map(r => r.rank);
+  const minR = Math.min(...ranks);
+  const maxR = Math.max(...ranks);
+  const range = maxR - minR || 1;
+
+  const x = (i) => single ? W / 2 : PAD + (i / (history.length - 1)) * (W - PAD * 2);
+  const y = (r) => single ? H / 2 : PAD + ((r - minR) / range) * (H - PAD * 2);
+
+  const latest   = history[history.length - 1];
+  const earliest = history[0];
+  const diff     = single ? 0 : earliest.rank - latest.rank;
+
+  const trendColor = diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red-bright)' : 'var(--text-dim)';
+  const trendLabel = single ? null
+    : diff === 0 ? '—'
+    : diff > 0 ? `▲${diff}` : `▼${Math.abs(diff)}`;
+
+  const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  const points     = history.map((r, i) => `${x(i)},${y(r.rank)}`).join(' ');
+  const areaPoints = single ? '' : [
+    `${x(0)},${H}`,
+    ...history.map((r, i) => `${x(i)},${y(r.rank)}`),
+    `${x(history.length - 1)},${H}`,
+  ].join(' ');
+
+  return (
+    <div className="pr-sparkline">
+      <div className="pr-sparkline-header">
+        <span className="pr-sparkline-label">Rank trend</span>
+        {trendLabel && (
+          <span className="pr-sparkline-trend" style={{ color: trendColor }}>
+            {trendLabel}
+            <span className="pr-sparkline-period"> ({history.length}d)</span>
+          </span>
+        )}
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="pr-sparkline-svg">
+        {!single && (
+          <polygon points={areaPoints} fill={primaryColor} opacity="0.08" />
+        )}
+        {!single && (
+          <polyline
+            points={points}
+            fill="none"
+            stroke={primaryColor}
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        )}
+        {/* Current rank dot */}
+        <circle cx={x(history.length - 1)} cy={y(latest.rank)} r="3" fill={primaryColor} />
+        {/* Rank label */}
+        <text
+          x={x(history.length - 1)}
+          y={y(latest.rank) - 5}
+          fontSize="9"
+          fill={primaryColor}
+          textAnchor="middle"
+          fontWeight="700"
+        >
+          #{latest.rank}
+        </text>
+        {/* First point label (only when multiple points) */}
+        {!single && (
+          <>
+            <circle cx={x(0)} cy={y(earliest.rank)} r="2" fill={primaryColor} opacity="0.5" />
+            <text
+              x={x(0)}
+              y={y(earliest.rank) - 4}
+              fontSize="8"
+              fill="var(--text-dim)"
+              textAnchor="middle"
+            >
+              #{earliest.rank}
+            </text>
+          </>
+        )}
+      </svg>
+      <div className="pr-sparkline-dates">
+        <span>{fmtDate(earliest.generated_date)}</span>
+        {!single && <span>{fmtDate(latest.generated_date)}</span>}
+      </div>
+    </div>
+  );
+}
+
 // ─── Rankings Panel ───────────────────────────────────────────────────────────
 
-function RankingsPanel({ standings, xgData, xgLoading, narrative }) {
+function RankingsPanel({ standings, xgData, xgLoading, narrative, history }) {
   const [showHow,    setShowHow]    = useState(false);
   const [canvasMounted, setCanvasMounted] = useState(false);
   const [exporting,  setExporting]  = useState(false);
@@ -794,18 +906,25 @@ function RankingsPanel({ standings, xgData, xgLoading, narrative }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-      {/* AI narrative card */}
-      {narrative?.narrative && (
+      {/* Narrative + sparkline card — shows when either exists */}
+      {(narrative?.narrative || history?.length) ? (
         <div className="lv-div-card lv-div-card--wide pr-narrative-card" style={{ marginTop: 4 }}>
-          <div className="pr-narrative-label">⚡ EyeWall AI — {PRIMARY} Rankings Report</div>
-          <p className="pr-narrative-text">{narrative.narrative}</p>
-          {narrative.generated_date && (
-            <span className="pr-narrative-date">
-              Updated {new Date(narrative.generated_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
-          )}
+          <div className="pr-narrative-card-top">
+            {narrative?.narrative && (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="pr-narrative-label">⚡ EyeWall AI — {PRIMARY} Rankings Report</div>
+                <p className="pr-narrative-text">{narrative.narrative}</p>
+                {narrative.generated_date && (
+                  <span className="pr-narrative-date">
+                    Updated {new Date(narrative.generated_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </span>
+                )}
+              </div>
+            )}
+            <RankSparkline history={history} primaryColor={PRIMARY_COLOR} />
+          </div>
         </div>
-      )}
+      ) : null}
 
       {/* Rankings table */}
       <div className="lv-div-card lv-div-card--wide">
@@ -842,14 +961,10 @@ function RankingsPanel({ standings, xgData, xgLoading, narrative }) {
                 {showArrow && <MovementArrow current={t.rank} prior={priorRank} />}
               </span>
               <span className="pr-col-team">
+                <TeamLogo abbr={t.abbr} size={16} />
                 <span className="pr-abbr" style={{ color: TEAM_COLORS[t.abbr] ?? 'var(--text)' }}>
                   {t.abbr}
                 </span>
-                {isPrimary && (
-                  <span className="lv-you-badge" style={{ color: PRIMARY_COLOR, background: `${PRIMARY_COLOR}26` }}>
-                    YOU
-                  </span>
-                )}
               </span>
               <span className="pr-col-stat">{(t.ptsPct * 100).toFixed(1)}%</span>
               <span className="pr-col-stat">{t.l10}</span>
@@ -1126,6 +1241,10 @@ export default function LeagueView() {
     () => activeTab === 'rankings' ? getPowerRankingsNarrative(TEAM_CONFIG.abbr) : Promise.resolve(null),
     [activeTab]
   )
+  const { data: prHistory } = useFetch(
+    () => activeTab === 'rankings' ? getPowerRankingsHistory(TEAM_CONFIG.abbr) : Promise.resolve(null),
+    [activeTab]
+  )
 
   const leadersLoading   = scoringLoading || goalsLoading || gaaLoading || svpLoading;
   const standingsEntries = Array.isArray(standings) ? standings : [];
@@ -1178,6 +1297,7 @@ export default function LeagueView() {
             xgData={xgData}
             xgLoading={xgLoading}
             narrative={prNarrative}
+            history={prHistory}
           />
         )}
       </div>
