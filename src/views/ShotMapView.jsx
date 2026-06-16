@@ -10,8 +10,8 @@ import {
 import IceRink from '../components/IceRink';
 import { GoalPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
-import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSpecialTeamsUnits } from '../utils/supabaseClient';
-import { inferPPUnit, inferPKUnit } from '../utils/ppUnits';
+import { getGoalieAnalytics, getGameXG, getGameLogInsights } from '../utils/supabaseClient';
+import { inferPPUnit, inferPKUnit, PP_UNITS_BY_TEAM, PK_UNITS_BY_TEAM } from '../utils/ppUnits';
 import InfoTip from '../components/InfoTip';
 import { StatBar, MetCard, MetCardSkeleton } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
@@ -145,10 +145,6 @@ export default function ShotMapView() {
 
   // Season GSAX from Supabase for goalie cards
   const { data: goalieAnalytics } = useFetch(() => getGoalieAnalytics());
-
-  // PP/PK unit compositions — fetched from Worker KV (fast) with Supabase fallback.
-  // Loaded once at mount; unit data doesn't change during a game.
-  const { data: specialTeamsUnits } = useFetch(() => getSpecialTeamsUnits());
 
   // Game-level xG from MoneyPuck (available ~2-4h post-game, not during live)
   const { data: gameXGData } = useFetch(
@@ -370,6 +366,19 @@ export default function ShotMapView() {
     registerOpenHandler((s) => setViewingSummaryPeriod(s.isGameSummary ? 'game' : s.period));
     return () => registerOpenHandler(null);
   }, [registerOpenHandler]);
+
+  // Auto-open game summary when a live game goes FINAL.
+  // wasLiveRef tracks whether we were watching a live game — prevents
+  // auto-opening on page load for already-completed games.
+  const wasLiveRef = useRef(false);
+  useEffect(() => {
+    if (isLive) { wasLiveRef.current = true; }
+  }, [isLive]);
+  useEffect(() => {
+    if (gameSummary && wasLiveRef.current && !isLive) {
+      setViewingSummaryPeriod('game');
+    }
+  }, [gameSummary, isLive]);
 
   // ── Debug panel (5 taps on score bar, dev only) ──────────────
   const [debugOpen,  setDebugOpen]  = useState(false);
@@ -704,15 +713,15 @@ export default function ShotMapView() {
           });
         });
         opp.carSkaterIds = [...skaterIds];
-        opp.unit = inferPPUnit(TEAM_CONFIG.abbr, season, opp.carSkaterIds, specialTeamsUnits);
+        opp.unit = inferPPUnit(TEAM_CONFIG.abbr, season, opp.carSkaterIds);
       });
 
-      // Build display unit arrays from DB-fetched config for the chips at the top
-      const teamUnits = specialTeamsUnits?.[TEAM_CONFIG.abbr]?.PP;
-      const ppUnit1 = (teamUnits?.[1] || [])
-        .map(id => pName(id)).filter(n => n !== '—');
-      const ppUnit2 = (teamUnits?.[2] || [])
-        .map(id => pName(id)).filter(n => n !== '—');
+      // Build display unit arrays from config for the chips at the top
+      const unitConfig = (PP_UNITS_BY_TEAM[TEAM_CONFIG.abbr] || {})[season];
+      const ppUnit1 = unitConfig?.pp1
+        .map(id => pName(id)).filter(n => n !== '—') ?? [];
+      const ppUnit2 = unitConfig?.pp2
+        .map(id => pName(id)).filter(n => n !== '—') ?? [];
 
       // Summary totals
       const totalGoals = ppOpps.filter(o => o.scored).length;
@@ -886,12 +895,12 @@ export default function ShotMapView() {
           });
         });
         opp.carSkaterIds = [...skaterIds];
-        opp.unit = inferPKUnit(TEAM_CONFIG.abbr, season, opp.carSkaterIds, specialTeamsUnits);
+        opp.unit = inferPKUnit(TEAM_CONFIG.abbr, season, opp.carSkaterIds);
       });
 
-      const pkTeamUnits = specialTeamsUnits?.[TEAM_CONFIG.abbr]?.PK;
-      const pkUnit1 = (pkTeamUnits?.[1] || []).map(id => pName(id)).filter(n => n !== '—');
-      const pkUnit2 = (pkTeamUnits?.[2] || []).map(id => pName(id)).filter(n => n !== '—');
+      const unitConfig = (PK_UNITS_BY_TEAM[TEAM_CONFIG.abbr] || {})[season];
+      const pkUnit1 = unitConfig?.pk1.map(id => pName(id)).filter(n => n !== '—') ?? [];
+      const pkUnit2 = unitConfig?.pk2.map(id => pName(id)).filter(n => n !== '—') ?? [];
 
       const totalGoalsAgainst = pkOpps.filter(o => o.allowed).length;
       const totalSOGAgainst   = pkOpps.reduce((s, o) => s + o.sog, 0);
