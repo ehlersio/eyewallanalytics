@@ -1,103 +1,38 @@
 /**
- * ppUnits.js — Special teams unit configurations by team and season.
+ * ppUnits.js — Special teams unit inference helpers.
  *
- * Player IDs match NHL API / Supabase players table.
- * Used in ShotMapView to infer which PP/PK unit is on the ice during live games.
+ * Unit data is no longer stored here — it lives in the `special_teams_units`
+ * Supabase table and is fetched at runtime via getSpecialTeamsUnits() in
+ * supabaseClient.js (Worker KV → Supabase fallback).
  *
- * Teams without an entry will have inferPPUnit / inferPKUnit return null —
- * the UI handles this gracefully by omitting the unit indicator.
+ * This file now only exports the inference functions that consume that data.
+ * Pass the fetched `specialTeamsMap` from ShotMapView into inferPPUnit /
+ * inferPKUnit instead of reading from the static constants.
  *
- * To add a team: add a key matching their NHL API abbreviation with
- * a season map in the same format as CAR below.
+ * Legacy static exports are kept below for any imports that haven't been
+ * updated yet — they return empty objects and will gracefully return null
+ * from the inference functions.
  */
-
-// ── Power play units ─────────────────────────────────────────
-const PP_UNITS = {
-  CAR: {
-    20252026: {
-      pp1: [
-        8482093, // Seth Jarvis
-        8478427, // Sebastian Aho
-        8477940, // Nikolaj Ehlers
-        8476906, // Shayne Gostisbehere
-        8480830, // Andrei Svechnikov
-      ],
-      pp2: [
-        8475791, // Taylor Hall
-        8482702, // Logan Stankoven
-        8477940, // Nikolaj Ehlers
-        8482809, // Jackson Blake
-        8480817, // K'Andre Miller
-      ],
-    },
-  },
-  VGK: {
-    20252026: {
-      pp1: [
-        8480801, // Jack Eichel
-        8481533, // Pavel Dorofeyev
-        8478476, // Mark Stone
-        8480785, // Shea Theodore
-        8476925, // Ivan Barbashev
-      ],
-      pp2: [
-        8475793, // Tomas Hertl
-        8479987, // Nicolas Roy
-        8480746, // Noah Hanifin
-        8477936, // William Carrier
-        8480768, // Chandler Stephenson
-      ],
-    },
-  },
-};
-
-// ── Penalty kill units ───────────────────────────────────────
-const PK_UNITS = {
-  CAR: {
-    20252026: {
-      pk1: [
-        8473533, // Jordan Staal
-        8476921, // Jordan Martinook
-        8476958, // Jaccob Slavin
-        8478970, // Jalen Chatfield
-      ],
-      pk2: [
-        8478427, // Sebastian Aho
-        8482093, // Seth Jarvis
-        8480817, // K'Andre Miller
-        8480336, // Sean Walker
-      ],
-    },
-  },
-  VGK: {
-    20252026: {
-      pk1: [
-        8480801, // Jack Eichel
-        8479987, // Nicolas Roy
-        8480785, // Shea Theodore
-        8476483, // Brayden McNabb
-      ],
-      pk2: [
-        8476925, // Ivan Barbashev
-        8477936, // William Carrier
-        8481000, // Nicolas Hague
-        8480034, // Zach Whitecloud
-      ],
-    },
-  },
-};
 
 /**
- * Given a team, season, and set of player IDs seen in a PP opportunity,
- * returns 1 (PP1), 2 (PP2), or null if no confident match.
+ * Given a team, season, set of player IDs seen in a PP opportunity, and
+ * the fetched special teams map, returns 1 (PP1), 2 (PP2), or null.
  * Requires at least 2 overlapping players to assign a unit.
+ *
+ * @param {string}   teamAbbr        - e.g. 'CAR'
+ * @param {number}   season          - e.g. 20252026 (unused — map is pre-filtered)
+ * @param {number[]} playerIds       - player IDs currently on ice
+ * @param {object}   specialTeamsMap - fetched from getSpecialTeamsUnits()
  */
-export function inferPPUnit(teamAbbr, season, playerIds) {
-  const units = PP_UNITS[teamAbbr]?.[season];
+export function inferPPUnit(teamAbbr, season, playerIds, specialTeamsMap) {
+  const units = specialTeamsMap?.[teamAbbr]?.PP;
   if (!units || !playerIds?.length) return null;
 
-  const pp1Overlap = playerIds.filter(id => units.pp1.includes(id)).length;
-  const pp2Overlap = playerIds.filter(id => units.pp2.includes(id)).length;
+  const pp1 = units[1] || [];
+  const pp2 = units[2] || [];
+
+  const pp1Overlap = playerIds.filter(id => pp1.includes(id)).length;
+  const pp2Overlap = playerIds.filter(id => pp2.includes(id)).length;
 
   if (pp1Overlap >= 2 && pp1Overlap >= pp2Overlap) return 1;
   if (pp2Overlap >= 2) return 2;
@@ -105,26 +40,35 @@ export function inferPPUnit(teamAbbr, season, playerIds) {
 }
 
 /**
- * Given a team, season, and set of player IDs seen in a PK opportunity,
- * returns 1 (PK1), 2 (PK2), or null if no confident match.
+ * Given a team, season, set of player IDs seen in a PK opportunity, and
+ * the fetched special teams map, returns 1 (PK1), 2 (PK2), or null.
  * Requires at least 2 overlapping players to assign a unit.
+ *
+ * @param {string}   teamAbbr        - e.g. 'CAR'
+ * @param {number}   season          - e.g. 20252026 (unused — map is pre-filtered)
+ * @param {number[]} playerIds       - player IDs currently on ice
+ * @param {object}   specialTeamsMap - fetched from getSpecialTeamsUnits()
  */
-export function inferPKUnit(teamAbbr, season, playerIds) {
-  const units = PK_UNITS[teamAbbr]?.[season];
+export function inferPKUnit(teamAbbr, season, playerIds, specialTeamsMap) {
+  const units = specialTeamsMap?.[teamAbbr]?.PK;
   if (!units || !playerIds?.length) return null;
 
-  const pk1Overlap = playerIds.filter(id => units.pk1.includes(id)).length;
-  const pk2Overlap = playerIds.filter(id => units.pk2.includes(id)).length;
+  const pk1 = units[1] || [];
+  const pk2 = units[2] || [];
+
+  const pk1Overlap = playerIds.filter(id => pk1.includes(id)).length;
+  const pk2Overlap = playerIds.filter(id => pk2.includes(id)).length;
 
   if (pk1Overlap >= 2 && pk1Overlap >= pk2Overlap) return 1;
   if (pk2Overlap >= 2) return 2;
   return null;
 }
 
-// Legacy named exports — kept for any existing imports
-export const CAR_PP_UNITS = PP_UNITS.CAR;
-export const CAR_PK_UNITS = PK_UNITS.CAR;
-
-// Full map exports — used in ShotMapView for unitConfig chip display
-export const PP_UNITS_BY_TEAM = PP_UNITS;
-export const PK_UNITS_BY_TEAM = PK_UNITS;
+// ── Legacy exports ────────────────────────────────────────────────────────────
+// Kept for backward compatibility. These are empty — unit data now comes from
+// getSpecialTeamsUnits() in supabaseClient.js.
+// Remove once all imports have been updated to use the new signature.
+export const CAR_PP_UNITS      = {};
+export const CAR_PK_UNITS      = {};
+export const PP_UNITS_BY_TEAM  = {};
+export const PK_UNITS_BY_TEAM  = {};

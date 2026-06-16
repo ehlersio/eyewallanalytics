@@ -505,3 +505,38 @@ export async function getTeamSkaterStatsFromDB(team = 'CAR', season = SEASON, ga
     };
   });
 }
+
+// ── Special teams units ───────────────────────────────────────
+// Returns PP/PK unit compositions for all teams keyed by abbr.
+// Shape: { CAR: { PP: { 1: [ids], 2: [ids] }, PK: { 1: [ids], 2: [ids] } }, ... }
+// Fetches from Worker KV first (fast), falls back to Supabase directly.
+export function buildSpecialTeamsMap(rows) {
+  const map = {};
+  for (const r of (rows || [])) {
+    if (!map[r.team]) map[r.team] = { PP: {}, PK: {} };
+    map[r.team][r.unit_type][r.unit_number] = r.player_ids;
+  }
+  return map;
+}
+
+export async function getSpecialTeamsUnits(season = SEASON) {
+  // Try Worker KV first
+  try {
+    const WORKER_URL = import.meta.env.VITE_WORKER_URL;
+    if (WORKER_URL) {
+      const r = await fetch(`${WORKER_URL}/cache/pp_units:all`);
+      if (r.ok) {
+        const kv = await r.json();
+        if (kv?.value) return JSON.parse(kv.value);
+      }
+    }
+  } catch (_) {}
+
+  // Fall back to Supabase directly
+  const rows = await sbFetch(
+    `special_teams_units?season=eq.${season}` +
+    `&select=team,unit_type,unit_number,player_ids&limit=256`
+  ).catch(() => []);
+
+  return buildSpecialTeamsMap(rows);
+}
