@@ -39,6 +39,7 @@ jobs:
         run: npm run dev &
         env:
           NODE_ENV: test
+          VITE_WORKER_URL: https://eyewall-poller.billowing-queen-bf23.workers.dev
 
       # ── Wait for dev server to be ready ────────────────────
       - name: Wait for dev server
@@ -63,6 +64,7 @@ jobs:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           # Pass Supabase anon key so Cypress env block can read it
           CYPRESS_SUPABASE_ANON: sb_publishable_e_zwr1UA7GnHq4OuQSas5Q_kO8bQ_Ct
+          VITE_WORKER_URL: https://eyewall-poller.billowing-queen-bf23.workers.dev
 
       # ── Generate HTML report ────────────────────────────────
       - name: Generate test report
