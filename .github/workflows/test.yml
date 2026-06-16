@@ -47,7 +47,7 @@ jobs:
 
       # ── Cypress e2e tests ───────────────────────────────────
       - name: E2E tests (Cypress)
-        uses: cypress-io/github-action@v6
+        uses: cypress-io/github-action@v7
         with:
           # Don't install — we already ran npm ci above
           install: false
