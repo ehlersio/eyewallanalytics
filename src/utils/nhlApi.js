@@ -535,7 +535,7 @@ async function fetchSkaterLeaders(gameTypeId = 2) {
   return await nhlFetch(url);
 }
 
-async function fetchGoalieLeaders(gameTypeId = 2) {
+async function fetchGoalieLeaders(_gameTypeId = 2) {
   // Goalie endpoint only accepts seasonId in cayenneExp (not gameTypeId).
   // We fetch the regular season data (gameTypeId=2 is the default/only accepted).
   // For playoff ranking we still use the reg season leaderboard as context —
@@ -990,7 +990,7 @@ export async function getTeamRealtime(gameTypeId = 2) {
 }
 
 // Score-state splits — endpoint broken, returns null gracefully
-export async function getTeamScoreState(gameTypeId = 2) {
+export async function getTeamScoreState(_gameTypeId = 2) {
   return null; // team/goalsForAgainst endpoint unavailable
 }
 
@@ -1112,7 +1112,7 @@ export function findGameOdds(oddsData, game) {
 
 // Extract best available moneyline odds for CAR and opponent
 // Returns { carOdds, oppOdds, book } or null
-export function extractMoneyline(oddsEntry, isHome) {
+export function extractMoneyline(oddsEntry, _isHome) {
   if (!oddsEntry?.bookmakers?.length) return null;
   // Prefer DraftKings, then FanDuel, then first available
   const preferred = ['draftkings','fanduel','betmgm','williamhill'];

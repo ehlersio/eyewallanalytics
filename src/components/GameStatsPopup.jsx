@@ -4,7 +4,7 @@ import {
   getCompletedGameStats, getOpponent, isHomeGame, getCarScore, getOppScore,
   formatGameDate, TEAM_COLORS,
 } from '../utils/nhlApi';
-import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
+import { computeShotAttempts, computePDO, computePuckLuck } from '../utils/advancedStats';
 import TeamLogo from '../components/TeamLogo';
 import InfoTip from '../components/InfoTip';
 import { capture } from '../utils/analytics';
@@ -56,7 +56,6 @@ function GameStatsPopup({ game, onClose }) {
   // Pull scoring summary from boxscore
   const bs         = data?.boxscore;
   const scoring    = bs?.summary?.scoring || bs?.linescore?.periods || [];
-  const shootout   = bs?.summary?.shootout || [];
   const starsList  = bs?.summary?.threeStars || [];
 
   // Boxscore player stats — use isCarHome from actual API data, fallback to schedule
@@ -87,16 +86,6 @@ function GameStatsPopup({ game, onClose }) {
   carPlayers_sorted.forEach(p => carPlayers.push(p));
 
   // Helper: find a team stat value by category
-  function getStat(category, teamAbbr) {
-    const row = teamStats.find(s =>
-      s.category?.toLowerCase().includes(category.toLowerCase())
-    );
-    if (!row) return null;
-    return teamAbbr === CAR_ABBR
-      ? (home ? row.homeValue : row.awayValue)
-      : (home ? row.awayValue : row.homeValue);
-  }
-
   // Map every raw NHL API category key -> human label + optional value transformer
   // The right-rail returns camelCase keys like "sog", "faceoffWinningPctg", "blockedShots", etc.
   const STAT_CONFIG = {
@@ -325,7 +314,7 @@ function GameStatsPopup({ game, onClose }) {
                       ['Shots on Goal',advStats.car.goals+advStats.car.sog, advStats.opp.goals+advStats.opp.sog, 'Shots that reached the goalie'],
                       ['Missed Shots', advStats.car.missed, advStats.opp.missed, 'Attempts that missed the net'],
                       ['Blocked Shots',advStats.car.blocked,advStats.opp.blocked,'Attempts blocked by a skater'],
-                    ].map(([label, car, opp, help]) => {
+                    ].map(([label, car, opp, _help]) => {
                       const tot = car + opp || 1;
                       return (
                         <div key={label} className="gp-adv-row">

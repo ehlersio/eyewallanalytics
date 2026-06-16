@@ -5,7 +5,7 @@ import {
   TEAM_COLORS, TEAM_CONFIG,
 } from '../utils/nhlApi';
 import { computeGSAx } from '../utils/advancedStats';
-import { getGoalieAnalytics, getTeamLines, getScoutingBlurb, getGameMatchup } from '../utils/supabaseClient';
+import { getGoalieAnalytics, getTeamLines, getGameMatchup } from '../utils/supabaseClient';
 import TeamLogo from './TeamLogo';
 import InfoTip from './InfoTip';
 import './ScoutingTab.css';
@@ -206,11 +206,9 @@ function TeamTotalCard({ carStats, oppStats, oppAbbr, isPlayoff }) {
 
 // ── Share canvas (off-screen 1080×1080) ──────────────────────
 function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPlayers,
-  carRecentGames, oppRecentGames, oppAbbr, oppColor, isPlayoff, carLines, matchupText }) {
+  _carRecentGames, _oppRecentGames, oppAbbr, oppColor, isPlayoff, carLines, matchupText }) {
   if (!carStats || !oppStats) return null;
 
-  const carGoalie  = carPlayers?.goalies?.[0];
-  const oppGoalie  = oppPlayers?.goalies?.[0];
   const logoUrl    = abbr => `/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
   const gpgFmt     = v => v?.toFixed(2) ?? '—';
   const pctFmt     = v => v != null ? `${(v * 100).toFixed(1)}%` : '—';
@@ -218,22 +216,6 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
   // Team total projection
   const carExp = ((carStats.goalsForPerGame ?? 0) + (oppStats.goalsAgainstPerGame ?? 0)) / 2;
   const oppExp = ((oppStats.goalsForPerGame ?? 0) + (carStats.goalsAgainstPerGame ?? 0)) / 2;
-  const projTotal = +(carExp + oppExp).toFixed(1);
-
-  // Recent form last 5
-  const formDots = (games, isCar) => (games || []).slice(0, 5).reverse().map((g, i) => {
-    const color = g.result === 'W' ? '#4ade80' : g.result === 'OTL' ? '#fb923c' : '#ef384c';
-    return (
-      <div key={i} style={{
-        width: 20, height: 20, borderRadius: 4, background: color + '33',
-        border: `1px solid ${color}`, display:'flex', alignItems:'center',
-        justifyContent:'center', fontSize: 8, fontWeight: 700, color,
-      }}>
-        {g.result === 'OTL' ? 'O' : g.result}
-      </div>
-    );
-  });
-
   return (
     <div className="sc-canvas" ref={canvasRef}>
       {/* Header */}
@@ -443,7 +425,7 @@ function XgfBadge({ pct }) {
   );
 }
 
-function LineUnit({ unit, label, color, isDefence }) {
+function LineUnit({ unit, label, color, _isDefence }) {
   const toiLabel = unit.toiMins != null ? `${unit.toiMins} min together` : null;
   return (
     <div className={`sc-line-unit${unit.isStatic ? ' sc-line-static' : ''}`}>
@@ -477,7 +459,7 @@ function LineUnit({ unit, label, color, isDefence }) {
 
 function LinesSection({ lines, color, isPlayoff, abbr }) {
   if (!lines) return null;
-  const { lines: fLines, pairs: dPairs, isInferred } = lines;
+  const { lines: fLines, pairs: dPairs, _isInferred } = lines;
   const lineLabels = ['Line 1', 'Line 2', 'Line 3', 'Line 4'];
   const pairLabels = ['Pair 1', 'Pair 2', 'Pair 3'];
   const hasAnyStatic = [...(fLines || []), ...(dPairs || [])].some(u => u.isStatic);

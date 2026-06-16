@@ -9,7 +9,6 @@ import {
 } from '../utils/nhlApi'
 import { getTeamGameLog as getDbTeamGameLog } from '../utils/supabaseClient'
 import { CONTRACTS, DRAFT_PICKS, getCapSummary, CAP_CEILING, CURRENT_SEASON, CONTRACT_DATA_DATE } from '../utils/carContracts'
-import { StatBar, MetCard } from '../components/StatBar'
 import { seasonPDO } from '../utils/advancedStats'
 import InfoTip from '../components/InfoTip'
 import TeamLogo from '../components/TeamLogo'
@@ -50,7 +49,6 @@ export default function TeamView() {
   const { data: liveGame } = useFetch(getLiveGame)
   const gameIsLive = !!(liveGame)
 
-  const gp   = stats?.gamesPlayed || 1
   // Standings update in real-time during games — exclude in-progress result
   const wins   = (stats?.wins    || 0) - (gameIsLive && (stats?.wins    || 0) > 0 ? 0 : 0)
   const losses = (stats?.losses  || 0)
@@ -94,7 +92,7 @@ export default function TeamView() {
 }
 
 // ── Overview tab ──────────────────────────────────────────────
-function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding, playoffSummary, wins, losses, otl, pts, inPlayoffs, liveGame, corsiReg, realtimeReg, rankings }) {
+function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStanding, playoffSummary, wins, losses, otl, pts, inPlayoffs, liveGame, _corsiReg, realtimeReg, rankings }) {
 
   function RankBadge({ r }) {
     if (!r) return null;
@@ -198,13 +196,11 @@ function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding
 }
 
 // ── Advanced tab ─────────────────────────────────────────────
-function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, scoreState, poAdv, inPlayoffs, homeSplit }) {
+function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, inPlayoffs, _homeSplit }) {
   const pdoData = seasonPDO(corsiReg);
   const [showPO, setShowPO] = useState(inPlayoffs);
   function pct(v) { if (v == null) return '—'; return `${(v*100).toFixed(1)}%`; }
   function fmt(v, dec=2) { return v == null ? '—' : Number(v).toFixed(dec); }
-
-  const corsiPo = poAdv?.corsi
 
   const corsi = showPO ? poAdv?.corsi : corsiReg
   const pp    = showPO ? poAdv?.pp    : ppReg
@@ -359,7 +355,7 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, scoreState, poAdv, i
 }
 
 // ── Splits tab ───────────────────────────────────────────────
-function SplitsTab({ homeSplit, homeSplitPO, stats, playoffSummary, inPlayoffs, ppReg, pkReg, corsiReg }) {
+function SplitsTab({ homeSplit, homeSplitPO, _stats, _playoffSummary, inPlayoffs, _ppReg, _pkReg, _corsiReg }) {
   const [showPO, setShowPO] = React.useState(false);
 
   const split = showPO ? homeSplitPO : homeSplit;
@@ -911,13 +907,4 @@ function AdvStatRow({ label, val, note, rating, avg }) {
       </span>
     </div>
   );
-}
-
-function SplitStat({ label, val }) {
-  return (
-    <div className="split-stat">
-      <span className="split-stat-label">{label}</span>
-      <span className="split-stat-val">{val}</span>
-    </div>
-  )
 }

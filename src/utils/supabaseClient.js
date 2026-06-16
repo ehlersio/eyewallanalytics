@@ -224,7 +224,7 @@ export async function getTeamLines(team = 'CAR', season = SEASON, gameType = 2) 
   try {
     const { getStaticLines } = await import('./staticLines.js');
     staticData = getStaticLines(team, gameType);
-  } catch (_) {}
+  } catch {}
   const posMap = buildStaticPosMap(staticData);
 
   // Try live inferred data from Supabase
@@ -542,7 +542,7 @@ export async function getSpecialTeamsUnits(season = SEASON) {
         if (kv?.value) return JSON.parse(kv.value);
       }
     }
-  } catch (_) {}
+  } catch {}
 
   // Fall back to Supabase directly
   const rows = await sbFetch(

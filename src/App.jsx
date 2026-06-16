@@ -57,7 +57,7 @@ export default function App() {
 
   // Show team picker on first launch (no team saved yet).
   // After selection, reload so all modules re-initialize with the chosen team.
-  const [needsTeam, setNeedsTeam] = useState(() => !hasTeamConfig());
+  const [needsTeam] = useState(() => !hasTeamConfig());
 
   if (needsTeam) {
     return (

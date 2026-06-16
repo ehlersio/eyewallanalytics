@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import { recordOutcome } from '../utils/predictionStore';
 import {
   getRegularSeasonGames, getPlayoffGames, getPlayoffSeries, getStandings,
-  buildCarPlayoffSummary, formatGameDate, formatGameTime,
+  buildCarPlayoffSummary, formatGameDate,
   getOpponent, isHomeGame, getCarScore, getOppScore,
   TEAM_COLORS, getNhlOdds, findGameOdds, extractMoneyline, oddsToImplied,
   TEAM_CONFIG,
@@ -22,7 +22,6 @@ export default function ScheduleView() {
   const [tab, setTab]                   = useState('Playoffs');
   const [selectedGame, setSelectedGame] = useState(null);
   const [popupGame, setPopupGame]       = useState(null);
-  const [poSort, setPoSort]             = useState('desc');
   const [regSort, setRegSort]           = useState('desc');
   const [viewMode, setViewMode]          = useState('cards'); // 'cards' | 'calendar'
   const [calMonth, setCalMonth]          = useState(() => {

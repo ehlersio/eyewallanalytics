@@ -12,7 +12,7 @@ export function capture(event, properties = {}) {
   if (import.meta.env.MODE !== 'production') return;
   try {
     posthog.capture(event, properties);
-  } catch (e) {
+  } catch {
     // Never let analytics errors affect the UI
   }
 }
@@ -20,7 +20,7 @@ export function capture(event, properties = {}) {
 export function identify(distinctId, properties = {}) {
   try {
     posthog.identify(distinctId, properties);
-  } catch (e) {}
+  } catch {}
 }
 
 export default posthog;

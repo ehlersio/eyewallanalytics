@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useWindowWidth } from '../hooks/useFetch';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import './IceRink.css';
@@ -57,7 +57,7 @@ const OPP_SHOT_STYLE = {
 };
 
 // ─── Main component ───────────────────────────────────────────
-export default function IceRink({ events = [], roster = {}, hidePlayerFilter = false, readOnly = false, flipPerspective = false }) {
+export default function IceRink({ events = [], _roster = {}, hidePlayerFilter = false, readOnly = false, flipPerspective = false }) {
   const [halfRink,    setHalfRink]    = useState(false);
   const [period,      setPeriod]      = useState('all');
   const [viewMode,    setViewMode]    = useState('dots'); // 'dots' | 'heat'
@@ -603,7 +603,7 @@ function HeatmapLayer({ canesEvents, oppEvents, heatTeam, showHalf, flipPerspect
 }
 
 // ─── Hover tooltip ────────────────────────────────────────────
-function HoverTooltip({ event: e, screenX, screenY, playerNames, wrapRef }) {
+function HoverTooltip({ event: e, screenX, screenY, _playerNames, wrapRef }) {
   const ref = useRef(null);
   const [pos, setPos] = useState({ top: 0, left: 0 });
 
@@ -648,7 +648,7 @@ function HoverTooltip({ event: e, screenX, screenY, playerNames, wrapRef }) {
 }
 
 // ─── Click popup ─────────────────────────────────────────────
-function ShotPopup({ event: e, playerNames, onClose }) {
+function ShotPopup({ event: e, _playerNames, onClose }) {
   const shooterName = e.shooterName || (e.isCanes ? `Unknown ${TEAM_CONFIG.abbr}` : 'Unknown');
   const goalieName  = e.goalieName  || null;
   const blockerName = e.blockerName || null;

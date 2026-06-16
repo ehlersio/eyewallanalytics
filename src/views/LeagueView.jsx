@@ -374,7 +374,7 @@ function normaliseSeries(raw) {
 function parseBracketData(raw) {
   if (!raw) return null;
   if (process.env.NODE_ENV !== 'production') {
-    console.log('[BracketPanel] bracketData shape:', JSON.stringify(raw, null, 2));
+    console.warn('[BracketPanel] bracketData shape:', JSON.stringify(raw, null, 2));
   }
   try {
     if (!Array.isArray(raw.rounds)) return null;
@@ -426,7 +426,7 @@ function WinDots({ wins, color }) {
 
 // ── Series card ──
 
-function TeamAbbr({ abbrev, isWinner, isEliminated }) {
+function TeamAbbr({ abbrev, _isWinner, isEliminated }) {
   const color = TEAM_COLORS[abbrev];
   return (
     <span
@@ -622,7 +622,6 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
   const topColor    = TEAM_COLORS[top]    ?? 'var(--text)';
   const bottomColor = TEAM_COLORS[bottom] ?? 'var(--text)';
   const winner      = topWins === 4 ? top : bottomWins === 4 ? bottom : null;
-  const isComplete  = topWins === 4 || bottomWins === 4;
 
   function fmtDate(iso) {
     if (!iso) return '';

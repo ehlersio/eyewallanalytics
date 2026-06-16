@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest'
 
 // ── groupStats (mirrors PlayersView.jsx) ──────────────────────
-function groupStats(defs, stats, isGoalie = false) {
+function groupStats(defs, stats, _isGoalie = false) {
   const groups = {}
   defs.forEach(def => {
     const raw = stats?.[def.key]

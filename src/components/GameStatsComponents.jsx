@@ -2,7 +2,7 @@ import React from 'react';
 import { computeGSAx } from '../utils/advancedStats';
 import InfoTip from '../components/InfoTip';
 
-function PeriodTable({ scoring, home, carAbbr, oppAbbr }) {
+function PeriodTable({ scoring, _home, carAbbr, oppAbbr }) {
   // scoring is array of periods, each with goals array
   const periods = scoring.map((p, i) => {
     const num = p.period || i + 1;

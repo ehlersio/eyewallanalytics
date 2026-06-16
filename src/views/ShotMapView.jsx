@@ -13,7 +13,7 @@ import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '.
 import { getGoalieAnalytics, getGameXG, getGameLogInsights } from '../utils/supabaseClient';
 import { inferPPUnit, inferPKUnit, PP_UNITS_BY_TEAM, PK_UNITS_BY_TEAM } from '../utils/ppUnits';
 import InfoTip from '../components/InfoTip';
-import { StatBar, MetCard, MetCardSkeleton } from '../components/StatBar';
+import { MetCard } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
 import './ShotMapView.css';
 import { publishClock, getClockDisplay, publishMomentum } from '../utils/liveClockStore';
@@ -125,7 +125,7 @@ export default function ShotMapView() {
   );
 
   // Team stats — we fetch once; we pick the right context (reg vs playoff) below
-  const { data: teamStats, loading: statsLoading } = useFetch(() => getTeamStats(CAR_ABBR));
+  const { data: teamStats } = useFetch(() => getTeamStats(CAR_ABBR));
 
   // Playoff-specific PP% when in playoffs
   const { data: poAdv } = useFetch(
@@ -178,7 +178,6 @@ export default function ShotMapView() {
       const type = play.typeDescKey;
       const owned = isCAR ? d.eventOwnerTeamId === CAR_ID : (d.eventOwnerTeamId && d.eventOwnerTeamId !== CAR_ID);
       if (type === 'faceoff') {
-        const won = d.eventOwnerTeamId === (isCAR ? CAR_ID : d.eventOwnerTeamId);
         return zone === 'O' && owned ? 0.6 : 0;
       }
       if (!owned) return 0;
@@ -419,13 +418,11 @@ export default function ShotMapView() {
   const [clockRunning,  setClockRunning]  = useState(true);
   const pageRef    = useRef(null);
   const clockRef   = useRef(null);
-  const lastSyncRef = useRef(null);
 
   // Build drill-down data from play-by-play
   const buildDrillDown = useCallback((statKey) => {
     if (!pbp?.plays) return;
     const plays = pbp.plays;
-    const rosterMap = roster || {};
     const carId = TEAM_CONFIG.teamId; // CAR team ID
     const oppId = opp?.id || null;
     const season = Number(TEAM_CONFIG.season.slice(0, 4)); // e.g. 2025 from '20252026'
@@ -554,7 +551,6 @@ export default function ShotMapView() {
       plays.forEach(p => {
         const sc        = p.situationCode;
         const onPP      = isCarPP(sc);
-        const sortOrder = p.sortOrder || 0;
         const periodNum = p.periodDescriptor?.number || 1;
         const timeSecs  = (() => {
           const [m, s] = (p.timeInPeriod || '0:00').split(':').map(Number);
@@ -933,7 +929,6 @@ export default function ShotMapView() {
     let carPKOpps = 0, carPKGoalsAgainst = 0;
 
     // Track power play opportunities from penalty events
-    const activePP = new Set(); // sortOrder when PP started
     plays.forEach(p => {
       const isCar = p.details?.eventOwnerTeamId === carId;
       switch (p.typeDescKey) {
@@ -1030,10 +1025,6 @@ export default function ShotMapView() {
       if (isCar) carXG += xg; else oppXG += xg;
     });
 
-    // PP stats from boxscore (more reliable for PP%)
-    const bs       = boxscore?.playerByGameStats;
-    const ppRaw    = getGameStat('powerPlay');
-
     return {
       sog:      { car: carSOG,    opp: oppSOG },
       hits:     { car: carHits,   opp: oppHits },
@@ -1051,7 +1042,6 @@ export default function ShotMapView() {
   const gameHits     = pbp?.plays?.length ? liveStats.hits    : getGameStat('hits');
   const gameBlocked  = pbp?.plays?.length ? liveStats.blocked : getGameStat('blocked');
   const gameFaceoff  = pbp?.plays?.length ? liveStats.faceoff : getGameStat('faceoff');
-  const gamePP       = getGameStat('powerPlay'); // always from rightRail (season stat)
 
   // ── Shot danger breakdown from coordinate data ──────────────
   const dangerCounts = useMemo(() => {
@@ -1151,15 +1141,6 @@ export default function ShotMapView() {
 
   const carGoalies = activateGoalies(boxscore?.playerByGameStats?.[gameHome ? 'homeTeam' : 'awayTeam']?.goalies || []);
   const oppGoalies = activateGoalies(boxscore?.playerByGameStats?.[oppKey]?.goalies || []);
-  // Keep single-goalie references for components that expect one
-  const carGoalie  = carGoalies[0] || null;
-  const oppGoalie  = oppGoalies[0] || null;
-
-  // ── Context label for top metrics ───────────────────────────
-  // Use playoff team stats if in playoffs, otherwise regular season
-  const ctxLabel    = inPlayoffs ? 'Playoff avg' : 'Season avg';
-  // teamStats comes from standings which is always current reg season
-  // For now we show reg season avg with a label — future: fetch playoff-specific team stats
 
   // ── Period scoring ───────────────────────────────────────────
   const scoring    = boxscore?.summary?.scoring || [];
@@ -2096,7 +2077,6 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
                 ? <div className="drill-empty">No {teamLabel} penalties.</div>
                 : rows.map((r, i) => {
                     const minor = r.duration <= 2;
-                    const color = tab === 'car' ? '#f87171' : '#4ade80';
                     return (
                       <div key={i} className="drill-row pen-row">
                         <div className="pen-row-top">
@@ -2557,7 +2537,6 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     // ── PK performance ───────────────────────────────────────
     const penalties = plays.filter(p => p.typeDescKey === 'penalty');
     const carPens   = penalties.filter(p => p.details?.eventOwnerTeamId === carTeam).length;
-    const oppPens   = penalties.filter(p => p.details?.eventOwnerTeamId !== carTeam).length;
     // situationCode lives on the play itself, not inside details
     const ppGoalsAgainst = plays.filter(p => {
       if (p.typeDescKey !== 'goal') return false;
@@ -2971,7 +2950,7 @@ function LiveInsightsCard({ insights, isLive }) {
 }
 
 // ── Momentum Card ─────────────────────────────────────────────
-function MomentumCard({ pbp, gameHome, isLive, oppAbbr }) {
+function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
   const [window, setWindow] = useState(5);
   const plays = pbp?.plays || [];
   const CAR_ID = TEAM_CONFIG.teamId;
@@ -3013,7 +2992,6 @@ function MomentumCard({ pbp, gameHome, isLive, oppAbbr }) {
       const t = playTimeSecs(p);
       if (t < cutoff) return;
       const cs = eventScore(p, CAR_ID);
-      const os = eventScore(p, -1); // opp = any non-CAR team
       // Recalculate for opp by checking if owner is not CAR
       const oppOwned = p.details?.eventOwnerTeamId && p.details.eventOwnerTeamId !== CAR_ID;
       const d = p.details || {};
@@ -3231,7 +3209,7 @@ function MomentumCard({ pbp, gameHome, isLive, oppAbbr }) {
 }
 
 // ── Advanced Game Panel ───────────────────────────────────────
-function AdvancedGamePanel({ pbp, gameHome, isLive, boxscore }) {
+function AdvancedGamePanel({ pbp, _gameHome, _isLive, _boxscore }) {
   const plays = pbp?.plays || [];
   const sa    = computeShotAttempts(plays);
   const pdo   = computePDO(plays);
@@ -3327,14 +3305,6 @@ function AdvancedGamePanel({ pbp, gameHome, isLive, boxscore }) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────
-
-function formatFaceoff(val) {
-  if (val == null) return '—';
-  const n = parseFloat(String(val).replace('%',''));
-  if (isNaN(n)) return '—';
-  // Could be 0-1 decimal or 0-100 percentage
-  return n <= 1 ? `${(n * 100).toFixed(1)}%` : `${n.toFixed(1)}%`;
-}
 
 function parsePct(val) {
   if (val == null) return 0;

@@ -203,7 +203,6 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarra
   const carScore = carIsHome ? summary.homeScore : summary.awayScore;
   const oppScore = carIsHome ? summary.awayScore : summary.homeScore;
   const stats = getPeriodStats(summary, carAbbr);
-  const logoUrl = (abbr) => `/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
   const dominatedBy = summary.corsiForPct >= 55 ? carAbbr : summary.corsiForPct <= 45 ? oppAbbr : null;
   const carPenalties = summary.penalties.filter(p => p.isCar).length;
   const oppPenalties = summary.penalties.filter(p => !p.isCar).length;
@@ -435,7 +434,7 @@ export default function PeriodSummary({
   carAbbr = TEAM_CONFIG.abbr,
   oppAbbr = 'OPP',
   homeAbbr = TEAM_CONFIG.abbr,
-  awayAbbr = 'OPP',
+  _awayAbbr = 'OPP',
   readOnly = false,
   isPlayoff = false,
 }) {

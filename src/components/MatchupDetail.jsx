@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useFetch } from '../hooks/useFetch';
-import { savePrediction, getPredictionStats, recordOutcome } from '../utils/predictionStore';
+import { savePrediction, getPredictionStats } from '../utils/predictionStore';
 import { capture } from '../utils/analytics';
 import ScoutingTab from '../components/ScoutingTab';
 import InfoTip from '../components/InfoTip';
-import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import { getTeamLines, getGamePrediction } from '../utils/supabaseClient';
 import {
-  getOpponent, isHomeGame, TEAM_COLORS, TEAM_CONFIG,
-  getStandings, findGameOdds, oddsToImplied, fmtOdds,
+  getOpponent, TEAM_COLORS, TEAM_CONFIG,
+  oddsToImplied, fmtOdds,
 } from '../utils/nhlApi';
 import { StatBar } from '../components/StatBar';
 import PredictionExportSection from '../components/PredictionShareCanvas';
-
-const CAR_ABBR = TEAM_CONFIG.abbr;
 
 function computeWinPct(carStanding, oppStanding, game, playoffSeries) {
   if (!carStanding || !oppStanding) return null;
@@ -182,8 +179,6 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   const oppPts = oppStanding.points ?? 0;
   const carPP  = carStanding.powerPlayPct ?? 22;
   const oppPK  = oppStanding.penaltyKillPct ?? 80;
-  const carPK  = carStanding.penaltyKillPct ?? 80;
-  const oppPP  = oppStanding.powerPlayPct ?? 22;
 
   // Series record this playoff round (if applicable)
   const id = String(game.id);
@@ -225,8 +220,6 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   // Blend with market odds if available (60/40)
   let carModelPct = winResult?.pct ?? 50;
   if (carImplied) carModelPct = Math.round(carModelPct * 0.6 + carImplied * 0.4);
-  const carFavoured = carModelPct >= 50;
-
   const modelTooltip = [
     'How we predict:',
     '• GF/GP & GA/GP — offensive and defensive efficiency',
@@ -255,7 +248,6 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
 
   // ── Save prediction + track record ───────────────────────
   const predStats   = getPredictionStats();
-  const { useEffect } = window.React || {};
   return (
     <div className="matchup-detail card">
       {/* Tab bar: Prediction vs Scouting */}
@@ -409,7 +401,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
     </div>
   );
 }
-function PredictionAnalysis({ gameId, oppAbbr, oppColor }) {
+function PredictionAnalysis({ gameId, _oppAbbr, _oppColor }) {
   const [analysis,  setAnalysis]  = useState(null);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);

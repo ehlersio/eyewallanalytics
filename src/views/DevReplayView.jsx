@@ -6,15 +6,14 @@
  * Usage: enter a game ID, scrub or play through the game,
  *        watch all live UI (momentum, insights, topbar bar) respond in real time.
  */
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { getGameDetail, getGameBoxscore } from '../utils/nhlApi';
 import { DevGameContext } from '../utils/DevGameContext';
-import { publishClock, publishMomentum, publishMockLiveGame, clearMockLiveGame } from '../utils/liveClockStore';
+import { publishClock, publishMockLiveGame, clearMockLiveGame } from '../utils/liveClockStore';
 import { CURRENT_SEASON } from '../utils/teamConfig';
 import ShotMapView from './ShotMapView';
 import './DevReplayView.css';
 
-const CAR_TEAM_ID = 12;
 const PERIOD_SECS = 1200; // 20 minutes
 
 function playTimeSecs(play) {

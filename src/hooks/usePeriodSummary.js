@@ -147,7 +147,6 @@ function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlay
 
   // Period-end score from last goal or period-end event
   const lastGoal = goals[goals.length - 1];
-  const periodEndPlay = periodPlays.findLast(p => p.typeDescKey === 'period-end' || p.typeDescKey === 'game-end');
   const awayScore = lastGoal?.awayScore ?? null;
   const homeScore = lastGoal?.homeScore ?? null;
 
@@ -412,7 +411,7 @@ function saveStoredGame(gameId, summary) {
   } catch {}
 }
 
-export function useGameSummary({ pbp, isLive, gameId, carTeamId }) {
+export function useGameSummary({ pbp, _isLive, gameId, carTeamId }) {
   const [gameSummary, setGameSummary] = useState(null);
   const builtRef = useRef(false);
 

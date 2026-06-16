@@ -94,7 +94,7 @@ function CalendarView({ games, calMonth, setCalMonth, onGamePopup }) {
   );
 }
 
-function CalCell({ day, dateStr, game, isToday, onGamePopup }) {
+function CalCell({ day, _dateStr, game, isToday, onGamePopup }) {
   if (!game) {
     return (
       <div className={`cal-cell no-game ${isToday ? 'today' : ''}`}>

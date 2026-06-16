@@ -212,7 +212,7 @@ function StatRow({ def, value }) {
   )
 }
 
-function StatSection({ label, groups, highlight, isGoalie }) {
+function StatSection({ label, groups, highlight, _isGoalie }) {
   const [open, setOpen] = useState(highlight)
   return (
     <div className={`stat-section ${highlight ? 'highlight-section' : ''}`}>
@@ -226,7 +226,7 @@ function StatSection({ label, groups, highlight, isGoalie }) {
           {groups.map(({ group, items }) => (
             <div key={group} className="stat-group">
               <div className="stat-group-label">{group}</div>
-              {items.map(({ def, value, fmt }) => (
+              {items.map(({ def, value: _value, fmt }) => (
                 <StatRow key={def.key} def={def} value={fmt} />
               ))}
             </div>
@@ -239,7 +239,7 @@ function StatSection({ label, groups, highlight, isGoalie }) {
 
 // ─── Heat Map ─────────────────────────────────────────────────
 
-function PlayerHeatMap({ shotData, goalieShotData, playerName, isGoalie }) {
+function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
   const [filter, setFilter] = useState('all')
   const [mapMode, setMapMode] = useState('dots')
 
@@ -439,7 +439,6 @@ function PlayerHeatMap({ shotData, goalieShotData, playerName, isGoalie }) {
   const goals   = allEvents.filter(e => e.type === 'goal').length
   const sog     = allEvents.filter(e => e.type === 'shot-on-goal').length
   const missed  = allEvents.filter(e => e.type === 'missed-shot').length
-  const blocked = allEvents.filter(e => e.type === 'blocked-shot').length
   const total   = allEvents.length
   const sh      = (goals + sog) > 0 ? ((goals / (goals + sog)) * 100).toFixed(1) : '—'
 
@@ -506,7 +505,7 @@ function PercentileBar({ label, pct, note, na }) {
   )
 }
 
-function PlayerAnalytics({ mpData, goalieData, playerName, isGoalie, position }) {
+function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position }) {
   if (isGoalie) {
     if (!goalieData) {
       return (

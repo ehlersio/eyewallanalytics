@@ -4,7 +4,7 @@ import TeamLogo from './TeamLogo';
 import { TEAM_COLORS } from '../utils/nhlApi';
 import './Topbar.css';
 import AboutPopup from './AboutPopup';
-import { subscribeClock, getClockDisplay, publishClock, getMomentum, subscribeMomentum, subscribeMockLiveGame } from '../utils/liveClockStore';
+import { subscribeClock, getClockDisplay, publishClock, subscribeMomentum, subscribeMockLiveGame } from '../utils/liveClockStore';
 import NotificationBell from './NotificationBell';
 
 const POLL_LIVE_MS = 10_000;      // 10s — matches ShotMapView

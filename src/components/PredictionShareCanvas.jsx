@@ -13,8 +13,6 @@ import { capture } from '../utils/analytics';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import './PredictionCanvas.css';
 
-const BLANK_GIF = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-
 // ── Share canvas (off-screen, 1080×1080) ─────────────────────
 function PredictionCanvas({
   canvasRef, carModelPct, predCarScore, predOppScore,

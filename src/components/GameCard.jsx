@@ -4,7 +4,7 @@ import {
   formatGameDate, formatGameTime, TEAM_COLORS, TEAM_CONFIG,
 } from '../utils/nhlApi';
 import TeamLogo from '../components/TeamLogo';
-import { extractMoneyline, fmtOdds } from '../utils/nhlApi';
+import { fmtOdds } from '../utils/nhlApi';
 
 function SeriesCard({ series }) {
   const oppAbbr  = series.opponent?.abbrev || '???';
@@ -71,7 +71,7 @@ function SeriesCard({ series }) {
 
 // ── Sort bar ─────────────────────────────────────────────────
 
-function SortBar({ sortOrder, setSortOrder, completedCount, upcomingCount, label }) {
+function SortBar({ sortOrder, setSortOrder, completedCount, upcomingCount, _label }) {
   return (
     <div className="sort-bar">
       <span className="sort-bar-count">

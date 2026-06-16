@@ -58,11 +58,10 @@ export default function InfoTip({ label, text, position = 'auto' }) {
     if (!open) return;
     // Small delay prevents the opening tap from immediately triggering close
     // (touchstart fires on the same gesture that opened the tip on some mobile browsers)
-    let timerId;
     function close(e) {
       if (!wrapRef.current?.contains(e.target)) setOpen(false);
     }
-    timerId = setTimeout(() => {
+    const timerId = setTimeout(() => {
       document.addEventListener('mousedown',  close);
       document.addEventListener('touchstart', close, { passive: true });
     }, 50);
