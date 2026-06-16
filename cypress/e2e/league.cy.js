@@ -218,6 +218,57 @@ describe('League page — CAR', () => {
       cy.get('.bkt-root').should('be.visible')
       cy.get('.bkt-card').should('have.length.gte', 1)
     })
+
+    it('completed series cards have the clickable class', () => {
+      cy.get('.bkt-card--clickable').should('have.length.gte', 1)
+    })
+
+    it('clicking a completed series card opens the series modal', () => {
+      cy.get('.bkt-card--clickable').first().click()
+      cy.get('.series-modal', { timeout: 3000 }).should('be.visible')
+    })
+
+    it('series modal shows both team abbreviations', () => {
+      cy.get('.bkt-card--clickable').first().click()
+      cy.get('.series-modal', { timeout: 3000 }).should('be.visible')
+      cy.get('.series-modal__abbrev').should('have.length', 2)
+      cy.get('.series-modal__abbrev').first().invoke('text').should('match', /^[A-Z]{2,3}$/)
+    })
+
+    it('series modal shows win dots for both teams', () => {
+      cy.get('.bkt-card--clickable').first().click()
+      cy.get('.series-modal', { timeout: 3000 }).should('be.visible')
+      cy.get('.series-modal .bkt-dots').should('have.length', 2)
+    })
+
+    it('series modal shows game rows after loading', () => {
+      cy.get('.bkt-card--clickable').first().click()
+      cy.get('.series-modal', { timeout: 3000 }).should('be.visible')
+      // Wait for games to load — skeleton disappears, rows appear
+      cy.get('.series-modal__game-row', { timeout: 10000 }).should('have.length.gte', 1)
+    })
+
+    it('game rows show a score for each team', () => {
+      cy.get('.bkt-card--clickable').first().click()
+      cy.get('.series-modal__game-row', { timeout: 10000 }).first().within(() => {
+        cy.get('.series-modal__score').should('have.length', 2)
+        cy.get('.series-modal__score').first().invoke('text').should('match', /^\d+$/)
+      })
+    })
+
+    it('series modal closes when backdrop is clicked', () => {
+      cy.get('.bkt-card--clickable').first().click()
+      cy.get('.series-modal', { timeout: 3000 }).should('be.visible')
+      cy.get('.popup-backdrop').click({ force: true })
+      cy.get('.series-modal').should('not.exist')
+    })
+
+    it('series modal closes when ✕ button is clicked', () => {
+      cy.get('.bkt-card--clickable').first().click()
+      cy.get('.series-modal', { timeout: 3000 }).should('be.visible')
+      cy.get('.series-modal .pp-close').click()
+      cy.get('.series-modal').should('not.exist')
+    })
   })
 
   // ── Leaders tab ───────────────────────────────────────────────

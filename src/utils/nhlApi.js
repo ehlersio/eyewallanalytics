@@ -179,11 +179,64 @@ export async function getPlayoffBracket() {
   }, TTL.PLAYOFF_GAMES);
 }
 
-// Get all playoff series with results
-export async function getPlayoffSeries() {
-  return cached('playoffSeries', async () => {
-    const data = await nhlFetch(`${BASE}/playoff-series/carousel/${TEAM_CONFIG.season}`);
+// Get all playoff series with results (carousel — win counts only, no game scores)
+export async function getPlayoffSeries(season = TEAM_CONFIG.season) {
+  return cached(`playoffSeries:${season}`, async () => {
+    const data = await nhlFetch(`${BASE}/playoff-series/carousel/${season}`);
     return data?.rounds || [];
+  }, TTL.PLAYOFF_GAMES);
+}
+
+/**
+ * Fetch game-by-game results for one playoff series.
+ *
+ * Game ID formula: {seasonStart}03{round}{seriesNum}{gameNum}
+ *   seriesNum = letter position in alphabet (A=1 ... O=15, never resets per round)
+ *   round     = 1-4 (1=R1, 2=R2, 3=CF, 4=SCF)
+ *   gameNum   = 1-7
+ *
+ * Returns array of normalised game objects, completed games only:
+ *   { gameId, gameDate, awayAbbrev, homeAbbrev, awayScore, homeScore, periodType }
+ *   periodType: 'REG' | 'OT' | 'SO'
+ */
+export async function getPlayoffSeriesGames(season, seriesLetter, round) {
+  const cacheKey = `seriesGames:${season}:${seriesLetter}:${round}`;
+  return cached(cacheKey, async () => {
+    const seasonStart = String(season).slice(0, 4);
+    // seriesNum is position within the round (resets to 1 each round):
+    //   R1: A=1, B=2, C=3, D=4, E=5, F=6, G=7, H=8
+    //   R2: I=1, J=2, K=3, L=4
+    //   R3: M=1, N=2
+    //   R4: O=1
+    // Each round starts at a new base letter: R1=A(1), R2=I(9), R3=M(13), R4=O(15)
+    const ROUND_BASE  = [0, 1, 9, 13, 15]; // index = round number
+    const letterNum   = seriesLetter.toUpperCase().charCodeAt(0) - 64; // A=1
+    const seriesNum   = letterNum - (ROUND_BASE[round] ?? 0) + 1;
+    const COMPLETED   = ['OFF', 'FINAL', 'F', 'FINAL_OVERTIME', 'FINAL_SHOOTOUT'];
+
+    const fetches = Array.from({ length: 7 }, (_, i) => {
+      const gameNum = i + 1;
+      const roundPad = String(round).padStart(2, '0');
+      const gameId  = `${seasonStart}03${roundPad}${seriesNum}${gameNum}`;
+      return nhlFetch(`${BASE}/gamecenter/${gameId}/landing`)
+        .then(d => {
+          if (!d || !COMPLETED.includes(d.gameState)) return null;
+          const periodType = d.periodDescriptor?.periodType ?? 'REG';
+          return {
+            gameId,
+            gameDate:   d.gameDate,
+            awayAbbrev: d.awayTeam?.abbrev,
+            homeAbbrev: d.homeTeam?.abbrev,
+            awayScore:  d.awayTeam?.score ?? 0,
+            homeScore:  d.homeTeam?.score ?? 0,
+            periodType,
+          };
+        })
+        .catch(() => null);
+    });
+
+    const results = await Promise.all(fetches);
+    return results.filter(Boolean);
   }, TTL.PLAYOFF_GAMES);
 }
 

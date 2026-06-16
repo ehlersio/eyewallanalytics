@@ -10,6 +10,8 @@ import {
   getGoalLeaders,
   getGoalieLeaders,
   getPlayoffBracket,
+  getPlayoffSeries,
+  getPlayoffSeriesGames,
   TEAM_CONFIG,
 } from '../utils/nhlApi';
 import { getTeamSeasonData, getPowerRankingsNarrative, getPowerRankingsHistory } from '../utils/supabaseClient';
@@ -436,16 +438,17 @@ function TeamAbbr({ abbrev, isWinner, isEliminated }) {
   );
 }
 
-function SeriesCard({ series }) {
+function SeriesCard({ series, onSeriesClick }) {
   if (!series) return <div className="bkt-card bkt-card--empty" />;
 
   const { top, bottom, topWins, bottomWins } = series;
   const isPrimary  = top === PRIMARY || bottom === PRIMARY;
   const isComplete = topWins === 4 || bottomWins === 4;
+  const hasGames   = topWins + bottomWins > 0;
   const dash       = '\u2013';
 
   let label = null;
-  if (topWins + bottomWins > 0) {
+  if (hasGames) {
     if      (topWins    === 4)          label = `${top} wins 4${dash}${bottomWins}`;
     else if (bottomWins === 4)          label = `${bottom} wins 4${dash}${topWins}`;
     else if (topWins    === bottomWins) label = `Tied ${topWins}${dash}${bottomWins}`;
@@ -455,8 +458,12 @@ function SeriesCard({ series }) {
 
   return (
     <div
-      className={['bkt-card', isPrimary ? 'bkt-card--primary' : ''].filter(Boolean).join(' ')}
+      className={['bkt-card', isPrimary ? 'bkt-card--primary' : '', hasGames ? 'bkt-card--clickable' : ''].filter(Boolean).join(' ')}
       style={isPrimary ? { borderColor: PRIMARY_COLOR } : undefined}
+      onClick={hasGames && onSeriesClick ? () => onSeriesClick(series) : undefined}
+      role={hasGames && onSeriesClick ? 'button' : undefined}
+      tabIndex={hasGames && onSeriesClick ? 0 : undefined}
+      onKeyDown={hasGames && onSeriesClick ? (e => e.key === 'Enter' && onSeriesClick(series)) : undefined}
     >
       <div className="bkt-team-row">
         <TeamAbbr abbrev={top} isEliminated={isComplete && topWins !== 4} />
@@ -526,14 +533,14 @@ function Connector({ count, direction, straight }) {
 
 const ROUND_LABELS = { 1: 'First round', 2: 'Second round', 3: 'Conf. finals' };
 
-function RoundCol({ round, label }) {
+function RoundCol({ round, label, onSeriesClick }) {
   return (
     <div className="bkt-round-col">
       <div className="bkt-round-label">{label ?? ROUND_LABELS[round.round] ?? `Round ${round.round}`}</div>
       <div className="bkt-round-series">
         {round.series.map((s, i) => (
           <div key={i} className="bkt-series-slot">
-            <SeriesCard series={s} />
+            <SeriesCard series={s} onSeriesClick={onSeriesClick} />
           </div>
         ))}
       </div>
@@ -543,17 +550,24 @@ function RoundCol({ round, label }) {
 
 // ── Cup Final center ──
 
-function CupFinalCol({ series }) {
+function CupFinalCol({ series, onSeriesClick }) {
   if (!series) return null;
   const { top, bottom, topWins, bottomWins } = series;
   const winner      = topWins === 4 ? top : bottomWins === 4 ? bottom : null;
   const isComplete  = topWins === 4 || bottomWins === 4;
+  const hasGames    = topWins + bottomWins > 0;
 
   return (
     <div className="bkt-final-col">
       <div className="bkt-round-label">Stanley Cup Final</div>
       <div className="bkt-final-center">
-        <div className="bkt-card bkt-card--final">
+        <div
+          className={['bkt-card bkt-card--final', hasGames ? 'bkt-card--clickable' : ''].join(' ')}
+          onClick={hasGames && onSeriesClick ? () => onSeriesClick(series) : undefined}
+          role={hasGames && onSeriesClick ? 'button' : undefined}
+          tabIndex={hasGames && onSeriesClick ? 0 : undefined}
+          onKeyDown={hasGames && onSeriesClick ? (e => e.key === 'Enter' && onSeriesClick(series)) : undefined}
+        >
           <div className="bkt-team-row">
             <TeamAbbr abbrev={top} isEliminated={isComplete && topWins !== 4} />
             <WinDots wins={topWins} color={TEAM_COLORS[top]} />
@@ -573,15 +587,148 @@ function CupFinalCol({ series }) {
   );
 }
 
+// ── Series Modal ──
+
+function SeriesModal({ series, carouselRounds, season, onClose }) {
+  const { top, bottom, topWins, bottomWins } = series;
+  const dash = '\u2013';
+
+  // Find matching series in carousel to get seriesLetter + roundNumber
+  const carouselSeries = React.useMemo(() => {
+    if (!carouselRounds?.length) return null;
+    for (const round of carouselRounds) {
+      for (const s of (round.series || [])) {
+        const a = s.topSeed?.abbrev;
+        const b = s.bottomSeed?.abbrev;
+        if ((a === top && b === bottom) || (a === bottom && b === top) ||
+            (a === top && b === bottom) || (b === top && a === bottom)) {
+          return { ...s, roundNumber: round.roundNumber };
+        }
+      }
+    }
+    return null;
+  }, [carouselRounds, top, bottom]);
+
+  const seriesLetter = carouselSeries?.seriesLetter ?? null;
+  const roundNumber  = carouselSeries?.roundNumber  ?? null;
+
+  const { data: games, loading: gamesLoading } = useFetch(
+    () => seriesLetter && roundNumber
+      ? getPlayoffSeriesGames(season, seriesLetter, roundNumber)
+      : Promise.resolve([]),
+    [seriesLetter, roundNumber, season]
+  );
+
+  const topColor    = TEAM_COLORS[top]    ?? 'var(--text)';
+  const bottomColor = TEAM_COLORS[bottom] ?? 'var(--text)';
+  const winner      = topWins === 4 ? top : bottomWins === 4 ? bottom : null;
+  const isComplete  = topWins === 4 || bottomWins === 4;
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso + 'T12:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function periodLabel(periodType) {
+    if (periodType === 'OT')  return 'OT';
+    if (periodType === 'SO')  return 'SO';
+    return '';
+  }
+
+  return (
+    <div className="popup-backdrop" onClick={onClose}>
+      <div className="series-modal" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="series-modal__header">
+          <div className="series-modal__teams">
+            <span className="series-modal__abbrev" style={{ color: topColor }}>{top}</span>
+            <div className="series-modal__dots-wrap">
+              <WinDots wins={topWins} color={topColor} />
+              <span className="series-modal__dash">{dash}</span>
+              <WinDots wins={bottomWins} color={bottomColor} />
+            </div>
+            <span className="series-modal__abbrev" style={{ color: bottomColor }}>{bottom}</span>
+          </div>
+          {winner && (
+            <div className="series-modal__result" style={{ color: TEAM_COLORS[winner] }}>
+              {winner} wins 4{dash}{winner === top ? bottomWins : topWins} 🏆
+            </div>
+          )}
+          {!winner && topWins + bottomWins > 0 && (
+            <div className="series-modal__result">
+              {topWins > bottomWins ? `${top} leads` : topWins < bottomWins ? `${bottom} leads` : 'Tied'} {Math.max(topWins, bottomWins)}{dash}{Math.min(topWins, bottomWins)}
+            </div>
+          )}
+          <button className="pp-close" onClick={onClose} aria-label="Close series">✕</button>
+        </div>
+
+        {/* Round label */}
+        {carouselSeries && (
+          <div className="series-modal__round-label">
+            {carouselSeries.seriesLabel ?? `Series ${seriesLetter}`}
+          </div>
+        )}
+
+        {/* Game-by-game */}
+        <div className="series-modal__games">
+          {gamesLoading && (
+            <div className="series-modal__loading">
+              {[70, 85, 70, 85].map((w, i) => (
+                <div key={i} className="skeleton" style={{ height: 32, width: `${w}%`, marginBottom: 6, borderRadius: 6 }} />
+              ))}
+            </div>
+          )}
+
+          {!gamesLoading && games?.length === 0 && (
+            <div className="series-modal__empty">Game data unavailable for this series.</div>
+          )}
+
+          {!gamesLoading && games?.map((g, i) => {
+            const awayWon = g.awayScore > g.homeScore;
+            const homeWon = g.homeScore > g.awayScore;
+            const extra   = periodLabel(g.periodType);
+            const awayColor = TEAM_COLORS[g.awayAbbrev] ?? 'var(--text)';
+            const homeColor = TEAM_COLORS[g.homeAbbrev] ?? 'var(--text)';
+            return (
+              <div key={g.gameId} className="series-modal__game-row">
+                <span className="series-modal__game-num">G{i + 1}</span>
+                <span className="series-modal__game-date">{fmtDate(g.gameDate)}</span>
+                <span className="series-modal__team-score">
+                  <span className="series-modal__team-abbrev" style={{ color: awayColor, fontWeight: awayWon ? 700 : 400 }}>{g.awayAbbrev}</span>
+                  <span className={`series-modal__score ${awayWon ? 'series-modal__score--win' : ''}`}>{g.awayScore}</span>
+                </span>
+                <span className="series-modal__separator">–</span>
+                <span className="series-modal__team-score series-modal__team-score--home">
+                  <span className={`series-modal__score ${homeWon ? 'series-modal__score--win' : ''}`}>{g.homeScore}</span>
+                  <span className="series-modal__team-abbrev" style={{ color: homeColor, fontWeight: homeWon ? 700 : 400 }}>{g.homeAbbrev}</span>
+                </span>
+                {extra && <span className="series-modal__extra">{extra}</span>}
+              </div>
+            );
+          })}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 // ── Main BracketPanel ──
 
 function BracketPanel({ data }) {
+  const [selectedSeries, setSelectedSeries] = useState(null);
+
   const bracket = useMemo(() => {
-    // Live API data takes priority. If it returns nothing (offseason 404,
-    // post-Final cleanup, or any other gap), fall back to the last completed
-    // bracket — always better than a blank screen.
     return parseBracketData(data) ?? OFFSEASON_BRACKET;
   }, [data]);
+
+  // Fetch carousel for seriesLetter lookup — only when bracket tab is active
+  const { data: carouselRounds } = useFetch(
+    () => getPlayoffSeries(SEASON),
+    [SEASON]
+  );
 
   if (!bracket) {
     return (
@@ -594,43 +741,54 @@ function BracketPanel({ data }) {
   const { east, west, final } = bracket;
 
   return (
-    <div className="bkt-root">
-      <div className="bkt-bracket">
+    <>
+      <div className="bkt-root">
+        <div className="bkt-bracket">
 
-        {/* East rounds — left side, connectors flow right */}
-        {east.map((round, ri) => (
-          <React.Fragment key={`e${ri}`}>
-            <RoundCol round={round} />
-            {ri < east.length - 1 && (
-              <Connector count={round.series.length} direction="right" />
-            )}
-          </React.Fragment>
-        ))}
-
-        {/* Connector: Conf Finals → Cup Final (straight horizontal) */}
-        <Connector count={1} direction="right" straight />
-
-        {/* Cup Final */}
-        <CupFinalCol series={final} />
-
-        {/* Connector: Cup Final → Conf Finals (straight horizontal) */}
-        <Connector count={1} direction="left" straight />
-
-        {/* West rounds — right side, reversed so deepest round is innermost */}
-        {[...west].reverse().map((round, ri) => {
-          const originalIndex = west.length - 1 - ri;
-          return (
-            <React.Fragment key={`w${originalIndex}`}>
-              {ri > 0 && (
-                <Connector count={round.series.length} direction="left" />
+          {/* East rounds — left side, connectors flow right */}
+          {east.map((round, ri) => (
+            <React.Fragment key={`e${ri}`}>
+              <RoundCol round={round} onSeriesClick={setSelectedSeries} />
+              {ri < east.length - 1 && (
+                <Connector count={round.series.length} direction="right" />
               )}
-              <RoundCol round={round} />
             </React.Fragment>
-          );
-        })}
+          ))}
 
+          {/* Connector: Conf Finals → Cup Final (straight horizontal) */}
+          <Connector count={1} direction="right" straight />
+
+          {/* Cup Final */}
+          <CupFinalCol series={final} onSeriesClick={setSelectedSeries} />
+
+          {/* Connector: Cup Final → Conf Finals (straight horizontal) */}
+          <Connector count={1} direction="left" straight />
+
+          {/* West rounds — right side, reversed so deepest round is innermost */}
+          {[...west].reverse().map((round, ri) => {
+            const originalIndex = west.length - 1 - ri;
+            return (
+              <React.Fragment key={`w${originalIndex}`}>
+                {ri > 0 && (
+                  <Connector count={round.series.length} direction="left" />
+                )}
+                <RoundCol round={round} onSeriesClick={setSelectedSeries} />
+              </React.Fragment>
+            );
+          })}
+
+        </div>
       </div>
-    </div>
+
+      {selectedSeries && (
+        <SeriesModal
+          series={selectedSeries}
+          carouselRounds={carouselRounds}
+          season={SEASON}
+          onClose={() => setSelectedSeries(null)}
+        />
+      )}
+    </>
   );
 }
 
