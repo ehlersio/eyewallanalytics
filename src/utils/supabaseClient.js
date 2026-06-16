@@ -370,6 +370,38 @@ export async function getTeamGameLog(count = 120, season = 20252026, teamAbbr = 
     pkOpps:          r.pk_opps,
   }));
 }
+
+// Fetches team_seasons data needed for power rankings:
+// xgf_pct + roster_war_score for all 32 teams.
+// Replaces the earlier getTeamSeasonXg — same call, extra column.
+export async function getTeamSeasonData(season = 20252026) {
+  const rows = await sbFetch(
+    `team_seasons?season=eq.${season}&game_type=eq.2` +
+    `&select=team,xgf_pct,roster_war_score,games_played&limit=32`
+  ).catch(() => []);
+  const map = {};
+  for (const r of (rows || [])) {
+    map[r.team] = {
+      xgfPct:       r.xgf_pct,
+      rosterWar:    r.roster_war_score,
+      gp:           r.games_played,
+    };
+  }
+  return map;
+}
+
+// Fetches the most recent power rankings narrative for the user's team.
+// Returns { narrative, rank, prior_rank, generated_date } or null.
+export async function getPowerRankingsNarrative(teamAbbr, season = 20252026) {
+  const rows = await sbFetch(
+    `power_rankings_narratives` +
+    `?team=eq.${teamAbbr}&season=eq.${season}` +
+    `&order=generated_date.desc&limit=1` +
+    `&select=narrative,rank,prior_rank,generated_date`
+  ).catch(() => []);
+  return rows?.[0] ?? null;
+}
+
 // ── Game matchup analysis ────────────────────────────────────
 // Returns the AI-generated line/player matchup analysis, or null if none exists.
 export async function getGameMatchup(gameId) {

@@ -53,11 +53,12 @@ describe('League page — CAR', () => {
 
   // ── Tab bar ──────────────────────────────────────────────────
 
-  it('renders all three tab buttons', () => {
-    cy.get('.league-tab').should('have.length', 3)
+  it('renders all four tab buttons', () => {
+    cy.get('.league-tab').should('have.length', 4)
     cy.get('.league-tab').eq(0).should('contain', 'Standings')
     cy.get('.league-tab').eq(1).should('contain', 'Playoff bracket')
     cy.get('.league-tab').eq(2).should('contain', 'Leaders')
+    cy.get('.league-tab').eq(3).should('contain', 'Power rankings')
   })
 
   it('Standings tab is active by default', () => {
@@ -300,6 +301,122 @@ describe('League page — CAR', () => {
           cy.wrap(youRows.first()).find('.lv-leaders-team').should('contain', 'CAR')
         }
       })
+    })
+  })
+  // ── Power Rankings tab ───────────────────────────────────────
+
+  describe('Power rankings tab', () => {
+    beforeEach(() => cy.get('.league-tab').contains('Power rankings').click())
+
+    it('makes Power rankings the active tab', () => {
+      cy.get('.league-tab').contains('Power rankings').should('have.class', 'league-tab--active')
+      cy.get('.league-tab').contains('Standings').should('not.have.class', 'league-tab--active')
+    })
+
+    it('shows 32 ranked rows', () => {
+      cy.get('.pr-row', { timeout: 10000 }).should('have.length', 32)
+    })
+
+    it('first row has rank 1', () => {
+      cy.get('.pr-rank-num').first().should('contain', '1')
+    })
+
+    it('last row has rank 32', () => {
+      cy.get('.pr-rank-num').last().should('contain', '32')
+    })
+
+    it('shows column headers Pts%, L10, xGF%, GD/GP', () => {
+      cy.get('.pr-table-header-row').should('contain', 'Pts%')
+      cy.get('.pr-table-header-row').should('contain', 'L10')
+      cy.get('.pr-table-header-row').should('contain', 'xGF%')
+      cy.get('.pr-table-header-row').should('contain', 'GD/GP')
+    })
+
+    it('shows team abbreviations in each row', () => {
+      cy.get('.pr-abbr').first().invoke('text').should('match', /^[A-Z]{2,3}$/)
+    })
+
+    it('shows Pts% as a percentage value', () => {
+      cy.get('.pr-row').first().find('.pr-col-stat').first()
+        .invoke('text').should('match', /\d+\.\d%/)
+    })
+
+    it('shows YOU badge on CAR row', () => {
+      cy.get('.pr-row--you').should('exist')
+      cy.get('.pr-row--you').find('.lv-you-badge').should('contain', 'YOU')
+    })
+
+    it('top 8 ranks are styled with pr-rank--top class', () => {
+      cy.get('.pr-rank--top').should('have.length', 8)
+    })
+
+    it('bottom 8 ranks are styled with pr-rank--bot class', () => {
+      cy.get('.pr-rank--bot').should('have.length', 8)
+    })
+
+    it('shows "How is this calculated?" toggle', () => {
+      cy.get('.pr-how-toggle').scrollIntoView().should('exist')
+      cy.get('.pr-how-toggle').should('contain', 'How is this calculated?')
+    })
+
+    it('how-toggle expands and collapses the explanation', () => {
+      cy.get('.pr-how-body').should('not.exist')
+      cy.get('.pr-how-toggle').click()
+      cy.get('.pr-how-body').should('be.visible')
+      cy.get('.pr-how-toggle').click()
+      cy.get('.pr-how-body').should('not.exist')
+    })
+
+    it('expanded explanation shows all six components', () => {
+      cy.get('.pr-how-toggle').click()
+      cy.get('.pr-how-item').should('have.length', 6)
+      cy.get('.pr-how-item').eq(0).should('contain', 'Points %')
+      cy.get('.pr-how-item').eq(1).should('contain', 'L10 Points %')
+      cy.get('.pr-how-item').eq(2).should('contain', 'Goal Differential')
+      cy.get('.pr-how-item').eq(3).should('contain', '5v5 xGF%')
+      cy.get('.pr-how-item').eq(4).should('contain', 'Special Teams')
+      cy.get('.pr-how-item').eq(5).should('contain', 'Roster WAR')
+    })
+
+    it('each component shows a weight percentage', () => {
+      cy.get('.pr-how-toggle').click()
+      cy.get('.pr-how-weight').should('have.length', 6)
+      cy.get('.pr-how-weight').each($el => {
+        cy.wrap($el).invoke('text').should('match', /\d+%/)
+      })
+    })
+
+    it('shows Roster WAR component in explanation', () => {
+      cy.get('.pr-how-toggle').click()
+      cy.get('.pr-how-item').should('have.length', 6)
+      cy.get('.pr-how-item').eq(5).should('contain', 'Roster WAR')
+    })
+
+    it('shows narrative card when AI narrative exists', () => {
+      // Narrative only exists after first pipeline run — check presence first
+      cy.get('body').then($body => {
+        if ($body.find('.pr-narrative-card').length) {
+          cy.get('.pr-narrative-card').find('.pr-narrative-label').should('contain', 'EyeWall AI')
+          cy.get('.pr-narrative-card').find('.pr-narrative-text').invoke('text').should('have.length.greaterThan', 20)
+          cy.get('.pr-narrative-card').find('.pr-narrative-date').should('exist')
+        }
+        // If no narrative yet, test passes silently — pipeline hasn't run
+      })
+    })
+
+    it('shows movement arrow on YOU row when prior rank exists', () => {
+      // Movement arrow only appears after first baseline run
+      cy.get('.pr-row--you').then($row => {
+        const $mvmt = $row.find('.pr-mvmt')
+        if ($mvmt.length) {
+          cy.wrap($mvmt).invoke('text').should('match', /^(▲\d+|▼\d+|—)$/)
+        }
+      })
+    })
+
+    it('shows export button', () => {
+      cy.get('.md-export-btn').scrollIntoView().should('exist')
+      cy.get('.md-export-btn').should('contain', 'Save Rankings Card')
     })
   })
 })

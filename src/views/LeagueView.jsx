@@ -12,8 +12,10 @@ import {
   getPlayoffBracket,
   TEAM_CONFIG,
 } from '../utils/nhlApi';
+import { getTeamSeasonData, getPowerRankingsNarrative } from '../utils/supabaseClient';
 import { ALL_TEAMS } from '../utils/teamConfig';
 import './LeagueView.css';
+import '../components/PredictionCanvas.css';
 
 const PRIMARY = TEAM_CONFIG.abbr;
 const SEASON  = TEAM_CONFIG.season;
@@ -612,12 +614,487 @@ function ErrorState({ message }) {
   );
 }
 
+// ─── Power Rankings ───────────────────────────────────────────────────────────
+
+/**
+ * Rank all 32 teams using five weighted, normalised components plus a
+ * roster talent prior (WAR) that tapers off as the season progresses.
+ *
+ * Components (full season, alpha = 1.0):
+ *   Points %       25%  — season-long win rate
+ *   L10 points %   25%  — recent form (drives weekly movement)
+ *   Goal diff/GP   20%  — scoring margin strength
+ *   5v5 xGF%       20%  — true possession quality (MoneyPuck, nightly)
+ *   Special teams  10%  — avg of PP% and PK%
+ *
+ * Roster WAR blending (early season):
+ *   alpha = min(maxGP / 20, 1.0) — reaches 1.0 by game 20
+ *   rosterWeight = 0.15 * (1 - alpha) — tapers from 15% → 0%
+ *   Other weights scale proportionally to fill the remaining 85%→100%.
+ */
+function computePowerRankings(standings, xgData) {
+  if (!standings?.length) return [];
+
+  const maxGP = Math.max(...standings.map(t => t.gamesPlayed || 0));
+  const alpha = Math.min(maxGP / 20, 1.0);
+  const wWar  = 0.15 * (1 - alpha);
+  const scale = 1 - wWar;
+
+  const W = {
+    pts: 0.25 * scale,
+    l10: 0.25 * scale,
+    gd:  0.20 * scale,
+    xgf: 0.20 * scale,
+    sp:  0.10 * scale,
+    war: wWar,
+  };
+
+  const teams = standings.map(t => {
+    const abbr = t.teamAbbrev?.default ?? t.teamAbbrev;
+    const gp   = t.gamesPlayed || 1;
+
+    const l10w  = t.l10Wins     ?? 0;
+    const l10l  = t.l10Losses   ?? 0;
+    const l10ot = t.l10OtLosses ?? 0;
+    const l10gp = (l10w + l10l + l10ot) || 10;
+
+    const rawPp = t.powerPlayPct   ?? t.ppPct ?? 0;
+    const rawPk = t.penaltyKillPct ?? t.pkPct ?? 0;
+    const ppPct = rawPp > 1 ? rawPp / 100 : rawPp;
+    const pkPct = rawPk > 1 ? rawPk / 100 : rawPk;
+
+    return {
+      abbr,
+      gp,
+      wins:      t.wins     ?? 0,
+      losses:    t.losses   ?? 0,
+      otLosses:  t.otLosses ?? 0,
+      ptsPct:    (t.points ?? 0) / (gp * 2),
+      l10PtsPct: ((l10w * 2) + l10ot) / (l10gp * 2),
+      gdPG:      ((t.goalFor ?? t.goalsFor ?? 0) - (t.goalAgainst ?? t.goalsAgainst ?? 0)) / gp,
+      xgfPct:    xgData?.[abbr]?.xgfPct    ?? null,
+      rosterWar: xgData?.[abbr]?.rosterWar ?? null,
+      spPct:     (ppPct + pkPct) / 2,
+      ppPct,
+      pkPct,
+      l10: `${l10w}-${l10l}-${l10ot}`,
+    };
+  });
+
+  function normalise(key) {
+    const vals  = teams.map(t => t[key]).filter(v => v != null);
+    if (!vals.length) return () => 0.5;
+    const min   = Math.min(...vals);
+    const range = Math.max(...vals) - min || 1;
+    return (v) => v == null ? 0.5 : (v - min) / range;
+  }
+
+  const normPts = normalise('ptsPct');
+  const normL10 = normalise('l10PtsPct');
+  const normGD  = normalise('gdPG');
+  const normXGF = normalise('xgfPct');
+  const normSP  = normalise('spPct');
+  const normWar = normalise('rosterWar');
+
+  // Per-component league rank for display (1 = best)
+  function leagueRank(key) {
+    const sorted = [...teams].sort((a, b) => (b[key] ?? -Infinity) - (a[key] ?? -Infinity));
+    const map = {};
+    sorted.forEach((t, i) => { map[t.abbr] = i + 1; });
+    return map;
+  }
+  const rankPts = leagueRank('ptsPct');
+  const rankL10 = leagueRank('l10PtsPct');
+  const rankGD  = leagueRank('gdPG');
+  const rankXGF = leagueRank('xgfPct');
+  const rankSP  = leagueRank('spPct');
+
+  return teams
+    .map(t => ({
+      ...t,
+      score:
+        normPts(t.ptsPct)    * W.pts +
+        normL10(t.l10PtsPct) * W.l10 +
+        normGD(t.gdPG)       * W.gd  +
+        normXGF(t.xgfPct)    * W.xgf +
+        normSP(t.spPct)      * W.sp  +
+        normWar(t.rosterWar) * W.war,
+      leagueRanks: {
+        pts: rankPts[t.abbr],
+        l10: rankL10[t.abbr],
+        gd:  rankGD[t.abbr],
+        xgf: rankXGF[t.abbr],
+        sp:  rankSP[t.abbr],
+      },
+    }))
+    .sort((a, b) => b.score - a.score)
+    .map((t, i) => ({ ...t, rank: i + 1 }));
+}
+
+// ─── Movement arrow ───────────────────────────────────────────────────────────
+
+function MovementArrow({ current, prior }) {
+  if (prior == null) return null;
+  const diff = prior - current; // positive = moved up
+  if (diff === 0) return <span className="pr-mvmt pr-mvmt--flat">—</span>;
+  if (diff > 0)   return <span className="pr-mvmt pr-mvmt--up">▲{diff}</span>;
+  return              <span className="pr-mvmt pr-mvmt--down">▼{Math.abs(diff)}</span>;
+}
+
+// ─── Rankings Panel ───────────────────────────────────────────────────────────
+
+function RankingsPanel({ standings, xgData, xgLoading, narrative }) {
+  const [showHow,    setShowHow]    = useState(false);
+  const [canvasMounted, setCanvasMounted] = useState(false);
+  const [exporting,  setExporting]  = useState(false);
+  const ranked  = computePowerRankings(standings, xgData);
+  const loading = !standings?.length || xgLoading;
+
+  // Find this team's rank + prior for movement
+  const myData    = ranked.find(t => t.abbr === PRIMARY);
+  const priorRank = narrative?.prior_rank ?? null;
+
+  const handleExport = async () => {
+    setExporting(true);
+    if (!canvasMounted) {
+      setCanvasMounted(true);
+      await new Promise(r => setTimeout(r, 120));
+    }
+    try {
+      const { toPng } = await import('html-to-image');
+      const node = document.getElementById('pr-export-canvas');
+      if (!node) return;
+      const dataUrl = await toPng(node, {
+        width: 1080, height: 1080, skipFonts: true,
+        imagePlaceholder: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+        style: { position: 'static', left: '0', top: '0' },
+      });
+      const link = document.createElement('a');
+      link.download = `EyeWall-PowerRankings-${PRIMARY}.png`;
+      link.href = dataUrl;
+      link.click();
+      capture('power_rankings_card_exported', { team: PRIMARY, rank: myData?.rank });
+    } catch (e) {
+      console.error('Rankings export failed:', e);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="lv-skeleton-wrap" aria-busy="true">
+        {[85, 90, 85, 95, 85, 90, 85, 90, 85, 95].map((w, i) => (
+          <div key={i} className="lv-skeleton-row" style={{ width: `${w}%` }} />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+      {/* AI narrative card */}
+      {narrative?.narrative && (
+        <div className="lv-div-card lv-div-card--wide pr-narrative-card" style={{ marginTop: 4 }}>
+          <div className="pr-narrative-label">⚡ EyeWall AI — {PRIMARY} Rankings Report</div>
+          <p className="pr-narrative-text">{narrative.narrative}</p>
+          {narrative.generated_date && (
+            <span className="pr-narrative-date">
+              Updated {new Date(narrative.generated_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Rankings table */}
+      <div className="lv-div-card lv-div-card--wide">
+        <div className="pr-table-header-row">
+          <span className="pr-col-rank">#</span>
+          <span className="pr-col-mvmt"></span>
+          <span className="pr-col-team">Team</span>
+          <span className="pr-col-stat">Pts%</span>
+          <span className="pr-col-stat">L10</span>
+          <span className="pr-col-stat">xGF%</span>
+          <span className="pr-col-stat">GD/GP</span>
+        </div>
+
+        {ranked.map(t => {
+          const isPrimary = t.abbr === PRIMARY;
+          // Show movement arrow only for the primary team (we only have their prior rank)
+          const showArrow = isPrimary && priorRank != null;
+          return (
+            <div
+              key={t.abbr}
+              className={`pr-row${isPrimary ? ' pr-row--you' : ''}`}
+              style={isPrimary ? {
+                '--row-accent': PRIMARY_COLOR,
+                borderLeft: `3px solid ${PRIMARY_COLOR}`,
+                background: `color-mix(in srgb, ${PRIMARY_COLOR} 8%, var(--surface))`,
+              } : {}}
+            >
+              <span className="pr-col-rank">
+                <span className={`pr-rank-num${t.rank <= 8 ? ' pr-rank--top' : t.rank >= 25 ? ' pr-rank--bot' : ''}`}>
+                  {t.rank}
+                </span>
+              </span>
+              <span className="pr-col-mvmt">
+                {showArrow && <MovementArrow current={t.rank} prior={priorRank} />}
+              </span>
+              <span className="pr-col-team">
+                <span className="pr-abbr" style={{ color: TEAM_COLORS[t.abbr] ?? 'var(--text)' }}>
+                  {t.abbr}
+                </span>
+                {isPrimary && (
+                  <span className="lv-you-badge" style={{ color: PRIMARY_COLOR, background: `${PRIMARY_COLOR}26` }}>
+                    YOU
+                  </span>
+                )}
+              </span>
+              <span className="pr-col-stat">{(t.ptsPct * 100).toFixed(1)}%</span>
+              <span className="pr-col-stat">{t.l10}</span>
+              <span className="pr-col-stat">
+                {t.xgfPct != null ? `${(t.xgfPct * 100).toFixed(1)}%` : '—'}
+              </span>
+              <span className={`pr-col-stat${t.gdPG > 0 ? ' pr-gd--pos' : t.gdPG < 0 ? ' pr-gd--neg' : ''}`}>
+                {t.gdPG > 0 ? '+' : ''}{t.gdPG.toFixed(2)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Export button */}
+      <button className="md-export-btn" onClick={handleExport} disabled={exporting || !myData}>
+        {exporting ? '⏳ Saving…' : '📸 Save Rankings Card'}
+      </button>
+
+      {/* How is this calculated? */}
+      <div className="lv-div-card lv-div-card--wide">
+        <button className="pr-how-toggle" onClick={() => setShowHow(v => !v)} aria-expanded={showHow}>
+          <span>How is this calculated?</span>
+          <span className="pr-how-chevron">{showHow ? '▲' : '▼'}</span>
+        </button>
+
+        {showHow && (
+          <div className="pr-how-body">
+            <p className="pr-how-text">
+              Rankings are computed from five components plus a roster talent prior
+              that tapers off as the season progresses. Each component is normalised
+              relative to the rest of the league (best team = 1.0, worst = 0.0) before
+              weighting, so rankings reflect where a team stands <em>right now</em>.
+            </p>
+
+            {[
+              {
+                label: 'Points %', weight: '25%',
+                desc: 'Points earned divided by maximum possible (games played × 2). The primary measure of season-long success.',
+                source: 'NHL standings',
+              },
+              {
+                label: 'L10 Points %', weight: '25%',
+                desc: 'Same formula applied to the last 10 games only. This is what moves rankings week to week — a hot team climbs, a cold team falls regardless of earlier results.',
+                source: 'NHL standings',
+              },
+              {
+                label: 'Goal Differential / GP', weight: '20%',
+                desc: 'Goals scored minus goals allowed per game. Teams that win convincingly rank higher than teams that constantly squeak by one goal.',
+                source: 'NHL standings',
+              },
+              {
+                label: '5v5 xGF%', weight: '20%',
+                desc: 'Expected goals for % at even strength — the share of shot quality a team generates versus allows at 5-on-5. Filters out goaltending and shooting luck that inflate or deflate raw goal totals.',
+                source: 'MoneyPuck (updated nightly)',
+              },
+              {
+                label: 'Special Teams', weight: '10%',
+                desc: 'Average of power play % and penalty kill %. Weighted lower than even-strength play because special teams frequency and opponent quality vary.',
+                source: 'NHL standings',
+              },
+              {
+                label: 'Roster WAR', weight: '0–15%',
+                desc: 'Sum of the top-18 skaters\' Wins Above Replacement plus the starter\'s Goals Saved Above Expected. Weighted at 15% at game 0, tapering to 0% by game 20. Ensures pre-season and early-season rankings reflect roster quality rather than a handful of fluky results.',
+                source: 'MoneyPuck / EyeWall RAPM model (updated nightly)',
+              },
+            ].map(c => (
+              <div key={c.label} className="pr-how-item">
+                <div className="pr-how-item-header">
+                  <span className="pr-how-item-label">{c.label}</span>
+                  <span className="pr-how-weight">{c.weight}</span>
+                </div>
+                <p className="pr-how-text">{c.desc}</p>
+                <span className="pr-how-source">Source: {c.source}</span>
+              </div>
+            ))}
+
+            <p className="pr-how-text" style={{ marginTop: 4 }}>
+              xGF% and Roster WAR show <em>—</em> until the first nightly pipeline
+              run populates them. All other components still produce a valid rank.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Off-screen export canvas */}
+      {canvasMounted && myData && (
+        <PowerRankingsCanvas
+          ranked={ranked}
+          myTeam={myData}
+          priorRank={priorRank}
+          narrative={narrative?.narrative ?? null}
+          primaryColor={PRIMARY_COLOR}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Power Rankings Export Canvas (1080×1080, off-screen) ────────────────────
+
+function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, primaryColor }) {
+  const logoUrl = abbr => `/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
+  const diff = priorRank != null ? priorRank - myTeam.rank : null;
+  const mvmtLabel = diff == null ? null : diff === 0 ? '—' : diff > 0 ? `▲${diff}` : `▼${Math.abs(diff)}`;
+  const mvmtColor = diff == null || diff === 0 ? 'rgba(255,255,255,0.5)' : diff > 0 ? '#4ade80' : '#f87171';
+
+  // Top 15 + team's neighbourhood if outside top 15
+  const inTop15 = myTeam.rank <= 15;
+  const displayRows = ranked.filter(t =>
+    t.rank <= 15 || (!inTop15 && Math.abs(t.rank - myTeam.rank) <= 2)
+  );
+
+  return (
+    <div
+      id="pr-export-canvas"
+      className="pred-canvas"
+      style={{ '--team-canvas': primaryColor, background: '#1a1a2e' }}
+    >
+      {/* Header */}
+      <div className="pred-canvas-header">
+        <img src="/eyewall-logo.svg" alt="EyeWall" className="pred-canvas-logo"
+          onError={e => { e.target.style.display = 'none'; }} />
+        <span className="pred-canvas-badge">Power Rankings</span>
+      </div>
+
+      {/* Hero — team logo, rank, movement, component bars */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '0 52px 20px', borderBottom: '0.5px solid rgba(255,255,255,0.07)' }}>
+        <img src={logoUrl(myTeam.abbr)} alt={myTeam.abbr}
+          style={{ width: 80, height: 80, objectFit: 'contain' }}
+          onError={e => { e.target.style.display = 'none'; }} />
+
+        <div style={{ minWidth: 160 }}>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
+            {myTeam.abbr} · {myTeam.wins}–{myTeam.losses}–{myTeam.otLosses}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+            <span style={{ fontSize: 72, fontWeight: 900, color: 'var(--team-canvas)', lineHeight: 1 }}>
+              #{myTeam.rank}
+            </span>
+            {mvmtLabel && (
+              <span style={{ fontSize: 26, fontWeight: 700, color: mvmtColor }}>{mvmtLabel}</span>
+            )}
+          </div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>of 32 teams</div>
+        </div>
+
+        {/* Component bars */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 9 }}>
+          {[
+            { label: 'Pts%',  val: myTeam.ptsPct * 100,                              fmt: v => `${v.toFixed(1)}%`, rank: myTeam.leagueRanks?.pts },
+            { label: 'L10',   val: myTeam.l10PtsPct * 100,                           fmt: () => myTeam.l10,        rank: myTeam.leagueRanks?.l10 },
+            { label: 'xGF%',  val: myTeam.xgfPct != null ? myTeam.xgfPct * 100 : null, fmt: v => `${v.toFixed(1)}%`, rank: myTeam.leagueRanks?.xgf },
+            { label: 'GD/GP', val: myTeam.gdPG,                                      fmt: v => (v > 0 ? '+' : '') + v.toFixed(2), rank: myTeam.leagueRanks?.gd },
+            { label: 'SP%',   val: myTeam.spPct * 100,                               fmt: v => `${v.toFixed(1)}%`, rank: myTeam.leagueRanks?.sp },
+          ].map(({ label, val, fmt, rank }) => {
+            const barPct   = rank != null ? ((32 - rank) / 31) * 100 : 50;
+            const barColor = rank != null && rank <= 10 ? '#4ade80' : rank != null && rank >= 23 ? '#f87171' : '#5b8fd4';
+            return (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 40, fontSize: 11, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>{label}</span>
+                <div style={{ flex: 1, height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ width: `${barPct}%`, height: '100%', background: barColor, borderRadius: 3 }} />
+                </div>
+                <span style={{ width: 46, fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  {val != null ? fmt(val) : '—'}
+                </span>
+                <span style={{ width: 26, fontSize: 10, color: 'rgba(255,255,255,0.45)', textAlign: 'right' }}>
+                  {rank != null ? `#${rank}` : ''}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* AI narrative */}
+      {narrative && (
+        <div className="pred-canvas-ai">
+          <div className="pred-canvas-ai-label">⚡ EyeWall AI</div>
+          <div className="pred-canvas-ai-text">{narrative}</div>
+        </div>
+      )}
+
+      {/* League snapshot */}
+      <div style={{ flex: 1, padding: '10px 52px 0', overflow: 'hidden' }}>
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginBottom: 6 }}>
+          League snapshot
+        </div>
+        {/* Column headers */}
+        <div style={{ display: 'grid', gridTemplateColumns: '28px 8px 52px 1fr 54px 60px 54px 54px', gap: 6, padding: '0 8px 4px', borderBottom: '0.5px solid rgba(255,255,255,0.07)', marginBottom: 3 }}>
+          {['#', '', 'Team', 'Record', 'Pts%', 'L10', 'xGF%', 'GD/GP'].map(h => (
+            <span key={h} style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', textAlign: h === 'Record' ? 'left' : h === '#' || h === '' ? 'center' : 'right' }}>{h}</span>
+          ))}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {displayRows.map(t => {
+            const isMe     = t.abbr === myTeam.abbr;
+            const teamColor = TEAM_COLORS[t.abbr] ?? 'rgba(255,255,255,0.5)';
+            return (
+              <div key={t.abbr} style={{
+                display: 'grid',
+                gridTemplateColumns: '28px 8px 52px 1fr 54px 60px 54px 54px',
+                alignItems: 'center',
+                gap: 6,
+                padding: '3px 8px',
+                borderRadius: 5,
+                background: isMe ? `${primaryColor}18` : 'transparent',
+                borderLeft: isMe ? `3px solid ${primaryColor}` : '3px solid transparent',
+              }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: isMe ? 'var(--team-canvas)' : 'rgba(255,255,255,0.45)', textAlign: 'center' }}>{t.rank}</span>
+                <span />
+                <span style={{ fontSize: 12, fontWeight: 700, color: teamColor }}>{t.abbr}</span>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>{t.wins}–{t.losses}–{t.otLosses}</span>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.70)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{(t.ptsPct * 100).toFixed(1)}%</span>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', textAlign: 'right' }}>{t.l10}</span>
+                <span style={{ fontSize: 11, color: t.xgfPct != null ? 'rgba(255,255,255,0.70)' : 'rgba(255,255,255,0.35)', textAlign: 'right' }}>
+                  {t.xgfPct != null ? `${(t.xgfPct * 100).toFixed(1)}%` : '—'}
+                </span>
+                <span style={{ fontSize: 11, color: t.gdPG > 0 ? '#4ade80' : t.gdPG < 0 ? '#f87171' : 'rgba(255,255,255,0.4)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  {t.gdPG > 0 ? '+' : ''}{t.gdPG.toFixed(2)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="pred-canvas-footer">
+        <span>eyewallanalytics.com</span>
+        <span>{TEAM_CONFIG.hashtags?.[0] || `#${myTeam.abbr}`}</span>
+      </div>
+    </div>
+  );
+}
+
+
 // ─── LeagueView ──────────────────────────────────────────────────────────────
 
 const TABS = [
   { id: 'standings', label: 'Standings' },
   { id: 'bracket',   label: 'Playoff bracket' },
   { id: 'leaders',   label: 'Leaders' },
+  { id: 'rankings',  label: 'Power rankings' }
 ];
 
 export default function LeagueView() {
@@ -640,6 +1117,15 @@ export default function LeagueView() {
 
   const { data: bracket, loading: bracketLoading }
     = useFetch(getPlayoffBracket, []);
+
+  const { data: xgData, loading: xgLoading } = useFetch(
+    () => activeTab === 'rankings' ? getTeamSeasonData() : Promise.resolve(null),
+    [activeTab]
+  )
+  const { data: prNarrative } = useFetch(
+    () => activeTab === 'rankings' ? getPowerRankingsNarrative(TEAM_CONFIG.abbr) : Promise.resolve(null),
+    [activeTab]
+  )
 
   const leadersLoading   = scoringLoading || goalsLoading || gaaLoading || svpLoading;
   const standingsEntries = Array.isArray(standings) ? standings : [];
@@ -684,6 +1170,15 @@ export default function LeagueView() {
               <LeadersPanel scoring={scoring} goals={goals} gaa={gaa} svp={svp} />
             )}
           </>
+        )}
+
+        {activeTab === 'rankings' && (
+          <RankingsPanel
+            standings={standingsEntries}
+            xgData={xgData}
+            xgLoading={xgLoading}
+            narrative={prNarrative}
+          />
         )}
       </div>
     </div>
