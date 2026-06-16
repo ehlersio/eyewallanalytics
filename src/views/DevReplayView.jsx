@@ -10,6 +10,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { getGameDetail, getGameBoxscore } from '../utils/nhlApi';
 import { DevGameContext } from '../utils/DevGameContext';
 import { publishClock, publishMomentum, publishMockLiveGame, clearMockLiveGame } from '../utils/liveClockStore';
+import { CURRENT_SEASON } from '../utils/teamConfig';
 import ShotMapView from './ShotMapView';
 import './DevReplayView.css';
 
@@ -131,7 +132,7 @@ export default function DevReplayView() {
 
   // Load recent CAR games for quick picks
   useEffect(() => {
-    fetch('/nhl-api/v1/club-schedule-season/CAR/20252026')
+    fetch(`/nhl-api/v1/club-schedule-season/CAR/${CURRENT_SEASON}`)
       .then(r => r.json())
       .then(d => {
         const completed = (d?.games || [])

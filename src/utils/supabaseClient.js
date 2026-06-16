@@ -3,6 +3,12 @@
  * Uses the public anon key — safe to expose in the browser.
  */
 
+import { CURRENT_SEASON } from './teamConfig';
+
+// Season as a number for Supabase integer comparisons.
+// Derived from CURRENT_SEASON in teamConfig.js — update that one value each October.
+const SEASON = Number(CURRENT_SEASON);
+
 const SUPABASE_URL = 'https://mqgasjzywoibdgxjjkux.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_e_zwr1UA7GnHq4OuQSas5Q_kO8bQ_Ct';
 
@@ -21,7 +27,7 @@ async function sbFetch(path) {
 // ── Player analytics ──────────────────────────────────────────
 // Returns analytics object keyed by player_id (string), matching
 // the shape the app already expects from moneypuck:skaters KV.
-export async function getPlayerAnalytics(season = 20252026) {
+export async function getPlayerAnalytics(season = SEASON) {
   // Fetch reg season analytics + playoff defensive stats in parallel
   const DEF_COLS = `player_id,hits,blocked_shots,takeaways,giveaways`;
   const ANA_COLS = `player_id,team,war,ev_off_pct,ev_def_inv,pp_xgf60,pk_xga60_inv,pp_icetime,pk_icetime,` +
@@ -88,7 +94,7 @@ export async function getPlayerAnalytics(season = 20252026) {
 // ── Player shot events ────────────────────────────────────────
 // Returns shot data for one player. car_game=true scopes to games
 // involving the selected team, team= filters to shooter rows only.
-export async function getPlayerShots(playerId, season = 20252026, team = 'CAR') {
+export async function getPlayerShots(playerId, season = SEASON, team = 'CAR') {
   const rows = await sbFetch(
     `shot_events?player_id=eq.${playerId}&season=eq.${season}` +
     `&car_game=eq.true&team=eq.${team}` +   // ← was hardcoded CAR
@@ -120,7 +126,7 @@ export async function getPlayerShots(playerId, season = 20252026, team = 'CAR') 
 // Returns shots faced by a specific goalie (for heat map).
 // car_game=true scopes to games involving the selected team.
 // goalie_id filter identifies the specific goalie's starts.
-export async function getGoalieShots(goalieId, season = 20252026) {
+export async function getGoalieShots(goalieId, season = SEASON) {
   const rows = await sbFetch(
     `shot_events?goalie_id=eq.${goalieId}&season=eq.${season}` +
     `&car_game=eq.true` +
@@ -149,7 +155,7 @@ export async function getGoalieShots(goalieId, season = 20252026) {
 }
 
 // ── Goalie analytics ──────────────────────────────────────────
-export async function getGoalieAnalytics(season = 20252026) {
+export async function getGoalieAnalytics(season = SEASON) {
   const rows = await sbFetch(
     `goalie_seasons?season=eq.${season}&game_type=eq.2` +
     `&gsax=not.is.null` +
@@ -212,7 +218,7 @@ function sortForwardLine(players, posMap) {
     });
 }
 
-export async function getTeamLines(team = 'CAR', season = 20252026, gameType = 2) {
+export async function getTeamLines(team = 'CAR', season = SEASON, gameType = 2) {
   // Always load static data upfront so we can use it as position authority
   let staticData = null;
   try {
@@ -294,7 +300,7 @@ export async function getGameXG(gameId) {
 // ── Game log insights ─────────────────────────────────────────
 // Returns team-specific situational stats for Live Insights.
 // Requires team_scored_first boolean in game_log (added by nhl_stats.py).
-export async function getGameLogInsights(oppAbbr, season = 20252026, teamAbbr = 'CAR') {
+export async function getGameLogInsights(oppAbbr, season = SEASON, teamAbbr = 'CAR') {
   const rows = await sbFetch(
     `game_log?season=eq.${season}&team=eq.${teamAbbr}` +
     `&select=game_id,opponent,team_score,opp_score,` +
@@ -344,7 +350,7 @@ export async function getGameLogInsights(oppAbbr, season = 20252026, teamAbbr = 
   };
 }
 
-export async function getTeamGameLog(count = 120, season = 20252026, teamAbbr = 'CAR') {
+export async function getTeamGameLog(count = 120, season = SEASON, teamAbbr = 'CAR') {
   const rows = await sbFetch(
     `game_log?season=eq.${season}&team=eq.${teamAbbr}&order=game_id.asc` +
     `&select=game_id,game_date,opponent,team_score,opp_score,home_team,` +
@@ -374,7 +380,7 @@ export async function getTeamGameLog(count = 120, season = 20252026, teamAbbr = 
 // Fetches team_seasons data needed for power rankings:
 // xgf_pct + roster_war_score for all 32 teams.
 // Replaces the earlier getTeamSeasonXg — same call, extra column.
-export async function getTeamSeasonData(season = 20252026) {
+export async function getTeamSeasonData(season = SEASON) {
   const rows = await sbFetch(
     `team_seasons?season=eq.${season}&game_type=eq.2` +
     `&select=team,xgf_pct,roster_war_score,games_played&limit=32`
@@ -392,7 +398,7 @@ export async function getTeamSeasonData(season = 20252026) {
 
 // Fetches the most recent power rankings narrative for the user's team.
 // Returns { narrative, rank, prior_rank, generated_date } or null.
-export async function getPowerRankingsNarrative(teamAbbr, season = 20252026) {
+export async function getPowerRankingsNarrative(teamAbbr, season = SEASON) {
   const rows = await sbFetch(
     `power_rankings_narratives` +
     `?team=eq.${teamAbbr}&season=eq.${season}` +
@@ -437,7 +443,7 @@ export async function getGameSummary(gameId, team) {
 
 // ── Player scouting blurb ─────────────────────────────────────
 // Returns the AI-generated scouting blurb for a player, or null if none exists.
-export async function getScoutingBlurb(playerId, season = 20252026) {
+export async function getScoutingBlurb(playerId, season = SEASON) {
   const rows = await sbFetch(
     `player_scouting?player_id=eq.${playerId}&season=eq.${season}&select=scouting_text,generated_at&limit=1`
   ).catch(() => []);
@@ -445,7 +451,7 @@ export async function getScoutingBlurb(playerId, season = 20252026) {
   return { blurb: rows[0].scouting_text, generatedAt: rows[0].generated_at };
 }
 
-export async function getTeamSkaterStatsFromDB(team = 'CAR', season = 20252026, gameType = 2) {
+export async function getTeamSkaterStatsFromDB(team = 'CAR', season = SEASON, gameType = 2) {
   // Supabase caps responses at 1000 rows server-side. The players table has 1346+
   // rows so we paginate with Range headers to get all of them.
   async function fetchAllPlayers() {
