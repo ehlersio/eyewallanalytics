@@ -15,6 +15,7 @@ import {
 import { getTeamSeasonData, getPowerRankingsNarrative, getPowerRankingsHistory } from '../utils/supabaseClient';
 import { ALL_TEAMS } from '../utils/teamConfig';
 import TeamLogo from '../components/TeamLogo';
+import PlayerPopup from '../components/PlayerPopup';
 import './LeagueView.css';
 import '../components/PredictionCanvas.css';
 
@@ -209,7 +210,7 @@ function StandingsPanel({ entries }) {
 
 // ─── Leaders Panel ────────────────────────────────────────────────────────────
 
-function LeadersCard({ title, statLabel, rows, formatStat }) {
+function LeadersCard({ title, statLabel, rows, formatStat, onPlayerClick }) {
   return (
     <div className="lv-leaders-card">
       <div className="lv-leaders-card__header">
@@ -218,17 +219,34 @@ function LeadersCard({ title, statLabel, rows, formatStat }) {
       </div>
       {rows.map((p, i) => {
         const abbrev    = p.teamAbbrev ?? '—';
-        const name      = p.firstName?.default
-          ? `${p.firstName.default} ${p.lastName.default}`
-          : p.name ?? '—';
+        const firstName = p.firstName?.default ?? p.name?.split(' ')[0] ?? '—';
+        const lastName  = p.lastName?.default  ?? p.name?.split(' ').slice(1).join(' ') ?? '';
+        const name      = `${firstName} ${lastName}`.trim();
         const isPrimary = abbrev === PRIMARY;
         const stat      = p.value ?? 0;
+        const teamColor = TEAM_COLORS[abbrev] ?? 'var(--text-dim)';
+        const pid       = p.playerId ?? p.id ?? null;
+
+        const playerObj = pid ? {
+          id:         pid,
+          firstName:  { default: firstName },
+          lastName:   { default: lastName },
+          teamAbbrev: abbrev,
+        } : null;
 
         return (
-          <div key={p.playerId ?? i} className={`lv-leaders-row${isPrimary ? ' lv-leaders-row--you' : ''}`} style={isPrimary ? { '--row-accent': PRIMARY_COLOR } : undefined}>
+          <div
+            key={pid ?? i}
+            className={`lv-leaders-row${pid ? ' lv-leaders-row--clickable' : ''}${isPrimary ? ' lv-leaders-row--you' : ''}`}
+            style={isPrimary ? { '--row-accent': PRIMARY_COLOR } : undefined}
+            onClick={playerObj ? () => onPlayerClick?.(playerObj) : undefined}
+            role={playerObj ? 'button' : undefined}
+            tabIndex={playerObj ? 0 : undefined}
+            onKeyDown={playerObj ? (e => e.key === 'Enter' && onPlayerClick?.(playerObj)) : undefined}
+          >
             <span className="lv-leaders-rank">{i + 1}</span>
             <span className="lv-leaders-name">{name}</span>
-            <span className="lv-leaders-team">{abbrev}</span>
+            <span className="lv-leaders-team" style={{ color: teamColor }}>{abbrev}</span>
             <span className="lv-leaders-stat">{formatStat ? formatStat(stat) : stat}</span>
           </div>
         );
@@ -238,23 +256,39 @@ function LeadersCard({ title, statLabel, rows, formatStat }) {
 }
 
 function LeadersPanel({ scoring, goals, gaa, svp }) {
+  const [selectedPlayer, setSelectedPlayer] = React.useState(null);
+
   return (
-    <div className="lv-leaders-grid">
-      <LeadersCard title="Points"            statLabel="PTS" rows={scoring ?? []} />
-      <LeadersCard title="Goals"             statLabel="G"   rows={goals   ?? []} />
-      <LeadersCard
-        title="Goals against avg."
-        statLabel="GAA"
-        rows={gaa ?? []}
-        formatStat={(v) => Number(v).toFixed(2)}
-      />
-      <LeadersCard
-        title="Save percentage"
-        statLabel="SV%"
-        rows={svp ?? []}
-        formatStat={(v) => Number(v).toFixed(3).replace('0.', '.')}
-      />
-    </div>
+    <>
+      <div className="lv-leaders-grid">
+        <LeadersCard title="Points"           statLabel="PTS" rows={scoring ?? []} onPlayerClick={setSelectedPlayer} />
+        <LeadersCard title="Goals"            statLabel="G"   rows={goals   ?? []} onPlayerClick={setSelectedPlayer} />
+        <LeadersCard
+          title="Goals against avg."
+          statLabel="GAA"
+          rows={gaa ?? []}
+          formatStat={(v) => Number(v).toFixed(2)}
+          onPlayerClick={setSelectedPlayer}
+        />
+        <LeadersCard
+          title="Save percentage"
+          statLabel="SV%"
+          rows={svp ?? []}
+          formatStat={(v) => Number(v).toFixed(3).replace('0.', '.')}
+          onPlayerClick={setSelectedPlayer}
+        />
+      </div>
+
+      {selectedPlayer && (
+        <PlayerPopup
+          player={selectedPlayer}
+          inPlayoffs={false}
+          standings={[]}
+          onClose={() => setSelectedPlayer(null)}
+          isLeagueContext={true}
+        />
+      )}
+    </>
   );
 }
 

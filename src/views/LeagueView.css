@@ -328,12 +328,32 @@
 }
 
 .lv-leaders-team {
-  color: var(--text-dim);
+  /* color set inline per row via TEAM_COLORS */
   font-size: 11px;
   min-width: 28px;
   text-align: right;
   font-family: var(--font-display);
   font-weight: 700;
+}
+
+.lv-leaders-row--clickable {
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.lv-leaders-row--clickable:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.lv-leaders-row--clickable:active {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.lv-leaders-row--clickable:focus-visible {
+  outline: 1.5px solid var(--red-bright);
+  outline-offset: -1px;
+  border-radius: 4px;
 }
 
 .lv-leaders-stat {

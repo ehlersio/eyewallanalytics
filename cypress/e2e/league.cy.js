@@ -301,6 +301,45 @@ describe('League page — CAR', () => {
         }
       })
     })
+
+    it('all leader rows have the clickable class', () => {
+      cy.get('.lv-leaders-card', { timeout: 10000 }).first()
+        .find('.lv-leaders-row')
+        .each($row => {
+          cy.wrap($row).should('have.class', 'lv-leaders-row--clickable')
+        })
+    })
+
+    it('team abbreviation cell has an inline color style', () => {
+      cy.get('.lv-leaders-card', { timeout: 10000 }).first()
+        .find('.lv-leaders-team').first()
+        .should('have.attr', 'style')
+        .and('include', 'color')
+    })
+
+    it('clicking a player row opens the player popup', () => {
+      cy.get('.lv-leaders-card', { timeout: 10000 }).first()
+        .find('.lv-leaders-row').first().click()
+      cy.get('.player-popup', { timeout: 8000 }).should('be.visible')
+    })
+
+    it('player popup from Leaders tab shows Stats and Analytics tabs only', () => {
+      cy.get('.lv-leaders-card', { timeout: 10000 }).first()
+        .find('.lv-leaders-row').first().click()
+      cy.get('.player-popup', { timeout: 8000 }).should('be.visible')
+      cy.get('.pp-tab').should('contain', '📊 Stats')
+      cy.get('.pp-tab').should('contain', '🧮 Analytics')
+      cy.get('.pp-tab').should('not.contain', '🎯 Heat Map')
+      cy.get('.pp-tab').should('not.contain', '🔍 Scout')
+    })
+
+    it('player popup closes when the ✕ button is clicked', () => {
+      cy.get('.lv-leaders-card', { timeout: 10000 }).first()
+        .find('.lv-leaders-row').first().click()
+      cy.get('.player-popup', { timeout: 8000 }).should('be.visible')
+      cy.get('.pp-close').click()
+      cy.get('.player-popup').should('not.exist')
+    })
   })
   // ── Power Rankings tab ───────────────────────────────────────
 
