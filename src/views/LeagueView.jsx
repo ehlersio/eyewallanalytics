@@ -950,9 +950,9 @@ function RankSparkline({ history, primaryColor }) {
     );
   }
 
-  const W = 200;
-  const H = 56;
-  const PAD = 14; // extra padding so labels don't clip
+  const W = 240;
+  const H = 80;
+  const PAD = 16; // extra padding so labels don't clip
 
   // With a single point, show a horizontal line at that rank
   const single = history.length === 1;
@@ -983,7 +983,7 @@ function RankSparkline({ history, primaryColor }) {
   ].join(' ');
 
   return (
-    <div className="pr-sparkline">
+    <div className="pr-sparkline" style={{ minWidth: 140 }}>
       <div className="pr-sparkline-header">
         <span className="pr-sparkline-label">Rank trend</span>
         {trendLabel && (
@@ -1002,18 +1002,18 @@ function RankSparkline({ history, primaryColor }) {
             points={points}
             fill="none"
             stroke={primaryColor}
-            strokeWidth="1.5"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
         )}
         {/* Current rank dot */}
-        <circle cx={x(history.length - 1)} cy={y(latest.rank)} r="3" fill={primaryColor} />
+        <circle cx={x(history.length - 1)} cy={y(latest.rank)} r="4" fill={primaryColor} />
         {/* Rank label */}
         <text
           x={x(history.length - 1)}
           y={y(latest.rank) - 5}
-          fontSize="9"
+          fontSize="11"
           fill={primaryColor}
           textAnchor="middle"
           fontWeight="700"
@@ -1023,11 +1023,11 @@ function RankSparkline({ history, primaryColor }) {
         {/* First point label (only when multiple points) */}
         {!single && (
           <>
-            <circle cx={x(0)} cy={y(earliest.rank)} r="2" fill={primaryColor} opacity="0.5" />
+            <circle cx={x(0)} cy={y(earliest.rank)} r="3" fill={primaryColor} opacity="0.5" />
             <text
               x={x(0)}
-              y={y(earliest.rank) - 4}
-              fontSize="8"
+              y={y(earliest.rank) - 5}
+              fontSize="10"
               fill="var(--text-dim)"
               textAnchor="middle"
             >
