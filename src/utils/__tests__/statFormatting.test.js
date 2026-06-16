@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest'
 function groupStats(defs, stats, isGoalie = false) {
   const groups = {}
   defs.forEach(def => {
-    let raw = stats?.[def.key]
+    const raw = stats?.[def.key]
     if (raw == null) return
     let fmt
     if (def.key === 'shootingPctg' || def.key === 'faceoffWinningPctg') {

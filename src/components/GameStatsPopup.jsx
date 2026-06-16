@@ -317,7 +317,7 @@ function GameStatsPopup({ game, onClose }) {
                   </div>
                   <div className="gp-adv-grid">
                     <div className="gp-adv-row header">
-                      <span></span><span className="team-primary-text">{TEAM_CONFIG.abbr}</span><span></span><span className="muted">OPP</span>
+                      <span /><span className="team-primary-text">{TEAM_CONFIG.abbr}</span><span /><span className="muted">OPP</span>
                     </div>
                     {[
                       ['Corsi (CF)',   advStats.carCorsi,   advStats.oppCorsi,   'All shot attempts incl. blocked'],

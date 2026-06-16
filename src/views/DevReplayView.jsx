@@ -116,7 +116,10 @@ export default function DevReplayView() {
   if (!import.meta.env.DEV) {
     return <div style={{ padding: 32, color: '#888' }}>Not available in production.</div>;
   }
+  return <DevReplayViewInner />;
+}
 
+function DevReplayViewInner() {
   const [gameIdInput, setGameIdInput]   = useState('');
   const [loadedGameId, setLoadedGameId] = useState(null);
   const [fullPbp, setFullPbp]           = useState(null);

@@ -133,7 +133,7 @@ const GOALIE_STATS = [
 function groupStats(defs, stats, isGoalie) {
   const groups = {}
   defs.forEach(def => {
-    let raw = stats?.[def.key]
+    const raw = stats?.[def.key]
     if (raw == null) return
     let fmt
     if (def.key === 'shootingPctg' || def.key === 'faceoffWinningPctg') {
@@ -336,7 +336,7 @@ function PlayerHeatMap({ shotData, goalieShotData, playerName, isGoalie }) {
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 6, fontSize: 11 }}>
             {[['#1D9E75','.960+'],['#5DCAA5','.930+'],['#FAC775','.900+'],['#EF9F27','.860+'],['#E24B4A','<.860']].map(([c,l]) => (
               <span key={l} style={{ display:'flex', alignItems:'center', gap:4, color:'var(--text-muted)' }}>
-                <span style={{ width:10, height:10, borderRadius:2, background:c, display:'inline-block' }}></span>{l}
+                <span style={{ width:10, height:10, borderRadius:2, background:c, display:'inline-block' }} />{l}
               </span>
             ))}
             <span style={{ color:'var(--text-dim)', marginLeft:'auto' }}>min 5 shots</span>

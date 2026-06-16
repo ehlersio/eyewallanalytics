@@ -1,0 +1,180 @@
+
+> canes-analytics@1.1.0 lint
+> eslint src
+
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\App.jsx
+  60:21  warning  'setNeedsTeam' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\components\CalendarView.jsx
+  97:25  warning  'dateStr' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\components\GameCard.jsx
+   7:10  warning  'extractMoneyline' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  74:76  warning  'label' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\components\GameStatsComponents.jsx
+  5:33  warning  'home' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\components\GameStatsPopup.jsx
+    7:60  warning  'computeGSAx' is defined but never used. Allowed unused vars must match /^_/u        no-unused-vars
+   59:9   warning  'shootout' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+   90:12  warning  'getStat' is defined but never used. Allowed unused vars must match /^_/u            no-unused-vars
+  328:46  warning  'help' is defined but never used. Allowed unused args must match /^_/u               no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\components\IceRink.jsx
+    1:37  warning  'useCallback' is defined but never used. Allowed unused vars must match /^_/u      no-unused-vars
+   60:48  warning  'roster' is assigned a value but never used. Allowed unused args must match /^_/u  no-unused-vars
+  606:53  warning  'playerNames' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+  651:32  warning  'playerNames' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\components\InfoTip.jsx
+  65:5  warning  'timerId' is never reassigned. Use 'const' instead  prefer-const
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\components\MatchupDetail.jsx
+    3:46  warning  'recordOutcome' is defined but never used. Allowed unused vars must match /^_/u         no-unused-vars
+    7:10  warning  'computeShotAttempts' is defined but never used. Allowed unused vars must match /^_/u   no-unused-vars
+    7:31  warning  'computePDO' is defined but never used. Allowed unused vars must match /^_/u            no-unused-vars
+    7:43  warning  'computePuckLuck' is defined but never used. Allowed unused vars must match /^_/u       no-unused-vars
+    7:60  warning  'computeGSAx' is defined but never used. Allowed unused vars must match /^_/u           no-unused-vars
+   10:16  warning  'isHomeGame' is defined but never used. Allowed unused vars must match /^_/u            no-unused-vars
+   11:3   warning  'getStandings' is defined but never used. Allowed unused vars must match /^_/u          no-unused-vars
+   11:17  warning  'findGameOdds' is defined but never used. Allowed unused vars must match /^_/u          no-unused-vars
+   16:7   warning  'CAR_ABBR' is assigned a value but never used. Allowed unused vars must match /^_/u     no-unused-vars
+  185:9   warning  'carPK' is assigned a value but never used. Allowed unused vars must match /^_/u        no-unused-vars
+  186:9   warning  'oppPP' is assigned a value but never used. Allowed unused vars must match /^_/u        no-unused-vars
+  228:9   warning  'carFavoured' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  258:11  warning  'useEffect' is assigned a value but never used. Allowed unused vars must match /^_/u    no-unused-vars
+  412:39  warning  'oppAbbr' is defined but never used. Allowed unused args must match /^_/u               no-unused-vars
+  412:48  warning  'oppColor' is defined but never used. Allowed unused args must match /^_/u              no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\components\PeriodSummary.jsx
+  140:43  error    'setShowVideo' is not defined                                                                   no-undef
+  206:9   warning  'logoUrl' is assigned a value but never used. Allowed unused vars must match /^_/u              no-unused-vars
+  438:3   warning  'awayAbbr' is assigned a value but never used. Allowed unused args must match /^_/u             no-unused-vars
+  459:3   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\components\PlayerPopup.jsx
+  133:34  warning  'isGoalie' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  215:50  warning  'isGoalie' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  229:34  warning  'value' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  242:52  warning  'playerName' is defined but never used. Allowed unused args must match /^_/u        no-unused-vars
+  442:9   warning  'blocked' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  509:48  warning  'playerName' is defined but never used. Allowed unused args must match /^_/u        no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\components\PredictionShareCanvas.jsx
+  16:7  warning  'BLANK_GIF' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\components\ScoutingTab.jsx
+    8:44  warning  'getScoutingBlurb' is defined but never used. Allowed unused vars must match /^_/u     no-unused-vars
+  145:54  warning  'oppAbbr' is defined but never used. Allowed unused args must match /^_/u              no-unused-vars
+  209:3   warning  'carRecentGames' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+  209:19  warning  'oppRecentGames' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+  212:9   warning  'carGoalie' is assigned a value but never used. Allowed unused vars must match /^_/u   no-unused-vars
+  213:9   warning  'oppGoalie' is assigned a value but never used. Allowed unused vars must match /^_/u   no-unused-vars
+  221:9   warning  'projTotal' is assigned a value but never used. Allowed unused vars must match /^_/u   no-unused-vars
+  224:9   warning  'formDots' is assigned a value but never used. Allowed unused vars must match /^_/u    no-unused-vars
+  224:28  warning  'isCar' is defined but never used. Allowed unused args must match /^_/u                no-unused-vars
+  446:41  warning  'isDefence' is defined but never used. Allowed unused args must match /^_/u            no-unused-vars
+  480:41  warning  'isInferred' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\components\Topbar.jsx
+  7:57  warning  'getMomentum' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\hooks\useFetch.js
+  31:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+  62:30  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\hooks\usePeriodSummary.js
+  150:9   warning  'periodEndPlay' is assigned a value but never used. Allowed unused vars must match /^_/u        no-unused-vars
+  280:3   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+  415:39  warning  'isLive' is defined but never used. Allowed unused args must match /^_/u                        no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\utils\__tests__\statFormatting.test.js
+  8:34  warning  'isGoalie' is assigned a value but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\utils\analytics.js
+  15:12  warning  'e' is defined but never used  no-unused-vars
+  23:12  warning  'e' is defined but never used  no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\utils\nhlApi.js
+   538:35  warning  'gameTypeId' is assigned a value but never used. Allowed unused args must match /^_/u  no-unused-vars
+   886:19  error    Duplicate key 'BUF'                                                                    no-dupe-keys
+   993:41  warning  'gameTypeId' is assigned a value but never used. Allowed unused args must match /^_/u  no-unused-vars
+  1115:45  warning  'isHome' is defined but never used. Allowed unused args must match /^_/u               no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\utils\supabaseClient.js
+  227:12  warning  '_' is defined but never used  no-unused-vars
+  545:12  warning  '_' is defined but never used  no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\views\DevReplayView.jsx
+    9:39  warning  'useCallback' is defined but never used. Allowed unused vars must match /^_/u           no-unused-vars
+   12:24  warning  'publishMomentum' is defined but never used. Allowed unused vars must match /^_/u       no-unused-vars
+   17:7   warning  'CAR_TEAM_ID' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  292:20  error    'gameIdInput' is not defined                                                            no-undef
+  293:28  error    'setGameIdInput' is not defined                                                         no-undef
+  294:66  error    'gameIdInput' is not defined                                                            no-undef
+  296:86  error    'gameIdInput' is not defined                                                            no-undef
+  314:38  error    'setGameIdInput' is not defined                                                         no-undef
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\views\LeagueView.jsx
+  377:5   warning  Unexpected console statement. Only these console methods are allowed: warn, error      no-console
+  429:29  warning  'isWinner' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  625:9   warning  'isComplete' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\views\NewsView.jsx
+  121:27  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\views\ScheduleView.jsx
+   1:46  warning  'useCallback' is defined but never used. Allowed unused vars must match /^_/u         no-unused-vars
+   6:43  warning  'formatGameTime' is defined but never used. Allowed unused vars must match /^_/u      no-unused-vars
+  25:10  warning  'poSort' is assigned a value but never used. Allowed unused vars must match /^_/u     no-unused-vars
+  25:18  warning  'setPoSort' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\views\ShotMapView.jsx
+    16:10  warning  'StatBar' is defined but never used. Allowed unused vars must match /^_/u                       no-unused-vars
+    16:28  warning  'MetCardSkeleton' is defined but never used. Allowed unused vars must match /^_/u               no-unused-vars
+    47:3   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+   128:37  warning  'statsLoading' is assigned a value but never used. Allowed unused vars must match /^_/u         no-unused-vars
+   181:15  warning  'won' is assigned a value but never used. Allowed unused vars must match /^_/u                  no-unused-vars
+   422:9   warning  'lastSyncRef' is assigned a value but never used. Allowed unused vars must match /^_/u          no-unused-vars
+   428:11  warning  'rosterMap' is assigned a value but never used. Allowed unused vars must match /^_/u            no-unused-vars
+   557:15  warning  'sortOrder' is assigned a value but never used. Allowed unused vars must match /^_/u            no-unused-vars
+   936:11  warning  'activePP' is assigned a value but never used. Allowed unused vars must match /^_/u             no-unused-vars
+  1034:11  warning  'bs' is assigned a value but never used. Allowed unused vars must match /^_/u                   no-unused-vars
+  1035:11  warning  'ppRaw' is assigned a value but never used. Allowed unused vars must match /^_/u                no-unused-vars
+  1054:9   warning  'gamePP' is assigned a value but never used. Allowed unused vars must match /^_/u               no-unused-vars
+  1155:9   warning  'carGoalie' is assigned a value but never used. Allowed unused vars must match /^_/u            no-unused-vars
+  1156:9   warning  'oppGoalie' is assigned a value but never used. Allowed unused vars must match /^_/u            no-unused-vars
+  1160:9   warning  'ctxLabel' is assigned a value but never used. Allowed unused vars must match /^_/u             no-unused-vars
+  1259:33  warning  't' is assigned a value but never used. Allowed unused vars must match /^_/u                    no-unused-vars
+  2099:27  warning  'color' is assigned a value but never used. Allowed unused vars must match /^_/u                no-unused-vars
+  2560:11  warning  'oppPens' is assigned a value but never used. Allowed unused vars must match /^_/u              no-unused-vars
+  2882:13  warning  'diff' is assigned a value but never used. Allowed unused vars must match /^_/u                 no-unused-vars
+  2974:30  warning  'gameHome' is defined but never used. Allowed unused args must match /^_/u                      no-unused-vars
+  2974:40  warning  'isLive' is defined but never used. Allowed unused args must match /^_/u                        no-unused-vars
+  3016:13  warning  'os' is assigned a value but never used. Allowed unused vars must match /^_/u                   no-unused-vars
+  3234:35  warning  'gameHome' is defined but never used. Allowed unused args must match /^_/u                      no-unused-vars
+  3234:45  warning  'isLive' is defined but never used. Allowed unused args must match /^_/u                        no-unused-vars
+  3234:53  warning  'boxscore' is defined but never used. Allowed unused args must match /^_/u                      no-unused-vars
+  3331:10  warning  'formatFaceoff' is defined but never used. Allowed unused vars must match /^_/u                 no-unused-vars
+
+C:\Users\matth\OneDrive\Documents\canes-analytics-starter\src\views\TeamView.jsx
+   12:10   warning  'StatBar' is defined but never used. Allowed unused vars must match /^_/u           no-unused-vars
+   12:19   warning  'MetCard' is defined but never used. Allowed unused vars must match /^_/u           no-unused-vars
+   53:9    warning  'gp' is assigned a value but never used. Allowed unused vars must match /^_/u       no-unused-vars
+   97:45   warning  'statsLoading' is defined but never used. Allowed unused args must match /^_/u      no-unused-vars
+   97:145  warning  'corsiReg' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  201:61   warning  'scoreState' is defined but never used. Allowed unused args must match /^_/u        no-unused-vars
+  201:92   warning  'homeSplit' is defined but never used. Allowed unused args must match /^_/u         no-unused-vars
+  207:9    warning  'corsiPo' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  362:46   warning  'stats' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  362:53   warning  'playoffSummary' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  362:81   warning  'ppReg' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  362:88   warning  'pkReg' is defined but never used. Allowed unused args must match /^_/u             no-unused-vars
+  362:95   warning  'corsiReg' is defined but never used. Allowed unused args must match /^_/u          no-unused-vars
+  916:10   warning  'SplitStat' is defined but never used. Allowed unused vars must match /^_/u         no-unused-vars
+
+Γ£û 122 problems (7 errors, 115 warnings)
+  0 errors and 6 warnings potentially fixable with the `--fix` option.
+

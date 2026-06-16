@@ -137,7 +137,7 @@ function GoalCarousel({ goals, carAbbr }) {
             <div
               key={i}
               className={`ps-carousel-dot ${i === idx ? 'active' : ''} ${goals[i].isCar ? 'car' : 'opp'}`}
-              onClick={() => { setIdx(i); setShowVideo(false); }}
+              onClick={() => { setIdx(i); }}
             />
           ))}
         </div>
@@ -456,7 +456,7 @@ export default function PeriodSummary({
       if (text && onNarrativeReady) onNarrativeReady(summary.period, text);
       if (card) setCardNarrative(card);
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [summary?.period]);
 
   if (!summary) return null;

@@ -277,7 +277,7 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
         buildAndStoreSummary(p, plays, false);
       }
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [gameId, isLive, pbp?.plays?.length]);
 
   const dismissNewSummary = useCallback(() => setNewSummary(null), []);

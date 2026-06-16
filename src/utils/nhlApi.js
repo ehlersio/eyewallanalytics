@@ -883,7 +883,7 @@ export const TEAM_COLORS = {
   MIN: '#154734', COL: '#6f263d', DAL: '#006847', ARI: '#8c2633',
   VGK: '#b4975a', SEA: '#99d9d9', EDM: '#ff4c00', CGY: '#c8102e',
   VAN: '#00843d', SJS: '#006d75', ANA: '#f47a38', LAK: '#a2aaad',
-  UTA: '#69b3e7', BUF: '#003087',
+  UTA: '#69b3e7',
 };
 
 // ─── Team advanced stats ──────────────────────────────────────

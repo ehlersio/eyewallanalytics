@@ -28,7 +28,7 @@ export function useFetch(fetchFn, deps = []) {
         setLoading(false);
       }
     }
-  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
+  }, deps);  
 
   useEffect(() => {
     mountedRef.current = true;
@@ -59,7 +59,7 @@ export function usePoll(fetchFn, intervalMs = 30000, deps = []) {
     }
     intervalRef.current = setInterval(tick, intervalMs);
     return () => clearInterval(intervalRef.current);
-  }, [intervalMs, ...deps]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [intervalMs, ...deps]);  
 
   return result;
 }

@@ -118,7 +118,7 @@ export default function NewsView() {
         fetchingRef.current = false;
       }
     }
-  }, [TEAM_CONFIG.abbr]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [TEAM_CONFIG.abbr]);  
 
   useEffect(() => {
     fetchArticles();

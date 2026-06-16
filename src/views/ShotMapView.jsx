@@ -44,7 +44,7 @@ export default function ShotMapView() {
     const minsToGame = (nextGameTime - Date.now()) / 60_000;
     if (minsToGame < 180) return 60_000;                // within 3hrs of puck drop — 1min
     return 5 * 60_000;                                  // between games — 5min
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [liveStateRef.current.isLive, liveStateRef.current.nextGameTime]);
 
   // Live game polling — interval adapts to game state

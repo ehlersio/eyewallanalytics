@@ -169,6 +169,26 @@ export default function ScheduleView() {
 // ── Calendar view ────────────────────────────────────────────
 
 function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup, oddsData }) {
+  // Hooks must be called before any early returns
+  const isCompletedGame = g => ['OFF','FINAL','F'].includes(g.gameState);
+
+  const byRound = {};
+  playoffGames.forEach(g => {
+    const id = String(g.id);
+    const round = (id.length === 10 && id.slice(4,6) === '03')
+      ? parseInt(id[7], 10) : 0;
+    if (!byRound[round]) byRound[round] = [];
+    byRound[round].push(g);
+  });
+
+  const roundNums = Object.keys(byRound).map(Number).sort((a,b) => b - a);
+  const maxRound  = roundNums[0] || 1;
+
+  const [collapsed, setCollapsed] = React.useState(() =>
+    Object.fromEntries(roundNums.map(r => [r, r < maxRound]))
+  );
+  const toggleRound = r => setCollapsed(prev => ({ ...prev, [r]: !prev[r] }));
+
   if (loading) return <LoadingCards count={3} />;
 
   if (!playoffGames.length) {
@@ -193,21 +213,6 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
     );
   }
 
-  const isCompletedGame = g => ['OFF','FINAL','F'].includes(g.gameState);
-
-  // Group games by round number
-  const byRound = {};
-  playoffGames.forEach(g => {
-    const id = String(g.id);
-    const round = (id.length === 10 && id.slice(4,6) === '03')
-      ? parseInt(id[7], 10) : 0;
-    if (!byRound[round]) byRound[round] = [];
-    byRound[round].push(g);
-  });
-
-  const roundNums = Object.keys(byRound).map(Number).sort((a,b) => b - a);
-  const maxRound  = roundNums[0] || 1;
-
   const ROUND_LABELS = {
     1: 'First Round', 2: 'Second Round',
     3: 'Conference Finals', 4: 'Stanley Cup Final',
@@ -216,12 +221,6 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
   // Build series map keyed by round
   const seriesByRound = {};
   playoffSeries.forEach(s => { seriesByRound[s.round] = s; });
-
-  // Collapsed: older rounds collapsed by default, current open
-  const [collapsed, setCollapsed] = React.useState(() =>
-    Object.fromEntries(roundNums.map(r => [r, r < maxRound]))
-  );
-  const toggleRound = r => setCollapsed(prev => ({ ...prev, [r]: !prev[r] }));
 
   return (
     <div>

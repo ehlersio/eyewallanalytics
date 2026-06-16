@@ -1122,7 +1122,7 @@ function RankingsPanel({ standings, xgData, xgLoading, narrative, history }) {
       <div className="lv-div-card lv-div-card--wide">
         <div className="pr-table-header-row">
           <span className="pr-col-rank">#</span>
-          <span className="pr-col-mvmt"></span>
+          <span className="pr-col-mvmt" />
           <span className="pr-col-team">Team</span>
           <span className="pr-col-stat">Pts%</span>
           <span className="pr-col-stat">L10</span>
