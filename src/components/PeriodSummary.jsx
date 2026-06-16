@@ -74,6 +74,7 @@ async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false) {
     carPenaltyCount: summary.penalties?.filter(p => p.isCar).length ?? 0,
     bestPeriod:     summary.bestPeriod,
     worstPeriod:    summary.worstPeriod,
+    primaryGoalieName:  summary.primaryGoalieName || null,
     goals: (summary.goals || []).map(g => ({
       isCar:      g.isCar,
       scorerName: g.scorerName,

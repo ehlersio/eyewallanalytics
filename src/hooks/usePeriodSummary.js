@@ -53,6 +53,18 @@ function buildRosterMap(pbp) {
   return map;
 }
 
+// Extract CAR goalie name from rosterSpots — used to ground the AI prompt
+function getPrimaryGoalieName(pbp, carTeamId) {
+  const spots = pbp?.rosterSpots || [];
+  const carGoalies = spots.filter(p =>
+    p.teamId === carTeamId && p.positionCode === 'G'
+  );
+  // Prefer the first listed goalie (starter) — roster spots are typically ordered
+  if (!carGoalies.length) return null;
+  const g = carGoalies[0];
+  return `${g.firstName?.default || ''} ${g.lastName?.default || ''}`.trim() || null;
+}
+
 function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlayoff = false) {
   const periodPlays = plays.filter(p => p.periodDescriptor?.number === period);
   const rosterMap = buildRosterMap(pbp);
@@ -177,6 +189,7 @@ function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlay
     aiNarrative: null,
     aiLoading: true,
     gameId,
+    primaryGoalieName: getPrimaryGoalieName(pbp, carTeamId),
   };
 }
 
@@ -378,6 +391,7 @@ function buildGameSummary(plays, carTeamId, landingData, pbp, gameId) {
     // AI
     aiNarrative: null, aiLoading: true,
     gameId,
+    primaryGoalieName: getPrimaryGoalieName(pbp, carTeamId),
   };
 }
 
