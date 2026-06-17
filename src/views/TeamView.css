@@ -259,16 +259,7 @@
   border-radius: var(--radius-sm);
 }
 
-.picks-year-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 0.5px solid var(--border); }
-.picks-year  { font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--text); width: 36px; flex-shrink: 0; }
-.picks-chips { display: flex; gap: 5px; flex-wrap: wrap; }
-.pick-chip   { display: flex; flex-direction: column; align-items: center; padding: 4px 8px; border-radius: 6px; border: 0.5px solid; min-width: 40px; }
-.pick-chip.r1 { background: rgba(61,186,126,0.15); border-color: rgba(61,186,126,0.4); }
-.pick-chip.r2 { background: rgba(90,180,240,0.12); border-color: rgba(90,180,240,0.35); }
-.pick-chip.r3 { background: rgba(240,160,48,0.10); border-color: rgba(240,160,48,0.3); }
-.pick-chip.r4,.pick-chip.r5,.pick-chip.r6,.pick-chip.r7 { background: var(--bg3); border-color: var(--border-2); }
-.pick-round  { font-family: var(--font-display); font-size: 11px; font-weight: 700; color: var(--text); }
-.pick-from   { font-size: 9px; color: var(--green); margin-top: 1px; }
+
 .picks-note  { font-size: 10px; color: var(--text-dim); margin-top: 8px; font-style: italic; }
 
 .empty-state { text-align: center; padding: 28px 16px; }
@@ -426,4 +417,52 @@
   font-size: 11px;
   color: var(--text-dim);
   text-align: center;
+}
+
+/* ── PicksTab additions ── */
+
+.picks-loading,
+.picks-empty {
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 12px 0;
+}
+
+.picks-slot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 13px;
+}
+.picks-slot:last-of-type { border-bottom: none; }
+.picks-slot-round  { font-weight: 600; color: var(--text-muted); min-width: 52px; }
+.picks-slot-overall { font-weight: 700; color: var(--text); }
+.picks-slot-from   { font-size: 12px; color: var(--text-dim); margin-left: auto; }
+
+.picks-made-list { display: flex; flex-direction: column; }
+.picks-made-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.1s;
+}
+.picks-made-row:last-child { border-bottom: none; }
+.picks-made-row:hover { background: var(--surface-hover, rgba(255,255,255,0.04)); }
+.picks-made-round { font-size: 11px; font-weight: 600; color: var(--text-dim); min-width: 72px; }
+.picks-made-name  { font-weight: 600; color: var(--text); flex: 1; }
+.picks-made-pos   { font-size: 12px; color: var(--text-muted); min-width: 24px; }
+.picks-made-rank  {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
 }

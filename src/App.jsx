@@ -23,6 +23,10 @@ const DevReplayView = import.meta.env.DEV
   ? lazy(() => import('./views/DevReplayView'))
   : null;
 
+const DevDraftView = import.meta.env.DEV
+  ? lazy(() => import('./views/DevDraftView'))
+  : null;
+
 const ViewFallback = () => (
   <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-dim)' }}>
     Loading…
@@ -89,6 +93,9 @@ export default function App() {
                 <Route path="/league"   element={<LeagueView />} />
                 {import.meta.env.DEV && DevReplayView && (
                   <Route path="/dev" element={<DevReplayView />} />
+                )}
+                {import.meta.env.DEV && DevDraftView && (
+                  <Route path="/dev/draft" element={<DevDraftView />} />
                 )}
               </Routes>
             </Suspense>

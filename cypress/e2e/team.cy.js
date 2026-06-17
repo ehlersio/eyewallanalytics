@@ -16,9 +16,10 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       ['Overview', 'Advanced', 'Splits', 'Trends'].forEach(tab =>
         cy.contains(tab).should('be.visible')
       )
-      // Cap & Picks only available for teams with salary data
+      // Cap and Picks tabs only available for teams with salary data
       if (teamAbbr === 'CAR') {
-        cy.contains('Cap & Picks').should('be.visible')
+        cy.contains('Cap').should('be.visible')
+        cy.contains('Picks').should('be.visible')
       }
     })
 
@@ -119,8 +120,8 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
 
     // Cap & Picks only runs for teams with salary data
     if (teamAbbr === 'CAR') {
-      describe('Cap & Picks tab', () => {
-        beforeEach(() => cy.contains('Cap & Picks').click())
+      describe('Cap tab', () => {
+        beforeEach(() => cy.contains('Cap').click())
 
         it('renders salary cap bar', () => {
           cy.contains(/cap/i, { timeout: 8000 }).should('exist')
@@ -135,9 +136,17 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
           })
         })
 
-        it('renders draft picks section', () => {
-          cy.contains(/Draft Picks/i, { timeout: 8000 }).should('exist')
-          cy.contains(/1st|2nd|3rd/).should('exist')
+      })
+
+      describe('Picks tab', () => {
+        beforeEach(() => cy.contains('Picks').click())
+
+        it('renders 2026 NHL Draft section', () => {
+          cy.contains('2026 NHL Draft', { timeout: 8000 }).should('exist')
+        })
+
+        it('renders CAR pick slot', () => {
+          cy.get('.picks-slot, .picks-made-row', { timeout: 8000 }).should('have.length.gte', 1)
         })
       })
     }

@@ -1,7 +1,7 @@
 // LeagueView.jsx
 // Place in src/views/ alongside LeagueView.css
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { capture } from '../utils/analytics';
 import { useFetch } from '../hooks/useFetch';
 import {
@@ -20,6 +20,7 @@ import TeamLogo from '../components/TeamLogo';
 import PlayerPopup from '../components/PlayerPopup';
 import './LeagueView.css';
 import '../components/PredictionCanvas.css';
+import DraftTab from '../components/DraftTab';
 
 const PRIMARY = TEAM_CONFIG.abbr;
 const SEASON  = TEAM_CONFIG.season;
@@ -1394,17 +1395,52 @@ function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, primaryColo
 }
 
 
+
+// ─── Scroll-to-top button ─────────────────────────────────────────────────────
+// Appears after the user scrolls down 200px within the league-content area.
+// Used by Power Rankings and Draft tabs which can be long.
+
+function ScrollTopButton() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const scroller = document.getElementById('main-content');
+    if (!scroller) return;
+    function onScroll() { setVisible(scroller.scrollTop > 200); }
+    scroller.addEventListener('scroll', onScroll, { passive: true });
+    return () => scroller.removeEventListener('scroll', onScroll);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <button
+      className="lv-scroll-top"
+      onClick={() => document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' })}
+      aria-label="Scroll to top"
+    >
+      ↑ Top
+    </button>
+  );
+}
+
 // ─── LeagueView ──────────────────────────────────────────────────────────────
 
 const TABS = [
   { id: 'standings', label: 'Standings' },
   { id: 'bracket',   label: 'Playoff bracket' },
   { id: 'leaders',   label: 'Leaders' },
-  { id: 'rankings',  label: 'Power rankings' }
+  { id: 'rankings',  label: 'Power rankings' },
+  { id: 'draft',     label: 'Draft' }
 ];
 
 export default function LeagueView() {
   const [activeTab, setActiveTab] = useState('standings');
+
+  const handleTabChange = useCallback((tabId) => {
+    setActiveTab(tabId);
+    capture('league_tab_viewed', { tab: tabId });
+  }, []);
 
   const { data: standings, loading: standingsLoading, error: standingsError }
     = useFetch(getStandings, []);
@@ -1449,7 +1485,7 @@ export default function LeagueView() {
             role="tab"
             aria-selected={activeTab === tab.id}
             className={`league-tab${activeTab === tab.id ? ' league-tab--active' : ''}`}
-            onClick={() => { setActiveTab(tab.id); capture('league_tab_viewed', { tab: tab.id }); }}
+            onClick={() => handleTabChange(tab.id)}
           >
             {tab.label}
           </button>
@@ -1483,14 +1519,22 @@ export default function LeagueView() {
         )}
 
         {activeTab === 'rankings' && (
-          <RankingsPanel
+          <>
+            <ScrollTopButton />
+            <RankingsPanel
             standings={standingsEntries}
             xgData={xgData}
             xgLoading={xgLoading}
             narrative={prNarrative}
             history={prHistory}
           />
+          </>
         )}
+
+        {activeTab === 'draft' && <>
+          <ScrollTopButton />
+          <DraftTab />
+        </>}
       </div>
     </div>
   );
