@@ -637,7 +637,7 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
   }
 
   return (
-    <div className="popup-backdrop" onClick={onClose}>
+    <div className="popup-backdrop popup-backdrop--centered" onClick={onClose}>
       <div className="series-modal" onClick={e => e.stopPropagation()}>
 
         {/* Header */}

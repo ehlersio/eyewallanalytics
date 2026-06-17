@@ -186,12 +186,21 @@ export function DraftPopup({ item, mode, onClose }) {
 // ─── Rankings Table ───────────────────────────────────────────────────────────
 
 function RankingsTable({ prospects, onSelect }) {
+  const wrapRef = useRef(null);
+  const [atEnd, setAtEnd] = useState(false);
+
+  function handleScroll(e) {
+    const el = e.currentTarget;
+    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4);
+  }
+
   if (!prospects?.length) {
     return <div className="dt-empty">No prospects found.</div>;
   }
 
   return (
-    <div className="dt-table-wrap">
+    <div className="dt-table-container">
+      <div className="dt-table-wrap" ref={wrapRef} onScroll={handleScroll}>
       <table className="dt-table" aria-label="Central Scouting rankings">
         <thead>
           <tr>
@@ -234,6 +243,8 @@ function RankingsTable({ prospects, onSelect }) {
           ))}
         </tbody>
       </table>
+      </div>
+      <div className={`dt-table-fade${atEnd ? ' dt-table-fade--hidden' : ''}`} />
     </div>
   );
 }

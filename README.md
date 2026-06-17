@@ -1,6 +1,6 @@
 # EyeWall Analytics
 
-> Advanced NHL analytics for all 32 teams — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, WAR/percentile rankings, and AI-powered league power rankings.
+> Advanced NHL analytics for all 32 teams — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, WAR/percentile rankings, AI-powered league power rankings, and live draft board.
 
 **Live at:** [eyewallanalytics.com](https://eyewallanalytics.com)  
 **Contact:** matt@eyewallanalytics.com  
@@ -10,7 +10,7 @@
 
 ## Overview
 
-EyeWall Analytics is a React PWA delivering real-time and historical NHL data entirely from the public NHL API and MoneyPuck. It combines live polling, a Cloudflare Worker caching layer, Web Push notifications, Workers AI-generated period/game summaries and matchup analysis, player shot heat maps, MoneyPuck-powered WAR/percentile analytics, true RAPM via ridge regression, and AI-powered nightly power rankings into a mobile-first experience for hockey fans who want to go deeper than the box score.
+EyeWall Analytics is a React PWA delivering real-time and historical NHL data entirely from the public NHL API and MoneyPuck. It combines live polling, a Cloudflare Worker caching layer, Web Push notifications, Workers AI-generated period/game summaries and matchup analysis, player shot heat maps, MoneyPuck-powered WAR/percentile analytics, true RAPM via ridge regression, AI-powered nightly power rankings, and a live draft board with Central Scouting rankings and AI pick analysis into a mobile-first experience for hockey fans who want to go deeper than the box score.
 
 Users select their team on first launch — all views, colors, and data scope to the selected team. The team and theme preference are persisted to `localStorage` and applied on every subsequent load.
 
@@ -26,12 +26,13 @@ Users select their team on first launch — all views, colors, and data scope to
 | Hosting | Cloudflare Pages (auto-deploys from `main`; `dev` branch → preview) |
 | API Proxy | Cloudflare Pages Functions (`functions/`) |
 | Cache Layer | Cloudflare Worker + KV (`eyewall-poller`) |
-| Database | Supabase Pro (player/team/goalie stats, shot events, RAPM, game xG, power rankings) |
-| Data Pipeline | Python (`eyewall-pipeline`) — NHL API + MoneyPuck → Supabase |
-| Pipeline CI | GitHub Actions — nightly data cron (3 AM ET) + AI pipeline (`ai_pipeline.yml`: summaries 8AM UTC, predictions 2PM UTC) |
+| Database | Supabase Pro (player/team/goalie stats, shot events, RAPM, game xG, power rankings, draft data) |
+| Data Pipeline | Python (`eyewall-pipeline`) — NHL API + MoneyPuck + Tankathon → Supabase |
+| Pipeline CI | GitHub Actions — nightly data cron (3 AM ET) + AI pipeline + draft day ingest |
 | Push Notifications | Web Push API (VAPID), Service Worker |
-| AI Summaries | Cloudflare Workers AI — `@cf/meta/llama-3.1-8b-instruct-fp8-fast` (period/game summaries, predictions, matchup analysis, scouting blurbs, power rankings narratives) |
+| AI Summaries | Cloudflare Workers AI — `@cf/meta/llama-3.1-8b-instruct-fp8-fast` (period/game summaries, predictions, matchup analysis, scouting blurbs, power rankings narratives, draft pick analysis) |
 | Analytics Data | MoneyPuck.com CSV (fetched nightly by pipeline) |
+| Draft Data | NHL Central Scouting API (rankings) + NHL API (live picks) + Tankathon (2026 pick order) |
 | User Analytics | PostHog (anonymous event tracking, cookieless) |
 | Data Source | NHL public API (no authentication required) |
 | Cap Data | Static `carContracts.js` (source: PuckPedia) |
@@ -64,11 +65,12 @@ canes-analytics-starter/
 │   ├── views/
 │   │   ├── ShotMapView.jsx/.css  # Live shot map, metrics, live insights, PP/PK, period summaries
 │   │   ├── ScheduleView.jsx/.css # Season + playoff schedule, predictions
-│   │   ├── TeamView.jsx/.css     # 5-tab team analytics
+│   │   ├── TeamView.jsx/.css     # 6-tab team analytics (Overview, Advanced, Splits, Trends, Cap, Picks)
 │   │   ├── PlayersView.jsx/.css  # Roster, player cards, analytics, heat maps
-│   │   ├── LeagueView.jsx/.css   # 4-tab league page: Standings, Playoff bracket, Leaders, Power rankings
+│   │   ├── LeagueView.jsx/.css   # 5-tab league page: Standings, Playoff bracket, Leaders, Power rankings, Draft
 │   │   ├── NewsView.jsx/.css     # News feed (4 sources, filters)
-│   │   └── DevReplayView.jsx/.css # Dev-only live game replay scrubber (/dev)
+│   │   ├── DevReplayView.jsx/.css # Dev-only live game replay scrubber (/dev)
+│   │   └── DevDraftView.jsx      # Dev-only draft simulator (/dev/draft)
 │   ├── components/
 │   │   ├── Topbar.jsx/.css       # Live score, countdown clock, momentum bar
 │   │   ├── IceRink.jsx/.css      # SVG rink, heat map, player filter, readOnly mode
@@ -81,6 +83,7 @@ canes-analytics-starter/
 │   │   ├── GameStatsComponents.jsx # PeriodTable, SkaterTable, GoalsList
 │   │   ├── PredictionShareCanvas.jsx # 1080×1080 prediction export card
 │   │   ├── PredictionCanvas.css   # Shared export card styles (used by prediction + power rankings canvas)
+│   │   ├── DraftTab.jsx/.css      # Draft board — rankings, live board, pick popups, AI analysis
 │   │   ├── NotificationBell.jsx  # ⚙️ Settings — push notification opt-in, theme toggle, period summary chips
 │   │   ├── PeriodSummary.jsx/.css # Period and game summary popup + share image canvas
 │   │   ├── AboutPopup.jsx/.css   # Logo tap → about + BMC link
@@ -93,14 +96,15 @@ canes-analytics-starter/
 │   │   ├── usePeriodSummary.js   # Period + game summary build, sessionStorage persistence
 │   │   └── useWakeLock.js        # Screen wake lock during live games
 │   └── utils/
-│       ├── nhlApi.js             # All NHL API calls, KV-first caching
+│       ├── nhlApi.js             # All NHL API calls, KV-first caching, draft endpoints
 │       ├── advancedStats.js      # Corsi, Fenwick, PDO, GSAx, Puck Luck
 │       ├── cache.js              # Module-level TTL cache, in-flight dedup
-│       ├── carContracts.js       # Static CAR contract + draft pick data
+│       ├── carContracts.js       # Static CAR contract data
+│       ├── draftFixtures.js      # Dev/test fixture data for draft simulator and Cypress
 │       ├── predictionStore.js    # localStorage game prediction tracker
-│       ├── supabaseClient.js     # Supabase read-only client + data fetchers (incl. getTeamSeasonData, getPowerRankingsNarrative)
+│       ├── supabaseClient.js     # Supabase read-only client + data fetchers
 │       ├── ppUnits.js            # PP/PK unit configs by season (inferPPUnit, inferPKUnit)
-│       ├── teamConfig.js         # All 32 team configs — primaryColor + displayColor + team picker
+│       ├── teamConfig.js         # All 32 team configs — primaryColor + displayColor + team picker. CURRENT_SEASON single flip point.
 │       ├── themeConfig.js        # Light/dark mode persistence (localStorage eyewall:theme)
 │       ├── applyTeamTheme.js     # Sets --team-primary, --team-primary-rgb, --team-canvas, --team-canvas-rgb on :root
 │       ├── PeriodSummaryContext.jsx # React context bridging ShotMapView → Game Center bell
@@ -108,24 +112,29 @@ canes-analytics-starter/
 │       ├── liveClockStore.js     # Shared pub/sub for synced clock + momentum
 │       └── analytics.js          # PostHog wrapper (capture, identify) — no-op outside production
 ├── src/utils/__tests__/          # Vitest unit tests
-│   ├── advancedStats.test.js     # Corsi, PDO, GSAx, Puck Luck (15 tests)
-│   ├── periodSummary.test.js     # HDC formula, strengthLabel, corsiColor, rosterMap (30 tests)
-│   ├── rolling.test.js           # Rolling win%, GF/GA, score-first, streak (28 tests)
-│   └── statFormatting.test.js    # groupStats formatting (10 tests)
+│   ├── advancedStats.test.js     # Corsi, PDO, GSAx, Puck Luck
+│   ├── periodSummary.test.js     # HDC formula, strengthLabel, corsiColor, rosterMap
+│   ├── rolling.test.js           # Rolling win%, GF/GA, score-first, streak
+│   ├── statFormatting.test.js    # groupStats formatting
+│   ├── leagueUtils.test.js       # Standings grouping functions
+│   ├── news.test.js              # News deduplication and filtering
+│   ├── prediction.test.js        # Win probability model
+│   └── staticLines.test.js       # Static line combination logic
 ├── cypress/
 │   ├── e2e/
-│   │   ├── navigation.cy.js      # Route navigation (7 tests)
-│   │   ├── news.cy.js            # News view, source filters (15 tests)
-│   │   ├── period-summary.cy.js  # Game Center, period/game summary popups (23 tests)
-│   │   ├── players.cy.js         # Roster, skater card, goalie card (30 tests)
-│   │   ├── schedule.cy.js        # Schedule view (47 tests)
-│   │   ├── shot-map.cy.js        # Shot Map all sections + rink controls (31 tests)
-│   │   ├── team.cy.js            # All 5 team tabs (19 tests)
-│   │   ├── league.cy.js          # League page — all 4 tabs incl. power rankings (63 tests)
-│   │   └── viewports.cy.js       # 4 viewports × 5 views (44 tests)
+│   │   ├── navigation.cy.js      # Route navigation
+│   │   ├── news.cy.js            # News view, source filters
+│   │   ├── period-summary.cy.js  # Game Center, period/game summary popups
+│   │   ├── players.cy.js         # Roster, skater card, goalie card
+│   │   ├── schedule.cy.js        # Schedule view
+│   │   ├── shot-map.cy.js        # Shot Map all sections + rink controls
+│   │   ├── team.cy.js            # All 6 team tabs
+│   │   ├── league.cy.js          # League page — all 5 tabs incl. draft
+│   │   ├── draft.cy.js           # Draft board — pre-draft, live, complete, team picks tab
+│   │   └── viewports.cy.js       # 4 viewports × 5 views
 │   └── support/e2e.js            # Custom commands: waitForContent, goTo, navTo, assertNoErrors
 ├── scripts/
-│   ├── cypress-full.mjs          # clean → run → report (always generates HTML regardless of failures)
+│   ├── cypress-full.mjs          # clean → run → report
 │   └── generate-report.mjs       # Mochawesome JSON merge → HTML report
 ├── .github/workflows/test.yml    # GitHub Actions: Vitest + Cypress on push to main/staging
 ├── SMOKE_TESTS.md                # Manual pre-merge checklist
@@ -149,18 +158,8 @@ On first launch the user selects their team from all 32 NHL teams. The selection
 | `--team-canvas` | Always `displayColor` | Export card accents (always dark bg) |
 | `--team-canvas-rgb` | RGB components of `--team-canvas` | `rgba()` tints in export CSS |
 
-### Color fields per team (teamConfig.js)
-
-| Field | Description |
-|-------|-------------|
-| `primaryColor` | Canonical brand hex — used in light mode and as the reference color |
-| `displayColor` | WCAG AA-compliant variant for dark mode (≥4.5:1 on `--bg2` / `#101827`). Equals `primaryColor` for the 9 teams that already pass. |
-
-### Light / dark mode
-The user's preference is stored in `localStorage` under `eyewall:theme` and read by `getTheme()` on mount. The toggle lives in the Settings drawer (⚙️). `setTheme(mode)` persists the choice and sets `data-theme` on `<html>`, which triggers the `[data-theme="light"]` token overrides in `index.css` and `light-mode-overrides.css`.
-
-### Export cards (social share images)
-`PredictionShareCanvas`, `PeriodSummary` share canvas, `ScoutingTab` share canvas, and `PowerRankingsCanvas` (inline in `LeagueView`) all use `--team-canvas` / `--team-canvas-rgb` for accents. Their backgrounds are hardcoded dark (`#1a1a2e`) regardless of app theme — export cards are always rendered for social sharing and should look consistent. Shared styles live in `PredictionCanvas.css`.
+### Season constant
+`CURRENT_SEASON = '20252026'` in `teamConfig.js` is the single flip point for all season-dependent logic in the app. The pipeline repo reads `NHL_SEASON` from a GitHub Actions secret. Both must be updated each October.
 
 ---
 
@@ -190,6 +189,9 @@ A separate Cloudflare Worker polls the NHL API every 60 seconds and writes to KV
 | `shots:CAR:index` | Player shot count index | 8 months |
 | `shots:done:{gameId}` | Shot aggregation dedup flag | 8 months |
 | `moneypuck:skaters` | WAR + percentile analytics for all CAR players | 4 hrs |
+| `draft:rankings:{categoryId}` | NHL Central Scouting rankings by category | 6 hrs |
+| `draft:picks:2026:{chunk}` | Live draft picks (chunked) | 5 min (live), 24hr (post-draft) |
+| `draft:order:2026:{team}` | 2026 pick order per team from Tankathon | 24 hrs |
 
 ### Worker Endpoints
 
@@ -206,24 +208,10 @@ A separate Cloudflare Worker polls the NHL API every 60 seconds and writes to KV
 | `GET /shots/backfill?secret=&batch=5` | Backfill shot data for completed games (batched) |
 | `GET /moneypuck/refresh?secret=` | Force refresh MoneyPuck analytics |
 | `GET /social/test?secret=&post=1` | Preview (or post) test X/social post |
-
-### Environment Variables
-
-| Variable | Where | Notes |
-|----------|-------|-------|
-| `POLL_SECRET` | Worker | Protects manual trigger endpoints |
-| `ODDS_API_KEY` | Worker | The Odds API key — free tier 500 req/month, game-window gated |
-| `VAPID_PUBLIC_KEY` | Worker + Pages | Web Push VAPID public key |
-| `VAPID_PRIVATE_KEY` | Worker (encrypted) | Web Push VAPID private key |
-| `VAPID_SUBJECT` | Worker | `mailto:matt@eyewallanalytics.com` |
-| `VITE_ANTHROPIC_API_KEY` | `.env.local` (dev only) | Claude API for period summary AI narratives via Vite proxy — **never committed** |
-| `X_CONSUMER_KEY` | Worker (encrypted) | X/Twitter API key |
-| `X_CONSUMER_SECRET` | Worker (encrypted) | X/Twitter API secret |
-| `X_ACCESS_TOKEN` | Worker (encrypted) | X/Twitter access token |
-| `X_ACCESS_SECRET` | Worker (encrypted) | X/Twitter access secret |
-| `VITE_WORKER_URL` | Pages (build-time) | Worker base URL |
-| `VITE_VAPID_PUBLIC_KEY` | Pages (build-time) | Web Push public key for browser |
-| `VITE_POSTHOG_KEY` | Pages (build-time) + `.env.local` | PostHog project API key (`phc_...`) |
+| `GET /draft/rankings?category=` | Central Scouting rankings (all or by category) |
+| `GET /draft/picks?team=` | Live/completed draft picks (optionally filtered by team) |
+| `GET /draft/order?team=` | 2026 pick order slots per team |
+| `POST /draft/picks/ingest` | Bulk insert draft picks (called by pipeline `draft_ingest.py`) |
 
 ---
 
@@ -274,25 +262,20 @@ The ⚙️ gear icon in the top-right corner opens the Settings drawer. It conta
 ### Live Insights Panel
 Auto-generated contextual callouts from PBP data — shot advantage, momentum, top scorer, PK performance, score situation alerts, empty net detection.
 
-### Metrics Row (7 cards, 2 rows)
-- **SOG, Hits, Blocks, Penalties** (top row)
-- **Faceoff %, PP %, PK %** (bottom row) — PP/PK cards tap to open full drill-down analysis
-
-### Power Play / Penalty Kill Analysis
-Summary bar, unit chips (PP1/PP2, PK1/PK2), per-opportunity breakdown, shot type breakdown, mini shot map.
-
 ### Schedule Page
 - Regular season game cards with win probability chips
 - Playoff round sections with series records
 - AI Game Summary card on completed games (Workers AI via Worker)
 
-### Team Page (5 tabs)
-**Overview, Advanced, Splits, Trends, Cap & Picks**
+### Team Page (6 tabs)
+**Overview, Advanced, Splits, Trends, Cap, Picks**
+
+The **Cap** tab (CAR only) shows salary cap bar, contract table with UFA/RFA status, and cap projections. The **Picks** tab (all 32 teams) shows that team's 2026 draft picks — pre-draft shows confirmed pick slots from Tankathon, live/post-draft shows actual selections with AI analysis popups.
 
 ### Players Page
 Skater and goalie cards with Stats, Analytics (WAR/GSAX), and Heat Map tabs. Dual goalie rankings by SV% and GAA.
 
-### League Page (4 tabs)
+### League Page (5 tabs)
 
 **Standings** — division, conference, league, and wild card views. L10 dot indicators, clinch/WC legend, YOU row highlight in team color.
 
@@ -311,7 +294,7 @@ Skater and goalie cards with Stats, Analytics (WAR/GSAX), and Heat Map tabs. Dua
 | Special teams avg | 10% | NHL standings |
 | Roster WAR | 0–15% | EyeWall RAPM model (tapers to 0% by game 20) |
 
-Roster WAR blends in at the start of the season when standings stats are unreliable, then tapers off as the season develops (alpha = min(GP/20, 1.0)). Movement arrows (▲/▼) show rank change from prior day. Personalised AI narrative (Workers AI, "Sticks" persona) generated nightly per team and stored in `power_rankings_narratives`. Expandable "How is this calculated?" transparency panel. 1080×1080 export card via `html-to-image`.
+**Draft** — NHL Central Scouting rankings with four category sub-tabs (NA Skaters, Intl Skaters, NA Goalies, Intl Goalies). Pre-draft shows rankings table with rank delta (midterm → final), height, weight, club, league, country. Auto-switches to live draft board when picks begin — round-grouped pick rows with CS rank badges and AI analysis popups ("Sticks" persona). Rankings/Board toggle remains available during and after the draft. Export cards for individual picks. The per-team Picks tab on the Team page also shows live picks filtered to that team.
 
 ### Game Event Popups
 Puck Drop, Goal (with goal horn), Opponent Penalty, Win — all deduped via `sessionStorage`.
@@ -342,9 +325,26 @@ Events: goal, game start, opponent penalty (PP), win. Payloadless push — SW fe
 | `rapm.py` | 3-year rolling ridge regression RAPM with score-state normalization |
 | `moneypuck.py` | WAR + percentiles + goalie GSAX + game-level xG + season xGF% aggregation |
 | `power_rankings.py` | Roster WAR scores + 32-team rankings + nightly AI narratives → Supabase |
+| `special_teams.py` | PP/PK unit inference from shift + shot events → `special_teams_units` table |
+| `draft_ingest.py` | Live draft pick polling — NHL API → Supabase + AI analysis via Worker |
+| `tankathon_ingest.py` | 2026 draft pick order scraper (Tankathon) → `draft_pick_order_2026` |
 | `validate_rapm.py` | RAPM quality checks — league-wide, uniform 60th percentile threshold |
 
-**Supabase tables:** `players`, `player_seasons`, `goalie_seasons`, `team_seasons` (incl. `xgf_pct`, `roster_war_score`), `shot_events`, `shift_events`, `zone_starts`, `game_log`, `game_xg`, `power_rankings_narratives`, `rapm_validation`, `skipped_games`, `player_score_state_dist`
+**Supabase tables:** `players`, `player_seasons`, `goalie_seasons`, `team_seasons` (incl. `xgf_pct`, `roster_war_score`), `shot_events`, `shift_events`, `zone_starts`, `game_log`, `game_xg`, `power_rankings_narratives`, `rapm_validation`, `skipped_games`, `player_score_state_dist`, `special_teams_units`, `draft_rankings_2026`, `draft_picks_2026`, `draft_pick_order_2026`
+
+### Pipeline GitHub Actions workflows
+
+| Workflow | Schedule | Description |
+|----------|----------|-------------|
+| `nightly.yml` | 3 AM ET daily | Full pipeline run (nhl_stats → rapm → moneypuck → power_rankings → ai_summaries) |
+| `moneypuck-ingest.yml` | Nightly | MoneyPuck CSV fetch via GH runner (Cloudflare IPs blocked) |
+| `reddit-ingest.yml` | Every 30 min | Reddit (32 subreddits) + SBNation atom feeds → Worker |
+| `tankathon-sync.yml` | Weekly (Tue 8am ET) | Tankathon draft order scrape → Supabase |
+| `draft-ingest.yml` | Jun 26 10:45pm UTC + Jun 27 2pm UTC | Live draft pick polling loop (exit 99 when 224 picks complete) |
+
+### Draft Day Ingest
+
+`draft_ingest.py --poll-picks` fetches live picks from the NHL API, diffs against `draft_picks_2026`, inserts new picks with AI analysis (via Worker), and exits with code 99 when all 224 picks are inserted. `draft-ingest.yml` loops this every 60 seconds with a 6-hour timeout covering both draft nights. A KV purge step runs before polling starts to clear any stale cached pick data.
 
 ### Pipeline run order (nightly, via `run.py`)
 
@@ -355,7 +355,7 @@ shift_data        → shifts
 zone_starts       → zone starts
 rapm              → RAPM regression
 moneypuck         → WAR, percentiles, xGF%, game xG
-line_combinations → line combos from shift + shot data
+special_teams     → PP/PK unit inference
 power_rankings    → roster WAR scores + rankings + AI narratives
 ai_summaries      → post-game summaries
 ai_scouting       → missing scouting blurbs
@@ -368,12 +368,6 @@ validate_rapm     → sanity checks (non-zero exit on failure)
 - **Formulation:** Signed xG differential; zone-start adjusted; score-state normalized via `player_score_state_dist`
 - **Ridge alpha:** 2500; **min sample:** 150 min EV ice time across 3-season pool
 - **Known limitations:** Draisaitl/Makar rank anomaly due to dominant linemate collinearity; injury-shortened seasons produce high-variance estimates — both documented in `validate_rapm.py`
-
----
-
-## MoneyPuck Analytics
-
-WAR (RAPM-derived), GSAX, SV% splits, percentile rankings — all fetched nightly from MoneyPuck CSV. Season-level 5v5 xGF% is aggregated from `game_xg` into `team_seasons.xgf_pct` nightly and used in power rankings.
 
 ---
 
@@ -397,7 +391,9 @@ VITE_POSTHOG_KEY=phc_...             # PostHog project API key (optional locally
 
 > The `VITE_ANTHROPIC_API_KEY` is injected server-side by the Vite proxy at `/anthropic` — it never appears in the client bundle. In production, period summary AI calls are handled by the Cloudflare Worker.
 
-**Dev tools** — visit `http://localhost:5173/dev` for the live game replay scrubber.
+**Dev tools:**
+- `http://localhost:5173/dev` — live game replay scrubber
+- `http://localhost:5173/dev/draft` — draft board simulator (pre-draft / live / complete states, all 16 teams, play/pause/step controls)
 
 **Debug panel** — tap the score bar 5 times to open. Sections: Popups, Insights, Situation, Push.
 
@@ -430,6 +426,16 @@ main branch → eyewallanalytics.com (production)
 
 **To run power rankings manually:** `python power_rankings.py` (all teams) or `python power_rankings.py --team CAR --dry-run` (preview one team's prompt).
 
+**To sync draft order:** `python tankathon_ingest.py` — upserts all 224 picks into `draft_pick_order_2026`. Run weekly or after any known trades involving picks.
+
+**October season prep checklist:**
+1. Update `CURRENT_SEASON` in `teamConfig.js` (app repo)
+2. Update `NHL_SEASON` GitHub Actions secret (pipeline repo)
+3. Update `MP_SEASON` in `moneypuck.py`
+4. Update `OFFSEASON_BRACKET` in `LeagueView.jsx` with prior season results
+5. Review Dependabot PRs (ESLint 10, Vite 8, supabase-ecosystem 2.31.0)
+6. Re-run `tankathon_ingest.py` for new draft year
+
 ---
 
 ## Testing
@@ -441,51 +447,52 @@ npm test            # Run all tests once
 npm run test:watch  # Watch mode
 ```
 
-**137 tests across 4 files:**
+**138 tests across 8 files:**
 
 | File | Coverage | Tests |
 |------|----------|-------|
-| `advancedStats.test.js` | `computeShotAttempts`, `seasonPDO` | 15 |
-| `periodSummary.test.js` | `isHighDanger` (HDC formula), `strengthLabel`, `corsiColor`, `buildRosterMap`, HDC counting integration | 30 |
-| `rolling.test.js` | Rolling win%, GF/GA, score-first rate, streak calculation | 28 |
-| `statFormatting.test.js` | `groupStats` formatting for all stat types | 10 |
+| `advancedStats.test.js` | `computeShotAttempts`, `seasonPDO` | 13 |
+| `periodSummary.test.js` | HDC formula, `strengthLabel`, `corsiColor`, `buildRosterMap` | 26 |
+| `rolling.test.js` | Rolling win%, GF/GA, score-first rate, streak | 18 |
+| `statFormatting.test.js` | `groupStats` formatting | 14 |
+| `leagueUtils.test.js` | Standings grouping functions | 15 |
+| `news.test.js` | News deduplication and filtering | 16 |
+| `prediction.test.js` | Win probability model | 7 |
+| `staticLines.test.js` | Static line combination logic | 29 |
 
 ### Cypress (E2E tests)
 
 ```bash
 npm run cypress:open    # Interactive mode
 npm run cypress:run     # Headless
-npm run cypress:full    # Clean → run → generate HTML report (always generates regardless of pass/fail)
+npm run cypress:full    # Clean → run → generate HTML report
 ```
 
 **HTML report:** `cypress/reports/html/merged.html`
 
-**279 tests across 9 specs:**
+**Tests across 10 specs:**
 
-| Spec | What it tests | Tests |
-|------|--------------|-------|
-| `navigation.cy.js` | All routes, bottom nav | 7 |
-| `news.cy.js` | Source filter chips (dynamic), article list, refresh, attribution | 16 |
-| `period-summary.cy.js` | Game Center (⚙️) drawer, period summary popup, final game summary | 23 |
-| `players.cy.js` | Roster, skater card (all tabs, defensive stats, GSAX), goalie card (dual rankings, GSAX analytics) | 30 |
-| `schedule.cy.js` | Playoffs rounds, Prediction/Scouting tabs, CAR lines, AI matchup analysis, stats popup | 50 |
-| `shot-map.cy.js` | All sections: insights, shot attempts, momentum, rink controls | 31 |
-| `team.cy.js` | All 5 tabs including trends charts and cap table | 19 |
-| `league.cy.js` | All 4 tabs: standings filters, bracket, leaders, power rankings + export | 63 |
-| `viewports.cy.js` | 4 viewports (375/430/768/1280px) × all 5 views | 44 |
+| Spec | What it tests |
+|------|--------------|
+| `navigation.cy.js` | All routes, bottom nav |
+| `news.cy.js` | Source filter chips, article list, refresh, attribution |
+| `period-summary.cy.js` | Game Center drawer, period summary popup, final game summary |
+| `players.cy.js` | Roster, skater card (all tabs), goalie card (dual rankings, GSAX) |
+| `schedule.cy.js` | Playoffs rounds, Prediction/Scouting tabs, AI matchup analysis, stats popup |
+| `shot-map.cy.js` | All sections: insights, shot attempts, momentum, rink controls |
+| `team.cy.js` | All 6 tabs including Cap and Picks |
+| `league.cy.js` | All 5 tabs: standings filters, bracket, leaders, power rankings, draft |
+| `draft.cy.js` | Pre-draft rankings, live board, complete state, team Picks tab (CAR + non-CAR) |
+| `viewports.cy.js` | 4 viewports (375/430/768/1280px) × all 5 views |
 
 CI runs Vitest + Cypress headless on every push to `main` or `staging`. GitHub Actions uploads HTML report as artifact (14-day retention) and screenshots on failure (7-day retention).
-
-### Pending Cypress additions
-- Theme toggle: verify `data-theme` attribute flips on toggle, persists across navigation
-- `viewports.cy.js`: run smoke pass in light mode to catch any rendering regressions
 
 ---
 
 ## Advanced Stats Definitions
 
 | Stat | Formula | Context |
-|------|---------|---------| 
+|------|---------|---------|
 | **CF%** | Team shot attempts ÷ total (SOG + missed + blocked) | ≥50% = controlling play |
 | **FF%** | Team unblocked attempts ÷ total unblocked | Excludes shot-blocking luck |
 | **PDO** | (SH% + SV%) × 100 | League avg = 100; far from 100 = luck |
@@ -498,29 +505,8 @@ CI runs Vitest + Cypress headless on every push to `main` or `staging`. GitHub A
 | **GSAX/$M** | Season GSAX ÷ cap hit in $M | Goalie contract value |
 | **Blended value** | (Points/$M × 0.6) + (WAR/$M × 6 × 0.4) | Skater contract value |
 | **Momentum%** | Weighted zone events: shots (1.0/0.7), OZ faceoff wins (0.6), OZ hits/takeaways (0.4–0.5) | Inspired by NHL Edge Ice Tilt |
-| **High Danger Chances** | Shot attempts (incl. blocked) within 15ft of net: `dist(|x|-89, y) < 15` | Matches Shot Map formula |
+| **High Danger Chances** | Shot attempts (incl. blocked) within 15ft of net: `dist(\|x\|-89, y) < 15` | Matches Shot Map formula |
 | **Power Rankings score** | Weighted sum of 5 normalised components + early-season roster WAR prior | See League Page section |
-
----
-
-## Performance (Lighthouse Mobile)
-
-Latest scores against `eyewallanalytics.com`:
-
-| Metric | Score |
-|--------|-------|
-| First Contentful Paint | 3.3s |
-| Largest Contentful Paint | 6.2s |
-| Total Blocking Time | 60ms |
-| Cumulative Layout Shift | 0 |
-| Speed Index | 4.6s |
-
-Key optimisations applied:
-- Font Awesome CDN replaced with inline SVGs (saved 19 KiB render-blocking CSS)
-- Google Fonts `@import` replaced with `<link display=optional>` (eliminates CLS)
-- Preconnect hints for Google Fonts, Supabase, and Worker
-- Route-level lazy loading — only `ShotMapView` loads on initial paint
-- `min-height` on `.two-col` prevents layout shift during data load
 
 ---
 
@@ -528,46 +514,48 @@ Key optimisations applied:
 
 - **Cron minimum:** 1-minute polling intervals — live data is 0–60s behind NHL API.
 - **Cap data:** NHL API doesn't expose salary. Static file requires manual updates.
+- **Future draft picks:** Per-team future pick inventory (beyond current draft year) deferred pending reliable data source. PuckPedia picks tab appears to load dynamically — scraping approach TBD.
 - **iOS push:** Requires Add to Home Screen — browser-tab Safari cannot receive Web Push.
 - **WAR/RAPM beta:** Zone-start OZS% still being refined.
 - **RAPM non-CAR players:** Non-CAR players only appear in 2–5 games vs CAR per season. Their RAPM estimates have high variance — validation thresholds are relaxed accordingly.
 - **RAPM linemate collinearity:** Draisaitl and Makar rank anomalously low due to dominant co-deployment. Documented in `validate_rapm.py` — treat as known artifact, not pipeline error.
 - **Period summary sessionStorage:** Summaries persist for the current game session only.
 - **Matchup analysis availability:** `matchup_text` only exists for upcoming games — scouting export card AI section is blank for completed games.
-- **`card_text` backfill:** Short card captions (`card_text`) are generated by the nightly pipeline. Existing `game_summaries` rows without `card_text` fall back to the full narrative on the export card until regenerated.
 - **X/Twitter posting:** Code is built and tested. Requires Basic tier ($100/mo) to post.
+- **Reddit ingest:** All 32 subreddits currently failing — Reddit blocks unauthenticated GH Actions IPs. Deferred to October; consider OAuth or alternative source.
 - **STATIC_LINES / PP_UNITS / PK_UNITS:** Only have CAR entries. Add other teams' data as needed; graceful null fallback exists for teams without entries.
-- **TEAM_NEWS_SOURCES in worker.js:** Only has CAR entry. Generic NHL sources serve all teams.
-- **Power rankings xGF%:** Shows `—` until first nightly pipeline run after the `migration_add_xgf_pct.sql` migration. Rankings still compute on the remaining four components.
-- **Power rankings UTA:** Utah not yet present in `team_seasons` — excluded from rankings until pipeline populates their row.
-- **Transactions / Injuries tabs:** Deferred pending PuckPedia API access. No reliable free endpoint for structured injury or transaction data.
+- **Power rankings xGF%:** Shows `—` until first nightly pipeline run after the `migration_add_xgf_pct.sql` migration.
+- **Transactions / Injuries tabs:** Deferred pending PuckPedia API access.
 
 ---
 
 ## Offseason Roadmap
 
-- [x] Cypress: theme toggle persistence test + light mode viewport smoke pass
-- [x] Route period summary AI narrative calls through Cloudflare Worker in production
-- [x] League page — Standings (all 4 views), Playoff bracket, Leaders
-- [x] League page — Power Rankings with AI narratives, movement arrows, export card
-- [x] Analytics staging suppression — `capture()` no-ops outside production
+- [x] League page — Standings, Playoff bracket, Leaders, Power Rankings
+- [x] League page — Draft tab with Central Scouting rankings + live board
+- [x] Team page — Cap/Picks split into separate tabs
+- [x] Draft day pipeline — `draft_ingest.py` polling loop + `draft-ingest.yml` workflow
+- [x] Tankathon scraper — `tankathon_ingest.py` + `tankathon-sync.yml`
+- [x] Special teams pipeline — `special_teams.py` replacing static `ppUnits.js`
+- [x] Season hardcoding eliminated — `CURRENT_SEASON` single flip point
+- [x] Supabase RLS enabled on all public tables
+- [ ] Reddit ingest fix (GH Actions IPs blocked — revisit OAuth or alternative source)
+- [ ] Future draft picks per team — PuckPedia scraping or alternative source
+- [ ] PuckPedia integration — contracts + cap for all 32 teams (pending scraping approach)
 - [ ] `app_config` Supabase table for season constant — eliminate hardcoded `20252026`
-- [ ] `pp_units` / `pk_units` Supabase table — replace static `ppUnits.js`
-- [ ] `score_state.py` backfill for 20242025 and 20232024 seasons (run `--season` flag)
+- [ ] `score_state.py` backfill for 20242025 and 20232024 seasons
 - [ ] RAPM alpha tuning via cross-validation (after 3+ full seasons)
-- [ ] RAPM validation chip in UI surfacing `rapm_validation` table
-- [ ] Update `SMOKE_TESTS.md` with period summary, Game Center, share image, theme toggle test cases
 - [ ] Expand `STATIC_LINES` / `PP_UNITS` / `PK_UNITS` for additional teams
-- [ ] PuckPedia API integration (pending access approval) → enables Transactions + Injuries tabs
 - [ ] X/Twitter auto-posting (when Basic tier active)
-- [ ] Year-over-year player comparison view
-- [ ] NHL EDGE zone time endpoint for live Momentum card improvement
-- [ ] PostHog funnel analysis — identify drop-off between Prediction view → AI analysis → export
-- [ ] Matchup analysis prompt quality — fix team attribution errors, consider structured JSON output for per-line cards
-- [ ] Capacitor PWA wrapper for App Store / Play Store distribution
-- [ ] Game summary auto-open on `FINAL` state (`useEffect` watching `pbp?.gameState`)
-- [ ] Power rankings — add prior-week movement history chart (sparkline of rank over last 4 weeks)
-- [ ] Bump `OFFSEASON_BRACKET`, `MP_SEASON`, `SEASON` fallback to `20262027` in October 2026
+- [ ] Season-over-season player comparison view
+- [ ] xGF% sparkline trend on team page
+- [ ] Line combinations tracker (extension of special_teams inference)
+- [ ] Standings clinching indicators (magic numbers)
+- [ ] Hat tricks / natural hat tricks / SHG milestone feed
+- [ ] PostHog funnel analysis
+- [ ] Capacitor PWA wrapper for App Store / Play Store
+- [ ] Dependabot: supabase-ecosystem 2.3.4→2.31.0, ESLint 9→10, Vite 5→8 (revisit October)
+- [ ] October season prep: bump `CURRENT_SEASON`, `NHL_SEASON`, `MP_SEASON`, `OFFSEASON_BRACKET`
 
 ---
 
