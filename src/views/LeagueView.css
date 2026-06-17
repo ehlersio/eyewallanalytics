@@ -976,3 +976,35 @@
   color: var(--text);
   border-color: var(--text-dim);
 }
+
+/* ── Mobile polish ──────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  /* League tabs: horizontal scroll instead of wrapping */
+  .league-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 10px;
+    gap: 4px;
+  }
+  .league-tabs::-webkit-scrollbar { display: none; }
+  .league-tab {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+
+  /* Series modal: force centered on mobile regardless of backdrop default */
+  .popup-backdrop--centered {
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 16px !important;
+  }
+  .series-modal {
+    width: calc(100vw - 32px) !important;
+    max-height: 85vh;
+    border-radius: var(--radius) !important;
+  }
+}
