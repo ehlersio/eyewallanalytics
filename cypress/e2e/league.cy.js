@@ -53,8 +53,8 @@ describe('League page — CAR', () => {
 
   // ── Tab bar ──────────────────────────────────────────────────
 
-  it('renders all four tab buttons', () => {
-    cy.get('.league-tab').should('have.length', 4)
+  it('renders all five tab buttons', () => {
+    cy.get('.league-tab').should('have.length', 5)
     cy.get('.league-tab').eq(0).should('contain', 'Standings')
     cy.get('.league-tab').eq(1).should('contain', 'Playoff bracket')
     cy.get('.league-tab').eq(2).should('contain', 'Leaders')

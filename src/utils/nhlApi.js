@@ -61,6 +61,56 @@ async function kvFetch(key) {
   }
 }
 
+
+// Call a Worker endpoint directly (not via KV cache passthrough).
+// Used for routes the Worker owns end-to-end: /draft/*, /news, etc.
+async function workerFetch(path) {
+  if (!WORKER_URL) return null;
+  try {
+    const res = await fetch(`${WORKER_URL}${path}`, {
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) {
+      console.warn(`Worker ${res.status}: ${path}`);
+      return null;
+    }
+    return res.json();
+  } catch (err) {
+    console.error('Worker fetch error:', path, err.message);
+    return null;
+  }
+}
+
+// ─── DRAFT ────────────────────────────────────────────
+
+// Fetch NHL Central Scouting rankings.
+// category: 1=NA Skater, 2=Intl Skater, 3=NA Goalie, 4=Intl Goalie
+// Omit category to get all 4 grouped by category_id: { 1: [...], 2: [...], 3: [...], 4: [...] }
+export async function getDraftRankings(category = null) {
+  const path = category ? `/draft/rankings?category=${category}` : '/draft/rankings';
+  return workerFetch(path);
+}
+
+// Fetch live/completed draft picks from Supabase (via Worker).
+// team: team abbrev filter e.g. 'CAR' — omit for full board
+// round: round number filter e.g. 1 — omit for all rounds
+// Returns [] pre-draft (no picks yet), populates live on June 26.
+export async function getDraftPicks(team = null, round = null) {
+  const params = new URLSearchParams();
+  if (team)  params.set('team', team);
+  if (round) params.set('round', String(round));
+  const qs = params.size ? `?${params}` : '';
+  return workerFetch(`/draft/picks${qs}`);
+}
+
+// Fetch confirmed R1 pick order (pre-draft placeholder slots).
+// team: team abbrev filter e.g. 'CAR' — omit for all 32 teams
+// Returns rows from draft_pick_order_2026 including original_team for traded picks.
+export async function getDraftOrder(team = null) {
+  const path = team ? `/draft/order?team=${team}` : '/draft/order';
+  return workerFetch(path);
+}
+
 // ─── SCHEDULE ────────────────────────────────────────────────
 
 // Fetch ALL CAR games for the season (regular + playoffs together)

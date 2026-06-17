@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { useFetch } from '../hooks/useFetch'
 import {
   getTeamStats, getStandings,
@@ -6,9 +6,11 @@ import {
   getTeamCorsi, getTeamRealtime, getTeamScoreState, getTeamPowerplay, getTeamPenaltyKill,
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
   getTeamSeasonRankings, TEAM_CONFIG,
+  getDraftOrder, getDraftPicks,
 } from '../utils/nhlApi'
 import { getTeamGameLog as getDbTeamGameLog } from '../utils/supabaseClient'
-import { CONTRACTS, DRAFT_PICKS, getCapSummary, CAP_CEILING, CURRENT_SEASON, CONTRACT_DATA_DATE } from '../utils/carContracts'
+import { CONTRACTS, getCapSummary, CAP_CEILING, CURRENT_SEASON, CONTRACT_DATA_DATE } from '../utils/carContracts'
+import { DraftPopup } from '../components/DraftTab'
 import { seasonPDO } from '../utils/advancedStats'
 import InfoTip from '../components/InfoTip'
 import TeamLogo from '../components/TeamLogo'
@@ -16,7 +18,8 @@ import { TEAM_COLORS } from '../utils/nhlApi'
 import './TeamView.css'
 
 const TABS = ['Overview', 'Advanced', 'Splits', 'Trends',
-  ...(TEAM_CONFIG.abbr === 'CAR' ? ['Cap & Picks'] : [])
+  ...(TEAM_CONFIG.abbr === 'CAR' ? ['Cap'] : []),
+  'Picks',
 ]
 
 export default function TeamView() {
@@ -61,14 +64,9 @@ export default function TeamView() {
   const capSummary      = getCapSummary()
   const capPct          = Math.round((capSummary.committed / CAP_CEILING) * 100)
   const sortedContracts = [...CONTRACTS].sort((a, b) => b.capHit - a.capHit)
-  const picksByYear     = {}
-  DRAFT_PICKS.forEach(p => {
-    if (!picksByYear[p.year]) picksByYear[p.year] = []
-    picksByYear[p.year].push(p)
-  })
 
   return (
-    <div className="page">
+    <div className="page team-view">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
         <TeamLogo abbr={TEAM_CONFIG.abbr} size={28} />
         <h2 className="view-title" style={{ margin: 0 }}>{TEAM_CONFIG.displayName}</h2>
@@ -86,7 +84,8 @@ export default function TeamView() {
       {tab === 'Advanced'  && <AdvancedTab corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} homeSplit={homeSplit} />}
       {tab === 'Splits'    && <SplitsTab homeSplit={homeSplit} homeSplitPO={homeSplitPO} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} ppReg={ppReg} pkReg={pkReg} corsiReg={corsiReg} />}
       {tab === 'Trends'    && <TrendsTab gameLog={gameLog} />}
-      {tab === 'Cap & Picks' && <CapTab capSummary={capSummary} capPct={capPct} sortedContracts={sortedContracts} picksByYear={picksByYear} />}
+      {tab === 'Cap'   && <CapTab capSummary={capSummary} capPct={capPct} sortedContracts={sortedContracts} />}
+      {tab === 'Picks' && <PicksTab />}
     </div>
   )
 }
@@ -813,78 +812,163 @@ function TrendsTab({ gameLog }) {
   )
 }
 
-// ── Cap & Picks tab ──────────────────────────────────────────
-function CapTab({ capSummary, capPct, sortedContracts, picksByYear }) {
+// ── Cap tab ───────────────────────────────────────────────────
+function CapTab({ capSummary, capPct, sortedContracts }) {
+  return (
+    <div className="card" style={{ marginTop: 4 }}>
+      <div className="sec-label" style={{ marginBottom: 10 }}>Salary Cap · {CURRENT_SEASON}</div>
+      <div className="cap-bar-wrap">
+        <div className="cap-bar-fill" style={{ width: `${capPct}%` }} />
+        <div className="cap-bar-track" />
+      </div>
+      <div className="cap-bar-labels">
+        <span className="cap-committed">${(capSummary.committed/1_000_000).toFixed(1)}M committed</span>
+        <span className="cap-space" style={{ color: capSummary.space < 5_000_000 ? 'var(--red-bright)' : 'var(--green)' }}>
+          ${(capSummary.space/1_000_000).toFixed(1)}M cap space
+        </span>
+      </div>
+      <div className="cap-ceiling-label">Cap ceiling: ${(CAP_CEILING/1_000_000).toFixed(1)}M</div>
+      <div className="cap-data-date">Data as of {CONTRACT_DATA_DATE} · Source: PuckPedia</div>
+      <div className="cap-table">
+        <div className="cap-table-header">
+          <span>Player</span><span>Pos</span><span>Cap Hit</span>
+          <span>Type</span><span>Expires</span>
+        </div>
+        {sortedContracts.map((c, i) => {
+          const barPct = Math.round((c.capHit / CAP_CEILING) * 100)
+          const isExpiring = c.yearsLeft === 0
+          return (
+            <div key={i} className={`cap-row ${isExpiring ? 'expiring' : ''}`}>
+              <span className="cap-name">{c.name}</span>
+              <span className="cap-pos">{c.pos}</span>
+              <div className="cap-hit-cell">
+                <div className="cap-hit-bar" style={{ width: `${Math.min(barPct * 3, 100)}%` }} />
+                <span className="cap-hit-val">${(c.capHit/1_000_000).toFixed(2)}M</span>
+              </div>
+              <span className={`cap-type ${c.type === 'UFA' ? 'ufa' : 'rfa'}`}>
+                {c.type}{c.note ? ` · ${c.note}` : ''}
+              </span>
+              <span className="cap-expires" style={{ color: isExpiring ? 'var(--amber)' : 'var(--text-dim)' }}>
+                {c.expiresAfter}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+      {capSummary.expiring.length > 0 && (
+        <div className="cap-expiring-note">
+          ⚠ {capSummary.ufa.length} UFA{capSummary.ufa.length !== 1 ? 's' : ''} and {capSummary.rfa.length} RFA{capSummary.rfa.length !== 1 ? 's' : ''} expiring this summer
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Picks tab ─────────────────────────────────────────────────
+function PicksTab({ overridePicks = null, overrideOrder = null, _devTeamAbbr = null }) {
+  const [order, setOrder]     = useState(null);
+  const [picks, setPicks]     = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected]     = useState(null);
+  const [selectedMode, setSelectedMode] = useState(null);
+
+  const teamAbbr = _devTeamAbbr || TEAM_CONFIG.abbr;
+
+  useEffect(() => {
+    if (overrideOrder !== null || overridePicks !== null) {
+      setOrder(Array.isArray(overrideOrder) ? overrideOrder : []);
+      setPicks(Array.isArray(overridePicks) ? overridePicks : []);
+      setLoading(false);
+      return;
+    }
+    Promise.all([
+      getDraftOrder(teamAbbr),
+      getDraftPicks(teamAbbr),
+    ]).then(([orderData, picksData]) => {
+      setOrder(Array.isArray(orderData) ? orderData : []);
+      const allPicks = Array.isArray(picksData) ? picksData : [];
+      // Worker filters by team, but guard client-side in case stub returns all picks
+      const teamPicks = allPicks.filter(p => !p.team_abbrev || p.team_abbrev === teamAbbr);
+      setPicks(teamPicks);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [teamAbbr, overrideOrder, overridePicks]);
+
+  const draftStarted = picks !== null && picks.length > 0;
+
+  function openPick(item, mode) {
+    setSelected(item);
+    setSelectedMode(mode);
+  }
+
+  function closePopup() {
+    setSelected(null);
+    setSelectedMode(null);
+  }
+
   return (
     <>
-      <div className="card" style={{ marginTop: 4 }}>
-        <div className="sec-label" style={{ marginBottom: 10 }}>Salary Cap · {CURRENT_SEASON}</div>
-        <div className="cap-bar-wrap">
-          <div className="cap-bar-fill" style={{ width: `${capPct}%` }} />
-          <div className="cap-bar-track" />
-        </div>
-        <div className="cap-bar-labels">
-          <span className="cap-committed">${(capSummary.committed/1_000_000).toFixed(1)}M committed</span>
-          <span className="cap-space" style={{ color: capSummary.space < 5_000_000 ? 'var(--red-bright)' : 'var(--green)' }}>
-            ${(capSummary.space/1_000_000).toFixed(1)}M cap space
-          </span>
-        </div>
-        <div className="cap-ceiling-label">Cap ceiling: ${(CAP_CEILING/1_000_000).toFixed(1)}M</div>
-        <div className="cap-data-date">Data as of {CONTRACT_DATA_DATE} · Source: PuckPedia</div>
-        <div className="cap-table">
-          <div className="cap-table-header">
-            <span>Player</span><span>Pos</span><span>Cap Hit</span>
-            <span>Type</span><span>Expires</span>
-          </div>
-          {sortedContracts.map((c, i) => {
-            const barPct = Math.round((c.capHit / CAP_CEILING) * 100)
-            const isExpiring = c.yearsLeft === 0
-            return (
-              <div key={i} className={`cap-row ${isExpiring ? 'expiring' : ''}`}>
-                <span className="cap-name">{c.name}</span>
-                <span className="cap-pos">{c.pos}</span>
-                <div className="cap-hit-cell">
-                  <div className="cap-hit-bar" style={{ width: `${Math.min(barPct * 3, 100)}%` }} />
-                  <span className="cap-hit-val">${(c.capHit/1_000_000).toFixed(2)}M</span>
+      {/* 2026 Draft */}
+      <div className="card" style={{ marginTop: 10 }}>
+        <div className="sec-label" style={{ marginBottom: 10 }}>2026 NHL Draft</div>
+
+        {loading && (
+          <div className="picks-loading">Loading…</div>
+        )}
+
+        {/* Pre-draft: R1 slot(s) from confirmed order */}
+        {!loading && !draftStarted && order !== null && (
+          <>
+            {order.length === 0 ? (
+              <div className="picks-empty">No confirmed picks found for {teamAbbr}.</div>
+            ) : (
+              <>
+                {order.map((slot) => (
+                  <div key={slot.pick_overall} className="picks-slot">
+                    <span className="picks-slot-round">Round {slot.round}</span>
+                    <span className="picks-slot-overall">Pick #{slot.pick_overall}</span>
+                    {slot.original_team && (
+                      <span className="picks-slot-from">via {slot.original_team}</span>
+                    )}
+                  </div>
+                ))}
+                <div className="picks-note" style={{ marginTop: 8 }}>
+                  Draft begins June 26 · Buffalo · 7 pm ET
                 </div>
-                <span className={`cap-type ${c.type === 'UFA' ? 'ufa' : 'rfa'}`}>
-                  {c.type}{c.note ? ` · ${c.note}` : ''}
-                </span>
-                <span className="cap-expires" style={{ color: isExpiring ? 'var(--amber)' : 'var(--text-dim)' }}>
-                  {c.expiresAfter}
-                </span>
+              </>
+            )}
+          </>
+        )}
+
+        {/* Live/post-draft: actual picks made */}
+        {!loading && draftStarted && (
+          <div className="picks-made-list">
+            {picks.map((pick) => (
+              <div
+                key={pick.pick_overall}
+                className="picks-made-row"
+                onClick={() => openPick(pick, 'pick')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && openPick(pick, 'pick')}
+              >
+                <span className="picks-made-round">R{pick.round} · #{pick.pick_overall}</span>
+                <span className="picks-made-name">{pick.prospect_first} {pick.prospect_last}</span>
+                <span className="picks-made-pos">{pick.position_code}</span>
+                {pick.final_rank && (
+                  <span className="picks-made-rank">CS #{pick.final_rank}</span>
+                )}
               </div>
-            )
-          })}
-        </div>
-        {capSummary.expiring.length > 0 && (
-          <div className="cap-expiring-note">
-            ⚠ {capSummary.ufa.length} UFA{capSummary.ufa.length !== 1 ? 's' : ''} and {capSummary.rfa.length} RFA{capSummary.rfa.length !== 1 ? 's' : ''} expiring this summer
+            ))}
           </div>
         )}
       </div>
 
-      <div className="card" style={{ marginTop: 10 }}>
-        <div className="sec-label" style={{ marginBottom: 10 }}>Future Draft Picks Owned</div>
-        {Object.entries(picksByYear).map(([year, picks]) => (
-          <div key={year} className="picks-year-row">
-            <span className="picks-year">{year}</span>
-            <div className="picks-chips">
-              {picks.sort((a,b) => a.round - b.round).map((p, i) => (
-                <div key={i} className={`pick-chip r${p.round}`}>
-                  <span className="pick-round">
-                    {p.round === 1 ? '1st' : p.round === 2 ? '2nd' : p.round === 3 ? '3rd' : `${p.round}th`}
-                  </span>
-                  {p.from !== 'CAR (own)' && <span className="pick-from">{p.from}</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-        <div className="picks-note">Source: PuckPedia (updated May 2026). Conditional picks not shown.</div>
-      </div>
+      {selected && (
+        <DraftPopup item={selected} mode={selectedMode} onClose={closePopup} />
+      )}
     </>
-  )
+  );
 }
 
 // ── Shared sub-components ────────────────────────────────────
@@ -906,5 +990,18 @@ function AdvStatRow({ label, val, note, rating, avg }) {
         )}
       </span>
     </div>
+  );
+}
+
+// ─── Dev export ──────────────────────────────────────────────────────────────
+// PicksTabDev — exported for DevDraftView simulator. Accepts teamAbbr as a prop
+// rather than reading from TEAM_CONFIG, so the simulator can switch teams.
+export function PicksTabDev({ teamAbbr, overridePicks = null, overrideOrder = null }) {
+  return (
+    <PicksTab
+      overridePicks={overridePicks}
+      overrideOrder={overrideOrder}
+      _devTeamAbbr={teamAbbr}
+    />
   );
 }
