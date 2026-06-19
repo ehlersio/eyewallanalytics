@@ -76,7 +76,7 @@ export default function AboutPopup({ isLive = false }) {
           </div>
 
           <p className="about-desc">
-            Advanced NHL analytics for all 32 teams — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, and WAR/percentile rankings.
+            Advanced analytics for all 32 NHL teams and 12 PWHL teams — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, and WAR/percentile rankings.
           </p>
 
           <div className="about-stats-row">

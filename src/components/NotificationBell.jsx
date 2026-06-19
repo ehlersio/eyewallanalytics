@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import { TEAM_CONFIG } from '../utils/teamConfig';
+import { useSport } from '../utils/SportContext';
+import { PWHL_TEAM_CONFIG } from '../utils/pwhlApi';
 import { getTheme, setTheme } from '../utils/themeConfig';
 import { applyTeamTheme } from '../utils/applyTeamTheme';
 import TeamLogo from '../components/TeamLogo';
@@ -9,6 +11,10 @@ import './NotificationBell.css';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
+  const { sport, isPWHL } = useSport();
+  const activeTeam = isPWHL ? PWHL_TEAM_CONFIG : TEAM_CONFIG;
+  const activeTeamAbbr = activeTeam?.abbr || TEAM_CONFIG.abbr;
+  const activeTeamName = activeTeam?.displayName || TEAM_CONFIG.displayName;
   const [theme, setThemeState] = useState(getTheme);
   const { supported, permission, subscribed, subscribe, unsubscribe, loading, error } =
     usePushNotifications();
@@ -16,7 +22,10 @@ export default function NotificationBell() {
 
   const handleChangeTeam = () => {
     setOpen(false);
+    // Clear sport selection so user returns to league picker
+    localStorage.removeItem('eyewall:sport');
     localStorage.removeItem('eyewall:team');
+    localStorage.removeItem('eyewall:pwhl_team');
     window.location.reload();
   };
 
@@ -64,8 +73,8 @@ export default function NotificationBell() {
           <div className="notif-my-team">
             <div className="notif-event-label">🏒 My Team</div>
             <div className="notif-team-row">
-              <TeamLogo abbr={TEAM_CONFIG.abbr} size={28} />
-              <span className="notif-team-name">{TEAM_CONFIG.displayName}</span>
+              <TeamLogo abbr={activeTeamAbbr} size={28} sport={isPWHL ? 'pwhl' : 'nhl'} />
+              <span className="notif-team-name">{activeTeamName}</span>
               <button className="notif-change-team-btn" onClick={handleChangeTeam}>
                 Change
               </button>
@@ -85,8 +94,8 @@ export default function NotificationBell() {
 
           <p className="notif-desc">
             {subscribed
-              ? `You'll get notified when the ${TEAM_CONFIG.displayName} score a goal, start a game, or win.`
-              : `Get instant alerts on your phone when the ${TEAM_CONFIG.displayName} score, start a game, or win — even when the app is closed.`}
+              ? `You'll get notified when the ${activeTeamName} score a goal, start a game, or win.`
+              : `Get instant alerts on your phone when the ${activeTeamName} score, start a game, or win — even when the app is closed.`}
           </p>
 
           {permission === 'denied' && (
@@ -115,9 +124,9 @@ export default function NotificationBell() {
           <div className="notif-events">
             <div className="notif-event-label">🔔 Push Notifications</div>
             {[
-              ['🚨', `${TEAM_CONFIG.displayName} goal scored`],
+              ['🚨', `${activeTeamName} goal scored`],
               ['🏒', 'Game starts'],
-              ['🏆', `${TEAM_CONFIG.displayName} win`],
+              ['🏆', `${activeTeamName} win`],
               ['😤', 'Opponent penalty (PP!)'],
             ].map(([icon, label]) => (
               <div key={label} className="notif-event-row">
@@ -144,7 +153,7 @@ export default function NotificationBell() {
                   </span>
                   <span className="notif-summary-chip-score">
                     {s.carGoals !== undefined
-                      ? `${TEAM_CONFIG.abbr} ${s.carGoals}–${s.oppGoals}`
+                      ? `${activeTeamAbbr} ${s.carGoals}–${s.oppGoals}`
                       : 'View summary'}
                   </span>
                   <span className="notif-summary-chip-arrow">›</span>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { pwhlLogoUrl } from '../utils/pwhlConfig';
 import './TeamLogo.css';
 
 // NHL logos are served from assets.nhle.com, proxied through /nhl-assets in dev.
@@ -7,8 +8,12 @@ import './TeamLogo.css';
 //
 // URL pattern:  /nhl-assets/logos/nhl/svg/{ABBR}_dark.svg
 // e.g. CAR → /nhl-assets/logos/nhl/svg/CAR_dark.svg
+//
+// PWHL logos are self-hosted in public/pwhl-logos/.
+// Filenames are irregular (see pwhlConfig.js PWHL_LOGO_FILES).
+// sport prop: 'nhl' (default) | 'pwhl'
 
-function logoUrl(abbr) {
+function nhlLogoUrl(abbr) {
   if (!abbr) return null;
   return `/nhl-assets/logos/nhl/svg/${abbr.toUpperCase()}_dark.svg`;
 }
@@ -35,16 +40,18 @@ function Fallback({ abbr, size, color }) {
  * TeamLogo
  *
  * Props:
- *   abbr    — three-letter team abbreviation, e.g. "CAR"
+ *   abbr    — team abbreviation, e.g. "CAR" (NHL) or "BOS" (PWHL)
+ *   sport   — 'nhl' (default) | 'pwhl'
  *   size    — px size (default 24)
- *   color   — team primary color string for fallback text (from TEAM_COLORS)
+ *   color   — team primary color string for fallback text
  *   className — extra class names
  */
-export default function TeamLogo({ abbr, size = 24, color, className = '' }) {
+export default function TeamLogo({ abbr, sport = 'nhl', size = 24, color, className = '' }) {
   const [errored, setErrored] = useState(false);
-  const src = logoUrl(abbr);
 
-  if (!abbr || errored) {
+  const src = sport === 'pwhl' ? pwhlLogoUrl(abbr) : nhlLogoUrl(abbr);
+
+  if (!abbr || !src || errored) {
     return <Fallback abbr={abbr} size={size} color={color} />;
   }
 
