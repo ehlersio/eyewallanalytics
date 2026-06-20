@@ -21,6 +21,7 @@ async function workerFetch(path) {
   try {
     const res = await fetch(`${WORKER_URL}${path}`, {
       signal: AbortSignal.timeout(8000),
+      cache: 'no-store',
     });
     if (!res.ok) {
       console.warn(`pwhlApi ${res.status}: ${path}`);
@@ -39,9 +40,20 @@ export async function fetchPWHLStandings(season = PWHL_CURRENT_SEASON) {
   return workerFetch(`/pwhl/standings?season=${season}`);
 }
 
+/** Fetch a single team's season record from pwhl_team_seasons (includes reg_wins, non_reg_wins). */
+export async function fetchPWHLTeamRecord(teamId, season) {
+  if (!teamId || !season) return null;
+  const data = await workerFetch(`/pwhl/standings?season=${season}`);
+  if (!Array.isArray(data)) return null;
+  // Coerce to int for comparison — Supabase returns team_id as integer
+  const id = parseInt(teamId, 10);
+  return data.find(r => parseInt(r.team_id, 10) === id) ?? null;
+}
+
+
 export async function fetchPWHLPlayers(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {
   if (!teamId) return null;
-  return workerFetch(`/pwhl/players?teamId=${teamId}&season=${season}`);
+  return workerFetch(`/pwhl/players?teamId=${teamId}&season=${season}&v=2`);
 }
 
 export async function fetchPWHLShots(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {

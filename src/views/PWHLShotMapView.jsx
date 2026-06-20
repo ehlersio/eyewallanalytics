@@ -1,5 +1,6 @@
 // views/PWHLShotMapView.jsx
 import { useState, useMemo, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useFetch } from '../hooks/useFetch';
 import {
   fetchPWHLShots, fetchPWHLRoster, fetchPWHLSchedule, fetchPWHLPBP,
@@ -706,8 +707,9 @@ export default function PWHLShotMapView() {
   const abbr   = team?.abbr || null;
   const color  = team?.displayColor || 'var(--text-dim)';
 
+  const location = useLocation();
   const [season,         setSeason]   = useState(PWHL_CURRENT_SEASON);
-  const [selectedGameId, setSelected] = useState(null);
+  const [selectedGameId, setSelected] = useState(location.state?.selectedGameId ?? null);
   const [drillStat,      setDrill]    = useState(null);
 
   const { data: rawShots  = null } = useFetch(
