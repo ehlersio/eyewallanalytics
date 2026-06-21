@@ -190,6 +190,7 @@ export default function PWHLPlayersView() {
         <PWHLPlayerPopup
           player={selected}
           seasonLabel={seasonLabel}
+          season={season}
           onClose={() => setSelected(null)}
         />
       )}

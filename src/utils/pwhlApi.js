@@ -40,6 +40,23 @@ export async function fetchPWHLStandings(season = PWHL_CURRENT_SEASON) {
   return workerFetch(`/pwhl/standings?season=${season}`);
 }
 
+/** Fetch all teams' skaters + goalies for the Leaders tab. */
+export async function fetchPWHLLeaguePlayers(season = PWHL_CURRENT_SEASON) {
+  return workerFetch(`/pwhl/league-players?season=${season}`);
+}
+
+/** Fetch salary data for a team. */
+export async function fetchPWHLSalaries(teamId, season = '2025-26') {
+  if (!teamId) return null;
+  return workerFetch(`/pwhl/salaries?teamId=${teamId}&season=${encodeURIComponent(season)}`);
+}
+
+/** Fetch shot events for a specific player (for heat map). */
+export async function fetchPWHLPlayerShots(playerId, season = PWHL_CURRENT_SEASON) {
+  if (!playerId) return null;
+  return workerFetch(`/pwhl/player-shots?playerId=${playerId}&season=${season}`);
+}
+
 /** Fetch a single team's season record from pwhl_team_seasons (includes reg_wins, non_reg_wins). */
 export async function fetchPWHLTeamRecord(teamId, season) {
   if (!teamId || !season) return null;
@@ -53,7 +70,7 @@ export async function fetchPWHLTeamRecord(teamId, season) {
 
 export async function fetchPWHLPlayers(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {
   if (!teamId) return null;
-  return workerFetch(`/pwhl/players?teamId=${teamId}&season=${season}&v=2`);
+  return workerFetch(`/pwhl/players?teamId=${teamId}&season=${season}`);
 }
 
 export async function fetchPWHLShots(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {

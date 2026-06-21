@@ -17,9 +17,7 @@ import DraftTab from '../components/DraftTab';
 import { PicksTabDev } from './TeamView';
 import {
   FIXTURE_RANKINGS,
-  FIXTURE_ORDER,
   FIXTURE_PICKS_SEQUENCE,
-  getPicksForTeam,
   getOrderForTeam,
 } from '../utils/draftFixtures';
 import '../components/DraftTab.css';
@@ -136,7 +134,6 @@ export default function DevDraftView() {
     : draftState === 'complete'  ? FIXTURE_PICKS_SEQUENCE
     : FIXTURE_PICKS_SEQUENCE.slice(0, pickIndex);
 
-  const teamPicks = getPicksForTeam(teamAbbr);
   const teamOrder = getOrderForTeam(teamAbbr);
 
   const totalPicks = FIXTURE_PICKS_SEQUENCE.length;

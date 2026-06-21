@@ -491,7 +491,7 @@ function TeamStatsCard({ pbpStats, shotStats, abbr, oppAbbr, color, oppColor, fa
 // ── PP Analysis Panel ────────────────────────────────────────
 function PPAnalysisPanel({ drillStat, abbr, color }) {
   const [openIdx, setOpenIdx] = useState(null);
-  const { ppOpps, summary, ppUnit1, ppUnit2 } = drillStat;
+  const { ppOpps, summary, ppUnit1, ppUnit2 } = drillStat; // eslint-disable-line no-unused-vars
   if (!ppOpps?.length) return <div className="drill-empty">No {abbr} power plays this game.</div>;
   const toggle    = idx => setOpenIdx(o => o === idx ? null : idx);
   const pctColor  = (g, o) => g/o >= 0.25 ? 'var(--green)' : g > 0 ? 'var(--text-muted)' : 'var(--red-bright)';
@@ -576,7 +576,7 @@ function PPAnalysisPanel({ drillStat, abbr, color }) {
 // ── PK Analysis Panel ─────────────────────────────────────────
 function PKAnalysisPanel({ drillStat, abbr, color }) {
   const [openIdx, setOpenIdx] = useState(null);
-  const { pkOpps, summary, pkUnit1, pkUnit2 } = drillStat;
+  const { pkOpps, summary, pkUnit1, pkUnit2 } = drillStat; // eslint-disable-line no-unused-vars
   if (!pkOpps?.length) return <div className="drill-empty">No {abbr} penalty kills this game.</div>;
   const toggle   = idx => setOpenIdx(o => o === idx ? null : idx);
   const pctColor = (ga, o) => ga === 0 ? 'var(--green)' : ga/o <= 0.25 ? 'var(--text-muted)' : 'var(--red-bright)';
@@ -961,7 +961,7 @@ export default function PWHLShotMapView() {
       const ourPPPens = penalties.filter(e => e.team_id !== teamId && e.team_id != null && e.is_power_play);
       // Our PP shots: shot events during PP penalty windows
       const ppOpps = ourPPPens.map((pen, idx) => {
-        const penStart = pen.period_id * 10000 + pen.time_seconds;
+        const _penStart = pen.period_id * 10000 + pen.time_seconds;
         // Shots within 2 min (120s) of this penalty in same period
         const ppShots = ourShotEvents.filter(s => {
           if (s.period !== pen.period_id) return false;
@@ -1009,7 +1009,7 @@ export default function PWHLShotMapView() {
           });
         const goals = pkOppShots.filter(r => r.event_type === 'goal');
         const sog   = pkOppShots.filter(r => r.event_type === 'shot' || r.event_type === 'goal');
-        const blocks = pkOppShots.filter(r => r.event_type === 'blocked_shot');
+        const _blocks = pkOppShots.filter(r => r.event_type === 'blocked_shot');
         let xgAgainst = 0;
         pkOppShots.forEach(r => {
           if (r.x_norm != null) {
@@ -1065,7 +1065,7 @@ export default function PWHLShotMapView() {
   const oppTeam     = scoreBarData ? PWHL_TEAM_MAP[scoreBarData.oppAbbr] : null;
   const oppColor    = oppTeam?.displayColor || 'var(--text-dim)';
   const seasonLabel = SEASONS.find(s => s.id === season)?.label || String(season);
-  const viewLabel   = selectedGameId && scoreBarData
+  const _viewLabel   = selectedGameId && scoreBarData
     ? `vs ${scoreBarData.oppAbbr} · ${scoreBarData.won ? 'W' : 'L'} ${scoreBarData.myScore}–${scoreBarData.oppScore}`
     : seasonLabel;
   const hasPBP  = selectedGameId && Array.isArray(pbpEvents) && pbpEvents.length > 0;

@@ -11,7 +11,7 @@ import './NotificationBell.css';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const { sport, isPWHL } = useSport();
+  const { isPWHL } = useSport();
   const activeTeam = isPWHL ? PWHL_TEAM_CONFIG : TEAM_CONFIG;
   const activeTeamAbbr = activeTeam?.abbr || TEAM_CONFIG.abbr;
   const activeTeamName = activeTeam?.displayName || TEAM_CONFIG.displayName;

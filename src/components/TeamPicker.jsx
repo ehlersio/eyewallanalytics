@@ -10,8 +10,7 @@
 // then onSelect(). The caller decides whether to reload the page.
 import { useState } from 'react'
 import { ALL_TEAMS, setTeamConfig } from '../utils/teamConfig'
-import { PWHL_TEAMS, PWHL_CURRENT_SEASON } from '../utils/pwhlConfig'
-import { setSportAndReload } from '../utils/SportContext'
+import { PWHL_TEAMS } from '../utils/pwhlConfig'
 import TeamLogo from './TeamLogo'
 import { TEAM_COLORS } from '../utils/nhlApi'
 import './TeamPicker.css'

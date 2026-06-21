@@ -106,7 +106,7 @@ export default function PWHLScheduleView() {
     return splitGames(regSchedule, teamId);
   }, [regSchedule, teamId]);
 
-  const { completed: poCompleted, upcoming: poUpcoming, record: poRecord } = useMemo(() => {
+  const { completed: _poCompleted, upcoming: _poUpcoming, record: poRecord } = useMemo(() => {
     return splitGames(poSchedule, teamId);
   }, [poSchedule, teamId]);
 
@@ -349,7 +349,7 @@ function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
   if (allSeries.length <= 1) {
     // Only one series — could be Semi or Final; use game count/timing to guess
     // If season has a known final and this series starts late, treat as Final
-    const firstGameId = allSeries[0] ? Math.min(...allSeries[0].games.map(g=>g.game_id)) : 0;
+    const _firstGameId = allSeries[0] ? Math.min(...allSeries[0].games.map(g=>g.game_id)) : 0;
     // Heuristic: if we only have 1 series and the team won it decisively, may have been the Final
     // Default: treat single series as Semi unless we can confirm otherwise
     semifinalSeries = allSeries;
@@ -415,7 +415,7 @@ function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
             {!isCollapsed && (
               <>
                 {series.map(s => {
-                  const isOurSeries = s.teamA === teamId || s.teamB === teamId;
+                  const _isOurSeries = s.teamA === teamId || s.teamB === teamId;
                   const ourWins  = s.teamA === teamId ? s.winsA : s.winsB;
                   const oppWins  = s.teamA === teamId ? s.winsB : s.winsA;
                   const oppId    = s.teamA === teamId ? s.teamB : s.teamA;
@@ -498,7 +498,7 @@ function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
 }
 
 // ── PWHL Series Card — best-of-5 (3 wins to advance) ─────────
-function PWHLSeriesCard({ series, teamId, abbr, color, oppAbbr, oppColor, ourWins, oppWins, isFinal }) {
+function PWHLSeriesCard({ series, teamId: _teamId, abbr, color, oppAbbr, oppColor, ourWins, oppWins, isFinal }) {
   const adv      = ourWins >= 3;
   const elim     = oppWins >= 3;
   const isActive = !adv && !elim && series.games.some(g => g.game_state === 'Final');

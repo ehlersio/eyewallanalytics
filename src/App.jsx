@@ -25,6 +25,7 @@ const PWHLLeagueView   = lazy(() => import('./views/PWHLLeagueView'));
 const PWHLScheduleView = lazy(() => import('./views/PWHLScheduleView'));
 const PWHLPlayersView  = lazy(() => import('./views/PWHLPlayersView'));
 const PWHLTeamView     = lazy(() => import('./views/PWHLTeamView'));
+const PWHLNewsView     = lazy(() => import('./views/PWHLNewsView'));
 
 const DevReplayView = import.meta.env.DEV
   ? lazy(() => import('./views/DevReplayView'))
@@ -118,7 +119,7 @@ export default function App() {
                   <Route path="/pwhl/league"   element={<PWHLLeagueView />} />
                   <Route path="/pwhl/players"  element={<PWHLPlayersView />} />
                   <Route path="/pwhl/schedule" element={<PWHLScheduleView />} />
-                  <Route path="/pwhl/news"     element={<div>PWHL News (coming soon)</div>} />
+                  <Route path="/pwhl/news"     element={<PWHLNewsView />} />
                   {import.meta.env.DEV && DevReplayView && (
                     <Route path="/dev" element={<DevReplayView />} />
                   )}
