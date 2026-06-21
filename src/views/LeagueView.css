@@ -1008,3 +1008,31 @@
     border-radius: var(--radius) !important;
   }
 }
+
+/* ── Draft table ─────────────────────────────────────────────────────────── */
+.draft-prev-school { color: var(--text-muted); }
+.draft-prev-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  background: rgba(255,255,255,0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+  color: var(--text-dim);
+  vertical-align: middle;
+}
+
+@media (max-width: 600px) {
+  /* Mobile: hide school name, keep only the league badge */
+  .draft-prev-school { display: none; }
+  .draft-prev-badge  { margin-left: 0; }
+
+  /* Player name: truncate gracefully */
+  .draft-td--player {
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

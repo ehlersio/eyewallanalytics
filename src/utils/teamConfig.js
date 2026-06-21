@@ -98,7 +98,10 @@ export function setTeamConfig(teamOrAbbr) {
 
 export function hasTeamConfig() {
   try {
-    return localStorage.getItem(STORAGE_KEY) !== null;
+    return (
+      localStorage.getItem('eyewall:team') !== null ||
+      localStorage.getItem('eyewall:pwhl_team') !== null
+    );
   } catch {
     return false;
   }

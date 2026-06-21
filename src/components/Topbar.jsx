@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { getLiveGame, getCarScore, getOppScore, getOpponent, getGameDetail, bustLiveGameCache } from '../utils/nhlApi';
 import TeamLogo from './TeamLogo';
-import { TEAM_COLORS } from '../utils/nhlApi';
+import { TEAM_COLORS, TEAM_CONFIG } from '../utils/nhlApi';
+import { useSport } from '../utils/SportContext';
 import './Topbar.css';
 import AboutPopup from './AboutPopup';
 import { subscribeClock, getClockDisplay, publishClock, subscribeMomentum, subscribeMockLiveGame } from '../utils/liveClockStore';
@@ -12,6 +13,7 @@ const POLL_IDLE_MS = 5 * 60_000;  // 5min — no game active
 const SEASON_END   = new Date('2026-07-01');
 
 export default function Topbar() {
+  const { isPWHL } = useSport();
   const [liveGame,    setLiveGame]    = useState(null);
   const [liveMeta,    setLiveMeta]    = useState(null);
   const [displayClock, setDisplayClock] = useState(null);
@@ -101,13 +103,14 @@ export default function Topbar() {
   }, []);
 
   useEffect(() => {
+    if (isPWHL) return; // PWHL has no live game feed
     if (Date.now() > SEASON_END.getTime()) return;
     checkLive();
     return () => {
       clearInterval(intervalRef.current);
       clearInterval(clockRef.current);
     };
-  }, []);
+  }, [isPWHL]);
 
   const activeLiveGame = mockLiveGame || liveGame;
   const opp      = activeLiveGame ? getOpponent(activeLiveGame) : null;
@@ -130,8 +133,8 @@ export default function Topbar() {
           <div className="topbar-live">
             <div className="live-dot" />
             <div className="live-score">
-              <TeamLogo abbr="CAR" size={18} />
-              <span className="live-team-red">CAR</span>
+              <TeamLogo abbr={TEAM_CONFIG.abbr} size={18} />
+              <span className="live-team-red">{TEAM_CONFIG.abbr}</span>
               <span className="live-num">{carScore}</span>
               <span className="live-sep">–</span>
               <span className="live-num">{oppScore}</span>
@@ -148,7 +151,7 @@ export default function Topbar() {
         ) : (
           <div className="topbar-status">
             <span className="status-dot-idle" />
-            <span className="topbar-no-live">Off season</span>
+            <span className="topbar-no-live">{isPWHL ? 'PWHL' : 'Off season'}</span>
           </div>
         )}
 
@@ -158,7 +161,7 @@ export default function Topbar() {
       {activeLiveGame && momentum && (
         <div className="topbar-momentum">
           <div className="tb-mom-labels">
-            <span className="tb-mom-car">CAR</span>
+            <span className="tb-mom-car">{TEAM_CONFIG.abbr}</span>
             <span className="tb-mom-window">{momentum.window}m</span>
             <span className="tb-mom-opp">{opp?.abbrev}</span>
           </div>

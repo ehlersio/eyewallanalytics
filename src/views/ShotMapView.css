@@ -714,3 +714,44 @@
   font-size: 10px; color: var(--text-dim);
   padding: 0 16px; line-height: 1.4;
 }
+
+/* ── Game chips (PWHL per-game selector) ─────────────────────── */
+.game-chips-wrap {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0 8px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+.game-chips-wrap::-webkit-scrollbar { display: none; }
+
+.game-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  flex-shrink: 0;
+}
+.game-chip:hover { border-color: var(--text-dim); }
+.game-chip-active {
+  background: var(--bg2);
+  border-color: var(--text-dim) !important;
+  color: var(--text);
+}
+.game-chip-all {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.game-chip-opp  { font-weight: 600; color: var(--text); }
+.game-chip-score { font-size: 10px; }
+.game-chip-venue { opacity: 0.6; }

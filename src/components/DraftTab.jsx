@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { capture } from '../utils/analytics';
-import { getDraftRankings, getDraftPicks, getDraftOrder } from '../utils/nhlApi';
+import { getDraftRankings, getDraftPicks } from '../utils/nhlApi';
 import TeamLogo from '../components/TeamLogo';
 import './DraftTab.css';
 

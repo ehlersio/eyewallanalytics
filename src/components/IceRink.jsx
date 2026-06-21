@@ -28,9 +28,20 @@ function distFromGoal(x, y) {
 }
 
 // Zone label from coordinates
-function zoneLabel(x) {
-  if (Math.abs(x) > 64) return 'Slot';
-  if (Math.abs(x) > 25) return 'Neutral zone';
+function zoneLabel(x, y = 0) {
+  const ax = Math.abs(x);
+  const ay = Math.abs(y);
+  // Behind the net: x > 89 (goal line) — never the slot
+  if (ax > 89) return 'Behind net';
+  // Slot: in front of net, inside the faceoff dots
+  // NHL: faceoff dots at x≈69, y≈±22; goal line at x=89
+  // True slot = x 69–89, y within ±17 (tighter than dot width)
+  if (ax > 69 && ay < 17) return 'Slot';
+  // High slot: top of circles toward blue line, still central
+  if (ax > 54 && ay < 17) return 'High slot';
+  // Wider offensive zone areas (corners, half-wall)
+  if (ax > 25) return 'Offensive zone';
+  if (ax > 0)  return 'Neutral zone';
   return 'Defensive zone';
 }
 
@@ -57,7 +68,11 @@ const OPP_SHOT_STYLE = {
 };
 
 // ─── Main component ───────────────────────────────────────────
-export default function IceRink({ events = [], _roster = {}, hidePlayerFilter = false, readOnly = false, flipPerspective = false }) {
+export default function IceRink({ events = [], _roster = {}, hidePlayerFilter = false, readOnly = false, flipPerspective = false, teamAbbr, teamColor }) {
+  // Use teamAbbr/teamColor when provided (PWHL), fall back to NHL TEAM_CONFIG
+  const displayAbbr  = teamAbbr  || TEAM_CONFIG.abbr;
+  const displayColor = teamColor || 'var(--team-primary)';
+
   const [halfRink,    setHalfRink]    = useState(false);
   const [period,      setPeriod]      = useState('all');
   const [viewMode,    setViewMode]    = useState('dots'); // 'dots' | 'heat'
@@ -125,12 +140,16 @@ export default function IceRink({ events = [], _roster = {}, hidePlayerFilter = 
   function normalizeCoords(e) {
     let x = e.x, y = e.y;
     if (!flipPerspective) {
+      // Normal: our team attacks right (positive x), OPP attacks left (negative x)
       if (e.isCanes  && x < 0) { x = -x; y = -y; }
       if (!e.isCanes && x > 0) { x = -x; y = -y; }
     } else {
-      // Flip: OPP attacks right, CAR attacks left
-      if (!e.isCanes && x < 0) { x = -x; y = -y; }
-      if (e.isCanes  && x > 0) { x = -x; y = -y; }
+      // flipPerspective (PK view): OPP attacks left, show their shots on the LEFT.
+      // Our team attacks right but we're showing OPP perspective.
+      // OPP shots: keep negative x so they render on the LEFT side of the rink.
+      // Our shots: flip to negative so they also appear on the right (our defensive zone).
+      if (!e.isCanes && x > 0) { x = -x; y = -y; }  // ensure OPP stays on left
+      if (e.isCanes  && x < 0) { x = -x; y = -y; }  // our shots stay on right
     }
     return { x, y };
   }
@@ -228,7 +247,7 @@ export default function IceRink({ events = [], _roster = {}, hidePlayerFilter = 
     // data attribute on the SVG, or just read the computed value at render time.
     // Simplest reliable approach: inline style with the CSS variable string —
     // modern browsers resolve CSS vars in SVG fill when set via style attribute.
-    const teamFill = isCanes && !s.fill ? 'var(--team-primary)' : s.fill;
+    const teamFill = isCanes && !s.fill ? displayColor : s.fill;
     const isHov = hovered?.event?.id === e.id;
     const isSel = selected?.id === e.id;
 
@@ -360,7 +379,7 @@ export default function IceRink({ events = [], _roster = {}, hidePlayerFilter = 
       {!readOnly && viewMode === 'heat' && (
         <div className="heat-controls">
           <span className="heat-label">Show:</span>
-          {[['car',`${TEAM_CONFIG.abbr} shots`],['opp','Opp shots'],['both','Both']].map(([val, lbl]) => (
+          {[['car',`${displayAbbr} shots`],['opp','Opp shots'],['both','Both']].map(([val, lbl]) => (
             <button
               key={val}
               className={`rink-btn ${heatTeam === val ? 'on' : ''}`}
@@ -378,8 +397,8 @@ export default function IceRink({ events = [], _roster = {}, hidePlayerFilter = 
       {/* Legend — only in dots mode, not readOnly */}
       {!readOnly && viewMode === 'dots' && (
         <div className="rink-legend">
-          <div className="legend-item"><span className="leg-dot" style={{background:'var(--team-primary)',opacity:0.65}} />{TEAM_CONFIG.abbr} shot</div>
-          <div className="legend-item"><span className="leg-dot leg-goal" style={{background:'var(--team-primary)'}} />{TEAM_CONFIG.abbr} goal</div>
+          <div className="legend-item"><span className="leg-dot" style={{background:displayColor,opacity:0.65}} />{displayAbbr} shot</div>
+          <div className="legend-item"><span className="leg-dot leg-goal" style={{background:displayColor}} />{displayAbbr} goal</div>
           <div className="legend-item"><span className="leg-dot" style={{background:'#4477ee',opacity:0.55}} />Opp shot</div>
           <div className="legend-item"><span className="leg-dot leg-goal" style={{background:'#4477ee'}} />Opp goal</div>
           <div className="legend-item"><span className="leg-dot" style={{background:'#8899aa',opacity:0.45}} />Blocked</div>
@@ -410,7 +429,7 @@ export default function IceRink({ events = [], _roster = {}, hidePlayerFilter = 
             transition: isPanning ? 'none' : 'transform 0.1s ease',
           }}
         >
-          <RinkMarkings showHalf={showHalf} flipPerspective={flipPerspective} />
+          <RinkMarkings showHalf={showHalf} flipPerspective={flipPerspective} teamAbbr={teamAbbr} teamColor={teamColor} />
           {viewMode === 'heat' && (
             <HeatmapLayer
               canesEvents={canesEvents}
@@ -444,7 +463,7 @@ export default function IceRink({ events = [], _roster = {}, hidePlayerFilter = 
 
       {/* Click popup — dots mode + goals in heat mode */}
       {!readOnly && (viewMode === 'dots' || viewMode === 'heat') && selected && (
-        <ShotPopup event={selected} playerNames={playerNames} onClose={() => setSelected(null)} />
+        <ShotPopup event={selected} playerNames={playerNames} onClose={() => setSelected(null)} displayAbbr={displayAbbr} />
       )}
 
       {events.length === 0 && (
@@ -648,15 +667,15 @@ function HoverTooltip({ event: e, screenX, screenY, _playerNames, wrapRef }) {
 }
 
 // ─── Click popup ─────────────────────────────────────────────
-function ShotPopup({ event: e, _playerNames, onClose }) {
-  const shooterName = e.shooterName || (e.isCanes ? `Unknown ${TEAM_CONFIG.abbr}` : 'Unknown');
+function ShotPopup({ event: e, _playerNames, onClose, displayAbbr }) {
+  const shooterName = e.shooterName || (e.isCanes ? `Unknown ${displayAbbr || TEAM_CONFIG.abbr}` : 'Unknown');
   const goalieName  = e.goalieName  || null;
   const blockerName = e.blockerName || null;
   const assists = [e.assist1Name, e.assist2Name].filter(Boolean);
 
   const dist     = distFromGoal(e.x, e.y);
   const angle    = Math.abs(Math.atan2(Math.abs(e.y), Math.abs(Math.abs(e.x) - 89)) * (180 / Math.PI)).toFixed(1);
-  const zone     = zoneLabel(e.x);
+  const zone     = zoneLabel(e.x, e.y);
   const isGoal   = e.type === 'goal';
   const isCanes  = e.isCanes;
 
@@ -676,7 +695,7 @@ function ShotPopup({ event: e, _playerNames, onClose }) {
           <div className="popup-type-row">
             <span className="popup-type-icon">{isGoal ? '🚨' : e.type === 'blocked-shot' ? '🛡' : e.type === 'missed-shot' ? '↗' : '🏒'}</span>
             <span className="popup-type-label">{TYPE_LABELS[e.type] || e.type}</span>
-            <span className="popup-team-badge">{isCanes ? TEAM_CONFIG.abbr : 'OPP'}</span>
+            <span className="popup-team-badge">{isCanes ? displayAbbr : 'OPP'}</span>
           </div>
           <button className="popup-close" onClick={onClose}>✕</button>
         </div>
@@ -784,7 +803,7 @@ function ShotPopup({ event: e, _playerNames, onClose }) {
 }
 
 // ─── Rink markings SVG ────────────────────────────────────────
-function RinkMarkings({ showHalf, flipPerspective = false }) {
+function RinkMarkings({ showHalf, flipPerspective = false, teamAbbr, teamColor }) {
   return (
     <g>
             {/* ── Rink surface ── */}
@@ -838,12 +857,12 @@ function RinkMarkings({ showHalf, flipPerspective = false }) {
       {!showHalf && (
         <>
           <text x="22"   y="18" fontSize="9" fill="#2255aa" opacity="0.6" fontFamily="sans-serif">OPP offensive zone</text>
-          <text x={W-108} y="18" fontSize="9" fill="var(--team-primary)" opacity="0.7" fontFamily="sans-serif">{TEAM_CONFIG.abbr} offensive zone</text>
+          <text x={W-108} y="18" fontSize="9" fill={teamColor || "var(--team-primary)"} opacity="0.7" fontFamily="sans-serif">{teamAbbr || TEAM_CONFIG.abbr} offensive zone</text>
         </>
       )}
       {showHalf && (
         <text x={CX+10} y="18" fontSize="9" fill={flipPerspective ? '#2255aa' : 'var(--team-primary)'} opacity="0.8" fontFamily="sans-serif">
-          {flipPerspective ? 'OPP offensive zone' : `${TEAM_CONFIG.abbr} offensive zone`}
+          {flipPerspective ? 'OPP offensive zone' : `${teamAbbr || TEAM_CONFIG.abbr} offensive zone`}
         </text>
       )}
     </g>

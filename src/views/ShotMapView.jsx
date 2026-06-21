@@ -1237,7 +1237,7 @@ export default function ShotMapView() {
                       <div className="score-period">
                         {(() => {
                           const n = pbp?.periodDescriptor?.number;
-                          const t = pbp?.periodDescriptor?.periodType;
+                          const t = pbp?.periodDescriptor?.periodType; // eslint-disable-line no-unused-vars
                           if (!n) return '—';
                           if (n <= 3) return `P${n}`;
                           // Playoffs: OT1=4, OT2=5, OT3=6 — all full 20min periods
@@ -2858,7 +2858,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     // ── Final result callout (completed games) ────────────────
     if (!isLive && carScore != null && oppScore != null) {
       const won  = carScore > oppScore;
-      const diff = Math.abs(carScore - oppScore);
+      const _diff = Math.abs(carScore - oppScore);
       // Total shots
       const carTot = Object.values(periodShots).reduce((s, p) => s + p.car, 0);
       const oppTot = Object.values(periodShots).reduce((s, p) => s + p.opp, 0);
