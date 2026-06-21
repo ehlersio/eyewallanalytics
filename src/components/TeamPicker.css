@@ -8,18 +8,16 @@
     justify-content: center;
     padding: 48px 16px 96px;
 }
-
 .team-picker-inner {
     width: 100%;
     max-width: 720px;
     padding-bottom: 48px;
 }
-
 .team-picker-header {
     text-align: center;
     margin-bottom: 40px;
+    position: relative;
 }
-
 .team-picker-title {
     font-size: 1.75rem;
     font-weight: 700;
@@ -27,20 +25,77 @@
     margin: 0 0 8px;
     letter-spacing: -0.02em;
 }
-
 .team-picker-sub {
     font-size: 0.875rem;
     color: var(--text-dim, #888);
     margin: 0;
 }
 
+/* ── Back button ─────────────────────────────────────────────────────────── */
+.team-picker-back {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-dim, #888);
+    font-size: 0.875rem;
+    cursor: pointer;
+    padding: 4px 0;
+    transition: color 0.12s;
+}
+.team-picker-back:hover {
+    color: var(--text, #f0f0f0);
+}
+
+/* ── Sport selection step ────────────────────────────────────────────────── */
+.team-picker-sport-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 48px;
+}
+.team-picker-sport-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 40px 24px;
+    border: 1px solid var(--border, #2a2a2e);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, transform 0.1s;
+    background: transparent;
+}
+.team-picker-sport-tile:hover {
+    transform: translateY(-2px);
+}
+.team-picker-sport-tile:active {
+    transform: translateY(0);
+}
+.team-picker-sport-logo {
+    height: 48px;
+    width: auto;
+    object-fit: contain;
+    /* NHL logo is white on transparent — fine for dark mode.
+       PWHL logo may need a brightness boost if it renders dark. */
+    filter: brightness(1);
+}
+.team-picker-sport-desc {
+    font-size: 0.8125rem;
+    color: var(--text-dim, #888);
+    text-align: center;
+}
+
+/* ── Team grid ───────────────────────────────────────────────────────────── */
 .team-picker-divisions {
     display: flex;
     flex-direction: column;
     gap: 32px;
     margin-bottom: 48px;
 }
-
 .team-picker-division-label {
     display: block;
     font-size: 0.6875rem;
@@ -50,13 +105,11 @@
     color: var(--text-dim, #888);
     margin-bottom: 12px;
 }
-
 .team-picker-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
 }
-
 .team-picker-tile {
     display: flex;
     flex-direction: column;
@@ -68,16 +121,37 @@
     cursor: pointer;
     transition: background 0.12s, border-color 0.12s, transform 0.1s;
     background: transparent;
+    position: relative;
 }
-
 .team-picker-tile:hover {
     transform: translateY(-2px);
 }
-
 .team-picker-tile:active {
     transform: translateY(0);
 }
 
+/* ── Disabled / coming-soon tiles ────────────────────────────────────────── */
+.team-picker-tile--disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.team-picker-coming-soon {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 0.5rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim, #888);
+    background: var(--bg2, #1a1a1e);
+    border-radius: 4px;
+    padding: 2px 4px;
+    line-height: 1;
+}
+
+/* ── Tile text ───────────────────────────────────────────────────────────── */
 .team-picker-abbr {
     font-size: 0.6875rem;
     font-weight: 700;
@@ -85,7 +159,6 @@
     color: var(--text-dim, #888);
     line-height: 1;
 }
-
 .team-picker-name {
     font-size: 0.6875rem;
     color: var(--text-dim, #888);
@@ -97,24 +170,38 @@
     white-space: nowrap;
 }
 
+/* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 480px) {
+    .team-picker-sport-grid {
+        gap: 12px;
+    }
+    .team-picker-sport-tile {
+        padding: 28px 16px;
+    }
     .team-picker-grid {
         grid-template-columns: repeat(4, 1fr);
         gap: 6px;
     }
-
     .team-picker-tile {
         padding: 10px 4px 8px;
     }
-
     .team-picker-title {
         font-size: 1.375rem;
-        }
+    }
+    .team-picker-back {
+        position: static;
+        transform: none;
+        display: block;
+        margin-bottom: 12px;
+        text-align: left;
+    }
+    .team-picker-header {
+        text-align: center;
+    }
 }
-
 @media (prefers-reduced-motion: reduce) {
-    .team-picker-tile {
+    .team-picker-tile,
+    .team-picker-sport-tile {
         transition: none;
     }
 }
-      

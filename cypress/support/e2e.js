@@ -54,6 +54,35 @@ beforeEach(() => {
   })
 })
 
+// ── PWHL team helpers ────────────────────────────────────────
+// cy.pwhlTeam()       — returns default BOS PWHL fixture
+// cy.setPWHLTeam()    — sets PWHL localStorage keys (sport + team)
+const PWHL_TEAM_FIXTURES = [
+  { abbr: 'BOS', teamId: 1 },
+  { abbr: 'MIN', teamId: 2 },
+  { abbr: 'MTL', teamId: 3 },
+  { abbr: 'NY',  teamId: 4 },
+  { abbr: 'OTT', teamId: 5 },
+  { abbr: 'TOR', teamId: 6 },
+  { abbr: 'SEA', teamId: 8 },
+  { abbr: 'VAN', teamId: 9 },
+]
+
+Cypress.Commands.add('pwhlTeam', (abbr = 'BOS') => {
+  const match = PWHL_TEAM_FIXTURES.find(t => t.abbr === abbr)
+  if (!match) throw new Error(`No PWHL fixture for: ${abbr}`)
+  return cy.wrap(match)
+})
+
+Cypress.Commands.add('setPWHLTeam', (abbr = 'BOS') => {
+  const match = PWHL_TEAM_FIXTURES.find(t => t.abbr === abbr)
+  if (!match) throw new Error(`No PWHL fixture for: ${abbr}`)
+  cy.window().then(win => {
+    win.localStorage.setItem('eyewall:sport',     'pwhl')
+    win.localStorage.setItem('eyewall:pwhl_team', JSON.stringify(match))
+  })
+})
+
 // ── Custom commands ───────────────────────────────────────────
 Cypress.Commands.add('waitForContent', (selector, options = {}) => {
   cy.get(selector, { timeout: options.timeout || 8000 }).should('be.visible')

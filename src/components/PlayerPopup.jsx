@@ -130,7 +130,7 @@ const GOALIE_STATS = [
 
 // ─── Helpers ──────────────────────────────────────────────────
 
-function groupStats(defs, stats, isGoalie) {
+function groupStats(defs, stats, _isGoalie) {
   const groups = {}
   defs.forEach(def => {
     const raw = stats?.[def.key]

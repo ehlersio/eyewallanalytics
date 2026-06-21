@@ -142,7 +142,7 @@ function PlayerTable({ players, loading, color, goalieAnalytics }) {
 
 
 // ── Goalie matchup card ──────────────────────────────────────
-function GoalieMatchupCard({ carPlayers, oppPlayers, oppAbbr, oppColor }) {
+function GoalieMatchupCard({ carPlayers, oppPlayers, oppAbbr: _oppAbbr, oppColor }) {
   const carGoalie = carPlayers?.goalies?.[0];
   const oppGoalie = oppPlayers?.goalies?.[0];
   if (!carGoalie && !oppGoalie) return null;
@@ -214,7 +214,9 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
   const pctFmt     = v => v != null ? `${(v * 100).toFixed(1)}%` : '—';
 
   // Team total projection
-  const carExp = ((carStats.goalsForPerGame ?? 0) + (oppStats.goalsAgainstPerGame ?? 0)) / 2;
+  // eslint-disable-next-line no-unused-vars
+  const carExp = ((carStats.goalsForPerGame ?? 0) + (oppStats.goalsAgainstPerGame ?? 0)) / 2; // used in TeamTotalCard variant
+  // eslint-disable-next-line no-unused-vars
   const oppExp = ((oppStats.goalsForPerGame ?? 0) + (carStats.goalsAgainstPerGame ?? 0)) / 2;
   return (
     <div className="sc-canvas" ref={canvasRef}>
