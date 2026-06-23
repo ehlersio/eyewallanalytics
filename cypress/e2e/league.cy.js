@@ -512,8 +512,8 @@ describe('League page — CAR', () => {
     })
 
     it('shows export button', () => {
-      cy.get('.md-export-btn').scrollIntoView().should('exist')
-      cy.get('.md-export-btn').should('contain', 'Save Rankings Card')
+      cy.get('.share-buttons-row').scrollIntoView().should('exist')
+      cy.get('.share-buttons-row').should('contain', 'Save Image')
     })
   })
 })
