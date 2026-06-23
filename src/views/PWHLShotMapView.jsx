@@ -1083,7 +1083,7 @@ export default function PWHLShotMapView() {
     if (devGame?.liveGame?.gameId && selectedGameId !== devGame.liveGame.gameId) {
       setSelected(devGame.liveGame.gameId);
     }
-  }, [devGame?.liveGame?.gameId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [devGame?.liveGame?.gameId]);
   const liveShotEvents = useMemo(() => {
     if (!isLive || !liveData?.events?.length || !teamId) return [];
     const homeId = liveData.homeTeamId;

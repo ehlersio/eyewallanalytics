@@ -91,7 +91,7 @@ export function useShareCard({ canvasRef, filename, xCaption, mountCanvas, getNo
       if (!node) return;
       const dataUrl = await renderToPng(node);
       const blob    = await dataUrlToBlob(dataUrl);
-      const file    = new File([blob], filename.replace('.png', '') + '.png', { type: 'image/png' });
+      const file    = new globalThis.File([blob], filename.replace('.png', '') + '.png', { type: 'image/png' });
 
       if (!navigator.canShare({ files: [file] })) {
         // Files not supported — fall back to text share

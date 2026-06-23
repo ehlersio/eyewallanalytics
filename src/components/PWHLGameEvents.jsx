@@ -16,7 +16,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import './GameEvents.css'; // reuse NHL styles
-import { HatTrickPopup } from './GameEvents'; // reuse hat trick popup
+import { HatTrickPopup as _HatTrickPopup } from './GameEvents'; // reuse hat trick popup
 
 // ── Puck Drop ─────────────────────────────────────────────────
 
@@ -193,7 +193,7 @@ function parsePenaltyDesc(raw) {
 }
 
 // Simple cleaner for use outside the popup (normalizer, drill-downs)
-function cleanPenaltyDesc(raw) {
+function _cleanPenaltyDesc(raw) {
   const { desc, severity } = parsePenaltyDesc(raw);
   return severity ? `${severity} — ${desc}` : desc;
 }

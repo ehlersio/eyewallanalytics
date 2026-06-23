@@ -10,9 +10,9 @@
  * normalized events — no boxscore synthesis needed.
  */
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { fetchPWHLLive, fetchPWHLSchedule, PWHL_TEAM_CONFIG, PWHL_TEAM_ID } from '../utils/pwhlApi';
+import { fetchPWHLLive, fetchPWHLSchedule, PWHL_TEAM_ID } from '../utils/pwhlApi';
 import { PWHLDevGameContext } from '../utils/PWHLDevGameContext';
-import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP } from '../utils/pwhlConfig';
+import { PWHL_CURRENT_SEASON } from '../utils/pwhlConfig';
 import PWHLShotMapView from './PWHLShotMapView';
 import './DevReplayView.css'; // reuse NHL dev styles
 
@@ -65,7 +65,7 @@ function deriveGoalieStats(events, fullGoalieStats) {
   // Count shots on goal (shot + goal events) by which goalie was in net
   // We don't have goalieInNet per event, so use the full goalie stats
   // scaled to the proportion of total shots seen so far
-  const totalShots = events.filter(e =>
+  const _totalShots = events.filter(e =>
     e.eventType === 'shot' || e.eventType === 'goal'
   ).length;
   // Return full goalie stats — they'll be approximately correct

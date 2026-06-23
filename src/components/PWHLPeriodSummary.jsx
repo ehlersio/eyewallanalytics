@@ -389,7 +389,6 @@ export default function PWHLPeriodSummary({
   readOnly = false,
 }) {
   const canvasRef    = useRef(null);
-  const [captionCopied, setCaptionCopied] = useState(false);
   const [canvasMounted, setCanvasMounted] = useState(false);
   const [cardNarrative, setCardNarrative] = useState(summary?.cardNarrative || null);
 
@@ -430,7 +429,7 @@ export default function PWHLPeriodSummary({
       if (text && onNarrativeReady) onNarrativeReady(summary.period, text);
       if (card) setCardNarrative(card);
     });
-  }, [summary?.period]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [summary?.period]);
 
   if (!summary) return null;
 

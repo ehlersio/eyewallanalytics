@@ -459,23 +459,21 @@ export default function PeriodSummary({
    
   }, [summary?.period]);
 
-  if (!summary) return null;
-
   const carIsHome = homeAbbr === carAbbr;
-  const carScore  = carIsHome ? summary.homeScore : summary.awayScore;
-  const oppScore  = carIsHome ? summary.awayScore : summary.homeScore;
+  const carScore  = carIsHome ? summary?.homeScore : summary?.awayScore;
+  const oppScore  = carIsHome ? summary?.awayScore : summary?.homeScore;
 
-  const xCaption = [
-    `${summary.periodLabel} Summary | ${carAbbr} ${carScore ?? '–'}–${oppScore ?? '–'} ${oppAbbr}`,
-    `CF% ${summary.corsiForPct} · SOG ${summary.carSOG}–${summary.oppSOG} · Goals ${summary.carGoals}–${summary.oppGoals}`,
+  const xCaption = summary ? [
+    `${summary.periodLabel} Summary | ${carAbbr} ${carScore ?? '\u2013'}-${oppScore ?? '\u2013'} ${oppAbbr}`,
+    `CF% ${summary.corsiForPct} \u00b7 SOG ${summary.carSOG}-${summary.oppSOG} \u00b7 Goals ${summary.carGoals}-${summary.oppGoals}`,
     summary.aiNarrative || '',
     `#${carAbbr} #EyeWallAnalytics`,
-  ].filter(Boolean).join('\n');
+  ].filter(Boolean).join('\n') : '';
 
   const { saving, sharing, handleSave, handleShareX, handleNativeShare, canNativeShare } =
     useShareCard({
       canvasRef,
-      filename: `EyeWall-${carAbbr}-${summary.periodShort}-Summary.png`,
+      filename: `EyeWall-${carAbbr}-${summary?.periodShort ?? 'Summary'}.png`,
       xCaption,
       mountCanvas: async () => {
         if (!canvasMounted) {
@@ -484,6 +482,8 @@ export default function PeriodSummary({
         }
       },
     });
+
+  if (!summary) return null;
 
   return (
     <>

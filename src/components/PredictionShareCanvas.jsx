@@ -229,14 +229,12 @@ export default function PredictionExportSection({
       .catch(() => {});
   }, [gameId]);
 
-  if (carGpg == null || oppGpg == null || predCarScore == null) return null;
-
-  const xCaption = [
+  const xCaption = (carGpg != null && predCarScore != null) ? [
     `${TEAM_CONFIG.abbr} ${predCarScore}–${predOppScore} ${oppAbbr} — EyeWall Prediction`,
     `Win probability: ${TEAM_CONFIG.abbr} ${carModelPct}% · ${oppAbbr} ${100 - carModelPct}%`,
     aiNarrative || '',
     `#${TEAM_CONFIG.abbr} #EyeWallAnalytics`,
-  ].filter(Boolean).join('\n');
+  ].filter(Boolean).join('\n') : '';
 
   const { saving, sharing, handleSave, handleShareX, handleNativeShare, canNativeShare } =
     useShareCard({
@@ -251,6 +249,7 @@ export default function PredictionExportSection({
       },
     });
 
+  if (carGpg == null || oppGpg == null || predCarScore == null) return null;
   const handleSaveWithCapture = async () => {
     await handleSave();
     capture('prediction_card_exported', {

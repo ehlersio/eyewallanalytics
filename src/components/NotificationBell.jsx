@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { usePushNotifications, loadPrefs, savePrefs, DEFAULT_PREFS } from '../hooks/usePushNotifications';
+import { usePushNotifications, loadPrefs, savePrefs } from '../hooks/usePushNotifications';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { useSport } from '../utils/SportContext';
