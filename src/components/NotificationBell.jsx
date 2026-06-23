@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { usePushNotifications } from '../hooks/usePushNotifications';
+import { useState, useCallback } from 'react';
+import { usePushNotifications, loadPrefs, savePrefs, DEFAULT_PREFS } from '../hooks/usePushNotifications';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { useSport } from '../utils/SportContext';
@@ -9,20 +9,57 @@ import { applyTeamTheme } from '../utils/applyTeamTheme';
 import TeamLogo from '../components/TeamLogo';
 import './NotificationBell.css';
 
+// ── Preference definitions ────────────────────────────────────
+
+const PREF_GROUPS = [
+  {
+    label: 'Game Flow',
+    items: [
+      { key: 'gameStart',   icon: '🏒', label: 'Game starts' },
+      { key: 'periodStart', icon: '🔔', label: 'Period starts (P2, P3, OT)' },
+      { key: 'periodEnd',   icon: '🔕', label: 'Period ends' },
+    ],
+  },
+  {
+    label: 'Goals',
+    items: [
+      { key: 'goal',     icon: '🚨', label: 'Team goal scored' },
+      { key: 'oppGoal',  icon: '😬', label: 'Opponent goal scored' },
+      { key: 'hatTrick', icon: '🎩', label: 'Hat trick' },
+    ],
+  },
+  {
+    label: 'Special Teams',
+    items: [
+      { key: 'penalty',      icon: '⚡', label: 'Power play opportunity' },
+      { key: 'goaliePulled', icon: '🥅', label: 'Opponent pulls goalie' },
+    ],
+  },
+  {
+    label: 'Result',
+    items: [
+      { key: 'win',  icon: '🏆', label: 'Win' },
+      { key: 'loss', icon: '📉', label: 'Loss' },
+    ],
+  },
+];
+
 export default function NotificationBell() {
-  const [open, setOpen] = useState(false);
-  const { isPWHL } = useSport();
-  const activeTeam = isPWHL ? PWHL_TEAM_CONFIG : TEAM_CONFIG;
-  const activeTeamAbbr = activeTeam?.abbr || TEAM_CONFIG.abbr;
-  const activeTeamName = activeTeam?.displayName || TEAM_CONFIG.displayName;
-  const [theme, setThemeState] = useState(getTheme);
-  const { supported, permission, subscribed, subscribe, unsubscribe, loading, error } =
+  const [open, setOpen]         = useState(false);
+  const [showPrefs, setShowPrefs] = useState(false);
+  const { isPWHL }              = useSport();
+  const activeTeam              = isPWHL ? PWHL_TEAM_CONFIG : TEAM_CONFIG;
+  const activeTeamAbbr          = activeTeam?.abbr || TEAM_CONFIG.abbr;
+  const activeTeamName          = activeTeam?.displayName || TEAM_CONFIG.displayName;
+  const [theme, setThemeState]  = useState(getTheme);
+  const [prefs, setPrefsState]  = useState(() => loadPrefs());
+
+  const { supported, permission, subscribed, subscribe, unsubscribe, updatePrefs, loading, error } =
     usePushNotifications();
   const { summaries, openSummary } = usePeriodSummaryContext();
 
   const handleChangeTeam = () => {
     setOpen(false);
-    // Clear sport selection so user returns to league picker
     localStorage.removeItem('eyewall:sport');
     localStorage.removeItem('eyewall:team');
     localStorage.removeItem('eyewall:pwhl_team');
@@ -36,14 +73,26 @@ export default function NotificationBell() {
     setThemeState(next);
   };
 
+  const leagueTeamKey = isPWHL ? `PWHL:${activeTeamAbbr}` : `NHL:${activeTeamAbbr}`;
+
   const handleToggle = async () => {
     if (subscribed) {
       await unsubscribe();
     } else {
-      const ok = await subscribe();
+      const ok = await subscribe(leagueTeamKey, prefs);
       if (ok) setOpen(false);
     }
   };
+
+  const handlePrefToggle = useCallback(async (key) => {
+    const next = { ...prefs, [key]: !prefs[key] };
+    setPrefsState(next);
+    savePrefs(next);
+    // Update server if already subscribed
+    if (subscribed) {
+      await updatePrefs(leagueTeamKey, next);
+    }
+  }, [prefs, subscribed, activeTeamAbbr, updatePrefs]);
 
   const handleOpenSummary = (summary) => {
     setOpen(false);
@@ -55,12 +104,12 @@ export default function NotificationBell() {
   return (
     <div className="notif-wrap">
       <button
-        className='notif-bell notif-active'
+        className="notif-bell notif-active"
         onClick={() => setOpen(o => !o)}
-        aria-label={'Settings'}
-        title={'Settings'}
+        aria-label="Settings"
+        title="Settings"
       >
-        {'⚙️'}
+        ⚙️
       </button>
 
       {open && (
@@ -69,7 +118,7 @@ export default function NotificationBell() {
 
           <div className="notif-title">⚙️ Settings</div>
 
-          {/* My Team section */}
+          {/* My Team */}
           <div className="notif-my-team">
             <div className="notif-event-label">🏒 My Team</div>
             <div className="notif-team-row">
@@ -81,7 +130,7 @@ export default function NotificationBell() {
             </div>
           </div>
 
-          {/* Appearance section */}
+          {/* Appearance */}
           <div className="notif-my-team">
             <div className="notif-event-label">🎨 Appearance</div>
             <div className="notif-team-row">
@@ -92,53 +141,85 @@ export default function NotificationBell() {
             </div>
           </div>
 
-          <p className="notif-desc">
-            {subscribed
-              ? `You'll get notified when the ${activeTeamName} score a goal, start a game, or win.`
-              : `Get instant alerts on your phone when the ${activeTeamName} score, start a game, or win — even when the app is closed.`}
-          </p>
-
-          {permission === 'denied' && (
-            <p className="notif-blocked">
-              Notifications are blocked in your browser settings. To enable, click the 🔒 in your address bar and allow notifications for this site.
-            </p>
-          )}
-
-          {error && <p className="notif-error">{error}</p>}
-
-          {supported && permission !== 'denied' && (
-            <button
-              className={`notif-toggle-btn ${subscribed ? 'notif-off-btn' : 'notif-on-btn'}`}
-              onClick={handleToggle}
-              disabled={loading}
-            >
-              {loading
-                ? 'Working…'
-                : subscribed
-                ? 'Turn off notifications'
-                : 'Turn on notifications'}
-            </button>
-          )}
-
+          {/* Push notifications */}
           {supported && (
-          <div className="notif-events">
-            <div className="notif-event-label">🔔 Push Notifications</div>
-            {[
-              ['🚨', `${activeTeamName} goal scored`],
-              ['🏒', 'Game starts'],
-              ['🏆', `${activeTeamName} win`],
-              ['😤', 'Opponent penalty (PP!)'],
-            ].map(([icon, label]) => (
-              <div key={label} className="notif-event-row">
-                <span>{icon}</span>
-                <span>{label}</span>
-                {subscribed && <span className="notif-check">✓</span>}
+            <>
+              <p className="notif-desc">
+                {subscribed
+                  ? `Subscribed for ${activeTeamName} alerts.`
+                  : `Get instant alerts on your phone for ${activeTeamName} — even when the app is closed.`}
+              </p>
+
+              {permission === 'denied' && (
+                <p className="notif-blocked">
+                  Notifications are blocked. Click 🔒 in your address bar and allow notifications for this site.
+                </p>
+              )}
+
+              {error && <p className="notif-error">{error}</p>}
+
+              {permission !== 'denied' && (
+                <button
+                  className={`notif-toggle-btn ${subscribed ? 'notif-off-btn' : 'notif-on-btn'}`}
+                  onClick={handleToggle}
+                  disabled={loading}
+                >
+                  {loading
+                    ? 'Working…'
+                    : subscribed
+                    ? 'Turn off notifications'
+                    : 'Turn on notifications'}
+                </button>
+              )}
+
+              {/* Preference toggles */}
+              <div className="notif-events">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <div className="notif-event-label" style={{ marginBottom: 0 }}>🔔 Alert Preferences</div>
+                  <button
+                    style={{ background: 'none', border: 'none', fontSize: 11, color: 'var(--text-dim)', cursor: 'pointer', padding: '0 2px' }}
+                    onClick={() => setShowPrefs(p => !p)}
+                  >
+                    {showPrefs ? 'Hide ›' : 'Customize ›'}
+                  </button>
+                </div>
+
+                {!showPrefs ? (
+                  // Summary view — just show active prefs
+                  PREF_GROUPS.flatMap(g => g.items)
+                    .filter(item => prefs[item.key])
+                    .map(item => (
+                      <div key={item.key} className="notif-event-row">
+                        <span>{item.icon}</span>
+                        <span>{item.label}</span>
+                        {subscribed && <span className="notif-check">✓</span>}
+                      </div>
+                    ))
+                ) : (
+                  // Expanded preference editor
+                  PREF_GROUPS.map(group => (
+                    <div key={group.label} style={{ marginBottom: 10 }}>
+                      <div className="notif-event-label" style={{ marginBottom: 4 }}>{group.label}</div>
+                      {group.items.map(item => (
+                        <div key={item.key} className="notif-event-row" style={{ cursor: 'pointer' }}
+                          onClick={() => handlePrefToggle(item.key)}>
+                          <span>{item.icon}</span>
+                          <span style={{ color: prefs[item.key] ? 'var(--text)' : 'var(--text-dim)' }}>
+                            {item.label}
+                          </span>
+                          <span style={{ marginLeft: 'auto', fontSize: 14 }}>
+                            {prefs[item.key] ? '✅' : '⬜'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ))
+                )}
               </div>
-            ))}
-          </div>
+            </>
           )}
 
-          {/* Period summaries section */}
+          {/* Period summaries */}
           {hasSummaries && (
             <div className="notif-summaries-section">
               <div className="notif-summaries-label">📋 Game Summaries</div>

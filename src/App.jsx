@@ -35,6 +35,10 @@ const DevDraftView = import.meta.env.DEV
   ? lazy(() => import('./views/DevDraftView'))
   : null;
 
+const PWHLDevReplayView = import.meta.env.DEV
+  ? lazy(() => import('./views/PWHLDevReplayView'))
+  : null;
+
 const ViewFallback = () => (
   <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-dim)' }}>
     Loading…
@@ -125,6 +129,9 @@ export default function App() {
                   )}
                   {import.meta.env.DEV && DevDraftView && (
                     <Route path="/dev/draft" element={<DevDraftView />} />
+                  )}
+                  {import.meta.env.DEV && PWHLDevReplayView && (
+                    <Route path="/pwhl/dev" element={<PWHLDevReplayView />} />
                   )}
                 </Routes>
               </Suspense>

@@ -1,41 +1,36 @@
 /**
- * EyeWall Analytics — Service Worker v1.2
+ * EyeWall Analytics — Service Worker v2.0
+ *
+ * Reads notification content directly from the encrypted push payload
+ * (RFC 8291 / aes128gcm). No KV fetch needed — payload carries
+ * { title, body, tag, url } from the Worker.
  */
-
-const WORKER_URL = 'https://eyewall-poller.billowing-queen-bf23.workers.dev';
 
 self.addEventListener('install',  () => self.skipWaiting());
 self.addEventListener('activate', e  => e.waitUntil(self.clients.claim()));
 
 self.addEventListener('push', e => {
-  e.waitUntil(showNotification());
+  e.waitUntil(handlePush(e));
 });
 
-async function showNotification() {
+async function handlePush(e) {
   let title = 'EyeWall Analytics';
-  let body  = 'New update from the Canes!';
+  let body  = 'New update!';
   let tag   = 'eyewall';
   let url   = '/';
 
-  // Retry up to 3 times with 300ms delay — KV has eventual consistency lag
-  for (let attempt = 0; attempt < 3; attempt++) {
+  // Read payload directly — Worker sends encrypted { title, body, tag, url }
+  if (e.data) {
     try {
-      if (attempt > 0) await new Promise(r => setTimeout(r, 300));
-      const res = await fetch(`${WORKER_URL}/cache/latest-notification`, {
-        cache: 'no-store',
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.tag && data.tag !== 'eyewall') {
-          // Got real data (not default)
-          title = data.title || title;
-          body  = data.body  || body;
-          tag   = data.tag   || tag;
-          url   = data.url   || url;
-          break;
-        }
-      }
-    } catch { /* continue */ }
+      const data = e.data.json();
+      title = data.title || title;
+      body  = data.body  || body;
+      tag   = data.tag   || tag;
+      url   = data.url   || url;
+    } catch {
+      // Payload not JSON — use text as body
+      body = e.data.text() || body;
+    }
   }
 
   return self.registration.showNotification(title, {

@@ -8,7 +8,7 @@ import {
   bustLiveGameCache, TEAM_COLORS, GAME_TYPE, TEAM_CONFIG,
 } from '../utils/nhlApi';
 import IceRink from '../components/IceRink';
-import { GoalPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
+import { GoalPopup, HatTrickPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import { getGoalieAnalytics, getGameXG, getGameLogInsights } from '../utils/supabaseClient';
 import { inferPPUnit, inferPKUnit, PP_UNITS_BY_TEAM, PK_UNITS_BY_TEAM } from '../utils/ppUnits';
@@ -313,14 +313,19 @@ export default function ShotMapView() {
   const playerMapForEvents = pbp ? buildPlayerMap(pbp) : {};
   const strMapForEvents = {};
   Object.entries(playerMapForEvents).forEach(([k,v]) => { strMapForEvents[String(k)] = v; });
-  const { goalPopup, clearGoalPopup, penaltyPopup, clearPenaltyPopup, winPopup, clearWinPopup, puckDropPopup, clearPuckDropPopup } =
-    useGameEvents(pbp, isLive, strMapForEvents, gameHome);
+  const { goalPopup, clearGoalPopup, hatTrickPopup, clearHatTrickPopup,
+    penaltyPopup, clearPenaltyPopup, winPopup, clearWinPopup,
+    puckDropPopup, clearPuckDropPopup } =
+    useGameEvents(pbp, isLive, strMapForEvents, gameHome,
+      TEAM_CONFIG.teamId, TEAM_CONFIG.abbr, TEAM_CONFIG.displayColor);
 
   // Keep refs current so the visibility handler always calls the latest versions
   useEffect(() => { clearGoalPopupRef.current    = clearGoalPopup;    }, [clearGoalPopup]);
   useEffect(() => { clearPenaltyPopupRef.current = clearPenaltyPopup; }, [clearPenaltyPopup]);
   useEffect(() => { clearWinPopupRef.current     = clearWinPopup;     }, [clearWinPopup]);
   useEffect(() => { clearPuckDropRef.current     = clearPuckDropPopup;}, [clearPuckDropPopup]);
+  const clearHatTrickRef = useRef(null);
+  useEffect(() => { clearHatTrickRef.current     = clearHatTrickPopup;}, [clearHatTrickPopup]);
   useEffect(() => { refetchLiveRef.current       = refetchLive;       }, [refetchLive]);
 
   // Visibility change — fires when user returns to the app from another tab/app.
@@ -383,9 +388,10 @@ export default function ShotMapView() {
   const [debugOpen,  setDebugOpen]  = useState(false);
   const [debugTaps,  setDebugTaps]  = useState(0);
   const debugTapRef = useRef(null);
-  const [debugGoalPopup,    setDebugGoalPopup]    = useState(null);
-  const [debugPenaltyPopup, setDebugPenaltyPopup] = useState(null);
-  const [debugWinPopup,     setDebugWinPopup]     = useState(null);
+  const [debugGoalPopup,     setDebugGoalPopup]     = useState(null);
+  const [debugHatTrickPopup, setDebugHatTrickPopup] = useState(null);
+  const [debugPenaltyPopup,  setDebugPenaltyPopup]  = useState(null);
+  const [debugWinPopup,      setDebugWinPopup]      = useState(null);
   const [debugPuckDropPopup, setDebugPuckDropPopup] = useState(null);
   const [debugSituation,    setDebugSituation]    = useState(null);
   const [debugInsight,      setDebugInsight]      = useState(null); // injected Live Insight row
@@ -1649,9 +1655,10 @@ export default function ShotMapView() {
     {winPopup      && <WinPopup     data={winPopup}        onClose={clearWinPopup}     />}
 
     {/* ── Debug popups ── */}
-    {debugGoalPopup    && <GoalPopup    data={debugGoalPopup}    onClose={() => setDebugGoalPopup(null)}    />}
-    {debugPenaltyPopup && <PenaltyPopup data={debugPenaltyPopup} onClose={() => setDebugPenaltyPopup(null)} />}
-    {debugWinPopup     && <WinPopup     data={debugWinPopup}     onClose={() => setDebugWinPopup(null)}     />}
+    {debugGoalPopup     && <GoalPopup     data={debugGoalPopup}     onClose={() => setDebugGoalPopup(null)}     />}
+    {debugHatTrickPopup && <HatTrickPopup data={debugHatTrickPopup} onClose={() => setDebugHatTrickPopup(null)} />}
+    {debugPenaltyPopup  && <PenaltyPopup  data={debugPenaltyPopup}  onClose={() => setDebugPenaltyPopup(null)}  />}
+    {debugWinPopup      && <WinPopup      data={debugWinPopup}      onClose={() => setDebugWinPopup(null)}      />}
     {debugPuckDropPopup && <PuckDropPopup data={debugPuckDropPopup} onClose={() => setDebugPuckDropPopup(null)} />}
 
     {/* ── Debug panel (5 taps on score bar) ── */}
@@ -1673,7 +1680,8 @@ export default function ShotMapView() {
               <button className="debug-btn goal" onClick={() => setDebugGoalPopup({ scorer: 'Sebastian Aho', assists: ['Andrei Svechnikov', 'Jaccob Slavin'], shotType: 'Wrist', period: 'P2', time: '14:32' })}>🚨 CAR Goal</button>
               <button className="debug-btn" style={{ background: 'rgba(204,34,0,0.15)', color: 'var(--red-bright)' }} onClick={() => setDebugPuckDropPopup({ gameId: 'debug' })}>🏒 Puck Drop</button>
               <button className="debug-btn penalty" onClick={() => setDebugPenaltyPopup({ id: 'debug-1', player: 'Brad Marchand', description: 'Hooking', duration: 2, period: 'P2', time: '08:17' })}>⚡ PP Alert</button>
-              <button className="debug-btn win" onClick={() => setDebugWinPopup({ score: 'CAR 4 – BOS 2' })}>🏆 Win Popup</button>
+              <button className="debug-btn win" onClick={() => setDebugWinPopup({ score: `${TEAM_CONFIG.abbr} 4 – BOS 2`, teamAbbr: TEAM_CONFIG.abbr })}>🏆 Win Popup</button>
+              <button className="debug-btn" style={{ background: 'rgba(200,169,81,0.15)', color: '#c8a951' }} onClick={() => setDebugHatTrickPopup({ scorer: 'Sebastian Aho', assists: ['Andrei Svechnikov'], shotType: 'Wrist', period: 'P3', time: '11:22', teamColor: TEAM_CONFIG.displayColor })}>🧢 Hat Trick</button>
             </div>
             <div className="debug-section-label">Insights</div>
             <div className="debug-panel-btns">

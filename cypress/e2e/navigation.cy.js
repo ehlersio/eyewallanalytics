@@ -36,7 +36,7 @@ describe('PWHL Navigation smoke tests (multi-team)', () => {
 
   PWHL_TEAMS.forEach(({ abbr, teamId }) => {
     it(`all PWHL routes load without crashing for ${abbr}`, () => {
-      const routes = ['/pwhl/shots', '/pwhl/schedule', '/pwhl/players', '/pwhl/team', '/pwhl/league', '/pwhl/news']
+      const routes = ['/pwhl/shots', '/pwhl/schedule', '/pwhl/players', '/pwhl/team', '/pwhl/league', '/pwhl/news', '/pwhl/dev']
       routes.forEach(path => {
         cy.visit(path, {
           onBeforeLoad(win) {

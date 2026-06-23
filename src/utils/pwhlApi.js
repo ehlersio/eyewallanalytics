@@ -136,3 +136,30 @@ export function pbpPowerPlay(events) {
   if (!Array.isArray(events)) return [];
   return events.filter(e => e.is_power_play);
 }
+
+// ── Live game API ─────────────────────────────────────────────────────────────
+
+/**
+ * Fetch today's PWHL games with live status.
+ * Returns [{ gameId, homeTeamId, awayTeamId, homeTeamCode, awayTeamCode,
+ *            homeScore, awayScore, status: 'pre'|'live'|'final' }]
+ */
+export async function fetchPWHLToday(season = PWHL_CURRENT_SEASON) {
+  return workerFetch(`/pwhl/today?season=${season}`);
+}
+
+/**
+ * Fetch live (or completed) normalized PBP for a single PWHL game.
+ * Returns {
+ *   gameId, homeTeamId, awayTeamId,
+ *   homeScore, awayScore,
+ *   gameStatus: 'pre'|'live'|'final',
+ *   events: [...normalized events],
+ *   goalieStats: [...],
+ *   faceoffStats: { playerId: { wins, attempts, losses } }
+ * }
+ */
+export async function fetchPWHLLive(gameId) {
+  if (!gameId) return null;
+  return workerFetch(`/pwhl/live/${gameId}`);
+}

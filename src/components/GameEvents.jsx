@@ -90,6 +90,61 @@ export function PenaltyPopup({ data, onClose }) {
   );
 }
 
+
+// ── Hat Rain ──────────────────────────────────────────────────
+function HatRain({ teamColor }) {
+  const hats = Array.from({ length: 40 }, (_, i) => ({
+    id: i,
+    left:     `${Math.random() * 100}%`,
+    size:     `${20 + Math.random() * 24}px`,
+    delay:    `${Math.random() * 1.5}s`,
+    duration: `${1.8 + Math.random() * 1.5}s`,
+    rotate:   `${Math.random() * 360}deg`,
+    color:    i % 3 === 0 ? (teamColor || 'var(--red-bright)') : i % 3 === 1 ? '#ffffff' : '#c8a951',
+  }));
+  return (
+    <>
+      {hats.map(h => (
+        <div key={h.id} className="hat-piece" style={{
+          left:            h.left,
+          fontSize:        h.size,
+          animationDelay:  h.delay,
+          animationDuration: h.duration,
+          '--hat-rotate':  h.rotate,
+          filter: `drop-shadow(0 0 4px ${h.color})`,
+        }}>🧢</div>
+      ))}
+    </>
+  );
+}
+
+// ── Hat Trick Popup ───────────────────────────────────────────
+export function HatTrickPopup({ data, onClose }) {
+  useEffect(() => {
+    if (!data) return;
+    const t = setTimeout(onClose, 12000);
+    return () => clearTimeout(t);
+  }, [data, onClose]);
+
+  if (!data) return null;
+  return (
+    <div className="game-event-overlay hat-trick-overlay" onClick={onClose}>
+      <HatRain teamColor={data.teamColor} />
+      <div className="hat-trick-popup">
+        <div className="goal-light">🚨</div>
+        <div className="hat-trick-word">HAT TRICK!</div>
+        {data.scorer && <div className="goal-scorer">{data.scorer}</div>}
+        {data.assists?.length > 0 && (
+          <div className="goal-assists">Assists: {data.assists.join(', ')}</div>
+        )}
+        {data.shotType && <div className="goal-shot-type">{data.shotType}</div>}
+        <div className="goal-period">{data.time ? `${data.period} · ${data.time}` : data.period}</div>
+        <div className="game-event-dismiss">tap to dismiss</div>
+      </div>
+    </div>
+  );
+}
+
 // ── Confetti ──────────────────────────────────────────────────
 function Confetti() {
   const pieces = Array.from({ length: 60 }, (_, i) => ({
@@ -128,7 +183,7 @@ export function WinPopup({ data, onClose }) {
       <Confetti />
       <div className="win-popup">
         <div className="win-logo">🏆</div>
-        <div className="win-text">CANES WIN!</div>
+        <div className="win-text">{data.teamAbbr || 'CANES'} WIN!</div>
         <div className="win-score">{data.score}</div>
         <div className="event-dismiss">tap to dismiss</div>
       </div>
@@ -137,10 +192,18 @@ export function WinPopup({ data, onClose }) {
 }
 
 // ── Hook ──────────────────────────────────────────────────────
-export function useGameEvents(pbp, isLive, playerMap, gameHome) {
-  const [goalPopup,    setGoalPopup]    = useState(null);
-  const [penaltyPopup, setPenaltyPopup] = useState(null);
-  const [winPopup,     setWinPopup]     = useState(null);
+export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr, teamColor) {
+  // teamId: integer team ID (replaces hardcoded TEAM_CONFIG.teamId)
+  // teamAbbr: e.g. 'CAR' for win popup
+  // teamColor: displayColor for hat trick popup
+  // Falls back to TEAM_CONFIG for backwards compat if not passed
+  const _teamId    = teamId    ?? TEAM_CONFIG.teamId;
+  const _teamAbbr  = teamAbbr  ?? TEAM_CONFIG.abbr;
+  const _teamColor = teamColor ?? 'var(--red-bright)';
+  const [goalPopup,     setGoalPopup]     = useState(null);
+  const [hatTrickPopup, setHatTrickPopup] = useState(null);
+  const [penaltyPopup,  setPenaltyPopup]  = useState(null);
+  const [winPopup,      setWinPopup]      = useState(null);
   const [puckDropPopup, setPuckDropPopup] = useState(null);
 
   const gameId = pbp?.id ? String(pbp.id) : null;
@@ -155,6 +218,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
   const shownPenalties = useRef(new Set(
     gameId ? JSON.parse(sessionStorage.getItem(`penalties_${gameId}`) || '[]') : []
   ));
+  const scorerGoals = useRef({}); // { scorerId: goalCount } for hat trick tracking
   // Track whether we were recently live (so we catch the final OT play)
   const wasLiveRef   = useRef(false);
 
@@ -206,7 +270,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
 
       // CAR goal — fire event, dedup by eventId
       // Also re-fire if scorer/assists changed (goal review)
-      if (play.typeDescKey === 'goal' && d.eventOwnerTeamId === TEAM_CONFIG.teamId) {
+      if (play.typeDescKey === 'goal' && d.eventOwnerTeamId === _teamId) {
         const eventId = play.eventId || `goal-${play.sortOrder}`;
         const scorer  = pName(d.scoringPlayerId);
         const assists = [d.assist1PlayerId, d.assist2PlayerId]
@@ -219,13 +283,25 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
           );
           shownGoals.current.add(goalSig);
           if (gameId) sessionStorage.setItem(`goals_${gameId}`, JSON.stringify([...shownGoals.current]));
-          setGoalPopup({ scorer, assists, shotType: d.shotType || null, period: per, time });
+
+          // Track goals per scorer for hat trick detection
+          const scorerId = String(d.scoringPlayerId || '');
+          if (scorerId) {
+            scorerGoals.current[scorerId] = (scorerGoals.current[scorerId] || 0) + 1;
+          }
+
+          if (scorerId && scorerGoals.current[scorerId] === 3) {
+            // Hat trick — fire hat trick popup instead of regular goal
+            setHatTrickPopup({ scorer, assists, shotType: d.shotType || null, period: per, time, teamColor: _teamColor });
+          } else {
+            setGoalPopup({ scorer, assists, shotType: d.shotType || null, period: per, time });
+          }
           continue;
         }
       }
 
       // Opponent penalty → CAR power play
-      if (play.typeDescKey === 'penalty' && d.eventOwnerTeamId !== TEAM_CONFIG.teamId) {
+      if (play.typeDescKey === 'penalty' && d.eventOwnerTeamId !== _teamId) {
         const penId = String(play.eventId || play.sortOrder);
         if (!shownPenalties.current.has(penId)) {
           shownPenalties.current.add(penId);
@@ -278,12 +354,13 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome) {
     if (carScore > oppScore) {
       gameEndFired.current = true;
       sessionStorage.setItem(sessionKey, '1');
-      setWinPopup({ score: `${TEAM_CONFIG.abbr} ${carScore} – ${oppAbbrev} ${oppScore}` });
+      setWinPopup({ score: `${_teamAbbr} ${carScore} – ${oppAbbrev} ${oppScore}`, teamAbbr: _teamAbbr });
     }
   }, [pbp?.gameState, pbp?.plays?.length]);
 
   return {
     goalPopup,     clearGoalPopup:     () => setGoalPopup(null),
+    hatTrickPopup, clearHatTrickPopup: () => setHatTrickPopup(null),
     penaltyPopup,  clearPenaltyPopup:  () => setPenaltyPopup(null),
     winPopup,      clearWinPopup:      () => setWinPopup(null),
     puckDropPopup, clearPuckDropPopup: () => setPuckDropPopup(null),
