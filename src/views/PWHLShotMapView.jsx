@@ -16,6 +16,9 @@ import {
   PWHLLiveInsights,
 } from '../components/PWHLGameEvents';
 import { HatTrickPopup } from '../components/GameEvents';
+import { usePWHLPeriodSummary, usePWHLGameSummary } from '../hooks/usePWHLPeriodSummary';
+import PWHLPeriodSummary from '../components/PWHLPeriodSummary';
+import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import IceRink from '../components/IceRink';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
@@ -785,6 +788,7 @@ export default function PWHLShotMapView() {
   const [season,         setSeason]   = useState(PWHL_CURRENT_SEASON);
   const [selectedGameId, setSelected] = useState(location.state?.selectedGameId ?? null);
   const [drillStat,      setDrill]    = useState(null);
+  const [viewingSummaryPeriod, setViewingSummaryPeriod] = useState(null);
 
   // ── Dev replay injection ──────────────────────────────────────
   const devGame = usePWHLDevGame();
@@ -947,6 +951,55 @@ export default function PWHLShotMapView() {
 
   // Live data takes precedence over stored PBP when a live game is selected
   const activePbpData = isLive && liveData ? liveData : pbpData;
+
+  // ── Period / game summaries ───────────────────────────────────
+  const { summaries: periodSummaries, newSummary, dismissNewSummary, updateSummaryNarrative } =
+    usePWHLPeriodSummary({
+      liveData: isLive ? liveData : null,
+      pbpData:  !isLive ? pbpData : null,
+      isLive,
+      gameId:   selectedGameId,
+      teamId,
+    });
+
+  const { gameSummary, updateGameNarrative } = usePWHLGameSummary({
+    liveData: isLive ? liveData : null,
+    pbpData:  !isLive ? pbpData : null,
+    isLive,
+    gameId:   selectedGameId,
+    teamId,
+  });
+
+  // Derive live summary so narrative updates reflect immediately
+  const viewingSummary = viewingSummaryPeriod === null ? null
+    : viewingSummaryPeriod === 'game' ? gameSummary
+    : periodSummaries.find(s => s.period === viewingSummaryPeriod) || null;
+
+  // Sync summaries to PeriodSummaryContext (shared with NHL bell)
+  const { setSummaries: setCtxSummaries, registerOpenHandler } = usePeriodSummaryContext();
+  useEffect(() => {
+    const all = gameSummary ? [gameSummary, ...periodSummaries] : periodSummaries;
+    setCtxSummaries(all);
+  }, [periodSummaries, gameSummary, setCtxSummaries]);
+  useEffect(() => {
+    registerOpenHandler((s) => setViewingSummaryPeriod(s.isGameSummary ? 'game' : s.period));
+    return () => registerOpenHandler(null);
+  }, [registerOpenHandler]);
+
+  // Auto-open game summary when live game goes final
+  const wasLiveRef = useRef(false);
+  useEffect(() => { if (isLive) wasLiveRef.current = true; }, [isLive]);
+  useEffect(() => {
+    if (!wasLiveRef.current) return;
+    if (!isLive && liveData?.gameStatus === 'final' && gameSummary && viewingSummaryPeriod === null) {
+      setViewingSummaryPeriod('game');
+    }
+  }, [isLive, liveData?.gameStatus, gameSummary, viewingSummaryPeriod]);
+
+  // Auto-show new period summary when it fires during a live game
+  useEffect(() => {
+    if (newSummary) setViewingSummaryPeriod(newSummary.isGameSummary ? 'game' : newSummary.period);
+  }, [newSummary]);
 
   // Normalize live events to snake_case shape used by pbpByType and pbpStats
   // Live: { eventType, teamId, isPowerPlay, ... }
@@ -1566,6 +1619,26 @@ export default function PWHLShotMapView() {
         />
       )}
 
+      {/* ── Period / game summary buttons ── */}
+      {hasPBP && periodSummaries.length > 0 && (
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap', padding:'0 0 4px' }}>
+          {periodSummaries.map(s => (
+            <button key={s.period} className="rink-btn"
+              style={{ fontSize:11, padding:'3px 10px' }}
+              onClick={() => setViewingSummaryPeriod(s.period)}>
+              {s.periodShort} Summary
+            </button>
+          ))}
+          {gameSummary && (
+            <button className="rink-btn"
+              style={{ fontSize:11, padding:'3px 10px', fontWeight:600 }}
+              onClick={() => setViewingSummaryPeriod('game')}>
+              📊 Game Summary
+            </button>
+          )}
+        </div>
+      )}
+
       {/* ── Row 1: SOG, Blocks, Hits, Penalties ── */}
       {shotStats && (
         <div className="metrics-grid metrics-grid-4">
@@ -1806,6 +1879,21 @@ export default function PWHLShotMapView() {
       {debugPenaltyPopup && <PWHLPenaltyPopup  data={debugPenaltyPopup} onClose={() => setDebugPenaltyPopup(null)} />}
       {debugWinPopup     && <PWHLWinPopup      data={debugWinPopup}     onClose={() => setDebugWinPopup(null)}     />}
       {debugPuckPopup    && <PWHLPuckDropPopup  data={debugPuckPopup}    onClose={() => setDebugPuckPopup(null)}    />}
+
+      {/* ── Period / Game Summary popup ── */}
+      {viewingSummary && (
+        <PWHLPeriodSummary
+          summary={viewingSummary}
+          onDismiss={() => { setViewingSummaryPeriod(null); dismissNewSummary(); }}
+          onNarrativeReady={(period, narrative) => {
+            if (viewingSummary.isGameSummary) updateGameNarrative(narrative);
+            else updateSummaryNarrative(period, narrative);
+          }}
+          carAbbr={abbr}
+          oppAbbr={oppAbbr || 'OPP'}
+          homeAbbr={scoreBarData?.isHome ? abbr : (oppAbbr || 'OPP')}
+        />
+      )}
 
       {/* ── Debug panel (5 taps on score card, dev only) ── */}
       {import.meta.env.DEV && debugOpen && (

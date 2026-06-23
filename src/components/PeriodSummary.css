@@ -1096,3 +1096,14 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* ── PWHL summary — centered modal (not bottom sheet) ───────── */
+.pwhl-summary-overlay {
+  align-items: center;
+  padding: 16px;
+}
+
+.pwhl-summary-overlay .ps-card {
+  border-radius: 20px;
+  max-height: 90vh;
+}
