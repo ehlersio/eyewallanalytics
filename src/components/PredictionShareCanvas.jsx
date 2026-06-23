@@ -11,6 +11,9 @@
 import { useRef, useState, useEffect } from 'react';
 import { capture } from '../utils/analytics';
 import { TEAM_CONFIG } from '../utils/teamConfig';
+import { useShareCard } from '../hooks/useShareCard';
+import ShareButtons from './ShareButtons';
+import './ShareButtons.css';
 import './PredictionCanvas.css';
 
 // ── Share canvas (off-screen, 1080×1080) ─────────────────────
@@ -201,7 +204,6 @@ export default function PredictionExportSection({
   factors, odds, oppAbbr, oppColor, isPlayoff, seriesEntry, gameId, carLines,
 }) {
   const canvasRef = useRef(null);
-  const [exporting, setExporting] = useState(false);
   const [canvasMounted, setCanvasMounted] = useState(false);
   const [aiNarrative, setAiNarrative] = useState(null);
 
@@ -227,47 +229,49 @@ export default function PredictionExportSection({
       .catch(() => {});
   }, [gameId]);
 
-  // Don't render until standings-derived props are available
   if (carGpg == null || oppGpg == null || predCarScore == null) return null;
 
-  const handleExport = async () => {
-    setExporting(true);
-    // Mount the canvas if not already mounted, wait a frame for React to render it
-    if (!canvasMounted) {
-      setCanvasMounted(true);
-      await new Promise(r => setTimeout(r, 100));
-    }
-    try {
-      const { toPng } = await import('html-to-image');
-      const node = canvasRef.current;
-      if (!node) return;
-      const dataUrl = await toPng(node, {
-        width: 1080, height: 1080, skipFonts: true,
-        imagePlaceholder: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
-        style: { position: 'static', left: '0', top: '0' },
-      });
-      const link = document.createElement('a');
-      link.download = `EyeWall-Prediction-${TEAM_CONFIG.abbr}-vs-${oppAbbr}.png`;
-      link.href = dataUrl;
-      link.click();
-      capture('prediction_card_exported', {
-        opponent: oppAbbr,
-        carPct:   carModelPct,
-        hasOdds:  !!odds,
-        hasAI:    !!aiNarrative,
-      });
-    } catch (e) {
-      console.error('Prediction export failed:', e);
-    } finally {
-      setExporting(false);
-    }
+  const xCaption = [
+    `${TEAM_CONFIG.abbr} ${predCarScore}–${predOppScore} ${oppAbbr} — EyeWall Prediction`,
+    `Win probability: ${TEAM_CONFIG.abbr} ${carModelPct}% · ${oppAbbr} ${100 - carModelPct}%`,
+    aiNarrative || '',
+    `#${TEAM_CONFIG.abbr} #EyeWallAnalytics`,
+  ].filter(Boolean).join('\n');
+
+  const { saving, sharing, handleSave, handleShareX, handleNativeShare, canNativeShare } =
+    useShareCard({
+      canvasRef,
+      filename: `EyeWall-Prediction-${TEAM_CONFIG.abbr}-vs-${oppAbbr}.png`,
+      xCaption,
+      mountCanvas: async () => {
+        if (!canvasMounted) {
+          setCanvasMounted(true);
+          await new Promise(r => setTimeout(r, 120));
+        }
+      },
+    });
+
+  const handleSaveWithCapture = async () => {
+    await handleSave();
+    capture('prediction_card_exported', {
+      opponent: oppAbbr,
+      carPct:   carModelPct,
+      hasOdds:  !!odds,
+      hasAI:    !!aiNarrative,
+    });
   };
 
   return (
     <>
-      <button className="md-export-btn" onClick={handleExport} disabled={exporting}>
-        {exporting ? '⏳ Saving…' : '📸 Save Prediction Card'}
-      </button>
+      <ShareButtons
+        onSave={handleSaveWithCapture}
+        onShareX={handleShareX}
+        onNativeShare={handleNativeShare}
+        canNativeShare={canNativeShare}
+        saving={saving}
+        sharing={sharing}
+        className="md-export-row"
+      />
       {canvasMounted && (
         <PredictionCanvas
           canvasRef={canvasRef}

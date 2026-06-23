@@ -18,7 +18,10 @@ import { getTeamSeasonData, getPowerRankingsNarrative, getPowerRankingsHistory }
 import { ALL_TEAMS } from '../utils/teamConfig';
 import TeamLogo from '../components/TeamLogo';
 import PlayerPopup from '../components/PlayerPopup';
+import { useShareCard } from '../hooks/useShareCard';
+import ShareButtons from '../components/ShareButtons';
 import './LeagueView.css';
+import '../components/ShareButtons.css';
 import '../components/PredictionCanvas.css';
 import DraftTab from '../components/DraftTab';
 
@@ -1050,7 +1053,6 @@ function RankSparkline({ history, primaryColor }) {
 function RankingsPanel({ standings, xgData, xgLoading, narrative, history }) {
   const [showHow,    setShowHow]    = useState(false);
   const [canvasMounted, setCanvasMounted] = useState(false);
-  const [exporting,  setExporting]  = useState(false);
   const ranked  = computePowerRankings(standings, xgData);
   const loading = !standings?.length || xgLoading;
 
@@ -1058,31 +1060,30 @@ function RankingsPanel({ standings, xgData, xgLoading, narrative, history }) {
   const myData    = ranked.find(t => t.abbr === PRIMARY);
   const priorRank = narrative?.prior_rank ?? null;
 
-  const handleExport = async () => {
-    setExporting(true);
-    if (!canvasMounted) {
-      setCanvasMounted(true);
-      await new Promise(r => setTimeout(r, 120));
-    }
-    try {
-      const { toPng } = await import('html-to-image');
-      const node = document.getElementById('pr-export-canvas');
-      if (!node) return;
-      const dataUrl = await toPng(node, {
-        width: 1080, height: 1080, skipFonts: true,
-        imagePlaceholder: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
-        style: { position: 'static', left: '0', top: '0' },
-      });
-      const link = document.createElement('a');
-      link.download = `EyeWall-PowerRankings-${PRIMARY}.png`;
-      link.href = dataUrl;
-      link.click();
-      capture('power_rankings_card_exported', { team: PRIMARY, rank: myData?.rank });
-    } catch (e) {
-      console.error('Rankings export failed:', e);
-    } finally {
-      setExporting(false);
-    }
+  const xCaption = [
+    `${PRIMARY} Power Rankings — #${myData?.rank ?? '?'} in the NHL`,
+    narrative?.narrative || '',
+    `#${PRIMARY} #EyeWallAnalytics`,
+  ].filter(Boolean).join('\n');
+
+  const { saving, sharing, handleSave, handleShareX, handleNativeShare, canNativeShare } =
+    useShareCard({
+      canvasRef:  { current: null }, // power rankings uses getElementById
+      filename: `EyeWall-PowerRankings-${PRIMARY}.png`,
+      xCaption,
+      mountCanvas: async () => {
+        if (!canvasMounted) {
+          setCanvasMounted(true);
+          await new Promise(r => setTimeout(r, 120));
+        }
+        // Override canvasRef.current after mount
+      },
+      getNode: () => document.getElementById('pr-export-canvas'),
+    });
+
+  const handleSaveWithCapture = async () => {
+    await handleSave();
+    capture('power_rankings_card_exported', { team: PRIMARY, rank: myData?.rank });
   };
 
   if (loading) {
@@ -1171,10 +1172,15 @@ function RankingsPanel({ standings, xgData, xgLoading, narrative, history }) {
         })}
       </div>
 
-      {/* Export button */}
-      <button className="md-export-btn" onClick={handleExport} disabled={exporting || !myData}>
-        {exporting ? '⏳ Saving…' : '📸 Save Rankings Card'}
-      </button>
+      {/* Export / share */}
+      <ShareButtons
+        onSave={handleSaveWithCapture}
+        onShareX={handleShareX}
+        onNativeShare={handleNativeShare}
+        canNativeShare={canNativeShare}
+        saving={saving}
+        sharing={sharing || !myData}
+      />
 
       {/* How is this calculated? */}
       <div className="lv-div-card lv-div-card--wide">

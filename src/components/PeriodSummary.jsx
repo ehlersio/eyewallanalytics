@@ -1,6 +1,9 @@
 // components/PeriodSummary.jsx
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { TEAM_CONFIG } from '../utils/teamConfig';
+import { useShareCard } from '../hooks/useShareCard';
+import ShareButtons from './ShareButtons';
+import './ShareButtons.css';
 import './PeriodSummary.css';
 
 // Brightcove embed — autoplay=false prevents simultaneous playback
@@ -439,8 +442,6 @@ export default function PeriodSummary({
   isPlayoff = false,
 }) {
   const canvasRef = useRef(null);
-  const [exporting, setExporting] = useState(false);
-  const [captionCopied, setCaptionCopied] = useState(false);
   const [canvasMounted, setCanvasMounted] = useState(false);
   const [cardNarrative, setCardNarrative] = useState(summary?.cardNarrative || null);
 
@@ -461,49 +462,28 @@ export default function PeriodSummary({
   if (!summary) return null;
 
   const carIsHome = homeAbbr === carAbbr;
-  const carScore = carIsHome ? summary.homeScore : summary.awayScore;
-  const oppScore = carIsHome ? summary.awayScore : summary.homeScore;
+  const carScore  = carIsHome ? summary.homeScore : summary.awayScore;
+  const oppScore  = carIsHome ? summary.awayScore : summary.homeScore;
 
-  const handleExport = async () => {
-    setExporting(true);
-    if (!canvasMounted) {
-      setCanvasMounted(true);
-      await new Promise(r => setTimeout(r, 100));
-    }
-    try {
-      const { toPng } = await import('html-to-image');
-      const node = canvasRef.current;
-      if (!node) return;
-      const dataUrl = await toPng(node, {
-        width: 1080,
-        height: 1080,
-        skipFonts: true,
-        imagePlaceholder: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
-        style: { position: 'static', left: '0', top: '0' },
-      });
-      const link = document.createElement('a');
-      link.download = `EyeWall-${carAbbr}-${summary.periodShort}-Summary.png`;
-      link.href = dataUrl;
-      link.click();
-    } catch (e) {
-      console.error('Export failed:', e);
-    } finally {
-      setExporting(false);
-    }
-  };
+  const xCaption = [
+    `${summary.periodLabel} Summary | ${carAbbr} ${carScore ?? '–'}–${oppScore ?? '–'} ${oppAbbr}`,
+    `CF% ${summary.corsiForPct} · SOG ${summary.carSOG}–${summary.oppSOG} · Goals ${summary.carGoals}–${summary.oppGoals}`,
+    summary.aiNarrative || '',
+    `#${carAbbr} #EyeWallAnalytics`,
+  ].filter(Boolean).join('\n');
 
-  const handleCopyCaption = () => {
-    const caption = [
-      `${summary.periodLabel} Summary | ${carAbbr} ${carScore ?? '–'}–${oppScore ?? '–'} ${oppAbbr}`,
-      `CF% ${summary.corsiForPct} · SOG ${summary.carSOG}–${summary.oppSOG} · Goals ${summary.carGoals}–${summary.oppGoals}`,
-      summary.aiNarrative || '',
-      '#LetsGoCanes #EyeWallAnalytics',
-    ].filter(Boolean).join('\n');
-    navigator.clipboard.writeText(caption).then(() => {
-      setCaptionCopied(true);
-      setTimeout(() => setCaptionCopied(false), 2000);
+  const { saving, sharing, handleSave, handleShareX, handleNativeShare, canNativeShare } =
+    useShareCard({
+      canvasRef,
+      filename: `EyeWall-${carAbbr}-${summary.periodShort}-Summary.png`,
+      xCaption,
+      mountCanvas: async () => {
+        if (!canvasMounted) {
+          setCanvasMounted(true);
+          await new Promise(r => setTimeout(r, 120));
+        }
+      },
     });
-  };
 
   return (
     <>
@@ -621,12 +601,14 @@ export default function PeriodSummary({
 
           {/* Share */}
           <div className="ps-share-section">
-            <button className="ps-share-btn primary" onClick={handleExport} disabled={exporting}>
-              {exporting ? '⏳ Saving…' : '📸 Save Image'}
-            </button>
-            <button className="ps-share-btn secondary" onClick={handleCopyCaption}>
-              {captionCopied ? '✓ Copied' : '📋 Copy Caption'}
-            </button>
+            <ShareButtons
+              onSave={handleSave}
+              onShareX={handleShareX}
+              onNativeShare={handleNativeShare}
+              canNativeShare={canNativeShare}
+              saving={saving}
+              sharing={sharing}
+            />
           </div>
 
         </div>

@@ -12,6 +12,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { pwhlLogoUrl } from '../utils/pwhlConfig';
+import { useShareCard } from '../hooks/useShareCard';
+import ShareButtons from './ShareButtons';
+import './ShareButtons.css';
 import './PeriodSummary.css';
 
 const WORKER_URL = typeof import.meta !== 'undefined'
@@ -386,7 +389,6 @@ export default function PWHLPeriodSummary({
   readOnly = false,
 }) {
   const canvasRef    = useRef(null);
-  const [exporting,     setExporting]     = useState(false);
   const [captionCopied, setCaptionCopied] = useState(false);
   const [canvasMounted, setCanvasMounted] = useState(false);
   const [cardNarrative, setCardNarrative] = useState(summary?.cardNarrative || null);
@@ -397,6 +399,26 @@ export default function PWHLPeriodSummary({
 
   const carLogo = pwhlLogoUrl(carAbbr);
   const oppLogo = pwhlLogoUrl(oppAbbr);
+
+  const xCaption = [
+    `${summary?.periodLabel} Summary | ${carAbbr} ${carScore ?? '–'}–${oppScore ?? '–'} ${oppAbbr}`,
+    `CF% ${summary?.corsiForPct} · SOG ${summary?.carSOG}–${summary?.oppSOG} · Goals ${summary?.carGoals}–${summary?.oppGoals}`,
+    summary?.aiNarrative || '',
+    '#PWHL #EyeWallAnalytics',
+  ].filter(Boolean).join('\n');
+
+  const { saving, sharing, handleSave, handleShareX, handleNativeShare, canNativeShare } =
+    useShareCard({
+      canvasRef,
+      filename: `EyeWall-PWHL-${carAbbr}-${summary?.periodShort}-Summary.png`,
+      xCaption,
+      mountCanvas: async () => {
+        if (!canvasMounted) {
+          setCanvasMounted(true);
+          await new Promise(r => setTimeout(r, 120));
+        }
+      },
+    });
 
   // Generate AI narrative on mount
   useEffect(() => {
@@ -411,47 +433,6 @@ export default function PWHLPeriodSummary({
   }, [summary?.period]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!summary) return null;
-
-  const handleExport = async () => {
-    setExporting(true);
-    if (!canvasMounted) {
-      setCanvasMounted(true);
-      await new Promise(r => setTimeout(r, 100));
-    }
-    try {
-      const { toPng } = await import('html-to-image');
-      const node = canvasRef.current;
-      if (!node) return;
-      const dataUrl = await toPng(node, {
-        width:  1080,
-        height: 1080,
-        skipFonts: true,
-        imagePlaceholder: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
-        style: { position: 'static', left: '0', top: '0' },
-      });
-      const link     = document.createElement('a');
-      link.download  = `EyeWall-PWHL-${carAbbr}-${summary.periodShort}-Summary.png`;
-      link.href      = dataUrl;
-      link.click();
-    } catch (e) {
-      console.error('Export failed:', e);
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  const handleCopyCaption = () => {
-    const caption = [
-      `${summary.periodLabel} Summary | ${carAbbr} ${carScore ?? '–'}–${oppScore ?? '–'} ${oppAbbr}`,
-      `CF% ${summary.corsiForPct} · SOG ${summary.carSOG}–${summary.oppSOG} · Goals ${summary.carGoals}–${summary.oppGoals}`,
-      summary.aiNarrative || '',
-      '#PWHL #EyeWallAnalytics',
-    ].filter(Boolean).join('\n');
-    navigator.clipboard.writeText(caption).then(() => {
-      setCaptionCopied(true);
-      setTimeout(() => setCaptionCopied(false), 2000);
-    });
-  };
 
   return (
     <>
@@ -580,12 +561,14 @@ export default function PWHLPeriodSummary({
 
           {/* Share */}
           <div className="ps-share-section">
-            <button className="ps-share-btn primary" onClick={handleExport} disabled={exporting}>
-              {exporting ? '⏳ Saving…' : '📸 Save Image'}
-            </button>
-            <button className="ps-share-btn secondary" onClick={handleCopyCaption}>
-              {captionCopied ? '✓ Copied' : '📋 Copy Caption'}
-            </button>
+            <ShareButtons
+              onSave={handleSave}
+              onShareX={handleShareX}
+              onNativeShare={handleNativeShare}
+              canNativeShare={canNativeShare}
+              saving={saving}
+              sharing={sharing}
+            />
           </div>
 
         </div>

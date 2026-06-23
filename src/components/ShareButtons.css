@@ -1,0 +1,72 @@
+/* ── ShareButtons — shared across all EyeWall export cards ──── */
+
+.share-buttons-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.share-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 16px;
+  border-radius: 12px;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  white-space: nowrap;
+  min-height: unset;
+  min-width: unset;
+}
+.share-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.share-btn:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+/* Save — primary (team color) */
+.share-btn--save {
+  flex: 1.5;
+  background: var(--red-bright);
+  color: #fff;
+}
+.share-btn--save:not(:disabled):hover {
+  opacity: 0.88;
+}
+
+/* X — dark */
+.share-btn--x {
+  flex: 1;
+  background: #000;
+  color: #fff;
+  border: 0.5px solid rgba(255,255,255,0.15);
+  font-family: 'Georgia', serif; /* 𝕏 glyph renders better in serif */
+}
+.share-btn--x:not(:disabled):hover {
+  background: #111;
+}
+
+/* Native share — bg2 */
+.share-btn--native {
+  flex: 1;
+  background: var(--bg3);
+  color: var(--text);
+  border: 0.5px solid var(--border);
+}
+.share-btn--native:not(:disabled):hover {
+  background: var(--bg2);
+}
+
+/* Hide native share button on desktop if Web Share API not supported */
+@media (hover: hover) and (pointer: fine) {
+  .share-btn--hidden-desktop {
+    display: none;
+  }
+}

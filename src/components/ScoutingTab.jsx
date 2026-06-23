@@ -8,6 +8,9 @@ import { computeGSAx } from '../utils/advancedStats';
 import { getGoalieAnalytics, getTeamLines, getGameMatchup } from '../utils/supabaseClient';
 import TeamLogo from './TeamLogo';
 import InfoTip from './InfoTip';
+import { useShareCard } from '../hooks/useShareCard';
+import ShareButtons from './ShareButtons';
+import './ShareButtons.css';
 import './ScoutingTab.css';
 import { capture } from '../utils/analytics';
 
@@ -506,8 +509,30 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
   const oppColor = TEAM_COLORS[oppAbbr] || 'var(--text-muted)';
 
   const canvasRef = useRef(null);
-  const [exporting, setExporting] = useState(false);
   const [canvasMounted, setCanvasMounted] = useState(false);
+
+  const xCaption = [
+    `${TEAM_CONFIG.abbr} vs ${oppAbbr} Scouting Report`,
+    '#EyeWallAnalytics',
+  ].join('\n');
+
+  const { saving, sharing, handleSave, handleShareX, handleNativeShare, canNativeShare } =
+    useShareCard({
+      canvasRef,
+      filename: `EyeWall-Scouting-${TEAM_CONFIG.abbr}-vs-${oppAbbr}.png`,
+      xCaption,
+      mountCanvas: async () => {
+        if (!canvasMounted) {
+          setCanvasMounted(true);
+          await new Promise(r => setTimeout(r, 120));
+        }
+      },
+    });
+
+  const handleSaveWithCapture = async () => {
+    await handleSave();
+    capture('scouting_card_exported', { opponent: oppAbbr, isPlayoff: !!isPlayoff });
+  };
 
   const { data: carRecentGames } = useFetch(
     () => getTeamRecentGames(TEAM_CONFIG.abbr, 10, isPlayoff), [TEAM_CONFIG.abbr, isPlayoff]
@@ -541,30 +566,6 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
 
   const pctFmt = v => v != null ? `${(v * 100).toFixed(1)}%` : '—';
   const gpgFmt = v => v?.toFixed(2) ?? '—';
-
-  const handleExport = async () => {
-    setExporting(true);
-    if (!canvasMounted) {
-      setCanvasMounted(true);
-      await new Promise(r => setTimeout(r, 100));
-    }
-    try {
-      const { toPng } = await import('html-to-image');
-      const node = canvasRef.current;
-      if (!node) return;
-      const dataUrl = await toPng(node, {
-        width: 1080, height: 1080, skipFonts: true,
-        imagePlaceholder: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
-        style: { position: 'static', left: '0', top: '0' },
-      });
-      const link = document.createElement('a');
-      link.download = `EyeWall-Scouting-${TEAM_CONFIG.abbr}-vs-${oppAbbr}.png`;
-      link.href = dataUrl;
-      link.click();
-      capture('scouting_card_exported', { opponent: oppAbbr, isPlayoff: !!isPlayoff });
-    } catch (e) { console.error('Scouting export failed:', e); }
-    finally { setExporting(false); }
-  };
 
   return (
     <>
@@ -700,11 +701,16 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
         <LinesSection lines={carLines} color={carColor} isPlayoff={isPlayoff} abbr={TEAM_CONFIG.abbr} />
       )}
 
-      {/* Export button */}
+      {/* Export / share */}
       <div className="scouting-section scouting-export-row">
-        <button className="scouting-export-btn" onClick={handleExport} disabled={exporting}>
-          {exporting ? '⏳ Saving…' : '📸 Save Scouting Card'}
-        </button>
+        <ShareButtons
+          onSave={handleSaveWithCapture}
+          onShareX={handleShareX}
+          onNativeShare={handleNativeShare}
+          canNativeShare={canNativeShare}
+          saving={saving}
+          sharing={sharing}
+        />
       </div>
     </div>
 
