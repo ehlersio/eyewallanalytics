@@ -31,7 +31,7 @@ describe('Settings (⚙️ button)', () => {
 
   it('drawer shows push notification toggle section', () => {
     cy.get('button.notif-bell').click()
-    cy.contains(/Push Notifications/i).should('exist')
+    cy.contains(/Alert Preferences|Push Notifications/i).should('exist')
     cy.contains(/Turn on notifications|Turn off notifications|Notifications blocked/i).should('exist')
   })
 

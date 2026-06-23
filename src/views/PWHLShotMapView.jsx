@@ -1,13 +1,21 @@
 // views/PWHLShotMapView.jsx
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useFetch } from '../hooks/useFetch';
+import { useFetch, usePoll } from '../hooks/useFetch';
 import {
   fetchPWHLShots, fetchPWHLRoster, fetchPWHLSchedule, fetchPWHLPBP,
+  fetchPWHLToday, fetchPWHLLive,
   pbpByType,
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
 import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP } from '../utils/pwhlConfig';
+import { usePWHLDevGame } from '../utils/PWHLDevGameContext';
+import {
+  usePWHLGameEvents,
+  PWHLGoalPopup, PWHLPenaltyPopup, PWHLWinPopup, PWHLPuckDropPopup,
+  PWHLLiveInsights,
+} from '../components/PWHLGameEvents';
+import { HatTrickPopup } from '../components/GameEvents';
 import IceRink from '../components/IceRink';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
@@ -81,6 +89,49 @@ function adaptOppShot(row) {
   };
 }
 
+/**
+ * Adapt a live shot/goal event from /pwhl/live/:gameId → IceRink event.
+ * Live events use raw x/y coords (not pre-normalised like stored shot events).
+ */
+function adaptLiveShot(ev, isOurTeam) {
+  const CANVAS_W = 600.0, CANVAS_H = 300.0;
+  const xRaw = ev.x, yRaw = ev.y;
+  if (xRaw == null || yRaw == null) return null;
+  const period = ev.period || 1;
+  // Normalise to NHL rink coords (same transform as pwhl_shot_events.py)
+  let xNorm = (xRaw / CANVAS_W - 0.5) * 200;
+  let yNorm = (yRaw / CANVAS_H - 0.5) * 85;
+  // Home attacks right in odd periods
+  const homeAttacksRight = period % 2 === 1;
+  const attackingRight   = isOurTeam ? homeAttacksRight : !homeAttacksRight;
+  if (!attackingRight) { xNorm = -xNorm; yNorm = -yNorm; }
+  // Fold to attacking direction (positive x)
+  if (xNorm < 0) { xNorm = -xNorm; yNorm = -yNorm; }
+  xNorm = Math.min(Math.abs(xNorm), 99);
+  yNorm = Math.max(-42, Math.min(42, yNorm));
+
+  const type = ev.isGoal || ev.eventType === 'goal'
+    ? 'goal'
+    : ev.eventType === 'blocked_shot' ? 'blocked-shot'
+    : 'shot-on-goal';
+
+  const shooter = ev.scorer || ev.scoredBy || ev.shooter;
+  const name    = shooter ? `${shooter.firstName || ''} ${shooter.lastName || ''}`.trim() : null;
+
+  return {
+    id:           `live-${ev.eventType}-${ev.period}-${ev.timeSeconds}`,
+    x:            xNorm,
+    y:            yNorm,
+    type,
+    isCanes:      isOurTeam,
+    period:       ev.period,
+    timeInPeriod: ev.time || '0:00',
+    shooterName:  name || null,
+    gameId:       null,
+    shotType:     ev.shotType || null,
+  };
+}
+
 function pLabel(n) {
   if (!n) return '—';
   if (n <= 3) return `P${n}`;
@@ -134,6 +185,29 @@ function GameChipsRow({ games, teamId, selectedGameId, onSelect, onAll }) {
           onClick={() => onSelect(g.game_id)} />
       ))}
     </div>
+  );
+}
+
+// ── Live game chip ────────────────────────────────────────────
+
+function LiveGameChip({ liveGame, teamId, onSelect, selected }) {
+  if (!liveGame) return null;
+  const isHome  = liveGame.homeTeamId === teamId;
+  const myScore = isHome ? liveGame.homeScore : liveGame.awayScore;
+  const opScore = isHome ? liveGame.awayScore : liveGame.homeScore;
+  const oppCode = isHome ? liveGame.awayTeamCode : liveGame.homeTeamCode;
+  const oppTeam = PWHL_TEAM_MAP[oppCode];
+  return (
+    <button
+      className={`game-chip game-chip-live${selected ? ' game-chip-active' : ''}`}
+      onClick={onSelect}
+      style={{ borderColor: 'var(--red-bright)', color: 'var(--red-bright)' }}
+    >
+      <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.05em' }}>🔴 LIVE</span>
+      <TeamLogo abbr={oppCode} sport="pwhl" size={18} color={oppTeam?.displayColor} />
+      <span className="game-chip-opp">{oppCode}</span>
+      <span className="game-chip-score">{myScore}–{opScore}</span>
+    </button>
   );
 }
 
@@ -703,7 +777,7 @@ function GoalieCard({ goalies, teamId, abbr, oppAbbr, color, oppColor }) {
 
 export default function PWHLShotMapView() {
   const team   = PWHL_TEAM_CONFIG;
-  const teamId = PWHL_TEAM_ID;
+  const teamId = PWHL_TEAM_ID ? parseInt(PWHL_TEAM_ID, 10) : null;
   const abbr   = team?.abbr || null;
   const color  = team?.displayColor || 'var(--text-dim)';
 
@@ -712,6 +786,155 @@ export default function PWHLShotMapView() {
   const [selectedGameId, setSelected] = useState(location.state?.selectedGameId ?? null);
   const [drillStat,      setDrill]    = useState(null);
 
+  // ── Dev replay injection ──────────────────────────────────────
+  const devGame = usePWHLDevGame();
+
+  // ── Live game detection ───────────────────────────────────────
+  // Detect dev route — suppress /pwhl/today polling entirely on /pwhl/dev
+  const isDevRoute = location.pathname === '/pwhl/dev';
+
+  // Poll /pwhl/today every 60s to detect live games for the current team.
+  // Skip entirely in dev route or when dev game is injected.
+  const isLiveRef = useRef(false);
+  const liveInterval = useMemo(() => isLiveRef.current ? 30_000 : 60_000, []);
+
+  const { data: todayGames } = usePoll(
+    () => (isDevRoute || devGame) ? Promise.resolve(null) : fetchPWHLToday(season),
+    liveInterval,
+    [season, !!devGame, isDevRoute]
+  );
+
+  // Find a live or pre-game game involving our team today
+  const liveGame = useMemo(() => {
+    if (devGame) return devGame.liveGame;
+    if (!todayGames?.length || !teamId) return null;
+    return todayGames.find(g =>
+      (g.homeTeamId === teamId || g.awayTeamId === teamId) &&
+      (g.status === 'live' || g.status === 'pre')
+    ) || null;
+  }, [todayGames, teamId, devGame]);
+
+  const isLive = devGame ? devGame.liveGame?.status === 'live' : liveGame?.status === 'live';
+
+  // Keep ref in sync for interval calculation
+  useEffect(() => { isLiveRef.current = isLive; }, [isLive]);
+
+  // Auto-select live game when it starts — don't override a manual selection
+  // Skip in dev mode (dev replay controls the selection)
+  const autoSelectedRef = useRef(false);
+  useEffect(() => {
+    if (devGame) return;
+    if (isLive && liveGame && !autoSelectedRef.current) {
+      setSelected(liveGame.gameId);
+      autoSelectedRef.current = true;
+    }
+    if (!isLive) autoSelectedRef.current = false;
+  }, [isLive, liveGame, devGame]);
+
+  // Poll live PBP every 30s when a live game is selected.
+  // In dev mode, liveData comes from the injected context instead.
+  const { data: liveDataReal } = usePoll(
+    () => isLive && !devGame && selectedGameId === liveGame?.gameId
+      ? fetchPWHLLive(selectedGameId)
+      : Promise.resolve(null),
+    30_000,
+    [isLive, selectedGameId, liveGame?.gameId, !!devGame]
+  );
+
+  const liveData = devGame ? devGame.liveData : liveDataReal;
+
+  // ── Derive situation from live events ─────────────────────────
+  // Track goalie pull and PP from the most recent penalty/goalie_change events
+  const liveSituation = useMemo(() => {
+    if (!liveData?.events?.length) return null;
+    const events  = liveData.events;
+    // Goalie pull: find latest goalie_change with goalieIn = null for either team
+    const goaliePulled = events.filter(e => e.eventType === 'goalie_change' && e.goalieIn === null);
+    const latestPull   = goaliePulled[goaliePulled.length - 1] || null;
+    // Goalie returned: last goalie_change with goalieOut = null
+    const goalieReturn = events.filter(e => e.eventType === 'goalie_change' && e.goalieOut === null);
+    const latestReturn = goalieReturn[goalieReturn.length - 1] || null;
+    const pulledTeamId = latestPull && (!latestReturn || latestPull.timeSeconds > latestReturn.timeSeconds)
+      ? latestPull.teamId : null;
+
+    // Active penalties: penalties in last 2 minutes of game time
+    const lastEvent    = events[events.length - 1];
+    const nowSecs      = (lastEvent?.period - 1) * 1200 + lastEvent?.timeSeconds || 0;
+    const pens         = events.filter(e => e.eventType === 'penalty' && e.isPowerPlay);
+    const activePens   = pens.filter(p => {
+      const penSecs = (p.period - 1) * 1200 + p.timeSeconds;
+      return nowSecs - penSecs < 120;
+    });
+    const ourPP  = activePens.some(p => p.teamId !== teamId && p.teamId != null);
+    const oppPP  = activePens.some(p => p.teamId === teamId);
+    const ourEN  = pulledTeamId === teamId;
+    const oppEN  = pulledTeamId !== null && pulledTeamId !== teamId;
+
+    return { ourPP, oppPP, ourEN, oppEN };
+  }, [liveData, teamId]);
+
+  // Current period + clock from last live event (or dev override)
+  const liveClock = useMemo(() => {
+    if (devGame?.liveGame?._period) {
+      return { period: devGame.liveGame._period, time: devGame.liveGame._time };
+    }
+    if (!liveData?.events?.length) return null;
+    const last = liveData.events[liveData.events.length - 1];
+    return { period: last.period, time: last.time };
+  }, [liveData, devGame]);
+
+  // ── Game event popups ─────────────────────────────────────────
+  // Pass raw liveData (not normalized) so the hook can read camelCase event fields
+  const {
+    goalPopup,     clearGoalPopup,
+    hatTrickPopup, clearHatTrickPopup,
+    penaltyPopup,  clearPenaltyPopup,
+    winPopup,      clearWinPopup,
+    puckDropPopup, clearPuckDropPopup,
+  } = usePWHLGameEvents(
+    isLive ? liveData : null,
+    isLive,
+    teamId,
+    team?.abbr || ''
+  );
+
+  // Clear popups on game change
+  const clearGoalRef    = useRef(null);
+  const clearPenaltyRef = useRef(null);
+  const clearWinRef     = useRef(null);
+  const clearPuckRef    = useRef(null);
+  useEffect(() => { clearGoalRef.current    = clearGoalPopup;    }, [clearGoalPopup]);
+  useEffect(() => { clearPenaltyRef.current = clearPenaltyPopup; }, [clearPenaltyPopup]);
+  useEffect(() => { clearWinRef.current     = clearWinPopup;     }, [clearWinPopup]);
+  useEffect(() => { clearPuckRef.current    = clearPuckDropPopup; }, [clearPuckDropPopup]);
+
+  useEffect(() => {
+    clearGoalRef.current?.();
+    clearPenaltyRef.current?.();
+    clearWinRef.current?.();
+    clearPuckRef.current?.();
+  }, [selectedGameId]);
+
+  // ── Debug panel (5 taps on score card, dev only) ──────────────
+  const [debugOpen,         setDebugOpen]         = useState(false);
+  const [debugTaps,         setDebugTaps]         = useState(0);
+  const debugTapRef         = useRef(null);
+  const [debugGoalPopup,    setDebugGoalPopup]    = useState(null);
+  const [debugHatTrickPopup, setDebugHatTrickPopup] = useState(null);
+  const [debugPenaltyPopup, setDebugPenaltyPopup] = useState(null);
+  const [debugWinPopup,     setDebugWinPopup]     = useState(null);
+  const [debugPuckPopup,    setDebugPuckPopup]    = useState(null);
+  const [debugSituation,    setDebugSituation]    = useState(null);
+
+  const handleDebugTap = () => {
+    if (!import.meta.env.DEV) return;
+    const next = debugTaps + 1;
+    setDebugTaps(next);
+    clearTimeout(debugTapRef.current);
+    if (next >= 5) { setDebugOpen(o => !o); setDebugTaps(0); return; }
+    debugTapRef.current = setTimeout(() => setDebugTaps(0), 2000);
+  };
+
   const { data: rawShots  = null } = useFetch(
     () => teamId ? fetchPWHLShots(teamId, season)   : Promise.resolve(null), [teamId, season]);
   const { data: roster    = null } = useFetch(
@@ -719,16 +942,121 @@ export default function PWHLShotMapView() {
   const { data: schedule  = null } = useFetch(
     () => teamId ? fetchPWHLSchedule(teamId, season) : Promise.resolve(null), [teamId, season]);
   const { data: pbpData   = null } = useFetch(
-    () => selectedGameId ? fetchPWHLPBP(selectedGameId) : Promise.resolve(null), [selectedGameId]);
+    () => selectedGameId && !isLive ? fetchPWHLPBP(selectedGameId) : Promise.resolve(null),
+    [selectedGameId, isLive]);
 
-  // Destructure PBP payload
-  const pbpEvents    = pbpData?.events      ?? null;
-  const oppShotRows  = pbpData?.oppShots    ?? [];
-  const pbpHomeId    = pbpData?.homeTeamId  ?? null;
-  const pbpAwayId    = pbpData?.awayTeamId  ?? null;
-  const faceoffStats = pbpData?.faceoffStats ?? {};   // { player_id: { name, wins, attempts, losses } }
-  const goalieStats  = pbpData?.goalieStats  ?? [];   // [{ team_id, name, saves, shots_against, ... }]
+  // Live data takes precedence over stored PBP when a live game is selected
+  const activePbpData = isLive && liveData ? liveData : pbpData;
 
+  // Normalize live events to snake_case shape used by pbpByType and pbpStats
+  // Live: { eventType, teamId, isPowerPlay, ... }
+  // Stored: { event_type, team_id, is_power_play, ... }
+  const normalizeLiveEvents = useCallback((events, homeTeamId, awayTeamId) => {
+    if (!events?.length) return [];
+    return events.map(e => {
+      const type = e.eventType;
+
+      // ── player_name: varies by event type ───────────────────
+      let playerId   = null;
+      let playerName = null;
+      let secPlayerId   = null;
+      let secPlayerName = null;
+
+      if (type === 'hit') {
+        // hit: { player (hitter), onPlayer (hittee) }
+        playerId   = e.player?.id ?? null;
+        playerName = e.player ? `${e.player.firstName} ${e.player.lastName}`.trim() : null;
+        secPlayerId   = e.onPlayer?.id ?? null;
+        secPlayerName = e.onPlayer ? `${e.onPlayer.firstName} ${e.onPlayer.lastName}`.trim() : null;
+      } else if (type === 'penalty') {
+        // penalty: { takenBy, servedBy }
+        playerId   = e.takenBy?.id ?? null;
+        playerName = e.takenBy ? `${e.takenBy.firstName} ${e.takenBy.lastName}`.trim() : null;
+      } else if (type === 'faceoff') {
+        // faceoff: { homePlayer, visitingPlayer, homeWin }
+        // team_id = winner's team ID
+        const winnerIsHome = e.homeWin;
+        const winner  = winnerIsHome ? e.homePlayer    : e.visitingPlayer;
+        const loser   = winnerIsHome ? e.visitingPlayer : e.homePlayer;
+        playerId      = winner?.id ?? null;
+        playerName    = winner ? `${winner.firstName} ${winner.lastName}`.trim() : null;
+        secPlayerId   = loser?.id ?? null;
+        secPlayerName = loser  ? `${loser.firstName} ${loser.lastName}`.trim()  : null;
+      } else if (type === 'goal') {
+        playerId   = e.scoredBy?.id ?? null;
+        playerName = e.scoredBy ? `${e.scoredBy.firstName} ${e.scoredBy.lastName}`.trim() : null;
+      } else if (type === 'shot' || type === 'blocked_shot') {
+        playerId   = e.shooter?.id ?? null;
+        playerName = e.shooter ? `${e.shooter.firstName} ${e.shooter.lastName}`.trim() : null;
+      }
+
+      // ── team_id: faceoffs derive from homeWin + team IDs ──
+      let resolvedTeamId = e.teamId ?? null;
+      if (type === 'faceoff' && homeTeamId != null) {
+        resolvedTeamId = e.homeWin ? homeTeamId : (awayTeamId ?? null);
+      }
+
+      return {
+        ...e,
+        event_type:           type,
+        team_id:              resolvedTeamId,
+        is_power_play:        e.isPowerPlay   ?? false,
+        player_id:            playerId,
+        player_name:          playerName,
+        secondary_player_id:  secPlayerId,
+        secondary_player_name: secPlayerName,
+        period_id:            e.period,
+        time_seconds:         e.timeSeconds,
+        description: e.description ? e.description.replace(/^(?:Ob|Maj|Min|Mis|Gm)-/i, '').replace(/-/g, ' ').trim() : null,
+        penalty_minutes:      e.minutes       ?? null,
+      };
+    });
+  }, []);
+
+  // Destructure PBP payload — live and stored shapes are compatible after normalization
+  const pbpEvents    = isLive
+    ? normalizeLiveEvents(liveData?.events, liveData?.homeTeamId, liveData?.awayTeamId)
+    : (activePbpData?.events ?? null);
+  const oppShotRows  = activePbpData?.oppShots    ?? [];
+  const pbpHomeId    = activePbpData?.homeTeamId  ?? liveData?.homeTeamId ?? null;
+  const pbpAwayId    = activePbpData?.awayTeamId  ?? liveData?.awayTeamId ?? null;
+  const faceoffStats = activePbpData?.faceoffStats ?? {};
+  const goalieStats  = isLive
+    ? (liveData?.goalieStats ?? [])
+    : (activePbpData?.goalieStats ?? []);
+
+  // In dev mode, auto-select the injected game ID
+  useEffect(() => {
+    if (devGame?.liveGame?.gameId && selectedGameId !== devGame.liveGame.gameId) {
+      setSelected(devGame.liveGame.gameId);
+    }
+  }, [devGame?.liveGame?.gameId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const liveShotEvents = useMemo(() => {
+    if (!isLive || !liveData?.events?.length || !teamId) return [];
+    const homeId = liveData.homeTeamId;
+    return liveData.events
+      .filter(e => e.eventType === 'shot' || e.eventType === 'blocked_shot' || e.eventType === 'goal')
+      .map(ev => {
+        const isOurTeam = ev.teamId === teamId;
+        // For home team perspective: home attacks right in odd periods
+        // adaptLiveShot receives isOurTeam relative to home perspective
+        const isHome = teamId === homeId;
+        return adaptLiveShot(ev, isHome ? isOurTeam : !isOurTeam);
+      })
+      .filter(Boolean);
+  }, [isLive, liveData, teamId]);
+
+  // Our shots from live feed
+  const liveOurShots = useMemo(
+    () => liveShotEvents.filter(e => e.isCanes),
+    [liveShotEvents]
+  );
+
+  // Opp shots from live feed
+  const liveOppShots = useMemo(
+    () => liveShotEvents.filter(e => !e.isCanes),
+    [liveShotEvents]
+  );
   const handleSeasonChange = id => { setSeason(id); setSelected(null); setDrill(null); };
   const handleSelect       = id => { setSelected(p => p === id ? null : id); setDrill(null); };
   const handleAll          = ()  => { setSelected(null); setDrill(null); };
@@ -746,20 +1074,21 @@ export default function PWHLShotMapView() {
                    .map(r => adaptOurShot(r, playerMap));
   }, [rawShots, playerMap]);
 
-  const ourShotEvents = useMemo(
-    () => selectedGameId ? allOurShots.filter(e => e.gameId === selectedGameId) : allOurShots,
-    [allOurShots, selectedGameId]
-  );
+  const ourShotEvents = useMemo(() => {
+    if (isLive && selectedGameId === liveGame?.gameId) return liveOurShots;
+    return selectedGameId ? allOurShots.filter(e => e.gameId === selectedGameId) : allOurShots;
+  }, [allOurShots, selectedGameId, isLive, liveGame, liveOurShots]);
 
   // Opponent shot events for the selected game (adapted for IceRink, isCanes=false)
   const oppShotEvents = useMemo(() => {
+    if (isLive && selectedGameId === liveGame?.gameId) return liveOppShots;
     if (!selectedGameId || !oppShotRows.length) return [];
     // Identify our team's shooter_ids so we can exclude them
     const ourIds = new Set((rawShots || []).filter(r => r.game_id === selectedGameId).map(r => r.shooter_id).filter(Boolean));
     return oppShotRows
       .filter(r => r.x_norm != null && r.y_norm != null && !ourIds.has(r.shooter_id))
       .map(adaptOppShot);
-  }, [selectedGameId, oppShotRows, rawShots]);
+  }, [selectedGameId, oppShotRows, rawShots, isLive, liveGame, liveOppShots]);
 
   // Combined for IceRink (our shots + opp shots in game view)
   const rinkEvents = useMemo(
@@ -767,7 +1096,7 @@ export default function PWHLShotMapView() {
     [ourShotEvents, oppShotEvents, selectedGameId]
   );
 
-  // Schedule
+  // Schedule — completed games only for chips
   const games = useMemo(() => {
     if (!schedule?.length) return [];
     return [...schedule].filter(g => g.game_state === 'Final').sort((a,b) => b.game_id - a.game_id);
@@ -777,6 +1106,19 @@ export default function PWHLShotMapView() {
   const displayGame  = selectedGame || games[0] || null;
 
   const scoreBarData = useMemo(() => {
+    // Live game score from live feed
+    if (isLive && liveGame && selectedGameId === liveGame.gameId) {
+      const isHome  = liveGame.homeTeamId === teamId;
+      const myScore = isHome ? liveGame.homeScore : liveGame.awayScore;
+      const opScore = isHome ? liveGame.awayScore : liveGame.homeScore;
+      const oppCode = isHome ? liveGame.awayTeamCode : liveGame.homeTeamCode;
+      return {
+        isHome, myScore, oppScore: opScore, oppAbbr: oppCode, won: myScore > opScore,
+        ot: false, shootout: false,
+        homeTeamId: liveGame.homeTeamId, awayTeamId: liveGame.awayTeamId,
+      };
+    }
+    // Completed game from schedule
     if (!displayGame || !teamId) return null;
     const isHome   = displayGame.home_team_id === teamId;
     const myScore  = isHome ? displayGame.home_score : displayGame.away_score;
@@ -788,7 +1130,7 @@ export default function PWHLShotMapView() {
       ot: displayGame.ot, shootout: displayGame.shootout,
       homeTeamId: displayGame.home_team_id, awayTeamId: displayGame.away_team_id,
     };
-  }, [displayGame, teamId]);
+  }, [displayGame, teamId, isLive, liveGame, selectedGameId]);
 
   // ── Shot stats ────────────────────────────────────────────────
 
@@ -877,7 +1219,19 @@ export default function PWHLShotMapView() {
     const ourShooterIds = new Set(
       (rawShots || []).filter(r => r.game_id === selectedGameId).map(r => r.shooter_id).filter(Boolean)
     );
-    const oppOnlyShots = oppShotRows.filter(r => !ourShooterIds.has(r.shooter_id));
+    // In live mode oppShotRows is empty — use adapted liveOppShots instead
+    const oppOnlyShots = (isLive && !oppShotRows.length)
+      ? liveOppShots.map(s => ({
+          shooter_id:   null,
+          shooter_name: s.shooterName || null,
+          event_type:   s.type === 'goal' ? 'goal' : s.type === 'blocked-shot' ? 'blocked_shot' : 'shot',
+          period_id:    s.period,
+          time_seconds: s.timeInPeriod
+            ? parseInt(s.timeInPeriod.split(':')[0]) * 60 + parseInt(s.timeInPeriod.split(':')[1])
+            : 0,
+          x_norm: s.x, y_norm: s.y,
+        }))
+      : oppShotRows.filter(r => !ourShooterIds.has(r.shooter_id));
 
     if (statKey === 'sog') {
       const carSOGEvts = ourShotEvents.filter(e => e.type === 'shot-on-goal' || e.type === 'goal');
@@ -914,7 +1268,7 @@ export default function PWHLShotMapView() {
       const oppP = pbpStats?.penalties.oppRows || [];
       const toRows = evs => evs.map(e => ({
         name:        e.player_name || `#${e.player_id}`,
-        description: e.description || 'Penalty',
+        description: e.description ? e.description.replace(/^(?:Ob|Maj|Min|Mis|Gm)-/i, '').replace(/-/g, ' ').trim() : 'Penalty',
         minutes:     e.penalty_minutes || 2,
         period:      pLabel(e.period_id),
         periods: {}, total: 1,
@@ -997,9 +1351,23 @@ export default function PWHLShotMapView() {
       // Penalty kill analysis: each of our PK opportunities (from our penalties)
       const penalties = pbpByType(pbpEvents, 'penalty');
       const ourPKPens = penalties.filter(e => e.team_id === teamId && e.is_power_play);
+      // In live mode oppShotRows is empty — use liveOppShots adapted to snake_case instead
+      const pkOppShotSource = (isLive && !oppShotRows.length)
+        ? liveOppShots.map(s => ({
+            shooter_id:  null,
+            shooter_name: s.shooterName || null,
+            event_type:   s.type === 'goal' ? 'goal' : s.type === 'blocked-shot' ? 'blocked_shot' : 'shot',
+            period_id:    s.period,
+            time_seconds: s.timeInPeriod
+              ? parseInt(s.timeInPeriod.split(':')[0]) * 60 + parseInt(s.timeInPeriod.split(':')[1])
+              : 0,
+            x_norm: s.x,
+            y_norm: s.y,
+          }))
+        : oppShotRows;
       const pkOpps = ourPKPens.map((pen, idx) => {
         // Opp shots during this PK window
-        const pkOppShots = oppShotRows
+        const pkOppShots = pkOppShotSource
           .filter(r => {
             const ourIds = new Set((rawShots||[]).filter(s=>s.game_id===selectedGameId).map(s=>s.shooter_id).filter(Boolean));
             if (ourIds.has(r.shooter_id)) return false;
@@ -1068,7 +1436,10 @@ export default function PWHLShotMapView() {
   const _viewLabel   = selectedGameId && scoreBarData
     ? `vs ${scoreBarData.oppAbbr} · ${scoreBarData.won ? 'W' : 'L'} ${scoreBarData.myScore}–${scoreBarData.oppScore}`
     : seasonLabel;
-  const hasPBP  = selectedGameId && Array.isArray(pbpEvents) && pbpEvents.length > 0;
+  const hasPBP  = selectedGameId && (
+    (isLive && liveData?.events?.length > 0) ||
+    (Array.isArray(pbpEvents) && pbpEvents.length > 0)
+  );
   const oppAbbr = scoreBarData?.oppAbbr;
 
   if (!abbr) return (
@@ -1083,7 +1454,7 @@ export default function PWHLShotMapView() {
     <div className="page">
 
       {/* ── Score bar ── */}
-      <div className="score-card card">
+      <div className="score-card card" onClick={handleDebugTap} style={{ userSelect: 'none' }}>
         <div className="score-inner">
           <div className="score-team-wrap">
             <div className="score-team">
@@ -1094,9 +1465,27 @@ export default function PWHLShotMapView() {
               </span>
               {scoreBarData && <span className="score-num" style={{ color }}>{scoreBarData.myScore}</span>}
             </div>
+            {(isLive && liveSituation?.ourPP) || debugSituation?.ourPP ? (
+              <div className="pp-indicator car-pp">⚡ Power Play</div>
+            ) : null}
+            {(isLive && liveSituation?.ourEN) || debugSituation?.ourEN ? (
+              <div className="pp-indicator en-indicator car-en">🥅 {abbr} Empty Net</div>
+            ) : null}
           </div>
           <div className="score-center">
-            {scoreBarData ? (
+            {isLive && selectedGameId === liveGame?.gameId ? (
+              <>
+                <div className="score-period">
+                  {liveClock ? pLabel(liveClock.period) : '—'}
+                </div>
+                <div className="score-clock" style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
+                  {liveClock?.time || '—'}
+                </div>
+                <div className="score-state pill pill-red" style={{ marginTop: 4 }}>
+                  {devGame ? '🟡 DEV' : '🔴 LIVE'}
+                </div>
+              </>
+            ) : scoreBarData ? (
               <>
                 <div className="score-period">Final{scoreBarData.ot?' OT':scoreBarData.shootout?' SO':''}</div>
                 <div style={{ fontSize:10, color:'var(--text-dim)', marginTop:2 }}>
@@ -1122,6 +1511,12 @@ export default function PWHLShotMapView() {
                 )}
                 <TeamLogo abbr={scoreBarData.oppAbbr} sport="pwhl" size={30} color={oppColor} />
               </div>
+              {(isLive && liveSituation?.oppPP) || debugSituation?.oppPP ? (
+                <div className="pp-indicator opp-pp">⚡ {scoreBarData.oppAbbr} Power Play</div>
+              ) : null}
+              {(isLive && liveSituation?.oppEN) || debugSituation?.oppEN ? (
+                <div className="pp-indicator en-indicator opp-en">🥅 {scoreBarData.oppAbbr} Empty Net</div>
+              ) : null}
             </div>
           ) : <div style={{ width:40 }} />}
           <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
@@ -1138,9 +1533,37 @@ export default function PWHLShotMapView() {
       </div>
 
       {/* ── Game selector ── */}
-      {games.length > 0 && (
-        <GameChipsRow games={games} teamId={teamId}
-          selectedGameId={selectedGameId} onSelect={handleSelect} onAll={handleAll} />
+      {(liveGame || games.length > 0) && (
+        <div style={{ display: 'flex', gap: 0, alignItems: 'center' }}>
+          {liveGame && (
+            <LiveGameChip
+              liveGame={liveGame}
+              teamId={teamId}
+              selected={selectedGameId === liveGame.gameId}
+              onSelect={() => { setSelected(liveGame.gameId); setDrill(null); }}
+            />
+          )}
+          {games.length > 0 && (
+            <GameChipsRow games={games} teamId={teamId}
+              selectedGameId={selectedGameId} onSelect={handleSelect} onAll={handleAll} />
+          )}
+        </div>
+      )}
+
+      {/* ── Live / Game Insights ── */}
+      {hasPBP && (
+        <PWHLLiveInsights
+          pbpEvents={pbpEvents}
+          ourShotEvents={ourShotEvents}
+          oppShotEvents={oppShotEvents}
+          teamId={teamId}
+          abbr={abbr}
+          oppAbbr={oppAbbr}
+          myScore={scoreBarData?.myScore}
+          oppScore={scoreBarData?.oppScore}
+          isLive={isLive}
+          liveData={liveData}
+        />
       )}
 
       {/* ── Row 1: SOG, Blocks, Hits, Penalties ── */}
@@ -1254,7 +1677,19 @@ export default function PWHLShotMapView() {
       {/* ── Shot Attempts panel ── */}
       {selectedGameId && ourShotEvents.length > 0 && (() => {
         const ourIds = new Set((rawShots||[]).filter(s=>s.game_id===selectedGameId).map(s=>s.shooter_id).filter(Boolean));
-        const filteredOppShots = oppShotRows.filter(r => !ourIds.has(r.shooter_id));
+        // In live mode oppShotRows is empty — adapt liveOppShots to snake_case shape
+        const filteredOppShots = (isLive && !oppShotRows.length)
+          ? liveOppShots.map(s => ({
+              shooter_id:  null,
+              shooter_name: s.shooterName || null,
+              event_type:  s.type === 'goal' ? 'goal' : s.type === 'blocked-shot' ? 'blocked_shot' : 'shot',
+              period_id:   s.period,
+              time_seconds: s.timeInPeriod
+                ? parseInt(s.timeInPeriod.split(':')[0]) * 60 + parseInt(s.timeInPeriod.split(':')[1])
+                : 0,
+              x_norm: s.x, y_norm: s.y,
+            }))
+          : oppShotRows.filter(r => !ourIds.has(r.shooter_id));
         return (
           <ShotAttemptsPanel
             ourShots={ourShotEvents}
@@ -1356,6 +1791,90 @@ export default function PWHLShotMapView() {
 
       {drillStat && (
         <StatDrillPopup drillStat={drillStat} onClose={() => setDrill(null)} abbr={abbr} oppAbbr={oppAbbr} color={color} />
+      )}
+
+      {/* ── Game event popups ── */}
+      {puckDropPopup && <PWHLPuckDropPopup data={puckDropPopup}  onClose={clearPuckDropPopup} />}
+      {goalPopup     && <PWHLGoalPopup     data={goalPopup}      onClose={clearGoalPopup}    />}
+      {hatTrickPopup && <HatTrickPopup      data={hatTrickPopup}  onClose={clearHatTrickPopup} />}
+      {penaltyPopup  && <PWHLPenaltyPopup  data={penaltyPopup}   onClose={clearPenaltyPopup} />}
+      {winPopup      && <PWHLWinPopup      data={winPopup}       onClose={clearWinPopup}     />}
+
+      {/* ── Debug popups ── */}
+      {debugGoalPopup    && <PWHLGoalPopup     data={debugGoalPopup}    onClose={() => setDebugGoalPopup(null)}    />}
+      {debugHatTrickPopup && <HatTrickPopup      data={debugHatTrickPopup} onClose={() => setDebugHatTrickPopup(null)} />}
+      {debugPenaltyPopup && <PWHLPenaltyPopup  data={debugPenaltyPopup} onClose={() => setDebugPenaltyPopup(null)} />}
+      {debugWinPopup     && <PWHLWinPopup      data={debugWinPopup}     onClose={() => setDebugWinPopup(null)}     />}
+      {debugPuckPopup    && <PWHLPuckDropPopup  data={debugPuckPopup}    onClose={() => setDebugPuckPopup(null)}    />}
+
+      {/* ── Debug panel (5 taps on score card, dev only) ── */}
+      {import.meta.env.DEV && debugOpen && (
+        <div className="debug-panel">
+          <div className="debug-panel-header">
+            <div>
+              <div className="debug-panel-title">🛠 PWHL Event Debug</div>
+              <div className="debug-panel-sub">Tap to fire game events</div>
+            </div>
+            <button className="debug-close-btn" onClick={() => setDebugOpen(false)}>✕</button>
+          </div>
+          <div className="debug-panel-cols">
+            <div>
+              <div className="debug-section-label">Popups</div>
+              <div className="debug-panel-btns">
+                <button className="debug-btn goal" onClick={() => setDebugGoalPopup({
+                  scorer: 'Marie-Philip Poulin', assists: ['Laura Stacey', 'Kayla Kosowski'],
+                  shotType: 'Wrist', isPowerPlay: false, isShortHanded: false,
+                  isEmptyNet: false, isPenaltyShot: false, periodLabel: 'P2', time: '14:32',
+                })}>🚨 Goal</button>
+                <button className="debug-btn goal" onClick={() => setDebugGoalPopup({
+                  scorer: 'Laura Stacey', assists: [],
+                  shotType: 'Snap', isPowerPlay: true, isShortHanded: false,
+                  isEmptyNet: false, isPenaltyShot: false, periodLabel: 'P1', time: '08:11',
+                })}>⚡ PP Goal</button>
+                <button className="debug-btn" style={{ background: 'rgba(204,34,0,0.15)', color: 'var(--red-bright)' }}
+                  onClick={() => setDebugPuckPopup({ gameId: 'debug' })}>🏒 Puck Drop</button>
+                <button className="debug-btn penalty" onClick={() => setDebugPenaltyPopup({
+                  id: 'debug-1', player: 'Blayre Turnbull',
+                  desc: 'Tripping', severity: null, duration: 2, periodLabel: 'P2', time: '08:17',
+                })}>⚡ PP Alert</button>
+                <button className="debug-btn penalty" onClick={() => setDebugPenaltyPopup({
+                  id: 'debug-2', player: 'Sarah Nurse',
+                  desc: 'Fighting', severity: 'Major', duration: 5, periodLabel: 'P3', time: '12:04',
+                })}>🟠 Major</button>
+                <button className="debug-btn win" onClick={() => setDebugWinPopup({
+                  teamAbbr: abbr || 'MTL',
+                  score: `${abbr || 'MTL'} 3 – BOS 2`,
+                })}>🏆 Win</button>
+                <button className="debug-btn" style={{ background: 'rgba(200,169,81,0.15)', color: '#c8a951' }}
+                  onClick={() => setDebugHatTrickPopup({
+                    scorer: 'Marie-Philip Poulin', assists: ['Laura Stacey'],
+                    shotType: 'Wrist', isPowerPlay: false, isShortHanded: false,
+                    isEmptyNet: false, isPenaltyShot: false, periodLabel: 'P3', time: '11:22',
+                    teamColor: color,
+                  })}>🧢 Hat Trick</button>
+              </div>
+              <div className="debug-section-label">Situation</div>
+              <div className="debug-panel-btns">
+                <button className="debug-btn pp-car"
+                  onClick={() => { setDebugSituation({ ourPP: true }); setTimeout(() => setDebugSituation(null), 15000); }}>
+                  🟢 Our PP
+                </button>
+                <button className="debug-btn pp-opp"
+                  onClick={() => { setDebugSituation({ oppPP: true }); setTimeout(() => setDebugSituation(null), 15000); }}>
+                  🟡 Opp PP
+                </button>
+                <button className="debug-btn" style={{ background: 'rgba(250,190,30,0.1)', color: '#fbbf24' }}
+                  onClick={() => { setDebugSituation({ ourEN: true }); setTimeout(() => setDebugSituation(null), 15000); }}>
+                  🥅 Our EN
+                </button>
+                <button className="debug-btn" style={{ background: 'rgba(250,190,30,0.1)', color: '#fbbf24' }}
+                  onClick={() => { setDebugSituation({ oppEN: true }); setTimeout(() => setDebugSituation(null), 15000); }}>
+                  🥅 Opp EN
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
