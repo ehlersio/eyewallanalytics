@@ -552,3 +552,49 @@ export async function getSpecialTeamsUnits(season = SEASON) {
 
   return buildSpecialTeamsMap(rows);
 }
+
+// ── xGF% per-game trend ───────────────────────────────────────
+// Returns { season: [...], last10: [...] } for the sparkline.
+// Each item: { gameId, date, opponent, teamScore, oppScore, xgfPct }
+// Joins game_xg (5on5) with game_log for date + opponent.
+// Both arrays are chronological (oldest first).
+export async function getTeamXgTrend(team = 'CAR', season = SEASON) {
+  const [xgRows, logRows] = await Promise.all([
+    sbFetch(
+      `game_xg?team=eq.${team}&season=eq.${season}&situation=eq.5on5` +
+      `&select=game_id,xgf_pct&limit=999`
+    ).catch(() => []),
+    sbFetch(
+      `game_log?team=eq.${team}&season=eq.${season}` +
+      `&select=game_id,game_date,opponent,team_score,opp_score&limit=999`
+    ).catch(() => []),
+  ]);
+
+  if (!xgRows.length || !logRows.length) return null;
+
+  // Build game_log map keyed by game_id
+  const logMap = {};
+  for (const r of logRows) logMap[r.game_id] = r;
+
+  // Join, filter to completed games with xg data, sort by date
+  const joined = xgRows
+    .map(r => {
+      const log = logMap[r.game_id];
+      if (!log || log.team_score == null) return null;
+      return {
+        gameId:    r.game_id,
+        date:      log.game_date,
+        opponent:  log.opponent,
+        teamScore: log.team_score,
+        oppScore:  log.opp_score,
+        xgfPct:   Math.round(parseFloat(r.xgf_pct) * 1000) / 10, // e.g. 54.3
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  return {
+    season: joined,
+    last10: joined.slice(-10),
+  };
+}

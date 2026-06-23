@@ -8,7 +8,7 @@ import {
   getTeamSeasonRankings, TEAM_CONFIG,
   getDraftOrder, getDraftPicks,
 } from '../utils/nhlApi'
-import { getTeamGameLog as getDbTeamGameLog } from '../utils/supabaseClient'
+import { getTeamGameLog as getDbTeamGameLog, getTeamXgTrend } from '../utils/supabaseClient'
 import { CONTRACTS, getCapSummary, CAP_CEILING, CURRENT_SEASON, CONTRACT_DATA_DATE } from '../utils/carContracts'
 import { DraftPopup } from '../components/DraftTab'
 import { seasonPDO } from '../utils/advancedStats'
@@ -40,6 +40,7 @@ export default function TeamView() {
   const { data: poAdv      } = useFetch(getTeamPlayoffStats)
   const { data: gameLog    } = useFetch(() => getTeamGameLog(20))
   const { data: rankings   } = useFetch(() => getTeamSeasonRankings(2))
+  const { data: xgTrend    } = useFetch(() => getTeamXgTrend(TEAM_CONFIG.abbr))
 
   const carStanding    = standings?.find(t => t.teamAbbrev?.default === TEAM_CONFIG.abbr)
   const playoffSummary = buildCarPlayoffSummary(playoffGames || [])
@@ -81,7 +82,7 @@ export default function TeamView() {
       </div>
 
       {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} realtimeReg={realtimeReg} rankings={rankings} />}
-      {tab === 'Advanced'  && <AdvancedTab corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} homeSplit={homeSplit} />}
+      {tab === 'Advanced'  && <AdvancedTab corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} homeSplit={homeSplit} xgTrend={xgTrend} />}
       {tab === 'Splits'    && <SplitsTab homeSplit={homeSplit} homeSplitPO={homeSplitPO} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} ppReg={ppReg} pkReg={pkReg} corsiReg={corsiReg} />}
       {tab === 'Trends'    && <TrendsTab gameLog={gameLog} />}
       {tab === 'Cap'   && <CapTab capSummary={capSummary} capPct={capPct} sortedContracts={sortedContracts} />}
@@ -195,7 +196,147 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
 }
 
 // ── Advanced tab ─────────────────────────────────────────────
-function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, inPlayoffs, _homeSplit }) {
+
+// ── xGF% per-game sparkline ───────────────────────────────────
+function XgfSparkline({ data }) {
+  const [view, setView] = React.useState('last10');
+  const [tooltip, setTooltip] = React.useState(null); // { x, y, game }
+
+  const games = view === 'last10' ? data.last10 : data.season;
+  if (!games?.length) return null;
+
+  const W = 320, H = 72, PAD_L = 28, PAD_R = 8, PAD_T = 8, PAD_B = 20;
+  const plotW = W - PAD_L - PAD_R;
+  const plotH = H - PAD_T - PAD_B;
+
+  const vals = games.map(g => g.xgfPct);
+  const minV = Math.max(0,  Math.min(...vals) - 5);
+  const maxV = Math.min(100, Math.max(...vals) + 5);
+  const range = maxV - minV || 10;
+
+  const toX = (i) => PAD_L + (i / Math.max(games.length - 1, 1)) * plotW;
+  const toY = (v) => PAD_T + plotH - ((v - minV) / range) * plotH;
+
+  const points = games.map((g, i) => `${toX(i)},${toY(g.xgfPct)}`).join(' ');
+  const areaPoints = [
+    `${PAD_L},${PAD_T + plotH}`,
+    ...games.map((g, i) => `${toX(i)},${toY(g.xgfPct)}`),
+    `${toX(games.length - 1)},${PAD_T + plotH}`,
+  ].join(' ');
+
+  const y50 = toY(50);
+  const teamColor = getComputedStyle(document.documentElement).getPropertyValue('--team-primary').trim() || '#e63946';
+
+  function handleMouseMove(e) {
+    const svg = e.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (W / rect.width);
+    // Find nearest game
+    let best = 0, bestDist = Infinity;
+    games.forEach((_, i) => {
+      const dist = Math.abs(toX(i) - mx);
+      if (dist < bestDist) { bestDist = dist; best = i; }
+    });
+    if (bestDist < plotW / games.length) {
+      setTooltip({ idx: best, game: games[best] });
+    } else {
+      setTooltip(null);
+    }
+  }
+
+  const tt = tooltip;
+  const ttGame = tt?.game;
+
+  return (
+    <div className="card" style={{ padding: '12px 14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <div className="sec-label" style={{ margin: 0 }}>xGF% per game · 5v5</div>
+        <div className="adv-toggle" style={{ gap: 0, padding: 0 }}>
+          <button
+            className={`adv-toggle-btn ${view === 'last10' ? 'active' : ''}`}
+            style={{ padding: '3px 10px', fontSize: 12 }}
+            onClick={() => setView('last10')}
+          >L10</button>
+          <button
+            className={`adv-toggle-btn ${view === 'season' ? 'active' : ''}`}
+            style={{ padding: '3px 10px', fontSize: 12 }}
+            onClick={() => setView('season')}
+          >Season</button>
+        </div>
+      </div>
+
+      {ttGame && (
+        <div style={{
+          fontSize: 12, color: 'var(--text)', marginBottom: 6,
+          display: 'flex', gap: 10, alignItems: 'center',
+        }}>
+          <span style={{ fontWeight: 500 }}>{ttGame.date}</span>
+          <span>vs {ttGame.opponent}</span>
+          <span style={{ color: 'var(--text-dim)' }}>
+            {ttGame.teamScore}–{ttGame.oppScore}
+          </span>
+          <span style={{
+            marginLeft: 'auto', fontWeight: 500,
+            color: ttGame.xgfPct >= 50 ? 'var(--good)' : 'var(--bad)',
+          }}>
+            {ttGame.xgfPct.toFixed(1)}%
+          </span>
+        </div>
+      )}
+
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        width="100%"
+        style={{ display: 'block', overflow: 'visible', cursor: 'crosshair' }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setTooltip(null)}
+        aria-label="xGF% per game sparkline"
+      >
+        {/* 50% baseline */}
+        {y50 >= PAD_T && y50 <= PAD_T + plotH && (
+          <line x1={PAD_L} y1={y50} x2={W - PAD_R} y2={y50}
+            stroke="var(--text-dim)" strokeWidth="0.5" strokeDasharray="3,3" opacity="0.5" />
+        )}
+
+        {/* Area fill */}
+        <polygon points={areaPoints} fill={teamColor} opacity="0.08" />
+
+        {/* Line */}
+        <polyline points={points} fill="none" stroke={teamColor} strokeWidth="2"
+          strokeLinejoin="round" strokeLinecap="round" />
+
+        {/* Y axis labels */}
+        <text x={PAD_L - 3} y={PAD_T + 4} fontSize="9" fill="var(--text-dim)"
+          textAnchor="end">{Math.round(maxV)}%</text>
+        {y50 >= PAD_T && y50 <= PAD_T + plotH && (
+          <text x={PAD_L - 3} y={y50 + 3} fontSize="9" fill="var(--text-dim)"
+            textAnchor="end">50%</text>
+        )}
+        <text x={PAD_L - 3} y={PAD_T + plotH + 4} fontSize="9" fill="var(--text-dim)"
+          textAnchor="end">{Math.round(minV)}%</text>
+
+        {/* Hover dot */}
+        {tt != null && (
+          <circle
+            cx={toX(tt.idx)} cy={toY(ttGame.xgfPct)} r="4"
+            fill={teamColor} stroke="var(--bg)" strokeWidth="2"
+          />
+        )}
+
+        {/* X axis: first + last label */}
+        {games.length > 0 && (
+          <>
+            <text x={PAD_L} y={H} fontSize="9" fill="var(--text-dim)">{games[0].date.slice(5)}</text>
+            <text x={W - PAD_R} y={H} fontSize="9" fill="var(--text-dim)"
+              textAnchor="end">{games[games.length - 1].date.slice(5)}</text>
+          </>
+        )}
+      </svg>
+    </div>
+  );
+}
+
+function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, inPlayoffs, _homeSplit, xgTrend }) {
   const pdoData = seasonPDO(corsiReg);
   const [showPO, setShowPO] = useState(inPlayoffs);
   function pct(v) { if (v == null) return '—'; return `${(v*100).toFixed(1)}%`; }
@@ -295,6 +436,9 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, 
         <AdvStatRow label="Goals Against/GP" val={corsi?.goalsAgainstPerGame ? fmt(corsi.goalsAgainstPerGame) : null}
           rating={rateVal(corsi?.goalsAgainstPerGame, LEAGUE_AVG.goalsAgainstPerGame, false)} avg={LEAGUE_AVG.goalsAgainstPerGame.toFixed(2)} />
       </div>
+
+      {/* xGF% per-game sparkline */}
+      {xgTrend && <XgfSparkline data={xgTrend} />}
 
       {/* PDO & Puck Luck */}
       {pdoData && (
