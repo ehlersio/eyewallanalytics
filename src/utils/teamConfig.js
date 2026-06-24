@@ -98,10 +98,11 @@ export function setTeamConfig(teamOrAbbr) {
 
 export function hasTeamConfig() {
   try {
-    return (
-      localStorage.getItem('eyewall:team') !== null ||
-      localStorage.getItem('eyewall:pwhl_team') !== null
-    );
+    const sport = localStorage.getItem('eyewall:sport') || 'nhl';
+    if (sport === 'pwhl') {
+      return localStorage.getItem('eyewall:pwhl_team') !== null;
+    }
+    return localStorage.getItem('eyewall:team') !== null;
   } catch {
     return false;
   }

@@ -243,13 +243,10 @@ export default function TeamPicker({ onSelect }) {
   }
 
   function handlePWHLSelect(abbr) {
-    // Save sport choice and PWHL team, then reload
-    // Full reload ensures SportContext re-reads localStorage
+    // eyewall:sport must be written before onSelect() triggers reload
+    // so hasTeamConfig() checks eyewall:pwhl_team on the next mount.
     localStorage.setItem('eyewall:sport', 'pwhl');
     localStorage.setItem('eyewall:pwhl_team', JSON.stringify(pwhlTeamByAbbr[abbr]));
-    // Also set a minimal NHL team config so hasTeamConfig() doesn't re-show
-    // the picker on reload — PWHL mode has its own team check via hasPWHLTeamConfig()
-    // TODO: decouple hasTeamConfig() from PWHL flow in a future session
     onSelect?.(abbr);
   }
 

@@ -129,7 +129,6 @@ export async function getPlayerShots(playerId, season = SEASON, team = 'CAR') {
 export async function getGoalieShots(goalieId, season = SEASON) {
   const rows = await sbFetch(
     `shot_events?goalie_id=eq.${goalieId}&season=eq.${season}` +
-    `&car_game=eq.true` +
     `&select=x,y,event_type,period,time_in_period,shot_type,team&limit=2000`
   );
 
