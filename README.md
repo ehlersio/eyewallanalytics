@@ -1,6 +1,6 @@
 # EyeWall Analytics
 
-> Advanced NHL + PWHL analytics — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, WAR/percentile rankings, AI-powered league power rankings, live draft board, and full PWHL analytics suite.
+> Advanced NHL + PWHL analytics — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, WAR/percentile rankings, AI-powered league power rankings, live draft board, full PWHL analytics suite, hat trick detection with live popups + game summary badges, xGF% per-game sparkline, and per-team AI narratives.
 
 **Live at:** [eyewallanalytics.com](https://eyewallanalytics.com)  
 **Contact:** matt@eyewallanalytics.com  
@@ -64,7 +64,7 @@ canes-analytics-starter/
 │   ├── views/
 │   │   ├── ShotMapView.jsx/.css        # NHL live shot map
 │   │   ├── ScheduleView.jsx/.css       # NHL schedule
-│   │   ├── TeamView.jsx/.css           # NHL 6-tab team analytics
+│   │   ├── TeamView.jsx/.css           # NHL 6-tab team analytics (Advanced tab: xGF% sparkline)
 │   │   ├── PlayersView.jsx/.css        # NHL players
 │   │   ├── LeagueView.jsx/.css         # NHL 5-tab league page
 │   │   ├── NewsView.jsx/.css           # NHL news feed
@@ -87,7 +87,10 @@ canes-analytics-starter/
 │   │   ├── ScoutingTab.jsx/.css        # NHL opponent scouting
 │   │   ├── DraftTab.jsx/.css           # NHL draft board
 │   │   ├── NotificationBell.jsx        # ⚙️ Settings drawer
-│   │   ├── PeriodSummary.jsx/.css      # Period/game summary popup + share canvas
+│   │   ├── PeriodSummary.jsx/.css      # Period/game summary popup + share canvas + hat trick badges
+│   │   ├── PWHLPeriodSummary.jsx/.css  # PWHL period/game summary popup + share canvas
+│   │   ├── ShareButtons.jsx/.css       # Shared Save/X/Share buttons across all export cards
+│   │   ├── HatTrickPopup              # (in GameEvents.jsx) — live hat trick celebration overlay
 │   │   ├── TeamLogo.jsx/.css           # NHL + PWHL team logo renderer
 │   │   ├── CalendarView.jsx            # NHL calendar month view
 │   │   ├── PWHLCalendarView.jsx        # PWHL calendar month view
@@ -105,7 +108,7 @@ canes-analytics-starter/
 │       ├── teamConfig.js               # NHL 32-team configs; CURRENT_SEASON flip point
 │       ├── SportContext.jsx            # Sport state (NHL/PWHL) + localStorage persistence
 │       ├── advancedStats.js
-│       ├── supabaseClient.js
+│       ├── supabaseClient.js           # DB queries; getTeamXgTrend, getGoalieShots (no car_game filter)
 │       └── analytics.js
 ├── src/utils/__tests__/
 │   └── *.test.js                       # Vitest unit tests (8 files, 138 tests)
@@ -137,7 +140,7 @@ canes-analytics-starter/
 ## Sport Selection & Theming
 
 ### Sport picker
-On first launch the user selects NHL or PWHL, then their team. The sport is stored under `eyewall:sport` and the team under `eyewall:team` (NHL) or `eyewall:pwhl_team` (PWHL). `SportContext` exposes `isPWHL` throughout the app — all routing, `BottomNav` tabs, and data fetching scope accordingly.
+On first launch the user selects NHL or PWHL, then their team. The sport is stored under `eyewall:sport` and the team under `eyewall:team` (NHL) or `eyewall:pwhl_team` (PWHL). `SportContext` exposes `isPWHL` throughout the app — all routing, `BottomNav` tabs, and data fetching scope accordingly. `hasTeamConfig()` is sport-aware: checks `eyewall:pwhl_team` when sport is PWHL, `eyewall:team` otherwise. On team change, the app navigates to `/` (NHL) or `/pwhl/shots` (PWHL) before reloading so the correct route initializes.
 
 ### PWHL teams
 8 active teams: BOS (Boston Fleet), MIN (Minnesota Frost), MTL (Montréal Victoire), NY (New York Sirens), OTT (Ottawa Charge), TOR (Toronto Sceptres), SEA (Seattle Torrent), VAN (Vancouver Goldeneyes).
@@ -170,6 +173,7 @@ Same mechanism as NHL — `applyTeamTheme()` sets `--team-primary`, `--team-prim
 | `pwhl:salaries:{teamId}:{season}` | Team salary data | 24 hr |
 | `pwhl:leagueplayers:{season}` | All 8 teams' skaters + goalies | 2 hr |
 | `pwhl:news` | Aggregated PWHL news articles | 30 min |
+| `pwhl:narrative:{period}:{gameId}:{carAbbr}` | AI period/game narrative per team perspective | 24 hr |
 
 ### PWHL Worker Endpoints
 
@@ -188,6 +192,8 @@ Same mechanism as NHL — `applyTeamTheme()` sets `--team-primary`, `--team-prim
 | `POST /pwhl/news/ingest` | Accept articles from GH Actions pipeline |
 | `POST /pwhl/news/bust` | Invalidate news cache |
 | `POST /pwhl/cache/bust?teamId=&season=` | Invalidate team KV cache |
+| `GET /pwhl/summary?gameId=` | HockeyTech gameSummary normalized (goals, MVPs, team stats) |
+| `POST /pwhl/summary/narrative?gameId=&period=&carAbbr=` | AI period/game narrative per team perspective |
 
 ---
 
@@ -256,7 +262,8 @@ All standings, record displays (W–OTW–OTL–L), and Splits calculations use 
 | `score_state.py` | Score-state ice time distribution |
 | `rapm.py` | 3-year rolling ridge regression RAPM |
 | `moneypuck.py` | WAR + percentiles + GSAX + xGF% |
-| `power_rankings.py` | 32-team rankings + AI narratives |
+| `power_rankings.py` | 32-team rankings + AI narratives (per-team KV cache) |
+| `ai_scouting.py` | AI scouting blurbs for skaters + goalies (all 32 teams) |
 | `special_teams.py` | PP/PK unit inference |
 | `draft_ingest.py` | Live draft pick polling + AI analysis |
 | `tankathon_ingest.py` | 2026 pick order scraper |
@@ -287,7 +294,8 @@ All standings, record displays (W–OTW–OTL–L), and Splits calculations use 
 
 | Workflow | Schedule | Description |
 |----------|----------|-------------|
-| `nightly.yml` | 3 AM ET daily | Full NHL pipeline + PWHL PBP events + PWHL news fetch |
+| `nightly.yml` | 3 AM ET daily | Full NHL pipeline (NHL-only after split) |
+| `pwhl-nightly.yml` | 3:20 AM ET daily | PWHL PBP events + PWHL news (20 min offset to avoid Supabase contention) |
 | `moneypuck-ingest.yml` | Nightly | MoneyPuck CSV fetch via GH runner |
 | `reddit-ingest.yml` | Every 30 min | Reddit (32 subreddits) + SBNation atom feeds → Worker |
 | `tankathon-sync.yml` | Weekly (Tue 8am ET) | Tankathon draft order scrape |
@@ -404,7 +412,18 @@ VITE_POSTHOG_KEY=phc_...
 - [x] PWHL player heat maps + AI scouting
 - [x] Sport picker (NHL/PWHL) with full team picker
 - [x] Cypress tests for all PWHL views (17 spec files total)
-- [x] ESLint clean (0 errors, 0 warnings)
+- [x] ESLint clean (0 errors, 0 warnings) — maintained throughout offseason
+- [x] xGF% per-game sparkline on Advanced tab (L10 / Season toggle, hover tooltip)
+- [x] Per-team AI narrative KV caching (carAbbr in key — all 32 teams get own perspective)
+- [x] AI scouting blurbs for goalies (goalie-specific prompt, GSAX/SV% metrics)
+- [x] Goalie heat map car_game filter removed (now shows all shots faced, not just CAR games)
+- [x] PWHL/NHL sport switching bug fixed (hasTeamConfig sport-aware, correct root redirect)
+- [x] Period summaries centered modal (not bottom sheet)
+- [x] ShareButtons centered across all export cards
+- [x] Power rankings AI narrative fixed (CF API key + Workers AI permission scope)
+- [x] DevReplayView Clear & Reset button + auto-clear session keys on game load
+- [x] PWHL news pipeline fixed (1 → 22 articles/run; Women's Hockey Life + OurSports Central)
+- [x] Share buttons unified across all 5 export card types (useShareCard hook)
 - [x] NHL Draft Board shipped (Sessions 19-20)
 
 ### Pending
@@ -416,7 +435,9 @@ VITE_POSTHOG_KEY=phc_...
 - [ ] `app_config` Supabase table to eliminate hardcoded season constants
 - [ ] Season-over-season player comparison
 - [ ] Standings clinching indicators
-- [ ] Hat tricks / SHG milestone feed
+- [x] Hat trick live popup (NHL + PWHL) — Phase A complete
+- [x] Hat trick badge in period/game summary cards (natural hat trick detection) — Phase B complete
+- [ ] Hat trick / milestones pipeline + feed — Phase C pending
 - [ ] Capacitor PWA wrapper for App Store / Play Store
 - [ ] Dependabot: supabase 2.31.x, ESLint 10, Vite 8 (October)
 - [ ] October: bump `CURRENT_SEASON`, `PWHL_CURRENT_SEASON`, `NHL_SEASON`, `OFFSEASON_BRACKET`
