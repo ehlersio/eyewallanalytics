@@ -157,10 +157,14 @@ function DevReplayViewInner() {
         getGameBoxscore(id),
       ]);
       if (!pbp?.plays?.length) throw new Error('No play-by-play data for this game.');
-      // Clear session keys so win/goal popups fire fresh in dev replay
+      // Clear session keys so win/goal popups and period summaries fire fresh
       sessionStorage.removeItem(`win_shown_${id}`);
       sessionStorage.removeItem(`lastPlay_${id}`);
       sessionStorage.removeItem(`goals_${id}`);
+      sessionStorage.removeItem('eyewall_period_summaries');
+      sessionStorage.removeItem('eyewall_game_summary');
+      sessionStorage.removeItem(`puckdrop_shown_${id}`);
+      sessionStorage.removeItem(`penalties_${id}`);
       const plays = pbp.plays;
       const last  = plays[plays.length - 1];
       const total = playTimeSecs(last) + 60;
@@ -219,7 +223,10 @@ function DevReplayViewInner() {
       awayTeam: { ...fullPbp.awayTeam, score: awayScore },
       clock: {
         timeRemaining:  isGameOver ? '00:00' : `${mm}:${ss}`,
-        inIntermission: false,
+        // Intermission: playhead is within the last 5s of a completed period
+        // and there's still another period to play. This triggers period summary
+        // generation in usePeriodSummary the same way a real intermission would.
+        inIntermission: !isGameOver && periodSecs >= PERIOD_SECS - 5 && periodNum < finalPeriod,
         running:        !isGameOver,
       },
       periodDescriptor: {
@@ -376,6 +383,29 @@ function DevReplayViewInner() {
                     {s < 60 ? `${s}s/s` : `${s/60}m/s`}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Dev tools */}
+            <div className="dev-speed-row">
+              <span className="dev-section-label">Dev</span>
+              <div className="dev-speed-btns">
+                <button className="dev-btn" onClick={() => {
+                  sessionStorage.removeItem('eyewall_period_summaries');
+                  sessionStorage.removeItem('eyewall_game_summary');
+                  if (loadedGameId) {
+                    sessionStorage.removeItem(`win_shown_${loadedGameId}`);
+                    sessionStorage.removeItem(`lastPlay_${loadedGameId}`);
+                    sessionStorage.removeItem(`goals_${loadedGameId}`);
+                    sessionStorage.removeItem(`puckdrop_shown_${loadedGameId}`);
+                    sessionStorage.removeItem(`penalties_${loadedGameId}`);
+                  }
+                  setPlayheadSecs(0);
+                  setPlaying(false);
+                  window.location.reload();
+                }} title="Clear all cached summaries and reset replay">
+                  🗑 Clear &amp; Reset
+                </button>
               </div>
             </div>
 

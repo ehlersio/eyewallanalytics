@@ -313,7 +313,7 @@ export default function ShotMapView() {
   const playerMapForEvents = pbp ? buildPlayerMap(pbp) : {};
   const strMapForEvents = {};
   Object.entries(playerMapForEvents).forEach(([k,v]) => { strMapForEvents[String(k)] = v; });
-  const { goalPopup, clearGoalPopup, _hatTrickPopup, clearHatTrickPopup,
+  const { goalPopup, clearGoalPopup, hatTrickPopup, clearHatTrickPopup,
     penaltyPopup, clearPenaltyPopup, winPopup, clearWinPopup,
     puckDropPopup, clearPuckDropPopup } =
     useGameEvents(pbp, isLive, strMapForEvents, gameHome,
@@ -1653,6 +1653,7 @@ export default function ShotMapView() {
     {goalPopup     && <GoalPopup    data={goalPopup}       onClose={clearGoalPopup}    />}
     {penaltyPopup  && <PenaltyPopup data={penaltyPopup}    onClose={clearPenaltyPopup} />}
     {winPopup      && <WinPopup     data={winPopup}        onClose={clearWinPopup}     />}
+    {hatTrickPopup && <HatTrickPopup data={hatTrickPopup}   onClose={clearHatTrickPopup} />}
 
     {/* ── Debug popups ── */}
     {debugGoalPopup     && <GoalPopup     data={debugGoalPopup}     onClose={() => setDebugGoalPopup(null)}     />}

@@ -90,7 +90,7 @@ async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false) {
   if (workerUrl && summary.gameId) {
     try {
       const res = await fetch(
-        `${workerUrl}/summary/narrative?gameId=${summary.gameId}&period=${periodKey}`,
+        `${workerUrl}/summary/narrative?gameId=${summary.gameId}&period=${periodKey}&carAbbr=${encodeURIComponent(carAbbr)}`,
         {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -110,6 +110,41 @@ async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false) {
 }
 
 // ── Goal Carousel ─────────────────────────────────────────────
+// ── Hat trick detection ──────────────────────────────────────
+// Natural hat trick: 3 consecutive goals in the FULL game goals list
+// by the same player with no other goals in between (from either team).
+function detectHatTricks(goals) {
+  if (!goals?.length) return [];
+  const counts  = {};
+  const info    = {};
+  goals.forEach((g, idx) => {
+    const id = g.scorerId != null ? String(g.scorerId) : g.scorerName;
+    if (!id) return;
+    counts[id] = (counts[id] || 0) + 1;
+    if (!info[id]) info[id] = { scorerName: g.scorerName, isCar: g.isCar, indices: [] };
+    info[id].indices.push(idx);  // track actual array index, not indexOf()
+  });
+  return Object.entries(counts)
+    .filter(([, n]) => n >= 3)
+    .map(([id]) => {
+      const { scorerName, isCar, indices } = info[id];
+      // Natural: find any 3 consecutive hat trick goals where every goal
+      // between the first and third (inclusive) belongs to this scorer.
+      let isNatural = false;
+      for (let i = 0; i <= indices.length - 3; i++) {
+        const start = indices[i];
+        const end   = indices[i + 2];
+        const slice = goals.slice(start, end + 1);
+        const sliceId = (g) => g.scorerId != null ? String(g.scorerId) : g.scorerName;
+        if (slice.every(g => sliceId(g) === id)) {
+          isNatural = true;
+          break;
+        }
+      }
+      return { scorerName, isCar, isNatural };
+    });
+}
+
 function GoalCarousel({ goals, carAbbr }) {
   const [idx, setIdx] = useState(0);
   const touchStartX = useRef(null);
@@ -252,6 +287,21 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarra
       </div>
 
       {/* Goals — two column for game, single column for period */}
+      {detectHatTricks(summary.goals).length > 0 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '4px 0', justifyContent: 'center' }}>
+          {detectHatTricks(summary.goals).map((ht, i) => (
+            <div key={i} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: 'var(--team-canvas)', color: '#fff',
+              fontSize: 13, fontWeight: 600, padding: '6px 12px',
+              borderRadius: 20, whiteSpace: 'nowrap',
+            }}>
+              🎩 {ht.isNatural ? 'Natural Hat Trick' : 'Hat Trick'}{ht.scorerName ? ` — ${ht.scorerName}` : ''}
+            </div>
+          ))}
+        </div>
+      )}
+
       {summary.goals.length > 0 && (
         <div className="ps-canvas-goals">
           <div className="ps-canvas-section-label">
@@ -545,6 +595,18 @@ export default function PeriodSummary({
             )}
           </div>
 
+          {/* Hat trick highlights */}
+          {detectHatTricks(summary.goals).length > 0 && (
+            <div className="ps-hat-tricks">
+              {detectHatTricks(summary.goals).map((ht, i) => (
+                <div key={i} className="ps-hat-trick-chip">
+                  🎩 {ht.isNatural ? 'Natural Hat Trick' : 'Hat Trick'}
+                  {ht.scorerName ? ` — ${ht.scorerName}` : ''}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Goals carousel */}
           {summary.goals.length > 0 && (
             <>
@@ -582,8 +644,8 @@ export default function PeriodSummary({
             </>
           )}
 
-          {/* Three stars (final period / game summary) */}
-          {summary.threeStars?.length > 0 && (
+          {/* Three stars — game summary only */}
+          {summary.isGameSummary && summary.threeStars?.length > 0 && (
             <>
               <div className="ps-section-label">Three Stars</div>
               <div className="ps-three-stars">
