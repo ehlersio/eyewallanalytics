@@ -92,9 +92,11 @@ export default function App() {
     return (
       <TeamPicker
         onSelect={() => {
-          // Full page reload — ensures TEAM_CONFIG (module-level constant) re-reads
-          // the newly saved localStorage value across all imported modules.
-          window.location.reload();
+          // Navigate to the correct root for the chosen sport before reloading
+          // so module-level constants re-initialize at the right route.
+          const sport = localStorage.getItem('eyewall:sport') || 'nhl';
+          const root  = sport === 'pwhl' ? '/pwhl/shots' : '/';
+          window.location.href = root;
         }}
       />
     );

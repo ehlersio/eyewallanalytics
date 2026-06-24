@@ -63,7 +63,9 @@ export default function NotificationBell() {
     localStorage.removeItem('eyewall:sport');
     localStorage.removeItem('eyewall:team');
     localStorage.removeItem('eyewall:pwhl_team');
-    window.location.reload();
+    // Navigate to root so TeamPicker shows at / regardless of current route.
+    // After team selection, App.jsx redirects to the correct sport root.
+    window.location.href = '/';
   };
 
   const handleThemeToggle = () => {

@@ -124,7 +124,7 @@ export async function getPlayerShots(playerId, season = SEASON, team = 'CAR') {
 
 // ── Goalie shot events ────────────────────────────────────────
 // Returns shots faced by a specific goalie (for heat map).
-// car_game=true scopes to games involving the selected team.
+// No car_game filter — shows all shots faced regardless of opponent.
 // goalie_id filter identifies the specific goalie's starts.
 export async function getGoalieShots(goalieId, season = SEASON) {
   const rows = await sbFetch(
