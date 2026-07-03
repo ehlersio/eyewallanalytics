@@ -24,6 +24,61 @@ function teamColor(abbr) {
   return PWHL_TEAM_MAP[abbr]?.displayColor || 'var(--text-dim)';
 }
 
+// Hoisted to module scope (not defined inside BracketPanel) so React keeps a
+// stable component identity across re-renders. Defining these inside
+// BracketPanel's function body created a brand-new function reference every
+// render, which React treats as a type change — forcing a full unmount/remount
+// of every card instead of reconciling the existing DOM nodes. That's what was
+// causing "series cards are clickable and show modal" to flake in Cypress
+// (card detaches from the DOM mid-click) and could cause the same
+// flicker/remount for real users on any re-render (e.g. closing the modal).
+function WinDots({ wins, color }) {
+  return (
+    <span className="bkt-dots">
+      {Array.from({length:3}).map((_,i) => (
+        <span key={i} className="bkt-dot"
+          style={i < wins && color ? {background:color, borderColor:color} : undefined} />
+      ))}
+    </span>
+  );
+}
+
+function BktSeriesCard({ series, onClick, myTeamId, myColor }) {
+  if (!series) return <div className="bkt-card bkt-card--empty" />;
+  const abbrA   = TEAM_CODES[series.teamA] || '?';
+  const abbrB   = TEAM_CODES[series.teamB] || '?';
+  const colorA  = teamColor(abbrA);
+  const colorB  = teamColor(abbrB);
+  const doneA   = series.winsA >= 3;
+  const doneB   = series.winsB >= 3;
+  const hasGames = series.games.length > 0;
+  const isPrimary = series.teamA === myTeamId || series.teamB === myTeamId;
+  const label = doneA ? `${abbrA} wins 3–${series.winsB}`
+    : doneB ? `${abbrB} wins 3–${series.winsA}`
+    : series.winsA > series.winsB ? `${abbrA} leads ${series.winsA}–${series.winsB}`
+    : series.winsB > series.winsA ? `${abbrB} leads ${series.winsB}–${series.winsA}`
+    : `Tied ${series.winsA}–${series.winsB}`;
+
+  return (
+    <div className={`bkt-card${isPrimary ? ' bkt-card--primary' : ''}${hasGames ? ' bkt-card--clickable' : ''}`}
+      style={isPrimary ? { borderColor: myColor } : undefined}
+      onClick={hasGames && onClick ? onClick : undefined}
+      role={hasGames ? 'button' : undefined}
+      tabIndex={hasGames ? 0 : undefined}
+      onKeyDown={hasGames && onClick ? (e => e.key==='Enter' && onClick()) : undefined}>
+      <div className="bkt-team-row">
+        <span className={`bkt-abbr${doneB && !doneA ? '' : ''}`} style={{ color: colorA }}>{abbrA}</span>
+        <WinDots wins={series.winsA} color={colorA} />
+      </div>
+      <div className="bkt-team-row">
+        <span className="bkt-abbr" style={{ color: colorB }}>{abbrB}</span>
+        <WinDots wins={series.winsB} color={colorB} />
+      </div>
+      {series.games.length > 0 && <div className="bkt-series-label">{label}</div>}
+    </div>
+  );
+}
+
 const TABS = [
   { id: 'standings', label: 'Standings'       },
   { id: 'bracket',   label: 'Playoff Bracket' },
@@ -304,53 +359,6 @@ function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
   const semis  = allSeries.slice(0, 2);
   const finals = allSeries.slice(2);
 
-  function WinDots({ wins, color }) {
-    return (
-      <span className="bkt-dots">
-        {Array.from({length:3}).map((_,i) => (
-          <span key={i} className="bkt-dot"
-            style={i < wins && color ? {background:color, borderColor:color} : undefined} />
-        ))}
-      </span>
-    );
-  }
-
-  function BktSeriesCard({ series, onClick }) {
-    if (!series) return <div className="bkt-card bkt-card--empty" />;
-    const abbrA   = TEAM_CODES[series.teamA] || '?';
-    const abbrB   = TEAM_CODES[series.teamB] || '?';
-    const colorA  = teamColor(abbrA);
-    const colorB  = teamColor(abbrB);
-    const doneA   = series.winsA >= 3;
-    const doneB   = series.winsB >= 3;
-    const hasGames = series.games.length > 0;
-    const isPrimary = series.teamA === myTeamId || series.teamB === myTeamId;
-    const label = doneA ? `${abbrA} wins 3–${series.winsB}`
-      : doneB ? `${abbrB} wins 3–${series.winsA}`
-      : series.winsA > series.winsB ? `${abbrA} leads ${series.winsA}–${series.winsB}`
-      : series.winsB > series.winsA ? `${abbrB} leads ${series.winsB}–${series.winsA}`
-      : `Tied ${series.winsA}–${series.winsB}`;
-
-    return (
-      <div className={`bkt-card${isPrimary ? ' bkt-card--primary' : ''}${hasGames ? ' bkt-card--clickable' : ''}`}
-        style={isPrimary ? { borderColor: myColor } : undefined}
-        onClick={hasGames && onClick ? onClick : undefined}
-        role={hasGames ? 'button' : undefined}
-        tabIndex={hasGames ? 0 : undefined}
-        onKeyDown={hasGames && onClick ? (e => e.key==='Enter' && onClick()) : undefined}>
-        <div className="bkt-team-row">
-          <span className={`bkt-abbr${doneB && !doneA ? '' : ''}`} style={{ color: colorA }}>{abbrA}</span>
-          <WinDots wins={series.winsA} color={colorA} />
-        </div>
-        <div className="bkt-team-row">
-          <span className="bkt-abbr" style={{ color: colorB }}>{abbrB}</span>
-          <WinDots wins={series.winsB} color={colorB} />
-        </div>
-        {series.games.length > 0 && <div className="bkt-series-label">{label}</div>}
-      </div>
-    );
-  }
-
   return (
     <div>
       <div className="bkt-root">
@@ -361,7 +369,7 @@ function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
             <div className="bkt-round-series">
               {semis.map((s,i) => (
                 <div key={i} className="bkt-series-slot">
-                  <BktSeriesCard series={s} onClick={() => setSelected(s)} />
+                  <BktSeriesCard series={s} onClick={() => setSelected(s)} myTeamId={myTeamId} myColor={myColor} />
                 </div>
               ))}
               {semis.length === 0 && <div className="bkt-card bkt-card--empty" />}
@@ -379,7 +387,7 @@ function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
             <div className="bkt-round-label">Walter Cup Final</div>
             <div className="bkt-final-center">
               {finals.length > 0
-                ? finals.map((s,i) => <BktSeriesCard key={i} series={s} onClick={() => setSelected(s)} />)
+                ? finals.map((s,i) => <BktSeriesCard key={i} series={s} onClick={() => setSelected(s)} myTeamId={myTeamId} myColor={myColor} />)
                 : <div className="bkt-card bkt-card--empty" style={{ minHeight: 80 }}>
                     <div style={{ fontSize:11, color:'var(--text-dim)', textAlign:'center', padding:12 }}>
                       Awaiting semi winners
