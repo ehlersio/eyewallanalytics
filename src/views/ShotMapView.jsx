@@ -2632,25 +2632,29 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     }
 
 
-    // ── OPP shot attempts limited by period ──────────────────
+    // ── OPP shot attempts / SOG limited by period ─────────────
     // Only fire for completed periods
     const completedPeriods = Object.keys(periodShots).map(Number)
       .filter(per => !isLive || per < (currentPeriod || 99));
-    completedPeriods.forEach(per => {
-      const ps = periodShots[per];
-      if (!ps) return;
-      const periodLabel = per <= 3 ? `P${per}` : isPlayoff ? (per === 4 ? 'OT' : `${per - 3}OT`) : per === 4 ? 'OT' : 'SO';
-      // ≤8 OPP shot attempts in a period is strong suppression (league avg ~12)
-      if (ps.opp <= 8 && ps.car >= 5) {
-        results.push({
-          icon: '🔒',
-          text: `${CAR_ABBR} held ${oppAbbr} to just ${ps.opp} shot attempts in ${periodLabel}`,
-          type: 'good',
-        });
-      }
+
+    // Genuine Corsi-style attempts (SOG + goals + misses + blocks). This was
+    // previously read from `periodShots` above, but that object is SOG-only
+    // (filtered to 'shot-on-goal'/'goal' — see the "Shot advantage by
+    // period" section, which deliberately wants SOG for the "outshot X–Y"
+    // language). Reusing it here made "shot attempts" a mislabeled duplicate
+    // of the SOG insight below — same play types in, same count out, every
+    // time. Computed separately with the full attempt filter, matching how
+    // "shot attempts" is already defined elsewhere in this file (momentum
+    // section above, PK section below).
+    const periodAttempts = {};
+    plays.forEach(p => {
+      if (!['shot-on-goal','goal','missed-shot','blocked-shot'].includes(p.typeDescKey)) return;
+      const per   = p.periodDescriptor?.number || 1;
+      const isCar = p.details?.eventOwnerTeamId === carTeam;
+      if (!periodAttempts[per]) periodAttempts[per] = { car: 0, opp: 0 };
+      if (isCar) periodAttempts[per].car++; else periodAttempts[per].opp++;
     });
 
-    // ── OPP SOG limited by period ─────────────────────────────
     const periodSOG = {};
     plays.forEach(p => {
       if (!['shot-on-goal','goal'].includes(p.typeDescKey)) return;
@@ -2659,12 +2663,32 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       if (!periodSOG[per]) periodSOG[per] = { car: 0, opp: 0 };
       if (isCar) periodSOG[per].car++; else periodSOG[per].opp++;
     });
+
     completedPeriods.forEach(per => {
+      const pa = periodAttempts[per];
       const ps = periodSOG[per];
-      if (!ps) return;
       const periodLabel = per <= 3 ? `P${per}` : isPlayoff ? (per === 4 ? 'OT' : `${per - 3}OT`) : per === 4 ? 'OT' : 'SO';
+
+      // ≤8 OPP shot attempts in a period is strong suppression (league avg ~12)
+      const attemptsHit = pa && pa.opp <= 8 && pa.car >= 5;
       // ≤5 OPP SOG in a completed period is excellent (league avg ~8-9)
-      if (ps.opp <= 5 && ps.car >= 4) {
+      const sogHit = ps && ps.opp <= 5 && ps.car >= 4;
+
+      if (attemptsHit && sogHit) {
+        // Both conditions met for the same period — one combined line
+        // instead of two near-duplicate rows eating two of the six slots.
+        results.push({
+          icon: '🔒',
+          text: `${CAR_ABBR} held ${oppAbbr} to ${pa.opp} shot attempts and ${ps.opp} SOG in ${periodLabel}`,
+          type: 'good',
+        });
+      } else if (attemptsHit) {
+        results.push({
+          icon: '🔒',
+          text: `${CAR_ABBR} held ${oppAbbr} to just ${pa.opp} shot attempts in ${periodLabel}`,
+          type: 'good',
+        });
+      } else if (sogHit) {
         results.push({
           icon: '🧱',
           text: `${CAR_ABBR} held ${oppAbbr} to ${ps.opp} shots on goal in ${periodLabel}`,

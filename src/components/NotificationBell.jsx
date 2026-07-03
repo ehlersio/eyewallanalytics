@@ -58,8 +58,17 @@ export default function NotificationBell() {
     usePushNotifications();
   const { summaries, openSummary } = usePeriodSummaryContext();
 
-  const handleChangeTeam = () => {
+  // Closes the popup and collapses the alert preferences editor back to
+  // its compact summary view, so reopening settings later never starts
+  // pre-expanded (this was why the popup could grow tall enough to cut
+  // off Game Summaries on mobile — showPrefs never reset between opens).
+  const closePopup = () => {
     setOpen(false);
+    setShowPrefs(false);
+  };
+
+  const handleChangeTeam = () => {
+    closePopup();
     localStorage.removeItem('eyewall:sport');
     localStorage.removeItem('eyewall:team');
     localStorage.removeItem('eyewall:pwhl_team');
@@ -82,7 +91,7 @@ export default function NotificationBell() {
       await unsubscribe();
     } else {
       const ok = await subscribe(leagueTeamKey, prefs);
-      if (ok) setOpen(false);
+      if (ok) closePopup();
     }
   };
 
@@ -97,7 +106,7 @@ export default function NotificationBell() {
   }, [prefs, subscribed, activeTeamAbbr, updatePrefs]);
 
   const handleOpenSummary = (summary) => {
-    setOpen(false);
+    closePopup();
     openSummary(summary);
   };
 
@@ -107,7 +116,7 @@ export default function NotificationBell() {
     <div className="notif-wrap">
       <button
         className="notif-bell notif-active"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => (open ? closePopup() : setOpen(true))}
         aria-label="Settings"
         title="Settings"
       >
@@ -116,7 +125,7 @@ export default function NotificationBell() {
 
       {open && (
         <div className="notif-popup">
-          <button className="notif-close" onClick={() => setOpen(false)} aria-label="Close">✕</button>
+          <button className="notif-close" onClick={closePopup} aria-label="Close">✕</button>
 
           <div className="notif-title">⚙️ Settings</div>
 

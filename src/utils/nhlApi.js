@@ -554,7 +554,13 @@ export async function getRoster(teamAbbr = TEAM_ABBR) {
   return cached(`roster:${teamAbbr}`, () => _getRoster(teamAbbr), TTL.SCHEDULE);
 }
 async function _getRoster(teamAbbr = TEAM_ABBR) {
-  const data = await nhlFetch(`${BASE}/roster/${teamAbbr}/${TEAM_CONFIG.season}`);
+  // NOTE: intentionally NOT /roster/{team}/{season} — that endpoint returns a
+  // frozen snapshot of who was on the roster during that specific season, so
+  // players who change teams via trade/UFA signing never show up for their
+  // new team until that season's roster actually gets populated (which can
+  // lag well into the following season). /current is season-agnostic and
+  // reflects the real active roster as of today.
+  const data = await nhlFetch(`${BASE}/roster/${teamAbbr}/current`);
   if (!data) return { forwards: [], defensemen: [], goalies: [], all: [] };
 
   const forwards   = data.forwards   || [];
