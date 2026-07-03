@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import './NewsView.css';
 import { capture } from '../utils/analytics';
 import { TEAM_CONFIG } from '../utils/nhlApi';
+import MilestonesFeed from '../components/MilestonesFeed';
 
 const WORKER_URL  = import.meta.env.VITE_WORKER_URL || '';
 const PAGE_SIZE   = 10;
@@ -68,6 +69,7 @@ function ArticleCard({ item }) {
 }
 
 export default function NewsView() {
+  const [view,      setView]      = useState('news'); // 'news' | 'milestones'
   const [articles,  setArticles]  = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
@@ -121,9 +123,10 @@ export default function NewsView() {
   }, [TEAM_CONFIG.abbr]);  
 
   useEffect(() => {
+    if (view !== 'news') return;
     fetchArticles();
     return () => { if (retryRef.current) clearTimeout(retryRef.current); };
-  }, [fetchArticles]);
+  }, [fetchArticles, view]);
 
   // Reset page when filter changes
   useEffect(() => { setPage(1); }, [filter]);
@@ -147,92 +150,114 @@ export default function NewsView() {
 
   return (
     <div className="news-view page">
-      {/* Header */}
-      <div className="news-header card">
-        <div className="news-header-row">
-          <div>
-            <div className="news-title">{TEAM_CONFIG.displayName} News</div>
-            {lastFetch && (
-              <div className="news-updated">Updated {timeAgo(lastFetch.toISOString())} · {articles.length} articles</div>
-            )}
-          </div>
-          <button className="news-refresh-btn" onClick={fetchArticles} disabled={loading}
-            aria-label="Refresh news">
-            {loading ? '…' : '↻'}
-          </button>
-        </div>
-
-        {/* Source filter chips — built from actual data */}
-        <div className="news-filter-chips">
-          {availableSources.map(s => (
-            <button
-              key={s}
-              className={`news-chip ${filter === s ? 'active' : ''}`}
-              onClick={() => { setFilter(s); if (s !== 'all') capture('news_filter_changed', { source: s }); }}
-            >
-              {s === 'all' ? `All (${articles.length})` : (SOURCE_META[s]?.label || s)}
-            </button>
-          ))}
-        </div>
+      {/* News / Milestones toggle */}
+      <div className="news-view-toggle">
+        <button
+          className={`news-view-toggle-btn${view === 'news' ? ' active' : ''}`}
+          onClick={() => setView('news')}
+        >
+          News
+        </button>
+        <button
+          className={`news-view-toggle-btn${view === 'milestones' ? ' active' : ''}`}
+          onClick={() => { setView('milestones'); capture('milestones_tab_viewed'); }}
+        >
+          Milestones
+        </button>
       </div>
 
-      {/* Content */}
-      {loading && (
-        <div className="news-loading">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="news-skeleton card">
-              <div className="skel skel-badge" />
-              <div className="skel skel-title" />
-              <div className="skel skel-text" />
-            </div>
-          ))}
-        </div>
-      )}
+      {view === 'milestones' && <MilestonesFeed />}
 
-      {!loading && error && (
-        <div className="news-error card">
-          <div className="news-error-icon">📰</div>
-          <div className="news-error-msg">{error}</div>
-          <button className="news-refresh-btn" onClick={fetchArticles}>Try again</button>
-        </div>
-      )}
-
-      {!loading && !error && filtered.length === 0 && (
-        <div className="news-empty card">
-          <div className="news-error-icon">📰</div>
-          <div>No articles found{filter !== 'all' ? ` from ${SOURCE_META[filter]?.label || filter}` : ''}.</div>
-        </div>
-      )}
-
-      {!loading && !error && paginated.length > 0 && (
+      {view === 'news' && (
         <>
-          <div className="news-feed">
-            {paginated.map((item, i) => <ArticleCard key={`${item.id}-${i}`} item={item} />)}
+          {/* Header */}
+          <div className="news-header card">
+            <div className="news-header-row">
+              <div>
+                <div className="news-title">{TEAM_CONFIG.displayName} News</div>
+                {lastFetch && (
+                  <div className="news-updated">Updated {timeAgo(lastFetch.toISOString())} · {articles.length} articles</div>
+                )}
+              </div>
+              <button className="news-refresh-btn" onClick={fetchArticles} disabled={loading}
+                aria-label="Refresh news">
+                {loading ? '…' : '↻'}
+              </button>
+            </div>
+
+            {/* Source filter chips — built from actual data */}
+            <div className="news-filter-chips">
+              {availableSources.map(s => (
+                <button
+                  key={s}
+                  className={`news-chip ${filter === s ? 'active' : ''}`}
+                  onClick={() => { setFilter(s); if (s !== 'all') capture('news_filter_changed', { source: s }); }}
+                >
+                  {s === 'all' ? `All (${articles.length})` : (SOURCE_META[s]?.label || s)}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="news-pagination">
-              <button
-                className="news-page-btn"
-                onClick={() => { setPage(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                disabled={page === 1}
-              >← Prev</button>
-              <span className="news-page-info">{page} / {totalPages}</span>
-              <button
-                className="news-page-btn"
-                onClick={() => { setPage(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                disabled={page === totalPages}
-              >Next →</button>
+          {/* Content */}
+          {loading && (
+            <div className="news-loading">
+              {[1,2,3,4].map(i => (
+                <div key={i} className="news-skeleton card">
+                  <div className="skel skel-badge" />
+                  <div className="skel skel-title" />
+                  <div className="skel skel-text" />
+                </div>
+              ))}
             </div>
           )}
+
+          {!loading && error && (
+            <div className="news-error card">
+              <div className="news-error-icon">📰</div>
+              <div className="news-error-msg">{error}</div>
+              <button className="news-refresh-btn" onClick={fetchArticles}>Try again</button>
+            </div>
+          )}
+
+          {!loading && !error && filtered.length === 0 && (
+            <div className="news-empty card">
+              <div className="news-error-icon">📰</div>
+              <div>No articles found{filter !== 'all' ? ` from ${SOURCE_META[filter]?.label || filter}` : ''}.</div>
+            </div>
+          )}
+
+          {!loading && !error && paginated.length > 0 && (
+            <>
+              <div className="news-feed">
+                {paginated.map((item, i) => <ArticleCard key={`${item.id}-${i}`} item={item} />)}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="news-pagination">
+                  <button
+                    className="news-page-btn"
+                    onClick={() => { setPage(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    disabled={page === 1}
+                  >← Prev</button>
+                  <span className="news-page-info">{page} / {totalPages}</span>
+                  <button
+                    className="news-page-btn"
+                    onClick={() => { setPage(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    disabled={page === totalPages}
+                  >Next →</button>
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="news-footer">
+            Articles from team blogs, ESPN, Sportsnet, Bleacher Report, The Athletic, and Reddit.
+            Tap any article to read the full story.
+          </div>
         </>
       )}
-
-      <div className="news-footer">
-        Articles from team blogs, ESPN, Sportsnet, Bleacher Report, The Athletic, and Reddit.
-        Tap any article to read the full story.
-      </div>
     </div>
   );
 }

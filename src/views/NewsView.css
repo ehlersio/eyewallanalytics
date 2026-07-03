@@ -135,3 +135,74 @@
 .news-page-btn:hover:not(:disabled) { background: var(--bg3); color: var(--text); }
 .news-page-btn:disabled { opacity: 0.3; cursor: default; }
 .news-page-info { font-size: 12px; color: var(--text-dim); }
+
+/* ── News / Milestones toggle ── */
+.news-view-toggle {
+  display: flex; gap: 6px; margin-bottom: 10px;
+}
+.news-view-toggle .news-view-toggle-btn {
+  font-size: 12px; padding: 6px 14px;
+  background: var(--bg3); border: 0.5px solid var(--border);
+  color: var(--text-muted); font-weight: 500;
+  border-radius: 20px; cursor: pointer;
+  transition: all 0.12s; min-height: unset; min-width: unset;
+}
+.news-view-toggle .news-view-toggle-btn:hover { background: var(--bg4); color: var(--text); }
+.news-view-toggle .news-view-toggle-btn.active {
+  background: rgba(204,34,0,0.2); border-color: rgba(204,34,0,0.4);
+  color: var(--red-bright); font-weight: 700;
+}
+
+/* ── Milestones feed ── */
+.milestones-feed { display: flex; flex-direction: column; }
+
+.milestone-icon-badge {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; padding: 2px 6px; border-radius: 4px;
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;
+  background: var(--bg3); color: var(--text-muted);
+}
+
+.milestone-card-title {
+  display: flex; align-items: center; gap: 8px;
+}
+
+.milestone-detail-row {
+  font-size: 11px; color: var(--text-dim); margin: 4px 0 0;
+  display: flex; flex-wrap: wrap; gap: 4px 10px;
+}
+.milestone-detail-item::before { content: '·'; margin-right: 10px; color: var(--border); }
+.milestone-detail-item:first-child::before { content: none; margin-right: 0; }
+
+/* ── Custom team-select dropdown (native <select> can't show logos) ── */
+.ms-team-select-wrap { position: relative; }
+
+.ms-team-select-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg3); border: 0.5px solid var(--border);
+  color: var(--text-muted); font-size: 11px; font-weight: 500;
+  padding: 4px 10px; border-radius: 20px; cursor: pointer;
+  transition: all 0.12s; min-height: unset; min-width: unset;
+}
+.ms-team-select-btn:hover { background: var(--bg4); color: var(--text); }
+.ms-team-select-btn.active {
+  background: rgba(204,34,0,0.2); border-color: rgba(204,34,0,0.4);
+  color: var(--red-bright); font-weight: 700;
+}
+
+.ms-team-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 20;
+  background: var(--bg2); border: 0.5px solid var(--border);
+  border-radius: 10px; padding: 6px;
+  width: 200px; max-height: 320px; overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+.ms-team-option {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  background: transparent; border: 0; text-align: left;
+  color: var(--text); font-size: 12px; font-weight: 500;
+  padding: 7px 8px; border-radius: 6px; cursor: pointer;
+  min-height: unset; min-width: unset;
+}
+.ms-team-option:hover { background: var(--bg3); }
+.ms-team-option.active { background: rgba(204,34,0,0.15); color: var(--red-bright); font-weight: 700; }
