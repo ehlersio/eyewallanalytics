@@ -5,8 +5,11 @@
 // it inherits NewsView.css without needing new stylesheet work.
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ALL_TEAMS } from '../utils/teamConfig';
+import { PWHL_TEAMS } from '../utils/pwhlConfig';
+import { useSport } from '../utils/SportContext';
 import TeamLogo from './TeamLogo';
 import PlayerPopup from './PlayerPopup';
+import PWHLPlayerPopup from './PWHLPlayerPopup';
 import { capture } from '../utils/analytics';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
@@ -32,14 +35,19 @@ function formatGameDate(dateStr) {
 
 // Build the secondary detail line from milestones.py's `detail` JSONB.
 // Every milestone_type has a different shape here — see milestones.py's
-// detect_* functions for what's actually written.
+// (NHL) / pwhl_milestones.py's (PWHL) detect_* functions for what's
+// actually written.
 function renderDetailItems(item) {
   const d = item.detail || {};
   const items = [];
 
   if (item.milestone_type === 'natural_hat_trick' && d.goal_periods?.length) {
     d.goal_periods.forEach((p, i) => {
-      const t = d.goal_times?.[i];
+      // PWHL stores raw countdown seconds remaining, not an elapsed mm:ss
+      // clock (OT period length isn't confirmed, so no derived clock time
+      // is shown — see pwhl_milestones.py). NHL stores elapsed "12:34"
+      // strings under goal_times, which PWHL rows never have.
+      const t = item.is_pwhl ? null : d.goal_times?.[i];
       items.push(`P${p}${t ? ` ${t}` : ''}`);
     });
   } else if (item.milestone_type === 'hat_trick' && d.goal_count) {
@@ -61,7 +69,7 @@ function renderDetailItems(item) {
 
 // Custom team dropdown — native <select><option> can't render images
 // inside options in any browser, so this is a button + popover instead.
-function TeamFilterDropdown({ team, onChange }) {
+function TeamFilterDropdown({ team, onChange, teams, sport }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
@@ -74,7 +82,7 @@ function TeamFilterDropdown({ team, onChange }) {
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [open]);
 
-  const selectedTeam = team !== 'all' ? ALL_TEAMS.find(t => t.abbr === team) : null;
+  const selectedTeam = team !== 'all' ? teams.find(t => t.abbr === team) : null;
 
   function pick(abbr) {
     onChange(abbr);
@@ -89,7 +97,7 @@ function TeamFilterDropdown({ team, onChange }) {
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        {selectedTeam ? <TeamLogo abbr={selectedTeam.abbr} size={16} /> : null}
+        {selectedTeam ? <TeamLogo abbr={selectedTeam.abbr} sport={sport} size={16} /> : null}
         {selectedTeam ? selectedTeam.abbr : 'All Teams'}
       </button>
       {open && (
@@ -102,7 +110,7 @@ function TeamFilterDropdown({ team, onChange }) {
           >
             All Teams
           </button>
-          {ALL_TEAMS.map(t => (
+          {teams.map(t => (
             <button
               key={t.abbr}
               className={`ms-team-option${team === t.abbr ? ' active' : ''}`}
@@ -110,7 +118,7 @@ function TeamFilterDropdown({ team, onChange }) {
               role="option"
               aria-selected={team === t.abbr}
             >
-              <TeamLogo abbr={t.abbr} size={18} />
+              <TeamLogo abbr={t.abbr} sport={sport} size={18} />
               {t.abbr} — {t.shortName}
             </button>
           ))}
@@ -146,7 +154,7 @@ function MilestoneCard({ item, onOpenPlayer }) {
           <span className="news-card-time">{formatGameDate(item.game_date)}</span>
         </div>
         <h3 className="news-card-title milestone-card-title">
-          <TeamLogo abbr={item.team} size={20} />
+          <TeamLogo abbr={item.team} sport={item.is_pwhl ? 'pwhl' : 'nhl'} size={20} />
           {item.description}
         </h3>
         {item.opponent && (
@@ -166,6 +174,7 @@ function MilestoneCard({ item, onOpenPlayer }) {
 }
 
 export default function MilestonesFeed() {
+  const { isPWHL } = useSport();
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState(null);
@@ -176,15 +185,20 @@ export default function MilestonesFeed() {
   const [popupError, setPopupError]     = useState(null);
 
   const fetchingRef = useRef(false);
+  const teamList = isPWHL ? PWHL_TEAMS : ALL_TEAMS;
+  const sportKey  = isPWHL ? 'pwhl' : 'nhl';
 
-  const fetchMilestones = useCallback(async (teamFilter) => {
+  const fetchMilestones = useCallback(async (teamFilter, pwhl) => {
     if (!WORKER_URL) { setError('Worker URL not configured'); setLoading(false); return; }
     if (fetchingRef.current) return;
     fetchingRef.current = true;
     setLoading(true);
     setError(null);
     try {
-      const qs  = teamFilter && teamFilter !== 'all' ? `?team=${teamFilter}` : '';
+      const params = new URLSearchParams();
+      if (pwhl) params.set('sport', 'pwhl');
+      if (teamFilter && teamFilter !== 'all') params.set('team', teamFilter);
+      const qs  = params.toString() ? `?${params.toString()}` : '';
       const res = await fetch(`${WORKER_URL}/milestones${qs}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('Milestones not available — check back soon');
       const data = await res.json();
@@ -197,35 +211,52 @@ export default function MilestonesFeed() {
     }
   }, []);
 
-  useEffect(() => { fetchMilestones(team); }, [team, fetchMilestones]);
+  // Reset the team filter on sport switch — a team abbreviation selected
+  // under one sport (e.g. "BOS") isn't guaranteed to mean the same team,
+  // or exist at all, under the other.
+  useEffect(() => { setTeam('all'); }, [isPWHL]);
 
-  // Fetch the full player object via the Worker's /player/landing proxy
-  // (browser can't hit api-web.nhle.com directly — no CORS headers on
-  // their end) and open PlayerPopup with it. isLeagueContext=true since
-  // this feed spans all 32 teams, same as the League page's Leaders tab.
+  useEffect(() => { fetchMilestones(team, isPWHL); }, [team, isPWHL, fetchMilestones]);
+
+  // Fetch the full player object and open the sport-appropriate popup.
+  // NHL: /player/landing proxies api-web.nhle.com (browser can't hit it
+  // directly — no CORS headers on their end), shape is the NHL landing
+  // API's own response, reshaped below for PlayerPopup.
+  // PWHL: /pwhl/player/landing queries Supabase directly and merges the
+  // player's season stats onto the identity row, since PWHLPlayerPopup
+  // (unlike NHL's PlayerPopup) reads stats straight off the player object
+  // instead of fetching them itself — no reshaping needed, passed through
+  // as-is.
   //
-  // NOTE: PlayerPopup reads p.teamAbbrev for the header team badge. The
-  // landing endpoint's exact key for that field hasn't been confirmed
-  // against a live response yet — if it's actually under a different
-  // key (e.g. currentTeamAbbrev), the popup still opens fine, it just
-  // won't show that one badge. Worth a quick manual check.
+  // Confirmed (via two independent NHL API references — nhlapi-tools
+  // PyPI package's real usage, and a hosted API doc listing get_landing's
+  // response fields) that the landing endpoint's field is
+  // currentTeamAbbrev, not teamAbbrev — checked first below, with
+  // teamAbbrev kept only as a defensive fallback.
   async function handleOpenPlayer(playerId) {
     setPopupLoading(true);
     setPopupError(null);
     try {
-      const res = await fetch(`${WORKER_URL}/player/landing?id=${playerId}`);
-      if (!res.ok) throw new Error('Player info not available');
-      const p = await res.json();
-      setPopupPlayer({
-        id: p.playerId ?? playerId,
-        firstName: p.firstName,
-        lastName: p.lastName,
-        positionCode: p.position,
-        teamAbbrev: p.teamAbbrev ?? p.currentTeamAbbrev,
-        headshot: p.headshot,
-        sweaterNumber: p.sweaterNumber,
-        shootsCatches: p.shootsCatches,
-      });
+      if (isPWHL) {
+        const res = await fetch(`${WORKER_URL}/pwhl/player/landing?id=${playerId}`);
+        if (!res.ok) throw new Error('Player info not available');
+        const p = await res.json();
+        setPopupPlayer(p);
+      } else {
+        const res = await fetch(`${WORKER_URL}/player/landing?id=${playerId}`);
+        if (!res.ok) throw new Error('Player info not available');
+        const p = await res.json();
+        setPopupPlayer({
+          id: p.playerId ?? playerId,
+          firstName: p.firstName,
+          lastName: p.lastName,
+          positionCode: p.position,
+          teamAbbrev: p.currentTeamAbbrev ?? p.teamAbbrev,
+          headshot: p.headshot,
+          sweaterNumber: p.sweaterNumber,
+          shootsCatches: p.shootsCatches,
+        });
+      }
     } catch (err) {
       setPopupError(err.message);
     } finally {
@@ -235,7 +266,7 @@ export default function MilestonesFeed() {
 
   function handleTeamChange(abbr) {
     setTeam(abbr);
-    if (abbr !== 'all') capture('milestones_filter_changed', { team: abbr });
+    if (abbr !== 'all') capture('milestones_filter_changed', { team: abbr, sport: sportKey });
   }
 
   return (
@@ -248,7 +279,7 @@ export default function MilestonesFeed() {
               <div className="news-updated">{milestones.length} recent</div>
             )}
           </div>
-          <TeamFilterDropdown team={team} onChange={handleTeamChange} />
+          <TeamFilterDropdown team={team} onChange={handleTeamChange} teams={teamList} sport={sportKey} />
         </div>
       </div>
 
@@ -279,7 +310,7 @@ export default function MilestonesFeed() {
         <div className="news-error card">
           <div className="news-error-icon">🏒</div>
           <div className="news-error-msg">{error}</div>
-          <button className="news-refresh-btn" onClick={() => fetchMilestones(team)}>Try again</button>
+          <button className="news-refresh-btn" onClick={() => fetchMilestones(team, isPWHL)}>Try again</button>
         </div>
       )}
 
@@ -303,13 +334,20 @@ export default function MilestonesFeed() {
       )}
 
       {popupPlayer && (
-        <PlayerPopup
-          player={popupPlayer}
-          isLeagueContext
-          inPlayoffs={false}
-          standings={[]}
-          onClose={() => setPopupPlayer(null)}
-        />
+        isPWHL ? (
+          <PWHLPlayerPopup
+            player={popupPlayer}
+            onClose={() => setPopupPlayer(null)}
+          />
+        ) : (
+          <PlayerPopup
+            player={popupPlayer}
+            isLeagueContext
+            inPlayoffs={false}
+            standings={[]}
+            onClose={() => setPopupPlayer(null)}
+          />
+        )
       )}
     </div>
   );

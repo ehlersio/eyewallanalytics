@@ -1,6 +1,8 @@
 // views/PWHLNewsView.jsx — mirrors NHL NewsView for PWHL
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import './NewsView.css';
+import MilestonesFeed from '../components/MilestonesFeed';
+import { capture } from '../utils/analytics';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
 const PAGE_SIZE  = 10;
@@ -33,7 +35,10 @@ function SourceBadge({ sourceId }) {
 
 function ArticleCard({ item }) {
   function handleClick() {
-    if (item.url) window.open(item.url, '_blank', 'noopener,noreferrer');
+    if (item.url) {
+      capture('news_article_clicked', { source: item.source, title: item.title?.slice(0, 60), sport: 'pwhl' });
+      window.open(item.url, '_blank', 'noopener,noreferrer');
+    }
   }
   return (
     <article className="news-card card" onClick={handleClick} role="link" tabIndex={0}
@@ -60,6 +65,7 @@ function ArticleCard({ item }) {
 }
 
 export default function PWHLNewsView() {
+  const [view,      setView]      = useState('news'); // 'news' | 'milestones'
   const [articles,  setArticles]  = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
@@ -109,9 +115,10 @@ export default function PWHLNewsView() {
   }, []);
 
   useEffect(() => {
+    if (view !== 'news') return;
     fetchArticles();
     return () => { if (retryRef.current) clearTimeout(retryRef.current); };
-  }, [fetchArticles]);
+  }, [fetchArticles, view]);
 
   useEffect(() => { setPage(1); }, [filter]);
 
@@ -133,84 +140,106 @@ export default function PWHLNewsView() {
 
   return (
     <div className="news-view page">
-      <div className="news-header card">
-        <div className="news-header-row">
-          <div>
-            <div className="news-title">🏒 PWHL News</div>
-            {lastFetch && (
-              <div className="news-updated">
-                Updated {timeAgo(lastFetch.toISOString())} · {articles.length} articles
-              </div>
-            )}
-          </div>
-          <button className="news-refresh-btn" onClick={fetchArticles} disabled={loading}
-            aria-label="Refresh news">
-            {loading ? '…' : '↻'}
-          </button>
-        </div>
-        <div className="news-filter-chips">
-          {availableSources.map(s => (
-            <button key={s}
-              className={`news-chip${filter === s ? ' active' : ''}`}
-              onClick={() => setFilter(s)}>
-              {s === 'all'
-                ? `All (${articles.length})`
-                : (SOURCE_META[s]?.label || s)}
-            </button>
-          ))}
-        </div>
+      {/* News / Milestones toggle */}
+      <div className="news-view-toggle">
+        <button
+          className={`news-view-toggle-btn${view === 'news' ? ' active' : ''}`}
+          onClick={() => setView('news')}
+        >
+          News
+        </button>
+        <button
+          className={`news-view-toggle-btn${view === 'milestones' ? ' active' : ''}`}
+          onClick={() => { setView('milestones'); capture('milestones_tab_viewed', { sport: 'pwhl' }); }}
+        >
+          Milestones
+        </button>
       </div>
 
-      {loading && (
-        <div className="news-loading">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="news-skeleton card">
-              <div className="skel skel-badge" />
-              <div className="skel skel-title" />
-              <div className="skel skel-text" />
-            </div>
-          ))}
-        </div>
-      )}
+      {view === 'milestones' && <MilestonesFeed />}
 
-      {!loading && error && (
-        <div className="news-error card">
-          <div className="news-error-icon">📰</div>
-          <div className="news-error-msg">{error}</div>
-          <button className="news-refresh-btn" onClick={fetchArticles}>Try again</button>
-        </div>
-      )}
-
-      {!loading && !error && filtered.length === 0 && (
-        <div className="news-empty card">
-          <div className="news-error-icon">📰</div>
-          <div>No articles found{filter !== 'all' ? ` from ${SOURCE_META[filter]?.label || filter}` : ''}.</div>
-        </div>
-      )}
-
-      {!loading && !error && paginated.length > 0 && (
+      {view === 'news' && (
         <>
-          <div className="news-feed">
-            {paginated.map((item, i) => <ArticleCard key={`${item.id}-${i}`} item={item} />)}
+          <div className="news-header card">
+            <div className="news-header-row">
+              <div>
+                <div className="news-title">🏒 PWHL News</div>
+                {lastFetch && (
+                  <div className="news-updated">
+                    Updated {timeAgo(lastFetch.toISOString())} · {articles.length} articles
+                  </div>
+                )}
+              </div>
+              <button className="news-refresh-btn" onClick={fetchArticles} disabled={loading}
+                aria-label="Refresh news">
+                {loading ? '…' : '↻'}
+              </button>
+            </div>
+            <div className="news-filter-chips">
+              {availableSources.map(s => (
+                <button key={s}
+                  className={`news-chip${filter === s ? ' active' : ''}`}
+                  onClick={() => { setFilter(s); if (s !== 'all') capture('news_filter_changed', { source: s, sport: 'pwhl' }); }}>
+                  {s === 'all'
+                    ? `All (${articles.length})`
+                    : (SOURCE_META[s]?.label || s)}
+                </button>
+              ))}
+            </div>
           </div>
-          {totalPages > 1 && (
-            <div className="news-pagination">
-              <button className="news-page-btn"
-                onClick={() => { setPage(p => p-1); window.scrollTo({ top:0, behavior:'smooth' }); }}
-                disabled={page === 1}>← Prev</button>
-              <span className="news-page-info">{page} / {totalPages}</span>
-              <button className="news-page-btn"
-                onClick={() => { setPage(p => p+1); window.scrollTo({ top:0, behavior:'smooth' }); }}
-                disabled={page === totalPages}>Next →</button>
+
+          {loading && (
+            <div className="news-loading">
+              {[1,2,3,4].map(i => (
+                <div key={i} className="news-skeleton card">
+                  <div className="skel skel-badge" />
+                  <div className="skel skel-title" />
+                  <div className="skel skel-text" />
+                </div>
+              ))}
             </div>
           )}
+
+          {!loading && error && (
+            <div className="news-error card">
+              <div className="news-error-icon">📰</div>
+              <div className="news-error-msg">{error}</div>
+              <button className="news-refresh-btn" onClick={fetchArticles}>Try again</button>
+            </div>
+          )}
+
+          {!loading && !error && filtered.length === 0 && (
+            <div className="news-empty card">
+              <div className="news-error-icon">📰</div>
+              <div>No articles found{filter !== 'all' ? ` from ${SOURCE_META[filter]?.label || filter}` : ''}.</div>
+            </div>
+          )}
+
+          {!loading && !error && paginated.length > 0 && (
+            <>
+              <div className="news-feed">
+                {paginated.map((item, i) => <ArticleCard key={`${item.id}-${i}`} item={item} />)}
+              </div>
+              {totalPages > 1 && (
+                <div className="news-pagination">
+                  <button className="news-page-btn"
+                    onClick={() => { setPage(p => p-1); window.scrollTo({ top:0, behavior:'smooth' }); }}
+                    disabled={page === 1}>← Prev</button>
+                  <span className="news-page-info">{page} / {totalPages}</span>
+                  <button className="news-page-btn"
+                    onClick={() => { setPage(p => p+1); window.scrollTo({ top:0, behavior:'smooth' }); }}
+                    disabled={page === totalPages}>Next →</button>
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="news-footer">
+            Articles from PWHL Official, ESPN, Sportsnet, and IIHF.
+            Tap any article to read the full story.
+          </div>
         </>
       )}
-
-      <div className="news-footer">
-        Articles from PWHL Official, ESPN, Sportsnet, and IIHF.
-        Tap any article to read the full story.
-      </div>
     </div>
   );
 }
