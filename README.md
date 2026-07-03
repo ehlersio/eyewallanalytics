@@ -1,6 +1,6 @@
 # EyeWall Analytics
 
-> Advanced NHL + PWHL analytics — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, WAR/percentile rankings, AI-powered league power rankings, live draft board, full PWHL analytics suite, hat trick detection with live popups + game summary badges, xGF% per-game sparkline, and per-team AI narratives.
+> Advanced NHL + PWHL analytics — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, WAR/percentile rankings, AI-powered league power rankings, live draft board, full PWHL analytics suite, hat trick detection with live popups + game summary badges, milestone tracking (hat tricks, shutouts, shorthanded goals, season/career thresholds) with a league-wide feed, xGF% per-game sparkline, and per-team AI narratives.
 
 **Live at:** [eyewallanalytics.com](https://eyewallanalytics.com)  
 **Contact:** matt@eyewallanalytics.com  
@@ -26,7 +26,7 @@ Users select their league (NHL or PWHL) and team on first launch. All views, col
 | Hosting | Cloudflare Pages (auto-deploys from `main`; `dev` branch → preview) |
 | API Proxy | Cloudflare Pages Functions (`functions/`) |
 | Cache Layer | Cloudflare Worker + KV (`eyewall-poller`) |
-| Database | Supabase Pro (NHL + PWHL player/team/goalie stats, shot events, RAPM, game xG, power rankings, draft data, salaries) |
+| Database | Supabase Pro (NHL + PWHL player/team/goalie stats, shot events, RAPM, game xG, power rankings, draft data, salaries, milestones) |
 | NHL Data Pipeline | Python (`eyewall-pipeline`) — NHL API + MoneyPuck + Tankathon → Supabase |
 | PWHL Data Pipeline | Python (`eyewall-pipeline`) — HockeyTech + PWHLPA → Supabase |
 | Pipeline CI | GitHub Actions — nightly data cron (3 AM ET) + AI pipeline + draft day ingest + PWHL news |
@@ -67,7 +67,7 @@ canes-analytics-starter/
 │   │   ├── TeamView.jsx/.css           # NHL 6-tab team analytics (Advanced tab: xGF% sparkline)
 │   │   ├── PlayersView.jsx/.css        # NHL players
 │   │   ├── LeagueView.jsx/.css         # NHL 5-tab league page
-│   │   ├── NewsView.jsx/.css           # NHL news feed
+│   │   ├── NewsView.jsx/.css           # NHL news feed + Milestones tab toggle
 │   │   ├── PWHLShotMapView.jsx         # PWHL shot map + PBP metrics
 │   │   ├── PWHLScheduleView.jsx        # PWHL schedule + calendar + playoffs
 │   │   ├── PWHLTeamView.jsx            # PWHL 5-tab team analytics
@@ -91,6 +91,7 @@ canes-analytics-starter/
 │   │   ├── PWHLPeriodSummary.jsx/.css  # PWHL period/game summary popup + share canvas
 │   │   ├── ShareButtons.jsx/.css       # Shared Save/X/Share buttons across all export cards
 │   │   ├── HatTrickPopup              # (in GameEvents.jsx) — live hat trick celebration overlay
+│   │   ├── MilestonesFeed.jsx          # League-wide milestone feed (hat tricks, shutouts, SH goals, season/career thresholds) — tappable into PlayerPopup
 │   │   ├── TeamLogo.jsx/.css           # NHL + PWHL team logo renderer
 │   │   ├── CalendarView.jsx            # NHL calendar month view
 │   │   ├── PWHLCalendarView.jsx        # PWHL calendar month view
@@ -116,6 +117,7 @@ canes-analytics-starter/
 │   ├── e2e/
 │   │   ├── navigation.cy.js            # NHL + PWHL route navigation (all 8 PWHL teams)
 │   │   ├── news.cy.js                  # NHL news
+│   │   ├── milestones.cy.js            # Milestones feed, team filter dropdown, tap-to-open popup
 │   │   ├── pwhl-news.cy.js             # PWHL news
 │   │   ├── period-summary.cy.js        # Game Center
 │   │   ├── players.cy.js               # NHL players
@@ -160,6 +162,32 @@ Same mechanism as NHL — `applyTeamTheme()` sets `--team-primary`, `--team-prim
 ## Cloudflare Worker (`eyewall-poller`)
 
 **Worker URL:** `https://eyewall-poller.billowing-queen-bf23.workers.dev`
+
+### NHL KV Keys
+
+| Key | Content | TTL |
+|-----|---------|-----|
+| `draft:rankings:2026:{category&#124;all}` | NHL Central Scouting rankings | 24 hr |
+| `draft:picks:2026:{team&#124;all}:{round&#124;all}` | Draft picks (live + historical) | 60s while draft in progress (0 &lt; count &lt; 224), 24 hr once complete |
+| `draft:order:2026:{team&#124;all}` | Known R1 pick order | 24 hr |
+| `narrative:{period}:{gameId}:{carAbbr}` | AI period/game narrative per team perspective | 24 hr |
+| `milestones:{team&#124;all}:{limit}` | Recent milestones (hat tricks, shutouts, SH goals, season/career thresholds) | 1 hr |
+| `player:landing:{id}` | NHL API player landing proxy (bio, headshot, career totals) | 1 hr |
+
+### NHL Worker Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /draft/rankings?category=` | NHL Central Scouting rankings by category |
+| `GET /draft/picks?team=&round=` | Draft picks, filterable by team and/or round |
+| `GET /draft/order?team=` | Known R1 pick order |
+| `POST /draft/analyze` | Workers AI draft pick analysis (secret-protected, `X-Poll-Secret` header) — called by `draft_ingest.py` on draft day |
+| `GET /milestones?team=&limit=` | Recent milestones, league-wide by default, optional team filter (default limit 50, max 100) |
+| `GET /player/landing?id=` | Proxies NHL API's `/player/{id}/landing` — browser can't call it directly (no CORS headers on the NHL side) |
+
+---
+
+## Cloudflare Worker (`eyewall-poller`) — PWHL
 
 ### PWHL KV Keys
 
@@ -265,8 +293,18 @@ All standings, record displays (W–OTW–OTL–L), and Splits calculations use 
 | `power_rankings.py` | 32-team rankings + AI narratives (per-team KV cache) |
 | `ai_scouting.py` | AI scouting blurbs for skaters + goalies (all 32 teams) |
 | `special_teams.py` | PP/PK unit inference |
-| `draft_ingest.py` | Live draft pick polling + AI analysis |
+| `draft_ingest.py` | Live draft pick polling + AI analysis + one-time backfill (`/draft/picks/{year}/all`) for a completed draft |
 | `tankathon_ingest.py` | 2026 pick order scraper |
+| `milestones.py` | Nightly milestone detection (hat tricks, natural hat tricks, shorthanded goals, shutouts, season goal/point thresholds, career point/win thresholds via live NHL API lookup) → `milestones` table |
+
+### Shared pipeline modules
+
+| Module | Description |
+|--------|-------------|
+| `db.py` | Supabase client (`get_client()`, tuned `postgrest_client_timeout=120`), `NHL_SEASON`, `PRIMARY_TEAM_ABBR`, batched `upsert()`. The canonical shared module — everything below imports from here rather than creating its own Supabase client. |
+| `pipeline_common.py` | Everything `db.py` doesn't cover: `nhl_get()` (NHL API GET helper) and `get_logger()` (shared logging config). |
+
+`nhl_stats.py`, `draft_ingest.py`, `milestones.py`, `ai_context.py`, and `ai_scouting.py` all import from `db.py`/`pipeline_common.py` rather than duplicating Supabase client setup — consolidated after `draft_ingest.py` and `milestones.py` were briefly built against a since-retired standalone `pipeline_common.get_supabase()` before `db.py`'s existing role was accounted for.
 
 ### PWHL Pipeline Modules
 | Module | Description |
@@ -294,7 +332,7 @@ All standings, record displays (W–OTW–OTL–L), and Splits calculations use 
 
 | Workflow | Schedule | Description |
 |----------|----------|-------------|
-| `nightly.yml` | 3 AM ET daily | Full NHL pipeline (NHL-only after split) |
+| `nightly.yml` | 3 AM ET daily | Full NHL pipeline (NHL-only after split) + `milestones.py` (runs after `python run.py`, once `game_scoring` is fresh) |
 | `pwhl-nightly.yml` | 3:20 AM ET daily | PWHL PBP events + PWHL news (20 min offset to avoid Supabase contention) |
 | `moneypuck-ingest.yml` | Nightly | MoneyPuck CSV fetch via GH runner |
 | `reddit-ingest.yml` | Every 30 min | Reddit (32 subreddits) + SBNation atom feeds → Worker |
@@ -318,12 +356,13 @@ npm run cypress:run
 npm run cypress:full    # Clean → run → HTML report
 ```
 
-**17 spec files:**
+**18 spec files:**
 
 | Spec | Coverage |
 |------|---------|
 | `navigation.cy.js` | NHL routes + PWHL 8-team smoke (all 6 PWHL routes) |
 | `news.cy.js` | NHL news, source filters |
+| `milestones.cy.js` | Milestones feed, team filter dropdown, card structure, tap-to-open player popup |
 | `pwhl-news.cy.js` | PWHL news, source chips, article list |
 | `period-summary.cy.js` | Game Center, period/game summary popups |
 | `players.cy.js` | NHL roster, skater/goalie cards (4 teams) |
@@ -425,6 +464,13 @@ VITE_POSTHOG_KEY=phc_...
 - [x] PWHL news pipeline fixed (1 → 22 articles/run; Women's Hockey Life + OurSports Central)
 - [x] Share buttons unified across all 5 export card types (useShareCard hook)
 - [x] NHL Draft Board shipped (Sessions 19-20)
+- [x] Hat trick live popup (NHL + PWHL) — Phase A complete
+- [x] Hat trick badge in period/game summary cards (natural hat trick detection) — Phase B complete
+- [x] Hat trick / milestones pipeline + feed — Phase C complete: `milestones.py` nightly detection (hat tricks, natural hat tricks, SH goals, shutouts, season goal/point thresholds, career point/win thresholds via live NHL API lookup), `/milestones` + `/player/landing` Worker endpoints, league-wide Milestones tab on News page with team-logo filter dropdown, tappable into PlayerPopup
+- [x] Draft pick field-name bug fixed (`firstName`/`lastName` are top-level `{"default": ...}` objects, not nested under `prospect`/`draftedPlayer` — was silently writing blank names for all round-1 picks) + one-time `--backfill-picks` mode using `/draft/picks/{year}/all`
+- [x] Cloudflare KV cache TTL bug fixed (empty results were getting the 24hr branch instead of 60s — could pin a stale/empty snapshot for a full day)
+- [x] `draft-ingest.yml` KV purge step fixed (was calling the wrong Cloudflare endpoint — `/keys/` instead of `/values/` — silently never worked)
+- [x] Shared pipeline modules consolidated — `draft_ingest.py`, `milestones.py`, `ai_context.py`, `ai_scouting.py` now all use `db.py`'s `get_client()` instead of each duplicating Supabase client setup
 
 ### Pending
 - [ ] PWHL expansion teams (DET, HAM, LAS, SJS) — October 2026
@@ -435,12 +481,12 @@ VITE_POSTHOG_KEY=phc_...
 - [ ] `app_config` Supabase table to eliminate hardcoded season constants
 - [ ] Season-over-season player comparison
 - [ ] Standings clinching indicators
-- [x] Hat trick live popup (NHL + PWHL) — Phase A complete
-- [x] Hat trick badge in period/game summary cards (natural hat trick detection) — Phase B complete
-- [ ] Hat trick / milestones pipeline + feed — Phase C pending
 - [ ] Capacitor PWA wrapper for App Store / Play Store
 - [ ] Dependabot: supabase 2.31.x, ESLint 10, Vite 8 (October)
 - [ ] October: bump `CURRENT_SEASON`, `PWHL_CURRENT_SEASON`, `NHL_SEASON`, `OFFSEASON_BRACKET`
+- [ ] PWHL milestones (hat tricks, shutouts, etc.) — deferred pending PWHL schema confirmation, same pattern as NHL `milestones.py`
+- [ ] `ai_summaries.py`/`ai_predictions.py` appear to run twice nightly — once inside `run.py`'s `run_all()`, again via `ai_pipeline.yml`'s separate cron an hour later. Worth confirming whether that's intentional redundancy or wasted GH Actions minutes / duplicate Workers AI calls.
+- [ ] Migrate remaining pipeline scripts (`ai_summaries.py`, `ai_predictions.py`, `moneypuck.py`, etc.) to `db.py`/`pipeline_common.py` if they don't already use them
 
 ---
 
