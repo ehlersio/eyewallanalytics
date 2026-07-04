@@ -22,11 +22,33 @@
 //   disambiguation is handled by SportContext: PWHL and NHL teams are never
 //   in the same scope at runtime.
 
+import { fetchSeasonsConfig } from './seasonClient';
+
 // ── Season constant ───────────────────────────────────────────────────────────
-// Update each October alongside CURRENT_SEASON in teamConfig.js.
-// Corresponds to HockeyTech season ID 8 (2025-26 Regular Season).
-// Next bump: October 2026 → 9 (2026-27 Regular Season, once ID confirmed).
-export const PWHL_CURRENT_SEASON = 8;
+// This used to be the ONE value updated each October alongside CURRENT_SEASON
+// in teamConfig.js. It's now live-resolved from the Worker's /config/seasons
+// endpoint (see seasons.js in eyewall-poller). This constant is now just the
+// fallback seed — used before the fetch below resolves, or if it fails.
+// It's a `let` so the fetch can update it in place.
+//
+// Same getter pattern as teamConfig.js: each team's `season` field is a
+// GETTER, so `team.season` reflects live updates automatically. See
+// teamConfig.js's Season constant comment for the one caveat (destructuring
+// `season` into a standalone variable and holding onto it indefinitely).
+export let PWHL_CURRENT_SEASON = 8;
+
+(async () => {
+  try {
+    const data = await fetchSeasonsConfig();
+    const seasonId = data?.pwhl?.seasonId;
+    if (seasonId && seasonId !== PWHL_CURRENT_SEASON) {
+      PWHL_CURRENT_SEASON = seasonId;
+      window.dispatchEvent(new window.CustomEvent('eyewall:pwhl-season-updated', { detail: PWHL_CURRENT_SEASON }));
+    }
+  } catch (e) {
+    console.warn('Live PWHL season lookup failed, using fallback:', e.message);
+  }
+})();
 
 // ── Team configs ─────────────────────────────────────────────────────────────
 // primaryColor: official brand hex from PWHL branding / Wikipedia sports color module.
@@ -50,7 +72,7 @@ export const PWHL_TEAMS = [
   {
     abbr: 'BOS',
     teamId: 1,
-    season: PWHL_CURRENT_SEASON,
+    get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'Boston Fleet',
     shortName: 'Fleet',
     primaryColor: '#173F35',
@@ -59,7 +81,7 @@ export const PWHL_TEAMS = [
   {
     abbr: 'MIN',
     teamId: 2,
-    season: PWHL_CURRENT_SEASON,
+    get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'Minnesota Frost',
     shortName: 'Frost',
     primaryColor: '#250E62',
@@ -68,7 +90,7 @@ export const PWHL_TEAMS = [
   {
     abbr: 'MTL',
     teamId: 3,
-    season: PWHL_CURRENT_SEASON,
+    get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'Montréal Victoire',
     shortName: 'Victoire',
     primaryColor: '#862633',
@@ -77,7 +99,7 @@ export const PWHL_TEAMS = [
   {
     abbr: 'NY',
     teamId: 4,
-    season: PWHL_CURRENT_SEASON,
+    get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'New York Sirens',
     shortName: 'Sirens',
     primaryColor: '#006D6F',
@@ -86,7 +108,7 @@ export const PWHL_TEAMS = [
   {
     abbr: 'OTT',
     teamId: 5,
-    season: PWHL_CURRENT_SEASON,
+    get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'Ottawa Charge',
     shortName: 'Charge',
     primaryColor: '#BF2B45',
@@ -95,7 +117,7 @@ export const PWHL_TEAMS = [
   {
     abbr: 'TOR',
     teamId: 6,
-    season: PWHL_CURRENT_SEASON,
+    get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'Toronto Sceptres',
     shortName: 'Sceptres',
     primaryColor: '#003594',
@@ -104,7 +126,7 @@ export const PWHL_TEAMS = [
   {
     abbr: 'SEA',
     teamId: 8,
-    season: PWHL_CURRENT_SEASON,
+    get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'Seattle Torrent',
     shortName: 'Torrent',
     primaryColor: '#2D5F5F',
@@ -113,7 +135,7 @@ export const PWHL_TEAMS = [
   {
     abbr: 'VAN',
     teamId: 9,
-    season: PWHL_CURRENT_SEASON,
+    get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'Vancouver Goldeneyes',
     shortName: 'Goldeneyes',
     primaryColor: '#1A4B7A',
@@ -126,7 +148,7 @@ export const PWHL_TEAMS = [
   {
     abbr: 'DET',
     teamId: null,
-    season: PWHL_CURRENT_SEASON,
+    get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL Detroit',
     shortName: 'Detroit',
     primaryColor: '#555555',
@@ -136,7 +158,7 @@ export const PWHL_TEAMS = [
   {
     abbr: 'HAM',
     teamId: null,
-    season: PWHL_CURRENT_SEASON,
+    get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL Hamilton',
     shortName: 'Hamilton',
     primaryColor: '#555555',
@@ -146,7 +168,7 @@ export const PWHL_TEAMS = [
   {
     abbr: 'LV',
     teamId: null,
-    season: PWHL_CURRENT_SEASON,
+    get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL Las Vegas',
     shortName: 'Las Vegas',
     primaryColor: '#555555',
@@ -156,7 +178,7 @@ export const PWHL_TEAMS = [
   {
     abbr: 'SJS',
     teamId: null,
-    season: PWHL_CURRENT_SEASON,
+    get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL San Jose',
     shortName: 'San Jose',
     primaryColor: '#555555',
