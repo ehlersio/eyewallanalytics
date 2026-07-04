@@ -142,12 +142,16 @@ export const PWHL_TEAMS = [
     displayColor: '#4A90D9',
   },
   // ── 2026-27 expansion teams ───────────────────────────────────────────────
-  // HockeyTech IDs not yet assigned. comingSoon: true disables selection in
-  // TeamPicker. Update teamId, primaryColor, displayColor in October 2026
-  // once IDs are assigned and brand colors are revealed.
+  // HockeyTech IDs confirmed 2026-07-04 (docs/hockeytech-api-notes.md) via
+  // real signing data + the team-filter dropdown on thepwhl.com/en/stats.
+  // comingSoon stays true even with real IDs: bootstrap's teams[] doesn't
+  // list these 4 yet (no roster/division assigned pre-season), and brand
+  // colors aren't public. Flip comingSoon to false once a real roster
+  // exists for a team; update primaryColor/displayColor once colors are
+  // revealed — those two are still genuinely manual, unlike the ID.
   {
     abbr: 'DET',
-    teamId: null,
+    teamId: 10,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL Detroit',
     shortName: 'Detroit',
@@ -157,7 +161,7 @@ export const PWHL_TEAMS = [
   },
   {
     abbr: 'HAM',
-    teamId: null,
+    teamId: 11,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL Hamilton',
     shortName: 'Hamilton',
@@ -167,7 +171,7 @@ export const PWHL_TEAMS = [
   },
   {
     abbr: 'LV',
-    teamId: null,
+    teamId: 12,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL Las Vegas',
     shortName: 'Las Vegas',
@@ -177,7 +181,7 @@ export const PWHL_TEAMS = [
   },
   {
     abbr: 'SJS',
-    teamId: null,
+    teamId: 13,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL San Jose',
     shortName: 'San Jose',
