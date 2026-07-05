@@ -79,7 +79,7 @@ canes-analytics-starter/
 │   ├── components/
 │   │   ├── Topbar.jsx/.css             # Live score, countdown clock, sport switcher
 │   │   ├── BottomNav.jsx               # Sport-aware bottom navigation
-│   │   ├── TeamPicker.jsx              # Sport + team selection (NHL + PWHL)
+│   │   ├── TeamPicker.jsx              # Sport + team selection (NHL + PWHL); active/expansion PWHL split derives from comingSoon (fixed 2026-07 — used to be a 2nd hardcoded list, ignored comingSoon entirely)
 │   │   ├── IceRink.jsx/.css            # SVG rink — shots, heat map, team-aware
 │   │   ├── PWHLPlayerPopup.jsx         # PWHL player popup (Stats, Heat Map, Scout)
 │   │   ├── PlayerPopup.jsx             # NHL player popup (Stats, Analytics, Heat Map)
@@ -105,8 +105,9 @@ canes-analytics-starter/
 │   └── utils/
 │       ├── nhlApi.js                   # NHL API calls + KV caching
 │       ├── pwhlApi.js                  # PWHL Worker API calls
-│       ├── pwhlConfig.js               # PWHL team configs (8 active + 4 expansion)
-│       ├── teamConfig.js               # NHL 32-team configs; CURRENT_SEASON flip point
+│       ├── pwhlConfig.js               # PWHL team configs (12 teams: 8 established + 4 expansion, all live/selectable)
+│       ├── teamConfig.js               # NHL 32-team configs; CURRENT_SEASON live-resolved (fallback seed only)
+│       ├── seasonClient.js             # Shared memoized fetch for /config/seasons — used by teamConfig.js + pwhlConfig.js
 │       ├── SportContext.jsx            # Sport state (NHL/PWHL) + localStorage persistence
 │       ├── advancedStats.js
 │       ├── supabaseClient.js           # DB queries; getTeamXgTrend, getGoalieShots (no car_game filter)
@@ -145,17 +146,32 @@ canes-analytics-starter/
 On first launch the user selects NHL or PWHL, then their team. The sport is stored under `eyewall:sport` and the team under `eyewall:team` (NHL) or `eyewall:pwhl_team` (PWHL). `SportContext` exposes `isPWHL` throughout the app — all routing, `BottomNav` tabs, and data fetching scope accordingly. `hasTeamConfig()` is sport-aware: checks `eyewall:pwhl_team` when sport is PWHL, `eyewall:team` otherwise. On team change, the app navigates to `/` (NHL) or `/pwhl/shots` (PWHL) before reloading so the correct route initializes.
 
 ### PWHL teams
-8 active teams: BOS (Boston Fleet), MIN (Minnesota Frost), MTL (Montréal Victoire), NY (New York Sirens), OTT (Ottawa Charge), TOR (Toronto Sceptres), SEA (Seattle Torrent), VAN (Vancouver Goldeneyes).
-
-4 expansion teams (2026–27, deferred until HockeyTech assigns IDs in October 2026): DET, HAM, LAS, SJS.
+12 teams, all live and selectable in `TeamPicker`: BOS (Boston Fleet), MIN (Minnesota Frost), MTL (Montréal Victoire), NY (New York Sirens), OTT (Ottawa Charge), TOR (Toronto Sceptres), SEA (Seattle Torrent), VAN (Vancouver Goldeneyes), plus 4 expansion teams flipped live 2026-07: DET (Detroit), HAM (Hamilton), LV (Las Vegas), SJS (San Jose). Expansion team colors are real (pulled from each team's own `*_colors.css` design tokens), but logos/team names are still temporary placeholders — no permanent branding revealed yet.
 
 ### Color tokens
 Same mechanism as NHL — `applyTeamTheme()` sets `--team-primary`, `--team-primary-rgb`, `--team-canvas`, `--team-canvas-rgb` on `:root` from `displayColor`.
 
-### Season constants
-- `CURRENT_SEASON = '20252026'` in `teamConfig.js` — NHL flip point
-- `PWHL_CURRENT_SEASON = 8` in `pwhlConfig.js` — PWHL regular season ID
-- Both must be updated each October along with `NHL_SEASON` and `PWHL_SEASON` GH Actions secrets
+### Season constants — now live-resolved, not a manual flip point (2026-07)
+`CURRENT_SEASON` (`teamConfig.js`) and `PWHL_CURRENT_SEASON` (`pwhlConfig.js`) are `let`, not `const` — seeded with a fallback value, then updated in place by a fire-and-forget fetch to the Worker's `GET /config/seasons` at module load (via the shared `seasonClient.js`). Every team object's `season` field is a **getter**, not a plain value, so `team.season` reflects the live value everywhere it's read without any consuming component needing to change.
+
+**One real limitation:** if a component destructures `const { season } = someTeam` once and holds onto that local variable indefinitely instead of re-reading `someTeam.season`, it'll keep whatever value existed at that moment — a normal JS stale-closure situation, not something the getter mechanism can fix. Confirmed this actually happening in `PWHLPlayersView.jsx` (its season-picker default via `useState(PWHL_CURRENT_SEASON)`) — fixed by having it listen for the `eyewall:pwhl-season-updated` event both `teamConfig.js`/`pwhlConfig.js` dispatch on resolution, but any *new* component built the same naive way could reintroduce this.
+
+---
+
+## Live Season Resolution
+
+Added 2026-07, replacing what used to be a yearly manual flip of `CURRENT_SEASON`/`PWHL_CURRENT_SEASON` here, `NHL_SEASON` in the Worker, and equivalent constants in the pipeline. The Worker's `seasons.js` is the single source of truth — everything else reads from it rather than resolving independently.
+
+**How the frontend consumes it:** `teamConfig.js` and `pwhlConfig.js` each fire a fetch to `GET /config/seasons` at module load (via the shared `seasonClient.js`, which memoizes the in-flight promise so both modules loading on the same page only trigger one real request, not two). The fetch is fire-and-forget — first paint uses the hardcoded fallback seed, and the `let` binding updates in place once the real value resolves. Every team object's `season` field is a getter reading that `let`, so `team.season` stays live everywhere without touching every consuming component.
+
+**Manual override**, if live resolution ever misjudges the real season boundary (this has happened once already, from a real bug — see Known Limitations below):
+```powershell
+wrangler kv key put --binding=CACHE "config:season:nhl:override" '"20262027"' --remote
+wrangler kv key put --binding=CACHE "config:season:pwhl:override" '{"seasonId":9,"seasonType":"regular","startYear":2026}' --remote
+```
+Note the `--remote` flag — without it, `wrangler kv` commands operate on the local/preview namespace, not the one the deployed Worker actually reads.
+
+Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `modulekit` bug, why PWHL resolution prefers regular seasons over more-recent playoffs) lives in `eyewall-poller`'s own README — this section only covers the frontend-facing side.
 
 ---
 
@@ -173,6 +189,8 @@ Same mechanism as NHL — `applyTeamTheme()` sets `--team-primary`, `--team-prim
 | `narrative:{period}:{gameId}:{carAbbr}` | AI period/game narrative per team perspective | 24 hr |
 | `milestones:{team&#124;all}:{limit}` | Recent milestones (hat tricks, shutouts, SH goals, season/career thresholds) | 1 hr |
 | `player:landing:{id}` | NHL API player landing proxy (bio, headshot, career totals) | 1 hr |
+| `config:season:nhl` | Live-resolved current NHL season (see [Live Season Resolution](#live-season-resolution)) | 6 hr |
+| `config:season:nhl:override` | Manual override, bypasses live resolution entirely | none (manual) |
 
 ### NHL Worker Endpoints
 
@@ -184,6 +202,7 @@ Same mechanism as NHL — `applyTeamTheme()` sets `--team-primary`, `--team-prim
 | `POST /draft/analyze` | Workers AI draft pick analysis (secret-protected, `X-Poll-Secret` header) — called by `draft_ingest.py` on draft day |
 | `GET /milestones?team=&limit=` | Recent milestones, league-wide by default, optional team filter (default limit 50, max 100) |
 | `GET /player/landing?id=` | Proxies NHL API's `/player/{id}/landing` — browser can't call it directly (no CORS headers on the NHL side) |
+| `GET /config/seasons` | Live-resolved current NHL + PWHL season, both leagues in one response (see [Live Season Resolution](#live-season-resolution)) — consumed by `seasonClient.js` at app boot and by the pipeline's `season_lookup.py` |
 
 ---
 
@@ -193,15 +212,17 @@ Same mechanism as NHL — `applyTeamTheme()` sets `--team-primary`, `--team-prim
 
 | Key | Content | TTL |
 |-----|---------|-----|
-| `pwhl:standings:{season}` | All 8 teams' standings + L10 + streak | 1 hr |
+| `pwhl:standings:{season}` | All 12 teams' standings + L10 + streak | 1 hr |
 | `pwhl:players:{teamId}:{season}` | Skaters + goalies + roster | 1 hr |
 | `pwhl:schedule:{teamId}:{season}` | Team schedule with scores + dates | 30 min |
 | `pwhl:shots:{teamId}:{gameId}` | Shot events for a game | 6 hr |
 | `pwhl:pshots:{playerId}:{season}` | Player shot coordinates for heat map | 6 hr |
 | `pwhl:salaries:{teamId}:{season}` | Team salary data | 24 hr |
-| `pwhl:leagueplayers:{season}` | All 8 teams' skaters + goalies | 2 hr |
+| `pwhl:leagueplayers:{season}` | All 12 teams' skaters + goalies | 2 hr |
 | `pwhl:news` | Aggregated PWHL news articles | 30 min |
 | `pwhl:narrative:{period}:{gameId}:{carAbbr}` | AI period/game narrative per team perspective | 24 hr |
+| `config:season:pwhl` | Live-resolved current PWHL season `{seasonId, seasonType, startYear}` | 6 hr |
+| `config:season:pwhl:override` | Manual override, bypasses live resolution entirely | none (manual) |
 
 ### PWHL Worker Endpoints
 
@@ -215,11 +236,11 @@ Same mechanism as NHL — `applyTeamTheme()` sets `--team-primary`, `--team-prim
 | `GET /pwhl/pbp?gameId=` | Play-by-play events |
 | `GET /pwhl/scout` (POST) | Workers AI scouting report |
 | `GET /pwhl/salaries?teamId=&season=` | Team salary data |
-| `GET /pwhl/league-players?season=` | All 8 teams' players (Leaders tab) |
+| `GET /pwhl/league-players?season=` | All 12 teams' players (Leaders tab) |
 | `GET /pwhl/news` | PWHL news feed |
 | `POST /pwhl/news/ingest` | Accept articles from GH Actions pipeline |
 | `POST /pwhl/news/bust` | Invalidate news cache |
-| `POST /pwhl/cache/bust?teamId=&season=` | Invalidate team KV cache |
+| `POST /pwhl/cache/bust?secret=&teamId=&season=` | Invalidate one team's KV caches for a given season. **Bust only after confirming the underlying data is actually correct** (direct Supabase query or a fresh Worker hit) — busting first just repopulates the same stale/empty entry if the fix hasn't landed yet. Learned this the hard way during the 2026-07 expansion rollout. |
 | `GET /pwhl/summary?gameId=` | HockeyTech gameSummary normalized (goals, MVPs, team stats) |
 | `POST /pwhl/summary/narrative?gameId=&period=&carAbbr=` | AI period/game narrative per team perspective |
 
@@ -301,22 +322,23 @@ All standings, record displays (W–OTW–OTL–L), and Splits calculations use 
 
 | Module | Description |
 |--------|-------------|
-| `db.py` | Supabase client (`get_client()`, tuned `postgrest_client_timeout=120`), `NHL_SEASON`, `PRIMARY_TEAM_ABBR`, batched `upsert()`. The canonical shared module — everything below imports from here rather than creating its own Supabase client. |
+| `db.py` | Supabase client (`get_client()`, tuned `postgrest_client_timeout=120`), `NHL_SEASON` (live-resolved via `season_lookup.py` as of 2026-07, `.env` value now just a fallback), `PRIMARY_TEAM_ABBR`, batched `upsert()`. The canonical shared module — everything below imports from here rather than creating its own Supabase client. |
 | `pipeline_common.py` | Everything `db.py` doesn't cover: `nhl_get()` (NHL API GET helper) and `get_logger()` (shared logging config). |
+| `season_lookup.py` | Added 2026-07. Reads the current NHL/PWHL season from the Worker's `GET /config/seasons`, with the `.env` values as fallback if the Worker's unreachable. `db.py`, `pwhl_stats.py`, `pwhl_salaries.py` all consume this rather than resolving independently. See `eyewall-poller`'s README for the full resolution chain. |
 
 `nhl_stats.py`, `draft_ingest.py`, `milestones.py`, `ai_context.py`, and `ai_scouting.py` all import from `db.py`/`pipeline_common.py` rather than duplicating Supabase client setup — consolidated after `draft_ingest.py` and `milestones.py` were briefly built against a since-retired standalone `pipeline_common.get_supabase()` before `db.py`'s existing role was accounted for.
 
 ### PWHL Pipeline Modules
 | Module | Description |
 |--------|-------------|
-| `pwhl_stats.py` | Rosters, skater/goalie/team stats, special teams (PP%/PK%), game log with dates, Corsi/Fenwick from shot events |
+| `pwhl_stats.py` | Rosters, skater/goalie/team stats, special teams (PP%/PK%), game log with dates, Corsi/Fenwick from shot events. `TEAM_ID_MAP`/`CITY_TEAM_MAP` include the 4 expansion teams (2026-07). |
 | `pwhl_pbp_events.py` | PBP events (faceoffs, hits, penalties) → `pwhl_pbp_events` |
 | `pwhl_shot_events.py` | Shot events with coordinates → `pwhl_shot_events` |
-| `pwhl_salaries.py` | PWHLPA PDF salary scraper → `pwhl_salaries` (190/194 player matches) |
+| `pwhl_salaries.py` | PWHLPA PDF salary scraper → `pwhl_salaries` (190/194 player matches). `SEASON_LABEL` now derived from the live-resolved season (2026-07 fix — used to be separately hardcoded, same bug shape as `moneypuck.py`'s old `MP_URL`). |
 | `pwhl_news.py` | RSS news fetcher → POST to Worker `/pwhl/news/ingest` |
 
 ### PWHL Supabase Tables
-`pwhl_players`, `pwhl_player_seasons`, `pwhl_goalie_seasons`, `pwhl_team_seasons` (incl. `pp_pct`, `pk_pct`, `corsi_for_pct`, `fenwick_for_pct`), `pwhl_game_log` (incl. `game_date`, `venue_name`, `venue_city`), `pwhl_shot_events`, `pwhl_pbp_events`, `pwhl_salaries`
+`pwhl_players` (no season dimension — one row per player, current team assignment only), `pwhl_player_seasons`, `pwhl_goalie_seasons`, `pwhl_team_seasons` (incl. `pp_pct`, `pk_pct`, `corsi_for_pct`, `fenwick_for_pct`), `pwhl_game_log` (incl. `game_date`, `venue_name`, `venue_city`), `pwhl_shot_events`, `pwhl_pbp_events`, `pwhl_salaries`, `pwhl_teams` (team master — `pwhl_players.team_id` has a foreign key against this table; a new team_id must be seeded here first or roster upserts fail with a `23503` FK violation)
 
 ### PWHL Season ID Map
 | ID | Season | Type |
@@ -327,6 +349,9 @@ All standings, record displays (W–OTW–OTL–L), and Splits calculations use 
 | 6 | 2024-25 | Playoffs |
 | 8 | 2025-26 | Regular |
 | 9 | 2025-26 | Playoffs |
+| 10 | 2026-27 | Pre-Season (current as of 2026-07; hidden from standings, no games yet) |
+
+IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` response (2026-07) — not missing/gapped as previously assumed here, just hidden from standings with little game data. Separately: `pwhl_stats.py`'s `SEASON_TYPE_MAP` labels ID 2 as `"showcase"`, but the real `bootstrap` response names it `"2024 Preseason"` — an unresolved discrepancy, not silently changed either way. See the pipeline README for detail.
 
 ### Pipeline GitHub Actions Workflows
 
@@ -357,6 +382,8 @@ npm run cypress:full    # Clean → run → HTML report
 ```
 
 **18 spec files:**
+
+**Note (2026-07):** the PWHL specs below describe existing coverage as of before the expansion rollout — none were verified or updated to include DET/HAM/LV/SJS this session. Given `pwhl:standings`/`pwhl:leagueplayers` now genuinely return all 12 teams' data, these specs are likely undercounting real coverage rather than testing something wrong, but worth confirming/expanding before trusting them as complete.
 
 | Spec | Coverage |
 |------|---------|
@@ -410,13 +437,17 @@ VITE_POSTHOG_KEY=phc_...
 **Worker:** edit `worker.js`, paste into Cloudflare Workers dashboard → Deploy.
 
 **October season prep checklist:**
-1. Update `CURRENT_SEASON` in `teamConfig.js`
-2. Update `PWHL_CURRENT_SEASON` in `pwhlConfig.js` (regular season ID)
-3. Update `NHL_SEASON` and `PWHL_SEASON` GitHub Actions secrets
-4. Update `MP_SEASON` in `moneypuck.py`
-5. Update `OFFSEASON_BRACKET` in `LeagueView.jsx`
-6. Add PWHL expansion team IDs to `pwhlConfig.js` once HockeyTech assigns them (DET, HAM, LAS, SJS — expected October 2026)
-7. Review Dependabot PRs (ESLint 10, Vite 8, supabase 2.31.x)
+
+**Most of this is now automatic (2026-07)** — see [Live Season Resolution](#live-season-resolution). What's left:
+
+1. ~~Update `CURRENT_SEASON` in `teamConfig.js`~~ — automatic now, live-resolved at app boot
+2. ~~Update `PWHL_CURRENT_SEASON` in `pwhlConfig.js`~~ — automatic now
+3. ~~Update `NHL_SEASON` and `PWHL_SEASON` GitHub Actions secrets~~ — fallback-only now, safe to leave stale
+4. ~~Update `MP_SEASON` in `moneypuck.py`~~ — automatic now, derived from `NHL_SEASON`
+5. Update `OFFSEASON_BRACKET` in `LeagueView.jsx` — **still manual**, not touched during the 2026-07 season-resolution work
+6. ~~Add PWHL expansion team IDs to `pwhlConfig.js`~~ — done 2026-07 (DET=10, HAM=11, LV=12, SJS=13)
+7. Review Dependabot PRs (ESLint 10, Vite 8, supabase 2.31.x) — still manual, unrelated to season resolution
+8. **New for future expansion waves:** if HockeyTech assigns another new team_id, remember: `pwhl_teams` needs the new team_id seeded before roster fetches succeed (FK constraint), roster data needs the literal current/preseason season_id rather than the "current regular season" default, and bust the Worker's KV cache only *after* confirming the data is actually correct — not before. All three cost real debugging time during the 2026-07 rollout; see `eyewall-poller` and `eyewall-pipeline` READMEs for the full story.
 
 ---
 
@@ -426,13 +457,16 @@ VITE_POSTHOG_KEY=phc_...
 - **PWHL news:** RSS feeds block Cloudflare datacenter IPs. GH Actions runner fetches and POSTs to Worker. Low volume in offseason; improves when season starts.
 - **PWHL Corsi/Fenwick:** No missed shot data in HockeyTech — FF% is SOG-based proxy, not true Fenwick.
 - **PWHL PDO (playoffs):** Requires playoff player-level shot data not yet separated in pipeline. Regular season PDO only.
-- **PWHL expansion teams:** Detroit, Hamilton, Las Vegas, San Jose deferred until HockeyTech assigns IDs (October 2026).
 - **PWHL Analytics tab:** Post-launch work — requires building PWHL xG model and WAR equivalent.
 - **Cap data:** NHL API doesn't expose salary. Static file requires manual updates.
 - **iOS push:** Requires Add to Home Screen — browser Safari cannot receive Web Push.
 - **WAR/RAPM:** Beta — zone-start OZS% still being refined. Non-CAR players have high variance.
 - **Reddit ingest:** Blocked by Reddit on GH Actions IPs. Deferred to October.
 - **X/Twitter posting:** Built but requires Basic tier ($100/mo).
+- **PWHL expansion team logos/names:** Real colors and roster data are live (2026-07), but logos and permanent team names are still placeholders — no official branding revealed yet. Expected this fall.
+- **Cache-busting order matters (learned 2026-07):** busting the Worker's KV cache *before* confirming the underlying data fix has actually landed just repopulates the same stale/empty entry. Always confirm the data first, then bust.
+- **HockeyTech `bootstrap` feed type:** it's `feed=statviewfeed`, not `feed=modulekit` — the latter returns a 200 OK with no real payload, which silently masqueraded as a working fallback for a while. If a HockeyTech URL is built from a written description rather than a captured real request, verify against actual DevTools traffic before trusting it.
+- **PWHL season resolution prefers regular seasons over playoffs, deliberately:** almost every `/pwhl/*` Worker endpoint filters `season_type=eq.regular` downstream, so resolving to a playoffs-type season_id breaks every PWHL view even for teams that played in that postseason. Shipped once without this preference and broke Cypress across every PWHL view before being caught.
 
 ---
 
@@ -471,22 +505,26 @@ VITE_POSTHOG_KEY=phc_...
 - [x] Cloudflare KV cache TTL bug fixed (empty results were getting the 24hr branch instead of 60s — could pin a stale/empty snapshot for a full day)
 - [x] `draft-ingest.yml` KV purge step fixed (was calling the wrong Cloudflare endpoint — `/keys/` instead of `/values/` — silently never worked)
 - [x] Shared pipeline modules consolidated — `draft_ingest.py`, `milestones.py`, `ai_context.py`, `ai_scouting.py` now all use `db.py`'s `get_client()` instead of each duplicating Supabase client setup
+- [x] Live season resolution (2026-07) — `NHL_SEASON`/`PWHL_CURRENT_SEASON`/etc. no longer need a yearly manual flip across 3 repos. Worker's `seasons.js` resolves live from NHL/HockeyTech APIs, exposed via `GET /config/seasons`; frontend (`seasonClient.js`) and pipeline (`season_lookup.py`) both read from it with fallback. Caught and fixed two real bugs along the way: a wrong HockeyTech feed type (`modulekit` vs `statviewfeed`) that silently masked all along, and a season-type mismatch (playoffs vs regular) that broke every PWHL view in production before being caught via Cypress.
+- [x] PWHL expansion teams (DET, HAM, LV, SJS) fully wired 2026-07 — HockeyTech IDs, real rosters (confirmed via direct HockeyTech fetches), real WCAG-checked colors from each team's own `*_colors.css`, `TeamPicker` selectable (fixed a real bug where it had its own hardcoded active/expansion list, ignoring `comingSoon` entirely)
+- [x] Vitest test suite added for `eyewall-poller` (previously had zero test infrastructure) — covers `seasons.js`'s resolution logic, including regression tests for both bugs found above
 
 ### Pending
-- [ ] PWHL expansion teams (DET, HAM, LAS, SJS) — October 2026
 - [ ] PWHL Analytics tab (xG model, WAR equivalent) — post-launch
 - [ ] PWHL PDO in playoffs (needs playoff player shot data)
 - [ ] Reddit ingest fix — October
 - [ ] PuckPedia integration (contracts + future picks, all 32 teams)
-- [ ] `app_config` Supabase table to eliminate hardcoded season constants
+- [ ] ~~`app_config` Supabase table to eliminate hardcoded season constants~~ — **solved differently, 2026-07:** ended up as Worker-resolved + KV-cached (`seasons.js` + `GET /config/seasons`) rather than a Supabase table. Same goal, different mechanism — closing this out rather than leaving it looking unstarted.
 - [ ] Season-over-season player comparison
 - [ ] Standings clinching indicators
 - [ ] Capacitor PWA wrapper for App Store / Play Store
 - [ ] Dependabot: supabase 2.31.x, ESLint 10, Vite 8 (October)
-- [ ] October: bump `CURRENT_SEASON`, `PWHL_CURRENT_SEASON`, `NHL_SEASON`, `OFFSEASON_BRACKET`
+- [ ] October: bump `OFFSEASON_BRACKET` — the only one of these four left after 2026-07's live season resolution work; `CURRENT_SEASON`/`PWHL_CURRENT_SEASON`/`NHL_SEASON` no longer need a manual bump
 - [ ] PWHL milestones (hat tricks, shutouts, etc.) — deferred pending PWHL schema confirmation, same pattern as NHL `milestones.py`
 - [ ] `ai_summaries.py`/`ai_predictions.py` appear to run twice nightly — once inside `run.py`'s `run_all()`, again via `ai_pipeline.yml`'s separate cron an hour later. Worth confirming whether that's intentional redundancy or wasted GH Actions minutes / duplicate Workers AI calls.
 - [ ] Migrate remaining pipeline scripts (`ai_summaries.py`, `ai_predictions.py`, `moneypuck.py`, etc.) to `db.py`/`pipeline_common.py` if they don't already use them
+- [ ] Expansion team logos/permanent names — still placeholders, waiting on official branding reveal (likely this fall)
+- [ ] `pwhl_stats.py`'s `SEASON_TYPE_MAP` labels season ID 2 as `"showcase"`, but HockeyTech's own `bootstrap` response calls it `"2024 Preseason"` — unresolved discrepancy, worth checking against real 2024 game data before changing either one
 
 ---
 
