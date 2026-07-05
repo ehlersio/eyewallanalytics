@@ -36,9 +36,14 @@ const NHL_DIVISIONS = [
 ];
 
 // ── PWHL grouping ─────────────────────────────────────────────────────────────
-// Split into active (selectable) and expansion (coming soon / disabled).
-const PWHL_ACTIVE_ABBRS  = ['BOS', 'MIN', 'MTL', 'NY', 'OTT', 'TOR', 'SEA', 'VAN'];
-const PWHL_EXPANSION_ABBRS = ['DET', 'HAM', 'LV', 'SJS'];
+// Active vs expansion is derived from each team's own `comingSoon` flag in
+// pwhlConfig.js — not hardcoded here. This used to be two static abbr
+// arrays that had to be kept in sync with pwhlConfig.js by hand, and had
+// drifted: comingSoon was flipped to false for all four expansion teams,
+// but these arrays were never touched, so they stayed permanently
+// disabled here regardless of what pwhlConfig.js said.
+const PWHL_ACTIVE_ABBRS    = PWHL_TEAMS.filter(t => !t.comingSoon).map(t => t.abbr);
+const PWHL_EXPANSION_ABBRS = PWHL_TEAMS.filter(t => t.comingSoon).map(t => t.abbr);
 
 // ── Lookups ───────────────────────────────────────────────────────────────────
 const nhlTeamByAbbr  = Object.fromEntries(ALL_TEAMS.map(t => [t.abbr, t]));
@@ -57,7 +62,7 @@ function SportStep({ onPickSport }) {
     {
       id: 'pwhl',
       logo: '/pwhl-logo.svg',
-      description: '8 active teams · Growing fast',
+      description: `All ${PWHL_ACTIVE_ABBRS.length} teams · Full analytics`,
     },
   ];
 
@@ -191,7 +196,8 @@ function PWHLTeamStep({ onBack, onSelect }) {
           </div>
         </div>
 
-        {/* Expansion teams — disabled */}
+        {/* Expansion teams — disabled. Hidden entirely once none are left. */}
+        {PWHL_EXPANSION_ABBRS.length > 0 && (
         <div className="team-picker-division">
           <span className="team-picker-division-label">2026–27 Expansion</span>
           <div className="team-picker-grid">
@@ -214,6 +220,7 @@ function PWHLTeamStep({ onBack, onSelect }) {
             })}
           </div>
         </div>
+        )}
       </div>
       <div style={{ height: 48 }} aria-hidden="true" />
     </>

@@ -64,8 +64,12 @@ export let PWHL_CURRENT_SEASON = 8;
 //   SEA #2D5F5F → too dark → lightened to #5DB8B8
 //   VAN #1A4B7A → too dark → lightened to #4A90D9
 //
-// Expansion teams (comingSoon: true) — colors TBD once brands are revealed:
-//   DET, HAM, LV, SJS using neutral placeholder; update October 2026.
+// Expansion teams — real colors pulled from each team's own *_colors.css
+// (verified 2026-07-05, computed contrast, not eyeballed):
+//   DET #A6192E → fails AA (2.37:1) → lightened to #E3475E (4.51:1, thin margin)
+//   HAM #64111D → fails AA (1.39:1) → lightened to #E14C62 (4.57:1)
+//   LV  #686F12 → fails AA (3.28:1) → lightened to #818916 (4.68:1)
+//   SJS #0072CE → fails AA (3.64:1) → lightened to #0083ED (4.62:1)
 
 export const PWHL_TEAMS = [
   // ── Original eight ───────────────────────────────────────────────────────
@@ -144,20 +148,29 @@ export const PWHL_TEAMS = [
   // ── 2026-27 expansion teams ───────────────────────────────────────────────
   // HockeyTech IDs confirmed 2026-07-04 (docs/hockeytech-api-notes.md) via
   // real signing data + the team-filter dropdown on thepwhl.com/en/stats.
-  // comingSoon stays true even with real IDs: bootstrap's teams[] doesn't
-  // list these 4 yet (no roster/division assigned pre-season), and brand
-  // colors aren't public. Flip comingSoon to false once a real roster
-  // exists for a team; update primaryColor/displayColor once colors are
-  // revealed — those two are still genuinely manual, unlike the ID.
+  // Colors are real (pulled from each team's own *_colors.css design
+  // tokens). comingSoon flipped to false 2026-07-05 — real roster data
+  // confirmed live in HockeyTech for all four (direct per-team roster
+  // fetches, not just the bootstrap team list). Logos are still temporary
+  // placeholders (no permanent team identity/logo revealed yet) — expected
+  // to update once each team's real branding drops, likely this fall.
   {
     abbr: 'DET',
     teamId: 10,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL Detroit',
     shortName: 'Detroit',
-    primaryColor: '#555555',
-    displayColor: '#999999',
-    comingSoon: true,
+    // Real hex from detroit_colors.css's "primary1"/interactive-accent
+    // token. Worth knowing: Detroit's own announcement named black-and-
+    // silver as primary with red as an accent, but this red is what the
+    // CSS's own design system treats as the interactive/branded color —
+    // black doesn't work well as a UI accent, so that's not unusual.
+    primaryColor: '#A6192E',
+    // Fails WCAG AA on dark mode (2.37:1) — lightened in HSL space to the
+    // first step clearing 4.5:1. Margin here is thin (4.51:1, barely over
+    // the line) — nudge lighter if you want more headroom than this.
+    displayColor: '#E3475E',
+    comingSoon: false,
   },
   {
     abbr: 'HAM',
@@ -165,9 +178,18 @@ export const PWHL_TEAMS = [
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL Hamilton',
     shortName: 'Hamilton',
-    primaryColor: '#555555',
-    displayColor: '#999999',
-    comingSoon: true,
+    // Real hex pulled from hamilton_colors.css (site design tokens), not
+    // guessed from press-release color names. #64111d is the file's own
+    // "surface-1"/primary token — the same role primaryColor plays for
+    // every other team here. #e2d2b8 (cream) and #f2a900 (gold) are also
+    // real if a future design wants them, just not used as primaryColor.
+    primaryColor: '#64111d',
+    // #64111d fails WCAG AA badly on dark mode (1.39:1) — lightened in HSL
+    // space (hue/saturation preserved) to the first step clearing 4.5:1,
+    // landing at 4.57:1 — consistent with MTL's own displayColor margin
+    // (4.54:1), not an outlier.
+    displayColor: '#E14C62',
+    comingSoon: false,
   },
   {
     abbr: 'LV',
@@ -175,9 +197,15 @@ export const PWHL_TEAMS = [
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL Las Vegas',
     shortName: 'Las Vegas',
-    primaryColor: '#555555',
-    displayColor: '#999999',
-    comingSoon: true,
+    // Real hex from lasvegas_colors.css's "primary1" token — matches the
+    // announced "green and gold" (gold #FFB81C shows up as a secondary
+    // underline/highlight accent in the file, not used here since this
+    // schema is one color pair per team).
+    primaryColor: '#686F12',
+    // Fails WCAG AA on dark mode (3.28:1) — lightened in HSL space to the
+    // first step clearing 4.5:1 (4.68:1, comfortable margin).
+    displayColor: '#818916',
+    comingSoon: false,
   },
   {
     abbr: 'SJS',
@@ -185,9 +213,15 @@ export const PWHL_TEAMS = [
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL San Jose',
     shortName: 'San Jose',
-    primaryColor: '#555555',
-    displayColor: '#999999',
-    comingSoon: true,
+    // Real hex from sanjose_colors.css's "primary1" token — matches the
+    // announced "orange, blue, white" (orange #F69245 shows up as a
+    // secondary underline/highlight accent in the file, not used here
+    // since this schema is one color pair per team).
+    primaryColor: '#0072CE',
+    // Fails WCAG AA on dark mode (3.64:1) — lightened in HSL space to the
+    // first step clearing 4.5:1 (4.62:1, comfortable margin).
+    displayColor: '#0083ED',
+    comingSoon: false,
   },
 ];
 

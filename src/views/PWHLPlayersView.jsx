@@ -1,6 +1,6 @@
 // views/PWHLPlayersView.jsx
 // Mirrors NHL PlayersView — Roster tab (photo grid) + Stats tab (sortable table).
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import { fetchPWHLPlayers, PWHL_TEAM_CONFIG, PWHL_TEAM_ID } from '../utils/pwhlApi';
 import { PWHL_CURRENT_SEASON } from '../utils/pwhlConfig';
@@ -57,6 +57,28 @@ export default function PWHLPlayersView() {
   const [view,     setView]     = useState('roster');
   const [gameType, setGameType] = useState('regular');
   const [selected, setSelected] = useState(null);
+
+  // useState's initial value only runs once, at first mount. If this
+  // component happens to mount before pwhlConfig.js's async live-season
+  // fetch resolves, `season` permanently locks onto the fallback value
+  // (PWHL_CURRENT_SEASON at that instant) even after the real value comes
+  // in — the fallback constant itself updates live, but this component's
+  // own snapshot of it doesn't. Catching up via the event pwhlConfig.js
+  // already dispatches on resolution, but only if the user hasn't
+  // manually picked a season themselves — don't clobber their choice.
+  const userPickedSeason = useRef(false);
+  useEffect(() => {
+    function handleSeasonUpdate(e) {
+      if (!userPickedSeason.current) setSeason(e.detail);
+    }
+    window.addEventListener('eyewall:pwhl-season-updated', handleSeasonUpdate);
+    return () => window.removeEventListener('eyewall:pwhl-season-updated', handleSeasonUpdate);
+  }, []);
+
+  function handleSeasonPick(id) {
+    userPickedSeason.current = true;
+    setSeason(id);
+  }
 
   const { data, loading } = useFetch(
     () => teamId ? fetchPWHLPlayers(teamId, season) : Promise.resolve(null),
@@ -154,7 +176,7 @@ export default function PWHLPlayersView() {
           <div className="players-tabs" style={{ marginTop: 0, marginBottom: 0 }}>
             {SEASONS.map(s => (
               <button key={s.id} className={`players-tab${season === s.id ? ' active' : ''}`}
-                onClick={() => setSeason(s.id)}>{s.label}</button>
+                onClick={() => handleSeasonPick(s.id)}>{s.label}</button>
             ))}
           </div>
           {/* Skaters / Goalies sub-tabs */}
