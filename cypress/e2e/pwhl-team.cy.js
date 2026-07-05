@@ -146,3 +146,78 @@ PWHL_TEST_TEAMS.forEach(abbr => {
     })
   })
 })
+
+// ── Expansion team (DET) — 2026-27 season hasn't started for these teams yet:
+// real roster exists in HockeyTech, but no games/standings/salary rows exist,
+// so every data-driven tab should show its graceful empty state, not crash
+// and not show real stats. Verified against the live Worker before writing
+// these assertions (see Session 38 investigation).
+describe('PWHL Team view — DET (expansion, no games played yet)', () => {
+  beforeEach(() => {
+    cy.visit('/pwhl/team', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('eyewall:sport', 'pwhl')
+        win.localStorage.setItem('eyewall:pwhl_team', JSON.stringify({ abbr: 'DET', teamId: 10 }))
+      },
+    })
+    cy.get('.topbar', { timeout: 10000 }).should('exist')
+    // No "{abbr} ..." headings render for this team (season stat grid, points
+    // leaders, etc. are all data-driven and absent — that's the point of this
+    // suite), so confirm the right team loaded via the logo's alt text instead.
+    cy.get('[alt="DET"]', { timeout: 8000 }).should('exist')
+  })
+
+  it('renders all tab buttons', () => {
+    ['Overview', 'Advanced', 'Splits', 'Trends', 'Salaries'].forEach(tab =>
+      cy.contains(tab).should('exist')
+    )
+    cy.assertNoErrors()
+  })
+
+  describe('Overview tab', () => {
+    it('shows a 0–0–0 record instead of crashing', () => {
+      cy.contains(/^0–0–0$/, { timeout: 8000 }).should('exist')
+      cy.contains('0 pts').should('exist')
+    })
+
+    it('does not show season stats, top scorers, or starting goalie sections', () => {
+      cy.contains(/Top scorers|Points leaders/i).should('not.exist')
+      cy.contains(/Starting goalie/i).should('not.exist')
+      cy.assertNoErrors()
+    })
+  })
+
+  describe('Splits tab', () => {
+    beforeEach(() => cy.contains('Splits').click())
+
+    it('shows the no-data empty state', () => {
+      cy.contains(/No regular season data yet/i, { timeout: 8000 }).should('exist')
+      cy.contains(/Home vs Away/i).should('not.exist')
+    })
+  })
+
+  describe('Trends tab', () => {
+    beforeEach(() => cy.contains('Trends').click())
+
+    it('shows the no-data empty state', () => {
+      cy.contains(/No game data yet/i, { timeout: 8000 }).should('exist')
+      cy.contains(/Current streak/i).should('not.exist')
+    })
+  })
+
+  describe('Salaries tab', () => {
+    beforeEach(() => cy.contains('Salaries').click())
+
+    it('shows the no-data empty state instead of real payroll numbers', () => {
+      cy.contains(/No salary data/i, { timeout: 8000 }).should('exist')
+      cy.contains('Total Payroll').should('not.exist')
+    })
+  })
+
+  it('never surfaces an error boundary while tabbing through', () => {
+    ['Advanced', 'Splits', 'Trends', 'Salaries', 'Overview'].forEach(tab => {
+      cy.contains(tab).click()
+      cy.assertNoErrors()
+    })
+  })
+})

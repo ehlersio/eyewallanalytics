@@ -116,22 +116,25 @@ canes-analytics-starter/
 │   └── *.test.js                       # Vitest unit tests (8 files, 138 tests)
 ├── cypress/
 │   ├── e2e/
-│   │   ├── navigation.cy.js            # NHL + PWHL route navigation (all 8 PWHL teams)
+│   │   ├── navigation.cy.js            # NHL + PWHL route navigation smoke (all 12 PWHL teams)
 │   │   ├── news.cy.js                  # NHL news
 │   │   ├── milestones.cy.js            # Milestones feed, team filter dropdown, tap-to-open popup
 │   │   ├── pwhl-news.cy.js             # PWHL news
 │   │   ├── period-summary.cy.js        # Game Center
 │   │   ├── players.cy.js               # NHL players
-│   │   ├── pwhl-players.cy.js          # PWHL players (4 teams)
+│   │   ├── pwhl-players.cy.js          # PWHL players (4 established teams, full features + 1 expansion team empty-state)
 │   │   ├── schedule.cy.js              # NHL schedule
-│   │   ├── pwhl-schedule.cy.js         # PWHL schedule (8 teams)
+│   │   ├── pwhl-schedule.cy.js         # PWHL schedule smoke (all 12 teams) + full features (BOS)
 │   │   ├── shot-map.cy.js              # NHL shot map
-│   │   ├── pwhl-shot-map.cy.js         # PWHL shot map (8 teams)
+│   │   ├── pwhl-shot-map.cy.js         # PWHL shot map smoke (all 12 teams) + full features (BOS)
+│   │   ├── pwhl-shots-live.cy.js       # PWHL + NHL shot map live-mode debug panel, popups, situation chips
+│   │   ├── pwhl-dev.cy.js              # PWHL dev game replay scrubber
 │   │   ├── team.cy.js                  # NHL team (4 teams, all 6 tabs)
-│   │   ├── pwhl-team.cy.js             # PWHL team (4 teams, all 5 tabs)
+│   │   ├── pwhl-team.cy.js             # PWHL team (4 established teams, all 5 tabs, full features + 1 expansion team empty-state)
 │   │   ├── league.cy.js                # NHL league (all 5 tabs)
-│   │   ├── pwhl-league.cy.js           # PWHL league (all 5 tabs)
+│   │   ├── pwhl-league.cy.js           # PWHL league (all 5 tabs; standings/leaders scoped to established teams — see Known gaps)
 │   │   ├── draft.cy.js                 # NHL draft board
+│   │   ├── TeamPicker.cy.js            # Sport + team picker — all 12 PWHL teams selectable with real colors
 │   │   ├── theme.cy.js                 # Light/dark mode
 │   │   └── viewports.cy.js             # 4 viewports × all views
 │   └── support/e2e.js                  # Custom commands incl. cy.setPWHLTeam()
@@ -381,28 +384,31 @@ npm run cypress:run
 npm run cypress:full    # Clean → run → HTML report
 ```
 
-**18 spec files:**
+**20 spec files:**
 
-**Note (2026-07):** the PWHL specs below describe existing coverage as of before the expansion rollout — none were verified or updated to include DET/HAM/LV/SJS this session. Given `pwhl:standings`/`pwhl:leagueplayers` now genuinely return all 12 teams' data, these specs are likely undercounting real coverage rather than testing something wrong, but worth confirming/expanding before trusting them as complete.
+**Note (2026-07, Session 38):** the PWHL expansion coverage gap flagged below (Session 34, carried through Session 37) is now closed. `navigation.cy.js`, `pwhl-schedule.cy.js`, and `pwhl-shot-map.cy.js` smoke-test all 12 PWHL teams; `pwhl-team.cy.js` and `pwhl-players.cy.js` add an explicit expansion-team (DET) case asserting the correct empty state (no games played yet — see [Known gaps](#known-gaps)); `pwhl-league.cy.js`'s standings/leaders tests are scoped to the 8 established teams on purpose, with an explicit assertion that expansion teams are *not* yet present (real data fact, not a bug); `TeamPicker.cy.js` is new and covers all 12 teams rendering as selectable with real brand colors.
 
 | Spec | Coverage |
 |------|---------|
-| `navigation.cy.js` | NHL routes + PWHL 8-team smoke (all 6 PWHL routes) |
+| `navigation.cy.js` | NHL routes + PWHL 12-team smoke (all 7 PWHL routes) |
 | `news.cy.js` | NHL news, source filters |
 | `milestones.cy.js` | Milestones feed, team filter dropdown, card structure, tap-to-open player popup |
 | `pwhl-news.cy.js` | PWHL news, source chips, article list |
 | `period-summary.cy.js` | Game Center, period/game summary popups |
 | `players.cy.js` | NHL roster, skater/goalie cards (4 teams) |
-| `pwhl-players.cy.js` | PWHL roster, stats, player popup (4 teams) |
+| `pwhl-players.cy.js` | PWHL roster, stats, player popup (4 established teams) + 1 expansion team (empty stats state) |
 | `schedule.cy.js` | NHL schedule, predictions |
-| `pwhl-schedule.cy.js` | PWHL schedule (8 teams), playoffs tab |
+| `pwhl-schedule.cy.js` | PWHL schedule smoke (12 teams), full features (BOS), playoffs tab |
 | `shot-map.cy.js` | NHL shot map, all sections |
-| `pwhl-shot-map.cy.js` | PWHL shot map (8 teams), PBP metrics |
+| `pwhl-shot-map.cy.js` | PWHL shot map smoke (12 teams), full features (BOS), PBP metrics |
+| `pwhl-shots-live.cy.js` | PWHL + NHL shot map live-mode debug panel, goal/penalty/win popups, situation chips |
+| `pwhl-dev.cy.js` | PWHL dev game replay scrubber |
 | `team.cy.js` | NHL 6 tabs (4 teams incl. Cap + Picks) |
-| `pwhl-team.cy.js` | PWHL 5 tabs (4 teams incl. Salaries) |
+| `pwhl-team.cy.js` | PWHL 5 tabs (4 established teams incl. Salaries) + 1 expansion team (empty-state across Splits/Trends/Salaries) |
 | `league.cy.js` | NHL 5 tabs |
-| `pwhl-league.cy.js` | PWHL 5 tabs incl. Draft (72 picks) |
+| `pwhl-league.cy.js` | PWHL 5 tabs incl. Draft (72 picks); standings/leaders scoped to established teams, expansion absence asserted |
 | `draft.cy.js` | NHL draft board |
+| `TeamPicker.cy.js` | Sport + team picker — all 12 PWHL teams selectable, real colors |
 | `theme.cy.js` | Light/dark mode |
 | `viewports.cy.js` | 4 viewports × all views |
 
@@ -464,6 +470,7 @@ VITE_POSTHOG_KEY=phc_...
 - **Reddit ingest:** Blocked by Reddit on GH Actions IPs. Deferred to October.
 - **X/Twitter posting:** Built but requires Basic tier ($100/mo).
 - **PWHL expansion team logos/names:** Real colors and roster data are live (2026-07), but logos and permanent team names are still placeholders — no official branding revealed yet. Expected this fall.
+- **PWHL expansion teams have no games yet (confirmed 2026-07 against the live Worker):** DET/HAM/LV/SJS have real rosters but empty schedule/skater-goalie-stats/standings/salaries until the 2026-27 season starts. Every data-driven view handles this gracefully (`PWHLScheduleView`, `PWHLShotMapView`, `PWHLPlayersView`'s Stats tab, and `PWHLTeamView`'s Splits/Trends/Salaries tabs all show an explicit empty-state message) — except `PWHLTeamView`'s Advanced tab, which shows "Loading advanced stats…" permanently for these teams instead of an explicit no-data message, since it early-returns on a missing standings row rather than distinguishing "still loading" from "no row will ever exist yet." Worth a copy fix, not covered by Cypress on purpose (would be asserting on a known-misleading string).
 - **Cache-busting order matters (learned 2026-07):** busting the Worker's KV cache *before* confirming the underlying data fix has actually landed just repopulates the same stale/empty entry. Always confirm the data first, then bust.
 - **HockeyTech `bootstrap` feed type:** it's `feed=statviewfeed`, not `feed=modulekit` — the latter returns a 200 OK with no real payload, which silently masqueraded as a working fallback for a while. If a HockeyTech URL is built from a written description rather than a captured real request, verify against actual DevTools traffic before trusting it.
 - **PWHL season resolution prefers regular seasons over playoffs, deliberately:** almost every `/pwhl/*` Worker endpoint filters `season_type=eq.regular` downstream, so resolving to a playoffs-type season_id breaks every PWHL view even for teams that played in that postseason. Shipped once without this preference and broke Cypress across every PWHL view before being caught.
@@ -484,7 +491,7 @@ VITE_POSTHOG_KEY=phc_...
 - [x] PWHL playoff bracket with series modal
 - [x] PWHL player heat maps + AI scouting
 - [x] Sport picker (NHL/PWHL) with full team picker
-- [x] Cypress tests for all PWHL views (17 spec files total)
+- [x] Cypress tests for all PWHL views (20 spec files total)
 - [x] ESLint clean (0 errors, 0 warnings) — maintained throughout offseason
 - [x] xGF% per-game sparkline on Advanced tab (L10 / Season toggle, hover tooltip)
 - [x] Per-team AI narrative KV caching (carAbbr in key — all 32 teams get own perspective)
@@ -508,6 +515,7 @@ VITE_POSTHOG_KEY=phc_...
 - [x] Live season resolution (2026-07) — `NHL_SEASON`/`PWHL_CURRENT_SEASON`/etc. no longer need a yearly manual flip across 3 repos. Worker's `seasons.js` resolves live from NHL/HockeyTech APIs, exposed via `GET /config/seasons`; frontend (`seasonClient.js`) and pipeline (`season_lookup.py`) both read from it with fallback. Caught and fixed two real bugs along the way: a wrong HockeyTech feed type (`modulekit` vs `statviewfeed`) that silently masked all along, and a season-type mismatch (playoffs vs regular) that broke every PWHL view in production before being caught via Cypress.
 - [x] PWHL expansion teams (DET, HAM, LV, SJS) fully wired 2026-07 — HockeyTech IDs, real rosters (confirmed via direct HockeyTech fetches), real WCAG-checked colors from each team's own `*_colors.css`, `TeamPicker` selectable (fixed a real bug where it had its own hardcoded active/expansion list, ignoring `comingSoon` entirely)
 - [x] Vitest test suite added for `eyewall-poller` (previously had zero test infrastructure) — covers `seasons.js`'s resolution logic, including regression tests for both bugs found above
+- [x] Cypress PWHL expansion team coverage gap closed (2026-07, Session 38) — `navigation.cy.js`/`pwhl-schedule.cy.js`/`pwhl-shot-map.cy.js` smoke all 12 teams; `pwhl-team.cy.js`/`pwhl-players.cy.js` add an expansion-team (DET) case asserting the correct empty state; `pwhl-league.cy.js` standings/leaders explicitly assert expansion teams are absent (real data fact — no games played yet, not a bug); new `TeamPicker.cy.js` covers the Session 34 `comingSoon` bug with an actual regression test (previously had zero coverage)
 
 ### Pending
 - [ ] PWHL Analytics tab (xG model, WAR equivalent) — post-launch

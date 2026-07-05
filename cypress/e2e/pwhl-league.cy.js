@@ -34,10 +34,22 @@ describe('PWHL League view', () => {
   })
 
   describe('Standings tab', () => {
-    it('shows all 8 PWHL teams', () => {
+    // Only the 8 established teams have a standings row today — DET/HAM/LV/SJS
+    // (2026-27 expansion) haven't played a game yet, so the Worker's
+    // /pwhl/standings response genuinely has no rows for them (confirmed
+    // against the live endpoint, not a frontend bug). Assert both sides of
+    // that boundary so this spec fails loudly the moment either changes.
+    it('shows all established-season teams', () => {
       ['BOS', 'MIN', 'MTL', 'NY', 'OTT', 'TOR', 'SEA', 'VAN'].forEach(abbr =>
         cy.contains(abbr, { timeout: 8000 }).should('exist')
       )
+    })
+
+    it('does not yet show expansion teams (no games played)', () => {
+      cy.contains('BOS', { timeout: 8000 }).should('exist') // wait for table to load first
+      ;['DET', 'HAM', 'LV', 'SJS'].forEach(abbr => {
+        cy.contains(abbr).should('not.exist')
+      })
     })
 
     it('shows W–OTW–OTL–L column headers', () => {
@@ -134,10 +146,21 @@ describe('PWHL League view', () => {
       cy.assertNoErrors()
     })
 
-    it('shows all 8 teams ranked', () => {
+    // Power rankings are derived from the same standings feed as the
+    // Standings tab, so they share the same established-teams-only boundary
+    // until DET/HAM/LV/SJS have played games (see Standings tab note above).
+    it('shows all established-season teams ranked', () => {
       cy.get('body').then($body => {
         ['BOS', 'MIN', 'MTL', 'NY', 'OTT', 'TOR', 'SEA', 'VAN'].forEach(abbr => {
           expect($body.text()).to.include(abbr)
+        })
+      })
+    })
+
+    it('does not yet rank expansion teams (no games played)', () => {
+      cy.get('body', { timeout: 8000 }).then($body => {
+        ['DET', 'HAM', 'LV', 'SJS'].forEach(abbr => {
+          expect($body.text()).to.not.include(abbr)
         })
       })
     })

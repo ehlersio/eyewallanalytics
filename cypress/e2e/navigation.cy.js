@@ -32,6 +32,10 @@ describe('PWHL Navigation smoke tests (multi-team)', () => {
     { abbr: 'TOR', teamId: 6 },
     { abbr: 'SEA', teamId: 8 },
     { abbr: 'VAN', teamId: 9 },
+    { abbr: 'DET', teamId: 10 },
+    { abbr: 'HAM', teamId: 11 },
+    { abbr: 'LV',  teamId: 12 },
+    { abbr: 'SJS', teamId: 13 },
   ]
 
   PWHL_TEAMS.forEach(({ abbr, teamId }) => {

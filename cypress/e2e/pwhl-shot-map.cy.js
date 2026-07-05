@@ -11,6 +11,10 @@ const PWHL_TEAMS = [
   { abbr: 'TOR', teamId: 6 },
   { abbr: 'SEA', teamId: 8 },
   { abbr: 'VAN', teamId: 9 },
+  { abbr: 'DET', teamId: 10 },
+  { abbr: 'HAM', teamId: 11 },
+  { abbr: 'LV',  teamId: 12 },
+  { abbr: 'SJS', teamId: 13 },
 ]
 
 // ── Multi-team smoke ──────────────────────────────────────────────────────────
@@ -25,7 +29,17 @@ describe('PWHL Shot Map smoke tests (multi-team)', () => {
       })
       cy.get('.topbar', { timeout: 10000 }).should('exist')
       cy.contains(abbr).should('be.visible')
-      cy.get('svg').should('exist')
+      // 2026-27 expansion teams have no shot events yet (no games played) —
+      // the rink SVG is intentionally not rendered in that case, replaced by
+      // an explicit "No shot data" message. Accept either so this stays a
+      // true crash-smoke-test rather than assuming real data exists. Uses a
+      // retrying should() (not .then()) since the fetch is still pending
+      // ("Loading shots…") for a moment right after visit.
+      cy.get('body', { timeout: 10000 }).should($body => {
+        const hasRink       = $body.find('svg').length > 0
+        const hasNoDataMsg  = /No shot data/i.test($body.text())
+        expect(hasRink || hasNoDataMsg, 'expected rink SVG or explicit no-data message').to.be.true
+      })
       cy.assertNoErrors()
     })
   })

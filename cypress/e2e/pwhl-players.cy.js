@@ -114,3 +114,54 @@ PWHL_TEST_TEAMS.forEach(abbr => {
     })
   })
 })
+
+// ── Expansion team (DET) — real roster exists in HockeyTech but zero games
+// played, so skater/goalie season stats are genuinely empty. Roster tab
+// should still render real players; Stats tab should show its explicit
+// empty message rather than a blank or crashed table. Verified against the
+// live Worker before writing these assertions (see Session 38 investigation).
+describe('PWHL Players view — DET (expansion, no games played yet)', () => {
+  beforeEach(() => {
+    cy.visit('/pwhl/players', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('eyewall:sport', 'pwhl')
+        win.localStorage.setItem('eyewall:pwhl_team', JSON.stringify({ abbr: 'DET', teamId: 10 }))
+      },
+    })
+    cy.get('.topbar', { timeout: 10000 }).should('exist')
+  })
+
+  describe('Roster tab (real roster data)', () => {
+    it('renders Forwards, Defencemen, and Goalies sections', () => {
+      cy.contains(/Forwards/i, { timeout: 8000 }).should('exist')
+      cy.contains(/Defencemen|Defence/i, { timeout: 8000 }).should('exist')
+      cy.contains('Goalies', { timeout: 8000 }).should('exist')
+    })
+
+    it('renders real player cards, not a no-roster message', () => {
+      cy.get('[class*="player-card"], [class*="roster"]', { timeout: 8000 })
+        .should('have.length.greaterThan', 0)
+      cy.contains(/No roster data/i).should('not.exist')
+    })
+    // Note: clicking a Roster-tab player card does not open the player popup
+    // today — confirmed this is a pre-existing gap independent of expansion
+    // teams (reproduces the same way with real BOS data), not something
+    // introduced by or specific to this coverage work. Not asserted here;
+    // flagged separately rather than encoded as expected behavior.
+  })
+
+  describe('Stats tab (no games played yet)', () => {
+    beforeEach(() => cy.contains('Stats', { timeout: 8000 }).click())
+
+    it('shows the no-skater-stats empty message instead of a table', () => {
+      cy.contains(/No skater stats/i, { timeout: 8000 }).should('exist')
+      cy.get('table').should('not.exist')
+    })
+
+    it('shows the no-goalie-stats empty message on the Goalies sub-tab', () => {
+      cy.contains('Goalies').click()
+      cy.contains(/No goalie stats/i, { timeout: 8000 }).should('exist')
+      cy.assertNoErrors()
+    })
+  })
+})
