@@ -271,7 +271,7 @@ function RosterSkeleton() {
   return (
     <div className="roster-grid" style={{ marginTop: 8 }}>
       {Array.from({ length: 12 }).map((_, i) => (
-        <div key={i} className="player-card card">
+        <div key={i} className="player-card-skeleton card">
           <div className="skeleton" style={{ width: '100%', aspectRatio: '1', borderRadius: 6, marginBottom: 8 }} />
           <div className="skeleton" style={{ height: 10, width: '60%', marginBottom: 6 }} />
           <div className="skeleton" style={{ height: 10, width: '40%' }} />

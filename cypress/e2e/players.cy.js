@@ -30,6 +30,19 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
           cy.contains(t.goalie).should('exist')
         })
       })
+
+      // Regression test for the Session 39 roster-click bug (shared with
+      // PWHL): the loading skeleton used to share the exact ".player-card"
+      // class with the real, clickable card, so a click landing during the
+      // loading→loaded transition could silently hit a lifeless ghost card.
+      // Waiting for real player text (.pc-last only renders on the real
+      // card) before clicking guards against that class ever colliding again.
+      it('opens the player popup when a real roster card is clicked', () => {
+        cy.get('.pc-last', { timeout: 8000 }).first().invoke('text').then(lastName => {
+          cy.contains('.player-card', lastName).click()
+        })
+        cy.get('.pp-tab', { timeout: 6000 }).should('exist')
+      })
     })
 
     describe('Skater card', () => {

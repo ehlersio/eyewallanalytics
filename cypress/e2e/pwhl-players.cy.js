@@ -33,6 +33,19 @@ PWHL_TEST_TEAMS.forEach(abbr => {
         cy.get('[class*="player-card"], [class*="roster"]', { timeout: 8000 })
           .should('have.length.greaterThan', 0)
       })
+
+      // Regression test for the Session 39 roster-click bug: the loading
+      // skeleton used to share the exact ".player-card" class with the real,
+      // clickable card, so a click landing during the loading→loaded
+      // transition could silently hit a lifeless ghost card. Waiting for
+      // real player text (.pc-last only renders on the real card) before
+      // clicking guards against that class ever colliding again.
+      it('opens the player popup when a real roster card is clicked', () => {
+        cy.get('.pc-last', { timeout: 8000 }).first().invoke('text').then(lastName => {
+          cy.contains('.player-card', lastName).click()
+        })
+        cy.get('.player-popup', { timeout: 6000 }).should('exist')
+      })
     })
 
     describe('Stats tab', () => {
@@ -143,11 +156,18 @@ describe('PWHL Players view — DET (expansion, no games played yet)', () => {
         .should('have.length.greaterThan', 0)
       cy.contains(/No roster data/i).should('not.exist')
     })
-    // Note: clicking a Roster-tab player card does not open the player popup
-    // today — confirmed this is a pre-existing gap independent of expansion
-    // teams (reproduces the same way with real BOS data), not something
-    // introduced by or specific to this coverage work. Not asserted here;
-    // flagged separately rather than encoded as expected behavior.
+
+    // Session 39 fix: clicking a Roster-tab player card previously did not
+    // open the player popup — root cause was the loading skeleton sharing
+    // the ".player-card" class with the real card (see RosterSkeleton in
+    // this file), not anything expansion-team-specific. Fixed by giving the
+    // skeleton its own ".player-card-skeleton" class.
+    it('opens the player popup when a real roster card is clicked', () => {
+      cy.get('.pc-last', { timeout: 8000 }).first().invoke('text').then(lastName => {
+        cy.contains('.player-card', lastName).click()
+      })
+      cy.get('.player-popup', { timeout: 6000 }).should('exist')
+    })
   })
 
   describe('Stats tab (no games played yet)', () => {

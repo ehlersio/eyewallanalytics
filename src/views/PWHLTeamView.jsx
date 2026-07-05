@@ -527,10 +527,18 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
   }, [poSchedule, teamId]);
   const useReg = !showPO || !poSched;
 
-  if (loading || !teamRow) return (
+  if (loading) return (
     <div className="card empty-state" style={{ marginTop: 10 }}>
       <div className="empty-icon">📊</div>
       <div className="empty-title">Loading advanced stats…</div>
+    </div>
+  );
+
+  if (!teamRow) return (
+    <div className="card empty-state" style={{ marginTop: 10 }}>
+      <div className="empty-icon">📊</div>
+      <div className="empty-title">No advanced stats yet</div>
+      <div className="empty-sub">{abbr} hasn't played a game yet this season.</div>
     </div>
   );
 

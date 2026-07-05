@@ -31,6 +31,15 @@
 .player-card:hover { border-color: var(--red-border); transform: translateY(-1px); }
 .player-card:active { transform: translateY(0); }
 
+/* Loading placeholder — deliberately a different class from .player-card so it
+   can never be mistaken for (or click-targeted as) a real, clickable roster tile. */
+.player-card-skeleton {
+  display: flex;
+  flex-direction: column;
+  padding: 9px;
+  overflow: hidden;
+}
+
 .pc-photo-wrap { position: relative; margin-bottom: 7px; }
 .pc-photo {
   width: 100%; aspect-ratio: 1;

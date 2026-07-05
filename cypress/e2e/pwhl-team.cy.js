@@ -187,6 +187,23 @@ describe('PWHL Team view — DET (expansion, no games played yet)', () => {
     })
   })
 
+  describe('Advanced tab', () => {
+    beforeEach(() => cy.contains('Advanced').click())
+
+    // Session 39 fix: this used to get stuck on "Loading advanced stats…"
+    // forever, because the loading guard couldn't tell "still fetching"
+    // apart from "fetched, but this team has no standings row yet" (DET
+    // never appears in /pwhl/standings until it plays a game). Now asserts
+    // the real, distinct empty-state message instead of tolerating the
+    // misleading loading text.
+    it('shows the no-data empty state instead of a permanent loading message', () => {
+      cy.contains(/No advanced stats yet/i, { timeout: 8000 }).should('exist')
+      cy.contains(/hasn.t played a game yet this season/i).should('exist')
+      cy.contains(/Loading advanced stats/i).should('not.exist')
+      cy.contains(/Shot Volume|CF%|Corsi/i).should('not.exist')
+    })
+  })
+
   describe('Splits tab', () => {
     beforeEach(() => cy.contains('Splits').click())
 
