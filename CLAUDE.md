@@ -11,6 +11,29 @@ React/Vite frontend for EyeWall Analytics, deployed on Cloudflare Pages at eyewa
 ## Sibling repos
 Lives in `eyewall/` alongside `eyewall-poller` (Cloudflare Workers backend, the API this app talks to) and `eyewall-pipeline` (Python data pipeline that populates Supabase). This repo only reads from `eyewall-poller`'s Worker endpoints — it does not talk to Supabase directly.
 
+## Git branch hygiene (standing rule — read before any session)
+
+Before making any file changes in a new session, always run:
+
+```
+git status
+git branch
+```
+
+If the current branch is not `main`, or if `main` locally is behind `origin/main`, stop and do this first:
+
+```
+git checkout main
+git pull origin main
+git checkout -b <new-branch-name-for-this-session>
+```
+
+Only start editing files after confirming you're on a fresh branch cut from an up-to-date `main`. Do not assume the working directory is already in the right state, even if the previous session ended with a merge — branch switches are a manual step and are easy to forget.
+
+Name the new branch for what the session is actually doing (e.g. `session43-line-combinations`), not a generic name, so it's identifiable later if it needs recovering.
+
+At the end of a session, after a PR is merged, explicitly prompt a reminder to run `git checkout main && git pull origin main` before ending — don't assume this happens automatically between sessions.
+
 ## Live season resolution (built Session 35–36)
 
 `seasonClient.js` is a shared, memoized fetch wrapper for `GET /config/seasons` on the Worker. `teamConfig.js` (NHL) and `pwhlConfig.js` (PWHL) both consume it — loading both on the same page triggers only one real fetch, not two.
