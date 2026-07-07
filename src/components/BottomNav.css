@@ -1,10 +1,28 @@
 .bottom-nav {
-  height: var(--nav-height);
+  /* Pinned directly to the viewport edge (Session 43) — previously this was
+     a plain flex-shrink:0 child of .app-shell, relying entirely on the
+     shell's height:100dvh calc staying in sync with the real viewport.
+     After a hard reload (the only way to switch sport — see
+     SportContext.jsx's setSportAndReload/NotificationBell's handleChangeTeam),
+     that calc could end up taller than the actual visible viewport on
+     Android/Chrome, silently pushing this nav below the fold with no
+     positioning of its own to fall back on. Fixed position removes that
+     dependency entirely — this always sits at the real screen bottom.
+     env(safe-area-inset-*) keeps it clear of rounded-corner/gesture-bar
+     areas (requires viewport-fit=cover in index.html's viewport meta tag). */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
   background: var(--bg1);
   border-top: 0.5px solid var(--border-2);
   display: flex;
   align-items: stretch;
-  flex-shrink: 0;
 }
 
 .nav-tab {

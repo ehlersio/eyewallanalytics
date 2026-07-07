@@ -500,7 +500,8 @@
 /* ── Debug panel ── */
 .debug-panel {
   position: fixed;
-  bottom: calc(var(--nav-height) + 16px);
+  /* BottomNav's real height now includes the safe-area inset (Session 43) */
+  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 16px);
   left: 50%; transform: translateX(-50%);
   background: var(--bg1);
   border: 1.5px solid var(--red-bright);

@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover is required for env(safe-area-inset-*) to resolve
+         to anything other than 0 on devices with rounded corners / display
+         cutouts — BottomNav.css relies on this (Session 43, Track C). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#080c14" />
     <meta name="description" content="EyeWall Analytics — Carolina Hurricanes advanced stats and analytics" />
 
