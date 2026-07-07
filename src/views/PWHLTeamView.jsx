@@ -6,7 +6,7 @@ import {
   fetchPWHLStandings, fetchPWHLPlayers, fetchPWHLSchedule, fetchPWHLSalaries,
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
-import { PWHL_CURRENT_SEASON } from '../utils/pwhlConfig';
+import { PWHL_CURRENT_SEASON, PWHL_PLAYOFF_SEASON_MAP } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
 import './TeamView.css';
@@ -29,7 +29,7 @@ export default function PWHLTeamView() {
     () => teamId ? fetchPWHLSchedule(teamId, PWHL_CURRENT_SEASON) : Promise.resolve(null), [teamId]
   );
   const { data: poSchedule, loading: poScLoad } = useFetch(
-    () => teamId ? fetchPWHLSchedule(teamId, 9) : Promise.resolve(null), [teamId]
+    () => teamId ? fetchPWHLSchedule(teamId, PWHL_PLAYOFF_SEASON_MAP[PWHL_CURRENT_SEASON] || 9) : Promise.resolve(null), [teamId]
   );
   const inPlayoffs = (poSchedule?.length || 0) > 0;
   const { data: salaries, loading: salLoad } = useFetch(

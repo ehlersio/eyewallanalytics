@@ -37,18 +37,72 @@ import { fetchSeasonsConfig } from './seasonClient';
 // `season` into a standalone variable and holding onto it indefinitely).
 export let PWHL_CURRENT_SEASON = 8;
 
+// Label form ("2025-26"), derived the same way eyewall-pipeline's
+// pwhl_salaries.py computes SEASON_LABEL (f"{start_year}-{start_year+1}").
+// This is the format pwhl_salaries.season actually stores in Supabase —
+// /pwhl/salaries matches on the label string, not the season_id integer.
+// Falls back to a hardcoded seed like PWHL_CURRENT_SEASON does, updated in
+// place once live resolution succeeds.
+export let PWHL_SEASON_LABEL = '2025-26';
+
 (async () => {
   try {
     const data = await fetchSeasonsConfig();
-    const seasonId = data?.pwhl?.seasonId;
+    const seasonId   = data?.pwhl?.seasonId;
+    const startYear  = data?.pwhl?.startYear;
     if (seasonId && seasonId !== PWHL_CURRENT_SEASON) {
       PWHL_CURRENT_SEASON = seasonId;
       window.dispatchEvent(new window.CustomEvent('eyewall:pwhl-season-updated', { detail: PWHL_CURRENT_SEASON }));
+    }
+    if (startYear) {
+      PWHL_SEASON_LABEL = `${startYear}-${String(startYear + 1).slice(2)}`;
     }
   } catch (e) {
     console.warn('Live PWHL season lookup failed, using fallback:', e.message);
   }
 })();
+
+// ── Season / playoff-type enumeration ────────────────────────────────────────
+// Single source of truth for "which season_ids are playoffs, and which
+// regular season each one follows" — this same data used to be duplicated
+// independently in PWHLTeamView.jsx (a bare `9` literal), PWHLLeagueView.jsx
+// (a `PLAYOFF_SEASON` id->id map), and PWHLScheduleView.jsx (this same
+// SEASONS shape). Centralized here (Session 43) so a future season addition
+// only needs one edit, not three found via grep-and-hope.
+//
+// HockeyTech assigns each season's playoffs their own distinct season_id —
+// it's not a type flag on the same id as the regular season it follows.
+// This list is NOT live-resolved (unlike PWHL_CURRENT_SEASON/PWHL_SEASON_LABEL
+// above) — HockeyTech's bootstrap feed doesn't expose "which future/past
+// season_id pairs with which," so this still needs a manual entry once a
+// season's playoffs actually get a season_id assigned. Same maintenance
+// burden as before, just one place to update it instead of three.
+export const PWHL_SEASONS = [
+  { id: 8, label: '2025-26', type: 'regular' },
+  { id: 9, label: '2025-26 Playoffs', type: 'playoffs' },
+  { id: 5, label: '2024-25', type: 'regular' },
+  { id: 6, label: '2024-25 Playoffs', type: 'playoffs' },
+  { id: 1, label: '2023-24', type: 'regular' },
+  { id: 3, label: '2023-24 Playoffs', type: 'playoffs' },
+];
+
+export const PWHL_REGULAR_SEASONS = PWHL_SEASONS.filter(s => s.type === 'regular');
+export const PWHL_PLAYOFF_SEASONS = PWHL_SEASONS.filter(s => s.type === 'playoffs');
+
+// Regular-season season_id -> its corresponding playoff season_id.
+// Derived from PWHL_SEASONS by pairing consecutive regular/playoffs entries
+// rather than hand-duplicating the {8:9, 5:6, 1:3} mapping a second time.
+export const PWHL_PLAYOFF_SEASON_MAP = Object.fromEntries(
+  PWHL_REGULAR_SEASONS.map((reg, i) => [reg.id, PWHL_PLAYOFF_SEASONS[i]?.id])
+);
+
+// Is this specific season_id (e.g. a game's own season_id) a playoffs season?
+// Used to derive per-game isPlayoff state (period/OT/shootout labeling —
+// PWHL regular season ends in a shootout, playoffs never do) without
+// needing a new Worker route: games already carry season_id.
+export function isPWHLPlayoffSeason(seasonId) {
+  return PWHL_SEASONS.find(s => s.id === seasonId)?.type === 'playoffs';
+}
 
 // ── Team configs ─────────────────────────────────────────────────────────────
 // primaryColor: official brand hex from PWHL branding / Wikipedia sports color module.

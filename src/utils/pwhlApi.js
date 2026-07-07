@@ -3,7 +3,7 @@
 // All requests go through the Cloudflare Worker (/pwhl/* endpoints).
 // Tables use team_id (integer), so we pass ?teamId= alongside ?season=.
 
-import { getPWHLStoredTeam, PWHL_CURRENT_SEASON } from './pwhlConfig';
+import { getPWHLStoredTeam, PWHL_CURRENT_SEASON, PWHL_SEASON_LABEL } from './pwhlConfig';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
 
@@ -46,7 +46,7 @@ export async function fetchPWHLLeaguePlayers(season = PWHL_CURRENT_SEASON) {
 }
 
 /** Fetch salary data for a team. */
-export async function fetchPWHLSalaries(teamId, season = '2025-26') {
+export async function fetchPWHLSalaries(teamId, season = PWHL_SEASON_LABEL) {
   if (!teamId) return null;
   return workerFetch(`/pwhl/salaries?teamId=${teamId}&season=${encodeURIComponent(season)}`);
 }

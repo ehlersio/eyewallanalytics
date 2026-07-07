@@ -8,7 +8,10 @@ import {
   pbpByType,
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
-import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP } from '../utils/pwhlConfig';
+import {
+  PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, isPWHLPlayoffSeason,
+  PWHL_REGULAR_SEASONS as SEASONS,
+} from '../utils/pwhlConfig';
 import { usePWHLDevGame } from '../utils/PWHLDevGameContext';
 import {
   usePWHLGameEvents,
@@ -25,11 +28,8 @@ import { MetCard } from '../components/StatBar';
 import InfoTip from '../components/InfoTip';
 import './ShotMapView.css';
 
-const SEASONS = [
-  { id: 8, label: '2025-26' },
-  { id: 5, label: '2024-25' },
-  { id: 1, label: '2023-24' },
-];
+// SEASONS moved to pwhlConfig.js's PWHL_REGULAR_SEASONS (Session 43) — was
+// an independent 5th copy of the same regular-season id/label list.
 
 const TEAM_CODES = {1:'BOS',2:'MIN',3:'MTL',4:'NY',5:'OTT',6:'TOR',8:'SEA',9:'VAN'};
 
@@ -135,12 +135,8 @@ function adaptLiveShot(ev, isOurTeam) {
   };
 }
 
-function pLabel(n) {
-  if (!n) return '—';
-  if (n <= 3) return `P${n}`;
-  if (n === 4) return 'OT';
-  return `OT${n - 3}`;
-}
+// pLabel moved inside PWHLShotMapView (needs isPlayoff in scope to label
+// period 5+ correctly — see the component body).
 
 function distFromGoal(x, y) {
   return Math.sqrt(Math.pow(Math.abs(x) - 89, 2) + y * y);
@@ -887,6 +883,42 @@ export default function PWHLShotMapView() {
     return { period: last.period, time: last.time };
   }, [liveData, devGame]);
 
+  // ── Schedule / selected game / playoff detection ──────────────
+  // Moved up from below the shot/roster fetches (where this used to live)
+  // so isPlayoff is available before usePWHLGameEvents/usePWHLPeriodSummary
+  // are called, a few lines down — both need it to label OT/SO correctly.
+  const { data: schedule = null } = useFetch(
+    () => teamId ? fetchPWHLSchedule(teamId, season) : Promise.resolve(null), [teamId, season]);
+
+  // Completed games only, for chips
+  const games = useMemo(() => {
+    if (!schedule?.length) return [];
+    return [...schedule].filter(g => g.game_state === 'Final').sort((a,b) => b.game_id - a.game_id);
+  }, [schedule]);
+
+  const selectedGame = useMemo(() => games.find(g => g.game_id === selectedGameId) || null, [games, selectedGameId]);
+  const displayGame  = selectedGame || games[0] || null;
+
+  // Is the selected/displayed game a playoffs game? PWHL regular-season
+  // games can end in a shootout; playoff games never do (extra full OT
+  // periods instead) — this decides period-label branching (OT vs SO) for
+  // period 5+. Derived from the game's own season_id via the shared
+  // regular<->playoff season_id map in pwhlConfig.js — no new Worker call
+  // needed, season_id was already present in schedule data, just unused.
+  const isPlayoff = isPWHLPlayoffSeason(displayGame?.season_id);
+
+  // Period label helper — regular season period 5 is a shootout ('SO'),
+  // playoffs never have one (full OT periods instead). Closure over
+  // isPlayoff rather than a module-level function since it's called from
+  // ~10 places throughout this component.
+  const pLabel = useCallback((n) => {
+    if (!n) return '—';
+    if (n <= 3) return `P${n}`;
+    if (n === 4) return 'OT';
+    if (isPlayoff) return `OT${n - 3}`;
+    return n === 5 ? 'SO' : `OT${n - 3}`;
+  }, [isPlayoff]);
+
   // ── Game event popups ─────────────────────────────────────────
   // Pass raw liveData (not normalized) so the hook can read camelCase event fields
   const {
@@ -899,7 +931,8 @@ export default function PWHLShotMapView() {
     isLive ? liveData : null,
     isLive,
     teamId,
-    team?.abbr || ''
+    team?.abbr || '',
+    isPlayoff
   );
 
   // Clear popups on game change
@@ -943,8 +976,6 @@ export default function PWHLShotMapView() {
     () => teamId ? fetchPWHLShots(teamId, season)   : Promise.resolve(null), [teamId, season]);
   const { data: roster    = null } = useFetch(
     () => teamId ? fetchPWHLRoster(teamId)           : Promise.resolve(null), [teamId]);
-  const { data: schedule  = null } = useFetch(
-    () => teamId ? fetchPWHLSchedule(teamId, season) : Promise.resolve(null), [teamId, season]);
   const { data: pbpData   = null } = useFetch(
     () => selectedGameId && !isLive ? fetchPWHLPBP(selectedGameId) : Promise.resolve(null),
     [selectedGameId, isLive]);
@@ -960,6 +991,7 @@ export default function PWHLShotMapView() {
       isLive,
       gameId:   selectedGameId,
       teamId,
+      isPlayoff,
     });
 
   const { gameSummary, updateGameNarrative } = usePWHLGameSummary({
@@ -1148,15 +1180,6 @@ export default function PWHLShotMapView() {
     () => selectedGameId ? [...ourShotEvents, ...oppShotEvents] : ourShotEvents,
     [ourShotEvents, oppShotEvents, selectedGameId]
   );
-
-  // Schedule — completed games only for chips
-  const games = useMemo(() => {
-    if (!schedule?.length) return [];
-    return [...schedule].filter(g => g.game_state === 'Final').sort((a,b) => b.game_id - a.game_id);
-  }, [schedule]);
-
-  const selectedGame = useMemo(() => games.find(g => g.game_id === selectedGameId) || null, [games, selectedGameId]);
-  const displayGame  = selectedGame || games[0] || null;
 
   const scoreBarData = useMemo(() => {
     // Live game score from live feed
@@ -1616,6 +1639,7 @@ export default function PWHLShotMapView() {
           oppScore={scoreBarData?.oppScore}
           isLive={isLive}
           liveData={liveData}
+          isPlayoff={isPlayoff}
         />
       )}
 
