@@ -11,6 +11,10 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  /* BottomNav is now position:fixed (Session 43) and no longer occupies
+     flex space of its own — without this, the last ~52px+ of scrolled
+     content would render underneath it. */
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
 }
 
 /* ── Accessibility ── */

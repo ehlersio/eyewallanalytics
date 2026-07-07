@@ -646,7 +646,8 @@
 /* ── Scroll to top button ── */
 .scroll-top-btn {
   position: fixed;
-  bottom: calc(var(--nav-height) + 16px);
+  /* BottomNav's real height now includes the safe-area inset (Session 43) */
+  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 16px);
   right: 16px;
   z-index: 150;
   background: var(--bg2);
