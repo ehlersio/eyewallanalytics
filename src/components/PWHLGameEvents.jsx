@@ -200,11 +200,15 @@ function _cleanPenaltyDesc(raw) {
 
 // ── Period label helper ───────────────────────────────────────
 
-function periodLabel(n) {
+// Regular-season period 5 is a shootout ('SO'); playoffs never have one
+// (full OT periods instead) — pass the current game's playoff status so
+// period 5+ labels correctly.
+function periodLabel(n, isPlayoff = false) {
   if (!n) return '—';
   if (n <= 3) return `P${n}`;
   if (n === 4) return 'OT';
-  return `OT${n - 3}`;
+  if (isPlayoff) return `OT${n - 3}`;
+  return n === 5 ? 'SO' : `OT${n - 3}`;
 }
 
 // ── usePWHLGameEvents hook ────────────────────────────────────
@@ -215,8 +219,9 @@ function periodLabel(n) {
  * @param {boolean} isLive
  * @param {number}  teamId       - our selected team ID (integer)
  * @param {string}  teamAbbr     - our team abbrev for win popup
+ * @param {boolean} isPlayoff    - is the current game a playoffs game (period 5+ labeling)
  */
-export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr) {
+export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff = false) {
   const [goalPopup,     setGoalPopup]     = useState(null);
   const [hatTrickPopup, setHatTrickPopup] = useState(null);
   const [penaltyPopup,  setPenaltyPopup]  = useState(null);
@@ -277,7 +282,7 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr) {
     if (!newEvents.length) return;
 
     for (const ev of newEvents) {
-      const per  = periodLabel(ev.period);
+      const per  = periodLabel(ev.period, isPlayoff);
       const time = ev.time || null;
 
       // ── Our team scores ─────────────────────────────────────
@@ -376,7 +381,7 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr) {
         score: `${teamAbbr} ${myScore} – ${oppAbbr} ${oppScore}`,
       });
     }
-  }, [liveData?.gameStatus, eventsLength, teamId, teamAbbr, gameId]);
+  }, [liveData?.gameStatus, eventsLength, teamId, teamAbbr, gameId, isPlayoff]);
 
   return {
     goalPopup,     clearGoalPopup:     () => setGoalPopup(null),
@@ -393,7 +398,7 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr) {
  * Mirrors NHL LiveInsights but uses the PWHL normalized event shapes.
  */
 export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
-  teamId, abbr, oppAbbr, myScore, oppScore, isLive, liveData }) {
+  teamId, abbr, oppAbbr, myScore, oppScore, isLive, liveData, isPlayoff = false }) {
 
   const insights = useMemo(() => {
     if (!pbpEvents?.length && !ourShotEvents?.length) return [];
@@ -422,7 +427,7 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
       const ps = periodShots[per];
       if (!ps) return;
       const diff = ps.car - ps.opp;
-      const pLabel = per <= 3 ? `P${per}` : per === 4 ? 'OT' : `OT${per - 3}`;
+      const pLabel = periodLabel(per, isPlayoff);
       const threshold = isLive ? 4 : 6;
       if (Math.abs(diff) >= threshold) {
         results.push({
@@ -499,7 +504,7 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
     completedPeriods.forEach(per => {
       const ps = periodShots[per];
       if (!ps) return;
-      const pLabel = per <= 3 ? `P${per}` : per === 4 ? 'OT' : `OT${per - 3}`;
+      const pLabel = periodLabel(per, isPlayoff);
       if (ps.opp <= 5 && ps.car >= 4) {
         results.push({ icon: '🧱', text: `${abbr} held ${oppAbbr} to ${ps.opp} shots in ${pLabel}`, type: 'good' });
       }
@@ -566,7 +571,7 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
       } else if (diff >= 3) {
         results.push({ icon: '🏒', text: `${abbr} up ${diff} — dominant performance`, type: 'good' });
       } else if (diff <= -2 && currentPeriod >= 3) {
-        results.push({ icon: '🚨', text: `${abbr} down ${Math.abs(diff)} in ${periodLabel(currentPeriod)} — need a push`, type: 'warn' });
+        results.push({ icon: '🚨', text: `${abbr} down ${Math.abs(diff)} in ${periodLabel(currentPeriod, isPlayoff)} — need a push`, type: 'warn' });
       }
     }
 
@@ -588,7 +593,7 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
 
     return results.slice(0, 6);
   }, [pbpEvents, ourShotEvents, oppShotEvents, teamId, abbr, oppAbbr,
-      myScore, oppScore, isLive, liveData]);
+      myScore, oppScore, isLive, liveData, isPlayoff]);
 
   if (!insights.length) return null;
   return <PWHLInsightsCard insights={insights} isLive={isLive} />;

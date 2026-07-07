@@ -78,16 +78,21 @@ async function fetchHTSummary(gameId) {
 
 // ── Helpers ───────────────────────────────────────────────────
 
-function periodLabel(p) {
+// Regular-season period 5 is a shootout ('SO'); playoffs never have one
+// (full OT periods instead) — see usePeriodSummary.js's NHL equivalent,
+// which this mirrors.
+function periodLabel(p, isPlayoff = false) {
   if (p <= 3) return `Period ${p}`;
   if (p === 4) return 'OT';
-  return `${p - 3}OT`;
+  if (isPlayoff) return `${p - 3}OT`;
+  return p === 5 ? 'SO' : `${p - 3}OT`;
 }
 
-function periodShort(p) {
+function periodShort(p, isPlayoff = false) {
   if (p <= 3) return `P${p}`;
   if (p === 4) return 'OT';
-  return `${p - 3}OT`;
+  if (isPlayoff) return `${p - 3}OT`;
+  return p === 5 ? 'SO' : `${p - 3}OT`;
 }
 
 // Compute shot stats from normalized PWHL events for a period (or all).
@@ -150,7 +155,7 @@ function annotateFaceoffs(events, teamId, homeTeamId) {
 
 // ── Build a single period summary ────────────────────────────
 
-function buildPWHLSummary(period, events, teamId, htSummary, gameId) {
+function buildPWHLSummary(period, events, teamId, htSummary, gameId, isPlayoff = false) {
   const periodEvts = events.filter(e => e.period === period);
   const shots      = computePWHLShotStats(events, teamId, period);
 
@@ -225,8 +230,8 @@ function buildPWHLSummary(period, events, teamId, htSummary, gameId) {
 
   return {
     period,
-    periodLabel:   periodLabel(period),
-    periodShort:   periodShort(period),
+    periodLabel:   periodLabel(period, isPlayoff),
+    periodShort:   periodShort(period, isPlayoff),
     generatedAt:   Date.now(),
     isGameSummary: false,
     // Shot stats
@@ -375,7 +380,7 @@ function buildPWHLGameSummary(events, teamId, htSummary, gameId) {
 
 // ── Main hook: usePWHLPeriodSummary ──────────────────────────
 
-export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId }) {
+export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId, isPlayoff = false }) {
   const [summaries,   setSummaries]   = useState([]);
   const [newSummary,  setNewSummary]  = useState(null);
 
@@ -420,7 +425,7 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
     try {
       const events    = getEvents();
       const htSummary = await getHTSummary();
-      const summary   = buildPWHLSummary(period, events, teamId, htSummary, gameId);
+      const summary   = buildPWHLSummary(period, events, teamId, htSummary, gameId, isPlayoff);
 
       setSummaries(prev => {
         const next = [...prev.filter(s => s.period !== period), summary]
@@ -432,7 +437,7 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
     } finally {
       buildingRef.current.delete(period);
     }
-  }, [gameId, teamId, getEvents, getHTSummary]);
+  }, [gameId, teamId, isPlayoff, getEvents, getHTSummary]);
 
   // Live: detect period transitions
   useEffect(() => {

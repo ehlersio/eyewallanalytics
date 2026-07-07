@@ -4,23 +4,14 @@ import { PWHLCalendarView } from '../components/PWHLCalendarView';
 import { useNavigate } from 'react-router-dom';
 import { useFetch } from '../hooks/useFetch';
 import { fetchPWHLSchedule, fetchPWHLTeamRecord, PWHL_TEAM_CONFIG, PWHL_TEAM_ID } from '../utils/pwhlApi';
-import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP } from '../utils/pwhlConfig';
+import {
+  PWHL_CURRENT_SEASON, PWHL_TEAM_MAP,
+  PWHL_REGULAR_SEASONS as REGULAR_SEASONS,
+  PWHL_PLAYOFF_SEASONS as PLAYOFF_SEASONS,
+} from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import './ScheduleView.css';
 import './ShotMapView.css';
-
-// Season map: regular vs playoff
-const SEASONS = [
-  { id: 8, label: '2025-26', type: 'regular' },
-  { id: 9, label: '2025-26 Playoffs', type: 'playoffs' },
-  { id: 5, label: '2024-25', type: 'regular' },
-  { id: 6, label: '2024-25 Playoffs', type: 'playoffs' },
-  { id: 1, label: '2023-24', type: 'regular' },
-  { id: 3, label: '2023-24 Playoffs', type: 'playoffs' },
-];
-
-const REGULAR_SEASONS  = SEASONS.filter(s => s.type === 'regular');
-const PLAYOFF_SEASONS  = SEASONS.filter(s => s.type === 'playoffs');
 
 const TEAM_CODES = { 1:'BOS',2:'MIN',3:'MTL',4:'NY',5:'OTT',6:'TOR',8:'SEA',9:'VAN' };
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
