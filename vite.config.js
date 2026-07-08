@@ -58,8 +58,10 @@ export default defineConfig(({ mode }) => {
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
+        manualChunks(id) {
+          if (['react', 'react-dom', 'react-router-dom'].some((pkg) => id.includes(`/node_modules/${pkg}/`))) {
+            return 'vendor'
+          }
         },
       },
     },
