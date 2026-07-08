@@ -1,45 +1,44 @@
 /**
- * supabaseClient.js — Supabase read-only client for the app.
- * Uses the public anon key — safe to expose in the browser.
+ * supabaseClient.js — NHL analytics data access.
+ *
+ * Historically fetched Supabase directly from the browser (embedded anon
+ * key, no caching, bypassing the Worker layer every other endpoint in this
+ * app goes through — see eyewall-analytics/CLAUDE.md). Session 44 moved
+ * every read behind eyewall-poller Worker routes instead: same tables,
+ * same filters/columns, same row shapes, just server-side now with KV
+ * caching and no exposed credential. Every function below keeps its exact
+ * original signature and row-transform logic — only the transport changed.
  */
 
 import { CURRENT_SEASON } from './teamConfig';
 
-// Season as a number for Supabase integer comparisons.
-// Derived from CURRENT_SEASON in teamConfig.js — update that one value each October.
+// Season as a number for filter defaults — actual value normally comes
+// from the caller (view components track season state themselves); this
+// only matters for the rare call site that omits it.
 const SEASON = Number(CURRENT_SEASON);
 
-const SUPABASE_URL = 'https://mqgasjzywoibdgxjjkux.supabase.co';
-const SUPABASE_ANON = 'sb_publishable_e_zwr1UA7GnHq4OuQSas5Q_kO8bQ_Ct';
+const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
 
-const HEADERS = {
-  'apikey':        SUPABASE_ANON,
-  'Authorization': `Bearer ${SUPABASE_ANON}`,
-  'Content-Type':  'application/json',
-};
-
-async function sbFetch(path) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: HEADERS });
-  if (!r.ok) throw new Error(`Supabase ${r.status}: ${path}`);
-  return r.json();
+async function workerFetch(path) {
+  if (!WORKER_URL) {
+    console.warn('supabaseClient: VITE_WORKER_URL not set');
+    return null;
+  }
+  try {
+    const res = await fetch(`${WORKER_URL}${path}`, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error(`Worker ${res.status}: ${path}`);
+    return await res.json();
+  } catch (err) {
+    console.warn(`[supabaseClient] ${path} failed:`, err.message);
+    throw err;
+  }
 }
 
 // ── Player analytics ──────────────────────────────────────────
 // Returns analytics object keyed by player_id (string), matching
 // the shape the app already expects from moneypuck:skaters KV.
 export async function getPlayerAnalytics(season = SEASON) {
-  // Fetch reg season analytics + playoff defensive stats in parallel
-  const DEF_COLS = `player_id,hits,blocked_shots,takeaways,giveaways`;
-  const ANA_COLS = `player_id,team,war,ev_off_pct,ev_def_inv,pp_xgf60,pk_xga60_inv,pp_icetime,pk_icetime,` +
-    `finishing,goals_per60,a1_per60,xgf_per60,penalties_per60,competition,teammates,game_score,` +
-    `pct_ev_off,pct_ev_def,pct_pp,pct_pk,pct_finishing,pct_goals,pct_a1,` +
-    `pct_penalties,pct_competition,pct_teammates,games_played,` +
-    `xga_per60,hdca_per60,hits,blocked_shots,takeaways,giveaways`;
-
-  const [rows, poRows] = await Promise.all([
-    sbFetch(`player_seasons?season=eq.${season}&game_type=eq.2&war=not.is.null&select=${ANA_COLS}&limit=2000`),
-    sbFetch(`player_seasons?season=eq.${season}&game_type=eq.3&select=${DEF_COLS}&limit=2000`).catch(() => []),
-  ]);
+  const { rows, poRows } = await workerFetch(`/player-analytics?season=${season}`);
 
   // Build playoff defensive map: player_id → { hits, blocked_shots, takeaways, giveaways }
   const poDefMap = {};
@@ -95,13 +94,9 @@ export async function getPlayerAnalytics(season = SEASON) {
 // Returns shot data for one player. car_game=true scopes to games
 // involving the selected team, team= filters to shooter rows only.
 export async function getPlayerShots(playerId, season = SEASON, team = 'CAR') {
-  const rows = await sbFetch(
-    `shot_events?player_id=eq.${playerId}&season=eq.${season}` +
-    `&car_game=eq.true&team=eq.${team}` +   // ← was hardcoded CAR
-    `&select=x,y,event_type,period,time_in_period,shot_type&limit=2000`
-  );
+  const rows = await workerFetch(`/player-shots?playerId=${playerId}&season=${season}&team=${team}`);
 
-  if (!rows.length) return null;
+  if (!rows?.length) return null;
 
   const typeMap = {
     'goal':         'g',
@@ -127,12 +122,9 @@ export async function getPlayerShots(playerId, season = SEASON, team = 'CAR') {
 // No car_game filter — shows all shots faced regardless of opponent.
 // goalie_id filter identifies the specific goalie's starts.
 export async function getGoalieShots(goalieId, season = SEASON) {
-  const rows = await sbFetch(
-    `shot_events?goalie_id=eq.${goalieId}&season=eq.${season}` +
-    `&select=x,y,event_type,period,time_in_period,shot_type,team&limit=2000`
-  );
+  const rows = await workerFetch(`/goalie-shots?goalieId=${goalieId}&season=${season}`);
 
-  if (!rows.length) return null;
+  if (!rows?.length) return null;
 
   const typeMap = {
     'goal':         'g',
@@ -155,16 +147,10 @@ export async function getGoalieShots(goalieId, season = SEASON) {
 
 // ── Goalie analytics ──────────────────────────────────────────
 export async function getGoalieAnalytics(season = SEASON) {
-  const rows = await sbFetch(
-    `goalie_seasons?season=eq.${season}&game_type=eq.2` +
-    `&gsax=not.is.null` +
-    `&select=player_id,team,games_played,gsax,gsax_per60,qs_pct,qs,` +
-    `ev_sv_pct,hd_sv_pct,md_sv_pct,pk_sv_pct,` +
-    `pct_gsax,pct_gsax60,pct_ev_sv,pct_hd_sv,pct_md_sv,pct_pk_sv`
-  );
+  const rows = await workerFetch(`/goalie-analytics?season=${season}`);
 
   const result = {};
-  for (const r of rows) {
+  for (const r of (rows || [])) {
     result[String(r.player_id)] = {
       gsax:    r.gsax,
       gsax60:  r.gsax_per60,
@@ -226,14 +212,10 @@ export async function getTeamLines(team = 'CAR', season = SEASON, gameType = 2) 
   } catch {}
   const posMap = buildStaticPosMap(staticData);
 
-  // Try live inferred data from Supabase
-  const rows = await sbFetch(
-    `line_combinations?team=eq.${team}&season=eq.${season}` +
-    `&order=unit_type.asc,rank.asc` +
-    `&select=unit_type,rank,name_a,name_b,name_c,pos_a,pos_b,pos_c,toi_secs,xgf_pct`
-  ).catch(() => []);
+  // Try live inferred data from the Worker
+  const rows = await workerFetch(`/team-lines?team=${team}&season=${season}`).catch(() => []);
 
-  const inferredLines = rows.filter(r => r.unit_type === 'F').map(r => ({
+  const inferredLines = (rows || []).filter(r => r.unit_type === 'F').map(r => ({
     rank:     r.rank,
     players:  sortForwardLine([
       { name: r.name_a, pos: r.pos_a },
@@ -245,7 +227,7 @@ export async function getTeamLines(team = 'CAR', season = SEASON, gameType = 2) 
     isStatic: false,
   }));
 
-  const inferredPairs = rows.filter(r => r.unit_type === 'D').map(r => ({
+  const inferredPairs = (rows || []).filter(r => r.unit_type === 'D').map(r => ({
     rank:     r.rank,
     players:  [
       { name: r.name_a, pos: r.pos_a },
@@ -288,10 +270,7 @@ export async function getTeamLines(team = 'CAR', season = SEASON, gameType = 2) 
 // Frontend falls back to coordinate-estimate xG when this returns null.
 export async function getGameXG(gameId) {
   if (!gameId) return null;
-  const rows = await sbFetch(
-    `game_xg?game_id=eq.${gameId}&situation=eq.5on5` +
-    `&select=team,xgf,xga,xgf_pct`
-  );
+  const rows = await workerFetch(`/game-xg?gameId=${gameId}`);
   if (!rows?.length) return null;
   return rows;
 }
@@ -300,11 +279,7 @@ export async function getGameXG(gameId) {
 // Returns team-specific situational stats for Live Insights.
 // Requires team_scored_first boolean in game_log (added by nhl_stats.py).
 export async function getGameLogInsights(oppAbbr, season = SEASON, teamAbbr = 'CAR') {
-  const rows = await sbFetch(
-    `game_log?season=eq.${season}&team=eq.${teamAbbr}` +
-    `&select=game_id,opponent,team_score,opp_score,` +
-    `team_scored_first,home_team&order=game_id.asc`
-  ).catch(() => null);
+  const rows = await workerFetch(`/game-log?team=${teamAbbr}&season=${season}`).catch(() => null);
 
   if (!rows?.length) return null;
 
@@ -350,12 +325,7 @@ export async function getGameLogInsights(oppAbbr, season = SEASON, teamAbbr = 'C
 }
 
 export async function getTeamGameLog(count = 120, season = SEASON, teamAbbr = 'CAR') {
-  const rows = await sbFetch(
-    `game_log?season=eq.${season}&team=eq.${teamAbbr}&order=game_id.asc` +
-    `&select=game_id,game_date,opponent,team_score,opp_score,home_team,` +
-    `team_scored_first,pp_goals,pp_opps,pk_goals_against,pk_opps,game_type` +
-    `&limit=${count}`
-  ).catch(() => null);
+  const rows = await workerFetch(`/game-log?team=${teamAbbr}&season=${season}&limit=${count}`).catch(() => null);
   if (!rows?.length) return null;
   return rows.map(r => ({
     gameId:          r.game_id,
@@ -380,10 +350,7 @@ export async function getTeamGameLog(count = 120, season = SEASON, teamAbbr = 'C
 // xgf_pct + roster_war_score for all 32 teams.
 // Replaces the earlier getTeamSeasonXg — same call, extra column.
 export async function getTeamSeasonData(season = SEASON) {
-  const rows = await sbFetch(
-    `team_seasons?season=eq.${season}&game_type=eq.2` +
-    `&select=team,xgf_pct,roster_war_score,games_played&limit=32`
-  ).catch(() => []);
+  const rows = await workerFetch(`/team-seasons?season=${season}`).catch(() => []);
   const map = {};
   for (const r of (rows || [])) {
     map[r.team] = {
@@ -398,24 +365,14 @@ export async function getTeamSeasonData(season = SEASON) {
 // Fetches the most recent power rankings narrative for the user's team.
 // Returns { narrative, rank, prior_rank, generated_date } or null.
 export async function getPowerRankingsNarrative(teamAbbr, season = SEASON) {
-  const rows = await sbFetch(
-    `power_rankings_narratives` +
-    `?team=eq.${teamAbbr}&season=eq.${season}` +
-    `&order=generated_date.desc&limit=1` +
-    `&select=narrative,rank,prior_rank,generated_date`
-  ).catch(() => []);
+  const rows = await workerFetch(`/power-rankings?team=${teamAbbr}&season=${season}&limit=1`).catch(() => []);
   return rows?.[0] ?? null;
 }
 
 // Fetches rank history for the sparkline — last 28 days.
 // Returns array of { generated_date, rank } oldest-first.
 export async function getPowerRankingsHistory(teamAbbr, season = SEASON) {
-  const rows = await sbFetch(
-    `power_rankings_narratives` +
-    `?team=eq.${teamAbbr}&season=eq.${season}` +
-    `&order=generated_date.desc&limit=28` +
-    `&select=generated_date,rank`
-  ).catch(() => []);
+  const rows = await workerFetch(`/power-rankings?team=${teamAbbr}&season=${season}&limit=28`).catch(() => []);
   return (rows || []).reverse(); // oldest first for charting
 }
 
@@ -423,9 +380,8 @@ export async function getPowerRankingsHistory(teamAbbr, season = SEASON) {
 // Returns the AI-generated line/player matchup analysis, or null if none exists.
 export async function getGameMatchup(gameId) {
   if (!gameId) return null;
-  const rows = await sbFetch(
-    `game_predictions?game_id=eq.${gameId}&select=matchup_text,generated_at&limit=1`
-  ).catch(e => { console.warn('[getGameMatchup] sbFetch error:', e.message); return null; });
+  const rows = await workerFetch(`/game-predictions?gameId=${gameId}`)
+    .catch(e => { console.warn('[getGameMatchup] fetch error:', e.message); return null; });
   if (!rows?.length || !rows[0]?.matchup_text) return null;
   return { text: rows[0].matchup_text, generatedAt: rows[0].generated_at };
 }
@@ -434,10 +390,8 @@ export async function getGameMatchup(gameId) {
 // Returns the AI-generated pre-game prediction narrative, or null if none exists.
 export async function getGamePrediction(gameId) {
   if (!gameId) return null;
-  const rows = await sbFetch(
-    `game_predictions?game_id=eq.${gameId}&select=prediction_text,generated_at&limit=1`
-  ).catch(() => []);
-  if (!rows?.length) return null;
+  const rows = await workerFetch(`/game-predictions?gameId=${gameId}`).catch(() => []);
+  if (!rows?.length || !rows[0]?.prediction_text) return null;
   return { text: rows[0].prediction_text, generatedAt: rows[0].generated_at };
 }
 
@@ -445,9 +399,7 @@ export async function getGamePrediction(gameId) {
 // Returns the AI-generated post-game summary for a team, or null if none exists.
 export async function getGameSummary(gameId, team) {
   if (!gameId || !team) return null;
-  const rows = await sbFetch(
-    `game_summaries?game_id=eq.${gameId}&team=eq.${team}&select=summary_text,card_text,generated_at&limit=1`
-  ).catch(() => []);
+  const rows = await workerFetch(`/game-summary?gameId=${gameId}&team=${team}`).catch(() => []);
   if (!rows?.length) return null;
   return { text: rows[0].summary_text, cardText: rows[0].card_text || null, generatedAt: rows[0].generated_at };
 }
@@ -455,49 +407,21 @@ export async function getGameSummary(gameId, team) {
 // ── Player scouting blurb ─────────────────────────────────────
 // Returns the AI-generated scouting blurb for a player, or null if none exists.
 export async function getScoutingBlurb(playerId, season = SEASON) {
-  const rows = await sbFetch(
-    `player_scouting?player_id=eq.${playerId}&season=eq.${season}&select=scouting_text,generated_at&limit=1`
-  ).catch(() => []);
+  const rows = await workerFetch(`/player-scouting?playerId=${playerId}&season=${season}`).catch(() => []);
   if (!rows?.length) return null;
   return { blurb: rows[0].scouting_text, generatedAt: rows[0].generated_at };
 }
 
 export async function getTeamSkaterStatsFromDB(team = 'CAR', season = SEASON, gameType = 2) {
-  // Supabase caps responses at 1000 rows server-side. The players table has 1346+
-  // rows so we paginate with Range headers to get all of them.
-  async function fetchAllPlayers() {
-    const pageSize = 1000;
-    const headers = { ...HEADERS, 'Range-Unit': 'items' };
-    const all = [];
-    let offset = 0;
-    while (true) {
-      const r = await fetch(
-        `${SUPABASE_URL}/rest/v1/players?select=id,name,position`,
-        { headers: { ...headers, 'Range': `${offset}-${offset + pageSize - 1}` } }
-      );
-      const rows = await r.json();
-      if (!Array.isArray(rows) || rows.length === 0) break;
-      all.push(...rows);
-      if (rows.length < pageSize) break;
-      offset += pageSize;
-    }
-    return all;
-  }
-
   const [seasonRows, playerRows] = await Promise.all([
-    sbFetch(
-      `player_seasons?team=eq.${team}&season=eq.${season}&game_type=eq.${gameType}` +
-      `&select=player_id,games_played,goals,assists,primary_assists,secondary_assists,` +
-      `points,plus_minus,pim,pp_goals,sh_goals,gw_goals,shots,shooting_pct,` +
-      `toi_per_game&order=points.desc.nullslast`
-    ),
-    fetchAllPlayers(),
+    workerFetch(`/team-skaters?team=${team}&season=${season}&gameType=${gameType}`),
+    workerFetch('/players-list'),
   ]);
 
   const playerMap = {};
-  playerRows.forEach(p => { playerMap[p.id] = p; });
+  (playerRows || []).forEach(p => { playerMap[p.id] = p; });
 
-  return seasonRows.map(r => {
+  return (seasonRows || []).map(r => {
     const p = playerMap[r.player_id] || {};
     return {
       ...r,
@@ -520,36 +444,18 @@ export async function getTeamSkaterStatsFromDB(team = 'CAR', season = SEASON, ga
 // ── Special teams units ───────────────────────────────────────
 // Returns PP/PK unit compositions for all teams keyed by abbr.
 // Shape: { CAR: { PP: { 1: [ids], 2: [ids] }, PK: { 1: [ids], 2: [ids] } }, ... }
-// Fetches from Worker KV first (fast), falls back to Supabase directly.
-export function buildSpecialTeamsMap(rows) {
-  const map = {};
-  for (const r of (rows || [])) {
-    if (!map[r.team]) map[r.team] = { PP: {}, PK: {} };
-    map[r.team][r.unit_type][r.unit_number] = r.player_ids;
-  }
-  return map;
-}
-
-export async function getSpecialTeamsUnits(season = SEASON) {
-  // Try Worker KV first
-  try {
-    const WORKER_URL = import.meta.env.VITE_WORKER_URL;
-    if (WORKER_URL) {
-      const r = await fetch(`${WORKER_URL}/cache/pp_units:all`);
-      if (r.ok) {
-        const kv = await r.json();
-        if (kv?.value) return JSON.parse(kv.value);
-      }
-    }
-  } catch {}
-
-  // Fall back to Supabase directly
-  const rows = await sbFetch(
-    `special_teams_units?season=eq.${season}` +
-    `&select=team,unit_type,unit_number,player_ids&limit=256`
-  ).catch(() => []);
-
-  return buildSpecialTeamsMap(rows);
+//
+// Old version of this function checked a Worker-KV-first path via
+// `/cache/pp_units:all`, reading `kv.value` off the response — but that
+// route returns the parsed KV value directly (see shared.js's kvGet,
+// which already does its own JSON.parse), not wrapped in `{ value }`. So
+// `kv?.value` was always undefined and this silently fell through to a
+// direct Supabase call on *every* invocation — the KV-first path was
+// dead code the whole time. /special-teams (added Session 44) does the
+// same KV read correctly server-side and needs no client-side unwrapping.
+export async function getSpecialTeamsUnits() {
+  const map = await workerFetch('/special-teams').catch(() => null);
+  return map || {};
 }
 
 // ── xGF% per-game trend ───────────────────────────────────────
@@ -559,17 +465,11 @@ export async function getSpecialTeamsUnits(season = SEASON) {
 // Both arrays are chronological (oldest first).
 export async function getTeamXgTrend(team = 'CAR', season = SEASON) {
   const [xgRows, logRows] = await Promise.all([
-    sbFetch(
-      `game_xg?team=eq.${team}&season=eq.${season}&situation=eq.5on5` +
-      `&select=game_id,xgf_pct&limit=999`
-    ).catch(() => []),
-    sbFetch(
-      `game_log?team=eq.${team}&season=eq.${season}` +
-      `&select=game_id,game_date,opponent,team_score,opp_score&limit=999`
-    ).catch(() => []),
+    workerFetch(`/xg-trend?team=${team}&season=${season}`).catch(() => []),
+    workerFetch(`/game-log?team=${team}&season=${season}`).catch(() => []),
   ]);
 
-  if (!xgRows.length || !logRows.length) return null;
+  if (!xgRows?.length || !logRows?.length) return null;
 
   // Build game_log map keyed by game_id
   const logMap = {};
