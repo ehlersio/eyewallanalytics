@@ -6,6 +6,21 @@
   display: flex;
   flex-direction: column;
   padding: 0 16px;
+  /* Safe-area padding, not position:fixed: unlike BottomNav, .topbar is
+     already the *first* flex child of .app-shell (height:100dvh), so it
+     isn't vulnerable to BottomNav's dvh-overshoot-pushes-last-child-off-
+     screen bug — its top edge always sits at .app-shell's own top edge.
+     The actual clipping is rounded-corner/notch overlap: viewport-fit=cover
+     (index.html, added in the BottomNav fix) makes env(safe-area-inset-top)
+     resolve to a real value, but nothing read it, so .topbar-row's content
+     (incl. the About/Settings buttons) could render under that curved
+     region. Padding here — not position:fixed + a compensating .app-main
+     padding-top — because .topbar's height is NOT constant like BottomNav's
+     (`.topbar-momentum` adds a variable amount of height only during live
+     games), so a hardcoded compensating padding on .app-main would drift
+     out of sync with the live-game state. Staying in normal flex flow
+     means .app-main's size adjusts automatically, momentum bar or not. */
+  padding-top: env(safe-area-inset-top, 0px);
   flex-shrink: 0;
   position: sticky;
   top: 0;
