@@ -10,6 +10,7 @@ import {
   PWHL_PLAYOFF_SEASONS as PLAYOFF_SEASONS,
 } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
+import PWHLGameStatsPopup from '../components/PWHLGameStatsPopup';
 import './ScheduleView.css';
 import './ShotMapView.css';
 
@@ -32,17 +33,6 @@ function formatDate(g) {
   const d = new Date(str + 'T12:00:00Z');
   if (isNaN(d)) return str;
   return `${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCDate()}`;
-}
-
-function formatDateLong(g) {
-  const str = _gameStr(g);
-  if (!str) return '—';
-  if (str.includes(',')) {
-    return str.split(',').slice(1).join(',').trim();
-  }
-  const d = new Date(str + 'T12:00:00Z');
-  if (isNaN(d)) return str;
-  return `${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
 }
 
 function dayOfWeek(g) {
@@ -254,7 +244,7 @@ export default function PWHLScheduleView() {
 
       {/* Game detail popup */}
       {popup && (
-        <PWHLGamePopup
+        <PWHLGameStatsPopup
           game={popup} teamId={teamId} abbr={abbr} color={color}
           onClose={() => setPopup(null)}
           onViewShotMap={() => {
@@ -634,102 +624,6 @@ function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff }) {
         <span className="result-sep" style={{ fontSize: 14, color: 'var(--text-dim)' }}>vs</span>
         <span className="result-abbr muted">{oppAbbr}</span>
         <TeamLogo abbr={oppAbbr} sport="pwhl" size={20} color={oppColor} />
-      </div>
-    </div>
-  );
-}
-
-// ── Game detail popup ─────────────────────────────────────────
-function PWHLGamePopup({ game: g, teamId, abbr, color, onClose, onViewShotMap }) {
-  const isHome   = g.home_team_id === teamId;
-  const my       = isHome ? g.home_score : g.away_score;
-  const op       = isHome ? g.away_score : g.home_score;
-  const oppId    = isHome ? g.away_team_id : g.home_team_id;
-  const oppAbbr  = TEAM_CODES[oppId] || String(oppId);
-  const oppTeam  = PWHL_TEAM_MAP[oppAbbr];
-  const oppColor = oppTeam?.displayColor || 'var(--text-dim)';
-  const won      = my > op;
-  const suffix   = g.shootout ? ' (SO)' : g.ot ? ' (OT)' : '';
-
-  return (
-    <div className="shot-popup-backdrop" onClick={onClose}>
-      <div className="shot-popup" onClick={e => e.stopPropagation()}>
-        {/* Header */}
-        <div className={`popup-header ${won ? 'popup-goal popup-car' : 'popup-opp'}`}>
-          <div className="popup-type-row">
-            <span className="popup-type-icon">{won ? '✅' : '❌'}</span>
-            <span className="popup-type-label">{won ? 'Win' : 'Loss'}{suffix}</span>
-            <span className="popup-team-badge">{formatDate(g)}</span>
-          </div>
-          <button className="popup-close" onClick={onClose}>✕</button>
-        </div>
-
-        <div className="popup-body">
-          {/* Score */}
-          <div className="popup-section">
-            <div className="popup-section-label">Final Score</div>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:24, padding:'14px 0' }}>
-              <div style={{ textAlign:'center' }}>
-                <TeamLogo abbr={abbr} sport="pwhl" size={36} color={color} />
-                <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, color, marginTop:6 }}>{my}</div>
-                <div style={{ fontSize:11, color, marginTop:2 }}>{abbr}</div>
-              </div>
-              <div style={{ textAlign:'center' }}>
-                <div style={{ fontSize:12, color:'var(--text-dim)', marginBottom:4 }}>Final{suffix}</div>
-                <div style={{ fontSize:10, color:'var(--text-dim)' }}>
-                  {isHome ? 'Home' : 'Away'} · {formatDateLong(g.game_date)}
-                </div>
-              </div>
-              <div style={{ textAlign:'center' }}>
-                <TeamLogo abbr={oppAbbr} sport="pwhl" size={36} color={oppColor} />
-                <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, color:oppColor, marginTop:6 }}>{op}</div>
-                <div style={{ fontSize:11, color:oppColor, marginTop:2 }}>{oppAbbr}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Game info rows */}
-          <div className="popup-section">
-            <div className="popup-section-label">Game Info</div>
-            <div className="popup-row">
-              <span className="popup-field">Date</span>
-              <span className="popup-value">{dayOfWeek(g)} · {formatDateLong(g)}</span>
-            </div>
-            <div className="popup-row">
-              <span className="popup-field">Venue</span>
-              <span className="popup-value">
-                {g.venue_name || (isHome ? 'Home arena' : 'Away')}
-                {g.venue_city ? ` · ${g.venue_city}` : ''}
-              </span>
-            </div>
-            <div className="popup-row">
-              <span className="popup-field">Location</span>
-              <span className="popup-value">{isHome ? 'Home' : 'Away'}</span>
-            </div>
-            <div className="popup-row">
-              <span className="popup-field">Outcome</span>
-              <span className="popup-value" style={{ color: won ? 'var(--green)' : 'var(--red-bright)', fontWeight:700 }}>
-                {won ? 'Win' : 'Loss'}{suffix}
-              </span>
-            </div>
-          </div>
-
-          {/* Shot map CTA */}
-          <div style={{ padding:'12px 16px' }}>
-            <button
-              onClick={onViewShotMap}
-              style={{
-                width:'100%', padding:'10px 0',
-                background: color, color:'#fff',
-                border:'none', borderRadius:8,
-                fontWeight:700, fontSize:14,
-                cursor:'pointer', letterSpacing:'0.02em',
-              }}
-            >
-              View Shot Map & Stats →
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
