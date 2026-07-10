@@ -150,6 +150,32 @@ export async function fetchPWHLGameSummary(gameId) {
   return workerFetch(`/pwhl/summary?gameId=${gameId}`);
 }
 
+/**
+ * Pre-game preview for an upcoming PWHL game (Session 51) — season series,
+ * all-time head-to-head, streaks, team-scoped leading scorers, special
+ * teams. Live-fetched from HockeyTech's gameCenterPreview by the Worker.
+ * Shape: { gameId, homeTeam, visitingTeam, seasonSeries, headToHeadRecords, longestStreaks }
+ */
+export async function fetchPWHLPreview(gameId) {
+  if (!gameId) return null;
+  return workerFetch(`/pwhl/preview?gameId=${gameId}`);
+}
+
+/**
+ * Team-level win prediction (heuristic + AI narrative) for an upcoming PWHL
+ * game — PWHL analog of NHL's /prediction/analyze fallback tier, NOT its
+ * DB-first RAPM/WAR system (see eyewall-poller/src/pwhl.js's route comment).
+ * corsiForPct is all-situations shot-attempt share, not 5v5-filtered —
+ * always pair it with the response's own corsiCaveat when displaying it.
+ * Shape: { gameId, homeAbbr, awayAbbr, isPlayoff, homeWinPct, awayWinPct,
+ *          expHome, expAway, narrative, homeStreak, awayStreak,
+ *          corsiForPct: {home, away}, corsiCaveat }
+ */
+export async function fetchPWHLPrediction(gameId) {
+  if (!gameId) return null;
+  return workerFetch(`/pwhl/prediction?gameId=${gameId}`);
+}
+
 // ── PBP helpers ───────────────────────────────────────────────────────────────
 
 /** Filter events to a single type */

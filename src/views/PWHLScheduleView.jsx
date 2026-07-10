@@ -11,6 +11,7 @@ import {
 } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import PWHLGameStatsPopup from '../components/PWHLGameStatsPopup';
+import PWHLGamePreviewPopup from '../components/PWHLGamePreviewPopup';
 import './ScheduleView.css';
 import './ShotMapView.css';
 
@@ -188,7 +189,8 @@ export default function PWHLScheduleView() {
           {!regLoading && regSchedule?.length > 0 && viewMode === 'list' && (
             <>
               {regUpcoming.map(g => (
-                <UpcomingCard key={g.game_id} game={g} teamId={teamId} abbr={abbr} color={color} />
+                <UpcomingCard key={g.game_id} game={g} teamId={teamId} abbr={abbr} color={color}
+                  onClick={() => setPopup(g)} />
               ))}
               {sortedRegCompleted.map(g => (
                 <CompletedCard key={g.game_id} game={g} teamId={teamId} abbr={abbr} color={color}
@@ -242,8 +244,9 @@ export default function PWHLScheduleView() {
         </>
       )}
 
-      {/* Game detail popup */}
-      {popup && (
+      {/* Game detail popup — Final games get the box-score popup, upcoming
+          games get the pre-game preview popup (Session 51) */}
+      {popup && popup.game_state === 'Final' && (
         <PWHLGameStatsPopup
           game={popup} teamId={teamId} abbr={abbr} color={color}
           onClose={() => setPopup(null)}
@@ -251,6 +254,12 @@ export default function PWHLScheduleView() {
             setPopup(null);
             navigate('/pwhl/shots', { state: { selectedGameId: popup.game_id } });
           }}
+        />
+      )}
+      {popup && popup.game_state !== 'Final' && (
+        <PWHLGamePreviewPopup
+          game={popup} teamId={teamId} abbr={abbr} color={color}
+          onClose={() => setPopup(null)}
         />
       )}
 
@@ -602,7 +611,7 @@ function CompletedCard({ game: g, teamId, abbr, color, onClick, isPlayoff }) {
 }
 
 // ── Upcoming game card ────────────────────────────────────────
-function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff }) {
+function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff, onClick }) {
   const isHome   = g.home_team_id === teamId;
   const oppId    = isHome ? g.away_team_id : g.home_team_id;
   const oppAbbr  = TEAM_CODES[oppId] || String(oppId);
@@ -610,7 +619,8 @@ function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff }) {
   const oppColor = oppTeam?.displayColor || 'var(--text-dim)';
 
   return (
-    <div className="card" style={{ marginBottom: 8, padding: '12px 14px' }}>
+    <div className="card" style={{ marginBottom: 8, padding: '12px 14px', cursor: onClick ? 'pointer' : 'default' }}
+      onClick={onClick}>
       <div className="result-top" style={{ marginBottom: 6 }}>
         <span className="result-date">{dayOfWeek(g)} {formatDate(g)}</span>
         <span className={`context-pill ${isPlayoff ? 'playoff' : 'regular'}`} style={{ fontSize: 10 }}>
@@ -625,6 +635,7 @@ function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff }) {
         <span className="result-abbr muted">{oppAbbr}</span>
         <TeamLogo abbr={oppAbbr} sport="pwhl" size={20} color={oppColor} />
       </div>
+      {onClick && <span className="result-tap-hint" style={{ marginTop: 6, display: 'inline-block' }}>Tap for preview →</span>}
     </div>
   );
 }
