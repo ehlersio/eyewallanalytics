@@ -141,4 +141,147 @@ describe('PWHL Schedule', () => {
       cy.get('.pgs-card').should('not.exist')
     })
   })
+
+  // ── Game preview popup (Session 51) ────────────────────────────────────────
+  // PWHLGamePreviewPopup triggers from an upcoming game's card, mirroring
+  // the box-score popup above for completed games. Unlike every other test
+  // in this spec, this block intercepts the network: PWHL is fully
+  // off-season as of this session (2026-07-10 -- season 8's 120 games and
+  // season 9's playoffs are both 100% Final, season 10's preseason has zero
+  // scheduled games yet), so there is no live upcoming game to click
+  // through. Intercepting /pwhl/schedule with one synthetic upcoming game,
+  // plus the two new routes, gives this click path real deterministic
+  // coverage regardless of season state instead of silently skipping it.
+  describe('Game preview popup', () => {
+    const UPCOMING_GAME_ID = 999001
+
+    const upcomingGame = {
+      game_id: UPCOMING_GAME_ID,
+      season_id: 8,
+      home_team_id: 1, // BOS
+      away_team_id: 5, // OTT
+      game_date: '2026-08-01',
+      game_state: 'Preview',
+      ot: false,
+      shootout: false,
+    }
+
+    const previewFixture = {
+      gameId: UPCOMING_GAME_ID,
+      homeTeam: {
+        id: 1, abbreviation: 'BOS', name: 'Boston Fleet',
+        goalsFor: 50, goalsAgainst: 40,
+        streak: 'W2',
+        overallRecord: '10-5-2-1',
+        last10Record: '6-3-1-0',
+        leadingScorers: [{ name: 'Test Skater', stats: { points: 20, goals: 10, assists: 10 } }],
+        leadingRookie: null,
+        leadingPIM: null,
+        powerPlay: { percentage: 20.5 },
+        penaltyKill: { percentage: 82.3 },
+      },
+      visitingTeam: {
+        id: 5, abbreviation: 'OTT', name: 'Ottawa Charge',
+        goalsFor: 40, goalsAgainst: 50,
+        streak: 'L1',
+        overallRecord: '5-10-2-1',
+        last10Record: '3-6-1-0',
+        leadingScorers: [{ name: 'Test Opponent', stats: { points: 15, goals: 8, assists: 7 } }],
+        leadingRookie: null,
+        leadingPIM: null,
+        powerPlay: { percentage: 15.2 },
+        penaltyKill: { percentage: 75.0 },
+      },
+      seasonSeries: [
+        { gameId: 900, datePlayed: '2026-01-10', homeTeamId: 1, homeCity: 'Boston', homeScore: 3, visitingTeamId: 5, visitingCity: 'Ottawa', visitingScore: 2 },
+      ],
+      headToHeadRecords: {
+        homeTeam:     { previousFiveYears: { formattedRecord: '5-3-0-0' } },
+        visitingTeam: { previousFiveYears: { formattedRecord: '3-5-0-0' } },
+      },
+      longestStreaks: {
+        // player is a full player object, not a plain name string --
+        // confirmed live against real HockeyTech data (Session 51, game
+        // 329). This fixture deliberately keeps that shape so this test
+        // would catch a regression of the "Objects are not valid as a
+        // React child" crash that shape caused before it was fixed.
+        home:     { points: [{ player: { firstName: 'Test', lastName: 'Streaker' }, streak: 'points', length: 4 }] },
+        visiting: { points: [] },
+      },
+      generatedAt: new Date().toISOString(),
+    }
+
+    const predictionFixture = {
+      gameId: UPCOMING_GAME_ID,
+      homeTeamId: 1, awayTeamId: 5,
+      homeAbbr: 'BOS', awayAbbr: 'OTT',
+      isPlayoff: false,
+      homeWinPct: 65, awayWinPct: 35,
+      expHome: 3.1, expAway: 2.2,
+      narrative: 'Boston is favored in this test matchup based on stronger possession numbers and a better record.',
+      h2hRecord: '2-1',
+      homeStreak: 'W2', awayStreak: 'L1',
+      corsiForPct: { home: 54.3, away: 45.7 },
+      corsiCaveat: 'All-situations shot-attempt share (goals+shots+blocked), not 5-on-5 filtered.',
+      generatedAt: new Date().toISOString(),
+    }
+
+    beforeEach(() => {
+      // Anchored to the Worker origin, not a bare glob -- '**/pwhl/schedule*'
+      // also matched the frontend's own /pwhl/schedule page route and broke
+      // cy.visit() (it intercepted the page-navigation request itself,
+      // returning JSON instead of HTML).
+      const workerUrl = Cypress.env('WORKER_URL')
+      cy.intercept('GET', `${workerUrl}/pwhl/schedule*`, { statusCode: 200, body: [upcomingGame] }).as('schedule')
+      cy.intercept('GET', `${workerUrl}/pwhl/preview*gameId=${UPCOMING_GAME_ID}*`, { statusCode: 200, body: previewFixture }).as('preview')
+      cy.intercept('GET', `${workerUrl}/pwhl/prediction*gameId=${UPCOMING_GAME_ID}*`, { statusCode: 200, body: predictionFixture }).as('prediction')
+      // Re-visit with intercepts already registered -- the outer describe's
+      // beforeEach already visited once before these intercepts existed.
+      cy.visit('/pwhl/schedule', {
+        onBeforeLoad(win) {
+          win.localStorage.setItem('eyewall:sport', 'pwhl')
+          win.localStorage.setItem('eyewall:pwhl_team', JSON.stringify({ abbr: 'BOS', teamId: 1 }))
+        },
+      })
+      cy.get('.topbar', { timeout: 10000 }).should('exist')
+      cy.wait('@schedule')
+    })
+
+    it('shows the upcoming card as clickable with a preview hint', () => {
+      cy.contains('Tap for preview', { timeout: 8000 }).should('exist')
+      cy.assertNoErrors()
+    })
+
+    it('opens on an upcoming game click and shows the prediction section', () => {
+      cy.contains('Tap for preview', { timeout: 8000 }).click()
+      cy.wait(['@preview', '@prediction'])
+      cy.get('.pgp-card', { timeout: 8000 }).should('be.visible')
+      cy.contains('.pgp-section-label', 'Prediction').should('exist')
+      cy.contains('65%').should('exist')
+      cy.contains('Boston is favored in this test matchup').should('exist')
+      cy.assertNoErrors()
+    })
+
+    it('renders season series, head-to-head, team form, hot streaks, leaders, and special teams', () => {
+      cy.contains('Tap for preview', { timeout: 8000 }).click()
+      cy.wait(['@preview', '@prediction'])
+      cy.get('.pgp-card', { timeout: 8000 }).should('be.visible')
+      cy.contains('.pgp-section-label', 'Season Series').should('exist')
+      cy.contains('Last 5 seasons vs OTT').should('exist')
+      cy.contains('.pgp-section-label', 'Team Form').should('exist')
+      cy.contains('.pgp-section-label', 'Hot Streaks').should('exist')
+      cy.contains('Test Streaker').should('exist')
+      cy.contains('.pgp-section-label', 'Team Leaders').should('exist')
+      cy.contains('Test Skater').should('exist')
+      cy.contains('.pgp-section-label', 'Special Teams').should('exist')
+      cy.assertNoErrors()
+    })
+
+    it('closes via the close button', () => {
+      cy.contains('Tap for preview', { timeout: 8000 }).click()
+      cy.get('.pgp-card', { timeout: 8000 }).should('be.visible')
+      cy.get('.pgp-close').click()
+      cy.get('.pgp-card').should('not.exist')
+    })
+  })
 })
