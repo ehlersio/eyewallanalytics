@@ -123,6 +123,33 @@ export async function fetchPWHLPBP(gameId) {
   return null;
 }
 
+/**
+ * Fetch per-player box score (skaters + goalies) for a completed game.
+ * Shape: { skaters: [...], goalies: [...] } — flat arrays with team_id on
+ * each row; caller groups by home/away using the game's own home_team_id/
+ * away_team_id (already available from the schedule fetch).
+ */
+export async function fetchPWHLGameBox(gameId) {
+  if (!gameId) return null;
+  const data = await workerFetch(`/pwhl/game-box?gameId=${gameId}`);
+  if (!data) return null;
+  return {
+    skaters: Array.isArray(data.skaters) ? data.skaters : [],
+    goalies: Array.isArray(data.goalies) ? data.goalies : [],
+  };
+}
+
+/**
+ * Fetch HockeyTech gameSummary enrichment (period scoring + MVPs/three
+ * stars) for a completed game — same endpoint PWHLPeriodSummary already
+ * uses for the shot-map's game summary.
+ * Shape: { periods, mvps, homeTeamStats, visitingTeamStats }
+ */
+export async function fetchPWHLGameSummary(gameId) {
+  if (!gameId) return null;
+  return workerFetch(`/pwhl/summary?gameId=${gameId}`);
+}
+
 // ── PBP helpers ───────────────────────────────────────────────────────────────
 
 /** Filter events to a single type */

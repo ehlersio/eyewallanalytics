@@ -309,8 +309,20 @@ export const PWHL_TEAM_MAP = Object.fromEntries(
   PWHL_TEAMS.map((t) => [t.abbr, t])
 );
 
+// team_id (integer, as stored on pwhl_* tables) -> team config. Derived from
+// PWHL_TEAMS rather than a second hardcoded map -- CLAUDE.md flags this repo's
+// team-ID map as already independently duplicated across eyewall-poller/
+// eyewall-pipeline; adding yet another local copy here would make that worse.
+export const PWHL_TEAM_BY_ID = Object.fromEntries(
+  PWHL_TEAMS.map((t) => [t.teamId, t])
+);
+
 export function getPWHLTeamConfig(abbr) {
   return PWHL_TEAM_MAP[abbr] ?? null;
+}
+
+export function getPWHLTeamById(teamId) {
+  return PWHL_TEAM_BY_ID[teamId] ?? null;
 }
 
 export function hasPWHLTeamConfig() {
