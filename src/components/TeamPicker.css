@@ -56,6 +56,15 @@
     gap: 16px;
     margin-bottom: 48px;
 }
+/* Matches AboutPopup.css's .about-privacy convention (10px, text-dim, centered) */
+.team-picker-disclaimer {
+    font-size: 10px;
+    color: var(--text-dim, #888);
+    text-align: center;
+    line-height: 1.5;
+    max-width: 480px;
+    margin: 0 auto;
+}
 .team-picker-sport-tile {
     display: flex;
     flex-direction: column;
