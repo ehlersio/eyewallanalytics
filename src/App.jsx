@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Topbar from './components/Topbar'
 import BottomNav from './components/BottomNav'
+import ViewportDebugOverlay from './components/ViewportDebugOverlay'
 import ShotMapView from './views/ShotMapView'
 import { PeriodSummaryProvider } from './utils/PeriodSummaryContext'
 import { SportProvider, useSport } from './utils/SportContext'
@@ -139,6 +140,7 @@ export default function App() {
               </Suspense>
             </main>
             <BottomNav />
+            <ViewportDebugOverlay />
           </div>
         </PeriodSummaryProvider>
       </SportProvider>

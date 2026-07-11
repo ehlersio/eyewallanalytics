@@ -1,0 +1,71 @@
+/* Session 53 — throwaway diagnostic overlay, see ViewportDebugOverlay.jsx.
+   Deliberately not using CSS custom properties from index.css -- this
+   needs to render legibly even if the bug it's diagnosing involves the
+   app-shell's own layout/variables misbehaving. */
+
+.vdo-root {
+  position: fixed;
+  top: env(safe-area-inset-top, 8px);
+  right: 8px;
+  z-index: 999999;
+  font-family: monospace;
+  font-size: 10px;
+}
+
+.vdo-toggle {
+  background: #ff2200;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-weight: 700;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.vdo-panel {
+  margin-top: 4px;
+  width: min(90vw, 360px);
+  max-height: 70vh;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.92);
+  color: #0f0;
+  border: 1px solid #ff2200;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.vdo-current pre {
+  margin: 0 0 8px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.vdo-actions {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.vdo-actions button {
+  background: #222;
+  color: #0f0;
+  border: 1px solid #0f0;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: monospace;
+  font-size: 10px;
+}
+
+.vdo-log {
+  border-top: 1px solid #333;
+  padding-top: 6px;
+}
+
+.vdo-log-row {
+  white-space: pre-wrap;
+  word-break: break-all;
+  border-bottom: 1px solid #222;
+  padding: 2px 0;
+  color: #9f9;
+}
