@@ -2,7 +2,7 @@
   "name": "EyeWall Analytics",
   "short_name": "EyeWall",
   "description": "Carolina Hurricanes advanced stats and analytics",
-  "start_url": "/?debug=viewport",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#12121e",
   "theme_color": "#12121e",

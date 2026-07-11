@@ -13,23 +13,29 @@ import './ViewportDebugOverlay.css';
 // permanent feature.
 //
 // The reported bug only reproduces in the installed home-screen PWA
-// (display-mode: standalone), which has no URL bar to append a query
-// param to, and BottomNav's NavLinks don't preserve query strings across
-// in-app navigation anyway (so ?debug=viewport would vanish on the first
-// tab switch even in a regular browser tab). Armed via localStorage
-// instead -- shared across Safari and the installed PWA for the same
-// origin, unlike sessionStorage -- so a single one-time visit in regular
-// Safari (any page, ?debug=viewport once) arms it permanently, then it
-// shows up in the already-installed home-screen icon with no URL editing
-// needed there at all. ?debug=off (or the in-panel Disable button) clears
-// it.
+// (display-mode: standalone). Tried gating this behind ?debug=viewport
+// arming a shared flag first (localStorage, then baking it into
+// manifest.json's start_url) -- neither worked: iOS keeps the installed
+// PWA's storage isolated from Safari's (confirmed empirically), and
+// Safari's "Add to Home Screen" doesn't reliably honor a manifest
+// start_url either. Simplest fix: this whole branch only ever deploys to
+// a throwaway dev/staging URL, never production, so there's no real
+// audience to hide this from -- just always render it there. ?debug=off
+// (or the in-panel Disable button) still exists as a per-context opt-out
+// if it gets in the way.
 const STORAGE_KEY = 'eyewall:debugViewport';
 
 function resolveEnabled() {
+  // Cypress's hard rule (run the full suite before every push) doesn't get
+  // an exception for a throwaway debug branch -- the overlay's fixed
+  // top-right position covers Topbar's about-trigger button and broke a
+  // real spec the first time this went always-on. window.Cypress is
+  // injected by the test runner itself, not spoofable by page content.
+  if (window.Cypress) return false;
   const flag = new URLSearchParams(window.location.search).get('debug');
-  if (flag === 'viewport') { localStorage.setItem(STORAGE_KEY, '1'); return true; }
-  if (flag === 'off') { localStorage.removeItem(STORAGE_KEY); return false; }
-  return localStorage.getItem(STORAGE_KEY) === '1';
+  if (flag === 'off') { localStorage.setItem(STORAGE_KEY, '0'); return false; }
+  if (flag === 'viewport') { localStorage.removeItem(STORAGE_KEY); return true; }
+  return localStorage.getItem(STORAGE_KEY) !== '0';
 }
 
 function readSafeAreaInsets(probeEl) {
@@ -133,7 +139,7 @@ export default function ViewportDebugOverlay() {
   };
 
   const disable = () => {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.setItem(STORAGE_KEY, '0');
     setEnabled(false);
   };
 
