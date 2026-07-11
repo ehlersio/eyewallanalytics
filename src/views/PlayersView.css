@@ -462,6 +462,10 @@
 
 .pa-source { font-size: 10px; color: var(--text-dim); margin-top: 14px; text-align: center; }
 
+/* ── Results vs. process (Session 56) ── */
+.rvp-wrap { margin-top: 18px; padding-top: 14px; border-top: 0.5px solid var(--border); }
+.rvp-wrap .pa-context { margin-bottom: 10px; }
+
 /* ── Players view tabs ── */
 .players-tabs {
   display: flex;
