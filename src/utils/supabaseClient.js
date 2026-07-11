@@ -66,6 +66,11 @@ export async function getPlayerAnalytics(season = SEASON) {
       a1_60:      r.a1_per60,
       ppToi:      r.pp_icetime ?? null,
       pkToi:      r.pk_icetime ?? null,
+      // Results-vs-process (Session 56) — both null below eyewall-pipeline's
+      // GP≥25 guardrail (moneypuck.py::RESULTS_VS_PROCESS_MIN_GP). Treat
+      // "null" as "not enough games yet," not a missing-data error.
+      onIceGfPct:          r.on_ice_gf_pct != null ? Math.round(r.on_ice_gf_pct * 1000) / 10 : null,
+      resultsVsProcessDiff: r.results_vs_process_diff != null ? Math.round(r.results_vs_process_diff * 1000) / 10 : null,
       // Regular season defensive (from realtime)
       hits:         r.hits         ?? null,
       blockedShots: r.blocked_shots ?? null,
@@ -410,6 +415,15 @@ export async function getScoutingBlurb(playerId, season = SEASON) {
   const rows = await workerFetch(`/player-scouting?playerId=${playerId}&season=${season}`).catch(() => []);
   if (!rows?.length) return null;
   return { blurb: rows[0].scouting_text, generatedAt: rows[0].generated_at };
+}
+
+// ── Results-vs-process narrative (Session 56, NHL skaters only) ──
+// Returns the AI-generated "results vs. process" blurb for a player, or
+// null if none exists yet (either not enough games, or not generated yet).
+export async function getResultsVsProcessNarrative(playerId, season = SEASON) {
+  const rows = await workerFetch(`/player-results-vs-process?playerId=${playerId}&season=${season}`).catch(() => []);
+  if (!rows?.length) return null;
+  return { blurb: rows[0].narrative_text, generatedAt: rows[0].generated_at };
 }
 
 export async function getTeamSkaterStatsFromDB(team = 'CAR', season = SEASON, gameType = 2) {

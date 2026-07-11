@@ -23,6 +23,7 @@ import {
   getPlayerShots,
   getGoalieShots,
   getScoutingBlurb,
+  getResultsVsProcessNarrative,
 } from '../utils/supabaseClient'
 import { findContract, contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING } from '../utils/carContracts'
 import IceRink from '../components/IceRink'
@@ -505,7 +506,7 @@ function PercentileBar({ label, pct, note, na }) {
   )
 }
 
-function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position }) {
+function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, narrativeData, isLeagueContext }) {
   if (isGoalie) {
     if (!goalieData) {
       return (
@@ -614,7 +615,68 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position }
         <PercentileBar label="Competition"   pct={p.comp?.pct}      note={p.comp?.note} />
         <PercentileBar label="Teammates"     pct={p.teammates?.pct} note={p.teammates?.note} />
       </div>
+      {!isLeagueContext && (
+        <ResultsVsProcess
+          onIceGfPct={mpData.onIceGfPct}
+          resultsVsProcessDiff={mpData.resultsVsProcessDiff}
+          narrativeData={narrativeData}
+        />
+      )}
       <div className="pa-source">Data: MoneyPuck.com · Updates nightly</div>
+    </div>
+  )
+}
+
+// ─── Results vs. Process ──────────────────────────────────────
+// Pairs on-ice results (on_ice_gf_pct) against underlying process (the
+// existing EV xGF% percentile) to surface over/underperforming players.
+// Both mpData fields are null below eyewall-pipeline's GP≥25 guardrail
+// (moneypuck.py::RESULTS_VS_PROCESS_MIN_GP) -- that's the only check made
+// here, no GP threshold is re-derived on this side.
+
+function ResultsVsProcess({ onIceGfPct, resultsVsProcessDiff, narrativeData }) {
+  if (resultsVsProcessDiff == null) {
+    return (
+      <div className="rvp-wrap">
+        <div className="pa-section-label">Results vs. Process</div>
+        <div className="scout-empty">
+          <div className="scout-empty-icon">⏳</div>
+          <div>Not enough games yet for a reliable read.</div>
+          <div className="scout-empty-sub">Needs a minimum sample of games played this season.</div>
+        </div>
+      </div>
+    )
+  }
+
+  const outperforming = resultsVsProcessDiff > 0
+  const diffColor = outperforming ? '#4ade80' : '#f87171'
+  const directionLabel = outperforming ? 'Outperforming process' : 'Underperforming process'
+
+  return (
+    <div className="rvp-wrap">
+      <div className="pa-section-label">Results vs. Process</div>
+      <div className="pa-context">
+        <div className="pa-ctx-item">
+          <span className="pa-ctx-val">{onIceGfPct}%</span>
+          <span className="pa-ctx-label">On-Ice GF% <InfoTip text="On-ice goals-for percentage at 5-on-5 -- the share of goals scored (not just shot attempts/quality) while this player is on the ice. The 'results' side of this pairing." position="above" /></span>
+        </div>
+        <div className="pa-ctx-item">
+          <span className="pa-ctx-val" style={{ color: diffColor }}>{resultsVsProcessDiff > 0 ? '+' : ''}{resultsVsProcessDiff}%</span>
+          <span className="pa-ctx-label">Gap vs. Process <InfoTip text="On-Ice GF% minus EV xGF% (the process/shot-quality side, shown above in the percentile rankings). A large positive or negative gap suggests results are running hotter or colder than the underlying process -- often a sign of unsustainable luck rather than true talent." position="above" /></span>
+        </div>
+      </div>
+      <div style={{ color: diffColor, fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{directionLabel}</div>
+      {narrativeData === undefined ? (
+        <div className="scout-loading">
+          {[92, 85, 70].map((w, i) => (
+            <div key={i} className="skeleton" style={{ height: 11, width: `${w}%`, marginBottom: 10, borderRadius: 4 }} />
+          ))}
+        </div>
+      ) : narrativeData?.blurb ? (
+        <div className="scout-blurb">{narrativeData.blurb}</div>
+      ) : (
+        <div className="scout-empty-sub">Narrative generates nightly — check back after the next pipeline run.</div>
+      )}
     </div>
   )
 }
@@ -698,6 +760,13 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
   const { data: goalieAll } = useFetch(() => getGoalieAnalytics(), [])
   const goalieData = goalieAll?.[String(p.id)] || null
+
+  // Results-vs-process narrative — skater-only (no on-ice GF/GA split for
+  // goalies), same CAR-roster-context gating as the Scout tab/ScoutingBlurb.
+  const { data: rvpNarrative } = useFetch(
+    () => (!isLeagueContext && !isGoalie) ? getResultsVsProcessNarrative(p.id, SEASON) : Promise.resolve(undefined),
+    [p.id, isGoalie, isLeagueContext]
+  )
 
   const seasonPO  = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 3)
   const seasonReg = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 2)
@@ -964,7 +1033,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
         {/* ── Analytics tab ── */}
         {ppTab === 'analytics' && (
-          <PlayerAnalytics mpData={mpData} goalieData={goalieData} playerName={name} isGoalie={isGoalie} position={positionCode} />
+          <PlayerAnalytics mpData={mpData} goalieData={goalieData} playerName={name} isGoalie={isGoalie} position={positionCode} narrativeData={rvpNarrative} isLeagueContext={isLeagueContext} />
         )}
 
         {/* ── Scout tab — CAR context only ── */}
