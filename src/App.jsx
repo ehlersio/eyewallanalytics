@@ -53,6 +53,45 @@ function RootRoute() {
   return <ShotMapView />;
 }
 
+// Session 53 -- BottomNav mobile regression investigation. Live device
+// logging (installed home-screen PWA, standalone mode) caught a ~1.5s
+// window after navigating between tabs where window.innerHeight/
+// visualViewport.height grew by exactly the safe-area-inset-top amount
+// (iOS's own chrome animating away, unexpectedly, inside what's supposed
+// to be a chrome-less standalone app) -- .app-shell's height:100dvh
+// tracks that growth on every intermediate frame, and .bottom-nav's
+// rendered position visibly lagged behind it for the duration before
+// settling. Rather than let .app-shell's height react continuously to
+// every mid-animation resize tick, this debounces it to a single update
+// once resize activity actually settles -- the same shape as the
+// long-standing "--vh custom property" mobile-viewport workaround, just
+// applied to reduce reflow churn during the animation instead of trying
+// to read a value that doesn't exist yet (dvh already resolves that part
+// correctly; the growing DELTA is what appears to be blowing up).
+// Unverified against the real device -- no way to test this session
+// without it in hand.
+function useStableViewportHeight() {
+  useEffect(() => {
+    const root = document.documentElement;
+    let timer = null;
+    const commit = () => {
+      root.style.setProperty('--app-vh', `${window.innerHeight}px`);
+    };
+    commit();
+    const onResize = () => {
+      clearTimeout(timer);
+      timer = setTimeout(commit, 200);
+    };
+    window.addEventListener('resize', onResize);
+    window.visualViewport?.addEventListener('resize', onResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', onResize);
+      window.visualViewport?.removeEventListener('resize', onResize);
+    };
+  }, []);
+}
+
 // Tracks route changes as pageviews
 function PageTracker() {
   const location = useLocation();
@@ -75,6 +114,13 @@ function PageTracker() {
       path:      location.pathname,
       page_name: names[location.pathname] || location.pathname,
     });
+    // Session 53 -- BottomNav mobile regression investigation: nothing
+    // reset .app-main's scroll position on tab switch, so arriving at a
+    // differently-sized page while still scrolled down from the previous
+    // one was a real, checkable gap (confirmed via live device debug
+    // logging) that could compound with iOS's standalone-PWA viewport
+    // resize animation (see useStableViewportHeight below).
+    document.getElementById('main-content')?.scrollTo(0, 0);
   }, [location.pathname]);
   return null;
 }
@@ -83,7 +129,9 @@ export default function App() {
   // In App component body, before the return:
   useEffect(() => {
     applyTeamTheme(TEAM_CONFIG, getTheme());
-  }, []); // runs once on mount; full reload on team change means this always reflects current team  
+  }, []); // runs once on mount; full reload on team change means this always reflects current team
+
+  useStableViewportHeight();
 
   // Show team picker on first launch (no team saved yet).
   // After selection, reload so all modules re-initialize with the chosen team.
