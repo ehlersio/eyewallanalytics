@@ -4,12 +4,6 @@
   flex-direction: column;
   height: 100vh;
   height: 100dvh; /* mobile browser chrome aware */
-  /* Session 53 -- --app-vh (set by App.jsx's useStableViewportHeight,
-     debounced ~200ms after resize activity settles) overrides dvh once
-     JS runs, to avoid reacting to every intermediate frame of iOS's
-     standalone-PWA viewport-resize animation. Falls back to live dvh
-     until the first effect commit. */
-  height: var(--app-vh, 100dvh);
   overflow: hidden;
 }
 
