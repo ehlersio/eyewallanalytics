@@ -21,6 +21,13 @@
      letting it chain up to the document (see index.css's html/body rule
      for why that matters on iOS). */
   overscroll-behavior-y: contain;
+  /* Session 53 -- every other scrollable container in this codebase
+     (LeagueView.css, NotificationBell.css, ShotMapView.css, DraftTab.css,
+     PlayersView.css) sets this; .app-main -- the actual main-page
+     scroller -- was the one exception. Reported symptom (a flick stops
+     just short of the true bottom, but a sustained drag pushes through)
+     matches iOS falling back to less accurate scroll physics without it. */
+  -webkit-overflow-scrolling: touch;
   /* BottomNav is now position:fixed (Session 43) and no longer occupies
      flex space of its own — without this, the last ~52px+ of scrolled
      content would render underneath it. */
