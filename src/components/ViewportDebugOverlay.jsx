@@ -8,10 +8,30 @@ import './ViewportDebugOverlay.css';
 // debug this live on iPhone the way Session 43's Android bug was solved
 // (chrome://inspect + adb + CDP) -- this renders the same kind of live
 // measurements directly on-screen instead, readable/copyable without any
-// remote-debugging tooling. Only active behind ?debug=viewport so it can't
-// affect real users or Cypress runs. Delete this file + its .css + the
-// mount in App.jsx once the bug is root-caused and fixed -- not meant to
-// be a permanent feature.
+// remote-debugging tooling. Delete this file + its .css + the mount in
+// App.jsx once the bug is root-caused and fixed -- not meant to be a
+// permanent feature.
+//
+// The reported bug only reproduces in the installed home-screen PWA
+// (display-mode: standalone), which has no URL bar to append a query
+// param to, and BottomNav's NavLinks don't preserve query strings across
+// in-app navigation anyway (so ?debug=viewport would vanish on the first
+// tab switch even in a regular browser tab). Armed via localStorage
+// instead -- shared across Safari and the installed PWA for the same
+// origin, unlike sessionStorage -- so a single one-time visit in regular
+// Safari (any page, ?debug=viewport once) arms it permanently, then it
+// shows up in the already-installed home-screen icon with no URL editing
+// needed there at all. ?debug=off (or the in-panel Disable button) clears
+// it.
+const STORAGE_KEY = 'eyewall:debugViewport';
+
+function resolveEnabled() {
+  const flag = new URLSearchParams(window.location.search).get('debug');
+  if (flag === 'viewport') { localStorage.setItem(STORAGE_KEY, '1'); return true; }
+  if (flag === 'off') { localStorage.removeItem(STORAGE_KEY); return false; }
+  return localStorage.getItem(STORAGE_KEY) === '1';
+}
+
 function readSafeAreaInsets(probeEl) {
   if (!probeEl) return null;
   const cs = getComputedStyle(probeEl);
@@ -51,8 +71,8 @@ function snapshot(probeEl) {
 }
 
 export default function ViewportDebugOverlay() {
-  const enabled = new URLSearchParams(window.location.search).get('debug') === 'viewport';
   const location = useLocation();
+  const [enabled, setEnabled] = useState(() => resolveEnabled());
   const [expanded, setExpanded] = useState(true);
   const [current, setCurrent] = useState(null);
   const [log, setLog] = useState([]);
@@ -100,15 +120,21 @@ export default function ViewportDebugOverlay() {
   }, [enabled]);
 
   useEffect(() => {
+    setEnabled(resolveEnabled());
     if (!enabled) return;
     setLog((prev) => [...prev, { t: new Date().toISOString().slice(11, 23), reason: `nav:${location.pathname}` }]);
-  }, [location.pathname, enabled]);
+  }, [location.pathname, location.search]);
 
   if (!enabled) return null;
 
   const copyLog = () => {
     const text = log.map((l) => JSON.stringify(l)).join('\n');
     navigator.clipboard?.writeText(text).catch(() => {});
+  };
+
+  const disable = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setEnabled(false);
   };
 
   return (
@@ -124,6 +150,7 @@ export default function ViewportDebugOverlay() {
           <div className="vdo-actions">
             <button onClick={copyLog}>Copy log ({log.length})</button>
             <button onClick={() => setLog([])}>Clear</button>
+            <button onClick={disable}>Disable</button>
           </div>
           <div className="vdo-log">
             {log.slice(-20).reverse().map((l, i) => (
