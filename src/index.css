@@ -76,6 +76,17 @@ html, body, #root {
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  /* Session 53 -- BottomNav mobile regression. iOS's position:fixed
+     tracks the *visual* viewport, not the layout viewport -- when a
+     rubber-band/overscroll bounce at the document level pans the visual
+     viewport, fixed elements (BottomNav) visibly detach from the true
+     screen edge until the bounce settles (confirmed via live device
+     logging: .bottom-nav's measured position tracked
+     innerHeight - visualViewport.offsetTop almost exactly, oscillating
+     for ~1-2s after a tab switch). Blocking the bounce at the document
+     level is the standard fix -- .app-main (below) still gets its own
+     contained overscroll effect, just without it chaining up to here. */
+  overscroll-behavior-y: none;
 }
 
 button { font-family: var(--font-body); cursor: pointer; border: none; background: none; color: inherit; }

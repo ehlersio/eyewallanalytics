@@ -17,6 +17,10 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  /* Session 53 -- contain this element's own overscroll bounce instead of
+     letting it chain up to the document (see index.css's html/body rule
+     for why that matters on iOS). */
+  overscroll-behavior-y: contain;
   /* BottomNav is now position:fixed (Session 43) and no longer occupies
      flex space of its own — without this, the last ~52px+ of scrolled
      content would render underneath it. */
