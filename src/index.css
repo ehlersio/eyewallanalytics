@@ -69,7 +69,18 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body, #root {
-  height: 100%;
+  /* Session 53 -- BottomNav mobile regression, continued. A persistent
+     (not transient) themed-background gap below .bottom-nav survived
+     every JS-level fix -- meaning it's a static CSS mismatch, not a
+     runtime timing issue. height:100% and .app-shell's height:100dvh
+     (App.css) resolve against different viewport references on iOS
+     Safari (percentage heights have historically used the "large"
+     viewport -- chrome fully collapsed -- while dvh tracks the actual
+     current viewport); if that gap exists even in standalone mode, body
+     ends up taller than .app-shell, exposing this element's own
+     background below it. Matching the same unit removes the mismatch
+     entirely rather than trying to compensate for it. */
+  height: 100dvh;
   background: var(--bg0);
   color: var(--text);
   font-family: var(--font-body);
