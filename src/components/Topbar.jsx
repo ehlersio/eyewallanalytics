@@ -7,6 +7,7 @@ import './Topbar.css';
 import AboutPopup from './AboutPopup';
 import { subscribeClock, getClockDisplay, publishClock, subscribeMomentum, subscribeMockLiveGame } from '../utils/liveClockStore';
 import NotificationBell from './NotificationBell';
+import PlayerSearch from './PlayerSearch';
 
 const POLL_LIVE_MS = 10_000;      // 10s — matches ShotMapView
 const POLL_IDLE_MS = 5 * 60_000;  // 5min — no game active
@@ -155,6 +156,7 @@ export default function Topbar() {
           </div>
         )}
 
+        <PlayerSearch />
         <NotificationBell />
       </div>
 

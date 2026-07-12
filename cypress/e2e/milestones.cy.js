@@ -121,3 +121,27 @@ describe('Milestones feed', () => {
     });
   });
 });
+
+// Session 60 regression: MilestonesFeed's PWHL branch no longer pre-fetches
+// /pwhl/player/landing itself before opening the popup — it just passes
+// {player_id} and lets PWHLPlayerPopup self-fetch. Confirm that still opens
+// a fully-populated popup (identity + stats), not just an empty shell.
+describe('PWHL milestones', () => {
+  beforeEach(() => {
+    cy.setPWHLTeam('BOS');
+    cy.visit('/pwhl/news');
+    cy.get('.topbar', { timeout: 10000 }).should('exist');
+    cy.get('.news-view-toggle-btn').contains('Milestones').click();
+  });
+
+  it('tapping a PWHL milestone card opens the popup with self-fetched identity + stats', () => {
+    cy.get('.milestones-feed .news-card').then($cards => {
+      if ($cards.length === 0) return; // no PWHL milestones today — nothing to check
+      cy.wrap($cards.first()).click();
+      cy.get('.popup-backdrop', { timeout: 10000 }).should('exist');
+      cy.contains('Goals', { timeout: 8000 }).should('exist');
+      cy.get('.pp-close').click();
+      cy.get('.popup-backdrop').should('not.exist');
+    });
+  });
+});

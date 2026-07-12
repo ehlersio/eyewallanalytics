@@ -57,6 +57,18 @@ export async function fetchPWHLPlayerShots(playerId, season = PWHL_CURRENT_SEASO
   return workerFetch(`/pwhl/player-shots?playerId=${playerId}&season=${season}`);
 }
 
+/**
+ * Fetch a single player's identity + one season's stat line, merged.
+ * Powers PWHLPlayerPopup's self-fetch-by-id — pass the popup's own
+ * `season` prop so the stat line matches whatever season the caller is
+ * showing; omit season to get the most recent regular-season row.
+ */
+export async function fetchPWHLPlayerLanding(playerId, season) {
+  if (!playerId) return null;
+  const qs = season ? `&season=${season}` : '';
+  return workerFetch(`/pwhl/player/landing?id=${playerId}${qs}`);
+}
+
 /** Fetch a single team's season record from pwhl_team_seasons (includes reg_wins, non_reg_wins). */
 export async function fetchPWHLTeamRecord(teamId, season) {
   if (!teamId || !season) return null;

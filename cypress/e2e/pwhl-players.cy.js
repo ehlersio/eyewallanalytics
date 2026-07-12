@@ -72,6 +72,38 @@ PWHL_TEST_TEAMS.forEach(abbr => {
       })
     })
 
+    // Session 60 regression: PWHLPlayerPopup now self-fetches identity +
+    // stats by id (GET /pwhl/player/landing?season=) instead of reading
+    // whatever the caller pre-merged, so it can be opened from search
+    // results that don't have stats attached. That self-fetch must still
+    // respect the season the user actually clicked from — a first version
+    // of the season-aware landing endpoint silently fell back to the most
+    // recent season regardless of the `season` param, which would have
+    // shown current-season stats under a "2023-24" label. Verified against
+    // the live Worker (not a fixture) since these are real, changing stats.
+    describe('Historical-season stat pinning', () => {
+      beforeEach(() => {
+        cy.contains('Stats', { timeout: 8000 }).click()
+        cy.contains('2023-24', { timeout: 8000 }).click()
+        cy.contains('GP', { timeout: 8000 }).should('exist')
+      })
+
+      it("popup's Points value matches the clicked 2023-24 row, not the current season", () => {
+        cy.get('tbody tr', { timeout: 10000 }).first().then($row => {
+          // SKATER_COLS order: Player, Pos, GP, G, A, PTS, ...
+          const rowPts = $row.find('td').eq(5).text().trim()
+          cy.wrap($row).click()
+          cy.get('.pp-tab', { timeout: 10000 }).should('exist')
+          cy.contains('2023-24 Regular Season', { timeout: 8000 }).should('exist')
+          cy.contains('.stat-row-label', 'Points')
+            .closest('.stat-row')
+            .find('.stat-row-value')
+            .should('have.text', rowPts)
+          cy.get('.pp-close').click({ force: true })
+        })
+      })
+    })
+
     describe('Player popup (skater)', () => {
       beforeEach(() => {
         // Open from Stats tab table row

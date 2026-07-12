@@ -23,6 +23,7 @@ Users select their league (NHL or PWHL) and team on first launch. All views, col
 | Frontend | React 18 + Vite, react-router-dom v7 |
 | Styling | CSS custom properties (design tokens), no CSS framework |
 | Charts | D3 v7, SVG-based IceRink component |
+| Player Search | Fuse.js — client-side fuzzy match against the Worker's flat NHL+PWHL player index (`GET /players-search-index`, ~1,600 players — small enough to ship once per session rather than query per keystroke) |
 | Hosting | Cloudflare Pages (auto-deploys from `main`; `dev` branch → preview) |
 | API Proxy | Cloudflare Pages Functions (`functions/`) |
 | Cache Layer | Cloudflare Worker + KV (`eyewall-poller`) |
@@ -92,6 +93,7 @@ canes-analytics-starter/
 │   │   ├── ShareButtons.jsx/.css       # Shared Save/X/Share buttons across all export cards
 │   │   ├── HatTrickPopup              # (in GameEvents.jsx) — live hat trick celebration overlay
 │   │   ├── MilestonesFeed.jsx          # League-wide milestone feed (hat tricks, shutouts, SH goals, season/career thresholds) — tappable into PlayerPopup
+│   │   ├── PlayerSearch.jsx/.css       # Global NHL+PWHL player search (Topbar) — Fuse.js fuzzy match against the Worker's flat player index
 │   │   ├── TeamLogo.jsx/.css           # NHL + PWHL team logo renderer
 │   │   ├── CalendarView.jsx            # NHL calendar month view
 │   │   ├── PWHLCalendarView.jsx        # PWHL calendar month view
@@ -111,6 +113,7 @@ canes-analytics-starter/
 │       ├── SportContext.jsx            # Sport state (NHL/PWHL) + localStorage persistence
 │       ├── advancedStats.js
 │       ├── supabaseClient.js           # DB queries; getTeamXgTrend, getGoalieShots (no car_game filter)
+│       ├── playerSearch.js             # Fuzzy player search — fetches GET /players-search-index once per session, matches via Fuse.js
 │       └── analytics.js
 ├── src/utils/__tests__/
 │   └── *.test.js                       # Vitest unit tests (8 files, 138 tests)
@@ -118,7 +121,8 @@ canes-analytics-starter/
 │   ├── e2e/
 │   │   ├── navigation.cy.js            # NHL + PWHL route navigation smoke (all 12 PWHL teams)
 │   │   ├── news.cy.js                  # NHL news
-│   │   ├── milestones.cy.js            # Milestones feed, team filter dropdown, tap-to-open popup
+│   │   ├── milestones.cy.js            # Milestones feed, team filter dropdown, tap-to-open popup (incl. PWHL milestone self-fetch popup)
+│   │   ├── player-search.cy.js         # Global player search — open/close, debounce, typo tolerance, NHL+PWHL result correctness, popup opens for both
 │   │   ├── pwhl-news.cy.js             # PWHL news
 │   │   ├── period-summary.cy.js        # Game Center
 │   │   ├── players.cy.js               # NHL players
@@ -206,6 +210,7 @@ Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `m
 | `GET /milestones?team=&limit=` | Recent milestones, league-wide by default, optional team filter (default limit 50, max 100) |
 | `GET /player/landing?id=` | Proxies NHL API's `/player/{id}/landing` — browser can't call it directly (no CORS headers on the NHL side) |
 | `GET /config/seasons` | Live-resolved current NHL + PWHL season, both leagues in one response (see [Live Season Resolution](#live-season-resolution)) — consumed by `seasonClient.js` at app boot and by the pipeline's `season_lookup.py` |
+| `GET /players-search-index` | Flat NHL + PWHL player list (`{id, name, team, position, sport}`, ~1,600 players) for the global player-search autocomplete — see `playerSearch.js` / `PlayerSearch.jsx` |
 
 ---
 
@@ -240,6 +245,7 @@ Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `m
 | `GET /pwhl/scout` (POST) | Workers AI scouting report |
 | `GET /pwhl/salaries?teamId=&season=` | Team salary data |
 | `GET /pwhl/league-players?season=` | All 12 teams' players (Leaders tab) |
+| `GET /pwhl/player/landing?id=&season=` | Single player's identity + one season's stat line, merged — powers `PWHLPlayerPopup`'s self-fetch-by-id (same role `/player/landing` plays for NHL's `PlayerPopup`). `season` pins the stat line to that `season_id`; omitted, falls back to the most recent regular-season row |
 | `GET /pwhl/news` | PWHL news feed |
 | `POST /pwhl/news/ingest` | Accept articles from GH Actions pipeline |
 | `POST /pwhl/news/bust` | Invalidate news cache |
