@@ -1,9 +1,20 @@
 // components/PWHLPlayerPopup.jsx
 // Player detail popup for PWHL — mirrors NHL PlayerPopup.
 // Tabs: Stats · Heat Map · Scout
+//
+// Props:
+//   player {object} — minimum shape: { player_id }. Self-fetches identity +
+//                      the given season's stat line via GET
+//                      /pwhl/player/landing, same self-fetch-by-id pattern
+//                      as NHL's PlayerPopup. Any additional fields on this
+//                      object (name, position, team_id, ...) are used for
+//                      instant paint before the fetch resolves; the fetched
+//                      fields win on conflict once they land.
+//   season {number}  — season_id to pin the self-fetched stat line to.
+//   seasonLabel, onClose — as before.
 import { useState } from 'react';
 import { useFetch } from '../hooks/useFetch';
-import { fetchPWHLPlayerShots } from '../utils/pwhlApi';
+import { fetchPWHLPlayerShots, fetchPWHLPlayerLanding } from '../utils/pwhlApi';
 import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP } from '../utils/pwhlConfig';
 
 const TEAM_CODES = {1:'BOS',2:'MIN',3:'MTL',4:'NY',5:'OTT',6:'TOR',8:'SEA',9:'VAN'};
@@ -333,9 +344,22 @@ function PWHLScout({ player, isGoalie, seasonLabel }) {
 
 // ── Main popup ────────────────────────────────────────────────
 
-export default function PWHLPlayerPopup({ player: p, seasonLabel = SEASON_LABEL, season = PWHL_CURRENT_SEASON, onClose }) {
+export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_LABEL, season = PWHL_CURRENT_SEASON, onClose }) {
   const [imgErr, setImgErr] = useState(false);
   const [ppTab, setPpTab]   = useState('stats');
+
+  // Self-fetches identity + this season's stat line by id, mirroring NHL's
+  // PlayerPopup (which self-fetches via getPlayerStats(p.id)) — callers
+  // only need to pass a minimum shape ({player_id}; name/position/team_id
+  // for instant paint before this resolves). `landing`'s fields win on
+  // conflict since it's the season-scoped, authoritative source; `initial`
+  // only fills the gap while loading, so the header doesn't flash blank.
+  const playerId = initial.player_id;
+  const { data: landing, loading: statsLoading } = useFetch(
+    () => playerId ? fetchPWHLPlayerLanding(playerId, season) : Promise.resolve(null),
+    [playerId, season]
+  );
+  const p = { ...initial, ...(landing || {}) };
 
   const isGoalie  = p.position === 'G';
   const defs      = isGoalie ? GOALIE_STATS : SKATER_STATS;
@@ -390,14 +414,23 @@ export default function PWHLPlayerPopup({ player: p, seasonLabel = SEASON_LABEL,
         {/* ── Stats tab ── */}
         {ppTab === 'stats' && (
           <div className="pp-body">
-            <StatsSection
-              label={`${seasonLabel} Regular Season`}
-              stats={p}
-              defs={defs}
-              highlight
-            />
-            {!defs.some(d => p[d.key] != null) && (
-              <div className="pp-no-stats">No stats available for this player yet.</div>
+            {statsLoading ? (
+              <div className="pp-heatmap-empty">
+                <div className="pp-heatmap-icon">📊</div>
+                <div>Loading stats…</div>
+              </div>
+            ) : (
+              <>
+                <StatsSection
+                  label={`${seasonLabel} Regular Season`}
+                  stats={p}
+                  defs={defs}
+                  highlight
+                />
+                {!defs.some(d => p[d.key] != null) && (
+                  <div className="pp-no-stats">No stats available for this player yet.</div>
+                )}
+              </>
             )}
           </div>
         )}

@@ -218,15 +218,14 @@ export default function MilestonesFeed() {
 
   useEffect(() => { fetchMilestones(team, isPWHL); }, [team, isPWHL, fetchMilestones]);
 
-  // Fetch the full player object and open the sport-appropriate popup.
-  // NHL: /player/landing proxies api-web.nhle.com (browser can't hit it
-  // directly — no CORS headers on their end), shape is the NHL landing
-  // API's own response, reshaped below for PlayerPopup.
-  // PWHL: /pwhl/player/landing queries Supabase directly and merges the
-  // player's season stats onto the identity row, since PWHLPlayerPopup
-  // (unlike NHL's PlayerPopup) reads stats straight off the player object
-  // instead of fetching them itself — no reshaping needed, passed through
-  // as-is.
+  // Open the sport-appropriate popup.
+  // PWHL: PWHLPlayerPopup self-fetches identity + stats by id (GET
+  // /pwhl/player/landing) — nothing to pre-fetch here, just pass the id.
+  // NHL: PlayerPopup does NOT self-fetch identity (only stats, via
+  // getPlayerStats) — it needs a minimum {id, firstName, lastName,
+  // teamAbbrev} shape from the caller, so this still fetches /player/landing
+  // (proxying api-web.nhle.com — browser can't hit it directly, no CORS
+  // headers on their end) and reshapes the response.
   //
   // Confirmed (via two independent NHL API references — nhlapi-tools
   // PyPI package's real usage, and a hosted API doc listing get_landing's
@@ -234,29 +233,26 @@ export default function MilestonesFeed() {
   // currentTeamAbbrev, not teamAbbrev — checked first below, with
   // teamAbbrev kept only as a defensive fallback.
   async function handleOpenPlayer(playerId) {
+    if (isPWHL) {
+      setPopupPlayer({ player_id: playerId });
+      return;
+    }
     setPopupLoading(true);
     setPopupError(null);
     try {
-      if (isPWHL) {
-        const res = await fetch(`${WORKER_URL}/pwhl/player/landing?id=${playerId}`);
-        if (!res.ok) throw new Error('Player info not available');
-        const p = await res.json();
-        setPopupPlayer(p);
-      } else {
-        const res = await fetch(`${WORKER_URL}/player/landing?id=${playerId}`);
-        if (!res.ok) throw new Error('Player info not available');
-        const p = await res.json();
-        setPopupPlayer({
-          id: p.playerId ?? playerId,
-          firstName: p.firstName,
-          lastName: p.lastName,
-          positionCode: p.position,
-          teamAbbrev: p.currentTeamAbbrev ?? p.teamAbbrev,
-          headshot: p.headshot,
-          sweaterNumber: p.sweaterNumber,
-          shootsCatches: p.shootsCatches,
-        });
-      }
+      const res = await fetch(`${WORKER_URL}/player/landing?id=${playerId}`);
+      if (!res.ok) throw new Error('Player info not available');
+      const p = await res.json();
+      setPopupPlayer({
+        id: p.playerId ?? playerId,
+        firstName: p.firstName,
+        lastName: p.lastName,
+        positionCode: p.position,
+        teamAbbrev: p.currentTeamAbbrev ?? p.teamAbbrev,
+        headshot: p.headshot,
+        sweaterNumber: p.sweaterNumber,
+        shootsCatches: p.shootsCatches,
+      });
     } catch (err) {
       setPopupError(err.message);
     } finally {

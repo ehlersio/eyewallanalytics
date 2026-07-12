@@ -91,18 +91,6 @@ export default function PWHLPlayersView() {
 
   const seasonLabel = SEASONS.find(s => s.id === season)?.label || String(season);
 
-  // For popup: merge stat row with roster bio (roster has headshot/birth_date etc)
-  const rosterMap = useMemo(() => {
-    const m = {};
-    for (const p of roster) m[p.player_id] = p;
-    return m;
-  }, [roster]);
-
-  function openPopup(row) {
-    const bio = rosterMap[row.player_id] || {};
-    setSelected({ ...bio, ...row });
-  }
-
   if (!abbr || !teamId) {
     return (
       <div className="page">
@@ -152,17 +140,17 @@ export default function PWHLPlayersView() {
               <RosterSection
                 title="Forwards"
                 players={roster.filter(p => ['C','LW','RW','F'].includes(p.position))}
-                onSelect={p => setSelected({ ...p, ...(skaters.find(s => s.player_id === p.player_id) || {}) })}
+                onSelect={setSelected}
               />
               <RosterSection
                 title="Defencemen"
                 players={roster.filter(p => ['D','LD','RD'].includes(p.position))}
-                onSelect={p => setSelected({ ...p, ...(skaters.find(s => s.player_id === p.player_id) || {}) })}
+                onSelect={setSelected}
               />
               <RosterSection
                 title="Goalies"
                 players={roster.filter(p => p.position === 'G')}
-                onSelect={p => setSelected({ ...p, ...(goalies.find(g => g.player_id === p.player_id) || {}) })}
+                onSelect={setSelected}
               />
             </>
           )}
@@ -191,14 +179,14 @@ export default function PWHLPlayersView() {
             <SortableTable
               rows={skaters} cols={SKATER_COLS} defaultSort="points"
               loading={loading} emptyMsg={`No skater stats for ${seasonLabel}.`}
-              onRowClick={openPopup}
+              onRowClick={setSelected}
             />
           )}
           {gameType === 'goalies' && (
             <SortableTable
               rows={goalies} cols={GOALIE_COLS} defaultSort="wins"
               loading={loading} emptyMsg={`No goalie stats for ${seasonLabel}.`}
-              onRowClick={openPopup}
+              onRowClick={setSelected}
             />
           )}
         </>
