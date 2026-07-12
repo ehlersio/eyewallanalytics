@@ -518,6 +518,81 @@ describe('League page — CAR', () => {
   })
 })
 
+// ── Standings tab — magic/tragic number display (Session 59) ───
+// Live standings + team-seasons data are both stubbed here so these four
+// states (clinched, eliminated, active magic number, wildcard bubble) are
+// deterministic — the real season is rarely in all four states at once,
+// and definitely isn't during summer preseason.
+
+const WORKER_URL_LEAGUE = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
+
+function standingsEntry(overrides) {
+  return {
+    teamAbbrev: { default: overrides.abbr },
+    teamName: { default: overrides.abbr },
+    divisionName: 'Metropolitan',
+    conferenceName: 'Eastern',
+    gamesPlayed: 78,
+    wins: 40, losses: 30, otLosses: 8,
+    points: 88,
+    l10Wins: 5, l10Losses: 3, l10OtLosses: 2,
+    streakCode: 'W', streakCount: 2,
+    clinchIndicator: null,
+    ...overrides,
+  }
+}
+
+const MAGIC_STANDINGS = [
+  standingsEntry({ abbr: 'CAR', divisionSequence: 1, conferenceSequence: 1, leagueSequence: 1, wildcardSequence: 0, points: 110, clinchIndicator: 'p' }),
+  standingsEntry({ abbr: 'NYR', divisionSequence: 2, conferenceSequence: 2, leagueSequence: 2, wildcardSequence: 0, points: 95 }),
+  standingsEntry({ abbr: 'NJD', divisionSequence: 3, conferenceSequence: 3, leagueSequence: 3, wildcardSequence: 0, points: 90 }),
+  standingsEntry({ abbr: 'CBJ', divisionSequence: 4, conferenceSequence: 4, leagueSequence: 4, wildcardSequence: 1, points: 70 }),
+  standingsEntry({ abbr: 'PHI', divisionSequence: 5, conferenceSequence: 5, leagueSequence: 5, wildcardSequence: 2, points: 50, clinchIndicator: 'e' }),
+]
+
+const MAGIC_TEAM_SEASONS = [
+  { team: 'NYR', magic_number: 4,  tragic_number: 45, clinched: false, eliminated: false },
+  { team: 'CBJ', magic_number: 30, tragic_number: 6,  clinched: false, eliminated: false },
+]
+
+describe('Standings tab — magic/tragic number display', () => {
+  beforeEach(() => {
+    cy.intercept('GET', `${WORKER_URL_LEAGUE}/cache/standings*`, { body: MAGIC_STANDINGS }).as('getStandings')
+    cy.intercept('GET', `${WORKER_URL_LEAGUE}/team-seasons*`, { body: MAGIC_TEAM_SEASONS }).as('getTeamSeasons')
+    cy.setTeam('CAR')
+    cy.visit('/league')
+    cy.get('.league-view', { timeout: 15000 }).should('be.visible')
+  })
+
+  function rowFor(abbr) {
+    return cy.get('.lv-team-abbrev').contains(abbr).closest('.lv-row')
+  }
+
+  it('clinched: Presidents\' Trophy letter shows the fixed border color (CLINCH_COLOR bug fix)', () => {
+    rowFor('CAR').find('.lv-clinch-badge').should('contain', 'P')
+    rowFor('CAR').find('.lv-td--team')
+      .should('have.attr', 'style')
+      .and('include', 'border-left')
+  })
+
+  it('eliminated: "e" letter shows the fixed border color (CLINCH_COLOR bug fix)', () => {
+    rowFor('PHI').find('.lv-clinch-badge').should('contain', 'E')
+    rowFor('PHI').find('.lv-td--team')
+      .should('have.attr', 'style')
+      .and('include', 'border-left')
+  })
+
+  it('active magic number: pre-clinch team shows a green M-badge, no official clinch badge', () => {
+    rowFor('NYR').find('.lv-magic-badge').should('have.class', 'lv-magic-badge--clinch').and('contain', 'M4')
+    rowFor('NYR').find('.lv-clinch-badge').should('not.exist')
+  })
+
+  it('wildcard bubble: pre-elimination wildcard-pool team shows a red E-badge', () => {
+    cy.get('.lv-filter-btn').contains('Wild card').click()
+    rowFor('CBJ').find('.lv-magic-badge').should('have.class', 'lv-magic-badge--elim').and('contain', 'E6')
+  })
+})
+
 // ── Bottom nav ────────────────────────────────────────────────
 
 describe('League bottom nav link', () => {
