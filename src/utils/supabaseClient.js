@@ -351,9 +351,10 @@ export async function getTeamGameLog(count = 120, season = SEASON, teamAbbr = 'C
   }));
 }
 
-// Fetches team_seasons data needed for power rankings:
-// xgf_pct + roster_war_score for all 32 teams.
-// Replaces the earlier getTeamSeasonXg — same call, extra column.
+// Fetches team_seasons data needed for power rankings (xgf_pct +
+// roster_war_score) and the Standings tab's magic/tragic number display
+// (Session 59) for all 32 teams in one call.
+// Replaces the earlier getTeamSeasonXg — same call, extra columns.
 export async function getTeamSeasonData(season = SEASON) {
   const rows = await workerFetch(`/team-seasons?season=${season}`).catch(() => []);
   const map = {};
@@ -362,6 +363,10 @@ export async function getTeamSeasonData(season = SEASON) {
       xgfPct:       r.xgf_pct,
       rosterWar:    r.roster_war_score,
       gp:           r.games_played,
+      magicNumber:  r.magic_number,
+      tragicNumber: r.tragic_number,
+      clinched:     r.clinched,
+      eliminated:   r.eliminated,
     };
   }
   return map;

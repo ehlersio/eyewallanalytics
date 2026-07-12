@@ -32,6 +32,8 @@ const CLINCH_COLOR = {
   z:   '#1D9E75',
   y:   '#1D9E75',
   x:   '#1D9E75',
+  p:   'var(--amber)',
+  e:   'var(--red-bright)',
   wc1: '#5B8FD4',
   wc2: '#5B8FD4',
 };
@@ -58,10 +60,36 @@ function L10Dots({ wins, losses, otl }) {
 
 const COL_HEADERS = ['#', 'Team', 'GP', 'W', 'L', 'OTL', 'PTS', 'L10', 'STRK'];
 
-function StandingsRow({ entry, rank }) {
+// Once the NHL's own clinchIndicator is populated for a team (live, via
+// /cache/standings), it's ground truth and wins outright — see
+// eyewall-pipeline's playoff_race.py docstring. Only fall back to our
+// nightly-computed magic/tragic numbers pre-clinch/pre-elimination, and
+// only show whichever of the two is closer (smaller): that's the team's
+// actual near-term storyline — clinching soon, or in real elimination
+// danger — rather than showing both and burying the meaningful one.
+function magicTragicBadge(seasonData) {
+  if (!seasonData) return null;
+  const { magicNumber, tragicNumber } = seasonData;
+  if (magicNumber == null && tragicNumber == null) return null;
+  if (magicNumber != null && (tragicNumber == null || magicNumber <= tragicNumber)) {
+    return {
+      text:      `M${magicNumber}`,
+      title:     `Magic number: ${magicNumber} — combined regulation wins / rival losses needed to clinch a playoff spot`,
+      modifier:  'clinch',
+    };
+  }
+  return {
+    text:      `E${tragicNumber}`,
+    title:     `Elimination number: ${tragicNumber} — combined rival wins / regulation losses until eliminated`,
+    modifier:  'elim',
+  };
+}
+
+function StandingsRow({ entry, rank, teamSeasonData }) {
   const abbrev    = entry.teamAbbrev?.default ?? entry.teamAbbrev;
   const isPrimary = abbrev === PRIMARY;
   const clinchColor = CLINCH_COLOR[entry.clinchIndicator] ?? null;
+  const magicBadge  = entry.clinchIndicator ? null : magicTragicBadge(teamSeasonData?.[abbrev]);
 
   return (
     <tr
@@ -77,6 +105,11 @@ function StandingsRow({ entry, rank }) {
           <span className="lv-team-abbrev" style={{ color: TEAM_COLORS[abbrev] ?? 'var(--text)' }}>{abbrev}</span>
           {entry.clinchIndicator && (
             <span className="lv-clinch-badge">{entry.clinchIndicator.toUpperCase()}</span>
+          )}
+          {magicBadge && (
+            <span className={`lv-magic-badge lv-magic-badge--${magicBadge.modifier}`} title={magicBadge.title}>
+              {magicBadge.text}
+            </span>
           )}
         </span>
       </td>
@@ -100,7 +133,7 @@ function StandingsRow({ entry, rank }) {
   );
 }
 
-function StandingsTable({ rows, caption }) {
+function StandingsTable({ rows, caption, teamSeasonData }) {
   return (
     <table className="lv-table" aria-label={caption}>
       <thead>
@@ -112,7 +145,7 @@ function StandingsTable({ rows, caption }) {
       </thead>
       <tbody>
         {rows.map((entry, i) => (
-          <StandingsRow key={entry.teamAbbrev?.default ?? i} entry={entry} rank={i + 1} />
+          <StandingsRow key={entry.teamAbbrev?.default ?? i} entry={entry} rank={i + 1} teamSeasonData={teamSeasonData} />
         ))}
       </tbody>
     </table>
@@ -123,7 +156,7 @@ import { groupByDivision, groupByConference, buildWildCard } from '../utils/leag
 
 // ─── Standings Panel ──────────────────────────────────────────────────────────
 
-function StandingsPanel({ entries }) {
+function StandingsPanel({ entries, teamSeasonData }) {
   const [filter, setFilter] = useState('division');
 
   const byDivision   = useMemo(() => groupByDivision(entries),  [entries]);
@@ -170,7 +203,7 @@ function StandingsPanel({ entries }) {
               {divs.map(([divName, { rows }]) => (
                 <div key={divName} className="lv-div-card">
                   <div className="lv-div-card__header">{divName}</div>
-                  <StandingsTable rows={rows} caption={`${divName} Division standings`} />
+                  <StandingsTable rows={rows} caption={`${divName} Division standings`} teamSeasonData={teamSeasonData} />
                 </div>
               ))}
             </div>
@@ -182,14 +215,14 @@ function StandingsPanel({ entries }) {
         <section key={confName} className="lv-conf-section">
           <h3 className="lv-conf-label">{confName} Conference</h3>
           <div className="lv-div-card lv-div-card--wide">
-            <StandingsTable rows={rows} caption={`${confName} Conference standings`} />
+            <StandingsTable rows={rows} caption={`${confName} Conference standings`} teamSeasonData={teamSeasonData} />
           </div>
         </section>
       ))}
 
       {filter === 'league' && (
         <div className="lv-div-card lv-div-card--wide">
-          <StandingsTable rows={byLeague} caption="League standings" />
+          <StandingsTable rows={byLeague} caption="League standings" teamSeasonData={teamSeasonData} />
         </div>
       )}
 
@@ -200,13 +233,13 @@ function StandingsPanel({ entries }) {
             {Object.entries(divLeaders).map(([divName, rows]) => (
               <div key={divName} className="lv-div-card">
                 <div className="lv-div-card__header">{divName} — Division leaders</div>
-                <StandingsTable rows={rows} caption={`${divName} division leaders`} />
+                <StandingsTable rows={rows} caption={`${divName} division leaders`} teamSeasonData={teamSeasonData} />
               </div>
             ))}
           </div>
           <div className="lv-div-card lv-div-card--wide lv-div-card--wc">
             <div className="lv-div-card__header">Wild card race</div>
-            <StandingsTable rows={wcPool} caption={`${confName} wild card`} />
+            <StandingsTable rows={wcPool} caption={`${confName} wild card`} teamSeasonData={teamSeasonData} />
           </div>
         </section>
       ))}
@@ -1466,8 +1499,10 @@ export default function LeagueView() {
   const { data: bracket, loading: bracketLoading }
     = useFetch(getPlayoffBracket, []);
 
+  // Also needed on the Standings tab (not just Power rankings) for the
+  // magic/tragic number display (Session 59).
   const { data: xgData, loading: xgLoading } = useFetch(
-    () => activeTab === 'rankings' ? getTeamSeasonData() : Promise.resolve(null),
+    () => (activeTab === 'rankings' || activeTab === 'standings') ? getTeamSeasonData() : Promise.resolve(null),
     [activeTab]
   )
   const { data: prNarrative } = useFetch(
@@ -1503,7 +1538,7 @@ export default function LeagueView() {
           <>
             {standingsLoading && <LoadingRows />}
             {standingsError   && <ErrorState message="Couldn't load standings." />}
-            {!standingsLoading && !standingsError && <StandingsPanel entries={standingsEntries} />}
+            {!standingsLoading && !standingsError && <StandingsPanel entries={standingsEntries} teamSeasonData={xgData} />}
           </>
         )}
 
