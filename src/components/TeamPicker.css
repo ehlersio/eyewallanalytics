@@ -85,8 +85,17 @@
     transform: translateY(0);
 }
 .team-picker-sport-logo {
-    height: 48px;
+    /* max-height/max-width (not height/width) so a wide-aspect-ratio
+       wordmark like the PWHL logo (142x34, ~4.2:1) shrinks to fit the
+       tile's content width instead of overflowing it — height:48px with
+       width:auto computed a ~200px-wide render that spilled past the
+       tile's ~88-123px content width depending on viewport (confirmed on
+       iOS PWA). max-width:100% instead of a fixed px value so this stays
+       correct at any tile width rather than just the widths tested. */
+    max-height: 48px;
+    max-width: 100%;
     width: auto;
+    height: auto;
     object-fit: contain;
     /* NHL logo is white on transparent — fine for dark mode.
        PWHL logo may need a brightness boost if it renders dark. */
