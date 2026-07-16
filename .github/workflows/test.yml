@@ -1,10 +1,13 @@
 name: Test
 
 on:
-  push:
-    branches: [main, staging]
   pull_request:
     branches: [main, staging]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - '.editorconfig'
+      - 'LICENSE'
 
 jobs:
   test:
