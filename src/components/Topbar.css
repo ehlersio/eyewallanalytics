@@ -35,6 +35,17 @@
   height: var(--topbar-height);
 }
 
+/* Groups the search + settings icons into a single flex item so
+   .topbar-row's space-between doesn't spread extra row width between
+   them the way it does between the other top-level children — without
+   this wrapper, the gap between the two icons scaled with leftover row
+   width instead of staying a fixed, tight distance. */
+.topbar-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .topbar-logo {
   display: flex;
   align-items: center;

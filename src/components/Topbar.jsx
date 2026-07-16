@@ -156,8 +156,10 @@ export default function Topbar() {
           </div>
         )}
 
-        <PlayerSearch />
-        <NotificationBell />
+        <div className="topbar-icons">
+          <PlayerSearch />
+          <NotificationBell />
+        </div>
       </div>
 
       {activeLiveGame && momentum && (
