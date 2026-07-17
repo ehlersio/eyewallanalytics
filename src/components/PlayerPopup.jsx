@@ -715,7 +715,7 @@ function ScoutingBlurb({ data, playerName }) {
     <div className="scout-wrap">
       <div className="scout-header">
         <span className="scout-label">Scouting Report</span>
-        <span className="scout-season">2025–26</span>
+        <span className="scout-season">{SEASON_LABEL}</span>
       </div>
       <div className="scout-blurb">{data.blurb}</div>
       <div className="scout-footer">

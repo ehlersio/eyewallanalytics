@@ -16,6 +16,58 @@ function liveSeriesIt(title, fn) {
   })
 }
 
+const WORKER_URL_LEAGUE = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
+
+// ── Standings / Power rankings / Leaders — zero-data empty states ──
+// Regression coverage for the Session 61 NHL season-flip prep: once the
+// season live-flips ahead of puck drop, standings/team-seasons/leaders
+// endpoints genuinely return zero rows (rosters + schedule exist, no games
+// played yet) until real games start. Before this fix, Standings/Leaders
+// rendered blank headers with no explanation, and Power Rankings' loading
+// skeleton spun forever (`loading = !standings?.length || xgLoading` never
+// resolved once standings was a real, empty array) — all three read as
+// "broken," not "season hasn't started." Stubbed to zero rows here since
+// the real season is rarely (if ever) actually in this state.
+//
+// Placed as the very first describe block in this spec, before even the
+// smoke tests — the leaders endpoints are keyed by season/gameType only
+// (not by team), so any earlier real page visit for ANY team populates
+// Chromium's HTTP cache for these exact URLs; a later cy.intercept() never
+// sees the request at all once that's happened (confirmed: this test
+// failed with "No request ever occurred" only when something upstream in
+// the same spec file had visited /league for real first, and passed
+// instantly in isolation or when run first).
+
+describe('Standings / Power rankings / Leaders — season-not-started empty state', () => {
+  beforeEach(() => {
+    cy.intercept('GET', `${WORKER_URL_LEAGUE}/cache/standings*`, { body: [] }).as('getStandings')
+    cy.intercept('GET', '**/nhl-api/v1/skater-stats-leaders/**', { body: { points: [], goals: [] } }).as('getSkaterLeaders')
+    cy.intercept('GET', '**/nhl-api/v1/goalie-stats-leaders/**', { body: { savePctg: [], goalsAgainstAverage: [] } }).as('getGoalieLeaders')
+    cy.setTeam('CAR')
+    cy.visit('/league')
+    cy.get('.league-view', { timeout: 15000 }).should('be.visible')
+  })
+
+  it('Standings tab shows the season-not-started message instead of blank headers/table', () => {
+    cy.get('.lv-season-empty').should('be.visible').and('contain', "hasn't started yet")
+    cy.get('.lv-table').should('not.exist')
+    cy.get('.lv-conf-label').should('not.exist')
+  })
+
+  it('Power rankings tab shows the season-not-started message instead of an infinite skeleton', () => {
+    cy.get('.league-tab').contains('Power rankings').click()
+    cy.get('.lv-season-empty').should('be.visible').and('contain', 'Power rankings will appear')
+    cy.get('.lv-skeleton-wrap').should('not.exist')
+    cy.get('.pr-row').should('not.exist')
+  })
+
+  it('Leaders tab shows the season-not-started message instead of four blank cards', () => {
+    cy.get('.league-tab').contains('Leaders').click()
+    cy.get('.lv-season-empty').should('be.visible').and('contain', 'Stat leaders will appear')
+    cy.get('.lv-leaders-card').should('not.exist')
+  })
+})
+
 // ── Smoke tests — all 32 teams ────────────────────────────────
 // Verifies the League page loads without JS errors for a sample of teams.
 
@@ -523,8 +575,6 @@ describe('League page — CAR', () => {
 // states (clinched, eliminated, active magic number, wildcard bubble) are
 // deterministic — the real season is rarely in all four states at once,
 // and definitely isn't during summer preseason.
-
-const WORKER_URL_LEAGUE = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
 
 function standingsEntry(overrides) {
   return {

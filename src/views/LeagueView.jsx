@@ -27,6 +27,7 @@ import DraftTab from '../components/DraftTab';
 
 const PRIMARY = TEAM_CONFIG.abbr;
 const SEASON  = TEAM_CONFIG.season;
+const SEASON_LABEL = `${SEASON.slice(0, 4)}–${SEASON.slice(6)}`;
 
 const CLINCH_COLOR = {
   z:   '#1D9E75',
@@ -171,6 +172,10 @@ function StandingsPanel({ entries, teamSeasonData }) {
     { id: 'wildcard',   label: 'Wild card' },
   ];
 
+  if (entries.length === 0) {
+    return <SeasonNotStartedState />;
+  }
+
   return (
     <div>
       <div className="lv-filter-row" role="group" aria-label="Standings view">
@@ -296,6 +301,11 @@ function LeadersCard({ title, statLabel, rows, formatStat, onPlayerClick }) {
 
 function LeadersPanel({ scoring, goals, gaa, svp }) {
   const [selectedPlayer, setSelectedPlayer] = React.useState(null);
+
+  const hasAnyData = [scoring, goals, gaa, svp].some((rows) => (rows ?? []).length > 0);
+  if (!hasAnyData) {
+    return <SeasonNotStartedState>Stat leaders will appear once games begin.</SeasonNotStartedState>;
+  }
 
   return (
     <>
@@ -849,6 +859,19 @@ function ErrorState({ message }) {
   );
 }
 
+// Shared across Standings, Stats Leaders, and Power Rankings — all three go
+// blank once the season is live-flipped but before any games have been
+// played (rosters/schedule exist, but standings/stats/rankings genuinely
+// have zero rows). Distinct from ErrorState: this isn't a failure, so no
+// warning icon and a calmer tone.
+function SeasonNotStartedState({ children }) {
+  return (
+    <div className="lv-season-empty">
+      <p>{children ?? `The ${SEASON_LABEL} season hasn't started yet — check back once games begin.`}</p>
+    </div>
+  );
+}
+
 // ─── Power Rankings ───────────────────────────────────────────────────────────
 
 /**
@@ -1083,11 +1106,16 @@ function RankSparkline({ history, primaryColor }) {
 
 // ─── Rankings Panel ───────────────────────────────────────────────────────────
 
-function RankingsPanel({ standings, xgData, xgLoading, narrative, history }) {
+function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrative, history }) {
   const [showHow,    setShowHow]    = useState(false);
   const [canvasMounted, setCanvasMounted] = useState(false);
   const ranked  = computePowerRankings(standings, xgData);
-  const loading = !standings?.length || xgLoading;
+  // standingsLoading/xgLoading in flight vs. fetch done but genuinely zero
+  // rows (season live-flipped, no games played yet) are different states —
+  // conflating them here used to mean an empty season showed this loading
+  // skeleton forever instead of a "not started yet" message.
+  const loading = standingsLoading || xgLoading;
+  const empty   = !loading && !standings?.length;
 
   // Find this team's rank + prior for movement
   const myData    = ranked.find(t => t.abbr === PRIMARY);
@@ -1127,6 +1155,10 @@ function RankingsPanel({ standings, xgData, xgLoading, narrative, history }) {
         ))}
       </div>
     );
+  }
+
+  if (empty) {
+    return <SeasonNotStartedState>Power rankings will appear once games begin.</SeasonNotStartedState>;
   }
 
   return (
@@ -1564,6 +1596,7 @@ export default function LeagueView() {
             <ScrollTopButton />
             <RankingsPanel
             standings={standingsEntries}
+            standingsLoading={standingsLoading}
             xgData={xgData}
             xgLoading={xgLoading}
             narrative={prNarrative}

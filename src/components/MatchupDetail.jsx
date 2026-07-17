@@ -103,7 +103,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   const oppAbbr = opp?.abbrev || 'OPP';
   const oppColor = TEAM_COLORS[oppAbbr] || '#7a8899';
   const gameType = playoffSeries ? 3 : 2;
-  const { data: carLines } = useFetch(() => getTeamLines(TEAM_CONFIG.abbr, 20252026, gameType), [TEAM_CONFIG.abbr, gameType]);
+  const { data: carLines } = useFetch(() => getTeamLines(TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType), [TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType]);
 
   // Auto-save prediction — must be before any early returns (Rules of Hooks)
   React.useEffect(() => {

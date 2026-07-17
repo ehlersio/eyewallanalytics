@@ -557,7 +557,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
     [oppAbbr, 'po', isPlayoff]
   );
   const { data: goalieAnalytics } = useFetch(() => getGoalieAnalytics());
-  const { data: carLines } = useFetch(() => getTeamLines(TEAM_CONFIG.abbr, 20252026, gameType), [TEAM_CONFIG.abbr, gameType]);
+  const { data: carLines } = useFetch(() => getTeamLines(TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType), [TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType]);
   const { data: matchupData } = useFetch(() => getGameMatchup(gameId), [gameId]);
 
   // Use playoff stats when available, fall back to regular season
@@ -735,4 +735,4 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
   );
 }
 
-const SEASON_LABEL = '2025–26';
+const SEASON_LABEL = `${TEAM_CONFIG.season.slice(0, 4)}–${TEAM_CONFIG.season.slice(6)}`;

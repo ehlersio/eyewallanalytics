@@ -579,6 +579,13 @@
   padding: 1.5rem 0;
 }
 
+.lv-season-empty {
+  color: var(--text-dim);
+  font-size: 13px;
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+
 /* ── Responsive ── */
 
 @media (max-width: 600px) {
