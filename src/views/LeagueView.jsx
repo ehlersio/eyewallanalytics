@@ -350,8 +350,13 @@ const TEAM_COLORS = Object.fromEntries(ALL_TEAMS.map(t => [t.abbr, t.displayColo
 // Primary team display color for YOU-row highlights and bracket card accent.
 const PRIMARY_COLOR = TEAM_CONFIG.displayColor;
 
-// Last completed playoff bracket — shown during offseason when the API returns no data.
-// Update this once per year alongside MP_SEASON (next bump: October 2026 → 20262027 season).
+// Last completed playoff bracket — shown during offseason when the API
+// returns no data. Verified against the real 2025-26 results (NHL's
+// /playoff-series/carousel/20252026) as part of the 2026-27 season flip —
+// already accurate, no data change needed. Update again once the 2026-27
+// playoffs actually conclude (MP_SEASON no longer exists as a separate
+// concept to bump alongside — season resolution is live now, see
+// teamConfig.js).
 const OFFSEASON_BRACKET = {
   east: [
     { round: 1, series: [
@@ -1547,7 +1552,17 @@ export default function LeagueView() {
   )
 
   const leadersLoading   = scoringLoading || goalsLoading || gaaLoading || svpLoading;
-  const standingsEntries = Array.isArray(standings) ? standings : [];
+  // NHL's /standings/now stays pinned to last season's finale for months
+  // after our season config flips (independent, live, un-related feed —
+  // see nhlApi.js's _getTeamStats() for the full story). A real, non-empty,
+  // but stale response would otherwise sail past the entries.length===0
+  // check below and render last season's table as if it were current.
+  // Only reject on an EXPLICIT mismatch — the real NHL API always includes
+  // seasonId, but nothing else that stubs standings in tests does, and an
+  // absent field isn't evidence of staleness.
+  const standingsAreStale = standings?.[0]?.seasonId != null
+    && String(standings[0].seasonId) !== SEASON;
+  const standingsEntries = standingsAreStale ? [] : (Array.isArray(standings) ? standings : []);
 
   return (
     <div className="league-view">

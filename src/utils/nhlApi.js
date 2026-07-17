@@ -447,6 +447,17 @@ async function _getTeamStats(teamAbbr = TEAM_ABBR) {
     return FALLBACK_STATS;
   }
 
+  // The NHL's own /standings/now redirects to whatever date it last
+  // resolved standings for, independent of our app's season config — it
+  // stays pinned to last season's finale for months until real games exist
+  // for the new one. Each row carries its own seasonId; a mismatch here
+  // means `team` is a genuine, real, but STALE full prior season, not
+  // "this season's data" — return null (distinct from "not found") rather
+  // than silently feeding a full 82-game record into this season's stats.
+  if (team.seasonId != null && String(team.seasonId) !== TEAM_CONFIG.season) {
+    return null;
+  }
+
   const gp = team.gamesPlayed || 1;
 
   // Field name notes for NHL API standings:

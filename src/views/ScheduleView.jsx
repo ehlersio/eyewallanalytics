@@ -55,11 +55,13 @@ export default function ScheduleView() {
   // trusting "now" to mean "this season" — otherwise a full prior season's
   // 82-game record (real GF/GA, PP%/PK%, streak) silently feeds computeWinPct
   // and the auto-saved prediction as if it were this season's partial form.
-  const standingsAreCurrent = standings?.[0]?.seasonId != null
-    && String(standings[0].seasonId) === TEAM_CONFIG.season;
+  // Only reject on an EXPLICIT mismatch — an absent seasonId (e.g. a test
+  // stub) isn't evidence of staleness, the real NHL API always includes it.
+  const standingsAreStale = standings?.[0]?.seasonId != null
+    && String(standings[0].seasonId) !== TEAM_CONFIG.season;
 
   const standingMap = {};
-  if (standingsAreCurrent) standings.forEach(t => {
+  if (!standingsAreStale) (standings || []).forEach(t => {
     // Key by the abbreviation — handle both { default: "CAR" } and plain "CAR"
     const abbr = t.teamAbbrev?.default || t.teamAbbrev;
     if (abbr) {
