@@ -1,0 +1,86 @@
+/* ── Season Comparison Picker (Session 64) ── */
+.season-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.season-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg2);
+  border: 0.5px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.season-chip:hover:not(:disabled) { background: var(--bg3); color: var(--text); }
+.season-chip:focus-visible {
+  outline: 2px solid var(--red-bright);
+  outline-offset: 2px;
+}
+
+.season-chip-selected {
+  background: var(--red-dim);
+  border-color: var(--red-border);
+  color: var(--text);
+}
+.season-chip-selected:hover { background: var(--red-dim); }
+
+.season-chip-partial { color: var(--text-dim); }
+.season-chip-badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--amber);
+  background: rgba(240, 160, 48, 0.14);
+  border-radius: 4px;
+  padding: 2px 5px;
+}
+
+.season-chip-disabled,
+.season-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.season-picker-loading { align-items: center; }
+.season-picker-skeleton {
+  width: 72px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+  animation: seasonPickerPulse 1.2s ease-in-out infinite;
+}
+@keyframes seasonPickerPulse {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+
+.season-picker-error,
+.season-picker-empty {
+  font-size: 12px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.season-picker-retry {
+  background: none;
+  border: 0.5px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+  min-height: unset;
+}
+.season-picker-retry:hover { color: var(--text); background: var(--bg3); }

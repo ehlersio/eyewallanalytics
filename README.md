@@ -98,7 +98,8 @@ canes-analytics-starter/
 │   │   ├── CalendarView.jsx            # NHL calendar month view
 │   │   ├── PWHLCalendarView.jsx        # PWHL calendar month view
 │   │   ├── InfoTip.jsx/.css            # Tap-to-open tooltip
-│   │   └── StatBar.jsx/.css            # Comparative stat bar
+│   │   ├── StatBar.jsx/.css            # Comparative stat bar
+│   │   └── SeasonComparisonPicker.jsx/.css # Generic N-season selector for season-over-season comparison (NHL + PWHL, not league-specific)
 │   ├── hooks/
 │   │   ├── useFetch.js                 # Data fetching + polling (cache: no-store)
 │   │   ├── usePushNotifications.js
@@ -107,16 +108,17 @@ canes-analytics-starter/
 │   └── utils/
 │       ├── nhlApi.js                   # NHL API calls + KV caching
 │       ├── pwhlApi.js                  # PWHL Worker API calls
+│       ├── seasonComparison.js         # Pure label/normalization helpers for season-over-season comparison
 │       ├── pwhlConfig.js               # PWHL team configs (12 teams: 8 established + 4 expansion, all live/selectable)
 │       ├── teamConfig.js               # NHL 32-team configs; CURRENT_SEASON live-resolved (fallback seed only)
-│       ├── seasonClient.js             # Shared memoized fetch for /config/seasons — used by teamConfig.js + pwhlConfig.js
+│       ├── seasonClient.js             # Shared memoized fetch for /config/seasons (teamConfig.js + pwhlConfig.js) and /config/seasons/comparison (SeasonComparisonPicker)
 │       ├── SportContext.jsx            # Sport state (NHL/PWHL) + localStorage persistence
 │       ├── advancedStats.js
 │       ├── supabaseClient.js           # DB queries; getTeamXgTrend, getGoalieShots (no car_game filter)
 │       ├── playerSearch.js             # Fuzzy player search — fetches GET /players-search-index once per session, matches via Fuse.js
 │       └── analytics.js
 ├── src/utils/__tests__/
-│   └── *.test.js                       # Vitest unit tests (8 files, 138 tests)
+│   └── *.test.js                       # Vitest unit tests (10 files, 157 tests)
 ├── cypress/
 │   ├── e2e/
 │   │   ├── navigation.cy.js            # NHL + PWHL route navigation smoke (all 12 PWHL teams)
