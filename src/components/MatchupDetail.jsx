@@ -139,14 +139,16 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
     });
   }, [game?.id]);
 
-  // Guard: if standings data unavailable show a graceful message with debug info
+  // Guard: no current-season standings to build a prediction from. Not just
+  // a loading flash — ScheduleView.jsx withholds carStanding/oppStanding
+  // entirely once the season flips and the NHL's own live standings feed
+  // hasn't caught up to it yet, which is the steady state for most of the
+  // preseason, not a rare edge case.
   if (!carStanding || !oppStanding) {
     return (
       <div className="matchup-detail card">
         <div className="md-note">
-          📊 Loading standings data…
-          {!carStanding && ` ${TEAM_CONFIG.abbr} standings not found.`}
-          {!oppStanding && ` ${oppAbbr} standings not found.`}
+          📊 Prediction needs this season's standings — not available until games begin.
         </div>
         {odds && (
           <div className="md-odds-row" style={{ marginTop: 12 }}>
