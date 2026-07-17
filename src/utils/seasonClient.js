@@ -34,3 +34,26 @@ export function fetchSeasonsConfig() {
   }
   return inFlight;
 }
+
+// Separate memoized fetch for /config/seasons/comparison (Session 64 —
+// season-over-season comparison). Kept independent from fetchSeasonsConfig
+// above rather than merged into one call: that endpoint answers "what's
+// current," this one answers "what's comparable," and they're consumed by
+// different things at different times (app-boot vs. opening a comparison
+// picker) — no reason to force one to wait on the other.
+let comparisonInFlight = null;
+
+export function fetchComparisonSeasons() {
+  if (!comparisonInFlight) {
+    comparisonInFlight = fetch(`${WORKER_BASE}/config/seasons/comparison`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`config/seasons/comparison ${res.status}`);
+        return res.json();
+      })
+      .catch((e) => {
+        comparisonInFlight = null;
+        throw e;
+      });
+  }
+  return comparisonInFlight;
+}
