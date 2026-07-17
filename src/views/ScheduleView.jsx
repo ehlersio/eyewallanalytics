@@ -47,8 +47,19 @@ export default function ScheduleView() {
   const { data: oddsData }                           = useFetch(getNhlOdds);
   const { data: playoffRounds }                      = useFetch(getPlayoffSeries);
 
+  // The NHL's own /standings/now redirects to whatever date it last actually
+  // resolved standings for — which stays pinned to last season's final date
+  // until real games exist for the new one (confirmed: still redirects to
+  // 2026-04-17, last season's finale, mid-July 2026). Every row carries its
+  // own `seasonId`, so compare that against our resolved season rather than
+  // trusting "now" to mean "this season" — otherwise a full prior season's
+  // 82-game record (real GF/GA, PP%/PK%, streak) silently feeds computeWinPct
+  // and the auto-saved prediction as if it were this season's partial form.
+  const standingsAreCurrent = standings?.[0]?.seasonId != null
+    && String(standings[0].seasonId) === TEAM_CONFIG.season;
+
   const standingMap = {};
-  if (standings) standings.forEach(t => {
+  if (standingsAreCurrent) standings.forEach(t => {
     // Key by the abbreviation — handle both { default: "CAR" } and plain "CAR"
     const abbr = t.teamAbbrev?.default || t.teamAbbrev;
     if (abbr) {
@@ -445,7 +456,7 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
               cardFavoured={cardFavoured}
               onClick={() => setSelectedGame(isSelected ? null : game)}
             />
-            {isSelected && oppStanding && carStanding && (
+            {isSelected && (
               <MatchupDetail game={game} oppStanding={oppStanding} carStanding={carStanding} odds={gameOdds} />
             )}
           </div>
