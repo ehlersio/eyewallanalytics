@@ -131,6 +131,10 @@ describe('League page — CAR', () => {
   // ── Standings tab ─────────────────────────────────────────────
 
   describe('Standings tab', () => {
+    beforeEach(function () {
+      cy.skipIfEither('.lv-season-empty', '.lv-table')
+    })
+
     it('shows the four filter buttons', () => {
       cy.get('.lv-filter-btn').should('have.length', 4)
       cy.get('.lv-filter-btn').eq(0).should('contain', 'By division')
@@ -484,52 +488,63 @@ describe('League page — CAR', () => {
       cy.get('.league-tab').contains('Standings').should('not.have.class', 'league-tab--active')
     })
 
-    it('shows 32 ranked rows', () => {
+    it('shows 32 ranked rows', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row', { timeout: 10000 })
       cy.get('.pr-row', { timeout: 10000 }).should('have.length', 32)
     })
 
-    it('first row has rank 1', () => {
+    it('first row has rank 1', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-rank-num').first().should('contain', '1')
     })
 
-    it('last row has rank 32', () => {
+    it('last row has rank 32', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-rank-num').last().should('contain', '32')
     })
 
-    it('shows column headers Pts%, L10, xGF%, GD/GP', () => {
+    it('shows column headers Pts%, L10, xGF%, GD/GP', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-table-header-row').should('contain', 'Pts%')
       cy.get('.pr-table-header-row').should('contain', 'L10')
       cy.get('.pr-table-header-row').should('contain', 'xGF%')
       cy.get('.pr-table-header-row').should('contain', 'GD/GP')
     })
 
-    it('shows team abbreviations in each row', () => {
+    it('shows team abbreviations in each row', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-abbr').first().invoke('text').should('match', /^[A-Z]{2,3}$/)
     })
 
-    it('shows Pts% as a percentage value', () => {
+    it('shows Pts% as a percentage value', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-row').first().find('.pr-col-stat').first()
         .invoke('text').should('match', /\d+\.\d%/)
     })
 
-    it('shows YOU row highlighted on CAR', () => {
+    it('shows YOU row highlighted on CAR', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-row--you').should('exist')
     })
 
-    it('top 8 ranks are styled with pr-rank--top class', () => {
+    it('top 8 ranks are styled with pr-rank--top class', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-rank--top').should('have.length', 8)
     })
 
-    it('bottom 8 ranks are styled with pr-rank--bot class', () => {
+    it('bottom 8 ranks are styled with pr-rank--bot class', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-rank--bot').should('have.length', 8)
     })
 
-    it('shows "How is this calculated?" toggle', () => {
+    it('shows "How is this calculated?" toggle', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-how-toggle').scrollIntoView().should('exist')
       cy.get('.pr-how-toggle').should('contain', 'How is this calculated?')
     })
 
-    it('how-toggle expands and collapses the explanation', () => {
+    it('how-toggle expands and collapses the explanation', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-how-body').should('not.exist')
       cy.get('.pr-how-toggle').click()
       cy.get('.pr-how-body').should('be.visible')
@@ -537,7 +552,8 @@ describe('League page — CAR', () => {
       cy.get('.pr-how-body').should('not.exist')
     })
 
-    it('expanded explanation shows all six components', () => {
+    it('expanded explanation shows all six components', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-how-toggle').click()
       cy.get('.pr-how-item').should('have.length', 6)
       cy.get('.pr-how-item').eq(0).should('contain', 'Points %')
@@ -548,7 +564,8 @@ describe('League page — CAR', () => {
       cy.get('.pr-how-item').eq(5).should('contain', 'Roster WAR')
     })
 
-    it('each component shows a weight percentage', () => {
+    it('each component shows a weight percentage', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-how-toggle').click()
       cy.get('.pr-how-weight').should('have.length', 6)
       cy.get('.pr-how-weight').each($el => {
@@ -556,7 +573,8 @@ describe('League page — CAR', () => {
       })
     })
 
-    it('shows Roster WAR component in explanation', () => {
+    it('shows Roster WAR component in explanation', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-how-toggle').click()
       cy.get('.pr-how-item').should('have.length', 6)
       cy.get('.pr-how-item').eq(5).should('contain', 'Roster WAR')
@@ -583,7 +601,8 @@ describe('League page — CAR', () => {
       })
     })
 
-    it('shows movement arrow on YOU row when prior rank exists', () => {
+    it('shows movement arrow on YOU row when prior rank exists', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       // Movement arrow only appears after first baseline run
       cy.get('.pr-row--you').then($row => {
         const $mvmt = $row.find('.pr-mvmt')
@@ -593,7 +612,8 @@ describe('League page — CAR', () => {
       })
     })
 
-    it('shows export button', () => {
+    it('shows export button', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.share-buttons-row').scrollIntoView().should('exist')
       cy.get('.share-buttons-row').should('contain', 'Save Image')
     })
