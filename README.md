@@ -82,8 +82,8 @@ canes-analytics-starter/
 │   │   ├── BottomNav.jsx               # Sport-aware bottom navigation
 │   │   ├── TeamPicker.jsx              # Sport + team selection (NHL + PWHL); active/expansion PWHL split derives from comingSoon (fixed 2026-07 — used to be a 2nd hardcoded list, ignored comingSoon entirely)
 │   │   ├── IceRink.jsx/.css            # SVG rink — shots, heat map, team-aware
-│   │   ├── PWHLPlayerPopup.jsx         # PWHL player popup (Stats, Heat Map, Scout)
-│   │   ├── PlayerPopup.jsx             # NHL player popup (Stats, Analytics, Heat Map)
+│   │   ├── PWHLPlayerPopup.jsx         # PWHL player popup (Stats, Heat Map, Scout, Compare — season-over-season, up to 4 seasons, one fetch per season)
+│   │   ├── PlayerPopup.jsx             # NHL player popup (Stats, Analytics, Heat Map, Compare — season-over-season, reuses the seasonTotals already fetched for Stats)
 │   │   ├── GameEvents.jsx/.css         # Goal/penalty/win/puck drop popups
 │   │   ├── ScoutingTab.jsx/.css        # NHL opponent scouting
 │   │   ├── DraftTab.jsx/.css           # NHL draft board

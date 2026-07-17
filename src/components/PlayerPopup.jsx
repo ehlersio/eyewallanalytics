@@ -26,8 +26,10 @@ import {
   getResultsVsProcessNarrative,
 } from '../utils/supabaseClient'
 import { findContract, contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING } from '../utils/carContracts'
+import { nhlSeasonLabel } from '../utils/seasonComparison'
 import IceRink from '../components/IceRink'
 import InfoTip from '../components/InfoTip'
+import SeasonComparisonPicker from '../components/SeasonComparisonPicker'
 import '../views/PlayersView.css'
 
 const SEASON       = Number(TEAM_CONFIG.season.slice(0, 4) + TEAM_CONFIG.season.slice(4))
@@ -213,8 +215,8 @@ function StatRow({ def, value }) {
   )
 }
 
-function StatSection({ label, groups, highlight, _isGoalie }) {
-  const [open, setOpen] = useState(highlight)
+function StatSection({ label, groups, highlight, defaultOpen = highlight, _isGoalie }) {
+  const [open, setOpen] = useState(defaultOpen)
   return (
     <div className={`stat-section ${highlight ? 'highlight-section' : ''}`}>
       <button className="stat-section-header" onClick={() => setOpen(o => !o)}>
@@ -735,6 +737,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   // In league context only show Stats + Analytics; in roster context show all four
   const defaultTab = 'stats'
   const [ppTab, setPpTab] = useState(defaultTab)
+  const [compareSeasons, setCompareSeasons] = useState([])
 
   const { data: scoutData } = useFetch(
     () => !isLeagueContext ? getScoutingBlurb(p.id, SEASON) : Promise.resolve(undefined),
@@ -992,6 +995,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
           {!isLeagueContext && (
             <button className={`pp-tab ${ppTab === 'scout' ? 'active' : ''}`} onClick={() => setPpTab('scout')}>🔍 Scout</button>
           )}
+          <button className={`pp-tab ${ppTab === 'compare' ? 'active' : ''}`} onClick={() => setPpTab('compare')}>🆚 Compare</button>
         </div>
 
         {/* ── Stats tab ── */}
@@ -1039,6 +1043,41 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
         {/* ── Scout tab — CAR context only ── */}
         {ppTab === 'scout' && !isLeagueContext && (
           <ScoutingBlurb data={scoutData} playerName={name} />
+        )}
+
+        {/* ── Compare tab — season-over-season (Session 64) ──
+            Reuses seasonTotals already fetched for the Stats tab above — no
+            second network call. Deliberately does NOT enrich with
+            mpData/goalieData (WAR/RAPM/QS%) the way the Stats tab's current
+            season does: those Supabase lookups are current-season-only, so
+            attaching them to a non-current selected season would silently
+            mislabel one season's numbers as another's. Box-score fields
+            from the NHL API's own seasonTotals only. */}
+        {ppTab === 'compare' && (
+          <div className="pp-body">
+            <SeasonComparisonPicker
+              league="nhl"
+              selected={compareSeasons}
+              onChange={setCompareSeasons}
+              maxSelected={4}
+            />
+            {compareSeasons.length === 0 && (
+              <div className="pp-no-stats">Select two or more seasons above to compare.</div>
+            )}
+            {[...compareSeasons].sort((a, b) => b - a).map(season => {
+              const seasonStats = stats?.seasonTotals?.find(s => s.season === season && s.gameTypeId === 2)
+              if (!seasonStats) {
+                return (
+                  <div key={season} className="pp-no-stats">
+                    No regular-season data for {nhlSeasonLabel(season)}.
+                  </div>
+                )
+              }
+              const groups = groupStats(statDefs, seasonStats, isGoalie)
+              if (!groups.length) return null
+              return <StatSection key={season} label={nhlSeasonLabel(season)} groups={groups} highlight={false} defaultOpen isGoalie={isGoalie} />
+            })}
+          </div>
         )}
       </div>
     </div>

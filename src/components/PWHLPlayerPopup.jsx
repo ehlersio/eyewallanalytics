@@ -15,6 +15,8 @@
 import { useState } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import { fetchPWHLPlayerShots, fetchPWHLPlayerLanding } from '../utils/pwhlApi';
+import { fetchComparisonSeasons } from '../utils/seasonClient';
+import { normalizeComparisonSeasons } from '../utils/seasonComparison';
 import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP } from '../utils/pwhlConfig';
 
 const TEAM_CODES = {1:'BOS',2:'MIN',3:'MTL',4:'NY',5:'OTT',6:'TOR',8:'SEA',9:'VAN'};
@@ -22,6 +24,7 @@ const TEAM_CODES = {1:'BOS',2:'MIN',3:'MTL',4:'NY',5:'OTT',6:'TOR',8:'SEA',9:'VA
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
 import IceRink from './IceRink';
 import InfoTip from './InfoTip';
+import SeasonComparisonPicker from './SeasonComparisonPicker';
 import '../views/PlayersView.css';
 
 const SEASON_LABEL = '2025–26';
@@ -342,11 +345,60 @@ function PWHLScout({ player, isGoalie, seasonLabel }) {
   );
 }
 
+// ── Season comparison (Session 64) ──────────────────────────────
+// PWHL has no multi-season payload the way NHL's player-landing does
+// (fetchPWHLPlayerLanding returns one season per call) — each selected
+// season needs its own fetch. PWHLCompareSeasonCard owns exactly one
+// useFetch call per rendered instance (keyed by season in the .map() below),
+// which keeps this legal under the rules of hooks without needing a
+// variable-length Promise.all inside a single hook call.
+
+function PWHLCompareSection({ label, stats, defs, loading }) {
+  const hasAny = stats && defs.some(d => stats[d.key] != null);
+  return (
+    <div className="stat-section">
+      <div className="stat-section-header">
+        <span className="stat-section-label">{label}</span>
+      </div>
+      <div className="stat-section-body">
+        {loading && <div className="skeleton" style={{ height: 11, width: '60%', margin: '8px 0' }} />}
+        {!loading && !hasAny && <div className="pp-no-stats">No data for this player in {label}.</div>}
+        {!loading && hasAny && [...new Set(defs.map(d => d.group))].map(g => {
+          const rows = defs.filter(d => d.group === g && stats[d.key] != null);
+          if (!rows.length) return null;
+          return (
+            <div key={g} className="stat-group">
+              <div className="stat-group-label">{g}</div>
+              {rows.map(def => <StatRow key={def.key} def={def} value={stats[def.key]} />)}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function PWHLCompareSeasonCard({ playerId, seasonValue, label, defs }) {
+  const { data: landing, loading } = useFetch(
+    () => playerId ? fetchPWHLPlayerLanding(playerId, seasonValue) : Promise.resolve(null),
+    [playerId, seasonValue]
+  );
+  return <PWHLCompareSection label={label} stats={landing} defs={defs} loading={loading} />;
+}
+
 // ── Main popup ────────────────────────────────────────────────
 
 export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_LABEL, season = PWHL_CURRENT_SEASON, onClose }) {
   const [imgErr, setImgErr] = useState(false);
   const [ppTab, setPpTab]   = useState('stats');
+  const [compareSeasons, setCompareSeasons] = useState([]);
+
+  // Reuses the same memoized fetch SeasonComparisonPicker itself calls
+  // (seasonClient.js's fetchComparisonSeasons) purely for season labels
+  // ("2025-26 Playoffs" etc) — no second network request.
+  const { data: comparisonConfig } = useFetch(fetchComparisonSeasons, []);
+  const pwhlSeasonOptions = normalizeComparisonSeasons('pwhl', comparisonConfig?.pwhl?.seasons);
+  const compareLabel = (val) => pwhlSeasonOptions.find(s => s.value === val)?.label || `Season ${val}`;
 
   // Self-fetches identity + this season's stat line by id, mirroring NHL's
   // PlayerPopup (which self-fetches via getPlayerStats(p.id)) — callers
@@ -409,6 +461,7 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
             <button className={`pp-tab${ppTab === 'heatmap' ? ' active' : ''}`} onClick={() => setPpTab('heatmap')}>🎯 Heat Map</button>
           )}
           <button className={`pp-tab${ppTab === 'scout'   ? ' active' : ''}`} onClick={() => setPpTab('scout')}>🔍 Scout</button>
+          <button className={`pp-tab${ppTab === 'compare' ? ' active' : ''}`} onClick={() => setPpTab('compare')}>🆚 Compare</button>
         </div>
 
         {/* ── Stats tab ── */}
@@ -443,6 +496,30 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
         {/* ── Scout tab ── */}
         {ppTab === 'scout' && (
           <PWHLScout player={p} isGoalie={isGoalie} seasonLabel={seasonLabel} />
+        )}
+
+        {/* ── Compare tab — season-over-season (Session 64) ── */}
+        {ppTab === 'compare' && (
+          <div className="pp-body">
+            <SeasonComparisonPicker
+              league="pwhl"
+              selected={compareSeasons}
+              onChange={setCompareSeasons}
+              maxSelected={4}
+            />
+            {compareSeasons.length === 0 && (
+              <div className="pp-no-stats">Select two or more seasons above to compare.</div>
+            )}
+            {[...compareSeasons].sort((a, b) => b - a).map(s => (
+              <PWHLCompareSeasonCard
+                key={s}
+                playerId={p.player_id}
+                seasonValue={s}
+                label={compareLabel(s)}
+                defs={defs}
+              />
+            ))}
+          </div>
         )}
 
       </div>
