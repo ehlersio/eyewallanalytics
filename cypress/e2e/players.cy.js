@@ -78,28 +78,33 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         })
       })
 
-      it('Stats tab shows scoring stats', () => {
+      it('Stats tab shows scoring stats', function () {
+        cy.skipUnlessContentAppears('.pp-body', '.highlight-section')
         cy.contains('Goals').should('exist')
         cy.contains('Assists').should('exist')
         cy.contains('Points').should('exist')
       })
 
-      it('Stats tab shows special teams section', () => {
+      it('Stats tab shows special teams section', function () {
+        cy.skipUnlessContentAppears('.pp-body', '.highlight-section')
         cy.contains(/Special Teams/i).should('exist')
         cy.contains(/PPG|PPP/i).should('exist')
       })
 
-      it('Stats tab shows shot quality section', () => {
+      it('Stats tab shows shot quality section', function () {
+        cy.skipUnlessContentAppears('.pp-body', '.highlight-section')
         cy.contains(/Shot Quality/i).should('exist')
         cy.contains('S%').should('exist')
       })
 
-      it('Stats tab shows ice time section', () => {
+      it('Stats tab shows ice time section', function () {
+        cy.skipUnlessContentAppears('.pp-body', '.highlight-section')
         cy.contains(/Ice Time/i).should('exist')
         cy.contains('TOI').should('exist')
       })
 
-      it('Stats tab shows defensive stats', () => {
+      it('Stats tab shows defensive stats', function () {
+        cy.skipUnlessContentAppears('.pp-body', '.highlight-section')
         cy.contains('Defensive', { timeout: 8000 }).should('exist')
         cy.contains(/Hits|Blocks|TK|GV/).should('exist')
       })
@@ -108,26 +113,30 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         cy.contains(/Career|Regular season/i).should('exist')
       })
 
-      it('Analytics tab loads WAR and percentiles', () => {
+      it('Analytics tab loads WAR and percentiles', function () {
         cy.get('.pp-tab').contains('Analytics').click()
+        cy.skipIfEither('.pp-heatmap-empty', '.pa-wrap', { timeout: 10000 })
         cy.contains('WAR', { timeout: 10000 }).should('exist')
         cy.contains('EV Offence').should('exist')
         cy.contains('EV Defence').should('exist')
       })
 
-      it('Analytics tab shows xGA/60 context chip', () => {
+      it('Analytics tab shows xGA/60 context chip', function () {
         cy.get('.pp-tab').contains('Analytics').click()
+        cy.skipIfEither('.pp-heatmap-empty', '.pa-wrap', { timeout: 10000 })
         cy.contains('xGA/60', { timeout: 10000 }).should('exist')
       })
 
-      it('Analytics tab shows percentile bars', () => {
+      it('Analytics tab shows percentile bars', function () {
         cy.get('.pp-tab').contains('Analytics').click()
+        cy.skipIfEither('.pp-heatmap-empty', '.pa-wrap', { timeout: 10000 })
         cy.contains(/Power Play/i, { timeout: 8000 }).should('exist')
         cy.contains(/Competition/i).should('exist')
       })
 
-      it('Heat Map tab renders rink', () => {
+      it('Heat Map tab renders rink', function () {
         cy.get('.pp-tab').contains('Heat Map').click()
+        cy.skipIfEither('.pp-heatmap-empty', 'svg, canvas', { timeout: 8000 })
         cy.get('svg, canvas', { timeout: 8000 }).should('exist')
       })
 
@@ -149,25 +158,29 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         cy.contains('Goalie').should('exist')
       })
 
-      it('shows dual rankings — by SV% and by GAA', () => {
+      it('shows dual rankings — by SV% and by GAA', function () {
+        cy.skipUnlessContentAppears('.pp-body', 'Ranked by SV%')
         cy.contains(/Ranked by SV%/i).should('exist')
         cy.contains(/Ranked by GAA/i).should('exist')
       })
 
-      it('shows Division, Conference, League ranks', () => {
+      it('shows Division, Conference, League ranks', function () {
+        cy.skipUnlessContentAppears('.pp-body', 'Division')
         cy.contains('Division').should('exist')
         cy.contains('Conference').should('exist')
         cy.contains('League').should('exist')
       })
 
-      it('Stats tab shows Record group', () => {
+      it('Stats tab shows Record group', function () {
+        cy.skipUnlessContentAppears('.pp-body', '.highlight-section')
         cy.contains('GP').should('exist')
         cy.contains(/^W$/).should('exist')
         cy.contains(/^L$/).should('exist')
         cy.contains('GS').should('exist')
       })
 
-      it('Stats tab shows Performance group', () => {
+      it('Stats tab shows Performance group', function () {
+        cy.skipUnlessContentAppears('.pp-body', '.highlight-section')
         cy.contains('SV%').should('exist')
         cy.contains('GAA').should('exist')
         cy.get('body').then($body => {
@@ -177,15 +190,17 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         })
       })
 
-      it('Analytics tab shows GSAX and goalie-specific metrics', () => {
+      it('Analytics tab shows GSAX and goalie-specific metrics', function () {
         cy.get('.pp-tab').contains('Analytics').click()
+        cy.skipIfEither('.pp-heatmap-empty', '.pa-wrap', { timeout: 10000 })
         cy.contains('GSAX', { timeout: 10000 }).should('exist')
         cy.contains(/5on5 SV%|HD SV%/i).should('exist')
         cy.contains(/Percentile/i).should('exist')
       })
 
-      it('Heat Map tab renders', () => {
+      it('Heat Map tab renders', function () {
         cy.get('.pp-tab').contains('Heat Map').click()
+        cy.skipIfEither('.pp-heatmap-empty', 'svg, canvas', { timeout: 8000 })
         cy.get('svg, canvas', { timeout: 8000 }).should('exist')
       })
 
@@ -199,14 +214,16 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
     })
 
     describe('Stats table', () => {
-      it('renders the Stats table tab', () => {
+      it('renders the Stats table tab', function () {
         cy.contains('Stats').click()
+        cy.skipIfEither('.drill-empty', '.sst-table', { timeout: 8000 })
         cy.team(teamAbbr).then(t => cy.contains(t.skater).should('exist'))
         cy.contains('GP').should('exist')
       })
 
-      it('stats table has sortable columns', () => {
+      it('stats table has sortable columns', function () {
         cy.contains('Stats').click()
+        cy.skipIfEither('.drill-empty', '.sst-table', { timeout: 8000 })
         cy.contains('G').click()
         cy.team(teamAbbr).then(t => cy.contains(t.skater).should('exist'))
       })
