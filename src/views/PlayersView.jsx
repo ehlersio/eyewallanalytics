@@ -16,7 +16,16 @@ const SEASON = Number(TEAM_CONFIG.season.slice(0, 4) + TEAM_CONFIG.season.slice(
 export default function PlayersView() {
   const { data: roster,      loading: rosterLoading } = useFetch(() => getRoster(TEAM_CONFIG.abbr))
   const { data: poGames }   = useFetch(getPlayoffGames)
-  const { data: standings } = useFetch(getStandings)
+  const { data: standingsRaw } = useFetch(getStandings)
+  // NHL's /standings/now stays pinned to last season's finale for months
+  // after our season config flips — see nhlApi.js's _getTeamStats() for the
+  // full story. Don't feed last season's team rank context into a player's
+  // rankings display as if it were current. Only reject on an EXPLICIT
+  // mismatch — an absent seasonId (e.g. a test stub) isn't evidence of
+  // staleness, the real NHL API always includes it.
+  const standingsAreStale = standingsRaw?.[0]?.seasonId != null
+    && String(standingsRaw[0].seasonId) !== TEAM_CONFIG.season
+  const standings = standingsAreStale ? [] : (standingsRaw || [])
   const [selected, setSelected] = useState(null)
   const [view, setView]         = useState('roster')
   const [gameType, setGameType] = useState(2)

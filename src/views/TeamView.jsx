@@ -42,7 +42,17 @@ export default function TeamView() {
   const { data: rankings   } = useFetch(() => getTeamSeasonRankings(2))
   const { data: xgTrend    } = useFetch(() => getTeamXgTrend(TEAM_CONFIG.abbr))
 
-  const carStanding    = standings?.find(t => t.teamAbbrev?.default === TEAM_CONFIG.abbr)
+  // Same staleness risk getTeamStats() already guards against (see nhlApi.js):
+  // NHL's /standings/now stays pinned to last season's finale for months
+  // after our season config flips. Don't surface last season's division/
+  // conference/streak as if it were this season's. Only reject on an
+  // EXPLICIT mismatch — an absent seasonId (e.g. a test stub) isn't
+  // evidence of staleness, the real NHL API always includes it.
+  const standingsAreStale = standings?.[0]?.seasonId != null
+    && String(standings[0].seasonId) !== TEAM_CONFIG.season
+  const carStanding    = standingsAreStale
+    ? undefined
+    : standings?.find(t => t.teamAbbrev?.default === TEAM_CONFIG.abbr)
   const playoffSummary = buildCarPlayoffSummary(playoffGames || [])
   const inPlayoffs     = (playoffGames?.length || 0) > 0
 
