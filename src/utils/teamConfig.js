@@ -28,7 +28,7 @@ const STORAGE_KEY = 'eyewall:team';
 // variable indefinitely (rather than re-reading `someTeam.season`), it'll
 // keep the value from whenever the destructure happened — same as any other
 // stale-closure situation in JS, not something unique to this change.
-export let CURRENT_SEASON = '20252026';
+export let CURRENT_SEASON = '20262027';
 
 (async () => {
   try {
