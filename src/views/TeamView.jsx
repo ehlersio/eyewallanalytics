@@ -14,6 +14,7 @@ import { DraftPopup } from '../components/DraftTab'
 import { seasonPDO } from '../utils/advancedStats'
 import InfoTip from '../components/InfoTip'
 import TeamLogo from '../components/TeamLogo'
+import TeamComparisonPopup from '../components/TeamComparisonPopup'
 import { TEAM_COLORS } from '../utils/nhlApi'
 import './TeamView.css'
 
@@ -24,6 +25,7 @@ const TABS = ['Overview', 'Advanced', 'Splits', 'Trends',
 
 export default function TeamView() {
   const [tab, setTab] = useState('Overview')
+  const [compareOpen, setCompareOpen] = useState(false)
 
   // Core data
   const { data: stats,        loading: statsLoading  } = useFetch(() => getTeamStats(TEAM_CONFIG.abbr))
@@ -82,7 +84,19 @@ export default function TeamView() {
         <TeamLogo abbr={TEAM_CONFIG.abbr} size={28} />
         <h2 className="view-title" style={{ margin: 0 }}>{TEAM_CONFIG.displayName}</h2>
       </div>
-      <p className="view-sub">{TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} season</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <p className="view-sub" style={{ margin: 0 }}>{TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} season</p>
+        <button className="team-compare-btn" onClick={() => setCompareOpen(true)}>🆚 Compare Seasons</button>
+      </div>
+
+      {compareOpen && (
+        <TeamComparisonPopup
+          league="nhl"
+          teamValue={TEAM_CONFIG.abbr}
+          teamLabel={TEAM_CONFIG.displayName}
+          onClose={() => setCompareOpen(false)}
+        />
+      )}
 
       {/* Tab bar */}
       <div className="team-tabs">

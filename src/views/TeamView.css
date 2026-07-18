@@ -1,6 +1,20 @@
 .view-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; }
 .view-sub   { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
 
+.team-compare-btn {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg2);
+  border: 0.5px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.team-compare-btn:hover { background: var(--bg3); color: var(--text); }
+
 /* ── Team tabs ── */
 .team-tabs {
   display: flex;

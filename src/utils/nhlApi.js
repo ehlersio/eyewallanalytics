@@ -536,7 +536,30 @@ async function _getTeamSeasonRankings(gameTypeId = 2) {
   }
 }
 
-
+// ─── SEASON-OVER-SEASON TEAM COMPARISON (Session 64) ───────────
+// Box-score fields only -- see eyewall-poller's /team-seasons/compare for
+// why (xgf_pct/roster_war_score are null across every season right now).
+// Not cached via cache.js's TTL layer like most of this file -- comparison
+// season lists are user-picked and vary per call, so there's no stable
+// cache key worth the complexity; the Worker's own KV cache (1hr) already
+// covers repeat requests for the same team+season combination.
+export async function fetchTeamSeasonsCompare(team, seasons) {
+  if (!seasons?.length) return [];
+  const rows = await workerFetch(`/team-seasons/compare?team=${encodeURIComponent(team)}&seasons=${seasons.join(',')}`);
+  if (!rows) return [];
+  return rows.map(r => ({
+    season:        r.season,
+    gamesPlayed:   r.games_played,
+    wins:          r.wins,
+    losses:        r.losses,
+    otLosses:      r.ot_losses,
+    points:        r.points,
+    goalsFor:      r.goals_for,
+    goalsAgainst:  r.goals_against,
+    ppPct:         r.pp_pct,
+    pkPct:         r.pk_pct,
+  }));
+}
 
 export async function getTeamSkaterStats(gameTypeId = 2) {
   return cached(`teamSkaterStats:${gameTypeId}`, () => _getTeamSkaterStats(gameTypeId), TTL.PLAYER_STATS);
