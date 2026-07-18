@@ -16,6 +16,7 @@ import {
 } from '../utils/nhlApi';
 import { getTeamSeasonData, getPowerRankingsNarrative, getPowerRankingsHistory } from '../utils/supabaseClient';
 import { ALL_TEAMS } from '../utils/teamConfig';
+import { useSport } from '../utils/SportContext';
 import TeamLogo from '../components/TeamLogo';
 import PlayerPopup from '../components/PlayerPopup';
 import { useShareCard } from '../hooks/useShareCard';
@@ -26,8 +27,17 @@ import '../components/PredictionCanvas.css';
 import DraftTab from '../components/DraftTab';
 
 const PRIMARY = TEAM_CONFIG.abbr;
-const SEASON  = TEAM_CONFIG.season;
-const SEASON_LABEL = `${SEASON.slice(0, 4)}–${SEASON.slice(6)}`;
+
+// Season used to be captured here as a module-level const (TEAM_CONFIG.season
+// read once at import time) -- that froze at whatever value existed when this
+// module first loaded and never picked up the Worker's live season
+// resolution landing afterward. Each component below that needs the current
+// season now reads it via useSport().currentSeason instead, which IS
+// reactive (see SportContext.jsx) since it re-renders on the same
+// eyewall:nhl-season-updated event teamConfig.js dispatches.
+function seasonLabelFor(season) {
+  return `${season.slice(0, 4)}–${season.slice(6)}`;
+}
 
 const CLINCH_COLOR = {
   z:   '#1D9E75',
@@ -769,6 +779,7 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
 // ── Main BracketPanel ──
 
 function BracketPanel({ data }) {
+  const { currentSeason: SEASON } = useSport();
   const [selectedSeries, setSelectedSeries] = useState(null);
 
   const bracket = useMemo(() => {
@@ -870,9 +881,10 @@ function ErrorState({ message }) {
 // have zero rows). Distinct from ErrorState: this isn't a failure, so no
 // warning icon and a calmer tone.
 function SeasonNotStartedState({ children }) {
+  const { currentSeason } = useSport();
   return (
     <div className="lv-season-empty">
-      <p>{children ?? `The ${SEASON_LABEL} season hasn't started yet — check back once games begin.`}</p>
+      <p>{children ?? `The ${seasonLabelFor(currentSeason)} season hasn't started yet — check back once games begin.`}</p>
     </div>
   );
 }
@@ -1511,6 +1523,7 @@ const TABS = [
 ];
 
 export default function LeagueView() {
+  const { currentSeason: SEASON } = useSport();
   const [activeTab, setActiveTab] = useState('standings');
 
   const handleTabChange = useCallback((tabId) => {

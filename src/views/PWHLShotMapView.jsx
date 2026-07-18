@@ -786,6 +786,22 @@ export default function PWHLShotMapView() {
   const [drillStat,      setDrill]    = useState(null);
   const [viewingSummaryPeriod, setViewingSummaryPeriod] = useState(null);
 
+  // useState's initial value only runs once, at first mount -- if this
+  // component mounts before pwhlConfig.js's async live-season fetch
+  // resolves, `season` would otherwise lock onto the fallback value
+  // forever, even though PWHL_CURRENT_SEASON itself goes on to update
+  // correctly. Same fix as PWHLPlayersView.jsx: catch up via the event
+  // pwhlConfig.js dispatches on resolution, but only if the user hasn't
+  // manually picked a season themselves.
+  const userPickedSeason = useRef(false);
+  useEffect(() => {
+    function handleSeasonUpdate(e) {
+      if (!userPickedSeason.current) setSeason(e.detail);
+    }
+    window.addEventListener('eyewall:pwhl-season-updated', handleSeasonUpdate);
+    return () => window.removeEventListener('eyewall:pwhl-season-updated', handleSeasonUpdate);
+  }, []);
+
   // ── Dev replay injection ──────────────────────────────────────
   const devGame = usePWHLDevGame();
 
@@ -1142,7 +1158,7 @@ export default function PWHLShotMapView() {
     () => liveShotEvents.filter(e => !e.isCanes),
     [liveShotEvents]
   );
-  const handleSeasonChange = id => { setSeason(id); setSelected(null); setDrill(null); };
+  const handleSeasonChange = id => { userPickedSeason.current = true; setSeason(id); setSelected(null); setDrill(null); };
   const handleSelect       = id => { setSelected(p => p === id ? null : id); setDrill(null); };
   const handleAll          = ()  => { setSelected(null); setDrill(null); };
 

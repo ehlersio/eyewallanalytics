@@ -1,5 +1,7 @@
 // cypress/e2e/team.cy.js
 
+const WORKER_URL = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
+
 const FULL_TEST_TEAMS = ['CAR', 'VGK', 'TOR', 'CHI']
 
 FULL_TEST_TEAMS.forEach(teamAbbr => {
@@ -197,5 +199,31 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         })
       })
     }
+  })
+})
+
+// ── Season correctness (Session 65) ─────────────────────────────
+// Regression coverage for the frozen-module-load-season-constants fix.
+// The existing skipIfEither/skipUnlessContentAppears skip-gate commands
+// (Session 62) only distinguish "real content present" from "no data yet"
+// -- they say nothing about whether that content is for the RIGHT season.
+// A component that regresses back to reading a frozen constant instead of
+// the live-resolved value would still show real, populated content and
+// sail straight through those gates.
+//
+// This is a genuinely new category of coverage for this repo, not a
+// bigger version of the skip-gate pattern: every existing spec asserts
+// WHETHER something rendered; this is the first one that asserts WHICH
+// season it rendered for, checked against the live source of truth
+// (/config/seasons) rather than a value baked into the test itself.
+describe('Season correctness — rendered label matches live /config/seasons', () => {
+  it('team page season label matches the season the Worker currently resolves as current', () => {
+    cy.request(`${WORKER_URL}/config/seasons`).then((res) => {
+      const liveSeasonId = String(res.body.nhl.seasonId)
+      const expectedLabel = `${liveSeasonId.slice(0, 4)}–${liveSeasonId.slice(6)}`
+      cy.setTeam('CAR')
+      cy.visit('/team')
+      cy.get('.view-sub', { timeout: 15000 }).should('contain', expectedLabel)
+    })
   })
 })

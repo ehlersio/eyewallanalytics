@@ -3,16 +3,10 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import { fetchPWHLPlayers, PWHL_TEAM_CONFIG, PWHL_TEAM_ID } from '../utils/pwhlApi';
-import { PWHL_CURRENT_SEASON } from '../utils/pwhlConfig';
+import { PWHL_CURRENT_SEASON, PWHL_REGULAR_SEASONS } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
 import './PlayersView.css';
-
-const SEASONS = [
-  { id: 8, label: '2025-26' },
-  { id: 5, label: '2024-25' },
-  { id: 1, label: '2023-24' },
-];
 
 // ── Skater columns ────────────────────────────────────────────
 const SKATER_COLS = [
@@ -89,7 +83,7 @@ export default function PWHLPlayersView() {
   const skaters = useMemo(() => data?.skaters || [], [data]);
   const goalies = useMemo(() => data?.goalies || [], [data]);
 
-  const seasonLabel = SEASONS.find(s => s.id === season)?.label || String(season);
+  const seasonLabel = PWHL_REGULAR_SEASONS.find(s => s.id === season)?.label || String(season);
 
   if (!abbr || !teamId) {
     return (
@@ -162,7 +156,7 @@ export default function PWHLPlayersView() {
         <>
           {/* Season picker */}
           <div className="players-tabs" style={{ marginTop: 0, marginBottom: 0 }}>
-            {SEASONS.map(s => (
+            {PWHL_REGULAR_SEASONS.map(s => (
               <button key={s.id} className={`players-tab${season === s.id ? ' active' : ''}`}
                 onClick={() => handleSeasonPick(s.id)}>{s.label}</button>
             ))}

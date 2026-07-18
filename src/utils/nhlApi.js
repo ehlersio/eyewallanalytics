@@ -980,13 +980,26 @@ export const TEAM_COLORS = {
 // Convenience aliases — advanced stats endpoints use teamId and franchiseId directly
 const TEAM_ID_ADV   = TEAM_CONFIG.teamId;
 const FRANCHISE_ID  = TEAM_CONFIG.franchiseId;
-const STATS_SEASON  = TEAM_CONFIG.season;
+// TEAM_CONFIG.season is a live getter (see teamConfig.js) -- read it
+// directly at each point of use below rather than caching it into its own
+// const the way this file used to (a `STATS_SEASON` const here froze at
+// module-load time and never picked up the live-resolved value).
+//
+// Consequence for the cached() calls below: season is now included in the
+// `teamSummary:`/`teamRealtime:`/`homeSplit:` cache keys, not just
+// gameTypeId. This isn't a drive-by cleanup -- it's required by the fix
+// above. Once TEAM_CONFIG.season can genuinely change mid-session (a KV
+// override, or the real Sept/Oct boundary), a cache keyed only on
+// gameTypeId would serve up to 10 minutes (TTL.ADVANCED) of the WRONG
+// season's data under a key that now silently means something different
+// than it did when it was cached. Shipping the const removal without this
+// would trade one staleness bug for a shorter-lived, harder-to-notice one.
 
 // Build URL for team stat endpoints.
 // Key: cayenneExp must use seasonId<=X and seasonId>=X (double-bound) not seasonId=X
 // Also needs isAggregate and isGame params for report endpoints like puckPossessions
 function teamStatsUrl(report, gameTypeId = 2) {
-  const s = STATS_SEASON;
+  const s = TEAM_CONFIG.season;
   const exp = encodeURIComponent(
     `franchiseId=${FRANCHISE_ID} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
   );
@@ -1013,7 +1026,7 @@ async function _getTeamSummary(gameTypeId) {
 // True Corsi/Fenwick using realtime + summary data we already fetch
 // shotattempts and puckPossessions endpoints return 500 on NHL API
 export async function getTeamCorsi(gameTypeId = 2) {
-  const t = await cached(`teamSummary:${gameTypeId}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
+  const t = await cached(`teamSummary:${gameTypeId}:${TEAM_CONFIG.season}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
   if (!t) return null;
 
   const sf = t.shotsForPerGame    || 0;
@@ -1021,8 +1034,8 @@ export async function getTeamCorsi(gameTypeId = 2) {
   const gp = t.gamesPlayed || 1;
 
   // Get realtime data which has blockedShots + shotAttemptsBlocked
-  const rt = await cached(`teamRealtime:${gameTypeId}`, async () => {
-    const s   = STATS_SEASON;
+  const rt = await cached(`teamRealtime:${gameTypeId}:${TEAM_CONFIG.season}`, async () => {
+    const s   = TEAM_CONFIG.season;
     const exp = encodeURIComponent(
       `franchiseId=${FRANCHISE_ID} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
     );
@@ -1064,8 +1077,8 @@ export async function getTeamCorsi(gameTypeId = 2) {
 
 // Realtime stats: blocked shots, hits, giveaways, takeaways
 export async function getTeamRealtime(gameTypeId = 2) {
-  return cached(`teamRealtime:${gameTypeId}`, async () => {
-    const s   = STATS_SEASON;
+  return cached(`teamRealtime:${gameTypeId}:${TEAM_CONFIG.season}`, async () => {
+    const s   = TEAM_CONFIG.season;
     // Try multiple known report names that include blocked shots
     // The NHL stats API 'realtime' report includes blockedShots, hits, giveaways, takeaways
     // Use same franchiseId filter as working team/summary endpoint
@@ -1088,20 +1101,20 @@ export async function getTeamScoreState(_gameTypeId = 2) {
 // Available fields: powerPlayPct, powerPlayNetPct, penaltyKillPct, penaltyKillNetPct
 // Goals and opportunity counts are NOT in team/summary; derive where possible from standings
 export async function getTeamPowerplay(gameTypeId = 2) {
-  return cached(`teamSummary:${gameTypeId}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
+  return cached(`teamSummary:${gameTypeId}:${TEAM_CONFIG.season}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
 }
 
 export async function getTeamPenaltyKill(gameTypeId = 2) {
-  return cached(`teamSummary:${gameTypeId}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
+  return cached(`teamSummary:${gameTypeId}:${TEAM_CONFIG.season}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
 }
 
 // Home/Away splits from team summary (homeRoadQuery)
 export async function getTeamHomeSplit(gameTypeId = 2) {
-  return cached(`homeSplit:${gameTypeId}`, () => _getTeamHomeSplit(gameTypeId), TTL.ADVANCED);
+  return cached(`homeSplit:${gameTypeId}:${TEAM_CONFIG.season}`, () => _getTeamHomeSplit(gameTypeId), TTL.ADVANCED);
 }
 async function _getTeamHomeSplit(gameTypeId = 2) {
-  const homeExp = encodeURIComponent(`seasonId=${STATS_SEASON} and gameTypeId=${gameTypeId} and homeRoad="H"`);
-  const awayExp = encodeURIComponent(`seasonId=${STATS_SEASON} and gameTypeId=${gameTypeId} and homeRoad="R"`);
+  const homeExp = encodeURIComponent(`seasonId=${TEAM_CONFIG.season} and gameTypeId=${gameTypeId} and homeRoad="H"`);
+  const awayExp = encodeURIComponent(`seasonId=${TEAM_CONFIG.season} and gameTypeId=${gameTypeId} and homeRoad="R"`);
   const [home, away] = await Promise.all([
     nhlFetch(`/nhl-stats/stats/rest/en/team/summary?limit=50&sort=wins&cayenneExp=${homeExp}`),
     nhlFetch(`/nhl-stats/stats/rest/en/team/summary?limit=50&sort=wins&cayenneExp=${awayExp}`),
