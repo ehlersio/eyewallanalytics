@@ -14,8 +14,15 @@ import { CURRENT_SEASON } from './teamConfig';
 
 // Season as a number for filter defaults — actual value normally comes
 // from the caller (view components track season state themselves); this
-// only matters for the rare call site that omits it.
-const SEASON = Number(CURRENT_SEASON);
+// only matters for the rare call site that omits it. CURRENT_SEASON is a
+// live `let` binding (see teamConfig.js) updated in place once the
+// Worker's live season resolution resolves — read it fresh via
+// currentSeason() at each call rather than caching it in a module-level
+// const, which would freeze at whatever value existed when this module
+// first evaluated (often before that live resolution finishes).
+function currentSeason() {
+  return Number(CURRENT_SEASON);
+}
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
 
@@ -37,7 +44,7 @@ async function workerFetch(path) {
 // ── Player analytics ──────────────────────────────────────────
 // Returns analytics object keyed by player_id (string), matching
 // the shape the app already expects from moneypuck:skaters KV.
-export async function getPlayerAnalytics(season = SEASON) {
+export async function getPlayerAnalytics(season = currentSeason()) {
   const { rows, poRows } = await workerFetch(`/player-analytics?season=${season}`);
 
   // Build playoff defensive map: player_id → { hits, blocked_shots, takeaways, giveaways }
@@ -98,7 +105,7 @@ export async function getPlayerAnalytics(season = SEASON) {
 // ── Player shot events ────────────────────────────────────────
 // Returns shot data for one player. car_game=true scopes to games
 // involving the selected team, team= filters to shooter rows only.
-export async function getPlayerShots(playerId, season = SEASON, team = 'CAR') {
+export async function getPlayerShots(playerId, season = currentSeason(), team = 'CAR') {
   const rows = await workerFetch(`/player-shots?playerId=${playerId}&season=${season}&team=${team}`);
 
   if (!rows?.length) return null;
@@ -126,7 +133,7 @@ export async function getPlayerShots(playerId, season = SEASON, team = 'CAR') {
 // Returns shots faced by a specific goalie (for heat map).
 // No car_game filter — shows all shots faced regardless of opponent.
 // goalie_id filter identifies the specific goalie's starts.
-export async function getGoalieShots(goalieId, season = SEASON) {
+export async function getGoalieShots(goalieId, season = currentSeason()) {
   const rows = await workerFetch(`/goalie-shots?goalieId=${goalieId}&season=${season}`);
 
   if (!rows?.length) return null;
@@ -151,7 +158,7 @@ export async function getGoalieShots(goalieId, season = SEASON) {
 }
 
 // ── Goalie analytics ──────────────────────────────────────────
-export async function getGoalieAnalytics(season = SEASON) {
+export async function getGoalieAnalytics(season = currentSeason()) {
   const rows = await workerFetch(`/goalie-analytics?season=${season}`);
 
   const result = {};
@@ -208,7 +215,7 @@ function sortForwardLine(players, posMap) {
     });
 }
 
-export async function getTeamLines(team = 'CAR', season = SEASON, gameType = 2) {
+export async function getTeamLines(team = 'CAR', season = currentSeason(), gameType = 2) {
   // Always load static data upfront so we can use it as position authority
   let staticData = null;
   try {
@@ -283,7 +290,7 @@ export async function getGameXG(gameId) {
 // ── Game log insights ─────────────────────────────────────────
 // Returns team-specific situational stats for Live Insights.
 // Requires team_scored_first boolean in game_log (added by nhl_stats.py).
-export async function getGameLogInsights(oppAbbr, season = SEASON, teamAbbr = 'CAR') {
+export async function getGameLogInsights(oppAbbr, season = currentSeason(), teamAbbr = 'CAR') {
   const rows = await workerFetch(`/game-log?team=${teamAbbr}&season=${season}`).catch(() => null);
 
   if (!rows?.length) return null;
@@ -329,7 +336,7 @@ export async function getGameLogInsights(oppAbbr, season = SEASON, teamAbbr = 'C
   };
 }
 
-export async function getTeamGameLog(count = 120, season = SEASON, teamAbbr = 'CAR') {
+export async function getTeamGameLog(count = 120, season = currentSeason(), teamAbbr = 'CAR') {
   const rows = await workerFetch(`/game-log?team=${teamAbbr}&season=${season}&limit=${count}`).catch(() => null);
   if (!rows?.length) return null;
   return rows.map(r => ({
@@ -355,7 +362,7 @@ export async function getTeamGameLog(count = 120, season = SEASON, teamAbbr = 'C
 // roster_war_score) and the Standings tab's magic/tragic number display
 // (Session 59) for all 32 teams in one call.
 // Replaces the earlier getTeamSeasonXg — same call, extra columns.
-export async function getTeamSeasonData(season = SEASON) {
+export async function getTeamSeasonData(season = currentSeason()) {
   const rows = await workerFetch(`/team-seasons?season=${season}`).catch(() => []);
   const map = {};
   for (const r of (rows || [])) {
@@ -374,14 +381,14 @@ export async function getTeamSeasonData(season = SEASON) {
 
 // Fetches the most recent power rankings narrative for the user's team.
 // Returns { narrative, rank, prior_rank, generated_date } or null.
-export async function getPowerRankingsNarrative(teamAbbr, season = SEASON) {
+export async function getPowerRankingsNarrative(teamAbbr, season = currentSeason()) {
   const rows = await workerFetch(`/power-rankings?team=${teamAbbr}&season=${season}&limit=1`).catch(() => []);
   return rows?.[0] ?? null;
 }
 
 // Fetches rank history for the sparkline — last 28 days.
 // Returns array of { generated_date, rank } oldest-first.
-export async function getPowerRankingsHistory(teamAbbr, season = SEASON) {
+export async function getPowerRankingsHistory(teamAbbr, season = currentSeason()) {
   const rows = await workerFetch(`/power-rankings?team=${teamAbbr}&season=${season}&limit=28`).catch(() => []);
   return (rows || []).reverse(); // oldest first for charting
 }
@@ -416,7 +423,7 @@ export async function getGameSummary(gameId, team) {
 
 // ── Player scouting blurb ─────────────────────────────────────
 // Returns the AI-generated scouting blurb for a player, or null if none exists.
-export async function getScoutingBlurb(playerId, season = SEASON) {
+export async function getScoutingBlurb(playerId, season = currentSeason()) {
   const rows = await workerFetch(`/player-scouting?playerId=${playerId}&season=${season}`).catch(() => []);
   if (!rows?.length) return null;
   return { blurb: rows[0].scouting_text, generatedAt: rows[0].generated_at };
@@ -425,13 +432,13 @@ export async function getScoutingBlurb(playerId, season = SEASON) {
 // ── Results-vs-process narrative (Session 56, NHL skaters only) ──
 // Returns the AI-generated "results vs. process" blurb for a player, or
 // null if none exists yet (either not enough games, or not generated yet).
-export async function getResultsVsProcessNarrative(playerId, season = SEASON) {
+export async function getResultsVsProcessNarrative(playerId, season = currentSeason()) {
   const rows = await workerFetch(`/player-results-vs-process?playerId=${playerId}&season=${season}`).catch(() => []);
   if (!rows?.length) return null;
   return { blurb: rows[0].narrative_text, generatedAt: rows[0].generated_at };
 }
 
-export async function getTeamSkaterStatsFromDB(team = 'CAR', season = SEASON, gameType = 2) {
+export async function getTeamSkaterStatsFromDB(team = 'CAR', season = currentSeason(), gameType = 2) {
   const [seasonRows, playerRows] = await Promise.all([
     workerFetch(`/team-skaters?team=${team}&season=${season}&gameType=${gameType}`),
     workerFetch('/players-list'),
@@ -482,7 +489,7 @@ export async function getSpecialTeamsUnits() {
 // Each item: { gameId, date, opponent, teamScore, oppScore, xgfPct }
 // Joins game_xg (5on5) with game_log for date + opponent.
 // Both arrays are chronological (oldest first).
-export async function getTeamXgTrend(team = 'CAR', season = SEASON) {
+export async function getTeamXgTrend(team = 'CAR', season = currentSeason()) {
   const [xgRows, logRows] = await Promise.all([
     workerFetch(`/xg-trend?team=${team}&season=${season}`).catch(() => []),
     workerFetch(`/game-log?team=${team}&season=${season}`).catch(() => []),

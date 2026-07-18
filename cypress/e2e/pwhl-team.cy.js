@@ -1,5 +1,7 @@
 // cypress/e2e/pwhl-team.cy.js
 
+const WORKER_URL = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
+
 const PWHL_TEST_TEAMS = ['BOS', 'MIN', 'MTL', 'TOR']
 
 PWHL_TEST_TEAMS.forEach(abbr => {
@@ -271,6 +273,38 @@ describe('PWHL Team view — DET (expansion, no games played yet)', () => {
       // No metric rows at all for this card -- confirms the empty state
       // replaces the stat list rather than rendering it zeroed-out.
       cy.get('.stat-section').find('.stat-row').should('not.exist')
+    })
+  })
+})
+
+// ── Season correctness (Session 65) ─────────────────────────────
+// Regression coverage for the frozen-module-load-season-constants fix.
+// The existing skipIfEither/skipUnlessContentAppears skip-gate commands
+// (Session 62) only distinguish "real content present" from "no data yet"
+// -- they say nothing about whether that content is for the RIGHT season.
+// A component that regresses back to reading a frozen constant instead of
+// the live-resolved value would still show real, populated content and
+// sail straight through those gates.
+//
+// This is a genuinely new category of coverage for this repo, not a
+// bigger version of the skip-gate pattern: every existing spec asserts
+// WHETHER something rendered; this is the first one that asserts WHICH
+// season it rendered for, checked against the live source of truth
+// (/config/seasons) rather than a value baked into the test itself. Was
+// literally a hardcoded "2025-26 season" string here until this session --
+// see PWHLTeamView.jsx.
+describe('Season correctness — rendered label matches live /config/seasons', () => {
+  it('team page season label matches the season the Worker currently resolves as current', () => {
+    cy.request(`${WORKER_URL}/config/seasons`).then((res) => {
+      const { startYear } = res.body.pwhl
+      const expectedBase = `${startYear}-${String(startYear + 1).slice(2)}`
+      cy.visit('/pwhl/team', {
+        onBeforeLoad(win) {
+          win.localStorage.setItem('eyewall:sport', 'pwhl')
+          win.localStorage.setItem('eyewall:pwhl_team', JSON.stringify({ abbr: 'BOS', teamId: 1 }))
+        },
+      })
+      cy.get('.view-sub', { timeout: 15000 }).should('contain', expectedBase)
     })
   })
 })

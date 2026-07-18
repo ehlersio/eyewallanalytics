@@ -1,6 +1,6 @@
 // views/PWHLLeagueView.jsx
 // Mirrors NHL LeagueView — Standings · Bracket · Leaders · Power Rankings
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import {
   fetchPWHLStandings, fetchPWHLLeaguePlayers,
@@ -94,6 +94,22 @@ export default function PWHLLeagueView() {
   const seasonLabel = SEASONS.find(s => s.id === season)?.label || String(season);
   const poSeasonId  = PLAYOFF_SEASON[season] || 9;
 
+  // useState's initial value only runs once, at first mount -- if this
+  // component mounts before pwhlConfig.js's async live-season fetch
+  // resolves, `season` would otherwise lock onto the fallback value
+  // forever, even though PWHL_CURRENT_SEASON itself goes on to update
+  // correctly. Same fix as PWHLPlayersView.jsx: catch up via the event
+  // pwhlConfig.js dispatches on resolution, but only if the user hasn't
+  // manually picked a season themselves.
+  const userPickedSeason = useRef(false);
+  useEffect(() => {
+    function handleSeasonUpdate(e) {
+      if (!userPickedSeason.current) setSeason(e.detail);
+    }
+    window.addEventListener('eyewall:pwhl-season-updated', handleSeasonUpdate);
+    return () => window.removeEventListener('eyewall:pwhl-season-updated', handleSeasonUpdate);
+  }, []);
+
   const { data: standings, loading: standLoading } = useFetch(
     () => fetchPWHLStandings(season), [season]
   );
@@ -103,6 +119,7 @@ export default function PWHLLeagueView() {
   );
 
   function handleSeason(id) {
+    userPickedSeason.current = true;
     setSeason(id);
   }
 

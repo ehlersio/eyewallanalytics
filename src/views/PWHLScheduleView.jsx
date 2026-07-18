@@ -55,6 +55,22 @@ export default function PWHLScheduleView() {
   const [tab,      setTab]      = useState('Regular Season');
   const [season,   setSeason]   = useState(PWHL_CURRENT_SEASON);
   const [poSeason, setPoSeason] = useState(9); // current playoffs season
+
+  // useState's initial value only runs once, at first mount -- if this
+  // component mounts before pwhlConfig.js's async live-season fetch
+  // resolves, `season` would otherwise lock onto the fallback value
+  // forever, even though PWHL_CURRENT_SEASON itself goes on to update
+  // correctly. Same fix as PWHLPlayersView.jsx: catch up via the event
+  // pwhlConfig.js dispatches on resolution, but only if the user hasn't
+  // manually picked a season themselves.
+  const userPickedSeason = useRef(false);
+  useEffect(() => {
+    function handleSeasonUpdate(e) {
+      if (!userPickedSeason.current) setSeason(e.detail);
+    }
+    window.addEventListener('eyewall:pwhl-season-updated', handleSeasonUpdate);
+    return () => window.removeEventListener('eyewall:pwhl-season-updated', handleSeasonUpdate);
+  }, []);
   const [popup,    setPopup]    = useState(null);
   const [regSort,  setRegSort]  = useState('desc');
   const [viewMode, setViewMode] = useState('list');   // 'list' | 'calendar'
@@ -162,7 +178,7 @@ export default function PWHLScheduleView() {
           <div className="sched-tabs" style={{ marginBottom: 4, marginTop: 0 }}>
             {REGULAR_SEASONS.map(s => (
               <button key={s.id} className={`sched-tab${season === s.id ? ' active' : ''}`}
-                onClick={() => setSeason(s.id)}>{s.label}</button>
+                onClick={() => { userPickedSeason.current = true; setSeason(s.id); }}>{s.label}</button>
             ))}
           </div>
 
