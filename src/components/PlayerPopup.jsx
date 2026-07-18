@@ -15,8 +15,10 @@
  */
 
 import { useState, useRef, useEffect } from 'react'
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts'
 import { useFetch } from '../hooks/useFetch'
 import { getPlayerStats, fetchPlayerRankings, TEAM_CONFIG } from '../utils/nhlApi'
+import { ALL_TEAMS } from '../utils/teamConfig'
 import {
   getPlayerAnalytics,
   getGoalieAnalytics,
@@ -169,6 +171,98 @@ function posLabel(code) {
   return { C:'Centre', LW:'Left Wing', RW:'Right Wing', D:'Defence', G:'Goalie' }[code] || code
 }
 
+// ─── Player-card header + Stats tab redesign (Session 66, NHL skaters only) ──
+// Radar chart + percentile tile grid below are additive UI on top of the
+// existing mpData.percentiles shape from getPlayerAnalytics() (supabaseClient.js)
+// -- no new data fetching. Goalies and PWHL are explicitly untouched: this
+// entire block is only reached when !isGoalie in this (NHL-only) file, and
+// PWHLPlayerPopup.jsx is a completely separate component this PR never edits.
+
+// WCAG-AA dark-mode-safe team colors, same lookup pattern LeagueView.jsx
+// already uses for its power-rankings sparkline (ALL_TEAMS -> displayColor).
+const TEAM_DISPLAY_COLORS = Object.fromEntries(ALL_TEAMS.map(t => [t.abbr, t.displayColor]))
+
+function teamColorFor(abbr) {
+  return TEAM_DISPLAY_COLORS[abbr] || TEAM_CONFIG.displayColor || '#4d80f0'
+}
+
+// Correct ordinal suffix (handles the 11th/12th/13th exception that
+// RankBadge's simpler rank===1/2/3 check above doesn't need to worry about
+// since league/division/conference ranks rarely land in the teens).
+function ordinalSuffix(n) {
+  const v = Math.round(n)
+  const mod100 = v % 100
+  if (mod100 >= 11 && mod100 <= 13) return 'th'
+  switch (v % 10) {
+    case 1: return 'st'
+    case 2: return 'nd'
+    case 3: return 'rd'
+    default: return 'th'
+  }
+}
+function ordinal(n) {
+  const v = Math.round(n)
+  return `${v}${ordinalSuffix(v)}`
+}
+
+// Radar categories -- 5 composites decided from the 10 pct_* columns.
+// Polarity check (done against eyewall-pipeline/moneypuck.py this session):
+// ALL 10 pct_* categories are already normalized so higher percentile always
+// = better performance before they ever reach the frontend -- ev_def and
+// pk are stored as 1/xGA60 (inverted at the source), and penalties60 is
+// -PIM/60 (negated at the source). So a flat "pct >= 50 good" read is safe
+// for every category here; no per-category flip needed in this display layer.
+//
+// - Scoring: average of Goals/60 and Finishing percentiles.
+// - Playmaking: 1st Assists/60 percentile alone (no secondary-assist data).
+// - EV Play-Driving: EV Offence (on-ice xGF%) percentile alone.
+// - Defense: EV Defence percentile alone. Deliberately NOT blending in PK
+//   here (even though the task allowed it) because PK is already folded
+//   into the Special Teams axis below -- reusing it in both places would
+//   double-count a single metric and distort the radar's shape.
+// - Special Teams: average of PP + PK percentiles when the player has a
+//   reliable sample in at least one (min 300s TOI, per moneypuck.py). Many
+//   depth players never see PP or PK time and would otherwise show a
+//   permanently blank axis, so this composite falls back to the Penalties
+//   (discipline) percentile when both PP and PK are null -- still a
+//   "special teams / discipline" read, just discipline-only for players
+//   who never see specialty-unit ice time.
+function computeRadarAxes(percentiles) {
+  const p = percentiles || {}
+  const avg = (...vals) => {
+    const present = vals.filter(v => v != null)
+    return present.length ? present.reduce((a, b) => a + b, 0) / present.length : null
+  }
+  const scoring    = avg(p.goals?.pct, p.finishing?.pct)
+  const playmaking = p.a1?.pct ?? null
+  const evDriving  = p.evOff?.pct ?? null
+  const defense    = p.evDef?.pct ?? null
+  const specialTeams = (p.pp?.pct != null || p.pk?.pct != null)
+    ? avg(p.pp?.pct, p.pk?.pct)
+    : (p.penalties?.pct ?? null)
+
+  return [
+    { axis: 'Scoring',        value: scoring },
+    { axis: 'Playmaking',     value: playmaking },
+    { axis: 'EV Driving',     value: evDriving },
+    { axis: 'Defense',        value: defense },
+    { axis: 'Special Teams',  value: specialTeams },
+  ].map(d => ({ ...d, hasData: d.value != null, value: d.value ?? 0 }))
+}
+
+// Box-score stat keys (from SKATER_STATS above) that have a reasonably
+// direct percentile counterpart in mpData.percentiles. Deliberately a small
+// subset -- most box-score counting stats (GP, +/-, SHG, GWG, Shots, TOI/G,
+// FO%, Hits, Blocks, TK, GV) have no backing percentile column at all, and
+// forcing a mapping onto them would be more misleading than showing none.
+const STAT_PCT_MAP = {
+  goals:           'goals',
+  assists:         'a1',        // percentile is 1st-assists/60, not all-assist rate -- noted in the tile's info tip
+  powerPlayPoints: 'pp',
+  pim:             'penalties',
+  shootingPctg:    'finishing',
+}
+
 // ─── Sub-components ───────────────────────────────────────────
 
 function RankBadge({ label, rank }) {
@@ -236,6 +330,142 @@ function StatSection({ label, groups, highlight, defaultOpen = highlight, _isGoa
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Skater percentile tile (Stats tab tile grid) ──────────────
+// Restyles a single box-score stat as a tile: label, big number, and — for
+// the subset of stats with a backing percentile column (STAT_PCT_MAP above)
+// — a thin percentile bar + ordinal label underneath. Color is a plain
+// blue(>=50th)/red(<50th) split rather than team color: this bar's whole
+// job is an at-a-glance good/bad read, and team colors (some of which are
+// red) would make that ambiguous. Team color is used instead on the radar
+// chart in the header, where there's no per-axis good/bad claim being made.
+function StatTile({ def, fmt, pctInfo }) {
+  const pct = pctInfo?.pct ?? null
+  const insufficientSample = !!pctInfo && pct == null
+  const color = pct >= 50 ? 'var(--blue-bright)' : '#f87171'
+  return (
+    <div className="stat-tile">
+      <div className="stat-tile-top">
+        <span className="stat-tile-label">{def.label}</span>
+        <InfoTip text={def.tip} position="above" />
+      </div>
+      <div className="stat-tile-value">{fmt ?? '—'}</div>
+      {pctInfo && !insufficientSample && (
+        <>
+          <div className="stat-tile-bar-track">
+            <div className="stat-tile-bar-fill" style={{ width: `${pct}%`, background: color }} />
+          </div>
+          <div className="stat-tile-pct-label" style={{ color }}>
+            {ordinal(pct)} percentile
+            {pctInfo.note && <InfoTip text={pctInfo.note} position="above" />}
+          </div>
+        </>
+      )}
+      {insufficientSample && (
+        <div className="stat-tile-na">Not enough playing time yet</div>
+      )}
+    </div>
+  )
+}
+
+function StatTileGrid({ groups, percentiles }) {
+  return (
+    <>
+      {groups.map(({ group, items }) => (
+        <div key={group} className="stat-group">
+          <div className="stat-group-label">{group}</div>
+          <div className="stat-tile-grid">
+            {items.map(({ def, fmt }) => {
+              const pctKey = STAT_PCT_MAP[def.key]
+              const pctInfo = pctKey ? (percentiles?.[pctKey] ?? { pct: null }) : null
+              return <StatTile key={def.key} def={def} fmt={fmt} pctInfo={pctInfo} />
+            })}
+          </div>
+        </div>
+      ))}
+    </>
+  )
+}
+
+// Collapsible section wrapper, matching StatSection's chrome exactly, but
+// rendering the new tile grid instead of the vertical StatRow list. Only
+// used for the current/highlighted season section of NHL skaters -- mpData
+// percentiles are current-season-only (same constraint documented on the
+// Compare tab below), so it would be wrong to attach them to a Career or
+// non-current-season section.
+function SkaterStatSection({ label, groups, highlight, defaultOpen = highlight, percentiles }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className={`stat-section ${highlight ? 'highlight-section' : ''}`}>
+      <button className="stat-section-header" onClick={() => setOpen(o => !o)}>
+        <span className="stat-section-label">{label}</span>
+        {highlight && <span className="stat-section-current">Current</span>}
+        <span className="stat-section-arrow">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="stat-section-body">
+          <StatTileGrid groups={groups} percentiles={percentiles} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Skater header radar + quick stats (Session 66) ────────────
+
+function PlayerRadarChart({ data, color }) {
+  const missing = data.filter(d => !d.hasData).map(d => d.axis)
+  return (
+    <div className="pp-radar-wrap">
+      <ResponsiveContainer width="100%" height={150}>
+        <RadarChart data={data} outerRadius="72%">
+          <PolarGrid stroke="var(--border-2)" />
+          <PolarAngleAxis dataKey="axis" tick={{ fill: 'var(--text-dim)', fontSize: 8.5 }} />
+          <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} tickCount={2} />
+          <Radar dataKey="value" stroke={color} fill={color} fillOpacity={0.35} strokeWidth={2} isAnimationActive={false} />
+        </RadarChart>
+      </ResponsiveContainer>
+      {missing.length > 0 && (
+        <div className="pp-radar-note">Not enough playing time yet: {missing.join(', ')}</div>
+      )}
+    </div>
+  )
+}
+
+function QuickStatPill({ label, value }) {
+  return (
+    <div className="pp-quickstat">
+      <span className="pp-quickstat-val">{value ?? '—'}</span>
+      <span className="pp-quickstat-label">{label}</span>
+    </div>
+  )
+}
+
+// Header panel shown only for NHL skaters (goalies + PWHL keep today's
+// header). `boxStats` is the current/highlighted season's raw stat line
+// (same object the Stats tab uses) -- reused here for the G/A/P/TOI pills
+// rather than re-fetching anything.
+function SkaterHeaderPanel({ percentiles, boxStats, teamColor }) {
+  if (!percentiles) return null
+  const radarData = computeRadarAxes(percentiles)
+  const fmtToi = (raw) => {
+    if (raw == null) return null
+    if (typeof raw === 'string' && raw.includes(':')) return raw
+    const m = Math.floor(raw / 60), s = String(raw % 60).padStart(2, '0')
+    return `${m}:${s}`
+  }
+  return (
+    <div className="pp-header-radar">
+      <PlayerRadarChart data={radarData} color={teamColor} />
+      <div className="pp-quickstats">
+        <QuickStatPill label="G"   value={boxStats?.goals} />
+        <QuickStatPill label="A"   value={boxStats?.assists} />
+        <QuickStatPill label="P"   value={boxStats?.points} />
+        <QuickStatPill label="TOI" value={fmtToi(boxStats?.avgToi)} />
+      </div>
     </div>
   )
 }
@@ -825,6 +1055,13 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   // Derive positionCode from stats if not on the player object (league context)
   const positionCode = p.positionCode || stats?.position || null
 
+  // ── Header + Stats tab redesign inputs (NHL skaters only, Session 66) ──
+  // isGoalie already computed above; PWHL never reaches this component.
+  const teamAbbr  = p.teamAbbrev || TEAM_CONFIG.abbr
+  const teamColor = teamColorFor(teamAbbr)
+  const currentSection   = sections.find(sec => sec.highlight)
+  const currentBoxStats  = currentSection?.stats || null
+
   return (
     <div className="popup-backdrop" onClick={onClose}>
       <div className="player-popup" onClick={e => e.stopPropagation()}>
@@ -869,6 +1106,15 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
           </div>
           <button className="pp-close" onClick={onClose} aria-label="Close player details">✕</button>
         </div>
+
+        {/* ── Radar + quick stats band — NHL skaters only (Session 66) ── */}
+        {!isGoalie && mpData?.percentiles && (
+          <SkaterHeaderPanel
+            percentiles={mpData.percentiles}
+            boxStats={currentBoxStats}
+            teamColor={teamColor}
+          />
+        )}
 
         {/* ── Rankings banner — CAR context only ── */}
         {!isLeagueContext && rankings && (rankings.division || rankings.conference || rankings.league) && (
@@ -1022,6 +1268,18 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
               }
               const groups = groupStats(statDefs, enriched, isGoalie)
               if (!groups.length) return null
+              // New tile-grid layout: NHL skaters only, and only for the
+              // current/highlighted season -- mpData percentiles are
+              // current-season-only (see Compare tab note below), so
+              // Career/other-season sections keep the original row list.
+              if (!isGoalie && highlight) {
+                return (
+                  <SkaterStatSection
+                    key={label} label={label} groups={groups} highlight={highlight}
+                    percentiles={mpData?.percentiles}
+                  />
+                )
+              }
               return <StatSection key={label} label={label} groups={groups} highlight={highlight} isGoalie={isGoalie} />
             })}
             {!loading && !sections.some(s => s.stats) && (
