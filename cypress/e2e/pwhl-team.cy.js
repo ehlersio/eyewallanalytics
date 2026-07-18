@@ -144,6 +144,23 @@ PWHL_TEST_TEAMS.forEach(abbr => {
         cy.contains(/CBA Target/i, { timeout: 8000 }).should('exist')
       })
     })
+
+    describe('Compare Seasons', () => {
+      beforeEach(() => cy.contains('🆚 Compare Seasons').click())
+
+      it('opens the picker with multiple season options', () => {
+        cy.contains('Compare Seasons').should('be.visible')
+        cy.get('.season-chip', { timeout: 8000 }).should('have.length.greaterThan', 1)
+      })
+
+      it('renders one comparison card per selected season', () => {
+        cy.get('.season-chip', { timeout: 8000 }).eq(0).click()
+        cy.get('.season-chip').eq(1).click()
+        cy.get('.stat-section').should('have.length', 2)
+        cy.contains('GP').should('be.visible')
+        cy.contains('PTS').should('be.visible')
+      })
+    })
   })
 })
 
@@ -235,6 +252,25 @@ describe('PWHL Team view — DET (expansion, no games played yet)', () => {
     ['Advanced', 'Splits', 'Trends', 'Salaries', 'Overview'].forEach(tab => {
       cy.contains(tab).click()
       cy.assertNoErrors()
+    })
+  })
+
+  // The durable case for SESSION_64_BUILD's "team has no row at all for a
+  // selected season" requirement -- unlike the NHL current-season null-field
+  // case in team.cy.js (which will stop being true once real games are
+  // played), DET never having existed as a franchise before the 2026-27
+  // expansion is a permanent historical fact, not a transient data gap. Safe
+  // to assert this indefinitely.
+  describe('Compare Seasons', () => {
+    beforeEach(() => cy.contains('🆚 Compare Seasons').click())
+
+    it('shows "Not yet available" instead of zeroed stats for a pre-expansion season', () => {
+      cy.get('.season-chip', { timeout: 8000 }).contains('2025-26').click()
+      cy.get('.stat-section').should('have.length', 1)
+      cy.contains('Not yet available for this season').should('be.visible')
+      // No metric rows at all for this card -- confirms the empty state
+      // replaces the stat list rather than rendering it zeroed-out.
+      cy.get('.stat-section').find('.stat-row').should('not.exist')
     })
   })
 })

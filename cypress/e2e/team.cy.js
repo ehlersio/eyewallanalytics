@@ -125,6 +125,44 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       })
     })
 
+    describe('Compare Seasons', () => {
+      beforeEach(() => cy.contains('🆚 Compare Seasons').click())
+
+      it('opens the picker with multiple season options', () => {
+        cy.contains('Compare Seasons').should('be.visible')
+        cy.get('.season-chip', { timeout: 8000 }).should('have.length.greaterThan', 1)
+      })
+
+      it('renders one comparison card per selected season', () => {
+        cy.get('.season-chip', { timeout: 8000 }).eq(0).click()
+        cy.get('.season-chip').eq(1).click()
+        cy.get('.stat-section').should('have.length', 2)
+        cy.contains('GP').should('be.visible')
+        cy.contains('PTS').should('be.visible')
+      })
+
+      // Season-boundary case (SESSION_64_BUILD's "not tracked yet" requirement):
+      // as of 2026-07, the current season (20262027) has real wins/losses/points
+      // but null goals_for/goals_against/pp_pct/pk_pct in Supabase (pipeline
+      // hasn't populated those columns yet -- see eyewall-poller#20's PR
+      // description for the underlying data-quality finding). This assertion
+      // will need revisiting once real 2026-27 games populate those columns --
+      // it's asserting today's real partial-season state, not a permanent one,
+      // same tradeoff this file already accepts for skipIfEither/season-flip
+      // content elsewhere. If it starts failing after the season is underway,
+      // that's this test going stale, not a regression.
+      it('shows "—" rather than blank for a box-score field not yet populated for the current season', function () {
+        cy.get('.season-chip', { timeout: 8000 }).contains('2026-27').click()
+        cy.get('.season-chip').contains('2025-26').click()
+        cy.get('.stat-section').should('have.length', 2)
+        cy.get('.stat-row-value').each($el => {
+          const text = $el.text().trim()
+          expect(text, `stat-row-value should never render blank/undefined/NaN, got "${text}"`)
+            .to.not.match(/^$|undefined|NaN/)
+        })
+      })
+    })
+
     // Cap & Picks only runs for teams with salary data
     if (teamAbbr === 'CAR') {
       describe('Cap tab', () => {
