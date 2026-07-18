@@ -141,21 +141,23 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         cy.contains('PTS').should('be.visible')
       })
 
-      // Season-boundary case (SESSION_64_BUILD's "not tracked yet" requirement):
-      // as of 2026-07, the current season (20262027) has real wins/losses/points
-      // but null goals_for/goals_against/pp_pct/pk_pct in Supabase (pipeline
-      // hasn't populated those columns yet -- see eyewall-poller#20's PR
-      // description for the underlying data-quality finding). This assertion
-      // will need revisiting once real 2026-27 games populate those columns --
-      // it's asserting today's real partial-season state, not a permanent one,
-      // same tradeoff this file already accepts for skipIfEither/season-flip
-      // content elsewhere. If it starts failing after the season is underway,
-      // that's this test going stale, not a regression.
-      it('shows "—" rather than blank for a box-score field not yet populated for the current season', function () {
+      // Season-boundary case, updated 2026-07-18 for the interim mitigation
+      // in TeamComparisonPopup.jsx: a manual KV override currently forces
+      // the current NHL season to resolve to 20262027 (unstarted), while
+      // team_seasons has real-but-mislabeled 2025-26 data sitting under
+      // that season number (see eyewall-poller#20's PR description). Rather
+      // than trust that row at all, the popup now shows a "Data pending"
+      // card for whatever season /config/seasons currently calls "current."
+      // This assertion is tied to that mitigation, not the real season
+      // boundary -- remove/update it when the mitigation itself is removed
+      // (see the comment block at the top of TeamComparisonPopup.jsx).
+      it('shows a "Data pending" card instead of the row for the season currently forced by the known-bad KV override', function () {
         cy.get('.season-chip', { timeout: 8000 }).contains('2026-27').click()
         cy.get('.season-chip').contains('2025-26').click()
         cy.get('.stat-section').should('have.length', 2)
-        cy.get('.stat-row-value').each($el => {
+        cy.contains('Data pending — check back soon.').should('be.visible')
+        // The real, non-contaminated season still renders its actual stats
+        cy.get('.stat-section').eq(1).find('.stat-row-value').each($el => {
           const text = $el.text().trim()
           expect(text, `stat-row-value should never render blank/undefined/NaN, got "${text}"`)
             .to.not.match(/^$|undefined|NaN/)
