@@ -80,6 +80,30 @@ export async function fetchPWHLTeamRecord(teamId, season) {
 }
 
 
+/**
+ * Season-over-season team comparison (Session 64) -- box-score fields
+ * only, mirroring NHL's fetchTeamSeasonsCompare. Normalized to the same
+ * camelCase shape that function returns so the same UI component can
+ * render either league's response without a league-specific branch.
+ */
+export async function fetchPWHLTeamSeasonsCompare(teamId, seasons) {
+  if (!teamId || !seasons?.length) return [];
+  const rows = await workerFetch(`/pwhl/team-seasons/compare?teamId=${teamId}&seasons=${seasons.join(',')}`);
+  if (!Array.isArray(rows)) return [];
+  return rows.map(r => ({
+    season:        r.season_id,
+    gamesPlayed:   r.gp,
+    wins:          r.wins,
+    losses:        r.losses,
+    otLosses:      r.ot_losses,
+    points:        r.points,
+    goalsFor:      r.goals_for,
+    goalsAgainst:  r.goals_against,
+    ppPct:         r.pp_pct,
+    pkPct:         r.pk_pct,
+  }));
+}
+
 export async function fetchPWHLPlayers(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {
   if (!teamId) return null;
   return workerFetch(`/pwhl/players?teamId=${teamId}&season=${season}`);

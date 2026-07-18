@@ -9,6 +9,7 @@ import {
 import { PWHL_CURRENT_SEASON, PWHL_PLAYOFF_SEASON_MAP } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
+import TeamComparisonPopup from '../components/TeamComparisonPopup';
 import './TeamView.css';
 import './ShotMapView.css';
 
@@ -20,6 +21,7 @@ export default function PWHLTeamView() {
   const abbr   = team?.abbr || '—';
   const color  = team?.displayColor || 'var(--text-dim)';
   const [tab,  setTab]  = useState('Overview');
+  const [compareOpen, setCompareOpen] = useState(false);
 
   const { data: standings, loading: sLoad } = useFetch(() => fetchPWHLStandings(PWHL_CURRENT_SEASON), []);
   const { data: players,   loading: pLoad } = useFetch(
@@ -58,7 +60,19 @@ export default function PWHLTeamView() {
         <TeamLogo abbr={abbr} sport="pwhl" size={28} color={color} />
         <h2 className="view-title" style={{ margin: 0 }}>{team.displayName}</h2>
       </div>
-      <p className="view-sub">2025-26 season</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <p className="view-sub" style={{ margin: 0 }}>2025-26 season</p>
+        <button className="team-compare-btn" onClick={() => setCompareOpen(true)}>🆚 Compare Seasons</button>
+      </div>
+
+      {compareOpen && (
+        <TeamComparisonPopup
+          league="pwhl"
+          teamValue={teamId}
+          teamLabel={team.displayName}
+          onClose={() => setCompareOpen(false)}
+        />
+      )}
 
       <div className="team-tabs">
         {TABS.map(t => (
