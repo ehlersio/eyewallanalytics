@@ -195,6 +195,15 @@
   background: var(--red-dim); color: var(--red-bright);
   border: 0.5px solid var(--red-border); text-transform: uppercase; letter-spacing: 0.06em;
 }
+/* Whole-season fallback (Session 66) — replaces .stat-section-current's red
+   "Current" styling, deliberately: this data is NOT current, it's last
+   season's, so it must never share the same visual weight/color as a
+   confirmed-current badge. */
+.stat-section-current.stat-section-stale {
+  background: var(--bg3); color: var(--text-dim);
+  border: 0.5px solid var(--border-2); text-transform: none; letter-spacing: normal;
+  font-style: italic; font-weight: 600;
+}
 .stat-section-arrow { font-size: 10px; color: var(--text-dim); }
 
 .stat-section-body { padding: 4px 16px 12px; }
@@ -615,6 +624,9 @@
   font-size: 9px; color: var(--text-dim); text-align: center;
   line-height: 1.4; padding: 0 4px; margin-top: -6px;
 }
+/* Whole-season fallback (Session 66) — same dimmed+italic "not current"
+   signal as .stat-section-stale / the search badge's .psr-team--stale. */
+.pp-radar-note.pp-radar-stale { font-style: italic; }
 .pp-quickstats {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

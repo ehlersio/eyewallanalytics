@@ -45,7 +45,7 @@ async function workerFetch(path) {
 // Returns analytics object keyed by player_id (string), matching
 // the shape the app already expects from moneypuck:skaters KV.
 export async function getPlayerAnalytics(season = currentSeason()) {
-  const { rows, poRows } = await workerFetch(`/player-analytics?season=${season}`);
+  const { rows, poRows, statsStale, statsSeason } = await workerFetch(`/player-analytics?season=${season}`);
 
   // Build playoff defensive map: player_id → { hits, blocked_shots, takeaways, giveaways }
   const poDefMap = {};
@@ -85,6 +85,15 @@ export async function getPlayerAnalytics(season = currentSeason()) {
       giveaways:    r.giveaways    ?? null,
       // Playoff defensive — separate object so frontend can inject per section
       poDef: poDefMap[String(r.player_id)] || null,
+      // Whole-season fallback flag (Session 66) — true when the live season
+      // had no player_seasons rows at all yet (e.g. schedule released well
+      // before puck drop) and every field above came from one season back
+      // instead. Stamped onto every player's object since the fallback is
+      // whole-season, not per-player — PlayerPopup.jsx uses this to label
+      // the radar/tile grid "as of <statsSeason>" rather than presenting a
+      // stale percentile as current fact.
+      statsStale:  !!statsStale,
+      statsSeason: statsSeason ?? null,
       percentiles: {
         evOff:     { pct: r.pct_ev_off,      label: 'EV Offence',   note: 'On-ice expected goals for % at 5-on-5. Measures how often your team generates quality chances when this player is on the ice. Above 50% = your team outshoots in quality. Percentile vs all NHL players at same position.' },
         evDef:     { pct: r.pct_ev_def,      label: 'EV Defence',   note: 'On-ice expected goals against per 60 at 5-on-5 (lower is better, inverted so higher = better defender). How many quality chances does the opponent generate when this player is on the ice? Percentile vs all NHL players at same position.' },
