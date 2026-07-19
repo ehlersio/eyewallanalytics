@@ -151,28 +151,6 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         cy.contains('PTS').scrollIntoView().should('be.visible')
       })
 
-      // Season-boundary case, updated 2026-07-18 for the interim mitigation
-      // in TeamComparisonPopup.jsx: a manual KV override currently forces
-      // the current NHL season to resolve to 20262027 (unstarted), while
-      // team_seasons has real-but-mislabeled 2025-26 data sitting under
-      // that season number (see eyewall-poller#20's PR description). Rather
-      // than trust that row at all, the popup now shows a "Data pending"
-      // card for whatever season /config/seasons currently calls "current."
-      // This assertion is tied to that mitigation, not the real season
-      // boundary -- remove/update it when the mitigation itself is removed
-      // (see the comment block at the top of TeamComparisonPopup.jsx).
-      it('shows a "Data pending" card instead of the row for the season currently forced by the known-bad KV override', function () {
-        cy.get('.season-chip', { timeout: 8000 }).contains('2026-27').click()
-        cy.get('.season-chip').contains('2025-26').click()
-        cy.get('.stat-section:not(.xg-overlay-section)').should('have.length', 2)
-        cy.contains('Data pending — check back soon.').should('be.visible')
-        // The real, non-contaminated season still renders its actual stats
-        cy.get('.stat-section:not(.xg-overlay-section)').eq(1).find('.stat-row-value').each($el => {
-          const text = $el.text().trim()
-          expect(text, `stat-row-value should never render blank/undefined/NaN, got "${text}"`)
-            .to.not.match(/^$|undefined|NaN/)
-        })
-      })
     })
 
     // Cap & Picks only runs for teams with salary data
