@@ -7,6 +7,7 @@
 // before opening.
 import { useState, useRef, useEffect } from 'react';
 import { searchPlayers } from '../utils/playerSearch';
+import { nhlSeasonLabel } from '../utils/seasonComparison';
 import PlayerPopup from './PlayerPopup';
 import PWHLPlayerPopup from './PWHLPlayerPopup';
 import TeamLogo from './TeamLogo';
@@ -129,7 +130,16 @@ export default function PlayerSearch() {
                   <TeamLogo abbr={p.team} sport={p.sport} size={22} />
                   <span className="psr-name">{p.name}</span>
                   <span className="psr-meta">
-                    <span className="psr-team">{p.team || '—'}</span>
+                    <span
+                      className={`psr-team${p.teamStale ? ' psr-team--stale' : ''}`}
+                      title={
+                        p.teamStale ? `As of ${nhlSeasonLabel(p.teamSeason)} season`
+                          : !p.team ? 'No team assigned yet'
+                          : undefined
+                      }
+                    >
+                      {p.team || '—'}
+                    </span>
                     {p.position && <span className="psr-pos">{p.position}</span>}
                     <span className={`psr-sport psr-sport--${p.sport}`}>{p.sport.toUpperCase()}</span>
                   </span>
