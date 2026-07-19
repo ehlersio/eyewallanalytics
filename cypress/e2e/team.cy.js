@@ -138,9 +138,17 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       it('renders one comparison card per selected season', () => {
         cy.get('.season-chip', { timeout: 8000 }).eq(0).click()
         cy.get('.season-chip').eq(1).click()
-        cy.get('.stat-section').should('have.length', 2)
-        cy.contains('GP').should('be.visible')
-        cy.contains('PTS').should('be.visible')
+        // :not(.xg-overlay-section) excludes the season-overlay chart card
+        // (added Session 67) from this "one card per season" count -- it's a
+        // single shared chart, not a per-season stat card.
+        cy.get('.stat-section:not(.xg-overlay-section)', { timeout: 15000 }).should('have.length', 2)
+        // The chart section renders above the season cards in the DOM (it's
+        // a shared header for the comparison, not per-season), so on a short
+        // viewport the cards can land below the popup's visible scroll area
+        // after Cypress auto-scrolls to click the chips. scrollIntoView
+        // finds them regardless of where that lands.
+        cy.contains('GP', { timeout: 15000 }).scrollIntoView().should('be.visible')
+        cy.contains('PTS').scrollIntoView().should('be.visible')
       })
 
       // Season-boundary case, updated 2026-07-18 for the interim mitigation
@@ -156,10 +164,10 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       it('shows a "Data pending" card instead of the row for the season currently forced by the known-bad KV override', function () {
         cy.get('.season-chip', { timeout: 8000 }).contains('2026-27').click()
         cy.get('.season-chip').contains('2025-26').click()
-        cy.get('.stat-section').should('have.length', 2)
+        cy.get('.stat-section:not(.xg-overlay-section)').should('have.length', 2)
         cy.contains('Data pending — check back soon.').should('be.visible')
         // The real, non-contaminated season still renders its actual stats
-        cy.get('.stat-section').eq(1).find('.stat-row-value').each($el => {
+        cy.get('.stat-section:not(.xg-overlay-section)').eq(1).find('.stat-row-value').each($el => {
           const text = $el.text().trim()
           expect(text, `stat-row-value should never render blank/undefined/NaN, got "${text}"`)
             .to.not.match(/^$|undefined|NaN/)
