@@ -121,6 +121,17 @@
   text-align: right;
 }
 
+/* Team resolved from last season's data, not confirmed for the current one
+   (e.g. right after a season flip, before real games repopulate team
+   assignments) -- a player who changed teams over the summer would show
+   the old one here, so this must never look identical to a confirmed
+   current team. Dimmed + italic rather than extra badge text, since the
+   result row has no room to spare; the real detail is in the title tooltip. */
+.psr-team--stale {
+  opacity: 0.65;
+  font-style: italic;
+}
+
 .psr-pos {
   background: var(--bg3);
   border-radius: 4px;

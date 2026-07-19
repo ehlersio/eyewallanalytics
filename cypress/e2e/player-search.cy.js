@@ -4,6 +4,8 @@
 // sport-appropriate popup (both self-fetch by id, so no pre-merge is
 // needed here — see PlayerSearch.jsx).
 
+const WORKER_URL_PLAYER_SEARCH = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
+
 describe('Global player search', () => {
   beforeEach(() => {
     cy.visit('/')
@@ -59,6 +61,48 @@ describe('Global player search', () => {
       cy.contains('Goals', { timeout: 8000 }).should('exist')
       cy.get('.pp-close').click()
       cy.get('.player-popup').should('not.exist')
+    })
+
+    // Deterministic (mocked), unlike the two tests above which assert
+    // against live production data -- the fallback-flagged state only
+    // exists in real data during the window right after a season flip
+    // (Session 66), so it can't be a reliable permanent live assertion.
+    // Asserts the SPECIFIC resolved team, not just that the badge is
+    // non-empty -- "shows *a* team" would pass even if the fallback picked
+    // the wrong season or a stale value silently indistinguishable from
+    // a confirmed-current one.
+    it('flags a team resolved from the season-back fallback as stale, not as current fact', () => {
+      cy.intercept('GET', `${WORKER_URL_PLAYER_SEARCH}/players-search-index`, {
+        body: [
+          { id: 8478402, name: 'Connor McDavid', team: 'EDM', teamStale: true, teamSeason: '20242025', position: 'C', sport: 'nhl' },
+        ],
+      }).as('getSearchIndex')
+      cy.get('.player-search-toggle').click()
+      cy.get('.player-search-input').type('mcdavid')
+      cy.wait('@getSearchIndex')
+      cy.contains('.player-search-result', 'Connor McDavid', { timeout: 8000 }).within(() => {
+        cy.get('.psr-team')
+          .should('have.class', 'psr-team--stale')
+          .and('contain', 'EDM')
+          .and('have.attr', 'title', 'As of 2024-25 season')
+      })
+    })
+
+    it('shows an explicit no-team state, distinct from the stale case, when neither season has data', () => {
+      cy.intercept('GET', `${WORKER_URL_PLAYER_SEARCH}/players-search-index`, {
+        body: [
+          { id: 9999999, name: 'Brand New Rookie', team: null, position: 'C', sport: 'nhl' },
+        ],
+      }).as('getSearchIndex')
+      cy.get('.player-search-toggle').click()
+      cy.get('.player-search-input').type('brand new rookie')
+      cy.wait('@getSearchIndex')
+      cy.contains('.player-search-result', 'Brand New Rookie', { timeout: 8000 }).within(() => {
+        cy.get('.psr-team')
+          .should('not.have.class', 'psr-team--stale')
+          .and('contain', '—')
+          .and('have.attr', 'title', 'No team assigned yet')
+      })
     })
   })
 

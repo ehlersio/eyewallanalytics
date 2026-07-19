@@ -45,7 +45,23 @@ export default function ScheduleView() {
   const { data: regGames,     loading: regLoading } = useFetch(getRegularSeasonGames);
   const { data: standings }                          = useFetch(getStandings);
   const { data: oddsData }                           = useFetch(getNhlOdds);
-  const { data: playoffRounds }                      = useFetch(getPlayoffSeries);
+  const { data: playoffRounds, loading: prLoading }  = useFetch(getPlayoffSeries);
+
+  // 'Playoffs' is the default `tab` above so a genuinely-live playoff run
+  // opens straight to it, but that default is a guess made before either
+  // fetch above resolves. Once both have settled, if there's no real
+  // playoff data (the same check that already hides the Playoffs tab
+  // button, just below) and the user hasn't manually switched tabs
+  // themselves, correct the guess to 'Regular Season' rather than leaving
+  // the content pane stuck showing "Playoffs not yet started" under a tab
+  // button that's no longer even in the list (e.g. right after an
+  // intentional early season flip, once the new season's schedule is
+  // published well before playoffs -- or any real offseason).
+  useEffect(() => {
+    if (poLoading || prLoading) return;
+    const hasPlayoffData = (playoffRounds?.length > 0) || (playoffGames?.length > 0);
+    if (!hasPlayoffData) setTab(t => t === 'Playoffs' ? 'Regular Season' : t);
+  }, [poLoading, prLoading, playoffRounds, playoffGames]);
 
   // The NHL's own /standings/now redirects to whatever date it last actually
   // resolved standings for — which stays pinned to last season's final date
