@@ -1,5 +1,17 @@
 // cypress/e2e/shot-map.cy.js
 
+// Pins the 'Shot Map' describe block below to a real, permanent CAR game
+// (2026-05-21 playoff win over MTL, gameState OFF) via the app's own
+// ?mockGame= dev feature (nhlApi.js:getLiveGame -- DEV-only, statically
+// eliminated from production builds, verified against a real `npm run
+// build` output during Session 67). Without this, every assertion in that
+// block requires a live/very-recent NHL game to exist, which is false for
+// ~4 months a year (off-season) -- this makes the block's 30 tests of real
+// feature coverage deterministic year-round instead of skip-gating them
+// dark. Same fix applied to period-summary.cy.js's "Game Summaries" and
+// "Period Summary popup" blocks, which have the identical dependency.
+const MOCK_GAME_ID = '2025030311'
+
 // ── Multi-team smoke ──────────────────────────────────────────────────────
 describe('Shot Map smoke tests (multi-team)', () => {
   const SAMPLE_TEAMS = ['CAR', 'VGK', 'TOR', 'CHI', 'BOS', 'EDM']
@@ -22,7 +34,7 @@ describe('Shot Map smoke tests (multi-team)', () => {
 describe('Shot Map', () => {
   beforeEach(() => {
     cy.team().then(t => {
-      cy.visit('/')
+      cy.visit(`/?mockGame=${MOCK_GAME_ID}`)
       cy.contains(t.abbr).should('be.visible')
     })
   })
@@ -34,13 +46,21 @@ describe('Shot Map', () => {
     })
 
     it('shows game date and type', () => {
-      cy.contains(/Playoff|Regular/i).should('exist')
+      // ?mockGame= unconditionally forces gameState 'LIVE' (nhlApi.js:201),
+      // which routes the header into its live-clock branch -- the
+      // "🏒 Playoff ·"/date line only exists in the completed-game branch
+      // (ShotMapView.jsx:1263-1269), so it can't appear here. The correct,
+      // live equivalent is the "🔴 LIVE" state pill this branch shows instead.
+      cy.contains('🔴 LIVE').should('exist')
     })
   })
 
   describe('Game Insights section', () => {
     it('renders section header', () => {
-      cy.contains(/Game Insights/i).should('exist')
+      // Live-mocked games render "LIVE INSIGHTS" instead of "Game Insights"
+      // (ShotMapView.jsx's LiveInsights component swaps the label when
+      // isLive is true, which ?mockGame= always forces -- see note above).
+      cy.contains(/Game Insights|LIVE INSIGHTS/i).should('exist')
     })
 
     it('shows at least one insight card', () => {

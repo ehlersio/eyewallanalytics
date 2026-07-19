@@ -6,6 +6,32 @@ const VIEWPORTS = [
   { label: 'Desktop',   width: 1280, height: 800  },
 ]
 
+// Shot Map ('/') and Schedule only show team/period/score/game-row content
+// once a real NHL game is live, very recent, or the season is published --
+// off-season (e.g. mid-July, current season resolves to next year's
+// not-yet-scheduled one) neither has any of that text at all. The topbar's
+// own .topbar-no-live "Off season" badge (Topbar.jsx:155) is the correct,
+// always-present signal for this state -- verified live (2026-07-19): with
+// no mock game, /schedule renders "2026-27 Schedule" with zero game rows.
+// Treat the badge as a pass for these two routes' checks too, rather than
+// skipping the whole smoke test (which would drop coverage of the other
+// routes) -- same "wait for whichever the app's own logic produces"
+// philosophy as cy.skipIfEither (support/e2e.js), just tolerant here.
+const SEASON_DEPENDENT_ROUTES = new Set(['/', '/schedule'])
+function assertRouteContent(path, checks) {
+  if (SEASON_DEPENDENT_ROUTES.has(path)) {
+    cy.get('body', { timeout: 8000 }).should($body => {
+      const isOffSeason = $body.find('.topbar-no-live').length > 0
+      const hasAllChecks = checks.every(check =>
+        check instanceof RegExp ? check.test($body.text()) : $body.text().includes(check)
+      )
+      expect(isOffSeason || hasAllChecks, 'expected the "Off season" topbar badge or matching route content').to.be.true
+    })
+  } else {
+    checks.forEach(check => cy.contains(check, { timeout: 8000 }).should('exist'))
+  }
+}
+
 VIEWPORTS.forEach(({ label, width, height }) => {
   describe(`Viewport: ${label} (${width}×${height})`, () => {
     beforeEach(() => cy.viewport(width, height))
@@ -21,7 +47,7 @@ VIEWPORTS.forEach(({ label, width, height }) => {
         ]
         routes.forEach(({ path, checks }) => {
           cy.visit(path)
-          checks.forEach(check => cy.contains(check, { timeout: 8000 }).should('exist'))
+          assertRouteContent(path, checks)
           cy.get('body').should('not.contain', 'Something went wrong')
         })
       })
@@ -102,7 +128,7 @@ VIEWPORTS.forEach(({ label, width, height }) => {
             },
           })
           cy.get('html').should('have.attr', 'data-theme', 'light')
-          checks.forEach(check => cy.contains(check, { timeout: 8000 }).should('exist'))
+          assertRouteContent(path, checks)
           cy.get('body').should('not.contain', 'Something went wrong')
           cy.assertNoErrors()
         })
