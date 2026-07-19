@@ -594,3 +594,92 @@
 }
 .scout-empty-icon { font-size: 28px; }
 .scout-empty-sub  { font-size: 11px; color: var(--text-dim); }
+
+/* ── Player-card header radar + quick stats (Session 66, NHL skaters only) ──
+   Own full-width band directly below the photo/bio header row rather than a
+   flex sibling squeezed inside .pp-header: this popup is hard-capped at
+   max-width 420px (see .player-popup above) regardless of viewport, and at
+   that width there's no room for photo + bio text + a legible radar chart
+   all on one row. Splitting it into its own row gives the radar a real
+   left/right split against the quick-stat pills while keeping the bio row
+   above uncompressed. */
+.pp-header-radar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 16px 16px;
+  border-bottom: 0.5px solid var(--border);
+}
+.pp-radar-wrap { flex: 1 1 140px; max-width: 160px; }
+.pp-radar-note {
+  font-size: 9px; color: var(--text-dim); text-align: center;
+  line-height: 1.4; padding: 0 4px; margin-top: -6px;
+}
+.pp-quickstats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  flex: 1;
+}
+.pp-quickstat {
+  display: flex; flex-direction: column; align-items: center;
+  background: var(--bg2); border-radius: 6px;
+  padding: 6px 8px;
+}
+.pp-quickstat-val {
+  font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--text);
+  line-height: 1.1;
+}
+.pp-quickstat-label {
+  font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+@media (max-width: 340px) {
+  .pp-header-radar { flex-direction: column; }
+  .pp-radar-wrap { max-width: 100%; }
+  .pp-quickstats { width: 100%; }
+}
+
+/* ── Stats tab percentile tile grid (Session 66, NHL skaters only) ── */
+.stat-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.stat-tile {
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 68px;
+}
+.stat-tile-top {
+  display: flex; align-items: center; gap: 4px;
+}
+.stat-tile-label {
+  font-size: 11px; color: var(--text-muted); font-weight: 600;
+}
+.stat-tile-value {
+  font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--text);
+  line-height: 1;
+}
+.stat-tile-bar-track {
+  height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin-top: 2px;
+}
+.stat-tile-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+.stat-tile-pct-label {
+  font-size: 10px; font-weight: 600; display: flex; align-items: center; gap: 2px;
+}
+.stat-tile-na {
+  font-size: 10px; color: var(--text-dim); font-style: italic; margin-top: 2px;
+}
+
+@media (max-width: 400px) {
+  .stat-tile-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .stat-tile { padding: 7px 8px; min-height: 60px; }
+  .stat-tile-value { font-size: 19px; }
+}
