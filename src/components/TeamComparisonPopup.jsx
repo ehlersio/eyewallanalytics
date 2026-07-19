@@ -1,14 +1,47 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import { fetchTeamSeasonsCompare } from '../utils/nhlApi';
 import { fetchPWHLTeamSeasonsCompare } from '../utils/pwhlApi';
 import { fetchComparisonSeasons, fetchSeasonsConfig } from '../utils/seasonClient';
 import { normalizeComparisonSeasons } from '../utils/seasonComparison';
+import { getTeamXgTrend } from '../utils/supabaseClient';
 import SeasonComparisonPicker from './SeasonComparisonPicker';
+import SeasonOverlayChart from './SeasonOverlayChart';
 // Reuses PlayerPopup's popup shell + stat-section/stat-row classes
 // (.popup-backdrop, .player-popup, .pp-header, .stat-section, .stat-row,
 // etc) rather than duplicating them in a new stylesheet.
 import '../views/PlayersView.css';
+
+// A season with zero comparable seasons shouldn't lock the picker down to
+// maxSelected=0 (which would make every chip permanently disabled) --
+// fall back to unlimited (null) until the real count is known.
+const FALLBACK_MAX_SELECTED = null;
+
+// Up to ~3 visually distinct dash patterns before they blur together --
+// used as a secondary cue alongside the color ramp below, cycling if more
+// seasons than patterns are selected (per Session 66's spec: dash pattern
+// alone doesn't scale, so it's never the only distinguishing signal).
+const DASH_PATTERNS = [undefined, '6 4', '2 3'];
+
+// Newest selected season gets full team-color saturation; older seasons
+// fade toward a floor alpha so the chart still reads past ~3-4 overlaid
+// seasons instead of becoming an indistinguishable knot of full-opacity
+// lines. `index` is position within seasons sorted newest-first.
+function hexToRgba(hex, alpha) {
+  const clean = String(hex).replace('#', '');
+  if (clean.length !== 6) return hex; // not a hex color (unexpected) -- pass through
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function seasonRampColor(baseHex, index, total) {
+  if (total <= 1) return baseHex;
+  const MIN_ALPHA = 0.35;
+  const alpha = 1 - (index / (total - 1)) * (1 - MIN_ALPHA);
+  return hexToRgba(baseHex, Number(alpha.toFixed(2)));
+}
 
 // Box-score fields only for v1 (Session 64 locked decision) -- Corsi/xG/WAR
 // excluded because they're null across every season for both leagues right
@@ -78,7 +111,51 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
   const seasonOptions = normalizeComparisonSeasons(league, comparisonConfig?.[league]?.seasons);
   const labelFor = (val) => seasonOptions.find(s => s.value === val)?.label || `Season ${val}`;
 
+  // Session 66: no artificial 4-season ceiling. This is the same
+  // /config/seasons/comparison-backed list SeasonComparisonPicker itself
+  // renders chips from -- the least-bad existing source of "how many
+  // seasons exist to compare" (there's no per-team team_seasons count
+  // endpoint; see Session 63/65 notes on the missing NHL season-list
+  // source of truth). It's a league-wide list, not literally scoped to
+  // this team, but it's what's already being fetched here and it's what
+  // bounds the picker's own chip set, so it can't ever under-count what's
+  // actually selectable.
+  const maxSelected = seasonOptions.length > 0 ? seasonOptions.length : FALLBACK_MAX_SELECTED;
+
   const rowBySeason = new Map((rows || []).map(r => [r.season, r]));
+
+  // ── xGF% overlay chart (Session 66, NHL-only v1) ───────────────────────
+  // getTeamXgTrend is the one metric with real per-game trend data already
+  // plumbed end-to-end (see XgfSparkline in TeamView.jsx for the
+  // single-season version this generalizes). GF/GA/PP%/PK% per-game trends
+  // need new poller work and are explicitly out of scope for this pass.
+  const isNhl = league === 'nhl';
+  const { data: xgTrendsBySeason, loading: xgLoading } = useFetch(
+    () => (isNhl && compareSeasons.length)
+      ? Promise.all(compareSeasons.map(season => getTeamXgTrend(teamValue, season)))
+      : Promise.resolve([]),
+    [isNhl, teamValue, compareSeasons.join(',')]
+  );
+
+  const teamColor = isNhl
+    ? (getComputedStyle(document.documentElement).getPropertyValue('--team-primary').trim() || '#e63946')
+    : null;
+
+  const sortedDesc = useMemo(() => [...compareSeasons].sort((a, b) => b - a), [compareSeasons]);
+
+  const chartSeries = useMemo(() => {
+    if (!isNhl || !xgTrendsBySeason) return [];
+    const trendBySeason = new Map(compareSeasons.map((s, i) => [s, xgTrendsBySeason[i] || null]));
+    return sortedDesc.map((season, idx) => {
+      const games = trendBySeason.get(season)?.season || [];
+      return {
+        seasonLabel: labelFor(season),
+        color: seasonRampColor(teamColor, idx, sortedDesc.length),
+        dashPattern: DASH_PATTERNS[idx % DASH_PATTERNS.length],
+        dataPoints: games.map((g, i) => ({ gameNumber: i + 1, value: g.xgfPct })),
+      };
+    });
+  }, [isNhl, xgTrendsBySeason, compareSeasons, sortedDesc, teamColor]);
 
   // ── TEMPORARY interim mitigation (2026-07-18) ──────────────────────────
   // A manual KV override (config:season:nhl:override, NHL only -- verified
@@ -125,15 +202,41 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
             league={league}
             selected={compareSeasons}
             onChange={setCompareSeasons}
-            maxSelected={4}
+            maxSelected={maxSelected}
           />
           {compareSeasons.length === 0 && (
             <div className="pp-no-stats">Select two or more seasons above to compare.</div>
           )}
+
+          {isNhl && compareSeasons.length > 0 && (
+            // xg-overlay-section keeps the .stat-section visual styling (card
+            // shell, header, body) but is deliberately excluded by that class
+            // alone -- team.cy.js counts ".stat-section" to mean "one card
+            // per selected season," and this section isn't one of those.
+            <div className="stat-section xg-overlay-section">
+              <div className="stat-section-header">
+                <span className="stat-section-label">xGF% per game · 5v5</span>
+              </div>
+              <div className="stat-section-body">
+                {xgLoading
+                  ? <div className="pp-no-stats">Loading chart…</div>
+                  : (
+                    <SeasonOverlayChart
+                      series={chartSeries}
+                      metricLabel="xGF% (5v5)"
+                      valueFormatter={(v) => `${v}%`}
+                      yDomain={[0, 100]}
+                      referenceValue={50}
+                    />
+                  )}
+              </div>
+            </div>
+          )}
+
           {loading && compareSeasons.length > 0 && (
             <div className="pp-no-stats">Loading…</div>
           )}
-          {!loading && [...compareSeasons].sort((a, b) => b - a).map(season => (
+          {!loading && sortedDesc.map(season => (
             <TeamCompareSeasonCard
               key={season}
               label={labelFor(season)}
