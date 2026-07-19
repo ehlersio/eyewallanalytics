@@ -209,7 +209,11 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
           )}
 
           {isNhl && compareSeasons.length > 0 && (
-            <div className="stat-section">
+            // xg-overlay-section keeps the .stat-section visual styling (card
+            // shell, header, body) but is deliberately excluded by that class
+            // alone -- team.cy.js counts ".stat-section" to mean "one card
+            // per selected season," and this section isn't one of those.
+            <div className="stat-section xg-overlay-section">
               <div className="stat-section-header">
                 <span className="stat-section-label">xGF% per game · 5v5</span>
               </div>
