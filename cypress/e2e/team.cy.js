@@ -141,9 +141,14 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         // :not(.xg-overlay-section) excludes the season-overlay chart card
         // (added Session 67) from this "one card per season" count -- it's a
         // single shared chart, not a per-season stat card.
-        cy.get('.stat-section:not(.xg-overlay-section)').should('have.length', 2)
-        cy.contains('GP').should('be.visible')
-        cy.contains('PTS').should('be.visible')
+        cy.get('.stat-section:not(.xg-overlay-section)', { timeout: 15000 }).should('have.length', 2)
+        // The chart section renders above the season cards in the DOM (it's
+        // a shared header for the comparison, not per-season), so on a short
+        // viewport the cards can land below the popup's visible scroll area
+        // after Cypress auto-scrolls to click the chips. scrollIntoView
+        // finds them regardless of where that lands.
+        cy.contains('GP', { timeout: 15000 }).scrollIntoView().should('be.visible')
+        cy.contains('PTS').scrollIntoView().should('be.visible')
       })
 
       // Season-boundary case, updated 2026-07-18 for the interim mitigation
