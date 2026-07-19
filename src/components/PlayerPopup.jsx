@@ -396,13 +396,23 @@ function StatTileGrid({ groups, percentiles }) {
 // percentiles are current-season-only (same constraint documented on the
 // Compare tab below), so it would be wrong to attach them to a Career or
 // non-current-season section.
-function SkaterStatSection({ label, groups, highlight, defaultOpen = highlight, percentiles }) {
+function SkaterStatSection({ label, groups, highlight, defaultOpen = highlight, percentiles, statsStale, statsSeason }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
     <div className={`stat-section ${highlight ? 'highlight-section' : ''}`}>
       <button className="stat-section-header" onClick={() => setOpen(o => !o)}>
         <span className="stat-section-label">{label}</span>
-        {highlight && <span className="stat-section-current">Current</span>}
+        {highlight && (
+          statsStale
+            // Whole-season fallback (Session 66) — these percentiles came
+            // from last season, not this one, so this replaces "Current"
+            // rather than sitting alongside it (never label stale data as
+            // current fact).
+            ? <span className="stat-section-current stat-section-stale" title={`Not enough games yet this season — showing ${nhlSeasonLabel(statsSeason)}`}>
+                As of {nhlSeasonLabel(statsSeason)}
+              </span>
+            : <span className="stat-section-current">Current</span>
+        )}
         <span className="stat-section-arrow">{open ? '▲' : '▼'}</span>
       </button>
       {open && (
@@ -448,7 +458,7 @@ function QuickStatPill({ label, value }) {
 // header). `boxStats` is the current/highlighted season's raw stat line
 // (same object the Stats tab uses) -- reused here for the G/A/P/TOI pills
 // rather than re-fetching anything.
-function SkaterHeaderPanel({ percentiles, boxStats, teamColor }) {
+function SkaterHeaderPanel({ percentiles, boxStats, teamColor, statsStale, statsSeason }) {
   if (!percentiles) return null
   const radarData = computeRadarAxes(percentiles)
   const fmtToi = (raw) => {
@@ -460,6 +470,14 @@ function SkaterHeaderPanel({ percentiles, boxStats, teamColor }) {
   return (
     <div className="pp-header-radar">
       <PlayerRadarChart data={radarData} color={teamColor} />
+      {statsStale && (
+        // Whole-season fallback (Session 66) — same "as of last season"
+        // signal as the Stats tab's stat-section-stale badge, since this
+        // radar is built from the same possibly-stale percentiles object.
+        <div className="pp-radar-note pp-radar-stale">
+          Not enough games yet this season — showing {nhlSeasonLabel(statsSeason)}
+        </div>
+      )}
       <div className="pp-quickstats">
         <QuickStatPill label="G"   value={boxStats?.goals} />
         <QuickStatPill label="A"   value={boxStats?.assists} />
@@ -1002,9 +1020,32 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   )
 
   const seasonPO  = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 3)
-  const seasonReg = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 2)
+  let   seasonReg = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 2)
   const careerPO  = stats?.careerTotals?.playoffs
   const careerReg = stats?.careerTotals?.regularSeason
+
+  // Whole-season fallback (Session 66) — mirrors mpData.statsStale/
+  // statsSeason, but this is a SEPARATE data source (the NHL API's own
+  // seasonTotals, already fully fetched for the Career accordions below --
+  // no new network call needed) with its own independent "does the live
+  // season have a real row yet" answer. The redesigned tile grid is only
+  // ever attached to whichever section has highlight: true, so without
+  // this, a player with no live-season box score (true right now for
+  // every NHL player) never gets the new layout at all, even once
+  // /player-analytics has real fallback percentiles to show.
+  let boxStatsStale = false
+  let boxStatsSeason = null
+  if (!seasonReg) {
+    const priorReg = (stats?.seasonTotals || [])
+      .filter(s => s.season < SEASON && s.gameTypeId === 2)
+      .sort((a, b) => b.season - a.season)[0]
+    if (priorReg) {
+      seasonReg = priorReg
+      boxStatsStale = true
+      boxStatsSeason = String(priorReg.season)
+    }
+  }
+  const regSeasonLabel = boxStatsStale ? nhlSeasonLabel(boxStatsSeason) : SEASON_LABEL
 
   // Rankings — skip in league context (requires team/division membership we don't have)
   const { data: rankings } = useFetch(
@@ -1022,7 +1063,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
         { label: 'Career Regular season',              stats: careerReg, highlight: false },
       ]
     : [
-        { label: `${SEASON_LABEL} Regular season`,     stats: seasonReg, highlight: true },
+        { label: `${regSeasonLabel} Regular season`,   stats: seasonReg, highlight: true },
         { label: `${SEASON_LABEL} Playoffs`,           stats: seasonPO,  highlight: false },
         { label: 'Career Regular season',              stats: careerReg, highlight: false },
         { label: 'Career Playoffs',                    stats: careerPO,  highlight: false },
@@ -1113,6 +1154,8 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
             percentiles={mpData.percentiles}
             boxStats={currentBoxStats}
             teamColor={teamColor}
+            statsStale={mpData.statsStale}
+            statsSeason={mpData.statsSeason}
           />
         )}
 
@@ -1277,6 +1320,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                   <SkaterStatSection
                     key={label} label={label} groups={groups} highlight={highlight}
                     percentiles={mpData?.percentiles}
+                    statsStale={boxStatsStale} statsSeason={boxStatsSeason}
                   />
                 )
               }
