@@ -4,6 +4,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { capture } from '../utils/analytics';
 import { useFetch } from '../hooks/useFetch';
+import Sparkline from '../components/Sparkline';
 import {
   getStandings,
   getScoringLeaders,
@@ -1027,20 +1028,8 @@ function RankSparkline({ history, primaryColor }) {
     );
   }
 
-  const W = 240;
-  const H = 80;
-  const PAD = 16; // extra padding so labels don't clip
-
-  // With a single point, show a horizontal line at that rank
+  // Single point: no trend to show, no line/area -- Sparkline centers a dot.
   const single = history.length === 1;
-  const ranks = history.map(r => r.rank);
-  const minR = Math.min(...ranks);
-  const maxR = Math.max(...ranks);
-  const range = maxR - minR || 1;
-
-  const x = (i) => single ? W / 2 : PAD + (i / (history.length - 1)) * (W - PAD * 2);
-  const y = (r) => single ? H / 2 : PAD + ((r - minR) / range) * (H - PAD * 2);
-
   const latest   = history[history.length - 1];
   const earliest = history[0];
   const diff     = single ? 0 : earliest.rank - latest.rank;
@@ -1051,13 +1040,6 @@ function RankSparkline({ history, primaryColor }) {
     : diff > 0 ? `▲${diff}` : `▼${Math.abs(diff)}`;
 
   const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-  const points     = history.map((r, i) => `${x(i)},${y(r.rank)}`).join(' ');
-  const areaPoints = single ? '' : [
-    `${x(0)},${H}`,
-    ...history.map((r, i) => `${x(i)},${y(r.rank)}`),
-    `${x(history.length - 1)},${H}`,
-  ].join(' ');
 
   return (
     <div className="pr-sparkline" style={{ minWidth: 140 }}>
@@ -1070,49 +1052,15 @@ function RankSparkline({ history, primaryColor }) {
           </span>
         )}
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="pr-sparkline-svg">
-        {!single && (
-          <polygon points={areaPoints} fill={primaryColor} opacity="0.08" />
-        )}
-        {!single && (
-          <polyline
-            points={points}
-            fill="none"
-            stroke={primaryColor}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        )}
-        {/* Current rank dot */}
-        <circle cx={x(history.length - 1)} cy={y(latest.rank)} r="4" fill={primaryColor} />
-        {/* Rank label */}
-        <text
-          x={x(history.length - 1)}
-          y={y(latest.rank) - 5}
-          fontSize="11"
-          fill={primaryColor}
-          textAnchor="middle"
-          fontWeight="700"
-        >
-          #{latest.rank}
-        </text>
-        {/* First point label (only when multiple points) */}
-        {!single && (
-          <>
-            <circle cx={x(0)} cy={y(earliest.rank)} r="3" fill={primaryColor} opacity="0.5" />
-            <text
-              x={x(0)}
-              y={y(earliest.rank) - 5}
-              fontSize="10"
-              fill="var(--text-dim)"
-              textAnchor="middle"
-            >
-              #{earliest.rank}
-            </text>
-          </>
-        )}
-      </svg>
+      <Sparkline
+        className="pr-sparkline-svg"
+        points={history.map(r => ({ value: r.rank }))}
+        color={primaryColor}
+        width={240} height={80} padding={16}
+        invertY // lower rank number (better) plots higher on the chart
+        showEndpoints
+        formatEndpointLabel={v => `#${v}`}
+      />
       <div className="pr-sparkline-dates">
         <span>{fmtDate(earliest.generated_date)}</span>
         {!single && <span>{fmtDate(latest.generated_date)}</span>}
