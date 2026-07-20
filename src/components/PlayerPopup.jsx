@@ -14,7 +14,7 @@
  *                            and the contract panel; keeps Stats + Analytics
  */
 
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts'
 import { useFetch } from '../hooks/useFetch'
 import { getPlayerStats, getPlayerGameLog, fetchPlayerRankings, TEAM_CONFIG, GAME_TYPE } from '../utils/nhlApi'
@@ -346,63 +346,13 @@ function RankBadge({ label, rank }) {
   )
 }
 
-function StatRow({ def, value }) {
-  const [tipOpen, setTipOpen] = useState(false)
-  const tipRef  = useRef(null)
-
-  useEffect(() => {
-    if (!tipOpen) return
-    function close(e) { if (!tipRef.current?.contains(e.target)) setTipOpen(false) }
-    document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
-  }, [tipOpen])
-
-  return (
-    <div className="stat-row">
-      <div className="stat-row-left">
-        <span className="stat-row-label">{def.label}</span>
-        <div className="stat-tip-wrap" ref={tipRef}>
-          <button className="stat-tip-btn" onClick={() => setTipOpen(o => !o)}
-            aria-label={`Info about ${def.label}`}>ⓘ</button>
-          {tipOpen && (
-            <div className="stat-tip-popup">
-              <div className="tip-title">{def.label}</div>
-              <p className="tip-body">{def.tip}</p>
-              {def.calc && <div className="tip-calc">{def.calc}</div>}
-              {def.why && <p className="tip-why"><strong>Why it matters:</strong> {def.why}</p>}
-            </div>
-          )}
-        </div>
-      </div>
-      <span className="stat-row-value">{value ?? '—'}</span>
-    </div>
-  )
-}
-
-function StatSection({ label, groups, highlight, defaultOpen = highlight, _isGoalie }) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <div className={`stat-section ${highlight ? 'highlight-section' : ''}`}>
-      <button className="stat-section-header" onClick={() => setOpen(o => !o)}>
-        <span className="stat-section-label">{label}</span>
-        {highlight && <span className="stat-section-current">Current</span>}
-        <span className="stat-section-arrow">{open ? '▲' : '▼'}</span>
-      </button>
-      {open && (
-        <div className="stat-section-body">
-          {groups.map(({ group, items }) => (
-            <div key={group} className="stat-group">
-              <div className="stat-group-label">{group}</div>
-              {items.map(({ def, value: _value, fmt }) => (
-                <StatRow key={def.key} def={def} value={fmt} />
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
+// StatRow/StatSection (vertical row-list accordion) removed Session 73 --
+// every section in this file now renders via the tile grid (TileStatSection
+// below); the row-list layout has no remaining call sites. Note this drops
+// the `def.why`/`def.calc` tooltip text that StatRow used to show (InfoTip
+// only takes a single `text`) -- already true for the current/highlighted
+// season's tiles since #45, now consistent across every section rather than
+// a mix.
 
 // ─── Skater percentile tile (Stats tab tile grid) ──────────────
 // Restyles a single box-score stat as a tile: label, big number, and — for
@@ -441,7 +391,13 @@ function StatTile({ def, fmt, pctInfo }) {
   )
 }
 
-function StatTileGrid({ groups, percentiles }) {
+// `showPercentiles` gates whether STAT_PCT_MAP is even consulted -- not just
+// whether `percentiles` is present. mpData.percentiles is current-season-only
+// (Session 72), so for Career/other-season/Compare-tab sections there is no
+// percentile concept at all, not merely a missing value. Falling through to
+// `{ pct: null }` in that case would make StatTile render "Not enough playing
+// time yet" on a career totals tile, which is actively wrong, not just blank.
+function StatTileGrid({ groups, percentiles, showPercentiles = true }) {
   return (
     <>
       {groups.map(({ group, items }) => (
@@ -449,7 +405,7 @@ function StatTileGrid({ groups, percentiles }) {
           <div className="stat-group-label">{group}</div>
           <div className="stat-tile-grid">
             {items.map(({ def, fmt }) => {
-              const pctKey = STAT_PCT_MAP[def.key]
+              const pctKey = showPercentiles ? STAT_PCT_MAP[def.key] : null
               const pctInfo = pctKey ? (percentiles?.[pctKey] ?? { pct: null }) : null
               return <StatTile key={def.key} def={def} fmt={fmt} pctInfo={pctInfo} />
             })}
@@ -460,14 +416,18 @@ function StatTileGrid({ groups, percentiles }) {
   )
 }
 
-// Collapsible section wrapper, matching StatSection's chrome exactly, but
-// rendering the new tile grid instead of the vertical StatRow list. Only
-// used for the current/highlighted season section of NHL skaters -- mpData
-// percentiles are current-season-only (same constraint documented on the
-// Compare tab below), so it would be wrong to attach them to a Career or
-// non-current-season section.
-function SkaterStatSection({ label, groups, highlight, defaultOpen = highlight, percentiles, statsStale, statsSeason }) {
-  const [open, setOpen] = useState(defaultOpen)
+// Collapsible section wrapper rendering the tile grid -- used for every
+// section now (Session 73), not just the current/highlighted one. Percentiles
+// are only ever passed for the current NHL-skater section (mpData is
+// current-season-only); every other call site (Career, the current season's
+// sibling game-type, Compare-tab seasons, and all goalie sections) omits
+// `percentiles` entirely, which turns off STAT_PCT_MAP lookups in
+// StatTileGrid rather than showing a misleading "insufficient sample" bar.
+// Defaults open for every section -- the whole point of this pass is that
+// Career/other sections shouldn't hide behind a click the way they used to.
+// Toggle is kept so a section can still be manually collapsed to save space.
+function TileStatSection({ label, groups, highlight, percentiles, statsStale, statsSeason }) {
+  const [open, setOpen] = useState(true)
   return (
     <div className={`stat-section ${highlight ? 'highlight-section' : ''}`}>
       <button className="stat-section-header" onClick={() => setOpen(o => !o)}>
@@ -487,7 +447,7 @@ function SkaterStatSection({ label, groups, highlight, defaultOpen = highlight, 
       </button>
       {open && (
         <div className="stat-section-body">
-          <StatTileGrid groups={groups} percentiles={percentiles} />
+          <StatTileGrid groups={groups} percentiles={percentiles} showPercentiles={!!percentiles} />
         </div>
       )}
     </div>
@@ -496,14 +456,41 @@ function SkaterStatSection({ label, groups, highlight, defaultOpen = highlight, 
 
 // ─── Skater header radar + quick stats (Session 66) ────────────
 
+// Root cause of the label-cutoff bug (Session 72): .pp-radar-wrap is capped
+// to a ~140-160px flex slot inside a popup hard-capped at 420px wide
+// (PlayersView.css), leaving only ~15-25px of margin outside the plotted
+// circle -- nowhere near enough for two-word labels like "Special Teams" at
+// any legible font size. Abbreviating is the only fix that guarantees no
+// clipping at every viewport; full names are still available on hover/tap
+// via a native SVG <title> (same info the "Not enough playing time yet"
+// caption below already spells out in full for whichever axes are missing).
+const RADAR_AXIS_ABBR = {
+  'Scoring':        'SCR',
+  'Playmaking':     'PLM',
+  'EV Driving':     'EVD',
+  'Defense':        'DEF',
+  'Special Teams':  'ST',
+}
+
+function RadarAxisTick({ x, y, payload, textAnchor }) {
+  const full  = payload.value
+  const short = RADAR_AXIS_ABBR[full] || full
+  return (
+    <text x={x} y={y} textAnchor={textAnchor} fill="var(--text-dim)" fontSize={8.5}>
+      {short}
+      <title>{full}</title>
+    </text>
+  )
+}
+
 function PlayerRadarChart({ data, color }) {
   const missing = data.filter(d => !d.hasData).map(d => d.axis)
   return (
     <div className="pp-radar-wrap">
       <ResponsiveContainer width="100%" height={150}>
-        <RadarChart data={data} outerRadius="72%">
+        <RadarChart data={data} outerRadius="62%">
           <PolarGrid stroke="var(--border-2)" />
-          <PolarAngleAxis dataKey="axis" tick={{ fill: 'var(--text-dim)', fontSize: 8.5 }} />
+          <PolarAngleAxis dataKey="axis" tick={RadarAxisTick} />
           <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} tickCount={2} />
           <Radar dataKey="value" stroke={color} fill={color} fillOpacity={0.35} strokeWidth={2} isAnimationActive={false} />
         </RadarChart>
@@ -1141,9 +1128,47 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
   const statDefs = isGoalie ? GOALIE_STATS : SKATER_STATS
 
+  // ── Stats tab sections (Session 73) ─────────────────────────────
+  // Every section renders as a tile grid now, not just the highlighted one
+  // (Session 72 found every StatSection instance in this file was hiding a
+  // comparison, not doing legitimate density-organizing work -- see
+  // SESSION_72_FINDINGS). The highlighted section still renders full-width
+  // on its own; the rest render together in a wrapping row so Career
+  // Regular/Playoffs (and the current season's sibling game-type) are all
+  // visible at once instead of one click-to-expand at a time.
+  const statsTabSections = loading ? [] : sections
+    .map(({ label, stats: s, highlight }) => {
+      if (!s) return null
+      let enriched = (isGoalie && goalieData?.qsPct != null)
+        ? { ...s, qualityStartPct: goalieData.qsPct }
+        : s
+      if (!isGoalie && mpData) {
+        if (s?.gameTypeId === 2) {
+          enriched = { ...enriched, hits: mpData.hits ?? undefined, blockedShots: mpData.blockedShots ?? undefined, takeaways: mpData.takeaways ?? undefined, giveaways: mpData.giveaways ?? undefined }
+        } else if (s?.gameTypeId === 3 && mpData.poDef) {
+          enriched = { ...enriched, hits: mpData.poDef.hits ?? undefined, blockedShots: mpData.poDef.blockedShots ?? undefined, takeaways: mpData.poDef.takeaways ?? undefined, giveaways: mpData.poDef.giveaways ?? undefined }
+        }
+      }
+      const groups = groupStats(statDefs, enriched, isGoalie)
+      if (!groups.length) return null
+      return {
+        highlight,
+        node: (
+          <TileStatSection
+            key={label} label={label} groups={groups} highlight={highlight}
+            percentiles={!isGoalie && highlight ? mpData?.percentiles : undefined}
+            statsStale={boxStatsStale} statsSeason={boxStatsSeason}
+          />
+        ),
+      }
+    })
+    .filter(Boolean)
+  const currentStatSections = statsTabSections.filter(r => r.highlight).map(r => r.node)
+  const otherStatSections   = statsTabSections.filter(r => !r.highlight).map(r => r.node)
+
   // ── Compare tab per-game trend chart (Session 70) ──────────────
   // Chart-ready metrics only (statDefs entries flagged `perGame` above);
-  // everything else keeps rendering as a StatSection tile row, unchanged.
+  // everything else still shows in the per-season tile grid below.
   const chartableStatDefs = statDefs.filter(d => d.perGame)
   const [chartMetricKey, setChartMetricKey] = useState(null)
   const activeChartDef = chartableStatDefs.find(d => d.key === chartMetricKey) || chartableStatDefs[0] || null
@@ -1412,35 +1437,10 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                 ))}
               </div>
             )}
-            {!loading && sections.map(({ label, stats: s, highlight }) => {
-              if (!s) return null
-              let enriched = (isGoalie && goalieData?.qsPct != null)
-                ? { ...s, qualityStartPct: goalieData.qsPct }
-                : s
-              if (!isGoalie && mpData) {
-                if (s?.gameTypeId === 2) {
-                  enriched = { ...enriched, hits: mpData.hits ?? undefined, blockedShots: mpData.blockedShots ?? undefined, takeaways: mpData.takeaways ?? undefined, giveaways: mpData.giveaways ?? undefined }
-                } else if (s?.gameTypeId === 3 && mpData.poDef) {
-                  enriched = { ...enriched, hits: mpData.poDef.hits ?? undefined, blockedShots: mpData.poDef.blockedShots ?? undefined, takeaways: mpData.poDef.takeaways ?? undefined, giveaways: mpData.poDef.giveaways ?? undefined }
-                }
-              }
-              const groups = groupStats(statDefs, enriched, isGoalie)
-              if (!groups.length) return null
-              // New tile-grid layout: NHL skaters only, and only for the
-              // current/highlighted season -- mpData percentiles are
-              // current-season-only (see Compare tab note below), so
-              // Career/other-season sections keep the original row list.
-              if (!isGoalie && highlight) {
-                return (
-                  <SkaterStatSection
-                    key={label} label={label} groups={groups} highlight={highlight}
-                    percentiles={mpData?.percentiles}
-                    statsStale={boxStatsStale} statsSeason={boxStatsSeason}
-                  />
-                )
-              }
-              return <StatSection key={label} label={label} groups={groups} highlight={highlight} isGoalie={isGoalie} />
-            })}
+            {!loading && currentStatSections}
+            {!loading && otherStatSections.length > 0 && (
+              <div className="stat-section-peers">{otherStatSections}</div>
+            )}
             {!loading && !sections.some(s => s.stats) && (
               <div className="pp-no-stats">No stats available for this player yet.</div>
             )}
@@ -1509,19 +1509,23 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                 </div>
               </div>
             )}
-            {[...compareSeasons].sort((a, b) => b - a).map(season => {
-              const seasonStats = stats?.seasonTotals?.find(s => s.season === season && s.gameTypeId === 2)
-              if (!seasonStats) {
-                return (
-                  <div key={season} className="pp-no-stats">
-                    No regular-season data for {nhlSeasonLabel(season)}.
-                  </div>
-                )
-              }
-              const groups = groupStats(statDefs, seasonStats, isGoalie)
-              if (!groups.length) return null
-              return <StatSection key={season} label={nhlSeasonLabel(season)} groups={groups} highlight={false} defaultOpen isGoalie={isGoalie} />
-            })}
+            {compareSeasons.length > 0 && (
+              <div className="stat-section-peers">
+                {compareSeasonsSortedDesc.map(season => {
+                  const seasonStats = stats?.seasonTotals?.find(s => s.season === season && s.gameTypeId === 2)
+                  if (!seasonStats) {
+                    return (
+                      <div key={season} className="pp-no-stats">
+                        No regular-season data for {nhlSeasonLabel(season)}.
+                      </div>
+                    )
+                  }
+                  const groups = groupStats(statDefs, seasonStats, isGoalie)
+                  if (!groups.length) return null
+                  return <TileStatSection key={season} label={nhlSeasonLabel(season)} groups={groups} />
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>

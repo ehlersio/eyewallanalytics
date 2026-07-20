@@ -212,6 +212,29 @@
 
 .stat-section-body { padding: 4px 16px 12px; }
 
+/* ── Peer stat sections (Session 73) ── Sections that used to render one at
+   a time behind an accordion click (Career Reg/PO, the current season's
+   sibling game-type, Compare-tab per-season rows) now sit side by side so
+   they're all visible without a click. Tiles inside a peer card drop to a
+   single column -- two columns doesn't read well once cards themselves are
+   only ~150-200px wide inside the popup's 420px hard cap (see the radar
+   chart's own note on that same cap, above). */
+.stat-section-peers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 16px;
+}
+.stat-section-peers .stat-section {
+  flex: 1 1 160px;
+  min-width: 140px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.stat-section-peers .stat-section-header { padding: 8px 10px; }
+.stat-section-peers .stat-section-body { padding: 4px 10px 10px; }
+.stat-section-peers .stat-tile-grid { grid-template-columns: 1fr; }
+
 /* ── Stat groups ── */
 .stat-group { margin-bottom: 10px; }
 .stat-group-label {
@@ -240,50 +263,6 @@
 .stat-row-value {
   font-family: var(--font-display); font-size: 18px; font-weight: 700;
   color: var(--text); flex-shrink: 0; min-width: 48px; text-align: right;
-}
-
-/* ── Tooltip ── */
-.stat-tip-wrap { position: relative; }
-.stat-tip-btn {
-  background: none; border: none; cursor: pointer;
-  font-size: 12px; color: var(--text-dim);
-  line-height: 1; padding: 2px 3px;
-  transition: color 0.12s; border-radius: 50%;
-}
-.stat-tip-btn:hover { color: var(--text-muted); }
-
-.stat-tip-popup {
-  position: absolute;
-  left: 0; top: calc(100% + 6px);
-  z-index: 200;
-  background: var(--bg1);
-  border: 0.5px solid var(--border-2);
-  border-radius: var(--radius);
-  padding: 10px 12px;
-  width: 240px;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
-  animation: tip-in 0.12s ease;
-}
-@keyframes tip-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.tip-title {
-  font-size: 12px; font-weight: 700; color: var(--text);
-  margin-bottom: 5px;
-}
-.tip-body { font-size: 11px; color: var(--text-muted); line-height: 1.5; margin: 0 0 5px; }
-.tip-calc {
-  font-family: var(--font-mono); font-size: 10px;
-  color: var(--amber); background: var(--bg3);
-  padding: 4px 7px; border-radius: 4px;
-  margin-bottom: 5px;
-}
-.tip-why { font-size: 11px; color: var(--text-muted); line-height: 1.5; margin: 0; }
-.tip-why strong { color: var(--text); }
-
-@media (max-width: 400px) {
-  .stat-tip-popup { width: 200px; left: auto; right: 0; }
 }
 
 /* ── Contract panel ── */
@@ -654,6 +633,8 @@
   .pp-header-radar { flex-direction: column; }
   .pp-radar-wrap { max-width: 100%; }
   .pp-quickstats { width: 100%; }
+  .stat-section-peers { flex-direction: column; }
+  .stat-section-peers .stat-section { min-width: 0; }
 }
 
 /* ── Stats tab percentile tile grid (Session 66, NHL skaters only) ── */
