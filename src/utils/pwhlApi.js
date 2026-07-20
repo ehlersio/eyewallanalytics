@@ -69,6 +69,23 @@ export async function fetchPWHLPlayerLanding(playerId, season) {
   return workerFetch(`/pwhl/player/landing?id=${playerId}${qs}`);
 }
 
+/**
+ * Fetch one player's game-by-game box score rows for a season (Session 70 —
+ * player Compare tab trend charts). Same flat skaters/goalies shape as
+ * fetchPWHLGameBox above, just filtered by player+season instead of by
+ * game — caller already knows the player's position and reads whichever
+ * array is non-empty, same convention as that function.
+ */
+export async function fetchPWHLPlayerGameLog(playerId, seasonId) {
+  if (!playerId || !seasonId) return null;
+  const data = await workerFetch(`/pwhl/player-game-log?playerId=${playerId}&seasonId=${seasonId}`);
+  if (!data) return null;
+  return {
+    skaters: Array.isArray(data.skaters) ? data.skaters : [],
+    goalies: Array.isArray(data.goalies) ? data.goalies : [],
+  };
+}
+
 /** Fetch a single team's season record from pwhl_team_seasons (includes reg_wins, non_reg_wins). */
 export async function fetchPWHLTeamRecord(teamId, season) {
   if (!teamId || !season) return null;
