@@ -48,6 +48,17 @@
   line-height: 1.5;
   margin: 0;
 }
+.info-tip-section + .info-tip-section {
+  margin-top: 8px;
+}
+.info-tip-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
 .info-tip-close {
   position: absolute;
   top: 6px; right: 8px;
