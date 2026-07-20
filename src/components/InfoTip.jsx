@@ -1,7 +1,8 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import './InfoTip.css';
 
-export default function InfoTip({ label, text, position = 'auto' }) {
+export default function InfoTip({ label, text, sections, position = 'auto' }) {
+  const items = sections ?? (text ? [{ text }] : []);
   const [open,  setOpen]  = useState(false);
   const [style, setStyle] = useState({ visibility: 'hidden' });
   const wrapRef   = useRef(null);
@@ -89,7 +90,12 @@ export default function InfoTip({ label, text, position = 'auto' }) {
           onClick={e => e.stopPropagation()}
         >
           {label && <div className="info-tip-title">{label}</div>}
-          <p className="info-tip-body">{text}</p>
+          {items.map((s, i) => (
+            <div className="info-tip-section" key={i}>
+              {s.label && <div className="info-tip-section-label">{s.label}</div>}
+              <p className="info-tip-body">{s.text}</p>
+            </div>
+          ))}
           <button className="info-tip-close" onClick={() => setOpen(false)}>✕</button>
         </div>
       )}

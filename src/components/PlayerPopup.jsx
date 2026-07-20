@@ -348,11 +348,10 @@ function RankBadge({ label, rank }) {
 
 // StatRow/StatSection (vertical row-list accordion) removed Session 73 --
 // every section in this file now renders via the tile grid (TileStatSection
-// below); the row-list layout has no remaining call sites. Note this drops
-// the `def.why`/`def.calc` tooltip text that StatRow used to show (InfoTip
-// only takes a single `text`) -- already true for the current/highlighted
-// season's tiles since #45, now consistent across every section rather than
-// a mix.
+// below); the row-list layout has no remaining call sites. `def.why`/
+// `def.calc` tooltip text (dropped when StatRow was removed, since InfoTip
+// only took a single `text` at the time) is resurfaced via InfoTip's
+// `sections` prop (Session 74) -- see StatTile below.
 
 // ─── Skater percentile tile (Stats tab tile grid) ──────────────
 // Restyles a single box-score stat as a tile: label, big number, and — for
@@ -370,7 +369,14 @@ function StatTile({ def, fmt, pctInfo }) {
     <div className="stat-tile">
       <div className="stat-tile-top">
         <span className="stat-tile-label">{def.label}</span>
-        <InfoTip text={def.tip} position="above" />
+        <InfoTip
+          sections={[
+            { text: def.tip },
+            def.calc && { label: 'Calculation', text: def.calc },
+            def.why  && { label: 'Why it matters', text: def.why },
+          ].filter(Boolean)}
+          position="above"
+        />
       </div>
       <div className="stat-tile-value">{fmt ?? '—'}</div>
       {pctInfo && !insufficientSample && (
