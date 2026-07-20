@@ -14,7 +14,7 @@
 //   seasonLabel, onClose — as before.
 import { useState, useMemo } from 'react';
 import { useFetch } from '../hooks/useFetch';
-import { fetchPWHLPlayerShots, fetchPWHLPlayerLanding, fetchPWHLPlayerGameLog } from '../utils/pwhlApi';
+import { fetchPWHLPlayerShots, fetchPWHLPlayerLanding, fetchPWHLPlayerGameLog, fetchPWHLPlayerCareer } from '../utils/pwhlApi';
 import { fetchComparisonSeasons } from '../utils/seasonClient';
 import { normalizeComparisonSeasons } from '../utils/seasonComparison';
 import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById } from '../utils/pwhlConfig';
@@ -24,7 +24,7 @@ const TEAM_CODES = {1:'BOS',2:'MIN',3:'MTL',4:'NY',5:'OTT',6:'TOR',8:'SEA',9:'VA
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
 import IceRink from './IceRink';
-import InfoTip from './InfoTip';
+import { TileStatSection } from './StatTileGrid';
 import SeasonComparisonPicker from './SeasonComparisonPicker';
 import '../views/PlayersView.css';
 
@@ -70,6 +70,7 @@ const SKATER_STATS = [
     why: 'High shot volume indicates offensive presence even when not scoring.' },
   { key: 'shot_pct',   label: 'S%',     group: 'Shot Quality',
     tip: 'Goals ÷ Shots on Goal × 100.',
+    calc: 'S% = (Goals / Shots) × 100',
     why: 'Sustained high S% indicates elite finishing; extreme values often regress.' },
   { key: 'pim',        label: 'PIM',    group: 'Discipline', perGame: true, perGameKey: 'penalty_minutes',
     tip: 'Penalty minutes.',
@@ -88,9 +89,11 @@ const GOALIE_STATS = [
     why: 'Goalies with many OTL often faced close games.' },
   { key: 'sv_pct',       label: 'SV%', group: 'Performance',
     tip: 'Saves ÷ Shots Against.',
+    calc: 'SV% = Saves / Shots Against',
     why: 'The most important goalie stat. Even small differences are significant.' },
   { key: 'gaa',          label: 'GAA', group: 'Performance',
     tip: 'Goals allowed per 60 minutes.',
+    calc: 'GAA = (Goals Against / Minutes Played) × 60',
     why: 'Best read alongside SV% for full context.' },
   { key: 'shutouts',     label: 'SO',  group: 'Performance',
     tip: 'Games where the goalie allowed zero goals.',
@@ -134,6 +137,30 @@ function pwhlPerGameValue(def, game) {
   return raw == null ? null : Number(raw);
 }
 
+// PWHL's own version of PlayerPopup.jsx's groupStats(), keyed on this
+// file's field names (shot_pct/sv_pct/gaa/plus_minus rather than NHL's
+// shootingPctg/savePctg/goalsAgainstAvg/plusMinus) -- same {group, items:
+// [{def, fmt}]} output shape StatTileGrid (Session 75, shared with NHL)
+// expects, so the same formatter runs over current-season, Compare-tab,
+// and Career data (the poller's /pwhl/player/career route renames its
+// HockeyTech fields to match these same keys for exactly this reason).
+function pwhlGroupStats(defs, stats) {
+  const groups = {};
+  defs.forEach(def => {
+    const raw = stats?.[def.key];
+    if (raw == null) return;
+    let fmt;
+    if (def.key === 'shot_pct') fmt = `${Number(raw).toFixed(1)}%`;
+    else if (def.key === 'sv_pct') fmt = Number(raw).toFixed(3).replace(/^0\./, '.');
+    else if (def.key === 'gaa') fmt = Number(raw).toFixed(2);
+    else if (def.key === 'plus_minus') { const n = Number(raw); fmt = n > 0 ? `+${n}` : String(n); }
+    else fmt = raw;
+    if (!groups[def.group]) groups[def.group] = [];
+    groups[def.group].push({ def, fmt });
+  });
+  return Object.entries(groups).map(([group, items]) => ({ group, items }));
+}
+
 // Same season-color-ramp math as TeamComparisonPopup/PlayerPopup, small
 // enough to duplicate per-file rather than cross-import (this codebase's
 // established convention for popup-owned UI helpers).
@@ -152,57 +179,6 @@ function seasonRampColor(baseHex, index, total) {
   return hexToRgba(baseHex, Number(alpha.toFixed(2)));
 }
 const CHART_DASH_PATTERNS = [undefined, '6 4', '2 3'];
-
-// ── Stat components ───────────────────────────────────────────
-
-function StatRow({ def, value }) {
-  let fmt = value;
-  if (def.key === 'shot_pct' && value != null) fmt = `${Number(value).toFixed(1)}%`;
-  else if (def.key === 'sv_pct' && value != null) fmt = Number(value).toFixed(3).replace('0.', '.');
-  else if (def.key === 'gaa'    && value != null) fmt = Number(value).toFixed(2);
-  else if (def.key === 'plus_minus' && value != null) fmt = value > 0 ? `+${value}` : String(value);
-  if (fmt == null) return null;
-  return (
-    <div className="stat-row">
-      <div className="stat-row-left">
-        <span className="stat-row-label">{def.label}</span>
-        <InfoTip text={`${def.tip}${def.why ? ` — ${def.why}` : ''}`} position="above" />
-      </div>
-      <span className="stat-row-value">{fmt}</span>
-    </div>
-  );
-}
-
-function StatsSection({ label, stats, defs, highlight }) {
-  const [open, setOpen] = useState(highlight);
-  if (!stats) return null;
-  const groups = [...new Set(defs.map(d => d.group))];
-  const hasAny = defs.some(d => stats[d.key] != null);
-  if (!hasAny) return null;
-  return (
-    <div className={`stat-section${highlight ? ' highlight-section' : ''}`}>
-      <button className="stat-section-header" onClick={() => setOpen(o => !o)}>
-        <span className="stat-section-label">{label}</span>
-        {highlight && <span className="stat-section-current">Current</span>}
-        <span className="stat-section-arrow">{open ? '▲' : '▼'}</span>
-      </button>
-      {open && (
-        <div className="stat-section-body">
-          {groups.map(g => {
-            const rows = defs.filter(d => d.group === g && stats[d.key] != null);
-            if (!rows.length) return null;
-            return (
-              <div key={g} className="stat-group">
-                <div className="stat-group-label">{g}</div>
-                {rows.map(def => <StatRow key={def.key} def={def} value={stats[def.key]} />)}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ── Heat Map ──────────────────────────────────────────────────
 
@@ -392,29 +368,28 @@ function PWHLScout({ player, isGoalie, seasonLabel }) {
 // which keeps this legal under the rules of hooks without needing a
 // variable-length Promise.all inside a single hook call.
 
+// Loading/empty states keep the plain (non-collapsible) header markup the
+// row-list version used; only the populated case hands off to the shared
+// TileStatSection, which is what actually needs the tile grid + toggle.
 function PWHLCompareSection({ label, stats, defs, loading }) {
-  const hasAny = stats && defs.some(d => stats[d.key] != null);
-  return (
-    <div className="stat-section">
-      <div className="stat-section-header">
-        <span className="stat-section-label">{label}</span>
+  const groups = stats ? pwhlGroupStats(defs, stats) : [];
+  if (loading) {
+    return (
+      <div className="stat-section">
+        <div className="stat-section-header"><span className="stat-section-label">{label}</span></div>
+        <div className="stat-section-body"><div className="skeleton" style={{ height: 11, width: '60%', margin: '8px 0' }} /></div>
       </div>
-      <div className="stat-section-body">
-        {loading && <div className="skeleton" style={{ height: 11, width: '60%', margin: '8px 0' }} />}
-        {!loading && !hasAny && <div className="pp-no-stats">No data for this player in {label}.</div>}
-        {!loading && hasAny && [...new Set(defs.map(d => d.group))].map(g => {
-          const rows = defs.filter(d => d.group === g && stats[d.key] != null);
-          if (!rows.length) return null;
-          return (
-            <div key={g} className="stat-group">
-              <div className="stat-group-label">{g}</div>
-              {rows.map(def => <StatRow key={def.key} def={def} value={stats[def.key]} />)}
-            </div>
-          );
-        })}
+    );
+  }
+  if (!groups.length) {
+    return (
+      <div className="stat-section">
+        <div className="stat-section-header"><span className="stat-section-label">{label}</span></div>
+        <div className="stat-section-body"><div className="pp-no-stats">No data for this player in {label}.</div></div>
       </div>
-    </div>
-  );
+    );
+  }
+  return <TileStatSection label={label} groups={groups} />;
 }
 
 function PWHLCompareSeasonCard({ playerId, seasonValue, label, defs }) {
@@ -454,6 +429,20 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
 
   const isGoalie  = p.position === 'G';
   const defs      = isGoalie ? GOALIE_STATS : SKATER_STATS;
+  const currentGroups = pwhlGroupStats(defs, p);
+
+  // ── Career Regular Season / Playoffs (Session 75) ──────────────
+  // Poller route renames HockeyTech's fields to match these same defs'
+  // keys (see fetchPWHLPlayerCareer/pwhl.js), so pwhlGroupStats works
+  // unmodified on career data too. `playoffs` legitimately comes back
+  // null for a player who hasn't made the playoffs yet -- not an error,
+  // just an empty section (see the "No stats" guard in the Stats tab JSX).
+  const { data: career } = useFetch(
+    () => playerId ? fetchPWHLPlayerCareer(playerId) : Promise.resolve(null),
+    [playerId]
+  );
+  const careerRegGroups = pwhlGroupStats(defs, career?.regularSeason);
+  const careerPOGroups  = pwhlGroupStats(defs, career?.playoffs);
 
   // ── Compare tab per-game trend chart (Session 70) ──────────────
   const chartableStatDefs = defs.filter(d => d.perGame);
@@ -550,14 +539,14 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
               </div>
             ) : (
               <>
-                <StatsSection
-                  label={`${seasonLabel} Regular Season`}
-                  stats={p}
-                  defs={defs}
-                  highlight
-                />
-                {!defs.some(d => p[d.key] != null) && (
-                  <div className="pp-no-stats">No stats available for this player yet.</div>
+                {currentGroups.length > 0
+                  ? <TileStatSection label={`${seasonLabel} Regular Season`} groups={currentGroups} highlight />
+                  : <div className="pp-no-stats">No stats available for this player yet.</div>}
+                {(careerRegGroups.length > 0 || careerPOGroups.length > 0) && (
+                  <div className="stat-section-peers">
+                    {careerRegGroups.length > 0 && <TileStatSection label="Career Regular Season" groups={careerRegGroups} />}
+                    {careerPOGroups.length > 0 && <TileStatSection label="Career Playoffs" groups={careerPOGroups} />}
+                  </div>
                 )}
               </>
             )}

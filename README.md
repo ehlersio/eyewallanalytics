@@ -251,6 +251,7 @@ Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `m
 | `GET /pwhl/salaries?teamId=&season=` | Team salary data |
 | `GET /pwhl/league-players?season=` | All 12 teams' players (Leaders tab) |
 | `GET /pwhl/player/landing?id=&season=` | Single player's identity + one season's stat line, merged — powers `PWHLPlayerPopup`'s self-fetch-by-id (same role `/player/landing` plays for NHL's `PlayerPopup`). `season` pins the stat line to that `season_id`; omitted, falls back to the most recent regular-season row |
+| `GET /pwhl/player/career?id=` | Career Regular Season / Playoffs totals — powers `PWHLPlayerPopup`'s Career tile sections. `playoffs` is `null` if the player hasn't made the playoffs yet |
 | `GET /pwhl/news` | PWHL news feed |
 | `POST /pwhl/news/ingest` | Accept articles from GH Actions pipeline |
 | `POST /pwhl/news/bust` | Invalidate news cache |
