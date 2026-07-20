@@ -190,6 +190,10 @@
   flex: 1; font-size: 13px; font-weight: 600; color: var(--text);
 }
 .stat-section.highlight-section .stat-section-label { color: var(--red-bright); }
+.pp-metric-select {
+  font-size: 11px; color: var(--text); background: var(--bg2);
+  border: 0.5px solid var(--border); border-radius: 6px; padding: 3px 6px;
+}
 .stat-section-current {
   font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px;
   background: var(--red-dim); color: var(--red-bright);

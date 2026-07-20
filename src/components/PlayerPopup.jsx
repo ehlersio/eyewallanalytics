@@ -14,10 +14,10 @@
  *                            and the contract panel; keeps Stats + Analytics
  */
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts'
 import { useFetch } from '../hooks/useFetch'
-import { getPlayerStats, fetchPlayerRankings, TEAM_CONFIG } from '../utils/nhlApi'
+import { getPlayerStats, getPlayerGameLog, fetchPlayerRankings, TEAM_CONFIG, GAME_TYPE } from '../utils/nhlApi'
 import { ALL_TEAMS } from '../utils/teamConfig'
 import {
   getPlayerAnalytics,
@@ -32,6 +32,7 @@ import { nhlSeasonLabel } from '../utils/seasonComparison'
 import IceRink from '../components/IceRink'
 import InfoTip from '../components/InfoTip'
 import SeasonComparisonPicker from '../components/SeasonComparisonPicker'
+import SeasonOverlayChart from './SeasonOverlayChart'
 import '../views/PlayersView.css'
 
 const SEASON       = Number(TEAM_CONFIG.season.slice(0, 4) + TEAM_CONFIG.season.slice(4))
@@ -39,45 +40,56 @@ const SEASON_LABEL = `${TEAM_CONFIG.season.slice(0, 4)}–${TEAM_CONFIG.season.s
 
 // ─── Stat definitions ─────────────────────────────────────────
 
+// `perGame`/`perGameKey`/`cumulative`/`derive` (Session 70) mark which
+// stats have a real per-game data source, for the Compare tab's trend
+// chart -- see SESSION_70_FINDINGS_player_compare_hybrid_viz.md Q3 for the
+// full per-metric reasoning. Only flagged where the NHL API's
+// /player/{id}/game-log endpoint (getPlayerGameLog, nhlApi.js) actually
+// carries the field; hits/blocks/TK/GV/FO%/S% don't (unconfirmed source),
+// and gamesPlayed isn't a trend concept at all -- those stay tile-only.
+// `cumulative: true` means the chart plots a running season-to-date total
+// rather than the raw per-game value -- for rare/binary events (a single
+// game's SHG/GWG is almost always 0), a running total is the only
+// meaningful line.
 const SKATER_STATS = [
-  { key: 'goals',              label: 'Goals',       group: 'Scoring',
+  { key: 'goals',              label: 'Goals',       group: 'Scoring', perGame: true,
     tip: 'Total goals scored. A goal is awarded when the puck fully crosses the opposing goal line.',
     why: 'The most direct measure of a player\'s finishing ability and offensive contribution.' },
-  { key: 'assists',            label: 'Assists',     group: 'Scoring',
+  { key: 'assists',            label: 'Assists',     group: 'Scoring', perGame: true,
     tip: 'Points credited for setting up a goal. Up to two assists are awarded per goal.',
     why: 'Reflects a player\'s playmaking and vision. Some elite players accumulate far more assists than goals.' },
-  { key: 'points',             label: 'Points',      group: 'Scoring',
+  { key: 'points',             label: 'Points',      group: 'Scoring', perGame: true,
     tip: 'Goals + Assists. The primary measure of offensive production.',
     why: 'The standard yardstick for comparing forwards and offensive defencemen across the league.' },
-  { key: 'plusMinus',          label: '+/−',         group: 'Scoring',
+  { key: 'plusMinus',          label: '+/−',         group: 'Scoring', perGame: true,
     tip: '+1 when on ice for a 5v5 or 4v4 goal for; −1 when on ice for one against. PP/SH goals excluded.',
     why: 'A rough proxy for two-way effectiveness, though heavily influenced by linemates and usage.' },
   { key: 'gamesPlayed',        label: 'GP',          group: 'Scoring',
     tip: 'Games played in this sample.',
     why: 'Context for all counting stats — a player with 20 points in 25 games is more productive than 20 in 40.' },
-  { key: 'powerPlayGoals',     label: 'PPG',         group: 'Special Teams',
+  { key: 'powerPlayGoals',     label: 'PPG',         group: 'Special Teams', perGame: true,
     tip: 'Goals scored while your team has a man advantage (power play).',
     why: 'Power play specialists can have outsized PPG totals. Compare to even-strength goals for full picture.' },
-  { key: 'powerPlayPoints',    label: 'PPP',         group: 'Special Teams',
+  { key: 'powerPlayPoints',    label: 'PPP',         group: 'Special Teams', perGame: true,
     tip: 'Goals + Assists on the power play.',
     why: 'High PPP players are valuable on the man-advantage unit but may be less impactful at 5v5.' },
-  { key: 'shorthandedGoals',   label: 'SHG',         group: 'Special Teams',
+  { key: 'shorthandedGoals',   label: 'SHG',         group: 'Special Teams', perGame: true, cumulative: true,
     tip: 'Goals scored while your team is shorthanded (penalty kill).',
     why: 'Rare and opportunistic — indicates speed and instinct.' },
-  { key: 'gameWinningGoals',   label: 'GWG',         group: 'Special Teams',
+  { key: 'gameWinningGoals',   label: 'GWG',         group: 'Special Teams', perGame: true, cumulative: true,
     tip: 'The goal that proved to be the winning margin. If the final score is 4–2, the 3rd goal for the winner is the GWG.',
     why: 'A measure of clutch scoring, though partially luck-dependent.' },
-  { key: 'shots',              label: 'Shots',       group: 'Shot Quality',
+  { key: 'shots',              label: 'Shots',       group: 'Shot Quality', perGame: true,
     tip: 'Shots on goal — shots that would have entered the net if not for the goalie.',
     why: 'High shot volume indicates an offensive presence even when not scoring.' },
   { key: 'shootingPctg',       label: 'S%',          group: 'Shot Quality',
     tip: 'Goals ÷ Shots on Goal × 100. League average for forwards is roughly 10–12%.',
     calc: 'S% = (Goals / Shots) × 100',
     why: 'Sustained high S% indicates elite finishing; very high or low rates often regress toward average over time.' },
-  { key: 'avgToi',             label: 'TOI/G',       group: 'Ice Time',
+  { key: 'avgToi',             label: 'TOI/G',       group: 'Ice Time', perGame: true, perGameKey: 'toi',
     tip: 'Average time on ice per game (minutes:seconds).',
     why: 'Coaches allocate more ice time to trusted players. Elite forwards average 18–22 min; top D pairs often exceed 24 min.' },
-  { key: 'pim',                label: 'PIM',         group: 'Ice Time',
+  { key: 'pim',                label: 'PIM',         group: 'Ice Time', perGame: true,
     tip: 'Penalty minutes. 2 min per minor, 4 per double minor, 5 per major.',
     why: 'High PIM means the player spends time in the box — hurting the team — though some physical players balance this with defensive value.' },
   { key: 'faceoffWinningPctg', label: 'FO%',         group: 'Ice Time',
@@ -98,22 +110,29 @@ const SKATER_STATS = [
     why: 'Giveaways lead to odd-man rushes and scoring chances against. Lower is better — compare to TK for full picture.' },
 ]
 
+// `otLosses`/`qualityStartPct` are deliberately NOT flagged `perGame` --
+// otLosses because the game-log's `decision` field was only observed as
+// `"W"`/`"L"` in the live sample checked (Session 70), not confirmed for
+// the OT/SO-loss case; qualityStartPct because it's a threshold classifier
+// (SV% ≥ .917, or ≥ .885 facing ≤20 shots) needing its own per-game
+// classification logic, not just a field read -- narrower scope than the
+// rest of this pass, left as a tile pending a follow-up.
 const GOALIE_STATS = [
   { key: 'gamesPlayed',   label: 'GP',   group: 'Record',
     tip: 'Games played.', why: 'Context for all other goalie stats.' },
-  { key: 'wins',          label: 'W',    group: 'Record',
+  { key: 'wins',          label: 'W',    group: 'Record', perGame: true, cumulative: true, derive: 'win',
     tip: 'Wins — the starter in a winning game receives the win.',
     why: 'The primary measure of a goalie\'s team contribution, though win totals depend on the team in front of them.' },
-  { key: 'losses',        label: 'L',    group: 'Record',
+  { key: 'losses',        label: 'L',    group: 'Record', perGame: true, cumulative: true, derive: 'loss',
     tip: 'Regulation losses.', why: 'Combined with OTL gives the full record picture.' },
   { key: 'otLosses',      label: 'OTL',  group: 'Record',
     tip: 'Overtime/shootout losses. The team earns 1 point; the goalie still receives a loss.',
     why: 'Goalies with many OTL often faced close games — neither good nor bad on its own.' },
-  { key: 'savePctg',      label: 'SV%',  group: 'Performance',
+  { key: 'savePctg',      label: 'SV%',  group: 'Performance', perGame: true,
     tip: 'Saves ÷ Shots Against. League average is roughly .910; elite is above .920.',
     calc: 'SV% = Saves / Shots Against',
     why: 'The most important single goalie stat. Even small differences are significant — .920 vs .900 = 2 extra goals allowed per 100 shots.' },
-  { key: 'goalsAgainstAvg', label: 'GAA', group: 'Performance',
+  { key: 'goalsAgainstAvg', label: 'GAA', group: 'Performance', perGame: true, derive: 'gaa',
     tip: 'Goals allowed per 60 minutes of play.',
     calc: 'GAA = (Goals Against / Minutes Played) × 60',
     why: 'Context-dependent — a goalie on a weak team will face more shots. Best read alongside SV%.' },
@@ -121,14 +140,14 @@ const GOALIE_STATS = [
     tip: 'Percentage of starts where the goalie posted a quality start — SV% ≥ .917, or ≥ .885 when facing 20 or fewer shots.',
     calc: 'QS% = Quality Starts / Games Started',
     why: 'Measures consistency. A "quality start" means the goalie gave his team a reasonable chance to win based on historical win rates at those SV% thresholds. League average is roughly 55%. Elite starters exceed 65%.' },
-  { key: 'shotsAgainst',   label: 'SA',  group: 'Performance',
+  { key: 'shotsAgainst',   label: 'SA',  group: 'Performance', perGame: true,
     tip: 'Shots on goal faced. Indicates workload.', why: 'High SA means the team gives up many chances; context for SV%.' },
-  { key: 'saves',          label: 'SV',  group: 'Performance',
+  { key: 'saves',          label: 'SV',  group: 'Performance', perGame: true, derive: 'saves',
     tip: 'Total saves made.', why: 'Combined with SA gives the SV%.' },
-  { key: 'shutouts',       label: 'SO',  group: 'Performance',
+  { key: 'shutouts',       label: 'SO',  group: 'Performance', perGame: true, cumulative: true,
     tip: 'Games where the goalie allowed zero goals (must play the full game).',
     why: 'A prestigious milestone. Elite goalies typically post 5–7 per full season.' },
-  { key: 'gamesStarted',   label: 'GS',  group: 'Record',
+  { key: 'gamesStarted',   label: 'GS',  group: 'Record', perGame: true, cumulative: true,
     tip: 'Games where the goalie started in net.',
     why: 'Distinguishes full-time starters from backups; relevant for season-long workload.' },
 ]
@@ -170,6 +189,57 @@ function groupStats(defs, stats, _isGoalie) {
 function posLabel(code) {
   return { C:'Centre', LW:'Left Wing', RW:'Right Wing', D:'Defence', G:'Goalie' }[code] || code
 }
+
+// ─── Per-game trend chart helpers (Session 70) ─────────────────
+
+function toiToSeconds(toi) {
+  if (typeof toi !== 'string' || !toi.includes(':')) return null
+  const [m, s] = toi.split(':').map(Number)
+  if (Number.isNaN(m) || Number.isNaN(s)) return null
+  return m * 60 + s
+}
+
+// Reads one stat's value off a single game-log row. Most `perGame` stats
+// are a direct field read (def.perGameKey || def.key); the small set of
+// goalie stats that aren't direct API fields (saves, W/L, GAA) go through
+// `def.derive` instead -- see the GOALIE_STATS comment above for why each
+// one needs its own formula rather than a field read.
+function perGameRawValue(def, game) {
+  if (!game) return null
+  if (def.derive === 'saves') {
+    const sa = game.shotsAgainst, ga = game.goalsAgainst
+    return (sa == null || ga == null) ? null : sa - ga
+  }
+  if (def.derive === 'win')  return game.decision === 'W' ? 1 : 0
+  if (def.derive === 'loss') return game.decision === 'L' ? 1 : 0
+  if (def.derive === 'gaa') {
+    const secs = toiToSeconds(game.toi)
+    return (!secs || game.goalsAgainst == null) ? null : (game.goalsAgainst / secs) * 3600
+  }
+  const raw = game[def.perGameKey || def.key]
+  return raw == null ? null : Number(raw)
+}
+
+// Small season-color ramp -- same math as TeamComparisonPopup's
+// seasonRampColor/hexToRgba, duplicated rather than cross-imported (this
+// codebase's convention for small UI-adjacent helpers owned by a single
+// popup component; see rapm.py's 3-bucket proxy for the same pattern on
+// the pipeline side).
+function hexToRgba(hex, alpha) {
+  const clean = String(hex).replace('#', '')
+  if (clean.length !== 6) return hex
+  const r = parseInt(clean.slice(0, 2), 16)
+  const g = parseInt(clean.slice(2, 4), 16)
+  const b = parseInt(clean.slice(4, 6), 16)
+  return `rgba(${r},${g},${b},${alpha})`
+}
+function seasonRampColor(baseHex, index, total) {
+  if (total <= 1) return baseHex
+  const MIN_ALPHA = 0.35
+  const alpha = 1 - (index / (total - 1)) * (1 - MIN_ALPHA)
+  return hexToRgba(baseHex, Number(alpha.toFixed(2)))
+}
+const CHART_DASH_PATTERNS = [undefined, '6 4', '2 3']
 
 // ─── Player-card header + Stats tab redesign (Session 66, NHL skaters only) ──
 // Radar chart + percentile tile grid below are additive UI on top of the
@@ -1071,6 +1141,51 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
   const statDefs = isGoalie ? GOALIE_STATS : SKATER_STATS
 
+  // ── Compare tab per-game trend chart (Session 70) ──────────────
+  // Chart-ready metrics only (statDefs entries flagged `perGame` above);
+  // everything else keeps rendering as a StatSection tile row, unchanged.
+  const chartableStatDefs = statDefs.filter(d => d.perGame)
+  const [chartMetricKey, setChartMetricKey] = useState(null)
+  const activeChartDef = chartableStatDefs.find(d => d.key === chartMetricKey) || chartableStatDefs[0] || null
+
+  const { data: gameLogsBySeason, loading: gameLogLoading } = useFetch(
+    () => (compareSeasons.length
+      ? Promise.all(compareSeasons.map(season => getPlayerGameLog(p.id, season, GAME_TYPE.REGULAR)))
+      : Promise.resolve([])),
+    [p.id, compareSeasons.join(',')]
+  )
+
+  const compareSeasonsSortedDesc = useMemo(
+    () => [...compareSeasons].sort((a, b) => b - a),
+    [compareSeasons]
+  )
+
+  const chartSeries = useMemo(() => {
+    if (!activeChartDef || !gameLogsBySeason) return []
+    const logBySeason = new Map(compareSeasons.map((s, i) => [s, gameLogsBySeason[i]?.gameLog || []]))
+    const baseColor = teamColorFor(p.teamAbbrev)
+    return compareSeasonsSortedDesc.map((season, idx) => {
+      // NHL's game-log endpoint returns newest-first; reverse so gameNumber
+      // 1 is the season's first game, matching SeasonOverlayChart's x-axis.
+      const games = (logBySeason.get(season) || []).slice().reverse()
+      let running = 0
+      const dataPoints = games.map((g, i) => {
+        const raw = perGameRawValue(activeChartDef, g)
+        if (activeChartDef.cumulative) {
+          if (raw != null) running += raw
+          return { gameNumber: i + 1, value: running }
+        }
+        return { gameNumber: i + 1, value: raw }
+      })
+      return {
+        seasonLabel: nhlSeasonLabel(season),
+        color: seasonRampColor(baseColor, idx, compareSeasonsSortedDesc.length),
+        dashPattern: CHART_DASH_PATTERNS[idx % CHART_DASH_PATTERNS.length],
+        dataPoints,
+      }
+    })
+  }, [activeChartDef, gameLogsBySeason, compareSeasons, compareSeasonsSortedDesc, p.teamAbbrev])
+
   function fmtHeight(inches) {
     if (!inches) return null
     return `${Math.floor(inches / 12)}′${inches % 12}″`
@@ -1365,6 +1480,34 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
             />
             {compareSeasons.length === 0 && (
               <div className="pp-no-stats">Select two or more seasons above to compare.</div>
+            )}
+            {chartableStatDefs.length > 0 && compareSeasons.length > 0 && (
+              <div className="stat-section xg-overlay-section">
+                <div className="stat-section-header">
+                  <span className="stat-section-label">Per-game trend</span>
+                  <select
+                    className="pp-metric-select"
+                    value={activeChartDef?.key || ''}
+                    onChange={e => setChartMetricKey(e.target.value)}
+                    aria-label="Trend metric"
+                  >
+                    {chartableStatDefs.map(d => (
+                      <option key={d.key} value={d.key}>{d.label}{d.cumulative ? ' (season total)' : ''}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="stat-section-body">
+                  {gameLogLoading
+                    ? <div className="pp-no-stats">Loading chart…</div>
+                    : (
+                      <SeasonOverlayChart
+                        series={chartSeries}
+                        metricLabel={activeChartDef.label}
+                        valueFormatter={v => (activeChartDef.key === 'savePctg' ? v.toFixed(3) : Math.round(v * 10) / 10)}
+                      />
+                    )}
+                </div>
+              </div>
             )}
             {[...compareSeasons].sort((a, b) => b - a).map(season => {
               const seasonStats = stats?.seasonTotals?.find(s => s.season === season && s.gameTypeId === 2)

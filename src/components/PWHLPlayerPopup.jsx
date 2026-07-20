@@ -12,12 +12,13 @@
 //                      fields win on conflict once they land.
 //   season {number}  — season_id to pin the self-fetched stat line to.
 //   seasonLabel, onClose — as before.
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useFetch } from '../hooks/useFetch';
-import { fetchPWHLPlayerShots, fetchPWHLPlayerLanding } from '../utils/pwhlApi';
+import { fetchPWHLPlayerShots, fetchPWHLPlayerLanding, fetchPWHLPlayerGameLog } from '../utils/pwhlApi';
 import { fetchComparisonSeasons } from '../utils/seasonClient';
 import { normalizeComparisonSeasons } from '../utils/seasonComparison';
-import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP } from '../utils/pwhlConfig';
+import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById } from '../utils/pwhlConfig';
+import SeasonOverlayChart from './SeasonOverlayChart';
 
 const TEAM_CODES = {1:'BOS',2:'MIN',3:'MTL',4:'NY',5:'OTT',6:'TOR',8:'SEA',9:'VAN'};
 
@@ -31,17 +32,25 @@ const SEASON_LABEL = '2025–26';
 
 // ── Stat definitions ──────────────────────────────────────────
 
+// `perGame`/`perGameKey` (Session 70) mark which stats have a real
+// per-game source in pwhl_skater_game_box/pwhl_goalie_game_box (via the
+// poller's /pwhl/player-game-log route) for the Compare tab's trend chart.
+// PP/SH/GW goal breakdowns and win/loss/shutout aren't in the box score at
+// all (aggregate-only, no per-game path); shot_pct/sv_pct/gaa are left
+// tile-only too even though technically derivable, to match exactly the
+// 6/11 skater and 2/9 goalie counts scoped and decided on for this pass —
+// see SESSION_70_DECISION_compare_tab_layout.md.
 const SKATER_STATS = [
-  { key: 'goals',      label: 'Goals',  group: 'Scoring',
+  { key: 'goals',      label: 'Goals',  group: 'Scoring', perGame: true,
     tip: 'Total goals scored.',
     why: 'The most direct measure of finishing ability and offensive contribution.' },
-  { key: 'assists',    label: 'Assists', group: 'Scoring',
+  { key: 'assists',    label: 'Assists', group: 'Scoring', perGame: true,
     tip: 'Points credited for setting up a goal.',
     why: 'Reflects playmaking and vision.' },
-  { key: 'points',     label: 'Points', group: 'Scoring',
+  { key: 'points',     label: 'Points', group: 'Scoring', perGame: true,
     tip: 'Goals + Assists.',
     why: 'Primary measure of offensive production.' },
-  { key: 'plus_minus', label: '+/−',    group: 'Scoring',
+  { key: 'plus_minus', label: '+/−',    group: 'Scoring', perGame: true,
     tip: '+1 when on ice for a goal for; −1 for a goal against at even strength.',
     why: 'Rough proxy for two-way effectiveness.' },
   { key: 'gp',         label: 'GP',     group: 'Scoring',
@@ -56,13 +65,13 @@ const SKATER_STATS = [
   { key: 'gw_goals',   label: 'GWG',    group: 'Special Teams',
     tip: 'The goal that proved to be the winning margin.',
     why: 'A measure of clutch scoring.' },
-  { key: 'shots',      label: 'Shots',  group: 'Shot Quality',
+  { key: 'shots',      label: 'Shots',  group: 'Shot Quality', perGame: true,
     tip: 'Shots on goal.',
     why: 'High shot volume indicates offensive presence even when not scoring.' },
   { key: 'shot_pct',   label: 'S%',     group: 'Shot Quality',
     tip: 'Goals ÷ Shots on Goal × 100.',
     why: 'Sustained high S% indicates elite finishing; extreme values often regress.' },
-  { key: 'pim',        label: 'PIM',    group: 'Discipline',
+  { key: 'pim',        label: 'PIM',    group: 'Discipline', perGame: true, perGameKey: 'penalty_minutes',
     tip: 'Penalty minutes.',
     why: 'High PIM hurts the team; compare to physical impact for full picture.' },
 ];
@@ -86,9 +95,9 @@ const GOALIE_STATS = [
   { key: 'shutouts',     label: 'SO',  group: 'Performance',
     tip: 'Games where the goalie allowed zero goals.',
     why: 'A prestigious milestone.' },
-  { key: 'saves',        label: 'SV',  group: 'Performance',
+  { key: 'saves',        label: 'SV',  group: 'Performance', perGame: true,
     tip: 'Total saves made.', why: 'Combined with shots against gives SV%.' },
-  { key: 'goals_against',label: 'GA',  group: 'Performance',
+  { key: 'goals_against',label: 'GA',  group: 'Performance', perGame: true,
     tip: 'Total goals allowed.', why: 'Context for GAA and SV%.' },
 ];
 
@@ -113,6 +122,36 @@ function calcAge(str) {
       (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) age--;
   return age;
 }
+
+// ── Per-game trend chart helpers (Session 70) ───────────────────
+// Every `perGame` PWHL stat is a direct box-score field read (no derived
+// stats like NHL's saves/GAA -- pwhl_skater_game_box/pwhl_goalie_game_box
+// don't carry the fields those derivations would need), so this is just a
+// key lookup, unlike NHL PlayerPopup's perGameRawValue.
+function pwhlPerGameValue(def, game) {
+  if (!game) return null;
+  const raw = game[def.perGameKey || def.key];
+  return raw == null ? null : Number(raw);
+}
+
+// Same season-color-ramp math as TeamComparisonPopup/PlayerPopup, small
+// enough to duplicate per-file rather than cross-import (this codebase's
+// established convention for popup-owned UI helpers).
+function hexToRgba(hex, alpha) {
+  const clean = String(hex).replace('#', '');
+  if (clean.length !== 6) return hex;
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+function seasonRampColor(baseHex, index, total) {
+  if (total <= 1) return baseHex;
+  const MIN_ALPHA = 0.35;
+  const alpha = 1 - (index / (total - 1)) * (1 - MIN_ALPHA);
+  return hexToRgba(baseHex, Number(alpha.toFixed(2)));
+}
+const CHART_DASH_PATTERNS = [undefined, '6 4', '2 3'];
 
 // ── Stat components ───────────────────────────────────────────
 
@@ -415,6 +454,43 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
 
   const isGoalie  = p.position === 'G';
   const defs      = isGoalie ? GOALIE_STATS : SKATER_STATS;
+
+  // ── Compare tab per-game trend chart (Session 70) ──────────────
+  const chartableStatDefs = defs.filter(d => d.perGame);
+  const [chartMetricKey, setChartMetricKey] = useState(null);
+  const activeChartDef = chartableStatDefs.find(d => d.key === chartMetricKey) || chartableStatDefs[0] || null;
+
+  const { data: gameLogsBySeason, loading: gameLogLoading } = useFetch(
+    () => (compareSeasons.length
+      ? Promise.all(compareSeasons.map(s => fetchPWHLPlayerGameLog(playerId, s)))
+      : Promise.resolve([])),
+    [playerId, compareSeasons.join(',')]
+  );
+
+  const compareSeasonsSortedDesc = useMemo(
+    () => [...compareSeasons].sort((a, b) => b - a),
+    [compareSeasons]
+  );
+
+  const chartSeries = useMemo(() => {
+    if (!activeChartDef || !gameLogsBySeason) return [];
+    const logBySeason = new Map(compareSeasons.map((s, i) => [s, gameLogsBySeason[i]]));
+    const baseColor = getPWHLTeamById(p.team_id)?.displayColor || '#4d80f0';
+    return compareSeasonsSortedDesc.map((season, idx) => {
+      const log = logBySeason.get(season);
+      // Route already orders by game_id.asc (chronological), unlike NHL's
+      // endpoint -- no reverse needed here.
+      const games = (isGoalie ? log?.goalies : log?.skaters) || [];
+      const dataPoints = games.map((g, i) => ({ gameNumber: i + 1, value: pwhlPerGameValue(activeChartDef, g) }));
+      return {
+        seasonLabel: compareLabel(season),
+        color: seasonRampColor(baseColor, idx, compareSeasonsSortedDesc.length),
+        dashPattern: CHART_DASH_PATTERNS[idx % CHART_DASH_PATTERNS.length],
+        dataPoints,
+      };
+    });
+  }, [activeChartDef, gameLogsBySeason, compareSeasons, compareSeasonsSortedDesc, isGoalie, p.team_id]);
+
   const name      = p.player_name || `${p.first_name || ''} ${p.last_name || ''}`.trim();
   const firstName = p.first_name || name.split(' ')[0] || '';
   const lastName  = p.last_name  || name.split(' ').slice(1).join(' ') || '';
@@ -509,6 +585,28 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
             />
             {compareSeasons.length === 0 && (
               <div className="pp-no-stats">Select two or more seasons above to compare.</div>
+            )}
+            {chartableStatDefs.length > 0 && compareSeasons.length > 0 && (
+              <div className="stat-section xg-overlay-section">
+                <div className="stat-section-header">
+                  <span className="stat-section-label">Per-game trend</span>
+                  <select
+                    className="pp-metric-select"
+                    value={activeChartDef?.key || ''}
+                    onChange={e => setChartMetricKey(e.target.value)}
+                    aria-label="Trend metric"
+                  >
+                    {chartableStatDefs.map(d => (
+                      <option key={d.key} value={d.key}>{d.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="stat-section-body">
+                  {gameLogLoading
+                    ? <div className="pp-no-stats">Loading chart…</div>
+                    : <SeasonOverlayChart series={chartSeries} metricLabel={activeChartDef.label} />}
+                </div>
+              </div>
             )}
             {[...compareSeasons].sort((a, b) => b - a).map(s => (
               <PWHLCompareSeasonCard

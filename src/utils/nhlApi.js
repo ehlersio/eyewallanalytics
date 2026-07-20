@@ -610,6 +610,27 @@ async function _getPlayerStats(playerId) {
   return await nhlFetch(`${BASE}/player/${playerId}/landing`);
 }
 
+// Per-game log for one player/season/gameType (Session 70 — player Compare
+// tab trend charts). Same proxy + shape family as getPlayerStats above, just
+// a different NHL API path. Response shape: { gameLog: [{ gameId, goals,
+// assists, points, plusMinus, powerPlayGoals, powerPlayPoints,
+// shorthandedGoals, gameWinningGoals, shots, pim, toi, ... }] } for skaters,
+// or { gameLog: [{ decision, shotsAgainst, goalsAgainst, savePctg,
+// shutouts, gamesStarted, toi, ... }] } for goalies — same endpoint serves
+// both, shape just differs by the player's real position. Returns null (not
+// []) on failure, same as every other nhlFetch call here — callers already
+// handle that via optional chaining.
+export async function getPlayerGameLog(playerId, season, gameTypeId = GAME_TYPE.REGULAR) {
+  return cached(
+    `playerGameLog:${playerId}:${season}:${gameTypeId}`,
+    () => _getPlayerGameLog(playerId, season, gameTypeId),
+    TTL.PLAYER_STATS
+  );
+}
+async function _getPlayerGameLog(playerId, season, gameTypeId) {
+  return await nhlFetch(`${BASE}/player/${playerId}/game-log/${season}/${gameTypeId}`);
+}
+
 // Fetch league-wide skater stats sorted by points.
 // limit=-1 returns ALL results (no pagination needed).
 // Proxied through /nhl-stats → https://api.nhle.com
