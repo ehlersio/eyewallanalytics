@@ -6,7 +6,14 @@
 
 const WORKER_URL_PLAYER_SEARCH = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
 
-describe('Global player search', () => {
+// Retries scoped to this spec only (not a suite-wide config change) — these
+// tests hit the real production search index rather than a mock, and were
+// observed failing intermittently only under batch/CI-level concurrent load
+// against that live endpoint (confirmed 15/15 clean over repeated isolated
+// local runs, so this isn't masking a deterministic bug). runMode retries
+// where the contention actually happens; openMode stays at 0 so a real
+// failure isn't hidden while watching it run interactively.
+describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () => {
   beforeEach(() => {
     cy.visit('/')
     cy.get('.topbar', { timeout: 10000 }).should('exist')
