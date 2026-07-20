@@ -33,6 +33,7 @@ import IceRink from '../components/IceRink'
 import InfoTip from '../components/InfoTip'
 import SeasonComparisonPicker from '../components/SeasonComparisonPicker'
 import SeasonOverlayChart from './SeasonOverlayChart'
+import { TileStatSection } from './StatTileGrid'
 import '../views/PlayersView.css'
 
 const SEASON       = Number(TEAM_CONFIG.season.slice(0, 4) + TEAM_CONFIG.season.slice(4))
@@ -256,25 +257,6 @@ function teamColorFor(abbr) {
   return TEAM_DISPLAY_COLORS[abbr] || TEAM_CONFIG.displayColor || '#4d80f0'
 }
 
-// Correct ordinal suffix (handles the 11th/12th/13th exception that
-// RankBadge's simpler rank===1/2/3 check above doesn't need to worry about
-// since league/division/conference ranks rarely land in the teens).
-function ordinalSuffix(n) {
-  const v = Math.round(n)
-  const mod100 = v % 100
-  if (mod100 >= 11 && mod100 <= 13) return 'th'
-  switch (v % 10) {
-    case 1: return 'st'
-    case 2: return 'nd'
-    case 3: return 'rd'
-    default: return 'th'
-  }
-}
-function ordinal(n) {
-  const v = Math.round(n)
-  return `${v}${ordinalSuffix(v)}`
-}
-
 // Radar categories -- 5 composites decided from the 10 pct_* columns.
 // Polarity check (done against eyewall-pipeline/moneypuck.py this session):
 // ALL 10 pct_* categories are already normalized so higher percentile always
@@ -347,118 +329,13 @@ function RankBadge({ label, rank }) {
 }
 
 // StatRow/StatSection (vertical row-list accordion) removed Session 73 --
-// every section in this file now renders via the tile grid (TileStatSection
-// below); the row-list layout has no remaining call sites. `def.why`/
-// `def.calc` tooltip text (dropped when StatRow was removed, since InfoTip
-// only took a single `text` at the time) is resurfaced via InfoTip's
-// `sections` prop (Session 74) -- see StatTile below.
-
-// ─── Skater percentile tile (Stats tab tile grid) ──────────────
-// Restyles a single box-score stat as a tile: label, big number, and — for
-// the subset of stats with a backing percentile column (STAT_PCT_MAP above)
-// — a thin percentile bar + ordinal label underneath. Color is a plain
-// blue(>=50th)/red(<50th) split rather than team color: this bar's whole
-// job is an at-a-glance good/bad read, and team colors (some of which are
-// red) would make that ambiguous. Team color is used instead on the radar
-// chart in the header, where there's no per-axis good/bad claim being made.
-function StatTile({ def, fmt, pctInfo }) {
-  const pct = pctInfo?.pct ?? null
-  const insufficientSample = !!pctInfo && pct == null
-  const color = pct >= 50 ? 'var(--blue-bright)' : '#f87171'
-  return (
-    <div className="stat-tile">
-      <div className="stat-tile-top">
-        <span className="stat-tile-label">{def.label}</span>
-        <InfoTip
-          sections={[
-            { text: def.tip },
-            def.calc && { label: 'Calculation', text: def.calc },
-            def.why  && { label: 'Why it matters', text: def.why },
-          ].filter(Boolean)}
-          position="above"
-        />
-      </div>
-      <div className="stat-tile-value">{fmt ?? '—'}</div>
-      {pctInfo && !insufficientSample && (
-        <>
-          <div className="stat-tile-bar-track">
-            <div className="stat-tile-bar-fill" style={{ width: `${pct}%`, background: color }} />
-          </div>
-          <div className="stat-tile-pct-label" style={{ color }}>
-            {ordinal(pct)} percentile
-            {pctInfo.note && <InfoTip text={pctInfo.note} position="above" />}
-          </div>
-        </>
-      )}
-      {insufficientSample && (
-        <div className="stat-tile-na">Not enough playing time yet</div>
-      )}
-    </div>
-  )
-}
-
-// `showPercentiles` gates whether STAT_PCT_MAP is even consulted -- not just
-// whether `percentiles` is present. mpData.percentiles is current-season-only
-// (Session 72), so for Career/other-season/Compare-tab sections there is no
-// percentile concept at all, not merely a missing value. Falling through to
-// `{ pct: null }` in that case would make StatTile render "Not enough playing
-// time yet" on a career totals tile, which is actively wrong, not just blank.
-function StatTileGrid({ groups, percentiles, showPercentiles = true }) {
-  return (
-    <>
-      {groups.map(({ group, items }) => (
-        <div key={group} className="stat-group">
-          <div className="stat-group-label">{group}</div>
-          <div className="stat-tile-grid">
-            {items.map(({ def, fmt }) => {
-              const pctKey = showPercentiles ? STAT_PCT_MAP[def.key] : null
-              const pctInfo = pctKey ? (percentiles?.[pctKey] ?? { pct: null }) : null
-              return <StatTile key={def.key} def={def} fmt={fmt} pctInfo={pctInfo} />
-            })}
-          </div>
-        </div>
-      ))}
-    </>
-  )
-}
-
-// Collapsible section wrapper rendering the tile grid -- used for every
-// section now (Session 73), not just the current/highlighted one. Percentiles
-// are only ever passed for the current NHL-skater section (mpData is
-// current-season-only); every other call site (Career, the current season's
-// sibling game-type, Compare-tab seasons, and all goalie sections) omits
-// `percentiles` entirely, which turns off STAT_PCT_MAP lookups in
-// StatTileGrid rather than showing a misleading "insufficient sample" bar.
-// Defaults open for every section -- the whole point of this pass is that
-// Career/other sections shouldn't hide behind a click the way they used to.
-// Toggle is kept so a section can still be manually collapsed to save space.
-function TileStatSection({ label, groups, highlight, percentiles, statsStale, statsSeason }) {
-  const [open, setOpen] = useState(true)
-  return (
-    <div className={`stat-section ${highlight ? 'highlight-section' : ''}`}>
-      <button className="stat-section-header" onClick={() => setOpen(o => !o)}>
-        <span className="stat-section-label">{label}</span>
-        {highlight && (
-          statsStale
-            // Whole-season fallback (Session 66) — these percentiles came
-            // from last season, not this one, so this replaces "Current"
-            // rather than sitting alongside it (never label stale data as
-            // current fact).
-            ? <span className="stat-section-current stat-section-stale" title={`Not enough games yet this season — showing ${nhlSeasonLabel(statsSeason)}`}>
-                As of {nhlSeasonLabel(statsSeason)}
-              </span>
-            : <span className="stat-section-current">Current</span>
-        )}
-        <span className="stat-section-arrow">{open ? '▲' : '▼'}</span>
-      </button>
-      {open && (
-        <div className="stat-section-body">
-          <StatTileGrid groups={groups} percentiles={percentiles} showPercentiles={!!percentiles} />
-        </div>
-      )}
-    </div>
-  )
-}
+// every section in this file now renders via the tile grid (TileStatSection,
+// imported from StatTileGrid.jsx as of Session 75's extraction so
+// PWHLPlayerPopup.jsx can share the same mechanism); the row-list layout
+// has no remaining call sites in this file. `def.why`/`def.calc` tooltip
+// text (dropped when StatRow was removed, since InfoTip only took a single
+// `text` at the time) is resurfaced via InfoTip's `sections` prop (Session
+// 74) -- see StatTile in StatTileGrid.jsx.
 
 // ─── Skater header radar + quick stats (Session 66) ────────────
 
@@ -1164,6 +1041,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
             key={label} label={label} groups={groups} highlight={highlight}
             percentiles={!isGoalie && highlight ? mpData?.percentiles : undefined}
             statsStale={boxStatsStale} statsSeason={boxStatsSeason}
+            pctMap={STAT_PCT_MAP}
           />
         ),
       }

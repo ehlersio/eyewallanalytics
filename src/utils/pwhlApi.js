@@ -70,6 +70,17 @@ export async function fetchPWHLPlayerLanding(playerId, season) {
 }
 
 /**
+ * Fetch one player's career Regular Season / Playoffs totals (Session 75).
+ * Returns { player_id, regularSeason, playoffs }, either season object
+ * `null` if the player has no rows in that section yet (e.g. hasn't made
+ * the playoffs). No `season` param -- career totals aren't season-scoped.
+ */
+export async function fetchPWHLPlayerCareer(playerId) {
+  if (!playerId) return null;
+  return workerFetch(`/pwhl/player/career?id=${playerId}`);
+}
+
+/**
  * Fetch one player's game-by-game box score rows for a season (Session 70 —
  * player Compare tab trend charts). Same flat skaters/goalies shape as
  * fetchPWHLGameBox above, just filtered by player+season instead of by
