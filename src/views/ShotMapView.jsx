@@ -1,4 +1,7 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import {
+  ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, ReferenceLine,
+} from 'recharts';
 import { usePoll, useFetch } from '../hooks/useFetch';
 import {
   getLiveGame, getAllGames, getGameDetail, getGameBoxscore, getGameRightRail,
@@ -3050,7 +3053,7 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
   }
 
   // Waveform — rolling 3-min weighted score sampled every 60s
-  const wavePoints = useMemo(() => {
+  const waveData = useMemo(() => {
     const pts = [];
     const WAVE_WIN = 180, STEP = 60;
     for (let t = WAVE_WIN; t <= nowSecs + STEP; t += STEP) {
@@ -3077,105 +3080,24 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
         }
       });
       const wt = wc + wo || 1;
-      pts.push(Math.round(wc / wt * 100));
+      const v = Math.round(wc / wt * 100);
+      // carArea/oppArea + a shared baseValue of 50 reproduce the old canvas's
+      // two-tone fill (CAR above midline, OPP below) as two Recharts <Area>s.
+      pts.push({ minute: t / 60, v, carArea: Math.max(50, v), oppArea: Math.min(50, v) });
     }
     return pts;
   }, [plays.length]);
 
   const { car, opp, carPct } = computeWindow(window);
   const totalGame = useMemo(() => computeWindow(0), [plays.length]);
+  const totalMinutes = Math.max(1, Math.ceil(nowSecs / 60));
 
-  const canvasRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !wavePoints.length) return;
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    const W = rect.width * dpr;
-    const H = rect.height * dpr;
-    canvas.width = W;
-    canvas.height = H;
-    const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
-    const lW = rect.width;
-    const lH = rect.height;
-    const mid = lH / 2;
-
-    ctx.clearRect(0, 0, lW, lH);
-
-    const pts = wavePoints.length;
-    const step = pts > 1 ? lW / (pts - 1) : lW;
-
-    // CAR area above midline
-    ctx.beginPath();
-    ctx.moveTo(0, mid);
-    wavePoints.forEach((v, i) => {
-      const x = i * step;
-      const y = mid - ((Math.max(50, v) - 50) / 50) * (mid - 6);
-      ctx.lineTo(x, y);
-    });
-    ctx.lineTo(lW, mid);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(204,34,0,0.18)';
-    ctx.fill();
-
-    // OPP area below midline
-    ctx.beginPath();
-    ctx.moveTo(0, mid);
-    wavePoints.forEach((v, i) => {
-      const x = i * step;
-      const y = mid + ((Math.max(0, 50 - v)) / 50) * (mid - 6);
-      ctx.lineTo(x, y);
-    });
-    ctx.lineTo(lW, mid);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(136,135,128,0.12)';
-    ctx.fill();
-
-    // CAR line
-    ctx.beginPath();
-    wavePoints.forEach((v, i) => {
-      const x = i * step;
-      const y = mid - ((v - 50) / 50) * (mid - 6);
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = 'var(--team-primary, #cc2200)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Period dividers
-    const totalMinutes = Math.ceil(nowSecs / 60);
-    [20, 40].forEach(min => {
-      if (min * 60 > nowSecs) return;
-      const x = (min / totalMinutes) * lW;
-      ctx.beginPath();
-      ctx.moveTo(x, 0); ctx.lineTo(x, lH);
-      ctx.strokeStyle = 'rgba(136,135,128,0.25)';
-      ctx.lineWidth = 0.5;
-      ctx.setLineDash([3, 3]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    });
-
-    // 50% midline
-    ctx.beginPath();
-    ctx.moveTo(0, mid); ctx.lineTo(lW, mid);
-    ctx.strokeStyle = 'rgba(136,135,128,0.2)';
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
-
-    // Current position dot
-    if (pts > 0) {
-      const lastX = (pts - 1) * step;
-      const lastV = wavePoints[pts - 1];
-      const lastY = mid - ((lastV - 50) / 50) * (mid - 6);
-      ctx.beginPath();
-      ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--team-primary').trim() || '#cc2200';
-      ctx.fill();
-    }
-  }, [wavePoints]);
+  // Recharts custom dot: only draw a marker on the most recent sample.
+  function currentPositionDot(props) {
+    const { cx, cy, index } = props;
+    if (index !== waveData.length - 1) return null;
+    return <circle key="momentum-current" cx={cx} cy={cy} r={3} style={{ fill: 'var(--team-primary, #cc2200)' }} />;
+  }
 
   const tooltipText = `Weighted territorial score combining shot attempts, zone faceoff wins, offensive zone hits and takeaways — inspired by NHL Edge Ice Tilt. Zone location matters: an offensive zone shot counts more than a neutral zone attempt. Above 50% = ${CAR_ABBR} controlling play.`;
 
@@ -3218,8 +3140,23 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
         </div>
       </div>
 
-      <canvas ref={canvasRef}
-        style={{ width: '100%', height: 80, display: 'block' }} />
+      <ResponsiveContainer width="100%" height={80}>
+        <ComposedChart data={waveData} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+          <XAxis dataKey="minute" type="number" domain={['dataMin', 'dataMax']} hide />
+          <YAxis domain={[0, 100]} hide />
+          <ReferenceLine y={50} stroke="rgba(136,135,128,0.2)" strokeWidth={0.5} />
+          {totalMinutes > 20 && (
+            <ReferenceLine x={20} stroke="rgba(136,135,128,0.25)" strokeWidth={0.5} strokeDasharray="3 3" />
+          )}
+          {totalMinutes > 40 && (
+            <ReferenceLine x={40} stroke="rgba(136,135,128,0.25)" strokeWidth={0.5} strokeDasharray="3 3" />
+          )}
+          <Area dataKey="carArea" baseValue={50} stroke="none" fill="rgba(204,34,0,0.18)" isAnimationActive={false} />
+          <Area dataKey="oppArea" baseValue={50} stroke="none" fill="rgba(136,135,128,0.12)" isAnimationActive={false} />
+          <Line dataKey="v" type="linear" stroke="var(--team-primary, #cc2200)" strokeWidth={1.5}
+            dot={currentPositionDot} activeDot={false} isAnimationActive={false} />
+        </ComposedChart>
+      </ResponsiveContainer>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--text-dim)', marginTop: 3 }}>
         <span>P1</span><span>P2</span><span>P3{nowSecs > 3600 ? '+' : ''}</span><span>Now</span>
       </div>
