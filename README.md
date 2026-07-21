@@ -63,13 +63,13 @@ canes-analytics-starter/
 ├── src/
 │   ├── App.jsx                   # Router, layout, sport context, theme init
 │   ├── views/
-│   │   ├── ShotMapView.jsx/.css        # NHL live shot map
+│   │   ├── ShotMapView.jsx/.css        # NHL live shot map — season/game history selector (Session 77) lets you browse past seasons/games; disabled+tooltip (not hidden) while a game is live, since a live game always wins the display
 │   │   ├── ScheduleView.jsx/.css       # NHL schedule
 │   │   ├── TeamView.jsx/.css           # NHL 6-tab team analytics (Advanced tab: xGF% sparkline)
 │   │   ├── PlayersView.jsx/.css        # NHL players
 │   │   ├── LeagueView.jsx/.css         # NHL 5-tab league page
 │   │   ├── NewsView.jsx/.css           # NHL news feed + Milestones tab toggle
-│   │   ├── PWHLShotMapView.jsx         # PWHL shot map + PBP metrics
+│   │   ├── PWHLShotMapView.jsx         # PWHL shot map + PBP metrics — season/game history + Regular Season/Playoffs toggle (Session 77, new capability, not just NHL parity)
 │   │   ├── PWHLScheduleView.jsx        # PWHL schedule + calendar + playoffs
 │   │   ├── PWHLTeamView.jsx            # PWHL 5-tab team analytics
 │   │   ├── PWHLPlayersView.jsx         # PWHL roster + stats + player popup
@@ -100,7 +100,11 @@ canes-analytics-starter/
 │   │   ├── InfoTip.jsx/.css            # Tap-to-open tooltip
 │   │   ├── StatBar.jsx/.css            # Comparative stat bar
 │   │   ├── SeasonComparisonPicker.jsx/.css # Generic N-season selector for season-over-season comparison (NHL + PWHL, not league-specific)
-│   │   └── TeamComparisonPopup.jsx     # Team-level season-over-season comparison dialog (NHL + PWHL, box-score stats only) — reuses PlayersView.css's popup/stat-section styles
+│   │   ├── TeamComparisonPopup.jsx     # Team-level season-over-season comparison dialog (NHL + PWHL, box-score stats only) — reuses PlayersView.css's popup/stat-section styles
+│   │   ├── GameChipsRow.jsx            # Shot map game-selector chip row (NHL + PWHL, shared) — normalized {id, opponentAbbr, opponentColor, myScore, oppScore, isHome} shape, each sport maps its own schedule-row into it
+│   │   ├── SeasonChipRow.jsx           # Shot map season-selector chip stack (NHL + PWHL, shared) — recent seasons inline + a "More seasons" overflow dropdown for older ones
+│   │   ├── SeasonTypeToggle.jsx        # Regular Season/Playoffs segmented toggle (NHL + PWHL, shared) — same UI, different wiring per sport (PWHL swaps season_id; NHL filters the fetched season's games by gameType)
+│   │   └── DisabledHint.jsx            # Tap-triggered "why is this grayed out" tooltip — used by the shot map selector while a game is live
 │   ├── hooks/
 │   │   ├── useFetch.js                 # Data fetching + polling (cache: no-store)
 │   │   ├── usePushNotifications.js
@@ -412,8 +416,8 @@ npm run cypress:full    # Clean → run → HTML report
 | `pwhl-players.cy.js` | PWHL roster, stats, player popup (4 established teams) + 1 expansion team (empty stats state) |
 | `schedule.cy.js` | NHL schedule, predictions |
 | `pwhl-schedule.cy.js` | PWHL schedule smoke (12 teams), full features (BOS), playoffs tab |
-| `shot-map.cy.js` | NHL shot map, all sections |
-| `pwhl-shot-map.cy.js` | PWHL shot map smoke (12 teams), full features (BOS), PBP metrics |
+| `shot-map.cy.js` | NHL shot map, all sections; season/game history selector (chips, "More seasons" overflow, Reg/Playoffs toggle), disabled+tooltip state during a live game |
+| `pwhl-shot-map.cy.js` | PWHL shot map smoke (12 teams), full features (BOS), PBP metrics, Reg/Playoffs toggle |
 | `pwhl-shots-live.cy.js` | PWHL + NHL shot map live-mode debug panel, goal/penalty/win popups, situation chips |
 | `pwhl-dev.cy.js` | PWHL dev game replay scrubber |
 | `team.cy.js` | NHL 6 tabs (4 teams incl. Cap + Picks) |

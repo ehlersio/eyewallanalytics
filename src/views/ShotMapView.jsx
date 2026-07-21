@@ -5,11 +5,12 @@ import {
 import { usePoll, useFetch } from '../hooks/useFetch';
 import {
   getLiveGame, getAllGames, getGameDetail, getGameBoxscore, getGameRightRail,
-  getRecentGames, getPlayoffGames, extractShotEvents,
-  getCarScore, getOppScore, getOpponent, isHomeGame,
+  getRecentGames, getPlayoffGames, getScheduleForSeason, extractShotEvents,
+  getCarScore, getOppScore, getOpponent, isHomeGame, isCompleted,
   getTeamStats, getTeamPlayoffStats, formatGameDate, getRoster, buildPlayerMap,
   bustLiveGameCache, TEAM_COLORS, GAME_TYPE, TEAM_CONFIG,
 } from '../utils/nhlApi';
+import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON } from '../utils/teamConfig';
 import IceRink from '../components/IceRink';
 import { GoalPopup, HatTrickPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
@@ -18,7 +19,13 @@ import { inferPPUnit, inferPKUnit, PP_UNITS_BY_TEAM, PK_UNITS_BY_TEAM } from '..
 import InfoTip from '../components/InfoTip';
 import { MetCard } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
+import GameChipsRow from '../components/GameChipsRow';
+import SeasonChipRow from '../components/SeasonChipRow';
+import SeasonTypeToggle from '../components/SeasonTypeToggle';
+import DisabledHint from '../components/DisabledHint';
 import './ShotMapView.css';
+
+const LIVE_SELECTOR_DISABLED_REASON = 'Available after the game ends.';
 import { publishClock, getClockDisplay, publishMomentum } from '../utils/liveClockStore';
 import { useDevGame } from '../utils/DevGameContext';
 import { useWakeLock } from '../hooks/useWakeLock';
@@ -75,7 +82,68 @@ export default function ShotMapView() {
   // Most recent completed game as fallback
   const { data: recentGames } = useFetch(getRecentGames);
   const lastGame   = recentGames?.[0] || null;
-  const activeGame = liveGame || lastGame;
+
+  // ── Season/game history selector (Session 77) ──────────────────
+  // Only rendered/relevant when nothing's live (see the JSX below) — a
+  // live game always wins over any historical selection here, unchanged
+  // from this view's behavior before this session. The in-progress game
+  // is this app's highest-value real-time feature; browsing old games is
+  // overwhelmingly a between-games activity anyway, so there's no real
+  // product cost to keeping the live path exactly as it was rather than
+  // adding PWHL's full manual-override-even-during-a-live-game behavior.
+  const [season, setSeason] = useState(CURRENT_SEASON);
+  const [seasonType, setSeasonType] = useState('regular'); // 'regular' | 'playoffs'
+  const [selectedGameId, setSelectedGameId] = useState(null);
+  const userPickedSeason = useRef(false);
+  useEffect(() => {
+    function handleSeasonUpdate(e) {
+      if (!userPickedSeason.current) setSeason(e.detail);
+    }
+    window.addEventListener('eyewall:nhl-season-updated', handleSeasonUpdate);
+    return () => window.removeEventListener('eyewall:nhl-season-updated', handleSeasonUpdate);
+  }, []);
+  const handleSeasonChange = id => { userPickedSeason.current = true; setSeason(id); setSelectedGameId(null); };
+  const handleSeasonTypeChange = type => { setSeasonType(type); setSelectedGameId(null); };
+  const handleSelect = id => setSelectedGameId(p => p === id ? null : id);
+  const handleAll     = ()  => setSelectedGameId(null);
+
+  // Tap-triggered "why is this grayed out" hint (Session 77 follow-up) —
+  // desktop hover is covered by the `title` attribute each disabled
+  // component sets itself; this covers mobile tap, which `title` doesn't
+  // reliably respond to.
+  const [showDisabledHint, setShowDisabledHint] = useState(false);
+  // Stable references — ShotMapView re-renders every 250ms during a live
+  // game (the clock tick), and DisabledHint's effect depends on `onDismiss`
+  // identity; an inline arrow here would tear down/re-attach its listeners
+  // on every one of those ticks for no reason.
+  const handleDisabledTap  = useCallback(() => setShowDisabledHint(true), []);
+  const dismissDisabledHint = useCallback(() => setShowDisabledHint(false), []);
+
+  const { data: seasonSchedule } = useFetch(() => getScheduleForSeason(CAR_ABBR, season), [season]);
+
+  // Completed games for the selected season+type, newest first.
+  const games = useMemo(() => {
+    if (!seasonSchedule?.length) return [];
+    const wantType = seasonType === 'playoffs' ? GAME_TYPE.PLAYOFFS : GAME_TYPE.REGULAR;
+    return seasonSchedule
+      .filter(g => g.gameType === wantType && isCompleted(g))
+      .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate));
+  }, [seasonSchedule, seasonType]);
+
+  const selectedGame = useMemo(() => games.find(g => g.id === selectedGameId) || null, [games, selectedGameId]);
+
+  // Normalized shape for the shared GameChipsRow — getOpponent/getCarScore/
+  // getOppScore/isHomeGame already work on any raw NHL schedule-row shape.
+  const gameChipGames = useMemo(() => games.map(g => ({
+    id: g.id,
+    opponentAbbr: getOpponent(g)?.abbrev,
+    opponentColor: TEAM_COLORS[getOpponent(g)?.abbrev],
+    myScore: getCarScore(g),
+    oppScore: getOppScore(g),
+    isHome: isHomeGame(g),
+  })), [games]);
+
+  const activeGame = liveGame || selectedGame || lastGame;
   useWakeLock(isLive); // keep screen on during live games
 
   // ── App resume: refetch live data and clear stale popups ─────
@@ -1201,8 +1269,7 @@ export default function ShotMapView() {
 
       {/* ── Score bar ── */}
       <div className="score-card card" onClick={handleDebugTap} style={{ userSelect: 'none' }}>
-        {activeGame ? (
-          <div className="score-inner">
+        <div className="score-inner">
             {/* CAR side */}
             <div className="score-team-wrap">
               <div className="score-team">
@@ -1263,12 +1330,17 @@ export default function ShotMapView() {
                   )}
                   <div className="score-state pill pill-red" style={{marginTop:4}}>🔴 LIVE</div>
                 </>
-              ) : (
+              ) : activeGame ? (
                 <>
                   <div className="score-period">Final</div>
                   <div className="score-state" style={{fontSize:10,color:'var(--text-dim)'}}>
                     {activeIsPlayoff ? '🏒 Playoff · ' : ''}{formatGameDate(activeGame.gameDate)}
                   </div>
+                </>
+              ) : (
+                <>
+                  <div className="score-period">Shot Map</div>
+                  <div className="score-state" style={{fontSize:10,color:'var(--text-dim)'}}>Loading game data…</div>
                 </>
               )}
             </div>
@@ -1299,13 +1371,33 @@ export default function ShotMapView() {
                 </div>
               ) : null}
             </div>
+
+            {/* ── Season/Reg-Playoffs selector (Session 77) — positioned
+                inside the score card like PWHLShotMapView.jsx's 4th
+                score-inner column, not as a separate block below it.
+                Historical browsing only — activeGame always prefers a live
+                game over any historical selection (see the comment on
+                `activeGame` above), so the chips stay disabled+grayed (not
+                hidden) while one is in progress rather than popping in/out
+                of the layout as a game goes live or finishes. Tap/hover
+                surfaces why. */}
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+              <SeasonTypeToggle value={seasonType} onChange={handleSeasonTypeChange}
+                disabled={isLive} disabledReason={LIVE_SELECTOR_DISABLED_REASON} onDisabledTap={handleDisabledTap} />
+              <SeasonChipRow seasons={NHL_REGULAR_SEASONS} archiveSeasons={NHL_ARCHIVE_SEASONS}
+                selected={season} onSelect={handleSeasonChange}
+                disabled={isLive} disabledReason={LIVE_SELECTOR_DISABLED_REASON} onDisabledTap={handleDisabledTap} />
+              <DisabledHint text={LIVE_SELECTOR_DISABLED_REASON} active={showDisabledHint} onDismiss={dismissDisabledHint} />
+            </div>
           </div>
-        ) : (
-          <div className="no-game-msg">
-            <span>Loading game data…</span>
-          </div>
-        )}
       </div>
+
+      {/* ── Game selector ── */}
+      {games.length > 0 && (
+        <GameChipsRow games={gameChipGames} sport="nhl"
+          selectedGameId={selectedGameId} onSelect={handleSelect} onAll={handleAll}
+          disabled={isLive} disabledReason={LIVE_SELECTOR_DISABLED_REASON} onDisabledTap={handleDisabledTap} />
+      )}
 
       {/* ── Live / Game Insights (below score) ── */}
       {pbp?.plays?.length > 0 && (

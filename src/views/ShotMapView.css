@@ -756,3 +756,87 @@
 .game-chip-opp  { font-weight: 600; color: var(--text); }
 .game-chip-score { font-size: 10px; }
 .game-chip-venue { opacity: 0.6; }
+
+/* ── Season "More" overflow dropdown (SeasonChipRow) ─────────── */
+.season-archive-wrap { position: relative; }
+.season-archive-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  min-width: 96px;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--bg2);
+  border: 0.5px solid var(--border-2);
+  border-radius: var(--radius-md, 10px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+.season-archive-item {
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  text-align: right;
+  color: var(--text-muted);
+  background: transparent;
+  white-space: nowrap;
+}
+.season-archive-item:hover { background: var(--bg3); color: var(--text); }
+.season-archive-item.active { color: var(--red-bright); font-weight: 600; }
+
+/* ── Regular Season / Playoffs segmented toggle (SeasonTypeToggle) ── */
+.season-type-toggle {
+  display: flex;
+  border: 0.5px solid var(--border-2);
+  border-radius: 20px;
+  overflow: hidden;
+  width: fit-content;
+}
+.season-type-toggle-btn {
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  white-space: nowrap;
+  /* Match SeasonChipRow's inline chipStyle override — without this, the
+     global `button { min-height/width: 44px }` WCAG touch-target rule
+     (index.css) forces this small pill-style button up to 44x44px,
+     dwarfing its own padding. */
+  min-height: unset;
+  min-width: unset;
+}
+.season-type-toggle-btn.on { background: var(--red-dim); color: var(--red-bright); }
+
+/* ── Disabled selector state (Session 77 follow-up — live game in progress).
+   Grays chips out but deliberately does NOT set pointer-events: none — the
+   click handlers stay live in JS (guarded to no-op / show a tooltip
+   instead of the real action) rather than truly disabled, so a tap can
+   still surface "why". See SeasonTypeToggle.jsx's comment for the full
+   reasoning. ── */
+.chip-disabled { cursor: default; }
+.chip-disabled .rink-btn,
+.chip-disabled .game-chip,
+.chip-disabled .season-type-toggle-btn {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.disabled-hint-popup {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--text);
+  background: var(--bg2);
+  border: 0.5px solid var(--border-2);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  white-space: nowrap;
+}

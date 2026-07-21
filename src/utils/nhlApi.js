@@ -118,13 +118,29 @@ export async function getDraftOrder(team = null) {
 // but stays fresh enough to detect live game state changes
 export async function getAllGames() {
   return cached('allGames', async () => {
-    // Try Worker KV first (pre-polled, zero per-user NHL calls)
-    const cached_kv = await kvFetch(`schedule:${TEAM_ABBR}`);
+    // Try Worker KV first (pre-polled, zero per-user NHL calls). Key is
+    // season-namespaced (Session 77 — schedule:{abbr}:{season}, not the
+    // old bare schedule:{abbr}) to match the Worker's /schedule route.
+    const cached_kv = await kvFetch(`schedule:${TEAM_ABBR}:${TEAM_CONFIG.season}`);
     if (cached_kv) return cached_kv;
     // Fall back to direct NHL call
     const data = await nhlFetch(`${BASE}/club-schedule-season/${TEAM_ABBR}/${TEAM_CONFIG.season}`);
     return data?.games || [];
   }, TTL.SHORT / 3); // 20 seconds client-side cache
+}
+
+// Fetch a specific team's schedule for a specific (possibly historical)
+// season — the shot map's season/game history selector (Session 77).
+// Unlike getAllGames() (always the live-resolved current season, via the
+// KV-passthrough+direct-NHL-fallback pattern above), this hits the
+// Worker's dedicated /schedule route directly, same shape as PWHL's
+// fetchPWHLSchedule(teamId, season) in pwhlApi.js. That route serves
+// historical seasons synchronously (single one-off upstream call, then a
+// 60-day KV TTL) — see nhl.js's /schedule route comment for why that
+// differs from the current-season's fire-and-forget-background pattern.
+export async function getScheduleForSeason(teamAbbr, season) {
+  const data = await workerFetch(`/schedule?team=${encodeURIComponent(teamAbbr)}&season=${encodeURIComponent(season)}`);
+  return data || [];
 }
 
 // Regular season games only (gameType === 2)
@@ -208,7 +224,7 @@ export async function getLiveGame() {
 }
 
 // Is a game finished?
-function isCompleted(game) {
+export function isCompleted(game) {
   // Only trust explicit completed game states — never infer from score presence
   // (scheduled games have score=0 which falsely triggered the old fallback)
   return ['OFF', 'FINAL', 'F', 'FINAL_OVERTIME', 'FINAL_SHOOTOUT'].includes(game.gameState);
