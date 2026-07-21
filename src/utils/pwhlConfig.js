@@ -96,6 +96,14 @@ export const PWHL_PLAYOFF_SEASON_MAP = Object.fromEntries(
   PWHL_REGULAR_SEASONS.map((reg, i) => [reg.id, PWHL_PLAYOFF_SEASONS[i]?.id])
 );
 
+// Reverse of the above -- playoffs season_id -> its regular season_id.
+// Lets the Reg/Playoffs toggle (Session 77) switch back from a playoffs
+// selection without a second hand-maintained map. `Number(...)` restores
+// the numeric id type -- Object.entries keys are always strings.
+export const PWHL_REGULAR_SEASON_MAP = Object.fromEntries(
+  Object.entries(PWHL_PLAYOFF_SEASON_MAP).map(([regId, poId]) => [poId, Number(regId)])
+);
+
 // Is this specific season_id (e.g. a game's own season_id) a playoffs season?
 // Used to derive per-game isPlayoff state (period/OT/shootout labeling —
 // PWHL regular season ends in a shootout, playoffs never do) without

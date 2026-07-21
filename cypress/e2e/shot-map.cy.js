@@ -55,6 +55,34 @@ describe('Shot Map', () => {
     })
   })
 
+  describe('Season/game history selector — disabled during a live game', () => {
+    // ?mockGame= forces isLive true, making this deterministic (unlike the
+    // "Shot Map — season/game history selector" block below, which visits
+    // without the mock and can't force either state). isLive itself only
+    // resolves once the live-game poll's first fetch completes though —
+    // wait for the disabled class to actually appear before interacting,
+    // rather than assuming it's already true right after cy.visit().
+    beforeEach(() => {
+      cy.get('.season-type-toggle', { timeout: 10000 }).should('have.class', 'chip-disabled')
+    })
+
+    it('shows the selector but visually disabled, and hover/tap reveals why', () => {
+      cy.get('.season-type-toggle').should('have.attr', 'title', 'Available after the game ends.')
+      cy.get('.season-type-toggle-btn[aria-disabled="true"]').should('have.length', 2)
+    })
+
+    it('clicking a disabled chip does not change the selection', () => {
+      cy.get('.season-type-toggle-btn.on').should('contain.text', 'Regular')
+      cy.contains('Playoffs').click()
+      cy.get('.season-type-toggle-btn.on').should('contain.text', 'Regular') // unchanged
+    })
+
+    it('tapping a disabled chip surfaces the tooltip', () => {
+      cy.contains('Playoffs').click()
+      cy.get('.disabled-hint-popup').should('be.visible').and('contain.text', 'Available after the game ends.')
+    })
+  })
+
   describe('Game Insights section', () => {
     it('renders section header', () => {
       // Live-mocked games render "LIVE INSIGHTS" instead of "Game Insights"
@@ -216,5 +244,77 @@ describe('Shot Map', () => {
     it('shows team stats section', () => {
       cy.contains(/Team stats/i).should('exist')
     })
+  })
+})
+
+// ── Season/game history selector (Session 77) ─────────────────────────────
+// The selector always renders now (Session 77 follow-up — disabled+tooltip
+// replaced hidden-during-live), but a real live game at test-run time would
+// make it genuinely non-interactive, and these tests need to actually
+// switch seasons/games. Unlike the block above, this visit can't be pinned
+// live via ?mockGame= (that only forces isLive TRUE, the opposite of what's
+// needed here), so each test skips cleanly if a real live game happens to
+// be in progress, rather than flaking. The /schedule intercept also
+// sidesteps a real, current off-season gap: "today" mid-summer has zero
+// completed current-season games, which would otherwise starve the
+// game-chip tests independent of the isLive question entirely.
+describe('Shot Map — season/game history selector', () => {
+  const workerUrl = Cypress.env('WORKER_URL')
+  const stubGames = [
+    { id: 2025020100, gameDate: '2025-11-10', gameType: 2, gameState: 'FINAL', homeTeam: { abbrev: 'CAR', score: 4 }, awayTeam: { abbrev: 'BOS', score: 2 } },
+    { id: 2025020050, gameDate: '2025-10-20', gameType: 2, gameState: 'FINAL', homeTeam: { abbrev: 'TOR', score: 1 }, awayTeam: { abbrev: 'CAR', score: 3 } },
+  ]
+
+  beforeEach(function () {
+    cy.intercept('GET', `${workerUrl}/schedule*`, { statusCode: 200, body: stubGames }).as('schedule')
+    cy.visit('/')
+    cy.get('.topbar', { timeout: 10000 }).should('exist')
+    cy.get('.season-type-toggle', { timeout: 10000 }).then($toggle => {
+      if ($toggle.hasClass('chip-disabled')) {
+        cy.log('Skipping — a real live game is in progress, selector is disabled')
+        this.skip()
+      }
+    })
+  })
+
+  it('shows the Regular/Playoffs toggle and season chips (current + 2 prior)', () => {
+    cy.get('.season-type-toggle').should('exist')
+    cy.contains('Regular').should('exist')
+    cy.contains('Playoffs').should('exist')
+    cy.contains('2026-27').should('exist')
+    cy.contains('2025-26').should('exist')
+    cy.contains('2024-25').should('exist')
+  })
+
+  it('switches seasons without crashing', () => {
+    cy.contains('2025-26').click()
+    cy.wait('@schedule')
+    cy.get('svg').should('exist')
+    cy.assertNoErrors()
+  })
+
+  it('More seasons overflow opens and lists an older season', () => {
+    cy.contains('•••').click()
+    cy.get('.season-archive-dropdown').should('be.visible')
+    cy.contains('2023-24').should('exist')
+    cy.contains('2023-24').click()
+    cy.get('.season-archive-dropdown').should('not.exist')
+  })
+
+  it('toggles to Playoffs and back without crashing', () => {
+    cy.contains('Playoffs').click()
+    cy.get('.season-type-toggle-btn.on').should('contain.text', 'Playoffs')
+    cy.assertNoErrors()
+    cy.contains('Regular').click()
+    cy.get('.season-type-toggle-btn.on').should('contain.text', 'Regular')
+  })
+
+  it('shows game chips from the stubbed schedule and selecting one highlights it', () => {
+    cy.wait('@schedule')
+    cy.contains(/^All \d+$/).should('exist')
+    cy.get('.game-chip').not('.game-chip-all').first().click()
+    cy.get('.game-chip-active').not('.game-chip-all').should('exist')
+    cy.get('.game-chip-all').click()
+    cy.get('.game-chip-all').should('have.class', 'game-chip-active')
   })
 })
