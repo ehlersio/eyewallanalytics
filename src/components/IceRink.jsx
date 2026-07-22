@@ -858,13 +858,15 @@ function RinkMarkings({ showHalf, flipPerspective = false, teamAbbr, teamColor }
       <circle cx={W-93} cy={CY-66} r="45" fill="none" stroke="#cc3333" strokeWidth="1" opacity="0.4"/>
       <circle cx={W-93} cy={CY+66} r="45" fill="none" stroke="#cc3333" strokeWidth="1" opacity="0.4"/>
 
-      {/* ── End-zone hash marks (NHL Rule 1.9: 2ft long, 5ft7in pair-spacing, at circle edge ±15ft=±45px from center) ── */}
+      {/* ── End-zone hash marks (2ft long, parallel to goal line, at the circle's
+           board-side/center-side tangent points — 15ft=45px above and below the
+           circle center — not the goal-line-side edge; pair spacing 5ft7in=16.75px) ── */}
       {[[93, CY-66], [93, CY+66], [W-93, CY-66], [W-93, CY+66]].map(([ccx, ccy], i) => (
         <g key={`hash-${i}`}>
-          <line x1={ccx-45} y1={ccy-11.375} x2={ccx-45} y2={ccy-5.375} stroke="#cc3333" strokeWidth="1.25"/>
-          <line x1={ccx-45} y1={ccy+5.375}  x2={ccx-45} y2={ccy+11.375} stroke="#cc3333" strokeWidth="1.25"/>
-          <line x1={ccx+45} y1={ccy-11.375} x2={ccx+45} y2={ccy-5.375} stroke="#cc3333" strokeWidth="1.25"/>
-          <line x1={ccx+45} y1={ccy+5.375}  x2={ccx+45} y2={ccy+11.375} stroke="#cc3333" strokeWidth="1.25"/>
+          <line x1={ccx-8.375} y1={ccy-48} x2={ccx-8.375} y2={ccy-42} stroke="#cc3333" strokeWidth="1.25"/>
+          <line x1={ccx+8.375} y1={ccy-48} x2={ccx+8.375} y2={ccy-42} stroke="#cc3333" strokeWidth="1.25"/>
+          <line x1={ccx-8.375} y1={ccy+42} x2={ccx-8.375} y2={ccy+48} stroke="#cc3333" strokeWidth="1.25"/>
+          <line x1={ccx+8.375} y1={ccy+42} x2={ccx+8.375} y2={ccy+48} stroke="#cc3333" strokeWidth="1.25"/>
         </g>
       ))}
 
