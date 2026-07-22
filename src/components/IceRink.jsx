@@ -858,15 +858,28 @@ function RinkMarkings({ showHalf, flipPerspective = false, teamAbbr, teamColor }
       <circle cx={W-93} cy={CY-66} r="45" fill="none" stroke="#cc3333" strokeWidth="1" opacity="0.4"/>
       <circle cx={W-93} cy={CY+66} r="45" fill="none" stroke="#cc3333" strokeWidth="1" opacity="0.4"/>
 
-      {/* ── End-zone hash marks (2ft long, parallel to goal line, at the circle's
-           board-side/center-side tangent points — 15ft=45px above and below the
-           circle center — not the goal-line-side edge; pair spacing 5ft7in=16.75px) ── */}
+      {/* ── End-zone hash marks (2ft long, parallel to goal line, entirely OUTSIDE the
+           circle — starting at the circle's own top/bottom tangent point (±15ft=45px
+           from center) and extending 2ft further out, not straddling the boundary;
+           pair spacing 5ft7in=16.75px) ── */}
       {[[93, CY-66], [93, CY+66], [W-93, CY-66], [W-93, CY+66]].map(([ccx, ccy], i) => (
         <g key={`hash-${i}`}>
-          <line x1={ccx-8.375} y1={ccy-48} x2={ccx-8.375} y2={ccy-42} stroke="#cc3333" strokeWidth="1.25"/>
-          <line x1={ccx+8.375} y1={ccy-48} x2={ccx+8.375} y2={ccy-42} stroke="#cc3333" strokeWidth="1.25"/>
-          <line x1={ccx-8.375} y1={ccy+42} x2={ccx-8.375} y2={ccy+48} stroke="#cc3333" strokeWidth="1.25"/>
-          <line x1={ccx+8.375} y1={ccy+42} x2={ccx+8.375} y2={ccy+48} stroke="#cc3333" strokeWidth="1.25"/>
+          <line x1={ccx-8.375} y1={ccy-45} x2={ccx-8.375} y2={ccy-51} stroke="#cc3333" strokeWidth="1.25"/>
+          <line x1={ccx+8.375} y1={ccy-45} x2={ccx+8.375} y2={ccy-51} stroke="#cc3333" strokeWidth="1.25"/>
+          <line x1={ccx-8.375} y1={ccy+45} x2={ccx-8.375} y2={ccy+51} stroke="#cc3333" strokeWidth="1.25"/>
+          <line x1={ccx+8.375} y1={ccy+45} x2={ccx+8.375} y2={ccy+51} stroke="#cc3333" strokeWidth="1.25"/>
+        </g>
+      ))}
+
+      {/* ── Player restraint lines (4 "L"-shaped marks surrounding each end-zone face-off
+           spot, 2in wide, 4ft × 3ft, corner at the spot's own edge (1ft=3px radius)
+           extending outward in a pinwheel — players must keep skates within these) ── */}
+      {[[93, CY-66], [93, CY+66], [W-93, CY-66], [W-93, CY+66]].map(([ccx, ccy], i) => (
+        <g key={`restraint-${i}`} stroke="#cc3333" strokeWidth="1" fill="none">
+          <path d={`M ${ccx+3} ${ccy-3} L ${ccx+15} ${ccy-3} M ${ccx+3} ${ccy-3} L ${ccx+3} ${ccy-12}`}/>
+          <path d={`M ${ccx+3} ${ccy+3} L ${ccx+15} ${ccy+3} M ${ccx+3} ${ccy+3} L ${ccx+3} ${ccy+12}`}/>
+          <path d={`M ${ccx-3} ${ccy+3} L ${ccx-15} ${ccy+3} M ${ccx-3} ${ccy+3} L ${ccx-3} ${ccy+12}`}/>
+          <path d={`M ${ccx-3} ${ccy-3} L ${ccx-15} ${ccy-3} M ${ccx-3} ${ccy-3} L ${ccx-3} ${ccy-12}`}/>
         </g>
       ))}
 
@@ -876,15 +889,16 @@ function RinkMarkings({ showHalf, flipPerspective = false, teamAbbr, teamColor }
       <circle cx={CX+75-15} cy={CY-66} r="3" fill="#cc3333" opacity="0.7"/>
       <circle cx={CX+75-15} cy={CY+66} r="3" fill="#cc3333" opacity="0.7"/>
 
-      {/* ── Zone labels ── */}
+      {/* ── Zone labels (centered between where the corner radius starts, 84px from
+           each end, and that side's blue line — not pinned to the corner itself) ── */}
       {!showHalf && (
         <>
-          <text x="22"   y="18" fontSize="9" fill="#2255aa" opacity="0.6" fontFamily="sans-serif">OPP offensive zone</text>
-          <text x={W-108} y="18" fontSize="9" fill={teamColor || "var(--team-primary)"} opacity="0.7" fontFamily="sans-serif">{teamAbbr || TEAM_CONFIG.abbr} offensive zone</text>
+          <text x="154.5" y="18" textAnchor="middle" fontSize="9" fill="#2255aa" opacity="0.6" fontFamily="sans-serif">OPP offensive zone</text>
+          <text x="445.5" y="18" textAnchor="middle" fontSize="9" fill={teamColor || "var(--team-primary)"} opacity="0.7" fontFamily="sans-serif">{teamAbbr || TEAM_CONFIG.abbr} offensive zone</text>
         </>
       )}
       {showHalf && (
-        <text x={CX+10} y="18" fontSize="9" fill={flipPerspective ? '#2255aa' : 'var(--team-primary)'} opacity="0.8" fontFamily="sans-serif">
+        <text x="445.5" y="18" textAnchor="middle" fontSize="9" fill={flipPerspective ? '#2255aa' : 'var(--team-primary)'} opacity="0.8" fontFamily="sans-serif">
           {flipPerspective ? 'OPP offensive zone' : `${teamAbbr || TEAM_CONFIG.abbr} offensive zone`}
         </text>
       )}
