@@ -16,7 +16,6 @@ import { MatchupDetail, computeWinPct } from '../components/MatchupDetail';
 import './ScheduleView.css';
 
 const TABS = ['Playoffs', 'Regular Season'];
-const CAR_ABBR = TEAM_CONFIG.abbr;
 
 export default function ScheduleView() {
   const [tab, setTab]                   = useState('Playoffs');
@@ -86,7 +85,7 @@ export default function ScheduleView() {
     }
   });
 
-  const carStanding    = standingMap[CAR_ABBR];
+  const carStanding    = standingMap[TEAM_CONFIG.abbr];
 
   // Auto-record prediction outcomes for any completed games
   useEffect(() => {
@@ -95,7 +94,7 @@ export default function ScheduleView() {
       ['OFF','FINAL','F','FINAL_OVERTIME','FINAL_SHOOTOUT'].includes(g.gameState)
     );
     completed.forEach(g => {
-      const isHome    = g.homeTeam?.abbrev === CAR_ABBR;
+      const isHome    = g.homeTeam?.abbrev === TEAM_CONFIG.abbr;
       const carActual = isHome ? g.homeTeam?.score : g.awayTeam?.score;
       const oppActual = isHome ? g.awayTeam?.score : g.homeTeam?.score;
       if (carActual != null && oppActual != null && g.id) {

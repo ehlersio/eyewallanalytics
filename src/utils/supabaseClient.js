@@ -167,6 +167,29 @@ export async function getGoalieShots(goalieId, season = currentSeason()) {
   };
 }
 
+// ── Season-wide shots for the shot map's "All N" chip ──────────
+// Both teams' shots from every game `team` played this season — matches
+// what extractShotEvents(pbp) already returns for a single game, just
+// aggregated. No shooter/goalie names (shot_events only stores player_id,
+// not a name — resolving those would need a season-long roster join this
+// view doesn't otherwise need); IceRink renders fine without them.
+export async function getSeasonShots(team, season = currentSeason()) {
+  const rows = await workerFetch(`/nhl/shots?team=${team}&season=${season}`);
+  if (!rows?.length) return [];
+
+  return rows.map(r => ({
+    id:           `${r.game_id}-${r.x}-${r.y}-${r.period}-${r.time_in_period}`,
+    gameId:       r.game_id,
+    x:            r.x,
+    y:            r.y,
+    type:         r.event_type,
+    period:       r.period,
+    timeInPeriod: r.time_in_period,
+    shotType:     r.shot_type,
+    isCanes:      r.team === team,
+  }));
+}
+
 // ── Goalie analytics ──────────────────────────────────────────
 export async function getGoalieAnalytics(season = currentSeason()) {
   const rows = await workerFetch(`/goalie-analytics?season=${season}`);
