@@ -3,13 +3,12 @@
 // All computable from public NHL API data
 
 import { TEAM_CONFIG } from './teamConfig';
-const CAR_TEAM_ID = TEAM_CONFIG.teamId;
 
 // ── Shot attempt classification ───────────────────────────────
 // Corsi  = goals + shots on goal + missed shots + blocked shots
 // Fenwick = goals + shots on goal + missed shots (excludes blocked)
 
-export function computeShotAttempts(plays, carTeamId = CAR_TEAM_ID) {
+export function computeShotAttempts(plays, carTeamId = TEAM_CONFIG.teamId) {
   const counts = {
     car: { goals: 0, sog: 0, missed: 0, blocked: 0 },
     opp: { goals: 0, sog: 0, missed: 0, blocked: 0 },
@@ -50,7 +49,7 @@ export function computeShotAttempts(plays, carTeamId = CAR_TEAM_ID) {
 // PDO = team shooting% + team save%
 // League average = ~100.0. Above 100 = likely lucky, below = unlucky.
 // Regresses strongly to 100 over a season.
-export function computePDO(plays, carTeamId = CAR_TEAM_ID) {
+export function computePDO(plays, carTeamId = TEAM_CONFIG.teamId) {
   let carGoals = 0, carSOG = 0, oppGoals = 0, oppSOG = 0;
 
   plays.forEach(p => {
@@ -84,7 +83,7 @@ export function computePDO(plays, carTeamId = CAR_TEAM_ID) {
 // Compares actual outcomes to expected based on shot share.
 // If CAR controls 60% of shot attempts but only 40% of goals → unlucky.
 // "Expected goals from shot share" = fenwick% × total goals in game.
-export function computePuckLuck(plays, carTeamId = CAR_TEAM_ID) {
+export function computePuckLuck(plays, carTeamId = TEAM_CONFIG.teamId) {
   const sa   = computeShotAttempts(plays, carTeamId);
   const pdo  = computePDO(plays, carTeamId);
 
