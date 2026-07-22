@@ -1,6 +1,6 @@
 /**
  * PlayerPopup.jsx
- * Shared player detail modal used by PlayersView (CAR roster) and
+ * Shared player detail modal used by PlayersView (selected team's roster) and
  * LeagueView Leaders tab (any NHL player).
  *
  * Props:
@@ -10,8 +10,10 @@
  *   inPlayoffs   {boolean} — controls section ordering; pass false from LeagueView
  *   standings    {array}   — for rank calculation; pass [] from LeagueView
  *   onClose      {fn}      — close handler
- *   isLeagueContext {bool} — when true, hides CAR-specific tabs (Heat Map, Scout)
- *                            and the contract panel; keeps Stats + Analytics
+ *   isLeagueContext {bool} — when true, hides roster-scoped tabs (Heat Map, Scout)
+ *                            and the contract panel (contract panel is further
+ *                            gated to TEAM_CONFIG.abbr === 'CAR' — carContracts.js
+ *                            only has real data for Carolina); keeps Stats + Analytics
  */
 
 import { useState, useMemo } from 'react'
@@ -1114,8 +1116,12 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   }
 
   const bio      = stats || p
-  // Only look up contract for CAR roster context
-  const contract = !isLeagueContext ? findContract(p.id, p.lastName?.default) : null
+  // carContracts.js only has real data for CAR — for any other selected team,
+  // findContract()'s last-name fallback can false-positive against CAR's roster
+  // (e.g. a shared surname), so gate on the selected team too, not just
+  // roster-vs-league context. Matches TeamView.jsx's Cap-tab guard.
+  const contract = (!isLeagueContext && TEAM_CONFIG.abbr === 'CAR')
+    ? findContract(p.id, p.lastName?.default) : null
 
   // Derive positionCode from stats if not on the player object (league context)
   const positionCode = p.positionCode || stats?.position || null

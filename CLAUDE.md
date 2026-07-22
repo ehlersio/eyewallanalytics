@@ -1,6 +1,6 @@
 # eyewall-analytics
 
-React/Vite frontend for EyeWall Analytics, deployed on Cloudflare Pages at eyewallanalytics.com. Covers NHL (Carolina Hurricanes focus) and PWHL game analytics, standings, players, milestones, news.
+React/Vite frontend for EyeWall Analytics, deployed on Cloudflare Pages at eyewallanalytics.com. Covers NHL (all 32 teams, user-selectable via `TeamPicker.jsx` — originally Carolina Hurricanes-only, expanded 2026-07) and PWHL (all 12 teams) game analytics, standings, players, milestones, news.
 
 ## Stack
 - React, Vite, Cloudflare Pages
@@ -53,6 +53,12 @@ Mechanism worth understanding before touching this:
 - `PWHLPlayersView.jsx`'s season-picker default only reads `PWHL_CURRENT_SEASON` once at `useState` mount — if the component mounts before live resolution finishes, it locks in the fallback forever. Fixed via listening for an `eyewall:pwhl-season-updated` event, without overriding a season the user picked manually. Keep this pattern in mind for any other component with a season-dependent initial state.
 
 Manual override exists on the Worker side (`config:season:nhl:override` / `config:season:pwhl:override` KV keys) if live resolution ever misjudges the real Sept/Oct boundary — **that transition has never actually been observed by this logic yet.**
+
+## NHL team config (multi-team, expanded 2026-07)
+`teamConfig.js` mirrors `pwhlConfig.js`'s pattern: `ALL_TEAMS` has all 32 NHL teams (abbr/teamId/franchiseId/colors), `TEAM_CONFIG` is the currently-selected team (default CAR, backed by `localStorage['eyewall:team']`), switchable via `setTeamConfig()`/`TeamPicker.jsx`. This app was originally Carolina-only — a lot of code still assumes CAR structurally, not just by default. Known open items (deliberately not fixed as part of the 2026-07 live-bug pass):
+- `CAR_ABBR = TEAM_CONFIG.abbr`-style local aliases exist in several files (`ShotMapView.jsx` heaviest, ~50+ call sites, also `ScheduleView.jsx`, `GameStatsPopup.jsx`, `nhlApi.js`, `advancedStats.js`). Currently harmless — every team switch does a full page reload — but the same *shape* as a real bug once caused a team_id clobber (see Session 44 memory). Don't add a hot-swap team-switch path without auditing these first.
+- `carContracts.js` / the Cap tab genuinely only has real data for Carolina — that's fine (correctly gated to `TEAM_CONFIG.abbr === 'CAR'` in both `TeamView.jsx` and `PlayerPopup.jsx`), not a bug to "fix" by fabricating other teams' contract data.
+- The poller's push-notification / live-game-detection / AI-game-summary pipeline (`eyewall-poller`'s `poll()`) is still structurally single-team — see that repo's CLAUDE.md. Not something this repo's code can fix on its own.
 
 ## PWHL team config
 `pwhlConfig.js` has all current + 2026-27 expansion teams (DET, HAM, LV, SJS) with real HockeyTech `teamId`s, real colors extracted from each team's own CSS design tokens (not press-release color names — WCAG AA contrast computed properly, Detroit's dark-mode margin is thin at 4.51:1, worth checking if it's ever adjusted), and `comingSoon: false`.

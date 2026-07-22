@@ -27,7 +27,7 @@ const NHL_DIVISIONS = [
   },
   {
     name: 'Central',
-    teams: ['ARI', 'CHI', 'COL', 'DAL', 'MIN', 'NSH', 'STL', 'UTA', 'WPG'],
+    teams: ['CHI', 'COL', 'DAL', 'MIN', 'NSH', 'STL', 'UTA', 'WPG'],
   },
   {
     name: 'Pacific',
