@@ -806,8 +806,8 @@ function ShotPopup({ event: e, _playerNames, onClose, displayAbbr }) {
 function RinkMarkings({ showHalf, flipPerspective = false, teamAbbr, teamColor }) {
   return (
     <g>
-            {/* ── Rink surface ── */}
-      <rect width={W} height={H} rx={28} ry={28} fill="#d6eaf5" stroke="#9ab8cc" strokeWidth="1.5"/>
+            {/* ── Rink surface (corner radius 28ft = 84px) ── */}
+      <rect width={W} height={H} rx={84} ry={84} fill="#d6eaf5" stroke="#9ab8cc" strokeWidth="1.5"/>
 
       {/* ── Center line (red) ── */}
       <line x1={CX} y1="0" x2={CX} y2={H} stroke="#cc2200" strokeWidth="3" opacity="0.5"/>
@@ -820,10 +820,10 @@ function RinkMarkings({ showHalf, flipPerspective = false, teamAbbr, teamColor }
       <line x1="33" y1="10" x2="33" y2={H-10} stroke="#cc2200" strokeWidth="1.5" opacity="0.6"/>
       <line x1={W-33} y1="10" x2={W-33} y2={H-10} stroke="#cc2200" strokeWidth="1.5" opacity="0.6"/>
 
-      {/* ── Goal creases (6ft deep=18px, 4ft each side=12px) ── */}
-      <path d={`M 33 ${CY-12} L 51 ${CY-12} A 18 18 0 0 1 51 ${CY+12} L 33 ${CY+12}`}
+      {/* ── Goal creases (true 6ft-radius semicircle: 18px deep, 18px each side) ── */}
+      <path d={`M 33 ${CY-18} L 51 ${CY-18} A 18 18 0 0 1 51 ${CY+18} L 33 ${CY+18}`}
         fill="rgba(68,119,238,0.15)" stroke="#2255aa" strokeWidth="1"/>
-      <path d={`M ${W-33} ${CY-12} L ${W-51} ${CY-12} A 18 18 0 0 0 ${W-51} ${CY+12} L ${W-33} ${CY+12}`}
+      <path d={`M ${W-33} ${CY-18} L ${W-51} ${CY-18} A 18 18 0 0 0 ${W-51} ${CY+18} L ${W-33} ${CY+18}`}
         fill="rgba(204,34,0,0.12)" stroke="#cc2200" strokeWidth="1"/>
 
       {/* ── Goal frames (6ft wide=18px, 4ft deep=12px) ── */}
@@ -834,24 +834,34 @@ function RinkMarkings({ showHalf, flipPerspective = false, teamAbbr, teamColor }
       <circle cx={CX} cy={CY} r="45" fill="none" stroke="#9ab8cc" strokeWidth="1.2" opacity="0.7"/>
       <circle cx={CX} cy={CY} r="3" fill="#cc2200"/>
 
-      {/* ── Zone face-off circles (15ft radius=45px, 20ft from goal line=60px, 22ft from boards=66px) ── */}
-      {/* Left zone (OPP) — cx=33+60=93, cy=CY±(127.5-66)=CY±61.5≈CY±62 */}
-      <circle cx="93" cy={CY-62} r="3" fill="#cc3333"/>
-      <circle cx="93" cy={CY+62} r="3" fill="#cc3333"/>
-      <circle cx="93" cy={CY-62} r="45" fill="none" stroke="#cc3333" strokeWidth="1" opacity="0.4"/>
-      <circle cx="93" cy={CY+62} r="45" fill="none" stroke="#cc3333" strokeWidth="1" opacity="0.4"/>
+      {/* ── Zone face-off circles (15ft radius=45px, 20ft from goal line=60px, 22ft from centerline=66px) ── */}
+      {/* Left zone (OPP) — cx=33+60=93, cy=CY±66 */}
+      <circle cx="93" cy={CY-66} r="3" fill="#cc3333"/>
+      <circle cx="93" cy={CY+66} r="3" fill="#cc3333"/>
+      <circle cx="93" cy={CY-66} r="45" fill="none" stroke="#cc3333" strokeWidth="1" opacity="0.4"/>
+      <circle cx="93" cy={CY+66} r="45" fill="none" stroke="#cc3333" strokeWidth="1" opacity="0.4"/>
 
       {/* Right zone (CAR) */}
-      <circle cx={W-93} cy={CY-62} r="3" fill="#cc3333"/>
-      <circle cx={W-93} cy={CY+62} r="3" fill="#cc3333"/>
-      <circle cx={W-93} cy={CY-62} r="45" fill="none" stroke="#cc3333" strokeWidth="1" opacity="0.4"/>
-      <circle cx={W-93} cy={CY+62} r="45" fill="none" stroke="#cc3333" strokeWidth="1" opacity="0.4"/>
+      <circle cx={W-93} cy={CY-66} r="3" fill="#cc3333"/>
+      <circle cx={W-93} cy={CY+66} r="3" fill="#cc3333"/>
+      <circle cx={W-93} cy={CY-66} r="45" fill="none" stroke="#cc3333" strokeWidth="1" opacity="0.4"/>
+      <circle cx={W-93} cy={CY+66} r="45" fill="none" stroke="#cc3333" strokeWidth="1" opacity="0.4"/>
 
-      {/* ── Neutral zone face-off dots (5ft inside blue lines = 15px, 22ft from boards = 66px from boards = CY±62) ── */}
-      <circle cx={CX-75+15} cy={CY-62} r="3" fill="#cc3333" opacity="0.7"/>
-      <circle cx={CX-75+15} cy={CY+62} r="3" fill="#cc3333" opacity="0.7"/>
-      <circle cx={CX+75-15} cy={CY-62} r="3" fill="#cc3333" opacity="0.7"/>
-      <circle cx={CX+75-15} cy={CY+62} r="3" fill="#cc3333" opacity="0.7"/>
+      {/* ── End-zone hash marks (NHL Rule 1.9: 2ft long, 5ft7in pair-spacing, at circle edge ±15ft=±45px from center) ── */}
+      {[[93, CY-66], [93, CY+66], [W-93, CY-66], [W-93, CY+66]].map(([ccx, ccy], i) => (
+        <g key={`hash-${i}`}>
+          <line x1={ccx-45} y1={ccy-11.375} x2={ccx-45} y2={ccy-5.375} stroke="#cc3333" strokeWidth="1"/>
+          <line x1={ccx-45} y1={ccy+5.375}  x2={ccx-45} y2={ccy+11.375} stroke="#cc3333" strokeWidth="1"/>
+          <line x1={ccx+45} y1={ccy-11.375} x2={ccx+45} y2={ccy-5.375} stroke="#cc3333" strokeWidth="1"/>
+          <line x1={ccx+45} y1={ccy+5.375}  x2={ccx+45} y2={ccy+11.375} stroke="#cc3333" strokeWidth="1"/>
+        </g>
+      ))}
+
+      {/* ── Neutral zone face-off dots (5ft inside blue lines = 15px, 22ft from centerline = 66px) ── */}
+      <circle cx={CX-75+15} cy={CY-66} r="3" fill="#cc3333" opacity="0.7"/>
+      <circle cx={CX-75+15} cy={CY+66} r="3" fill="#cc3333" opacity="0.7"/>
+      <circle cx={CX+75-15} cy={CY-66} r="3" fill="#cc3333" opacity="0.7"/>
+      <circle cx={CX+75-15} cy={CY+66} r="3" fill="#cc3333" opacity="0.7"/>
 
       {/* ── Zone labels ── */}
       {!showHalf && (
