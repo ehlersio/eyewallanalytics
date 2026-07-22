@@ -816,15 +816,26 @@ function RinkMarkings({ showHalf, flipPerspective = false, teamAbbr, teamColor }
       <line x1={CX-75} y1="0" x2={CX-75} y2={H} stroke="#2255aa" strokeWidth="3" opacity="0.55"/>
       <line x1={CX+75} y1="0" x2={CX+75} y2={H} stroke="#2255aa" strokeWidth="3" opacity="0.55"/>
 
-      {/* ── Goal lines (33px = 11ft from end boards) ── */}
-      <line x1="33" y1="10" x2="33" y2={H-10} stroke="#cc2200" strokeWidth="1.5" opacity="0.6"/>
-      <line x1={W-33} y1="10" x2={W-33} y2={H-10} stroke="#cc2200" strokeWidth="1.5" opacity="0.6"/>
+      {/* ── Goal lines (33px = 11ft from end boards; y-span clipped to where the
+           84px-radius corner arc actually is at that x, not a fixed inset —
+           full straight-edge length would poke out past the curved boards) ── */}
+      <line x1="33" y1={CY-110.25} x2="33" y2={CY+110.25} stroke="#cc2200" strokeWidth="1.5" opacity="0.6"/>
+      <line x1={W-33} y1={CY-110.25} x2={W-33} y2={CY+110.25} stroke="#cc2200" strokeWidth="1.5" opacity="0.6"/>
 
-      {/* ── Goal creases (true 6ft-radius semicircle: 18px deep, 18px each side) ── */}
-      <path d={`M 33 ${CY-18} L 51 ${CY-18} A 18 18 0 0 1 51 ${CY+18} L 33 ${CY+18}`}
+      {/* ── Goal creases (NHL: 8ft wide at the goal line = ±12px, straight sides run
+           6ft-radius-minus-4ft-half-width = sqrt(6²-4²)=√20ft ≈ 13.42px deep before
+           curving into the 6ft-radius (18px) arc capped at the goal line's midpoint) ── */}
+      <path d={`M 33 ${CY-12} L 46.42 ${CY-12} A 18 18 0 0 1 46.42 ${CY+12} L 33 ${CY+12}`}
         fill="rgba(68,119,238,0.15)" stroke="#2255aa" strokeWidth="1"/>
-      <path d={`M ${W-33} ${CY-18} L ${W-51} ${CY-18} A 18 18 0 0 0 ${W-51} ${CY+18} L ${W-33} ${CY+18}`}
+      <path d={`M ${W-33} ${CY-12} L ${W-46.42} ${CY-12} A 18 18 0 0 0 ${W-46.42} ${CY+12} L ${W-33} ${CY+12}`}
         fill="rgba(204,34,0,0.12)" stroke="#cc2200" strokeWidth="1"/>
+
+      {/* ── Goaltender's restricted area ("trapezoid"): 22ft wide at goal line (±33px),
+           28ft wide at the boards (±42px), 11ft deep (goal line to boards) ── */}
+      <line x1="33" y1={CY-33} x2="0" y2={CY-42} stroke="#cc2200" strokeWidth="1" opacity="0.5"/>
+      <line x1="33" y1={CY+33} x2="0" y2={CY+42} stroke="#cc2200" strokeWidth="1" opacity="0.5"/>
+      <line x1={W-33} y1={CY-33} x2={W} y2={CY-42} stroke="#cc2200" strokeWidth="1" opacity="0.5"/>
+      <line x1={W-33} y1={CY+33} x2={W} y2={CY+42} stroke="#cc2200" strokeWidth="1" opacity="0.5"/>
 
       {/* ── Goal frames (6ft wide=18px, 4ft deep=12px) ── */}
       <rect x="21" y={CY-9} width="12" height="18" fill="none" stroke="#2255aa" strokeWidth="1.5"/>
@@ -850,10 +861,10 @@ function RinkMarkings({ showHalf, flipPerspective = false, teamAbbr, teamColor }
       {/* ── End-zone hash marks (NHL Rule 1.9: 2ft long, 5ft7in pair-spacing, at circle edge ±15ft=±45px from center) ── */}
       {[[93, CY-66], [93, CY+66], [W-93, CY-66], [W-93, CY+66]].map(([ccx, ccy], i) => (
         <g key={`hash-${i}`}>
-          <line x1={ccx-45} y1={ccy-11.375} x2={ccx-45} y2={ccy-5.375} stroke="#cc3333" strokeWidth="1"/>
-          <line x1={ccx-45} y1={ccy+5.375}  x2={ccx-45} y2={ccy+11.375} stroke="#cc3333" strokeWidth="1"/>
-          <line x1={ccx+45} y1={ccy-11.375} x2={ccx+45} y2={ccy-5.375} stroke="#cc3333" strokeWidth="1"/>
-          <line x1={ccx+45} y1={ccy+5.375}  x2={ccx+45} y2={ccy+11.375} stroke="#cc3333" strokeWidth="1"/>
+          <line x1={ccx-45} y1={ccy-11.375} x2={ccx-45} y2={ccy-5.375} stroke="#cc3333" strokeWidth="1.25"/>
+          <line x1={ccx-45} y1={ccy+5.375}  x2={ccx-45} y2={ccy+11.375} stroke="#cc3333" strokeWidth="1.25"/>
+          <line x1={ccx+45} y1={ccy-11.375} x2={ccx+45} y2={ccy-5.375} stroke="#cc3333" strokeWidth="1.25"/>
+          <line x1={ccx+45} y1={ccy+5.375}  x2={ccx+45} y2={ccy+11.375} stroke="#cc3333" strokeWidth="1.25"/>
         </g>
       ))}
 
