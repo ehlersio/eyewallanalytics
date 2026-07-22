@@ -112,8 +112,9 @@ export async function getPlayerAnalytics(season = currentSeason()) {
 }
 
 // ── Player shot events ────────────────────────────────────────
-// Returns shot data for one player. car_game=true scopes to games
-// involving the selected team, team= filters to shooter rows only.
+// Returns shot data for one player. team= scopes to that player's own
+// shots (a player only ever shoots for one team per row) — not restricted
+// to games against any particular opponent.
 export async function getPlayerShots(playerId, season = currentSeason(), team = 'CAR') {
   const rows = await workerFetch(`/player-shots?playerId=${playerId}&season=${season}&team=${team}`);
 
