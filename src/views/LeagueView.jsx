@@ -165,6 +165,7 @@ function StandingsTable({ rows, caption, teamSeasonData }) {
 }
 
 import { groupByDivision, groupByConference, buildWildCard } from '../utils/leagueUtils';
+import { isStandingsStale } from '../utils/standingsUtils';
 
 // ─── Standings Panel ──────────────────────────────────────────────────────────
 
@@ -1521,8 +1522,7 @@ export default function LeagueView() {
   // Only reject on an EXPLICIT mismatch — the real NHL API always includes
   // seasonId, but nothing else that stubs standings in tests does, and an
   // absent field isn't evidence of staleness.
-  const standingsAreStale = standings?.[0]?.seasonId != null
-    && String(standings[0].seasonId) !== SEASON;
+  const standingsAreStale = isStandingsStale(standings, SEASON);
   const standingsEntries = standingsAreStale ? [] : (Array.isArray(standings) ? standings : []);
 
   return (

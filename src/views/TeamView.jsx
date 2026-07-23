@@ -12,6 +12,7 @@ import { getTeamGameLog as getDbTeamGameLog, getTeamXgTrend } from '../utils/sup
 import { CONTRACTS, getCapSummary, CAP_CEILING, CURRENT_SEASON, CONTRACT_DATA_DATE } from '../utils/carContracts'
 import { DraftPopup } from '../components/DraftTab'
 import { seasonPDO } from '../utils/advancedStats'
+import { isStandingsStale } from '../utils/standingsUtils'
 import InfoTip from '../components/InfoTip'
 import TeamLogo from '../components/TeamLogo'
 import TeamComparisonPopup from '../components/TeamComparisonPopup'
@@ -51,8 +52,7 @@ export default function TeamView() {
   // conference/streak as if it were this season's. Only reject on an
   // EXPLICIT mismatch — an absent seasonId (e.g. a test stub) isn't
   // evidence of staleness, the real NHL API always includes it.
-  const standingsAreStale = standings?.[0]?.seasonId != null
-    && String(standings[0].seasonId) !== TEAM_CONFIG.season
+  const standingsAreStale = isStandingsStale(standings, TEAM_CONFIG.season)
   const carStanding    = standingsAreStale
     ? undefined
     : standings?.find(t => t.teamAbbrev?.default === TEAM_CONFIG.abbr)

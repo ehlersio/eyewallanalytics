@@ -13,6 +13,7 @@ import { CalendarView } from '../components/CalendarView';
 import { GameStatsPopup } from '../components/GameStatsPopup';
 import { SeriesCard, SortBar, GameCard } from '../components/GameCard';
 import { MatchupDetail, computeWinPct } from '../components/MatchupDetail';
+import { isStandingsStale } from '../utils/standingsUtils';
 import './ScheduleView.css';
 
 const TABS = ['Playoffs', 'Regular Season'];
@@ -72,8 +73,7 @@ export default function ScheduleView() {
   // and the auto-saved prediction as if it were this season's partial form.
   // Only reject on an EXPLICIT mismatch — an absent seasonId (e.g. a test
   // stub) isn't evidence of staleness, the real NHL API always includes it.
-  const standingsAreStale = standings?.[0]?.seasonId != null
-    && String(standings[0].seasonId) !== TEAM_CONFIG.season;
+  const standingsAreStale = isStandingsStale(standings, TEAM_CONFIG.season);
 
   const standingMap = {};
   if (!standingsAreStale) (standings || []).forEach(t => {
