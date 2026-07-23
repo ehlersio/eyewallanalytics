@@ -3,6 +3,7 @@ import { useFetch } from '../hooks/useFetch'
 import { getRoster, getPlayoffGames, getStandings, TEAM_CONFIG } from '../utils/nhlApi'
 import { getTeamSkaterStatsFromDB } from '../utils/supabaseClient'
 import { useSport } from '../utils/SportContext'
+import { isStandingsStale } from '../utils/standingsUtils'
 import TeamLogo from '../components/TeamLogo'
 import PlayerPopup from '../components/PlayerPopup'
 import './PlayersView.css'
@@ -28,8 +29,7 @@ export default function PlayersView() {
   // rankings display as if it were current. Only reject on an EXPLICIT
   // mismatch — an absent seasonId (e.g. a test stub) isn't evidence of
   // staleness, the real NHL API always includes it.
-  const standingsAreStale = standingsRaw?.[0]?.seasonId != null
-    && String(standingsRaw[0].seasonId) !== TEAM_CONFIG.season
+  const standingsAreStale = isStandingsStale(standingsRaw, TEAM_CONFIG.season)
   const standings = standingsAreStale ? [] : (standingsRaw || [])
   const [selected, setSelected] = useState(null)
   const [view, setView]         = useState('roster')

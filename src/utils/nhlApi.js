@@ -1217,7 +1217,15 @@ const ODDS_KEY  = import.meta.env.VITE_ODDS_API_KEY || null;
 
 // Fetch NHL moneyline odds for upcoming games
 // Returns array of { homeTeam, awayTeam, commence_time, bookmakers }
+// Cached client-side (same TTL tier as standings) — this call goes straight
+// to the real Odds API from the browser with no server-side dedup, against
+// a 500 requests/month free-tier key. Every other call in this file already
+// goes through `cached()`; this one didn't, so every ScheduleView mount by
+// every visitor burned its own live request.
 export async function getNhlOdds() {
+  return cached('nhlOdds', _getNhlOdds, TTL.STANDINGS);
+}
+async function _getNhlOdds() {
   if (!ODDS_KEY) return null;
   try {
     const url = `${ODDS_BASE}/sports/icehockey_nhl/odds/?apiKey=${ODDS_KEY}&regions=us&markets=h2h&oddsFormat=american`;
