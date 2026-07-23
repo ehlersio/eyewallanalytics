@@ -135,4 +135,4 @@ Run through this before merging `dev` → `main`.
 - `tab-badge` light mode: `color: #fff` override applied — verify the LIVE chip on amber background looks correct; may need reverting to `color: #000`
 - News chips CI test: flaky in CI, passes locally
 - Schedule AI section: timeout flaky in CI, passes locally
-- `GET /cache/odds:nhl 404` in console when no game is in window: expected
+- ~~`GET /cache/odds:nhl 404` in console when no game is in window: expected~~ — resolved 2026-07: the `odds:nhl` KV key was removed entirely (Odds Persistence Writer moved odds to a persisted Supabase table, `GET /nhl/odds`); this note no longer applies.
