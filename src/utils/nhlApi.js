@@ -1207,80 +1207,48 @@ async function _getTeamGameLog(count = 20) {
 }
 
 
-// ─── ODDS (The Odds API) ─────────────────────────────────────
-// Free tier: 500 requests/month. Get a key at https://the-odds-api.com
-// Add your key to a .env file as: VITE_ODDS_API_KEY=your_key_here
-// Without a key, this returns null gracefully.
+// ─── ODDS (Odds Persistence Writer) ──────────────────────────
+// Was: this file called The Odds API directly from every visitor's
+// browser (cached only per-session, 5-min TTL) against a shared
+// 500-requests/month free-tier key — every concurrent visitor
+// independently burned from the same budget. Now: a Worker-side scheduled
+// writer (fetchOdds()/persistOddsToSupabase() in eyewall-poller's nhl.js)
+// fetches on its own throttled cadence and persists to Supabase; this just
+// reads the result. See ODDS_PERSISTENCE_WRITER_SCOPE.md for the full design.
 
-const ODDS_BASE = 'https://api.the-odds-api.com/v4';
-const ODDS_KEY  = import.meta.env.VITE_ODDS_API_KEY || null;
-
-// Fetch NHL moneyline odds for upcoming games
-// Returns array of { homeTeam, awayTeam, commence_time, bookmakers }
-// Cached client-side (same TTL tier as standings) — this call goes straight
-// to the real Odds API from the browser with no server-side dedup, against
-// a 500 requests/month free-tier key. Every other call in this file already
-// goes through `cached()`; this one didn't, so every ScheduleView mount by
-// every visitor burned its own live request.
+// Fetch NHL moneyline odds for upcoming games from the Worker's persisted
+// table — already flattened/matched by team abbr server-side (home_abbr,
+// away_abbr, commence_time, moneyline_home, moneyline_away, book), no
+// team-name fuzzy matching needed here anymore. Still cached client-side
+// (same TTL tier as standings) on top of the Worker's own edge cache —
+// cheap either way now, since this is a table read, not a live API call.
 export async function getNhlOdds() {
   return cached('nhlOdds', _getNhlOdds, TTL.STANDINGS);
 }
 async function _getNhlOdds() {
-  if (!ODDS_KEY) return null;
-  try {
-    const url = `${ODDS_BASE}/sports/icehockey_nhl/odds/?apiKey=${ODDS_KEY}&regions=us&markets=h2h&oddsFormat=american`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch { return null; }
+  return (await workerFetch('/nhl/odds')) || [];
 }
 
-// Find odds for a specific game by matching team names
+// Find odds for a specific game — exact match by team abbr, resolved
+// server-side already (no more fuzzy team-name/fragment matching).
 // oddsData: array from getNhlOdds()
 // game: NHL API game object
 export function findGameOdds(oddsData, game) {
   if (!oddsData?.length || !game) return null;
-  const opp    = getOpponent(game);
-  const oppAbbr = opp?.abbrev?.toLowerCase() || '';
-  const oppName = (opp?.commonName?.default || opp?.placeName?.default || '').toLowerCase();
-
-  return oddsData.find(od => {
-    const home = od.home_team?.toLowerCase() || '';
-    const away = od.away_team?.toLowerCase() || '';
-    const combined = home + ' ' + away;
-    // Match by city/name fragment — "Carolina" or "Hurricanes"
-    const teamFragment = TEAM_CONFIG.fullNameFragment.toLowerCase();
-    return combined.includes(teamFragment) &&
-           (combined.includes(oppName) || combined.includes(oppAbbr));
-  }) || null;
+  const homeAbbr = game.homeTeam?.abbrev;
+  const awayAbbr = game.awayTeam?.abbrev;
+  return oddsData.find(od => od.home_abbr === homeAbbr && od.away_abbr === awayAbbr) || null;
 }
 
-// Extract best available moneyline odds for CAR and opponent
+// Extract moneyline odds for CAR (or whichever team is TEAM_CONFIG) and
+// its opponent from an already-flattened odds row.
 // Returns { carOdds, oppOdds, book } or null
-export function extractMoneyline(oddsEntry, _isHome) {
-  if (!oddsEntry?.bookmakers?.length) return null;
-  // Prefer DraftKings, then FanDuel, then first available
-  const preferred = ['draftkings','fanduel','betmgm','williamhill'];
-  let book = oddsEntry.bookmakers.find(b => preferred.includes(b.key));
-  if (!book) book = oddsEntry.bookmakers[0];
-
-  const market = book.markets?.find(m => m.key === 'h2h');
-  if (!market?.outcomes?.length) return null;
-
-  const teamFragment  = TEAM_CONFIG.fullNameFragment.toLowerCase();
-  const teamDisplay   = TEAM_CONFIG.displayName.toLowerCase();
-  const carOut = market.outcomes.find(o => {
-    const name = o.name?.toLowerCase() || '';
-    return name.includes(teamFragment) || name.includes(teamDisplay);
-  });
-  const oppOut = market.outcomes.find(o => o !== carOut);
-
-  if (!carOut || !oppOut) return null;
-  return {
-    carOdds: carOut.price,
-    oppOdds: oppOut.price,
-    book:    book.title || book.key,
-  };
+export function extractMoneyline(oddsEntry, isHome) {
+  if (!oddsEntry) return null;
+  const carOdds = isHome ? oddsEntry.moneyline_home : oddsEntry.moneyline_away;
+  const oppOdds = isHome ? oddsEntry.moneyline_away : oddsEntry.moneyline_home;
+  if (carOdds == null || oppOdds == null) return null;
+  return { carOdds, oppOdds, book: oddsEntry.book };
 }
 
 // Convert American odds to implied probability %
