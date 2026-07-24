@@ -14,7 +14,7 @@
 //   seasonLabel, onClose — as before.
 import { useState, useMemo } from 'react';
 import { useFetch } from '../hooks/useFetch';
-import { fetchPWHLPlayerShots, fetchPWHLPlayerLanding, fetchPWHLPlayerGameLog, fetchPWHLPlayerCareer } from '../utils/pwhlApi';
+import { fetchPWHLPlayerShots, fetchPWHLPlayerLanding, fetchPWHLPlayerGameLog, fetchPWHLPlayerCareer, fetchPWHLPlayerPercentiles } from '../utils/pwhlApi';
 import { fetchComparisonSeasons } from '../utils/seasonClient';
 import { normalizeComparisonSeasons } from '../utils/seasonComparison';
 import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById } from '../utils/pwhlConfig';
@@ -76,6 +76,18 @@ const SKATER_STATS = [
     tip: 'Penalty minutes.',
     why: 'High PIM hurts the team; compare to physical impact for full picture.' },
 ];
+
+// Box-score stat keys with a backing percentile column in
+// /pwhl/player/percentiles -- same small-subset pattern as NHL's
+// STAT_PCT_MAP in PlayerPopup.jsx (pwhl_percentiles.py only computes
+// these 4 categories today; assists maps to a1/primary-assists rate,
+// not the raw all-assist count, same caveat as NHL's own 'assists' tile).
+const PWHL_STAT_PCT_MAP = {
+  goals:    'goals',
+  assists:  'a1',
+  pim:      'penalties',
+  shot_pct: 'finishing',
+};
 
 const GOALIE_STATS = [
   { key: 'gp',           label: 'GP',  group: 'Record',
@@ -431,6 +443,15 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
   const defs      = isGoalie ? GOALIE_STATS : SKATER_STATS;
   const currentGroups = pwhlGroupStats(defs, p);
 
+  // ── Percentiles (Session 80) — precomputed by eyewall-pipeline's
+  // pwhl_percentiles.py, served as-is by the poller's
+  // /pwhl/player/percentiles. Skaters only, current season only, same
+  // scope NHL's PlayerPopup already applies to its own percentile tiles.
+  const { data: pctData } = useFetch(
+    () => (!isGoalie && playerId) ? fetchPWHLPlayerPercentiles(playerId, season) : Promise.resolve(null),
+    [playerId, season, isGoalie]
+  );
+
   // ── Career Regular Season / Playoffs (Session 75) ──────────────
   // Poller route renames HockeyTech's fields to match these same defs'
   // keys (see fetchPWHLPlayerCareer/pwhl.js), so pwhlGroupStats works
@@ -540,7 +561,13 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
             ) : (
               <>
                 {currentGroups.length > 0
-                  ? <TileStatSection label={`${seasonLabel} Regular Season`} groups={currentGroups} highlight />
+                  ? <TileStatSection
+                      label={`${seasonLabel} Regular Season`}
+                      groups={currentGroups}
+                      highlight
+                      percentiles={!isGoalie ? pctData?.percentiles : undefined}
+                      pctMap={PWHL_STAT_PCT_MAP}
+                    />
                   : <div className="pp-no-stats">No stats available for this player yet.</div>}
                 {(careerRegGroups.length > 0 || careerPOGroups.length > 0) && (
                   <div className="stat-section-peers">

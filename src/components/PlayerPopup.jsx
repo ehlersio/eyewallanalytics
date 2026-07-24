@@ -368,7 +368,7 @@ function RadarAxisTick({ x, y, payload, textAnchor }) {
   )
 }
 
-function PlayerRadarChart({ data, color }) {
+function PlayerRadarChart({ data, color, staleNote }) {
   const missing = data.filter(d => !d.hasData).map(d => d.axis)
   return (
     <div className="pp-radar-wrap">
@@ -382,6 +382,15 @@ function PlayerRadarChart({ data, color }) {
       </ResponsiveContainer>
       {missing.length > 0 && (
         <div className="pp-radar-note">Not enough playing time yet: {missing.join(', ')}</div>
+      )}
+      {/* Whole-season fallback caption (Session 66) — rendered here, inside
+          the narrow radar column, rather than as a sibling of .pp-quickstats
+          in .pp-header-radar's row (Session 80): once that row shares width
+          with the compact identity column instead of spanning the popup's
+          full ~400px, a full-sentence-length flex sibling there forces
+          .pp-quickstats to zero width instead of wrapping in place. */}
+      {staleNote && (
+        <div className="pp-radar-note pp-radar-stale">{staleNote}</div>
       )}
     </div>
   )
@@ -409,17 +418,15 @@ function SkaterHeaderPanel({ percentiles, boxStats, teamColor, statsStale, stats
     const m = Math.floor(raw / 60), s = String(raw % 60).padStart(2, '0')
     return `${m}:${s}`
   }
+  // Whole-season fallback (Session 66) — same "as of last season" signal as
+  // the Stats tab's stat-section-stale badge, since this radar is built
+  // from the same possibly-stale percentiles object.
+  const staleNote = statsStale
+    ? `Not enough games yet this season — showing ${nhlSeasonLabel(statsSeason)}`
+    : null
   return (
     <div className="pp-header-radar">
-      <PlayerRadarChart data={radarData} color={teamColor} />
-      {statsStale && (
-        // Whole-season fallback (Session 66) — same "as of last season"
-        // signal as the Stats tab's stat-section-stale badge, since this
-        // radar is built from the same possibly-stale percentiles object.
-        <div className="pp-radar-note pp-radar-stale">
-          Not enough games yet this season — showing {nhlSeasonLabel(statsSeason)}
-        </div>
-      )}
+      <PlayerRadarChart data={radarData} color={teamColor} staleNote={staleNote} />
       <div className="pp-quickstats">
         <QuickStatPill label="G"   value={boxStats?.goals} />
         <QuickStatPill label="A"   value={boxStats?.assists} />
@@ -1133,12 +1140,30 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   const currentSection   = sections.find(sec => sec.highlight)
   const currentBoxStats  = currentSection?.stats || null
 
+  // ── Header reflow (Session 80) — two-column top row (compact identity |
+  // radar + 2x2 totals) plus a full-width 6-column bio row underneath.
+  // Scoped to exactly the case SkaterHeaderPanel already renders for
+  // (!isGoalie && percentiles present) -- goalies and the pre-percentiles
+  // loading flash keep the original single-block header rather than
+  // splitting into a two-column layout with nothing to put on the right.
+  const showHeaderReflow = !isGoalie && !!mpData?.percentiles
+  const bioFields = [
+    { label: 'Height',    value: bio.heightInInches ? fmtHeight(bio.heightInInches) : null },
+    { label: 'Weight',    value: bio.weightInPounds ? `${bio.weightInPounds} lbs` : null },
+    { label: 'Shoots',    value: p.shootsCatches ? (p.shootsCatches === 'L' ? 'Left' : 'Right') : null },
+    { label: 'Age',       value: bio.birthDate ? calcAge(bio.birthDate) : null },
+    { label: 'Birthdate', value: bio.birthDate ? fmtBirth(bio.birthDate) : null },
+    { label: 'Hometown',  value: bio.birthCity?.default
+        ? `${bio.birthCity.default}${bio.birthCountry ? `, ${bio.birthCountry}` : ''}`
+        : null },
+  ]
+
   return (
     <div className="popup-backdrop" onClick={onClose}>
       <div className="player-popup" onClick={e => e.stopPropagation()}>
 
         {/* ── Header ── */}
-        <div className="pp-header">
+        <div className={`pp-header ${showHeaderReflow ? 'pp-header-reflow' : ''}`}>
           <div className="pp-photo-wrap">
             {!imgErr && (stats?.headshot || p.headshot) ? (
               <img src={stats?.headshot || p.headshot} alt={name}
@@ -1161,13 +1186,13 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
               {isLeagueContext && p.teamAbbrev && (
                 <span className="pp-chip">{p.teamAbbrev}</span>
               )}
-              {bio.heightInInches && <span className="pp-chip">{fmtHeight(bio.heightInInches)}</span>}
-              {bio.weightInPounds && <span className="pp-chip">{bio.weightInPounds} lbs</span>}
-              {p.shootsCatches && (
+              {!showHeaderReflow && bio.heightInInches && <span className="pp-chip">{fmtHeight(bio.heightInInches)}</span>}
+              {!showHeaderReflow && bio.weightInPounds && <span className="pp-chip">{bio.weightInPounds} lbs</span>}
+              {!showHeaderReflow && p.shootsCatches && (
                 <span className="pp-chip">{isGoalie ? 'Catches' : 'Shoots'} {p.shootsCatches === 'L' ? 'Left' : 'Right'}</span>
               )}
             </div>
-            {bio.birthDate && (
+            {!showHeaderReflow && bio.birthDate && (
               <div className="pp-birth">
                 {fmtBirth(bio.birthDate)} · Age {calcAge(bio.birthDate)}
                 {bio.birthCity?.default && ` · ${bio.birthCity.default}`}
@@ -1175,18 +1200,28 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
               </div>
             )}
           </div>
+          {showHeaderReflow && (
+            <SkaterHeaderPanel
+              percentiles={mpData.percentiles}
+              boxStats={currentBoxStats}
+              teamColor={teamColor}
+              statsStale={mpData.statsStale}
+              statsSeason={mpData.statsSeason}
+            />
+          )}
           <button className="pp-close" onClick={onClose} aria-label="Close player details">✕</button>
         </div>
 
-        {/* ── Radar + quick stats band — NHL skaters only (Session 66) ── */}
-        {!isGoalie && mpData?.percentiles && (
-          <SkaterHeaderPanel
-            percentiles={mpData.percentiles}
-            boxStats={currentBoxStats}
-            teamColor={teamColor}
-            statsStale={mpData.statsStale}
-            statsSeason={mpData.statsSeason}
-          />
+        {/* ── Bio row — full width, 6 evenly-spaced columns (Session 80) ── */}
+        {showHeaderReflow && (
+          <div className="pp-bio-row">
+            {bioFields.map(f => (
+              <div className="pp-bio-field" key={f.label}>
+                <div className="pp-bio-label">{f.label}</div>
+                <div className="pp-bio-value">{f.value ?? '—'}</div>
+              </div>
+            ))}
+          </div>
         )}
 
         {/* ── Rankings banner — CAR context only ── */}

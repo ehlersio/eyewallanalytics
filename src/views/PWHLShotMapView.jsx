@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { useFetch, usePoll } from '../hooks/useFetch';
 import {
   fetchPWHLShots, fetchPWHLRoster, fetchPWHLSchedule, fetchPWHLPBP,
-  fetchPWHLToday, fetchPWHLLive,
+  fetchPWHLToday, fetchPWHLLive, fetchPWHLTeamSeasonSummary,
   pbpByType,
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
@@ -963,6 +963,13 @@ export default function PWHLShotMapView() {
     () => teamId ? fetchPWHLShots(teamId, season)   : Promise.resolve(null), [teamId, season]);
   const { data: roster    = null } = useFetch(
     () => teamId ? fetchPWHLRoster(teamId)           : Promise.resolve(null), [teamId]);
+  // "All N" (no live game, no selectedGameId) — season-aggregate SOG/
+  // blocks/hits/penalties/faceoffs + PP%/PK% for the summary cards, since
+  // per-game pbpStats (below) never populates without a selected game.
+  const isAllN = !isLive && !selectedGameId;
+  const { data: seasonSummary = null } = useFetch(
+    () => isAllN && teamId ? fetchPWHLTeamSeasonSummary(teamId, season) : Promise.resolve(null),
+    [isAllN, teamId, season]);
   const { data: pbpData   = null } = useFetch(
     () => selectedGameId && !isLive ? fetchPWHLPBP(selectedGameId) : Promise.resolve(null),
     [selectedGameId, isLive]);
@@ -1664,25 +1671,55 @@ export default function PWHLShotMapView() {
         </div>
       )}
 
-      {/* ── Row 1: SOG, Blocks, Hits, Penalties ── */}
+      {/* ── Row 1: SOG, Blocks, Hits, Penalties ──
+          "All N": Opp SOG/Blocks come from seasonSummary instead of
+          shotStats.oppSOG/oppBlocked, which are always 0 here -- those
+          derive from oppShotEvents, which requires a selectedGameId (see
+          its useMemo above) and was never actually season-aware despite
+          shotStats itself (the "car" side) already being correct for All
+          N. Hits/Penalties similarly switch from the "Select a game"
+          placeholder to seasonSummary once it's the same "All N" data. */}
       {shotStats && (
         <div className="metrics-grid metrics-grid-4">
           <MetCard label="Shots on Goal" value={shotStats.sog}
-            sub={`${shotStats.goals}G · Opp ${shotStats.oppSOG ?? '—'}`}
+            sub={`${shotStats.goals}G · Opp ${(isAllN ? seasonSummary?.sog.opp : shotStats.oppSOG) ?? '—'}`}
             onClick={() => buildDrillDown('sog')} />
           <MetCard label="Blocks" value={shotStats.blocks}
-            sub={`Opp ${shotStats.oppBlocked ?? '—'}`}
+            sub={`Opp ${(isAllN ? seasonSummary?.blocked.opp : shotStats.oppBlocked) ?? '—'}`}
             onClick={() => buildDrillDown('blocked')} />
           <MetCard label="Hits"
-            value={hasPBP ? (pbpStats?.hits.car ?? '—') : '—'}
-            sub={hasPBP && pbpStats ? `Opp ${pbpStats.hits.opp}` : selectedGameId ? 'Loading…' : 'Select a game'}
-            color={hasPBP && pbpStats && pbpStats.hits.car > pbpStats.hits.opp ? 'green' : null}
-            onClick={hasPBP ? () => buildDrillDown('hits') : null} />
+            value={isAllN ? (seasonSummary?.hits.car ?? '—') : hasPBP ? (pbpStats?.hits.car ?? '—') : '—'}
+            sub={isAllN
+              ? (seasonSummary ? `Opp ${seasonSummary.hits.opp}` : 'Loading…')
+              : hasPBP && pbpStats ? `Opp ${pbpStats.hits.opp}` : selectedGameId ? 'Loading…' : 'Select a game'}
+            color={!isAllN && hasPBP && pbpStats && pbpStats.hits.car > pbpStats.hits.opp ? 'green' : null}
+            onClick={!isAllN && hasPBP ? () => buildDrillDown('hits') : null} />
           <MetCard label="Penalties"
-            value={hasPBP ? (pbpStats?.penalties.car ?? '—') : '—'}
-            sub={hasPBP && pbpStats ? `Opp ${pbpStats.penalties.opp}` : selectedGameId ? 'Loading…' : 'Select a game'}
+            value={isAllN ? (seasonSummary?.penalties.car ?? '—') : hasPBP ? (pbpStats?.penalties.car ?? '—') : '—'}
+            sub={isAllN
+              ? (seasonSummary ? `Opp ${seasonSummary.penalties.opp}` : 'Loading…')
+              : hasPBP && pbpStats ? `Opp ${pbpStats.penalties.opp}` : selectedGameId ? 'Loading…' : 'Select a game'}
             color={hasPBP && pbpStats && pbpStats.penalties.car < pbpStats.penalties.opp ? 'green' : null}
             onClick={hasPBP ? () => buildDrillDown('penalties') : null} />
+        </div>
+      )}
+
+      {/* ── Row 2: Faceoff%, PP%, PK% — "All N" season aggregate ──
+          Previously this whole row simply never rendered in All-N mode
+          (gated on hasPBP && pbpStats, both per-game-only) -- seasonSummary
+          (Session 80) is the first season-wide source for any of these. */}
+      {isAllN && (
+        <div className="metrics-grid metrics-grid-3">
+          <MetCard label="Faceoff %"
+            value={seasonSummary?.faceoff.pct != null ? `${seasonSummary.faceoff.pct.toFixed(1)}%` : '—'}
+            sub={seasonSummary ? `${seasonSummary.faceoff.car}W – ${seasonSummary.faceoff.opp}L` : 'Loading…'}
+            color={seasonSummary?.faceoff.pct != null && seasonSummary.faceoff.pct > 50 ? 'green' : null} />
+          <MetCard label="PP %"
+            value={seasonSummary?.ppPct != null ? `${(seasonSummary.ppPct * 100).toFixed(1)}%` : '—'}
+            sub={seasonSummary?.gamesPlayed ? `${seasonSummary.gamesPlayed} GP` : 'season'} />
+          <MetCard label="PK %"
+            value={seasonSummary?.pkPct != null ? `${(seasonSummary.pkPct * 100).toFixed(1)}%` : '—'}
+            sub={seasonSummary?.gamesPlayed ? `${seasonSummary.gamesPlayed} GP` : 'season'} />
         </div>
       )}
 

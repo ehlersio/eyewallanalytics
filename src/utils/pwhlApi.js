@@ -70,6 +70,20 @@ export async function fetchPWHLPlayerLanding(playerId, season) {
 }
 
 /**
+ * Fetch a player's precomputed league percentiles for one season (goals,
+ * 1st assists, penalty discipline, finishing -- see eyewall-pipeline's
+ * pwhl_percentiles.py for what's actually computed; this is a straight
+ * read of eyewall-poller's /pwhl/player/percentiles, same "null = not
+ * enough data yet, not an error" convention as the rest of this file).
+ * Omit season to get the most recent regular-season row.
+ */
+export async function fetchPWHLPlayerPercentiles(playerId, season) {
+  if (!playerId) return null;
+  const qs = season ? `&season=${season}` : '';
+  return workerFetch(`/pwhl/player/percentiles?id=${playerId}${qs}`);
+}
+
+/**
  * Fetch one player's career Regular Season / Playoffs totals (Session 75).
  * Returns { player_id, regularSeason, playoffs }, either season object
  * `null` if the player has no rows in that section yet (e.g. hasn't made
@@ -140,6 +154,15 @@ export async function fetchPWHLPlayers(teamId = PWHL_TEAM_ID, season = PWHL_CURR
 export async function fetchPWHLShots(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {
   if (!teamId) return null;
   return workerFetch(`/pwhl/shots?teamId=${teamId}&season=${season}`);
+}
+
+// Season-aggregate SOG/blocks/hits/penalties/faceoffs (car vs. opp) + PP%/
+// PK% for the Shot Map's "All N" summary cards (Session 80) — counts only,
+// not raw rows the way fetchPWHLShots is. See eyewall-poller's pwhl.js for
+// the aggregation itself.
+export async function fetchPWHLTeamSeasonSummary(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {
+  if (!teamId) return null;
+  return workerFetch(`/pwhl/team-season-summary?teamId=${teamId}&season=${season}`);
 }
 
 export async function fetchPWHLSchedule(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {
