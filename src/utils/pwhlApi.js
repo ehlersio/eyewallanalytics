@@ -156,6 +156,15 @@ export async function fetchPWHLShots(teamId = PWHL_TEAM_ID, season = PWHL_CURREN
   return workerFetch(`/pwhl/shots?teamId=${teamId}&season=${season}`);
 }
 
+// Season-aggregate SOG/blocks/hits/penalties/faceoffs (car vs. opp) + PP%/
+// PK% for the Shot Map's "All N" summary cards (Session 80) — counts only,
+// not raw rows the way fetchPWHLShots is. See eyewall-poller's pwhl.js for
+// the aggregation itself.
+export async function fetchPWHLTeamSeasonSummary(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {
+  if (!teamId) return null;
+  return workerFetch(`/pwhl/team-season-summary?teamId=${teamId}&season=${season}`);
+}
+
 export async function fetchPWHLSchedule(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {
   if (!teamId) return null;
   return workerFetch(`/pwhl/schedule?teamId=${teamId}&season=${season}`);
