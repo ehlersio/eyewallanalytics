@@ -1683,10 +1683,10 @@ export default function PWHLShotMapView() {
         <div className="metrics-grid metrics-grid-4">
           <MetCard label="Shots on Goal" value={shotStats.sog}
             sub={`${shotStats.goals}G · Opp ${(isAllN ? seasonSummary?.sog.opp : shotStats.oppSOG) ?? '—'}`}
-            onClick={!isAllN ? () => buildDrillDown('sog') : null} />
+            onClick={() => buildDrillDown('sog')} />
           <MetCard label="Blocks" value={shotStats.blocks}
             sub={`Opp ${(isAllN ? seasonSummary?.blocked.opp : shotStats.oppBlocked) ?? '—'}`}
-            onClick={!isAllN ? () => buildDrillDown('blocked') : null} />
+            onClick={() => buildDrillDown('blocked')} />
           <MetCard label="Hits"
             value={isAllN ? (seasonSummary?.hits.car ?? '—') : hasPBP ? (pbpStats?.hits.car ?? '—') : '—'}
             sub={isAllN
