@@ -319,6 +319,26 @@ export default function ShotMapView() {
     ? (pbp ? extractShotEvents(pbp) : [])
     : (seasonShots || []);
 
+  const isAllN = !isLive && !selectedGameId;
+
+  // SOG/Blocks season aggregates for the "All N" summary cards — derived
+  // from the same seasonShots data already fetched for the rink dots above
+  // (shot_events has team ownership per row via isCanes, same shape
+  // extractShotEvents(pbp) produces for a single game). Blocked-shot rows
+  // are owned by the shooting team, not the blocker, mirroring liveStats'
+  // per-game blocked-shot counting below (`isCar ? oppBlocks++ : carBlocks++`).
+  const seasonStats = useMemo(() => {
+    if (!isAllN) return null;
+    const rows = seasonShots || [];
+    const sogTypes = new Set(['shot-on-goal', 'goal']);
+    let carSog = 0, oppSog = 0, carBlocks = 0, oppBlocks = 0;
+    rows.forEach(e => {
+      if (sogTypes.has(e.type)) { e.isCanes ? carSog++ : oppSog++; }
+      else if (e.type === 'blocked-shot') { e.isCanes ? oppBlocks++ : carBlocks++; }
+    });
+    return { sog: { car: carSog, opp: oppSog }, blocked: { car: carBlocks, opp: oppBlocks } };
+  }, [isAllN, seasonShots]);
+
   const opp        = activeGame ? getOpponent(activeGame) : null;
   const carScore   = activeGame ? getCarScore(activeGame) : null;
   const oppScore   = activeGame ? getOppScore(activeGame) : null;
@@ -1125,10 +1145,12 @@ export default function ShotMapView() {
     };
   }, [pbp, boxscore, gameHome]);
 
-  // Fall back to rightRail when no PBP available (pre-game)
-  const gameSog      = pbp?.plays?.length ? liveStats.sog     : getGameStat('sog');
+  // "All N": season aggregate from seasonStats (SOG/Blocks only -- Hits/
+  // Faceoffs have no season-aggregate source yet, tracked separately).
+  // Otherwise fall back to rightRail when no PBP available (pre-game).
+  const gameSog      = isAllN ? seasonStats.sog     : pbp?.plays?.length ? liveStats.sog     : getGameStat('sog');
   const gameHits     = pbp?.plays?.length ? liveStats.hits    : getGameStat('hits');
-  const gameBlocked  = pbp?.plays?.length ? liveStats.blocked : getGameStat('blocked');
+  const gameBlocked  = isAllN ? seasonStats.blocked : pbp?.plays?.length ? liveStats.blocked : getGameStat('blocked');
   const gameFaceoff  = pbp?.plays?.length ? liveStats.faceoff : getGameStat('faceoff');
 
   // ── Shot danger breakdown from coordinate data ──────────────
@@ -1432,9 +1454,9 @@ export default function ShotMapView() {
         <MetCard
           label="Shots on goal"
           value={gameSog.car ?? '—'}
-          sub={gameSog.opp != null ? `Opp ${gameSog.opp}` : 'this game'}
+          sub={gameSog.opp != null ? `Opp ${gameSog.opp}${isAllN ? ' · season' : ''}` : 'this game'}
           color={gameSog.car > gameSog.opp ? 'green' : null}
-          onClick={pbp ? () => buildDrillDown('sog') : null}
+          onClick={!isAllN && pbp ? () => buildDrillDown('sog') : null}
         />
         <MetCard
           label="Hits"
@@ -1446,10 +1468,10 @@ export default function ShotMapView() {
         <MetCard
           label="Blocks"
           value={gameBlocked.car ?? '—'}
-          sub={gameBlocked.opp != null ? `Opp ${gameBlocked.opp}` : 'this game'}
+          sub={gameBlocked.opp != null ? `Opp ${gameBlocked.opp}${isAllN ? ' · season' : ''}` : 'this game'}
           color={gameBlocked.car > gameBlocked.opp ? 'green' : null}
           help={`Shots blocked by ${TEAM_CONFIG.abbr} skaters`}
-          onClick={pbp ? () => buildDrillDown('blocked') : null}
+          onClick={!isAllN && pbp ? () => buildDrillDown('blocked') : null}
         />
         {(() => {
           const pens = liveStats?.penalties;
@@ -1481,25 +1503,30 @@ export default function ShotMapView() {
         />
         {(() => {
           const gpp     = liveStats?.pp;
-          const hasGamePP = gpp?.gamePPOpps > 0;
+          // "All N": last-game gamePP data doesn't belong on a season-aggregate
+          // card, so the season average (already fetched via getTeamStats)
+          // becomes the headline value instead of a "Szn avg" footnote.
+          const hasGamePP = !isAllN && gpp?.gamePPOpps > 0;
           const gamePPPct = hasGamePP ? gpp.gamePPGoals / gpp.gamePPOpps * 100 : null;
           const avgPct    = ppPct ? (ppPct <= 1 ? (ppPct * 100).toFixed(1) : parseFloat(ppPct).toFixed(1)) : null;
           const avgLabel  = inPlayoffs ? 'PO avg' : 'Szn avg';
           return (
             <MetCard
               label="PP %"
-              value={hasGamePP ? `${gamePPPct.toFixed(1)}%` : '—'}
+              value={hasGamePP ? `${gamePPPct.toFixed(1)}%` : isAllN && avgPct ? `${avgPct}%` : '—'}
               sub={hasGamePP
                 ? `${gpp.gamePPGoals}/${gpp.gamePPOpps} · ${avgLabel} ${avgPct ?? '—'}%`
-                : `${avgLabel}${avgPct ? ` ${avgPct}%` : ''}`}
+                : isAllN
+                  ? (teamStats?.gamesPlayed ? `${teamStats.gamesPlayed} GP` : avgLabel)
+                  : `${avgLabel}${avgPct ? ` ${avgPct}%` : ''}`}
               color={hasGamePP && avgPct && gamePPPct >= parseFloat(avgPct) ? 'green' : null}
-              onClick={pbp ? () => buildDrillDown('pp') : null}
+              onClick={!isAllN && pbp ? () => buildDrillDown('pp') : null}
             />
           );
         })()}
         {(() => {
           const gpk       = liveStats?.pk;
-          const hasGamePK = gpk?.gamePKOpps > 0;
+          const hasGamePK = !isAllN && gpk?.gamePKOpps > 0;
           const survived  = hasGamePK ? gpk.gamePKOpps - gpk.gamePKGoalsAgainst : null;
           const gamePKPct = hasGamePK ? survived / gpk.gamePKOpps * 100 : null;
           const avgPct    = pkPct ? (pkPct <= 1 ? (pkPct * 100).toFixed(1) : parseFloat(pkPct).toFixed(1)) : null;
@@ -1507,12 +1534,14 @@ export default function ShotMapView() {
           return (
             <MetCard
               label="PK %"
-              value={hasGamePK ? `${gamePKPct.toFixed(1)}%` : '—'}
+              value={hasGamePK ? `${gamePKPct.toFixed(1)}%` : isAllN && avgPct ? `${avgPct}%` : '—'}
               sub={hasGamePK
                 ? `${survived}/${gpk.gamePKOpps} killed · ${avgLabel} ${avgPct ?? '—'}%`
-                : `${avgLabel}${avgPct ? ` ${avgPct}%` : ''}`}
+                : isAllN
+                  ? (teamStats?.gamesPlayed ? `${teamStats.gamesPlayed} GP` : avgLabel)
+                  : `${avgLabel}${avgPct ? ` ${avgPct}%` : ''}`}
               color={hasGamePK && avgPct && gamePKPct >= parseFloat(avgPct) ? 'green' : null}
-              onClick={pbp ? () => buildDrillDown('pk') : null}
+              onClick={!isAllN && pbp ? () => buildDrillDown('pk') : null}
             />
           );
         })()}

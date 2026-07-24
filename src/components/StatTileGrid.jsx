@@ -71,11 +71,14 @@ function StatTile({ def, fmt, pctInfo }) {
 
 // `showPercentiles` gates whether pctMap is even consulted -- not just
 // whether `percentiles` is present. Percentile data is current-season-only
-// (and NHL-only -- PWHL has no percentile system at all today), so for
-// Career/other-season/Compare-tab sections there is no percentile concept
-// at all, not merely a missing value. Falling through to `{ pct: null }`
-// in that case would make StatTile render "Not enough playing time yet"
-// on a career totals tile, which is actively wrong, not just blank.
+// for both leagues (PWHL's pwhl_percentiles.py/poller route were already
+// computed and served -- Session 80 wired PWHLPlayerPopup.jsx to actually
+// fetch them, this comment previously and incorrectly claimed PWHL had no
+// percentile system at all), so for Career/other-season/Compare-tab
+// sections there is no percentile concept at all, not merely a missing
+// value. Falling through to `{ pct: null }` in that case would make
+// StatTile render "Not enough playing time yet" on a career totals tile,
+// which is actively wrong, not just blank.
 export function StatTileGrid({ groups, percentiles, showPercentiles = true, pctMap = {} }) {
   return (
     <>
@@ -97,11 +100,11 @@ export function StatTileGrid({ groups, percentiles, showPercentiles = true, pctM
 
 // Collapsible section wrapper rendering the tile grid -- used for every
 // section (Session 73), not just the current/highlighted one. Percentiles
-// are only ever passed for the current NHL-skater section; every other
-// call site (Career, the current season's sibling game-type, Compare-tab
-// seasons, and all goalie/PWHL sections) omits `percentiles` entirely,
-// which turns off pctMap lookups in StatTileGrid rather than showing a
-// misleading "insufficient sample" bar.
+// are only ever passed for the current-season skater section, either
+// league (Session 80 added PWHL's); every other call site (Career, the
+// current season's sibling game-type, Compare-tab seasons, and all goalie
+// sections) omits `percentiles` entirely, which turns off pctMap lookups
+// in StatTileGrid rather than showing a misleading "insufficient sample" bar.
 // Defaults open for every section -- the whole point of the tile-grid pass
 // is that Career/other sections shouldn't hide behind a click. Toggle is
 // kept so a section can still be manually collapsed to save space.
