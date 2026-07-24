@@ -1492,15 +1492,32 @@ export default function ShotMapView() {
 
       {/* ── Game metrics — bottom row: FO%, PP%, PK% ── */}
       <div className="metrics-grid metrics-grid-3">
-        <MetCard
-          label="Faceoff %"
-          value={gameFaceoff.car != null
-            ? `${(parsePct(gameFaceoff.car)).toFixed(1)}%`
-            : '—'}
-          sub="this game"
-          color={parsePct(gameFaceoff.car) > 50 ? 'green' : null}
-          onClick={pbp ? () => buildDrillDown('faceoff') : null}
-        />
+        {(() => {
+          // "All N": teamStats.faceoffWinPct comes from the NHL team/summary
+          // endpoint (nhlApi.js fetchTeamFaceoffWinPct) -- season-wide, so it
+          // replaces the last-game-only gameFaceoff value here same as the
+          // PP%/PK% cards below already do.
+          const seasonFO   = isAllN ? teamStats?.faceoffWinPct : null;
+          const hasGameFO  = !isAllN && gameFaceoff.car != null;
+          const hasSeasonFO = isAllN && seasonFO != null;
+          return (
+            <MetCard
+              label="Faceoff %"
+              value={hasGameFO
+                ? `${parsePct(gameFaceoff.car).toFixed(1)}%`
+                : hasSeasonFO
+                  ? `${parsePct(seasonFO).toFixed(1)}%`
+                  : '—'}
+              sub={isAllN
+                ? (teamStats?.gamesPlayed ? `${teamStats.gamesPlayed} GP` : 'season')
+                : 'this game'}
+              color={hasGameFO
+                ? (parsePct(gameFaceoff.car) > 50 ? 'green' : null)
+                : hasSeasonFO ? (parsePct(seasonFO) > 50 ? 'green' : null) : null}
+              onClick={!isAllN && pbp ? () => buildDrillDown('faceoff') : null}
+            />
+          );
+        })()}
         {(() => {
           const gpp     = liveStats?.pp;
           // "All N": last-game gamePP data doesn't belong on a season-aggregate

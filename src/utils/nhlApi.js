@@ -451,6 +451,24 @@ export async function getTeamStatsPlayoff(teamAbbr = TEAM_CONFIG.abbr) {
     };
   }, TTL.TEAM_STATS);
 }
+// Faceoff win % isn't on the /standings/now response _getTeamStats() reads
+// below at all — pull it from the same team/summary REST endpoint
+// getTeamStatsPlayoff() already uses (gameTypeId=2 here instead of 3).
+// Best-effort: a failed fetch or unmatched team just leaves this null
+// rather than failing the whole getTeamStats() call over one extra field.
+async function fetchTeamFaceoffWinPct(teamAbbr) {
+  const exp = encodeURIComponent(`gameTypeId=2 and seasonId<=${TEAM_CONFIG.season} and seasonId>=${TEAM_CONFIG.season}`);
+  const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false&sort=shotsForPerGame&sortDirection=DESC&limit=32&cayenneExp=${exp}`;
+  const data = await nhlFetch(url);
+  const team = (data?.data || []).find(t => t.teamFullName && (
+    (teamAbbr === TEAM_CONFIG.abbr && t.teamFullName.includes(TEAM_CONFIG.fullNameFragment)) ||
+    (teamAbbr === 'VGK' && t.teamFullName.includes('Vegas')) ||
+    t.teamAbbrevs === teamAbbr ||
+    t.teamFullName.toLowerCase().includes(teamAbbr.toLowerCase())
+  ));
+  return team?.faceoffWinPct ?? null;
+}
+
 async function _getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
   const standings = await getStandings();
   const team = standings.find(t => t.teamAbbrev?.default === teamAbbr);
@@ -472,6 +490,7 @@ async function _getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
   }
 
   const gp = team.gamesPlayed || 1;
+  const faceoffWinPct = await fetchTeamFaceoffWinPct(teamAbbr).catch(() => null);
 
   // Field name notes for NHL API standings:
   //   goalFor / goalAgainst = season totals (not per-game averages)
@@ -489,6 +508,7 @@ async function _getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
     shotsForPerGame:     team.shotsForPerGame     ?? 31.2,
     shotsAgainstPerGame: team.shotsAgainstPerGame ?? 28.4,
     blockedShotsPerGame: team.blockedShots != null ? team.blockedShots / gp : null,
+    faceoffWinPct,
     divisionName:        team.divisionName,
     conferenceName:      team.conferenceName,
     streakCode:          team.streakCode,
