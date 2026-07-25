@@ -1,14 +1,12 @@
 // components/PWHLCalendarView.jsx
 // Mirrors NHL CalendarView.jsx — monthly grid of PWHL games.
 // Completed games are clickable (fires onGamePopup). Upcoming shows date only.
-import { PWHL_TEAM_MAP } from '../utils/pwhlConfig';
+import { PWHL_TEAM_MAP, getPWHLTeamById } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 
 const MONTHS = ['January','February','March','April','May','June',
                 'July','August','September','October','November','December'];
 const DOW    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-
-const TEAM_CODES = {1:'BOS',2:'MIN',3:'MTL',4:'NY',5:'OTT',6:'TOR',8:'SEA',9:'VAN'};
 
 export function PWHLCalendarView({ games, calMonth, setCalMonth, onGamePopup, teamId }) {
   const { year, month } = calMonth;
@@ -96,7 +94,7 @@ function PWHLCalCell({ day, game, isToday, teamId, onGamePopup }) {
 
   const isHome       = game.home_team_id === teamId;
   const oppId        = isHome ? game.away_team_id : game.home_team_id;
-  const oppAbbr      = TEAM_CODES[oppId] || String(oppId);
+  const oppAbbr      = getPWHLTeamById(oppId)?.abbr || String(oppId);
   const oppTeam      = PWHL_TEAM_MAP[oppAbbr];
   const oppColor     = oppTeam?.displayColor || 'var(--text-muted)';
   const isCompleted  = game.game_state === 'Final';
