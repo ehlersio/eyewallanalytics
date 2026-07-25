@@ -7,7 +7,7 @@ import {
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
 import {
-  PWHL_CURRENT_SEASON, PWHL_TEAM_MAP,
+  PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById,
   PWHL_REGULAR_SEASONS as SEASONS,
   PWHL_PLAYOFF_SEASON_MAP as PLAYOFF_SEASON,
 } from '../utils/pwhlConfig';
@@ -16,7 +16,9 @@ import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
 import './LeagueView.css';
 import './PlayersView.css';
 
-const TEAM_CODES = {1:'BOS',2:'MIN',3:'MTL',4:'NY',5:'OTT',6:'TOR',8:'SEA',9:'VAN'};
+function teamAbbr(teamId) {
+  return getPWHLTeamById(teamId)?.abbr;
+}
 
 function teamColor(abbr) {
   return PWHL_TEAM_MAP[abbr]?.displayColor || 'var(--text-dim)';
@@ -43,8 +45,8 @@ function WinDots({ wins, color }) {
 
 function BktSeriesCard({ series, onClick, myTeamId, myColor }) {
   if (!series) return <div className="bkt-card bkt-card--empty" />;
-  const abbrA   = TEAM_CODES[series.teamA] || '?';
-  const abbrB   = TEAM_CODES[series.teamB] || '?';
+  const abbrA   = teamAbbr(series.teamA) || '?';
+  const abbrB   = teamAbbr(series.teamB) || '?';
   const colorA  = teamColor(abbrA);
   const colorB  = teamColor(abbrB);
   const doneA   = series.winsA >= 3;
@@ -268,7 +270,7 @@ function StandingsPanel({ standings, loading, myTeamId, myColor }) {
           </thead>
           <tbody>
             {sorted.map((row, i) => {
-              const abbr   = TEAM_CODES[row.team_id] || '—';
+              const abbr   = teamAbbr(row.team_id) || '—';
               const color  = teamColor(abbr);
               const isMe   = row.team_id === myTeamId;
               const diff   = row._diff;
@@ -421,8 +423,8 @@ function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
           <div className="series-modal" onClick={e => e.stopPropagation()}>
             {(() => {
               const s = selectedSeries;
-              const abbrA = TEAM_CODES[s.teamA] || '?';
-              const abbrB = TEAM_CODES[s.teamB] || '?';
+              const abbrA = teamAbbr(s.teamA) || '?';
+              const abbrB = teamAbbr(s.teamB) || '?';
               const colorA = teamColor(abbrA);
               const colorB = teamColor(abbrB);
               const doneA = s.winsA >= 3, doneB = s.winsB >= 3;
@@ -442,8 +444,8 @@ function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
                   </div>
                   <div className="series-modal__games">
                     {[...s.games].sort((a,b)=>a.game_id-b.game_id).map((g, gi) => {
-                              const homeAbbr = TEAM_CODES[g.home_team_id] || '?';
-                      const awayAbbr = TEAM_CODES[g.away_team_id] || '?';
+                              const homeAbbr = teamAbbr(g.home_team_id) || '?';
+                      const awayAbbr = teamAbbr(g.away_team_id) || '?';
                       const homeColor = teamColor(homeAbbr);
                       const awayColor = teamColor(awayAbbr);
                       const homeWon = g.home_score > g.away_score;
@@ -485,7 +487,7 @@ function LeadersCard({ title, statLabel, rows, formatStat, onPlayerClick }) {
         <span className="lv-leaders-card__stat-label">{statLabel}</span>
       </div>
       {rows.map((p, i) => {
-        const abbr   = TEAM_CODES[p.team_id] || '—';
+        const abbr   = teamAbbr(p.team_id) || '—';
         const color  = teamColor(abbr);
         const name   = p.player_name || '—';
         return (
@@ -554,7 +556,7 @@ function PowerRankingsPanel({ standings, loading, myTeamId, myAbbr: _myAbbr, myC
   const ranked = useMemo(() => {
     if (!standings.length) return [];
     const teams = standings.map(r => {
-      const abbr   = TEAM_CODES[r.team_id] || '—';
+      const abbr   = teamAbbr(r.team_id) || '—';
       const gp     = r.gp || 1;
       const ptsPct = r.gp ? (r.points ?? 0) / (r.gp * 3) : 0;
       const l10pts = r.l10W != null ? (r.l10W * 3 + (r.l10OTL||0)) / 30 : ptsPct;

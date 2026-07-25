@@ -12,6 +12,7 @@ import {
   PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, isPWHLPlayoffSeason,
   PWHL_REGULAR_SEASONS as SEASONS,
   PWHL_PLAYOFF_SEASON_MAP, PWHL_REGULAR_SEASON_MAP,
+  getPWHLTeamById,
 } from '../utils/pwhlConfig';
 import { usePWHLDevGame } from '../utils/PWHLDevGameContext';
 import {
@@ -35,7 +36,12 @@ import './ShotMapView.css';
 // SEASONS moved to pwhlConfig.js's PWHL_REGULAR_SEASONS (Session 43) — was
 // an independent 5th copy of the same regular-season id/label list.
 
-const TEAM_CODES = {1:'BOS',2:'MIN',3:'MTL',4:'NY',5:'OTT',6:'TOR',8:'SEA',9:'VAN'};
+// Local TEAM_CODES (team_id -> abbr) map removed Session 85 — it was a
+// stale 5th duplicate of the team-id list CLAUDE.md already flags as
+// independently duplicated across repos, missing team_id 7 and all 4
+// expansion teams (10-13). Silently broke opponent abbr/name/logo for
+// expansion-team games in three places (game chips, score card). Use
+// getPWHLTeamById (derived from PWHL_TEAMS, pwhlConfig.js) instead.
 
 // ── Shot adapters ─────────────────────────────────────────────
 
@@ -872,7 +878,7 @@ export default function PWHLShotMapView() {
   const gameChipGames = useMemo(() => games.map(g => {
     const isHome  = g.home_team_id === teamId;
     const oppId   = isHome ? g.away_team_id : g.home_team_id;
-    const oppAbbr = TEAM_CODES[oppId] || String(oppId);
+    const oppAbbr = getPWHLTeamById(oppId)?.abbr || String(oppId);
     return {
       id: g.game_id,
       opponentAbbr: oppAbbr,
@@ -1214,7 +1220,7 @@ export default function PWHLShotMapView() {
     const myScore  = isHome ? displayGame.home_score : displayGame.away_score;
     const oppScore = isHome ? displayGame.away_score : displayGame.home_score;
     const oppId    = isHome ? displayGame.away_team_id : displayGame.home_team_id;
-    const oppAbbr  = TEAM_CODES[oppId] || String(oppId);
+    const oppAbbr  = getPWHLTeamById(oppId)?.abbr || String(oppId);
     return {
       isHome, myScore, oppScore, oppAbbr, won: myScore > oppScore,
       ot: displayGame.ot, shootout: displayGame.shootout,

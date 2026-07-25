@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useFetch } from '../hooks/useFetch';
 import { fetchPWHLSchedule, fetchPWHLTeamRecord, PWHL_TEAM_CONFIG, PWHL_TEAM_ID } from '../utils/pwhlApi';
 import {
-  PWHL_CURRENT_SEASON, PWHL_TEAM_MAP,
+  PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById,
   PWHL_REGULAR_SEASONS as REGULAR_SEASONS,
   PWHL_PLAYOFF_SEASONS as PLAYOFF_SEASONS,
 } from '../utils/pwhlConfig';
@@ -15,7 +15,6 @@ import PWHLGamePreviewPopup from '../components/PWHLGamePreviewPopup';
 import './ScheduleView.css';
 import './ShotMapView.css';
 
-const TEAM_CODES = { 1:'BOS',2:'MIN',3:'MTL',4:'NY',5:'OTT',6:'TOR',8:'SEA',9:'VAN' };
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function _gameStr(g) {
@@ -425,7 +424,7 @@ function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
                   const ourWins  = s.teamA === teamId ? s.winsA : s.winsB;
                   const oppWins  = s.teamA === teamId ? s.winsB : s.winsA;
                   const oppId    = s.teamA === teamId ? s.teamB : s.teamA;
-                  const oppAbbr  = TEAM_CODES[oppId] || String(oppId);
+                  const oppAbbr  = getPWHLTeamById(oppId)?.abbr || String(oppId);
                   const oppTeam  = PWHL_TEAM_MAP[oppAbbr];
                   const oppColor = oppTeam?.displayColor || 'var(--text-dim)';
 
@@ -452,7 +451,7 @@ function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
                           const my       = isHome ? g.home_score : g.away_score;
                           const op       = isHome ? g.away_score : g.home_score;
                           const gOppId   = isHome ? g.away_team_id : g.home_team_id;
-                          const gOppAbbr = TEAM_CODES[gOppId] || String(gOppId);
+                          const gOppAbbr = getPWHLTeamById(gOppId)?.abbr || String(gOppId);
                           const gOppTeam = PWHL_TEAM_MAP[gOppAbbr];
                           const gOppColor = gOppTeam?.displayColor || 'var(--text-dim)';
                           const won      = my > op;
@@ -593,7 +592,7 @@ function CompletedCard({ game: g, teamId, abbr, color, onClick, isPlayoff }) {
   const my       = isHome ? g.home_score : g.away_score;
   const op       = isHome ? g.away_score : g.home_score;
   const oppId    = isHome ? g.away_team_id : g.home_team_id;
-  const oppAbbr  = TEAM_CODES[oppId] || String(oppId);
+  const oppAbbr  = getPWHLTeamById(oppId)?.abbr || String(oppId);
   const oppTeam  = PWHL_TEAM_MAP[oppAbbr];
   const oppColor = oppTeam?.displayColor || 'var(--text-dim)';
   const won      = my > op;
@@ -630,7 +629,7 @@ function CompletedCard({ game: g, teamId, abbr, color, onClick, isPlayoff }) {
 function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff, onClick }) {
   const isHome   = g.home_team_id === teamId;
   const oppId    = isHome ? g.away_team_id : g.home_team_id;
-  const oppAbbr  = TEAM_CODES[oppId] || String(oppId);
+  const oppAbbr  = getPWHLTeamById(oppId)?.abbr || String(oppId);
   const oppTeam  = PWHL_TEAM_MAP[oppAbbr];
   const oppColor = oppTeam?.displayColor || 'var(--text-dim)';
 

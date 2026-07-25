@@ -20,7 +20,9 @@ import { normalizeComparisonSeasons } from '../utils/seasonComparison';
 import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById } from '../utils/pwhlConfig';
 import SeasonOverlayChart from './SeasonOverlayChart';
 
-const TEAM_CODES = {1:'BOS',2:'MIN',3:'MTL',4:'NY',5:'OTT',6:'TOR',8:'SEA',9:'VAN'};
+// Local TEAM_CODES (team_id -> abbr) map removed Session 85 — stale
+// duplicate missing expansion teams, same bug as PWHLShotMapView.jsx.
+// Use getPWHLTeamById instead (already imported below).
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
 import IceRink from './IceRink';
@@ -269,7 +271,7 @@ function PWHLHeatMap({ playerId, season, isGoalie, teamId }) {
         ))}
       </div>
       {(() => {
-        const tAbbr  = TEAM_CODES[teamId] || 'BOS';
+        const tAbbr  = getPWHLTeamById(teamId)?.abbr || 'BOS';
         const tTeam  = PWHL_TEAM_MAP[tAbbr];
         const tColor = tTeam?.displayColor || 'var(--team-primary)';
         return (

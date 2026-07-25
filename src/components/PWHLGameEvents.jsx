@@ -15,6 +15,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { getPWHLTeamById } from '../utils/pwhlConfig';
 import './GameEvents.css'; // reuse NHL styles
 import { HatTrickPopup as _HatTrickPopup } from './GameEvents'; // reuse hat trick popup
 
@@ -373,9 +374,8 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
     if (myScore > oppScore) {
       gameEndFired.current = true;
       if (gameId) sessionStorage.setItem(sessionKey, '1');
-      const TEAM_CODES = { 1:'BOS', 2:'MIN', 3:'MTL', 4:'NY', 5:'OTT', 6:'TOR', 8:'SEA', 9:'VAN' };
       const oppId   = isHome ? liveData.awayTeamId : liveData.homeTeamId;
-      const oppAbbr = TEAM_CODES[oppId] || String(oppId);
+      const oppAbbr = getPWHLTeamById(oppId)?.abbr || String(oppId);
       setWinPopup({
         teamAbbr: teamAbbr || 'WIN',
         score: `${teamAbbr} ${myScore} – ${oppAbbr} ${oppScore}`,
