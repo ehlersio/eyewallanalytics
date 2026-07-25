@@ -95,16 +95,40 @@ export async function getPlayerAnalytics(season = currentSeason()) {
       statsStale:  !!statsStale,
       statsSeason: statsSeason ?? null,
       percentiles: {
+        // Radar-only categories (computeRadarAxes in PlayerPopup.jsx) --
+        // no backing tile, so no conf/div scoping (PR #56 computed it, but
+        // nothing renders it -- see PLAYER_CARD_PERCENTILE_DISPLAY_BRIEF).
         evOff:     { pct: r.pct_ev_off,      label: 'EV Offence',   note: 'On-ice expected goals for % at 5-on-5. Measures how often your team generates quality chances when this player is on the ice. Above 50% = your team outshoots in quality. Percentile vs all NHL players at same position.' },
         evDef:     { pct: r.pct_ev_def,      label: 'EV Defence',   note: 'On-ice expected goals against per 60 at 5-on-5 (lower is better, inverted so higher = better defender). How many quality chances does the opponent generate when this player is on the ice? Percentile vs all NHL players at same position.' },
-        pp:        { pct: r.pct_pp,          label: 'Power Play',   note: 'Power play expected goals for per 60 minutes. Measures offensive contribution on the man advantage. N/A = not enough PP ice time for a reliable number (min 300 seconds). Percentile vs all NHL players at same position.' },
         pk:        { pct: r.pct_pk,          label: 'Penalty Kill', note: 'Penalty kill expected goals against per 60 minutes (lower is better, inverted). How well does this player suppress scoring chances while killing a penalty? Note: this metric does not adjust for the quality of opposing power plays — players who kill penalties against elite PP units (like McDavid\'s) will appear worse than players with lighter usage. N/A = not enough PK ice time (min 300 seconds). Percentile vs all NHL players at same position.' },
-        finishing: { pct: r.pct_finishing,   label: 'Finishing',    note: 'Goals scored above what their shot quality predicts per 60 minutes. Positive = consistently beats goalies beyond expectations. Negative = getting unlucky or taking poor shot selections. Filters out shot quality so only pure shooting talent remains. Percentile vs all NHL players at same position.' },
-        goals:     { pct: r.pct_goals,       label: 'Goals',        note: 'Goals scored per 60 minutes of ice time. Removes the effect of playing time — a player with 10 goals in 12 min/game scores at a very different rate than 10 goals in 22 min/game. Percentile vs all NHL players at same position.' },
-        a1:        { pct: r.pct_a1,          label: '1st Assists',  note: 'Primary (first) assists per 60 minutes. First assists directly set up the goal and are more meaningful than secondary assists. A high rate reflects strong playmaking. Percentile vs all NHL players at same position.' },
-        penalties: { pct: r.pct_penalties,   label: 'Penalties',    note: 'Penalty discipline: penalties drawn minus penalties taken, per 60 minutes. Higher is better — drawing penalties gives your team a power play; taking them gives the opponent one. Percentile vs all NHL players at same position.' },
         comp:      { pct: r.pct_competition, label: 'Competition',  note: 'Quality of opponents faced — average on-ice rating of opposing players. High percentile = plays against the toughest competition in the league. Good stats against tough competition are more impressive than the same stats against easy matchups.' },
         teammates: { pct: r.pct_teammates,   label: 'Teammates',    note: 'Team performance with this player on ice vs. off ice (xGF% delta). Positive = team generates better shot quality with them on the ice. Filters out team quality so you can see an individual\'s actual effect on their linemates.' },
+
+        // Tile-facing categories (STAT_PCT_MAP) -- these back a real stat
+        // tile and get the 3-scope league/conf/div marker treatment when
+        // conf/div are present. `conf`/`div` are undefined for PWHL (no
+        // percentile column exists there at all) and for any NHL row from
+        // before PR #56 backfilled it -- StatTile treats a missing conf/div
+        // as "1-marker, league only," not an error.
+        pp:        { pct: r.pct_pp,          conf: r.pct_pp_conf,          div: r.pct_pp_div,          label: 'Power Play',   note: 'Power play expected goals for per 60 minutes. Measures offensive contribution on the man advantage. N/A = not enough PP ice time for a reliable number (min 300 seconds). Percentile vs all NHL players at same position.' },
+        finishing: { pct: r.pct_finishing,   conf: r.pct_finishing_conf,   div: r.pct_finishing_div,   label: 'Finishing',    note: 'Goals scored above what their shot quality predicts per 60 minutes. Positive = consistently beats goalies beyond expectations. Negative = getting unlucky or taking poor shot selections. Filters out shot quality so only pure shooting talent remains. Percentile vs all NHL players at same position.' },
+        goals:     { pct: r.pct_goals,       conf: r.pct_goals_conf,       div: r.pct_goals_div,       label: 'Goals',        note: 'Goals scored per 60 minutes of ice time. Removes the effect of playing time — a player with 10 goals in 12 min/game scores at a very different rate than 10 goals in 22 min/game. Percentile vs all NHL players at same position.' },
+        a1:        { pct: r.pct_a1,          conf: r.pct_a1_conf,          div: r.pct_a1_div,          label: '1st Assists',  note: 'Primary (first) assists per 60 minutes. First assists directly set up the goal and are more meaningful than secondary assists. A high rate reflects strong playmaking. Percentile vs all NHL players at same position.' },
+        penalties: { pct: r.pct_penalties,   conf: r.pct_penalties_conf,   div: r.pct_penalties_div,   label: 'Penalties',    note: 'Penalty discipline: penalties drawn minus penalties taken, per 60 minutes. Higher is better — drawing penalties gives your team a power play; taking them gives the opponent one. Percentile vs all NHL players at same position.' },
+
+        // New (PR #56) -- plain box-score totals ranked directly, not a
+        // per-60 rate like the ten above.
+        gamesPlayed:   { pct: r.pct_games_played,   conf: r.pct_games_played_conf,   div: r.pct_games_played_div,   label: 'Games Played',   note: 'Games played this season. Percentile vs all NHL players at same position.' },
+        plusMinus:     { pct: r.pct_plus_minus,     conf: r.pct_plus_minus_conf,     div: r.pct_plus_minus_div,     label: '+/-',            note: '+1 when on ice for a 5v5/4v4 goal for, -1 when on ice for one against. Percentile vs all NHL players at same position.' },
+        shGoals:       { pct: r.pct_sh_goals,       conf: r.pct_sh_goals_conf,       div: r.pct_sh_goals_div,       label: 'SH Goals',       note: 'Shorthanded goals scored. Percentile vs all NHL players at same position.' },
+        gwGoals:       { pct: r.pct_gw_goals,       conf: r.pct_gw_goals_conf,       div: r.pct_gw_goals_div,       label: 'GW Goals',       note: 'Game-winning goals scored. Percentile vs all NHL players at same position.' },
+        shots:         { pct: r.pct_shots,          conf: r.pct_shots_conf,          div: r.pct_shots_div,          label: 'Shots',          note: 'Shots on goal. Percentile vs all NHL players at same position.' },
+        toiPerGame:    { pct: r.pct_toi_per_game,   conf: r.pct_toi_per_game_conf,   div: r.pct_toi_per_game_div,   label: 'TOI/Game',       note: 'Average time on ice per game. Percentile vs all NHL players at same position.' },
+        faceoffWinPct: { pct: r.pct_faceoff_win_pct, conf: r.pct_faceoff_win_pct_conf, div: r.pct_faceoff_win_pct_div, label: 'Faceoff %',   note: 'Percentage of faceoffs won. Percentile vs all NHL players at same position.' },
+        hits:          { pct: r.pct_hits,           conf: r.pct_hits_conf,           div: r.pct_hits_div,           label: 'Hits',           note: 'Body checks delivered. Percentile vs all NHL players at same position.' },
+        blockedShots:  { pct: r.pct_blocked_shots,  conf: r.pct_blocked_shots_conf,  div: r.pct_blocked_shots_div,  label: 'Blocked Shots',  note: 'Shots blocked. Percentile vs all NHL players at same position.' },
+        takeaways:     { pct: r.pct_takeaways,      conf: r.pct_takeaways_conf,      div: r.pct_takeaways_div,      label: 'Takeaways',      note: 'Takeaways — puck possessions won from an opponent. Percentile vs all NHL players at same position.' },
+        giveaways:     { pct: r.pct_giveaways,      conf: r.pct_giveaways_conf,      div: r.pct_giveaways_div,      label: 'Giveaways',      note: 'Giveaways — puck possessions lost to an opponent. Percentile vs all NHL players at same position.' },
       },
     };
   }

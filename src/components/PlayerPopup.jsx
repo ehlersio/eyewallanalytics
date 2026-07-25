@@ -35,7 +35,7 @@ import IceRink from '../components/IceRink'
 import InfoTip from '../components/InfoTip'
 import SeasonComparisonPicker from '../components/SeasonComparisonPicker'
 import SeasonOverlayChart from './SeasonOverlayChart'
-import { TileStatSection } from './StatTileGrid'
+import { TileStatSection, PercentileScopeLegend } from './StatTileGrid'
 import '../views/PlayersView.css'
 
 const SEASON       = Number(TEAM_CONFIG.season.slice(0, 4) + TEAM_CONFIG.season.slice(4))
@@ -304,17 +304,29 @@ function computeRadarAxes(percentiles) {
   ].map(d => ({ ...d, hasData: d.value != null, value: d.value ?? 0 }))
 }
 
-// Box-score stat keys (from SKATER_STATS above) that have a reasonably
-// direct percentile counterpart in mpData.percentiles. Deliberately a small
-// subset -- most box-score counting stats (GP, +/-, SHG, GWG, Shots, TOI/G,
-// FO%, Hits, Blocks, TK, GV) have no backing percentile column at all, and
-// forcing a mapping onto them would be more misleading than showing none.
+// Box-score stat keys (from SKATER_STATS above) that have a percentile
+// counterpart in mpData.percentiles. PR #56 (eyewall-pipeline) added the 11
+// entries below (GP, +/-, SHG, GWG, Shots, TOI/G, FO%, Hits, Blocks, TK,
+// GV) -- previously these had no backing percentile column at all. The 5
+// radar-only categories (ev_off, ev_def, pk, competition, teammates) are
+// deliberately left out here -- they feed computeRadarAxes, not a tile.
 const STAT_PCT_MAP = {
-  goals:           'goals',
-  assists:         'a1',        // percentile is 1st-assists/60, not all-assist rate -- noted in the tile's info tip
-  powerPlayPoints: 'pp',
-  pim:             'penalties',
-  shootingPctg:    'finishing',
+  goals:              'goals',
+  assists:            'a1',        // percentile is 1st-assists/60, not all-assist rate -- noted in the tile's info tip
+  powerPlayPoints:    'pp',
+  pim:                'penalties',
+  shootingPctg:       'finishing',
+  gamesPlayed:        'gamesPlayed',
+  plusMinus:          'plusMinus',
+  shorthandedGoals:   'shGoals',
+  gameWinningGoals:   'gwGoals',
+  shots:              'shots',
+  avgToi:             'toiPerGame',
+  faceoffWinningPctg: 'faceoffWinPct',
+  hits:               'hits',
+  blockedShots:       'blockedShots',
+  takeaways:          'takeaways',
+  giveaways:          'giveaways',
 }
 
 // ─── Sub-components ───────────────────────────────────────────
@@ -1362,6 +1374,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                 ))}
               </div>
             )}
+            {!loading && !isGoalie && mpData?.percentiles && <PercentileScopeLegend />}
             {!loading && currentStatSections}
             {!loading && otherStatSections.length > 0 && (
               <div className="stat-section-peers">{otherStatSections}</div>
