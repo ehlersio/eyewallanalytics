@@ -140,6 +140,48 @@ function calcAge(str) {
   return age;
 }
 
+// Matches NHL PlayerPopup's fmtHeight exactly, for visual parity between
+// the two leagues' bio rows (Session 85 header reflow).
+function fmtHeight(inches) {
+  if (!inches) return null;
+  return `${Math.floor(inches / 12)}′${inches % 12}″`;
+}
+
+function PWHLPercentileTile({ label, pct }) {
+  return (
+    <div className="pp-quickstat">
+      <span className="pp-quickstat-val">{pct != null ? Math.round(pct) : '—'}</span>
+      <span className="pp-quickstat-label">{label}</span>
+    </div>
+  );
+}
+
+// Header panel (Session 85) — PWHL's equivalent of NHL PlayerPopup's
+// SkaterHeaderPanel. Substitutes a 2x2 percentile-tile grid for NHL's
+// radar + G/A/P/TOI totals since PWHL only computes 4 percentile
+// categories today (pwhl_percentiles.py) and has no radar-worthy stat
+// set to plot. Reuses the same percentiles/pctMap the Stats tab's
+// TileStatSection already fetches -- no second request.
+function PWHLHeaderPanel({ percentiles }) {
+  if (!percentiles) return null;
+  const tiles = [
+    { statKey: 'goals',    label: 'G' },
+    { statKey: 'assists',  label: 'A1' },
+    { statKey: 'pim',      label: 'PIM' },
+    { statKey: 'shot_pct', label: 'S%' },
+  ];
+  return (
+    <div className="pp-header-radar">
+      <div className="pp-quickstats">
+        {tiles.map(t => (
+          <PWHLPercentileTile key={t.statKey} label={t.label}
+            pct={percentiles[PWHL_STAT_PCT_MAP[t.statKey]]?.pct} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Per-game trend chart helpers (Session 70) ───────────────────
 // Every `perGame` PWHL stat is a direct box-score field read (no derived
 // stats like NHL's saves/GAA -- pwhl_skater_game_box/pwhl_goalie_game_box
@@ -509,12 +551,27 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
   const headshot  = p.headshot || `https://assets.leaguestat.com/pwhl/240x240/${p.player_id}.jpg`;
   const initials  = (firstName[0] || '') + (lastName[0] || '');
 
+  // ── Header reflow (Session 85) — same two-column top row + full-width
+  // 6-column bio row pattern as NHL PlayerPopup (Session 80). Scoped to
+  // skaters with percentile data, same condition NHL's showHeaderReflow
+  // uses -- goalies and the pre-percentiles loading flash keep the
+  // original single-block header.
+  const showHeaderReflow = !isGoalie && !!pctData?.percentiles;
+  const bioFields = [
+    { label: 'Height',    value: fmtHeight(p.height_inches) },
+    { label: 'Weight',    value: null },
+    { label: 'Shoots',    value: p.shoots ? (p.shoots === 'L' ? 'Left' : p.shoots === 'R' ? 'Right' : p.shoots) : null },
+    { label: 'Age',       value: p.birth_date ? calcAge(p.birth_date) : null },
+    { label: 'Birthdate', value: p.birth_date ? fmtBirth(p.birth_date) : null },
+    { label: 'Hometown',  value: p.birth_city || null },
+  ];
+
   return (
     <div className="popup-backdrop" onClick={onClose}>
       <div className="player-popup" onClick={e => e.stopPropagation()}>
 
         {/* ── Header ── */}
-        <div className="pp-header">
+        <div className={`pp-header ${showHeaderReflow ? 'pp-header-reflow' : ''}`}>
           <div className="pp-photo-wrap">
             {!imgErr ? (
               <img src={headshot} alt={name} className="pp-photo" onError={() => setImgErr(true)} />
@@ -530,17 +587,30 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
             </div>
             <div className="pp-chips">
               {p.position && <span className="pp-pos-chip">{posLabel(p.position)}</span>}
-              {p.shoots    && <span className="pp-chip">Shoots {p.shoots === 'L' ? 'Left' : p.shoots === 'R' ? 'Right' : p.shoots}</span>}
+              {!showHeaderReflow && p.shoots && <span className="pp-chip">Shoots {p.shoots === 'L' ? 'Left' : p.shoots === 'R' ? 'Right' : p.shoots}</span>}
             </div>
-            {p.birth_date && (
+            {!showHeaderReflow && p.birth_date && (
               <div className="pp-birth">
                 {fmtBirth(p.birth_date)} · Age {calcAge(p.birth_date)}
                 {p.birth_city ? ` · ${p.birth_city}` : ''}
               </div>
             )}
           </div>
+          {showHeaderReflow && <PWHLHeaderPanel percentiles={pctData.percentiles} />}
           <button className="pp-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
+
+        {/* ── Bio row — full width, 6 evenly-spaced columns (Session 85) ── */}
+        {showHeaderReflow && (
+          <div className="pp-bio-row">
+            {bioFields.map(f => (
+              <div className="pp-bio-field" key={f.label}>
+                <div className="pp-bio-label">{f.label}</div>
+                <div className="pp-bio-value">{f.value ?? '—'}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* ── Tabs ── */}
         <div className="pp-tabs">
