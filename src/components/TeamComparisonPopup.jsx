@@ -204,13 +204,17 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
           {loading && compareSeasons.length > 0 && (
             <div className="pp-no-stats">Loading…</div>
           )}
-          {!loading && sortedDesc.map(season => (
-            <TeamCompareSeasonCard
-              key={season}
-              label={labelFor(season)}
-              row={rowBySeason.get(season)}
-            />
-          ))}
+          {!loading && sortedDesc.length > 0 && (
+            <div className="stat-section-peers">
+              {sortedDesc.map(season => (
+                <TeamCompareSeasonCard
+                  key={season}
+                  label={labelFor(season)}
+                  row={rowBySeason.get(season)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
