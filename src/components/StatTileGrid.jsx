@@ -25,18 +25,82 @@ function ordinal(n) {
   return `${v}${ordinalSuffix(v)}`
 }
 
+// ─── Percentile scope legend (PLAYER_CARD_PERCENTILE_DISPLAY_BRIEF) ────
+// Division/Conference are NHL-only (PR #56) -- PWHL has no conf/div
+// structure at all, so PWHLPlayerPopup.jsx never renders this legend, it
+// only ever has the League scope to show and a single marker needs no key.
+export const PCT_SCOPES = [
+  { key: 'div',    label: 'Division',   color: 'var(--amber)' },
+  { key: 'conf',   label: 'Conference', color: 'var(--purple)' },
+  { key: 'league', label: 'League',     color: 'var(--blue-bright)' },
+]
+
+export function PercentileScopeLegend() {
+  return (
+    <div className="stat-tile-legend">
+      {PCT_SCOPES.map(s => (
+        <span key={s.key} className="stat-tile-legend-item">
+          <span className="stat-tile-legend-dot" style={{ background: s.color }} />
+          {s.label}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 // ─── Skater/goalie percentile tile (Stats tab tile grid) ──────────────
 // Restyles a single box-score stat as a tile: label, big number, and — for
 // the subset of stats with a backing percentile column (via pctMap) — a
-// thin percentile bar + ordinal label underneath. Color is a plain
-// blue(>=50th)/red(<50th) split rather than team color: this bar's whole
-// job is an at-a-glance good/bad read, and team colors (some of which are
-// red) would make that ambiguous. Team color is used instead on the radar
-// chart in the header, where there's no per-axis good/bad claim being made.
+// bare 0-100 scale with a small tick marker per scope. Markers are colored
+// by scope (PCT_SCOPES above), not by good/bad -- position on the scale
+// already carries that meaning, and a fixed per-scope color is what lets
+// the shared legend mean the same thing on every card. PWHL (and any NHL
+// category without conf/div, e.g. pre-#56 rows) renders a single League
+// marker; NHL's 16 tile-facing categories render all 3 once PR #56's
+// conf/div columns are populated. `pctInfo.conf`/`.div` being undefined --
+// not present at all -- is what selects the 1-marker path, so this
+// degrades automatically rather than needing a separate PWHL code path.
 function StatTile({ def, fmt, pctInfo }) {
-  const pct = pctInfo?.pct ?? null
-  const insufficientSample = !!pctInfo && pct == null
-  const color = pct >= 50 ? 'var(--blue-bright)' : '#f87171'
+  const hasLeague = pctInfo && pctInfo.pct != null
+  const hasScopes = pctInfo && (pctInfo.conf != null || pctInfo.div != null)
+  const insufficientSample = !!pctInfo && !hasLeague && !hasScopes
+
+  // Above/below placement is assigned by sorted *value*, not fixed scope
+  // order -- two scopes frequently land on the same or a near-identical
+  // percentile (division and league agreeing is common, not an edge case),
+  // and a fixed div/conf/league alternation would put both of those on the
+  // same side, stacking their labels exactly on top of each other. Sorting
+  // by value first means any two markers close enough to collide are
+  // adjacent in the sort and land on opposite sides -- *unless* all 3
+  // values cluster within one small span, in which case 2 rows can't avoid
+  // giving one row 2 members (pigeonhole: 3 markers, 2 rows). That's the
+  // common case, not rare -- division/conference/league percentiles for
+  // one player are correlated, so real data frequently has 2 or all 3
+  // matching exactly (confirmed live: e.g. Blocks/TK/GV tiles below all
+  // land 3-for-3 identical for some players). The second pass below nudges
+  // same-row labels apart horizontally when their values are too close,
+  // so a same-row pair never fully overlaps regardless of clustering.
+  const COLLISION_PCT = 10
+  const markers = pctInfo
+    ? (() => {
+        const raw = PCT_SCOPES
+          .map(scope => ({ ...scope, value: scope.key === 'league' ? pctInfo.pct : pctInfo[scope.key] }))
+          .filter(m => m.value != null)
+        if (raw.length < 2) return raw
+        const bySorted = [...raw].sort((a, b) => a.value - b.value)
+        const aboveKeys = new Set(bySorted.filter((_, i) => i % 2 === 0).map(m => m.key))
+        const withSide = raw.map(m => ({ ...m, above: aboveKeys.has(m.key) }))
+        for (const above of [true, false]) {
+          const group = withSide.filter(m => m.above === above).sort((a, b) => a.value - b.value)
+          if (group.length === 2 && Math.abs(group[0].value - group[1].value) < COLLISION_PCT) {
+            group[0].offsetPx = -11
+            group[1].offsetPx = 11
+          }
+        }
+        return withSide
+      })()
+    : []
+
   return (
     <div className="stat-tile">
       <div className="stat-tile-top">
@@ -51,16 +115,26 @@ function StatTile({ def, fmt, pctInfo }) {
         />
       </div>
       <div className="stat-tile-value">{fmt ?? '—'}</div>
-      {pctInfo && !insufficientSample && (
-        <>
-          <div className="stat-tile-bar-track">
-            <div className="stat-tile-bar-fill" style={{ width: `${pct}%`, background: color }} />
+      {markers.length > 0 && (
+        <div className="stat-tile-scale-wrap">
+          <div className="stat-tile-scale-track">
+            {markers.map(m => (
+              <div
+                key={m.key}
+                className={`stat-tile-marker ${m.above ? 'marker-above' : 'marker-below'}`}
+                style={{ left: `${m.value}%`, background: m.color }}
+              >
+                <span
+                  className="stat-tile-marker-val"
+                  style={{ color: m.color, transform: `translateX(calc(-50% + ${m.offsetPx || 0}px))` }}
+                >
+                  {ordinal(m.value)}
+                </span>
+              </div>
+            ))}
           </div>
-          <div className="stat-tile-pct-label" style={{ color }}>
-            {ordinal(pct)} percentile
-            {pctInfo.note && <InfoTip text={pctInfo.note} position="above" />}
-          </div>
-        </>
+          {pctInfo.note && <InfoTip text={pctInfo.note} position="above" />}
+        </div>
       )}
       {insufficientSample && (
         <div className="stat-tile-na">Not enough playing time yet</div>
