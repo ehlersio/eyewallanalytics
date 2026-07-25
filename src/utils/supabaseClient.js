@@ -392,8 +392,10 @@ export async function getTeamGameLog(count = 120, season = currentSeason(), team
 }
 
 // Fetches team_seasons data needed for power rankings (xgf_pct +
-// roster_war_score) and the Standings tab's magic/tragic number display
-// (Session 59) for all 32 teams in one call.
+// roster_war_score), the Standings tab's magic/tragic number display
+// (Session 59), and the Shot Map "All N" Hits/Penalties cards (Session 82,
+// selected team's own season total only -- see
+// NHL_HITS_PENALTIES_WIRING_BRIEF.md) for all 32 teams in one call.
 // Replaces the earlier getTeamSeasonXg — same call, extra columns.
 export async function getTeamSeasonData(season = currentSeason()) {
   const rows = await workerFetch(`/team-seasons?season=${season}`).catch(() => []);
@@ -407,6 +409,8 @@ export async function getTeamSeasonData(season = currentSeason()) {
       tragicNumber: r.tragic_number,
       clinched:     r.clinched,
       eliminated:   r.eliminated,
+      hits:         r.hits,
+      penalties:    r.penalties,
     };
   }
   return map;

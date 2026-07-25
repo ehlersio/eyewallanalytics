@@ -14,7 +14,7 @@ import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON } from '../uti
 import IceRink from '../components/IceRink';
 import { GoalPopup, HatTrickPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
-import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots } from '../utils/supabaseClient';
+import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getTeamSeasonData } from '../utils/supabaseClient';
 import { inferPPUnit, inferPKUnit, PP_UNITS_BY_TEAM, PK_UNITS_BY_TEAM } from '../utils/ppUnits';
 import InfoTip from '../components/InfoTip';
 import { MetCard } from '../components/StatBar';
@@ -202,6 +202,13 @@ export default function ShotMapView() {
 
   // Team stats — we fetch once; we pick the right context (reg vs playoff) below
   const { data: teamStats } = useFetch(() => getTeamStats(TEAM_CONFIG.abbr));
+
+  // team_seasons row for this team/season -- All-N Hits/Penalties cards
+  // (Session 82). Same 32-team response the Standings/Power Rankings tabs
+  // already fetch via getTeamSeasonData; we just pick our own team out of it
+  // rather than adding a second Worker route.
+  const { data: teamSeasonMap } = useFetch(() => getTeamSeasonData(season), [season]);
+  const teamSeasonRow = teamSeasonMap?.[TEAM_CONFIG.abbr];
 
   // Playoff-specific PP% when in playoffs
   const { data: poAdv } = useFetch(
@@ -1145,11 +1152,12 @@ export default function ShotMapView() {
     };
   }, [pbp, boxscore, gameHome]);
 
-  // "All N": season aggregate from seasonStats (SOG/Blocks only -- Hits/
-  // Faceoffs have no season-aggregate source yet, tracked separately).
+  // "All N": season aggregate from seasonStats (SOG/Blocks) or
+  // teamSeasonRow (Hits -- Session 82, selected-team total only, no
+  // opponent side; see the Penalties card below for the same treatment).
   // Otherwise fall back to rightRail when no PBP available (pre-game).
   const gameSog      = isAllN ? seasonStats.sog     : pbp?.plays?.length ? liveStats.sog     : getGameStat('sog');
-  const gameHits     = pbp?.plays?.length ? liveStats.hits    : getGameStat('hits');
+  const gameHits     = isAllN ? { car: teamSeasonRow?.hits ?? null, opp: null } : pbp?.plays?.length ? liveStats.hits    : getGameStat('hits');
   const gameBlocked  = isAllN ? seasonStats.blocked : pbp?.plays?.length ? liveStats.blocked : getGameStat('blocked');
   const gameFaceoff  = pbp?.plays?.length ? liveStats.faceoff : getGameStat('faceoff');
 
@@ -1461,9 +1469,11 @@ export default function ShotMapView() {
         <MetCard
           label="Hits"
           value={gameHits.car ?? '—'}
-          sub={gameHits.opp != null ? `Opp ${gameHits.opp}` : 'this game'}
-          color={gameHits.car > gameHits.opp ? 'green' : null}
-          onClick={pbp ? () => buildDrillDown('hits') : null}
+          sub={isAllN
+            ? (teamSeasonRow?.gp ? `${teamSeasonRow.gp} GP` : 'season')
+            : gameHits.opp != null ? `Opp ${gameHits.opp}` : 'this game'}
+          color={!isAllN && gameHits.car > gameHits.opp ? 'green' : null}
+          onClick={!isAllN && pbp ? () => buildDrillDown('hits') : null}
         />
         <MetCard
           label="Blocks"
@@ -1475,16 +1485,18 @@ export default function ShotMapView() {
         />
         {(() => {
           const pens = liveStats?.penalties;
-          const carP = pens?.car ?? 0;
-          const oppP = pens?.opp ?? 0;
-          const color = carP < oppP ? 'green' : null;
+          const carP = isAllN ? (teamSeasonRow?.penalties ?? null) : (pens?.car ?? 0);
+          const oppP = isAllN ? null : (pens?.opp ?? 0);
+          const color = !isAllN && carP < oppP ? 'green' : null;
           return (
             <MetCard
               label="Penalties"
               value={carP ?? '—'}
-              sub={`Opp ${oppP ?? '—'}`}
+              sub={isAllN
+                ? (teamSeasonRow?.gp ? `${teamSeasonRow.gp} GP` : 'season')
+                : `Opp ${oppP ?? '—'}`}
               color={color}
-              onClick={pbp ? () => buildDrillDown('penalties') : null}
+              onClick={!isAllN && pbp ? () => buildDrillDown('penalties') : null}
             />
           );
         })()}
