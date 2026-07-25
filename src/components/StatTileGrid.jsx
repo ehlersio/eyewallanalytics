@@ -104,17 +104,19 @@ function StatTile({ def, fmt, pctInfo }) {
   return (
     <div className="stat-tile">
       <div className="stat-tile-top">
-        <span className="stat-tile-label">{def.label}</span>
-        <InfoTip
-          sections={[
-            { text: def.tip },
-            def.calc && { label: 'Calculation', text: def.calc },
-            def.why  && { label: 'Why it matters', text: def.why },
-          ].filter(Boolean)}
-          position="above"
-        />
+        <span className="stat-tile-label-wrap">
+          <span className="stat-tile-label">{def.label}</span>
+          <InfoTip
+            sections={[
+              { text: def.tip },
+              def.calc && { label: 'Calculation', text: def.calc },
+              def.why  && { label: 'Why it matters', text: def.why },
+            ].filter(Boolean)}
+            position="above"
+          />
+        </span>
+        <span className="stat-tile-value">{fmt ?? '—'}</span>
       </div>
-      <div className="stat-tile-value">{fmt ?? '—'}</div>
       {markers.length > 0 && (
         <div className="stat-tile-scale-wrap">
           <div className="stat-tile-scale-track">

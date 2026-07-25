@@ -679,10 +679,11 @@
   .stat-section-peers .stat-section { min-width: 0; }
 }
 
-/* ── Stats tab percentile tile grid (Session 66, NHL skaters only) ── */
+/* ── Stats tab percentile tile grid (Session 66, NHL skaters only;
+   3-per-row single-line layout per PLAYER_CARD_POLISH_BRIEF item 2) ── */
 .stat-tile-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-bottom: 4px;
 }
@@ -690,21 +691,24 @@
   background: var(--bg2);
   border: 0.5px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 6px 8px;
+  padding: 9px 10px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-height: 58px;
 }
 .stat-tile-top {
-  display: flex; align-items: center; gap: 4px;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 6px;
+}
+.stat-tile-label-wrap {
+  display: flex; align-items: center; gap: 4px; min-width: 0;
 }
 .stat-tile-label {
   font-size: 11px; color: var(--text-muted); font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .stat-tile-value {
-  font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--text);
-  line-height: 1;
+  font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--text);
+  line-height: 1; white-space: nowrap;
 }
 .stat-tile-na {
   font-size: 10px; color: var(--text-dim); font-style: italic; margin-top: 2px;
@@ -738,7 +742,7 @@
 .stat-tile-legend {
   display: flex; flex-wrap: wrap; gap: 12px;
   font-size: 11px; color: var(--text-muted);
-  margin-bottom: 8px;
+  padding: 0 16px; margin-bottom: 8px;
 }
 .stat-tile-legend-item { display: flex; align-items: center; gap: 4px; }
 .stat-tile-legend-dot {
@@ -746,7 +750,7 @@
 }
 
 @media (max-width: 400px) {
-  .stat-tile-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
-  .stat-tile { padding: 6px 7px; min-height: 54px; }
-  .stat-tile-value { font-size: 19px; }
+  .stat-tile-grid { gap: 6px; }
+  .stat-tile { padding: 7px 8px; }
+  .stat-tile-value { font-size: 14px; }
 }
