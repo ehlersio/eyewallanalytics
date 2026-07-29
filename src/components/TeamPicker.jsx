@@ -27,7 +27,7 @@ const NHL_DIVISIONS = [
   },
   {
     name: 'Central',
-    teams: ['ARI', 'CHI', 'COL', 'DAL', 'MIN', 'NSH', 'STL', 'UTA', 'WPG'],
+    teams: ['CHI', 'COL', 'DAL', 'MIN', 'NSH', 'STL', 'UTA', 'WPG'],
   },
   {
     name: 'Pacific',
@@ -98,6 +98,9 @@ function SportStep({ onPickSport }) {
           );
         })}
       </div>
+      <p className="team-picker-disclaimer">
+        EyeWall Analytics is not affiliated with, endorsed by, or sponsored by the National Hockey League (NHL), the Professional Women's Hockey League (PWHL), or any of their teams. All NHL and PWHL team names, logos, and trademarks are the property of their respective owners. Statistics and data are sourced from publicly available APIs and are provided for informational purposes only.
+      </p>
     </>
   );
 }

@@ -14,8 +14,15 @@ import { CURRENT_SEASON } from './teamConfig';
 
 // Season as a number for filter defaults — actual value normally comes
 // from the caller (view components track season state themselves); this
-// only matters for the rare call site that omits it.
-const SEASON = Number(CURRENT_SEASON);
+// only matters for the rare call site that omits it. CURRENT_SEASON is a
+// live `let` binding (see teamConfig.js) updated in place once the
+// Worker's live season resolution resolves — read it fresh via
+// currentSeason() at each call rather than caching it in a module-level
+// const, which would freeze at whatever value existed when this module
+// first evaluated (often before that live resolution finishes).
+function currentSeason() {
+  return Number(CURRENT_SEASON);
+}
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
 
@@ -37,8 +44,8 @@ async function workerFetch(path) {
 // ── Player analytics ──────────────────────────────────────────
 // Returns analytics object keyed by player_id (string), matching
 // the shape the app already expects from moneypuck:skaters KV.
-export async function getPlayerAnalytics(season = SEASON) {
-  const { rows, poRows } = await workerFetch(`/player-analytics?season=${season}`);
+export async function getPlayerAnalytics(season = currentSeason()) {
+  const { rows, poRows, statsStale, statsSeason } = await workerFetch(`/player-analytics?season=${season}`);
 
   // Build playoff defensive map: player_id → { hits, blocked_shots, takeaways, giveaways }
   const poDefMap = {};
@@ -66,6 +73,11 @@ export async function getPlayerAnalytics(season = SEASON) {
       a1_60:      r.a1_per60,
       ppToi:      r.pp_icetime ?? null,
       pkToi:      r.pk_icetime ?? null,
+      // Results-vs-process (Session 56) — both null below eyewall-pipeline's
+      // GP≥25 guardrail (moneypuck.py::RESULTS_VS_PROCESS_MIN_GP). Treat
+      // "null" as "not enough games yet," not a missing-data error.
+      onIceGfPct:          r.on_ice_gf_pct != null ? Math.round(r.on_ice_gf_pct * 1000) / 10 : null,
+      resultsVsProcessDiff: r.results_vs_process_diff != null ? Math.round(r.results_vs_process_diff * 1000) / 10 : null,
       // Regular season defensive (from realtime)
       hits:         r.hits         ?? null,
       blockedShots: r.blocked_shots ?? null,
@@ -73,17 +85,50 @@ export async function getPlayerAnalytics(season = SEASON) {
       giveaways:    r.giveaways    ?? null,
       // Playoff defensive — separate object so frontend can inject per section
       poDef: poDefMap[String(r.player_id)] || null,
+      // Whole-season fallback flag (Session 66) — true when the live season
+      // had no player_seasons rows at all yet (e.g. schedule released well
+      // before puck drop) and every field above came from one season back
+      // instead. Stamped onto every player's object since the fallback is
+      // whole-season, not per-player — PlayerPopup.jsx uses this to label
+      // the radar/tile grid "as of <statsSeason>" rather than presenting a
+      // stale percentile as current fact.
+      statsStale:  !!statsStale,
+      statsSeason: statsSeason ?? null,
       percentiles: {
+        // Radar-only categories (computeRadarAxes in PlayerPopup.jsx) --
+        // no backing tile, so no conf/div scoping (PR #56 computed it, but
+        // nothing renders it -- see PLAYER_CARD_PERCENTILE_DISPLAY_BRIEF).
         evOff:     { pct: r.pct_ev_off,      label: 'EV Offence',   note: 'On-ice expected goals for % at 5-on-5. Measures how often your team generates quality chances when this player is on the ice. Above 50% = your team outshoots in quality. Percentile vs all NHL players at same position.' },
         evDef:     { pct: r.pct_ev_def,      label: 'EV Defence',   note: 'On-ice expected goals against per 60 at 5-on-5 (lower is better, inverted so higher = better defender). How many quality chances does the opponent generate when this player is on the ice? Percentile vs all NHL players at same position.' },
-        pp:        { pct: r.pct_pp,          label: 'Power Play',   note: 'Power play expected goals for per 60 minutes. Measures offensive contribution on the man advantage. N/A = not enough PP ice time for a reliable number (min 300 seconds). Percentile vs all NHL players at same position.' },
         pk:        { pct: r.pct_pk,          label: 'Penalty Kill', note: 'Penalty kill expected goals against per 60 minutes (lower is better, inverted). How well does this player suppress scoring chances while killing a penalty? Note: this metric does not adjust for the quality of opposing power plays — players who kill penalties against elite PP units (like McDavid\'s) will appear worse than players with lighter usage. N/A = not enough PK ice time (min 300 seconds). Percentile vs all NHL players at same position.' },
-        finishing: { pct: r.pct_finishing,   label: 'Finishing',    note: 'Goals scored above what their shot quality predicts per 60 minutes. Positive = consistently beats goalies beyond expectations. Negative = getting unlucky or taking poor shot selections. Filters out shot quality so only pure shooting talent remains. Percentile vs all NHL players at same position.' },
-        goals:     { pct: r.pct_goals,       label: 'Goals',        note: 'Goals scored per 60 minutes of ice time. Removes the effect of playing time — a player with 10 goals in 12 min/game scores at a very different rate than 10 goals in 22 min/game. Percentile vs all NHL players at same position.' },
-        a1:        { pct: r.pct_a1,          label: '1st Assists',  note: 'Primary (first) assists per 60 minutes. First assists directly set up the goal and are more meaningful than secondary assists. A high rate reflects strong playmaking. Percentile vs all NHL players at same position.' },
-        penalties: { pct: r.pct_penalties,   label: 'Penalties',    note: 'Penalty discipline: penalties drawn minus penalties taken, per 60 minutes. Higher is better — drawing penalties gives your team a power play; taking them gives the opponent one. Percentile vs all NHL players at same position.' },
         comp:      { pct: r.pct_competition, label: 'Competition',  note: 'Quality of opponents faced — average on-ice rating of opposing players. High percentile = plays against the toughest competition in the league. Good stats against tough competition are more impressive than the same stats against easy matchups.' },
         teammates: { pct: r.pct_teammates,   label: 'Teammates',    note: 'Team performance with this player on ice vs. off ice (xGF% delta). Positive = team generates better shot quality with them on the ice. Filters out team quality so you can see an individual\'s actual effect on their linemates.' },
+
+        // Tile-facing categories (STAT_PCT_MAP) -- these back a real stat
+        // tile and get the 3-scope league/conf/div marker treatment when
+        // conf/div are present. `conf`/`div` are undefined for PWHL (no
+        // percentile column exists there at all) and for any NHL row from
+        // before PR #56 backfilled it -- StatTile treats a missing conf/div
+        // as "1-marker, league only," not an error.
+        pp:        { pct: r.pct_pp,          conf: r.pct_pp_conf,          div: r.pct_pp_div,          label: 'Power Play',   note: 'Power play expected goals for per 60 minutes. Measures offensive contribution on the man advantage. N/A = not enough PP ice time for a reliable number (min 300 seconds). Percentile vs all NHL players at same position.' },
+        finishing: { pct: r.pct_finishing,   conf: r.pct_finishing_conf,   div: r.pct_finishing_div,   label: 'Finishing',    note: 'Goals scored above what their shot quality predicts per 60 minutes. Positive = consistently beats goalies beyond expectations. Negative = getting unlucky or taking poor shot selections. Filters out shot quality so only pure shooting talent remains. Percentile vs all NHL players at same position.' },
+        goals:     { pct: r.pct_goals,       conf: r.pct_goals_conf,       div: r.pct_goals_div,       label: 'Goals',        note: 'Goals scored per 60 minutes of ice time. Removes the effect of playing time — a player with 10 goals in 12 min/game scores at a very different rate than 10 goals in 22 min/game. Percentile vs all NHL players at same position.' },
+        a1:        { pct: r.pct_a1,          conf: r.pct_a1_conf,          div: r.pct_a1_div,          label: '1st Assists',  note: 'Primary (first) assists per 60 minutes. First assists directly set up the goal and are more meaningful than secondary assists. A high rate reflects strong playmaking. Percentile vs all NHL players at same position.' },
+        penalties: { pct: r.pct_penalties,   conf: r.pct_penalties_conf,   div: r.pct_penalties_div,   label: 'Penalties',    note: 'Penalty discipline: penalties drawn minus penalties taken, per 60 minutes. Higher is better — drawing penalties gives your team a power play; taking them gives the opponent one. Percentile vs all NHL players at same position.' },
+
+        // New (PR #56) -- plain box-score totals ranked directly, not a
+        // per-60 rate like the ten above.
+        gamesPlayed:   { pct: r.pct_games_played,   conf: r.pct_games_played_conf,   div: r.pct_games_played_div,   label: 'Games Played',   note: 'Games played this season. Percentile vs all NHL players at same position.' },
+        plusMinus:     { pct: r.pct_plus_minus,     conf: r.pct_plus_minus_conf,     div: r.pct_plus_minus_div,     label: '+/-',            note: '+1 when on ice for a 5v5/4v4 goal for, -1 when on ice for one against. Percentile vs all NHL players at same position.' },
+        shGoals:       { pct: r.pct_sh_goals,       conf: r.pct_sh_goals_conf,       div: r.pct_sh_goals_div,       label: 'SH Goals',       note: 'Shorthanded goals scored. Percentile vs all NHL players at same position.' },
+        gwGoals:       { pct: r.pct_gw_goals,       conf: r.pct_gw_goals_conf,       div: r.pct_gw_goals_div,       label: 'GW Goals',       note: 'Game-winning goals scored. Percentile vs all NHL players at same position.' },
+        shots:         { pct: r.pct_shots,          conf: r.pct_shots_conf,          div: r.pct_shots_div,          label: 'Shots',          note: 'Shots on goal. Percentile vs all NHL players at same position.' },
+        toiPerGame:    { pct: r.pct_toi_per_game,   conf: r.pct_toi_per_game_conf,   div: r.pct_toi_per_game_div,   label: 'TOI/Game',       note: 'Average time on ice per game. Percentile vs all NHL players at same position.' },
+        faceoffWinPct: { pct: r.pct_faceoff_win_pct, conf: r.pct_faceoff_win_pct_conf, div: r.pct_faceoff_win_pct_div, label: 'Faceoff %',   note: 'Percentage of faceoffs won. Percentile vs all NHL players at same position.' },
+        hits:          { pct: r.pct_hits,           conf: r.pct_hits_conf,           div: r.pct_hits_div,           label: 'Hits',           note: 'Body checks delivered. Percentile vs all NHL players at same position.' },
+        blockedShots:  { pct: r.pct_blocked_shots,  conf: r.pct_blocked_shots_conf,  div: r.pct_blocked_shots_div,  label: 'Blocked Shots',  note: 'Shots blocked. Percentile vs all NHL players at same position.' },
+        takeaways:     { pct: r.pct_takeaways,      conf: r.pct_takeaways_conf,      div: r.pct_takeaways_div,      label: 'Takeaways',      note: 'Takeaways — puck possessions won from an opponent. Percentile vs all NHL players at same position.' },
+        giveaways:     { pct: r.pct_giveaways,      conf: r.pct_giveaways_conf,      div: r.pct_giveaways_div,      label: 'Giveaways',      note: 'Giveaways — puck possessions lost to an opponent. Percentile vs all NHL players at same position.' },
       },
     };
   }
@@ -91,9 +136,10 @@ export async function getPlayerAnalytics(season = SEASON) {
 }
 
 // ── Player shot events ────────────────────────────────────────
-// Returns shot data for one player. car_game=true scopes to games
-// involving the selected team, team= filters to shooter rows only.
-export async function getPlayerShots(playerId, season = SEASON, team = 'CAR') {
+// Returns shot data for one player. team= scopes to that player's own
+// shots (a player only ever shoots for one team per row) — not restricted
+// to games against any particular opponent.
+export async function getPlayerShots(playerId, season = currentSeason(), team = 'CAR') {
   const rows = await workerFetch(`/player-shots?playerId=${playerId}&season=${season}&team=${team}`);
 
   if (!rows?.length) return null;
@@ -121,7 +167,7 @@ export async function getPlayerShots(playerId, season = SEASON, team = 'CAR') {
 // Returns shots faced by a specific goalie (for heat map).
 // No car_game filter — shows all shots faced regardless of opponent.
 // goalie_id filter identifies the specific goalie's starts.
-export async function getGoalieShots(goalieId, season = SEASON) {
+export async function getGoalieShots(goalieId, season = currentSeason()) {
   const rows = await workerFetch(`/goalie-shots?goalieId=${goalieId}&season=${season}`);
 
   if (!rows?.length) return null;
@@ -145,8 +191,31 @@ export async function getGoalieShots(goalieId, season = SEASON) {
   };
 }
 
+// ── Season-wide shots for the shot map's "All N" chip ──────────
+// Both teams' shots from every game `team` played this season — matches
+// what extractShotEvents(pbp) already returns for a single game, just
+// aggregated. No shooter/goalie names (shot_events only stores player_id,
+// not a name — resolving those would need a season-long roster join this
+// view doesn't otherwise need); IceRink renders fine without them.
+export async function getSeasonShots(team, season = currentSeason()) {
+  const rows = await workerFetch(`/nhl/shots?team=${team}&season=${season}`);
+  if (!rows?.length) return [];
+
+  return rows.map(r => ({
+    id:           `${r.game_id}-${r.x}-${r.y}-${r.period}-${r.time_in_period}`,
+    gameId:       r.game_id,
+    x:            r.x,
+    y:            r.y,
+    type:         r.event_type,
+    period:       r.period,
+    timeInPeriod: r.time_in_period,
+    shotType:     r.shot_type,
+    isCanes:      r.team === team,
+  }));
+}
+
 // ── Goalie analytics ──────────────────────────────────────────
-export async function getGoalieAnalytics(season = SEASON) {
+export async function getGoalieAnalytics(season = currentSeason()) {
   const rows = await workerFetch(`/goalie-analytics?season=${season}`);
 
   const result = {};
@@ -203,7 +272,7 @@ function sortForwardLine(players, posMap) {
     });
 }
 
-export async function getTeamLines(team = 'CAR', season = SEASON, gameType = 2) {
+export async function getTeamLines(team = 'CAR', season = currentSeason(), gameType = 2) {
   // Always load static data upfront so we can use it as position authority
   let staticData = null;
   try {
@@ -278,7 +347,7 @@ export async function getGameXG(gameId) {
 // ── Game log insights ─────────────────────────────────────────
 // Returns team-specific situational stats for Live Insights.
 // Requires team_scored_first boolean in game_log (added by nhl_stats.py).
-export async function getGameLogInsights(oppAbbr, season = SEASON, teamAbbr = 'CAR') {
+export async function getGameLogInsights(oppAbbr, season = currentSeason(), teamAbbr = 'CAR') {
   const rows = await workerFetch(`/game-log?team=${teamAbbr}&season=${season}`).catch(() => null);
 
   if (!rows?.length) return null;
@@ -324,7 +393,7 @@ export async function getGameLogInsights(oppAbbr, season = SEASON, teamAbbr = 'C
   };
 }
 
-export async function getTeamGameLog(count = 120, season = SEASON, teamAbbr = 'CAR') {
+export async function getTeamGameLog(count = 120, season = currentSeason(), teamAbbr = 'CAR') {
   const rows = await workerFetch(`/game-log?team=${teamAbbr}&season=${season}&limit=${count}`).catch(() => null);
   if (!rows?.length) return null;
   return rows.map(r => ({
@@ -346,10 +415,13 @@ export async function getTeamGameLog(count = 120, season = SEASON, teamAbbr = 'C
   }));
 }
 
-// Fetches team_seasons data needed for power rankings:
-// xgf_pct + roster_war_score for all 32 teams.
-// Replaces the earlier getTeamSeasonXg — same call, extra column.
-export async function getTeamSeasonData(season = SEASON) {
+// Fetches team_seasons data needed for power rankings (xgf_pct +
+// roster_war_score), the Standings tab's magic/tragic number display
+// (Session 59), and the Shot Map "All N" Hits/Penalties cards (Session 82,
+// selected team's own season total only -- see
+// NHL_HITS_PENALTIES_WIRING_BRIEF.md) for all 32 teams in one call.
+// Replaces the earlier getTeamSeasonXg — same call, extra columns.
+export async function getTeamSeasonData(season = currentSeason()) {
   const rows = await workerFetch(`/team-seasons?season=${season}`).catch(() => []);
   const map = {};
   for (const r of (rows || [])) {
@@ -357,6 +429,12 @@ export async function getTeamSeasonData(season = SEASON) {
       xgfPct:       r.xgf_pct,
       rosterWar:    r.roster_war_score,
       gp:           r.games_played,
+      magicNumber:  r.magic_number,
+      tragicNumber: r.tragic_number,
+      clinched:     r.clinched,
+      eliminated:   r.eliminated,
+      hits:         r.hits,
+      penalties:    r.penalties,
     };
   }
   return map;
@@ -364,14 +442,14 @@ export async function getTeamSeasonData(season = SEASON) {
 
 // Fetches the most recent power rankings narrative for the user's team.
 // Returns { narrative, rank, prior_rank, generated_date } or null.
-export async function getPowerRankingsNarrative(teamAbbr, season = SEASON) {
+export async function getPowerRankingsNarrative(teamAbbr, season = currentSeason()) {
   const rows = await workerFetch(`/power-rankings?team=${teamAbbr}&season=${season}&limit=1`).catch(() => []);
   return rows?.[0] ?? null;
 }
 
 // Fetches rank history for the sparkline — last 28 days.
 // Returns array of { generated_date, rank } oldest-first.
-export async function getPowerRankingsHistory(teamAbbr, season = SEASON) {
+export async function getPowerRankingsHistory(teamAbbr, season = currentSeason()) {
   const rows = await workerFetch(`/power-rankings?team=${teamAbbr}&season=${season}&limit=28`).catch(() => []);
   return (rows || []).reverse(); // oldest first for charting
 }
@@ -406,13 +484,22 @@ export async function getGameSummary(gameId, team) {
 
 // ── Player scouting blurb ─────────────────────────────────────
 // Returns the AI-generated scouting blurb for a player, or null if none exists.
-export async function getScoutingBlurb(playerId, season = SEASON) {
+export async function getScoutingBlurb(playerId, season = currentSeason()) {
   const rows = await workerFetch(`/player-scouting?playerId=${playerId}&season=${season}`).catch(() => []);
   if (!rows?.length) return null;
   return { blurb: rows[0].scouting_text, generatedAt: rows[0].generated_at };
 }
 
-export async function getTeamSkaterStatsFromDB(team = 'CAR', season = SEASON, gameType = 2) {
+// ── Results-vs-process narrative (Session 56, NHL skaters only) ──
+// Returns the AI-generated "results vs. process" blurb for a player, or
+// null if none exists yet (either not enough games, or not generated yet).
+export async function getResultsVsProcessNarrative(playerId, season = currentSeason()) {
+  const rows = await workerFetch(`/player-results-vs-process?playerId=${playerId}&season=${season}`).catch(() => []);
+  if (!rows?.length) return null;
+  return { blurb: rows[0].narrative_text, generatedAt: rows[0].generated_at };
+}
+
+export async function getTeamSkaterStatsFromDB(team = 'CAR', season = currentSeason(), gameType = 2) {
   const [seasonRows, playerRows] = await Promise.all([
     workerFetch(`/team-skaters?team=${team}&season=${season}&gameType=${gameType}`),
     workerFetch('/players-list'),
@@ -463,7 +550,7 @@ export async function getSpecialTeamsUnits() {
 // Each item: { gameId, date, opponent, teamScore, oppScore, xgfPct }
 // Joins game_xg (5on5) with game_log for date + opponent.
 // Both arrays are chronological (oldest first).
-export async function getTeamXgTrend(team = 'CAR', season = SEASON) {
+export async function getTeamXgTrend(team = 'CAR', season = currentSeason()) {
   const [xgRows, logRows] = await Promise.all([
     workerFetch(`/xg-trend?team=${team}&season=${season}`).catch(() => []),
     workerFetch(`/game-log?team=${team}&season=${season}`).catch(() => []),

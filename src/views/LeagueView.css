@@ -243,6 +243,25 @@
   letter-spacing: 0.04em;
 }
 
+.lv-magic-badge {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 1px 3px;
+  border-radius: 3px;
+  font-family: var(--font-display);
+}
+
+.lv-magic-badge--clinch {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 15%, transparent);
+}
+
+.lv-magic-badge--elim {
+  color: var(--red-bright);
+  background: color-mix(in srgb, var(--red-bright) 12%, transparent);
+}
+
 /* ── L10 dots ── */
 
 .l10-dots {
@@ -558,6 +577,13 @@
   font-size: 13px;
   color: var(--text-muted);
   padding: 1.5rem 0;
+}
+
+.lv-season-empty {
+  color: var(--text-dim);
+  font-size: 13px;
+  padding: 2.5rem 1rem;
+  text-align: center;
 }
 
 /* ── Responsive ── */

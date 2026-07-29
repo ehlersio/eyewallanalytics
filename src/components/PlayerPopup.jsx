@@ -1,6 +1,6 @@
 /**
  * PlayerPopup.jsx
- * Shared player detail modal used by PlayersView (CAR roster) and
+ * Shared player detail modal used by PlayersView (selected team's roster) and
  * LeagueView Leaders tab (any NHL player).
  *
  * Props:
@@ -10,23 +10,32 @@
  *   inPlayoffs   {boolean} — controls section ordering; pass false from LeagueView
  *   standings    {array}   — for rank calculation; pass [] from LeagueView
  *   onClose      {fn}      — close handler
- *   isLeagueContext {bool} — when true, hides CAR-specific tabs (Heat Map, Scout)
- *                            and the contract panel; keeps Stats + Analytics
+ *   isLeagueContext {bool} — when true, hides roster-scoped tabs (Heat Map, Scout)
+ *                            and the contract panel (contract panel is further
+ *                            gated to TEAM_CONFIG.abbr === 'CAR' — carContracts.js
+ *                            only has real data for Carolina); keeps Stats + Analytics
  */
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useMemo } from 'react'
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts'
 import { useFetch } from '../hooks/useFetch'
-import { getPlayerStats, fetchPlayerRankings, TEAM_CONFIG } from '../utils/nhlApi'
+import { getPlayerStats, getPlayerGameLog, fetchPlayerRankings, TEAM_CONFIG, GAME_TYPE } from '../utils/nhlApi'
+import { ALL_TEAMS } from '../utils/teamConfig'
 import {
   getPlayerAnalytics,
   getGoalieAnalytics,
   getPlayerShots,
   getGoalieShots,
   getScoutingBlurb,
+  getResultsVsProcessNarrative,
 } from '../utils/supabaseClient'
 import { findContract, contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING } from '../utils/carContracts'
+import { nhlSeasonLabel } from '../utils/seasonComparison'
 import IceRink from '../components/IceRink'
 import InfoTip from '../components/InfoTip'
+import SeasonComparisonPicker from '../components/SeasonComparisonPicker'
+import SeasonOverlayChart from './SeasonOverlayChart'
+import { TileStatSection, PercentileScopeLegend } from './StatTileGrid'
 import '../views/PlayersView.css'
 
 const SEASON       = Number(TEAM_CONFIG.season.slice(0, 4) + TEAM_CONFIG.season.slice(4))
@@ -34,45 +43,56 @@ const SEASON_LABEL = `${TEAM_CONFIG.season.slice(0, 4)}–${TEAM_CONFIG.season.s
 
 // ─── Stat definitions ─────────────────────────────────────────
 
+// `perGame`/`perGameKey`/`cumulative`/`derive` (Session 70) mark which
+// stats have a real per-game data source, for the Compare tab's trend
+// chart -- see SESSION_70_FINDINGS_player_compare_hybrid_viz.md Q3 for the
+// full per-metric reasoning. Only flagged where the NHL API's
+// /player/{id}/game-log endpoint (getPlayerGameLog, nhlApi.js) actually
+// carries the field; hits/blocks/TK/GV/FO%/S% don't (unconfirmed source),
+// and gamesPlayed isn't a trend concept at all -- those stay tile-only.
+// `cumulative: true` means the chart plots a running season-to-date total
+// rather than the raw per-game value -- for rare/binary events (a single
+// game's SHG/GWG is almost always 0), a running total is the only
+// meaningful line.
 const SKATER_STATS = [
-  { key: 'goals',              label: 'Goals',       group: 'Scoring',
+  { key: 'goals',              label: 'Goals',       group: 'Scoring', perGame: true,
     tip: 'Total goals scored. A goal is awarded when the puck fully crosses the opposing goal line.',
     why: 'The most direct measure of a player\'s finishing ability and offensive contribution.' },
-  { key: 'assists',            label: 'Assists',     group: 'Scoring',
+  { key: 'assists',            label: 'Assists',     group: 'Scoring', perGame: true,
     tip: 'Points credited for setting up a goal. Up to two assists are awarded per goal.',
     why: 'Reflects a player\'s playmaking and vision. Some elite players accumulate far more assists than goals.' },
-  { key: 'points',             label: 'Points',      group: 'Scoring',
+  { key: 'points',             label: 'Points',      group: 'Scoring', perGame: true,
     tip: 'Goals + Assists. The primary measure of offensive production.',
     why: 'The standard yardstick for comparing forwards and offensive defencemen across the league.' },
-  { key: 'plusMinus',          label: '+/−',         group: 'Scoring',
+  { key: 'plusMinus',          label: '+/−',         group: 'Scoring', perGame: true,
     tip: '+1 when on ice for a 5v5 or 4v4 goal for; −1 when on ice for one against. PP/SH goals excluded.',
     why: 'A rough proxy for two-way effectiveness, though heavily influenced by linemates and usage.' },
   { key: 'gamesPlayed',        label: 'GP',          group: 'Scoring',
     tip: 'Games played in this sample.',
     why: 'Context for all counting stats — a player with 20 points in 25 games is more productive than 20 in 40.' },
-  { key: 'powerPlayGoals',     label: 'PPG',         group: 'Special Teams',
+  { key: 'powerPlayGoals',     label: 'PPG',         group: 'Special Teams', perGame: true,
     tip: 'Goals scored while your team has a man advantage (power play).',
     why: 'Power play specialists can have outsized PPG totals. Compare to even-strength goals for full picture.' },
-  { key: 'powerPlayPoints',    label: 'PPP',         group: 'Special Teams',
+  { key: 'powerPlayPoints',    label: 'PPP',         group: 'Special Teams', perGame: true,
     tip: 'Goals + Assists on the power play.',
     why: 'High PPP players are valuable on the man-advantage unit but may be less impactful at 5v5.' },
-  { key: 'shorthandedGoals',   label: 'SHG',         group: 'Special Teams',
+  { key: 'shorthandedGoals',   label: 'SHG',         group: 'Special Teams', perGame: true, cumulative: true,
     tip: 'Goals scored while your team is shorthanded (penalty kill).',
     why: 'Rare and opportunistic — indicates speed and instinct.' },
-  { key: 'gameWinningGoals',   label: 'GWG',         group: 'Special Teams',
+  { key: 'gameWinningGoals',   label: 'GWG',         group: 'Special Teams', perGame: true, cumulative: true,
     tip: 'The goal that proved to be the winning margin. If the final score is 4–2, the 3rd goal for the winner is the GWG.',
     why: 'A measure of clutch scoring, though partially luck-dependent.' },
-  { key: 'shots',              label: 'Shots',       group: 'Shot Quality',
+  { key: 'shots',              label: 'Shots',       group: 'Shot Quality', perGame: true,
     tip: 'Shots on goal — shots that would have entered the net if not for the goalie.',
     why: 'High shot volume indicates an offensive presence even when not scoring.' },
   { key: 'shootingPctg',       label: 'S%',          group: 'Shot Quality',
     tip: 'Goals ÷ Shots on Goal × 100. League average for forwards is roughly 10–12%.',
     calc: 'S% = (Goals / Shots) × 100',
     why: 'Sustained high S% indicates elite finishing; very high or low rates often regress toward average over time.' },
-  { key: 'avgToi',             label: 'TOI/G',       group: 'Ice Time',
+  { key: 'avgToi',             label: 'TOI/G',       group: 'Ice Time', perGame: true, perGameKey: 'toi',
     tip: 'Average time on ice per game (minutes:seconds).',
     why: 'Coaches allocate more ice time to trusted players. Elite forwards average 18–22 min; top D pairs often exceed 24 min.' },
-  { key: 'pim',                label: 'PIM',         group: 'Ice Time',
+  { key: 'pim',                label: 'PIM',         group: 'Ice Time', perGame: true,
     tip: 'Penalty minutes. 2 min per minor, 4 per double minor, 5 per major.',
     why: 'High PIM means the player spends time in the box — hurting the team — though some physical players balance this with defensive value.' },
   { key: 'faceoffWinningPctg', label: 'FO%',         group: 'Ice Time',
@@ -93,22 +113,29 @@ const SKATER_STATS = [
     why: 'Giveaways lead to odd-man rushes and scoring chances against. Lower is better — compare to TK for full picture.' },
 ]
 
+// `otLosses`/`qualityStartPct` are deliberately NOT flagged `perGame` --
+// otLosses because the game-log's `decision` field was only observed as
+// `"W"`/`"L"` in the live sample checked (Session 70), not confirmed for
+// the OT/SO-loss case; qualityStartPct because it's a threshold classifier
+// (SV% ≥ .917, or ≥ .885 facing ≤20 shots) needing its own per-game
+// classification logic, not just a field read -- narrower scope than the
+// rest of this pass, left as a tile pending a follow-up.
 const GOALIE_STATS = [
   { key: 'gamesPlayed',   label: 'GP',   group: 'Record',
     tip: 'Games played.', why: 'Context for all other goalie stats.' },
-  { key: 'wins',          label: 'W',    group: 'Record',
+  { key: 'wins',          label: 'W',    group: 'Record', perGame: true, cumulative: true, derive: 'win',
     tip: 'Wins — the starter in a winning game receives the win.',
     why: 'The primary measure of a goalie\'s team contribution, though win totals depend on the team in front of them.' },
-  { key: 'losses',        label: 'L',    group: 'Record',
+  { key: 'losses',        label: 'L',    group: 'Record', perGame: true, cumulative: true, derive: 'loss',
     tip: 'Regulation losses.', why: 'Combined with OTL gives the full record picture.' },
   { key: 'otLosses',      label: 'OTL',  group: 'Record',
     tip: 'Overtime/shootout losses. The team earns 1 point; the goalie still receives a loss.',
     why: 'Goalies with many OTL often faced close games — neither good nor bad on its own.' },
-  { key: 'savePctg',      label: 'SV%',  group: 'Performance',
+  { key: 'savePctg',      label: 'SV%',  group: 'Performance', perGame: true,
     tip: 'Saves ÷ Shots Against. League average is roughly .910; elite is above .920.',
     calc: 'SV% = Saves / Shots Against',
     why: 'The most important single goalie stat. Even small differences are significant — .920 vs .900 = 2 extra goals allowed per 100 shots.' },
-  { key: 'goalsAgainstAvg', label: 'GAA', group: 'Performance',
+  { key: 'goalsAgainstAvg', label: 'GAA', group: 'Performance', perGame: true, derive: 'gaa',
     tip: 'Goals allowed per 60 minutes of play.',
     calc: 'GAA = (Goals Against / Minutes Played) × 60',
     why: 'Context-dependent — a goalie on a weak team will face more shots. Best read alongside SV%.' },
@@ -116,14 +143,14 @@ const GOALIE_STATS = [
     tip: 'Percentage of starts where the goalie posted a quality start — SV% ≥ .917, or ≥ .885 when facing 20 or fewer shots.',
     calc: 'QS% = Quality Starts / Games Started',
     why: 'Measures consistency. A "quality start" means the goalie gave his team a reasonable chance to win based on historical win rates at those SV% thresholds. League average is roughly 55%. Elite starters exceed 65%.' },
-  { key: 'shotsAgainst',   label: 'SA',  group: 'Performance',
+  { key: 'shotsAgainst',   label: 'SA',  group: 'Performance', perGame: true,
     tip: 'Shots on goal faced. Indicates workload.', why: 'High SA means the team gives up many chances; context for SV%.' },
-  { key: 'saves',          label: 'SV',  group: 'Performance',
+  { key: 'saves',          label: 'SV',  group: 'Performance', perGame: true, derive: 'saves',
     tip: 'Total saves made.', why: 'Combined with SA gives the SV%.' },
-  { key: 'shutouts',       label: 'SO',  group: 'Performance',
+  { key: 'shutouts',       label: 'SO',  group: 'Performance', perGame: true, cumulative: true,
     tip: 'Games where the goalie allowed zero goals (must play the full game).',
     why: 'A prestigious milestone. Elite goalies typically post 5–7 per full season.' },
-  { key: 'gamesStarted',   label: 'GS',  group: 'Record',
+  { key: 'gamesStarted',   label: 'GS',  group: 'Record', perGame: true, cumulative: true,
     tip: 'Games where the goalie started in net.',
     why: 'Distinguishes full-time starters from backups; relevant for season-long workload.' },
 ]
@@ -166,6 +193,142 @@ function posLabel(code) {
   return { C:'Centre', LW:'Left Wing', RW:'Right Wing', D:'Defence', G:'Goalie' }[code] || code
 }
 
+// ─── Per-game trend chart helpers (Session 70) ─────────────────
+
+function toiToSeconds(toi) {
+  if (typeof toi !== 'string' || !toi.includes(':')) return null
+  const [m, s] = toi.split(':').map(Number)
+  if (Number.isNaN(m) || Number.isNaN(s)) return null
+  return m * 60 + s
+}
+
+// Reads one stat's value off a single game-log row. Most `perGame` stats
+// are a direct field read (def.perGameKey || def.key); the small set of
+// goalie stats that aren't direct API fields (saves, W/L, GAA) go through
+// `def.derive` instead -- see the GOALIE_STATS comment above for why each
+// one needs its own formula rather than a field read.
+function perGameRawValue(def, game) {
+  if (!game) return null
+  if (def.derive === 'saves') {
+    const sa = game.shotsAgainst, ga = game.goalsAgainst
+    return (sa == null || ga == null) ? null : sa - ga
+  }
+  if (def.derive === 'win')  return game.decision === 'W' ? 1 : 0
+  if (def.derive === 'loss') return game.decision === 'L' ? 1 : 0
+  if (def.derive === 'gaa') {
+    const secs = toiToSeconds(game.toi)
+    return (!secs || game.goalsAgainst == null) ? null : (game.goalsAgainst / secs) * 3600
+  }
+  const raw = game[def.perGameKey || def.key]
+  return raw == null ? null : Number(raw)
+}
+
+// Small season-color ramp -- same math as TeamComparisonPopup's
+// seasonRampColor/hexToRgba, duplicated rather than cross-imported (this
+// codebase's convention for small UI-adjacent helpers owned by a single
+// popup component; see rapm.py's 3-bucket proxy for the same pattern on
+// the pipeline side).
+function hexToRgba(hex, alpha) {
+  const clean = String(hex).replace('#', '')
+  if (clean.length !== 6) return hex
+  const r = parseInt(clean.slice(0, 2), 16)
+  const g = parseInt(clean.slice(2, 4), 16)
+  const b = parseInt(clean.slice(4, 6), 16)
+  return `rgba(${r},${g},${b},${alpha})`
+}
+function seasonRampColor(baseHex, index, total) {
+  if (total <= 1) return baseHex
+  const MIN_ALPHA = 0.35
+  const alpha = 1 - (index / (total - 1)) * (1 - MIN_ALPHA)
+  return hexToRgba(baseHex, Number(alpha.toFixed(2)))
+}
+const CHART_DASH_PATTERNS = [undefined, '6 4', '2 3']
+
+// ─── Player-card header + Stats tab redesign (Session 66, NHL skaters only) ──
+// Radar chart + percentile tile grid below are additive UI on top of the
+// existing mpData.percentiles shape from getPlayerAnalytics() (supabaseClient.js)
+// -- no new data fetching. Goalies and PWHL are explicitly untouched: this
+// entire block is only reached when !isGoalie in this (NHL-only) file, and
+// PWHLPlayerPopup.jsx is a completely separate component this PR never edits.
+
+// WCAG-AA dark-mode-safe team colors, same lookup pattern LeagueView.jsx
+// already uses for its power-rankings sparkline (ALL_TEAMS -> displayColor).
+const TEAM_DISPLAY_COLORS = Object.fromEntries(ALL_TEAMS.map(t => [t.abbr, t.displayColor]))
+
+function teamColorFor(abbr) {
+  return TEAM_DISPLAY_COLORS[abbr] || TEAM_CONFIG.displayColor || '#4d80f0'
+}
+
+// Radar categories -- 5 composites decided from the 10 pct_* columns.
+// Polarity check (done against eyewall-pipeline/moneypuck.py this session):
+// ALL 10 pct_* categories are already normalized so higher percentile always
+// = better performance before they ever reach the frontend -- ev_def and
+// pk are stored as 1/xGA60 (inverted at the source), and penalties60 is
+// -PIM/60 (negated at the source). So a flat "pct >= 50 good" read is safe
+// for every category here; no per-category flip needed in this display layer.
+//
+// - Scoring: average of Goals/60 and Finishing percentiles.
+// - Playmaking: 1st Assists/60 percentile alone (no secondary-assist data).
+// - EV Play-Driving: EV Offence (on-ice xGF%) percentile alone.
+// - Defense: EV Defence percentile alone. Deliberately NOT blending in PK
+//   here (even though the task allowed it) because PK is already folded
+//   into the Special Teams axis below -- reusing it in both places would
+//   double-count a single metric and distort the radar's shape.
+// - Special Teams: average of PP + PK percentiles when the player has a
+//   reliable sample in at least one (min 300s TOI, per moneypuck.py). Many
+//   depth players never see PP or PK time and would otherwise show a
+//   permanently blank axis, so this composite falls back to the Penalties
+//   (discipline) percentile when both PP and PK are null -- still a
+//   "special teams / discipline" read, just discipline-only for players
+//   who never see specialty-unit ice time.
+function computeRadarAxes(percentiles) {
+  const p = percentiles || {}
+  const avg = (...vals) => {
+    const present = vals.filter(v => v != null)
+    return present.length ? present.reduce((a, b) => a + b, 0) / present.length : null
+  }
+  const scoring    = avg(p.goals?.pct, p.finishing?.pct)
+  const playmaking = p.a1?.pct ?? null
+  const evDriving  = p.evOff?.pct ?? null
+  const defense    = p.evDef?.pct ?? null
+  const specialTeams = (p.pp?.pct != null || p.pk?.pct != null)
+    ? avg(p.pp?.pct, p.pk?.pct)
+    : (p.penalties?.pct ?? null)
+
+  return [
+    { axis: 'Scoring',        value: scoring },
+    { axis: 'Playmaking',     value: playmaking },
+    { axis: 'EV Driving',     value: evDriving },
+    { axis: 'Defense',        value: defense },
+    { axis: 'Special Teams',  value: specialTeams },
+  ].map(d => ({ ...d, hasData: d.value != null, value: d.value ?? 0 }))
+}
+
+// Box-score stat keys (from SKATER_STATS above) that have a percentile
+// counterpart in mpData.percentiles. PR #56 (eyewall-pipeline) added the 11
+// entries below (GP, +/-, SHG, GWG, Shots, TOI/G, FO%, Hits, Blocks, TK,
+// GV) -- previously these had no backing percentile column at all. The 5
+// radar-only categories (ev_off, ev_def, pk, competition, teammates) are
+// deliberately left out here -- they feed computeRadarAxes, not a tile.
+const STAT_PCT_MAP = {
+  goals:              'goals',
+  assists:            'a1',        // percentile is 1st-assists/60, not all-assist rate -- noted in the tile's info tip
+  powerPlayPoints:    'pp',
+  pim:                'penalties',
+  shootingPctg:       'finishing',
+  gamesPlayed:        'gamesPlayed',
+  plusMinus:          'plusMinus',
+  shorthandedGoals:   'shGoals',
+  gameWinningGoals:   'gwGoals',
+  shots:              'shots',
+  avgToi:             'toiPerGame',
+  faceoffWinningPctg: 'faceoffWinPct',
+  hits:               'hits',
+  blockedShots:       'blockedShots',
+  takeaways:          'takeaways',
+  giveaways:          'giveaways',
+}
+
 // ─── Sub-components ───────────────────────────────────────────
 
 function RankBadge({ label, rank }) {
@@ -179,60 +342,109 @@ function RankBadge({ label, rank }) {
   )
 }
 
-function StatRow({ def, value }) {
-  const [tipOpen, setTipOpen] = useState(false)
-  const tipRef  = useRef(null)
+// StatRow/StatSection (vertical row-list accordion) removed Session 73 --
+// every section in this file now renders via the tile grid (TileStatSection,
+// imported from StatTileGrid.jsx as of Session 75's extraction so
+// PWHLPlayerPopup.jsx can share the same mechanism); the row-list layout
+// has no remaining call sites in this file. `def.why`/`def.calc` tooltip
+// text (dropped when StatRow was removed, since InfoTip only took a single
+// `text` at the time) is resurfaced via InfoTip's `sections` prop (Session
+// 74) -- see StatTile in StatTileGrid.jsx.
 
-  useEffect(() => {
-    if (!tipOpen) return
-    function close(e) { if (!tipRef.current?.contains(e.target)) setTipOpen(false) }
-    document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
-  }, [tipOpen])
+// ─── Skater header radar + quick stats (Session 66) ────────────
 
+// Root cause of the label-cutoff bug (Session 72): .pp-radar-wrap is capped
+// to a ~140-160px flex slot inside a popup hard-capped at 420px wide
+// (PlayersView.css), leaving only ~15-25px of margin outside the plotted
+// circle -- nowhere near enough for two-word labels like "Special Teams" at
+// any legible font size. Abbreviating is the only fix that guarantees no
+// clipping at every viewport; full names are still available on hover/tap
+// via a native SVG <title> (same info the "Not enough playing time yet"
+// caption below already spells out in full for whichever axes are missing).
+const RADAR_AXIS_ABBR = {
+  'Scoring':        'SCR',
+  'Playmaking':     'PLM',
+  'EV Driving':     'EVD',
+  'Defense':        'DEF',
+  'Special Teams':  'ST',
+}
+
+function RadarAxisTick({ x, y, payload, textAnchor }) {
+  const full  = payload.value
+  const short = RADAR_AXIS_ABBR[full] || full
   return (
-    <div className="stat-row">
-      <div className="stat-row-left">
-        <span className="stat-row-label">{def.label}</span>
-        <div className="stat-tip-wrap" ref={tipRef}>
-          <button className="stat-tip-btn" onClick={() => setTipOpen(o => !o)}
-            aria-label={`Info about ${def.label}`}>ⓘ</button>
-          {tipOpen && (
-            <div className="stat-tip-popup">
-              <div className="tip-title">{def.label}</div>
-              <p className="tip-body">{def.tip}</p>
-              {def.calc && <div className="tip-calc">{def.calc}</div>}
-              {def.why && <p className="tip-why"><strong>Why it matters:</strong> {def.why}</p>}
-            </div>
-          )}
-        </div>
-      </div>
-      <span className="stat-row-value">{value ?? '—'}</span>
+    <text x={x} y={y} textAnchor={textAnchor} fill="var(--text-dim)" fontSize={8.5}>
+      {short}
+      <title>{full}</title>
+    </text>
+  )
+}
+
+function PlayerRadarChart({ data, color, staleNote }) {
+  const missing = data.filter(d => !d.hasData).map(d => d.axis)
+  return (
+    <div className="pp-radar-wrap">
+      <ResponsiveContainer width="100%" height={150}>
+        <RadarChart data={data} outerRadius="62%">
+          <PolarGrid stroke="var(--border-2)" />
+          <PolarAngleAxis dataKey="axis" tick={RadarAxisTick} />
+          <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} tickCount={2} />
+          <Radar dataKey="value" stroke={color} fill={color} fillOpacity={0.35} strokeWidth={2} isAnimationActive={false} />
+        </RadarChart>
+      </ResponsiveContainer>
+      {missing.length > 0 && (
+        <div className="pp-radar-note">Not enough playing time yet: {missing.join(', ')}</div>
+      )}
+      {/* Whole-season fallback caption (Session 66) — rendered here, inside
+          the narrow radar column, rather than as a sibling of .pp-quickstats
+          in .pp-header-radar's row (Session 80): once that row shares width
+          with the compact identity column instead of spanning the popup's
+          full ~400px, a full-sentence-length flex sibling there forces
+          .pp-quickstats to zero width instead of wrapping in place. */}
+      {staleNote && (
+        <div className="pp-radar-note pp-radar-stale">{staleNote}</div>
+      )}
     </div>
   )
 }
 
-function StatSection({ label, groups, highlight, _isGoalie }) {
-  const [open, setOpen] = useState(highlight)
+function QuickStatPill({ label, value }) {
   return (
-    <div className={`stat-section ${highlight ? 'highlight-section' : ''}`}>
-      <button className="stat-section-header" onClick={() => setOpen(o => !o)}>
-        <span className="stat-section-label">{label}</span>
-        {highlight && <span className="stat-section-current">Current</span>}
-        <span className="stat-section-arrow">{open ? '▲' : '▼'}</span>
-      </button>
-      {open && (
-        <div className="stat-section-body">
-          {groups.map(({ group, items }) => (
-            <div key={group} className="stat-group">
-              <div className="stat-group-label">{group}</div>
-              {items.map(({ def, value: _value, fmt }) => (
-                <StatRow key={def.key} def={def} value={fmt} />
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
+    <div className="pp-quickstat">
+      <span className="pp-quickstat-val">{value ?? '—'}</span>
+      <span className="pp-quickstat-label">{label}</span>
+    </div>
+  )
+}
+
+// Header panel shown only for NHL skaters (goalies + PWHL keep today's
+// header). `boxStats` is the current/highlighted season's raw stat line
+// (same object the Stats tab uses) -- reused here for the G/A/P/TOI pills
+// rather than re-fetching anything.
+function SkaterHeaderPanel({ percentiles, boxStats, teamColor, statsStale, statsSeason }) {
+  if (!percentiles) return null
+  const radarData = computeRadarAxes(percentiles)
+  const fmtToi = (raw) => {
+    if (raw == null) return null
+    if (typeof raw === 'string' && raw.includes(':')) return raw
+    const m = Math.floor(raw / 60), s = String(raw % 60).padStart(2, '0')
+    return `${m}:${s}`
+  }
+  // Whole-season fallback (Session 66) — same "as of last season" signal as
+  // the Stats tab's stat-section-stale badge, since this radar is built
+  // from the same possibly-stale percentiles object.
+  const staleNote = statsStale
+    ? `Not enough games yet this season — showing ${nhlSeasonLabel(statsSeason)}`
+    : null
+  return (
+    <div className="pp-header-radar">
+      <PlayerRadarChart data={radarData} color={teamColor} staleNote={staleNote} />
+      <div className="pp-quickstats">
+        <QuickStatPill label="G"   value={boxStats?.goals} />
+        <QuickStatPill label="A"   value={boxStats?.assists} />
+        <QuickStatPill label="P"   value={boxStats?.points} />
+        <QuickStatPill label="TOI" value={fmtToi(boxStats?.avgToi)} />
+      </div>
     </div>
   )
 }
@@ -505,7 +717,7 @@ function PercentileBar({ label, pct, note, na }) {
   )
 }
 
-function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position }) {
+function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, narrativeData, isLeagueContext }) {
   if (isGoalie) {
     if (!goalieData) {
       return (
@@ -614,7 +826,68 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position }
         <PercentileBar label="Competition"   pct={p.comp?.pct}      note={p.comp?.note} />
         <PercentileBar label="Teammates"     pct={p.teammates?.pct} note={p.teammates?.note} />
       </div>
+      {!isLeagueContext && (
+        <ResultsVsProcess
+          onIceGfPct={mpData.onIceGfPct}
+          resultsVsProcessDiff={mpData.resultsVsProcessDiff}
+          narrativeData={narrativeData}
+        />
+      )}
       <div className="pa-source">Data: MoneyPuck.com · Updates nightly</div>
+    </div>
+  )
+}
+
+// ─── Results vs. Process ──────────────────────────────────────
+// Pairs on-ice results (on_ice_gf_pct) against underlying process (the
+// existing EV xGF% percentile) to surface over/underperforming players.
+// Both mpData fields are null below eyewall-pipeline's GP≥25 guardrail
+// (moneypuck.py::RESULTS_VS_PROCESS_MIN_GP) -- that's the only check made
+// here, no GP threshold is re-derived on this side.
+
+function ResultsVsProcess({ onIceGfPct, resultsVsProcessDiff, narrativeData }) {
+  if (resultsVsProcessDiff == null) {
+    return (
+      <div className="rvp-wrap">
+        <div className="pa-section-label">Results vs. Process</div>
+        <div className="scout-empty">
+          <div className="scout-empty-icon">⏳</div>
+          <div>Not enough games yet for a reliable read.</div>
+          <div className="scout-empty-sub">Needs a minimum sample of games played this season.</div>
+        </div>
+      </div>
+    )
+  }
+
+  const outperforming = resultsVsProcessDiff > 0
+  const diffColor = outperforming ? '#4ade80' : '#f87171'
+  const directionLabel = outperforming ? 'Outperforming process' : 'Underperforming process'
+
+  return (
+    <div className="rvp-wrap">
+      <div className="pa-section-label">Results vs. Process</div>
+      <div className="pa-context">
+        <div className="pa-ctx-item">
+          <span className="pa-ctx-val">{onIceGfPct}%</span>
+          <span className="pa-ctx-label">On-Ice GF% <InfoTip text="On-ice goals-for percentage at 5-on-5 -- the share of goals scored (not just shot attempts/quality) while this player is on the ice. The 'results' side of this pairing." position="above" /></span>
+        </div>
+        <div className="pa-ctx-item">
+          <span className="pa-ctx-val" style={{ color: diffColor }}>{resultsVsProcessDiff > 0 ? '+' : ''}{resultsVsProcessDiff}%</span>
+          <span className="pa-ctx-label">Gap vs. Process <InfoTip text="On-Ice GF% minus EV xGF% (the process/shot-quality side, shown above in the percentile rankings). A large positive or negative gap suggests results are running hotter or colder than the underlying process -- often a sign of unsustainable luck rather than true talent." position="above" /></span>
+        </div>
+      </div>
+      <div style={{ color: diffColor, fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{directionLabel}</div>
+      {narrativeData === undefined ? (
+        <div className="scout-loading">
+          {[92, 85, 70].map((w, i) => (
+            <div key={i} className="skeleton" style={{ height: 11, width: `${w}%`, marginBottom: 10, borderRadius: 4 }} />
+          ))}
+        </div>
+      ) : narrativeData?.blurb ? (
+        <div className="scout-blurb">{narrativeData.blurb}</div>
+      ) : (
+        <div className="scout-empty-sub">Narrative generates nightly — check back after the next pipeline run.</div>
+      )}
     </div>
   )
 }
@@ -653,7 +926,7 @@ function ScoutingBlurb({ data, playerName }) {
     <div className="scout-wrap">
       <div className="scout-header">
         <span className="scout-label">Scouting Report</span>
-        <span className="scout-season">2025–26</span>
+        <span className="scout-season">{SEASON_LABEL}</span>
       </div>
       <div className="scout-blurb">{data.blurb}</div>
       <div className="scout-footer">
@@ -673,6 +946,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   // In league context only show Stats + Analytics; in roster context show all four
   const defaultTab = 'stats'
   const [ppTab, setPpTab] = useState(defaultTab)
+  const [compareSeasons, setCompareSeasons] = useState([])
 
   const { data: scoutData } = useFetch(
     () => !isLeagueContext ? getScoutingBlurb(p.id, SEASON) : Promise.resolve(undefined),
@@ -699,10 +973,40 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   const { data: goalieAll } = useFetch(() => getGoalieAnalytics(), [])
   const goalieData = goalieAll?.[String(p.id)] || null
 
+  // Results-vs-process narrative — skater-only (no on-ice GF/GA split for
+  // goalies), same CAR-roster-context gating as the Scout tab/ScoutingBlurb.
+  const { data: rvpNarrative } = useFetch(
+    () => (!isLeagueContext && !isGoalie) ? getResultsVsProcessNarrative(p.id, SEASON) : Promise.resolve(undefined),
+    [p.id, isGoalie, isLeagueContext]
+  )
+
   const seasonPO  = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 3)
-  const seasonReg = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 2)
+  let   seasonReg = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 2)
   const careerPO  = stats?.careerTotals?.playoffs
   const careerReg = stats?.careerTotals?.regularSeason
+
+  // Whole-season fallback (Session 66) — mirrors mpData.statsStale/
+  // statsSeason, but this is a SEPARATE data source (the NHL API's own
+  // seasonTotals, already fully fetched for the Career accordions below --
+  // no new network call needed) with its own independent "does the live
+  // season have a real row yet" answer. The redesigned tile grid is only
+  // ever attached to whichever section has highlight: true, so without
+  // this, a player with no live-season box score (true right now for
+  // every NHL player) never gets the new layout at all, even once
+  // /player-analytics has real fallback percentiles to show.
+  let boxStatsStale = false
+  let boxStatsSeason = null
+  if (!seasonReg) {
+    const priorReg = (stats?.seasonTotals || [])
+      .filter(s => s.season < SEASON && s.gameTypeId === 2)
+      .sort((a, b) => b.season - a.season)[0]
+    if (priorReg) {
+      seasonReg = priorReg
+      boxStatsStale = true
+      boxStatsSeason = String(priorReg.season)
+    }
+  }
+  const regSeasonLabel = boxStatsStale ? nhlSeasonLabel(boxStatsSeason) : SEASON_LABEL
 
   // Rankings — skip in league context (requires team/division membership we don't have)
   const { data: rankings } = useFetch(
@@ -720,13 +1024,97 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
         { label: 'Career Regular season',              stats: careerReg, highlight: false },
       ]
     : [
-        { label: `${SEASON_LABEL} Regular season`,     stats: seasonReg, highlight: true },
+        { label: `${regSeasonLabel} Regular season`,   stats: seasonReg, highlight: true },
         { label: `${SEASON_LABEL} Playoffs`,           stats: seasonPO,  highlight: false },
         { label: 'Career Regular season',              stats: careerReg, highlight: false },
         { label: 'Career Playoffs',                    stats: careerPO,  highlight: false },
       ]
 
   const statDefs = isGoalie ? GOALIE_STATS : SKATER_STATS
+
+  // ── Stats tab sections (Session 73) ─────────────────────────────
+  // Every section renders as a tile grid now, not just the highlighted one
+  // (Session 72 found every StatSection instance in this file was hiding a
+  // comparison, not doing legitimate density-organizing work -- see
+  // SESSION_72_FINDINGS). The highlighted section still renders full-width
+  // on its own; the rest render together in a wrapping row so Career
+  // Regular/Playoffs (and the current season's sibling game-type) are all
+  // visible at once instead of one click-to-expand at a time.
+  const statsTabSections = loading ? [] : sections
+    .map(({ label, stats: s, highlight }) => {
+      if (!s) return null
+      let enriched = (isGoalie && goalieData?.qsPct != null)
+        ? { ...s, qualityStartPct: goalieData.qsPct }
+        : s
+      if (!isGoalie && mpData) {
+        if (s?.gameTypeId === 2) {
+          enriched = { ...enriched, hits: mpData.hits ?? undefined, blockedShots: mpData.blockedShots ?? undefined, takeaways: mpData.takeaways ?? undefined, giveaways: mpData.giveaways ?? undefined }
+        } else if (s?.gameTypeId === 3 && mpData.poDef) {
+          enriched = { ...enriched, hits: mpData.poDef.hits ?? undefined, blockedShots: mpData.poDef.blockedShots ?? undefined, takeaways: mpData.poDef.takeaways ?? undefined, giveaways: mpData.poDef.giveaways ?? undefined }
+        }
+      }
+      const groups = groupStats(statDefs, enriched, isGoalie)
+      if (!groups.length) return null
+      return {
+        highlight,
+        node: (
+          <TileStatSection
+            key={label} label={label} groups={groups} highlight={highlight}
+            percentiles={!isGoalie && highlight ? mpData?.percentiles : undefined}
+            statsStale={boxStatsStale} statsSeason={boxStatsSeason}
+            pctMap={STAT_PCT_MAP}
+          />
+        ),
+      }
+    })
+    .filter(Boolean)
+  const currentStatSections = statsTabSections.filter(r => r.highlight).map(r => r.node)
+  const otherStatSections   = statsTabSections.filter(r => !r.highlight).map(r => r.node)
+
+  // ── Compare tab per-game trend chart (Session 70) ──────────────
+  // Chart-ready metrics only (statDefs entries flagged `perGame` above);
+  // everything else still shows in the per-season tile grid below.
+  const chartableStatDefs = statDefs.filter(d => d.perGame)
+  const [chartMetricKey, setChartMetricKey] = useState(null)
+  const activeChartDef = chartableStatDefs.find(d => d.key === chartMetricKey) || chartableStatDefs[0] || null
+
+  const { data: gameLogsBySeason, loading: gameLogLoading } = useFetch(
+    () => (compareSeasons.length
+      ? Promise.all(compareSeasons.map(season => getPlayerGameLog(p.id, season, GAME_TYPE.REGULAR)))
+      : Promise.resolve([])),
+    [p.id, compareSeasons.join(',')]
+  )
+
+  const compareSeasonsSortedDesc = useMemo(
+    () => [...compareSeasons].sort((a, b) => b - a),
+    [compareSeasons]
+  )
+
+  const chartSeries = useMemo(() => {
+    if (!activeChartDef || !gameLogsBySeason) return []
+    const logBySeason = new Map(compareSeasons.map((s, i) => [s, gameLogsBySeason[i]?.gameLog || []]))
+    const baseColor = teamColorFor(p.teamAbbrev)
+    return compareSeasonsSortedDesc.map((season, idx) => {
+      // NHL's game-log endpoint returns newest-first; reverse so gameNumber
+      // 1 is the season's first game, matching SeasonOverlayChart's x-axis.
+      const games = (logBySeason.get(season) || []).slice().reverse()
+      let running = 0
+      const dataPoints = games.map((g, i) => {
+        const raw = perGameRawValue(activeChartDef, g)
+        if (activeChartDef.cumulative) {
+          if (raw != null) running += raw
+          return { gameNumber: i + 1, value: running }
+        }
+        return { gameNumber: i + 1, value: raw }
+      })
+      return {
+        seasonLabel: nhlSeasonLabel(season),
+        color: seasonRampColor(baseColor, idx, compareSeasonsSortedDesc.length),
+        dashPattern: CHART_DASH_PATTERNS[idx % CHART_DASH_PATTERNS.length],
+        dataPoints,
+      }
+    })
+  }, [activeChartDef, gameLogsBySeason, compareSeasons, compareSeasonsSortedDesc, p.teamAbbrev])
 
   function fmtHeight(inches) {
     if (!inches) return null
@@ -747,18 +1135,47 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   }
 
   const bio      = stats || p
-  // Only look up contract for CAR roster context
-  const contract = !isLeagueContext ? findContract(p.id, p.lastName?.default) : null
+  // carContracts.js only has real data for CAR — for any other selected team,
+  // findContract()'s last-name fallback can false-positive against CAR's roster
+  // (e.g. a shared surname), so gate on the selected team too, not just
+  // roster-vs-league context. Matches TeamView.jsx's Cap-tab guard.
+  const contract = (!isLeagueContext && TEAM_CONFIG.abbr === 'CAR')
+    ? findContract(p.id, p.lastName?.default) : null
 
   // Derive positionCode from stats if not on the player object (league context)
   const positionCode = p.positionCode || stats?.position || null
+
+  // ── Header + Stats tab redesign inputs (NHL skaters only, Session 66) ──
+  // isGoalie already computed above; PWHL never reaches this component.
+  const teamAbbr  = p.teamAbbrev || TEAM_CONFIG.abbr
+  const teamColor = teamColorFor(teamAbbr)
+  const currentSection   = sections.find(sec => sec.highlight)
+  const currentBoxStats  = currentSection?.stats || null
+
+  // ── Header reflow (Session 80) — two-column top row (compact identity |
+  // radar + 2x2 totals) plus a full-width 6-column bio row underneath.
+  // Scoped to exactly the case SkaterHeaderPanel already renders for
+  // (!isGoalie && percentiles present) -- goalies and the pre-percentiles
+  // loading flash keep the original single-block header rather than
+  // splitting into a two-column layout with nothing to put on the right.
+  const showHeaderReflow = !isGoalie && !!mpData?.percentiles
+  const bioFields = [
+    { label: 'Height',    value: bio.heightInInches ? fmtHeight(bio.heightInInches) : null },
+    { label: 'Weight',    value: bio.weightInPounds ? `${bio.weightInPounds} lbs` : null },
+    { label: 'Shoots',    value: p.shootsCatches ? (p.shootsCatches === 'L' ? 'Left' : 'Right') : null },
+    { label: 'Age',       value: bio.birthDate ? calcAge(bio.birthDate) : null },
+    { label: 'Birthdate', value: bio.birthDate ? fmtBirth(bio.birthDate) : null },
+    { label: 'Hometown',  value: bio.birthCity?.default
+        ? `${bio.birthCity.default}${bio.birthCountry ? `, ${bio.birthCountry}` : ''}`
+        : null },
+  ]
 
   return (
     <div className="popup-backdrop" onClick={onClose}>
       <div className="player-popup" onClick={e => e.stopPropagation()}>
 
         {/* ── Header ── */}
-        <div className="pp-header">
+        <div className={`pp-header ${showHeaderReflow ? 'pp-header-reflow' : ''}`}>
           <div className="pp-photo-wrap">
             {!imgErr && (stats?.headshot || p.headshot) ? (
               <img src={stats?.headshot || p.headshot} alt={name}
@@ -781,13 +1198,13 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
               {isLeagueContext && p.teamAbbrev && (
                 <span className="pp-chip">{p.teamAbbrev}</span>
               )}
-              {bio.heightInInches && <span className="pp-chip">{fmtHeight(bio.heightInInches)}</span>}
-              {bio.weightInPounds && <span className="pp-chip">{bio.weightInPounds} lbs</span>}
-              {p.shootsCatches && (
+              {!showHeaderReflow && bio.heightInInches && <span className="pp-chip">{fmtHeight(bio.heightInInches)}</span>}
+              {!showHeaderReflow && bio.weightInPounds && <span className="pp-chip">{bio.weightInPounds} lbs</span>}
+              {!showHeaderReflow && p.shootsCatches && (
                 <span className="pp-chip">{isGoalie ? 'Catches' : 'Shoots'} {p.shootsCatches === 'L' ? 'Left' : 'Right'}</span>
               )}
             </div>
-            {bio.birthDate && (
+            {!showHeaderReflow && bio.birthDate && (
               <div className="pp-birth">
                 {fmtBirth(bio.birthDate)} · Age {calcAge(bio.birthDate)}
                 {bio.birthCity?.default && ` · ${bio.birthCity.default}`}
@@ -795,8 +1212,29 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
               </div>
             )}
           </div>
+          {showHeaderReflow && (
+            <SkaterHeaderPanel
+              percentiles={mpData.percentiles}
+              boxStats={currentBoxStats}
+              teamColor={teamColor}
+              statsStale={mpData.statsStale}
+              statsSeason={mpData.statsSeason}
+            />
+          )}
           <button className="pp-close" onClick={onClose} aria-label="Close player details">✕</button>
         </div>
+
+        {/* ── Bio row — full width, 6 evenly-spaced columns (Session 80) ── */}
+        {showHeaderReflow && (
+          <div className="pp-bio-row">
+            {bioFields.map(f => (
+              <div className="pp-bio-field" key={f.label}>
+                <div className="pp-bio-label">{f.label}</div>
+                <div className="pp-bio-value">{f.value ?? '—'}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* ── Rankings banner — CAR context only ── */}
         {!isLeagueContext && rankings && (rankings.division || rankings.conference || rankings.league) && (
@@ -923,6 +1361,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
           {!isLeagueContext && (
             <button className={`pp-tab ${ppTab === 'scout' ? 'active' : ''}`} onClick={() => setPpTab('scout')}>🔍 Scout</button>
           )}
+          <button className={`pp-tab ${ppTab === 'compare' ? 'active' : ''}`} onClick={() => setPpTab('compare')}>🆚 Compare</button>
         </div>
 
         {/* ── Stats tab ── */}
@@ -935,22 +1374,11 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                 ))}
               </div>
             )}
-            {!loading && sections.map(({ label, stats: s, highlight }) => {
-              if (!s) return null
-              let enriched = (isGoalie && goalieData?.qsPct != null)
-                ? { ...s, qualityStartPct: goalieData.qsPct }
-                : s
-              if (!isGoalie && mpData) {
-                if (s?.gameTypeId === 2) {
-                  enriched = { ...enriched, hits: mpData.hits ?? undefined, blockedShots: mpData.blockedShots ?? undefined, takeaways: mpData.takeaways ?? undefined, giveaways: mpData.giveaways ?? undefined }
-                } else if (s?.gameTypeId === 3 && mpData.poDef) {
-                  enriched = { ...enriched, hits: mpData.poDef.hits ?? undefined, blockedShots: mpData.poDef.blockedShots ?? undefined, takeaways: mpData.poDef.takeaways ?? undefined, giveaways: mpData.poDef.giveaways ?? undefined }
-                }
-              }
-              const groups = groupStats(statDefs, enriched, isGoalie)
-              if (!groups.length) return null
-              return <StatSection key={label} label={label} groups={groups} highlight={highlight} isGoalie={isGoalie} />
-            })}
+            {!loading && !isGoalie && mpData?.percentiles && <PercentileScopeLegend />}
+            {!loading && currentStatSections}
+            {!loading && otherStatSections.length > 0 && (
+              <div className="stat-section-peers">{otherStatSections}</div>
+            )}
             {!loading && !sections.some(s => s.stats) && (
               <div className="pp-no-stats">No stats available for this player yet.</div>
             )}
@@ -964,12 +1392,79 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
         {/* ── Analytics tab ── */}
         {ppTab === 'analytics' && (
-          <PlayerAnalytics mpData={mpData} goalieData={goalieData} playerName={name} isGoalie={isGoalie} position={positionCode} />
+          <PlayerAnalytics mpData={mpData} goalieData={goalieData} playerName={name} isGoalie={isGoalie} position={positionCode} narrativeData={rvpNarrative} isLeagueContext={isLeagueContext} />
         )}
 
         {/* ── Scout tab — CAR context only ── */}
         {ppTab === 'scout' && !isLeagueContext && (
           <ScoutingBlurb data={scoutData} playerName={name} />
+        )}
+
+        {/* ── Compare tab — season-over-season (Session 64) ──
+            Reuses seasonTotals already fetched for the Stats tab above — no
+            second network call. Deliberately does NOT enrich with
+            mpData/goalieData (WAR/RAPM/QS%) the way the Stats tab's current
+            season does: those Supabase lookups are current-season-only, so
+            attaching them to a non-current selected season would silently
+            mislabel one season's numbers as another's. Box-score fields
+            from the NHL API's own seasonTotals only. */}
+        {ppTab === 'compare' && (
+          <div className="pp-body">
+            <SeasonComparisonPicker
+              league="nhl"
+              selected={compareSeasons}
+              onChange={setCompareSeasons}
+              maxSelected={4}
+            />
+            {compareSeasons.length === 0 && (
+              <div className="pp-no-stats">Select two or more seasons above to compare.</div>
+            )}
+            {chartableStatDefs.length > 0 && compareSeasons.length > 0 && (
+              <div className="stat-section xg-overlay-section">
+                <div className="stat-section-header">
+                  <span className="stat-section-label">Per-game trend</span>
+                  <select
+                    className="pp-metric-select"
+                    value={activeChartDef?.key || ''}
+                    onChange={e => setChartMetricKey(e.target.value)}
+                    aria-label="Trend metric"
+                  >
+                    {chartableStatDefs.map(d => (
+                      <option key={d.key} value={d.key}>{d.label}{d.cumulative ? ' (season total)' : ''}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="stat-section-body">
+                  {gameLogLoading
+                    ? <div className="pp-no-stats">Loading chart…</div>
+                    : (
+                      <SeasonOverlayChart
+                        series={chartSeries}
+                        metricLabel={activeChartDef.label}
+                        valueFormatter={v => (activeChartDef.key === 'savePctg' ? v.toFixed(3) : Math.round(v * 10) / 10)}
+                      />
+                    )}
+                </div>
+              </div>
+            )}
+            {compareSeasons.length > 0 && (
+              <div className="stat-section-peers">
+                {compareSeasonsSortedDesc.map(season => {
+                  const seasonStats = stats?.seasonTotals?.find(s => s.season === season && s.gameTypeId === 2)
+                  if (!seasonStats) {
+                    return (
+                      <div key={season} className="pp-no-stats">
+                        No regular-season data for {nhlSeasonLabel(season)}.
+                      </div>
+                    )
+                  }
+                  const groups = groupStats(statDefs, seasonStats, isGoalie)
+                  if (!groups.length) return null
+                  return <TileStatSection key={season} label={nhlSeasonLabel(season)} groups={groups} />
+                })}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

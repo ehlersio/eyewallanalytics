@@ -13,10 +13,10 @@ import { CalendarView } from '../components/CalendarView';
 import { GameStatsPopup } from '../components/GameStatsPopup';
 import { SeriesCard, SortBar, GameCard } from '../components/GameCard';
 import { MatchupDetail, computeWinPct } from '../components/MatchupDetail';
+import { isStandingsStale } from '../utils/standingsUtils';
 import './ScheduleView.css';
 
 const TABS = ['Playoffs', 'Regular Season'];
-const CAR_ABBR = TEAM_CONFIG.abbr;
 
 export default function ScheduleView() {
   const [tab, setTab]                   = useState('Playoffs');
@@ -45,10 +45,38 @@ export default function ScheduleView() {
   const { data: regGames,     loading: regLoading } = useFetch(getRegularSeasonGames);
   const { data: standings }                          = useFetch(getStandings);
   const { data: oddsData }                           = useFetch(getNhlOdds);
-  const { data: playoffRounds }                      = useFetch(getPlayoffSeries);
+  const { data: playoffRounds, loading: prLoading }  = useFetch(getPlayoffSeries);
+
+  // 'Playoffs' is the default `tab` above so a genuinely-live playoff run
+  // opens straight to it, but that default is a guess made before either
+  // fetch above resolves. Once both have settled, if there's no real
+  // playoff data (the same check that already hides the Playoffs tab
+  // button, just below) and the user hasn't manually switched tabs
+  // themselves, correct the guess to 'Regular Season' rather than leaving
+  // the content pane stuck showing "Playoffs not yet started" under a tab
+  // button that's no longer even in the list (e.g. right after an
+  // intentional early season flip, once the new season's schedule is
+  // published well before playoffs -- or any real offseason).
+  useEffect(() => {
+    if (poLoading || prLoading) return;
+    const hasPlayoffData = (playoffRounds?.length > 0) || (playoffGames?.length > 0);
+    if (!hasPlayoffData) setTab(t => t === 'Playoffs' ? 'Regular Season' : t);
+  }, [poLoading, prLoading, playoffRounds, playoffGames]);
+
+  // The NHL's own /standings/now redirects to whatever date it last actually
+  // resolved standings for — which stays pinned to last season's final date
+  // until real games exist for the new one (confirmed: still redirects to
+  // 2026-04-17, last season's finale, mid-July 2026). Every row carries its
+  // own `seasonId`, so compare that against our resolved season rather than
+  // trusting "now" to mean "this season" — otherwise a full prior season's
+  // 82-game record (real GF/GA, PP%/PK%, streak) silently feeds computeWinPct
+  // and the auto-saved prediction as if it were this season's partial form.
+  // Only reject on an EXPLICIT mismatch — an absent seasonId (e.g. a test
+  // stub) isn't evidence of staleness, the real NHL API always includes it.
+  const standingsAreStale = isStandingsStale(standings, TEAM_CONFIG.season);
 
   const standingMap = {};
-  if (standings) standings.forEach(t => {
+  if (!standingsAreStale) (standings || []).forEach(t => {
     // Key by the abbreviation — handle both { default: "CAR" } and plain "CAR"
     const abbr = t.teamAbbrev?.default || t.teamAbbrev;
     if (abbr) {
@@ -57,7 +85,7 @@ export default function ScheduleView() {
     }
   });
 
-  const carStanding    = standingMap[CAR_ABBR];
+  const carStanding    = standingMap[TEAM_CONFIG.abbr];
 
   // Auto-record prediction outcomes for any completed games
   useEffect(() => {
@@ -66,7 +94,7 @@ export default function ScheduleView() {
       ['OFF','FINAL','F','FINAL_OVERTIME','FINAL_SHOOTOUT'].includes(g.gameState)
     );
     completed.forEach(g => {
-      const isHome    = g.homeTeam?.abbrev === CAR_ABBR;
+      const isHome    = g.homeTeam?.abbrev === TEAM_CONFIG.abbr;
       const carActual = isHome ? g.homeTeam?.score : g.awayTeam?.score;
       const oppActual = isHome ? g.awayTeam?.score : g.homeTeam?.score;
       if (carActual != null && oppActual != null && g.id) {
@@ -445,7 +473,7 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
               cardFavoured={cardFavoured}
               onClick={() => setSelectedGame(isSelected ? null : game)}
             />
-            {isSelected && oppStanding && carStanding && (
+            {isSelected && (
               <MatchupDetail game={game} oppStanding={oppStanding} carStanding={carStanding} odds={gameOdds} />
             )}
           </div>

@@ -12,7 +12,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { fetchPWHLLive, fetchPWHLSchedule, PWHL_TEAM_ID } from '../utils/pwhlApi';
 import { PWHLDevGameContext } from '../utils/PWHLDevGameContext';
-import { PWHL_CURRENT_SEASON } from '../utils/pwhlConfig';
+import { PWHL_CURRENT_SEASON, getPWHLTeamById } from '../utils/pwhlConfig';
 import PWHLShotMapView from './PWHLShotMapView';
 import './DevReplayView.css'; // reuse NHL dev styles
 
@@ -226,14 +226,13 @@ function PWHLDevReplayViewInner() {
       ? { homeScore: synthLiveData.homeScore, awayScore: synthLiveData.awayScore }
       : { homeScore: 0, awayScore: 0 };
 
-    // Resolve team codes from PWHL_TEAM_MAP
-    const TEAM_CODES = { 1:'BOS', 2:'MIN', 3:'MTL', 4:'NY', 5:'OTT', 6:'TOR', 8:'SEA', 9:'VAN' };
+    // Resolve team codes from PWHL_TEAM_BY_ID (via getPWHLTeamById)
     return {
       gameId:        fullLiveData.gameId,
       homeTeamId:    fullLiveData.homeTeamId,
       awayTeamId:    fullLiveData.awayTeamId,
-      homeTeamCode:  TEAM_CODES[fullLiveData.homeTeamId] || String(fullLiveData.homeTeamId),
-      awayTeamCode:  TEAM_CODES[fullLiveData.awayTeamId] || String(fullLiveData.awayTeamId),
+      homeTeamCode:  getPWHLTeamById(fullLiveData.homeTeamId)?.abbr || String(fullLiveData.homeTeamId),
+      awayTeamCode:  getPWHLTeamById(fullLiveData.awayTeamId)?.abbr || String(fullLiveData.awayTeamId),
       homeScore,
       awayScore,
       status:        isGameOver ? 'final' : 'live',
@@ -250,7 +249,6 @@ function PWHLDevReplayViewInner() {
   } : null;
 
   const currentEvent = slicedEvents[slicedEvents.length - 1];
-  const TEAM_CODES   = { 1:'BOS', 2:'MIN', 3:'MTL', 4:'NY', 5:'OTT', 6:'TOR', 8:'SEA', 9:'VAN' };
 
   return (
     <div className="dev-replay">
@@ -285,8 +283,8 @@ function PWHLDevReplayViewInner() {
             <div className="dev-section-label">Recent games</div>
             <div className="dev-game-list">
               {recentGames.map(g => {
-                const homeCode = TEAM_CODES[g.home_team_id] || String(g.home_team_id);
-                const awayCode = TEAM_CODES[g.away_team_id] || String(g.away_team_id);
+                const homeCode = getPWHLTeamById(g.home_team_id)?.abbr || String(g.home_team_id);
+                const awayCode = getPWHLTeamById(g.away_team_id)?.abbr || String(g.away_team_id);
                 return (
                   <button
                     key={g.game_id}

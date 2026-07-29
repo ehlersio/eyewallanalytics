@@ -108,3 +108,70 @@ Cypress.Commands.add('assertNoErrors', () => {
     expect(errors, `Unexpected console errors: ${errors.join(', ')}`).to.have.length(0)
   })
 })
+
+// ── Season-boundary skip gate (Session 62) ──────────────────────
+// Real, current-season data (standings, team/player stats, completed
+// games) doesn't exist for weeks after a live season flip — the app
+// already renders each page's own correct empty/graceful state for this
+// (built across #34/#35/#36/#37). These tests assert real data, which is
+// a safe assumption once games exist but not during that gap. Rather than
+// a parallel heuristic like "games played > 0" (the exact class of bug
+// this whole arc kept finding), each of these waits for a selector this
+// page's OWN rendering logic already produces, and skips only if that's
+// the "no data" one — never invents a new signal.
+//
+// Usage:
+//   cy.skipIfEither('.lv-season-empty', '.lv-leaders-card')
+//     — for pages with a dedicated empty-state marker (league.cy.js,
+//       players.cy.js's `.drill-empty`). Waits for whichever renders.
+//
+//   cy.skipUnlessContentAppears('.records-row', 'Season stats')
+//     — for pages with no dedicated empty marker, only the absence of a
+//       real-content marker (team.cy.js). Waits for a guaranteed-present
+//       anchor first (proof the page has settled, not still loading),
+//       then checks for the content synchronously.
+//
+// Both must be called from a `function () {}` test/hook body (not an
+// arrow function) so `this.skip()` binds to the real Mocha context —
+// Cypress binds a custom command's own `this` to that context the same
+// way it does for `it`/`before`/`beforeEach`.
+Cypress.Commands.add('skipIfEither', function (emptySelector, realSelector, options = {}) {
+  const timeout = options.timeout ?? 10000
+  cy.get(`${emptySelector}, ${realSelector}`, { timeout }).then(($el) => {
+    if ($el.is(emptySelector)) {
+      cy.log(`Skipping — ${emptySelector} present (no live season data yet)`)
+      this.skip()
+    }
+  })
+})
+
+Cypress.Commands.add('skipUnlessContentAppears', function (anchorSelector, contentMatcher, options = {}) {
+  const timeout = options.timeout ?? 10000
+  cy.get(anchorSelector, { timeout }).should('exist')
+  cy.get('body').then(($body) => {
+    const hasContent = typeof contentMatcher === 'string'
+      ? $body.text().includes(contentMatcher)
+      : $body.find(contentMatcher).length > 0
+    if (!hasContent) {
+      cy.log(`Skipping — "${contentMatcher}" not present (no live season data yet)`)
+      this.skip()
+    }
+  })
+})
+
+// Inverse of skipUnlessContentAppears — for pages whose own "no data yet"
+// state is a specific piece of real, live-computed text (e.g. "0 played")
+// rather than a dedicated empty-state marker.
+Cypress.Commands.add('skipIfContentAppears', function (anchorSelector, contentMatcher, options = {}) {
+  const timeout = options.timeout ?? 10000
+  cy.get(anchorSelector, { timeout }).should('exist')
+  cy.get('body').then(($body) => {
+    const hasContent = typeof contentMatcher === 'string'
+      ? $body.text().includes(contentMatcher)
+      : $body.find(contentMatcher).length > 0
+    if (hasContent) {
+      cy.log(`Skipping — "${contentMatcher}" present (no live season data yet)`)
+      this.skip()
+    }
+  })
+})

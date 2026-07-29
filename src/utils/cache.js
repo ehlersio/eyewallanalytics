@@ -17,6 +17,7 @@ export const TTL = {
   GAME_DATA:     2 * 60_000,  // 2 min  — live/recent boxscore
   ADVANCED:      10 * 60_000, // 10 min — team corsi/pp/pk
   SHORT:         60_000,      // 1 min  — live-ish data
+  PLAYER_SEARCH_INDEX: 30 * 60_000, // 30 min — flat NHL+PWHL player list for search
 };
 
 /** Fetch with caching + in-flight deduplication.

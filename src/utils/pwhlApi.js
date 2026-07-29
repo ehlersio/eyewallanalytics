@@ -57,6 +57,60 @@ export async function fetchPWHLPlayerShots(playerId, season = PWHL_CURRENT_SEASO
   return workerFetch(`/pwhl/player-shots?playerId=${playerId}&season=${season}`);
 }
 
+/**
+ * Fetch a single player's identity + one season's stat line, merged.
+ * Powers PWHLPlayerPopup's self-fetch-by-id — pass the popup's own
+ * `season` prop so the stat line matches whatever season the caller is
+ * showing; omit season to get the most recent regular-season row.
+ */
+export async function fetchPWHLPlayerLanding(playerId, season) {
+  if (!playerId) return null;
+  const qs = season ? `&season=${season}` : '';
+  return workerFetch(`/pwhl/player/landing?id=${playerId}${qs}`);
+}
+
+/**
+ * Fetch a player's precomputed league percentiles for one season (goals,
+ * 1st assists, penalty discipline, finishing -- see eyewall-pipeline's
+ * pwhl_percentiles.py for what's actually computed; this is a straight
+ * read of eyewall-poller's /pwhl/player/percentiles, same "null = not
+ * enough data yet, not an error" convention as the rest of this file).
+ * Omit season to get the most recent regular-season row.
+ */
+export async function fetchPWHLPlayerPercentiles(playerId, season) {
+  if (!playerId) return null;
+  const qs = season ? `&season=${season}` : '';
+  return workerFetch(`/pwhl/player/percentiles?id=${playerId}${qs}`);
+}
+
+/**
+ * Fetch one player's career Regular Season / Playoffs totals (Session 75).
+ * Returns { player_id, regularSeason, playoffs }, either season object
+ * `null` if the player has no rows in that section yet (e.g. hasn't made
+ * the playoffs). No `season` param -- career totals aren't season-scoped.
+ */
+export async function fetchPWHLPlayerCareer(playerId) {
+  if (!playerId) return null;
+  return workerFetch(`/pwhl/player/career?id=${playerId}`);
+}
+
+/**
+ * Fetch one player's game-by-game box score rows for a season (Session 70 —
+ * player Compare tab trend charts). Same flat skaters/goalies shape as
+ * fetchPWHLGameBox above, just filtered by player+season instead of by
+ * game — caller already knows the player's position and reads whichever
+ * array is non-empty, same convention as that function.
+ */
+export async function fetchPWHLPlayerGameLog(playerId, seasonId) {
+  if (!playerId || !seasonId) return null;
+  const data = await workerFetch(`/pwhl/player-game-log?playerId=${playerId}&seasonId=${seasonId}`);
+  if (!data) return null;
+  return {
+    skaters: Array.isArray(data.skaters) ? data.skaters : [],
+    goalies: Array.isArray(data.goalies) ? data.goalies : [],
+  };
+}
+
 /** Fetch a single team's season record from pwhl_team_seasons (includes reg_wins, non_reg_wins). */
 export async function fetchPWHLTeamRecord(teamId, season) {
   if (!teamId || !season) return null;
@@ -68,6 +122,53 @@ export async function fetchPWHLTeamRecord(teamId, season) {
 }
 
 
+/**
+ * Season-over-season team comparison (Session 64) -- box-score fields
+ * only, mirroring NHL's fetchTeamSeasonsCompare. Normalized to the same
+ * camelCase shape that function returns so the same UI component can
+ * render either league's response without a league-specific branch.
+ */
+export async function fetchPWHLTeamSeasonsCompare(teamId, seasons) {
+  if (!teamId || !seasons?.length) return [];
+  const rows = await workerFetch(`/pwhl/team-seasons/compare?teamId=${teamId}&seasons=${seasons.join(',')}`);
+  if (!Array.isArray(rows)) return [];
+  return rows.map(r => ({
+    season:        r.season_id,
+    gamesPlayed:   r.gp,
+    wins:          r.wins,
+    losses:        r.losses,
+    otLosses:      r.ot_losses,
+    points:        r.points,
+    goalsFor:      r.goals_for,
+    goalsAgainst:  r.goals_against,
+    ppPct:         r.pp_pct,
+    pkPct:         r.pk_pct,
+  }));
+}
+
+/**
+ * Team vs team comparison (Session 86) -- two teams, one season, mirroring
+ * NHL's fetchTeamSeasonsCompareTeams. Backed by /pwhl/team-seasons/compare-teams.
+ */
+export async function fetchPWHLTeamSeasonsCompareTeams(teamIdA, teamIdB, season) {
+  if (!teamIdA || !teamIdB || !season) return [];
+  const rows = await workerFetch(`/pwhl/team-seasons/compare-teams?teamIds=${teamIdA},${teamIdB}&season=${season}`);
+  if (!Array.isArray(rows)) return [];
+  return rows.map(r => ({
+    team:          r.team_id,
+    season:        r.season_id,
+    gamesPlayed:   r.gp,
+    wins:          r.wins,
+    losses:        r.losses,
+    otLosses:      r.ot_losses,
+    points:        r.points,
+    goalsFor:      r.goals_for,
+    goalsAgainst:  r.goals_against,
+    ppPct:         r.pp_pct,
+    pkPct:         r.pk_pct,
+  }));
+}
+
 export async function fetchPWHLPlayers(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {
   if (!teamId) return null;
   return workerFetch(`/pwhl/players?teamId=${teamId}&season=${season}`);
@@ -76,6 +177,15 @@ export async function fetchPWHLPlayers(teamId = PWHL_TEAM_ID, season = PWHL_CURR
 export async function fetchPWHLShots(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {
   if (!teamId) return null;
   return workerFetch(`/pwhl/shots?teamId=${teamId}&season=${season}`);
+}
+
+// Season-aggregate SOG/blocks/hits/penalties/faceoffs (car vs. opp) + PP%/
+// PK% for the Shot Map's "All N" summary cards (Session 80) — counts only,
+// not raw rows the way fetchPWHLShots is. See eyewall-poller's pwhl.js for
+// the aggregation itself.
+export async function fetchPWHLTeamSeasonSummary(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {
+  if (!teamId) return null;
+  return workerFetch(`/pwhl/team-season-summary?teamId=${teamId}&season=${season}`);
 }
 
 export async function fetchPWHLSchedule(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {

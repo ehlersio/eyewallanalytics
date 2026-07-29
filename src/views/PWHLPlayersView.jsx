@@ -3,16 +3,10 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import { fetchPWHLPlayers, PWHL_TEAM_CONFIG, PWHL_TEAM_ID } from '../utils/pwhlApi';
-import { PWHL_CURRENT_SEASON } from '../utils/pwhlConfig';
+import { PWHL_CURRENT_SEASON, PWHL_REGULAR_SEASONS } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
 import './PlayersView.css';
-
-const SEASONS = [
-  { id: 8, label: '2025-26' },
-  { id: 5, label: '2024-25' },
-  { id: 1, label: '2023-24' },
-];
 
 // ── Skater columns ────────────────────────────────────────────
 const SKATER_COLS = [
@@ -89,19 +83,7 @@ export default function PWHLPlayersView() {
   const skaters = useMemo(() => data?.skaters || [], [data]);
   const goalies = useMemo(() => data?.goalies || [], [data]);
 
-  const seasonLabel = SEASONS.find(s => s.id === season)?.label || String(season);
-
-  // For popup: merge stat row with roster bio (roster has headshot/birth_date etc)
-  const rosterMap = useMemo(() => {
-    const m = {};
-    for (const p of roster) m[p.player_id] = p;
-    return m;
-  }, [roster]);
-
-  function openPopup(row) {
-    const bio = rosterMap[row.player_id] || {};
-    setSelected({ ...bio, ...row });
-  }
+  const seasonLabel = PWHL_REGULAR_SEASONS.find(s => s.id === season)?.label || String(season);
 
   if (!abbr || !teamId) {
     return (
@@ -152,17 +134,17 @@ export default function PWHLPlayersView() {
               <RosterSection
                 title="Forwards"
                 players={roster.filter(p => ['C','LW','RW','F'].includes(p.position))}
-                onSelect={p => setSelected({ ...p, ...(skaters.find(s => s.player_id === p.player_id) || {}) })}
+                onSelect={setSelected}
               />
               <RosterSection
                 title="Defencemen"
                 players={roster.filter(p => ['D','LD','RD'].includes(p.position))}
-                onSelect={p => setSelected({ ...p, ...(skaters.find(s => s.player_id === p.player_id) || {}) })}
+                onSelect={setSelected}
               />
               <RosterSection
                 title="Goalies"
                 players={roster.filter(p => p.position === 'G')}
-                onSelect={p => setSelected({ ...p, ...(goalies.find(g => g.player_id === p.player_id) || {}) })}
+                onSelect={setSelected}
               />
             </>
           )}
@@ -174,7 +156,7 @@ export default function PWHLPlayersView() {
         <>
           {/* Season picker */}
           <div className="players-tabs" style={{ marginTop: 0, marginBottom: 0 }}>
-            {SEASONS.map(s => (
+            {PWHL_REGULAR_SEASONS.map(s => (
               <button key={s.id} className={`players-tab${season === s.id ? ' active' : ''}`}
                 onClick={() => handleSeasonPick(s.id)}>{s.label}</button>
             ))}
@@ -191,14 +173,14 @@ export default function PWHLPlayersView() {
             <SortableTable
               rows={skaters} cols={SKATER_COLS} defaultSort="points"
               loading={loading} emptyMsg={`No skater stats for ${seasonLabel}.`}
-              onRowClick={openPopup}
+              onRowClick={setSelected}
             />
           )}
           {gameType === 'goalies' && (
             <SortableTable
               rows={goalies} cols={GOALIE_COLS} defaultSort="wins"
               loading={loading} emptyMsg={`No goalie stats for ${seasonLabel}.`}
-              onRowClick={openPopup}
+              onRowClick={setSelected}
             />
           )}
         </>

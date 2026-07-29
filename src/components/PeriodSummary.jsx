@@ -438,7 +438,7 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarra
       {/* Footer */}
       <div className="ps-canvas-footer">
         <span className="ps-canvas-footer-brand">eyewallanalytics.com</span>
-        <span className="ps-canvas-footer-tag">#LetsGoCanes</span>
+        <span className="ps-canvas-footer-tag">{TEAM_CONFIG.hashtags?.[0] || `#${TEAM_CONFIG.abbr}`}</span>
       </div>
     </div>
   );

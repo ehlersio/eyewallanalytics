@@ -1,5 +1,15 @@
 // cypress/e2e/period-summary.cy.js
 
+// Pins the game-summary-chip-dependent blocks below to a real, permanent
+// CAR game (2026-05-21 playoff win over MTL, gameState OFF) via the app's
+// own ?mockGame= dev feature (nhlApi.js:getLiveGame -- DEV-only, statically
+// eliminated from production builds, verified against a real `npm run
+// build` output during Session 67). Without this, period-summary chips
+// only render for a live/very-recent NHL game, which is false for ~4
+// months a year (off-season). Same fix applied to shot-map.cy.js's 'Shot
+// Map' block, which has the identical dependency.
+const MOCK_GAME_ID = '2025030311'
+
 describe('Settings (⚙️ button)', () => {
   beforeEach(() => {
     cy.visit('/')
@@ -43,6 +53,11 @@ describe('Settings (⚙️ button)', () => {
   })
 
   describe('Game Summaries section', () => {
+    beforeEach(() => {
+      cy.visit(`/?mockGame=${MOCK_GAME_ID}`)
+      cy.team().then(t => cy.contains(t.abbr, { timeout: 10000 }).should('exist'))
+    })
+
     it('shows period chips after summaries load', () => {
       cy.get('button.notif-bell').click()
       cy.contains(/P1|P2|P3|FINAL/, { timeout: 15000 }).should('exist')
@@ -77,9 +92,9 @@ describe('Settings (⚙️ button)', () => {
 
 describe('Period Summary popup', () => {
   beforeEach(() => {
-    cy.visit('/')
+    cy.visit(`/?mockGame=${MOCK_GAME_ID}`)
     cy.window().then(win => win.sessionStorage.clear())
-    cy.visit('/')
+    cy.visit(`/?mockGame=${MOCK_GAME_ID}`)
     cy.team().then(t => cy.contains(t.abbr, { timeout: 10000 }).should('exist'))
     cy.get('button.notif-bell').click()
     cy.get('.notif-summary-chip', { timeout: 15000 }).first().click()
@@ -184,9 +199,9 @@ describe('Period Summary popup', () => {
 
 describe('Final Game Summary popup', () => {
   beforeEach(() => {
-    cy.visit('/')
+    cy.visit(`/?mockGame=${MOCK_GAME_ID}`)
     cy.window().then(win => win.sessionStorage.clear())
-    cy.visit('/')
+    cy.visit(`/?mockGame=${MOCK_GAME_ID}`)
     cy.team().then(t => cy.contains(t.abbr, { timeout: 10000 }).should('exist'))
     cy.get('button.notif-bell').click()
     cy.get('.notif-summary-chip-game', { timeout: 15000 }).click()

@@ -78,6 +78,35 @@ describe('PWHL Shot Map', () => {
     })
   })
 
+  // Reg/Playoffs toggle (Session 77) — new capability for PWHL, not just
+  // NHL parity. PWHL models playoffs as a distinct season_id
+  // (PWHL_PLAYOFF_SEASON_MAP in pwhlConfig.js), unlike NHL's gameType
+  // filter, so toggling here actually re-fetches a different season_id.
+  describe('Regular Season / Playoffs toggle', () => {
+    it('shows the toggle defaulted to Regular', () => {
+      cy.get('.season-type-toggle').should('exist')
+      cy.get('.season-type-toggle-btn.on').should('contain.text', 'Regular')
+    })
+
+    it('switches to Playoffs and back without crashing', () => {
+      cy.contains('Playoffs').click()
+      cy.get('.season-type-toggle-btn.on').should('contain.text', 'Playoffs')
+      cy.get('svg').should('exist')
+      cy.assertNoErrors()
+      cy.contains('Regular').click()
+      cy.get('.season-type-toggle-btn.on').should('contain.text', 'Regular')
+    })
+
+    it('keeps the same year selected when toggling to Playoffs', () => {
+      cy.contains('2024-25').click()
+      cy.contains('Playoffs').click()
+      // The year chip row highlights by regular-season id even while
+      // viewing that year's playoffs (see selectedYear in PWHLShotMapView.jsx)
+      cy.contains('2024-25').should('have.class', 'on')
+      cy.contains('Regular').click()
+    })
+  })
+
   describe('Game chips', () => {
     it('shows an All games chip', () => {
       cy.contains(/^All \d+$/).should('exist')

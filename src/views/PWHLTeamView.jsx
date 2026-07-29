@@ -6,9 +6,11 @@ import {
   fetchPWHLStandings, fetchPWHLPlayers, fetchPWHLSchedule, fetchPWHLSalaries,
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
-import { PWHL_CURRENT_SEASON, PWHL_PLAYOFF_SEASON_MAP } from '../utils/pwhlConfig';
+import { PWHL_SEASONS, PWHL_PLAYOFF_SEASON_MAP } from '../utils/pwhlConfig';
+import { useSport } from '../utils/SportContext';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
+import TeamComparisonPopup from '../components/TeamComparisonPopup';
 import './TeamView.css';
 import './ShotMapView.css';
 
@@ -20,16 +22,26 @@ export default function PWHLTeamView() {
   const abbr   = team?.abbr || '—';
   const color  = team?.displayColor || 'var(--text-dim)';
   const [tab,  setTab]  = useState('Overview');
+  const [compareOpen, setCompareOpen] = useState(false);
 
-  const { data: standings, loading: sLoad } = useFetch(() => fetchPWHLStandings(PWHL_CURRENT_SEASON), []);
+  // currentSeason is reactive (see SportContext.jsx) -- unlike reading
+  // PWHL_CURRENT_SEASON directly here, which would only ever reflect
+  // whatever value existed at this component's first mount: these
+  // useFetch calls have no `season` state of their own to put in their
+  // deps array (this view has no season picker), so without including
+  // currentSeason in the deps below, none of them would ever re-fetch
+  // once the live season resolves after mount.
+  const { currentSeason } = useSport();
+
+  const { data: standings, loading: sLoad } = useFetch(() => fetchPWHLStandings(currentSeason), [currentSeason]);
   const { data: players,   loading: pLoad } = useFetch(
-    () => teamId ? fetchPWHLPlayers(teamId, PWHL_CURRENT_SEASON) : Promise.resolve(null), [teamId]
+    () => teamId ? fetchPWHLPlayers(teamId, currentSeason) : Promise.resolve(null), [teamId, currentSeason]
   );
   const { data: schedule,  loading: scLoad  } = useFetch(
-    () => teamId ? fetchPWHLSchedule(teamId, PWHL_CURRENT_SEASON) : Promise.resolve(null), [teamId]
+    () => teamId ? fetchPWHLSchedule(teamId, currentSeason) : Promise.resolve(null), [teamId, currentSeason]
   );
   const { data: poSchedule, loading: poScLoad } = useFetch(
-    () => teamId ? fetchPWHLSchedule(teamId, PWHL_PLAYOFF_SEASON_MAP[PWHL_CURRENT_SEASON] || 9) : Promise.resolve(null), [teamId]
+    () => teamId ? fetchPWHLSchedule(teamId, PWHL_PLAYOFF_SEASON_MAP[currentSeason] || 9) : Promise.resolve(null), [teamId, currentSeason]
   );
   const inPlayoffs = (poSchedule?.length || 0) > 0;
   const { data: salaries, loading: salLoad } = useFetch(
@@ -51,6 +63,9 @@ export default function PWHLTeamView() {
   }
 
   const loading = sLoad || pLoad;
+  // Was a hardcoded "2025-26 season" string -- silently wrong every season
+  // after this one. currentSeason is reactive (see SportContext.jsx).
+  const seasonLabel = PWHL_SEASONS.find(s => s.id === currentSeason)?.label || `Season ${currentSeason}`;
 
   return (
     <div className="page team-view">
@@ -58,7 +73,19 @@ export default function PWHLTeamView() {
         <TeamLogo abbr={abbr} sport="pwhl" size={28} color={color} />
         <h2 className="view-title" style={{ margin: 0 }}>{team.displayName}</h2>
       </div>
-      <p className="view-sub">2025-26 season</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <p className="view-sub" style={{ margin: 0 }}>{seasonLabel} season</p>
+        <button className="team-compare-btn" onClick={() => setCompareOpen(true)}>🆚 Compare Seasons</button>
+      </div>
+
+      {compareOpen && (
+        <TeamComparisonPopup
+          league="pwhl"
+          teamValue={teamId}
+          teamLabel={team.displayName}
+          onClose={() => setCompareOpen(false)}
+        />
+      )}
 
       <div className="team-tabs">
         {TABS.map(t => (

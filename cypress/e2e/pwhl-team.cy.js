@@ -1,5 +1,7 @@
 // cypress/e2e/pwhl-team.cy.js
 
+const WORKER_URL = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
+
 const PWHL_TEST_TEAMS = ['BOS', 'MIN', 'MTL', 'TOR']
 
 PWHL_TEST_TEAMS.forEach(abbr => {
@@ -144,6 +146,48 @@ PWHL_TEST_TEAMS.forEach(abbr => {
         cy.contains(/CBA Target/i, { timeout: 8000 }).should('exist')
       })
     })
+
+    describe('Compare Seasons', () => {
+      beforeEach(() => cy.contains('🆚 Compare Seasons').click())
+
+      it('opens the picker with multiple season options', () => {
+        cy.contains('Compare Seasons').should('be.visible')
+        cy.get('.season-chip', { timeout: 8000 }).should('have.length.greaterThan', 1)
+      })
+
+      it('renders one comparison card per selected season', () => {
+        cy.get('.season-chip', { timeout: 8000 }).eq(0).click()
+        cy.get('.season-chip').eq(1).click()
+        cy.get('.stat-section').should('have.length', 2)
+        cy.contains('GP').should('be.visible')
+        cy.contains('PTS').should('be.visible')
+      })
+    })
+
+    describe('Compare Teams (Session 86)', () => {
+      beforeEach(() => {
+        cy.contains('🆚 Compare Seasons').click()
+        cy.get('[aria-label="Compare vs team"]').click()
+        cy.contains('Full Stat Comparison').should('be.visible')
+      })
+
+      it('opponent picker excludes the current team', () => {
+        cy.get('select[aria-label="Choose opponent team"]').find('option').then($opts => {
+          const values = [...$opts].map(o => o.value).filter(Boolean)
+          expect(values).not.to.include(String(teamId))
+        })
+      })
+
+      it('renders one comparison card per team once an opponent and season are picked', () => {
+        cy.get('select[aria-label="Choose opponent team"]').then($sel => {
+          const opponent = [...$sel[0].options].map(o => o.value).find(v => v && v !== String(teamId))
+          cy.wrap($sel).select(opponent)
+        })
+        cy.get('.season-chip', { timeout: 8000 }).first().click()
+        cy.get('.stat-section', { timeout: 15000 }).should('have.length', 2)
+        cy.contains('GP').scrollIntoView().should('be.visible')
+      })
+    })
   })
 })
 
@@ -235,6 +279,70 @@ describe('PWHL Team view — DET (expansion, no games played yet)', () => {
     ['Advanced', 'Splits', 'Trends', 'Salaries', 'Overview'].forEach(tab => {
       cy.contains(tab).click()
       cy.assertNoErrors()
+    })
+  })
+
+  // The durable case for SESSION_64_BUILD's "team has no row at all for a
+  // selected season" requirement -- unlike the NHL current-season null-field
+  // case in team.cy.js (which will stop being true once real games are
+  // played), DET never having existed as a franchise before the 2026-27
+  // expansion is a permanent historical fact, not a transient data gap. Safe
+  // to assert this indefinitely.
+  describe('Compare Seasons', () => {
+    beforeEach(() => cy.contains('🆚 Compare Seasons').click())
+
+    it('shows "Not yet available" instead of zeroed stats for a pre-expansion season', () => {
+      cy.get('.season-chip', { timeout: 8000 }).contains('2025-26').click()
+      cy.get('.stat-section').should('have.length', 1)
+      cy.contains('Not yet available for this season').should('be.visible')
+      // No metric rows at all for this card -- confirms the empty state
+      // replaces the stat list rather than rendering it zeroed-out.
+      cy.get('.stat-section').find('.stat-row').should('not.exist')
+    })
+  })
+
+  describe('Compare Teams (Session 86)', () => {
+    beforeEach(() => {
+      cy.contains('🆚 Compare Seasons').click()
+      cy.get('[aria-label="Compare vs team"]').click()
+    })
+
+    it('shows "Not yet available" for an expansion team with no prior-season row', () => {
+      cy.get('select[aria-label="Choose opponent team"]').select('2') // Minnesota Frost
+      cy.get('.season-chip', { timeout: 8000 }).contains('2025-26').click()
+      cy.contains('Not yet available for this season', { timeout: 15000 }).should('be.visible')
+    })
+  })
+})
+
+// ── Season correctness (Session 65) ─────────────────────────────
+// Regression coverage for the frozen-module-load-season-constants fix.
+// The existing skipIfEither/skipUnlessContentAppears skip-gate commands
+// (Session 62) only distinguish "real content present" from "no data yet"
+// -- they say nothing about whether that content is for the RIGHT season.
+// A component that regresses back to reading a frozen constant instead of
+// the live-resolved value would still show real, populated content and
+// sail straight through those gates.
+//
+// This is a genuinely new category of coverage for this repo, not a
+// bigger version of the skip-gate pattern: every existing spec asserts
+// WHETHER something rendered; this is the first one that asserts WHICH
+// season it rendered for, checked against the live source of truth
+// (/config/seasons) rather than a value baked into the test itself. Was
+// literally a hardcoded "2025-26 season" string here until this session --
+// see PWHLTeamView.jsx.
+describe('Season correctness — rendered label matches live /config/seasons', () => {
+  it('team page season label matches the season the Worker currently resolves as current', () => {
+    cy.request(`${WORKER_URL}/config/seasons`).then((res) => {
+      const { startYear } = res.body.pwhl
+      const expectedBase = `${startYear}-${String(startYear + 1).slice(2)}`
+      cy.visit('/pwhl/team', {
+        onBeforeLoad(win) {
+          win.localStorage.setItem('eyewall:sport', 'pwhl')
+          win.localStorage.setItem('eyewall:pwhl_team', JSON.stringify({ abbr: 'BOS', teamId: 1 }))
+        },
+      })
+      cy.get('.view-sub', { timeout: 15000 }).should('contain', expectedBase)
     })
   })
 })

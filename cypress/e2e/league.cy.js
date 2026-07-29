@@ -16,6 +16,58 @@ function liveSeriesIt(title, fn) {
   })
 }
 
+const WORKER_URL_LEAGUE = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
+
+// ── Standings / Power rankings / Leaders — zero-data empty states ──
+// Regression coverage for the Session 61 NHL season-flip prep: once the
+// season live-flips ahead of puck drop, standings/team-seasons/leaders
+// endpoints genuinely return zero rows (rosters + schedule exist, no games
+// played yet) until real games start. Before this fix, Standings/Leaders
+// rendered blank headers with no explanation, and Power Rankings' loading
+// skeleton spun forever (`loading = !standings?.length || xgLoading` never
+// resolved once standings was a real, empty array) — all three read as
+// "broken," not "season hasn't started." Stubbed to zero rows here since
+// the real season is rarely (if ever) actually in this state.
+//
+// Placed as the very first describe block in this spec, before even the
+// smoke tests — the leaders endpoints are keyed by season/gameType only
+// (not by team), so any earlier real page visit for ANY team populates
+// Chromium's HTTP cache for these exact URLs; a later cy.intercept() never
+// sees the request at all once that's happened (confirmed: this test
+// failed with "No request ever occurred" only when something upstream in
+// the same spec file had visited /league for real first, and passed
+// instantly in isolation or when run first).
+
+describe('Standings / Power rankings / Leaders — season-not-started empty state', () => {
+  beforeEach(() => {
+    cy.intercept('GET', `${WORKER_URL_LEAGUE}/cache/standings*`, { body: [] }).as('getStandings')
+    cy.intercept('GET', '**/nhl-api/v1/skater-stats-leaders/**', { body: { points: [], goals: [] } }).as('getSkaterLeaders')
+    cy.intercept('GET', '**/nhl-api/v1/goalie-stats-leaders/**', { body: { savePctg: [], goalsAgainstAverage: [] } }).as('getGoalieLeaders')
+    cy.setTeam('CAR')
+    cy.visit('/league')
+    cy.get('.league-view', { timeout: 15000 }).should('be.visible')
+  })
+
+  it('Standings tab shows the season-not-started message instead of blank headers/table', () => {
+    cy.get('.lv-season-empty').should('be.visible').and('contain', "hasn't started yet")
+    cy.get('.lv-table').should('not.exist')
+    cy.get('.lv-conf-label').should('not.exist')
+  })
+
+  it('Power rankings tab shows the season-not-started message instead of an infinite skeleton', () => {
+    cy.get('.league-tab').contains('Power rankings').click()
+    cy.get('.lv-season-empty').should('be.visible').and('contain', 'Power rankings will appear')
+    cy.get('.lv-skeleton-wrap').should('not.exist')
+    cy.get('.pr-row').should('not.exist')
+  })
+
+  it('Leaders tab shows the season-not-started message instead of four blank cards', () => {
+    cy.get('.league-tab').contains('Leaders').click()
+    cy.get('.lv-season-empty').should('be.visible').and('contain', 'Stat leaders will appear')
+    cy.get('.lv-leaders-card').should('not.exist')
+  })
+})
+
 // ── Smoke tests — all 32 teams ────────────────────────────────
 // Verifies the League page loads without JS errors for a sample of teams.
 
@@ -79,6 +131,10 @@ describe('League page — CAR', () => {
   // ── Standings tab ─────────────────────────────────────────────
 
   describe('Standings tab', () => {
+    beforeEach(function () {
+      cy.skipIfEither('.lv-season-empty', '.lv-table')
+    })
+
     it('shows the four filter buttons', () => {
       cy.get('.lv-filter-btn').should('have.length', 4)
       cy.get('.lv-filter-btn').eq(0).should('contain', 'By division')
@@ -241,18 +297,38 @@ describe('League page — CAR', () => {
       cy.get('.series-modal .bkt-dots').should('have.length', 2)
     })
 
-    it('series modal shows game rows after loading', () => {
+    // Per-game data is only fetchable for OFFSEASON_BRACKET's series once
+    // the app's "current season" still matches the season those games
+    // actually belong to. Once the season flips, that stops being true
+    // until OFFSEASON_BRACKET itself gets refreshed to a fetchable season —
+    // the modal already handles this gracefully ("Game data unavailable for
+    // this series."), so these accept either outcome rather than asserting
+    // real games always load.
+    it('series modal shows game rows after loading, or the graceful empty state', () => {
       cy.get('.bkt-card--clickable').first().click()
       cy.get('.series-modal', { timeout: 3000 }).should('be.visible')
-      // Wait for games to load — skeleton disappears, rows appear
-      cy.get('.series-modal__game-row', { timeout: 10000 }).should('have.length.gte', 1)
+      cy.get('.series-modal__loading', { timeout: 10000 }).should('not.exist')
+      cy.get('body').then(($body) => {
+        if ($body.find('.series-modal__empty').length > 0) {
+          cy.get('.series-modal__empty').should('contain', 'unavailable')
+        } else {
+          cy.get('.series-modal__game-row').should('have.length.gte', 1)
+        }
+      })
     })
 
-    it('game rows show a score for each team', () => {
+    it('game rows show a score for each team, when game data is available', () => {
       cy.get('.bkt-card--clickable').first().click()
-      cy.get('.series-modal__game-row', { timeout: 10000 }).first().within(() => {
-        cy.get('.series-modal__score').should('have.length', 2)
-        cy.get('.series-modal__score').first().invoke('text').should('match', /^\d+$/)
+      cy.get('.series-modal__loading', { timeout: 10000 }).should('not.exist')
+      cy.get('body').then(($body) => {
+        if ($body.find('.series-modal__empty').length > 0) {
+          cy.get('.series-modal__empty').should('exist')
+        } else {
+          cy.get('.series-modal__game-row').first().within(() => {
+            cy.get('.series-modal__score').should('have.length', 2)
+            cy.get('.series-modal__score').first().invoke('text').should('match', /^\d+$/)
+          })
+        }
       })
     })
 
@@ -274,7 +350,17 @@ describe('League page — CAR', () => {
   // ── Leaders tab ───────────────────────────────────────────────
 
   describe('Leaders tab', () => {
-    beforeEach(() => cy.get('.league-tab').contains('Leaders').click())
+    // These assert real leader data (10 rows/card, real names/stats). That's
+    // only ever true once real games exist for the app's current season —
+    // not true right after a season flip, and not true for most of every
+    // preseason going forward. Skip (not fail) when the SeasonNotStartedState
+    // is showing instead — same philosophy as `liveSeriesIt` below.
+    beforeEach(function () {
+      cy.get('.league-tab').contains('Leaders').click()
+      cy.get('.lv-season-empty, .lv-leaders-card', { timeout: 10000 }).then(($el) => {
+        if ($el.hasClass('lv-season-empty')) this.skip()
+      })
+    })
 
     it('shows four leader cards', () => {
       cy.get('.lv-leaders-card', { timeout: 10000 }).should('have.length', 4)
@@ -402,52 +488,63 @@ describe('League page — CAR', () => {
       cy.get('.league-tab').contains('Standings').should('not.have.class', 'league-tab--active')
     })
 
-    it('shows 32 ranked rows', () => {
+    it('shows 32 ranked rows', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row', { timeout: 10000 })
       cy.get('.pr-row', { timeout: 10000 }).should('have.length', 32)
     })
 
-    it('first row has rank 1', () => {
+    it('first row has rank 1', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-rank-num').first().should('contain', '1')
     })
 
-    it('last row has rank 32', () => {
+    it('last row has rank 32', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-rank-num').last().should('contain', '32')
     })
 
-    it('shows column headers Pts%, L10, xGF%, GD/GP', () => {
+    it('shows column headers Pts%, L10, xGF%, GD/GP', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-table-header-row').should('contain', 'Pts%')
       cy.get('.pr-table-header-row').should('contain', 'L10')
       cy.get('.pr-table-header-row').should('contain', 'xGF%')
       cy.get('.pr-table-header-row').should('contain', 'GD/GP')
     })
 
-    it('shows team abbreviations in each row', () => {
+    it('shows team abbreviations in each row', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-abbr').first().invoke('text').should('match', /^[A-Z]{2,3}$/)
     })
 
-    it('shows Pts% as a percentage value', () => {
+    it('shows Pts% as a percentage value', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-row').first().find('.pr-col-stat').first()
         .invoke('text').should('match', /\d+\.\d%/)
     })
 
-    it('shows YOU row highlighted on CAR', () => {
+    it('shows YOU row highlighted on CAR', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-row--you').should('exist')
     })
 
-    it('top 8 ranks are styled with pr-rank--top class', () => {
+    it('top 8 ranks are styled with pr-rank--top class', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-rank--top').should('have.length', 8)
     })
 
-    it('bottom 8 ranks are styled with pr-rank--bot class', () => {
+    it('bottom 8 ranks are styled with pr-rank--bot class', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-rank--bot').should('have.length', 8)
     })
 
-    it('shows "How is this calculated?" toggle', () => {
+    it('shows "How is this calculated?" toggle', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-how-toggle').scrollIntoView().should('exist')
       cy.get('.pr-how-toggle').should('contain', 'How is this calculated?')
     })
 
-    it('how-toggle expands and collapses the explanation', () => {
+    it('how-toggle expands and collapses the explanation', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-how-body').should('not.exist')
       cy.get('.pr-how-toggle').click()
       cy.get('.pr-how-body').should('be.visible')
@@ -455,7 +552,8 @@ describe('League page — CAR', () => {
       cy.get('.pr-how-body').should('not.exist')
     })
 
-    it('expanded explanation shows all six components', () => {
+    it('expanded explanation shows all six components', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-how-toggle').click()
       cy.get('.pr-how-item').should('have.length', 6)
       cy.get('.pr-how-item').eq(0).should('contain', 'Points %')
@@ -466,7 +564,8 @@ describe('League page — CAR', () => {
       cy.get('.pr-how-item').eq(5).should('contain', 'Roster WAR')
     })
 
-    it('each component shows a weight percentage', () => {
+    it('each component shows a weight percentage', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-how-toggle').click()
       cy.get('.pr-how-weight').should('have.length', 6)
       cy.get('.pr-how-weight').each($el => {
@@ -474,7 +573,8 @@ describe('League page — CAR', () => {
       })
     })
 
-    it('shows Roster WAR component in explanation', () => {
+    it('shows Roster WAR component in explanation', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.pr-how-toggle').click()
       cy.get('.pr-how-item').should('have.length', 6)
       cy.get('.pr-how-item').eq(5).should('contain', 'Roster WAR')
@@ -501,7 +601,8 @@ describe('League page — CAR', () => {
       })
     })
 
-    it('shows movement arrow on YOU row when prior rank exists', () => {
+    it('shows movement arrow on YOU row when prior rank exists', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       // Movement arrow only appears after first baseline run
       cy.get('.pr-row--you').then($row => {
         const $mvmt = $row.find('.pr-mvmt')
@@ -511,10 +612,84 @@ describe('League page — CAR', () => {
       })
     })
 
-    it('shows export button', () => {
+    it('shows export button', function () {
+      cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.share-buttons-row').scrollIntoView().should('exist')
       cy.get('.share-buttons-row').should('contain', 'Save Image')
     })
+  })
+})
+
+// ── Standings tab — magic/tragic number display (Session 59) ───
+// Live standings + team-seasons data are both stubbed here so these four
+// states (clinched, eliminated, active magic number, wildcard bubble) are
+// deterministic — the real season is rarely in all four states at once,
+// and definitely isn't during summer preseason.
+
+function standingsEntry(overrides) {
+  return {
+    teamAbbrev: { default: overrides.abbr },
+    teamName: { default: overrides.abbr },
+    divisionName: 'Metropolitan',
+    conferenceName: 'Eastern',
+    gamesPlayed: 78,
+    wins: 40, losses: 30, otLosses: 8,
+    points: 88,
+    l10Wins: 5, l10Losses: 3, l10OtLosses: 2,
+    streakCode: 'W', streakCount: 2,
+    clinchIndicator: null,
+    ...overrides,
+  }
+}
+
+const MAGIC_STANDINGS = [
+  standingsEntry({ abbr: 'CAR', divisionSequence: 1, conferenceSequence: 1, leagueSequence: 1, wildcardSequence: 0, points: 110, clinchIndicator: 'p' }),
+  standingsEntry({ abbr: 'NYR', divisionSequence: 2, conferenceSequence: 2, leagueSequence: 2, wildcardSequence: 0, points: 95 }),
+  standingsEntry({ abbr: 'NJD', divisionSequence: 3, conferenceSequence: 3, leagueSequence: 3, wildcardSequence: 0, points: 90 }),
+  standingsEntry({ abbr: 'CBJ', divisionSequence: 4, conferenceSequence: 4, leagueSequence: 4, wildcardSequence: 1, points: 70 }),
+  standingsEntry({ abbr: 'PHI', divisionSequence: 5, conferenceSequence: 5, leagueSequence: 5, wildcardSequence: 2, points: 50, clinchIndicator: 'e' }),
+]
+
+const MAGIC_TEAM_SEASONS = [
+  { team: 'NYR', magic_number: 4,  tragic_number: 45, clinched: false, eliminated: false },
+  { team: 'CBJ', magic_number: 30, tragic_number: 6,  clinched: false, eliminated: false },
+]
+
+describe('Standings tab — magic/tragic number display', () => {
+  beforeEach(() => {
+    cy.intercept('GET', `${WORKER_URL_LEAGUE}/cache/standings*`, { body: MAGIC_STANDINGS }).as('getStandings')
+    cy.intercept('GET', `${WORKER_URL_LEAGUE}/team-seasons*`, { body: MAGIC_TEAM_SEASONS }).as('getTeamSeasons')
+    cy.setTeam('CAR')
+    cy.visit('/league')
+    cy.get('.league-view', { timeout: 15000 }).should('be.visible')
+  })
+
+  function rowFor(abbr) {
+    return cy.get('.lv-team-abbrev').contains(abbr).closest('.lv-row')
+  }
+
+  it('clinched: Presidents\' Trophy letter shows the fixed border color (CLINCH_COLOR bug fix)', () => {
+    rowFor('CAR').find('.lv-clinch-badge').should('contain', 'P')
+    rowFor('CAR').find('.lv-td--team')
+      .should('have.attr', 'style')
+      .and('include', 'border-left')
+  })
+
+  it('eliminated: "e" letter shows the fixed border color (CLINCH_COLOR bug fix)', () => {
+    rowFor('PHI').find('.lv-clinch-badge').should('contain', 'E')
+    rowFor('PHI').find('.lv-td--team')
+      .should('have.attr', 'style')
+      .and('include', 'border-left')
+  })
+
+  it('active magic number: pre-clinch team shows a green M-badge, no official clinch badge', () => {
+    rowFor('NYR').find('.lv-magic-badge').should('have.class', 'lv-magic-badge--clinch').and('contain', 'M4')
+    rowFor('NYR').find('.lv-clinch-badge').should('not.exist')
+  })
+
+  it('wildcard bubble: pre-elimination wildcard-pool team shows a red E-badge', () => {
+    cy.get('.lv-filter-btn').contains('Wild card').click()
+    rowFor('CBJ').find('.lv-magic-badge').should('have.class', 'lv-magic-badge--elim').and('contain', 'E6')
   })
 })
 

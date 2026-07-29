@@ -2,11 +2,11 @@ import { useState, useMemo } from 'react'
 import { useFetch } from '../hooks/useFetch'
 import { getRoster, getPlayoffGames, getStandings, TEAM_CONFIG } from '../utils/nhlApi'
 import { getTeamSkaterStatsFromDB } from '../utils/supabaseClient'
+import { useSport } from '../utils/SportContext'
+import { isStandingsStale } from '../utils/standingsUtils'
 import TeamLogo from '../components/TeamLogo'
 import PlayerPopup from '../components/PlayerPopup'
 import './PlayersView.css'
-
-const SEASON = Number(TEAM_CONFIG.season.slice(0, 4) + TEAM_CONFIG.season.slice(4)) // e.g. 20252026
 
 // ─── Stat definitions with tooltips ──────────────────────────
 // Moved to PlayerPopup.jsx (shared with LeagueView leaders modal)
@@ -14,9 +14,23 @@ const SEASON = Number(TEAM_CONFIG.season.slice(0, 4) + TEAM_CONFIG.season.slice(
 // ─── Main component ───────────────────────────────────────────
 
 export default function PlayersView() {
+  // SEASON used to be a module-level const derived from TEAM_CONFIG.season
+  // once at import time -- frozen at whatever value existed then, never
+  // picking up the Worker's live season resolution landing afterward.
+  // useSport().currentSeason is reactive (see SportContext.jsx).
+  const { currentSeason } = useSport()
+  const SEASON = Number(currentSeason)
   const { data: roster,      loading: rosterLoading } = useFetch(() => getRoster(TEAM_CONFIG.abbr))
   const { data: poGames }   = useFetch(getPlayoffGames)
-  const { data: standings } = useFetch(getStandings)
+  const { data: standingsRaw } = useFetch(getStandings)
+  // NHL's /standings/now stays pinned to last season's finale for months
+  // after our season config flips — see nhlApi.js's _getTeamStats() for the
+  // full story. Don't feed last season's team rank context into a player's
+  // rankings display as if it were current. Only reject on an EXPLICIT
+  // mismatch — an absent seasonId (e.g. a test stub) isn't evidence of
+  // staleness, the real NHL API always includes it.
+  const standingsAreStale = isStandingsStale(standingsRaw, TEAM_CONFIG.season)
+  const standings = standingsAreStale ? [] : (standingsRaw || [])
   const [selected, setSelected] = useState(null)
   const [view, setView]         = useState('roster')
   const [gameType, setGameType] = useState(2)
@@ -24,7 +38,7 @@ export default function PlayersView() {
 
   const { data: skaterStats, loading: statsLoading } = useFetch(
     () => getTeamSkaterStatsFromDB(TEAM_CONFIG.abbr, SEASON, gameType),
-    [gameType]
+    [gameType, SEASON]
   )
 
   return (

@@ -10,7 +10,6 @@ import InfoTip from '../components/InfoTip';
 import { capture } from '../utils/analytics';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 
-const CAR_ABBR = TEAM_CONFIG.abbr;
 
 // ── Game stats popup ─────────────────────────────────────────
 import { PeriodTable, SkaterTable, GoalsList } from '../components/GameStatsComponents';
@@ -228,7 +227,7 @@ function GameStatsPopup({ game, onClose }) {
                 <div className="gp-period-stars-row">
                   <div className="gp-section gp-period-col">
                     <div className="gp-section-label">Scoring by period</div>
-                    <PeriodTable scoring={scoring} home={home} carAbbr={CAR_ABBR} oppAbbr={oppAbbr} />
+                    <PeriodTable scoring={scoring} home={home} carAbbr={TEAM_CONFIG.abbr} oppAbbr={oppAbbr} />
                   </div>
                   {starsList.length > 0 && (
                     <div className="gp-section gp-stars-col">
@@ -255,7 +254,7 @@ function GameStatsPopup({ game, onClose }) {
               {scoring.length > 0 && (
                 <div className="gp-section">
                   <div className="gp-section-label">Goals</div>
-                  <GoalsList scoring={scoring} carAbbr={CAR_ABBR} oppAbbr={oppAbbr} oppColor={oppColor} />
+                  <GoalsList scoring={scoring} carAbbr={TEAM_CONFIG.abbr} oppAbbr={oppAbbr} oppColor={oppColor} />
                 </div>
               )}
 

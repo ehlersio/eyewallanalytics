@@ -1,5 +1,7 @@
 // cypress/e2e/team.cy.js
 
+const WORKER_URL = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
+
 const FULL_TEST_TEAMS = ['CAR', 'VGK', 'TOR', 'CHI']
 
 FULL_TEST_TEAMS.forEach(teamAbbr => {
@@ -24,12 +26,14 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
     })
 
     describe('Overview tab', () => {
-      it('shows season record', () => {
+      it('shows season record', function () {
+        cy.skipUnlessContentAppears('.records-row', 'Season stats')
         cy.contains('Season stats').should('be.visible')
         cy.contains(/\d+–\d+–\d+/).should('be.visible')
       })
 
-      it('shows season stats with league ranks', () => {
+      it('shows season stats with league ranks', function () {
+        cy.skipUnlessContentAppears('.records-row', 'Season stats')
         cy.contains('Season stats').should('be.visible')
         cy.contains(/Goals\/GP|GA\/GP|PP%|PK%/).should('be.visible')
         cy.get('.overview-stat-rank').first().then($el => {
@@ -53,7 +57,8 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         cy.contains(/Corsi|CF%|Shot/i, { timeout: 8000 }).should('exist')
       })
 
-      it('renders PDO section', () => {
+      it('renders PDO section', function () {
+        cy.skipUnlessContentAppears('.adv-context-note, .adv-toggle', 'PDO', { timeout: 8000 })
         cy.contains('PDO', { timeout: 8000 }).should('exist')
       })
 
@@ -90,22 +95,26 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
     describe('Trends tab', () => {
       beforeEach(() => cy.contains('Trends').click())
 
-      it('renders quick stats cards', () => {
+      it('renders quick stats cards', function () {
+        cy.skipIfEither('.empty-title', '[class*="result-dot"]', { timeout: 8000 })
         cy.contains(/Current streak|W\d|L\d/i, { timeout: 8000 }).should('exist')
         cy.contains('Last 10 games', { timeout: 8000 }).should('exist')
       })
 
-      it('renders result dots for last 20 games', () => {
+      it('renders result dots for last 20 games', function () {
+        cy.skipIfEither('.empty-title', '[class*="result-dot"]', { timeout: 8000 })
         cy.contains(/Last \d+ games/i, { timeout: 8000 }).should('exist')
         cy.get('[class*="result-dot"]').should('have.length.greaterThan', 0)
       })
 
-      it('renders rolling win% chart', () => {
+      it('renders rolling win% chart', function () {
+        cy.skipIfEither('.empty-title', '[class*="rolling-bar"]', { timeout: 8000 })
         cy.contains(/Win %|Rolling.*win/i, { timeout: 8000 }).should('exist')
         cy.get('[class*="rolling-bar"]').should('have.length.greaterThan', 0)
       })
 
-      it('renders goal differential chart', () => {
+      it('renders goal differential chart', function () {
+        cy.skipIfEither('.empty-title', '[class*="result-dot"]', { timeout: 8000 })
         cy.contains(/Goal differential/i, { timeout: 8000 }).should('exist')
       })
 
@@ -115,6 +124,62 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
             cy.contains(/Score.first rate/i).should('exist')
           }
         })
+      })
+    })
+
+    describe('Compare Seasons', () => {
+      beforeEach(() => cy.contains('🆚 Compare Seasons').click())
+
+      it('opens the picker with multiple season options', () => {
+        cy.contains('Compare Seasons').should('be.visible')
+        cy.get('.season-chip', { timeout: 8000 }).should('have.length.greaterThan', 1)
+      })
+
+      it('renders one comparison card per selected season', () => {
+        cy.get('.season-chip', { timeout: 8000 }).eq(0).click()
+        cy.get('.season-chip').eq(1).click()
+        // :not(.xg-overlay-section) excludes the season-overlay chart card
+        // (added Session 67) from this "one card per season" count -- it's a
+        // single shared chart, not a per-season stat card.
+        cy.get('.stat-section:not(.xg-overlay-section)', { timeout: 15000 }).should('have.length', 2)
+        // The chart section renders above the season cards in the DOM (it's
+        // a shared header for the comparison, not per-season), so on a short
+        // viewport the cards can land below the popup's visible scroll area
+        // after Cypress auto-scrolls to click the chips. scrollIntoView
+        // finds them regardless of where that lands.
+        cy.contains('GP', { timeout: 15000 }).scrollIntoView().should('be.visible')
+        cy.contains('PTS').scrollIntoView().should('be.visible')
+      })
+
+    })
+
+    describe('Compare Teams (Session 86)', () => {
+      beforeEach(() => {
+        cy.contains('🆚 Compare Seasons').click()
+        cy.get('[aria-label="Compare vs team"]').click()
+        cy.contains('Full Stat Comparison').should('be.visible')
+      })
+
+      it('opponent picker excludes the current team', () => {
+        cy.get('select[aria-label="Choose opponent team"]').find('option').then($opts => {
+          const values = [...$opts].map(o => o.value).filter(Boolean)
+          expect(values).not.to.include(teamAbbr)
+        })
+      })
+
+      it('renders one comparison card per team once an opponent and season are picked', () => {
+        cy.get('select[aria-label="Choose opponent team"]').then($sel => {
+          const opponent = [...$sel[0].options].map(o => o.value).find(v => v && v !== teamAbbr)
+          cy.wrap($sel).select(opponent)
+        })
+        cy.get('.season-chip', { timeout: 8000 }).first().click()
+        cy.get('.stat-section', { timeout: 15000 }).should('have.length', 2)
+        cy.contains('GP').scrollIntoView().should('be.visible')
+      })
+
+      it('switches back to Head-to-Head placeholder without losing the mode toggle', () => {
+        cy.contains('Head-to-Head').click()
+        cy.contains(/coming in a follow-up/i).should('be.visible')
       })
     })
 
@@ -150,5 +215,31 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         })
       })
     }
+  })
+})
+
+// ── Season correctness (Session 65) ─────────────────────────────
+// Regression coverage for the frozen-module-load-season-constants fix.
+// The existing skipIfEither/skipUnlessContentAppears skip-gate commands
+// (Session 62) only distinguish "real content present" from "no data yet"
+// -- they say nothing about whether that content is for the RIGHT season.
+// A component that regresses back to reading a frozen constant instead of
+// the live-resolved value would still show real, populated content and
+// sail straight through those gates.
+//
+// This is a genuinely new category of coverage for this repo, not a
+// bigger version of the skip-gate pattern: every existing spec asserts
+// WHETHER something rendered; this is the first one that asserts WHICH
+// season it rendered for, checked against the live source of truth
+// (/config/seasons) rather than a value baked into the test itself.
+describe('Season correctness — rendered label matches live /config/seasons', () => {
+  it('team page season label matches the season the Worker currently resolves as current', () => {
+    cy.request(`${WORKER_URL}/config/seasons`).then((res) => {
+      const liveSeasonId = String(res.body.nhl.seasonId)
+      const expectedLabel = `${liveSeasonId.slice(0, 4)}–${liveSeasonId.slice(6)}`
+      cy.setTeam('CAR')
+      cy.visit('/team')
+      cy.get('.view-sub', { timeout: 15000 }).should('contain', expectedLabel)
+    })
   })
 })

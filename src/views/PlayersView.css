@@ -190,14 +190,50 @@
   flex: 1; font-size: 13px; font-weight: 600; color: var(--text);
 }
 .stat-section.highlight-section .stat-section-label { color: var(--red-bright); }
+.pp-metric-select {
+  font-size: 11px; color: var(--text); background: var(--bg2);
+  border: 0.5px solid var(--border); border-radius: 6px; padding: 3px 6px;
+}
 .stat-section-current {
   font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px;
   background: var(--red-dim); color: var(--red-bright);
   border: 0.5px solid var(--red-border); text-transform: uppercase; letter-spacing: 0.06em;
 }
+/* Whole-season fallback (Session 66) — replaces .stat-section-current's red
+   "Current" styling, deliberately: this data is NOT current, it's last
+   season's, so it must never share the same visual weight/color as a
+   confirmed-current badge. */
+.stat-section-current.stat-section-stale {
+  background: var(--bg3); color: var(--text-dim);
+  border: 0.5px solid var(--border-2); text-transform: none; letter-spacing: normal;
+  font-style: italic; font-weight: 600;
+}
 .stat-section-arrow { font-size: 10px; color: var(--text-dim); }
 
 .stat-section-body { padding: 4px 16px 12px; }
+
+/* ── Peer stat sections (Session 73) ── Sections that used to render one at
+   a time behind an accordion click (Career Reg/PO, the current season's
+   sibling game-type, Compare-tab per-season rows) now sit side by side so
+   they're all visible without a click. Tiles inside a peer card drop to a
+   single column -- two columns doesn't read well once cards themselves are
+   only ~150-200px wide inside the popup's 420px hard cap (see the radar
+   chart's own note on that same cap, above). */
+.stat-section-peers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 16px;
+}
+.stat-section-peers .stat-section {
+  flex: 1 1 160px;
+  min-width: 140px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.stat-section-peers .stat-section-header { padding: 8px 10px; }
+.stat-section-peers .stat-section-body { padding: 4px 10px 10px; }
+.stat-section-peers .stat-tile-grid { grid-template-columns: 1fr; }
 
 /* ── Stat groups ── */
 .stat-group { margin-bottom: 10px; }
@@ -227,50 +263,6 @@
 .stat-row-value {
   font-family: var(--font-display); font-size: 18px; font-weight: 700;
   color: var(--text); flex-shrink: 0; min-width: 48px; text-align: right;
-}
-
-/* ── Tooltip ── */
-.stat-tip-wrap { position: relative; }
-.stat-tip-btn {
-  background: none; border: none; cursor: pointer;
-  font-size: 12px; color: var(--text-dim);
-  line-height: 1; padding: 2px 3px;
-  transition: color 0.12s; border-radius: 50%;
-}
-.stat-tip-btn:hover { color: var(--text-muted); }
-
-.stat-tip-popup {
-  position: absolute;
-  left: 0; top: calc(100% + 6px);
-  z-index: 200;
-  background: var(--bg1);
-  border: 0.5px solid var(--border-2);
-  border-radius: var(--radius);
-  padding: 10px 12px;
-  width: 240px;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
-  animation: tip-in 0.12s ease;
-}
-@keyframes tip-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.tip-title {
-  font-size: 12px; font-weight: 700; color: var(--text);
-  margin-bottom: 5px;
-}
-.tip-body { font-size: 11px; color: var(--text-muted); line-height: 1.5; margin: 0 0 5px; }
-.tip-calc {
-  font-family: var(--font-mono); font-size: 10px;
-  color: var(--amber); background: var(--bg3);
-  padding: 4px 7px; border-radius: 4px;
-  margin-bottom: 5px;
-}
-.tip-why { font-size: 11px; color: var(--text-muted); line-height: 1.5; margin: 0; }
-.tip-why strong { color: var(--text); }
-
-@media (max-width: 400px) {
-  .stat-tip-popup { width: 200px; left: auto; right: 0; }
 }
 
 /* ── Contract panel ── */
@@ -462,6 +454,10 @@
 
 .pa-source { font-size: 10px; color: var(--text-dim); margin-top: 14px; text-align: center; }
 
+/* ── Results vs. process (Session 56) ── */
+.rvp-wrap { margin-top: 18px; padding-top: 14px; border-top: 0.5px solid var(--border); }
+.rvp-wrap .pa-context { margin-bottom: 10px; }
+
 /* ── Players view tabs ── */
 .players-tabs {
   display: flex;
@@ -590,3 +586,171 @@
 }
 .scout-empty-icon { font-size: 28px; }
 .scout-empty-sub  { font-size: 11px; color: var(--text-dim); }
+
+/* ── Player-card header radar + quick stats (Session 66) ── Restructured
+   Session 80: now the right column of .pp-header-reflow's two-column top
+   row instead of its own full-width band below the header. The original
+   "no room for photo + bio text + radar on one row" concern (see git
+   history) no longer applies once bio text (height/weight/shoots/age/
+   birthdate/hometown) moves out of the left column into its own
+   full-width .pp-bio-row underneath — the left column .pp-header-reflow
+   leaves for this row is just photo/name/number/position now. */
+.pp-header-radar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* Quickstats gets a fixed, protected width (see .pp-quickstats below) since
+   its content (e.g. "19:37") has a hard minimum legible width; the radar
+   takes whatever's left. Letting both compete via generic flex-shrink (the
+   Session 80 first pass) let the radar's max-width win the space fight and
+   collapsed quickstats to 0 -- see PR discussion. */
+.pp-radar-wrap { flex: 1 1 0%; min-width: 50px; max-width: 130px; }
+.pp-radar-note {
+  font-size: 9px; color: var(--text-dim); text-align: center;
+  line-height: 1.4; padding: 0 4px; margin-top: -6px;
+}
+/* Whole-season fallback (Session 66) — same dimmed+italic "not current"
+   signal as .stat-section-stale / the search badge's .psr-team--stale. */
+.pp-radar-note.pp-radar-stale { font-style: italic; }
+.pp-quickstats {
+  display: grid;
+  grid-template-columns: 38px 38px;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.pp-quickstat {
+  display: flex; flex-direction: column; align-items: center;
+  background: var(--bg2); border-radius: 6px;
+  padding: 4px 2px;
+  min-width: 0;
+}
+.pp-quickstat-val {
+  font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--text);
+  line-height: 1.1;
+}
+.pp-quickstat-label {
+  font-size: 8px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+/* ── Header reflow top row (Session 80) — left = compact photo/identity,
+   right = .pp-header-radar (radar + 2x2 totals). Only applied when
+   SkaterHeaderPanel has content to show (see showHeaderReflow in
+   PlayerPopup.jsx) — goalies and the pre-percentiles loading flash keep
+   the original single-block .pp-header layout untouched below. */
+.pp-header-reflow { align-items: center; gap: 10px; }
+.pp-header-reflow .pp-identity { flex: 0 1 84px; min-width: 60px; gap: 3px; }
+.pp-header-reflow .pp-last { overflow-wrap: break-word; }
+
+/* ── Bio row (Session 80) — full-width strip under the reflowed header,
+   six evenly-spaced label/value columns. Mirrors .pp-contract-item's
+   label-above-value pattern (muted uppercase label, bold value) already
+   used elsewhere in this popup, just narrower per-column since six
+   columns share the same 420px cap three columns get in .pp-contract-row. */
+.pp-bio-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px 4px;
+  padding: 10px 12px 14px;
+  border-bottom: 0.5px solid var(--border);
+}
+.pp-bio-field {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 3px; text-align: center; min-width: 0;
+}
+.pp-bio-label {
+  font-size: 8px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-dim); font-family: var(--font-display); font-weight: 600;
+}
+.pp-bio-value {
+  font-size: 11px; font-weight: 600; color: var(--text);
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 340px) {
+  .pp-header-radar { flex-direction: column; }
+  .pp-radar-wrap { max-width: 100%; }
+  .pp-quickstats { width: 100%; }
+  .pp-header-reflow { flex-wrap: wrap; }
+  .pp-bio-row { grid-template-columns: repeat(3, 1fr); }
+  .stat-section-peers { flex-direction: column; }
+  .stat-section-peers .stat-section { min-width: 0; }
+}
+
+/* ── Stats tab percentile tile grid (Session 66, NHL skaters only;
+   3-per-row single-line layout per PLAYER_CARD_POLISH_BRIEF item 2) ── */
+.stat-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.stat-tile {
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stat-tile-top {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 6px;
+}
+.stat-tile-label-wrap {
+  display: flex; align-items: center; gap: 4px; min-width: 0;
+}
+.stat-tile-label {
+  font-size: 11px; color: var(--text-muted); font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.stat-tile-value {
+  font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--text);
+  line-height: 1; white-space: nowrap;
+}
+.stat-tile-na {
+  font-size: 10px; color: var(--text-dim); font-style: italic; margin-top: 2px;
+}
+
+/* ── Multi-scope percentile scale (PLAYER_CARD_PERCENTILE_DISPLAY_BRIEF) ──
+   Bare 0-100 track, no fill -- markers carry all the meaning. Up to 3
+   markers (division/conference/league), alternating label position above/
+   below the track so adjacent markers' numeric labels don't collide. */
+.stat-tile-scale-wrap {
+  display: flex; align-items: center; gap: 4px;
+  margin-top: 14px; padding-bottom: 12px;
+}
+.stat-tile-scale-track {
+  position: relative; flex: 1; height: 3px;
+  background: var(--bg3); border-radius: 2px;
+}
+.stat-tile-marker {
+  position: absolute; top: 50%; width: 6px; height: 6px;
+  border-radius: 50%; transform: translate(-50%, -50%);
+}
+.stat-tile-marker-val {
+  /* transform (centering + any collision-avoidance nudge) set inline --
+     see StatTile's `offsetPx` in StatTileGrid.jsx */
+  position: absolute; left: 50%;
+  font-size: 9px; font-weight: 700; white-space: nowrap;
+}
+.stat-tile-marker.marker-above .stat-tile-marker-val { bottom: 8px; }
+.stat-tile-marker.marker-below .stat-tile-marker-val { top: 8px; }
+
+.stat-tile-legend {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  font-size: 11px; color: var(--text-muted);
+  padding: 0 16px; margin-bottom: 8px;
+}
+.stat-tile-legend-item { display: flex; align-items: center; gap: 4px; }
+.stat-tile-legend-dot {
+  width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0;
+}
+
+@media (max-width: 400px) {
+  .stat-tile-grid { gap: 6px; }
+  .stat-tile { padding: 7px 8px; }
+  .stat-tile-value { font-size: 14px; }
+}

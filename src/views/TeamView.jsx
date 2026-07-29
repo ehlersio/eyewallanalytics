@@ -12,8 +12,11 @@ import { getTeamGameLog as getDbTeamGameLog, getTeamXgTrend } from '../utils/sup
 import { CONTRACTS, getCapSummary, CAP_CEILING, CURRENT_SEASON, CONTRACT_DATA_DATE } from '../utils/carContracts'
 import { DraftPopup } from '../components/DraftTab'
 import { seasonPDO } from '../utils/advancedStats'
+import { isStandingsStale } from '../utils/standingsUtils'
 import InfoTip from '../components/InfoTip'
 import TeamLogo from '../components/TeamLogo'
+import TeamComparisonPopup from '../components/TeamComparisonPopup'
+import Sparkline from '../components/Sparkline'
 import { TEAM_COLORS } from '../utils/nhlApi'
 import './TeamView.css'
 
@@ -24,6 +27,7 @@ const TABS = ['Overview', 'Advanced', 'Splits', 'Trends',
 
 export default function TeamView() {
   const [tab, setTab] = useState('Overview')
+  const [compareOpen, setCompareOpen] = useState(false)
 
   // Core data
   const { data: stats,        loading: statsLoading  } = useFetch(() => getTeamStats(TEAM_CONFIG.abbr))
@@ -42,7 +46,16 @@ export default function TeamView() {
   const { data: rankings   } = useFetch(() => getTeamSeasonRankings(2))
   const { data: xgTrend    } = useFetch(() => getTeamXgTrend(TEAM_CONFIG.abbr))
 
-  const carStanding    = standings?.find(t => t.teamAbbrev?.default === TEAM_CONFIG.abbr)
+  // Same staleness risk getTeamStats() already guards against (see nhlApi.js):
+  // NHL's /standings/now stays pinned to last season's finale for months
+  // after our season config flips. Don't surface last season's division/
+  // conference/streak as if it were this season's. Only reject on an
+  // EXPLICIT mismatch — an absent seasonId (e.g. a test stub) isn't
+  // evidence of staleness, the real NHL API always includes it.
+  const standingsAreStale = isStandingsStale(standings, TEAM_CONFIG.season)
+  const carStanding    = standingsAreStale
+    ? undefined
+    : standings?.find(t => t.teamAbbrev?.default === TEAM_CONFIG.abbr)
   const playoffSummary = buildCarPlayoffSummary(playoffGames || [])
   const inPlayoffs     = (playoffGames?.length || 0) > 0
 
@@ -72,7 +85,19 @@ export default function TeamView() {
         <TeamLogo abbr={TEAM_CONFIG.abbr} size={28} />
         <h2 className="view-title" style={{ margin: 0 }}>{TEAM_CONFIG.displayName}</h2>
       </div>
-      <p className="view-sub">{TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} season</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <p className="view-sub" style={{ margin: 0 }}>{TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} season</p>
+        <button className="team-compare-btn" onClick={() => setCompareOpen(true)}>🆚 Compare Seasons</button>
+      </div>
+
+      {compareOpen && (
+        <TeamComparisonPopup
+          league="nhl"
+          teamValue={TEAM_CONFIG.abbr}
+          teamLabel={TEAM_CONFIG.displayName}
+          onClose={() => setCompareOpen(false)}
+        />
+      )}
 
       {/* Tab bar */}
       <div className="team-tabs">
@@ -199,53 +224,14 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
 
 // ── xGF% per-game sparkline ───────────────────────────────────
 function XgfSparkline({ data }) {
-  const [view, setView] = React.useState('last10');
-  const [tooltip, setTooltip] = React.useState(null); // { x, y, game }
+  const [view, setView] = useState('last10');
+  const [hover, setHover] = useState(null); // { game, idx }
 
   const games = view === 'last10' ? data.last10 : data.season;
   if (!games?.length) return null;
 
-  const W = 320, H = 72, PAD_L = 28, PAD_R = 8, PAD_T = 8, PAD_B = 20;
-  const plotW = W - PAD_L - PAD_R;
-  const plotH = H - PAD_T - PAD_B;
-
-  const vals = games.map(g => g.xgfPct);
-  const minV = Math.max(0,  Math.min(...vals) - 5);
-  const maxV = Math.min(100, Math.max(...vals) + 5);
-  const range = maxV - minV || 10;
-
-  const toX = (i) => PAD_L + (i / Math.max(games.length - 1, 1)) * plotW;
-  const toY = (v) => PAD_T + plotH - ((v - minV) / range) * plotH;
-
-  const points = games.map((g, i) => `${toX(i)},${toY(g.xgfPct)}`).join(' ');
-  const areaPoints = [
-    `${PAD_L},${PAD_T + plotH}`,
-    ...games.map((g, i) => `${toX(i)},${toY(g.xgfPct)}`),
-    `${toX(games.length - 1)},${PAD_T + plotH}`,
-  ].join(' ');
-
-  const y50 = toY(50);
   const teamColor = getComputedStyle(document.documentElement).getPropertyValue('--team-primary').trim() || '#e63946';
-
-  function handleMouseMove(e) {
-    const svg = e.currentTarget;
-    const rect = svg.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) * (W / rect.width);
-    // Find nearest game
-    let best = 0, bestDist = Infinity;
-    games.forEach((_, i) => {
-      const dist = Math.abs(toX(i) - mx);
-      if (dist < bestDist) { bestDist = dist; best = i; }
-    });
-    if (bestDist < plotW / games.length) {
-      setTooltip({ idx: best, game: games[best] });
-    } else {
-      setTooltip(null);
-    }
-  }
-
-  const tt = tooltip;
-  const ttGame = tt?.game;
+  const ttGame = hover?.game;
 
   return (
     <div className="card" style={{ padding: '12px 14px' }}>
@@ -284,54 +270,23 @@ function XgfSparkline({ data }) {
         </div>
       )}
 
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        width="100%"
-        style={{ display: 'block', overflow: 'visible', cursor: 'crosshair' }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={() => setTooltip(null)}
-        aria-label="xGF% per game sparkline"
-      >
-        {/* 50% baseline */}
-        {y50 >= PAD_T && y50 <= PAD_T + plotH && (
-          <line x1={PAD_L} y1={y50} x2={W - PAD_R} y2={y50}
-            stroke="var(--text-dim)" strokeWidth="0.5" strokeDasharray="3,3" opacity="0.5" />
-        )}
-
-        {/* Area fill */}
-        <polygon points={areaPoints} fill={teamColor} opacity="0.08" />
-
-        {/* Line */}
-        <polyline points={points} fill="none" stroke={teamColor} strokeWidth="2"
-          strokeLinejoin="round" strokeLinecap="round" />
-
-        {/* Y axis labels */}
-        <text x={PAD_L - 3} y={PAD_T + 4} fontSize="9" fill="var(--text-dim)"
-          textAnchor="end">{Math.round(maxV)}%</text>
-        {y50 >= PAD_T && y50 <= PAD_T + plotH && (
-          <text x={PAD_L - 3} y={y50 + 3} fontSize="9" fill="var(--text-dim)"
-            textAnchor="end">50%</text>
-        )}
-        <text x={PAD_L - 3} y={PAD_T + plotH + 4} fontSize="9" fill="var(--text-dim)"
-          textAnchor="end">{Math.round(minV)}%</text>
-
-        {/* Hover dot */}
-        {tt != null && (
-          <circle
-            cx={toX(tt.idx)} cy={toY(ttGame.xgfPct)} r="4"
-            fill={teamColor} stroke="var(--bg)" strokeWidth="2"
-          />
-        )}
-
-        {/* X axis: first + last label */}
-        {games.length > 0 && (
-          <>
-            <text x={PAD_L} y={H} fontSize="9" fill="var(--text-dim)">{games[0].date.slice(5)}</text>
-            <text x={W - PAD_R} y={H} fontSize="9" fill="var(--text-dim)"
-              textAnchor="end">{games[games.length - 1].date.slice(5)}</text>
-          </>
-        )}
-      </svg>
+      <Sparkline
+        points={games.map(g => ({ value: g.xgfPct, ...g }))}
+        color={teamColor}
+        width={320} height={72} padding={{ left: 28, right: 8, top: 8, bottom: 8 }}
+        yDomain={{ min: 0, max: 100, pad: 5 }}
+        referenceValue={50}
+        showAxisLabels
+        formatAxisLabel={v => `${Math.round(v)}%`}
+        onHover={(game, idx) => setHover(game ? { game, idx } : null)}
+        hoverIndex={hover?.idx ?? null}
+        ariaLabel="xGF% per game sparkline"
+      />
+      {/* First/last game date -- external row, same convention as LeagueView's rank sparkline */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--text-dim)', marginTop: 2 }}>
+        <span>{games[0].date.slice(5)}</span>
+        <span>{games[games.length - 1].date.slice(5)}</span>
+      </div>
     </div>
   );
 }

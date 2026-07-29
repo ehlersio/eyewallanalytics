@@ -20,9 +20,6 @@ const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
 export { TEAM_CONFIG, ALL_TEAMS, getTeamConfig, setTeamConfig, hasTeamConfig } from './teamConfig'
 import { TEAM_CONFIG } from './teamConfig'
 
-// Convenience aliases — used throughout this file
-const TEAM_ABBR = TEAM_CONFIG.abbr;
-const TEAM_ID   = TEAM_CONFIG.teamId;
 
 // gameType values from NHL API:
 //   1 = Preseason, 2 = Regular season, 3 = Playoffs
@@ -118,13 +115,29 @@ export async function getDraftOrder(team = null) {
 // but stays fresh enough to detect live game state changes
 export async function getAllGames() {
   return cached('allGames', async () => {
-    // Try Worker KV first (pre-polled, zero per-user NHL calls)
-    const cached_kv = await kvFetch(`schedule:${TEAM_ABBR}`);
+    // Try Worker KV first (pre-polled, zero per-user NHL calls). Key is
+    // season-namespaced (Session 77 — schedule:{abbr}:{season}, not the
+    // old bare schedule:{abbr}) to match the Worker's /schedule route.
+    const cached_kv = await kvFetch(`schedule:${TEAM_CONFIG.abbr}:${TEAM_CONFIG.season}`);
     if (cached_kv) return cached_kv;
     // Fall back to direct NHL call
-    const data = await nhlFetch(`${BASE}/club-schedule-season/${TEAM_ABBR}/${TEAM_CONFIG.season}`);
+    const data = await nhlFetch(`${BASE}/club-schedule-season/${TEAM_CONFIG.abbr}/${TEAM_CONFIG.season}`);
     return data?.games || [];
   }, TTL.SHORT / 3); // 20 seconds client-side cache
+}
+
+// Fetch a specific team's schedule for a specific (possibly historical)
+// season — the shot map's season/game history selector (Session 77).
+// Unlike getAllGames() (always the live-resolved current season, via the
+// KV-passthrough+direct-NHL-fallback pattern above), this hits the
+// Worker's dedicated /schedule route directly, same shape as PWHL's
+// fetchPWHLSchedule(teamId, season) in pwhlApi.js. That route serves
+// historical seasons synchronously (single one-off upstream call, then a
+// 60-day KV TTL) — see nhl.js's /schedule route comment for why that
+// differs from the current-season's fire-and-forget-background pattern.
+export async function getScheduleForSeason(teamAbbr, season) {
+  const data = await workerFetch(`/schedule?team=${encodeURIComponent(teamAbbr)}&season=${encodeURIComponent(season)}`);
+  return data || [];
 }
 
 // Regular season games only (gameType === 2)
@@ -208,7 +221,7 @@ export async function getLiveGame() {
 }
 
 // Is a game finished?
-function isCompleted(game) {
+export function isCompleted(game) {
   // Only trust explicit completed game states — never infer from score presence
   // (scheduled games have score=0 which falsely triggered the old fallback)
   return ['OFF', 'FINAL', 'F', 'FINAL_OVERTIME', 'FINAL_SHOOTOUT'].includes(game.gameState);
@@ -403,19 +416,19 @@ async function _getStandings() {
 
 // Get team stats, shaped consistently for our components
 // gameType: 2 = regular season stats, 3 = playoff stats
-export async function getTeamStats(teamAbbr = TEAM_ABBR) {
+export async function getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
   return cached(`teamStats:${teamAbbr}`, () => _getTeamStats(teamAbbr), TTL.TEAM_STATS);
 }
 
 // Playoff team stats — uses NHL stats REST API with gameTypeId=3
 // Returns same shape as getTeamStats for drop-in use in ScoutingTab
-export async function getTeamStatsPlayoff(teamAbbr = TEAM_ABBR) {
+export async function getTeamStatsPlayoff(teamAbbr = TEAM_CONFIG.abbr) {
   return cached(`teamStatsPlayoff:${teamAbbr}`, async () => {
     const exp = encodeURIComponent(`gameTypeId=3 and seasonId<=${TEAM_CONFIG.season} and seasonId>=${TEAM_CONFIG.season}`);
     const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false&sort=shotsForPerGame&sortDirection=DESC&limit=32&cayenneExp=${exp}`;
     const data = await nhlFetch(url);
     const team = (data?.data || []).find(t => t.teamFullName && (
-      (teamAbbr === TEAM_ABBR && t.teamFullName.includes(TEAM_CONFIG.fullNameFragment)) ||
+      (teamAbbr === TEAM_CONFIG.abbr && t.teamFullName.includes(TEAM_CONFIG.fullNameFragment)) ||
       (teamAbbr === 'VGK' && t.teamFullName.includes('Vegas')) ||
       t.teamAbbrevs === teamAbbr ||
       t.teamFullName.toLowerCase().includes(teamAbbr.toLowerCase())
@@ -438,7 +451,25 @@ export async function getTeamStatsPlayoff(teamAbbr = TEAM_ABBR) {
     };
   }, TTL.TEAM_STATS);
 }
-async function _getTeamStats(teamAbbr = TEAM_ABBR) {
+// Faceoff win % isn't on the /standings/now response _getTeamStats() reads
+// below at all — pull it from the same team/summary REST endpoint
+// getTeamStatsPlayoff() already uses (gameTypeId=2 here instead of 3).
+// Best-effort: a failed fetch or unmatched team just leaves this null
+// rather than failing the whole getTeamStats() call over one extra field.
+async function fetchTeamFaceoffWinPct(teamAbbr) {
+  const exp = encodeURIComponent(`gameTypeId=2 and seasonId<=${TEAM_CONFIG.season} and seasonId>=${TEAM_CONFIG.season}`);
+  const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false&sort=shotsForPerGame&sortDirection=DESC&limit=32&cayenneExp=${exp}`;
+  const data = await nhlFetch(url);
+  const team = (data?.data || []).find(t => t.teamFullName && (
+    (teamAbbr === TEAM_CONFIG.abbr && t.teamFullName.includes(TEAM_CONFIG.fullNameFragment)) ||
+    (teamAbbr === 'VGK' && t.teamFullName.includes('Vegas')) ||
+    t.teamAbbrevs === teamAbbr ||
+    t.teamFullName.toLowerCase().includes(teamAbbr.toLowerCase())
+  ));
+  return team?.faceoffWinPct ?? null;
+}
+
+async function _getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
   const standings = await getStandings();
   const team = standings.find(t => t.teamAbbrev?.default === teamAbbr);
 
@@ -447,7 +478,19 @@ async function _getTeamStats(teamAbbr = TEAM_ABBR) {
     return FALLBACK_STATS;
   }
 
+  // The NHL's own /standings/now redirects to whatever date it last
+  // resolved standings for, independent of our app's season config — it
+  // stays pinned to last season's finale for months until real games exist
+  // for the new one. Each row carries its own seasonId; a mismatch here
+  // means `team` is a genuine, real, but STALE full prior season, not
+  // "this season's data" — return null (distinct from "not found") rather
+  // than silently feeding a full 82-game record into this season's stats.
+  if (team.seasonId != null && String(team.seasonId) !== TEAM_CONFIG.season) {
+    return null;
+  }
+
   const gp = team.gamesPlayed || 1;
+  const faceoffWinPct = await fetchTeamFaceoffWinPct(teamAbbr).catch(() => null);
 
   // Field name notes for NHL API standings:
   //   goalFor / goalAgainst = season totals (not per-game averages)
@@ -465,6 +508,7 @@ async function _getTeamStats(teamAbbr = TEAM_ABBR) {
     shotsForPerGame:     team.shotsForPerGame     ?? 31.2,
     shotsAgainstPerGame: team.shotsAgainstPerGame ?? 28.4,
     blockedShotsPerGame: team.blockedShots != null ? team.blockedShots / gp : null,
+    faceoffWinPct,
     divisionName:        team.divisionName,
     conferenceName:      team.conferenceName,
     streakCode:          team.streakCode,
@@ -525,13 +569,58 @@ async function _getTeamSeasonRankings(gameTypeId = 2) {
   }
 }
 
+// ─── SEASON-OVER-SEASON TEAM COMPARISON (Session 64) ───────────
+// Box-score fields only -- see eyewall-poller's /team-seasons/compare for
+// why (xgf_pct/roster_war_score are null across every season right now).
+// Not cached via cache.js's TTL layer like most of this file -- comparison
+// season lists are user-picked and vary per call, so there's no stable
+// cache key worth the complexity; the Worker's own KV cache (1hr) already
+// covers repeat requests for the same team+season combination.
+export async function fetchTeamSeasonsCompare(team, seasons) {
+  if (!seasons?.length) return [];
+  const rows = await workerFetch(`/team-seasons/compare?team=${encodeURIComponent(team)}&seasons=${seasons.join(',')}`);
+  if (!rows) return [];
+  return rows.map(r => ({
+    season:        r.season,
+    gamesPlayed:   r.games_played,
+    wins:          r.wins,
+    losses:        r.losses,
+    otLosses:      r.ot_losses,
+    points:        r.points,
+    goalsFor:      r.goals_for,
+    goalsAgainst:  r.goals_against,
+    ppPct:         r.pp_pct,
+    pkPct:         r.pk_pct,
+  }));
+}
 
+// ─── TEAM vs TEAM COMPARISON (Session 86) ───────────
+// Two teams, one season -- mirrors fetchTeamSeasonsCompare's shape but
+// keyed by team instead of season, backed by /team-seasons/compare-teams.
+export async function fetchTeamSeasonsCompareTeams(teamA, teamB, season) {
+  if (!teamA || !teamB || !season) return [];
+  const rows = await workerFetch(`/team-seasons/compare-teams?teams=${encodeURIComponent(teamA)},${encodeURIComponent(teamB)}&season=${season}`);
+  if (!rows) return [];
+  return rows.map(r => ({
+    team:          r.team,
+    season:        r.season,
+    gamesPlayed:   r.games_played,
+    wins:          r.wins,
+    losses:        r.losses,
+    otLosses:      r.ot_losses,
+    points:        r.points,
+    goalsFor:      r.goals_for,
+    goalsAgainst:  r.goals_against,
+    ppPct:         r.pp_pct,
+    pkPct:         r.pk_pct,
+  }));
+}
 
 export async function getTeamSkaterStats(gameTypeId = 2) {
   return cached(`teamSkaterStats:${gameTypeId}`, () => _getTeamSkaterStats(gameTypeId), TTL.PLAYER_STATS);
 }
 async function _getTeamSkaterStats(gameTypeId = 2) {
-  const exp    = encodeURIComponent(`seasonId=${TEAM_CONFIG.season} and gameTypeId=${gameTypeId} and teamAbbrevs="${TEAM_ABBR}"`);
+  const exp    = encodeURIComponent(`seasonId=${TEAM_CONFIG.season} and gameTypeId=${gameTypeId} and teamAbbrevs="${TEAM_CONFIG.abbr}"`);
   const sort   = encodeURIComponent(JSON.stringify([{property:'points',direction:'DESC'},{property:'goals',direction:'DESC'},{property:'playerId',direction:'ASC'}]));
 
   const [summary, scoring] = await Promise.all([
@@ -550,10 +639,10 @@ async function _getTeamSkaterStats(gameTypeId = 2) {
 }
 
 
-export async function getRoster(teamAbbr = TEAM_ABBR) {
+export async function getRoster(teamAbbr = TEAM_CONFIG.abbr) {
   return cached(`roster:${teamAbbr}`, () => _getRoster(teamAbbr), TTL.SCHEDULE);
 }
-async function _getRoster(teamAbbr = TEAM_ABBR) {
+async function _getRoster(teamAbbr = TEAM_CONFIG.abbr) {
   // NOTE: intentionally NOT /roster/{team}/{season} — that endpoint returns a
   // frozen snapshot of who was on the roster during that specific season, so
   // players who change teams via trade/UFA signing never show up for their
@@ -574,6 +663,27 @@ export async function getPlayerStats(playerId) {
 }
 async function _getPlayerStats(playerId) {
   return await nhlFetch(`${BASE}/player/${playerId}/landing`);
+}
+
+// Per-game log for one player/season/gameType (Session 70 — player Compare
+// tab trend charts). Same proxy + shape family as getPlayerStats above, just
+// a different NHL API path. Response shape: { gameLog: [{ gameId, goals,
+// assists, points, plusMinus, powerPlayGoals, powerPlayPoints,
+// shorthandedGoals, gameWinningGoals, shots, pim, toi, ... }] } for skaters,
+// or { gameLog: [{ decision, shotsAgainst, goalsAgainst, savePctg,
+// shutouts, gamesStarted, toi, ... }] } for goalies — same endpoint serves
+// both, shape just differs by the player's real position. Returns null (not
+// []) on failure, same as every other nhlFetch call here — callers already
+// handle that via optional chaining.
+export async function getPlayerGameLog(playerId, season, gameTypeId = GAME_TYPE.REGULAR) {
+  return cached(
+    `playerGameLog:${playerId}:${season}:${gameTypeId}`,
+    () => _getPlayerGameLog(playerId, season, gameTypeId),
+    TTL.PLAYER_STATS
+  );
+}
+async function _getPlayerGameLog(playerId, season, gameTypeId) {
+  return await nhlFetch(`${BASE}/player/${playerId}/game-log/${season}/${gameTypeId}`);
 }
 
 // Fetch league-wide skater stats sorted by points.
@@ -823,7 +933,7 @@ export function extractShotEvents(playByPlay) {
         teamId:       d.eventOwnerTeamId,
         shotType:     d.shotType,
         zoneCode:     d.zoneCode,
-        isCanes:      d.eventOwnerTeamId === TEAM_ID,
+        isCanes:      d.eventOwnerTeamId === TEAM_CONFIG.teamId,
         shooterId:    shooterId || null,
         // Player names resolved inline from rosterSpots
         shooterName:  shooterId            ? (playerMap[shooterId]            || null) : null,
@@ -856,23 +966,23 @@ export function formatGameTime(utcStr) {
 
 export function getOpponent(game) {
   if (!game) return null;
-  return game.homeTeam?.abbrev === TEAM_ABBR ? game.awayTeam : game.homeTeam;
+  return game.homeTeam?.abbrev === TEAM_CONFIG.abbr ? game.awayTeam : game.homeTeam;
 }
 
 export function isHomeGame(game) {
-  return game?.homeTeam?.abbrev === TEAM_ABBR;
+  return game?.homeTeam?.abbrev === TEAM_CONFIG.abbr;
 }
 
 export function getCarScore(game) {
   if (!game) return null;
-  return game.homeTeam?.abbrev === TEAM_ABBR
+  return game.homeTeam?.abbrev === TEAM_CONFIG.abbr
     ? game.homeTeam?.score
     : game.awayTeam?.score;
 }
 
 export function getOppScore(game) {
   if (!game) return null;
-  return game.homeTeam?.abbrev === TEAM_ABBR
+  return game.homeTeam?.abbrev === TEAM_CONFIG.abbr
     ? game.awayTeam?.score
     : game.homeTeam?.score;
 }
@@ -946,13 +1056,26 @@ export const TEAM_COLORS = {
 // Convenience aliases — advanced stats endpoints use teamId and franchiseId directly
 const TEAM_ID_ADV   = TEAM_CONFIG.teamId;
 const FRANCHISE_ID  = TEAM_CONFIG.franchiseId;
-const STATS_SEASON  = TEAM_CONFIG.season;
+// TEAM_CONFIG.season is a live getter (see teamConfig.js) -- read it
+// directly at each point of use below rather than caching it into its own
+// const the way this file used to (a `STATS_SEASON` const here froze at
+// module-load time and never picked up the live-resolved value).
+//
+// Consequence for the cached() calls below: season is now included in the
+// `teamSummary:`/`teamRealtime:`/`homeSplit:` cache keys, not just
+// gameTypeId. This isn't a drive-by cleanup -- it's required by the fix
+// above. Once TEAM_CONFIG.season can genuinely change mid-session (a KV
+// override, or the real Sept/Oct boundary), a cache keyed only on
+// gameTypeId would serve up to 10 minutes (TTL.ADVANCED) of the WRONG
+// season's data under a key that now silently means something different
+// than it did when it was cached. Shipping the const removal without this
+// would trade one staleness bug for a shorter-lived, harder-to-notice one.
 
 // Build URL for team stat endpoints.
 // Key: cayenneExp must use seasonId<=X and seasonId>=X (double-bound) not seasonId=X
 // Also needs isAggregate and isGame params for report endpoints like puckPossessions
 function teamStatsUrl(report, gameTypeId = 2) {
-  const s = STATS_SEASON;
+  const s = TEAM_CONFIG.season;
   const exp = encodeURIComponent(
     `franchiseId=${FRANCHISE_ID} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
   );
@@ -962,8 +1085,8 @@ function teamStatsUrl(report, gameTypeId = 2) {
 // Find the configured team from an array of team records
 function findTeam(data) {
   return data?.find(t =>
-    t.teamAbbrevs === TEAM_ABBR ||
-    t.teamAbbrev  === TEAM_ABBR ||
+    t.teamAbbrevs === TEAM_CONFIG.abbr ||
+    t.teamAbbrev  === TEAM_CONFIG.abbr ||
     t.teamId      === TEAM_ID_ADV ||
     t.franchiseId === FRANCHISE_ID
   ) || null;
@@ -979,7 +1102,7 @@ async function _getTeamSummary(gameTypeId) {
 // True Corsi/Fenwick using realtime + summary data we already fetch
 // shotattempts and puckPossessions endpoints return 500 on NHL API
 export async function getTeamCorsi(gameTypeId = 2) {
-  const t = await cached(`teamSummary:${gameTypeId}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
+  const t = await cached(`teamSummary:${gameTypeId}:${TEAM_CONFIG.season}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
   if (!t) return null;
 
   const sf = t.shotsForPerGame    || 0;
@@ -987,8 +1110,8 @@ export async function getTeamCorsi(gameTypeId = 2) {
   const gp = t.gamesPlayed || 1;
 
   // Get realtime data which has blockedShots + shotAttemptsBlocked
-  const rt = await cached(`teamRealtime:${gameTypeId}`, async () => {
-    const s   = STATS_SEASON;
+  const rt = await cached(`teamRealtime:${gameTypeId}:${TEAM_CONFIG.season}`, async () => {
+    const s   = TEAM_CONFIG.season;
     const exp = encodeURIComponent(
       `franchiseId=${FRANCHISE_ID} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
     );
@@ -1030,8 +1153,8 @@ export async function getTeamCorsi(gameTypeId = 2) {
 
 // Realtime stats: blocked shots, hits, giveaways, takeaways
 export async function getTeamRealtime(gameTypeId = 2) {
-  return cached(`teamRealtime:${gameTypeId}`, async () => {
-    const s   = STATS_SEASON;
+  return cached(`teamRealtime:${gameTypeId}:${TEAM_CONFIG.season}`, async () => {
+    const s   = TEAM_CONFIG.season;
     // Try multiple known report names that include blocked shots
     // The NHL stats API 'realtime' report includes blockedShots, hits, giveaways, takeaways
     // Use same franchiseId filter as working team/summary endpoint
@@ -1054,20 +1177,20 @@ export async function getTeamScoreState(_gameTypeId = 2) {
 // Available fields: powerPlayPct, powerPlayNetPct, penaltyKillPct, penaltyKillNetPct
 // Goals and opportunity counts are NOT in team/summary; derive where possible from standings
 export async function getTeamPowerplay(gameTypeId = 2) {
-  return cached(`teamSummary:${gameTypeId}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
+  return cached(`teamSummary:${gameTypeId}:${TEAM_CONFIG.season}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
 }
 
 export async function getTeamPenaltyKill(gameTypeId = 2) {
-  return cached(`teamSummary:${gameTypeId}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
+  return cached(`teamSummary:${gameTypeId}:${TEAM_CONFIG.season}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
 }
 
 // Home/Away splits from team summary (homeRoadQuery)
 export async function getTeamHomeSplit(gameTypeId = 2) {
-  return cached(`homeSplit:${gameTypeId}`, () => _getTeamHomeSplit(gameTypeId), TTL.ADVANCED);
+  return cached(`homeSplit:${gameTypeId}:${TEAM_CONFIG.season}`, () => _getTeamHomeSplit(gameTypeId), TTL.ADVANCED);
 }
 async function _getTeamHomeSplit(gameTypeId = 2) {
-  const homeExp = encodeURIComponent(`seasonId=${STATS_SEASON} and gameTypeId=${gameTypeId} and homeRoad="H"`);
-  const awayExp = encodeURIComponent(`seasonId=${STATS_SEASON} and gameTypeId=${gameTypeId} and homeRoad="R"`);
+  const homeExp = encodeURIComponent(`seasonId=${TEAM_CONFIG.season} and gameTypeId=${gameTypeId} and homeRoad="H"`);
+  const awayExp = encodeURIComponent(`seasonId=${TEAM_CONFIG.season} and gameTypeId=${gameTypeId} and homeRoad="R"`);
   const [home, away] = await Promise.all([
     nhlFetch(`/nhl-stats/stats/rest/en/team/summary?limit=50&sort=wins&cayenneExp=${homeExp}`),
     nhlFetch(`/nhl-stats/stats/rest/en/team/summary?limit=50&sort=wins&cayenneExp=${awayExp}`),
@@ -1095,7 +1218,7 @@ export async function getTeamGameLog(count = 20) {
   return cached(`gameLog:${count}`, () => _getTeamGameLog(count), TTL.SCHEDULE);
 }
 async function _getTeamGameLog(count = 20) {
-  const games = await nhlFetch(`${BASE}/club-schedule-season/${TEAM_ABBR}/${TEAM_CONFIG.season}`);
+  const games = await nhlFetch(`${BASE}/club-schedule-season/${TEAM_CONFIG.abbr}/${TEAM_CONFIG.season}`);
   const allGames = games?.games || [];
   const completed = allGames
     .filter(g => ['OFF','FINAL','F'].includes(g.gameState))
@@ -1104,7 +1227,7 @@ async function _getTeamGameLog(count = 20) {
     .reverse(); // chronological
 
   return completed.map(g => {
-    const home    = g.homeTeam?.abbrev === TEAM_ABBR;
+    const home    = g.homeTeam?.abbrev === TEAM_CONFIG.abbr;
     const carScore = home ? (g.homeTeam?.score ?? 0) : (g.awayTeam?.score ?? 0);
     const oppScore = home ? (g.awayTeam?.score ?? 0) : (g.homeTeam?.score ?? 0);
     const opp      = home ? g.awayTeam?.abbrev : g.homeTeam?.abbrev;
@@ -1126,72 +1249,48 @@ async function _getTeamGameLog(count = 20) {
 }
 
 
-// ─── ODDS (The Odds API) ─────────────────────────────────────
-// Free tier: 500 requests/month. Get a key at https://the-odds-api.com
-// Add your key to a .env file as: VITE_ODDS_API_KEY=your_key_here
-// Without a key, this returns null gracefully.
+// ─── ODDS (Odds Persistence Writer) ──────────────────────────
+// Was: this file called The Odds API directly from every visitor's
+// browser (cached only per-session, 5-min TTL) against a shared
+// 500-requests/month free-tier key — every concurrent visitor
+// independently burned from the same budget. Now: a Worker-side scheduled
+// writer (fetchOdds()/persistOddsToSupabase() in eyewall-poller's nhl.js)
+// fetches on its own throttled cadence and persists to Supabase; this just
+// reads the result. See ODDS_PERSISTENCE_WRITER_SCOPE.md for the full design.
 
-const ODDS_BASE = 'https://api.the-odds-api.com/v4';
-const ODDS_KEY  = import.meta.env.VITE_ODDS_API_KEY || null;
-
-// Fetch NHL moneyline odds for upcoming games
-// Returns array of { homeTeam, awayTeam, commence_time, bookmakers }
+// Fetch NHL moneyline odds for upcoming games from the Worker's persisted
+// table — already flattened/matched by team abbr server-side (home_abbr,
+// away_abbr, commence_time, moneyline_home, moneyline_away, book), no
+// team-name fuzzy matching needed here anymore. Still cached client-side
+// (same TTL tier as standings) on top of the Worker's own edge cache —
+// cheap either way now, since this is a table read, not a live API call.
 export async function getNhlOdds() {
-  if (!ODDS_KEY) return null;
-  try {
-    const url = `${ODDS_BASE}/sports/icehockey_nhl/odds/?apiKey=${ODDS_KEY}&regions=us&markets=h2h&oddsFormat=american`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch { return null; }
+  return cached('nhlOdds', _getNhlOdds, TTL.STANDINGS);
+}
+async function _getNhlOdds() {
+  return (await workerFetch('/nhl/odds')) || [];
 }
 
-// Find odds for a specific game by matching team names
+// Find odds for a specific game — exact match by team abbr, resolved
+// server-side already (no more fuzzy team-name/fragment matching).
 // oddsData: array from getNhlOdds()
 // game: NHL API game object
 export function findGameOdds(oddsData, game) {
   if (!oddsData?.length || !game) return null;
-  const opp    = getOpponent(game);
-  const oppAbbr = opp?.abbrev?.toLowerCase() || '';
-  const oppName = (opp?.commonName?.default || opp?.placeName?.default || '').toLowerCase();
-
-  return oddsData.find(od => {
-    const home = od.home_team?.toLowerCase() || '';
-    const away = od.away_team?.toLowerCase() || '';
-    const combined = home + ' ' + away;
-    // Match by city/name fragment — "Carolina" or "Hurricanes"
-    const teamFragment = TEAM_CONFIG.fullNameFragment.toLowerCase();
-    return combined.includes(teamFragment) &&
-           (combined.includes(oppName) || combined.includes(oppAbbr));
-  }) || null;
+  const homeAbbr = game.homeTeam?.abbrev;
+  const awayAbbr = game.awayTeam?.abbrev;
+  return oddsData.find(od => od.home_abbr === homeAbbr && od.away_abbr === awayAbbr) || null;
 }
 
-// Extract best available moneyline odds for CAR and opponent
+// Extract moneyline odds for CAR (or whichever team is TEAM_CONFIG) and
+// its opponent from an already-flattened odds row.
 // Returns { carOdds, oppOdds, book } or null
-export function extractMoneyline(oddsEntry, _isHome) {
-  if (!oddsEntry?.bookmakers?.length) return null;
-  // Prefer DraftKings, then FanDuel, then first available
-  const preferred = ['draftkings','fanduel','betmgm','williamhill'];
-  let book = oddsEntry.bookmakers.find(b => preferred.includes(b.key));
-  if (!book) book = oddsEntry.bookmakers[0];
-
-  const market = book.markets?.find(m => m.key === 'h2h');
-  if (!market?.outcomes?.length) return null;
-
-  const teamFragment  = TEAM_CONFIG.fullNameFragment.toLowerCase();
-  const teamDisplay   = TEAM_CONFIG.displayName.toLowerCase();
-  const carOut = market.outcomes.find(o => {
-    const name = o.name?.toLowerCase() || '';
-    return name.includes(teamFragment) || name.includes(teamDisplay);
-  });
-  const oppOut = market.outcomes.find(o => o !== carOut);
-
-  if (!carOut || !oppOut) return null;
-  return {
-    carOdds: carOut.price,
-    oppOdds: oppOut.price,
-    book:    book.title || book.key,
-  };
+export function extractMoneyline(oddsEntry, isHome) {
+  if (!oddsEntry) return null;
+  const carOdds = isHome ? oddsEntry.moneyline_home : oddsEntry.moneyline_away;
+  const oppOdds = isHome ? oddsEntry.moneyline_away : oddsEntry.moneyline_home;
+  if (carOdds == null || oppOdds == null) return null;
+  return { carOdds, oppOdds, book: oddsEntry.book };
 }
 
 // Convert American odds to implied probability %

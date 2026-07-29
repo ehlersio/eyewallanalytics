@@ -28,7 +28,7 @@ const STORAGE_KEY = 'eyewall:team';
 // variable indefinitely (rather than re-reading `someTeam.season`), it'll
 // keep the value from whenever the destructure happened — same as any other
 // stale-closure situation in JS, not something unique to this change.
-export let CURRENT_SEASON = '20252026';
+export let CURRENT_SEASON = '20262027';
 
 (async () => {
   try {
@@ -44,6 +44,38 @@ export let CURRENT_SEASON = '20252026';
     console.warn('Live NHL season lookup failed, using fallback:', e.message);
   }
 })();
+
+// ── Season chip lists (Session 77 — shot map history selector) ────────────
+// Mirrors pwhlConfig.js's PWHL_REGULAR_SEASONS: a static, hand-maintained
+// list of selectable seasons for the shot map's season-chip row. Same
+// once-a-year manual-bump convention as PWHL_SEASONS and LeagueView.jsx's
+// OFFSEASON_BRACKET -- add the new season here when it starts.
+//
+// No NHL_PLAYOFF_SEASONS here, unlike PWHL. PWHL's HockeyTech data models
+// playoffs as a distinct season_id (e.g. id 9 = "2025-26 Playoffs", paired
+// with id 8's regular season) — a genuinely separate thing to select. NHL's
+// `club-schedule-season/{abbr}/{season}` returns preseason+regular+playoffs
+// for ONE season string in a single response, distinguished only by each
+// game's `gameType` field (see GAME_TYPE in nhlApi.js). So for NHL, Reg/
+// Playoffs is a client-side filter of the season you already fetched, not
+// a second season to pick from -- do not add a parallel playoffs list here.
+function nhlSeasonLabel(seasonId) {
+  const s = String(seasonId);
+  return `${s.slice(0, 4)}-${s.slice(6)}`;
+}
+
+export const NHL_REGULAR_SEASONS = [
+  '20262027', '20252026', '20242025',
+].map(id => ({ id, label: nhlSeasonLabel(id) }));
+
+// Older seasons, for the shot map's "More seasons" overflow dropdown —
+// not shown in the main chip row. Starts at 2013-14 (a defensible modern-
+// era cutoff for this app's shot-location-dependent views; push it back
+// further if a use case needs it).
+export const NHL_ARCHIVE_SEASONS = [
+  '20232024', '20222023', '20212022', '20202021', '20192020',
+  '20182019', '20172018', '20162017', '20152016', '20142015', '20132014',
+].map(id => ({ id, label: nhlSeasonLabel(id) }));
 
 // All 32 NHL teams.
 // Fields:

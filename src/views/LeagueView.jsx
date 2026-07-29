@@ -4,6 +4,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { capture } from '../utils/analytics';
 import { useFetch } from '../hooks/useFetch';
+import Sparkline from '../components/Sparkline';
 import {
   getStandings,
   getScoringLeaders,
@@ -16,6 +17,7 @@ import {
 } from '../utils/nhlApi';
 import { getTeamSeasonData, getPowerRankingsNarrative, getPowerRankingsHistory } from '../utils/supabaseClient';
 import { ALL_TEAMS } from '../utils/teamConfig';
+import { useSport } from '../utils/SportContext';
 import TeamLogo from '../components/TeamLogo';
 import PlayerPopup from '../components/PlayerPopup';
 import { useShareCard } from '../hooks/useShareCard';
@@ -26,12 +28,24 @@ import '../components/PredictionCanvas.css';
 import DraftTab from '../components/DraftTab';
 
 const PRIMARY = TEAM_CONFIG.abbr;
-const SEASON  = TEAM_CONFIG.season;
+
+// Season used to be captured here as a module-level const (TEAM_CONFIG.season
+// read once at import time) -- that froze at whatever value existed when this
+// module first loaded and never picked up the Worker's live season
+// resolution landing afterward. Each component below that needs the current
+// season now reads it via useSport().currentSeason instead, which IS
+// reactive (see SportContext.jsx) since it re-renders on the same
+// eyewall:nhl-season-updated event teamConfig.js dispatches.
+function seasonLabelFor(season) {
+  return `${season.slice(0, 4)}–${season.slice(6)}`;
+}
 
 const CLINCH_COLOR = {
   z:   '#1D9E75',
   y:   '#1D9E75',
   x:   '#1D9E75',
+  p:   'var(--amber)',
+  e:   'var(--red-bright)',
   wc1: '#5B8FD4',
   wc2: '#5B8FD4',
 };
@@ -58,10 +72,36 @@ function L10Dots({ wins, losses, otl }) {
 
 const COL_HEADERS = ['#', 'Team', 'GP', 'W', 'L', 'OTL', 'PTS', 'L10', 'STRK'];
 
-function StandingsRow({ entry, rank }) {
+// Once the NHL's own clinchIndicator is populated for a team (live, via
+// /cache/standings), it's ground truth and wins outright — see
+// eyewall-pipeline's playoff_race.py docstring. Only fall back to our
+// nightly-computed magic/tragic numbers pre-clinch/pre-elimination, and
+// only show whichever of the two is closer (smaller): that's the team's
+// actual near-term storyline — clinching soon, or in real elimination
+// danger — rather than showing both and burying the meaningful one.
+function magicTragicBadge(seasonData) {
+  if (!seasonData) return null;
+  const { magicNumber, tragicNumber } = seasonData;
+  if (magicNumber == null && tragicNumber == null) return null;
+  if (magicNumber != null && (tragicNumber == null || magicNumber <= tragicNumber)) {
+    return {
+      text:      `M${magicNumber}`,
+      title:     `Magic number: ${magicNumber} — combined regulation wins / rival losses needed to clinch a playoff spot`,
+      modifier:  'clinch',
+    };
+  }
+  return {
+    text:      `E${tragicNumber}`,
+    title:     `Elimination number: ${tragicNumber} — combined rival wins / regulation losses until eliminated`,
+    modifier:  'elim',
+  };
+}
+
+function StandingsRow({ entry, rank, teamSeasonData }) {
   const abbrev    = entry.teamAbbrev?.default ?? entry.teamAbbrev;
   const isPrimary = abbrev === PRIMARY;
   const clinchColor = CLINCH_COLOR[entry.clinchIndicator] ?? null;
+  const magicBadge  = entry.clinchIndicator ? null : magicTragicBadge(teamSeasonData?.[abbrev]);
 
   return (
     <tr
@@ -77,6 +117,11 @@ function StandingsRow({ entry, rank }) {
           <span className="lv-team-abbrev" style={{ color: TEAM_COLORS[abbrev] ?? 'var(--text)' }}>{abbrev}</span>
           {entry.clinchIndicator && (
             <span className="lv-clinch-badge">{entry.clinchIndicator.toUpperCase()}</span>
+          )}
+          {magicBadge && (
+            <span className={`lv-magic-badge lv-magic-badge--${magicBadge.modifier}`} title={magicBadge.title}>
+              {magicBadge.text}
+            </span>
           )}
         </span>
       </td>
@@ -100,7 +145,7 @@ function StandingsRow({ entry, rank }) {
   );
 }
 
-function StandingsTable({ rows, caption }) {
+function StandingsTable({ rows, caption, teamSeasonData }) {
   return (
     <table className="lv-table" aria-label={caption}>
       <thead>
@@ -112,7 +157,7 @@ function StandingsTable({ rows, caption }) {
       </thead>
       <tbody>
         {rows.map((entry, i) => (
-          <StandingsRow key={entry.teamAbbrev?.default ?? i} entry={entry} rank={i + 1} />
+          <StandingsRow key={entry.teamAbbrev?.default ?? i} entry={entry} rank={i + 1} teamSeasonData={teamSeasonData} />
         ))}
       </tbody>
     </table>
@@ -120,10 +165,11 @@ function StandingsTable({ rows, caption }) {
 }
 
 import { groupByDivision, groupByConference, buildWildCard } from '../utils/leagueUtils';
+import { isStandingsStale } from '../utils/standingsUtils';
 
 // ─── Standings Panel ──────────────────────────────────────────────────────────
 
-function StandingsPanel({ entries }) {
+function StandingsPanel({ entries, teamSeasonData }) {
   const [filter, setFilter] = useState('division');
 
   const byDivision   = useMemo(() => groupByDivision(entries),  [entries]);
@@ -137,6 +183,10 @@ function StandingsPanel({ entries }) {
     { id: 'league',     label: 'League' },
     { id: 'wildcard',   label: 'Wild card' },
   ];
+
+  if (entries.length === 0) {
+    return <SeasonNotStartedState />;
+  }
 
   return (
     <div>
@@ -170,7 +220,7 @@ function StandingsPanel({ entries }) {
               {divs.map(([divName, { rows }]) => (
                 <div key={divName} className="lv-div-card">
                   <div className="lv-div-card__header">{divName}</div>
-                  <StandingsTable rows={rows} caption={`${divName} Division standings`} />
+                  <StandingsTable rows={rows} caption={`${divName} Division standings`} teamSeasonData={teamSeasonData} />
                 </div>
               ))}
             </div>
@@ -182,14 +232,14 @@ function StandingsPanel({ entries }) {
         <section key={confName} className="lv-conf-section">
           <h3 className="lv-conf-label">{confName} Conference</h3>
           <div className="lv-div-card lv-div-card--wide">
-            <StandingsTable rows={rows} caption={`${confName} Conference standings`} />
+            <StandingsTable rows={rows} caption={`${confName} Conference standings`} teamSeasonData={teamSeasonData} />
           </div>
         </section>
       ))}
 
       {filter === 'league' && (
         <div className="lv-div-card lv-div-card--wide">
-          <StandingsTable rows={byLeague} caption="League standings" />
+          <StandingsTable rows={byLeague} caption="League standings" teamSeasonData={teamSeasonData} />
         </div>
       )}
 
@@ -200,13 +250,13 @@ function StandingsPanel({ entries }) {
             {Object.entries(divLeaders).map(([divName, rows]) => (
               <div key={divName} className="lv-div-card">
                 <div className="lv-div-card__header">{divName} — Division leaders</div>
-                <StandingsTable rows={rows} caption={`${divName} division leaders`} />
+                <StandingsTable rows={rows} caption={`${divName} division leaders`} teamSeasonData={teamSeasonData} />
               </div>
             ))}
           </div>
           <div className="lv-div-card lv-div-card--wide lv-div-card--wc">
             <div className="lv-div-card__header">Wild card race</div>
-            <StandingsTable rows={wcPool} caption={`${confName} wild card`} />
+            <StandingsTable rows={wcPool} caption={`${confName} wild card`} teamSeasonData={teamSeasonData} />
           </div>
         </section>
       ))}
@@ -264,6 +314,11 @@ function LeadersCard({ title, statLabel, rows, formatStat, onPlayerClick }) {
 function LeadersPanel({ scoring, goals, gaa, svp }) {
   const [selectedPlayer, setSelectedPlayer] = React.useState(null);
 
+  const hasAnyData = [scoring, goals, gaa, svp].some((rows) => (rows ?? []).length > 0);
+  if (!hasAnyData) {
+    return <SeasonNotStartedState>Stat leaders will appear once games begin.</SeasonNotStartedState>;
+  }
+
   return (
     <>
       <div className="lv-leaders-grid">
@@ -307,8 +362,13 @@ const TEAM_COLORS = Object.fromEntries(ALL_TEAMS.map(t => [t.abbr, t.displayColo
 // Primary team display color for YOU-row highlights and bracket card accent.
 const PRIMARY_COLOR = TEAM_CONFIG.displayColor;
 
-// Last completed playoff bracket — shown during offseason when the API returns no data.
-// Update this once per year alongside MP_SEASON (next bump: October 2026 → 20262027 season).
+// Last completed playoff bracket — shown during offseason when the API
+// returns no data. Verified against the real 2025-26 results (NHL's
+// /playoff-series/carousel/20252026) as part of the 2026-27 season flip —
+// already accurate, no data change needed. Update again once the 2026-27
+// playoffs actually conclude (MP_SEASON no longer exists as a separate
+// concept to bump alongside — season resolution is live now, see
+// teamConfig.js).
 const OFFSEASON_BRACKET = {
   east: [
     { round: 1, series: [
@@ -721,6 +781,7 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
 // ── Main BracketPanel ──
 
 function BracketPanel({ data }) {
+  const { currentSeason: SEASON } = useSport();
   const [selectedSeries, setSelectedSeries] = useState(null);
 
   const bracket = useMemo(() => {
@@ -812,6 +873,20 @@ function ErrorState({ message }) {
     <div className="lv-error">
       <span>⚠</span>
       <p>{message ?? 'Something went wrong. Try refreshing.'}</p>
+    </div>
+  );
+}
+
+// Shared across Standings, Stats Leaders, and Power Rankings — all three go
+// blank once the season is live-flipped but before any games have been
+// played (rosters/schedule exist, but standings/stats/rankings genuinely
+// have zero rows). Distinct from ErrorState: this isn't a failure, so no
+// warning icon and a calmer tone.
+function SeasonNotStartedState({ children }) {
+  const { currentSeason } = useSport();
+  return (
+    <div className="lv-season-empty">
+      <p>{children ?? `The ${seasonLabelFor(currentSeason)} season hasn't started yet — check back once games begin.`}</p>
     </div>
   );
 }
@@ -954,20 +1029,8 @@ function RankSparkline({ history, primaryColor }) {
     );
   }
 
-  const W = 240;
-  const H = 80;
-  const PAD = 16; // extra padding so labels don't clip
-
-  // With a single point, show a horizontal line at that rank
+  // Single point: no trend to show, no line/area -- Sparkline centers a dot.
   const single = history.length === 1;
-  const ranks = history.map(r => r.rank);
-  const minR = Math.min(...ranks);
-  const maxR = Math.max(...ranks);
-  const range = maxR - minR || 1;
-
-  const x = (i) => single ? W / 2 : PAD + (i / (history.length - 1)) * (W - PAD * 2);
-  const y = (r) => single ? H / 2 : PAD + ((r - minR) / range) * (H - PAD * 2);
-
   const latest   = history[history.length - 1];
   const earliest = history[0];
   const diff     = single ? 0 : earliest.rank - latest.rank;
@@ -978,13 +1041,6 @@ function RankSparkline({ history, primaryColor }) {
     : diff > 0 ? `▲${diff}` : `▼${Math.abs(diff)}`;
 
   const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-  const points     = history.map((r, i) => `${x(i)},${y(r.rank)}`).join(' ');
-  const areaPoints = single ? '' : [
-    `${x(0)},${H}`,
-    ...history.map((r, i) => `${x(i)},${y(r.rank)}`),
-    `${x(history.length - 1)},${H}`,
-  ].join(' ');
 
   return (
     <div className="pr-sparkline" style={{ minWidth: 140 }}>
@@ -997,49 +1053,15 @@ function RankSparkline({ history, primaryColor }) {
           </span>
         )}
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="pr-sparkline-svg">
-        {!single && (
-          <polygon points={areaPoints} fill={primaryColor} opacity="0.08" />
-        )}
-        {!single && (
-          <polyline
-            points={points}
-            fill="none"
-            stroke={primaryColor}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        )}
-        {/* Current rank dot */}
-        <circle cx={x(history.length - 1)} cy={y(latest.rank)} r="4" fill={primaryColor} />
-        {/* Rank label */}
-        <text
-          x={x(history.length - 1)}
-          y={y(latest.rank) - 5}
-          fontSize="11"
-          fill={primaryColor}
-          textAnchor="middle"
-          fontWeight="700"
-        >
-          #{latest.rank}
-        </text>
-        {/* First point label (only when multiple points) */}
-        {!single && (
-          <>
-            <circle cx={x(0)} cy={y(earliest.rank)} r="3" fill={primaryColor} opacity="0.5" />
-            <text
-              x={x(0)}
-              y={y(earliest.rank) - 5}
-              fontSize="10"
-              fill="var(--text-dim)"
-              textAnchor="middle"
-            >
-              #{earliest.rank}
-            </text>
-          </>
-        )}
-      </svg>
+      <Sparkline
+        className="pr-sparkline-svg"
+        points={history.map(r => ({ value: r.rank }))}
+        color={primaryColor}
+        width={240} height={80} padding={16}
+        invertY // lower rank number (better) plots higher on the chart
+        showEndpoints
+        formatEndpointLabel={v => `#${v}`}
+      />
       <div className="pr-sparkline-dates">
         <span>{fmtDate(earliest.generated_date)}</span>
         {!single && <span>{fmtDate(latest.generated_date)}</span>}
@@ -1050,11 +1072,16 @@ function RankSparkline({ history, primaryColor }) {
 
 // ─── Rankings Panel ───────────────────────────────────────────────────────────
 
-function RankingsPanel({ standings, xgData, xgLoading, narrative, history }) {
+function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrative, history }) {
   const [showHow,    setShowHow]    = useState(false);
   const [canvasMounted, setCanvasMounted] = useState(false);
   const ranked  = computePowerRankings(standings, xgData);
-  const loading = !standings?.length || xgLoading;
+  // standingsLoading/xgLoading in flight vs. fetch done but genuinely zero
+  // rows (season live-flipped, no games played yet) are different states —
+  // conflating them here used to mean an empty season showed this loading
+  // skeleton forever instead of a "not started yet" message.
+  const loading = standingsLoading || xgLoading;
+  const empty   = !loading && !standings?.length;
 
   // Find this team's rank + prior for movement
   const myData    = ranked.find(t => t.abbr === PRIMARY);
@@ -1094,6 +1121,10 @@ function RankingsPanel({ standings, xgData, xgLoading, narrative, history }) {
         ))}
       </div>
     );
+  }
+
+  if (empty) {
+    return <SeasonNotStartedState>Power rankings will appear once games begin.</SeasonNotStartedState>;
   }
 
   return (
@@ -1441,6 +1472,7 @@ const TABS = [
 ];
 
 export default function LeagueView() {
+  const { currentSeason: SEASON } = useSport();
   const [activeTab, setActiveTab] = useState('standings');
 
   const handleTabChange = useCallback((tabId) => {
@@ -1466,8 +1498,10 @@ export default function LeagueView() {
   const { data: bracket, loading: bracketLoading }
     = useFetch(getPlayoffBracket, []);
 
+  // Also needed on the Standings tab (not just Power rankings) for the
+  // magic/tragic number display (Session 59).
   const { data: xgData, loading: xgLoading } = useFetch(
-    () => activeTab === 'rankings' ? getTeamSeasonData() : Promise.resolve(null),
+    () => (activeTab === 'rankings' || activeTab === 'standings') ? getTeamSeasonData() : Promise.resolve(null),
     [activeTab]
   )
   const { data: prNarrative } = useFetch(
@@ -1480,7 +1514,16 @@ export default function LeagueView() {
   )
 
   const leadersLoading   = scoringLoading || goalsLoading || gaaLoading || svpLoading;
-  const standingsEntries = Array.isArray(standings) ? standings : [];
+  // NHL's /standings/now stays pinned to last season's finale for months
+  // after our season config flips (independent, live, un-related feed —
+  // see nhlApi.js's _getTeamStats() for the full story). A real, non-empty,
+  // but stale response would otherwise sail past the entries.length===0
+  // check below and render last season's table as if it were current.
+  // Only reject on an EXPLICIT mismatch — the real NHL API always includes
+  // seasonId, but nothing else that stubs standings in tests does, and an
+  // absent field isn't evidence of staleness.
+  const standingsAreStale = isStandingsStale(standings, SEASON);
+  const standingsEntries = standingsAreStale ? [] : (Array.isArray(standings) ? standings : []);
 
   return (
     <div className="league-view">
@@ -1503,7 +1546,7 @@ export default function LeagueView() {
           <>
             {standingsLoading && <LoadingRows />}
             {standingsError   && <ErrorState message="Couldn't load standings." />}
-            {!standingsLoading && !standingsError && <StandingsPanel entries={standingsEntries} />}
+            {!standingsLoading && !standingsError && <StandingsPanel entries={standingsEntries} teamSeasonData={xgData} />}
           </>
         )}
 
@@ -1529,6 +1572,7 @@ export default function LeagueView() {
             <ScrollTopButton />
             <RankingsPanel
             standings={standingsEntries}
+            standingsLoading={standingsLoading}
             xgData={xgData}
             xgLoading={xgLoading}
             narrative={prNarrative}

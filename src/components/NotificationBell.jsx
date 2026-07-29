@@ -11,6 +11,20 @@ import './NotificationBell.css';
 
 // ── Preference definitions ────────────────────────────────────
 
+// iOS Safari (and every iOS browser, since Apple mandates WebKit under
+// the hood) only exposes the Web Push API to a PWA actually installed via
+// "Add to Home Screen" — a regular browser tab never gets PushManager,
+// even on iOS 16.4+. usePushNotifications()'s `supported` flag correctly
+// comes back false there, but that used to just silently drop the whole
+// section with no explanation. This distinguishes that specific, fixable
+// case (show install instructions) from a genuinely unsupported browser.
+function isIOSBrowserTab() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.navigator.standalone === true
+    || window.matchMedia('(display-mode: standalone)').matches;
+  return isIOS && !isStandalone;
+}
+
 const PREF_GROUPS = [
   {
     label: 'Game Flow',
@@ -153,6 +167,16 @@ export default function NotificationBell() {
           </div>
 
           {/* Push notifications */}
+          {!supported && (
+            <div className="notif-my-team">
+              <div className="notif-event-label">🔔 Push Notifications</div>
+              <p className="notif-desc">
+                {isIOSBrowserTab()
+                  ? 'On iPhone/iPad, push notifications require adding EyeWall Analytics to your Home Screen first: tap Share, then "Add to Home Screen" — then open it from there.'
+                  : "Push notifications aren't supported in this browser."}
+              </p>
+            </div>
+          )}
           {supported && (
             <>
               <p className="notif-desc">

@@ -44,6 +44,13 @@ describe('TeamPicker', () => {
     cy.contains(/All 12 teams/i).should('exist')
   })
 
+  it('shows the NHL/PWHL non-affiliation disclaimer', () => {
+    cy.get('.team-picker-disclaimer').should('be.visible')
+      .and('contain.text', 'not affiliated with')
+      .and('contain.text', 'NHL')
+      .and('contain.text', 'PWHL')
+  })
+
   describe('PWHL team step', () => {
     beforeEach(() => {
       cy.get('[aria-label="PWHL"]').click()

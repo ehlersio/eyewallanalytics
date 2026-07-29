@@ -4,13 +4,15 @@ import { useLocation } from 'react-router-dom';
 import { useFetch, usePoll } from '../hooks/useFetch';
 import {
   fetchPWHLShots, fetchPWHLRoster, fetchPWHLSchedule, fetchPWHLPBP,
-  fetchPWHLToday, fetchPWHLLive,
+  fetchPWHLToday, fetchPWHLLive, fetchPWHLTeamSeasonSummary,
   pbpByType,
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
 import {
   PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, isPWHLPlayoffSeason,
   PWHL_REGULAR_SEASONS as SEASONS,
+  PWHL_PLAYOFF_SEASON_MAP, PWHL_REGULAR_SEASON_MAP,
+  getPWHLTeamById,
 } from '../utils/pwhlConfig';
 import { usePWHLDevGame } from '../utils/PWHLDevGameContext';
 import {
@@ -26,12 +28,20 @@ import IceRink from '../components/IceRink';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
 import InfoTip from '../components/InfoTip';
+import GameChipsRow, { LiveGameChip } from '../components/GameChipsRow';
+import SeasonChipRow from '../components/SeasonChipRow';
+import SeasonTypeToggle from '../components/SeasonTypeToggle';
 import './ShotMapView.css';
 
 // SEASONS moved to pwhlConfig.js's PWHL_REGULAR_SEASONS (Session 43) — was
 // an independent 5th copy of the same regular-season id/label list.
 
-const TEAM_CODES = {1:'BOS',2:'MIN',3:'MTL',4:'NY',5:'OTT',6:'TOR',8:'SEA',9:'VAN'};
+// Local TEAM_CODES (team_id -> abbr) map removed Session 85 — it was a
+// stale 5th duplicate of the team-id list CLAUDE.md already flags as
+// independently duplicated across repos, missing team_id 7 and all 4
+// expansion teams (10-13). Silently broke opponent abbr/name/logo for
+// expansion-team games in three places (game chips, score card). Use
+// getPWHLTeamById (derived from PWHL_TEAMS, pwhlConfig.js) instead.
 
 // ── Shot adapters ─────────────────────────────────────────────
 
@@ -142,73 +152,11 @@ function distFromGoal(x, y) {
   return Math.sqrt(Math.pow(Math.abs(x) - 89, 2) + y * y);
 }
 
-// ── Game chips ────────────────────────────────────────────────
-
-function GameChip({ game, teamId, selected, onClick }) {
-  const isHome  = game.home_team_id === teamId;
-  const my      = isHome ? game.home_score : game.away_score;
-  const op      = isHome ? game.away_score : game.home_score;
-  const oppId   = isHome ? game.away_team_id : game.home_team_id;
-  const oppAbbr = TEAM_CODES[oppId] || String(oppId);
-  const oppTeam = PWHL_TEAM_MAP[oppAbbr];
-  const won     = my > op;
-  return (
-    <button className={`game-chip${selected ? ' game-chip-active' : ''}`} onClick={onClick}>
-      <TeamLogo abbr={oppAbbr} sport="pwhl" size={18} color={oppTeam?.displayColor} />
-      <span className="game-chip-opp">{oppAbbr}</span>
-      <span className="game-chip-score" style={{ color: won ? 'var(--green)' : 'var(--red-bright)' }}>
-        {won ? 'W' : 'L'} {my}–{op}
-      </span>
-      <span className="game-chip-venue">{isHome ? 'H' : 'A'}</span>
-    </button>
-  );
-}
-
-function GameChipsRow({ games, teamId, selectedGameId, onSelect, onAll }) {
-  const attachWheel = el => {
-    if (!el) return;
-    el.addEventListener('wheel', e => {
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-      e.preventDefault();
-      el.scrollLeft += e.deltaY;
-    }, { passive: false });
-  };
-  return (
-    <div className="game-chips-wrap" ref={attachWheel}>
-      <button className={`game-chip game-chip-all${!selectedGameId ? ' game-chip-active' : ''}`} onClick={onAll}>
-        All {games.length}
-      </button>
-      {games.map(g => (
-        <GameChip key={g.game_id} game={g} teamId={teamId}
-          selected={selectedGameId === g.game_id}
-          onClick={() => onSelect(g.game_id)} />
-      ))}
-    </div>
-  );
-}
-
-// ── Live game chip ────────────────────────────────────────────
-
-function LiveGameChip({ liveGame, teamId, onSelect, selected }) {
-  if (!liveGame) return null;
-  const isHome  = liveGame.homeTeamId === teamId;
-  const myScore = isHome ? liveGame.homeScore : liveGame.awayScore;
-  const opScore = isHome ? liveGame.awayScore : liveGame.homeScore;
-  const oppCode = isHome ? liveGame.awayTeamCode : liveGame.homeTeamCode;
-  const oppTeam = PWHL_TEAM_MAP[oppCode];
-  return (
-    <button
-      className={`game-chip game-chip-live${selected ? ' game-chip-active' : ''}`}
-      onClick={onSelect}
-      style={{ borderColor: 'var(--red-bright)', color: 'var(--red-bright)' }}
-    >
-      <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.05em' }}>🔴 LIVE</span>
-      <TeamLogo abbr={oppCode} sport="pwhl" size={18} color={oppTeam?.displayColor} />
-      <span className="game-chip-opp">{oppCode}</span>
-      <span className="game-chip-score">{myScore}–{opScore}</span>
-    </button>
-  );
-}
+// GameChip/GameChipsRow/LiveGameChip generalized into
+// src/components/GameChipsRow.jsx (Session 77) so ShotMapView.jsx (NHL)
+// shares the same component instead of a forked copy. Raw schedule rows
+// are mapped into the shared normalized shape just before render — see
+// `gameChipGames`/`liveGameChipData` below.
 
 // ── Stat Drill Popup ──────────────────────────────────────────
 
@@ -786,6 +734,22 @@ export default function PWHLShotMapView() {
   const [drillStat,      setDrill]    = useState(null);
   const [viewingSummaryPeriod, setViewingSummaryPeriod] = useState(null);
 
+  // useState's initial value only runs once, at first mount -- if this
+  // component mounts before pwhlConfig.js's async live-season fetch
+  // resolves, `season` would otherwise lock onto the fallback value
+  // forever, even though PWHL_CURRENT_SEASON itself goes on to update
+  // correctly. Same fix as PWHLPlayersView.jsx: catch up via the event
+  // pwhlConfig.js dispatches on resolution, but only if the user hasn't
+  // manually picked a season themselves.
+  const userPickedSeason = useRef(false);
+  useEffect(() => {
+    function handleSeasonUpdate(e) {
+      if (!userPickedSeason.current) setSeason(e.detail);
+    }
+    window.addEventListener('eyewall:pwhl-season-updated', handleSeasonUpdate);
+    return () => window.removeEventListener('eyewall:pwhl-season-updated', handleSeasonUpdate);
+  }, []);
+
   // ── Dev replay injection ──────────────────────────────────────
   const devGame = usePWHLDevGame();
 
@@ -813,6 +777,18 @@ export default function PWHLShotMapView() {
       (g.status === 'live' || g.status === 'pre')
     ) || null;
   }, [todayGames, teamId, devGame]);
+
+  // Normalized shape for the shared LiveGameChip (Session 77).
+  const liveGameChipData = useMemo(() => {
+    if (!liveGame) return null;
+    const isHome = liveGame.homeTeamId === teamId;
+    return {
+      opponentAbbr:  isHome ? liveGame.awayTeamCode : liveGame.homeTeamCode,
+      opponentColor: PWHL_TEAM_MAP[isHome ? liveGame.awayTeamCode : liveGame.homeTeamCode]?.displayColor,
+      myScore:  isHome ? liveGame.homeScore : liveGame.awayScore,
+      oppScore: isHome ? liveGame.awayScore : liveGame.homeScore,
+    };
+  }, [liveGame, teamId]);
 
   const isLive = devGame ? devGame.liveGame?.status === 'live' : liveGame?.status === 'live';
 
@@ -896,6 +872,23 @@ export default function PWHLShotMapView() {
     return [...schedule].filter(g => g.game_state === 'Final').sort((a,b) => b.game_id - a.game_id);
   }, [schedule]);
 
+  // Normalized shape for the shared GameChipsRow (Session 77) — raw PWHL
+  // schedule rows use home_team_id/away_team_id/home_score/away_score;
+  // GameChipsRow doesn't know about any sport's raw field names.
+  const gameChipGames = useMemo(() => games.map(g => {
+    const isHome  = g.home_team_id === teamId;
+    const oppId   = isHome ? g.away_team_id : g.home_team_id;
+    const oppAbbr = getPWHLTeamById(oppId)?.abbr || String(oppId);
+    return {
+      id: g.game_id,
+      opponentAbbr: oppAbbr,
+      opponentColor: PWHL_TEAM_MAP[oppAbbr]?.displayColor,
+      myScore:  isHome ? g.home_score : g.away_score,
+      oppScore: isHome ? g.away_score : g.home_score,
+      isHome,
+    };
+  }), [games, teamId]);
+
   const selectedGame = useMemo(() => games.find(g => g.game_id === selectedGameId) || null, [games, selectedGameId]);
   const displayGame  = selectedGame || games[0] || null;
 
@@ -976,6 +969,13 @@ export default function PWHLShotMapView() {
     () => teamId ? fetchPWHLShots(teamId, season)   : Promise.resolve(null), [teamId, season]);
   const { data: roster    = null } = useFetch(
     () => teamId ? fetchPWHLRoster(teamId)           : Promise.resolve(null), [teamId]);
+  // "All N" (no live game, no selectedGameId) — season-aggregate SOG/
+  // blocks/hits/penalties/faceoffs + PP%/PK% for the summary cards, since
+  // per-game pbpStats (below) never populates without a selected game.
+  const isAllN = !isLive && !selectedGameId;
+  const { data: seasonSummary = null } = useFetch(
+    () => isAllN && teamId ? fetchPWHLTeamSeasonSummary(teamId, season) : Promise.resolve(null),
+    [isAllN, teamId, season]);
   const { data: pbpData   = null } = useFetch(
     () => selectedGameId && !isLive ? fetchPWHLPBP(selectedGameId) : Promise.resolve(null),
     [selectedGameId, isLive]);
@@ -1142,9 +1142,29 @@ export default function PWHLShotMapView() {
     () => liveShotEvents.filter(e => !e.isCanes),
     [liveShotEvents]
   );
-  const handleSeasonChange = id => { setSeason(id); setSelected(null); setDrill(null); };
+  const handleSeasonChange = id => { userPickedSeason.current = true; setSeason(id); setSelected(null); setDrill(null); };
   const handleSelect       = id => { setSelected(p => p === id ? null : id); setDrill(null); };
   const handleAll          = ()  => { setSelected(null); setDrill(null); };
+
+  // Reg/Playoffs toggle (Session 77) — PWHL models playoffs as a distinct
+  // season_id, so toggling just swaps which paired id gets fetched via the
+  // existing handleSeasonChange (no separate season-type state needed).
+  // The year chip row always shows/selects the REGULAR id (that's the
+  // "which year" identity); `selectedYear` maps a playoffs selection back
+  // to its regular id purely for highlighting the right chip.
+  const seasonType   = isPWHLPlayoffSeason(season) ? 'playoffs' : 'regular';
+  const selectedYear = seasonType === 'playoffs' ? PWHL_REGULAR_SEASON_MAP[season] : season;
+  const handleSeasonTypeChange = type => {
+    if (type === seasonType) return;
+    const nextSeason = type === 'playoffs' ? PWHL_PLAYOFF_SEASON_MAP[season] : PWHL_REGULAR_SEASON_MAP[season];
+    if (nextSeason != null) handleSeasonChange(nextSeason);
+  };
+  // Picking a year chip preserves whichever seasonType is currently active
+  // (e.g. picking "2024-25" while viewing Playoffs jumps straight to that
+  // year's playoffs, not back to its regular season).
+  const handleYearSelect = regId => {
+    handleSeasonChange(seasonType === 'playoffs' ? (PWHL_PLAYOFF_SEASON_MAP[regId] ?? regId) : regId);
+  };
 
   // Roster name map (our team only — used for our shots)
   const playerMap = useMemo(() => {
@@ -1200,7 +1220,7 @@ export default function PWHLShotMapView() {
     const myScore  = isHome ? displayGame.home_score : displayGame.away_score;
     const oppScore = isHome ? displayGame.away_score : displayGame.home_score;
     const oppId    = isHome ? displayGame.away_team_id : displayGame.home_team_id;
-    const oppAbbr  = TEAM_CODES[oppId] || String(oppId);
+    const oppAbbr  = getPWHLTeamById(oppId)?.abbr || String(oppId);
     return {
       isHome, myScore, oppScore, oppAbbr, won: myScore > oppScore,
       ot: displayGame.ot, shootout: displayGame.shootout,
@@ -1595,15 +1615,9 @@ export default function PWHLShotMapView() {
               ) : null}
             </div>
           ) : <div style={{ width:40 }} />}
-          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
-            {SEASONS.map(s => (
-              <button key={s.id}
-                className={`rink-btn${season === s.id ? ' on' : ''}`}
-                style={{ padding:'2px 8px', fontSize:10, minHeight:'unset', minWidth:'unset' }}
-                onClick={() => handleSeasonChange(s.id)}>
-                {s.label}
-              </button>
-            ))}
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6 }}>
+            <SeasonTypeToggle value={seasonType} onChange={handleSeasonTypeChange} />
+            <SeasonChipRow seasons={SEASONS} selected={selectedYear} onSelect={handleYearSelect} />
           </div>
         </div>
       </div>
@@ -1613,14 +1627,14 @@ export default function PWHLShotMapView() {
         <div style={{ display: 'flex', gap: 0, alignItems: 'center' }}>
           {liveGame && (
             <LiveGameChip
-              liveGame={liveGame}
-              teamId={teamId}
+              liveGame={liveGameChipData}
+              sport="pwhl"
               selected={selectedGameId === liveGame.gameId}
               onSelect={() => { setSelected(liveGame.gameId); setDrill(null); }}
             />
           )}
           {games.length > 0 && (
-            <GameChipsRow games={games} teamId={teamId}
+            <GameChipsRow games={gameChipGames} sport="pwhl"
               selectedGameId={selectedGameId} onSelect={handleSelect} onAll={handleAll} />
           )}
         </div>
@@ -1663,25 +1677,55 @@ export default function PWHLShotMapView() {
         </div>
       )}
 
-      {/* ── Row 1: SOG, Blocks, Hits, Penalties ── */}
+      {/* ── Row 1: SOG, Blocks, Hits, Penalties ──
+          "All N": Opp SOG/Blocks come from seasonSummary instead of
+          shotStats.oppSOG/oppBlocked, which are always 0 here -- those
+          derive from oppShotEvents, which requires a selectedGameId (see
+          its useMemo above) and was never actually season-aware despite
+          shotStats itself (the "car" side) already being correct for All
+          N. Hits/Penalties similarly switch from the "Select a game"
+          placeholder to seasonSummary once it's the same "All N" data. */}
       {shotStats && (
         <div className="metrics-grid metrics-grid-4">
           <MetCard label="Shots on Goal" value={shotStats.sog}
-            sub={`${shotStats.goals}G · Opp ${shotStats.oppSOG ?? '—'}`}
+            sub={`${shotStats.goals}G · Opp ${(isAllN ? seasonSummary?.sog.opp : shotStats.oppSOG) ?? '—'}`}
             onClick={() => buildDrillDown('sog')} />
           <MetCard label="Blocks" value={shotStats.blocks}
-            sub={`Opp ${shotStats.oppBlocked ?? '—'}`}
+            sub={`Opp ${(isAllN ? seasonSummary?.blocked.opp : shotStats.oppBlocked) ?? '—'}`}
             onClick={() => buildDrillDown('blocked')} />
           <MetCard label="Hits"
-            value={hasPBP ? (pbpStats?.hits.car ?? '—') : '—'}
-            sub={hasPBP && pbpStats ? `Opp ${pbpStats.hits.opp}` : selectedGameId ? 'Loading…' : 'Select a game'}
-            color={hasPBP && pbpStats && pbpStats.hits.car > pbpStats.hits.opp ? 'green' : null}
-            onClick={hasPBP ? () => buildDrillDown('hits') : null} />
+            value={isAllN ? (seasonSummary?.hits.car ?? '—') : hasPBP ? (pbpStats?.hits.car ?? '—') : '—'}
+            sub={isAllN
+              ? (seasonSummary ? `Opp ${seasonSummary.hits.opp}` : 'Loading…')
+              : hasPBP && pbpStats ? `Opp ${pbpStats.hits.opp}` : selectedGameId ? 'Loading…' : 'Select a game'}
+            color={!isAllN && hasPBP && pbpStats && pbpStats.hits.car > pbpStats.hits.opp ? 'green' : null}
+            onClick={!isAllN && hasPBP ? () => buildDrillDown('hits') : null} />
           <MetCard label="Penalties"
-            value={hasPBP ? (pbpStats?.penalties.car ?? '—') : '—'}
-            sub={hasPBP && pbpStats ? `Opp ${pbpStats.penalties.opp}` : selectedGameId ? 'Loading…' : 'Select a game'}
+            value={isAllN ? (seasonSummary?.penalties.car ?? '—') : hasPBP ? (pbpStats?.penalties.car ?? '—') : '—'}
+            sub={isAllN
+              ? (seasonSummary ? `Opp ${seasonSummary.penalties.opp}` : 'Loading…')
+              : hasPBP && pbpStats ? `Opp ${pbpStats.penalties.opp}` : selectedGameId ? 'Loading…' : 'Select a game'}
             color={hasPBP && pbpStats && pbpStats.penalties.car < pbpStats.penalties.opp ? 'green' : null}
             onClick={hasPBP ? () => buildDrillDown('penalties') : null} />
+        </div>
+      )}
+
+      {/* ── Row 2: Faceoff%, PP%, PK% — "All N" season aggregate ──
+          Previously this whole row simply never rendered in All-N mode
+          (gated on hasPBP && pbpStats, both per-game-only) -- seasonSummary
+          (Session 80) is the first season-wide source for any of these. */}
+      {isAllN && (
+        <div className="metrics-grid metrics-grid-3">
+          <MetCard label="Faceoff %"
+            value={seasonSummary?.faceoff.pct != null ? `${seasonSummary.faceoff.pct.toFixed(1)}%` : '—'}
+            sub={seasonSummary ? `${seasonSummary.faceoff.car}W – ${seasonSummary.faceoff.opp}L` : 'Loading…'}
+            color={seasonSummary?.faceoff.pct != null && seasonSummary.faceoff.pct > 50 ? 'green' : null} />
+          <MetCard label="PP %"
+            value={seasonSummary?.ppPct != null ? `${(seasonSummary.ppPct * 100).toFixed(1)}%` : '—'}
+            sub={seasonSummary?.gamesPlayed ? `${seasonSummary.gamesPlayed} GP` : 'season'} />
+          <MetCard label="PK %"
+            value={seasonSummary?.pkPct != null ? `${(seasonSummary.pkPct * 100).toFixed(1)}%` : '—'}
+            sub={seasonSummary?.gamesPlayed ? `${seasonSummary.gamesPlayed} GP` : 'season'} />
         </div>
       )}
 

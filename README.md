@@ -23,6 +23,7 @@ Users select their league (NHL or PWHL) and team on first launch. All views, col
 | Frontend | React 18 + Vite, react-router-dom v7 |
 | Styling | CSS custom properties (design tokens), no CSS framework |
 | Charts | D3 v7, SVG-based IceRink component |
+| Player Search | Fuse.js — client-side fuzzy match against the Worker's flat NHL+PWHL player index (`GET /players-search-index`, ~1,600 players — small enough to ship once per session rather than query per keystroke) |
 | Hosting | Cloudflare Pages (auto-deploys from `main`; `dev` branch → preview) |
 | API Proxy | Cloudflare Pages Functions (`functions/`) |
 | Cache Layer | Cloudflare Worker + KV (`eyewall-poller`) |
@@ -62,13 +63,13 @@ canes-analytics-starter/
 ├── src/
 │   ├── App.jsx                   # Router, layout, sport context, theme init
 │   ├── views/
-│   │   ├── ShotMapView.jsx/.css        # NHL live shot map
+│   │   ├── ShotMapView.jsx/.css        # NHL live shot map — season/game history selector (Session 77) lets you browse past seasons/games; disabled+tooltip (not hidden) while a game is live, since a live game always wins the display
 │   │   ├── ScheduleView.jsx/.css       # NHL schedule
 │   │   ├── TeamView.jsx/.css           # NHL 6-tab team analytics (Advanced tab: xGF% sparkline)
 │   │   ├── PlayersView.jsx/.css        # NHL players
 │   │   ├── LeagueView.jsx/.css         # NHL 5-tab league page
 │   │   ├── NewsView.jsx/.css           # NHL news feed + Milestones tab toggle
-│   │   ├── PWHLShotMapView.jsx         # PWHL shot map + PBP metrics
+│   │   ├── PWHLShotMapView.jsx         # PWHL shot map + PBP metrics — season/game history + Regular Season/Playoffs toggle (Session 77, new capability, not just NHL parity)
 │   │   ├── PWHLScheduleView.jsx        # PWHL schedule + calendar + playoffs
 │   │   ├── PWHLTeamView.jsx            # PWHL 5-tab team analytics
 │   │   ├── PWHLPlayersView.jsx         # PWHL roster + stats + player popup
@@ -81,8 +82,8 @@ canes-analytics-starter/
 │   │   ├── BottomNav.jsx               # Sport-aware bottom navigation
 │   │   ├── TeamPicker.jsx              # Sport + team selection (NHL + PWHL); active/expansion PWHL split derives from comingSoon (fixed 2026-07 — used to be a 2nd hardcoded list, ignored comingSoon entirely)
 │   │   ├── IceRink.jsx/.css            # SVG rink — shots, heat map, team-aware
-│   │   ├── PWHLPlayerPopup.jsx         # PWHL player popup (Stats, Heat Map, Scout)
-│   │   ├── PlayerPopup.jsx             # NHL player popup (Stats, Analytics, Heat Map)
+│   │   ├── PWHLPlayerPopup.jsx         # PWHL player popup (Stats, Heat Map, Scout, Compare — season-over-season, up to 4 seasons, one fetch per season; Compare tab adds a per-game trend chart for chart-ready metrics (6/11 skater, 2/9 goalie — box-score-backed via /pwhl/player-game-log) alongside the existing tile rows, Session 70)
+│   │   ├── PlayerPopup.jsx             # NHL player popup (Stats, Analytics, Heat Map, Compare — season-over-season, reuses the seasonTotals already fetched for Stats; Compare tab adds a per-game trend chart for chart-ready metrics (11/18 skater, 8/11 goalie — via the NHL API's own game-log endpoint) alongside the existing tile rows, Session 70)
 │   │   ├── GameEvents.jsx/.css         # Goal/penalty/win/puck drop popups
 │   │   ├── ScoutingTab.jsx/.css        # NHL opponent scouting
 │   │   ├── DraftTab.jsx/.css           # NHL draft board
@@ -92,11 +93,18 @@ canes-analytics-starter/
 │   │   ├── ShareButtons.jsx/.css       # Shared Save/X/Share buttons across all export cards
 │   │   ├── HatTrickPopup              # (in GameEvents.jsx) — live hat trick celebration overlay
 │   │   ├── MilestonesFeed.jsx          # League-wide milestone feed (hat tricks, shutouts, SH goals, season/career thresholds) — tappable into PlayerPopup
+│   │   ├── PlayerSearch.jsx/.css       # Global NHL+PWHL player search (Topbar) — Fuse.js fuzzy match against the Worker's flat player index
 │   │   ├── TeamLogo.jsx/.css           # NHL + PWHL team logo renderer
 │   │   ├── CalendarView.jsx            # NHL calendar month view
 │   │   ├── PWHLCalendarView.jsx        # PWHL calendar month view
 │   │   ├── InfoTip.jsx/.css            # Tap-to-open tooltip
-│   │   └── StatBar.jsx/.css            # Comparative stat bar
+│   │   ├── StatBar.jsx/.css            # Comparative stat bar
+│   │   ├── SeasonComparisonPicker.jsx/.css # Generic N-season selector for season-over-season comparison (NHL + PWHL, not league-specific)
+│   │   ├── TeamComparisonPopup.jsx     # Team-level season-over-season comparison dialog (NHL + PWHL, box-score stats only) — reuses PlayersView.css's popup/stat-section styles
+│   │   ├── GameChipsRow.jsx            # Shot map game-selector chip row (NHL + PWHL, shared) — normalized {id, opponentAbbr, opponentColor, myScore, oppScore, isHome} shape, each sport maps its own schedule-row into it
+│   │   ├── SeasonChipRow.jsx           # Shot map season-selector chip stack (NHL + PWHL, shared) — recent seasons inline + a "More seasons" overflow dropdown for older ones
+│   │   ├── SeasonTypeToggle.jsx        # Regular Season/Playoffs segmented toggle (NHL + PWHL, shared) — same UI, different wiring per sport (PWHL swaps season_id; NHL filters the fetched season's games by gameType)
+│   │   └── DisabledHint.jsx            # Tap-triggered "why is this grayed out" tooltip — used by the shot map selector while a game is live
 │   ├── hooks/
 │   │   ├── useFetch.js                 # Data fetching + polling (cache: no-store)
 │   │   ├── usePushNotifications.js
@@ -105,20 +113,23 @@ canes-analytics-starter/
 │   └── utils/
 │       ├── nhlApi.js                   # NHL API calls + KV caching
 │       ├── pwhlApi.js                  # PWHL Worker API calls
+│       ├── seasonComparison.js         # Pure label/normalization helpers for season-over-season comparison
 │       ├── pwhlConfig.js               # PWHL team configs (12 teams: 8 established + 4 expansion, all live/selectable)
 │       ├── teamConfig.js               # NHL 32-team configs; CURRENT_SEASON live-resolved (fallback seed only)
-│       ├── seasonClient.js             # Shared memoized fetch for /config/seasons — used by teamConfig.js + pwhlConfig.js
+│       ├── seasonClient.js             # Shared memoized fetch for /config/seasons (teamConfig.js + pwhlConfig.js) and /config/seasons/comparison (SeasonComparisonPicker)
 │       ├── SportContext.jsx            # Sport state (NHL/PWHL) + localStorage persistence
 │       ├── advancedStats.js
 │       ├── supabaseClient.js           # DB queries; getTeamXgTrend, getGoalieShots (no car_game filter)
+│       ├── playerSearch.js             # Fuzzy player search — fetches GET /players-search-index once per session, matches via Fuse.js
 │       └── analytics.js
 ├── src/utils/__tests__/
-│   └── *.test.js                       # Vitest unit tests (8 files, 138 tests)
+│   └── *.test.js                       # Vitest unit tests (10 files, 157 tests)
 ├── cypress/
 │   ├── e2e/
 │   │   ├── navigation.cy.js            # NHL + PWHL route navigation smoke (all 12 PWHL teams)
 │   │   ├── news.cy.js                  # NHL news
-│   │   ├── milestones.cy.js            # Milestones feed, team filter dropdown, tap-to-open popup
+│   │   ├── milestones.cy.js            # Milestones feed, team filter dropdown, tap-to-open popup (incl. PWHL milestone self-fetch popup)
+│   │   ├── player-search.cy.js         # Global player search — open/close, debounce, typo tolerance, NHL+PWHL result correctness, popup opens for both
 │   │   ├── pwhl-news.cy.js             # PWHL news
 │   │   ├── period-summary.cy.js        # Game Center
 │   │   ├── players.cy.js               # NHL players
@@ -206,6 +217,10 @@ Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `m
 | `GET /milestones?team=&limit=` | Recent milestones, league-wide by default, optional team filter (default limit 50, max 100) |
 | `GET /player/landing?id=` | Proxies NHL API's `/player/{id}/landing` — browser can't call it directly (no CORS headers on the NHL side) |
 | `GET /config/seasons` | Live-resolved current NHL + PWHL season, both leagues in one response (see [Live Season Resolution](#live-season-resolution)) — consumed by `seasonClient.js` at app boot and by the pipeline's `season_lookup.py` |
+| `GET /players-search-index` | Flat NHL + PWHL player list (`{id, name, team, position, sport}`, ~1,600 players) for the global player-search autocomplete — see `playerSearch.js` / `PlayerSearch.jsx`. NHL entries may carry `teamStale: true` + `teamSeason` when the live season's own roster data doesn't exist yet (e.g. right after an early season flip) and `team` fell back to the prior season — `PlayerSearch.jsx` renders these dimmed/italic with a "As of `<season>`" tooltip rather than presenting a possibly-wrong team as current fact. |
+| `GET /config/seasons/comparison` | Per-league season list with team counts and a `comparable` flag (season-over-season comparison feature, Session 64) — consumed by `SeasonComparisonPicker.jsx` via `fetchComparisonSeasons()` |
+| `GET /team-seasons/compare?team=&seasons=` | Box-score fields only for one team across a comma-separated season list — consumed by `TeamComparisonPopup.jsx` via `fetchTeamSeasonsCompare()` |
+| `GET /team-seasons/compare-teams?teams=,&season=` | Box-score fields only for two teams at one shared season — backs the "vs Team" mode's Full Stat Comparison (Session 86), consumed by `TeamComparisonPopup.jsx` via `fetchTeamSeasonsCompareTeams()` |
 
 ---
 
@@ -240,12 +255,16 @@ Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `m
 | `GET /pwhl/scout` (POST) | Workers AI scouting report |
 | `GET /pwhl/salaries?teamId=&season=` | Team salary data |
 | `GET /pwhl/league-players?season=` | All 12 teams' players (Leaders tab) |
+| `GET /pwhl/player/landing?id=&season=` | Single player's identity + one season's stat line, merged — powers `PWHLPlayerPopup`'s self-fetch-by-id (same role `/player/landing` plays for NHL's `PlayerPopup`). `season` pins the stat line to that `season_id`; omitted, falls back to the most recent regular-season row |
+| `GET /pwhl/player/career?id=` | Career Regular Season / Playoffs totals — powers `PWHLPlayerPopup`'s Career tile sections. `playoffs` is `null` if the player hasn't made the playoffs yet |
 | `GET /pwhl/news` | PWHL news feed |
 | `POST /pwhl/news/ingest` | Accept articles from GH Actions pipeline |
 | `POST /pwhl/news/bust` | Invalidate news cache |
 | `POST /pwhl/cache/bust?secret=&teamId=&season=` | Invalidate one team's KV caches for a given season. **Bust only after confirming the underlying data is actually correct** (direct Supabase query or a fresh Worker hit) — busting first just repopulates the same stale/empty entry if the fix hasn't landed yet. Learned this the hard way during the 2026-07 expansion rollout. |
 | `GET /pwhl/summary?gameId=` | HockeyTech gameSummary normalized (goals, MVPs, team stats) |
 | `POST /pwhl/summary/narrative?gameId=&period=&carAbbr=` | AI period/game narrative per team perspective |
+| `GET /pwhl/team-seasons/compare?teamId=&seasons=` | Box-score fields only for one team across a comma-separated `season_id` list — PWHL analog of `/team-seasons/compare`, consumed by `TeamComparisonPopup.jsx` via `fetchPWHLTeamSeasonsCompare()` |
+| `GET /pwhl/team-seasons/compare-teams?teamIds=,&season=` | Box-score fields only for two teams at one shared `season_id` — PWHL analog of `/team-seasons/compare-teams` (Session 86), consumed by `TeamComparisonPopup.jsx` via `fetchPWHLTeamSeasonsCompareTeams()` |
 
 ---
 
@@ -399,8 +418,8 @@ npm run cypress:full    # Clean → run → HTML report
 | `pwhl-players.cy.js` | PWHL roster, stats, player popup (4 established teams) + 1 expansion team (empty stats state) |
 | `schedule.cy.js` | NHL schedule, predictions |
 | `pwhl-schedule.cy.js` | PWHL schedule smoke (12 teams), full features (BOS), playoffs tab |
-| `shot-map.cy.js` | NHL shot map, all sections |
-| `pwhl-shot-map.cy.js` | PWHL shot map smoke (12 teams), full features (BOS), PBP metrics |
+| `shot-map.cy.js` | NHL shot map, all sections; season/game history selector (chips, "More seasons" overflow, Reg/Playoffs toggle), disabled+tooltip state during a live game |
+| `pwhl-shot-map.cy.js` | PWHL shot map smoke (12 teams), full features (BOS), PBP metrics, Reg/Playoffs toggle |
 | `pwhl-shots-live.cy.js` | PWHL + NHL shot map live-mode debug panel, goal/penalty/win popups, situation chips |
 | `pwhl-dev.cy.js` | PWHL dev game replay scrubber |
 | `team.cy.js` | NHL 6 tabs (4 teams incl. Cap + Picks) |
