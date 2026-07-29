@@ -163,6 +163,31 @@ PWHL_TEST_TEAMS.forEach(abbr => {
         cy.contains('PTS').should('be.visible')
       })
     })
+
+    describe('Compare Teams (Session 86)', () => {
+      beforeEach(() => {
+        cy.contains('🆚 Compare Seasons').click()
+        cy.contains('vs Team').click()
+        cy.contains('Full Stat Comparison').should('be.visible')
+      })
+
+      it('opponent picker excludes the current team', () => {
+        cy.get('select[aria-label="Choose opponent team"]').find('option').then($opts => {
+          const values = [...$opts].map(o => o.value).filter(Boolean)
+          expect(values).not.to.include(String(teamId))
+        })
+      })
+
+      it('renders one comparison card per team once an opponent and season are picked', () => {
+        cy.get('select[aria-label="Choose opponent team"]').then($sel => {
+          const opponent = [...$sel[0].options].map(o => o.value).find(v => v && v !== String(teamId))
+          cy.wrap($sel).select(opponent)
+        })
+        cy.get('.season-chip', { timeout: 8000 }).first().click()
+        cy.get('.stat-section', { timeout: 15000 }).should('have.length', 2)
+        cy.contains('GP').scrollIntoView().should('be.visible')
+      })
+    })
   })
 })
 
@@ -273,6 +298,19 @@ describe('PWHL Team view — DET (expansion, no games played yet)', () => {
       // No metric rows at all for this card -- confirms the empty state
       // replaces the stat list rather than rendering it zeroed-out.
       cy.get('.stat-section').find('.stat-row').should('not.exist')
+    })
+  })
+
+  describe('Compare Teams (Session 86)', () => {
+    beforeEach(() => {
+      cy.contains('🆚 Compare Seasons').click()
+      cy.contains('vs Team').click()
+    })
+
+    it('shows "Not yet available" for an expansion team with no prior-season row', () => {
+      cy.get('select[aria-label="Choose opponent team"]').select('2') // Minnesota Frost
+      cy.get('.season-chip', { timeout: 8000 }).contains('2025-26').click()
+      cy.contains('Not yet available for this season', { timeout: 15000 }).should('be.visible')
     })
   })
 })

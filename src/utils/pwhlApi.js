@@ -146,6 +146,29 @@ export async function fetchPWHLTeamSeasonsCompare(teamId, seasons) {
   }));
 }
 
+/**
+ * Team vs team comparison (Session 86) -- two teams, one season, mirroring
+ * NHL's fetchTeamSeasonsCompareTeams. Backed by /pwhl/team-seasons/compare-teams.
+ */
+export async function fetchPWHLTeamSeasonsCompareTeams(teamIdA, teamIdB, season) {
+  if (!teamIdA || !teamIdB || !season) return [];
+  const rows = await workerFetch(`/pwhl/team-seasons/compare-teams?teamIds=${teamIdA},${teamIdB}&season=${season}`);
+  if (!Array.isArray(rows)) return [];
+  return rows.map(r => ({
+    team:          r.team_id,
+    season:        r.season_id,
+    gamesPlayed:   r.gp,
+    wins:          r.wins,
+    losses:        r.losses,
+    otLosses:      r.ot_losses,
+    points:        r.points,
+    goalsFor:      r.goals_for,
+    goalsAgainst:  r.goals_against,
+    ppPct:         r.pp_pct,
+    pkPct:         r.pk_pct,
+  }));
+}
+
 export async function fetchPWHLPlayers(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {
   if (!teamId) return null;
   return workerFetch(`/pwhl/players?teamId=${teamId}&season=${season}`);
