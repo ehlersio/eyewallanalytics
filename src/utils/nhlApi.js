@@ -594,6 +594,28 @@ export async function fetchTeamSeasonsCompare(team, seasons) {
   }));
 }
 
+// ─── TEAM vs TEAM COMPARISON (Session 86) ───────────
+// Two teams, one season -- mirrors fetchTeamSeasonsCompare's shape but
+// keyed by team instead of season, backed by /team-seasons/compare-teams.
+export async function fetchTeamSeasonsCompareTeams(teamA, teamB, season) {
+  if (!teamA || !teamB || !season) return [];
+  const rows = await workerFetch(`/team-seasons/compare-teams?teams=${encodeURIComponent(teamA)},${encodeURIComponent(teamB)}&season=${season}`);
+  if (!rows) return [];
+  return rows.map(r => ({
+    team:          r.team,
+    season:        r.season,
+    gamesPlayed:   r.games_played,
+    wins:          r.wins,
+    losses:        r.losses,
+    otLosses:      r.ot_losses,
+    points:        r.points,
+    goalsFor:      r.goals_for,
+    goalsAgainst:  r.goals_against,
+    ppPct:         r.pp_pct,
+    pkPct:         r.pk_pct,
+  }));
+}
+
 export async function getTeamSkaterStats(gameTypeId = 2) {
   return cached(`teamSkaterStats:${gameTypeId}`, () => _getTeamSkaterStats(gameTypeId), TTL.PLAYER_STATS);
 }

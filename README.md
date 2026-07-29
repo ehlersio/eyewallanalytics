@@ -220,6 +220,7 @@ Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `m
 | `GET /players-search-index` | Flat NHL + PWHL player list (`{id, name, team, position, sport}`, ~1,600 players) for the global player-search autocomplete — see `playerSearch.js` / `PlayerSearch.jsx`. NHL entries may carry `teamStale: true` + `teamSeason` when the live season's own roster data doesn't exist yet (e.g. right after an early season flip) and `team` fell back to the prior season — `PlayerSearch.jsx` renders these dimmed/italic with a "As of `<season>`" tooltip rather than presenting a possibly-wrong team as current fact. |
 | `GET /config/seasons/comparison` | Per-league season list with team counts and a `comparable` flag (season-over-season comparison feature, Session 64) — consumed by `SeasonComparisonPicker.jsx` via `fetchComparisonSeasons()` |
 | `GET /team-seasons/compare?team=&seasons=` | Box-score fields only for one team across a comma-separated season list — consumed by `TeamComparisonPopup.jsx` via `fetchTeamSeasonsCompare()` |
+| `GET /team-seasons/compare-teams?teams=,&season=` | Box-score fields only for two teams at one shared season — backs the "vs Team" mode's Full Stat Comparison (Session 86), consumed by `TeamComparisonPopup.jsx` via `fetchTeamSeasonsCompareTeams()` |
 
 ---
 
@@ -263,6 +264,7 @@ Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `m
 | `GET /pwhl/summary?gameId=` | HockeyTech gameSummary normalized (goals, MVPs, team stats) |
 | `POST /pwhl/summary/narrative?gameId=&period=&carAbbr=` | AI period/game narrative per team perspective |
 | `GET /pwhl/team-seasons/compare?teamId=&seasons=` | Box-score fields only for one team across a comma-separated `season_id` list — PWHL analog of `/team-seasons/compare`, consumed by `TeamComparisonPopup.jsx` via `fetchPWHLTeamSeasonsCompare()` |
+| `GET /pwhl/team-seasons/compare-teams?teamIds=,&season=` | Box-score fields only for two teams at one shared `season_id` — PWHL analog of `/team-seasons/compare-teams` (Session 86), consumed by `TeamComparisonPopup.jsx` via `fetchPWHLTeamSeasonsCompareTeams()` |
 
 ---
 

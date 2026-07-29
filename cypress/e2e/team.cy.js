@@ -153,6 +153,36 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
 
     })
 
+    describe('Compare Teams (Session 86)', () => {
+      beforeEach(() => {
+        cy.contains('🆚 Compare Seasons').click()
+        cy.get('[aria-label="Compare vs team"]').click()
+        cy.contains('Full Stat Comparison').should('be.visible')
+      })
+
+      it('opponent picker excludes the current team', () => {
+        cy.get('select[aria-label="Choose opponent team"]').find('option').then($opts => {
+          const values = [...$opts].map(o => o.value).filter(Boolean)
+          expect(values).not.to.include(teamAbbr)
+        })
+      })
+
+      it('renders one comparison card per team once an opponent and season are picked', () => {
+        cy.get('select[aria-label="Choose opponent team"]').then($sel => {
+          const opponent = [...$sel[0].options].map(o => o.value).find(v => v && v !== teamAbbr)
+          cy.wrap($sel).select(opponent)
+        })
+        cy.get('.season-chip', { timeout: 8000 }).first().click()
+        cy.get('.stat-section', { timeout: 15000 }).should('have.length', 2)
+        cy.contains('GP').scrollIntoView().should('be.visible')
+      })
+
+      it('switches back to Head-to-Head placeholder without losing the mode toggle', () => {
+        cy.contains('Head-to-Head').click()
+        cy.contains(/coming in a follow-up/i).should('be.visible')
+      })
+    })
+
     // Cap & Picks only runs for teams with salary data
     if (teamAbbr === 'CAR') {
       describe('Cap tab', () => {
