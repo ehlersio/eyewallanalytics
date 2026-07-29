@@ -187,15 +187,6 @@ PWHL_TEST_TEAMS.forEach(abbr => {
         cy.get('.stat-section', { timeout: 15000 }).should('have.length', 2)
         cy.contains('GP').scrollIntoView().should('be.visible')
       })
-
-      it('renders all-time record, or the no-meetings state, once an opponent is picked (Session 88)', () => {
-        cy.get('select[aria-label="Choose opponent team"]').then($sel => {
-          const opponent = [...$sel[0].options].map(o => o.value).find(v => v && v !== String(teamId))
-          cy.wrap($sel).select(opponent)
-        })
-        cy.contains('Head-to-Head').click()
-        cy.contains(/Since 2023-24|No meetings on record/i, { timeout: 15000 }).should('be.visible')
-      })
     })
   })
 })
@@ -320,16 +311,6 @@ describe('PWHL Team view — DET (expansion, no games played yet)', () => {
       cy.get('select[aria-label="Choose opponent team"]').select('2') // Minnesota Frost
       cy.get('.season-chip', { timeout: 8000 }).contains('2025-26').click()
       cy.contains('Not yet available for this season', { timeout: 15000 }).should('be.visible')
-    })
-
-    // DET has never played a game in this pipeline's history (2026-27
-    // expansion) -- unlike the "either/or" assertion used for established
-    // teams elsewhere, this pair is guaranteed zero real meetings, so this
-    // can assert the exact empty state deterministically (Session 88).
-    it('Head-to-Head shows the zero-meetings empty state for an expansion team', () => {
-      cy.get('select[aria-label="Choose opponent team"]').select('2') // Minnesota Frost
-      cy.contains('Head-to-Head').click()
-      cy.contains('No meetings on record between these teams yet', { timeout: 15000 }).should('be.visible')
     })
   })
 })

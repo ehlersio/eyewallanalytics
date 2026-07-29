@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useFetch } from '../hooks/useFetch';
-import { fetchTeamSeasonsCompare, fetchTeamSeasonsCompareTeams, fetchTeamHeadToHead } from '../utils/nhlApi';
-import { fetchPWHLTeamSeasonsCompare, fetchPWHLTeamSeasonsCompareTeams, fetchPWHLTeamHeadToHead } from '../utils/pwhlApi';
+import { fetchTeamSeasonsCompare, fetchTeamSeasonsCompareTeams } from '../utils/nhlApi';
+import { fetchPWHLTeamSeasonsCompare, fetchPWHLTeamSeasonsCompareTeams } from '../utils/pwhlApi';
 import { fetchComparisonSeasons } from '../utils/seasonClient';
 import { normalizeComparisonSeasons } from '../utils/seasonComparison';
 import { getTeamXgTrend } from '../utils/supabaseClient';
@@ -111,10 +111,11 @@ function TeamCompareSeasonCard({ label, row }) {
 // (/team-seasons/compare-teams, /pwhl/team-seasons/compare-teams) already
 // return a gap the same way /team-seasons/compare does.
 //
-// Opponent is lifted all the way to the parent (Session 88: shared with
-// HeadToHeadPanel below, one picker for both sub-tabs) and rendered once
-// by the parent, not here -- this panel only owns the season picker.
-function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, opponentLabel, season, onSeasonChange }) {
+// Opponent/season selection is lifted to the parent (not local state here)
+// so the popup header can reflect "Team A vs Team B" once both are picked
+// (Session 86 header redesign, Option C) -- this panel is now a controlled
+// view over that shared state, not its own source of truth.
+function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, onOpponentChange, season, onSeasonChange, opponentOptions }) {
   const selectedSeason = season[0] ?? null;
   const fetchFn = league === 'pwhl' ? fetchPWHLTeamSeasonsCompareTeams : fetchTeamSeasonsCompareTeams;
   const { data: rows, loading } = useFetch(
@@ -123,10 +124,12 @@ function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, oppon
   );
 
   const rowByTeam = new Map((rows || []).map(r => [String(r.team), r]));
+  const opponentLabel = opponentOptions.find(t => String(t.value) === String(opponent))?.label || 'Opponent';
 
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+        <TeamOpponentPicker teams={opponentOptions} value={opponent} onChange={onOpponentChange} excludeValue={teamValue} />
         <SeasonComparisonPicker
           league={league}
           selected={season}
@@ -136,7 +139,7 @@ function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, oppon
       </div>
 
       {!opponent && (
-        <div className="pp-no-stats">Choose an opponent above and a season to compare.</div>
+        <div className="pp-no-stats">Choose an opponent and a season above to compare.</div>
       )}
       {opponent && !selectedSeason && (
         <div className="pp-no-stats">Choose a season above to compare.</div>
@@ -155,72 +158,12 @@ function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, oppon
   );
 }
 
-// Mode 2 of Team vs Team (Session 88): all-time head-to-head record,
-// recent-window record, and current streak between two teams, across
-// every season on record. Derived-insight math (record/streak/window)
-// is computed server-side (buildHeadToHeadPayload in eyewall-poller's
-// shared.js) -- this component only renders what the route already
-// returns, no client-side recomputation.
-// Scoreboard layout (Session 88 follow-up, Option B of 3 mockups) -- leads
-// with both team logos and a big win-count split rather than a label/value
-// stat-row list, with recent-window and streak as secondary pills below.
-// "Since 2023-24" (not "All-time") because that's genuinely as far back as
-// this app's own game_log/pwhl_game_log goes for either league -- see
-// HEAD_TO_HEAD_BRIEF.md's historical-depth note. Don't relabel this
-// "all-time" even though the underlying route has no season filter.
-function HeadToHeadPanel({ league, teamValue, opponent }) {
-  const fetchFn = league === 'pwhl' ? fetchPWHLTeamHeadToHead : fetchTeamHeadToHead;
-  const { data: h2h, loading } = useFetch(
-    () => opponent ? fetchFn(teamValue, opponent) : Promise.resolve(null),
-    [teamValue, opponent]
-  );
-
-  if (!opponent) {
-    return <div className="pp-no-stats">Choose an opponent above to see head-to-head history.</div>;
-  }
-  if (loading) {
-    return <div className="pp-no-stats">Loading…</div>;
-  }
-  if (!h2h || h2h.totalMeetings === 0) {
-    return <div className="pp-no-stats">No meetings on record between these teams yet.</div>;
-  }
-
-  const { totalMeetings, allTimeRecord, recentWindow, currentStreak, isThinSample } = h2h;
-  const isNhl = league === 'nhl';
-  const sport = isNhl ? 'nhl' : 'pwhl';
-  const { abbr: teamAbbr } = resolveTeamLogo(league, teamValue);
-  const { abbr: opponentAbbr } = resolveTeamLogo(league, opponent);
-  const streakAbbr = currentStreak?.holder === 'A' ? teamAbbr : opponentAbbr;
-
-  return (
-    <div className="h2h-scoreboard">
-      <div className="h2h-scoreboard-label">Since 2023-24</div>
-      <div className="h2h-scoreboard-teams">
-        <div className="h2h-scoreboard-team">
-          <TeamLogo abbr={teamAbbr} sport={sport} size={36} />
-          <div className="h2h-scoreboard-wins">{allTimeRecord.teamAWins}</div>
-        </div>
-        <div className="h2h-scoreboard-vs">wins</div>
-        <div className="h2h-scoreboard-team">
-          <TeamLogo abbr={opponentAbbr} sport={sport} size={36} />
-          <div className="h2h-scoreboard-wins">{allTimeRecord.teamBWins}</div>
-        </div>
-      </div>
-      <div className="h2h-scoreboard-pills">
-        {recentWindow.size < totalMeetings && (
-          <span className="h2h-pill">Last {recentWindow.size}: {recentWindow.teamAWins}-{recentWindow.teamBWins}</span>
-        )}
-        {currentStreak && (
-          <span className="h2h-pill">{streakAbbr} won {currentStreak.count} straight</span>
-        )}
-      </div>
-      {isThinSample && (
-        <div className="pp-no-stats" style={{ marginTop: 10 }}>
-          Only {totalMeetings} meeting{totalMeetings === 1 ? '' : 's'} on record — too few to call a trend.
-        </div>
-      )}
-    </div>
-  );
+// Head-to-Head (Mode 2) is a separate, larger build -- league-specific
+// query patterns for "all games between two teams across all seasons"
+// (see TEAM_VS_TEAM_COMPARISON_BRIEF.md's Mode 2 notes) plus derived-
+// insight logic that doesn't exist yet. Placeholder until that lands.
+function HeadToHeadPanel() {
+  return <div className="pp-no-stats">Head-to-head history is coming in a follow-up build.</div>;
 }
 
 // Generic team-level season-over-season comparison popup — one component
@@ -242,18 +185,14 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
     ? PWHL_TEAMS.map(t => ({ value: t.teamId, label: t.displayName }))
     : ALL_TEAMS.map(t => ({ value: t.abbr, label: t.displayName }));
 
-  // Header logo -- current team, always; opponent, once picked (Option C:
-  // the header itself becomes the toggle). Opponent selection is shared
-  // across both vs-Team sub-tabs (Session 88), so this no longer checks
-  // teamSubMode -- Full Stat Comparison and Head-to-Head show the same
-  // "Team A vs Team B" header once an opponent is picked, regardless of
-  // which sub-tab is active.
+  // Header logo -- current team, always; opponent, only once vs-Team mode
+  // has one picked (Option C: the header itself becomes the toggle).
   const { abbr: logoAbbr, color: logoColor } = resolveTeamLogo(league, teamValue);
-  const showOpponentInHeader = mode === 'team' && !!vsTeamOpponent;
+  const showOpponentInHeader = mode === 'team' && teamSubMode === 'full' && !!vsTeamOpponent;
   const { abbr: opponentLogoAbbr, color: opponentLogoColor } = showOpponentInHeader
     ? resolveTeamLogo(league, vsTeamOpponent)
     : {};
-  const opponentLabel = vsTeamOpponent
+  const opponentLabel = showOpponentInHeader
     ? (opponentOptions.find(t => String(t.value) === String(vsTeamOpponent))?.label || 'Opponent')
     : null;
 
@@ -322,11 +261,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
   // yet) so there's no empty/broken-looking header while the user is still
   // choosing.
   const headerTitle = showOpponentInHeader ? `${teamLabel} vs ${opponentLabel}` : (mode === 'team' ? 'Compare Teams' : 'Compare Seasons');
-  // Season label only applies to Full Stat Comparison -- Head-to-Head
-  // spans all seasons, so it has no single season to show here.
-  const headerSubtitle = showOpponentInHeader && teamSubMode === 'full' && vsTeamSeason[0]
-    ? labelFor(vsTeamSeason[0])
-    : (showOpponentInHeader && teamSubMode === 'h2h' ? 'Since 2023-24' : teamLabel);
+  const headerSubtitle = showOpponentInHeader && vsTeamSeason[0] ? labelFor(vsTeamSeason[0]) : teamLabel;
 
   return (
     <div className="popup-backdrop" onClick={onClose}>
@@ -431,10 +366,6 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
 
           {mode === 'team' && (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-                <TeamOpponentPicker teams={opponentOptions} value={vsTeamOpponent} onChange={setVsTeamOpponent} excludeValue={teamValue} />
-              </div>
-
               <div className="compare-mode-toggle compare-submode-toggle" role="group" aria-label="Team comparison type">
                 <button
                   type="button"
@@ -461,18 +392,13 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
                     teamValue={teamValue}
                     teamLabel={teamLabel}
                     opponent={vsTeamOpponent}
-                    opponentLabel={opponentLabel}
+                    onOpponentChange={setVsTeamOpponent}
                     season={vsTeamSeason}
                     onSeasonChange={setVsTeamSeason}
+                    opponentOptions={opponentOptions}
                   />
                 )
-                : (
-                  <HeadToHeadPanel
-                    league={league}
-                    teamValue={teamValue}
-                    opponent={vsTeamOpponent}
-                  />
-                )}
+                : <HeadToHeadPanel />}
             </>
           )}
         </div>
