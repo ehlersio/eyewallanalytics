@@ -10,6 +10,7 @@ import { PWHL_TEAMS } from '../utils/pwhlConfig';
 import SeasonComparisonPicker from './SeasonComparisonPicker';
 import SeasonOverlayChart from './SeasonOverlayChart';
 import TeamOpponentPicker from './TeamOpponentPicker';
+import TeamLogo from './TeamLogo';
 // Reuses PlayerPopup's popup shell + stat-section/stat-row classes
 // (.popup-backdrop, .player-popup, .pp-header, .stat-section, .stat-row,
 // etc) rather than duplicating them in a new stylesheet.
@@ -44,6 +45,19 @@ function seasonRampColor(baseHex, index, total) {
   const MIN_ALPHA = 0.35;
   const alpha = 1 - (index / (total - 1)) * (1 - MIN_ALPHA);
   return hexToRgba(baseHex, Number(alpha.toFixed(2)));
+}
+
+// Resolves {abbr, color} for TeamLogo from whatever value a team is
+// keyed by -- an NHL abbr string directly, or a PWHL numeric team_id
+// (which <select> always round-trips as a string, so compared loosely
+// here rather than assuming a type). Used for both the popup's own team
+// and, once picked, its vs-Team opponent (Session 86 header redesign).
+function resolveTeamLogo(league, value) {
+  if (league === 'pwhl') {
+    const t = PWHL_TEAMS.find(t => String(t.teamId) === String(value));
+    return { abbr: t?.abbr, color: t?.displayColor };
+  }
+  return { abbr: value, color: undefined };
 }
 
 // Box-score fields only for v1 (Session 64 locked decision) -- Corsi/xG/WAR
@@ -96,18 +110,12 @@ function TeamCompareSeasonCard({ label, row }) {
 // just keyed by team instead of season -- the underlying Worker routes
 // (/team-seasons/compare-teams, /pwhl/team-seasons/compare-teams) already
 // return a gap the same way /team-seasons/compare does.
-function FullStatComparisonPanel({ league, teamValue, teamLabel }) {
-  const [opponent, setOpponent] = useState(null);
-  const [season, setSeason] = useState([]); // SeasonComparisonPicker-shaped: 0 or 1 value
-
-  const opponentOptions = league === 'pwhl'
-    ? PWHL_TEAMS.map(t => ({ value: t.teamId, label: t.displayName }))
-    : ALL_TEAMS.map(t => ({ value: t.abbr, label: t.displayName }));
-
-  const { data: comparisonConfig } = useFetch(fetchComparisonSeasons, []);
-  const seasonOptions = normalizeComparisonSeasons(league, comparisonConfig?.[league]?.seasons);
-  const labelFor = (val) => seasonOptions.find(s => s.value === val)?.label || `Season ${val}`;
-
+//
+// Opponent/season selection is lifted to the parent (not local state here)
+// so the popup header can reflect "Team A vs Team B" once both are picked
+// (Session 86 header redesign, Option C) -- this panel is now a controlled
+// view over that shared state, not its own source of truth.
+function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, onOpponentChange, season, onSeasonChange, opponentOptions }) {
   const selectedSeason = season[0] ?? null;
   const fetchFn = league === 'pwhl' ? fetchPWHLTeamSeasonsCompareTeams : fetchTeamSeasonsCompareTeams;
   const { data: rows, loading } = useFetch(
@@ -121,11 +129,11 @@ function FullStatComparisonPanel({ league, teamValue, teamLabel }) {
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-        <TeamOpponentPicker teams={opponentOptions} value={opponent} onChange={setOpponent} excludeValue={teamValue} />
+        <TeamOpponentPicker teams={opponentOptions} value={opponent} onChange={onOpponentChange} excludeValue={teamValue} />
         <SeasonComparisonPicker
           league={league}
           selected={season}
-          onChange={setSeason}
+          onChange={onSeasonChange}
           maxSelected={1}
         />
       </div>
@@ -141,13 +149,10 @@ function FullStatComparisonPanel({ league, teamValue, teamLabel }) {
         <div className="pp-no-stats">Loading…</div>
       )}
       {!loading && opponent && selectedSeason && (
-        <>
-          <div className="pp-birth" style={{ marginTop: 8 }}>{labelFor(selectedSeason)}</div>
-          <div className="stat-section-peers">
-            <TeamCompareSeasonCard label={teamLabel} row={rowByTeam.get(String(teamValue))} />
-            <TeamCompareSeasonCard label={opponentLabel} row={rowByTeam.get(String(opponent))} />
-          </div>
-        </>
+        <div className="stat-section-peers">
+          <TeamCompareSeasonCard label={teamLabel} row={rowByTeam.get(String(teamValue))} />
+          <TeamCompareSeasonCard label={opponentLabel} row={rowByTeam.get(String(opponent))} />
+        </div>
       )}
     </>
   );
@@ -170,6 +175,26 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
   const [mode, setMode] = useState('season'); // 'season' | 'team'
   const [teamSubMode, setTeamSubMode] = useState('full'); // 'full' | 'h2h', only relevant when mode === 'team'
   const [compareSeasons, setCompareSeasons] = useState([]);
+
+  // vs-Team opponent/season selection (Session 86 header redesign) --
+  // lifted here, not owned by FullStatComparisonPanel, so the header can
+  // read "Team A vs Team B" once both are picked.
+  const [vsTeamOpponent, setVsTeamOpponent] = useState(null);
+  const [vsTeamSeason, setVsTeamSeason] = useState([]); // SeasonComparisonPicker-shaped: 0 or 1 value
+  const opponentOptions = league === 'pwhl'
+    ? PWHL_TEAMS.map(t => ({ value: t.teamId, label: t.displayName }))
+    : ALL_TEAMS.map(t => ({ value: t.abbr, label: t.displayName }));
+
+  // Header logo -- current team, always; opponent, only once vs-Team mode
+  // has one picked (Option C: the header itself becomes the toggle).
+  const { abbr: logoAbbr, color: logoColor } = resolveTeamLogo(league, teamValue);
+  const showOpponentInHeader = mode === 'team' && teamSubMode === 'full' && !!vsTeamOpponent;
+  const { abbr: opponentLogoAbbr, color: opponentLogoColor } = showOpponentInHeader
+    ? resolveTeamLogo(league, vsTeamOpponent)
+    : {};
+  const opponentLabel = showOpponentInHeader
+    ? (opponentOptions.find(t => String(t.value) === String(vsTeamOpponent))?.label || 'Opponent')
+    : null;
 
   const fetchFn = league === 'pwhl' ? fetchPWHLTeamSeasonsCompare : fetchTeamSeasonsCompare;
   const { data: rows, loading } = useFetch(
@@ -229,37 +254,62 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
     });
   }, [isNhl, xgTrendsBySeason, compareSeasons, sortedDesc, teamColor]);
 
+  // Header content (Option C, Session 86): the identity row itself carries
+  // the vs-Team state once an opponent is picked, rather than a generic
+  // title that never changes. Falls back to the plain team label/name for
+  // every other state (vs-Season mode, or vs-Team mode with nothing picked
+  // yet) so there's no empty/broken-looking header while the user is still
+  // choosing.
+  const headerTitle = showOpponentInHeader ? `${teamLabel} vs ${opponentLabel}` : (mode === 'team' ? 'Compare Teams' : 'Compare Seasons');
+  const headerSubtitle = showOpponentInHeader && vsTeamSeason[0] ? labelFor(vsTeamSeason[0]) : teamLabel;
+
   return (
     <div className="popup-backdrop" onClick={onClose}>
       <div className="player-popup" onClick={e => e.stopPropagation()}>
         <div className="pp-header">
+          <div className="cvt-team-logos">
+            <div className="pp-photo-wrap">
+              <TeamLogo abbr={logoAbbr} sport={league === 'pwhl' ? 'pwhl' : 'nhl'} size={44} color={logoColor} />
+            </div>
+            {showOpponentInHeader && (
+              <>
+                <span className="cvt-vs">vs</span>
+                <div className="pp-photo-wrap">
+                  <TeamLogo abbr={opponentLogoAbbr} sport={league === 'pwhl' ? 'pwhl' : 'nhl'} size={44} color={opponentLogoColor} />
+                </div>
+              </>
+            )}
+          </div>
           <div className="pp-identity">
-            <div className="pp-name"><span className="pp-first">{mode === 'team' ? 'Compare Teams' : 'Compare Seasons'}</span></div>
-            <div className="pp-birth">{teamLabel}</div>
+            <div className="pp-name"><span className="pp-first">{headerTitle}</span></div>
+            <div className="pp-birth">{headerSubtitle}</div>
+          </div>
+          <div className="cvt-mode-switch" role="group" aria-label="Comparison mode">
+            <button
+              type="button"
+              className={mode === 'season' ? 'cvt-mode-switch-active' : ''}
+              aria-pressed={mode === 'season'}
+              onClick={() => setMode('season')}
+              title="vs Season"
+              aria-label="Compare vs season"
+            >
+              📅
+            </button>
+            <button
+              type="button"
+              className={mode === 'team' ? 'cvt-mode-switch-active' : ''}
+              aria-pressed={mode === 'team'}
+              onClick={() => setMode('team')}
+              title="vs Team"
+              aria-label="Compare vs team"
+            >
+              🆚
+            </button>
           </div>
           <button className="pp-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
         <div className="pp-body">
-          <div className="compare-mode-toggle" role="group" aria-label="Comparison mode">
-            <button
-              type="button"
-              className={'compare-mode-btn' + (mode === 'season' ? ' compare-mode-btn-active' : '')}
-              aria-pressed={mode === 'season'}
-              onClick={() => setMode('season')}
-            >
-              vs Season
-            </button>
-            <button
-              type="button"
-              className={'compare-mode-btn' + (mode === 'team' ? ' compare-mode-btn-active' : '')}
-              aria-pressed={mode === 'team'}
-              onClick={() => setMode('team')}
-            >
-              vs Team
-            </button>
-          </div>
-
           {mode === 'season' && (
             <>
               <SeasonComparisonPicker
@@ -336,7 +386,18 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
               </div>
 
               {teamSubMode === 'full'
-                ? <FullStatComparisonPanel league={league} teamValue={teamValue} teamLabel={teamLabel} />
+                ? (
+                  <FullStatComparisonPanel
+                    league={league}
+                    teamValue={teamValue}
+                    teamLabel={teamLabel}
+                    opponent={vsTeamOpponent}
+                    onOpponentChange={setVsTeamOpponent}
+                    season={vsTeamSeason}
+                    onSeasonChange={setVsTeamSeason}
+                    opponentOptions={opponentOptions}
+                  />
+                )
                 : <HeadToHeadPanel />}
             </>
           )}

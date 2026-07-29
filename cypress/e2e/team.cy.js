@@ -156,7 +156,7 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
     describe('Compare Teams (Session 86)', () => {
       beforeEach(() => {
         cy.contains('🆚 Compare Seasons').click()
-        cy.contains('vs Team').click()
+        cy.get('[aria-label="Compare vs team"]').click()
         cy.contains('Full Stat Comparison').should('be.visible')
       })
 

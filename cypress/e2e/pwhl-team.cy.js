@@ -167,7 +167,7 @@ PWHL_TEST_TEAMS.forEach(abbr => {
     describe('Compare Teams (Session 86)', () => {
       beforeEach(() => {
         cy.contains('🆚 Compare Seasons').click()
-        cy.contains('vs Team').click()
+        cy.get('[aria-label="Compare vs team"]').click()
         cy.contains('Full Stat Comparison').should('be.visible')
       })
 
@@ -304,7 +304,7 @@ describe('PWHL Team view — DET (expansion, no games played yet)', () => {
   describe('Compare Teams (Session 86)', () => {
     beforeEach(() => {
       cy.contains('🆚 Compare Seasons').click()
-      cy.contains('vs Team').click()
+      cy.get('[aria-label="Compare vs team"]').click()
     })
 
     it('shows "Not yet available" for an expansion team with no prior-season row', () => {
