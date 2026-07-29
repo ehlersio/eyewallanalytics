@@ -616,6 +616,17 @@ export async function fetchTeamSeasonsCompareTeams(teamA, teamB, season) {
   }));
 }
 
+// ─── HEAD-TO-HEAD (Session 88) ───────────
+// All-time record/streak/recent-window between two teams, across every
+// season on record. Backed by /team-seasons/head-to-head, which already
+// returns a clean camelCase shape (record/streak/window computed
+// server-side so there's one definition shared with PWHL) -- no
+// snake_case remapping needed here, unlike this file's other fetchers.
+export async function fetchTeamHeadToHead(teamA, teamB) {
+  if (!teamA || !teamB) return null;
+  return workerFetch(`/team-seasons/head-to-head?teams=${encodeURIComponent(teamA)},${encodeURIComponent(teamB)}`);
+}
+
 export async function getTeamSkaterStats(gameTypeId = 2) {
   return cached(`teamSkaterStats:${gameTypeId}`, () => _getTeamSkaterStats(gameTypeId), TTL.PLAYER_STATS);
 }

@@ -1,3 +1,58 @@
+/* ── Head-to-Head scoreboard (Session 88 follow-up, Option B) ── */
+.h2h-scoreboard {
+  background: var(--bg2);
+  border: 0.5px solid var(--border-2);
+  border-radius: 12px;
+  padding: 18px;
+  margin-top: 12px;
+  text-align: center;
+}
+.h2h-scoreboard-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+.h2h-scoreboard-teams {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+.h2h-scoreboard-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.h2h-scoreboard-wins {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+}
+.h2h-scoreboard-vs {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.h2h-scoreboard-pills {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.h2h-pill {
+  background: var(--red-dim);
+  color: var(--red-bright);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
 /* ── Compare Seasons/Teams mode toggle (Session 86) ── */
 .compare-mode-toggle {
   display: flex;
