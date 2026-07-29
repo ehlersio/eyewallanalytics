@@ -194,7 +194,7 @@ PWHL_TEST_TEAMS.forEach(abbr => {
           cy.wrap($sel).select(opponent)
         })
         cy.contains('Head-to-Head').click()
-        cy.contains(/All-time record|No meetings on record/i, { timeout: 15000 }).should('be.visible')
+        cy.contains(/Since 2023-24|No meetings on record/i, { timeout: 15000 }).should('be.visible')
       })
     })
   })

@@ -161,16 +161,14 @@ function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, oppon
 // is computed server-side (buildHeadToHeadPayload in eyewall-poller's
 // shared.js) -- this component only renders what the route already
 // returns, no client-side recomputation.
-function HeadToHeadRow({ label, value }) {
-  return (
-    <div className="stat-row">
-      <div className="stat-row-left"><span className="stat-row-label">{label}</span></div>
-      <span className="stat-row-value">{value}</span>
-    </div>
-  );
-}
-
-function HeadToHeadPanel({ league, teamValue, teamLabel, opponent, opponentLabel }) {
+// Scoreboard layout (Session 88 follow-up, Option B of 3 mockups) -- leads
+// with both team logos and a big win-count split rather than a label/value
+// stat-row list, with recent-window and streak as secondary pills below.
+// "Since 2023-24" (not "All-time") because that's genuinely as far back as
+// this app's own game_log/pwhl_game_log goes for either league -- see
+// HEAD_TO_HEAD_BRIEF.md's historical-depth note. Don't relabel this
+// "all-time" even though the underlying route has no season filter.
+function HeadToHeadPanel({ league, teamValue, opponent }) {
   const fetchFn = league === 'pwhl' ? fetchPWHLTeamHeadToHead : fetchTeamHeadToHead;
   const { data: h2h, loading } = useFetch(
     () => opponent ? fetchFn(teamValue, opponent) : Promise.resolve(null),
@@ -188,27 +186,39 @@ function HeadToHeadPanel({ league, teamValue, teamLabel, opponent, opponentLabel
   }
 
   const { totalMeetings, allTimeRecord, recentWindow, currentStreak, isThinSample } = h2h;
-  const streakLabel = currentStreak
-    ? `${currentStreak.holder === 'A' ? teamLabel : opponentLabel} has won ${currentStreak.count} straight`
-    : null;
+  const isNhl = league === 'nhl';
+  const sport = isNhl ? 'nhl' : 'pwhl';
+  const { abbr: teamAbbr } = resolveTeamLogo(league, teamValue);
+  const { abbr: opponentAbbr } = resolveTeamLogo(league, opponent);
+  const streakAbbr = currentStreak?.holder === 'A' ? teamAbbr : opponentAbbr;
 
   return (
-    <div className="stat-section">
-      <div className="stat-section-header">
-        <span className="stat-section-label">{teamLabel} vs {opponentLabel} — all-time</span>
+    <div className="h2h-scoreboard">
+      <div className="h2h-scoreboard-label">Since 2023-24</div>
+      <div className="h2h-scoreboard-teams">
+        <div className="h2h-scoreboard-team">
+          <TeamLogo abbr={teamAbbr} sport={sport} size={36} />
+          <div className="h2h-scoreboard-wins">{allTimeRecord.teamAWins}</div>
+        </div>
+        <div className="h2h-scoreboard-vs">wins</div>
+        <div className="h2h-scoreboard-team">
+          <TeamLogo abbr={opponentAbbr} sport={sport} size={36} />
+          <div className="h2h-scoreboard-wins">{allTimeRecord.teamBWins}</div>
+        </div>
       </div>
-      <div className="stat-section-body">
-        <HeadToHeadRow label="All-time record" value={`${allTimeRecord.teamAWins}-${allTimeRecord.teamBWins}`} />
+      <div className="h2h-scoreboard-pills">
         {recentWindow.size < totalMeetings && (
-          <HeadToHeadRow label={`Last ${recentWindow.size} meetings`} value={`${recentWindow.teamAWins}-${recentWindow.teamBWins}`} />
+          <span className="h2h-pill">Last {recentWindow.size}: {recentWindow.teamAWins}-{recentWindow.teamBWins}</span>
         )}
-        {streakLabel && <HeadToHeadRow label="Current streak" value={streakLabel} />}
-        {isThinSample && (
-          <div className="pp-no-stats" style={{ marginTop: 6 }}>
-            Only {totalMeetings} meeting{totalMeetings === 1 ? '' : 's'} on record — too few to call a trend.
-          </div>
+        {currentStreak && (
+          <span className="h2h-pill">{streakAbbr} won {currentStreak.count} straight</span>
         )}
       </div>
+      {isThinSample && (
+        <div className="pp-no-stats" style={{ marginTop: 10 }}>
+          Only {totalMeetings} meeting{totalMeetings === 1 ? '' : 's'} on record — too few to call a trend.
+        </div>
+      )}
     </div>
   );
 }
@@ -316,7 +326,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
   // spans all seasons, so it has no single season to show here.
   const headerSubtitle = showOpponentInHeader && teamSubMode === 'full' && vsTeamSeason[0]
     ? labelFor(vsTeamSeason[0])
-    : (showOpponentInHeader && teamSubMode === 'h2h' ? 'All-time' : teamLabel);
+    : (showOpponentInHeader && teamSubMode === 'h2h' ? 'Since 2023-24' : teamLabel);
 
   return (
     <div className="popup-backdrop" onClick={onClose}>
@@ -460,9 +470,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
                   <HeadToHeadPanel
                     league={league}
                     teamValue={teamValue}
-                    teamLabel={teamLabel}
                     opponent={vsTeamOpponent}
-                    opponentLabel={opponentLabel}
                   />
                 )}
             </>

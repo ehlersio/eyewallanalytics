@@ -194,7 +194,7 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         cy.contains('Head-to-Head').click()
         // Real record depends on live data for this team pair -- either
         // shape is a valid, non-broken outcome (see /team-seasons/head-to-head).
-        cy.contains(/All-time record|No meetings on record/i, { timeout: 15000 }).should('be.visible')
+        cy.contains(/Since 2023-24|No meetings on record/i, { timeout: 15000 }).should('be.visible')
       })
     })
 
