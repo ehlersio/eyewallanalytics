@@ -169,15 +169,6 @@ export async function fetchPWHLTeamSeasonsCompareTeams(teamIdA, teamIdB, season)
   }));
 }
 
-/**
- * Head-to-head (Session 88) -- PWHL analog of fetchTeamHeadToHead. Backed
- * by /pwhl/team-seasons/head-to-head, already a clean camelCase shape.
- */
-export async function fetchPWHLTeamHeadToHead(teamIdA, teamIdB) {
-  if (!teamIdA || !teamIdB) return null;
-  return workerFetch(`/pwhl/team-seasons/head-to-head?teamIds=${teamIdA},${teamIdB}`);
-}
-
 export async function fetchPWHLPlayers(teamId = PWHL_TEAM_ID, season = PWHL_CURRENT_SEASON) {
   if (!teamId) return null;
   return workerFetch(`/pwhl/players?teamId=${teamId}&season=${season}`);

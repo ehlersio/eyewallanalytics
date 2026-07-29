@@ -177,24 +177,9 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         cy.contains('GP').scrollIntoView().should('be.visible')
       })
 
-      it('opponent selection carries over when switching to Head-to-Head', () => {
-        cy.get('select[aria-label="Choose opponent team"]').then($sel => {
-          const opponent = [...$sel[0].options].map(o => o.value).find(v => v && v !== teamAbbr)
-          cy.wrap($sel).select(opponent)
-          cy.contains('Head-to-Head').click()
-          cy.get('select[aria-label="Choose opponent team"]').should('have.value', opponent)
-        })
-      })
-
-      it('renders all-time record, or the no-meetings state, once an opponent is picked', () => {
-        cy.get('select[aria-label="Choose opponent team"]').then($sel => {
-          const opponent = [...$sel[0].options].map(o => o.value).find(v => v && v !== teamAbbr)
-          cy.wrap($sel).select(opponent)
-        })
+      it('switches back to Head-to-Head placeholder without losing the mode toggle', () => {
         cy.contains('Head-to-Head').click()
-        // Real record depends on live data for this team pair -- either
-        // shape is a valid, non-broken outcome (see /team-seasons/head-to-head).
-        cy.contains(/Since 2023-24|No meetings on record/i, { timeout: 15000 }).should('be.visible')
+        cy.contains(/coming in a follow-up/i).should('be.visible')
       })
     })
 
