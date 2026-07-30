@@ -100,7 +100,7 @@ canes-analytics-starter/
 │   │   ├── InfoTip.jsx/.css            # Tap-to-open tooltip
 │   │   ├── StatBar.jsx/.css            # Comparative stat bar
 │   │   ├── SeasonComparisonPicker.jsx/.css # Generic N-season selector for season-over-season comparison (NHL + PWHL, not league-specific)
-│   │   ├── TeamComparisonPopup.jsx     # Team-level season-over-season comparison dialog (NHL + PWHL, box-score stats only) — reuses PlayersView.css's popup/stat-section styles
+│   │   ├── TeamComparisonPopup.jsx     # Team-level season-over-season comparison dialog (NHL + PWHL, box-score stats only) — reuses PlayersView.css's popup/stat-section styles; its Head-to-Head tab also renders an AI narrative card (Session 90) via HeadToHeadNarrativeCard
 │   │   ├── GameChipsRow.jsx            # Shot map game-selector chip row (NHL + PWHL, shared) — normalized {id, opponentAbbr, opponentColor, myScore, oppScore, isHome} shape, each sport maps its own schedule-row into it
 │   │   ├── SeasonChipRow.jsx           # Shot map season-selector chip stack (NHL + PWHL, shared) — recent seasons inline + a "More seasons" overflow dropdown for older ones
 │   │   ├── SeasonTypeToggle.jsx        # Regular Season/Playoffs segmented toggle (NHL + PWHL, shared) — same UI, different wiring per sport (PWHL swaps season_id; NHL filters the fetched season's games by gameType)
@@ -222,6 +222,7 @@ Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `m
 | `GET /team-seasons/compare?team=&seasons=` | Box-score fields only for one team across a comma-separated season list — consumed by `TeamComparisonPopup.jsx` via `fetchTeamSeasonsCompare()` |
 | `GET /team-seasons/compare-teams?teams=,&season=` | Box-score fields only for two teams at one shared season — backs the "vs Team" mode's Full Stat Comparison (Session 86), consumed by `TeamComparisonPopup.jsx` via `fetchTeamSeasonsCompareTeams()` |
 | `GET /team-seasons/head-to-head?teams=,` | All-time head-to-head record/recent-window/current-streak between two teams across every season — backs the "vs Team" mode's Head-to-Head tab (Session 88), consumed via `fetchTeamHeadToHead()` |
+| `POST /team-seasons/head-to-head/narrative` | AI narrative layer on top of the head-to-head stats above (Session 90) — posts the already-fetched record/window/streak payload back to the Worker, called directly via `fetch()` (not through `nhlApi.js`) by `HeadToHeadNarrativeCard` in `TeamComparisonPopup.jsx`, same pattern as `PeriodSummary.jsx`'s narrative calls |
 
 ---
 
@@ -267,6 +268,7 @@ Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `m
 | `GET /pwhl/team-seasons/compare?teamId=&seasons=` | Box-score fields only for one team across a comma-separated `season_id` list — PWHL analog of `/team-seasons/compare`, consumed by `TeamComparisonPopup.jsx` via `fetchPWHLTeamSeasonsCompare()` |
 | `GET /pwhl/team-seasons/compare-teams?teamIds=,&season=` | Box-score fields only for two teams at one shared `season_id` — PWHL analog of `/team-seasons/compare-teams` (Session 86), consumed by `TeamComparisonPopup.jsx` via `fetchPWHLTeamSeasonsCompareTeams()` |
 | `GET /pwhl/team-seasons/head-to-head?teamIds=,` | All-time head-to-head record/recent-window/current-streak between two teams — PWHL analog of `/team-seasons/head-to-head` (Session 88), consumed via `fetchPWHLTeamHeadToHead()` |
+| `POST /pwhl/team-seasons/head-to-head/narrative` | AI narrative layer on top of the head-to-head stats above (Session 90) — PWHL analog of `/team-seasons/head-to-head/narrative` |
 
 ---
 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import { fetchTeamSeasonsCompare, fetchTeamSeasonsCompareTeams, fetchTeamHeadToHead } from '../utils/nhlApi';
 import { fetchPWHLTeamSeasonsCompare, fetchPWHLTeamSeasonsCompareTeams, fetchPWHLTeamHeadToHead } from '../utils/pwhlApi';
@@ -155,6 +155,72 @@ function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, oppon
   );
 }
 
+// AI narrative layer on top of the templated head-to-head stats above
+// (Session 90 fast-follow). Posts the derived-insight fields the Worker
+// already computed (record/window/streak/isThinSample) back to it --
+// deliberately not the full h2h.games array, which the narrative route
+// never reads and which can run long for teams with several seasons of
+// history; no point shipping that on every popup open. Auto-generates on
+// mount and the Worker caches in KV so only the first viewer of a given
+// pair pays the generation cost, same UX pattern as PeriodSummary.jsx's
+// game/period narratives.
+function HeadToHeadNarrativeCard({ league, h2h, teamADisplay, teamBDisplay }) {
+  const [narrative, setNarrative] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+
+  const { teamA, teamB, totalMeetings, allTimeRecord, recentWindow, currentStreak, isThinSample } = h2h;
+
+  useEffect(() => {
+    let cancelled = false;
+    setNarrative(null);
+    setFailed(false);
+    setLoading(true);
+
+    const workerUrl = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_WORKER_URL : null;
+    if (!workerUrl) { setLoading(false); setFailed(true); return undefined; }
+
+    const path = league === 'pwhl'
+      ? '/pwhl/team-seasons/head-to-head/narrative'
+      : '/team-seasons/head-to-head/narrative';
+
+    fetch(`${workerUrl}${path}`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        teamA, teamB, teamADisplay, teamBDisplay,
+        totalMeetings, allTimeRecord, recentWindow, currentStreak, isThinSample,
+      }),
+    })
+      .then(res => res.ok ? res.json() : Promise.reject(new Error(`Worker ${res.status}`)))
+      .then(data => {
+        if (cancelled) return;
+        if (data.narrative) setNarrative(data.narrative);
+        else setFailed(true);
+      })
+      .catch(() => { if (!cancelled) setFailed(true); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [league, teamA, teamB, totalMeetings, teamADisplay, teamBDisplay]);
+
+  if (failed) return null;
+
+  return (
+    <div className="h2h-narrative">
+      <div className="h2h-narrative-label"><span>⚡</span> EyeWall AI</div>
+      {loading ? (
+        <div className="h2h-narrative-loading">
+          <div className="h2h-narrative-dot" />
+          Generating analysis…
+        </div>
+      ) : (
+        <div className="h2h-narrative-text">{narrative}</div>
+      )}
+    </div>
+  );
+}
+
 // Mode 2 of Team vs Team (Session 88): all-time head-to-head record,
 // recent-window record, and current streak between two teams, across
 // every season on record. Derived-insight math (record/streak/window)
@@ -168,7 +234,7 @@ function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, oppon
 // this app's own game_log/pwhl_game_log goes for either league -- see
 // HEAD_TO_HEAD_BRIEF.md's historical-depth note. Don't relabel this
 // "all-time" even though the underlying route has no season filter.
-function HeadToHeadPanel({ league, teamValue, opponent }) {
+function HeadToHeadPanel({ league, teamValue, opponent, teamLabel, opponentLabel }) {
   const fetchFn = league === 'pwhl' ? fetchPWHLTeamHeadToHead : fetchTeamHeadToHead;
   const { data: h2h, loading } = useFetch(
     () => opponent ? fetchFn(teamValue, opponent) : Promise.resolve(null),
@@ -193,33 +259,36 @@ function HeadToHeadPanel({ league, teamValue, opponent }) {
   const streakAbbr = currentStreak?.holder === 'A' ? teamAbbr : opponentAbbr;
 
   return (
-    <div className="h2h-scoreboard">
-      <div className="h2h-scoreboard-label">Since 2023-24</div>
-      <div className="h2h-scoreboard-teams">
-        <div className="h2h-scoreboard-team">
-          <TeamLogo abbr={teamAbbr} sport={sport} size={36} />
-          <div className="h2h-scoreboard-wins">{allTimeRecord.teamAWins}</div>
+    <>
+      <div className="h2h-scoreboard">
+        <div className="h2h-scoreboard-label">Since 2023-24</div>
+        <div className="h2h-scoreboard-teams">
+          <div className="h2h-scoreboard-team">
+            <TeamLogo abbr={teamAbbr} sport={sport} size={36} />
+            <div className="h2h-scoreboard-wins">{allTimeRecord.teamAWins}</div>
+          </div>
+          <div className="h2h-scoreboard-vs">wins</div>
+          <div className="h2h-scoreboard-team">
+            <TeamLogo abbr={opponentAbbr} sport={sport} size={36} />
+            <div className="h2h-scoreboard-wins">{allTimeRecord.teamBWins}</div>
+          </div>
         </div>
-        <div className="h2h-scoreboard-vs">wins</div>
-        <div className="h2h-scoreboard-team">
-          <TeamLogo abbr={opponentAbbr} sport={sport} size={36} />
-          <div className="h2h-scoreboard-wins">{allTimeRecord.teamBWins}</div>
+        <div className="h2h-scoreboard-pills">
+          {recentWindow.size < totalMeetings && (
+            <span className="h2h-pill">Last {recentWindow.size}: {recentWindow.teamAWins}-{recentWindow.teamBWins}</span>
+          )}
+          {currentStreak && (
+            <span className="h2h-pill">{streakAbbr} won {currentStreak.count} straight</span>
+          )}
         </div>
-      </div>
-      <div className="h2h-scoreboard-pills">
-        {recentWindow.size < totalMeetings && (
-          <span className="h2h-pill">Last {recentWindow.size}: {recentWindow.teamAWins}-{recentWindow.teamBWins}</span>
+        {isThinSample && (
+          <div className="pp-no-stats" style={{ marginTop: 10 }}>
+            Only {totalMeetings} meeting{totalMeetings === 1 ? '' : 's'} on record — too few to call a trend.
+          </div>
         )}
-        {currentStreak && (
-          <span className="h2h-pill">{streakAbbr} won {currentStreak.count} straight</span>
-        )}
       </div>
-      {isThinSample && (
-        <div className="pp-no-stats" style={{ marginTop: 10 }}>
-          Only {totalMeetings} meeting{totalMeetings === 1 ? '' : 's'} on record — too few to call a trend.
-        </div>
-      )}
-    </div>
+      <HeadToHeadNarrativeCard league={league} h2h={h2h} teamADisplay={teamLabel} teamBDisplay={opponentLabel} />
+    </>
   );
 }
 
@@ -471,6 +540,8 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
                     league={league}
                     teamValue={teamValue}
                     opponent={vsTeamOpponent}
+                    teamLabel={teamLabel}
+                    opponentLabel={opponentLabel}
                   />
                 )}
             </>
