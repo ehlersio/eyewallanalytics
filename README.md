@@ -21,8 +21,8 @@ Users select their league (NHL or PWHL) and team on first launch. All views, col
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 18 + Vite, react-router-dom v7 |
-| Styling | CSS custom properties (design tokens), no CSS framework |
-| Charts | D3 v7, SVG-based IceRink component |
+| Styling | CSS custom properties (design tokens); Tailwind (`@tailwindcss/vite`) scoped to `PlayerComparisonPopup.jsx` only — utilities layer only, no preflight, so it can't leak a reset into the rest of the app's plain-CSS components |
+| Charts | D3 v7, SVG-based IceRink component; Recharts (radar charts — single-player header, Session 66/80; two-player overlay in Player vs Player Comparison, Session 91) |
 | Player Search | Fuse.js — client-side fuzzy match against the Worker's flat NHL+PWHL player index (`GET /players-search-index`, ~1,600 players — small enough to ship once per session rather than query per keystroke) |
 | Hosting | Cloudflare Pages (auto-deploys from `main`; `dev` branch → preview) |
 | API Proxy | Cloudflare Pages Functions (`functions/`) |
@@ -82,8 +82,11 @@ canes-analytics-starter/
 │   │   ├── BottomNav.jsx               # Sport-aware bottom navigation
 │   │   ├── TeamPicker.jsx              # Sport + team selection (NHL + PWHL); active/expansion PWHL split derives from comingSoon (fixed 2026-07 — used to be a 2nd hardcoded list, ignored comingSoon entirely)
 │   │   ├── IceRink.jsx/.css            # SVG rink — shots, heat map, team-aware
-│   │   ├── PWHLPlayerPopup.jsx         # PWHL player popup (Stats, Heat Map, Scout, Compare — season-over-season, up to 4 seasons, one fetch per season; Compare tab adds a per-game trend chart for chart-ready metrics (6/11 skater, 2/9 goalie — box-score-backed via /pwhl/player-game-log) alongside the existing tile rows, Session 70)
-│   │   ├── PlayerPopup.jsx             # NHL player popup (Stats, Analytics, Heat Map, Compare — season-over-season, reuses the seasonTotals already fetched for Stats; Compare tab adds a per-game trend chart for chart-ready metrics (11/18 skater, 8/11 goalie — via the NHL API's own game-log endpoint) alongside the existing tile rows, Session 70)
+│   │   ├── PWHLPlayerPopup.jsx         # PWHL player popup (Stats, Heat Map, Scout, Compare — season-over-season, up to 4 seasons, one fetch per season; Compare tab adds a per-game trend chart for chart-ready metrics (6/11 skater, 2/9 goalie — box-score-backed via /pwhl/player-game-log) alongside the existing tile rows, Session 70; header also renders a "vs Player" entry point, Session 91 — a separate affordance from the "🆚 Compare" tab, which means something different (own-season history, not another player))
+│   │   ├── PlayerPopup.jsx             # NHL player popup (Stats, Analytics, Heat Map, Compare — season-over-season, reuses the seasonTotals already fetched for Stats; Compare tab adds a per-game trend chart for chart-ready metrics (11/18 skater, 8/11 goalie — via the NHL API's own game-log endpoint) alongside the existing tile rows, Session 70; header also renders a "vs Player" entry point, Session 91, stacked under the radar's quickstats grid rather than inline so it doesn't compress the radar)
+│   │   ├── PlayerComparisonEntry.jsx   # "vs Player" button + same-league (Fuse.js) search panel mounted in both player popups' headers (Session 91) — opens PlayerComparisonPopup once a second player is picked
+│   │   ├── PlayerComparisonPopup.jsx/.css # Player-vs-Player Comparison (Session 91) — same-league only (NHL-NHL or PWHL-PWHL); two-series Recharts radar (5-axis NHL skater / 6-axis NHL goalie / 4-axis PWHL skater); tabbed detail (Scoring/Possession/Physical/Special Teams for skaters, Record/Performance/Advanced for goalies) reusing the shared StatTileGrid; goalie-vs-skater and PWHL goalie-vs-goalie are hard-blocked (non-overlapping stat schema / no PWHL goalie percentile data yet, respectively); F-vs-D pairing shows a non-blocking mismatch badge. First and only consumer of Tailwind in this repo.
+│   │   ├── PercentileBar.jsx           # Single percentile row (bar + tier label) — extracted from PlayerPopup.jsx (Session 91) so PlayerComparisonPopup.jsx can reuse it without importing PlayerPopup.jsx back (would create a circular import, since PlayerPopup.jsx renders the entry point that opens the comparison popup)
 │   │   ├── GameEvents.jsx/.css         # Goal/penalty/win/puck drop popups
 │   │   ├── ScoutingTab.jsx/.css        # NHL opponent scouting
 │   │   ├── DraftTab.jsx/.css           # NHL draft board
@@ -121,6 +124,8 @@ canes-analytics-starter/
 │       ├── advancedStats.js
 │       ├── supabaseClient.js           # DB queries; getTeamXgTrend, getGoalieShots (no car_game filter)
 │       ├── playerSearch.js             # Fuzzy player search — fetches GET /players-search-index once per session, matches via Fuse.js
+│       ├── nhlPlayerStats.js           # NHL skater/goalie stat defs, formatters, and radar-axis composites — extracted from PlayerPopup.jsx (Session 91) so PlayerComparisonPopup.jsx can reuse them without a circular import
+│       ├── pwhlPlayerStats.js          # PWHL equivalent of nhlPlayerStats.js — extracted from PWHLPlayerPopup.jsx (Session 91)
 │       └── analytics.js
 ├── src/utils/__tests__/
 │   └── *.test.js                       # Vitest unit tests (10 files, 157 tests)
@@ -130,6 +135,7 @@ canes-analytics-starter/
 │   │   ├── news.cy.js                  # NHL news
 │   │   ├── milestones.cy.js            # Milestones feed, team filter dropdown, tap-to-open popup (incl. PWHL milestone self-fetch popup)
 │   │   ├── player-search.cy.js         # Global player search — open/close, debounce, typo tolerance, NHL+PWHL result correctness, popup opens for both
+│   │   ├── player-comparison.cy.js     # Player vs Player Comparison (Session 91) — "vs Player" entry point, same-league search scoping, NHL skater/goalie + PWHL skater comparison rendering, goalie-vs-skater + PWHL goalie-vs-goalie hard blocks, position-mismatch badge
 │   │   ├── pwhl-news.cy.js             # PWHL news
 │   │   ├── period-summary.cy.js        # Game Center
 │   │   ├── players.cy.js               # NHL players
@@ -147,6 +153,7 @@ canes-analytics-starter/
 │   │   ├── draft.cy.js                 # NHL draft board
 │   │   ├── TeamPicker.cy.js            # Sport + team picker — all 12 PWHL teams selectable with real colors
 │   │   ├── theme.cy.js                 # Light/dark mode
+│   │   ├── topnav-safe-area.cy.js      # Topbar safe-area regression (mobile viewports)
 │   │   └── viewports.cy.js             # 4 viewports × all views
 │   └── support/e2e.js                  # Custom commands incl. cy.setPWHLTeam()
 └── .github/workflows/test.yml
@@ -282,6 +289,7 @@ All existing NHL features unchanged — see original documentation. Key features
 - League page (Standings, Bracket, Leaders, Power Rankings, Draft)
 - Player analytics (WAR, RAPM, GSAX, heat maps)
 - Push notifications (goal, game start, penalty, win)
+- Player vs Player Comparison (Session 91, NHL + PWHL) — "vs Player" entry point on the player popup opens a same-league two-player comparison: overlaid radar chart, tabbed detail sections reusing the existing stat-tile grid. Goalie-vs-skater and PWHL goalie-vs-goalie (no percentile data yet) are hard-blocked; forward-vs-defenceman pairing shows a non-blocking mismatch badge.
 
 ### PWHL Features
 
@@ -394,7 +402,7 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (138 tests, 8 files)
+### Vitest (162 tests, 11 files)
 ```bash
 npm test
 npm run test:watch
@@ -407,7 +415,7 @@ npm run cypress:run
 npm run cypress:full    # Clean → run → HTML report
 ```
 
-**20 spec files:**
+**23 spec files:**
 
 **Note (2026-07, Session 38):** the PWHL expansion coverage gap flagged below (Session 34, carried through Session 37) is now closed. `navigation.cy.js`, `pwhl-schedule.cy.js`, and `pwhl-shot-map.cy.js` smoke-test all 12 PWHL teams; `pwhl-team.cy.js` and `pwhl-players.cy.js` add an explicit expansion-team (DET) case asserting the correct empty state (no games played yet — see [Known gaps](#known-gaps)); `pwhl-league.cy.js`'s standings/leaders tests are scoped to the 8 established teams on purpose, with an explicit assertion that expansion teams are *not* yet present (real data fact, not a bug); `TeamPicker.cy.js` is new and covers all 12 teams rendering as selectable with real brand colors.
 
@@ -416,6 +424,8 @@ npm run cypress:full    # Clean → run → HTML report
 | `navigation.cy.js` | NHL routes + PWHL 12-team smoke (all 7 PWHL routes) |
 | `news.cy.js` | NHL news, source filters |
 | `milestones.cy.js` | Milestones feed, team filter dropdown, card structure, tap-to-open player popup |
+| `player-search.cy.js` | Global player search — open/close, debounce, typo tolerance, NHL+PWHL result correctness, popup opens for both |
+| `player-comparison.cy.js` | Player vs Player Comparison — "vs Player" entry point vs. the existing season-over-season Compare tab, same-league search scoping/self-exclusion, NHL skater comparison (radar + all 4 tabs), NHL goalie comparison (own 3-tab set), PWHL skater comparison, goalie-vs-skater + PWHL goalie-vs-goalie hard blocks, F-vs-D position-mismatch badge, tab-click and radar-squeeze regressions |
 | `pwhl-news.cy.js` | PWHL news, source chips, article list |
 | `period-summary.cy.js` | Game Center, period/game summary popups |
 | `players.cy.js` | NHL roster, skater/goalie cards (4 teams) |
@@ -433,6 +443,7 @@ npm run cypress:full    # Clean → run → HTML report
 | `draft.cy.js` | NHL draft board |
 | `TeamPicker.cy.js` | Sport + team picker — all 12 PWHL teams selectable, real colors |
 | `theme.cy.js` | Light/dark mode |
+| `topnav-safe-area.cy.js` | Topbar safe-area regression (mobile viewports) |
 | `viewports.cy.js` | 4 viewports × all views |
 
 ---
@@ -539,6 +550,7 @@ VITE_POSTHOG_KEY=phc_...
 - [x] PWHL expansion teams (DET, HAM, LV, SJS) fully wired 2026-07 — HockeyTech IDs, real rosters (confirmed via direct HockeyTech fetches), real WCAG-checked colors from each team's own `*_colors.css`, `TeamPicker` selectable (fixed a real bug where it had its own hardcoded active/expansion list, ignoring `comingSoon` entirely)
 - [x] Vitest test suite added for `eyewall-poller` (previously had zero test infrastructure) — covers `seasons.js`'s resolution logic, including regression tests for both bugs found above
 - [x] Cypress PWHL expansion team coverage gap closed (2026-07, Session 38) — `navigation.cy.js`/`pwhl-schedule.cy.js`/`pwhl-shot-map.cy.js` smoke all 12 teams; `pwhl-team.cy.js`/`pwhl-players.cy.js` add an expansion-team (DET) case asserting the correct empty state; `pwhl-league.cy.js` standings/leaders explicitly assert expansion teams are absent (real data fact — no games played yet, not a bug); new `TeamPicker.cy.js` covers the Session 34 `comingSoon` bug with an actual regression test (previously had zero coverage)
+- [x] Player vs Player Comparison (Session 91, NHL + PWHL) — "vs Player" entry point on both player popups, same-league Fuse.js search, two-series Recharts radar (position-agnostic NHL skater set reused as-is; new 6-axis NHL goalie set; new thinner 4-axis PWHL skater set), tabbed detail reusing the shared `StatTileGrid`. First and only Tailwind consumer in the codebase (utilities-only, no preflight, so it can't leak into the rest of the app's plain-CSS components). `player-comparison.cy.js` added, 16 tests.
 
 ### Pending
 - [ ] PWHL Analytics tab (xG model, WAR equivalent) — post-launch

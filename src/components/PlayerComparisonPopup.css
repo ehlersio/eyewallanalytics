@@ -1,0 +1,198 @@
+/* Tailwind, scoped to this component only.
+ *
+ * Deliberately importing theme + utilities WITHOUT preflight (the base
+ * reset tailwindcss's default import bundles in) -- this is the only
+ * Tailwind consumer in a codebase where every other component relies on
+ * plain global CSS (PlayersView.css etc) with its own margin/button/heading
+ * defaults. Pulling in preflight here would leak a global CSS reset into
+ * every other view via this file's import, silently changing button/
+ * heading/list styling app-wide. Utilities-only keeps Tailwind's blast
+ * radius limited to className usage inside PlayerComparisonPopup.jsx.
+ */
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+/* A handful of pieces (tab underline, mismatch badge, radar note spacing)
+ * read better as real CSS than as a pile of arbitrary-value Tailwind
+ * classes -- colors here intentionally stay on the app's existing
+ * var(--...) design tokens rather than Tailwind's own palette, so this
+ * component matches every other popup instead of introducing a second
+ * color system. */
+/* .player-popup (PlayersView.css) sets `max-width: 420px`, sized for a
+ * single-player card -- max-width always wins over a plain `width`
+ * override, so this needs its own max-width, not just a wider width. */
+.pcp-root {
+  width: 100%;
+  max-width: 640px;
+}
+
+/* This popup is nested inside PlayerPopup/PWHLPlayerPopup's own header
+ * (via PlayerComparisonEntry) rather than being a top-level sibling of
+ * .bottom-nav the way the app's other popups are -- confirmed live
+ * (elementsFromPoint) that .bottom-nav was still winning hit-testing at
+ * this popup's bottom edge even after raising z-index well above both
+ * .popup-backdrop (300) and .bottom-nav (100), so this isn't a plain
+ * z-index fight. Sidestepping it entirely: reserve the same --nav-height
+ * space other bottom-pinned UI in this app already reserves (App.css's
+ * .app-shell padding-bottom, ScheduleView/ShotMapView's floating buttons)
+ * so this sheet's own content never geometrically overlaps .bottom-nav's
+ * footprint in the first place. z-index:400 kept as defense in depth. */
+.pcp-backdrop {
+  z-index: 400;
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+}
+
+.pcp-root {
+  max-height: calc(90vh - var(--nav-height));
+}
+
+.pcp-radar {
+  margin-top: 4px;
+}
+
+.pcp-mismatch-badge {
+  margin: 12px 16px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--amber);
+  background: var(--bg-2);
+  color: var(--amber);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.pcp-tabbar {
+  display: flex;
+  gap: 4px;
+  margin: 14px 16px 0;
+  border-bottom: 1px solid var(--border-2);
+  overflow-x: auto;
+}
+
+.pcp-tab {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  border-bottom: 2px solid transparent;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  cursor: pointer;
+}
+
+.pcp-tab-active {
+  color: var(--text);
+  border-bottom-color: var(--blue-bright);
+}
+
+.pcp-pct-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px;
+}
+
+.flex.flex-col.gap-4.mt-2 {
+  padding: 0 16px 16px;
+}
+
+.pcp-player-block-label {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+/* PlayerComparisonEntry ("vs Player" button + search panel) */
+.pce-wrap {
+  position: relative;
+}
+
+.pce-toggle {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--border-2);
+  background: var(--bg-2);
+  color: var(--text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pce-toggle:hover {
+  color: var(--text);
+  border-color: var(--blue-bright);
+}
+
+.pce-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  width: 260px;
+  background: var(--bg-1);
+  border: 1px solid var(--border-2);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  padding: 8px;
+}
+
+.pce-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--border-2);
+  background: var(--bg-2);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.pce-status {
+  padding: 8px 4px 2px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.pce-results {
+  margin-top: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pce-result {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pce-result:hover {
+  background: var(--bg-2);
+}
+
+.pce-result-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pce-result-meta {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-dim);
+}

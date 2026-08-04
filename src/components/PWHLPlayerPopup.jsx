@@ -28,102 +28,21 @@ const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
 import IceRink from './IceRink';
 import { TileStatSection } from './StatTileGrid';
 import SeasonComparisonPicker from './SeasonComparisonPicker';
+import PlayerComparisonEntry from './PlayerComparisonEntry';
+import {
+  SKATER_STATS, GOALIE_STATS, PWHL_STAT_PCT_MAP, posLabel, groupStats as pwhlGroupStats,
+} from '../utils/pwhlPlayerStats';
 import '../views/PlayersView.css';
 
 const SEASON_LABEL = '2025–26';
 
-// ── Stat definitions ──────────────────────────────────────────
+// SKATER_STATS moved to utils/pwhlPlayerStats.js (Session 91).
 
-// `perGame`/`perGameKey` (Session 70) mark which stats have a real
-// per-game source in pwhl_skater_game_box/pwhl_goalie_game_box (via the
-// poller's /pwhl/player-game-log route) for the Compare tab's trend chart.
-// PP/SH/GW goal breakdowns and win/loss/shutout aren't in the box score at
-// all (aggregate-only, no per-game path); shot_pct/sv_pct/gaa are left
-// tile-only too even though technically derivable, to match exactly the
-// 6/11 skater and 2/9 goalie counts scoped and decided on for this pass —
-// see SESSION_70_DECISION_compare_tab_layout.md.
-const SKATER_STATS = [
-  { key: 'goals',      label: 'Goals',  group: 'Scoring', perGame: true,
-    tip: 'Total goals scored.',
-    why: 'The most direct measure of finishing ability and offensive contribution.' },
-  { key: 'assists',    label: 'Assists', group: 'Scoring', perGame: true,
-    tip: 'Points credited for setting up a goal.',
-    why: 'Reflects playmaking and vision.' },
-  { key: 'points',     label: 'Points', group: 'Scoring', perGame: true,
-    tip: 'Goals + Assists.',
-    why: 'Primary measure of offensive production.' },
-  { key: 'plus_minus', label: '+/−',    group: 'Scoring', perGame: true,
-    tip: '+1 when on ice for a goal for; −1 for a goal against at even strength.',
-    why: 'Rough proxy for two-way effectiveness.' },
-  { key: 'gp',         label: 'GP',     group: 'Scoring',
-    tip: 'Games played.',
-    why: 'Context for all counting stats.' },
-  { key: 'pp_goals',   label: 'PPG',    group: 'Special Teams',
-    tip: 'Goals scored on the power play.',
-    why: 'Indicates value on the man-advantage unit.' },
-  { key: 'sh_goals',   label: 'SHG',    group: 'Special Teams',
-    tip: 'Goals scored while shorthanded.',
-    why: 'Rare and opportunistic — indicates speed and instinct.' },
-  { key: 'gw_goals',   label: 'GWG',    group: 'Special Teams',
-    tip: 'The goal that proved to be the winning margin.',
-    why: 'A measure of clutch scoring.' },
-  { key: 'shots',      label: 'Shots',  group: 'Shot Quality', perGame: true,
-    tip: 'Shots on goal.',
-    why: 'High shot volume indicates offensive presence even when not scoring.' },
-  { key: 'shot_pct',   label: 'S%',     group: 'Shot Quality',
-    tip: 'Goals ÷ Shots on Goal × 100.',
-    calc: 'S% = (Goals / Shots) × 100',
-    why: 'Sustained high S% indicates elite finishing; extreme values often regress.' },
-  { key: 'pim',        label: 'PIM',    group: 'Discipline', perGame: true, perGameKey: 'penalty_minutes',
-    tip: 'Penalty minutes.',
-    why: 'High PIM hurts the team; compare to physical impact for full picture.' },
-];
-
-// Box-score stat keys with a backing percentile column in
-// /pwhl/player/percentiles -- same small-subset pattern as NHL's
-// STAT_PCT_MAP in PlayerPopup.jsx (pwhl_percentiles.py only computes
-// these 4 categories today; assists maps to a1/primary-assists rate,
-// not the raw all-assist count, same caveat as NHL's own 'assists' tile).
-const PWHL_STAT_PCT_MAP = {
-  goals:    'goals',
-  assists:  'a1',
-  pim:      'penalties',
-  shot_pct: 'finishing',
-};
-
-const GOALIE_STATS = [
-  { key: 'gp',           label: 'GP',  group: 'Record',
-    tip: 'Games played.', why: 'Context for all other stats.' },
-  { key: 'wins',         label: 'W',   group: 'Record',
-    tip: 'Wins.', why: 'Primary measure of team contribution.' },
-  { key: 'losses',       label: 'L',   group: 'Record',
-    tip: 'Regulation losses.', why: 'Combined with OTL gives the full record.' },
-  { key: 'ot_losses',    label: 'OTL', group: 'Record',
-    tip: 'Overtime/shootout losses (1 point for the team).',
-    why: 'Goalies with many OTL often faced close games.' },
-  { key: 'sv_pct',       label: 'SV%', group: 'Performance',
-    tip: 'Saves ÷ Shots Against.',
-    calc: 'SV% = Saves / Shots Against',
-    why: 'The most important goalie stat. Even small differences are significant.' },
-  { key: 'gaa',          label: 'GAA', group: 'Performance',
-    tip: 'Goals allowed per 60 minutes.',
-    calc: 'GAA = (Goals Against / Minutes Played) × 60',
-    why: 'Best read alongside SV% for full context.' },
-  { key: 'shutouts',     label: 'SO',  group: 'Performance',
-    tip: 'Games where the goalie allowed zero goals.',
-    why: 'A prestigious milestone.' },
-  { key: 'saves',        label: 'SV',  group: 'Performance', perGame: true,
-    tip: 'Total saves made.', why: 'Combined with shots against gives SV%.' },
-  { key: 'goals_against',label: 'GA',  group: 'Performance', perGame: true,
-    tip: 'Total goals allowed.', why: 'Context for GAA and SV%.' },
-];
+// SKATER_STATS/GOALIE_STATS/PWHL_STAT_PCT_MAP/posLabel/groupStats moved to
+// utils/pwhlPlayerStats.js (Session 91) so PlayerComparisonPopup.jsx can
+// reuse them without a circular import back into this file.
 
 // ── Helpers ───────────────────────────────────────────────────
-
-function posLabel(code) {
-  return { C:'Centre', LW:'Left Wing', RW:'Right Wing', D:'Defence',
-           LD:'Left Defence', RD:'Right Defence', G:'Goalie', F:'Forward' }[code] || code;
-}
 
 function fmtBirth(str) {
   if (!str) return null;
@@ -162,7 +81,11 @@ function PWHLPercentileTile({ label, pct }) {
 // categories today (pwhl_percentiles.py) and has no radar-worthy stat
 // set to plot. Reuses the same percentiles/pctMap the Stats tab's
 // TileStatSection already fetches -- no second request.
-function PWHLHeaderPanel({ percentiles }) {
+// `comparisonEntry` (the "vs Player" button, Session 91) stacks below the
+// quickstats grid rather than sitting inline as a sibling of this panel --
+// matching the fix applied to NHL's SkaterHeaderPanel after the inline
+// placement was reported to squeeze that header row.
+function PWHLHeaderPanel({ percentiles, comparisonEntry }) {
   if (!percentiles) return null;
   const tiles = [
     { statKey: 'goals',    label: 'G' },
@@ -172,11 +95,14 @@ function PWHLHeaderPanel({ percentiles }) {
   ];
   return (
     <div className="pp-header-radar">
-      <div className="pp-quickstats">
-        {tiles.map(t => (
-          <PWHLPercentileTile key={t.statKey} label={t.label}
-            pct={percentiles[PWHL_STAT_PCT_MAP[t.statKey]]?.pct} />
-        ))}
+      <div className="pp-quickstats-col">
+        <div className="pp-quickstats">
+          {tiles.map(t => (
+            <PWHLPercentileTile key={t.statKey} label={t.label}
+              pct={percentiles[PWHL_STAT_PCT_MAP[t.statKey]]?.pct} />
+          ))}
+        </div>
+        {comparisonEntry}
       </div>
     </div>
   );
@@ -193,29 +119,8 @@ function pwhlPerGameValue(def, game) {
   return raw == null ? null : Number(raw);
 }
 
-// PWHL's own version of PlayerPopup.jsx's groupStats(), keyed on this
-// file's field names (shot_pct/sv_pct/gaa/plus_minus rather than NHL's
-// shootingPctg/savePctg/goalsAgainstAvg/plusMinus) -- same {group, items:
-// [{def, fmt}]} output shape StatTileGrid (Session 75, shared with NHL)
-// expects, so the same formatter runs over current-season, Compare-tab,
-// and Career data (the poller's /pwhl/player/career route renames its
-// HockeyTech fields to match these same keys for exactly this reason).
-function pwhlGroupStats(defs, stats) {
-  const groups = {};
-  defs.forEach(def => {
-    const raw = stats?.[def.key];
-    if (raw == null) return;
-    let fmt;
-    if (def.key === 'shot_pct') fmt = `${Number(raw).toFixed(1)}%`;
-    else if (def.key === 'sv_pct') fmt = Number(raw).toFixed(3).replace(/^0\./, '.');
-    else if (def.key === 'gaa') fmt = Number(raw).toFixed(2);
-    else if (def.key === 'plus_minus') { const n = Number(raw); fmt = n > 0 ? `+${n}` : String(n); }
-    else fmt = raw;
-    if (!groups[def.group]) groups[def.group] = [];
-    groups[def.group].push({ def, fmt });
-  });
-  return Object.entries(groups).map(([group, items]) => ({ group, items }));
-}
+// pwhlGroupStats moved to utils/pwhlPlayerStats.js (Session 91, imported
+// above as `groupStats as pwhlGroupStats`).
 
 // Same season-color-ramp math as TeamComparisonPopup/PlayerPopup, small
 // enough to duplicate per-file rather than cross-import (this codebase's
@@ -566,6 +471,16 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
     { label: 'Hometown',  value: p.birth_city || null },
   ];
 
+  // Built once, placed either inline in .pp-header (goalies/loading) or
+  // stacked under PWHLHeaderPanel's quickstats grid (skaters with a
+  // reflowed header) -- see showHeaderReflow below.
+  const comparisonEntry = (
+    <PlayerComparisonEntry
+      sport="pwhl"
+      player={{ id: p.player_id, name, team: getPWHLTeamById(p.team_id)?.abbr, position: p.position }}
+    />
+  );
+
   return (
     <div className="popup-backdrop" onClick={onClose}>
       <div className="player-popup" onClick={e => e.stopPropagation()}>
@@ -596,7 +511,8 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
               </div>
             )}
           </div>
-          {showHeaderReflow && <PWHLHeaderPanel percentiles={pctData.percentiles} />}
+          {showHeaderReflow && <PWHLHeaderPanel percentiles={pctData.percentiles} comparisonEntry={comparisonEntry} />}
+          {!showHeaderReflow && comparisonEntry}
           <button className="pp-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
