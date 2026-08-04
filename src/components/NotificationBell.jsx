@@ -7,6 +7,7 @@ import { PWHL_TEAM_CONFIG } from '../utils/pwhlApi';
 import { getTheme, setTheme } from '../utils/themeConfig';
 import { applyTeamTheme } from '../utils/applyTeamTheme';
 import TeamLogo from '../components/TeamLogo';
+import AccountSection from './AccountSection';
 import './NotificationBell.css';
 
 // ── Preference definitions ────────────────────────────────────
@@ -142,6 +143,10 @@ export default function NotificationBell() {
           <button className="notif-close" onClick={closePopup} aria-label="Close">✕</button>
 
           <div className="notif-title">⚙️ Settings</div>
+
+          <AccountSection />
+
+          <div className="notif-section-label">Preferences</div>
 
           {/* My Team */}
           <div className="notif-my-team">
