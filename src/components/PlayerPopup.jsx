@@ -36,162 +36,21 @@ import InfoTip from '../components/InfoTip'
 import SeasonComparisonPicker from '../components/SeasonComparisonPicker'
 import SeasonOverlayChart from './SeasonOverlayChart'
 import { TileStatSection, PercentileScopeLegend } from './StatTileGrid'
+import PercentileBar from './PercentileBar'
+import PlayerComparisonEntry from './PlayerComparisonEntry'
+import {
+  SKATER_STATS, GOALIE_STATS, groupStats, posLabel,
+  STAT_PCT_MAP, computeRadarAxes, RADAR_AXIS_ABBR,
+} from '../utils/nhlPlayerStats'
 import '../views/PlayersView.css'
 
 const SEASON       = Number(TEAM_CONFIG.season.slice(0, 4) + TEAM_CONFIG.season.slice(4))
 const SEASON_LABEL = `${TEAM_CONFIG.season.slice(0, 4)}–${TEAM_CONFIG.season.slice(6)}`
 
 // ─── Stat definitions ─────────────────────────────────────────
-
-// `perGame`/`perGameKey`/`cumulative`/`derive` (Session 70) mark which
-// stats have a real per-game data source, for the Compare tab's trend
-// chart -- see SESSION_70_FINDINGS_player_compare_hybrid_viz.md Q3 for the
-// full per-metric reasoning. Only flagged where the NHL API's
-// /player/{id}/game-log endpoint (getPlayerGameLog, nhlApi.js) actually
-// carries the field; hits/blocks/TK/GV/FO%/S% don't (unconfirmed source),
-// and gamesPlayed isn't a trend concept at all -- those stay tile-only.
-// `cumulative: true` means the chart plots a running season-to-date total
-// rather than the raw per-game value -- for rare/binary events (a single
-// game's SHG/GWG is almost always 0), a running total is the only
-// meaningful line.
-const SKATER_STATS = [
-  { key: 'goals',              label: 'Goals',       group: 'Scoring', perGame: true,
-    tip: 'Total goals scored. A goal is awarded when the puck fully crosses the opposing goal line.',
-    why: 'The most direct measure of a player\'s finishing ability and offensive contribution.' },
-  { key: 'assists',            label: 'Assists',     group: 'Scoring', perGame: true,
-    tip: 'Points credited for setting up a goal. Up to two assists are awarded per goal.',
-    why: 'Reflects a player\'s playmaking and vision. Some elite players accumulate far more assists than goals.' },
-  { key: 'points',             label: 'Points',      group: 'Scoring', perGame: true,
-    tip: 'Goals + Assists. The primary measure of offensive production.',
-    why: 'The standard yardstick for comparing forwards and offensive defencemen across the league.' },
-  { key: 'plusMinus',          label: '+/−',         group: 'Scoring', perGame: true,
-    tip: '+1 when on ice for a 5v5 or 4v4 goal for; −1 when on ice for one against. PP/SH goals excluded.',
-    why: 'A rough proxy for two-way effectiveness, though heavily influenced by linemates and usage.' },
-  { key: 'gamesPlayed',        label: 'GP',          group: 'Scoring',
-    tip: 'Games played in this sample.',
-    why: 'Context for all counting stats — a player with 20 points in 25 games is more productive than 20 in 40.' },
-  { key: 'powerPlayGoals',     label: 'PPG',         group: 'Special Teams', perGame: true,
-    tip: 'Goals scored while your team has a man advantage (power play).',
-    why: 'Power play specialists can have outsized PPG totals. Compare to even-strength goals for full picture.' },
-  { key: 'powerPlayPoints',    label: 'PPP',         group: 'Special Teams', perGame: true,
-    tip: 'Goals + Assists on the power play.',
-    why: 'High PPP players are valuable on the man-advantage unit but may be less impactful at 5v5.' },
-  { key: 'shorthandedGoals',   label: 'SHG',         group: 'Special Teams', perGame: true, cumulative: true,
-    tip: 'Goals scored while your team is shorthanded (penalty kill).',
-    why: 'Rare and opportunistic — indicates speed and instinct.' },
-  { key: 'gameWinningGoals',   label: 'GWG',         group: 'Special Teams', perGame: true, cumulative: true,
-    tip: 'The goal that proved to be the winning margin. If the final score is 4–2, the 3rd goal for the winner is the GWG.',
-    why: 'A measure of clutch scoring, though partially luck-dependent.' },
-  { key: 'shots',              label: 'Shots',       group: 'Shot Quality', perGame: true,
-    tip: 'Shots on goal — shots that would have entered the net if not for the goalie.',
-    why: 'High shot volume indicates an offensive presence even when not scoring.' },
-  { key: 'shootingPctg',       label: 'S%',          group: 'Shot Quality',
-    tip: 'Goals ÷ Shots on Goal × 100. League average for forwards is roughly 10–12%.',
-    calc: 'S% = (Goals / Shots) × 100',
-    why: 'Sustained high S% indicates elite finishing; very high or low rates often regress toward average over time.' },
-  { key: 'avgToi',             label: 'TOI/G',       group: 'Ice Time', perGame: true, perGameKey: 'toi',
-    tip: 'Average time on ice per game (minutes:seconds).',
-    why: 'Coaches allocate more ice time to trusted players. Elite forwards average 18–22 min; top D pairs often exceed 24 min.' },
-  { key: 'pim',                label: 'PIM',         group: 'Ice Time', perGame: true,
-    tip: 'Penalty minutes. 2 min per minor, 4 per double minor, 5 per major.',
-    why: 'High PIM means the player spends time in the box — hurting the team — though some physical players balance this with defensive value.' },
-  { key: 'faceoffWinningPctg', label: 'FO%',         group: 'Ice Time',
-    tip: 'Percentage of faceoffs won. Relevant mainly for centres.',
-    calc: 'FO% = (Faceoffs Won / Total Faceoffs) × 100',
-    why: 'Winning faceoffs gives your team puck possession. A rate above 50% is above average.' },
-  { key: 'hits',               label: 'Hits',        group: 'Defensive',
-    tip: 'Body checks delivered. Counted when a player legally separates an opponent from the puck.',
-    why: 'Physical play disrupts opponents and can shift momentum, though elite defensive players aren\'t always hitters.' },
-  { key: 'blockedShots',       label: 'Blocks',      group: 'Defensive',
-    tip: 'Shots blocked by this player — positioned between the shooter and the net.',
-    why: 'Shot blocking is a tangible defensive contribution, especially valued in the playoffs where teams tighten defensively.' },
-  { key: 'takeaways',          label: 'TK',          group: 'Defensive',
-    tip: 'Takeaways — times this player stripped the puck from an opponent.',
-    why: 'Takeaways generate possession and transition chances. A high ratio of TK to GV signals a net-positive puck-battle player.' },
-  { key: 'giveaways',          label: 'GV',          group: 'Defensive',
-    tip: 'Giveaways — times this player lost the puck to an opponent.',
-    why: 'Giveaways lead to odd-man rushes and scoring chances against. Lower is better — compare to TK for full picture.' },
-]
-
-// `otLosses`/`qualityStartPct` are deliberately NOT flagged `perGame` --
-// otLosses because the game-log's `decision` field was only observed as
-// `"W"`/`"L"` in the live sample checked (Session 70), not confirmed for
-// the OT/SO-loss case; qualityStartPct because it's a threshold classifier
-// (SV% ≥ .917, or ≥ .885 facing ≤20 shots) needing its own per-game
-// classification logic, not just a field read -- narrower scope than the
-// rest of this pass, left as a tile pending a follow-up.
-const GOALIE_STATS = [
-  { key: 'gamesPlayed',   label: 'GP',   group: 'Record',
-    tip: 'Games played.', why: 'Context for all other goalie stats.' },
-  { key: 'wins',          label: 'W',    group: 'Record', perGame: true, cumulative: true, derive: 'win',
-    tip: 'Wins — the starter in a winning game receives the win.',
-    why: 'The primary measure of a goalie\'s team contribution, though win totals depend on the team in front of them.' },
-  { key: 'losses',        label: 'L',    group: 'Record', perGame: true, cumulative: true, derive: 'loss',
-    tip: 'Regulation losses.', why: 'Combined with OTL gives the full record picture.' },
-  { key: 'otLosses',      label: 'OTL',  group: 'Record',
-    tip: 'Overtime/shootout losses. The team earns 1 point; the goalie still receives a loss.',
-    why: 'Goalies with many OTL often faced close games — neither good nor bad on its own.' },
-  { key: 'savePctg',      label: 'SV%',  group: 'Performance', perGame: true,
-    tip: 'Saves ÷ Shots Against. League average is roughly .910; elite is above .920.',
-    calc: 'SV% = Saves / Shots Against',
-    why: 'The most important single goalie stat. Even small differences are significant — .920 vs .900 = 2 extra goals allowed per 100 shots.' },
-  { key: 'goalsAgainstAvg', label: 'GAA', group: 'Performance', perGame: true, derive: 'gaa',
-    tip: 'Goals allowed per 60 minutes of play.',
-    calc: 'GAA = (Goals Against / Minutes Played) × 60',
-    why: 'Context-dependent — a goalie on a weak team will face more shots. Best read alongside SV%.' },
-  { key: 'qualityStartPct', label: 'QS%', group: 'Performance',
-    tip: 'Percentage of starts where the goalie posted a quality start — SV% ≥ .917, or ≥ .885 when facing 20 or fewer shots.',
-    calc: 'QS% = Quality Starts / Games Started',
-    why: 'Measures consistency. A "quality start" means the goalie gave his team a reasonable chance to win based on historical win rates at those SV% thresholds. League average is roughly 55%. Elite starters exceed 65%.' },
-  { key: 'shotsAgainst',   label: 'SA',  group: 'Performance', perGame: true,
-    tip: 'Shots on goal faced. Indicates workload.', why: 'High SA means the team gives up many chances; context for SV%.' },
-  { key: 'saves',          label: 'SV',  group: 'Performance', perGame: true, derive: 'saves',
-    tip: 'Total saves made.', why: 'Combined with SA gives the SV%.' },
-  { key: 'shutouts',       label: 'SO',  group: 'Performance', perGame: true, cumulative: true,
-    tip: 'Games where the goalie allowed zero goals (must play the full game).',
-    why: 'A prestigious milestone. Elite goalies typically post 5–7 per full season.' },
-  { key: 'gamesStarted',   label: 'GS',  group: 'Record', perGame: true, cumulative: true,
-    tip: 'Games where the goalie started in net.',
-    why: 'Distinguishes full-time starters from backups; relevant for season-long workload.' },
-]
-
-// ─── Helpers ──────────────────────────────────────────────────
-
-function groupStats(defs, stats, _isGoalie) {
-  const groups = {}
-  defs.forEach(def => {
-    const raw = stats?.[def.key]
-    if (raw == null) return
-    let fmt
-    if (def.key === 'shootingPctg' || def.key === 'faceoffWinningPctg') {
-      const n = parseFloat(raw)
-      fmt = isNaN(n) ? '—' : (n <= 1 ? `${(n * 100).toFixed(1)}%` : `${n.toFixed(1)}%`)
-    } else if (def.key === 'savePctg') {
-      const n = parseFloat(raw)
-      fmt = isNaN(n) ? '—' : (n <= 1 ? n.toFixed(3) : (n / 100).toFixed(3))
-    } else if (def.key === 'goalsAgainstAvg' || def.key === 'gaa') {
-      fmt = parseFloat(raw).toFixed(2)
-    } else if (def.key === 'qualityStartPct') {
-      const n = parseFloat(raw)
-      fmt = isNaN(n) ? '—' : `${(n * 100).toFixed(1)}%`
-    } else if (def.key === 'plusMinus') {
-      const n = parseInt(raw)
-      fmt = isNaN(n) ? '—' : (n >= 0 ? `+${n}` : `${n}`)
-    } else if (def.key === 'avgToi' || def.key === 'toi') {
-      if (typeof raw === 'string' && raw.includes(':')) fmt = raw
-      else { const m = Math.floor(raw/60); const s = String(raw%60).padStart(2,'0'); fmt = `${m}:${s}` }
-    } else {
-      fmt = raw
-    }
-    if (!groups[def.group]) groups[def.group] = []
-    groups[def.group].push({ def, value: raw, fmt })
-  })
-  return Object.entries(groups).map(([group, items]) => ({ group, items }))
-}
-
-function posLabel(code) {
-  return { C:'Centre', LW:'Left Wing', RW:'Right Wing', D:'Defence', G:'Goalie' }[code] || code
-}
+// SKATER_STATS/GOALIE_STATS/groupStats/posLabel moved to
+// utils/nhlPlayerStats.js (Session 91) so PlayerComparisonPopup.jsx can
+// reuse them without a circular import back into this file.
 
 // ─── Per-game trend chart helpers (Session 70) ─────────────────
 
@@ -259,75 +118,8 @@ function teamColorFor(abbr) {
   return TEAM_DISPLAY_COLORS[abbr] || TEAM_CONFIG.displayColor || '#4d80f0'
 }
 
-// Radar categories -- 5 composites decided from the 10 pct_* columns.
-// Polarity check (done against eyewall-pipeline/moneypuck.py this session):
-// ALL 10 pct_* categories are already normalized so higher percentile always
-// = better performance before they ever reach the frontend -- ev_def and
-// pk are stored as 1/xGA60 (inverted at the source), and penalties60 is
-// -PIM/60 (negated at the source). So a flat "pct >= 50 good" read is safe
-// for every category here; no per-category flip needed in this display layer.
-//
-// - Scoring: average of Goals/60 and Finishing percentiles.
-// - Playmaking: 1st Assists/60 percentile alone (no secondary-assist data).
-// - EV Play-Driving: EV Offence (on-ice xGF%) percentile alone.
-// - Defense: EV Defence percentile alone. Deliberately NOT blending in PK
-//   here (even though the task allowed it) because PK is already folded
-//   into the Special Teams axis below -- reusing it in both places would
-//   double-count a single metric and distort the radar's shape.
-// - Special Teams: average of PP + PK percentiles when the player has a
-//   reliable sample in at least one (min 300s TOI, per moneypuck.py). Many
-//   depth players never see PP or PK time and would otherwise show a
-//   permanently blank axis, so this composite falls back to the Penalties
-//   (discipline) percentile when both PP and PK are null -- still a
-//   "special teams / discipline" read, just discipline-only for players
-//   who never see specialty-unit ice time.
-function computeRadarAxes(percentiles) {
-  const p = percentiles || {}
-  const avg = (...vals) => {
-    const present = vals.filter(v => v != null)
-    return present.length ? present.reduce((a, b) => a + b, 0) / present.length : null
-  }
-  const scoring    = avg(p.goals?.pct, p.finishing?.pct)
-  const playmaking = p.a1?.pct ?? null
-  const evDriving  = p.evOff?.pct ?? null
-  const defense    = p.evDef?.pct ?? null
-  const specialTeams = (p.pp?.pct != null || p.pk?.pct != null)
-    ? avg(p.pp?.pct, p.pk?.pct)
-    : (p.penalties?.pct ?? null)
-
-  return [
-    { axis: 'Scoring',        value: scoring },
-    { axis: 'Playmaking',     value: playmaking },
-    { axis: 'EV Driving',     value: evDriving },
-    { axis: 'Defense',        value: defense },
-    { axis: 'Special Teams',  value: specialTeams },
-  ].map(d => ({ ...d, hasData: d.value != null, value: d.value ?? 0 }))
-}
-
-// Box-score stat keys (from SKATER_STATS above) that have a percentile
-// counterpart in mpData.percentiles. PR #56 (eyewall-pipeline) added the 11
-// entries below (GP, +/-, SHG, GWG, Shots, TOI/G, FO%, Hits, Blocks, TK,
-// GV) -- previously these had no backing percentile column at all. The 5
-// radar-only categories (ev_off, ev_def, pk, competition, teammates) are
-// deliberately left out here -- they feed computeRadarAxes, not a tile.
-const STAT_PCT_MAP = {
-  goals:              'goals',
-  assists:            'a1',        // percentile is 1st-assists/60, not all-assist rate -- noted in the tile's info tip
-  powerPlayPoints:    'pp',
-  pim:                'penalties',
-  shootingPctg:       'finishing',
-  gamesPlayed:        'gamesPlayed',
-  plusMinus:          'plusMinus',
-  shorthandedGoals:   'shGoals',
-  gameWinningGoals:   'gwGoals',
-  shots:              'shots',
-  avgToi:             'toiPerGame',
-  faceoffWinningPctg: 'faceoffWinPct',
-  hits:               'hits',
-  blockedShots:       'blockedShots',
-  takeaways:          'takeaways',
-  giveaways:          'giveaways',
-}
+// computeRadarAxes/STAT_PCT_MAP moved to utils/nhlPlayerStats.js (Session 91,
+// same circular-import reasoning as the stat-def move above).
 
 // ─── Sub-components ───────────────────────────────────────────
 
@@ -361,13 +153,7 @@ function RankBadge({ label, rank }) {
 // clipping at every viewport; full names are still available on hover/tap
 // via a native SVG <title> (same info the "Not enough playing time yet"
 // caption below already spells out in full for whichever axes are missing).
-const RADAR_AXIS_ABBR = {
-  'Scoring':        'SCR',
-  'Playmaking':     'PLM',
-  'EV Driving':     'EVD',
-  'Defense':        'DEF',
-  'Special Teams':  'ST',
-}
+// RADAR_AXIS_ABBR moved to utils/nhlPlayerStats.js (Session 91).
 
 function RadarAxisTick({ x, y, payload, textAnchor }) {
   const full  = payload.value
@@ -421,7 +207,13 @@ function QuickStatPill({ label, value }) {
 // header). `boxStats` is the current/highlighted season's raw stat line
 // (same object the Stats tab uses) -- reused here for the G/A/P/TOI pills
 // rather than re-fetching anything.
-function SkaterHeaderPanel({ percentiles, boxStats, teamColor, statsStale, statsSeason }) {
+// `comparisonEntry` (the "vs Player" button, Session 91) is rendered
+// stacked below the quickstats grid rather than as a sibling of this whole
+// panel in .pp-header's row -- putting it inline there ate into
+// .pp-radar-wrap's already-tight flex share (radar takes "whatever's
+// left" after quickstats' protected fixed width, see PlayersView.css) and
+// visibly squeezed the radar. Reported live after shipping.
+function SkaterHeaderPanel({ percentiles, boxStats, teamColor, statsStale, statsSeason, comparisonEntry }) {
   if (!percentiles) return null
   const radarData = computeRadarAxes(percentiles)
   const fmtToi = (raw) => {
@@ -439,11 +231,14 @@ function SkaterHeaderPanel({ percentiles, boxStats, teamColor, statsStale, stats
   return (
     <div className="pp-header-radar">
       <PlayerRadarChart data={radarData} color={teamColor} staleNote={staleNote} />
-      <div className="pp-quickstats">
-        <QuickStatPill label="G"   value={boxStats?.goals} />
-        <QuickStatPill label="A"   value={boxStats?.assists} />
-        <QuickStatPill label="P"   value={boxStats?.points} />
-        <QuickStatPill label="TOI" value={fmtToi(boxStats?.avgToi)} />
+      <div className="pp-quickstats-col">
+        <div className="pp-quickstats">
+          <QuickStatPill label="G"   value={boxStats?.goals} />
+          <QuickStatPill label="A"   value={boxStats?.assists} />
+          <QuickStatPill label="P"   value={boxStats?.points} />
+          <QuickStatPill label="TOI" value={fmtToi(boxStats?.avgToi)} />
+        </div>
+        {comparisonEntry}
       </div>
     </div>
   )
@@ -684,38 +479,7 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
 
 // ─── Analytics ────────────────────────────────────────────────
 
-function PercentileBar({ label, pct, note, na }) {
-  if (na || pct == null) {
-    const naNote = note || `${label} data unavailable — player may not have enough ice time in this situation to generate a reliable percentile.`
-    return (
-      <div className="pa-row">
-        <span className="pa-label">
-          {label}
-          {naNote && <InfoTip text={naNote} position="above" />}
-        </span>
-        <span className="pa-na">N/A</span>
-      </div>
-    )
-  }
-  const color = pct >= 67 ? '#4ade80' : pct >= 34 ? '#fbbf24' : '#f87171'
-  const tier  = pct >= 90 ? 'Elite' : pct >= 75 ? 'Great' : pct >= 50 ? 'Above avg'
-              : pct >= 25 ? 'Below avg' : 'Poor'
-  return (
-    <div className="pa-row">
-      <span className="pa-label">
-        {label}
-        {note && <InfoTip text={note} position="above" />}
-      </span>
-      <div className="pa-bar-wrap">
-        <div className="pa-bar-track">
-          <div className="pa-bar-fill" style={{ width: `${pct}%`, background: color }} />
-        </div>
-        <span className="pa-pct" style={{ color }}>{pct}th</span>
-        <span className="pa-tier" style={{ color }}>{tier}</span>
-      </div>
-    </div>
-  )
-}
+// PercentileBar moved to components/PercentileBar.jsx (Session 91).
 
 function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, narrativeData, isLeagueContext }) {
   if (isGoalie) {
@@ -1170,6 +934,29 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
         : null },
   ]
 
+  // Built once, placed either inline in .pp-header (goalies/loading, no
+  // radar to compress) or stacked under SkaterHeaderPanel's quickstats
+  // grid (skaters with a reflowed header) -- see showHeaderReflow below.
+  const comparisonEntry = (
+    <PlayerComparisonEntry
+      sport="nhl"
+      player={{
+        id: p.id,
+        name: `${p.firstName?.default || ''} ${p.lastName?.default || ''}`.trim(),
+        // Deliberately p.teamAbbrev directly, not the `teamAbbr` var above
+        // -- that one falls back to TEAM_CONFIG.abbr (this app's
+        // currently-selected team, default CAR) when missing, which is
+        // fine for its actual use (a radar-color fallback) but reads as a
+        // real, wrong team label if reused here. Confirmed live:
+        // /players-search-index can return team:null for a player
+        // (Shesterkin, this session), which would otherwise silently show
+        // "CAR" for a Rangers goalie.
+        team: p.teamAbbrev || null,
+        position: positionCode,
+      }}
+    />
+  )
+
   return (
     <div className="popup-backdrop" onClick={onClose}>
       <div className="player-popup" onClick={e => e.stopPropagation()}>
@@ -1219,8 +1006,10 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
               teamColor={teamColor}
               statsStale={mpData.statsStale}
               statsSeason={mpData.statsSeason}
+              comparisonEntry={comparisonEntry}
             />
           )}
+          {!showHeaderReflow && comparisonEntry}
           <button className="pp-close" onClick={onClose} aria-label="Close player details">✕</button>
         </div>
 

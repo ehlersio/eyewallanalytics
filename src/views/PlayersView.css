@@ -615,12 +615,35 @@
 /* Whole-season fallback (Session 66) — same dimmed+italic "not current"
    signal as .stat-section-stale / the search badge's .psr-team--stale. */
 .pp-radar-note.pp-radar-stale { font-style: italic; }
+/* Wraps .pp-quickstats + the "vs Player" button (Session 91) so the
+ * button stacks underneath the 2x2 grid instead of sitting inline as a
+ * third flex item in .pp-header-radar's row -- that placement ate into
+ * .pp-radar-wrap's already-tight flex share and visibly squeezed the
+ * radar chart. */
+.pp-quickstats-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 0 0 auto;
+}
 .pp-quickstats {
   display: grid;
   grid-template-columns: 38px 38px;
   gap: 4px;
-  flex: 0 0 auto;
 }
+/* .pce-toggle (PlayerComparisonPopup.css) defaults to nowrap, sized for
+ * sitting inline next to a full-width header -- too wide for this
+ * 80px-wide column, so it gets a compact variant here. */
+.pp-quickstats-col .pce-toggle {
+  width: 100%;
+  box-sizing: border-box;
+  white-space: normal;
+  text-align: center;
+  font-size: 9px;
+  padding: 4px 2px;
+  line-height: 1.2;
+}
+.pp-quickstats-col .pce-wrap { width: 100%; }
 .pp-quickstat {
   display: flex; flex-direction: column; align-items: center;
   background: var(--bg2); border-radius: 6px;
