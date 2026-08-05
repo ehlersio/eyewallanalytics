@@ -88,6 +88,15 @@
 }
 .notif-check { margin-left: auto; color: var(--green); font-size: 12px; }
 
+.notif-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
 /* My Team section */
 .notif-my-team {
   margin-bottom: 12px;

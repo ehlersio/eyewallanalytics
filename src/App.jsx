@@ -6,6 +6,7 @@ import BottomNav from './components/BottomNav'
 import ShotMapView from './views/ShotMapView'
 import { PeriodSummaryProvider } from './utils/PeriodSummaryContext'
 import { SportProvider, useSport } from './utils/SportContext'
+import { AuthProvider } from './utils/AuthContext'
 import { capture } from './utils/analytics'
 import './App.css'
 import { hasTeamConfig, TEAM_CONFIG } from './utils/teamConfig'
@@ -105,42 +106,44 @@ export default function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <SportProvider>
-        <PeriodSummaryProvider>
-          <div className="app-shell">
-            <a href="#main-content" className="skip-link">Skip to main content</a>
-            <PageTracker />
-            <Topbar />
-            <main id="main-content" className="app-main" aria-label="Main content">
-              <Suspense fallback={<ViewFallback />}>
-                <Routes>
-                  <Route path="/"         element={<RootRoute />} />
-                  <Route path="/schedule" element={<ScheduleView />} />
-                  <Route path="/players"  element={<PlayersView />} />
-                  <Route path="/team"     element={<TeamView />} />
-                  <Route path="/news"     element={<NewsView />} />
-                  <Route path="/league"   element={<LeagueView />} />
-                  {/* PWHL routes */}
-                  <Route path="/pwhl/shots"    element={<PWHLShotMapView />} />
-                  <Route path="/pwhl/team"     element={<PWHLTeamView />} />
-                  <Route path="/pwhl/league"   element={<PWHLLeagueView />} />
-                  <Route path="/pwhl/players"  element={<PWHLPlayersView />} />
-                  <Route path="/pwhl/schedule" element={<PWHLScheduleView />} />
-                  <Route path="/pwhl/news"     element={<PWHLNewsView />} />
-                  {import.meta.env.DEV && DevReplayView && (
-                    <Route path="/dev" element={<DevReplayView />} />
-                  )}
-                  {import.meta.env.DEV && DevDraftView && (
-                    <Route path="/dev/draft" element={<DevDraftView />} />
-                  )}
-                  {import.meta.env.DEV && PWHLDevReplayView && (
-                    <Route path="/pwhl/dev" element={<PWHLDevReplayView />} />
-                  )}
-                </Routes>
-              </Suspense>
-            </main>
-            <BottomNav />
-          </div>
-        </PeriodSummaryProvider>
+        <AuthProvider>
+          <PeriodSummaryProvider>
+            <div className="app-shell">
+              <a href="#main-content" className="skip-link">Skip to main content</a>
+              <PageTracker />
+              <Topbar />
+              <main id="main-content" className="app-main" aria-label="Main content">
+                <Suspense fallback={<ViewFallback />}>
+                  <Routes>
+                    <Route path="/"         element={<RootRoute />} />
+                    <Route path="/schedule" element={<ScheduleView />} />
+                    <Route path="/players"  element={<PlayersView />} />
+                    <Route path="/team"     element={<TeamView />} />
+                    <Route path="/news"     element={<NewsView />} />
+                    <Route path="/league"   element={<LeagueView />} />
+                    {/* PWHL routes */}
+                    <Route path="/pwhl/shots"    element={<PWHLShotMapView />} />
+                    <Route path="/pwhl/team"     element={<PWHLTeamView />} />
+                    <Route path="/pwhl/league"   element={<PWHLLeagueView />} />
+                    <Route path="/pwhl/players"  element={<PWHLPlayersView />} />
+                    <Route path="/pwhl/schedule" element={<PWHLScheduleView />} />
+                    <Route path="/pwhl/news"     element={<PWHLNewsView />} />
+                    {import.meta.env.DEV && DevReplayView && (
+                      <Route path="/dev" element={<DevReplayView />} />
+                    )}
+                    {import.meta.env.DEV && DevDraftView && (
+                      <Route path="/dev/draft" element={<DevDraftView />} />
+                    )}
+                    {import.meta.env.DEV && PWHLDevReplayView && (
+                      <Route path="/pwhl/dev" element={<PWHLDevReplayView />} />
+                    )}
+                  </Routes>
+                </Suspense>
+              </main>
+              <BottomNav />
+            </div>
+          </PeriodSummaryProvider>
+        </AuthProvider>
       </SportProvider>
     </BrowserRouter>
   )
