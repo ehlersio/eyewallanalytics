@@ -136,9 +136,13 @@ canes-analytics-starter/
 │       ├── pwhlPlayerStats.js          # PWHL equivalent of nhlPlayerStats.js — extracted from PWHLPlayerPopup.jsx (Session 91)
 │       └── analytics.js
 ├── src/utils/__tests__/
-│   └── *.test.js                       # Vitest unit tests (10 files, 157 tests)
+│   ├── *.test.js                       # Vitest unit tests (13 files, 179 tests)
+│   └── testHelpers/mockSupabaseAuth.js # Shared vi.mock() query-builder + localStorage/window stubs for favoriteTeamSync.test.js / triviaAnswers.test.js (Session 93)
 ├── cypress/
 │   ├── e2e/
+│   │   ├── auth.cy.js                  # Sign-in flow (Session 93) — OTP request intercepted (never hits real Supabase Auth), signed-in state via an injected fake session, sign-out
+│   │   ├── trivia.cy.js                # Daily Trivia tab (Session 93) — /trivia/today stubbed with fixtures, three tier cards, answer/reveal, aggregate stats, empty state, PWHL smoke
+│   │   ├── read-state-badges.cy.js     # Unseen-content dots (Session 93) — News/Milestones/Trivia tab dots, BottomNav's combined dot, clear-on-answer (Trivia) vs. clear-on-visit (News/Milestones)
 │   │   ├── navigation.cy.js            # NHL + PWHL route navigation smoke (all 12 PWHL teams)
 │   │   ├── news.cy.js                  # NHL news
 │   │   ├── milestones.cy.js            # Milestones feed, team filter dropdown, tap-to-open popup (incl. PWHL milestone self-fetch popup)
@@ -446,7 +450,7 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (162 tests, 11 files)
+### Vitest (179 tests, 13 files)
 ```bash
 npm test
 npm run test:watch
@@ -459,12 +463,17 @@ npm run cypress:run
 npm run cypress:full    # Clean → run → HTML report
 ```
 
-**23 spec files:**
+**26 spec files:**
+
+**Note (2026-08, Session 93):** `auth.cy.js`, `trivia.cy.js`, and `read-state-badges.cy.js` added, closing the gap flagged when Sessions 90-92 first shipped Auth/Trivia/Badges with zero automated coverage. `auth.cy.js` intercepts the Supabase Auth OTP request rather than hitting it for real (avoids sending a real email against Resend's rate limit on every CI run) and exercises the signed-in UI state via an injected fake session, matching supabase-js's own storage shape, rather than a real sign-in. `trivia.cy.js`/`read-state-badges.cy.js` stub `/trivia/today` with fixture questions — same reasoning as `draft.cy.js` stubbing `/draft/*`: deterministic, and NHL genuinely has zero real trivia data outside the regular season.
 
 **Note (2026-07, Session 38):** the PWHL expansion coverage gap flagged below (Session 34, carried through Session 37) is now closed. `navigation.cy.js`, `pwhl-schedule.cy.js`, and `pwhl-shot-map.cy.js` smoke-test all 12 PWHL teams; `pwhl-team.cy.js` and `pwhl-players.cy.js` add an explicit expansion-team (DET) case asserting the correct empty state (no games played yet — see [Known gaps](#known-gaps)); `pwhl-league.cy.js`'s standings/leaders tests are scoped to the 8 established teams on purpose, with an explicit assertion that expansion teams are *not* yet present (real data fact, not a bug); `TeamPicker.cy.js` is new and covers all 12 teams rendering as selectable with real brand colors.
 
 | Spec | Coverage |
 |------|---------|
+| `auth.cy.js` | Sign-in flow — signed-out row, two-step email form, OTP request/error handling (intercepted), signed-in row (avatar/email/Synced badge, via an injected fake session), sign-out |
+| `trivia.cy.js` | Daily Trivia tab — three tier cards, team logo (not team name) on medium, answer/reveal flow, aggregate stats, empty state, PWHL smoke |
+| `read-state-badges.cy.js` | Unseen-content dots — News/Milestones/Trivia tab dots, BottomNav's combined dot, Trivia clearing only on answer vs. News/Milestones clearing on visit |
 | `navigation.cy.js` | NHL routes + PWHL 12-team smoke (all 7 PWHL routes) |
 | `news.cy.js` | NHL news, source filters |
 | `milestones.cy.js` | Milestones feed, team filter dropdown, card structure, tap-to-open player popup |
@@ -553,7 +562,7 @@ VITE_SUPABASE_ANON=sb_publishable_...
 - **PWHL expansion team logos/names:** Real colors and roster data are live (2026-07), but logos and permanent team names are still placeholders — no official branding revealed yet. Expected this fall.
 - **PWHL expansion teams have no games yet (confirmed 2026-07 against the live Worker):** DET/HAM/LV/SJS have real rosters but empty schedule/skater-goalie-stats/standings/salaries until the 2026-27 season starts. Every data-driven view handles this gracefully (`PWHLScheduleView`, `PWHLShotMapView`, `PWHLPlayersView`'s Stats tab, and `PWHLTeamView`'s Splits/Trends/Salaries tabs all show an explicit empty-state message) — except `PWHLTeamView`'s Advanced tab, which shows "Loading advanced stats…" permanently for these teams instead of an explicit no-data message, since it early-returns on a missing standings row rather than distinguishing "still loading" from "no row will ever exist yet." Worth a copy fix, not covered by Cypress on purpose (would be asserting on a known-misleading string).
 - **Cache-busting order matters (learned 2026-07):** busting the Worker's KV cache *before* confirming the underlying data fix has actually landed just repopulates the same stale/empty entry. Always confirm the data first, then bust.
-- **Auth/Trivia/Badges have no automated test coverage yet (Session 90-92):** verified live/manually each session (real accounts, real generation, real answering) but no Vitest unit tests for `AuthContext.jsx`/`favoriteTeamSync.js`/`triviaAnswers.js`/`useReadState.js`, and no Cypress specs for the sign-in flow, Trivia tab, or read-state badges — the 162/11 Vitest count and 23 Cypress spec files below are both unchanged by this work. Worth closing before this surface grows further.
+- **Auth/Trivia/Badges test coverage (Session 93):** `favoriteTeamSync.js`/`triviaAnswers.js` have Vitest coverage (supabaseAuth mocked via `vi.mock`; localStorage/window stubbed via `vi.stubGlobal` since this repo's Vitest runs under `environment: 'node'`, not jsdom — see `src/utils/__tests__/testHelpers/mockSupabaseAuth.js`). `AuthContext.jsx`/`useReadState.js` (React hooks) are covered at the Cypress layer instead (`auth.cy.js`, `trivia.cy.js`, `read-state-badges.cy.js`) rather than adding a `@testing-library/react` dependency for hook-level unit tests.
 - **Hard-tier trivia has no ongoing content pipeline:** only the 2 questions seeded for Session 92's live verification exist. No admin UI in v1 (intentional) — new hard questions need direct Supabase SQL editor inserts.
 - **HockeyTech `bootstrap` feed type:** it's `feed=statviewfeed`, not `feed=modulekit` — the latter returns a 200 OK with no real payload, which silently masqueraded as a working fallback for a while. If a HockeyTech URL is built from a written description rather than a captured real request, verify against actual DevTools traffic before trusting it.
 - **PWHL season resolution prefers regular seasons over playoffs, deliberately:** almost every `/pwhl/*` Worker endpoint filters `season_type=eq.regular` downstream, so resolving to a playoffs-type season_id breaks every PWHL view even for teams that played in that postseason. Shipped once without this preference and broke Cypress across every PWHL view before being caught.
