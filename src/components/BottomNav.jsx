@@ -1,6 +1,9 @@
 import { NavLink } from 'react-router-dom';
 import { useSport } from '../utils/SportContext';
+import { useReadState } from '../hooks/useReadState';
 import './BottomNav.css';
+
+const NEWS_PATHS = ['/news', '/pwhl/news'];
 
 const NHL_TABS = [
   { to: '/',         icon: '⬡',  label: 'Shot Map' },
@@ -23,6 +26,12 @@ const PWHL_TABS = [
 export default function BottomNav() {
   const { isPWHL } = useSport();
   const tabs = isPWHL ? PWHL_TABS : NHL_TABS;
+  // Combined dot on the News icon — OR across News/Milestones/Trivia's own
+  // per-tab unseen state (already computed by useReadState; no separate
+  // tracking mechanism). Safe to mount alongside NewsView's own instance
+  // of this hook — same localStorage keys, cross-instance reactivity via
+  // the 'eyewall:read-state-updated' event (see useReadState.js).
+  const readState = useReadState();
 
   return (
     <nav className="bottom-nav" aria-label="Main navigation">
@@ -33,7 +42,10 @@ export default function BottomNav() {
           end={tab.to === '/'}
           className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}
         >
-          <span className="nav-icon">{tab.icon}</span>
+          <span className="nav-icon">
+            {tab.icon}
+            {NEWS_PATHS.includes(tab.to) && readState.any && <span className="nav-badge-dot" />}
+          </span>
           <span className="nav-label">{tab.label}</span>
         </NavLink>
       ))}

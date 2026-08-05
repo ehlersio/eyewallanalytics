@@ -3,6 +3,8 @@ import './NewsView.css';
 import { capture } from '../utils/analytics';
 import { TEAM_CONFIG } from '../utils/nhlApi';
 import MilestonesFeed from '../components/MilestonesFeed';
+import TriviaFeed from '../components/TriviaFeed';
+import { useReadState } from '../hooks/useReadState';
 
 const WORKER_URL  = import.meta.env.VITE_WORKER_URL || '';
 const PAGE_SIZE   = 10;
@@ -69,7 +71,7 @@ function ArticleCard({ item }) {
 }
 
 export default function NewsView() {
-  const [view,      setView]      = useState('news'); // 'news' | 'milestones'
+  const [view,      setView]      = useState('news'); // 'news' | 'milestones' | 'trivia'
   const [articles,  setArticles]  = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
@@ -79,6 +81,7 @@ export default function NewsView() {
 
   const fetchingRef = useRef(false);
   const retryRef    = useRef(null);
+  const readState   = useReadState();
 
   const fetchArticles = useCallback(async (isRetry = false) => {
     if (!WORKER_URL) { setError('Worker URL not configured'); setLoading(false); return; }
@@ -154,19 +157,26 @@ export default function NewsView() {
       <div className="news-view-toggle">
         <button
           className={`news-view-toggle-btn${view === 'news' ? ' active' : ''}`}
-          onClick={() => setView('news')}
+          onClick={() => { setView('news'); readState.markSeen('news'); }}
         >
-          News
+          News{readState.news && <span className="news-view-toggle-dot" />}
         </button>
         <button
           className={`news-view-toggle-btn${view === 'milestones' ? ' active' : ''}`}
-          onClick={() => { setView('milestones'); capture('milestones_tab_viewed'); }}
+          onClick={() => { setView('milestones'); capture('milestones_tab_viewed'); readState.markSeen('milestones'); }}
         >
-          Milestones
+          Milestones{readState.milestones && <span className="news-view-toggle-dot" />}
+        </button>
+        <button
+          className={`news-view-toggle-btn${view === 'trivia' ? ' active' : ''}`}
+          onClick={() => { setView('trivia'); capture('trivia_tab_viewed'); }}
+        >
+          Trivia{readState.trivia && <span className="news-view-toggle-dot" />}
         </button>
       </div>
 
       {view === 'milestones' && <MilestonesFeed />}
+      {view === 'trivia' && <TriviaFeed />}
 
       {view === 'news' && (
         <>
