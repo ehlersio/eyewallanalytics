@@ -87,6 +87,13 @@ export default function NotificationBell() {
     localStorage.removeItem('eyewall:sport');
     localStorage.removeItem('eyewall:team');
     localStorage.removeItem('eyewall:pwhl_team');
+    // Signed-in users get their favorite team reconciled from the server on
+    // every load (see favoriteTeamSync.js) -- without this flag, clearing
+    // local storage here looks identical to "fresh device, no opinion yet"
+    // to that reconciliation, which would silently re-apply the OLD server
+    // value before TeamPicker ever renders, defeating this button entirely.
+    // TeamPicker clears this flag itself once a new pick is made.
+    localStorage.setItem('eyewall:team-change-pending', '1');
     // Navigate to root so TeamPicker shows at / regardless of current route.
     // After team selection, App.jsx redirects to the correct sport root.
     window.location.href = '/';

@@ -11,6 +11,8 @@
 import { useState } from 'react'
 import { ALL_TEAMS, setTeamConfig } from '../utils/teamConfig'
 import { PWHL_TEAMS } from '../utils/pwhlConfig'
+import { useAuth } from '../utils/AuthContext'
+import { upsertFavoriteTeam } from '../utils/favoriteTeamSync'
 import TeamLogo from './TeamLogo'
 import { TEAM_COLORS } from '../utils/nhlApi'
 import './TeamPicker.css'
@@ -234,6 +236,10 @@ function PWHLTeamStep({ onBack, onSelect }) {
 export default function TeamPicker({ onSelect }) {
   const [step, setStep]   = useState('sport'); // 'sport' | 'team'
   const [sport, setSport] = useState(null);    // 'nhl' | 'pwhl'
+  // AuthProvider always wraps this component (see App.jsx) — for a
+  // signed-out visitor, isAuthenticated is just false and the sync call
+  // below never fires, so this adds nothing to that path.
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   function handlePickSport(id) {
     setSport(id);
@@ -245,18 +251,38 @@ export default function TeamPicker({ onSelect }) {
     setSport(null);
   }
 
-  function handleNHLSelect(abbr) {
+  // Awaited (not fire-and-forget) before onSelect() triggers the reload —
+  // AuthContext's reconcile-on-load runs again right after that reload, and
+  // it needs to read back the value this write just sent, not a stale one.
+  // If a pick happens before the initial getSession() resolves (authLoading
+  // still true), the sync is skipped for that pick — a rare race on the
+  // "Change team" path only, accepted rather than blocking first-launch
+  // rendering on an auth check.
+  async function syncIfSignedIn(sportId, abbr) {
+    if (!authLoading && isAuthenticated) {
+      await upsertFavoriteTeam(user.id, sportId, abbr);
+    }
+  }
+
+  async function handleNHLSelect(abbr) {
     // Save sport choice then team, then let caller reload
     localStorage.setItem('eyewall:sport', 'nhl');
     setTeamConfig(abbr);
+    // Consume the "Change team" flag (see NotificationBell.jsx /
+    // favoriteTeamSync.js) now that a real pick has been made — first-launch
+    // selects never set it, so this is a harmless no-op there.
+    localStorage.removeItem('eyewall:team-change-pending');
+    await syncIfSignedIn('nhl', abbr);
     onSelect?.(abbr);
   }
 
-  function handlePWHLSelect(abbr) {
+  async function handlePWHLSelect(abbr) {
     // eyewall:sport must be written before onSelect() triggers reload
     // so hasTeamConfig() checks eyewall:pwhl_team on the next mount.
     localStorage.setItem('eyewall:sport', 'pwhl');
     localStorage.setItem('eyewall:pwhl_team', JSON.stringify(pwhlTeamByAbbr[abbr]));
+    localStorage.removeItem('eyewall:team-change-pending');
+    await syncIfSignedIn('pwhl', abbr);
     onSelect?.(abbr);
   }
 

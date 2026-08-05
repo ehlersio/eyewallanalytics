@@ -9,8 +9,9 @@
 // components can reactively show signed-in/out UI, it does not implement
 // persistence itself.
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabaseAuth } from './supabaseAuth';
+import { syncFavoriteTeamOnSignIn } from './favoriteTeamSync';
 
 const AuthContext = createContext({
   user: null,
@@ -24,6 +25,12 @@ const AuthContext = createContext({
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Auth Phase 1 (favorite-team sync) — tracks which signed-in user id has
+  // already had a reconcile pass this page load, so a token refresh (which
+  // also fires onAuthStateChange with a new session object, same user)
+  // doesn't re-trigger it. Reset naturally on every full reload, which is
+  // exactly when a fresh reconcile is wanted anyway.
+  const reconciledUserId = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,6 +52,13 @@ export function AuthProvider({ children }) {
       subscription.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId || reconciledUserId.current === userId) return;
+    reconciledUserId.current = userId;
+    syncFavoriteTeamOnSignIn(userId);
+  }, [session]);
 
   const signInWithOtp = async (email) => {
     return supabaseAuth.auth.signInWithOtp({

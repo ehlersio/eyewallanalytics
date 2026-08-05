@@ -89,62 +89,65 @@ export default function App() {
   // After selection, reload so all modules re-initialize with the chosen team.
   const [needsTeam] = useState(() => !hasTeamConfig());
 
-  if (needsTeam) {
-    return (
-      <TeamPicker
-        onSelect={() => {
-          // Navigate to the correct root for the chosen sport before reloading
-          // so module-level constants re-initialize at the right route.
-          const sport = localStorage.getItem('eyewall:sport') || 'nhl';
-          const root  = sport === 'pwhl' ? '/pwhl/shots' : '/';
-          window.location.href = root;
-        }}
-      />
-    );
-  }
-
+  // AuthProvider wraps both branches below — TeamPicker is the sole place
+  // team selection gets written (first launch and "Change team" both route
+  // through it), and it needs auth state to sync a signed-in user's pick
+  // to user_preferences (see favoriteTeamSync.js). It used to only wrap the
+  // post-needsTeam branch, which left TeamPicker with no auth context at all.
   return (
-    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <SportProvider>
-        <AuthProvider>
-          <PeriodSummaryProvider>
-            <div className="app-shell">
-              <a href="#main-content" className="skip-link">Skip to main content</a>
-              <PageTracker />
-              <Topbar />
-              <main id="main-content" className="app-main" aria-label="Main content">
-                <Suspense fallback={<ViewFallback />}>
-                  <Routes>
-                    <Route path="/"         element={<RootRoute />} />
-                    <Route path="/schedule" element={<ScheduleView />} />
-                    <Route path="/players"  element={<PlayersView />} />
-                    <Route path="/team"     element={<TeamView />} />
-                    <Route path="/news"     element={<NewsView />} />
-                    <Route path="/league"   element={<LeagueView />} />
-                    {/* PWHL routes */}
-                    <Route path="/pwhl/shots"    element={<PWHLShotMapView />} />
-                    <Route path="/pwhl/team"     element={<PWHLTeamView />} />
-                    <Route path="/pwhl/league"   element={<PWHLLeagueView />} />
-                    <Route path="/pwhl/players"  element={<PWHLPlayersView />} />
-                    <Route path="/pwhl/schedule" element={<PWHLScheduleView />} />
-                    <Route path="/pwhl/news"     element={<PWHLNewsView />} />
-                    {import.meta.env.DEV && DevReplayView && (
-                      <Route path="/dev" element={<DevReplayView />} />
-                    )}
-                    {import.meta.env.DEV && DevDraftView && (
-                      <Route path="/dev/draft" element={<DevDraftView />} />
-                    )}
-                    {import.meta.env.DEV && PWHLDevReplayView && (
-                      <Route path="/pwhl/dev" element={<PWHLDevReplayView />} />
-                    )}
-                  </Routes>
-                </Suspense>
-              </main>
-              <BottomNav />
-            </div>
-          </PeriodSummaryProvider>
-        </AuthProvider>
-      </SportProvider>
-    </BrowserRouter>
+    <AuthProvider>
+      {needsTeam ? (
+        <TeamPicker
+          onSelect={() => {
+            // Navigate to the correct root for the chosen sport before reloading
+            // so module-level constants re-initialize at the right route.
+            const sport = localStorage.getItem('eyewall:sport') || 'nhl';
+            const root  = sport === 'pwhl' ? '/pwhl/shots' : '/';
+            window.location.href = root;
+          }}
+        />
+      ) : (
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <SportProvider>
+            <PeriodSummaryProvider>
+              <div className="app-shell">
+                <a href="#main-content" className="skip-link">Skip to main content</a>
+                <PageTracker />
+                <Topbar />
+                <main id="main-content" className="app-main" aria-label="Main content">
+                  <Suspense fallback={<ViewFallback />}>
+                    <Routes>
+                      <Route path="/"         element={<RootRoute />} />
+                      <Route path="/schedule" element={<ScheduleView />} />
+                      <Route path="/players"  element={<PlayersView />} />
+                      <Route path="/team"     element={<TeamView />} />
+                      <Route path="/news"     element={<NewsView />} />
+                      <Route path="/league"   element={<LeagueView />} />
+                      {/* PWHL routes */}
+                      <Route path="/pwhl/shots"    element={<PWHLShotMapView />} />
+                      <Route path="/pwhl/team"     element={<PWHLTeamView />} />
+                      <Route path="/pwhl/league"   element={<PWHLLeagueView />} />
+                      <Route path="/pwhl/players"  element={<PWHLPlayersView />} />
+                      <Route path="/pwhl/schedule" element={<PWHLScheduleView />} />
+                      <Route path="/pwhl/news"     element={<PWHLNewsView />} />
+                      {import.meta.env.DEV && DevReplayView && (
+                        <Route path="/dev" element={<DevReplayView />} />
+                      )}
+                      {import.meta.env.DEV && DevDraftView && (
+                        <Route path="/dev/draft" element={<DevDraftView />} />
+                      )}
+                      {import.meta.env.DEV && PWHLDevReplayView && (
+                        <Route path="/pwhl/dev" element={<PWHLDevReplayView />} />
+                      )}
+                    </Routes>
+                  </Suspense>
+                </main>
+                <BottomNav />
+              </div>
+            </PeriodSummaryProvider>
+          </SportProvider>
+        </BrowserRouter>
+      )}
+    </AuthProvider>
   )
 }
