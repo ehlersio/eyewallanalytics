@@ -12,6 +12,7 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabaseAuth } from './supabaseAuth';
 import { syncFavoriteTeamOnSignIn } from './favoriteTeamSync';
+import { syncTriviaAnswersOnSignIn } from './triviaAnswers';
 
 const AuthContext = createContext({
   user: null,
@@ -58,6 +59,7 @@ export function AuthProvider({ children }) {
     if (!userId || reconciledUserId.current === userId) return;
     reconciledUserId.current = userId;
     syncFavoriteTeamOnSignIn(userId);
+    syncTriviaAnswersOnSignIn(userId);
   }, [session]);
 
   const signInWithOtp = async (email) => {

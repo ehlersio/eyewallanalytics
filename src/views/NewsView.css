@@ -152,6 +152,14 @@
   background: rgba(204,34,0,0.2); border-color: rgba(204,34,0,0.4);
   color: var(--red-bright); font-weight: 700;
 }
+.news-view-toggle-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background: var(--red-bright);
+  vertical-align: middle;
+}
 
 /* ── Milestones feed ── */
 .milestones-feed { display: flex; flex-direction: column; }
