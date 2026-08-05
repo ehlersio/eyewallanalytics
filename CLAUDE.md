@@ -9,7 +9,7 @@ React/Vite frontend for EyeWall Analytics, deployed on Cloudflare Pages at eyewa
 - PostHog for analytics
 
 ## Sibling repos
-Lives in `eyewall/` alongside `eyewall-poller` (Cloudflare Workers backend, the API this app talks to) and `eyewall-pipeline` (Python data pipeline that populates Supabase). This repo only reads from `eyewall-poller`'s Worker endpoints — it does not talk to Supabase directly.
+Lives in `eyewall/` alongside `eyewall-poller` (Cloudflare Workers backend, the API this app talks to) and `eyewall-pipeline` (Python data pipeline that populates Supabase). Every data read goes through `eyewall-poller`'s Worker endpoints, not Supabase directly. **One deliberate exception (Session 90):** `supabaseAuth.js` talks to Supabase Auth directly (`signInWithOtp`, session handling) — that's inherently a browser-to-Supabase-Auth-endpoint flow with no Worker route to proxy it through. `trivia_answers`/`user_preferences` writes for signed-in users go the same direct route. Don't use `supabaseAuth.js` for data reads — that's still `supabaseClient.js`'s job, Worker-proxied as before.
 
 ## Git branch hygiene (standing rule — read before any session)
 

@@ -1,6 +1,6 @@
 # EyeWall Analytics
 
-> Advanced NHL + PWHL analytics — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, WAR/percentile rankings, AI-powered league power rankings, live draft board, full PWHL analytics suite, hat trick detection with live popups + game summary badges, milestone tracking (hat tricks, shutouts, shorthanded goals, season/career thresholds) with a league-wide feed, xGF% per-game sparkline, and per-team AI narratives.
+> Advanced NHL + PWHL analytics — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, WAR/percentile rankings, AI-powered league power rankings, live draft board, full PWHL analytics suite, hat trick detection with live popups + game summary badges, milestone tracking (hat tricks, shutouts, shorthanded goals, season/career thresholds) with a league-wide feed, xGF% per-game sparkline, per-team AI narratives, optional passwordless sign-in with cross-device favorite-team sync, and daily trivia (three difficulty tiers, guardrailed AI generation).
 
 **Live at:** [eyewallanalytics.com](https://eyewallanalytics.com)  
 **Contact:** matt@eyewallanalytics.com  
@@ -28,6 +28,7 @@ Users select their league (NHL or PWHL) and team on first launch. All views, col
 | API Proxy | Cloudflare Pages Functions (`functions/`) |
 | Cache Layer | Cloudflare Worker + KV (`eyewall-poller`) |
 | Database | Supabase Pro (NHL + PWHL player/team/goalie stats, shot events, RAPM, game xG, power rankings, draft data, salaries, milestones) |
+| Auth | Supabase Auth — passwordless magic-link sign-in (`@supabase/supabase-js`, Session 90). The one deliberate exception to "this app only reads from the Worker" — `signInWithOtp`/session handling is inherently a browser-to-Supabase-Auth flow, no Worker route to proxy it through. Email delivery via custom SMTP (Resend). |
 | NHL Data Pipeline | Python (`eyewall-pipeline`) — NHL API + MoneyPuck + Tankathon → Supabase |
 | PWHL Data Pipeline | Python (`eyewall-pipeline`) — HockeyTech + PWHLPA → Supabase |
 | Pipeline CI | GitHub Actions — nightly data cron (3 AM ET) + AI pipeline + draft day ingest + PWHL news |
@@ -68,7 +69,7 @@ canes-analytics-starter/
 │   │   ├── TeamView.jsx/.css           # NHL 6-tab team analytics (Advanced tab: xGF% sparkline)
 │   │   ├── PlayersView.jsx/.css        # NHL players
 │   │   ├── LeagueView.jsx/.css         # NHL 5-tab league page
-│   │   ├── NewsView.jsx/.css           # NHL news feed + Milestones tab toggle
+│   │   ├── NewsView.jsx/.css           # NHL news feed + News/Milestones/Trivia tab toggle (Trivia added Session 92)
 │   │   ├── PWHLShotMapView.jsx         # PWHL shot map + PBP metrics — season/game history + Regular Season/Playoffs toggle (Session 77, new capability, not just NHL parity)
 │   │   ├── PWHLScheduleView.jsx        # PWHL schedule + calendar + playoffs
 │   │   ├── PWHLTeamView.jsx            # PWHL 5-tab team analytics
@@ -90,7 +91,9 @@ canes-analytics-starter/
 │   │   ├── GameEvents.jsx/.css         # Goal/penalty/win/puck drop popups
 │   │   ├── ScoutingTab.jsx/.css        # NHL opponent scouting
 │   │   ├── DraftTab.jsx/.css           # NHL draft board
-│   │   ├── NotificationBell.jsx        # ⚙️ Settings drawer
+│   │   ├── NotificationBell.jsx        # ⚙️ Settings drawer — Account section (sign-in/out, Session 90) at top, Preferences (My Team/Appearance/Push Notifications/Game Summaries) below
+│   │   ├── AccountSection.jsx/.css     # Sign-in UI inside Settings (Session 90) — signed-out row, two-step email sign-in, signed-in row (avatar/email/Synced badge) + sign-out
+│   │   ├── TriviaFeed.jsx/.css         # Daily Trivia tab content (Session 92) — three tier cards, answer/reveal flow, aggregate correct/attempted stats. Same "rendered as a tab inside NewsView" pattern as MilestonesFeed.jsx
 │   │   ├── PeriodSummary.jsx/.css      # Period/game summary popup + share canvas + hat trick badges
 │   │   ├── PWHLPeriodSummary.jsx/.css  # PWHL period/game summary popup + share canvas
 │   │   ├── ShareButtons.jsx/.css       # Shared Save/X/Share buttons across all export cards
@@ -112,7 +115,8 @@ canes-analytics-starter/
 │   │   ├── useFetch.js                 # Data fetching + polling (cache: no-store)
 │   │   ├── usePushNotifications.js
 │   │   ├── usePeriodSummary.js
-│   │   └── useWakeLock.js
+│   │   ├── useWakeLock.js
+│   │   └── useReadState.js             # Unseen-content badges for News/Milestones/Trivia tabs + BottomNav's combined dot (Session 92) — local-only, boolean-only; reuses SportContext.jsx's window.CustomEvent cross-component convention rather than a new Context
 │   └── utils/
 │       ├── nhlApi.js                   # NHL API calls + KV caching
 │       ├── pwhlApi.js                  # PWHL Worker API calls
@@ -122,7 +126,11 @@ canes-analytics-starter/
 │       ├── seasonClient.js             # Shared memoized fetch for /config/seasons (teamConfig.js + pwhlConfig.js) and /config/seasons/comparison (SeasonComparisonPicker)
 │       ├── SportContext.jsx            # Sport state (NHL/PWHL) + localStorage persistence
 │       ├── advancedStats.js
-│       ├── supabaseClient.js           # DB queries; getTeamXgTrend, getGoalieShots (no car_game filter)
+│       ├── supabaseClient.js           # DB queries; getTeamXgTrend, getGoalieShots (no car_game filter) — Worker-proxied, NOT direct Supabase (see supabaseAuth.js for the one exception)
+│       ├── supabaseAuth.js             # Supabase Auth client (Session 90) — the only place this app imports @supabase/supabase-js directly; signInWithOtp/session handling only, never used for data reads
+│       ├── AuthContext.jsx             # Auth state (Session 90) — mirrors SportContext.jsx's context+provider+hook pattern. Also runs favoriteTeamSync.js/triviaAnswers.js's sign-in reconciliation
+│       ├── favoriteTeamSync.js         # Favorite-team sync for signed-in users (Session 91) — write-on-switch (awaited before the team-change reload) + reconcile-on-session-load (first sign-in uploads local; existing server value wins on a new device)
+│       ├── triviaAnswers.js            # Trivia answer tracking (Session 92) — local-first for everyone; signed-in users get a union merge on sign-in (not favoriteTeamSync's overwrite rule — answer history is append-only, so a second device's local answers must never be discarded)
 │       ├── playerSearch.js             # Fuzzy player search — fetches GET /players-search-index once per session, matches via Fuse.js
 │       ├── nhlPlayerStats.js           # NHL skater/goalie stat defs, formatters, and radar-axis composites — extracted from PlayerPopup.jsx (Session 91) so PlayerComparisonPopup.jsx can reuse them without a circular import
 │       ├── pwhlPlayerStats.js          # PWHL equivalent of nhlPlayerStats.js — extracted from PWHLPlayerPopup.jsx (Session 91)
@@ -230,6 +238,9 @@ Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `m
 | `GET /team-seasons/compare-teams?teams=,&season=` | Box-score fields only for two teams at one shared season — backs the "vs Team" mode's Full Stat Comparison (Session 86), consumed by `TeamComparisonPopup.jsx` via `fetchTeamSeasonsCompareTeams()` |
 | `GET /team-seasons/head-to-head?teams=,` | All-time head-to-head record/recent-window/current-streak between two teams across every season — backs the "vs Team" mode's Head-to-Head tab (Session 88), consumed via `fetchTeamHeadToHead()` |
 | `POST /team-seasons/head-to-head/narrative` | AI narrative layer on top of the head-to-head stats above (Session 90) — posts the already-fetched record/window/streak payload back to the Worker, called directly via `fetch()` (not through `nhlApi.js`) by `HeadToHeadNarrativeCard` in `TeamComparisonPopup.jsx`, same pattern as `PeriodSummary.jsx`'s narrative calls |
+| `GET /trivia/today?sport=&team=` | All three trivia tiers (easy/medium/hard) in one response, `team` optional (Session 92) — consumed by `TriviaFeed.jsx` and `useReadState.js` (the latter to compute Trivia's unseen-state badge without rendering the full feed) |
+| `GET /news/latest?sport=&team=` | Cheap "anything new" check for the News tab's read-state badge (Session 92) — consumed by `useReadState.js` only, not the main news fetch |
+| `GET /milestones/latest?sport=` | Same badge purpose as `/news/latest`, for Milestones (Session 92) |
 
 ---
 
@@ -314,6 +325,39 @@ All existing NHL features unchanged — see original documentation. Key features
 - **Draft** — 2026 (72 picks, 12 teams) and 2025 (48 picks, 8 teams) with position and round filters
 
 **News** — Aggregated from Sportsnet, The Score, and others. Fetched by GH Actions `pwhl_news.py` and POSTed to Worker (CF datacenter IPs are blocked by RSS sources). 30-min KV cache.
+
+---
+
+## Authentication
+
+Optional, passwordless sign-in via Supabase Auth (`signInWithOtp`) — Session 90. **Fully additive**: the app behaves identically for anyone who never signs in. Two-step flow in the Settings drawer's new Account section (`AccountSection.jsx`): email entry → "check your email." Session persistence/refresh is handled entirely by `supabase-js` itself (`persistSession`/`autoRefreshToken` in `supabaseAuth.js`, backed by `localStorage`) — `AuthContext.jsx` just mirrors that state into React.
+
+**The one deliberate exception to "this app only talks to the Worker":** `signInWithOtp`/session handling is inherently a browser-to-Supabase-Auth-endpoint flow — there's no Worker route to proxy it through, and the anon/publishable key is already safe to expose client-side by design. Every data read still goes through the Worker, unchanged.
+
+**Email delivery:** custom SMTP via Resend (configured in the Supabase dashboard — not something this repo's code touches). Supabase's default shared sender caps at 2 emails/hour, which doesn't survive real usage; Resend removes that ceiling.
+
+**`user_preferences` table** (`auth.uid()`-scoped RLS, `docs/session90_user_preferences_table.sql` + `docs/session91_favorite_sport_column.sql` in `eyewall-pipeline`) backs two things:
+
+- **Favorite team sync** (`favoriteTeamSync.js`, Session 91) — a signed-in user's team switch (`TeamPicker.jsx`, the sole write site) writes through immediately, awaited before the team-change reload so the very next reconciliation pass doesn't read back a stale value. On session load, the server value is reconciled once: first sign-in with no server row yet uploads the local pick; a second device where a server value already exists wins and overwrites local (one corrective reload). `AuthProvider` wraps `TeamPicker` (not just the post-onboarding app shell) so this can work on the "Change team" path too — a short-lived `eyewall:team-change-pending` flag stops reconciliation from clobbering a re-pick in progress with the *old* server value.
+- **Trivia answer history** (`triviaAnswers.js`, Session 92) — see [Daily Trivia](#daily-trivia) below; deliberately a different merge rule than favorite team.
+
+Neither sync mechanism is a live subscription — server changes on another device are picked up on this device's *next load*, not instantly. A stated v1 scope decision, not an oversight.
+
+---
+
+## Daily Trivia
+
+Third tab on the News page (`TriviaFeed.jsx`, alongside News/Milestones — Session 92), NHL and PWHL both. Three tiers per day, fetched in one call to `GET /trivia/today?sport=&team=`:
+
+- **Easy** — league-wide, AI-generated (guardrailed — see `eyewall-pipeline`'s [Daily Trivia](https://github.com/ehlersio/eyewall-pipeline#daily-trivia) section for the generation-side detail, including two real prompt bugs found and fixed during live verification)
+- **Medium** — the user's own team, AI-generated. Question text is deliberately team-name-free (the model can't be trusted to reproduce a proper noun correctly, confirmed live) — team identity is instead conveyed by a `TeamLogo` next to the tier badge, driven by the row's own real `team` column
+- **Hard** — historic/rules deep-cuts, hand-curated directly in Supabase (no admin UI in v1)
+
+**Answer tracking** (`triviaAnswers.js`): local-first for everyone (`eyewall:trivia-answers` in `localStorage`). Signed-in users write through to `trivia_answers` immediately on answering, and get a **union merge** on sign-in — local-only and server-only answered questions both survive; nothing is ever overwritten or discarded. This is a deliberately different rule from favorite-team's overwrite-on-second-device sync above: answer history is an append-only log, and Phase 1's "server wins" rule would silently delete real answers a second device already has. Verified live in both directions with a real two-device simulation.
+
+**Stats display:** aggregate correct/attempted ratio (e.g. "12/15 correct — 80%"), not a streak counter — a stated v1 scope choice.
+
+**Read-state badges** (`useReadState.js`) — Trivia's tab dot needs no storage of its own; it's derived from today's questions vs. the answered map, so *answering* a question clears it, not merely viewing the tab. News/Milestones use a real `localStorage` "last seen item id" marker instead (`GET /news/latest`/`GET /milestones/latest`), cleared on tab visit. `BottomNav`'s News icon shows a combined dot — an OR across all three tabs' own unseen state, reusing the same cross-component reactivity `SportContext.jsx` already established for season updates rather than introducing a new Context.
 
 ---
 
@@ -462,7 +506,10 @@ npm run build
 VITE_WORKER_URL=https://eyewall-poller.billowing-queen-bf23.workers.dev
 VITE_VAPID_PUBLIC_KEY=BHuReh0oBGitFpWQpzEkxM-0m2XHxDX3hqfvX6lpA-IfKSivoB892Jvs64Uz7oNOF-NvDIpPeeBAcWwsIRpnKX4
 VITE_POSTHOG_KEY=phc_...
+VITE_SUPABASE_URL=https://mqgasjzywoibdgxjjkux.supabase.co
+VITE_SUPABASE_ANON=sb_publishable_...
 ```
+`VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON` (Session 90) back `supabaseAuth.js` only — both have hardcoded fallback literals in that file (a publishable key, safe to expose client-side by design), so local dev works even without setting them explicitly.
 
 **Dev tools:**
 - `http://localhost:5173/dev` — live game replay scrubber
@@ -506,6 +553,8 @@ VITE_POSTHOG_KEY=phc_...
 - **PWHL expansion team logos/names:** Real colors and roster data are live (2026-07), but logos and permanent team names are still placeholders — no official branding revealed yet. Expected this fall.
 - **PWHL expansion teams have no games yet (confirmed 2026-07 against the live Worker):** DET/HAM/LV/SJS have real rosters but empty schedule/skater-goalie-stats/standings/salaries until the 2026-27 season starts. Every data-driven view handles this gracefully (`PWHLScheduleView`, `PWHLShotMapView`, `PWHLPlayersView`'s Stats tab, and `PWHLTeamView`'s Splits/Trends/Salaries tabs all show an explicit empty-state message) — except `PWHLTeamView`'s Advanced tab, which shows "Loading advanced stats…" permanently for these teams instead of an explicit no-data message, since it early-returns on a missing standings row rather than distinguishing "still loading" from "no row will ever exist yet." Worth a copy fix, not covered by Cypress on purpose (would be asserting on a known-misleading string).
 - **Cache-busting order matters (learned 2026-07):** busting the Worker's KV cache *before* confirming the underlying data fix has actually landed just repopulates the same stale/empty entry. Always confirm the data first, then bust.
+- **Auth/Trivia/Badges have no automated test coverage yet (Session 90-92):** verified live/manually each session (real accounts, real generation, real answering) but no Vitest unit tests for `AuthContext.jsx`/`favoriteTeamSync.js`/`triviaAnswers.js`/`useReadState.js`, and no Cypress specs for the sign-in flow, Trivia tab, or read-state badges — the 162/11 Vitest count and 23 Cypress spec files below are both unchanged by this work. Worth closing before this surface grows further.
+- **Hard-tier trivia has no ongoing content pipeline:** only the 2 questions seeded for Session 92's live verification exist. No admin UI in v1 (intentional) — new hard questions need direct Supabase SQL editor inserts.
 - **HockeyTech `bootstrap` feed type:** it's `feed=statviewfeed`, not `feed=modulekit` — the latter returns a 200 OK with no real payload, which silently masqueraded as a working fallback for a while. If a HockeyTech URL is built from a written description rather than a captured real request, verify against actual DevTools traffic before trusting it.
 - **PWHL season resolution prefers regular seasons over playoffs, deliberately:** almost every `/pwhl/*` Worker endpoint filters `season_type=eq.regular` downstream, so resolving to a playoffs-type season_id breaks every PWHL view even for teams that played in that postseason. Shipped once without this preference and broke Cypress across every PWHL view before being caught.
 
@@ -551,6 +600,9 @@ VITE_POSTHOG_KEY=phc_...
 - [x] Vitest test suite added for `eyewall-poller` (previously had zero test infrastructure) — covers `seasons.js`'s resolution logic, including regression tests for both bugs found above
 - [x] Cypress PWHL expansion team coverage gap closed (2026-07, Session 38) — `navigation.cy.js`/`pwhl-schedule.cy.js`/`pwhl-shot-map.cy.js` smoke all 12 teams; `pwhl-team.cy.js`/`pwhl-players.cy.js` add an expansion-team (DET) case asserting the correct empty state; `pwhl-league.cy.js` standings/leaders explicitly assert expansion teams are absent (real data fact — no games played yet, not a bug); new `TeamPicker.cy.js` covers the Session 34 `comingSoon` bug with an actual regression test (previously had zero coverage)
 - [x] Player vs Player Comparison (Session 91, NHL + PWHL) — "vs Player" entry point on both player popups, same-league Fuse.js search, two-series Recharts radar (position-agnostic NHL skater set reused as-is; new 6-axis NHL goalie set; new thinner 4-axis PWHL skater set), tabbed detail reusing the shared `StatTileGrid`. First and only Tailwind consumer in the codebase (utilities-only, no preflight, so it can't leak into the rest of the app's plain-CSS components). `player-comparison.cy.js` added, 16 tests.
+- [x] Supabase Auth magic-link sign-in (Session 90) — optional, fully additive passwordless sign-in via `signInWithOtp`. New Account section in Settings (`AccountSection.jsx`), `AuthContext.jsx` mirroring `SportContext.jsx`'s pattern, `user_preferences` table with `auth.uid()`-scoped RLS validated live with two real accounts. Custom SMTP (Resend) configured for email delivery.
+- [x] Favorite-team sync for signed-in users (Session 91) — write-on-switch + reconcile-on-session-load, verified live in both directions (first-sign-in upload, second-device server-wins). Found and fixed a real bug during live testing: reconciliation was silently defeating the "Change team" button for signed-in users.
+- [x] Daily Trivia (Session 92, NHL + PWHL) — three tiers (easy/medium AI-generated with a verified-value guardrail, hard hand-curated), new Trivia tab on the News page, union-merge answer sync for signed-in users, read-state badges on News/Milestones/Trivia + `BottomNav`. Found and fixed two real guardrail bugs during live generation (a misread team abbreviation, then a hallucinated team-name substitution even when given the correct name) — team identity is now conveyed via a logo, never AI-generated text.
 
 ### Pending
 - [ ] PWHL Analytics tab (xG model, WAR equivalent) — post-launch
