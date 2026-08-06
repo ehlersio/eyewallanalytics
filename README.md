@@ -21,7 +21,7 @@ Users select their league (NHL or PWHL) and team on first launch. All views, col
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 18 + Vite, react-router-dom v7 |
-| Styling | CSS custom properties (design tokens); Tailwind (`@tailwindcss/vite`) scoped to `PlayerComparisonPopup.jsx` only — utilities layer only, no preflight, so it can't leak a reset into the rest of the app's plain-CSS components |
+| Styling | CSS custom properties (design tokens); Tailwind (`@tailwindcss/vite`) — single global entry point (`src/tailwind.css`, Session 94), utilities layer only, no preflight, so it can't leak a reset into the rest of the app's plain-CSS components. `PlayerComparisonPopup.jsx` is the only component using Tailwind classes today — full-app migration in progress (see `SESSION_94_FINDINGS_tailwind_migration.md`) |
 | Charts | D3 v7, SVG-based IceRink component; Recharts (radar charts — single-player header, Session 66/80; two-player overlay in Player vs Player Comparison, Session 91) |
 | Player Search | Fuse.js — client-side fuzzy match against the Worker's flat NHL+PWHL player index (`GET /players-search-index`, ~1,600 players — small enough to ship once per session rather than query per keystroke) |
 | Hosting | Cloudflare Pages (auto-deploys from `main`; `dev` branch → preview) |
@@ -463,7 +463,16 @@ npm run cypress:run
 npm run cypress:full    # Clean → run → HTML report
 ```
 
-**26 spec files:**
+### Visual regression (Tailwind migration, Session 94)
+```bash
+npm run cypress:visual:baseline   # (re)generate baseline screenshots -- run this after a verified, intentional visual change
+npm run cypress:visual            # diff current rendering against the committed baselines
+```
+48 baseline screenshots (`cypress/snapshots/base/`, committed) covering every NHL + PWHL route × mobile/desktop × dark/light. These routes hit the live Worker API with no fixture seeding, so a small amount of pixel drift between a baseline capture and a diff run is expected (real content changing, not a bug) — `errorThreshold: 1` (%) in `cypress/support/e2e.js` absorbs that noise; a real layout/spacing/color regression runs far higher and still fails. Intended workflow: capture a baseline immediately before a migration phase, diff immediately after.
+
+**28 spec files:**
+
+**Note (2026-08, Session 94):** `visual-regression.cy.js` added as part of Phase 0 of the full Tailwind migration (see `SESSION_94_FINDINGS_tailwind_migration.md`) — the parity-verification tooling that migration's later phases depend on.
 
 **Note (2026-08, Session 93):** `auth.cy.js`, `trivia.cy.js`, and `read-state-badges.cy.js` added, closing the gap flagged when Sessions 90-92 first shipped Auth/Trivia/Badges with zero automated coverage. `auth.cy.js` intercepts the Supabase Auth OTP request rather than hitting it for real (avoids sending a real email against Resend's rate limit on every CI run) and exercises the signed-in UI state via an injected fake session, matching supabase-js's own storage shape, rather than a real sign-in. `trivia.cy.js`/`read-state-badges.cy.js` stub `/trivia/today` with fixture questions — same reasoning as `draft.cy.js` stubbing `/draft/*`: deterministic, and NHL genuinely has zero real trivia data outside the regular season.
 
@@ -498,6 +507,7 @@ npm run cypress:full    # Clean → run → HTML report
 | `theme.cy.js` | Light/dark mode |
 | `topnav-safe-area.cy.js` | Topbar safe-area regression (mobile viewports) |
 | `viewports.cy.js` | 4 viewports × all views |
+| `visual-regression.cy.js` | Pixel-level baseline screenshots — every NHL + PWHL route × mobile/desktop × dark/light (48 total); parity evidence for the Tailwind migration |
 
 ---
 

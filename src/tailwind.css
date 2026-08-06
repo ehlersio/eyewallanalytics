@@ -1,0 +1,17 @@
+/* Single global Tailwind entry point (Session 94, Phase 0).
+ *
+ * Deliberately importing theme + utilities WITHOUT preflight (the base
+ * reset the bundled `@import "tailwindcss"` pulls in) -- this app relies on
+ * its own global reset and element defaults (index.css: box-sizing/margin/
+ * padding reset, button/a/svg defaults). Pulling in preflight here would
+ * silently change that reset app-wide. Utilities-only keeps Tailwind's
+ * output to className-driven utility classes only.
+ *
+ * This used to be imported per-component (originally just inside
+ * PlayerComparisonPopup.css, the first Tailwind consumer). Importing it
+ * once here instead means any component can use Tailwind utility classes
+ * without re-declaring this import, and Tailwind's content scan only runs
+ * once rather than once per component-scoped CSS file.
+ */
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);

@@ -1,18 +1,8 @@
-/* Tailwind, scoped to this component only.
+/* Tailwind's theme+utilities (no preflight) are imported once, globally, in
+ * src/tailwind.css (Session 94, Phase 0) -- this file used to carry that
+ * import itself, back when this was the only Tailwind consumer in the app.
  *
- * Deliberately importing theme + utilities WITHOUT preflight (the base
- * reset tailwindcss's default import bundles in) -- this is the only
- * Tailwind consumer in a codebase where every other component relies on
- * plain global CSS (PlayersView.css etc) with its own margin/button/heading
- * defaults. Pulling in preflight here would leak a global CSS reset into
- * every other view via this file's import, silently changing button/
- * heading/list styling app-wide. Utilities-only keeps Tailwind's blast
- * radius limited to className usage inside PlayerComparisonPopup.jsx.
- */
-@import "tailwindcss/theme" layer(theme);
-@import "tailwindcss/utilities" layer(utilities);
-
-/* A handful of pieces (tab underline, mismatch badge, radar note spacing)
+ * A handful of pieces (tab underline, mismatch badge, radar note spacing)
  * read better as real CSS than as a pile of arbitrary-value Tailwind
  * classes -- colors here intentionally stay on the app's existing
  * var(--...) design tokens rather than Tailwind's own palette, so this
@@ -55,7 +45,7 @@
   padding: 8px 12px;
   border-radius: 8px;
   border: 1px solid var(--amber);
-  background: var(--bg-2);
+  background: var(--bg2);
   color: var(--amber);
   font-size: 12px;
   line-height: 1.4;
@@ -116,7 +106,7 @@
   padding: 5px 9px;
   border-radius: 6px;
   border: 1px solid var(--border-2);
-  background: var(--bg-2);
+  background: var(--bg2);
   color: var(--text-dim);
   cursor: pointer;
   white-space: nowrap;
@@ -133,7 +123,7 @@
   right: 0;
   z-index: 50;
   width: 260px;
-  background: var(--bg-1);
+  background: var(--bg1);
   border: 1px solid var(--border-2);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
@@ -146,7 +136,7 @@
   padding: 7px 9px;
   border-radius: 6px;
   border: 1px solid var(--border-2);
-  background: var(--bg-2);
+  background: var(--bg2);
   color: var(--text);
   font-size: 13px;
 }
@@ -182,7 +172,7 @@
 }
 
 .pce-result:hover {
-  background: var(--bg-2);
+  background: var(--bg2);
 }
 
 .pce-result-name {
