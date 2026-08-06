@@ -1,4 +1,5 @@
 import { defineConfig } from 'cypress'
+import { configureVisualRegression } from 'cypress-visual-regression'
 
 export default defineConfig({
   e2e: {
@@ -27,6 +28,18 @@ export default defineConfig({
         json:         true,
         quiet:        true,
       },
+    },
+
+    // ── Visual regression (Session 94, Phase 0) ────────────────
+    // 'regression' compares against the committed baselines by default;
+    // pass `--expose visualRegressionType=base` to (re)generate baselines
+    // after a verified, intentional visual change.
+    screenshotsFolder: './cypress/snapshots/actual',
+    expose: {
+      visualRegressionType: 'regression',
+    },
+    setupNodeEvents(on) {
+      configureVisualRegression(on)
     },
   },
 })

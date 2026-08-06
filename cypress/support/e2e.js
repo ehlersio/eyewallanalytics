@@ -1,5 +1,20 @@
 // cypress/support/e2e.js
 
+import { addCompareSnapshotCommand } from 'cypress-visual-regression/dist/command'
+
+// errorThreshold: 1 (%) -- these pages hit the live Worker API with no fixture
+// seeding, so a baseline captured minutes before a diff run will show small,
+// real content drift (roster ordering, live standings, a stat that ticked
+// over) even with zero CSS changes. Measured up to ~0.85% on the noisiest
+// pages (Players tables) during Phase 0 baseline capture (Session 94) with
+// no code change between runs. 1% comfortably clears that floor while still
+// failing on real layout/spacing/color regressions, which run far higher.
+// The diff image (always generated on failure) is the actual evidence for
+// review -- this threshold only controls pass/fail noise, not what gets shown.
+addCompareSnapshotCommand({
+  errorThreshold: 1,
+})
+
 const IGNORED_ERRORS = [
   /ResizeObserver loop/,
   /Non-passive event listener/,

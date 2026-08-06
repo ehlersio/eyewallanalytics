@@ -196,7 +196,7 @@ function PlayerIdentity({ data, sport }) {
   return (
     <div className="flex items-center gap-2 min-w-0 flex-1">
       {data.headshot
-        ? <img src={data.headshot} alt="" className="w-11 h-11 rounded-full object-cover shrink-0 bg-[var(--bg-2)]" />
+        ? <img src={data.headshot} alt="" className="w-11 h-11 rounded-full object-cover shrink-0 bg-[var(--bg2)]" />
         : <TeamLogo abbr={data.teamAbbr} sport={sport} size={44} color={data.teamColor} />}
       <div className="min-w-0">
         <div className="text-[15px] font-semibold leading-tight truncate">{data.name || '—'}</div>
@@ -208,7 +208,7 @@ function PlayerIdentity({ data, sport }) {
 
 function BlockMessage({ text }) {
   return (
-    <div className="mx-1 my-6 rounded-lg border border-[var(--border-2)] bg-[var(--bg-2)] px-4 py-6 text-center text-sm text-[color:var(--text-dim)]">
+    <div className="mx-1 my-6 rounded-lg border border-[var(--border-2)] bg-[var(--bg2)] px-4 py-6 text-center text-sm text-[color:var(--text-dim)]">
       {text}
     </div>
   )

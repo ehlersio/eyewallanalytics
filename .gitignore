@@ -31,5 +31,11 @@ cypress/screenshots/
 cypress/videos/
 cypress/reports/
 
+# Visual regression (Session 94) -- 'actual' and 'diff' are regenerated on
+# every run; 'base' is the committed source of truth for parity diffs and
+# must NOT be ignored.
+cypress/snapshots/actual/
+cypress/snapshots/diff/
+
 # Claude Code agent worktrees -- local scratch copies, not source
 .claude/worktrees/
