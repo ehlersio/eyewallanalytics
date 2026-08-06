@@ -30,3 +30,6 @@ Thumbs.db
 cypress/screenshots/
 cypress/videos/
 cypress/reports/
+
+# Claude Code agent worktrees -- local scratch copies, not source
+.claude/worktrees/
