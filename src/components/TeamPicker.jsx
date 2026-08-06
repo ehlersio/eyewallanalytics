@@ -15,7 +15,49 @@ import { useAuth } from '../utils/AuthContext'
 import { upsertFavoriteTeam } from '../utils/favoriteTeamSync'
 import TeamLogo from './TeamLogo'
 import { TEAM_COLORS } from '../utils/nhlApi'
-import './TeamPicker.css'
+
+// Tailwind migration (Session 95, Phase 1) -- previously TeamPicker.css.
+//
+// .team-picker-disclaimer/.team-picker-tile/.team-picker-tile--disabled/
+// .team-picker-abbr are kept as literal marker strings alongside the
+// Tailwind utilities -- TeamPicker.cy.js selects and asserts on these
+// exact class names. They carry no CSS of their own anymore; Tailwind
+// owns the visuals, these are pure test hooks now.
+//
+// .team-picker-overlay's background was `var(--bg, #0d0d0f)` in the
+// original CSS -- `--bg` (bare, no number) is never defined anywhere in
+// this codebase (unlike --bg0/--bg1/etc, which are real), so this always
+// rendered the literal fallback #0d0d0f regardless of light/dark theme.
+// Reproduced as the literal color for exact parity, but flagging: since
+// --text/--text-dim *are* real theme-reactive tokens, a user who set light
+// mode in a previous session and then reopens TeamPicker via "Change team"
+// would see light-mode near-black text (#0d1117) on this permanently-dark
+// background -- a real, currently-live legibility issue, not something
+// this migration should silently "fix" by guessing which token was meant.
+//
+// Hover lift (translateY) uses real CSS :hover; hover background/border-
+// color are deliberately left as JS-driven inline styles (unchanged below)
+// since they're genuinely dynamic (per-team brand color), matching the
+// pattern already established for other components' dynamic values.
+const OVERLAY_CLASSES = 'fixed inset-0 z-[1000] bg-[#0d0d0f] overflow-y-auto flex justify-center pt-12 px-4 pb-24';
+const INNER_CLASSES = 'w-full max-w-[720px] pb-12';
+const HEADER_CLASSES = 'text-center mb-10 relative';
+const TITLE_CLASSES = 'text-[1.75rem] font-bold text-[color:var(--text)] mb-2 tracking-[-0.02em]';
+const SUB_CLASSES = 'text-[0.875rem] text-[color:var(--text-dim)] m-0';
+const BACK_CLASSES = 'absolute left-0 top-1/2 -translate-y-1/2 max-[480px]:static max-[480px]:translate-y-0 max-[480px]:block max-[480px]:mb-3 max-[480px]:text-left bg-transparent border-0 text-[color:var(--text-dim)] text-[0.875rem] cursor-pointer py-1 px-0 [transition:color_0.12s] hover:text-[color:var(--text)]';
+const SPORT_GRID_CLASSES = 'grid grid-cols-2 gap-4 max-[480px]:gap-3 mb-12';
+const DISCLAIMER_CLASSES = 'team-picker-disclaimer text-[10px] text-[color:var(--text-dim)] text-center leading-[1.5] max-w-[480px] mx-auto';
+const SPORT_TILE_CLASSES = 'flex flex-col items-center justify-center gap-2 py-10 px-6 max-[480px]:py-7 max-[480px]:px-4 border border-[var(--border)] rounded-[14px] cursor-pointer [transition:background_0.12s,border-color_0.12s,transform_0.1s] motion-reduce:transition-none bg-transparent hover:-translate-y-0.5 active:translate-y-0';
+const SPORT_LOGO_CLASSES = 'max-h-12 max-w-full w-auto h-auto object-contain brightness-100';
+const SPORT_DESC_CLASSES = 'text-[0.8125rem] text-[color:var(--text-dim)] text-center';
+const DIVISIONS_CLASSES = 'flex flex-col gap-8 mb-12';
+const DIVISION_LABEL_CLASSES = 'block text-[0.6875rem] font-semibold tracking-[0.1em] uppercase text-[color:var(--text-dim)] mb-3';
+const GRID_CLASSES = 'grid grid-cols-4 gap-2 max-[480px]:gap-1.5';
+const TILE_CLASSES = 'team-picker-tile flex flex-col items-center gap-1.5 pt-3.5 px-2 pb-3 max-[480px]:pt-2.5 max-[480px]:px-1 max-[480px]:pb-2 border border-[var(--border)] rounded-[10px] cursor-pointer [transition:background_0.12s,border-color_0.12s,transform_0.1s] motion-reduce:transition-none bg-transparent relative hover:-translate-y-0.5 active:translate-y-0';
+const TILE_DISABLED_CLASSES = 'team-picker-tile--disabled opacity-40 cursor-not-allowed pointer-events-none';
+const COMING_SOON_CLASSES = 'absolute top-[5px] right-[5px] text-[0.5rem] font-bold tracking-[0.06em] uppercase text-[color:var(--text-dim)] bg-[var(--bg2)] rounded-[4px] py-0.5 px-1 leading-none';
+const ABBR_CLASSES = 'team-picker-abbr text-[0.6875rem] font-bold tracking-[0.06em] text-[color:var(--text-dim)] leading-none';
+const NAME_CLASSES = 'text-[0.6875rem] text-[color:var(--text-dim)] leading-none text-center max-w-[72px] overflow-hidden text-ellipsis whitespace-nowrap';
 
 // ── NHL division grouping ─────────────────────────────────────────────────────
 const NHL_DIVISIONS = [
@@ -70,17 +112,17 @@ function SportStep({ onPickSport }) {
 
   return (
     <>
-      <div className="team-picker-header">
-        <h1 className="team-picker-title">Choose your league</h1>
-        <p className="team-picker-sub">You can change this any time from settings.</p>
+      <div className={HEADER_CLASSES}>
+        <h1 className={TITLE_CLASSES}>Choose your league</h1>
+        <p className={SUB_CLASSES}>You can change this any time from settings.</p>
       </div>
-      <div className="team-picker-sport-grid">
+      <div className={SPORT_GRID_CLASSES}>
         {sports.map(({ id, logo, description }) => {
           const isHov = hovered === id;
           return (
             <button
               key={id}
-              className="team-picker-sport-tile"
+              className={SPORT_TILE_CLASSES}
               style={{
                 background: isHov ? 'var(--bg2)' : 'transparent',
                 borderColor: isHov ? 'var(--text-dim)' : 'var(--border)',
@@ -93,14 +135,14 @@ function SportStep({ onPickSport }) {
               <img
                 src={logo}
                 alt={id.toUpperCase()}
-                className="team-picker-sport-logo"
+                className={SPORT_LOGO_CLASSES}
               />
-              <span className="team-picker-sport-desc">{description}</span>
+              <span className={SPORT_DESC_CLASSES}>{description}</span>
             </button>
           );
         })}
       </div>
-      <p className="team-picker-disclaimer">
+      <p className={DISCLAIMER_CLASSES}>
         EyeWall Analytics is not affiliated with, endorsed by, or sponsored by the National Hockey League (NHL), the Professional Women's Hockey League (PWHL), or any of their teams. All NHL and PWHL team names, logos, and trademarks are the property of their respective owners. Statistics and data are sourced from publicly available APIs and are provided for informational purposes only.
       </p>
     </>
@@ -113,16 +155,16 @@ function NHLTeamStep({ onBack, onSelect }) {
 
   return (
     <>
-      <div className="team-picker-header">
-        <button className="team-picker-back" onClick={onBack}>← Back</button>
-        <h1 className="team-picker-title">Choose your team</h1>
-        <p className="team-picker-sub">You can change this any time from settings.</p>
+      <div className={HEADER_CLASSES}>
+        <button className={BACK_CLASSES} onClick={onBack}>← Back</button>
+        <h1 className={TITLE_CLASSES}>Choose your team</h1>
+        <p className={SUB_CLASSES}>You can change this any time from settings.</p>
       </div>
-      <div className="team-picker-divisions">
+      <div className={DIVISIONS_CLASSES}>
         {NHL_DIVISIONS.map(division => (
-          <div key={division.name} className="team-picker-division">
-            <span className="team-picker-division-label">{division.name}</span>
-            <div className="team-picker-grid">
+          <div key={division.name}>
+            <span className={DIVISION_LABEL_CLASSES}>{division.name}</span>
+            <div className={GRID_CLASSES}>
               {division.teams.map(abbr => {
                 const team  = nhlTeamByAbbr[abbr];
                 const color = TEAM_COLORS[abbr] || '#888';
@@ -131,7 +173,7 @@ function NHLTeamStep({ onBack, onSelect }) {
                 return (
                   <button
                     key={abbr}
-                    className="team-picker-tile"
+                    className={TILE_CLASSES}
                     style={{
                       '--team-color': color,
                       background:  isHov ? `${color}22` : 'transparent',
@@ -143,8 +185,8 @@ function NHLTeamStep({ onBack, onSelect }) {
                     aria-label={team.displayName}
                   >
                     <TeamLogo abbr={abbr} size={48} />
-                    <span className="team-picker-abbr">{abbr}</span>
-                    <span className="team-picker-name">{team.shortName}</span>
+                    <span className={ABBR_CLASSES}>{abbr}</span>
+                    <span className={NAME_CLASSES}>{team.shortName}</span>
                   </button>
                 );
               })}
@@ -163,16 +205,16 @@ function PWHLTeamStep({ onBack, onSelect }) {
 
   return (
     <>
-      <div className="team-picker-header">
-        <button className="team-picker-back" onClick={onBack}>← Back</button>
-        <h1 className="team-picker-title">Choose your team</h1>
-        <p className="team-picker-sub">You can change this any time from settings.</p>
+      <div className={HEADER_CLASSES}>
+        <button className={BACK_CLASSES} onClick={onBack}>← Back</button>
+        <h1 className={TITLE_CLASSES}>Choose your team</h1>
+        <p className={SUB_CLASSES}>You can change this any time from settings.</p>
       </div>
-      <div className="team-picker-divisions">
+      <div className={DIVISIONS_CLASSES}>
         {/* Active teams */}
-        <div className="team-picker-division">
-          <span className="team-picker-division-label">PWHL</span>
-          <div className="team-picker-grid">
+        <div>
+          <span className={DIVISION_LABEL_CLASSES}>PWHL</span>
+          <div className={GRID_CLASSES}>
             {PWHL_ACTIVE_ABBRS.map(abbr => {
               const team  = pwhlTeamByAbbr[abbr];
               const color = team?.displayColor || '#888';
@@ -181,7 +223,7 @@ function PWHLTeamStep({ onBack, onSelect }) {
               return (
                 <button
                   key={abbr}
-                  className="team-picker-tile"
+                  className={TILE_CLASSES}
                   style={{
                     '--team-color': color,
                     background:  isHov ? `${color}22` : 'transparent',
@@ -193,8 +235,8 @@ function PWHLTeamStep({ onBack, onSelect }) {
                   aria-label={team.displayName}
                 >
                   <TeamLogo abbr={abbr} sport="pwhl" size={48} color={color} />
-                  <span className="team-picker-abbr">{abbr}</span>
-                  <span className="team-picker-name">{team.shortName}</span>
+                  <span className={ABBR_CLASSES}>{abbr}</span>
+                  <span className={NAME_CLASSES}>{team.shortName}</span>
                 </button>
               );
             })}
@@ -203,23 +245,23 @@ function PWHLTeamStep({ onBack, onSelect }) {
 
         {/* Expansion teams — disabled. Hidden entirely once none are left. */}
         {PWHL_EXPANSION_ABBRS.length > 0 && (
-        <div className="team-picker-division">
-          <span className="team-picker-division-label">2026–27 Expansion</span>
-          <div className="team-picker-grid">
+        <div>
+          <span className={DIVISION_LABEL_CLASSES}>2026–27 Expansion</span>
+          <div className={GRID_CLASSES}>
             {PWHL_EXPANSION_ABBRS.map(abbr => {
               const team = pwhlTeamByAbbr[abbr];
               if (!team) return null;
               return (
                 <button
                   key={abbr}
-                  className="team-picker-tile team-picker-tile--disabled"
+                  className={`${TILE_CLASSES} ${TILE_DISABLED_CLASSES}`}
                   disabled
                   aria-label={`${team.displayName} — coming soon`}
                 >
                   <TeamLogo abbr={abbr} sport="pwhl" size={48} color="var(--text-dim)" />
-                  <span className="team-picker-abbr">{abbr}</span>
-                  <span className="team-picker-name">{team.shortName}</span>
-                  <span className="team-picker-coming-soon">Soon</span>
+                  <span className={ABBR_CLASSES}>{abbr}</span>
+                  <span className={NAME_CLASSES}>{team.shortName}</span>
+                  <span className={COMING_SOON_CLASSES}>Soon</span>
                 </button>
               );
             })}
@@ -287,8 +329,8 @@ export default function TeamPicker({ onSelect }) {
   }
 
   return (
-    <div className="team-picker-overlay">
-      <div className="team-picker-inner">
+    <div className={OVERLAY_CLASSES}>
+      <div className={INNER_CLASSES}>
         {step === 'sport' && (
           <SportStep onPickSport={handlePickSport} />
         )}

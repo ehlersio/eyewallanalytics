@@ -429,7 +429,9 @@
 }
 .pa-ctx-val { font-size: 14px; font-weight: 700; font-family: var(--font-mono); color: var(--text); }
 .pa-ctx-label { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
-.pa-ctx-label .info-tip-popup { white-space: normal; }
+/* InfoTip's popup now carries its own whitespace-normal directly (Session
+   95, Phase 1 -- see InfoTip.jsx's POPUP_CLASSES) since it migrated off the
+   .info-tip-popup class name this selector used to target. */
 
 .pa-section-label {
   font-size: 10px; font-weight: 700; text-transform: uppercase;

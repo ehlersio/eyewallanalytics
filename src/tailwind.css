@@ -15,3 +15,44 @@
  */
 @import "tailwindcss/theme" layer(theme);
 @import "tailwindcss/utilities" layer(utilities);
+
+/* Root font-size compensation (Session 95, Phase 1).
+ *
+ * index.css sets `html, body, #root { font-size: 14px; }` (a pre-existing,
+ * app-wide design decision predating this migration) -- but `rem` in CSS
+ * always resolves against the ROOT element's font-size, and Tailwind's
+ * entire numeric spacing scale (`mb-2`, `py-1.5`, `gap-2`, `w-2`, etc.) is
+ * defined in rem relative to an assumed 16px root. Left unfixed, every
+ * numeric-scale utility in the app silently renders ~12.5% smaller than
+ * its pixel-equivalent name suggests (`mb-2` produces 7px, not 8px).
+ * Confirmed live during Phase 1 work, and confirmed to already be affecting
+ * PlayerComparisonPopup (Phase 0/pre-Phase-1 Tailwind code, e.g. its
+ * `w-11 h-11` headshot circle rendering at 38.5px instead of the intended
+ * 44px) -- not something newly introduced by this phase.
+ *
+ * This compensates the scale globally so `mb-2` continues to mean a literal
+ * 8px regardless of the app's 14px root, matching what every one of these
+ * utilities meant before this migration existed. Named radius utilities
+ * (`rounded-lg`, `rounded-md`, etc.) are NOT compensated this way -- see
+ * the comment further down on why those are avoided entirely instead.
+ */
+@theme {
+  --spacing: calc(0.25rem * 16 / 14);
+}
+
+/* Named Tailwind radius utilities (`rounded-sm`/`md`/`lg`/`xl`/`2xl`/`3xl`)
+ * are deliberately never used anywhere in this migration -- avoid, don't
+ * just compensate. Two independent problems compound here: (1) they're
+ * rem-based like spacing above, and (2) three of them collide by name with
+ * this app's own pre-existing `--radius`/`--radius-sm`/`--radius-lg`
+ * tokens (plain px, defined in index.css, a completely different numeric
+ * scale -- 10px/6px/14px -- than Tailwind's own 0.25rem-based steps).
+ * Cascade layers make the app's unlayered tokens win over Tailwind's
+ * layered ones for those three names specifically, so e.g. `rounded-lg`
+ * silently renders at the app's --radius-lg (14px) instead of Tailwind's
+ * own scale step, while `rounded-md` (no app equivalent) renders at
+ * Tailwind's uncompensated rem value instead. There's no single
+ * compensation factor that fixes both problems for all six steps at once.
+ * Always use an explicit `rounded-[Npx]` (or `rounded-[var(--radius-sm)]`
+ * etc. to reference the app's own tokens on purpose) instead.
+ */

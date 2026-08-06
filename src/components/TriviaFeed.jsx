@@ -11,9 +11,39 @@ import { PWHL_TEAM_CONFIG } from '../utils/pwhlApi';
 import { getAnsweredMap, getStats, recordAnswer } from '../utils/triviaAnswers';
 import { capture } from '../utils/analytics';
 import TeamLogo from './TeamLogo';
-import './TriviaFeed.css';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
+
+// Tailwind migration (Session 95, Phase 1) -- previously TriviaFeed.css.
+// .card/.news-* classes below are NOT part of this migration -- they're
+// owned by NewsView.css (a later phase), reused here as documented in this
+// file's header comment; left untouched.
+//
+// Several original class names are kept as literal marker strings
+// alongside the Tailwind utilities (trivia-card/trivia-tier-badge/
+// trivia-result-badge/trivia-question-text/trivia-option/trivia-explanation/
+// trivia-empty-msg, plus the bare `correct`/`incorrect` state classes) --
+// trivia.cy.js and read-state-badges.cy.js select and assert on these
+// exact class names (`cy.get('.trivia-option')`,
+// `.should('have.class', 'correct')`, etc). They carry no CSS of their own
+// anymore; Tailwind owns the visuals, these are pure test hooks now.
+const TIERS_CLASSES = 'flex flex-col gap-2.5';
+const CARD_CLASSES = 'trivia-card flex flex-col gap-2.5';
+const CARD_HEADER_CLASSES = 'flex items-center justify-between';
+const TIER_BADGE_CLASSES = 'trivia-tier-badge inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.05em] text-[color:var(--text-muted)]';
+const RESULT_BADGE_BASE = 'trivia-result-badge text-[11px] font-bold py-[3px] px-2 rounded-[6px]';
+const RESULT_BADGE_COLOR = {
+  correct: 'correct text-[color:var(--green)] bg-[rgba(61,186,126,0.12)]',
+  incorrect: 'incorrect text-[color:var(--red-bright)] bg-[rgba(255,68,34,0.1)]',
+};
+const QUESTION_TEXT_CLASSES = 'trivia-question-text text-[14px] font-semibold text-[color:var(--text)] leading-[1.4] m-0';
+const OPTIONS_CLASSES = 'flex flex-col gap-1.5';
+const OPTION_BASE = 'trivia-option text-left py-2.5 px-3 rounded-[8px] border-[0.5px] border-[var(--border-2)] bg-[var(--bg3)] text-[color:var(--text)] text-[13px] font-medium cursor-pointer [transition:background_0.15s,opacity_0.15s] enabled:hover:bg-[var(--bg4)] disabled:cursor-default';
+const OPTION_CORRECT = 'correct border-[var(--green)] bg-[rgba(61,186,126,0.14)] text-[color:var(--green)] font-bold';
+const OPTION_INCORRECT = 'incorrect border-[var(--red-bright)] bg-[rgba(255,68,34,0.1)] text-[color:var(--red-bright)] font-bold';
+const OPTION_DIMMED = 'dimmed opacity-50';
+const EXPLANATION_CLASSES = 'trivia-explanation text-[12px] text-[color:var(--text-muted)] leading-[1.5] m-0';
+const EMPTY_MSG_CLASSES = 'trivia-empty-msg text-[12px] text-[color:var(--text-dim)] m-0';
 
 const TIER_META = {
   easy:   { label: 'Easy',   icon: '🟢' },
@@ -32,11 +62,11 @@ function TierCard({ tier, question, answered, userId, onAnswered, sportKey }) {
 
   if (!question) {
     return (
-      <div className="trivia-card card">
-        <div className="trivia-card-header">
-          <span className="trivia-tier-badge">{meta.icon} {meta.label}</span>
+      <div className={`${CARD_CLASSES} card`}>
+        <div className={CARD_HEADER_CLASSES}>
+          <span className={TIER_BADGE_CLASSES}>{meta.icon} {meta.label}</span>
         </div>
-        <p className="trivia-empty-msg">No {meta.label.toLowerCase()} question today yet — check back soon.</p>
+        <p className={EMPTY_MSG_CLASSES}>No {meta.label.toLowerCase()} question today yet — check back soon.</p>
       </div>
     );
   }
@@ -57,26 +87,26 @@ function TierCard({ tier, question, answered, userId, onAnswered, sportKey }) {
   const selectedIndex = answered?.selectedIndex;
 
   return (
-    <div className="trivia-card card">
-      <div className="trivia-card-header">
-        <span className="trivia-tier-badge">
+    <div className={`${CARD_CLASSES} card`}>
+      <div className={CARD_HEADER_CLASSES}>
+        <span className={TIER_BADGE_CLASSES}>
           {meta.icon} {meta.label}
           {showTeamLogo && <TeamLogo abbr={question.team} sport={sportKey} size={18} />}
         </span>
         {answered && (
-          <span className={`trivia-result-badge ${answered.isCorrect ? 'correct' : 'incorrect'}`}>
+          <span className={`${RESULT_BADGE_BASE} ${answered.isCorrect ? RESULT_BADGE_COLOR.correct : RESULT_BADGE_COLOR.incorrect}`}>
             {answered.isCorrect ? '✓ Correct' : '✕ Incorrect'}
           </span>
         )}
       </div>
-      <p className="trivia-question-text">{question.question_text}</p>
-      <div className="trivia-options">
+      <p className={QUESTION_TEXT_CLASSES}>{question.question_text}</p>
+      <div className={OPTIONS_CLASSES}>
         {question.options.map((opt, i) => {
-          let cls = 'trivia-option';
+          let cls = OPTION_BASE;
           if (answered) {
-            if (i === question.correct_index) cls += ' correct';
-            else if (i === selectedIndex) cls += ' incorrect';
-            else cls += ' dimmed';
+            if (i === question.correct_index) cls += ` ${OPTION_CORRECT}`;
+            else if (i === selectedIndex) cls += ` ${OPTION_INCORRECT}`;
+            else cls += ` ${OPTION_DIMMED}`;
           }
           return (
             <button
@@ -91,7 +121,7 @@ function TierCard({ tier, question, answered, userId, onAnswered, sportKey }) {
         })}
       </div>
       {answered && question.explanation && (
-        <p className="trivia-explanation">{question.explanation}</p>
+        <p className={EXPLANATION_CLASSES}>{question.explanation}</p>
       )}
     </div>
   );
@@ -168,7 +198,7 @@ export default function TriviaFeed() {
       )}
 
       {!loading && !error && (
-        <div className="trivia-tiers">
+        <div className={TIERS_CLASSES}>
           {['easy', 'medium', 'hard'].map((tier) => {
             const q = questions[tier];
             const answered = q ? answeredMap[String(q.id)] : undefined;

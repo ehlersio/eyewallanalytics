@@ -3,7 +3,16 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ReferenceLine,
 } from 'recharts';
-import './SeasonOverlayChart.css';
+// Tailwind migration (Session 95, Phase 1) -- previously SeasonOverlayChart.css.
+const CHART_CLASSES = 'w-full';
+const EMPTY_CLASSES = 'text-[12px] text-[color:var(--text-dim)] py-4 text-center';
+const LEGEND_CHIP_CLASSES = 'font-[family-name:var(--font-body)] text-[12px] font-semibold text-[color:var(--text-muted)] [transition:opacity_0.15s]';
+const TOOLTIP_CLASSES = 'bg-[var(--bg2)] border-[0.5px] border-[var(--border-2)] rounded-[var(--radius-sm)] py-2 px-2.5 font-[family-name:var(--font-body)] shadow-[0_4px_16px_rgba(0,0,0,0.25)]';
+const TOOLTIP_TITLE_CLASSES = 'text-[11px] font-semibold text-[color:var(--text-dim)] mb-1.5 whitespace-nowrap';
+const TOOLTIP_ROW_CLASSES = 'flex items-center gap-1.5 text-[12px] text-[color:var(--text)] py-0.5 whitespace-nowrap';
+const TOOLTIP_SWATCH_CLASSES = 'w-2 h-2 rounded-full shrink-0';
+const TOOLTIP_LABEL_CLASSES = 'text-[color:var(--text-muted)] mr-auto pr-2.5';
+const TOOLTIP_VALUE_CLASSES = 'font-semibold';
 
 // Generic multi-season overlay line chart (Session 66). Deliberately
 // metric-agnostic and league-agnostic -- callers own team-color selection,
@@ -76,11 +85,11 @@ export default function SeasonOverlayChart({
   const hasAnyData = chartData.length > 0;
 
   if (!hasAnyData) {
-    return <div className="soc-empty">No per-game data available for the selected seasons yet.</div>;
+    return <div className={EMPTY_CLASSES}>No per-game data available for the selected seasons yet.</div>;
   }
 
   return (
-    <div className="season-overlay-chart">
+    <div className={CHART_CLASSES}>
       <ResponsiveContainer width="100%" height={height}>
         <LineChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
           <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
@@ -116,7 +125,7 @@ export default function SeasonOverlayChart({
             onClick={(entry) => toggle(entry.dataKey)}
             formatter={(value, entry) => (
               <span
-                className="soc-legend-chip"
+                className={LEGEND_CHIP_CLASSES}
                 style={{ opacity: hiddenSeasons.has(entry.dataKey) ? 0.35 : 1 }}
               >
                 {value}
@@ -151,13 +160,13 @@ function OverlayTooltip({ active, payload, label, metricLabel, valueFormatter, h
   const visible = payload.filter(p => p.value != null && !hiddenSeasons.has(p.dataKey));
   if (!visible.length) return null;
   return (
-    <div className="soc-tooltip">
-      <div className="soc-tooltip-title">{metricLabel} · Game {label}</div>
+    <div className={TOOLTIP_CLASSES}>
+      <div className={TOOLTIP_TITLE_CLASSES}>{metricLabel} · Game {label}</div>
       {visible.map(p => (
-        <div key={p.dataKey} className="soc-tooltip-row">
-          <span className="soc-tooltip-swatch" style={{ background: p.color }} />
-          <span className="soc-tooltip-label">{p.dataKey}</span>
-          <span className="soc-tooltip-value">{valueFormatter(p.value)}</span>
+        <div key={p.dataKey} className={TOOLTIP_ROW_CLASSES}>
+          <span className={TOOLTIP_SWATCH_CLASSES} style={{ background: p.color }} />
+          <span className={TOOLTIP_LABEL_CLASSES}>{p.dataKey}</span>
+          <span className={TOOLTIP_VALUE_CLASSES}>{valueFormatter(p.value)}</span>
         </div>
       ))}
     </div>

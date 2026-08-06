@@ -3,7 +3,6 @@ import { getLiveGame, getCarScore, getOppScore, getOpponent, getGameDetail, bust
 import TeamLogo from './TeamLogo';
 import { TEAM_COLORS, TEAM_CONFIG } from '../utils/nhlApi';
 import { useSport } from '../utils/SportContext';
-import './Topbar.css';
 import AboutPopup from './AboutPopup';
 import { subscribeClock, getClockDisplay, publishClock, subscribeMomentum, subscribeMockLiveGame } from '../utils/liveClockStore';
 import NotificationBell from './NotificationBell';
@@ -12,6 +11,38 @@ import PlayerSearch from './PlayerSearch';
 const POLL_LIVE_MS = 10_000;      // 10s — matches ShotMapView
 const POLL_IDLE_MS = 5 * 60_000;  // 5min — no game active
 const SEASON_END   = new Date('2026-07-01');
+
+// Tailwind migration (Session 95, Phase 1) -- previously Topbar.css.
+// .topbar and .topbar-no-live are kept as literal marker strings alongside
+// the Tailwind utilities -- a large number of Cypress specs (navigation,
+// shot-map, pwhl-*, player-search, topnav-safe-area, this repo's own
+// visual-regression.cy.js) select `.topbar` as their page-ready gate, and
+// viewports.cy.js's off-season detection reads `.topbar-no-live` by class
+// name specifically (see that file's own comment). Neither carries CSS of
+// its own anymore; Tailwind owns the visuals, these are pure test hooks.
+const TOPBAR_CLASSES = 'topbar h-auto min-h-[var(--topbar-height)] bg-[var(--bg1)] border-b-[0.5px] border-b-[var(--red-border)] flex flex-col px-4 pb-0 pt-[env(safe-area-inset-top,0px)] shrink-0 sticky top-0 z-[100]';
+const ROW_CLASSES = 'flex items-center justify-between gap-3 h-[var(--topbar-height)]';
+const ICONS_CLASSES = 'flex items-center gap-1';
+const LIVE_CLASSES = 'flex items-center gap-2 bg-[var(--red-dim)] border-[0.5px] border-[var(--red-border)] rounded-[20px] py-[5px] px-3 max-[480px]:py-1 max-[480px]:px-2 max-[480px]:gap-[5px]';
+const LIVE_SCORE_CLASSES = 'flex items-center gap-[5px] font-[family-name:var(--font-display)] text-[14px] font-semibold max-[480px]:text-[12px] max-[480px]:gap-[3px]';
+const LIVE_TEAM_RED_CLASSES = 'text-[color:var(--red-bright)]';
+const LIVE_TEAM_MUTED_CLASSES = 'text-[color:var(--text-muted)]';
+const LIVE_NUM_CLASSES = 'text-[color:var(--text)]';
+const LIVE_SEP_CLASSES = 'text-[color:var(--text-dim)]';
+const LIVE_CLOCK_CLASSES = 'text-[11px] text-[color:var(--amber)] font-[family-name:var(--font-mono)] max-[480px]:hidden';
+const STATUS_CLASSES = 'flex items-center gap-1.5 text-[11px] text-[color:var(--text-dim)]';
+const STATUS_DOT_CLASSES = 'w-1.5 h-1.5 rounded-full bg-[var(--text-dim)]';
+const NO_LIVE_CLASSES = 'topbar-no-live hidden';
+const CLOCK_STOPPED_CLASSES = 'text-[#fbbf24] text-[10px] ml-[3px]';
+const MOMENTUM_CLASSES = 'pb-[7px] flex flex-col gap-[3px]';
+const MOM_LABELS_CLASSES = 'flex justify-between text-[9px] tracking-[0.05em] uppercase';
+const MOM_CAR_CLASSES = 'text-[color:var(--red-bright)] font-semibold';
+const MOM_OPP_CLASSES = 'text-[color:var(--text-dim)]';
+const MOM_WINDOW_CLASSES = 'text-[color:var(--text-dim)]';
+const MOM_TRACK_CLASSES = 'h-[3px] bg-[var(--bg3)] rounded-[2px] relative overflow-hidden';
+const MOM_CENTER_CLASSES = 'absolute left-1/2 top-0 bottom-0 w-px bg-[var(--border-2)]';
+const MOM_FILL_CAR_CLASSES = 'absolute right-1/2 top-0 bottom-0 bg-[var(--red-bright)] rounded-[2px_0_0_2px] [transition:width_0.5s_ease]';
+const MOM_FILL_OPP_CLASSES = 'absolute left-1/2 top-0 bottom-0 bg-[var(--text-dim)] rounded-[0_2px_2px_0] opacity-50 [transition:width_0.5s_ease]';
 
 export default function Topbar() {
   const { isPWHL } = useSport();
@@ -126,53 +157,53 @@ export default function Topbar() {
     : null;
 
   return (
-    <header className="topbar">
-      <div className="topbar-row">
+    <header className={TOPBAR_CLASSES}>
+      <div className={ROW_CLASSES}>
         <AboutPopup isLive={!!activeLiveGame} />
 
         {activeLiveGame ? (
-          <div className="topbar-live">
+          <div className={LIVE_CLASSES}>
             <div className="live-dot" />
-            <div className="live-score">
+            <div className={LIVE_SCORE_CLASSES}>
               <TeamLogo abbr={TEAM_CONFIG.abbr} size={18} />
-              <span className="live-team-red">{TEAM_CONFIG.abbr}</span>
-              <span className="live-num">{carScore}</span>
-              <span className="live-sep">–</span>
-              <span className="live-num">{oppScore}</span>
-              <span className="live-team-muted">{opp?.abbrev}</span>
+              <span className={LIVE_TEAM_RED_CLASSES}>{TEAM_CONFIG.abbr}</span>
+              <span className={LIVE_NUM_CLASSES}>{carScore}</span>
+              <span className={LIVE_SEP_CLASSES}>–</span>
+              <span className={LIVE_NUM_CLASSES}>{oppScore}</span>
+              <span className={LIVE_TEAM_MUTED_CLASSES}>{opp?.abbrev}</span>
               <TeamLogo abbr={opp?.abbrev} size={18} color={TEAM_COLORS[opp?.abbrev]} />
             </div>
             {(period || displayClock) && activeLiveGame?.gameState !== 'FINAL' && (
-              <div className="live-clock">
+              <div className={LIVE_CLOCK_CLASSES}>
                 {period}{period && displayClock ? ' · ' : ''}{displayClock}
-                {displayClock && !clockRunning && <span className="clock-stopped-tb">⏸</span>}
+                {displayClock && !clockRunning && <span className={CLOCK_STOPPED_CLASSES}>⏸</span>}
               </div>
             )}
           </div>
         ) : (
-          <div className="topbar-status">
-            <span className="status-dot-idle" />
-            <span className="topbar-no-live">{isPWHL ? 'PWHL' : 'Off season'}</span>
+          <div className={STATUS_CLASSES}>
+            <span className={STATUS_DOT_CLASSES} />
+            <span className={NO_LIVE_CLASSES}>{isPWHL ? 'PWHL' : 'Off season'}</span>
           </div>
         )}
 
-        <div className="topbar-icons">
+        <div className={ICONS_CLASSES}>
           <PlayerSearch />
           <NotificationBell />
         </div>
       </div>
 
       {activeLiveGame && momentum && (
-        <div className="topbar-momentum">
-          <div className="tb-mom-labels">
-            <span className="tb-mom-car">{TEAM_CONFIG.abbr}</span>
-            <span className="tb-mom-window">{momentum.window}m</span>
-            <span className="tb-mom-opp">{opp?.abbrev}</span>
+        <div className={MOMENTUM_CLASSES}>
+          <div className={MOM_LABELS_CLASSES}>
+            <span className={MOM_CAR_CLASSES}>{TEAM_CONFIG.abbr}</span>
+            <span className={MOM_WINDOW_CLASSES}>{momentum.window}m</span>
+            <span className={MOM_OPP_CLASSES}>{opp?.abbrev}</span>
           </div>
-          <div className="tb-mom-track">
-            <div className="tb-mom-center" />
-            <div className="tb-mom-fill-car" style={{ width: `${Math.max(0, momentum.carPct - 50)}%` }} />
-            <div className="tb-mom-fill-opp" style={{ width: `${Math.max(0, 50 - momentum.carPct)}%` }} />
+          <div className={MOM_TRACK_CLASSES}>
+            <div className={MOM_CENTER_CLASSES} />
+            <div className={MOM_FILL_CAR_CLASSES} style={{ width: `${Math.max(0, momentum.carPct - 50)}%` }} />
+            <div className={MOM_FILL_OPP_CLASSES} style={{ width: `${Math.max(0, 50 - momentum.carPct)}%` }} />
           </div>
         </div>
       )}

@@ -1,5 +1,60 @@
 import { useState, useEffect, useRef } from 'react';
-import './AboutPopup.css';
+
+// Tailwind migration (Session 95, Phase 1) -- previously AboutPopup.css.
+//
+// TOPBAR_LOGOIMG/NAME/SUB_CLASSES were previously `.topbar-logoimg`/
+// `.topbar-name`/`.topbar-sub` in Topbar.css -- this component is their
+// only consumer (Topbar.jsx itself never renders an element with those
+// classes), so they migrate here; Topbar.css drops the now-dead rules
+// when it's migrated later in this phase. Includes the two responsive
+// max-width rules those classes had (collapsed into one -- the original
+// 400px and 480px breakpoints both just hid .topbar-sub, so only the
+// wider 480px threshold has any observable effect).
+//
+// .about-trigger's focus-visible outline-offset (3px) is NOT reproduced --
+// index.css's global `:focus-visible` rule is deliberately unlayered (see
+// its own comment) so it always wins over a layered Tailwind utility
+// regardless of specificity, which would make a `focus-visible:` utility
+// here dead on arrival anyway. Falls back to the global rule's 2px
+// offset -- same color, same width, 1px difference on a keyboard-only
+// focus state, not worth fighting the layer system for.
+//
+// .fa-instagram/.fa-x-twitter/.fa-reddit-alien/.fa-facebook are NOT
+// reproduced -- confirmed dead in the current JSX (leftover from a
+// Font-Awesome-based implementation predating the inline-SVG icons this
+// file's own comment describes; no element anywhere carries these class
+// names, so the icons already render in inherited color today, not the
+// brand colors those rules implied).
+// about-trigger/about-popup/about-close are kept as literal marker strings
+// alongside the Tailwind utilities -- topnav-safe-area.cy.js selects and
+// asserts on these exact class names. They carry no CSS of their own
+// anymore; Tailwind owns the visuals, these are pure test hooks now.
+const TRIGGER_CLASSES = 'about-trigger flex items-center gap-2.5 bg-transparent border-0 cursor-pointer p-0 text-left rounded-[8px] [transition:opacity_0.15s] hover:opacity-85';
+const TOPBAR_LOGOIMG_CLASSES = 'w-[36px] h-[36px] rounded-[6px] object-contain shrink-0';
+const TOPBAR_NAME_CLASSES = 'font-[family-name:var(--font-display)] text-[15px] max-[480px]:text-[13px] font-bold tracking-[0.04em] leading-[1.2]';
+const TOPBAR_SUB_CLASSES = 'text-[10px] text-[color:var(--text-muted)] tracking-[0.04em] max-[480px]:hidden';
+const POPUP_CLASSES = 'about-popup absolute top-[calc(100%+10px)] left-0 z-[500] w-[300px] max-w-[calc(100vw-24px)] bg-[var(--bg1)] border-[0.5px] border-[var(--border-2)] rounded-[16px] p-5 shadow-[0_16px_48px_rgba(0,0,0,0.6)] animate-[popupIn_0.18s_cubic-bezier(0.34,1.56,0.64,1)]';
+const CLOSE_CLASSES = 'about-close absolute top-3 right-3.5 bg-transparent border-0 text-[14px] text-[color:var(--text-dim)] cursor-pointer py-0.5 px-[5px] rounded-[4px] hover:text-[color:var(--text)] hover:bg-[var(--bg3)]';
+const LOGO_ROW_CLASSES = 'flex items-center gap-3 mb-3.5';
+const TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[16px] font-bold text-[color:var(--text)]';
+const SUBTITLE_CLASSES = 'text-[11px] text-[color:var(--text-muted)] mt-0.5';
+const DESC_CLASSES = 'text-[12px] text-[color:var(--text-muted)] leading-[1.55] mb-3.5';
+const STATS_ROW_CLASSES = 'flex gap-0 bg-[var(--bg2)] rounded-[10px] overflow-hidden mb-3.5';
+const STAT_CLASSES = 'flex-1 flex flex-col items-center py-2 px-1 border-r-[0.5px] border-r-[var(--border)] last:border-r-0';
+const STAT_VAL_CLASSES = 'font-[family-name:var(--font-display)] text-[14px] font-bold text-[color:var(--red-bright)]';
+const STAT_LABEL_CLASSES = 'text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.06em] mt-0.5';
+const DIVIDER_CLASSES = 'h-[0.5px] bg-[var(--border)] my-3.5';
+const SUPPORT_CLASSES = 'text-center';
+const SUPPORT_TEXT_CLASSES = 'text-[12px] text-[color:var(--text-muted)] leading-[1.5] mb-3';
+const BMC_BTN_CLASSES = 'inline-flex items-center gap-2 bg-[#FFDD00] text-black rounded-[10px] py-2.5 px-5 text-[14px] font-bold no-underline [transition:transform_0.1s,box-shadow_0.1s] shadow-[0_2px_12px_rgba(255,221,0,0.3)] hover:-translate-y-px hover:shadow-[0_4px_20px_rgba(255,221,0,0.45)] active:translate-y-0';
+const BMC_ICON_CLASSES = 'text-[18px]';
+const FOOTER_CLASSES = 'flex justify-between items-center text-[10px] text-[color:var(--text-dim)]';
+const VERSION_CLASSES = 'opacity-70';
+const CONTACT_CLASSES = 'mt-2.5 text-[11px] text-[color:var(--text-dim)] text-center';
+const EMAIL_CLASSES = 'text-[color:var(--text-muted)] no-underline hover:text-[color:var(--text)] hover:underline';
+const SOCIAL_CLASSES = 'flex justify-center gap-4 py-1';
+const SOCIAL_LINK_CLASSES = 'flex items-center justify-center w-[44px] h-[44px] rounded-[12px] bg-[var(--bg3)] no-underline text-[20px] [transition:background_0.15s,transform_0.1s] hover:bg-[var(--bg2)] hover:-translate-y-0.5';
+const PRIVACY_CLASSES = 'text-[10px] text-[color:var(--text-dim)] text-center pt-2 leading-[1.5]';
 
 // Inline SVGs — replaces Font Awesome CDN (saves 19 KiB render-blocking CSS)
 function IconInstagram() {
@@ -47,74 +102,74 @@ export default function AboutPopup({ isLive = false }) {
   }, [open]);
 
   return (
-    <div ref={ref} className="about-wrap">
+    <div ref={ref} className="relative">
       <button
-        className="about-trigger"
+        className={TRIGGER_CLASSES}
         onClick={() => setOpen(o => !o)}
         aria-label="About EyeWall Analytics"
         aria-expanded={open}
       >
-        <img src="/eyewall-logo.svg" alt="" className="topbar-logoimg" width="36" height="36" />
+        <img src="/eyewall-logo.svg" alt="" className={TOPBAR_LOGOIMG_CLASSES} width="36" height="36" />
         {!isLive && (
           <div>
-            <div className="topbar-name">EyeWall Analytics</div>
-            <div className="topbar-sub">Hockey Intelligence</div>
+            <div className={TOPBAR_NAME_CLASSES}>EyeWall Analytics</div>
+            <div className={TOPBAR_SUB_CLASSES}>Hockey Intelligence</div>
           </div>
         )}
       </button>
 
       {open && (
-        <div className="about-popup" role="dialog" aria-label="About EyeWall Analytics">
-          <button className="about-close" onClick={() => setOpen(false)} aria-label="Close">✕</button>
+        <div className={POPUP_CLASSES} role="dialog" aria-label="About EyeWall Analytics">
+          <button className={CLOSE_CLASSES} onClick={() => setOpen(false)} aria-label="Close">✕</button>
 
-          <div className="about-logo-row">
+          <div className={LOGO_ROW_CLASSES}>
             <img src="/eyewall-logo.svg" alt="EyeWall Analytics" width="48" height="48" />
             <div>
-              <div className="about-title">EyeWall Analytics</div>
-              <div className="about-subtitle">Hockey Intelligence</div>
+              <div className={TITLE_CLASSES}>EyeWall Analytics</div>
+              <div className={SUBTITLE_CLASSES}>Hockey Intelligence</div>
             </div>
           </div>
 
-          <p className="about-desc">
+          <p className={DESC_CLASSES}>
             Advanced analytics for all 32 NHL teams and 12 PWHL teams — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, and WAR/percentile rankings.
           </p>
 
-          <div className="about-stats-row">
-            <div className="about-stat">
-              <span className="about-stat-val">Live</span>
-              <span className="about-stat-label">Shot Maps</span>
+          <div className={STATS_ROW_CLASSES}>
+            <div className={STAT_CLASSES}>
+              <span className={STAT_VAL_CLASSES}>Live</span>
+              <span className={STAT_LABEL_CLASSES}>Shot Maps</span>
             </div>
-            <div className="about-stat">
-              <span className="about-stat-val">20s</span>
-              <span className="about-stat-label">Live Poll</span>
+            <div className={STAT_CLASSES}>
+              <span className={STAT_VAL_CLASSES}>20s</span>
+              <span className={STAT_LABEL_CLASSES}>Live Poll</span>
             </div>
-            <div className="about-stat">
-              <span className="about-stat-val">Free</span>
-              <span className="about-stat-label">Always</span>
+            <div className={STAT_CLASSES}>
+              <span className={STAT_VAL_CLASSES}>Free</span>
+              <span className={STAT_LABEL_CLASSES}>Always</span>
             </div>
           </div>
 
-          <div className="about-divider" />
+          <div className={DIVIDER_CLASSES} />
 
-          <div className="about-social">
-            <a href="https://www.instagram.com/eyewallanalytics" target="_blank" rel="noopener noreferrer" className="about-social-link" aria-label="Instagram">
+          <div className={SOCIAL_CLASSES}>
+            <a href="https://www.instagram.com/eyewallanalytics" target="_blank" rel="noopener noreferrer" className={SOCIAL_LINK_CLASSES} aria-label="Instagram">
               <IconInstagram />
             </a>
-            <a href="https://x.com/eyewallstats" target="_blank" rel="noopener noreferrer" className="about-social-link" aria-label="X / Twitter">
+            <a href="https://x.com/eyewallstats" target="_blank" rel="noopener noreferrer" className={SOCIAL_LINK_CLASSES} aria-label="X / Twitter">
               <IconX />
             </a>
-            <a href="https://www.reddit.com/user/eyewallanalytics" target="_blank" rel="noopener noreferrer" className="about-social-link" aria-label="Reddit">
+            <a href="https://www.reddit.com/user/eyewallanalytics" target="_blank" rel="noopener noreferrer" className={SOCIAL_LINK_CLASSES} aria-label="Reddit">
               <IconReddit />
             </a>
-            <a href="https://www.facebook.com/profile.php?id=61590095322617" target="_blank" rel="noopener noreferrer" className="about-social-link" aria-label="Facebook">
+            <a href="https://www.facebook.com/profile.php?id=61590095322617" target="_blank" rel="noopener noreferrer" className={SOCIAL_LINK_CLASSES} aria-label="Facebook">
               <IconFacebook />
             </a>
           </div>
 
-          <div className="about-divider" />
+          <div className={DIVIDER_CLASSES} />
 
-          <div className="about-support">
-            <p className="about-support-text">
+          <div className={SUPPORT_CLASSES}>
+            <p className={SUPPORT_TEXT_CLASSES}>
               EyeWall Analytics is a passion project. If you find it useful,
               buying a coffee helps keep the servers running. 🙏
             </p>
@@ -122,28 +177,28 @@ export default function AboutPopup({ isLive = false }) {
               href="https://buymeacoffee.com/mattehlers"
               target="_blank"
               rel="noopener noreferrer"
-              className="bmc-btn"
+              className={BMC_BTN_CLASSES}
             >
-              <span className="bmc-icon">☕</span>
+              <span className={BMC_ICON_CLASSES}>☕</span>
               Buy me a coffee
             </a>
           </div>
 
-          <div className="about-divider" />
+          <div className={DIVIDER_CLASSES} />
 
-          <div className="about-footer">
+          <div className={FOOTER_CLASSES}>
             <span>Built with 🌀 for Canes Nation</span>
-            <span className="about-version">Data via NHL API</span>
+            <span className={VERSION_CLASSES}>Data via NHL API</span>
           </div>
 
-          <div className="about-contact">
+          <div className={CONTACT_CLASSES}>
             For all inquiries:{' '}
-            <a href="mailto:matt@eyewallanalytics.com" className="about-email">
+            <a href="mailto:matt@eyewallanalytics.com" className={EMAIL_CLASSES}>
               matt@eyewallanalytics.com
             </a>
           </div>
 
-          <div className="about-privacy">
+          <div className={PRIVACY_CLASSES}>
             EyeWall uses anonymous analytics (PostHog) to understand which
             features are most useful. No personal data is sold or shared.
           </div>

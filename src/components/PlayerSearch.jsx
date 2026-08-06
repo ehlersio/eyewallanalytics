@@ -11,7 +11,33 @@ import { nhlSeasonLabel } from '../utils/seasonComparison';
 import PlayerPopup from './PlayerPopup';
 import PWHLPlayerPopup from './PWHLPlayerPopup';
 import TeamLogo from './TeamLogo';
-import './PlayerSearch.css';
+
+// Tailwind migration (Session 95, Phase 1) -- previously PlayerSearch.css.
+// A few original class names are kept as literal marker strings alongside
+// the Tailwind utilities (player-search-toggle/player-search-panel/
+// player-search-input/player-search-result/psr-team/psr-team--stale) --
+// player-search.cy.js and player-comparison.cy.js select and assert on
+// these exact class names. They carry no CSS of their own anymore;
+// Tailwind owns the visuals, these are pure test hooks now.
+const WRAP_CLASSES = 'relative';
+const TOGGLE_CLASSES = 'player-search-toggle flex items-center justify-center w-[32px] h-[32px] border-0 bg-transparent text-[color:var(--text)] text-[15px] cursor-pointer rounded-full hover:bg-[var(--bg3)]';
+const PANEL_CLASSES = 'player-search-panel absolute top-[calc(100%+8px)] right-0 w-[min(340px,88vw)] bg-[var(--bg2)] border-[0.5px] border-[var(--border-2)] rounded-[var(--radius)] shadow-[0_8px_24px_rgba(0,0,0,0.35)] p-2 z-[200]';
+const INPUT_ROW_CLASSES = 'flex items-center gap-1.5';
+const INPUT_CLASSES = 'player-search-input flex-1 bg-[var(--bg1)] border-[0.5px] border-[var(--border-2)] rounded-[var(--radius-sm)] text-[color:var(--text)] font-[family-name:var(--font-body)] text-[14px] py-2 px-2.5 focus:outline-none focus:border-[var(--blue-bright)]';
+const CLOSE_CLASSES = 'border-0 bg-transparent text-[color:var(--text-dim)] text-[14px] cursor-pointer py-1 px-1.5';
+const STATUS_CLASSES = 'py-3 px-2 text-[color:var(--text-dim)] text-[13px] text-center';
+const RESULTS_CLASSES = 'mt-1.5 max-h-[320px] overflow-y-auto flex flex-col gap-0.5';
+const RESULT_CLASSES = 'player-search-result flex items-center gap-2.5 w-full border-0 bg-transparent text-[color:var(--text)] p-2 rounded-[var(--radius-sm)] cursor-pointer text-left hover:bg-[var(--bg3)]';
+const PSR_NAME_CLASSES = 'flex-1 font-semibold text-[14px] whitespace-nowrap overflow-hidden text-ellipsis';
+const PSR_META_CLASSES = 'flex items-center gap-1.5 text-[11px] text-[color:var(--text-dim)]';
+const PSR_TEAM_CLASSES = 'psr-team font-[family-name:var(--font-mono)] min-w-[28px] text-right';
+const PSR_TEAM_STALE_CLASSES = 'psr-team--stale opacity-65 italic';
+const PSR_POS_CLASSES = 'bg-[var(--bg3)] rounded-[4px] py-[1px] px-[5px]';
+const PSR_SPORT_CLASSES = 'rounded-[4px] py-[1px] px-[5px] font-bold tracking-[0.02em]';
+const PSR_SPORT_COLOR = {
+  nhl: 'bg-[var(--red-dim)] text-[color:var(--red-bright)]',
+  pwhl: 'bg-[var(--blue-dim)] text-[color:var(--blue-bright)]',
+};
 
 const DEBOUNCE_MS = 250;
 
@@ -91,9 +117,9 @@ export default function PlayerSearch() {
   }
 
   return (
-    <div className="player-search" ref={wrapRef}>
+    <div className={WRAP_CLASSES} ref={wrapRef}>
       <button
-        className="player-search-toggle"
+        className={TOGGLE_CLASSES}
         onClick={() => setOpen(o => !o)}
         aria-label="Search players"
         aria-expanded={open}
@@ -102,36 +128,36 @@ export default function PlayerSearch() {
       </button>
 
       {open && (
-        <div className="player-search-panel">
-          <div className="player-search-input-row">
+        <div className={PANEL_CLASSES}>
+          <div className={INPUT_ROW_CLASSES}>
             <input
               ref={inputRef}
-              className="player-search-input"
+              className={INPUT_CLASSES}
               type="text"
               placeholder="Search NHL + PWHL players…"
               value={query}
               onChange={e => setQuery(e.target.value)}
               onKeyDown={e => e.key === 'Escape' && closeSearch()}
             />
-            <button className="player-search-close" onClick={closeSearch} aria-label="Close search">✕</button>
+            <button className={CLOSE_CLASSES} onClick={closeSearch} aria-label="Close search">✕</button>
           </div>
 
-          {searching && <div className="player-search-status">Searching…</div>}
+          {searching && <div className={STATUS_CLASSES}>Searching…</div>}
 
           {!searching && results.length > 0 && (
-            <div className="player-search-results" role="listbox">
+            <div className={RESULTS_CLASSES} role="listbox">
               {results.map(p => (
                 <button
                   key={`${p.sport}-${p.id}`}
-                  className="player-search-result"
+                  className={RESULT_CLASSES}
                   onClick={() => handleSelect(p)}
                   role="option"
                 >
                   <TeamLogo abbr={p.team} sport={p.sport} size={22} />
-                  <span className="psr-name">{p.name}</span>
-                  <span className="psr-meta">
+                  <span className={PSR_NAME_CLASSES}>{p.name}</span>
+                  <span className={PSR_META_CLASSES}>
                     <span
-                      className={`psr-team${p.teamStale ? ' psr-team--stale' : ''}`}
+                      className={`${PSR_TEAM_CLASSES} ${p.teamStale ? PSR_TEAM_STALE_CLASSES : ''}`}
                       title={
                         p.teamStale ? `As of ${nhlSeasonLabel(p.teamSeason)} season`
                           : !p.team ? 'No team assigned yet'
@@ -140,8 +166,8 @@ export default function PlayerSearch() {
                     >
                       {p.team || '—'}
                     </span>
-                    {p.position && <span className="psr-pos">{p.position}</span>}
-                    <span className={`psr-sport psr-sport--${p.sport}`}>{p.sport.toUpperCase()}</span>
+                    {p.position && <span className={PSR_POS_CLASSES}>{p.position}</span>}
+                    <span className={`${PSR_SPORT_CLASSES} ${PSR_SPORT_COLOR[p.sport] || ''}`}>{p.sport.toUpperCase()}</span>
                   </span>
                 </button>
               ))}
@@ -149,7 +175,7 @@ export default function PlayerSearch() {
           )}
 
           {!searching && query.trim().length >= 2 && results.length === 0 && (
-            <div className="player-search-status">No players found.</div>
+            <div className={STATUS_CLASSES}>No players found.</div>
           )}
         </div>
       )}
