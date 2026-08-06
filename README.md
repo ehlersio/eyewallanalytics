@@ -632,4 +632,15 @@ VITE_SUPABASE_ANON=sb_publishable_...
 
 ---
 
+## Disclaimer
+
+EyeWall Analytics is an independent, fan-built analytics project and is not
+affiliated with, endorsed by, or sponsored by the National Hockey League
+(NHL), the Professional Women's Hockey League (PWHL), or any of their
+member teams. All team names, logos, and related marks are the property of
+their respective owners and are used here for informational and editorial
+purposes only.
+
+---
+
 *Built with 🌀 for hockey fans*
