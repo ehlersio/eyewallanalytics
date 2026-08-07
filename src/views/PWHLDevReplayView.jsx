@@ -14,7 +14,73 @@ import { fetchPWHLLive, fetchPWHLSchedule, PWHL_TEAM_ID } from '../utils/pwhlApi
 import { PWHLDevGameContext } from '../utils/PWHLDevGameContext';
 import { PWHL_CURRENT_SEASON, getPWHLTeamById } from '../utils/pwhlConfig';
 import PWHLShotMapView from './PWHLShotMapView';
-import './DevReplayView.css'; // reuse NHL dev styles
+
+// Tailwind migration (Session 97, Phase 4, sub-PR 1) -- see DevReplayView.jsx
+// for the full rationale (shared 2-consumer graph confirmed clean, why
+// min-height/min-width are omitted, the .dev-btn.active/:hover specificity
+// note). Cypress markers kept: .dev-game-btn, .dev-period-tick,
+// .dev-scrubber, .dev-shotmap.
+const DEV_REPLAY_CLASSES = 'flex flex-col h-[calc(100vh-var(--topbar-height)-var(--nav-height))] overflow-hidden'
+const DEV_PANEL_CLASSES = 'bg-[var(--bg1)] border-b-[0.5px] border-[var(--border-2)] py-3 px-[14px] flex flex-col gap-[10px] shrink-0'
+const DEV_PANEL_HEADER_CLASSES = 'flex items-center gap-2'
+const DEV_BADGE_CLASSES = 'text-[9px] font-bold tracking-[0.1em] bg-[var(--amber)] text-[#000] py-[2px] px-[6px] rounded-[4px]'
+const DEV_TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[14px] font-semibold text-[color:var(--text)]'
+const DEV_ROW_CLASSES = 'flex gap-2'
+const DEV_INPUT_CLASSES = 'dev-input flex-1 bg-[var(--bg3)] border-[0.5px] border-[var(--border-2)] rounded-[var(--radius-sm)] text-[color:var(--text)] font-[family-name:var(--font-mono)] text-[12px] py-[6px] px-[10px] focus:outline-none focus:border-[var(--red-border)]'
+
+// bg/border-color/text-color live entirely in the per-state variants below,
+// never in BASE -- combining an unconditional BASE color utility with a
+// state variant's own unconditional color utility for the same property in
+// one string is a real bug (Tailwind's generated CSS order between two
+// same-specificity, same-layer utilities isn't guaranteed to match string
+// order; found live as the Load button rendering muted-gray text instead
+// of red-bright). Each devBtnClasses() call includes exactly one color state.
+const DEV_BTN_BASE_CLASSES = 'border-[0.5px] rounded-[var(--radius-sm)] text-[12px] py-[6px] px-3 [transition:all_0.12s] whitespace-nowrap disabled:opacity-40 disabled:cursor-default'
+const DEV_BTN_DEFAULT_CLASSES = 'bg-[var(--bg3)] border-[var(--border-2)] text-[color:var(--text-muted)] enabled:hover:bg-[var(--bg4)] enabled:hover:text-[color:var(--text)]'
+const DEV_BTN_PRIMARY_CLASSES = 'bg-[var(--red-dim)] border-[var(--red-border)] text-[color:var(--red-bright)] enabled:hover:bg-[rgba(204,34,0,0.25)]'
+const DEV_BTN_ACTIVE_CLASSES = 'bg-[var(--red-dim)] border-[var(--red-border)] text-[color:var(--red-bright)]'
+function devBtnClasses({ primary, active } = {}) {
+  if (primary) return `${DEV_BTN_BASE_CLASSES} ${DEV_BTN_PRIMARY_CLASSES}`
+  if (active) return `${DEV_BTN_BASE_CLASSES} ${DEV_BTN_ACTIVE_CLASSES}`
+  return `${DEV_BTN_BASE_CLASSES} ${DEV_BTN_DEFAULT_CLASSES}`
+}
+const DEV_PLAY_BTN_CLASSES = 'py-[6px] px-5 font-semibold'
+
+const DEV_RECENT_CLASSES = 'flex flex-col gap-[6px]'
+const DEV_SECTION_LABEL_CLASSES = 'text-[9px] font-semibold tracking-[0.1em] uppercase text-[color:var(--text-dim)]'
+const DEV_GAME_LIST_CLASSES = 'flex gap-[6px] flex-wrap'
+const DEV_GAME_BTN_BASE_CLASSES = 'dev-game-btn flex flex-col items-center gap-px border-[0.5px] rounded-[var(--radius-sm)] py-[5px] px-[10px] cursor-pointer [transition:all_0.12s]'
+const DEV_GAME_BTN_INACTIVE_CLASSES = 'bg-[var(--bg3)] border-[var(--border)] hover:border-[var(--border-2)] hover:bg-[var(--bg4)]'
+const DEV_GAME_BTN_ACTIVE_CLASSES = 'border-[var(--red-border)] bg-[var(--red-dim)]'
+function devGameBtnClasses(active) {
+  return `${DEV_GAME_BTN_BASE_CLASSES} ${active ? DEV_GAME_BTN_ACTIVE_CLASSES : DEV_GAME_BTN_INACTIVE_CLASSES}`
+}
+const DEV_GAME_DATE_CLASSES = 'text-[9px] text-[color:var(--text-dim)]'
+const DEV_GAME_MATCHUP_CLASSES = 'text-[11px] font-semibold text-[color:var(--text)]'
+const DEV_GAME_SCORE_CLASSES = 'text-[10px] text-[color:var(--text-muted)] font-[family-name:var(--font-mono)]'
+
+const DEV_ERROR_CLASSES = 'text-[12px] text-[color:var(--red-bright)] bg-[var(--red-dim)] border-[0.5px] border-[var(--red-border)] rounded-[var(--radius-sm)] py-[6px] px-[10px]'
+
+const DEV_SCRUBBER_ROW_CLASSES = 'flex items-center gap-2'
+const DEV_SCRUBBER_WRAP_CLASSES = 'flex-1 relative flex flex-col gap-[2px]'
+const DEV_SCRUBBER_CLASSES = 'dev-scrubber w-full [accent-color:var(--red-bright)]'
+const DEV_PERIOD_MARKERS_CLASSES = 'relative h-4'
+const DEV_PERIOD_TICK_CLASSES = 'dev-period-tick group absolute -translate-x-1/2 bg-transparent border-0 p-0 cursor-pointer flex flex-col items-center gap-px before:content-[\'\'] before:block before:w-px before:h-[5px] before:bg-[var(--border-2)] hover:before:bg-[var(--red-bright)]'
+const DEV_PERIOD_TICK_LABEL_CLASSES = 'text-[8px] text-[color:var(--text-dim)] font-[family-name:var(--font-mono)] whitespace-nowrap group-hover:text-[color:var(--red-bright)]'
+const DEV_TIME_CLASSES = 'text-[10px] font-[family-name:var(--font-mono)] text-[color:var(--text-muted)] whitespace-nowrap min-w-[52px] last:text-right'
+
+const DEV_CONTROLS_CLASSES = 'flex items-center gap-[6px]'
+
+const DEV_SPEED_ROW_CLASSES = 'flex items-center gap-2'
+const DEV_SPEED_BTNS_CLASSES = 'flex gap-1'
+const DEV_SPEED_BTN_EXTRA_CLASSES = 'py-1 px-2 text-[10px]'
+
+const DEV_STATUS_CLASSES = 'flex gap-4 py-[6px] px-[10px] bg-[var(--bg3)] rounded-[var(--radius-sm)] border-[0.5px] border-[var(--border)]'
+const DEV_STATUS_ITEM_CLASSES = 'flex flex-col gap-px'
+const DEV_STATUS_LABEL_CLASSES = 'text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.08em]'
+const DEV_STATUS_VAL_CLASSES = 'text-[11px] font-[family-name:var(--font-mono)] text-[color:var(--text-muted)]'
+
+const DEV_SHOTMAP_CLASSES = 'dev-shotmap flex-1 overflow-y-auto'
 
 const PERIOD_SECS = 1200; // 20 min periods
 
@@ -251,25 +317,25 @@ function PWHLDevReplayViewInner() {
   const currentEvent = slicedEvents[slicedEvents.length - 1];
 
   return (
-    <div className="dev-replay">
+    <div className={DEV_REPLAY_CLASSES}>
       {/* ── Control panel ── */}
-      <div className="dev-panel">
-        <div className="dev-panel-header">
-          <span className="dev-badge">DEV</span>
-          <span className="dev-title">PWHL Live Game Replay</span>
+      <div className={DEV_PANEL_CLASSES}>
+        <div className={DEV_PANEL_HEADER_CLASSES}>
+          <span className={DEV_BADGE_CLASSES}>DEV</span>
+          <span className={DEV_TITLE_CLASSES}>PWHL Live Game Replay</span>
         </div>
 
         {/* Game ID input */}
-        <div className="dev-row">
+        <div className={DEV_ROW_CLASSES}>
           <input
-            className="dev-input"
+            className={DEV_INPUT_CLASSES}
             placeholder="Game ID (e.g. 329)"
             value={gameIdInput}
             onChange={e => setGameIdInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && loadGame(Number(gameIdInput))}
           />
           <button
-            className="dev-btn dev-btn-primary"
+            className={devBtnClasses({ primary: true })}
             onClick={() => loadGame(Number(gameIdInput))}
             disabled={loading}
           >
@@ -279,21 +345,21 @@ function PWHLDevReplayViewInner() {
 
         {/* Recent games quick-pick */}
         {recentGames.length > 0 && (
-          <div className="dev-recent">
-            <div className="dev-section-label">Recent games</div>
-            <div className="dev-game-list">
+          <div className={DEV_RECENT_CLASSES}>
+            <div className={DEV_SECTION_LABEL_CLASSES}>Recent games</div>
+            <div className={DEV_GAME_LIST_CLASSES}>
               {recentGames.map(g => {
                 const homeCode = getPWHLTeamById(g.home_team_id)?.abbr || String(g.home_team_id);
                 const awayCode = getPWHLTeamById(g.away_team_id)?.abbr || String(g.away_team_id);
                 return (
                   <button
                     key={g.game_id}
-                    className={`dev-game-btn${loadedGameId === g.game_id ? ' active' : ''}`}
+                    className={devGameBtnClasses(loadedGameId === g.game_id)}
                     onClick={() => { setGameIdInput(String(g.game_id)); loadGame(g.game_id); }}
                   >
-                    <span className="dev-game-date">{g.game_date?.slice(5)}</span>
-                    <span className="dev-game-matchup">{homeCode} vs {awayCode}</span>
-                    <span className="dev-game-score">{g.home_score}–{g.away_score}</span>
+                    <span className={DEV_GAME_DATE_CLASSES}>{g.game_date?.slice(5)}</span>
+                    <span className={DEV_GAME_MATCHUP_CLASSES}>{homeCode} vs {awayCode}</span>
+                    <span className={DEV_GAME_SCORE_CLASSES}>{g.home_score}–{g.away_score}</span>
                   </button>
                 );
               })}
@@ -301,56 +367,56 @@ function PWHLDevReplayViewInner() {
           </div>
         )}
 
-        {error && <div className="dev-error">{error}</div>}
+        {error && <div className={DEV_ERROR_CLASSES}>{error}</div>}
 
         {/* Scrubber + controls */}
         {loadedGameId && (
           <>
-            <div className="dev-scrubber-row">
-              <span className="dev-time">{secsToDisplay(Math.floor(playheadSecs))}</span>
-              <div className="dev-scrubber-wrap">
+            <div className={DEV_SCRUBBER_ROW_CLASSES}>
+              <span className={DEV_TIME_CLASSES}>{secsToDisplay(Math.floor(playheadSecs))}</span>
+              <div className={DEV_SCRUBBER_WRAP_CLASSES}>
                 <input
                   type="range" min={0} max={maxSecs} step={1}
                   value={Math.floor(playheadSecs)}
                   onChange={e => { setPlaying(false); setPlayheadSecs(Number(e.target.value)); }}
-                  className="dev-scrubber"
+                  className={DEV_SCRUBBER_CLASSES}
                 />
                 {/* Period marker ticks */}
-                <div className="dev-period-markers">
+                <div className={DEV_PERIOD_MARKERS_CLASSES}>
                   {[1200, 2400, 3600].filter(s => s < maxSecs).map(s => (
                     <button
                       key={s}
-                      className="dev-period-tick"
+                      className={DEV_PERIOD_TICK_CLASSES}
                       style={{ left: `${(s / maxSecs) * 100}%` }}
                       onClick={() => { setPlaying(false); setPlayheadSecs(s); }}
                       title={`Jump to P${s / 1200 + 1}`}
                     >
-                      <span className="dev-period-tick-label">P{s / 1200 + 1}</span>
+                      <span className={DEV_PERIOD_TICK_LABEL_CLASSES}>P{s / 1200 + 1}</span>
                     </button>
                   ))}
                 </div>
               </div>
-              <span className="dev-time">{secsToDisplay(maxSecs)}</span>
+              <span className={DEV_TIME_CLASSES}>{secsToDisplay(maxSecs)}</span>
             </div>
 
             {/* Playback controls */}
-            <div className="dev-controls">
-              <button className="dev-btn" onClick={() => { setPlaying(false); setPlayheadSecs(0); }}>⏮</button>
-              <button className="dev-btn" onClick={() => setPlayheadSecs(p => Math.max(0, p - 60))}>–1m</button>
-              <button className="dev-btn dev-btn-primary dev-play-btn" onClick={() => setPlaying(p => !p)}>
+            <div className={DEV_CONTROLS_CLASSES}>
+              <button className={devBtnClasses()} onClick={() => { setPlaying(false); setPlayheadSecs(0); }}>⏮</button>
+              <button className={devBtnClasses()} onClick={() => setPlayheadSecs(p => Math.max(0, p - 60))}>–1m</button>
+              <button className={`${devBtnClasses({ primary: true })} ${DEV_PLAY_BTN_CLASSES}`} onClick={() => setPlaying(p => !p)}>
                 {playing ? '⏸ Pause' : '▶ Play'}
               </button>
-              <button className="dev-btn" onClick={() => setPlayheadSecs(p => Math.min(maxSecs, p + 60))}>+1m</button>
-              <button className="dev-btn" onClick={() => { setPlaying(false); setPlayheadSecs(maxSecs); }}>⏭</button>
+              <button className={devBtnClasses()} onClick={() => setPlayheadSecs(p => Math.min(maxSecs, p + 60))}>+1m</button>
+              <button className={devBtnClasses()} onClick={() => { setPlaying(false); setPlayheadSecs(maxSecs); }}>⏭</button>
             </div>
 
             {/* Speed */}
-            <div className="dev-speed-row">
-              <span className="dev-section-label">Speed</span>
-              <div className="dev-speed-btns">
+            <div className={DEV_SPEED_ROW_CLASSES}>
+              <span className={DEV_SECTION_LABEL_CLASSES}>Speed</span>
+              <div className={DEV_SPEED_BTNS_CLASSES}>
                 {[10, 30, 60, 120, 300].map(s => (
                   <button key={s}
-                    className={`dev-btn dev-speed-btn${speed === s ? ' active' : ''}`}
+                    className={`${devBtnClasses({ active: speed === s })} ${DEV_SPEED_BTN_EXTRA_CLASSES}`}
                     onClick={() => setSpeed(s)}>
                     {s < 60 ? `${s}s/s` : `${s/60}m/s`}
                   </button>
@@ -359,24 +425,24 @@ function PWHLDevReplayViewInner() {
             </div>
 
             {/* Status */}
-            <div className="dev-status">
-              <span className="dev-status-item">
-                <span className="dev-status-label">Events</span>
-                <span className="dev-status-val">
+            <div className={DEV_STATUS_CLASSES}>
+              <span className={DEV_STATUS_ITEM_CLASSES}>
+                <span className={DEV_STATUS_LABEL_CLASSES}>Events</span>
+                <span className={DEV_STATUS_VAL_CLASSES}>
                   {slicedEvents.length} / {fullLiveData?.events?.length ?? 0}
                 </span>
               </span>
-              <span className="dev-status-item">
-                <span className="dev-status-label">Period</span>
-                <span className="dev-status-val">{periodLabel(currentPeriod)}</span>
+              <span className={DEV_STATUS_ITEM_CLASSES}>
+                <span className={DEV_STATUS_LABEL_CLASSES}>Period</span>
+                <span className={DEV_STATUS_VAL_CLASSES}>{periodLabel(currentPeriod)}</span>
               </span>
-              <span className="dev-status-item">
-                <span className="dev-status-label">Last event</span>
-                <span className="dev-status-val">{currentEvent?.eventType || '—'}</span>
+              <span className={DEV_STATUS_ITEM_CLASSES}>
+                <span className={DEV_STATUS_LABEL_CLASSES}>Last event</span>
+                <span className={DEV_STATUS_VAL_CLASSES}>{currentEvent?.eventType || '—'}</span>
               </span>
-              <span className="dev-status-item">
-                <span className="dev-status-label">Game ID</span>
-                <span className="dev-status-val">{loadedGameId}</span>
+              <span className={DEV_STATUS_ITEM_CLASSES}>
+                <span className={DEV_STATUS_LABEL_CLASSES}>Game ID</span>
+                <span className={DEV_STATUS_VAL_CLASSES}>{loadedGameId}</span>
               </span>
             </div>
           </>
@@ -384,7 +450,7 @@ function PWHLDevReplayViewInner() {
       </div>
 
       {/* ── Shot Map rendered with injected data ── */}
-      <div className="dev-shotmap">
+      <div className={DEV_SHOTMAP_CLASSES}>
         <PWHLDevGameContext.Provider value={devValue}>
           <PWHLShotMapView />
         </PWHLDevGameContext.Provider>
