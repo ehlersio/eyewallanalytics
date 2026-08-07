@@ -149,6 +149,13 @@
 .player-card:hover { border-color: var(--red-border); transform: translateY(-1px); }
 .player-card:active { transform: translateY(0); }
 
+/* .empty-state (TeamView.jsx, PWHLTeamView.jsx -- Phase 4) -- same collision
+   shape as .player-card above: combined with the shared .card class, its
+   padding: 28px 16px would silently lose to .card's unlayered padding: 14px
+   if written as a Tailwind utility. Only the colliding property lives here;
+   text-align and the icon/title/sub children's sizing are still Tailwind. */
+.empty-state { padding: 28px 16px; }
+
 /* .stat-section-peers nested overrides (StatTileGrid.jsx's TileStatSection,
    TeamComparisonPopup.jsx's TeamCompareSeasonCard -- Session 97, Phase 3,
    sub-PR 3) -- kept as real, unlayered CSS since both consumers render

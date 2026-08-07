@@ -11,7 +11,6 @@ import { useSport } from '../utils/SportContext';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
 import TeamComparisonPopup from '../components/TeamComparisonPopup';
-import './TeamView.css';
 import './ShotMapView.css';
 
 // .view-title / .players-tabs / .players-tab (Session 97, Phase 3) -- were
@@ -27,6 +26,145 @@ const TAB_ACTIVE_CLASSES = 'text-[color:var(--red-bright)] border-b-[var(--red-b
 function tabClasses(isActive) {
   return `${TAB_BASE_CLASSES} ${isActive ? TAB_ACTIVE_CLASSES : TAB_INACTIVE_CLASSES}`
 }
+
+// ── TeamView.css-derived Tailwind class constants (Phase 4 -- TeamView.css
+// deleted). Duplicated from TeamView.jsx per established per-file convention.
+// .adv-stat-row/.cap-row/.split-adv-row/.rolling-avg-line kept as literal
+// markers so light-mode-overrides.css's "TeamView.css additions" block keeps
+// applying untouched (PWHLTeamView.jsx doesn't use .split-adv-section-title
+// or .cap-row -- no Cap/Picks tabs on the PWHL side).
+
+const VIEW_SUB_CLASSES = 'view-sub text-[12px] text-[color:var(--text-muted)] mb-3'
+const TEAM_COMPARE_BTN_CLASSES = 'text-[11px] font-semibold text-[color:var(--text-muted)] bg-[var(--bg2)] border-[0.5px] border-[var(--border-2)] rounded-[var(--radius-sm)] py-[5px] px-[9px] cursor-pointer whitespace-nowrap [transition:background_0.15s,color_0.15s] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]'
+
+const TEAM_TABS_CLASSES = 'flex gap-1 mb-[14px] overflow-x-auto pb-[2px] border-b-[0.5px] border-[var(--border)]'
+// bg-transparent deliberately NOT in base -- see TeamView.jsx's comment
+// (lesson #9: same-layer Tailwind utilities racing for one property).
+const TEAM_TAB_BASE_CLASSES = 'team-tab py-[6px] px-[14px] rounded-[20px] text-[12px] font-medium border-[0.5px] whitespace-nowrap cursor-pointer [transition:all_0.15s]'
+const TEAM_TAB_INACTIVE_CLASSES = 'bg-transparent text-[color:var(--text-muted)] border-transparent hover:text-[color:var(--text)]'
+const TEAM_TAB_ACTIVE_CLASSES = 'bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[var(--red-border)]'
+function teamTabClasses(active) {
+  return `${TEAM_TAB_BASE_CLASSES} ${active ? TEAM_TAB_ACTIVE_CLASSES : TEAM_TAB_INACTIVE_CLASSES}`
+}
+
+const RECORDS_ROW_CLASSES = 'records-row grid grid-cols-2 gap-[10px]'
+const RECORD_BLOCK_CLASSES = 'record-block flex flex-col gap-1'
+const RECORD_BLOCK_LABEL_CLASSES = 'text-[11px] text-[color:var(--text-dim)] font-semibold'
+const RECORD_MAIN_ROW_CLASSES = 'flex items-baseline gap-2'
+const RECORD_BIG_CLASSES = 'record-big font-[family-name:var(--font-display)] text-[22px] font-bold text-[color:var(--text)]'
+const PTS_CHIP_CLASSES = 'text-[12px] text-[color:var(--amber)] font-semibold'
+const RECORD_META_CLASSES = 'text-[11px] text-[color:var(--text-muted)] flex items-center gap-[5px]'
+const RECORD_META_SEP_CLASSES = 'text-[color:var(--border-2)]'
+
+const STREAK_CHIP_BASE_CLASSES = 'streak-chip text-[10px] font-bold py-[1px] px-[6px] rounded-[4px]'
+const STREAK_W_CLASSES = 'bg-[rgba(61,186,126,0.15)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.3)]'
+const STREAK_L_CLASSES = 'bg-[rgba(204,34,0,0.12)] text-[color:var(--red-bright)] border-[0.5px] border-[rgba(204,34,0,0.3)]'
+function streakChipClasses(positive) {
+  return `${STREAK_CHIP_BASE_CLASSES} ${positive ? STREAK_W_CLASSES : STREAK_L_CLASSES}`
+}
+
+const OVERVIEW_STAT_GRID_CLASSES = 'grid grid-cols-3 gap-2'
+const OVERVIEW_STAT_CELL_CLASSES = 'text-center bg-[var(--bg3)] rounded-[var(--radius-sm)] py-2 px-1'
+const OVERVIEW_STAT_LABEL_CLASSES = 'text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.08em] mb-[3px]'
+const OVERVIEW_STAT_VAL_CLASSES = 'font-[family-name:var(--font-display)] text-[18px] font-bold text-[color:var(--text)]'
+const OVERVIEW_STAT_RANK_CLASSES = 'overview-stat-rank text-[10px] font-bold font-[family-name:var(--font-mono)] mt-[2px] block'
+
+const ADV_EXPLAIN_CLASSES = 'text-[11px] text-[color:var(--text-dim)] mb-[10px] italic border-l-2 border-[var(--border-2)] pl-2'
+const ADV_STAT_ROW_CLASSES = 'adv-stat-row flex items-center justify-between py-[7px] border-b-[0.5px] border-[rgba(255,255,255,0.04)]'
+const ADV_STAT_LABEL_CLASSES = 'text-[12px] text-[color:var(--text-muted)] flex-1'
+const ADV_STAT_NOTE_CLASSES = 'text-[10px] text-[color:var(--text-dim)]'
+const ADV_STAT_RIGHT_CLASSES = 'adv-stat-right flex items-center gap-[6px] flex-shrink-0 min-w-[120px] justify-end'
+const ADV_STAT_VAL_BASE_CLASSES = 'font-[family-name:var(--font-mono)] text-[14px] font-semibold ml-2 min-w-[52px] text-right'
+const ADV_STAT_VAL_DEFAULT_CLASSES = 'text-[color:var(--text)]'
+const ADV_STAT_VAL_GOOD_CLASSES = 'text-[#4ade80]'
+const ADV_STAT_VAL_BAD_CLASSES = 'text-[#f87171]'
+function advStatValClasses(rating) {
+  const variant = rating === 'good' ? ADV_STAT_VAL_GOOD_CLASSES : rating === 'bad' ? ADV_STAT_VAL_BAD_CLASSES : ADV_STAT_VAL_DEFAULT_CLASSES
+  return `${ADV_STAT_VAL_BASE_CLASSES} ${variant}`
+}
+const ADV_STAT_AVG_CLASSES = 'text-[10px] text-[color:var(--text-dim)] whitespace-nowrap min-w-[48px] text-right'
+
+const ADV_TOGGLE_CLASSES = 'adv-toggle flex gap-1 bg-[var(--bg2)] border-[0.5px] border-[var(--border)] rounded-[20px] p-[3px] w-fit'
+// bg-transparent moved to INACTIVE, same lesson-#9 fix as teamTabClasses above.
+const ADV_TOGGLE_BTN_BASE_CLASSES = 'py-[5px] px-[14px] rounded-[16px] text-[12px] font-medium border-none cursor-pointer [transition:all_0.15s]'
+const ADV_TOGGLE_BTN_INACTIVE_CLASSES = 'bg-transparent text-[color:var(--text-muted)]'
+const ADV_TOGGLE_BTN_ACTIVE_CLASSES = 'bg-[var(--bg4)] text-[color:var(--text)] shadow-[0_1px_4px_rgba(0,0,0,0.3)]'
+function advToggleBtnClasses(active) {
+  return `${ADV_TOGGLE_BTN_BASE_CLASSES} ${active ? ADV_TOGGLE_BTN_ACTIVE_CLASSES : ADV_TOGGLE_BTN_INACTIVE_CLASSES}`
+}
+const ADV_CONTEXT_NOTE_CLASSES = 'adv-context-note text-[11px] text-[color:var(--text-dim)] italic mb-1'
+
+const SPLIT_ADV_HEADER_CLASSES = 'grid grid-cols-[1fr_auto_1fr] text-[11px] font-bold text-[color:var(--text-dim)] py-[8px] pb-[6px] text-center [&>span:first-child]:text-left [&>span:last-child]:text-right'
+const SPLIT_ADV_ROW_CLASSES = 'split-adv-row grid grid-cols-[60px_1fr_60px] items-center py-[5px] border-b-[0.5px] border-[rgba(255,255,255,0.03)] gap-1'
+const SPLIT_ADV_VAL_BASE_CLASSES = 'font-[family-name:var(--font-mono)] text-[13px] font-semibold'
+const SPLIT_ADV_VAL_DEFAULT_CLASSES = 'text-[color:var(--text-muted)]'
+const SPLIT_ADV_VAL_GOOD_CLASSES = 'text-[#4ade80]'
+function splitAdvValClasses(good, right) {
+  const base = `${SPLIT_ADV_VAL_BASE_CLASSES} ${good ? SPLIT_ADV_VAL_GOOD_CLASSES : SPLIT_ADV_VAL_DEFAULT_CLASSES}`
+  return right ? `${base} text-right` : base
+}
+const SPLIT_ADV_LABEL_CLASSES = 'text-[11px] text-[color:var(--text-dim)] text-center'
+
+const TRENDS_QUICK_CLASSES = 'grid grid-cols-3 gap-2'
+const TQ_ITEM_CLASSES = 'text-center bg-[var(--bg3)] rounded-[var(--radius-sm)] py-[10px] px-1'
+const TQ_LABEL_CLASSES = 'text-[10px] text-[color:var(--text-dim)] uppercase tracking-[0.06em] mb-1'
+const TQ_VAL_CLASSES = 'font-[family-name:var(--font-display)] text-[22px] font-bold text-[color:var(--text)]'
+
+const RESULT_DOTS_CLASSES = 'result-dots flex gap-1 flex-wrap'
+const RESULT_DOT_BASE_CLASSES = 'result-dot relative w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold cursor-default'
+const RESULT_DOT_W_CLASSES = 'bg-[rgba(61,186,126,0.2)] text-[color:var(--green)] border border-[rgba(61,186,126,0.4)]'
+const RESULT_DOT_L_CLASSES = 'bg-[rgba(204,34,0,0.15)] text-[color:var(--red-bright)] border border-[rgba(204,34,0,0.3)]'
+const RESULT_DOT_OTL_CLASSES = 'bg-[rgba(240,160,48,0.15)] text-[color:var(--amber)] border border-[rgba(240,160,48,0.3)]'
+// 'otw' (PWHL-only, an overtime/shootout win) had zero CSS coverage in
+// TeamView.css -- .result-dot.w/.l/.otl existed but .otw never did, so these
+// dots rendered with no fill/color at all. Fixed here by giving otw the same
+// treatment as w (both are wins), rather than faithfully replicating the gap.
+function resultDotClasses(state) {
+  const s = (state || '').toLowerCase()
+  const variant = (s === 'w' || s === 'otw') ? RESULT_DOT_W_CLASSES : s === 'l' ? RESULT_DOT_L_CLASSES : RESULT_DOT_OTL_CLASSES
+  return `${RESULT_DOT_BASE_CLASSES} ${variant}`
+}
+
+const ROLLING_CHART_CLASSES = 'rolling-chart h-[90px] flex items-end gap-[3px] relative border-b-[0.5px] border-[var(--border)] mb-2'
+const ROLLING_CHART_DUAL_CLASSES = 'rolling-chart rolling-chart-dual h-[120px] flex items-center gap-[3px] relative border-b-[0.5px] border-[var(--border)] mb-2'
+const ROLLING_BAR_WRAP_CLASSES = 'rolling-bar-wrap flex-1 h-full flex flex-col justify-end relative'
+const ROLLING_BAR_BASE_CLASSES = 'rolling-bar w-full rounded-t-[2px] min-h-[2px] [transition:height_0.3s]'
+const ROLLING_BAR_HOT_CLASSES = 'bg-[var(--green)]'
+const ROLLING_BAR_OK_CLASSES = 'bg-[var(--amber)]'
+const ROLLING_BAR_COLD_CLASSES = 'bg-[var(--red)]'
+function rollingBarClasses(pct) {
+  const variant = pct >= 60 ? ROLLING_BAR_HOT_CLASSES : pct >= 40 ? ROLLING_BAR_OK_CLASSES : ROLLING_BAR_COLD_CLASSES
+  return `${ROLLING_BAR_BASE_CLASSES} ${variant}`
+}
+const ROLLING_BAR_GF_CLASSES = 'rolling-bar bg-[var(--red-bright)] flex-1'
+const ROLLING_BAR_GA_CLASSES = 'rolling-bar bg-[var(--blue-bright)] flex-1'
+const ROLLING_BAR_DUAL_WRAP_CLASSES = 'rolling-bar-dual flex gap-px h-[60px] items-end w-full'
+const ROLLING_LABEL_CLASSES = 'rolling-label absolute bottom-[-16px] text-[9px] text-[color:var(--text-dim)] text-center w-full'
+const ROLLING_AVG_LINE_CLASSES = 'rolling-avg-line absolute left-0 right-0 h-px bg-[rgba(255,255,255,0.2)] pointer-events-none'
+const ROLLING_LEGEND_CLASSES = 'rolling-legend flex gap-3 text-[10px] flex-wrap pt-5'
+const RL_HOT_CLASSES = 'text-[color:var(--green)]'
+const RL_OK_CLASSES = 'text-[color:var(--amber)]'
+const RL_COLD_CLASSES = 'text-[color:var(--red-bright)]'
+const ROLLING_BAR_LABEL_CLASSES = 'text-[10px] font-[family-name:var(--font-mono)] text-[color:var(--text-dim)] text-center leading-none mb-[2px] min-h-[12px] flex items-end justify-center'
+const ROLLING_BAR_LABEL_BOT_CLASSES = 'text-[10px] font-[family-name:var(--font-mono)] text-center leading-none mt-[2px] min-h-[12px] flex items-start justify-center'
+
+const GD_CHART_WRAP_CLASSES = 'relative h-[100px] mb-1'
+const GD_BASELINE_LINE_CLASSES = 'absolute top-1/2 left-0 right-0 h-px bg-[var(--border-2)] z-[1]'
+const GD_BARS_CLASSES = 'flex gap-[3px] h-full items-stretch relative'
+const GD_BAR_COL_CLASSES = 'flex-1 flex flex-col'
+const GD_TOP_CLASSES = 'flex-1 flex flex-col justify-end'
+const GD_BOT_CLASSES = 'flex-1 flex flex-col justify-start'
+const GD_BAR_POS_CLASSES = 'w-full min-h-[4px] rounded-[2px] bg-[var(--green)]'
+const GD_BAR_NEG_CLASSES = 'w-full min-h-[4px] rounded-[2px] bg-[var(--red)]'
+const GD_BAR_INLINE_LABEL_POS_CLASSES = 'text-[8px] font-[family-name:var(--font-mono)] text-center leading-none text-[color:var(--green)] mb-[1px]'
+const GD_BAR_INLINE_LABEL_NEG_CLASSES = 'text-[8px] font-[family-name:var(--font-mono)] text-center leading-none text-[color:var(--red-bright)] mt-[1px]'
+
+// padding: 28px 16px moved to index.css as real unlayered CSS -- collides
+// with .card's own unlayered padding (see index.css's .empty-state comment).
+const EMPTY_STATE_CLASSES = 'empty-state text-center'
+const EMPTY_ICON_CLASSES = 'empty-icon text-[28px] mb-2'
+const EMPTY_TITLE_CLASSES = 'empty-title text-[14px] font-semibold text-[color:var(--text)] mb-1'
+const EMPTY_SUB_CLASSES = 'empty-sub text-[12px] text-[color:var(--text-muted)]'
 
 const TABS = ['Overview', 'Advanced', 'Splits', 'Trends', 'Salaries'];
 
@@ -88,8 +226,8 @@ export default function PWHLTeamView() {
         <h2 className={VIEW_TITLE_CLASSES} style={{ margin: 0 }}>{team.displayName}</h2>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <p className="view-sub" style={{ margin: 0 }}>{seasonLabel} season</p>
-        <button className="team-compare-btn" onClick={() => setCompareOpen(true)}>🆚 Compare Seasons</button>
+        <p className={VIEW_SUB_CLASSES} style={{ margin: 0 }}>{seasonLabel} season</p>
+        <button className={TEAM_COMPARE_BTN_CLASSES} onClick={() => setCompareOpen(true)}>🆚 Compare Seasons</button>
       </div>
 
       {compareOpen && (
@@ -101,9 +239,9 @@ export default function PWHLTeamView() {
         />
       )}
 
-      <div className="team-tabs">
+      <div className={TEAM_TABS_CLASSES}>
         {TABS.map(t => (
-          <button key={t} className={`team-tab${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>{t}</button>
+          <button key={t} className={teamTabClasses(tab === t)} onClick={() => setTab(t)}>{t}</button>
         ))}
       </div>
 
@@ -191,7 +329,7 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
     if (!r) return null;
     const clr    = r <= 2 ? 'var(--green)' : r <= 6 ? 'var(--text-muted)' : 'var(--red-bright)';
     const suffix = r === 1 ? 'st' : r === 2 ? 'nd' : r === 3 ? 'rd' : 'th';
-    return <span className="overview-stat-rank" style={{ color: clr }}>{r}<sup>{suffix}</sup></span>;
+    return <span className={OVERVIEW_STAT_RANK_CLASSES} style={{ color: clr }}>{r}<sup className="text-[7px]">{suffix}</sup></span>;
   }
 
   // Last 5 results
@@ -213,24 +351,24 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
   return (
     <>
       {/* Record block — mirrors NHL record-block */}
-      <div className="records-row">
-        <div className="card record-block">
-          <div className="record-block-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div className={RECORDS_ROW_CLASSES}>
+        <div className={`card ${RECORD_BLOCK_CLASSES}`}>
+          <div className={RECORD_BLOCK_LABEL_CLASSES} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <TeamLogo abbr={abbr} sport="pwhl" size={14} color={color} /> Regular Season
           </div>
           {loading ? <div className="skeleton" style={{ height: 28, width: '70%' }} /> : (
-            <div className="record-main-row">
-              <span className="record-big">{teamRow?.wins??0}–{teamRow?.losses??0}–{teamRow?.ot_losses??0}</span>
-              <span className="pts-chip">{teamRow?.points??0} pts</span>
+            <div className={RECORD_MAIN_ROW_CLASSES}>
+              <span className={RECORD_BIG_CLASSES}>{teamRow?.wins??0}–{teamRow?.losses??0}–{teamRow?.ot_losses??0}</span>
+              <span className={PTS_CHIP_CLASSES}>{teamRow?.points??0} pts</span>
             </div>
           )}
           {teamRow && (
-            <div className="record-meta">
+            <div className={RECORD_META_CLASSES}>
               <span>GF: {teamRow.goals_for??'—'}</span>
-              <span className="record-meta-sep">·</span>
+              <span className={RECORD_META_SEP_CLASSES}>·</span>
               <span>GA: {teamRow.goals_against??'—'}</span>
               {gd != null && (
-                <span className={`streak-chip${gd >= 0 ? ' streak-w' : ' streak-l'}`}>
+                <span className={streakChipClasses(gd >= 0)}>
                   {gd >= 0 ? `+${gd}` : gd} diff
                 </span>
               )}
@@ -264,7 +402,7 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
       {teamRow && (
         <div className="card" style={{ marginTop: 10 }}>
           <div className="sec-label" style={{ marginBottom: 10 }}>Season stats</div>
-          <div className="overview-stat-grid">
+          <div className={OVERVIEW_STAT_GRID_CLASSES}>
             {[
               ['GF/GP',  teamRow.gp ? ((teamRow.goals_for??0)/teamRow.gp).toFixed(2) : '—', rankings.gfpg],
               ['GA/GP',  teamRow.gp ? ((teamRow.goals_against??0)/teamRow.gp).toFixed(2) : '—', rankings.gapg],
@@ -274,9 +412,9 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
               ['SOG/GP', sogPG ?? '—', null],
               ['SA/GP',  saPG  ?? '—', null],
             ].map(([label, val, rank]) => (
-              <div key={label} className="overview-stat-cell">
-                <div className="overview-stat-label">{label}</div>
-                <div className="overview-stat-val">{val}</div>
+              <div key={label} className={OVERVIEW_STAT_CELL_CLASSES}>
+                <div className={OVERVIEW_STAT_LABEL_CLASSES}>{label}</div>
+                <div className={OVERVIEW_STAT_VAL_CLASSES}>{val}</div>
                 <RankBadge r={rank} />
               </div>
             ))}
@@ -289,16 +427,16 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
         <div className="card" style={{ marginTop: 10 }}>
           <div className="sec-label" style={{ marginBottom: 8 }}>{abbr} Points Leaders</div>
           {topScorers.map((p, i) => (
-            <div key={p.id ?? i} className="adv-stat-row">
-              <span className="adv-stat-label">
+            <div key={p.id ?? i} className={ADV_STAT_ROW_CLASSES}>
+              <span className={ADV_STAT_LABEL_CLASSES}>
                 {p.player_name || `Player #${p.player_id}`}
-                {p.position && <span className="adv-stat-note"> · {p.position}</span>}
+                {p.position && <span className={ADV_STAT_NOTE_CLASSES}> · {p.position}</span>}
               </span>
-              <span className="adv-stat-right">
-                <span className="adv-stat-val" style={{ color }}>
+              <span className={ADV_STAT_RIGHT_CLASSES}>
+                <span className={advStatValClasses(null)} style={{ color }}>
                   {p.points ?? '—'} pts
                 </span>
-                <span className="adv-stat-avg">
+                <span className={ADV_STAT_AVG_CLASSES}>
                   {p.goals ?? 0}G {p.assists ?? 0}A
                 </span>
               </span>
@@ -390,30 +528,30 @@ function StatsTab({ skaters, goalies, loading, abbr: _abbr, color }) {
       )}
 
       {!loading && view === 'skaters' && skaters.map((p, i) => (
-        <div key={p.id ?? i} className="adv-stat-row">
-          <span className="adv-stat-label">
+        <div key={p.id ?? i} className={ADV_STAT_ROW_CLASSES}>
+          <span className={ADV_STAT_LABEL_CLASSES}>
             {p.player_name || `#${p.player_id}`}
-            {p.position && <span className="adv-stat-note"> {p.position}</span>}
+            {p.position && <span className={ADV_STAT_NOTE_CLASSES}> {p.position}</span>}
           </span>
-          <span className="adv-stat-right">
-            <span className="adv-stat-val" style={{ color }}>
+          <span className={ADV_STAT_RIGHT_CLASSES}>
+            <span className={advStatValClasses(null)} style={{ color }}>
               {p.points ?? 0} pts
             </span>
-            <span className="adv-stat-avg">{p.goals??0}G {p.assists??0}A · {p.gp??0} GP</span>
+            <span className={ADV_STAT_AVG_CLASSES}>{p.goals??0}G {p.assists??0}A · {p.gp??0} GP</span>
           </span>
         </div>
       ))}
 
       {!loading && view === 'goalies' && goalies.map((g, i) => (
-        <div key={g.id ?? i} className="adv-stat-row">
-          <span className="adv-stat-label">
+        <div key={g.id ?? i} className={ADV_STAT_ROW_CLASSES}>
+          <span className={ADV_STAT_LABEL_CLASSES}>
             {g.player_name || `#${g.player_id}`}
           </span>
-          <span className="adv-stat-right">
-            <span className="adv-stat-val" style={{ color }}>
+          <span className={ADV_STAT_RIGHT_CLASSES}>
+            <span className={advStatValClasses(null)} style={{ color }}>
               {g.sv_pct != null ? g.sv_pct.toFixed(3).replace('0.','.') : '—'}
             </span>
-            <span className="adv-stat-avg">{g.gaa?.toFixed(2)??'—'} GAA · {g.wins??0}W</span>
+            <span className={ADV_STAT_AVG_CLASSES}>{g.gaa?.toFixed(2)??'—'} GAA · {g.wins??0}W</span>
           </span>
         </div>
       ))}
@@ -464,10 +602,10 @@ function SplitsTab({ schedule, poSchedule, teamId, abbr: _abbr, color: _color, l
       ? (better === 'higher' ? hVal >= aVal : hVal <= aVal) : false;
     const aBetter = hVal != null && aVal != null ? !hBetter : false;
     return (
-      <div className="split-adv-row">
-        <span className={`split-adv-val${hBetter ? ' good' : ''}`}>{fn(hVal)}</span>
-        <span className="split-adv-label">{label}</span>
-        <span className={`split-adv-val right${aBetter ? ' good' : ''}`}>{fn(aVal)}</span>
+      <div className={SPLIT_ADV_ROW_CLASSES}>
+        <span className={splitAdvValClasses(hBetter, false)}>{fn(hVal)}</span>
+        <span className={SPLIT_ADV_LABEL_CLASSES}>{label}</span>
+        <span className={splitAdvValClasses(aBetter, true)}>{fn(aVal)}</span>
       </div>
     );
   }
@@ -485,14 +623,14 @@ function SplitsTab({ schedule, poSchedule, teamId, abbr: _abbr, color: _color, l
 
       {/* Regular Season / Playoffs toggle */}
       {inPlayoffs && (
-        <div className="adv-toggle">
-          <button className={`adv-toggle-btn${!showPO ? ' active' : ''}`}
+        <div className={ADV_TOGGLE_CLASSES}>
+          <button className={advToggleBtnClasses(!showPO)}
             onClick={() => setShowPO(false)}>📅 Regular Season</button>
-          <button className={`adv-toggle-btn${showPO ? ' active' : ''}`}
+          <button className={advToggleBtnClasses(showPO)}
             onClick={() => setShowPO(true)}>🏒 Playoffs</button>
         </div>
       )}
-      {!inPlayoffs && <div className="adv-context-note">Showing Regular Season stats</div>}
+      {!inPlayoffs && <div className={ADV_CONTEXT_NOTE_CLASSES}>Showing Regular Season stats</div>}
 
       {!splits ? (
         <div className="card" style={{ textAlign:'center', padding:32, color:'var(--text-dim)' }}>
@@ -503,17 +641,17 @@ function SplitsTab({ schedule, poSchedule, teamId, abbr: _abbr, color: _color, l
           {/* Side-by-side comparison — mirrors NHL SplitsTab */}
           <div className="card">
             <div className="sec-label" style={{ marginBottom:10 }}>Home vs Away — {label}</div>
-            <div className="split-adv-header">
+            <div className={SPLIT_ADV_HEADER_CLASSES}>
               <span>🏠 Home</span>
               <span />
               <span>✈ Away</span>
             </div>
-            <div className="split-adv-row" style={{ fontWeight:700, fontSize:14 }}>
-              <span className="split-adv-val">
+            <div className={SPLIT_ADV_ROW_CLASSES} style={{ fontWeight:700, fontSize:14 }}>
+              <span className={splitAdvValClasses(false, false)}>
                 {splits.home.gp ? `${splits.home.w}–${splits.home.otw}–${splits.home.otl}–${splits.home.l}` : '—'}
               </span>
-              <span className="split-adv-label" style={{ color:'var(--text-dim)', fontSize:11 }}>W–OTW–OTL–L</span>
-              <span className="split-adv-val right">
+              <span className={SPLIT_ADV_LABEL_CLASSES} style={{ color:'var(--text-dim)', fontSize:11 }}>W–OTW–OTL–L</span>
+              <span className={splitAdvValClasses(false, true)}>
                 {splits.away.gp ? `${splits.away.w}–${splits.away.otw}–${splits.away.otl}–${splits.away.l}` : '—'}
               </span>
             </div>
@@ -544,14 +682,14 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
   function AdvStatRow({ label, val, avg, rating, note }) {
     if (val == null || val === '—') return null;
     return (
-      <div className="adv-stat-row">
-        <span className="adv-stat-label">
+      <div className={ADV_STAT_ROW_CLASSES}>
+        <span className={ADV_STAT_LABEL_CLASSES}>
           {label}
-          {note && <span className="adv-stat-note"> · {note}</span>}
+          {note && <span className={ADV_STAT_NOTE_CLASSES}> · {note}</span>}
         </span>
-        <span className="adv-stat-right">
-          <span className={`adv-stat-val${rating === 'good' ? ' good' : rating === 'bad' ? ' bad' : ''}`}>{val}</span>
-          {avg && <span className="adv-stat-avg">avg {avg}</span>}
+        <span className={ADV_STAT_RIGHT_CLASSES}>
+          <span className={advStatValClasses(rating)}>{val}</span>
+          {avg && <span className={ADV_STAT_AVG_CLASSES}>avg {avg}</span>}
         </span>
       </div>
     );
@@ -569,17 +707,17 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
   const useReg = !showPO || !poSched;
 
   if (loading) return (
-    <div className="card empty-state" style={{ marginTop: 10 }}>
-      <div className="empty-icon">📊</div>
-      <div className="empty-title">Loading advanced stats…</div>
+    <div className={`card ${EMPTY_STATE_CLASSES}`} style={{ marginTop: 10 }}>
+      <div className={EMPTY_ICON_CLASSES}>📊</div>
+      <div className={EMPTY_TITLE_CLASSES}>Loading advanced stats…</div>
     </div>
   );
 
   if (!teamRow) return (
-    <div className="card empty-state" style={{ marginTop: 10 }}>
-      <div className="empty-icon">📊</div>
-      <div className="empty-title">No advanced stats yet</div>
-      <div className="empty-sub">{abbr} hasn't played a game yet this season.</div>
+    <div className={`card ${EMPTY_STATE_CLASSES}`} style={{ marginTop: 10 }}>
+      <div className={EMPTY_ICON_CLASSES}>📊</div>
+      <div className={EMPTY_TITLE_CLASSES}>No advanced stats yet</div>
+      <div className={EMPTY_SUB_CLASSES}>{abbr} hasn't played a game yet this season.</div>
     </div>
   );
 
@@ -630,7 +768,7 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
     if (!r) return null;
     const clr    = r <= 2 ? 'var(--green)' : r <= 6 ? 'var(--text-muted)' : 'var(--red-bright)';
     const suffix = r === 1 ? 'st' : r === 2 ? 'nd' : r === 3 ? 'rd' : 'th';
-    return <span className="overview-stat-rank" style={{ color: clr }}>{r}<sup>{suffix}</sup></span>;
+    return <span className={OVERVIEW_STAT_RANK_CLASSES} style={{ color: clr }}>{r}<sup className="text-[7px]">{suffix}</sup></span>;
   }
 
 
@@ -640,19 +778,19 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:10 }}>
       {inPlayoffs && (
-        <div className="adv-toggle">
-          <button className={`adv-toggle-btn${!showPO ? ' active' : ''}`}
+        <div className={ADV_TOGGLE_CLASSES}>
+          <button className={advToggleBtnClasses(!showPO)}
             onClick={() => setShowPO(false)}>📅 Regular Season</button>
-          <button className={`adv-toggle-btn${showPO ? ' active' : ''}`}
+          <button className={advToggleBtnClasses(showPO)}
             onClick={() => setShowPO(true)}>🏒 Playoffs</button>
         </div>
       )}
-      {!inPlayoffs && <div className="adv-context-note">Showing Regular Season stats</div>}
+      {!inPlayoffs && <div className={ADV_CONTEXT_NOTE_CLASSES}>Showing Regular Season stats</div>}
 
       {/* Shot Volume & Possession */}
       <div className="card">
         <div className="sec-label" style={{ marginBottom:8 }}>Shot Volume &amp; Possession</div>
-        <div className="adv-explain">
+        <div className={ADV_EXPLAIN_CLASSES}>
           {useReg
             ? <>Corsi For% (CF%) counts all shot attempts (shots + goals + blocked shots) for ÷ total.
                Fenwick For% (FF%) uses shots + goals only, excluding blocked shots.
@@ -678,7 +816,7 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
               note="shot attempts against per game" />
           </>
         ) : useReg ? (
-          <div className="adv-explain">Run pwhl_stats.py to populate Corsi/Fenwick data.</div>
+          <div className={ADV_EXPLAIN_CLASSES}>Run pwhl_stats.py to populate Corsi/Fenwick data.</div>
         ) : null}
         <AdvStatRow label="Shots For/GP"     val={sogPG != null ? fmt(sogPG,1) : null}
           avg={AVG.sogpg.toFixed(1)} rating={rate(sogPG, AVG.sogpg)} />
@@ -694,12 +832,12 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
       <div className="card">
         <div className="sec-label" style={{ marginBottom:8 }}>PDO &amp; Puck Luck</div>
         {showPO ? (
-          <div className="adv-explain">
+          <div className={ADV_EXPLAIN_CLASSES}>
             PDO requires shot-level data not available for playoffs yet.
             Showing regular season PDO for reference.
           </div>
         ) : (
-          <div className="adv-explain">
+          <div className={ADV_EXPLAIN_CLASSES}>
             PDO = team shooting% + save% × 100. League average = 100.
             Values above 102 suggest positive puck luck likely to regress; below 98 suggests negative luck.
           </div>
@@ -740,7 +878,7 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
             )}
           </>
         ) : (
-          <div className="adv-explain">Running pwhl_stats.py will populate PP/PK data.</div>
+          <div className={ADV_EXPLAIN_CLASSES}>Running pwhl_stats.py will populate PP/PK data.</div>
         )}
       </div>
 
@@ -748,7 +886,7 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
       {/* League context */}
       <div className="card">
         <div className="sec-label" style={{ marginBottom:8 }}>League Context</div>
-        <div className="adv-explain">
+        <div className={ADV_EXPLAIN_CLASSES}>
           Where {abbr} ranks among 8 PWHL teams this season.
         </div>
         {[
@@ -758,11 +896,11 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
         ].map(([label, val, key, hb]) => {
           const r = leagueRank(key, hb);
           return (
-            <div key={label} className="adv-stat-row">
-              <span className="adv-stat-label">{label}: <strong>{val ?? '—'}</strong></span>
-              <span className="adv-stat-right">
+            <div key={label} className={ADV_STAT_ROW_CLASSES}>
+              <span className={ADV_STAT_LABEL_CLASSES}>{label}: <strong>{val ?? '—'}</strong></span>
+              <span className={ADV_STAT_RIGHT_CLASSES}>
                 <RankBadge r={r} />
-                <span className="adv-stat-avg" style={{ marginLeft:4 }}>of 8</span>
+                <span className={ADV_STAT_AVG_CLASSES} style={{ marginLeft:4 }}>of 8</span>
               </span>
             </div>
           );
@@ -792,16 +930,16 @@ function TrendsTab({ schedule, teamId, loading }) {
   }, [schedule, teamId]);
 
   if (loading) return (
-    <div className="card empty-state" style={{ marginTop: 10 }}>
-      <div className="empty-icon">📈</div>
-      <div className="empty-title">Loading trends…</div>
+    <div className={`card ${EMPTY_STATE_CLASSES}`} style={{ marginTop: 10 }}>
+      <div className={EMPTY_ICON_CLASSES}>📈</div>
+      <div className={EMPTY_TITLE_CLASSES}>Loading trends…</div>
     </div>
   );
 
   if (!gameLog.length) return (
-    <div className="card empty-state" style={{ marginTop: 10 }}>
-      <div className="empty-icon">📈</div>
-      <div className="empty-title">No game data yet</div>
+    <div className={`card ${EMPTY_STATE_CLASSES}`} style={{ marginTop: 10 }}>
+      <div className={EMPTY_ICON_CLASSES}>📈</div>
+      <div className={EMPTY_TITLE_CLASSES}>No game data yet</div>
     </div>
   );
 
@@ -842,20 +980,20 @@ function TrendsTab({ schedule, teamId, loading }) {
 
       {/* Quick stats */}
       <div className="card">
-        <div className="trends-quick">
-          <div className="tq-item">
-            <div className="tq-label">Current streak</div>
-            <div className="tq-val" style={{ color: streakType === 'W' ? 'var(--green)' : 'var(--red-bright)' }}>
+        <div className={TRENDS_QUICK_CLASSES}>
+          <div className={TQ_ITEM_CLASSES}>
+            <div className={TQ_LABEL_CLASSES}>Current streak</div>
+            <div className={TQ_VAL_CLASSES} style={{ color: streakType === 'W' ? 'var(--green)' : 'var(--red-bright)' }}>
               {streakType}{streak}
             </div>
           </div>
-          <div className="tq-item">
-            <div className="tq-label">Last 10 games</div>
-            <div className="tq-val">{last10W}–{10-last10W}</div>
+          <div className={TQ_ITEM_CLASSES}>
+            <div className={TQ_LABEL_CLASSES}>Last 10 games</div>
+            <div className={TQ_VAL_CLASSES}>{last10W}–{10-last10W}</div>
           </div>
-          <div className="tq-item">
-            <div className="tq-label">Win% L10</div>
-            <div className="tq-val">{Math.round(last10W/10*100)}%</div>
+          <div className={TQ_ITEM_CLASSES}>
+            <div className={TQ_LABEL_CLASSES}>Win% L10</div>
+            <div className={TQ_VAL_CLASSES}>{Math.round(last10W/10*100)}%</div>
           </div>
         </div>
       </div>
@@ -863,10 +1001,10 @@ function TrendsTab({ schedule, teamId, loading }) {
       {/* Result dots */}
       <div className="card">
         <div className="sec-label" style={{ marginBottom: 10 }}>Last {display.length} games</div>
-        <div className="result-dots">
+        <div className={RESULT_DOTS_CLASSES}>
           {display.map((g, i) => (
             <div key={i}
-              className={`result-dot ${g.won ? (g.ot||g.so ? 'otw' : 'w') : (g.ot||g.so ? 'otl' : 'l')}`}
+              className={resultDotClasses(g.won ? (g.ot||g.so ? 'otw' : 'w') : (g.ot||g.so ? 'otl' : 'l'))}
               title={`${g.result} ${g.my}–${g.op}`}>
               {g.result === 'OTW' ? 'W' : g.result === 'OTL' ? 'O' : g.result}
             </div>
@@ -877,22 +1015,22 @@ function TrendsTab({ schedule, teamId, loading }) {
       {/* Rolling 10-game win % */}
       <div className="card">
         <div className="sec-label" style={{ marginBottom: 10 }}>Win% — rolling 10-game window</div>
-        <div className="rolling-chart">
+        <div className={ROLLING_CHART_CLASSES}>
           {rollDisp.map((g, i) => (
-            <div key={i} className="rolling-bar-wrap">
-              <div className="rolling-bar-label">{g.w10pct}%</div>
-              <div className={`rolling-bar ${g.w10pct >= 60 ? 'hot' : g.w10pct >= 40 ? 'ok' : 'cold'}`}
+            <div key={i} className={ROLLING_BAR_WRAP_CLASSES}>
+              <div className={ROLLING_BAR_LABEL_CLASSES}>{g.w10pct}%</div>
+              <div className={rollingBarClasses(g.w10pct)}
                 style={{ height: `${g.w10pct}%` }}
                 title={`${g.w10pct}% win rate`} />
-              {i % 5 === 0 && <div className="rolling-label">{i+1}</div>}
+              {i % 5 === 0 && <div className={ROLLING_LABEL_CLASSES}>{i+1}</div>}
             </div>
           ))}
-          <div className="rolling-avg-line" style={{ bottom: '50%' }} />
+          <div className={ROLLING_AVG_LINE_CLASSES} style={{ bottom: '50%' }} />
         </div>
-        <div className="rolling-legend">
-          <span className="rl-hot">■ Hot (≥60%)</span>
-          <span className="rl-ok">■ Average (40–60%)</span>
-          <span className="rl-cold">■ Cold (&lt;40%)</span>
+        <div className={ROLLING_LEGEND_CLASSES}>
+          <span className={RL_HOT_CLASSES}>■ Hot (≥60%)</span>
+          <span className={RL_OK_CLASSES}>■ Average (40–60%)</span>
+          <span className={RL_COLD_CLASSES}>■ Cold (&lt;40%)</span>
           <span style={{ color:'var(--text-dim)', marginLeft:'auto', fontSize:9 }}>— 50% ref</span>
         </div>
       </div>
@@ -900,24 +1038,24 @@ function TrendsTab({ schedule, teamId, loading }) {
       {/* GF/GA rolling 5-game avg */}
       <div className="card">
         <div className="sec-label" style={{ marginBottom: 10 }}>Goals — rolling 5-game average</div>
-        <div className="rolling-chart rolling-chart-dual">
+        <div className={ROLLING_CHART_DUAL_CLASSES}>
           {gfDisp.map((gf, i) => {
             const ga = gaDisp[i];
             const maxVal = 6;
             return (
-              <div key={i} className="rolling-bar-wrap">
-                <div className="rolling-bar-label" style={{ color: 'var(--red-bright)' }}>{gf}</div>
-                <div className="rolling-bar-dual">
-                  <div className="rolling-bar gf-bar" style={{ height: `${Math.min(gf/maxVal*100,100)}%` }} title={`GF avg: ${gf}`} />
-                  <div className="rolling-bar ga-bar" style={{ height: `${Math.min(ga/maxVal*100,100)}%` }} title={`GA avg: ${ga}`} />
+              <div key={i} className={ROLLING_BAR_WRAP_CLASSES}>
+                <div className={ROLLING_BAR_LABEL_CLASSES} style={{ color: 'var(--red-bright)' }}>{gf}</div>
+                <div className={ROLLING_BAR_DUAL_WRAP_CLASSES}>
+                  <div className={ROLLING_BAR_GF_CLASSES} style={{ height: `${Math.min(gf/maxVal*100,100)}%` }} title={`GF avg: ${gf}`} />
+                  <div className={ROLLING_BAR_GA_CLASSES} style={{ height: `${Math.min(ga/maxVal*100,100)}%` }} title={`GA avg: ${ga}`} />
                 </div>
-                <div className="rolling-bar-label-bot" style={{ color: 'var(--blue-bright)' }}>{ga}</div>
-                {i % 5 === 0 && <div className="rolling-label">{i+1}</div>}
+                <div className={ROLLING_BAR_LABEL_BOT_CLASSES} style={{ color: 'var(--blue-bright)' }}>{ga}</div>
+                {i % 5 === 0 && <div className={ROLLING_LABEL_CLASSES}>{i+1}</div>}
               </div>
             );
           })}
         </div>
-        <div className="rolling-legend">
+        <div className={ROLLING_LEGEND_CLASSES}>
           <span style={{ color: 'var(--red-bright)' }}>■ Goals For</span>
           <span style={{ color: 'var(--blue-bright)', marginLeft: 12 }}>■ Goals Against</span>
         </div>
@@ -926,27 +1064,27 @@ function TrendsTab({ schedule, teamId, loading }) {
       {/* Goal differential */}
       <div className="card">
         <div className="sec-label" style={{ marginBottom: 6 }}>Goal differential by game</div>
-        <div className="gd-chart-wrap">
-          <div className="gd-baseline-line" />
-          <div className="gd-bars">
+        <div className={GD_CHART_WRAP_CLASSES}>
+          <div className={GD_BASELINE_LINE_CLASSES} />
+          <div className={GD_BARS_CLASSES}>
             {display.map((g, i) => {
               const diff  = g.my - g.op;
               const absPx = Math.min(Math.abs(diff) * 12, 48);
               return (
-                <div key={i} className="gd-bar-col" title={`${g.result} ${g.my}–${g.op}`}>
-                  <div className="gd-top">
+                <div key={i} className={GD_BAR_COL_CLASSES} title={`${g.result} ${g.my}–${g.op}`}>
+                  <div className={GD_TOP_CLASSES}>
                     {diff > 0 && (
                       <>
-                        <div className="gd-bar-inline-label pos">+{diff}</div>
-                        <div className="gd-bar pos" style={{ height: absPx }} />
+                        <div className={GD_BAR_INLINE_LABEL_POS_CLASSES}>+{diff}</div>
+                        <div className={GD_BAR_POS_CLASSES} style={{ height: absPx }} />
                       </>
                     )}
                   </div>
-                  <div className="gd-bot">
+                  <div className={GD_BOT_CLASSES}>
                     {diff < 0 && (
                       <>
-                        <div className="gd-bar neg" style={{ height: absPx }} />
-                        <div className="gd-bar-inline-label neg">{diff}</div>
+                        <div className={GD_BAR_NEG_CLASSES} style={{ height: absPx }} />
+                        <div className={GD_BAR_INLINE_LABEL_NEG_CLASSES}>{diff}</div>
                       </>
                     )}
                   </div>
@@ -972,10 +1110,10 @@ function SalariesTab({ salaries, loading, abbr, color }) {
   );
 
   if (!salaries?.length) return (
-    <div className="card empty-state" style={{ marginTop:10 }}>
-      <div className="empty-icon">💰</div>
-      <div className="empty-title">No salary data</div>
-      <div className="empty-sub">Run python pwhl_salaries.py to populate.</div>
+    <div className={`card ${EMPTY_STATE_CLASSES}`} style={{ marginTop:10 }}>
+      <div className={EMPTY_ICON_CLASSES}>💰</div>
+      <div className={EMPTY_TITLE_CLASSES}>No salary data</div>
+      <div className={EMPTY_SUB_CLASSES}>Run python pwhl_salaries.py to populate.</div>
     </div>
   );
 
@@ -1000,7 +1138,7 @@ function SalariesTab({ salaries, loading, abbr, color }) {
       {/* Cap summary */}
       <div className="card">
         <div className="sec-label" style={{ marginBottom:10 }}>2025-26 Salary Summary</div>
-        <div className="overview-stat-grid">
+        <div className={OVERVIEW_STAT_GRID_CLASSES}>
           {[
             ['Total Payroll',  fmtSalary(totalPay)],
             ['Players',        salaries.length],
@@ -1009,9 +1147,9 @@ function SalariesTab({ salaries, loading, abbr, color }) {
             ['Avg vs Target',  avgVsTarget != null ? `${avgVsTarget > 0 ? '+' : ''}${avgVsTarget}%` : '—'],
             ['Cap Ceiling',    fmtSalary(CAP)],
           ].map(([label, val]) => (
-            <div key={label} className="overview-stat-cell">
-              <div className="overview-stat-label">{label}</div>
-              <div className="overview-stat-val" style={{ fontSize:13 }}>{val}</div>
+            <div key={label} className={OVERVIEW_STAT_CELL_CLASSES}>
+              <div className={OVERVIEW_STAT_LABEL_CLASSES}>{label}</div>
+              <div className={OVERVIEW_STAT_VAL_CLASSES} style={{ fontSize:13 }}>{val}</div>
             </div>
           ))}
         </div>

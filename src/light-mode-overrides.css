@@ -78,14 +78,19 @@
 }
 
 /* ════════════════════════════════════════════════════════════════
-   TeamView.css additions
+   TeamView.css additions (Phase 4: TeamView.css itself deleted --
+   TeamView.jsx/PWHLTeamView.jsx now migrated to Tailwind, but these
+   classNames are kept as literal markers specifically so these light-mode
+   overrides keep applying unlayered, same reasoning as .card/.player-card
+   in index.css. .score-state-row and .ha-grid-row were ALREADY dead code
+   in TeamView.jsx/PWHLTeamView.jsx before this migration -- confirmed via
+   full-tree grep -- so those two selectors were dropped here rather than
+   carried forward pointing at nothing. )
    ════════════════════════════════════════════════════════════════ */
 
-/* adv-stat-row, score-state-row, cap-row, split-adv-* dividers */
+/* adv-stat-row, cap-row, split-adv-row dividers */
 [data-theme="light"] .adv-stat-row,
-[data-theme="light"] .score-state-row,
 [data-theme="light"] .cap-row,
-[data-theme="light"] .ha-grid-row,
 [data-theme="light"] .split-adv-row {
   border-bottom-color: rgba(0,0,0,0.06);
 }
@@ -101,8 +106,6 @@
 
 /* adv-stat-indicator / adv-stat-val good/bad — #4ade80 and #f87171
    are readable on both backgrounds, no change needed */
-
-/* ha-val good: #4ade80 readable on light bg — fine */
 
 /* NotificationBell.css's light-mode popup-shadow override moved to
    index.css's --popup-shadow token (Session 95, Phase 1) -- the migrated
