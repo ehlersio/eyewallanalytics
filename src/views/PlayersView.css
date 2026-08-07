@@ -1,75 +1,11 @@
-/* ── Page header ── */
-.players-header { margin-bottom: 14px; }
-.view-title {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 2px;
-}
-.players-sub { font-size: 12px; color: var(--text-muted); }
-
-/* ── Roster grid ── */
-.roster-section { margin-bottom: 20px; }
-.roster-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 8px;
-}
-
-/* ── Player card tile ── */
-.player-card {
-  display: flex;
-  flex-direction: column;
-  padding: 9px;
-  cursor: pointer;
-  transition: border-color 0.15s, transform 0.1s;
-  overflow: hidden;
-}
-.player-card:hover { border-color: var(--red-border); transform: translateY(-1px); }
-.player-card:active { transform: translateY(0); }
-
-/* Loading placeholder — deliberately a different class from .player-card so it
-   can never be mistaken for (or click-targeted as) a real, clickable roster tile. */
-.player-card-skeleton {
-  display: flex;
-  flex-direction: column;
-  padding: 9px;
-  overflow: hidden;
-}
-
-.pc-photo-wrap { position: relative; margin-bottom: 7px; }
-.pc-photo {
-  width: 100%; aspect-ratio: 1;
-  object-fit: cover; object-position: top center;
-  border-radius: var(--radius-sm);
-  background: var(--bg3); display: block;
-}
-.pc-photo-fallback {
-  width: 100%; aspect-ratio: 1;
-  border-radius: var(--radius-sm);
-  background: var(--bg3);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--text-dim);
-}
-.pc-num {
-  position: absolute; top: 4px; left: 4px;
-  background: rgba(0,0,0,0.65); color: var(--red-bright);
-  font-family: var(--font-display); font-size: 11px; font-weight: 700;
-  padding: 1px 5px; border-radius: 3px; line-height: 1.4;
-}
-.pc-info { display: flex; flex-direction: column; gap: 2px; }
-.pc-first { font-size: 10px; color: var(--text-muted); line-height: 1; }
-.pc-last  { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.2; }
-.pc-badges { display: flex; gap: 4px; margin-top: 3px; flex-wrap: wrap; }
-.pc-pos {
-  font-family: var(--font-display); font-size: 10px; font-weight: 700;
-  background: var(--red-dim); color: var(--red-bright);
-  border: 0.5px solid var(--red-border); padding: 1px 5px; border-radius: 3px;
-}
-.pc-shoots { font-size: 10px; color: var(--text-dim); background: var(--bg3); padding: 1px 5px; border-radius: 3px; }
+/* .players-header/.view-title/.players-sub/.roster-section/.roster-grid/
+   .player-card(-skeleton)/.pc-* migrated to Tailwind (Session 97, Phase 3,
+   sub-PR 1) -- PlayersView.jsx, PWHLPlayersView.jsx. .view-title and
+   .players-tabs/.players-tab (below) turned out to be shared with
+   TeamView.jsx/PWHLTeamView.jsx too (outside this phase's 7-consumer list)
+   -- migrated there as well so these rules could be deleted cleanly rather
+   than left stranded for a future phase. .player-card's hover/active state
+   moved to index.css as real CSS (cascade-layer note there). */
 
 /* ── Player popup ── */
 .player-popup {
@@ -460,86 +396,10 @@
 .rvp-wrap { margin-top: 18px; padding-top: 14px; border-top: 0.5px solid var(--border); }
 .rvp-wrap .pa-context { margin-bottom: 10px; }
 
-/* ── Players view tabs ── */
-.players-tabs {
-  display: flex;
-  border-bottom: 0.5px solid var(--border);
-  margin: 0 -14px 14px;
-  padding: 0 14px;
-}
-.players-tab {
-  flex: 1;
-  padding: 10px 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.players-tab.active {
-  color: var(--red-bright);
-  border-bottom-color: var(--red-bright);
-}
-
-/* ── Skater stats table ── */
-.sst-wrap { margin-bottom: 12px; }
-.sst-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  border-radius: 10px;
-  border: 0.5px solid var(--border);
-}
-.sst-table {
-  border-collapse: collapse;
-  width: 100%;
-  min-width: 680px;
-  font-size: 12px;
-}
-.sst-th {
-  background: var(--bg2);
-  padding: 8px 6px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-dim);
-  border-bottom: 0.5px solid var(--border);
-  white-space: nowrap;
-  position: relative;
-  user-select: none;
-}
-.sst-th.sorted { color: var(--text); }
-.sst-th.sticky, .sst-td.sticky {
-  position: sticky;
-  left: 0;
-  z-index: 2;
-  background: var(--bg2);
-  border-right: 0.5px solid var(--border);
-}
-.sst-th.left, .sst-td.left   { text-align: left; padding-left: 10px; }
-.sst-th.right, .sst-td.right { text-align: right; padding-right: 8px; }
-.sst-th.center, .sst-td.center { text-align: center; }
-.sst-sort-icon { font-size: 10px; }
-
-.sst-row { cursor: pointer; transition: background 0.1s; }
-.sst-row:hover { background: var(--bg3); }
-.sst-row.even .sst-td:not(.sticky) { background: rgba(255,255,255,0.015); }
-.sst-td {
-  padding: 8px 6px;
-  border-bottom: 0.5px solid rgba(255,255,255,0.04);
-  color: var(--text-muted);
-  white-space: nowrap;
-  font-family: var(--font-mono);
-}
-.sst-td.sticky { color: var(--text); font-family: inherit; font-weight: 600; }
-.sst-td.bold { color: var(--text); font-weight: 700; }
-.sst-hint {
-  font-size: 10px;
-  color: var(--text-dim);
-  text-align: center;
-  margin-top: 6px;
-}
+/* .players-tabs/.players-tab/.sst-* migrated to Tailwind (Session 97,
+   Phase 3, sub-PR 1) -- PlayersView.jsx, PWHLPlayersView.jsx,
+   PWHLLeagueView.jsx, plus TeamView.jsx/PWHLTeamView.jsx (tabs only,
+   outside the 7-consumer list but genuinely shared -- see note above). */
 
 /* ── Scouting blurb ── */
 .scout-wrap { padding: 16px; }

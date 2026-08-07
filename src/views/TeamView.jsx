@@ -20,6 +20,12 @@ import Sparkline from '../components/Sparkline'
 import { TEAM_COLORS } from '../utils/nhlApi'
 import './TeamView.css'
 
+// .view-title (Session 97, Phase 3) -- was PlayersView.css's, genuinely
+// shared with PlayersView.jsx/PWHLPlayersView.jsx/PWHLTeamView.jsx. Migrated
+// here too so that rule can be deleted from PlayersView.css without leaving
+// this file's only usage stranded on dead CSS.
+const VIEW_TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[20px] font-bold flex items-center gap-2 mb-[2px]'
+
 const TABS = ['Overview', 'Advanced', 'Splits', 'Trends',
   ...(TEAM_CONFIG.abbr === 'CAR' ? ['Cap'] : []),
   'Picks',
@@ -83,7 +89,7 @@ export default function TeamView() {
     <div className="page team-view">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
         <TeamLogo abbr={TEAM_CONFIG.abbr} size={28} />
-        <h2 className="view-title" style={{ margin: 0 }}>{TEAM_CONFIG.displayName}</h2>
+        <h2 className={VIEW_TITLE_CLASSES} style={{ margin: 0 }}>{TEAM_CONFIG.displayName}</h2>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <p className="view-sub" style={{ margin: 0 }}>{TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} season</p>

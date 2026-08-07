@@ -134,6 +134,21 @@
   padding: 14px;
 }
 
+/* .player-card / .player-card-skeleton (PlayersView.jsx, PWHLPlayersView.jsx
+   -- Session 97, Phase 3) -- kept as real, unlayered CSS rather than
+   Tailwind utilities. .card's declarations above are unlayered, and
+   unlayered CSS always beats a layered Tailwind utility regardless of
+   specificity (the same bug class fixed for button/a/svg in Session 94,
+   Phase 0) -- both a p-[9px] override of .card's padding:14px and a
+   hover:border-[...] utility would be silently overridden by .card every
+   time. Only the pieces that actually collide with .card's own properties
+   (padding, hover border-color, hover/active transform) need to live here;
+   .player-card's non-colliding layout properties (flex, cursor, overflow,
+   etc) are still plain Tailwind utilities on the element. */
+.player-card, .player-card-skeleton { padding: 9px; }
+.player-card:hover { border-color: var(--red-border); transform: translateY(-1px); }
+.player-card:active { transform: translateY(0); }
+
 .pill {
   display: inline-flex;
   align-items: center;
