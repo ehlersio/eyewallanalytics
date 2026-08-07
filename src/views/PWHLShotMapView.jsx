@@ -43,6 +43,19 @@ import './ShotMapView.css';
 // expansion-team games in three places (game chips, score card). Use
 // getPWHLTeamById (derived from PWHL_TEAMS, pwhlConfig.js) instead.
 
+// ── PP indicator classes (Phase 4, sub-PR 2 -- GameEvents.css deleted) ──
+// .score-team-wrap/.pp-indicator/.car-pp/.opp-pp were transitive consumers
+// of GameEvents.css (loaded as a side effect of importing PWHLGoalPopup etc.
+// from ./PWHLGameEvents above), not declared consumers -- migrated here
+// rather than left as dead classNames. .en-indicator/.car-en/.opp-en stay
+// literal and untouched: they're ShotMapView.css's own classes (out of
+// scope), and use !important so they win regardless of how .pp-indicator's
+// base becomes Tailwind utilities. Duplicated from ShotMapView.jsx.
+const SCORE_TEAM_WRAP_CLASSES = 'flex flex-col items-center gap-1';
+const PP_INDICATOR_BASE_CLASSES = 'text-[10px] font-bold py-0.5 px-2 rounded-[4px] animate-[ppPulse_1.5s_ease-in-out_infinite]';
+const CAR_PP_CLASSES = 'car-pp bg-[rgba(61,186,126,0.2)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.4)]';
+const OPP_PP_CLASSES = 'opp-pp bg-[rgba(240,160,48,0.2)] text-[color:var(--amber)] border-[0.5px] border-[rgba(240,160,48,0.3)]';
+
 // ── Shot adapters ─────────────────────────────────────────────
 
 function mapEventType(t) {
@@ -1552,7 +1565,7 @@ export default function PWHLShotMapView() {
       {/* ── Score bar ── */}
       <div className="score-card card" onClick={handleDebugTap} style={{ userSelect: 'none' }}>
         <div className="score-inner">
-          <div className="score-team-wrap">
+          <div className={SCORE_TEAM_WRAP_CLASSES}>
             <div className="score-team">
               <TeamLogo abbr={abbr} sport="pwhl" size={30} color={color} />
               <span className="score-abbr" style={{ color }}>{abbr}</span>
@@ -1562,10 +1575,10 @@ export default function PWHLShotMapView() {
               {scoreBarData && <span className="score-num" style={{ color }}>{scoreBarData.myScore}</span>}
             </div>
             {(isLive && liveSituation?.ourPP) || debugSituation?.ourPP ? (
-              <div className="pp-indicator car-pp">⚡ Power Play</div>
+              <div className={`${PP_INDICATOR_BASE_CLASSES} ${CAR_PP_CLASSES}`}>⚡ Power Play</div>
             ) : null}
             {(isLive && liveSituation?.ourEN) || debugSituation?.ourEN ? (
-              <div className="pp-indicator en-indicator car-en">🥅 {abbr} Empty Net</div>
+              <div className={`${PP_INDICATOR_BASE_CLASSES} en-indicator car-en`}>🥅 {abbr} Empty Net</div>
             ) : null}
           </div>
           <div className="score-center">
@@ -1596,7 +1609,7 @@ export default function PWHLShotMapView() {
             )}
           </div>
           {scoreBarData ? (
-            <div className="score-team-wrap">
+            <div className={SCORE_TEAM_WRAP_CLASSES}>
               <div className="score-team">
                 <span className="score-num muted">{scoreBarData.oppScore}</span>
                 <span className="score-abbr muted">{scoreBarData.oppAbbr}</span>
@@ -1608,10 +1621,10 @@ export default function PWHLShotMapView() {
                 <TeamLogo abbr={scoreBarData.oppAbbr} sport="pwhl" size={30} color={oppColor} />
               </div>
               {(isLive && liveSituation?.oppPP) || debugSituation?.oppPP ? (
-                <div className="pp-indicator opp-pp">⚡ {scoreBarData.oppAbbr} Power Play</div>
+                <div className={`${PP_INDICATOR_BASE_CLASSES} ${OPP_PP_CLASSES}`}>⚡ {scoreBarData.oppAbbr} Power Play</div>
               ) : null}
               {(isLive && liveSituation?.oppEN) || debugSituation?.oppEN ? (
-                <div className="pp-indicator en-indicator opp-en">🥅 {scoreBarData.oppAbbr} Empty Net</div>
+                <div className={`${PP_INDICATOR_BASE_CLASSES} en-indicator opp-en`}>🥅 {scoreBarData.oppAbbr} Empty Net</div>
               ) : null}
             </div>
           ) : <div style={{ width:40 }} />}

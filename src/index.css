@@ -321,6 +321,31 @@
   to   { transform: translateY(0); opacity: 1; }
 }
 
+/* Hoisted here (Phase 4, sub-PR 2) from GameEvents.css's popup animations --
+   shared across goal/penalty/win/hat-trick popups (each with its own
+   duration via animate-[goalBurst_Xs_...]) and the goal/win spinning icons.
+   GameEvents.css's own .fadeIn (camelCase) keyframe was identical to the
+   fade-in (kebab-case) one above and was NOT re-hoisted -- .game-event-overlay
+   now references fade-in directly instead of carrying a duplicate. */
+@keyframes goalBurst {
+  0%   { transform: scale(0.5) rotate(-5deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes confettiFall {
+  0%   { transform: translateY(0)   rotate(0deg)   scaleX(1); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg) scaleX(-1); opacity: 0; }
+}
+@keyframes hatFall {
+  0%   { transform: translateY(0)    rotate(0deg); opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(var(--hat-rotate, 360deg)); opacity: 0; }
+}
+@keyframes ppPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
 /* ── Focus styles for keyboard navigation (WCAG 2.4.7) ── */
 /* Deliberately left unlayered (unlike the resets in @layer base above) --
  * this is meant to be the single, always-wins source of truth for

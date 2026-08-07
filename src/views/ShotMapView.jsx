@@ -35,6 +35,19 @@ import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 
 const WINDOW_MINS = 3; // rolling window for momentum calculation
 
+// ── PP indicator classes (Phase 4, sub-PR 2 -- GameEvents.css deleted) ──
+// .score-team-wrap/.pp-indicator/.car-pp/.opp-pp were transitive consumers
+// of GameEvents.css (loaded as a side effect of importing GoalPopup etc.
+// from ./GameEvents above), not declared consumers -- migrated here rather
+// than left as dead classNames. .en-indicator/.car-en/.opp-en stay literal
+// and untouched: they're ShotMapView.css's own classes (out of scope), and
+// use !important so they win regardless of how .pp-indicator's base becomes
+// Tailwind utilities. Duplicated in PWHLShotMapView.jsx per convention.
+const SCORE_TEAM_WRAP_CLASSES = 'flex flex-col items-center gap-1';
+const PP_INDICATOR_BASE_CLASSES = 'text-[10px] font-bold py-0.5 px-2 rounded-[4px] animate-[ppPulse_1.5s_ease-in-out_infinite]';
+const CAR_PP_CLASSES = 'car-pp bg-[rgba(61,186,126,0.2)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.4)]';
+const OPP_PP_CLASSES = 'opp-pp bg-[rgba(240,160,48,0.2)] text-[color:var(--amber)] border-[0.5px] border-[rgba(240,160,48,0.3)]';
+
 export default function ShotMapView() {
   // ── Dev replay injection ──────────────────────────────────────
   const devGame = useDevGame();
@@ -1312,21 +1325,21 @@ export default function ShotMapView() {
       <div className="score-card card" onClick={handleDebugTap} style={{ userSelect: 'none' }}>
         <div className="score-inner">
             {/* CAR side */}
-            <div className="score-team-wrap">
+            <div className={SCORE_TEAM_WRAP_CLASSES}>
               <div className="score-team">
                 <TeamLogo abbr={TEAM_CONFIG.abbr} size={30} />
                 <span className="score-abbr team-primary-text">{TEAM_CONFIG.abbr}</span>
                 <span className="score-num team-primary-text">{carScore ?? '—'}</span>
               </div>
               {/* CAR PP indicator */}
-              {(isLive || debugSituation) && (debugSituation?.team === TEAM_CONFIG.abbr || 
+              {(isLive || debugSituation) && (debugSituation?.team === TEAM_CONFIG.abbr ||
                 (currentSituation?.strength === 'PP' && !currentSituation?.carEN)) && (
-                <div className="pp-indicator car-pp">
+                <div className={`${PP_INDICATOR_BASE_CLASSES} ${CAR_PP_CLASSES}`}>
                   ⚡ {(debugSituation?.carSkaters === 5 && debugSituation?.oppSkaters === 3) ? '5v3 ' : currentSituation && currentSituation.carSkaters !== 5 ? `${currentSituation.carSkaters}v${currentSituation.oppSkaters} ` : ''}Power Play
                 </div>
               )}
               {(isLive || debugSituation?.carEN) && (currentSituation?.carEN || debugSituation?.carEN) && (
-                <div className="pp-indicator en-indicator car-en">🥅 {TEAM_CONFIG.abbr} Empty Net</div>
+                <div className={`${PP_INDICATOR_BASE_CLASSES} en-indicator car-en`}>🥅 {TEAM_CONFIG.abbr} Empty Net</div>
               )}
             </div>
 
@@ -1387,27 +1400,27 @@ export default function ShotMapView() {
             </div>
 
             {/* OPP side */}
-            <div className="score-team-wrap">
+            <div className={SCORE_TEAM_WRAP_CLASSES}>
               <div className="score-team">
                 <span className="score-num muted">{oppScore ?? '—'}</span>
                 <span className="score-abbr muted">{oppAbbr}</span>
                 <TeamLogo abbr={oppAbbr} size={30} color={oppColor} />
               </div>
               {/* Opponent PP indicator */}
-              {(isLive || debugSituation) && (debugSituation?.team === 'OPP' || 
+              {(isLive || debugSituation) && (debugSituation?.team === 'OPP' ||
                 (currentSituation?.strength === 'SH' && !currentSituation?.oppEN)) && (
-                <div className="pp-indicator opp-pp">
-                  ⚡ {currentSituation && currentSituation.oppSkaters < 4 
-                    ? `${currentSituation.oppSkaters}v${currentSituation.carSkaters} ` 
+                <div className={`${PP_INDICATOR_BASE_CLASSES} ${OPP_PP_CLASSES}`}>
+                  ⚡ {currentSituation && currentSituation.oppSkaters < 4
+                    ? `${currentSituation.oppSkaters}v${currentSituation.carSkaters} `
                     : ''}{oppAbbr || 'OPP'} Power Play
                 </div>
               )}
               {(isLive || debugSituation?.oppEN) && (currentSituation?.oppEN || debugSituation?.oppEN) && (
-                <div className="pp-indicator en-indicator opp-en">🥅 {oppAbbr || 'OPP'} Empty Net</div>
+                <div className={`${PP_INDICATOR_BASE_CLASSES} en-indicator opp-en`}>🥅 {oppAbbr || 'OPP'} Empty Net</div>
               )}
               {/* 4v4 or 3v3 (both teams penalized) — regular season only, playoffs use full strength */}
               {!inPlayoffs && ((isLive && currentSituation?.strength === '4v4') || debugSituation?.strength === '4v4') ? (
-                <div className="pp-indicator" style={{ background: 'rgba(148,163,184,0.15)', color: 'var(--text-muted)', border: '0.5px solid rgba(148,163,184,0.3)' }}>
+                <div className={PP_INDICATOR_BASE_CLASSES} style={{ background: 'rgba(148,163,184,0.15)', color: 'var(--text-muted)', border: '0.5px solid rgba(148,163,184,0.3)' }}>
                   {debugSituation?.carSkaters || currentSituation?.carSkaters}v{debugSituation?.oppSkaters || currentSituation?.oppSkaters} — Coincidental
                 </div>
               ) : null}
