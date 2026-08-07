@@ -14,6 +14,20 @@ import TeamComparisonPopup from '../components/TeamComparisonPopup';
 import './TeamView.css';
 import './ShotMapView.css';
 
+// .view-title / .players-tabs / .players-tab (Session 97, Phase 3) -- were
+// PlayersView.css's, genuinely shared with PlayersView.jsx/
+// PWHLPlayersView.jsx/TeamView.jsx. Migrated here too so these rules can be
+// deleted from PlayersView.css without leaving this file's usages stranded
+// on dead CSS.
+const VIEW_TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[20px] font-bold flex items-center gap-2 mb-[2px]'
+const TABS_WRAP_CLASSES = 'flex border-b-[0.5px] border-[var(--border)] mx-[-14px] mb-[14px] px-[14px]'
+const TAB_BASE_CLASSES = 'flex-1 py-[10px] text-[13px] font-semibold bg-transparent border-0 border-b-2 cursor-pointer [transition:all_0.15s]'
+const TAB_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] border-b-transparent'
+const TAB_ACTIVE_CLASSES = 'text-[color:var(--red-bright)] border-b-[var(--red-bright)]'
+function tabClasses(isActive) {
+  return `${TAB_BASE_CLASSES} ${isActive ? TAB_ACTIVE_CLASSES : TAB_INACTIVE_CLASSES}`
+}
+
 const TABS = ['Overview', 'Advanced', 'Splits', 'Trends', 'Salaries'];
 
 export default function PWHLTeamView() {
@@ -71,7 +85,7 @@ export default function PWHLTeamView() {
     <div className="page team-view">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
         <TeamLogo abbr={abbr} sport="pwhl" size={28} color={color} />
-        <h2 className="view-title" style={{ margin: 0 }}>{team.displayName}</h2>
+        <h2 className={VIEW_TITLE_CLASSES} style={{ margin: 0 }}>{team.displayName}</h2>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <p className="view-sub" style={{ margin: 0 }}>{seasonLabel} season</p>
@@ -362,9 +376,9 @@ function StatsTab({ skaters, goalies, loading, abbr: _abbr, color }) {
         </div>
       )}
 
-      <div className="players-tabs" style={{ marginTop: 8 }}>
-        <button className={`players-tab${view === 'skaters' ? ' active' : ''}`} onClick={() => setView('skaters')}>Skaters</button>
-        <button className={`players-tab${view === 'goalies' ? ' active' : ''}`} onClick={() => setView('goalies')}>Goalies</button>
+      <div className={TABS_WRAP_CLASSES} style={{ marginTop: 8 }}>
+        <button className={tabClasses(view === 'skaters')} onClick={() => setView('skaters')}>Skaters</button>
+        <button className={tabClasses(view === 'goalies')} onClick={() => setView('goalies')}>Goalies</button>
       </div>
 
       {loading && (

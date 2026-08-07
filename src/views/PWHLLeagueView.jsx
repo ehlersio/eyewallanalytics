@@ -16,6 +16,23 @@ import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
 import './LeagueView.css';
 import './PlayersView.css';
 
+// Tailwind migration (Session 97, Phase 3, sub-PR 1) -- only the small
+// PlayersView.css-owned pieces this file actually uses (.players-tabs/.tab,
+// .pp-close, .sst-hint, .sst-sort-icon); LeagueView.css's own .lv-* classes
+// are untouched. .pp-close is kept as a literal marker -- league.cy.js,
+// milestones.cy.js, player-search.cy.js, and pwhl-league.cy.js select on it
+// directly.
+const TABS_WRAP_CLASSES = 'flex border-b-[0.5px] border-[var(--border)] mx-[-14px] mb-[14px] px-[14px]'
+const TAB_BASE_CLASSES = 'players-tab flex-1 py-[10px] text-[13px] font-semibold bg-transparent border-0 border-b-2 cursor-pointer [transition:all_0.15s]'
+const TAB_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] border-b-transparent'
+const TAB_ACTIVE_CLASSES = 'text-[color:var(--red-bright)] border-b-[var(--red-bright)]'
+function tabClasses(isActive) {
+  return `${TAB_BASE_CLASSES} ${isActive ? TAB_ACTIVE_CLASSES : TAB_INACTIVE_CLASSES}`
+}
+const PP_CLOSE_CLASSES = 'pp-close absolute top-3 right-3 w-[28px] h-[28px] rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]'
+const SST_SORT_ICON_CLASSES = 'text-[10px]'
+const SST_HINT_CLASSES = 'text-[10px] text-[color:var(--text-dim)] text-center mt-[6px]'
+
 function teamAbbr(teamId) {
   return getPWHLTeamById(teamId)?.abbr;
 }
@@ -128,9 +145,9 @@ export default function PWHLLeagueView() {
   return (
     <div className="league-view">
       {/* Season picker */}
-      <div className="players-tabs" style={{ marginBottom: 8 }}>
+      <div className={TABS_WRAP_CLASSES} style={{ marginBottom: 8 }}>
         {SEASONS.map(s => (
-          <button key={s.id} className={`players-tab${season === s.id ? ' active' : ''}`}
+          <button key={s.id} className={tabClasses(season === s.id)}
             onClick={() => handleSeason(s.id)}>{s.label}</button>
         ))}
       </div>
@@ -263,7 +280,7 @@ function StandingsPanel({ standings, loading, myTeamId, myColor }) {
                   style={{ cursor: col.sortable ? 'pointer' : 'default', textAlign: col.align, width: col.width }}
                   onClick={col.sortable ? () => handleSort(col.key) : undefined}>
                   {col.label}
-                  {col.sortable && sortKey === col.key && <span className="sst-sort-icon">{sortDir==='desc'?' ↓':' ↑'}</span>}
+                  {col.sortable && sortKey === col.key && <span className={SST_SORT_ICON_CLASSES}>{sortDir==='desc'?' ↓':' ↑'}</span>}
                 </th>
               ))}
             </tr>
@@ -315,7 +332,7 @@ function StandingsPanel({ standings, loading, myTeamId, myColor }) {
           </tbody>
         </table>
       </div>
-      <div className="sst-hint" style={{ padding: '6px 0 8px' }}>
+      <div className={SST_HINT_CLASSES} style={{ padding: '6px 0 8px' }}>
         W–OTW–OTL–L · PTS = W×3 + OTW×2 + OTL×1 · Sort by any column · Source: HockeyTech / PWHL
       </div>
     </div>
@@ -432,7 +449,7 @@ function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
               return (
                 <>
                   <div className="series-modal__header">
-                    <button className="pp-close" onClick={() => setSelected(null)}>✕</button>
+                    <button className={PP_CLOSE_CLASSES} onClick={() => setSelected(null)}>✕</button>
                     <div className="series-modal__teams">
                       <span className="series-modal__abbrev" style={{ color: colorA }}>{abbrA}</span>
                       <div className="series-modal__dots-wrap">
@@ -684,7 +701,7 @@ function PowerRankingsPanel({ standings, loading, myTeamId, myAbbr: _myAbbr, myC
             </div>
           );
         })}
-        <div className="sst-hint" style={{ padding:'6px 0 8px' }}>
+        <div className={SST_HINT_CLASSES} style={{ padding:'6px 0 8px' }}>
           Composite of Pts%, L10, GD/GP, CF%, Special Teams · Updates with standings
         </div>
       </div>
@@ -862,9 +879,9 @@ function DraftPanel({ season }) {
     <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
 
       {/* Draft year picker */}
-      <div className="players-tabs" style={{ marginBottom:0 }}>
+      <div className={TABS_WRAP_CLASSES} style={{ marginBottom:0 }}>
         {[2026, 2025].map(y => (
-          <button key={y} className={`players-tab${draftYear === y ? ' active' : ''}`}
+          <button key={y} className={tabClasses(draftYear === y)}
             onClick={() => setDraftYear(y)}>{y} Draft</button>
         ))}
       </div>

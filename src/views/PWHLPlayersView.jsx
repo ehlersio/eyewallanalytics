@@ -8,6 +8,70 @@ import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
 import './PlayersView.css';
 
+// Tailwind migration (Session 97, Phase 3, sub-PR 1) -- see PlayersView.jsx
+// for the full rationale (cascade-layer note on .player-card's hover/active
+// state, Cypress marker classes kept: .player-card, .player-card-skeleton,
+// .pc-last, .sst-table). This file mirrors that one's class constants since
+// there's no shared component between the NHL/PWHL roster views.
+const HEADER_WRAP_CLASSES = 'mb-[14px]'
+const VIEW_TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[20px] font-bold flex items-center gap-2 mb-[2px]'
+const PLAYERS_SUB_CLASSES = 'text-[12px] text-[color:var(--text-muted)]'
+
+const TABS_WRAP_CLASSES = 'flex border-b-[0.5px] border-[var(--border)] mx-[-14px] mb-[14px] px-[14px]'
+const TAB_BASE_CLASSES = 'players-tab flex-1 py-[10px] text-[13px] font-semibold bg-transparent border-0 border-b-2 cursor-pointer [transition:all_0.15s]'
+const TAB_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] border-b-transparent'
+const TAB_ACTIVE_CLASSES = 'text-[color:var(--red-bright)] border-b-[var(--red-bright)]'
+function tabClasses(isActive) {
+  return `${TAB_BASE_CLASSES} ${isActive ? TAB_ACTIVE_CLASSES : TAB_INACTIVE_CLASSES}`
+}
+
+const ROSTER_SECTION_CLASSES = 'mb-5'
+const ROSTER_GRID_CLASSES = 'grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(110px,1fr))]'
+
+// padding is real CSS in index.css, not a Tailwind utility -- .card's own
+// unlayered padding:14px would beat a layered p-[9px] utility (see index.css)
+const CARD_BASE_CLASSES = 'player-card card flex flex-col cursor-pointer overflow-hidden'
+const SKELETON_CARD_CLASSES = 'player-card-skeleton card flex flex-col overflow-hidden'
+const PC_PHOTO_WRAP_CLASSES = 'relative mb-[7px]'
+const PC_PHOTO_CLASSES = 'pc-photo w-full aspect-square object-cover object-top rounded-[var(--radius-sm)] bg-[var(--bg3)] block'
+const PC_PHOTO_FALLBACK_CLASSES = 'w-full aspect-square rounded-[var(--radius-sm)] bg-[var(--bg3)] flex items-center justify-center font-[family-name:var(--font-display)] text-[20px] font-bold text-[color:var(--text-dim)]'
+const PC_NUM_CLASSES = 'absolute top-1 left-1 bg-[rgba(0,0,0,0.65)] text-[color:var(--red-bright)] font-[family-name:var(--font-display)] text-[11px] font-bold py-px px-[5px] rounded-[3px] leading-[1.4]'
+const PC_INFO_CLASSES = 'flex flex-col gap-[2px]'
+const PC_FIRST_CLASSES = 'text-[10px] text-[color:var(--text-muted)] leading-none'
+const PC_LAST_CLASSES = 'pc-last text-[13px] font-semibold text-[color:var(--text)] leading-[1.2]'
+const PC_BADGES_CLASSES = 'flex gap-1 mt-[3px] flex-wrap'
+const PC_POS_CLASSES = 'font-[family-name:var(--font-display)] text-[10px] font-bold bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[0.5px] border-[var(--red-border)] py-px px-[5px] rounded-[3px]'
+const PC_SHOOTS_CLASSES = 'text-[10px] text-[color:var(--text-dim)] bg-[var(--bg3)] py-px px-[5px] rounded-[3px]'
+
+const SST_WRAP_CLASSES = 'mb-[12px]'
+const SST_SCROLL_CLASSES = 'overflow-x-auto [-webkit-overflow-scrolling:touch] rounded-[10px] border-[0.5px] border-[var(--border)]'
+const SST_TABLE_CLASSES = 'sst-table border-collapse w-full min-w-[680px] text-[12px]'
+const SST_TH_BASE_CLASSES = 'py-2 px-[6px] text-[11px] font-bold border-b-[0.5px] border-[var(--border)] whitespace-nowrap relative select-none'
+const SST_TD_BASE_CLASSES = 'py-2 px-[6px] border-b-[0.5px] border-[rgba(255,255,255,0.04)] whitespace-nowrap'
+const STICKY_CLASSES = 'sticky left-0 z-[2] bg-[var(--bg2)] border-r-[0.5px] border-[var(--border)]'
+const SST_SORT_ICON_CLASSES = 'text-[10px]'
+const SST_ROW_CLASSES = 'sst-row cursor-pointer [transition:background_0.1s] hover:bg-[var(--bg3)]'
+const SST_HINT_CLASSES = 'text-[10px] text-[color:var(--text-dim)] text-center mt-[6px]'
+
+function alignClasses(align) {
+  if (align === 'left') return 'text-left pl-[10px]'
+  if (align === 'right') return 'text-right pr-2'
+  return 'text-center'
+}
+function thClasses(col, sortKey) {
+  const color = sortKey === col.key ? 'text-[color:var(--text)]' : 'text-[color:var(--text-dim)]'
+  return `${SST_TH_BASE_CLASSES} ${alignClasses(col.align)} ${color} ${col.sticky ? STICKY_CLASSES : ''}`
+}
+function tdClasses(col, isEvenRow) {
+  const colorFont = col.sticky
+    ? `text-[color:var(--text)] font-[family-name:inherit] font-semibold ${STICKY_CLASSES}`
+    : col.bold
+      ? 'text-[color:var(--text)] font-bold font-[family-name:var(--font-mono)]'
+      : 'text-[color:var(--text-muted)] font-[family-name:var(--font-mono)]'
+  const evenBg = isEvenRow && !col.sticky ? 'bg-[rgba(255,255,255,0.015)]' : ''
+  return `${SST_TD_BASE_CLASSES} ${alignClasses(col.align)} ${colorFont} ${evenBg}`
+}
+
 // ── Skater columns ────────────────────────────────────────────
 const SKATER_COLS = [
   { key: 'player_name', label: 'Player', align: 'left',   sortable: true,  sticky: true, fmt: v => v || '—' },
@@ -97,20 +161,20 @@ export default function PWHLPlayersView() {
 
   return (
     <div className="page">
-      <div className="players-header">
-        <h2 className="view-title">
+      <div className={HEADER_WRAP_CLASSES}>
+        <h2 className={VIEW_TITLE_CLASSES}>
           <TeamLogo abbr={abbr} sport="pwhl" size={22} color={color} />
           Roster
         </h2>
-        <p className="players-sub">Tap a player for stats</p>
+        <p className={PLAYERS_SUB_CLASSES}>Tap a player for stats</p>
       </div>
 
       {/* Roster / Stats toggle */}
-      <div className="players-tabs">
-        <button className={`players-tab${view === 'roster' ? ' active' : ''}`} onClick={() => setView('roster')}>
+      <div className={TABS_WRAP_CLASSES}>
+        <button className={tabClasses(view === 'roster')} onClick={() => setView('roster')}>
           Roster
         </button>
-        <button className={`players-tab${view === 'stats' ? ' active' : ''}`} onClick={() => setView('stats')}>
+        <button className={tabClasses(view === 'stats')} onClick={() => setView('stats')}>
           📊 Stats
         </button>
       </div>
@@ -155,17 +219,17 @@ export default function PWHLPlayersView() {
       {view === 'stats' && (
         <>
           {/* Season picker */}
-          <div className="players-tabs" style={{ marginTop: 0, marginBottom: 0 }}>
+          <div className={TABS_WRAP_CLASSES} style={{ marginTop: 0, marginBottom: 0 }}>
             {PWHL_REGULAR_SEASONS.map(s => (
-              <button key={s.id} className={`players-tab${season === s.id ? ' active' : ''}`}
+              <button key={s.id} className={tabClasses(season === s.id)}
                 onClick={() => handleSeasonPick(s.id)}>{s.label}</button>
             ))}
           </div>
           {/* Skaters / Goalies sub-tabs */}
-          <div className="players-tabs" style={{ marginTop: 4, marginBottom: 4 }}>
-            <button className={`players-tab${gameType === 'regular' ? ' active' : ''}`}
+          <div className={TABS_WRAP_CLASSES} style={{ marginTop: 4, marginBottom: 4 }}>
+            <button className={tabClasses(gameType === 'regular')}
               onClick={() => setGameType('regular')}>Skaters</button>
-            <button className={`players-tab${gameType === 'goalies' ? ' active' : ''}`}
+            <button className={tabClasses(gameType === 'goalies')}
               onClick={() => setGameType('goalies')}>Goalies</button>
           </div>
 
@@ -208,9 +272,9 @@ function RosterSection({ title, players, onSelect }) {
   if (!players.length) return null;
   const sorted = [...players].sort((a,b) => (a.jersey_number||99) - (b.jersey_number||99));
   return (
-    <div className="roster-section">
+    <div className={ROSTER_SECTION_CLASSES}>
       <div className="sec-label">{title}</div>
-      <div className="roster-grid">
+      <div className={ROSTER_GRID_CLASSES}>
         {sorted.map(p => <PlayerCard key={p.player_id} player={p} onClick={() => onSelect(p)} />)}
       </div>
     </div>
@@ -226,21 +290,21 @@ function PlayerCard({ player: p, onClick }) {
   const initials = (p.first_name?.[0] || '') + (p.last_name?.[0] || '');
 
   return (
-    <div className="player-card card" onClick={onClick}>
-      <div className="pc-photo-wrap">
+    <div className={CARD_BASE_CLASSES} onClick={onClick}>
+      <div className={PC_PHOTO_WRAP_CLASSES}>
         {!imgErr ? (
-          <img src={headshot} alt={name} className="pc-photo" onError={() => setImgErr(true)} />
+          <img src={headshot} alt={name} className={PC_PHOTO_CLASSES} onError={() => setImgErr(true)} />
         ) : (
-          <div className="pc-photo-fallback">{initials}</div>
+          <div className={PC_PHOTO_FALLBACK_CLASSES}>{initials}</div>
         )}
-        {p.jersey_number && <span className="pc-num">#{p.jersey_number}</span>}
+        {p.jersey_number && <span className={PC_NUM_CLASSES}>#{p.jersey_number}</span>}
       </div>
-      <div className="pc-info">
-        <span className="pc-first">{p.first_name}</span>
-        <span className="pc-last">{p.last_name}</span>
-        <div className="pc-badges">
-          {p.position && <span className="pc-pos">{p.position}</span>}
-          {p.shoots   && <span className="pc-shoots">{p.shoots}</span>}
+      <div className={PC_INFO_CLASSES}>
+        <span className={PC_FIRST_CLASSES}>{p.first_name}</span>
+        <span className={PC_LAST_CLASSES}>{p.last_name}</span>
+        <div className={PC_BADGES_CLASSES}>
+          {p.position && <span className={PC_POS_CLASSES}>{p.position}</span>}
+          {p.shoots   && <span className={PC_SHOOTS_CLASSES}>{p.shoots}</span>}
         </div>
       </div>
     </div>
@@ -251,9 +315,9 @@ function PlayerCard({ player: p, onClick }) {
 
 function RosterSkeleton() {
   return (
-    <div className="roster-grid" style={{ marginTop: 8 }}>
+    <div className={ROSTER_GRID_CLASSES} style={{ marginTop: 8 }}>
       {Array.from({ length: 12 }).map((_, i) => (
-        <div key={i} className="player-card-skeleton card">
+        <div key={i} className={SKELETON_CARD_CLASSES}>
           <div className="skeleton" style={{ width: '100%', aspectRatio: '1', borderRadius: 6, marginBottom: 8 }} />
           <div className="skeleton" style={{ height: 10, width: '60%', marginBottom: 6 }} />
           <div className="skeleton" style={{ height: 10, width: '40%' }} />
@@ -296,19 +360,19 @@ function SortableTable({ rows, cols, defaultSort, loading, emptyMsg, onRowClick 
   if (!rows?.length) return <div className="drill-empty">{emptyMsg}</div>;
 
   return (
-    <div className="sst-wrap">
-      <div className="sst-scroll">
-        <table className="sst-table">
+    <div className={SST_WRAP_CLASSES}>
+      <div className={SST_SCROLL_CLASSES}>
+        <table className={SST_TABLE_CLASSES}>
           <thead>
             <tr>
               {cols.map(col => (
                 <th key={col.key}
-                  className={`sst-th ${col.align}${col.sticky ? ' sticky' : ''}${sortKey === col.key ? ' sorted' : ''}`}
+                  className={thClasses(col, sortKey)}
                   style={{ cursor: col.sortable ? 'pointer' : 'default' }}
                   onClick={() => handleSort(col.key)}>
                   {col.label}
                   {col.sortable && sortKey === col.key && (
-                    <span className="sst-sort-icon">{sortDir === 'desc' ? ' ↓' : ' ↑'}</span>
+                    <span className={SST_SORT_ICON_CLASSES}>{sortDir === 'desc' ? ' ↓' : ' ↑'}</span>
                   )}
                 </th>
               ))}
@@ -317,7 +381,7 @@ function SortableTable({ rows, cols, defaultSort, loading, emptyMsg, onRowClick 
           <tbody>
             {sorted.map((row, i) => (
               <tr key={row.player_id ?? i}
-                className={`sst-row${i % 2 === 0 ? ' even' : ''}${onRowClick ? ' clickable' : ''}`}
+                className={`${SST_ROW_CLASSES}${onRowClick ? ' clickable' : ''}`}
                 onClick={() => onRowClick?.(row)}>
                 {cols.map(col => {
                   const val = row[col.key];
@@ -326,7 +390,7 @@ function SortableTable({ rows, cols, defaultSort, loading, emptyMsg, onRowClick 
                     : 'inherit';
                   return (
                     <td key={col.key}
-                      className={`sst-td ${col.align}${col.sticky ? ' sticky' : ''}${col.bold ? ' bold' : ''}`}
+                      className={tdClasses(col, i % 2 === 0)}
                       style={{ color: pmColor }}>
                       {col.fmt(val)}
                     </td>
@@ -337,7 +401,7 @@ function SortableTable({ rows, cols, defaultSort, loading, emptyMsg, onRowClick 
           </tbody>
         </table>
       </div>
-      <div className="sst-hint">Tap a row to open player profile · Sort by any column</div>
+      <div className={SST_HINT_CLASSES}>Tap a row to open player profile · Sort by any column</div>
     </div>
   );
 }
