@@ -125,27 +125,15 @@
    (ps-canvas-* is the export image — intentionally kept dark)
    ════════════════════════════════════════════════════════════════ */
 
-/* Popup backdrop */
-[data-theme="light"] .ps-backdrop {
-  background: rgba(0,0,0,0.5);
-}
-
-/* Red tints using hardcoded rgba(206,17,38,...) → team-primary-rgb */
-[data-theme="light"] .ps-header-badge {
-  background: rgba(var(--team-primary-rgb), 0.12);
-}
-
-[data-theme="light"] .ps-stat-row-highlight,
-[data-theme="light"] .ps-insight-car {
-  background: rgba(var(--team-primary-rgb), 0.08);
-  border-left-color: var(--team-primary);
-}
-
-/* rgba(255,255,255,0.08) dividers in popup */
-[data-theme="light"] .ps-section-divider,
-[data-theme="light"] .ps-row-divider {
-  border-color: rgba(0,0,0,0.08);
-}
+/* .ps-backdrop, .ps-header-badge, .ps-stat-row-highlight, .ps-insight-car,
+   .ps-section-divider, .ps-row-divider, .ps-factor-card were removed here
+   (Phase 4, sub-PR 5a) -- confirmed via full-tree grep that none of these
+   classes exist anywhere in PeriodSummary.css or its 2 consumers. Stale
+   overrides, likely left behind from an earlier rename (e.g. .ps-period-badge
+   is presumably what .ps-header-badge became -- current .ps-period-badge
+   already uses the theme-reactive rgba(var(--team-primary-rgb),...) pattern
+   directly, so no override is needed there regardless). Only .ps-carousel-dot
+   below was confirmed to match a real, live class. */
 
 /* Carousel dots */
 [data-theme="light"] .ps-carousel-dot.opp {
@@ -156,10 +144,4 @@
 }
 [data-theme="light"] .ps-carousel-dot.car {
   background: rgba(var(--team-primary-rgb), 0.4);
-}
-
-/* rgba(255,255,255,0.04) card backgrounds in popup */
-[data-theme="light"] .ps-factor-card {
-  background: rgba(0,0,0,0.03);
-  border-color: rgba(0,0,0,0.06);
 }
