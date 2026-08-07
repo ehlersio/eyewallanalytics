@@ -34,6 +34,72 @@ import {
 } from '../utils/pwhlPlayerStats';
 import '../views/PlayersView.css';
 
+// Tailwind migration (Session 97, Phase 3, sub-PR 2) -- see PlayerPopup.jsx
+// for the full rationale on which classes stay plain (shared with
+// TeamComparisonPopup.jsx's own markup, or entangled with a cascade-layer
+// override on one of those shared classes): player-popup, pp-header,
+// pp-header-reflow, pp-close, pp-body, pp-no-stats, pp-identity, pp-name,
+// pp-first, pp-birth, pp-photo-wrap, popup-backdrop, stat-section,
+// stat-section-header, stat-section-label, stat-section-body. pp-last is
+// migrated but kept as a literal marker for the same surviving
+// .pp-header-reflow .pp-last compound rule. pp-quickstats-col is migrated
+// + its base rule deleted, kept literal for the .pce-toggle/.pce-wrap
+// compact-mode override (moved into PlayerComparisonPopup.css this same
+// sub-PR). Cypress markers kept: pp-heatmap-empty, pp-quickstats-col, pp-tab.
+const PP_QUICKSTAT_CLASSES = 'flex flex-col items-center bg-[var(--bg2)] rounded-md py-1 px-[2px] min-w-0'
+const PP_QUICKSTAT_VAL_CLASSES = 'font-[family-name:var(--font-display)] text-[13px] font-bold text-[color:var(--text)] leading-[1.1]'
+const PP_QUICKSTAT_LABEL_CLASSES = 'text-[8px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]'
+const PP_HEADER_RADAR_CLASSES = 'flex items-center gap-2 flex-[1_1_auto] min-w-0 max-[340px]:flex-col'
+const PP_QUICKSTATS_COL_CLASSES = 'pp-quickstats-col flex flex-col gap-1 flex-none'
+const PP_QUICKSTATS_CLASSES = 'grid [grid-template-columns:38px_38px] gap-1 max-[340px]:w-full'
+
+const HEATMAP_CHIP_BASE_CLASSES = 'py-1 px-[10px] rounded-xl text-[11px] font-semibold leading-none border-[0.5px] border-[var(--border)] bg-[var(--bg2)] text-[color:var(--text-muted)] cursor-pointer'
+const HEATMAP_CHIP_ACTIVE_CLASSES = 'bg-[var(--red-bright)] text-[#fff] border-[var(--red-bright)]'
+function heatmapChipClasses(active) { return `${HEATMAP_CHIP_BASE_CLASSES} ${active ? HEATMAP_CHIP_ACTIVE_CLASSES : ''}` }
+const PP_HEATMAP_CLASSES = 'py-3 px-4'
+const PP_HEATMAP_EMPTY_CLASSES = 'pp-heatmap-empty py-8 px-4 text-center text-[color:var(--text-muted)] text-[13px] flex flex-col items-center gap-2'
+const PP_HEATMAP_ICON_CLASSES = 'text-[28px]'
+const PP_HEATMAP_SUB_CLASSES = 'text-[11px] text-[color:var(--text-dim)]'
+const PP_HEATMAP_SUMMARY_CLASSES = 'flex justify-around py-[8px_0_12px] border-b-[0.5px] border-[var(--border)] mb-[10px]'
+const PP_HEATMAP_STAT_CLASSES = 'flex flex-col items-center gap-[2px] text-[10px] text-[color:var(--text-dim)]'
+const PP_HEATMAP_NUM_BASE_CLASSES = 'text-[18px] font-bold font-[family-name:var(--font-mono)]'
+const PP_HEATMAP_NUM_DEFAULT_CLASSES = 'text-[color:var(--text)]'
+const PP_HEATMAP_NUM_GOAL_CLASSES = 'text-[#f87171]'
+const PP_HEATMAP_NUM_SOG_CLASSES = 'text-[#4ade80]'
+const PP_HEATMAP_FILTERS_CLASSES = 'flex gap-[6px] flex-wrap mb-[10px]'
+const PP_HEATMAP_RINK_CLASSES = 'rounded-lg overflow-hidden w-full'
+
+const SCOUT_WRAP_CLASSES = 'p-4'
+const SCOUT_HEADER_CLASSES = 'flex items-center justify-between mb-3'
+const SCOUT_LABEL_CLASSES = 'text-[10px] font-bold uppercase tracking-[0.1em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)]'
+const SCOUT_SEASON_CLASSES = 'text-[10px] font-bold py-[2px] px-[7px] rounded-[10px] bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[0.5px] border-[var(--red-border)] uppercase tracking-[0.06em] font-[family-name:var(--font-display)]'
+const SCOUT_BLURB_CLASSES = 'text-[14px] leading-[1.65] text-[color:var(--text)] bg-[var(--bg2)] rounded-[10px] py-[14px] px-4 border-[0.5px] border-[var(--border)] whitespace-pre-wrap'
+const SCOUT_FOOTER_CLASSES = 'text-[10px] text-[color:var(--text-dim)] mt-[10px] text-center'
+const SCOUT_LOADING_CLASSES = 'flex flex-col gap-1 py-1'
+const SCOUT_EMPTY_CLASSES = 'py-8 px-4 text-center text-[color:var(--text-muted)] text-[13px] flex flex-col items-center gap-2'
+const SCOUT_EMPTY_ICON_CLASSES = 'text-[28px]'
+
+const PP_PHOTO_CLASSES = 'w-[80px] h-[80px] object-cover object-top rounded-[var(--radius)] bg-[var(--bg3)] border-[0.5px] border-[var(--border-2)]'
+const PP_PHOTO_FALLBACK_CLASSES = 'w-[80px] h-[80px] rounded-[var(--radius)] bg-[var(--bg3)] border-[0.5px] border-[var(--border-2)] flex items-center justify-center font-[family-name:var(--font-display)] text-[24px] font-bold text-[color:var(--text-dim)]'
+const PP_NUM_CLASSES = 'font-[family-name:var(--font-display)] text-[11px] font-bold text-[color:var(--red-bright)] tracking-[0.06em]'
+const PP_LAST_CLASSES = 'pp-last font-[family-name:var(--font-display)] text-[20px] font-bold text-[color:var(--text)]'
+const PP_LAST_REFLOW_CLASSES = 'break-words'
+const PP_CHIPS_CLASSES = 'flex gap-[5px] flex-wrap mt-[2px]'
+const PP_POS_CHIP_CLASSES = 'pp-pos-chip font-[family-name:var(--font-display)] text-[10px] font-bold bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[0.5px] border-[var(--red-border)] py-[2px] px-[7px] rounded'
+const PP_CHIP_CLASSES = 'pp-chip text-[10px] text-[color:var(--text-muted)] bg-[var(--bg3)] py-[2px] px-[6px] rounded'
+
+const PP_BIO_ROW_CLASSES = 'grid grid-cols-6 gap-[8px_4px] py-[10px_12px_14px] border-b-[0.5px] border-[var(--border)] max-[340px]:grid-cols-3'
+const PP_BIO_FIELD_CLASSES = 'flex flex-col items-center gap-[3px] text-center min-w-0'
+const PP_BIO_LABEL_CLASSES = 'text-[8px] uppercase tracking-[0.06em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] font-semibold'
+const PP_BIO_VALUE_CLASSES = 'text-[11px] font-semibold text-[color:var(--text)] [overflow-wrap:break-word]'
+
+const PP_TABS_CLASSES = 'flex border-b-[0.5px] border-[var(--border)] mx-[-16px] px-4'
+const PP_TAB_BASE_CLASSES = 'pp-tab flex-1 py-[10px] text-[13px] font-semibold bg-transparent border-0 border-b-2 cursor-pointer [transition:all_0.15s]'
+const PP_TAB_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] border-b-transparent'
+const PP_TAB_ACTIVE_CLASSES = 'text-[color:var(--red-bright)] border-b-[var(--red-bright)]'
+function ppTabClasses(active) { return `${PP_TAB_BASE_CLASSES} ${active ? PP_TAB_ACTIVE_CLASSES : PP_TAB_INACTIVE_CLASSES}` }
+const PP_METRIC_SELECT_CLASSES = 'text-[11px] text-[color:var(--text)] bg-[var(--bg2)] border-[0.5px] border-[var(--border)] rounded-md py-[3px] px-[6px]'
+
 const SEASON_LABEL = '2025–26';
 
 // SKATER_STATS moved to utils/pwhlPlayerStats.js (Session 91).
@@ -68,9 +134,9 @@ function fmtHeight(inches) {
 
 function PWHLPercentileTile({ label, pct }) {
   return (
-    <div className="pp-quickstat">
-      <span className="pp-quickstat-val">{pct != null ? Math.round(pct) : '—'}</span>
-      <span className="pp-quickstat-label">{label}</span>
+    <div className={PP_QUICKSTAT_CLASSES}>
+      <span className={PP_QUICKSTAT_VAL_CLASSES}>{pct != null ? Math.round(pct) : '—'}</span>
+      <span className={PP_QUICKSTAT_LABEL_CLASSES}>{label}</span>
     </div>
   );
 }
@@ -94,9 +160,9 @@ function PWHLHeaderPanel({ percentiles, comparisonEntry }) {
     { statKey: 'shot_pct', label: 'S%' },
   ];
   return (
-    <div className="pp-header-radar">
-      <div className="pp-quickstats-col">
-        <div className="pp-quickstats">
+    <div className={PP_HEADER_RADAR_CLASSES}>
+      <div className={PP_QUICKSTATS_COL_CLASSES}>
+        <div className={PP_QUICKSTATS_CLASSES}>
           {tiles.map(t => (
             <PWHLPercentileTile key={t.statKey} label={t.label}
               pct={percentiles[PWHL_STAT_PCT_MAP[t.statKey]]?.pct} />
@@ -153,18 +219,18 @@ function PWHLHeatMap({ playerId, season, isGoalie, teamId }) {
 
   if (isGoalie) {
     return (
-      <div className="pp-heatmap-empty">
-        <div className="pp-heatmap-icon">🥅</div>
+      <div className={PP_HEATMAP_EMPTY_CLASSES}>
+        <div className={PP_HEATMAP_ICON_CLASSES}>🥅</div>
         <div>Goalie shot maps not yet available.</div>
-        <div className="pp-heatmap-sub">Coming in a future update.</div>
+        <div className={PP_HEATMAP_SUB_CLASSES}>Coming in a future update.</div>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="pp-heatmap-empty">
-        <div className="pp-heatmap-icon">🎯</div>
+      <div className={PP_HEATMAP_EMPTY_CLASSES}>
+        <div className={PP_HEATMAP_ICON_CLASSES}>🎯</div>
         <div>Loading shot data…</div>
       </div>
     );
@@ -172,10 +238,10 @@ function PWHLHeatMap({ playerId, season, isGoalie, teamId }) {
 
   if (!shotData || !shotData.shots?.length) {
     return (
-      <div className="pp-heatmap-empty">
-        <div className="pp-heatmap-icon">🎯</div>
+      <div className={PP_HEATMAP_EMPTY_CLASSES}>
+        <div className={PP_HEATMAP_ICON_CLASSES}>🎯</div>
         <div>No shot data for this player.</div>
-        <div className="pp-heatmap-sub">Data builds up as games complete.</div>
+        <div className={PP_HEATMAP_SUB_CLASSES}>Data builds up as games complete.</div>
       </div>
     );
   }
@@ -200,20 +266,20 @@ function PWHLHeatMap({ playerId, season, isGoalie, teamId }) {
   const sh     = (goals + sog) > 0 ? ((goals / (goals + sog)) * 100).toFixed(1) : '—';
 
   return (
-    <div className="pp-heatmap">
-      <div className="pp-heatmap-summary">
-        <div className="pp-heatmap-stat"><span className="pp-heatmap-num goal-col">{goals}</span><span>Goals</span></div>
-        <div className="pp-heatmap-stat"><span className="pp-heatmap-num sog-col">{sog}</span><span>SOG</span></div>
-        <div className="pp-heatmap-stat"><span className="pp-heatmap-num">{total}</span><span>Total</span></div>
-        <div className="pp-heatmap-stat"><span className="pp-heatmap-num">{sh}%</span><span>SH%</span></div>
+    <div className={PP_HEATMAP_CLASSES}>
+      <div className={PP_HEATMAP_SUMMARY_CLASSES}>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_GOAL_CLASSES}`}>{goals}</span><span>Goals</span></div>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_SOG_CLASSES}`}>{sog}</span><span>SOG</span></div>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{total}</span><span>Total</span></div>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{sh}%</span><span>SH%</span></div>
       </div>
-      <div className="pp-heatmap-filters">
+      <div className={PP_HEATMAP_FILTERS_CLASSES}>
         {[
           { key: 'all',   label: `All (${total})` },
           { key: 'goals', label: `Goals (${goals})` },
           { key: 'sog',   label: `SOG (${sog})` },
         ].map(f => (
-          <button key={f.key} className={`pp-heatmap-chip${filter === f.key ? ' active' : ''}`}
+          <button key={f.key} className={heatmapChipClasses(filter === f.key)}
             onClick={() => setFilter(f.key)}>{f.label}</button>
         ))}
       </div>
@@ -222,7 +288,7 @@ function PWHLHeatMap({ playerId, season, isGoalie, teamId }) {
         const tTeam  = PWHL_TEAM_MAP[tAbbr];
         const tColor = tTeam?.displayColor || 'var(--team-primary)';
         return (
-          <div className="pp-heatmap-rink">
+          <div className={PP_HEATMAP_RINK_CLASSES}>
             <IceRink events={filtered} roster={{}} hidePlayerFilter
               teamAbbr={tAbbr} teamColor={tColor} />
           </div>
@@ -267,9 +333,9 @@ function PWHLScout({ player, isGoalie, seasonLabel }) {
 
   if (!generated) {
     return (
-      <div className="scout-wrap">
-        <div className="scout-empty">
-          <div className="scout-empty-icon">📋</div>
+      <div className={SCOUT_WRAP_CLASSES}>
+        <div className={SCOUT_EMPTY_CLASSES}>
+          <div className={SCOUT_EMPTY_ICON_CLASSES}>📋</div>
           <div style={{ marginBottom: 12 }}>Generate an AI scouting report for {name}.</div>
           <button
             onClick={generate}
@@ -287,8 +353,8 @@ function PWHLScout({ player, isGoalie, seasonLabel }) {
 
   if (loading) {
     return (
-      <div className="scout-wrap">
-        <div className="scout-loading">
+      <div className={SCOUT_WRAP_CLASSES}>
+        <div className={SCOUT_LOADING_CLASSES}>
           {[95, 88, 72, 90, 65].map((w, i) => (
             <div key={i} className="skeleton" style={{ height: 11, width: `${w}%`, marginBottom: 10, borderRadius: 4 }} />
           ))}
@@ -299,9 +365,9 @@ function PWHLScout({ player, isGoalie, seasonLabel }) {
 
   if (!blurb) {
     return (
-      <div className="scout-wrap">
-        <div className="scout-empty">
-          <div className="scout-empty-icon">📋</div>
+      <div className={SCOUT_WRAP_CLASSES}>
+        <div className={SCOUT_EMPTY_CLASSES}>
+          <div className={SCOUT_EMPTY_ICON_CLASSES}>📋</div>
           <div>Failed to generate report. Try again.</div>
           <button onClick={() => { setGenerated(false); }} style={{ marginTop: 8, padding: '6px 16px', cursor: 'pointer' }}>Retry</button>
         </div>
@@ -310,13 +376,13 @@ function PWHLScout({ player, isGoalie, seasonLabel }) {
   }
 
   return (
-    <div className="scout-wrap">
-      <div className="scout-header">
-        <span className="scout-label">Scouting Report</span>
-        <span className="scout-season">{seasonLabel}</span>
+    <div className={SCOUT_WRAP_CLASSES}>
+      <div className={SCOUT_HEADER_CLASSES}>
+        <span className={SCOUT_LABEL_CLASSES}>Scouting Report</span>
+        <span className={SCOUT_SEASON_CLASSES}>{seasonLabel}</span>
       </div>
-      <div className="scout-blurb">{blurb}</div>
-      <div className="scout-footer">AI-generated · EyeWall Analytics</div>
+      <div className={SCOUT_BLURB_CLASSES}>{blurb}</div>
+      <div className={SCOUT_FOOTER_CLASSES}>AI-generated · EyeWall Analytics</div>
     </div>
   );
 }
@@ -489,20 +555,20 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
         <div className={`pp-header ${showHeaderReflow ? 'pp-header-reflow' : ''}`}>
           <div className="pp-photo-wrap">
             {!imgErr ? (
-              <img src={headshot} alt={name} className="pp-photo" onError={() => setImgErr(true)} />
+              <img src={headshot} alt={name} className={PP_PHOTO_CLASSES} onError={() => setImgErr(true)} />
             ) : (
-              <div className="pp-photo-fallback">{initials}</div>
+              <div className={PP_PHOTO_FALLBACK_CLASSES}>{initials}</div>
             )}
           </div>
           <div className="pp-identity">
-            {p.jersey_number && <div className="pp-num">#{p.jersey_number}</div>}
+            {p.jersey_number && <div className={PP_NUM_CLASSES}>#{p.jersey_number}</div>}
             <div className="pp-name">
               <span className="pp-first">{firstName}</span>
-              <span className="pp-last">{lastName}</span>
+              <span className={`${PP_LAST_CLASSES} ${showHeaderReflow ? PP_LAST_REFLOW_CLASSES : ''}`}>{lastName}</span>
             </div>
-            <div className="pp-chips">
-              {p.position && <span className="pp-pos-chip">{posLabel(p.position)}</span>}
-              {!showHeaderReflow && p.shoots && <span className="pp-chip">Shoots {p.shoots === 'L' ? 'Left' : p.shoots === 'R' ? 'Right' : p.shoots}</span>}
+            <div className={PP_CHIPS_CLASSES}>
+              {p.position && <span className={PP_POS_CHIP_CLASSES}>{posLabel(p.position)}</span>}
+              {!showHeaderReflow && p.shoots && <span className={PP_CHIP_CLASSES}>Shoots {p.shoots === 'L' ? 'Left' : p.shoots === 'R' ? 'Right' : p.shoots}</span>}
             </div>
             {!showHeaderReflow && p.birth_date && (
               <div className="pp-birth">
@@ -518,32 +584,32 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
 
         {/* ── Bio row — full width, 6 evenly-spaced columns (Session 85) ── */}
         {showHeaderReflow && (
-          <div className="pp-bio-row">
+          <div className={PP_BIO_ROW_CLASSES}>
             {bioFields.map(f => (
-              <div className="pp-bio-field" key={f.label}>
-                <div className="pp-bio-label">{f.label}</div>
-                <div className="pp-bio-value">{f.value ?? '—'}</div>
+              <div className={PP_BIO_FIELD_CLASSES} key={f.label}>
+                <div className={PP_BIO_LABEL_CLASSES}>{f.label}</div>
+                <div className={PP_BIO_VALUE_CLASSES}>{f.value ?? '—'}</div>
               </div>
             ))}
           </div>
         )}
 
         {/* ── Tabs ── */}
-        <div className="pp-tabs">
-          <button className={`pp-tab${ppTab === 'stats'   ? ' active' : ''}`} onClick={() => setPpTab('stats')}>📊 Stats</button>
+        <div className={PP_TABS_CLASSES}>
+          <button className={ppTabClasses(ppTab === 'stats')} onClick={() => setPpTab('stats')}>📊 Stats</button>
           {!isGoalie && (
-            <button className={`pp-tab${ppTab === 'heatmap' ? ' active' : ''}`} onClick={() => setPpTab('heatmap')}>🎯 Heat Map</button>
+            <button className={ppTabClasses(ppTab === 'heatmap')} onClick={() => setPpTab('heatmap')}>🎯 Heat Map</button>
           )}
-          <button className={`pp-tab${ppTab === 'scout'   ? ' active' : ''}`} onClick={() => setPpTab('scout')}>🔍 Scout</button>
-          <button className={`pp-tab${ppTab === 'compare' ? ' active' : ''}`} onClick={() => setPpTab('compare')}>🆚 Compare</button>
+          <button className={ppTabClasses(ppTab === 'scout')} onClick={() => setPpTab('scout')}>🔍 Scout</button>
+          <button className={ppTabClasses(ppTab === 'compare')} onClick={() => setPpTab('compare')}>🆚 Compare</button>
         </div>
 
         {/* ── Stats tab ── */}
         {ppTab === 'stats' && (
           <div className="pp-body">
             {statsLoading ? (
-              <div className="pp-heatmap-empty">
-                <div className="pp-heatmap-icon">📊</div>
+              <div className={PP_HEATMAP_EMPTY_CLASSES}>
+                <div className={PP_HEATMAP_ICON_CLASSES}>📊</div>
                 <div>Loading stats…</div>
               </div>
             ) : (
@@ -595,7 +661,7 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
                 <div className="stat-section-header">
                   <span className="stat-section-label">Per-game trend</span>
                   <select
-                    className="pp-metric-select"
+                    className={PP_METRIC_SELECT_CLASSES}
                     value={activeChartDef?.key || ''}
                     onChange={e => setChartMetricKey(e.target.value)}
                     aria-label="Trend metric"

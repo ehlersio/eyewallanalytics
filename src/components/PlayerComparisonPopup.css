@@ -112,6 +112,23 @@
   white-space: nowrap;
 }
 
+/* Compact variant for PlayerPopup.jsx/PWHLPlayerPopup.jsx's 80px-wide
+ * .pp-quickstats-col -- moved here from PlayersView.css (Session 97, Phase
+ * 3, sub-PR 2) when .pp-quickstats-col's own base rule was migrated to
+ * Tailwind and deleted. .pce-toggle/.pce-wrap's own base rules above
+ * default to sitting inline next to a full-width header, too wide for
+ * this narrow column. */
+.pp-quickstats-col .pce-toggle {
+  width: 100%;
+  box-sizing: border-box;
+  white-space: normal;
+  text-align: center;
+  font-size: 9px;
+  padding: 4px 2px;
+  line-height: 1.2;
+}
+.pp-quickstats-col .pce-wrap { width: 100%; }
+
 .pce-toggle:hover {
   color: var(--text);
   border-color: var(--blue-bright);

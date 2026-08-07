@@ -44,8 +44,137 @@ import {
 } from '../utils/nhlPlayerStats'
 import '../views/PlayersView.css'
 
+// Tailwind migration (Session 97, Phase 3, sub-PR 2). Most of this file's
+// classes are fully migrated (Tailwind utility strings below, CSS rules
+// deleted from PlayersView.css in the same sub-PR). A subset is
+// deliberately left as plain, literal classNames -- not migrated here --
+// because TeamComparisonPopup.jsx (sub-PR 3, still unmigrated) uses the
+// same classes directly in its own markup, so PlayersView.css can't drop
+// those rules yet:
+//   player-popup, pp-header, pp-close, pp-body, pp-no-stats, pp-identity,
+//   pp-name, pp-first, pp-birth, pp-photo-wrap, pp-radar-note,
+//   stat-section, stat-section-header, stat-section-label,
+//   stat-section-body, stat-section-peers, popup-backdrop
+// pp-header-reflow and highlight-section are ALSO left plain even though
+// TeamComparisonPopup.jsx doesn't use them: both override properties
+// (align-items/gap; a child span's color) that a leave-alone class already
+// sets unlayered, so a Tailwind utility trying to override them would lose
+// regardless of the "active" marker being present (same bug as .card in
+// sub-PR 1) -- the only way to keep the override working is to leave the
+// whole mechanism (marker + CSS) intact until sub-PR 3 migrates the shell
+// itself. pp-radar-stale rides along with pp-radar-note for the same reason.
+// pp-last is fully migrated (not shared with TCP) but kept as a literal
+// marker anyway -- .pp-header-reflow .pp-last{overflow-wrap:break-word} is
+// a small surviving compound rule that still needs the classname to fire;
+// it doesn't collide with anything Tailwind sets on pp-last, so it's safe
+// to leave untouched rather than reinvent via inline style.
+// pp-quickstats-col is fully migrated + its base rule deleted, but kept
+// literal too: PlayersView.css's `.pp-quickstats-col .pce-toggle`/`.pce-wrap`
+// compact-mode override (for PlayerComparisonEntry.jsx, a sub-PR-3-adjacent
+// file) is moved into PlayerComparisonPopup.css in this same sub-PR rather
+// than left dangling.
+//
+// Cypress marker classnames kept (audited via grep): pa-wrap, pp-heatmap-empty,
+// pp-quickstats-col, pp-radar-wrap, pp-tab.
+
 const SEASON       = Number(TEAM_CONFIG.season.slice(0, 4) + TEAM_CONFIG.season.slice(4))
 const SEASON_LABEL = `${TEAM_CONFIG.season.slice(0, 4)}–${TEAM_CONFIG.season.slice(6)}`
+
+// ─── Tailwind class constants (Session 97, Phase 3, sub-PR 2) ─────────
+const HEATMAP_CHIP_BASE_CLASSES = 'py-1 px-[10px] rounded-xl text-[11px] font-semibold leading-none border-[0.5px] border-[var(--border)] bg-[var(--bg2)] text-[color:var(--text-muted)] cursor-pointer'
+const HEATMAP_CHIP_ACTIVE_CLASSES = 'bg-[var(--red-bright)] text-[#fff] border-[var(--red-bright)]'
+function heatmapChipClasses(active) { return `${HEATMAP_CHIP_BASE_CLASSES} ${active ? HEATMAP_CHIP_ACTIVE_CLASSES : ''}` }
+
+const PP_PHOTO_CLASSES = 'w-[80px] h-[80px] object-cover object-top rounded-[var(--radius)] bg-[var(--bg3)] border-[0.5px] border-[var(--border-2)]'
+const PP_PHOTO_FALLBACK_CLASSES = 'w-[80px] h-[80px] rounded-[var(--radius)] bg-[var(--bg3)] border-[0.5px] border-[var(--border-2)] flex items-center justify-center font-[family-name:var(--font-display)] text-[24px] font-bold text-[color:var(--text-dim)]'
+const PP_NUM_CLASSES = 'font-[family-name:var(--font-display)] text-[11px] font-bold text-[color:var(--red-bright)] tracking-[0.06em]'
+const PP_LAST_CLASSES = 'pp-last font-[family-name:var(--font-display)] text-[20px] font-bold text-[color:var(--text)]'
+const PP_LAST_REFLOW_CLASSES = 'break-words'
+const PP_CHIPS_CLASSES = 'flex gap-[5px] flex-wrap mt-[2px]'
+const PP_POS_CHIP_CLASSES = 'pp-pos-chip font-[family-name:var(--font-display)] text-[10px] font-bold bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[0.5px] border-[var(--red-border)] py-[2px] px-[7px] rounded'
+const PP_CHIP_CLASSES = 'pp-chip text-[10px] text-[color:var(--text-muted)] bg-[var(--bg3)] py-[2px] px-[6px] rounded'
+
+const PP_RANKINGS_CLASSES = 'flex flex-col items-center gap-2 py-3 px-4 bg-[var(--bg2)] border-b-[0.5px] border-[var(--border)] text-center'
+const PP_RANK_LABEL_CLASSES = 'text-[10px] text-[color:var(--text-dim)] uppercase tracking-[0.08em] font-[family-name:var(--font-display)] font-semibold'
+const PP_RANK_ITEMS_CLASSES = 'flex gap-6 justify-center flex-wrap'
+const RANK_BADGE_CLASSES = 'flex flex-col items-center gap-[2px]'
+const RANK_NUM_CLASSES = 'font-[family-name:var(--font-display)] text-[22px] font-bold leading-none'
+const RANK_NUM_SUP_CLASSES = 'text-[11px]'
+const RANK_SCOPE_CLASSES = 'text-[10px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]'
+
+const PP_LOADING_CLASSES = 'p-4 flex flex-col gap-2'
+const PP_TABS_CLASSES = 'flex border-b-[0.5px] border-[var(--border)] mx-[-16px] px-4'
+const PP_TAB_BASE_CLASSES = 'pp-tab flex-1 py-[10px] text-[13px] font-semibold bg-transparent border-0 border-b-2 cursor-pointer [transition:all_0.15s]'
+const PP_TAB_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] border-b-transparent'
+const PP_TAB_ACTIVE_CLASSES = 'text-[color:var(--red-bright)] border-b-[var(--red-bright)]'
+function ppTabClasses(active) { return `${PP_TAB_BASE_CLASSES} ${active ? PP_TAB_ACTIVE_CLASSES : PP_TAB_INACTIVE_CLASSES}` }
+
+const PP_HEATMAP_CLASSES = 'py-3 px-4'
+const PP_HEATMAP_EMPTY_CLASSES = 'pp-heatmap-empty py-8 px-4 text-center text-[color:var(--text-muted)] text-[13px] flex flex-col items-center gap-2'
+const PP_HEATMAP_ICON_CLASSES = 'text-[28px]'
+const PP_HEATMAP_SUB_CLASSES = 'text-[11px] text-[color:var(--text-dim)]'
+const PP_HEATMAP_SUMMARY_CLASSES = 'flex justify-around py-[8px_0_12px] border-b-[0.5px] border-[var(--border)] mb-[10px]'
+const PP_HEATMAP_STAT_CLASSES = 'flex flex-col items-center gap-[2px] text-[10px] text-[color:var(--text-dim)]'
+const PP_HEATMAP_NUM_BASE_CLASSES = 'text-[18px] font-bold font-[family-name:var(--font-mono)]'
+const PP_HEATMAP_NUM_DEFAULT_CLASSES = 'text-[color:var(--text)]'
+const PP_HEATMAP_NUM_GOAL_CLASSES = 'text-[#f87171]'
+const PP_HEATMAP_NUM_SOG_CLASSES = 'text-[#4ade80]'
+const PP_HEATMAP_FILTERS_CLASSES = 'flex gap-[6px] flex-wrap mb-[10px]'
+const PP_HEATMAP_RINK_CLASSES = 'rounded-lg overflow-hidden w-full'
+
+const PA_WRAP_CLASSES = 'pa-wrap py-3 px-4 pb-4'
+const PA_WAR_CARD_CLASSES = 'flex items-center gap-4 bg-[var(--bg2)] rounded-[10px] py-[14px] px-4 mb-3'
+const PA_WAR_MAIN_CLASSES = 'flex flex-col items-center shrink-0'
+const PA_WAR_NUM_CLASSES = 'text-[32px] font-extrabold font-[family-name:var(--font-mono)] leading-none'
+const PA_WAR_LABEL_CLASSES = 'text-[11px] font-bold text-[color:var(--text-dim)] tracking-[0.08em] mt-[2px]'
+const PA_WAR_META_CLASSES = 'flex flex-col gap-[3px] text-[13px] font-semibold'
+const PA_WAR_SUB_CLASSES = 'text-[11px] text-[color:var(--text-dim)] font-normal'
+const PA_CONTEXT_CLASSES = 'flex gap-2 flex-wrap mb-[14px]'
+const PA_CONTEXT_CENTERED_CLASSES = 'justify-center'
+const PA_CTX_ITEM_CLASSES = 'flex flex-col items-center bg-[var(--bg2)] rounded-lg py-[6px] px-[10px] text-[10px] text-[color:var(--text-dim)] gap-[2px] flex-[1_1_calc(33.333%-8px)] min-w-[60px] max-w-[120px]'
+const PA_CTX_VAL_CLASSES = 'text-[14px] font-bold font-[family-name:var(--font-mono)] text-[color:var(--text)]'
+const PA_CTX_LABEL_CLASSES = 'inline-flex items-center gap-[2px] whitespace-nowrap'
+const PA_SECTION_LABEL_CLASSES = 'text-[10px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] mb-2'
+const PA_BARS_CLASSES = 'flex flex-col gap-[6px]'
+const PA_SOURCE_CLASSES = 'text-[10px] text-[color:var(--text-dim)] mt-[14px] text-center'
+
+const RVP_WRAP_CLASSES = 'mt-[18px] pt-[14px] border-t-[0.5px] border-[var(--border)]'
+const RVP_CONTEXT_CLASSES = `${PA_CONTEXT_CLASSES} mb-[10px]`
+
+const SCOUT_WRAP_CLASSES = 'p-4'
+const SCOUT_HEADER_CLASSES = 'flex items-center justify-between mb-3'
+const SCOUT_LABEL_CLASSES = 'text-[10px] font-bold uppercase tracking-[0.1em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)]'
+const SCOUT_SEASON_CLASSES = 'text-[10px] font-bold py-[2px] px-[7px] rounded-[10px] bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[0.5px] border-[var(--red-border)] uppercase tracking-[0.06em] font-[family-name:var(--font-display)]'
+const SCOUT_BLURB_CLASSES = 'text-[14px] leading-[1.65] text-[color:var(--text)] bg-[var(--bg2)] rounded-[10px] py-[14px] px-4 border-[0.5px] border-[var(--border)] whitespace-pre-wrap'
+const SCOUT_FOOTER_CLASSES = 'text-[10px] text-[color:var(--text-dim)] mt-[10px] text-center'
+const SCOUT_LOADING_CLASSES = 'flex flex-col gap-1 py-1'
+const SCOUT_EMPTY_CLASSES = 'py-8 px-4 text-center text-[color:var(--text-muted)] text-[13px] flex flex-col items-center gap-2'
+const SCOUT_EMPTY_ICON_CLASSES = 'text-[28px]'
+const SCOUT_EMPTY_SUB_CLASSES = 'text-[11px] text-[color:var(--text-dim)]'
+
+const PP_HEADER_RADAR_CLASSES = 'flex items-center gap-2 flex-[1_1_auto] min-w-0 max-[340px]:flex-col'
+const PP_RADAR_WRAP_CLASSES = 'pp-radar-wrap flex-[1_1_0%] min-w-[50px] max-w-[130px] max-[340px]:max-w-full'
+const PP_QUICKSTATS_COL_CLASSES = 'pp-quickstats-col flex flex-col gap-1 flex-none'
+const PP_QUICKSTATS_CLASSES = 'grid [grid-template-columns:38px_38px] gap-1 max-[340px]:w-full'
+const PP_QUICKSTAT_CLASSES = 'flex flex-col items-center bg-[var(--bg2)] rounded-md py-1 px-[2px] min-w-0'
+const PP_QUICKSTAT_VAL_CLASSES = 'font-[family-name:var(--font-display)] text-[13px] font-bold text-[color:var(--text)] leading-[1.1]'
+const PP_QUICKSTAT_LABEL_CLASSES = 'text-[8px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]'
+
+const PP_BIO_ROW_CLASSES = 'grid grid-cols-6 gap-[8px_4px] py-[10px_12px_14px] border-b-[0.5px] border-[var(--border)] max-[340px]:grid-cols-3'
+const PP_BIO_FIELD_CLASSES = 'flex flex-col items-center gap-[3px] text-center min-w-0'
+const PP_BIO_LABEL_CLASSES = 'text-[8px] uppercase tracking-[0.06em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] font-semibold'
+const PP_BIO_VALUE_CLASSES = 'text-[11px] font-semibold text-[color:var(--text)] [overflow-wrap:break-word]'
+
+const PP_CONTRACT_CLASSES = 'py-3 px-4 bg-[var(--bg2)] border-b-[0.5px] border-[var(--border)] text-center'
+const PP_CONTRACT_ROW_CLASSES = 'grid grid-cols-3 gap-[10px_6px] mb-[10px]'
+const PP_CONTRACT_ITEM_CLASSES = 'flex flex-col items-center gap-[3px]'
+const PP_CONTRACT_LABEL_CLASSES = 'text-[9px] uppercase tracking-[0.08em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] font-semibold'
+const PP_CONTRACT_VAL_CLASSES = 'font-[family-name:var(--font-display)] text-[15px] font-bold text-[color:var(--text)]'
+const PP_VALUE_ROW_CLASSES = 'flex items-center justify-center gap-2 flex-wrap'
+const PP_VALUE_BADGE_CLASSES = 'flex items-center gap-1 text-[11px] font-semibold py-1 px-3 rounded-xl border-[0.5px]'
+const PP_ADV_CHIP_CLASSES = 'pp-adv-chip flex items-center gap-[3px] text-[11px] text-[color:var(--text-muted)] bg-[var(--bg3)] py-[3px] px-2 rounded-lg'
+const PP_VALUE_SCORE_CLASSES = 'text-[10px] opacity-75'
+const PP_METRIC_SELECT_CLASSES = 'text-[11px] text-[color:var(--text)] bg-[var(--bg2)] border-[0.5px] border-[var(--border)] rounded-md py-[3px] px-[6px]'
 
 // ─── Stat definitions ─────────────────────────────────────────
 // SKATER_STATS/GOALIE_STATS/groupStats/posLabel moved to
@@ -127,9 +256,9 @@ function RankBadge({ label, rank }) {
   const suffix = rank === 1 ? 'st' : rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th'
   const color  = rank <= 3 ? 'var(--green)' : rank <= 10 ? 'var(--amber)' : 'var(--text-muted)'
   return (
-    <div className="rank-badge">
-      <span className="rank-num" style={{ color }}>{rank}<sup>{suffix}</sup></span>
-      <span className="rank-scope">{label}</span>
+    <div className={RANK_BADGE_CLASSES}>
+      <span className={RANK_NUM_CLASSES} style={{ color }}>{rank}<sup className={RANK_NUM_SUP_CLASSES}>{suffix}</sup></span>
+      <span className={RANK_SCOPE_CLASSES}>{label}</span>
     </div>
   )
 }
@@ -169,7 +298,7 @@ function RadarAxisTick({ x, y, payload, textAnchor }) {
 function PlayerRadarChart({ data, color, staleNote }) {
   const missing = data.filter(d => !d.hasData).map(d => d.axis)
   return (
-    <div className="pp-radar-wrap">
+    <div className={PP_RADAR_WRAP_CLASSES}>
       <ResponsiveContainer width="100%" height={150}>
         <RadarChart data={data} outerRadius="62%">
           <PolarGrid stroke="var(--border-2)" />
@@ -196,9 +325,9 @@ function PlayerRadarChart({ data, color, staleNote }) {
 
 function QuickStatPill({ label, value }) {
   return (
-    <div className="pp-quickstat">
-      <span className="pp-quickstat-val">{value ?? '—'}</span>
-      <span className="pp-quickstat-label">{label}</span>
+    <div className={PP_QUICKSTAT_CLASSES}>
+      <span className={PP_QUICKSTAT_VAL_CLASSES}>{value ?? '—'}</span>
+      <span className={PP_QUICKSTAT_LABEL_CLASSES}>{label}</span>
     </div>
   )
 }
@@ -229,10 +358,10 @@ function SkaterHeaderPanel({ percentiles, boxStats, teamColor, statsStale, stats
     ? `Not enough games yet this season — showing ${nhlSeasonLabel(statsSeason)}`
     : null
   return (
-    <div className="pp-header-radar">
+    <div className={PP_HEADER_RADAR_CLASSES}>
       <PlayerRadarChart data={radarData} color={teamColor} staleNote={staleNote} />
-      <div className="pp-quickstats-col">
-        <div className="pp-quickstats">
+      <div className={PP_QUICKSTATS_COL_CLASSES}>
+        <div className={PP_QUICKSTATS_CLASSES}>
           <QuickStatPill label="G"   value={boxStats?.goals} />
           <QuickStatPill label="A"   value={boxStats?.assists} />
           <QuickStatPill label="P"   value={boxStats?.points} />
@@ -253,10 +382,10 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
   if (isGoalie) {
     if (!goalieShotData) {
       return (
-        <div className="pp-heatmap-empty">
-          <div className="pp-heatmap-icon">🥅</div>
+        <div className={PP_HEATMAP_EMPTY_CLASSES}>
+          <div className={PP_HEATMAP_ICON_CLASSES}>🥅</div>
           <div>No shot data yet.</div>
-          <div className="pp-heatmap-sub">Data builds up as games complete.</div>
+          <div className={PP_HEATMAP_SUB_CLASSES}>Data builds up as games complete.</div>
         </div>
       )
     }
@@ -316,25 +445,25 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
     }
 
     return (
-      <div className="pp-heatmap">
-        <div className="pp-heatmap-summary">
-          <div className="pp-heatmap-stat"><span className="pp-heatmap-num goal-col">{goals}</span><span>Goals</span></div>
-          <div className="pp-heatmap-stat"><span className="pp-heatmap-num sog-col">{saves}</span><span>Saves</span></div>
-          <div className="pp-heatmap-stat"><span className="pp-heatmap-num">{total}</span><span>Shots faced</span></div>
-          <div className="pp-heatmap-stat"><span className="pp-heatmap-num">{svPct}</span><span>SV%</span></div>
+      <div className={PP_HEATMAP_CLASSES}>
+        <div className={PP_HEATMAP_SUMMARY_CLASSES}>
+          <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_GOAL_CLASSES}`}>{goals}</span><span>Goals</span></div>
+          <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_SOG_CLASSES}`}>{saves}</span><span>Saves</span></div>
+          <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{total}</span><span>Shots faced</span></div>
+          <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{svPct}</span><span>SV%</span></div>
         </div>
-        <div className="pp-heatmap-filters" style={{ marginBottom: 6 }}>
-          <button className={`pp-heatmap-chip ${mapMode === 'dots' ? 'active' : ''}`} onClick={() => setMapMode('dots')}>Dot map</button>
-          <button className={`pp-heatmap-chip ${mapMode === 'zones' ? 'active' : ''}`} onClick={() => setMapMode('zones')}>Zone SV%</button>
+        <div className={PP_HEATMAP_FILTERS_CLASSES} style={{ marginBottom: 6 }}>
+          <button className={heatmapChipClasses(mapMode === 'dots')} onClick={() => setMapMode('dots')}>Dot map</button>
+          <button className={heatmapChipClasses(mapMode === 'zones')} onClick={() => setMapMode('zones')}>Zone SV%</button>
         </div>
         {mapMode === 'dots' && (
-          <div className="pp-heatmap-filters">
+          <div className={PP_HEATMAP_FILTERS_CLASSES}>
             {[
               { key: 'all',   label: `All (${total})` },
               { key: 'goals', label: `Goals (${goals})` },
               { key: 'saves', label: `Saves (${saves})` },
             ].map(f => (
-              <button key={f.key} className={`pp-heatmap-chip ${filter === f.key ? 'active' : ''}`}
+              <button key={f.key} className={heatmapChipClasses(filter === f.key)}
                 onClick={() => setFilter(f.key)}>{f.label}</button>
             ))}
           </div>
@@ -349,7 +478,7 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
             <span style={{ color:'var(--text-dim)', marginLeft:'auto' }}>min 5 shots</span>
           </div>
         )}
-        <div className="pp-heatmap-rink">
+        <div className={PP_HEATMAP_RINK_CLASSES}>
           <svg viewBox="0 0 300 230" width="100%" xmlns="http://www.w3.org/2000/svg" style={{ display:'block' }}>
             <rect x="20" y="10" width="260" height="205" rx="12" fill="#d6eaf5" stroke="#9ab8cc" strokeWidth="1" />
             <rect x="133" y="10" width="34" height="14" rx="2" fill="rgba(204,34,0,0.08)" stroke="#cc2200" strokeWidth="1.5" />
@@ -420,10 +549,10 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
   // Skater heat map
   if (!shotData) {
     return (
-      <div className="pp-heatmap-empty">
-        <div className="pp-heatmap-icon">🎯</div>
+      <div className={PP_HEATMAP_EMPTY_CLASSES}>
+        <div className={PP_HEATMAP_ICON_CLASSES}>🎯</div>
         <div>No season shot data yet.</div>
-        <div className="pp-heatmap-sub">Data builds up as games complete.</div>
+        <div className={PP_HEATMAP_SUB_CLASSES}>Data builds up as games complete.</div>
       </div>
     )
   }
@@ -450,27 +579,27 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
   const sh      = (goals + sog) > 0 ? ((goals / (goals + sog)) * 100).toFixed(1) : '—'
 
   return (
-    <div className="pp-heatmap">
-      <div className="pp-heatmap-summary">
-        <div className="pp-heatmap-stat"><span className="pp-heatmap-num goal-col">{goals}</span><span>Goals</span></div>
-        <div className="pp-heatmap-stat"><span className="pp-heatmap-num sog-col">{sog}</span><span>SOG</span></div>
-        <div className="pp-heatmap-stat"><span className="pp-heatmap-num">{missed}</span><span>Missed</span></div>
-        <div className="pp-heatmap-stat"><span className="pp-heatmap-num">{total}</span><span>Total</span></div>
-        <div className="pp-heatmap-stat"><span className="pp-heatmap-num">{sh}%</span><span>SH%</span></div>
-        {shotData.games && <div className="pp-heatmap-stat"><span className="pp-heatmap-num">{shotData.games}</span><span>Games</span></div>}
+    <div className={PP_HEATMAP_CLASSES}>
+      <div className={PP_HEATMAP_SUMMARY_CLASSES}>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_GOAL_CLASSES}`}>{goals}</span><span>Goals</span></div>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_SOG_CLASSES}`}>{sog}</span><span>SOG</span></div>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{missed}</span><span>Missed</span></div>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{total}</span><span>Total</span></div>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{sh}%</span><span>SH%</span></div>
+        {shotData.games && <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{shotData.games}</span><span>Games</span></div>}
       </div>
-      <div className="pp-heatmap-filters">
+      <div className={PP_HEATMAP_FILTERS_CLASSES}>
         {[
           { key: 'all',    label: `All (${total})` },
           { key: 'goals',  label: `Goals (${goals})` },
           { key: 'sog',    label: `SOG (${sog})` },
           { key: 'missed', label: `Missed (${missed})` },
         ].map(f => (
-          <button key={f.key} className={`pp-heatmap-chip ${filter === f.key ? 'active' : ''}`}
+          <button key={f.key} className={heatmapChipClasses(filter === f.key)}
             onClick={() => setFilter(f.key)}>{f.label}</button>
         ))}
       </div>
-      <div className="pp-heatmap-rink">
+      <div className={PP_HEATMAP_RINK_CLASSES}>
         <IceRink events={filtered} roster={{}} hidePlayerFilter />
       </div>
     </div>
@@ -485,10 +614,10 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
   if (isGoalie) {
     if (!goalieData) {
       return (
-        <div className="pp-heatmap-empty">
-          <div className="pp-heatmap-icon">🥅</div>
+        <div className={PP_HEATMAP_EMPTY_CLASSES}>
+          <div className={PP_HEATMAP_ICON_CLASSES}>🥅</div>
           <div>Analytics data not yet available.</div>
-          <div className="pp-heatmap-sub">Updates daily from MoneyPuck.</div>
+          <div className={PP_HEATMAP_SUB_CLASSES}>Updates daily from MoneyPuck.</div>
         </div>
       )
     }
@@ -496,28 +625,28 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
     const gsaxColor = gsax >= 5 ? '#4ade80' : gsax >= 0 ? '#fbbf24' : '#f87171'
     const gsaxLabel = gsax >= 10 ? 'Elite' : gsax >= 5 ? 'Above average' : gsax >= 0 ? 'Average' : 'Below average'
     return (
-      <div className="pa-wrap">
-        <div className="pa-war-card">
-          <div className="pa-war-main">
-            <span className="pa-war-num" style={{ color: gsaxColor }}>{gsax > 0 ? '+' : ''}{gsax}</span>
-            <span className="pa-war-label">GSAX</span>
+      <div className={PA_WRAP_CLASSES}>
+        <div className={PA_WAR_CARD_CLASSES}>
+          <div className={PA_WAR_MAIN_CLASSES}>
+            <span className={PA_WAR_NUM_CLASSES} style={{ color: gsaxColor }}>{gsax > 0 ? '+' : ''}{gsax}</span>
+            <span className={PA_WAR_LABEL_CLASSES}>GSAX</span>
           </div>
-          <div className="pa-war-meta">
+          <div className={PA_WAR_META_CLASSES}>
             <span style={{ color: gsaxColor }}>{gsaxLabel}</span>
-            <span className="pa-war-sub">{gp} GP · {gsax60 != null ? `${gsax60 > 0 ? '+' : ''}${gsax60} per 60` : ''}</span>
-            <span className="pa-war-sub" style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
+            <span className={PA_WAR_SUB_CLASSES}>{gp} GP · {gsax60 != null ? `${gsax60 > 0 ? '+' : ''}${gsax60} per 60` : ''}</span>
+            <span className={PA_WAR_SUB_CLASSES} style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
               Goals saved above expected — flurry-adjusted xGoals model
             </span>
           </div>
         </div>
-        <div className="pa-context pa-context-centered">
-          {evSvPct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{evSvPct}%</span><span className="pa-ctx-label">5on5 SV% <InfoTip text="Save percentage at even strength (5-on-5 only). Removes special teams situations which can skew overall SV%. The most stable indicator of true goaltending ability." position="above" /></span></div>}
-          {hdSvPct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{hdSvPct}%</span><span className="pa-ctx-label">HD SV% <InfoTip text="Save percentage on high-danger shots — taken within ~15 feet of the net. The hardest shots to stop; the best quality-adjusted goalie metric." position="above" /></span></div>}
-          {mdSvPct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{mdSvPct}%</span><span className="pa-ctx-label">MD SV% <InfoTip text="Save percentage on medium-danger shots (15–30 feet from net). Complements HD SV% for a fuller picture of save quality across shot locations." position="above" /></span></div>}
-          {pkSvPct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{pkSvPct}%</span><span className="pa-ctx-label">PK SV% <InfoTip text="Save percentage while shorthanded. Penalty kill goaltending requires different positioning — some goalies are significantly better or worse in this situation than at even strength." position="above" /></span></div>}
+        <div className={`${PA_CONTEXT_CLASSES} ${PA_CONTEXT_CENTERED_CLASSES}`}>
+          {evSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{evSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>5on5 SV% <InfoTip text="Save percentage at even strength (5-on-5 only). Removes special teams situations which can skew overall SV%. The most stable indicator of true goaltending ability." position="above" /></span></div>}
+          {hdSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{hdSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>HD SV% <InfoTip text="Save percentage on high-danger shots — taken within ~15 feet of the net. The hardest shots to stop; the best quality-adjusted goalie metric." position="above" /></span></div>}
+          {mdSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{mdSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>MD SV% <InfoTip text="Save percentage on medium-danger shots (15–30 feet from net). Complements HD SV% for a fuller picture of save quality across shot locations." position="above" /></span></div>}
+          {pkSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{pkSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>PK SV% <InfoTip text="Save percentage while shorthanded. Penalty kill goaltending requires different positioning — some goalies are significantly better or worse in this situation than at even strength." position="above" /></span></div>}
         </div>
-        <div className="pa-section-label">Percentile rankings vs all NHL goalies</div>
-        <div className="pa-bars">
+        <div className={PA_SECTION_LABEL_CLASSES}>Percentile rankings vs all NHL goalies</div>
+        <div className={PA_BARS_CLASSES}>
           <PercentileBar label="GSAX"            pct={p.gsax?.pct}   note={p.gsax?.note} />
           <PercentileBar label="GSAX/60"         pct={p.gsax60?.pct} note={p.gsax60?.note} />
           <PercentileBar label="5-on-5 SV%"      pct={p.evSv?.pct}   note={p.evSv?.note} />
@@ -525,17 +654,17 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
           <PercentileBar label="Med Danger SV%"  pct={p.mdSv?.pct}   note={p.mdSv?.note} />
           <PercentileBar label="PK SV%"          pct={p.pkSv?.pct}   note={p.pkSv?.note} />
         </div>
-        <div className="pa-source">Data: MoneyPuck.com · Updates nightly</div>
+        <div className={PA_SOURCE_CLASSES}>Data: MoneyPuck.com · Updates nightly</div>
       </div>
     )
   }
 
   if (!mpData) {
     return (
-      <div className="pp-heatmap-empty">
-        <div className="pp-heatmap-icon">🧮</div>
+      <div className={PP_HEATMAP_EMPTY_CLASSES}>
+        <div className={PP_HEATMAP_ICON_CLASSES}>🧮</div>
         <div>Analytics data not yet available.</div>
-        <div className="pp-heatmap-sub">Updates daily from MoneyPuck.</div>
+        <div className={PP_HEATMAP_SUB_CLASSES}>Updates daily from MoneyPuck.</div>
       </div>
     )
   }
@@ -550,35 +679,35 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
     : war >= 0.5 ? 'Solid contributor' : war >= -0.5 ? 'Replacement level' : 'Below replacement'
 
   return (
-    <div className="pa-wrap">
-      <div className="pa-war-card">
-        <div className="pa-war-main">
-          <span className="pa-war-num" style={{ color: warColor }}>{war > 0 ? '+' : ''}{war}</span>
-          <span className="pa-war-label">
+    <div className={PA_WRAP_CLASSES}>
+      <div className={PA_WAR_CARD_CLASSES}>
+        <div className={PA_WAR_MAIN_CLASSES}>
+          <span className={PA_WAR_NUM_CLASSES} style={{ color: warColor }}>{war > 0 ? '+' : ''}{war}</span>
+          <span className={PA_WAR_LABEL_CLASSES}>
             WAR
             <InfoTip text="Wins Above Replacement (beta). EV component uses 5v5 RAPM — ridge regression across 3 seasons of league-wide shift and shot data, controlling for teammates and opponents. PP/PK and finishing components are xGoals-based from MoneyPuck. RAPM is 5v5 only; special teams remain approximate. Zone-start adjustment in development — defensive defensemen may be slightly undervalued in current model. Validated periodically vs Evolving Hockey public RAPM." position="above" />
           </span>
         </div>
-        <div className="pa-war-meta">
+        <div className={PA_WAR_META_CLASSES}>
           <span style={{ color: warColor }}>{warLabel}</span>
-          <span className="pa-war-sub">{gp} GP · Game Score {gameScore}</span>
-          <span className="pa-war-sub" style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
+          <span className={PA_WAR_SUB_CLASSES}>{gp} GP · Game Score {gameScore}</span>
+          <span className={PA_WAR_SUB_CLASSES} style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
             5v5 RAPM (beta) + PP/PK/finishing components
           </span>
         </div>
       </div>
-      <div className="pa-context">
-        {xGF_pct != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{xGF_pct}%</span><span className="pa-ctx-label">EV xGF% <InfoTip text="On-ice expected goals for % at 5-on-5. The share of total shot quality generated while this player is on the ice — above 50% means the team outshoots opponents in quality with him on the ice. Team metric, not individual." position="above" /></span></div>}
-        {xGF60  != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{xGF60}</span><span className="pa-ctx-label">xGF/60 <InfoTip text="Individual expected goals generated per 60 minutes — the shot quality this player personally produces, based on shot location and type. Measures how dangerous their own shots are, independent of linemates." position="above" /></span></div>}
-        {xGA60  != null && <div className="pa-ctx-item"><span className="pa-ctx-val" style={{ color: xGA60 < 2.0 ? 'var(--green)' : xGA60 > 2.8 ? 'var(--red-bright)' : 'inherit' }}>{xGA60}</span><span className="pa-ctx-label">xGA/60 <InfoTip text="On-ice expected goals against per 60 minutes at 5-on-5. Measures how many quality chances opponents generate while this player is on the ice — lower is better. Team metric reflecting the full line's defensive performance." position="above" /></span></div>}
-        {hdca60 != null && <div className="pa-ctx-item"><span className="pa-ctx-val" style={{ color: hdca60 < 7 ? 'var(--green)' : hdca60 > 10 ? 'var(--red-bright)' : 'inherit' }}>{hdca60}</span><span className="pa-ctx-label">HDCA/60 <InfoTip text="High-danger chances against per 60 minutes at 5-on-5. Shots from the slot and crease — the most likely to result in goals. Lower is better." position="above" /></span></div>}
-        {goals60!= null && <div className="pa-ctx-item"><span className="pa-ctx-val">{goals60}</span><span className="pa-ctx-label">G/60 <InfoTip text="Goals scored per 60 minutes of ice time. Rate-adjusts for playing time so a player with 15 min/game and one with 22 min/game can be compared fairly." position="above" /></span></div>}
-        {a1_60  != null && <div className="pa-ctx-item"><span className="pa-ctx-val">{a1_60}</span><span className="pa-ctx-label">A1/60 <InfoTip text="Primary (first) assists per 60 minutes. First assists directly set up the goal scorer and are more meaningful than secondary assists, which can be coincidental." position="above" /></span></div>}
-        {ppToi != null && ppToi > 0 && <div className="pa-ctx-item"><span className="pa-ctx-val">{fmtToi(ppToi)}</span><span className="pa-ctx-label">PP TOI <InfoTip text="Power play ice time this season. Presence here means the player has enough PP time for a reliable PP metric — see the Power Play percentile bar below." position="above" /></span></div>}
-        {pkToi != null && pkToi > 0 && <div className="pa-ctx-item"><span className="pa-ctx-val">{fmtToi(pkToi)}</span><span className="pa-ctx-label">PK TOI <InfoTip text="Penalty kill ice time this season. Presence here means the player has enough PK time for a reliable PK metric — see the Penalty Kill percentile bar below." position="above" /></span></div>}
+      <div className={PA_CONTEXT_CLASSES}>
+        {xGF_pct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{xGF_pct}%</span><span className={PA_CTX_LABEL_CLASSES}>EV xGF% <InfoTip text="On-ice expected goals for % at 5-on-5. The share of total shot quality generated while this player is on the ice — above 50% means the team outshoots opponents in quality with him on the ice. Team metric, not individual." position="above" /></span></div>}
+        {xGF60  != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{xGF60}</span><span className={PA_CTX_LABEL_CLASSES}>xGF/60 <InfoTip text="Individual expected goals generated per 60 minutes — the shot quality this player personally produces, based on shot location and type. Measures how dangerous their own shots are, independent of linemates." position="above" /></span></div>}
+        {xGA60  != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES} style={{ color: xGA60 < 2.0 ? 'var(--green)' : xGA60 > 2.8 ? 'var(--red-bright)' : 'inherit' }}>{xGA60}</span><span className={PA_CTX_LABEL_CLASSES}>xGA/60 <InfoTip text="On-ice expected goals against per 60 minutes at 5-on-5. Measures how many quality chances opponents generate while this player is on the ice — lower is better. Team metric reflecting the full line's defensive performance." position="above" /></span></div>}
+        {hdca60 != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES} style={{ color: hdca60 < 7 ? 'var(--green)' : hdca60 > 10 ? 'var(--red-bright)' : 'inherit' }}>{hdca60}</span><span className={PA_CTX_LABEL_CLASSES}>HDCA/60 <InfoTip text="High-danger chances against per 60 minutes at 5-on-5. Shots from the slot and crease — the most likely to result in goals. Lower is better." position="above" /></span></div>}
+        {goals60!= null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{goals60}</span><span className={PA_CTX_LABEL_CLASSES}>G/60 <InfoTip text="Goals scored per 60 minutes of ice time. Rate-adjusts for playing time so a player with 15 min/game and one with 22 min/game can be compared fairly." position="above" /></span></div>}
+        {a1_60  != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{a1_60}</span><span className={PA_CTX_LABEL_CLASSES}>A1/60 <InfoTip text="Primary (first) assists per 60 minutes. First assists directly set up the goal scorer and are more meaningful than secondary assists, which can be coincidental." position="above" /></span></div>}
+        {ppToi != null && ppToi > 0 && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{fmtToi(ppToi)}</span><span className={PA_CTX_LABEL_CLASSES}>PP TOI <InfoTip text="Power play ice time this season. Presence here means the player has enough PP time for a reliable PP metric — see the Power Play percentile bar below." position="above" /></span></div>}
+        {pkToi != null && pkToi > 0 && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{fmtToi(pkToi)}</span><span className={PA_CTX_LABEL_CLASSES}>PK TOI <InfoTip text="Penalty kill ice time this season. Presence here means the player has enough PK time for a reliable PK metric — see the Penalty Kill percentile bar below." position="above" /></span></div>}
       </div>
-      <div className="pa-section-label">Percentile rankings vs all NHL {posLbl}</div>
-      <div className="pa-bars">
+      <div className={PA_SECTION_LABEL_CLASSES}>Percentile rankings vs all NHL {posLbl}</div>
+      <div className={PA_BARS_CLASSES}>
         <PercentileBar label="EV Offence"    pct={p.evOff?.pct}     note={p.evOff?.note} />
         <PercentileBar label="EV Defence"    pct={p.evDef?.pct}     note={p.evDef?.note} />
         <PercentileBar label="Power Play"    pct={p.pp?.pct}        note={p.pp?.note}    na={p.pp?.pct == null} />
@@ -597,7 +726,7 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
           narrativeData={narrativeData}
         />
       )}
-      <div className="pa-source">Data: MoneyPuck.com · Updates nightly</div>
+      <div className={PA_SOURCE_CLASSES}>Data: MoneyPuck.com · Updates nightly</div>
     </div>
   )
 }
@@ -612,12 +741,12 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
 function ResultsVsProcess({ onIceGfPct, resultsVsProcessDiff, narrativeData }) {
   if (resultsVsProcessDiff == null) {
     return (
-      <div className="rvp-wrap">
-        <div className="pa-section-label">Results vs. Process</div>
-        <div className="scout-empty">
-          <div className="scout-empty-icon">⏳</div>
+      <div className={RVP_WRAP_CLASSES}>
+        <div className={PA_SECTION_LABEL_CLASSES}>Results vs. Process</div>
+        <div className={SCOUT_EMPTY_CLASSES}>
+          <div className={SCOUT_EMPTY_ICON_CLASSES}>⏳</div>
           <div>Not enough games yet for a reliable read.</div>
-          <div className="scout-empty-sub">Needs a minimum sample of games played this season.</div>
+          <div className={SCOUT_EMPTY_SUB_CLASSES}>Needs a minimum sample of games played this season.</div>
         </div>
       </div>
     )
@@ -628,29 +757,29 @@ function ResultsVsProcess({ onIceGfPct, resultsVsProcessDiff, narrativeData }) {
   const directionLabel = outperforming ? 'Outperforming process' : 'Underperforming process'
 
   return (
-    <div className="rvp-wrap">
-      <div className="pa-section-label">Results vs. Process</div>
-      <div className="pa-context">
-        <div className="pa-ctx-item">
-          <span className="pa-ctx-val">{onIceGfPct}%</span>
-          <span className="pa-ctx-label">On-Ice GF% <InfoTip text="On-ice goals-for percentage at 5-on-5 -- the share of goals scored (not just shot attempts/quality) while this player is on the ice. The 'results' side of this pairing." position="above" /></span>
+    <div className={RVP_WRAP_CLASSES}>
+      <div className={PA_SECTION_LABEL_CLASSES}>Results vs. Process</div>
+      <div className={RVP_CONTEXT_CLASSES}>
+        <div className={PA_CTX_ITEM_CLASSES}>
+          <span className={PA_CTX_VAL_CLASSES}>{onIceGfPct}%</span>
+          <span className={PA_CTX_LABEL_CLASSES}>On-Ice GF% <InfoTip text="On-ice goals-for percentage at 5-on-5 -- the share of goals scored (not just shot attempts/quality) while this player is on the ice. The 'results' side of this pairing." position="above" /></span>
         </div>
-        <div className="pa-ctx-item">
-          <span className="pa-ctx-val" style={{ color: diffColor }}>{resultsVsProcessDiff > 0 ? '+' : ''}{resultsVsProcessDiff}%</span>
-          <span className="pa-ctx-label">Gap vs. Process <InfoTip text="On-Ice GF% minus EV xGF% (the process/shot-quality side, shown above in the percentile rankings). A large positive or negative gap suggests results are running hotter or colder than the underlying process -- often a sign of unsustainable luck rather than true talent." position="above" /></span>
+        <div className={PA_CTX_ITEM_CLASSES}>
+          <span className={PA_CTX_VAL_CLASSES} style={{ color: diffColor }}>{resultsVsProcessDiff > 0 ? '+' : ''}{resultsVsProcessDiff}%</span>
+          <span className={PA_CTX_LABEL_CLASSES}>Gap vs. Process <InfoTip text="On-Ice GF% minus EV xGF% (the process/shot-quality side, shown above in the percentile rankings). A large positive or negative gap suggests results are running hotter or colder than the underlying process -- often a sign of unsustainable luck rather than true talent." position="above" /></span>
         </div>
       </div>
       <div style={{ color: diffColor, fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{directionLabel}</div>
       {narrativeData === undefined ? (
-        <div className="scout-loading">
+        <div className={SCOUT_LOADING_CLASSES}>
           {[92, 85, 70].map((w, i) => (
             <div key={i} className="skeleton" style={{ height: 11, width: `${w}%`, marginBottom: 10, borderRadius: 4 }} />
           ))}
         </div>
       ) : narrativeData?.blurb ? (
-        <div className="scout-blurb">{narrativeData.blurb}</div>
+        <div className={SCOUT_BLURB_CLASSES}>{narrativeData.blurb}</div>
       ) : (
-        <div className="scout-empty-sub">Narrative generates nightly — check back after the next pipeline run.</div>
+        <div className={SCOUT_EMPTY_SUB_CLASSES}>Narrative generates nightly — check back after the next pipeline run.</div>
       )}
     </div>
   )
@@ -661,8 +790,8 @@ function ResultsVsProcess({ onIceGfPct, resultsVsProcessDiff, narrativeData }) {
 function ScoutingBlurb({ data, playerName }) {
   if (data === undefined) {
     return (
-      <div className="scout-wrap">
-        <div className="scout-loading">
+      <div className={SCOUT_WRAP_CLASSES}>
+        <div className={SCOUT_LOADING_CLASSES}>
           {[95, 88, 72, 90, 65].map((w, i) => (
             <div key={i} className="skeleton" style={{ height: 11, width: `${w}%`, marginBottom: 10, borderRadius: 4 }} />
           ))}
@@ -672,11 +801,11 @@ function ScoutingBlurb({ data, playerName }) {
   }
   if (!data?.blurb) {
     return (
-      <div className="scout-wrap">
-        <div className="scout-empty">
-          <div className="scout-empty-icon">📋</div>
+      <div className={SCOUT_WRAP_CLASSES}>
+        <div className={SCOUT_EMPTY_CLASSES}>
+          <div className={SCOUT_EMPTY_ICON_CLASSES}>📋</div>
           <div>No scouting report yet for {playerName}.</div>
-          <div className="scout-empty-sub">Reports generate nightly — check back after the next pipeline run.</div>
+          <div className={SCOUT_EMPTY_SUB_CLASSES}>Reports generate nightly — check back after the next pipeline run.</div>
         </div>
       </div>
     )
@@ -687,13 +816,13 @@ function ScoutingBlurb({ data, playerName }) {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
   return (
-    <div className="scout-wrap">
-      <div className="scout-header">
-        <span className="scout-label">Scouting Report</span>
-        <span className="scout-season">{SEASON_LABEL}</span>
+    <div className={SCOUT_WRAP_CLASSES}>
+      <div className={SCOUT_HEADER_CLASSES}>
+        <span className={SCOUT_LABEL_CLASSES}>Scouting Report</span>
+        <span className={SCOUT_SEASON_CLASSES}>{SEASON_LABEL}</span>
       </div>
-      <div className="scout-blurb">{data.blurb}</div>
-      <div className="scout-footer">
+      <div className={SCOUT_BLURB_CLASSES}>{data.blurb}</div>
+      <div className={SCOUT_FOOTER_CLASSES}>
         AI-generated · Updated nightly
         {data.generatedAt && ` · ${fmtDate(data.generatedAt)}`}
       </div>
@@ -966,29 +1095,29 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
           <div className="pp-photo-wrap">
             {!imgErr && (stats?.headshot || p.headshot) ? (
               <img src={stats?.headshot || p.headshot} alt={name}
-                className="pp-photo" onError={() => setImgErr(true)} />
+                className={PP_PHOTO_CLASSES} onError={() => setImgErr(true)} />
             ) : (
-              <div className="pp-photo-fallback">
+              <div className={PP_PHOTO_FALLBACK_CLASSES}>
                 {(p.firstName?.default?.[0] || '') + (p.lastName?.default?.[0] || '')}
               </div>
             )}
           </div>
           <div className="pp-identity">
-            {p.sweaterNumber && <div className="pp-num">#{p.sweaterNumber}</div>}
+            {p.sweaterNumber && <div className={PP_NUM_CLASSES}>#{p.sweaterNumber}</div>}
             <div className="pp-name">
               <span className="pp-first">{p.firstName?.default}</span>
-              <span className="pp-last">{p.lastName?.default}</span>
+              <span className={`${PP_LAST_CLASSES} ${showHeaderReflow ? PP_LAST_REFLOW_CLASSES : ''}`}>{p.lastName?.default}</span>
             </div>
-            <div className="pp-chips">
-              {positionCode && <span className="pp-pos-chip">{posLabel(positionCode)}</span>}
+            <div className={PP_CHIPS_CLASSES}>
+              {positionCode && <span className={PP_POS_CHIP_CLASSES}>{posLabel(positionCode)}</span>}
               {/* In league context show team abbrev as a chip */}
               {isLeagueContext && p.teamAbbrev && (
-                <span className="pp-chip">{p.teamAbbrev}</span>
+                <span className={PP_CHIP_CLASSES}>{p.teamAbbrev}</span>
               )}
-              {!showHeaderReflow && bio.heightInInches && <span className="pp-chip">{fmtHeight(bio.heightInInches)}</span>}
-              {!showHeaderReflow && bio.weightInPounds && <span className="pp-chip">{bio.weightInPounds} lbs</span>}
+              {!showHeaderReflow && bio.heightInInches && <span className={PP_CHIP_CLASSES}>{fmtHeight(bio.heightInInches)}</span>}
+              {!showHeaderReflow && bio.weightInPounds && <span className={PP_CHIP_CLASSES}>{bio.weightInPounds} lbs</span>}
               {!showHeaderReflow && p.shootsCatches && (
-                <span className="pp-chip">{isGoalie ? 'Catches' : 'Shoots'} {p.shootsCatches === 'L' ? 'Left' : 'Right'}</span>
+                <span className={PP_CHIP_CLASSES}>{isGoalie ? 'Catches' : 'Shoots'} {p.shootsCatches === 'L' ? 'Left' : 'Right'}</span>
               )}
             </div>
             {!showHeaderReflow && bio.birthDate && (
@@ -1015,11 +1144,11 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
         {/* ── Bio row — full width, 6 evenly-spaced columns (Session 80) ── */}
         {showHeaderReflow && (
-          <div className="pp-bio-row">
+          <div className={PP_BIO_ROW_CLASSES}>
             {bioFields.map(f => (
-              <div className="pp-bio-field" key={f.label}>
-                <div className="pp-bio-label">{f.label}</div>
-                <div className="pp-bio-value">{f.value ?? '—'}</div>
+              <div className={PP_BIO_FIELD_CLASSES} key={f.label}>
+                <div className={PP_BIO_LABEL_CLASSES}>{f.label}</div>
+                <div className={PP_BIO_VALUE_CLASSES}>{f.value ?? '—'}</div>
               </div>
             ))}
           </div>
@@ -1027,17 +1156,17 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
         {/* ── Rankings banner — CAR context only ── */}
         {!isLeagueContext && rankings && (rankings.division || rankings.conference || rankings.league) && (
-          <div className="pp-rankings">
-            <span className="pp-rank-label">Ranked by {rankings.statLabel}</span>
-            <div className="pp-rank-items">
+          <div className={PP_RANKINGS_CLASSES}>
+            <span className={PP_RANK_LABEL_CLASSES}>Ranked by {rankings.statLabel}</span>
+            <div className={PP_RANK_ITEMS_CLASSES}>
               {rankings.division   && <RankBadge label="Division"   rank={rankings.division} />}
               {rankings.conference && <RankBadge label="Conference" rank={rankings.conference} />}
               {rankings.league     && <RankBadge label="League"     rank={rankings.league} />}
             </div>
             {rankings.gaa && (rankings.gaa.league || rankings.gaa.division) && (
               <>
-                <span className="pp-rank-label" style={{ marginTop: 8 }}>Ranked by GAA</span>
-                <div className="pp-rank-items">
+                <span className={PP_RANK_LABEL_CLASSES} style={{ marginTop: 8 }}>Ranked by GAA</span>
+                <div className={PP_RANK_ITEMS_CLASSES}>
                   {rankings.gaa.division   && <RankBadge label="Division"   rank={rankings.gaa.division} />}
                   {rankings.gaa.conference && <RankBadge label="Conference" rank={rankings.gaa.conference} />}
                   {rankings.gaa.league     && <RankBadge label="League"     rank={rankings.gaa.league} />}
@@ -1049,31 +1178,31 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
         {/* ── Contract & value panel — CAR context only ── */}
         {!isLeagueContext && contract && (
-          <div className="pp-contract">
-            <div className="pp-contract-row">
-              <div className="pp-contract-item">
-                <div className="pp-contract-label">Cap Hit</div>
-                <div className="pp-contract-val">${(contract.capHit / 1_000_000).toFixed(2)}M</div>
+          <div className={PP_CONTRACT_CLASSES}>
+            <div className={PP_CONTRACT_ROW_CLASSES}>
+              <div className={PP_CONTRACT_ITEM_CLASSES}>
+                <div className={PP_CONTRACT_LABEL_CLASSES}>Cap Hit</div>
+                <div className={PP_CONTRACT_VAL_CLASSES}>${(contract.capHit / 1_000_000).toFixed(2)}M</div>
               </div>
-              <div className="pp-contract-item">
-                <div className="pp-contract-label">AAV / Year</div>
-                <div className="pp-contract-val">${(contract.capHit / 1_000_000).toFixed(2)}M</div>
+              <div className={PP_CONTRACT_ITEM_CLASSES}>
+                <div className={PP_CONTRACT_LABEL_CLASSES}>AAV / Year</div>
+                <div className={PP_CONTRACT_VAL_CLASSES}>${(contract.capHit / 1_000_000).toFixed(2)}M</div>
               </div>
-              <div className="pp-contract-item">
-                <div className="pp-contract-label">Expires After</div>
-                <div className="pp-contract-val">{contract.expiresAfter}</div>
+              <div className={PP_CONTRACT_ITEM_CLASSES}>
+                <div className={PP_CONTRACT_LABEL_CLASSES}>Expires After</div>
+                <div className={PP_CONTRACT_VAL_CLASSES}>{contract.expiresAfter}</div>
               </div>
-              <div className="pp-contract-item">
-                <div className="pp-contract-label">Status</div>
-                <div className="pp-contract-val">{contract.type}{contract.note ? ` · ${contract.note}` : ''}</div>
+              <div className={PP_CONTRACT_ITEM_CLASSES}>
+                <div className={PP_CONTRACT_LABEL_CLASSES}>Status</div>
+                <div className={PP_CONTRACT_VAL_CLASSES}>{contract.type}{contract.note ? ` · ${contract.note}` : ''}</div>
               </div>
-              <div className="pp-contract-item">
-                <div className="pp-contract-label">Yrs Left</div>
-                <div className="pp-contract-val">{contract.yearsLeft}</div>
+              <div className={PP_CONTRACT_ITEM_CLASSES}>
+                <div className={PP_CONTRACT_LABEL_CLASSES}>Yrs Left</div>
+                <div className={PP_CONTRACT_VAL_CLASSES}>{contract.yearsLeft}</div>
               </div>
-              <div className="pp-contract-item">
-                <div className="pp-contract-label">% of Cap</div>
-                <div className="pp-contract-val">{((contract.capHit / CAP_CEILING) * 100).toFixed(1)}%</div>
+              <div className={PP_CONTRACT_ITEM_CLASSES}>
+                <div className={PP_CONTRACT_LABEL_CLASSES}>% of Cap</div>
+                <div className={PP_CONTRACT_VAL_CLASSES}>{((contract.capHit / CAP_CEILING) * 100).toFixed(1)}%</div>
               </div>
             </div>
             {(() => {
@@ -1095,21 +1224,21 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                 ? `Blended score: 60% points per $1M (projected to 82 GP) + 40% WAR per $1M (scaled). WAR uses 5v5 RAPM (beta) + PP/PK/finishing components — captures two-way value points miss. Defensive specialists and shutdown players score higher here than on a pure points basis. Scale: ≥8.0 Exceptional · ≥5.0 Great · ≥3.0 Good · ≥1.8 Fair · ≥1.0 Below avg · <1.0 Overpaid. ELC contracts excluded.`
                 : `Points per $1M of cap hit (projected to 82 games). WAR data unavailable for this player — using points only. Scale: ≥8.0 Exceptional · ≥5.0 Great · ≥3.0 Good · ≥1.8 Fair · ≥1.0 Below avg · <1.0 Overpaid. ELC contracts excluded.`
               return (
-                <div className="pp-value-row">
+                <div className={PP_VALUE_ROW_CLASSES}>
                   {score != null && vl && (
-                    <div className="pp-value-badge" style={{ background: vl.color + '22', borderColor: vl.color + '55', color: vl.color }}>
+                    <div className={PP_VALUE_BADGE_CLASSES} style={{ background: vl.color + '22', borderColor: vl.color + '55', color: vl.color }}>
                       <span>{vl.label}</span>
-                      <span className="pp-value-score">{score} {method === 'blended' ? 'blended/$M' : 'pts/$M'}</span>
+                      <span className={PP_VALUE_SCORE_CLASSES}>{score} {method === 'blended' ? 'blended/$M' : 'pts/$M'}</span>
                       <InfoTip label="Contract Value Score" text={valueTooltip} />
                     </div>
                   )}
                   {p60 != null && (
-                    <div className="pp-adv-chip">P/60: <strong>{p60}</strong>
+                    <div className={PP_ADV_CHIP_CLASSES}>P/60: <strong>{p60}</strong>
                       <InfoTip label="P/60" text="Points per 60 minutes of ice time. Removes ice time differences — a player with 10 pts in 12 min/game produces at a very different rate than 10 pts in 22 min/game. League avg for top-6 forwards: ~2.0–3.5." />
                     </div>
                   )}
                   {isELC && !isGoalie && (
-                    <div className="pp-adv-chip" style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>
+                    <div className={PP_ADV_CHIP_CLASSES} style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>
                       ELC — value score N/A
                       <InfoTip label="ELC Contract" text="Entry Level Contracts have a league-mandated cap hit ($775K–$925K) that doesn't reflect market value, so the blended value comparison isn't meaningful." />
                     </div>
@@ -1121,15 +1250,15 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                     const gScore = goalieContractValue(gsax, gGp, contract.capHit, isELC)
                     const gVl    = goalieValueLabel(gScore)
                     if (!gScore || !gVl) return isELC ? (
-                      <div className="pp-adv-chip" style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>
+                      <div className={PP_ADV_CHIP_CLASSES} style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>
                         ELC — value score N/A
                         <InfoTip label="ELC Contract" text="ELC cap hits are league-mandated and don't reflect market value." />
                       </div>
                     ) : null
                     return (
-                      <div className="pp-value-badge" style={{ background: gVl.color + '22', borderColor: gVl.color + '55', color: gVl.color }}>
+                      <div className={PP_VALUE_BADGE_CLASSES} style={{ background: gVl.color + '22', borderColor: gVl.color + '55', color: gVl.color }}>
                         <span>{gVl.label}</span>
-                        <span className="pp-value-score">GSAX {gScore > 0 ? '+' : ''}{gScore}/$M</span>
+                        <span className={PP_VALUE_SCORE_CLASSES}>GSAX {gScore > 0 ? '+' : ''}{gScore}/$M</span>
                         <InfoTip label="Goalie Value Score" text="Goals saved above expected (GSAX) per $1M of cap hit. GSAX accounts for shot quality and volume — a positive number means the goalie saved more goals than an average goalie would have on the same shots. Dividing by cap hit shows how much of that value you're getting per dollar. Scale: ≥4.0 Exceptional · ≥2.0 Great · ≥0.0 Fair · ≥-2.0 Below avg · <-2.0 Overpaid. ELC goalies excluded." />
                       </div>
                     )
@@ -1141,23 +1270,23 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
         )}
 
         {/* ── Tab toggle ── */}
-        <div className="pp-tabs">
-          <button className={`pp-tab ${ppTab === 'stats' ? 'active' : ''}`} onClick={() => setPpTab('stats')}>📊 Stats</button>
-          <button className={`pp-tab ${ppTab === 'analytics' ? 'active' : ''}`} onClick={() => setPpTab('analytics')}>🧮 Analytics</button>
+        <div className={PP_TABS_CLASSES}>
+          <button className={ppTabClasses(ppTab === 'stats')} onClick={() => setPpTab('stats')}>📊 Stats</button>
+          <button className={ppTabClasses(ppTab === 'analytics')} onClick={() => setPpTab('analytics')}>🧮 Analytics</button>
           {!isLeagueContext && (
-            <button className={`pp-tab ${ppTab === 'heatmap' ? 'active' : ''}`} onClick={() => setPpTab('heatmap')}>🎯 Heat Map</button>
+            <button className={ppTabClasses(ppTab === 'heatmap')} onClick={() => setPpTab('heatmap')}>🎯 Heat Map</button>
           )}
           {!isLeagueContext && (
-            <button className={`pp-tab ${ppTab === 'scout' ? 'active' : ''}`} onClick={() => setPpTab('scout')}>🔍 Scout</button>
+            <button className={ppTabClasses(ppTab === 'scout')} onClick={() => setPpTab('scout')}>🔍 Scout</button>
           )}
-          <button className={`pp-tab ${ppTab === 'compare' ? 'active' : ''}`} onClick={() => setPpTab('compare')}>🆚 Compare</button>
+          <button className={ppTabClasses(ppTab === 'compare')} onClick={() => setPpTab('compare')}>🆚 Compare</button>
         </div>
 
         {/* ── Stats tab ── */}
         {ppTab === 'stats' && (
           <div className="pp-body">
             {loading && (
-              <div className="pp-loading">
+              <div className={PP_LOADING_CLASSES}>
                 {[80,60,70,50].map((w,i) => (
                   <div key={i} className="skeleton" style={{ height: 11, width: `${w}%`, marginBottom: 10 }} />
                 ))}
@@ -1213,7 +1342,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                 <div className="stat-section-header">
                   <span className="stat-section-label">Per-game trend</span>
                   <select
-                    className="pp-metric-select"
+                    className={PP_METRIC_SELECT_CLASSES}
                     value={activeChartDef?.key || ''}
                     onChange={e => setChartMetricKey(e.target.value)}
                     aria-label="Trend metric"

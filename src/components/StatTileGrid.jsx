@@ -9,6 +9,58 @@ import { useState } from 'react'
 import InfoTip from './InfoTip'
 import { nhlSeasonLabel } from '../utils/seasonComparison'
 
+// Tailwind migration (Session 97, Phase 3, sub-PR 2). This file's own
+// classes (.stat-tile*, .stat-group*, .highlight-section's siblings) are
+// fully migrated. .stat-section/.stat-section-header/.stat-section-label/
+// .stat-section-body/.stat-section-peers stay as plain, literal classNames
+// -- TeamComparisonPopup.jsx (sub-PR 3, unmigrated) uses those same 5
+// classes directly in its own markup, so PlayersView.css's rules for them
+// can't be deleted yet. .highlight-section is ALSO kept plain rather than
+// migrated: its background is easy to Tailwind-ify, but the compound
+// selector `.stat-section.highlight-section .stat-section-label { color:
+// red-bright }` recolors a CHILD span that belongs to the still-shared
+// .stat-section-label class -- .stat-section-label's own unlayered color
+// rule would beat any Tailwind color utility placed directly on the span
+// (same cascade-layer bug as .card in Session 97, sub-PR 1), so the only
+// way to keep that conditional recolor working is to leave the whole
+// mechanism (marker class + both CSS rules) intact until sub-PR 3.
+//
+// .stat-tile-grid is kept as a literal marker (base grid/gap IS migrated to
+// Tailwind, base rule deleted) because `.stat-section-peers .stat-tile-grid
+// { grid-template-columns: 1fr }` -- a real, unlayered rule keyed off the
+// still-shared .stat-section-peers -- needs the classname to keep firing;
+// that specific nested rule stays in PlayersView.css.
+//
+// Cypress marker classnames kept (audited via grep): .pp-tab is not in this
+// file; this file's own markers are .stat-tile, .stat-tile-label,
+// .stat-tile-value (pwhl-players.cy.js, player-comparison.cy.js).
+
+const LEGEND_CLASSES = 'flex flex-wrap gap-3 text-[11px] text-[color:var(--text-muted)] px-4 mb-2'
+const LEGEND_ITEM_CLASSES = 'flex items-center gap-1'
+const LEGEND_DOT_CLASSES = 'w-[7px] h-[7px] rounded-full inline-block shrink-0'
+
+const TILE_GRID_CLASSES = 'stat-tile-grid grid grid-cols-3 gap-2 mb-1 max-[400px]:gap-[6px]'
+const TILE_CLASSES = 'stat-tile bg-[var(--bg2)] border-[0.5px] border-[var(--border)] rounded-[var(--radius-sm)] p-[9px_10px] flex flex-col gap-1 max-[400px]:p-[7px_8px]'
+const TILE_TOP_CLASSES = 'flex items-baseline justify-between gap-[6px]'
+const TILE_LABEL_WRAP_CLASSES = 'flex items-center gap-1 min-w-0'
+const TILE_LABEL_CLASSES = 'stat-tile-label text-[11px] text-[color:var(--text-muted)] font-semibold whitespace-nowrap overflow-hidden text-ellipsis'
+const TILE_VALUE_CLASSES = 'stat-tile-value font-[family-name:var(--font-display)] text-[15px] font-bold text-[color:var(--text)] leading-none whitespace-nowrap max-[400px]:text-[14px]'
+const TILE_NA_CLASSES = 'text-[10px] text-[color:var(--text-dim)] italic mt-[2px]'
+
+const SCALE_WRAP_CLASSES = 'flex items-center gap-1 mt-[14px] pb-3'
+const SCALE_TRACK_CLASSES = 'relative flex-1 h-[3px] bg-[var(--bg3)] rounded-[2px]'
+const MARKER_BASE_CLASSES = 'absolute top-1/2 w-[6px] h-[6px] rounded-full -translate-x-1/2 -translate-y-1/2'
+const MARKER_VAL_ABOVE_CLASSES = 'absolute left-1/2 text-[9px] font-bold whitespace-nowrap bottom-2'
+const MARKER_VAL_BELOW_CLASSES = 'absolute left-1/2 text-[9px] font-bold whitespace-nowrap top-2'
+
+const STAT_GROUP_CLASSES = 'mb-[10px]'
+const STAT_GROUP_LABEL_CLASSES = 'text-[9px] font-bold uppercase tracking-[0.1em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] py-1 border-b-[0.5px] border-[var(--border)] mb-[2px]'
+
+const SECTION_BADGE_BASE_CLASSES = 'text-[9px] py-[2px] px-[7px] rounded-[10px] border-[0.5px]'
+const SECTION_BADGE_CURRENT_CLASSES = 'font-bold bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[var(--red-border)] uppercase tracking-[0.06em]'
+const SECTION_BADGE_STALE_CLASSES = 'font-semibold italic bg-[var(--bg3)] text-[color:var(--text-dim)] border-[var(--border-2)] normal-case tracking-normal'
+const SECTION_ARROW_CLASSES = 'text-[10px] text-[color:var(--text-dim)]'
+
 function ordinalSuffix(n) {
   const v = Math.round(n)
   const mod100 = v % 100
@@ -37,10 +89,10 @@ export const PCT_SCOPES = [
 
 export function PercentileScopeLegend() {
   return (
-    <div className="stat-tile-legend">
+    <div className={LEGEND_CLASSES}>
       {PCT_SCOPES.map(s => (
-        <span key={s.key} className="stat-tile-legend-item">
-          <span className="stat-tile-legend-dot" style={{ background: s.color }} />
+        <span key={s.key} className={LEGEND_ITEM_CLASSES}>
+          <span className={LEGEND_DOT_CLASSES} style={{ background: s.color }} />
           {s.label}
         </span>
       ))}
@@ -102,10 +154,10 @@ function StatTile({ def, fmt, pctInfo }) {
     : []
 
   return (
-    <div className="stat-tile">
-      <div className="stat-tile-top">
-        <span className="stat-tile-label-wrap">
-          <span className="stat-tile-label">{def.label}</span>
+    <div className={TILE_CLASSES}>
+      <div className={TILE_TOP_CLASSES}>
+        <span className={TILE_LABEL_WRAP_CLASSES}>
+          <span className={TILE_LABEL_CLASSES}>{def.label}</span>
           <InfoTip
             sections={[
               { text: def.tip },
@@ -115,19 +167,19 @@ function StatTile({ def, fmt, pctInfo }) {
             position="above"
           />
         </span>
-        <span className="stat-tile-value">{fmt ?? '—'}</span>
+        <span className={TILE_VALUE_CLASSES}>{fmt ?? '—'}</span>
       </div>
       {markers.length > 0 && (
-        <div className="stat-tile-scale-wrap">
-          <div className="stat-tile-scale-track">
+        <div className={SCALE_WRAP_CLASSES}>
+          <div className={SCALE_TRACK_CLASSES}>
             {markers.map(m => (
               <div
                 key={m.key}
-                className={`stat-tile-marker ${m.above ? 'marker-above' : 'marker-below'}`}
+                className={MARKER_BASE_CLASSES}
                 style={{ left: `${m.value}%`, background: m.color }}
               >
                 <span
-                  className="stat-tile-marker-val"
+                  className={m.above ? MARKER_VAL_ABOVE_CLASSES : MARKER_VAL_BELOW_CLASSES}
                   style={{ color: m.color, transform: `translateX(calc(-50% + ${m.offsetPx || 0}px))` }}
                 >
                   {ordinal(m.value)}
@@ -139,7 +191,7 @@ function StatTile({ def, fmt, pctInfo }) {
         </div>
       )}
       {insufficientSample && (
-        <div className="stat-tile-na">Not enough playing time yet</div>
+        <div className={TILE_NA_CLASSES}>Not enough playing time yet</div>
       )}
     </div>
   )
@@ -159,9 +211,9 @@ export function StatTileGrid({ groups, percentiles, showPercentiles = true, pctM
   return (
     <>
       {groups.map(({ group, items }) => (
-        <div key={group} className="stat-group">
-          <div className="stat-group-label">{group}</div>
-          <div className="stat-tile-grid">
+        <div key={group} className={STAT_GROUP_CLASSES}>
+          <div className={STAT_GROUP_LABEL_CLASSES}>{group}</div>
+          <div className={TILE_GRID_CLASSES}>
             {items.map(({ def, fmt }) => {
               const pctKey = showPercentiles ? pctMap[def.key] : null
               const pctInfo = pctKey ? (percentiles?.[pctKey] ?? { pct: null }) : null
@@ -196,12 +248,12 @@ export function TileStatSection({ label, groups, highlight, percentiles, showPer
         <span className="stat-section-label">{label}</span>
         {highlight && (
           statsStale
-            ? <span className="stat-section-current stat-section-stale" title={`Not enough games yet this season — showing ${nhlSeasonLabel(statsSeason)}`}>
+            ? <span className={`${SECTION_BADGE_BASE_CLASSES} ${SECTION_BADGE_STALE_CLASSES}`} title={`Not enough games yet this season — showing ${nhlSeasonLabel(statsSeason)}`}>
                 As of {nhlSeasonLabel(statsSeason)}
               </span>
-            : <span className="stat-section-current">Current</span>
+            : <span className={`${SECTION_BADGE_BASE_CLASSES} ${SECTION_BADGE_CURRENT_CLASSES}`}>Current</span>
         )}
-        <span className="stat-section-arrow">{open ? '▲' : '▼'}</span>
+        <span className={SECTION_ARROW_CLASSES}>{open ? '▲' : '▼'}</span>
       </button>
       {open && (
         <div className="stat-section-body">
