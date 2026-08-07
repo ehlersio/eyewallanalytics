@@ -1,10 +1,21 @@
 // views/PWHLNewsView.jsx — mirrors NHL NewsView for PWHL
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import './NewsView.css';
 import MilestonesFeed from '../components/MilestonesFeed';
 import TriviaFeed from '../components/TriviaFeed';
 import { capture } from '../utils/analytics';
 import { useReadState } from '../hooks/useReadState';
+import {
+  NEWS_VIEW_CLASSES, NEWS_HEADER_CLASSES, NEWS_HEADER_ROW_CLASSES, NEWS_TITLE_CLASSES,
+  NEWS_UPDATED_CLASSES, NEWS_REFRESH_BTN_CLASSES, NEWS_FILTER_CHIPS_CLASSES, newsChipClasses,
+  NEWS_FEED_CLASSES, NEWS_CARD_CLASSES, NEWS_CARD_IMG_CLASSES, NEWS_CARD_BODY_CLASSES,
+  NEWS_CARD_META_CLASSES, NEWS_SOURCE_BADGE_CLASSES, NEWS_CARD_TIME_CLASSES,
+  NEWS_CARD_TITLE_CLASSES, NEWS_CARD_EXCERPT_CLASSES, NEWS_CARD_ARROW_CLASSES,
+  NEWS_LOADING_CLASSES, NEWS_SKELETON_CLASSES, SKEL_BADGE_CLASSES, SKEL_TITLE_CLASSES,
+  SKEL_TEXT_CLASSES, NEWS_ERROR_CLASSES, NEWS_EMPTY_CLASSES, NEWS_ERROR_ICON_CLASSES,
+  NEWS_ERROR_MSG_CLASSES, NEWS_FOOTER_CLASSES, NEWS_PAGINATION_CLASSES, NEWS_PAGE_BTN_CLASSES,
+  NEWS_PAGE_INFO_CLASSES, NEWS_VIEW_TOGGLE_CLASSES, newsViewToggleBtnClasses,
+  NEWS_VIEW_TOGGLE_DOT_CLASSES,
+} from '../utils/newsViewClasses';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
 const PAGE_SIZE  = 10;
@@ -29,7 +40,7 @@ function timeAgo(isoDate) {
 function SourceBadge({ sourceId }) {
   const meta = SOURCE_META[sourceId] || { label: sourceId, color: '#fff', bg: '#555' };
   return (
-    <span className="news-source-badge" style={{ background: meta.bg, color: meta.color }}>
+    <span className={NEWS_SOURCE_BADGE_CLASSES} style={{ background: meta.bg, color: meta.color }}>
       {meta.label}
     </span>
   );
@@ -43,25 +54,25 @@ function ArticleCard({ item }) {
     }
   }
   return (
-    <article className="news-card card" onClick={handleClick} role="link" tabIndex={0}
+    <article className={`${NEWS_CARD_CLASSES} card`} onClick={handleClick} role="link" tabIndex={0}
       onKeyDown={e => e.key === 'Enter' && handleClick()}
       aria-label={item.title}>
       {item.imageUrl && (
-        <div className="news-card-img">
+        <div className={NEWS_CARD_IMG_CLASSES}>
           <img src={item.imageUrl} alt="" loading="lazy" />
         </div>
       )}
-      <div className="news-card-body">
-        <div className="news-card-meta">
+      <div className={NEWS_CARD_BODY_CLASSES}>
+        <div className={NEWS_CARD_META_CLASSES}>
           <SourceBadge sourceId={item.source} />
-          <span className="news-card-time">{timeAgo(item.publishedAt)}</span>
+          <span className={NEWS_CARD_TIME_CLASSES}>{timeAgo(item.publishedAt)}</span>
         </div>
-        <h3 className="news-card-title">{item.title}</h3>
+        <h3 className={NEWS_CARD_TITLE_CLASSES}>{item.title}</h3>
         {item.excerpt && item.excerpt !== item.sourceName && (
-          <p className="news-card-excerpt">{item.excerpt}</p>
+          <p className={NEWS_CARD_EXCERPT_CLASSES}>{item.excerpt}</p>
         )}
       </div>
-      <div className="news-card-arrow">→</div>
+      <div className={NEWS_CARD_ARROW_CLASSES}>→</div>
     </article>
   );
 }
@@ -142,26 +153,26 @@ export default function PWHLNewsView() {
   );
 
   return (
-    <div className="news-view page">
+    <div className={`${NEWS_VIEW_CLASSES} page`}>
       {/* News / Milestones toggle */}
-      <div className="news-view-toggle">
+      <div className={NEWS_VIEW_TOGGLE_CLASSES}>
         <button
-          className={`news-view-toggle-btn${view === 'news' ? ' active' : ''}`}
+          className={newsViewToggleBtnClasses(view === 'news')}
           onClick={() => { setView('news'); readState.markSeen('news'); }}
         >
-          News{readState.news && <span className="news-view-toggle-dot" />}
+          News{readState.news && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
         </button>
         <button
-          className={`news-view-toggle-btn${view === 'milestones' ? ' active' : ''}`}
+          className={newsViewToggleBtnClasses(view === 'milestones')}
           onClick={() => { setView('milestones'); capture('milestones_tab_viewed', { sport: 'pwhl' }); readState.markSeen('milestones'); }}
         >
-          Milestones{readState.milestones && <span className="news-view-toggle-dot" />}
+          Milestones{readState.milestones && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
         </button>
         <button
-          className={`news-view-toggle-btn${view === 'trivia' ? ' active' : ''}`}
+          className={newsViewToggleBtnClasses(view === 'trivia')}
           onClick={() => { setView('trivia'); capture('trivia_tab_viewed', { sport: 'pwhl' }); }}
         >
-          Trivia{readState.trivia && <span className="news-view-toggle-dot" />}
+          Trivia{readState.trivia && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
         </button>
       </div>
 
@@ -170,25 +181,25 @@ export default function PWHLNewsView() {
 
       {view === 'news' && (
         <>
-          <div className="news-header card">
-            <div className="news-header-row">
+          <div className={`${NEWS_HEADER_CLASSES} card`}>
+            <div className={NEWS_HEADER_ROW_CLASSES}>
               <div>
-                <div className="news-title">🏒 PWHL News</div>
+                <div className={NEWS_TITLE_CLASSES}>🏒 PWHL News</div>
                 {lastFetch && (
-                  <div className="news-updated">
+                  <div className={NEWS_UPDATED_CLASSES}>
                     Updated {timeAgo(lastFetch.toISOString())} · {articles.length} articles
                   </div>
                 )}
               </div>
-              <button className="news-refresh-btn" onClick={fetchArticles} disabled={loading}
+              <button className={NEWS_REFRESH_BTN_CLASSES} onClick={fetchArticles} disabled={loading}
                 aria-label="Refresh news">
                 {loading ? '…' : '↻'}
               </button>
             </div>
-            <div className="news-filter-chips">
+            <div className={NEWS_FILTER_CHIPS_CLASSES}>
               {availableSources.map(s => (
                 <button key={s}
-                  className={`news-chip${filter === s ? ' active' : ''}`}
+                  className={newsChipClasses(filter === s)}
                   onClick={() => { setFilter(s); if (s !== 'all') capture('news_filter_changed', { source: s, sport: 'pwhl' }); }}>
                   {s === 'all'
                     ? `All (${articles.length})`
@@ -199,44 +210,44 @@ export default function PWHLNewsView() {
           </div>
 
           {loading && (
-            <div className="news-loading">
+            <div className={NEWS_LOADING_CLASSES}>
               {[1,2,3,4].map(i => (
-                <div key={i} className="news-skeleton card">
-                  <div className="skel skel-badge" />
-                  <div className="skel skel-title" />
-                  <div className="skel skel-text" />
+                <div key={i} className={`${NEWS_SKELETON_CLASSES} card`}>
+                  <div className={SKEL_BADGE_CLASSES} />
+                  <div className={SKEL_TITLE_CLASSES} />
+                  <div className={SKEL_TEXT_CLASSES} />
                 </div>
               ))}
             </div>
           )}
 
           {!loading && error && (
-            <div className="news-error card">
-              <div className="news-error-icon">📰</div>
-              <div className="news-error-msg">{error}</div>
-              <button className="news-refresh-btn" onClick={fetchArticles}>Try again</button>
+            <div className={`${NEWS_ERROR_CLASSES} card`}>
+              <div className={NEWS_ERROR_ICON_CLASSES}>📰</div>
+              <div className={NEWS_ERROR_MSG_CLASSES}>{error}</div>
+              <button className={NEWS_REFRESH_BTN_CLASSES} onClick={fetchArticles}>Try again</button>
             </div>
           )}
 
           {!loading && !error && filtered.length === 0 && (
-            <div className="news-empty card">
-              <div className="news-error-icon">📰</div>
+            <div className={`${NEWS_EMPTY_CLASSES} card`}>
+              <div className={NEWS_ERROR_ICON_CLASSES}>📰</div>
               <div>No articles found{filter !== 'all' ? ` from ${SOURCE_META[filter]?.label || filter}` : ''}.</div>
             </div>
           )}
 
           {!loading && !error && paginated.length > 0 && (
             <>
-              <div className="news-feed">
+              <div className={NEWS_FEED_CLASSES}>
                 {paginated.map((item, i) => <ArticleCard key={`${item.id}-${i}`} item={item} />)}
               </div>
               {totalPages > 1 && (
-                <div className="news-pagination">
-                  <button className="news-page-btn"
+                <div className={NEWS_PAGINATION_CLASSES}>
+                  <button className={NEWS_PAGE_BTN_CLASSES}
                     onClick={() => { setPage(p => p-1); window.scrollTo({ top:0, behavior:'smooth' }); }}
                     disabled={page === 1}>← Prev</button>
-                  <span className="news-page-info">{page} / {totalPages}</span>
-                  <button className="news-page-btn"
+                  <span className={NEWS_PAGE_INFO_CLASSES}>{page} / {totalPages}</span>
+                  <button className={NEWS_PAGE_BTN_CLASSES}
                     onClick={() => { setPage(p => p+1); window.scrollTo({ top:0, behavior:'smooth' }); }}
                     disabled={page === totalPages}>Next →</button>
                 </div>
@@ -244,7 +255,7 @@ export default function PWHLNewsView() {
             </>
           )}
 
-          <div className="news-footer">
+          <div className={NEWS_FOOTER_CLASSES}>
             Articles from PWHL Official, ESPN, Sportsnet, and IIHF.
             Tap any article to read the full story.
           </div>

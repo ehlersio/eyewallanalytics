@@ -11,13 +11,19 @@ import { PWHL_TEAM_CONFIG } from '../utils/pwhlApi';
 import { getAnsweredMap, getStats, recordAnswer } from '../utils/triviaAnswers';
 import { capture } from '../utils/analytics';
 import TeamLogo from './TeamLogo';
+import {
+  NEWS_HEADER_CLASSES, NEWS_HEADER_ROW_CLASSES, NEWS_TITLE_CLASSES, NEWS_UPDATED_CLASSES,
+  NEWS_REFRESH_BTN_CLASSES, NEWS_LOADING_CLASSES, NEWS_SKELETON_CLASSES, SKEL_BADGE_CLASSES,
+  SKEL_TITLE_CLASSES, SKEL_TEXT_CLASSES, NEWS_ERROR_CLASSES, NEWS_ERROR_ICON_CLASSES,
+  NEWS_ERROR_MSG_CLASSES,
+} from '../utils/newsViewClasses';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
 
-// Tailwind migration (Session 95, Phase 1) -- previously TriviaFeed.css.
-// .card/.news-* classes below are NOT part of this migration -- they're
-// owned by NewsView.css (a later phase), reused here as documented in this
-// file's header comment; left untouched.
+// Tailwind migration (Session 95, Phase 1; NewsView.css classes finished in
+// Phase 4 once NewsView.css itself was migrated/deleted -- imported from
+// newsViewClasses.js since they're genuinely shared with NewsView.jsx/
+// PWHLNewsView.jsx/MilestonesFeed.jsx, not duplicated here).
 //
 // Several original class names are kept as literal marker strings
 // alongside the Tailwind utilities (trivia-card/trivia-tier-badge/
@@ -164,12 +170,12 @@ export default function TriviaFeed() {
 
   return (
     <div className="trivia-feed">
-      <div className="news-header card">
-        <div className="news-header-row">
+      <div className={`${NEWS_HEADER_CLASSES} card`}>
+        <div className={NEWS_HEADER_ROW_CLASSES}>
           <div>
-            <div className="news-title">Daily Trivia</div>
+            <div className={NEWS_TITLE_CLASSES}>Daily Trivia</div>
             {stats.attempted > 0 && (
-              <div className="news-updated">
+              <div className={NEWS_UPDATED_CLASSES}>
                 {stats.correct}/{stats.attempted} correct ({Math.round((stats.correct / stats.attempted) * 100)}%)
               </div>
             )}
@@ -178,22 +184,22 @@ export default function TriviaFeed() {
       </div>
 
       {loading && (
-        <div className="news-loading">
+        <div className={NEWS_LOADING_CLASSES}>
           {[1, 2, 3].map(i => (
-            <div key={i} className="news-skeleton card">
-              <div className="skel skel-badge" />
-              <div className="skel skel-title" />
-              <div className="skel skel-text" />
+            <div key={i} className={`${NEWS_SKELETON_CLASSES} card`}>
+              <div className={SKEL_BADGE_CLASSES} />
+              <div className={SKEL_TITLE_CLASSES} />
+              <div className={SKEL_TEXT_CLASSES} />
             </div>
           ))}
         </div>
       )}
 
       {!loading && error && (
-        <div className="news-error card">
-          <div className="news-error-icon">🏒</div>
-          <div className="news-error-msg">{error}</div>
-          <button className="news-refresh-btn" onClick={fetchQuestions}>Try again</button>
+        <div className={`${NEWS_ERROR_CLASSES} card`}>
+          <div className={NEWS_ERROR_ICON_CLASSES}>🏒</div>
+          <div className={NEWS_ERROR_MSG_CLASSES}>{error}</div>
+          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={fetchQuestions}>Try again</button>
         </div>
       )}
 

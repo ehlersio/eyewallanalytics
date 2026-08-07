@@ -11,6 +11,17 @@ import TeamLogo from './TeamLogo';
 import PlayerPopup from './PlayerPopup';
 import PWHLPlayerPopup from './PWHLPlayerPopup';
 import { capture } from '../utils/analytics';
+import {
+  NEWS_HEADER_CLASSES, NEWS_HEADER_ROW_CLASSES, NEWS_TITLE_CLASSES, NEWS_UPDATED_CLASSES,
+  NEWS_REFRESH_BTN_CLASSES, NEWS_FEED_CLASSES, NEWS_CARD_CLASSES, NEWS_CARD_BODY_CLASSES,
+  NEWS_CARD_META_CLASSES, NEWS_CARD_TIME_CLASSES,
+  NEWS_CARD_EXCERPT_CLASSES, NEWS_CARD_ARROW_CLASSES, NEWS_LOADING_CLASSES, NEWS_SKELETON_CLASSES,
+  SKEL_BADGE_CLASSES, SKEL_TITLE_CLASSES, SKEL_TEXT_CLASSES, NEWS_ERROR_CLASSES,
+  NEWS_EMPTY_CLASSES, NEWS_ERROR_ICON_CLASSES, NEWS_ERROR_MSG_CLASSES,
+  MILESTONES_FEED_CLASSES, MILESTONE_ICON_BADGE_CLASSES, MILESTONE_CARD_TITLE_CLASSES,
+  MILESTONE_DETAIL_ROW_CLASSES, MILESTONE_DETAIL_ITEM_CLASSES,
+  MS_TEAM_SELECT_WRAP_CLASSES, msTeamSelectBtnClasses, MS_TEAM_MENU_CLASSES, msTeamOptionClasses,
+} from '../utils/newsViewClasses';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
 
@@ -90,9 +101,9 @@ function TeamFilterDropdown({ team, onChange, teams, sport }) {
   }
 
   return (
-    <div className="ms-team-select-wrap" ref={wrapRef}>
+    <div className={MS_TEAM_SELECT_WRAP_CLASSES} ref={wrapRef}>
       <button
-        className={`ms-team-select-btn${team !== 'all' ? ' active' : ''}`}
+        className={msTeamSelectBtnClasses(team !== 'all')}
         onClick={() => setOpen(o => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -101,9 +112,9 @@ function TeamFilterDropdown({ team, onChange, teams, sport }) {
         {selectedTeam ? selectedTeam.abbr : 'All Teams'}
       </button>
       {open && (
-        <div className="ms-team-menu" role="listbox">
+        <div className={MS_TEAM_MENU_CLASSES} role="listbox">
           <button
-            className={`ms-team-option${team === 'all' ? ' active' : ''}`}
+            className={msTeamOptionClasses(team === 'all')}
             onClick={() => pick('all')}
             role="option"
             aria-selected={team === 'all'}
@@ -113,7 +124,7 @@ function TeamFilterDropdown({ team, onChange, teams, sport }) {
           {teams.map(t => (
             <button
               key={t.abbr}
-              className={`ms-team-option${team === t.abbr ? ' active' : ''}`}
+              className={msTeamOptionClasses(team === t.abbr)}
               onClick={() => pick(t.abbr)}
               role="option"
               aria-selected={team === t.abbr}
@@ -141,34 +152,34 @@ function MilestoneCard({ item, onOpenPlayer }) {
 
   return (
     <article
-      className="news-card card"
+      className={`${NEWS_CARD_CLASSES} card`}
       onClick={tappable ? handleClick : undefined}
       role={tappable ? 'link' : undefined}
       tabIndex={tappable ? 0 : undefined}
       onKeyDown={tappable ? (e => e.key === 'Enter' && handleClick()) : undefined}
       aria-label={item.description}
     >
-      <div className="news-card-body">
-        <div className="news-card-meta">
-          <span className="milestone-icon-badge">{meta.icon} {meta.label}</span>
-          <span className="news-card-time">{formatGameDate(item.game_date)}</span>
+      <div className={NEWS_CARD_BODY_CLASSES}>
+        <div className={NEWS_CARD_META_CLASSES}>
+          <span className={MILESTONE_ICON_BADGE_CLASSES}>{meta.icon} {meta.label}</span>
+          <span className={NEWS_CARD_TIME_CLASSES}>{formatGameDate(item.game_date)}</span>
         </div>
-        <h3 className="news-card-title milestone-card-title">
+        <h3 className={MILESTONE_CARD_TITLE_CLASSES}>
           <TeamLogo abbr={item.team} sport={item.is_pwhl ? 'pwhl' : 'nhl'} size={20} />
           {item.description}
         </h3>
         {item.opponent && (
-          <p className="news-card-excerpt">vs {item.opponent}</p>
+          <p className={NEWS_CARD_EXCERPT_CLASSES}>vs {item.opponent}</p>
         )}
         {detailItems.length > 0 && (
-          <div className="milestone-detail-row">
+          <div className={MILESTONE_DETAIL_ROW_CLASSES}>
             {detailItems.map((d, i) => (
-              <span key={i} className="milestone-detail-item">{d}</span>
+              <span key={i} className={MILESTONE_DETAIL_ITEM_CLASSES}>{d}</span>
             ))}
           </div>
         )}
       </div>
-      {tappable && <div className="news-card-arrow">→</div>}
+      {tappable && <div className={NEWS_CARD_ARROW_CLASSES}>→</div>}
     </article>
   );
 }
@@ -266,13 +277,13 @@ export default function MilestonesFeed() {
   }
 
   return (
-    <div className="milestones-feed">
-      <div className="news-header card">
-        <div className="news-header-row">
+    <div className={MILESTONES_FEED_CLASSES}>
+      <div className={`${NEWS_HEADER_CLASSES} card`}>
+        <div className={NEWS_HEADER_ROW_CLASSES}>
           <div>
-            <div className="news-title">Milestones</div>
+            <div className={NEWS_TITLE_CLASSES}>Milestones</div>
             {!loading && (
-              <div className="news-updated">{milestones.length} recent</div>
+              <div className={NEWS_UPDATED_CLASSES}>{milestones.length} recent</div>
             )}
           </div>
           <TeamFilterDropdown team={team} onChange={handleTeamChange} teams={teamList} sport={sportKey} />
@@ -280,45 +291,45 @@ export default function MilestonesFeed() {
       </div>
 
       {popupLoading && (
-        <div className="news-updated" style={{ textAlign: 'center', padding: '8px 0' }}>
+        <div className={NEWS_UPDATED_CLASSES} style={{ textAlign: 'center', padding: '8px 0' }}>
           Loading player…
         </div>
       )}
       {popupError && (
-        <div className="news-error-msg" style={{ textAlign: 'center', padding: '8px 0' }}>
+        <div className={NEWS_ERROR_MSG_CLASSES} style={{ textAlign: 'center', padding: '8px 0' }}>
           {popupError}
         </div>
       )}
 
       {loading && (
-        <div className="news-loading">
+        <div className={NEWS_LOADING_CLASSES}>
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="news-skeleton card">
-              <div className="skel skel-badge" />
-              <div className="skel skel-title" />
-              <div className="skel skel-text" />
+            <div key={i} className={`${NEWS_SKELETON_CLASSES} card`}>
+              <div className={SKEL_BADGE_CLASSES} />
+              <div className={SKEL_TITLE_CLASSES} />
+              <div className={SKEL_TEXT_CLASSES} />
             </div>
           ))}
         </div>
       )}
 
       {!loading && error && (
-        <div className="news-error card">
-          <div className="news-error-icon">🏒</div>
-          <div className="news-error-msg">{error}</div>
-          <button className="news-refresh-btn" onClick={() => fetchMilestones(team, isPWHL)}>Try again</button>
+        <div className={`${NEWS_ERROR_CLASSES} card`}>
+          <div className={NEWS_ERROR_ICON_CLASSES}>🏒</div>
+          <div className={NEWS_ERROR_MSG_CLASSES}>{error}</div>
+          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={() => fetchMilestones(team, isPWHL)}>Try again</button>
         </div>
       )}
 
       {!loading && !error && milestones.length === 0 && (
-        <div className="news-empty card">
-          <div className="news-error-icon">🏒</div>
+        <div className={`${NEWS_EMPTY_CLASSES} card`}>
+          <div className={NEWS_ERROR_ICON_CLASSES}>🏒</div>
           <div>No milestones found{team !== 'all' ? ` for ${team}` : ''} yet.</div>
         </div>
       )}
 
       {!loading && !error && milestones.length > 0 && (
-        <div className="news-feed">
+        <div className={NEWS_FEED_CLASSES}>
           {milestones.map((item, i) => (
             <MilestoneCard
               key={`${item.game_id}-${item.player_id}-${item.milestone_type}-${i}`}
