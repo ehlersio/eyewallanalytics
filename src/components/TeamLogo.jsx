@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { pwhlLogoUrl } from '../utils/pwhlConfig';
-import './TeamLogo.css';
+
+// Tailwind migration (Session 95, Phase 1) -- previously TeamLogo.css.
+const LOGO_CLASSES = 'inline-block object-contain shrink-0 align-middle drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]';
+const FALLBACK_CLASSES = 'inline-flex items-center justify-center shrink-0 align-middle font-[family-name:var(--font-display)] font-bold tracking-[0.04em]';
 
 // NHL logos are served from assets.nhle.com, proxied through /nhl-assets in dev.
 // Two variants: dark (white logo, for dark backgrounds) and light (colored, for white bg).
@@ -23,7 +26,7 @@ function Fallback({ abbr, size, color }) {
   const initials = abbr ? abbr.slice(0, 2) : '?';
   return (
     <span
-      className="team-logo-fallback"
+      className={FALLBACK_CLASSES}
       style={{
         width:  size,
         height: size,
@@ -61,7 +64,7 @@ export default function TeamLogo({ abbr, sport = 'nhl', size = 24, color, classN
       alt={abbr}
       width={size}
       height={size}
-      className={`team-logo ${className}`}
+      className={`${LOGO_CLASSES} ${className}`}
       onError={() => setErrored(true)}
       style={{ width: size, height: size }}
     />

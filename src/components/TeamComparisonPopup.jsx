@@ -15,6 +15,13 @@ import TeamLogo from './TeamLogo';
 // (.popup-backdrop, .player-popup, .pp-header, .stat-section, .stat-row,
 // etc) rather than duplicating them in a new stylesheet.
 import '../views/PlayersView.css';
+// This component's own .h2h-*/.compare-mode-*/.cvt-* styles (Session 95,
+// Phase 1). They used to load transitively through SeasonComparisonPicker.jsx's
+// import of this same file -- that file dropped the import when its own
+// .season-picker/.season-chip rules migrated to Tailwind, since it no
+// longer needs anything from this CSS file itself. Importing it directly
+// here instead, since this is the component that actually still needs it.
+import './SeasonComparisonPicker.css';
 
 // A season with zero comparable seasons shouldn't lock the picker down to
 // maxSelected=0 (which would make every chip permanently disabled) --

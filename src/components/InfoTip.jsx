@@ -1,5 +1,18 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import './InfoTip.css';
+
+// Tailwind migration (Session 95, Phase 1) -- previously InfoTip.css.
+const WRAP_CLASSES = 'relative inline-flex items-center align-middle';
+const BTN_CLASSES = 'bg-transparent border-0 cursor-pointer text-[12px] text-[color:var(--text-dim)] px-0.5 py-0 leading-none rounded-full transition-colors duration-150 align-middle hover:text-[color:var(--text-muted)] focus-visible:text-[color:var(--text-muted)] focus-visible:outline-none';
+// whitespace-normal is required, not decorative -- InfoTip renders inside
+// several compact labels that set `white-space: nowrap` (e.g. PlayersView's
+// .pa-ctx-label), and white-space is an inherited property, so without this
+// the popup's own body text would inherit nowrap from wherever it's nested
+// and refuse to wrap.
+const POPUP_CLASSES = 'fixed z-[9999] bg-[var(--bg1)] border-[0.5px] border-[var(--border-2)] rounded-[10px] pt-3 px-3.5 pb-2.5 w-[220px] max-w-[calc(100vw-20px)] shadow-[0_8px_32px_rgba(0,0,0,0.55)] whitespace-normal';
+const TITLE_CLASSES = 'text-[12px] font-bold text-[color:var(--text)] mb-[5px] pr-[18px]';
+const BODY_CLASSES = 'text-[12px] text-[color:var(--text-muted)] leading-[1.5] m-0';
+const SECTION_LABEL_CLASSES = 'text-[10px] font-bold text-[color:var(--text-dim)] uppercase tracking-[0.04em] mb-0.5';
+const CLOSE_CLASSES = 'absolute top-1.5 right-2 bg-transparent border-0 text-[13px] text-[color:var(--text-dim)] cursor-pointer px-1 py-0.5 leading-none hover:text-[color:var(--text)]';
 
 export default function InfoTip({ label, text, sections, position = 'auto' }) {
   const items = sections ?? (text ? [{ text }] : []);
@@ -74,9 +87,9 @@ export default function InfoTip({ label, text, sections, position = 'auto' }) {
   }, [open]);
 
   return (
-    <span className="info-tip-wrap" ref={wrapRef}>
+    <span className={WRAP_CLASSES} ref={wrapRef}>
       <button
-        className="info-tip-btn"
+        className={BTN_CLASSES}
         onClick={handleOpen}
         aria-label={label ? `Info about ${label}` : 'More information'}
         aria-expanded={open}
@@ -84,19 +97,19 @@ export default function InfoTip({ label, text, sections, position = 'auto' }) {
       {open && (
         <div
           ref={popupRef}
-          className="info-tip-popup"
+          className={POPUP_CLASSES}
           role="tooltip"
           style={style}
           onClick={e => e.stopPropagation()}
         >
-          {label && <div className="info-tip-title">{label}</div>}
+          {label && <div className={TITLE_CLASSES}>{label}</div>}
           {items.map((s, i) => (
-            <div className="info-tip-section" key={i}>
-              {s.label && <div className="info-tip-section-label">{s.label}</div>}
-              <p className="info-tip-body">{s.text}</p>
+            <div className={i > 0 ? 'mt-2' : ''} key={i}>
+              {s.label && <div className={SECTION_LABEL_CLASSES}>{s.label}</div>}
+              <p className={BODY_CLASSES}>{s.text}</p>
             </div>
           ))}
-          <button className="info-tip-close" onClick={() => setOpen(false)}>✕</button>
+          <button className={CLOSE_CLASSES} onClick={() => setOpen(false)}>✕</button>
         </div>
       )}
     </span>

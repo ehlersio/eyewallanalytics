@@ -104,14 +104,11 @@
 
 /* ha-val good: #4ade80 readable on light bg — fine */
 
-/* ════════════════════════════════════════════════════════════════
-   NotificationBell.css additions
-   ════════════════════════════════════════════════════════════════ */
-
-/* Popup shadow on light */
-[data-theme="light"] .notif-popup {
-  box-shadow: 0 16px 48px rgba(0,0,0,0.15);
-}
+/* NotificationBell.css's light-mode popup-shadow override moved to
+   index.css's --popup-shadow token (Session 95, Phase 1) -- the migrated
+   component references the token directly via Tailwind's
+   shadow-[var(--popup-shadow)] instead of this file targeting a class name
+   that no longer exists. */
 
 /* ════════════════════════════════════════════════════════════════
    NewsView.css additions

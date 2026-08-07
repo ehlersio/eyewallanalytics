@@ -8,7 +8,57 @@ import { getTheme, setTheme } from '../utils/themeConfig';
 import { applyTeamTheme } from '../utils/applyTeamTheme';
 import TeamLogo from '../components/TeamLogo';
 import AccountSection from './AccountSection';
-import './NotificationBell.css';
+
+// Tailwind migration (Session 95, Phase 1) -- previously NotificationBell.css.
+// notif-summary-chip* classes below were previously defined in
+// PeriodSummary.css (a later-phase file) -- this component is their only
+// consumer (confirmed via grep), so they migrate here now rather than
+// waiting on PeriodSummary's own phase; the now-dead rules are removed from
+// PeriodSummary.css in this same change.
+//
+// .notif-bell always renders with `notif-active` alongside it in this
+// codebase's one real usage below, and `.notif-bell.notif-active`'s
+// opacity:1 always won over the plain `.notif-bell` rule's opacity:0.6 (via
+// selector specificity) -- so the dimmed 0.6 state was already unreachable
+// dead CSS before this migration touched it. Reproduced as always-1, not
+// reintroduced as a real toggle.
+//
+// Several original class names are kept as literal marker strings
+// alongside the Tailwind utilities (notif-bell/notif-popup/notif-close/
+// notif-title/notif-change-team-btn/notif-summary-chip and its period/
+// score/game variants) -- auth.cy.js, theme.cy.js, topnav-safe-area.cy.js,
+// and period-summary.cy.js select and assert on these exact class names.
+// They carry no CSS of their own anymore; Tailwind owns the visuals, these
+// are pure test hooks now.
+const WRAP_CLASSES = 'relative';
+const BELL_CLASSES = 'notif-bell bg-transparent border-0 text-[18px] cursor-pointer py-1 px-1.5 rounded-[8px] [transition:opacity_0.15s]';
+const POPUP_CLASSES = 'notif-popup absolute top-[calc(100%+10px)] right-0 z-[500] w-[280px] max-w-[calc(100vw-24px)] max-h-[min(560px,calc(100vh-90px))] overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] bg-[var(--bg1)] border-[0.5px] border-[var(--border-2)] rounded-[16px] p-[18px] shadow-[var(--popup-shadow)] animate-[popupIn_0.18s_cubic-bezier(0.34,1.56,0.64,1)]';
+const CLOSE_CLASSES = 'notif-close absolute top-3 right-3.5 bg-transparent border-0 text-[14px] text-[color:var(--text-dim)] cursor-pointer py-0.5 px-[5px] hover:text-[color:var(--text)]';
+const TITLE_CLASSES = 'notif-title text-[14px] font-bold text-[color:var(--text)] mb-2 pr-5';
+const DESC_CLASSES = 'text-[12px] text-[color:var(--text-muted)] leading-[1.5] mb-3.5';
+const BLOCKED_CLASSES = 'text-[11px] text-[color:var(--amber)] bg-[rgba(240,160,48,0.1)] rounded-[8px] py-2 px-2.5 mb-3 leading-[1.5]';
+const ERROR_CLASSES = 'text-[11px] text-[color:var(--red-bright)] mb-2.5';
+const TOGGLE_BTN_BASE = 'w-full p-2.5 rounded-[10px] border-0 text-[13px] font-bold cursor-pointer [transition:opacity_0.15s] mb-3.5 disabled:opacity-50 disabled:cursor-wait enabled:hover:opacity-90';
+const TOGGLE_BTN_ON = 'bg-[var(--red-bright)] text-white';
+const TOGGLE_BTN_OFF = 'bg-[var(--bg3)] text-[color:var(--text-muted)]';
+const EVENTS_CLASSES = 'flex flex-col gap-1.5';
+const EVENT_LABEL_CLASSES = 'text-[9px] font-bold uppercase tracking-[0.07em] text-[color:var(--text-dim)] mb-0.5';
+const EVENT_ROW_CLASSES = 'flex items-center gap-2 text-[12px] text-[color:var(--text-muted)]';
+const CHECK_CLASSES = 'ml-auto text-[color:var(--green)] text-[12px]';
+const SECTION_LABEL_CLASSES = 'text-[10px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] mb-2';
+const MY_TEAM_CLASSES = 'mb-3';
+const TEAM_ROW_CLASSES = 'flex items-center gap-2 pt-2 px-0 pb-1';
+const TEAM_NAME_CLASSES = 'flex-1 text-[14px] font-semibold text-[color:var(--text)]';
+const CHANGE_TEAM_BTN_CLASSES = 'notif-change-team-btn py-1 px-2.5 text-[12px] rounded-[6px] border border-[var(--team-primary)] text-[color:var(--team-primary)] bg-transparent cursor-pointer font-medium [transition:background_0.15s] hover:bg-[rgba(var(--team-primary-rgb,204,0,0),0.1)]';
+
+const SUMMARIES_SECTION_CLASSES = 'mt-3.5 pt-3.5 border-t-[0.5px] border-t-[var(--border)]';
+const SUMMARIES_LABEL_CLASSES = 'text-[9px] font-bold tracking-[0.1em] uppercase text-[color:var(--text-dim)] mb-2';
+const SUMMARY_CHIP_BASE = 'notif-summary-chip flex items-center gap-2 w-full py-[9px] px-2.5 bg-[var(--bg2)] border-0 rounded-[8px] cursor-pointer mb-1 text-left [transition:background_0.15s] hover:bg-[var(--bg3)]';
+const SUMMARY_CHIP_GAME = 'notif-summary-chip-game border-[0.5px] border-[rgba(var(--team-primary-rgb),0.3)] bg-[rgba(var(--team-primary-rgb),0.06)]';
+const SUMMARY_CHIP_PERIOD_BASE = 'notif-summary-chip-period text-[11px] font-extrabold text-[color:var(--red-bright)] min-w-[24px]';
+const SUMMARY_CHIP_PERIOD_GAME = 'text-[9px] tracking-[0.08em]';
+const SUMMARY_CHIP_SCORE_CLASSES = 'notif-summary-chip-score text-[12px] font-bold text-[color:var(--text)] flex-1';
+const SUMMARY_CHIP_ARROW_CLASSES = 'text-[11px] text-[color:var(--text-dim)]';
 
 // ── Preference definitions ────────────────────────────────────
 
@@ -135,9 +185,9 @@ export default function NotificationBell() {
   const hasSummaries = summaries.length > 0;
 
   return (
-    <div className="notif-wrap">
+    <div className={WRAP_CLASSES}>
       <button
-        className="notif-bell notif-active"
+        className={BELL_CLASSES}
         onClick={() => (open ? closePopup() : setOpen(true))}
         aria-label="Settings"
         title="Settings"
@@ -146,33 +196,33 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="notif-popup">
-          <button className="notif-close" onClick={closePopup} aria-label="Close">✕</button>
+        <div className={POPUP_CLASSES}>
+          <button className={CLOSE_CLASSES} onClick={closePopup} aria-label="Close">✕</button>
 
-          <div className="notif-title">⚙️ Settings</div>
+          <div className={TITLE_CLASSES}>⚙️ Settings</div>
 
           <AccountSection />
 
-          <div className="notif-section-label">Preferences</div>
+          <div className={SECTION_LABEL_CLASSES}>Preferences</div>
 
           {/* My Team */}
-          <div className="notif-my-team">
-            <div className="notif-event-label">🏒 My Team</div>
-            <div className="notif-team-row">
+          <div className={MY_TEAM_CLASSES}>
+            <div className={EVENT_LABEL_CLASSES}>🏒 My Team</div>
+            <div className={TEAM_ROW_CLASSES}>
               <TeamLogo abbr={activeTeamAbbr} size={28} sport={isPWHL ? 'pwhl' : 'nhl'} />
-              <span className="notif-team-name">{activeTeamName}</span>
-              <button className="notif-change-team-btn" onClick={handleChangeTeam}>
+              <span className={TEAM_NAME_CLASSES}>{activeTeamName}</span>
+              <button className={CHANGE_TEAM_BTN_CLASSES} onClick={handleChangeTeam}>
                 Change
               </button>
             </div>
           </div>
 
           {/* Appearance */}
-          <div className="notif-my-team">
-            <div className="notif-event-label">🎨 Appearance</div>
-            <div className="notif-team-row">
-              <span className="notif-team-name">{theme === 'dark' ? '🌙 Dark' : '☀️ Light'}</span>
-              <button className="notif-change-team-btn" onClick={handleThemeToggle}>
+          <div className={MY_TEAM_CLASSES}>
+            <div className={EVENT_LABEL_CLASSES}>🎨 Appearance</div>
+            <div className={TEAM_ROW_CLASSES}>
+              <span className={TEAM_NAME_CLASSES}>{theme === 'dark' ? '🌙 Dark' : '☀️ Light'}</span>
+              <button className={CHANGE_TEAM_BTN_CLASSES} onClick={handleThemeToggle}>
                 {theme === 'dark' ? 'Light mode' : 'Dark mode'}
               </button>
             </div>
@@ -180,9 +230,9 @@ export default function NotificationBell() {
 
           {/* Push notifications */}
           {!supported && (
-            <div className="notif-my-team">
-              <div className="notif-event-label">🔔 Push Notifications</div>
-              <p className="notif-desc">
+            <div className={MY_TEAM_CLASSES}>
+              <div className={EVENT_LABEL_CLASSES}>🔔 Push Notifications</div>
+              <p className={DESC_CLASSES}>
                 {isIOSBrowserTab()
                   ? 'On iPhone/iPad, push notifications require adding EyeWall Analytics to your Home Screen first: tap Share, then "Add to Home Screen" — then open it from there.'
                   : "Push notifications aren't supported in this browser."}
@@ -191,23 +241,23 @@ export default function NotificationBell() {
           )}
           {supported && (
             <>
-              <p className="notif-desc">
+              <p className={DESC_CLASSES}>
                 {subscribed
                   ? `Subscribed for ${activeTeamName} alerts.`
                   : `Get instant alerts on your phone for ${activeTeamName} — even when the app is closed.`}
               </p>
 
               {permission === 'denied' && (
-                <p className="notif-blocked">
+                <p className={BLOCKED_CLASSES}>
                   Notifications are blocked. Click 🔒 in your address bar and allow notifications for this site.
                 </p>
               )}
 
-              {error && <p className="notif-error">{error}</p>}
+              {error && <p className={ERROR_CLASSES}>{error}</p>}
 
               {permission !== 'denied' && (
                 <button
-                  className={`notif-toggle-btn ${subscribed ? 'notif-off-btn' : 'notif-on-btn'}`}
+                  className={`${TOGGLE_BTN_BASE} ${subscribed ? TOGGLE_BTN_OFF : TOGGLE_BTN_ON}`}
                   onClick={handleToggle}
                   disabled={loading}
                 >
@@ -220,9 +270,9 @@ export default function NotificationBell() {
               )}
 
               {/* Preference toggles */}
-              <div className="notif-events">
+              <div className={EVENTS_CLASSES}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div className="notif-event-label" style={{ marginBottom: 0 }}>🔔 Alert Preferences</div>
+                  <div className={EVENT_LABEL_CLASSES} style={{ marginBottom: 0 }}>🔔 Alert Preferences</div>
                   <button
                     style={{ background: 'none', border: 'none', fontSize: 11, color: 'var(--text-dim)', cursor: 'pointer', padding: '0 2px' }}
                     onClick={() => setShowPrefs(p => !p)}
@@ -236,19 +286,19 @@ export default function NotificationBell() {
                   PREF_GROUPS.flatMap(g => g.items)
                     .filter(item => prefs[item.key])
                     .map(item => (
-                      <div key={item.key} className="notif-event-row">
+                      <div key={item.key} className={EVENT_ROW_CLASSES}>
                         <span>{item.icon}</span>
                         <span>{item.label}</span>
-                        {subscribed && <span className="notif-check">✓</span>}
+                        {subscribed && <span className={CHECK_CLASSES}>✓</span>}
                       </div>
                     ))
                 ) : (
                   // Expanded preference editor
                   PREF_GROUPS.map(group => (
                     <div key={group.label} style={{ marginBottom: 10 }}>
-                      <div className="notif-event-label" style={{ marginBottom: 4 }}>{group.label}</div>
+                      <div className={EVENT_LABEL_CLASSES} style={{ marginBottom: 4 }}>{group.label}</div>
                       {group.items.map(item => (
-                        <div key={item.key} className="notif-event-row" style={{ cursor: 'pointer' }}
+                        <div key={item.key} className={EVENT_ROW_CLASSES} style={{ cursor: 'pointer' }}
                           onClick={() => handlePrefToggle(item.key)}>
                           <span>{item.icon}</span>
                           <span style={{ color: prefs[item.key] ? 'var(--text)' : 'var(--text-dim)' }}>
@@ -268,23 +318,23 @@ export default function NotificationBell() {
 
           {/* Period summaries */}
           {hasSummaries && (
-            <div className="notif-summaries-section">
-              <div className="notif-summaries-label">📋 Game Summaries</div>
+            <div className={SUMMARIES_SECTION_CLASSES}>
+              <div className={SUMMARIES_LABEL_CLASSES}>📋 Game Summaries</div>
               {summaries.map(s => (
                 <button
                   key={s.period}
-                  className={`notif-summary-chip ${s.isGameSummary ? 'notif-summary-chip-game' : ''}`}
+                  className={`${SUMMARY_CHIP_BASE} ${s.isGameSummary ? SUMMARY_CHIP_GAME : ''}`}
                   onClick={() => handleOpenSummary(s)}
                 >
-                  <span className="notif-summary-chip-period">
+                  <span className={`${SUMMARY_CHIP_PERIOD_BASE} ${s.isGameSummary ? SUMMARY_CHIP_PERIOD_GAME : ''}`}>
                     {s.isGameSummary ? 'FINAL' : s.periodShort}
                   </span>
-                  <span className="notif-summary-chip-score">
+                  <span className={SUMMARY_CHIP_SCORE_CLASSES}>
                     {s.carGoals !== undefined
                       ? `${activeTeamAbbr} ${s.carGoals}–${s.oppGoals}`
                       : 'View summary'}
                   </span>
-                  <span className="notif-summary-chip-arrow">›</span>
+                  <span className={SUMMARY_CHIP_ARROW_CLASSES}>›</span>
                 </button>
               ))}
             </div>
