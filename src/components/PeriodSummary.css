@@ -359,26 +359,14 @@
   align-items: center;
   gap: 8px;
 }
-.ps-share-section .share-buttons-row {
-  justify-content: center;
-}
-.ps-share-btn {
-  flex: 1;
-  padding: 12px;
-  border-radius: 12px;
-  border: none;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: opacity 0.15s;
-}
-.ps-share-btn:hover { opacity: 0.85; }
-.ps-share-btn.primary { background: var(--red-bright); color: #fff; }
-.ps-share-btn.secondary { background: var(--bg3); color: var(--text-muted); }
+/* .ps-share-section .share-buttons-row { justify-content: center } removed
+   (Session 96, Phase 2) -- ShareButtons.jsx's own base .share-buttons-row
+   already centers by default, so this was a same-value no-op override, not
+   a real dependency on the class name that migrated to Tailwind.
+   .ps-share-btn/.primary/.secondary also removed here -- confirmed via
+   grep to have zero JSX consumers anywhere in the codebase; dead CSS left
+   over from before this component switched to the shared <ShareButtons/>
+   (which .ps-share-section still wraps, unchanged). */
 
 /* ── Share image canvas (1080×1080) ──────────────────────────── */
 /* Hidden off-screen canvas rendered for export */

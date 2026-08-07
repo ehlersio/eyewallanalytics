@@ -14,7 +14,6 @@ import { useEffect, useRef, useState } from 'react';
 import { pwhlLogoUrl } from '../utils/pwhlConfig';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
-import './ShareButtons.css';
 import './PeriodSummary.css';
 
 const WORKER_URL = typeof import.meta !== 'undefined'

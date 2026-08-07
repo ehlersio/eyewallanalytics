@@ -10,7 +10,6 @@ import TeamLogo from './TeamLogo';
 import InfoTip from './InfoTip';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
-import './ShareButtons.css';
 import './ScoutingTab.css';
 import { capture } from '../utils/analytics';
 
