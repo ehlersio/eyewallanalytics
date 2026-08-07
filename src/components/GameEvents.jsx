@@ -1,6 +1,53 @@
 import { useState, useEffect, useRef } from 'react';
-import './GameEvents.css';
 import { TEAM_CONFIG } from '../utils/nhlApi';
+
+// ── Tailwind class constants (Phase 4, sub-PR 2 -- GameEvents.css deleted) ──
+// Duplicated in PWHLGameEvents.jsx per established per-file convention
+// (see DevReplayView.jsx / PWHLDevReplayView.jsx, Phase 4 sub-PR 1).
+
+const OVERLAY_BASE_CLASSES = 'fixed inset-0 z-[500] flex items-center justify-center animate-[fade-in_0.2s_ease]';
+// .game-event-overlay (bg 0.75) and .win-overlay/.hat-trick-overlay (bg 0.85)
+// both set `background` unconditionally -- concatenating two Tailwind bg-[...]
+// utilities for the same property risks the same-layer ordering bug from
+// DevReplayView.css (lesson #9), so this is a single helper with a complete,
+// mutually exclusive class string per state instead.
+function overlayClasses(darker) {
+  return `${OVERLAY_BASE_CLASSES} ${darker ? 'bg-[rgba(0,0,0,0.85)]' : 'bg-[rgba(0,0,0,0.75)]'}`;
+}
+
+const PUCK_DROP_POPUP_CLASSES = 'puck-drop-popup bg-[var(--bg1)] border-[0.5px] border-[var(--border-2)] rounded-[var(--radius-lg)] pt-7 px-6 pb-5 text-center max-w-[300px] animate-[pop-in_0.18s_cubic-bezier(0.34,1.56,0.64,1)]';
+const PUCK_DROP_SIREN_CLASSES = 'text-[48px] mb-3.5 animate-[pulse-dot_1s_ease-in-out_infinite]';
+const PUCK_DROP_TEXT_CLASSES = 'font-[family-name:var(--font-display)] text-[20px] font-bold text-[color:var(--text)] leading-[1.4] tracking-[0.02em] mb-4';
+const PUCK_DROP_TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[32px] font-bold text-[color:var(--red-bright)] tracking-[0.08em] mb-3';
+
+const GOAL_POPUP_CLASSES = 'goal-popup bg-[var(--bg1)] border-[2px] border-[var(--red-bright)] rounded-[20px] py-8 px-10 text-center max-w-[320px] w-[90%] animate-[goalBurst_0.4s_cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_0_60px_rgba(255,68,34,0.4)]';
+const GOAL_LIGHT_CLASSES = 'text-[64px] animate-[spin_0.8s_linear_infinite] inline-block mb-2';
+const GOAL_WORD_CLASSES = 'font-[family-name:var(--font-display)] text-[48px] font-black text-[color:var(--red-bright)] tracking-[0.05em] [text-shadow:0_0_20px_rgba(255,68,34,0.6)] mb-3';
+const GOAL_SCORER_CLASSES = 'text-[20px] font-bold text-[color:var(--text)] mb-1';
+const GOAL_ASSISTS_CLASSES = 'text-[13px] text-[color:var(--text-muted)] mb-1';
+const GOAL_SHOT_TYPE_CLASSES = 'text-[11px] text-[color:var(--text-dim)] uppercase tracking-[0.08em]';
+const GOAL_PERIOD_CLASSES = 'text-[11px] text-[color:var(--text-dim)] mt-1';
+
+const PENALTY_POPUP_CLASSES = 'penalty-popup bg-[var(--bg1)] border-[2px] border-[var(--amber)] rounded-[20px] py-8 px-10 text-center max-w-[300px] w-[90%] animate-[goalBurst_0.3s_ease] shadow-[0_0_40px_rgba(240,160,48,0.3)]';
+const PENALTY_WORDS_CLASSES = 'flex flex-col gap-1 mb-4';
+const PENALTY_WORD_SPAN_CLASSES = 'font-[family-name:var(--font-display)] text-[36px] font-black text-[color:var(--amber)] tracking-[0.06em] leading-none';
+const PENALTY_DIVIDER_CLASSES = 'h-px bg-[var(--border)] my-3';
+const PENALTY_PLAYER_CLASSES = 'text-[18px] font-bold text-[color:var(--text)] mb-1';
+const PENALTY_DESC_CLASSES = 'text-[13px] text-[color:var(--text-muted)] capitalize mb-1';
+const PENALTY_DURATION_CLASSES = 'text-[11px] text-[color:var(--text-dim)]';
+
+const WIN_POPUP_CLASSES = 'win-popup bg-[var(--bg1)] border-[2px] border-[var(--red-bright)] rounded-[20px] pt-10 px-12 pb-10 text-center max-w-[340px] w-[90%] z-[501] animate-[goalBurst_0.5s_cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_0_80px_rgba(255,68,34,0.5)]';
+const WIN_LOGO_CLASSES = 'text-[64px] mb-3 animate-[spin_1.5s_linear_infinite] inline-block';
+const WIN_TEXT_CLASSES = 'font-[family-name:var(--font-display)] text-[44px] font-black text-[color:var(--red-bright)] tracking-[0.04em] [text-shadow:0_0_30px_rgba(255,68,34,0.7)] mb-3';
+const WIN_SCORE_CLASSES = 'text-[24px] font-bold text-[color:var(--text)] mb-2';
+
+const CONFETTI_PIECE_CLASSES = 'absolute top-[-20px] rounded-[2px] animate-[confettiFall_linear_forwards] z-[500]';
+
+const GAME_EVENT_DISMISS_CLASSES = 'game-event-dismiss mt-4 bg-transparent border-[0.5px] border-[var(--border)] text-[color:var(--text-dim)] text-[11px] py-1 px-3 rounded-[6px] cursor-pointer hover:bg-[var(--bg3)] hover:text-[color:var(--text)]';
+
+const HAT_PIECE_CLASSES = 'hat-piece absolute top-[-40px] animate-[hatFall_linear_forwards] z-[500] select-none';
+const HAT_TRICK_POPUP_CLASSES = 'hat-trick-popup bg-[var(--bg1)] border-[2px] border-[#c8a951] rounded-[20px] py-8 px-10 text-center max-w-[320px] w-[90%] animate-[goalBurst_0.4s_cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_0_60px_rgba(200,169,81,0.5)] z-[501] relative';
+const HAT_TRICK_WORD_CLASSES = 'font-[family-name:var(--font-display)] text-[40px] font-black text-[#c8a951] tracking-[0.05em] [text-shadow:0_0_20px_rgba(200,169,81,0.7)] mb-3';
 
 // ── Puck Drop Popup ───────────────────────────────────────────
 export function PuckDropPopup({ data, onClose }) {
@@ -12,16 +59,16 @@ export function PuckDropPopup({ data, onClose }) {
 
   if (!data) return null;
   return (
-    <div className="game-event-overlay" onClick={onClose}>
-      <div className="puck-drop-popup">
-        <div className="puck-drop-siren">🚨</div>
-        <div className="puck-drop-title">PUCK DROP</div>
-        <div className="puck-drop-text">
+    <div className={overlayClasses(false)} onClick={onClose}>
+      <div className={PUCK_DROP_POPUP_CLASSES}>
+        <div className={PUCK_DROP_SIREN_CLASSES}>🚨</div>
+        <div className={PUCK_DROP_TITLE_CLASSES}>PUCK DROP</div>
+        <div className={PUCK_DROP_TEXT_CLASSES}>
           Pucks in deep. Pucks on net.<br />
           Win the battles.<br />
           Here we go, boys!
         </div>
-        <div className="event-dismiss">tap to dismiss</div>
+        <div className={GAME_EVENT_DISMISS_CLASSES}>tap to dismiss</div>
       </div>
     </div>
   );
@@ -47,17 +94,17 @@ export function GoalPopup({ data, onClose }) {
 
   if (!data) return null;
   return (
-    <div className="game-event-overlay" onClick={onClose}>
-      <div className="goal-popup">
-        <div className="goal-light">🚨</div>
-        <div className="goal-word">GOAL!</div>
-        {data.scorer && <div className="goal-scorer">{data.scorer}</div>}
+    <div className={overlayClasses(false)} onClick={onClose}>
+      <div className={GOAL_POPUP_CLASSES}>
+        <div className={GOAL_LIGHT_CLASSES}>🚨</div>
+        <div className={GOAL_WORD_CLASSES}>GOAL!</div>
+        {data.scorer && <div className={GOAL_SCORER_CLASSES}>{data.scorer}</div>}
         {data.assists?.length > 0 && (
-          <div className="goal-assists">Assists: {data.assists.join(', ')}</div>
+          <div className={GOAL_ASSISTS_CLASSES}>Assists: {data.assists.join(', ')}</div>
         )}
-        {data.shotType && <div className="goal-shot-type">{data.shotType}</div>}
-        <div className="goal-period">{data.time ? `${data.period} · ${data.time}` : data.period}</div>
-        <div className="event-dismiss">tap to dismiss</div>
+        {data.shotType && <div className={GOAL_SHOT_TYPE_CLASSES}>{data.shotType}</div>}
+        <div className={GOAL_PERIOD_CLASSES}>{data.time ? `${data.period} · ${data.time}` : data.period}</div>
+        <div className={GAME_EVENT_DISMISS_CLASSES}>tap to dismiss</div>
       </div>
     </div>
   );
@@ -73,18 +120,18 @@ export function PenaltyPopup({ data, onClose }) {
 
   if (!data) return null;
   return (
-    <div className="game-event-overlay" onClick={onClose}>
-      <div className="penalty-popup">
-        <div className="penalty-words">
-          <span>CHEATERS</span>
-          <span>NEVER</span>
-          <span>WIN</span>
+    <div className={overlayClasses(false)} onClick={onClose}>
+      <div className={PENALTY_POPUP_CLASSES}>
+        <div className={PENALTY_WORDS_CLASSES}>
+          <span className={PENALTY_WORD_SPAN_CLASSES}>CHEATERS</span>
+          <span className={PENALTY_WORD_SPAN_CLASSES}>NEVER</span>
+          <span className={PENALTY_WORD_SPAN_CLASSES}>WIN</span>
         </div>
-        <div className="penalty-divider" />
-        {data.player && <div className="penalty-player">{data.player}</div>}
-        <div className="penalty-desc">{data.description}</div>
-        <div className="penalty-duration">{data.duration} min · {data.time ? `${data.period} ${data.time}` : data.period}</div>
-        <div className="event-dismiss">tap to dismiss</div>
+        <div className={PENALTY_DIVIDER_CLASSES} />
+        {data.player && <div className={PENALTY_PLAYER_CLASSES}>{data.player}</div>}
+        <div className={PENALTY_DESC_CLASSES}>{data.description}</div>
+        <div className={PENALTY_DURATION_CLASSES}>{data.duration} min · {data.time ? `${data.period} ${data.time}` : data.period}</div>
+        <div className={GAME_EVENT_DISMISS_CLASSES}>tap to dismiss</div>
       </div>
     </div>
   );
@@ -105,7 +152,7 @@ function HatRain({ teamColor }) {
   return (
     <>
       {hats.map(h => (
-        <div key={h.id} className="hat-piece" style={{
+        <div key={h.id} className={HAT_PIECE_CLASSES} style={{
           left:            h.left,
           fontSize:        h.size,
           animationDelay:  h.delay,
@@ -128,18 +175,18 @@ export function HatTrickPopup({ data, onClose }) {
 
   if (!data) return null;
   return (
-    <div className="game-event-overlay hat-trick-overlay" onClick={onClose}>
+    <div className={overlayClasses(true)} onClick={onClose}>
       <HatRain teamColor={data.teamColor} />
-      <div className="hat-trick-popup">
-        <div className="goal-light">🚨</div>
-        <div className="hat-trick-word">HAT TRICK!</div>
-        {data.scorer && <div className="goal-scorer">{data.scorer}</div>}
+      <div className={HAT_TRICK_POPUP_CLASSES}>
+        <div className={GOAL_LIGHT_CLASSES}>🚨</div>
+        <div className={HAT_TRICK_WORD_CLASSES}>HAT TRICK!</div>
+        {data.scorer && <div className={GOAL_SCORER_CLASSES}>{data.scorer}</div>}
         {data.assists?.length > 0 && (
-          <div className="goal-assists">Assists: {data.assists.join(', ')}</div>
+          <div className={GOAL_ASSISTS_CLASSES}>Assists: {data.assists.join(', ')}</div>
         )}
-        {data.shotType && <div className="goal-shot-type">{data.shotType}</div>}
-        <div className="goal-period">{data.time ? `${data.period} · ${data.time}` : data.period}</div>
-        <div className="game-event-dismiss">tap to dismiss</div>
+        {data.shotType && <div className={GOAL_SHOT_TYPE_CLASSES}>{data.shotType}</div>}
+        <div className={GOAL_PERIOD_CLASSES}>{data.time ? `${data.period} · ${data.time}` : data.period}</div>
+        <div className={GAME_EVENT_DISMISS_CLASSES}>tap to dismiss</div>
       </div>
     </div>
   );
@@ -159,7 +206,7 @@ function Confetti() {
   return (
     <>
       {pieces.map(p => (
-        <div key={p.id} className="confetti-piece" style={{
+        <div key={p.id} className={CONFETTI_PIECE_CLASSES} style={{
           left: p.left, background: p.color,
           width: p.width, height: p.height,
           animationDelay: p.delay, animationDuration: p.duration,
@@ -179,13 +226,13 @@ export function WinPopup({ data, onClose }) {
 
   if (!data) return null;
   return (
-    <div className="game-event-overlay win-overlay" onClick={onClose}>
+    <div className={overlayClasses(true)} onClick={onClose}>
       <Confetti />
-      <div className="win-popup">
-        <div className="win-logo">🏆</div>
-        <div className="win-text">{data.teamAbbr || 'CANES'} WIN!</div>
-        <div className="win-score">{data.score}</div>
-        <div className="event-dismiss">tap to dismiss</div>
+      <div className={WIN_POPUP_CLASSES}>
+        <div className={WIN_LOGO_CLASSES}>🏆</div>
+        <div className={WIN_TEXT_CLASSES}>{data.teamAbbr || 'CANES'} WIN!</div>
+        <div className={WIN_SCORE_CLASSES}>{data.score}</div>
+        <div className={GAME_EVENT_DISMISS_CLASSES}>tap to dismiss</div>
       </div>
     </div>
   );
