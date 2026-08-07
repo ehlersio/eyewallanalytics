@@ -23,7 +23,6 @@ import PlayerPopup from '../components/PlayerPopup';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from '../components/ShareButtons';
 import './LeagueView.css';
-import '../components/ShareButtons.css';
 import '../components/PredictionCanvas.css';
 import DraftTab from '../components/DraftTab';
 

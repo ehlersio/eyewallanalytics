@@ -3,7 +3,6 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
-import './ShareButtons.css';
 import './PeriodSummary.css';
 
 // Brightcove embed — autoplay=false prevents simultaneous playback

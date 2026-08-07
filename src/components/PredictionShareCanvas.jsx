@@ -13,7 +13,6 @@ import { capture } from '../utils/analytics';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
-import './ShareButtons.css';
 import './PredictionCanvas.css';
 
 // ── Share canvas (off-screen, 1080×1080) ─────────────────────
