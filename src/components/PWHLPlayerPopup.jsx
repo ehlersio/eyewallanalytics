@@ -32,20 +32,19 @@ import PlayerComparisonEntry from './PlayerComparisonEntry';
 import {
   SKATER_STATS, GOALIE_STATS, PWHL_STAT_PCT_MAP, posLabel, groupStats as pwhlGroupStats,
 } from '../utils/pwhlPlayerStats';
-import '../views/PlayersView.css';
-
-// Tailwind migration (Session 97, Phase 3, sub-PR 2) -- see PlayerPopup.jsx
-// for the full rationale on which classes stay plain (shared with
-// TeamComparisonPopup.jsx's own markup, or entangled with a cascade-layer
-// override on one of those shared classes): player-popup, pp-header,
-// pp-header-reflow, pp-close, pp-body, pp-no-stats, pp-identity, pp-name,
-// pp-first, pp-birth, pp-photo-wrap, popup-backdrop, stat-section,
-// stat-section-header, stat-section-label, stat-section-body. pp-last is
-// migrated but kept as a literal marker for the same surviving
-// .pp-header-reflow .pp-last compound rule. pp-quickstats-col is migrated
-// + its base rule deleted, kept literal for the .pce-toggle/.pce-wrap
-// compact-mode override (moved into PlayerComparisonPopup.css this same
-// sub-PR). Cypress markers kept: pp-heatmap-empty, pp-quickstats-col, pp-tab.
+// Tailwind migration (Session 97, Phase 3, sub-PR 2 + sub-PR 3) -- see
+// PlayerPopup.jsx for the full rationale. The former shell classes
+// (player-popup, pp-header, pp-header-reflow, pp-close, pp-body,
+// pp-no-stats, pp-identity, pp-name, pp-first, pp-birth, pp-photo-wrap)
+// are fully Tailwind now that TeamComparisonPopup.jsx/PlayerComparisonPopup.jsx
+// (sub-PR 3) are migrated too. popup-backdrop stays untouched -- separate
+// permanently-shared global class in index.css, not part of PlayersView.css.
+// pp-last keeps its literal marker for one surviving compound rule
+// (.pp-header-reflow .pp-last{overflow-wrap:break-word}). pp-quickstats-col
+// is migrated + its base rule deleted, kept literal for the
+// .pce-toggle/.pce-wrap compact-mode override (moved into
+// PlayerComparisonPopup.css in sub-PR 2). Cypress markers kept:
+// pp-heatmap-empty, pp-quickstats-col, pp-tab, pp-pos-chip, pp-chip.
 const PP_QUICKSTAT_CLASSES = 'flex flex-col items-center bg-[var(--bg2)] rounded-md py-1 px-[2px] min-w-0'
 const PP_QUICKSTAT_VAL_CLASSES = 'font-[family-name:var(--font-display)] text-[13px] font-bold text-[color:var(--text)] leading-[1.1]'
 const PP_QUICKSTAT_LABEL_CLASSES = 'text-[8px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]'
@@ -99,6 +98,22 @@ const PP_TAB_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] border-b-transpa
 const PP_TAB_ACTIVE_CLASSES = 'text-[color:var(--red-bright)] border-b-[var(--red-bright)]'
 function ppTabClasses(active) { return `${PP_TAB_BASE_CLASSES} ${active ? PP_TAB_ACTIVE_CLASSES : PP_TAB_INACTIVE_CLASSES}` }
 const PP_METRIC_SELECT_CLASSES = 'text-[11px] text-[color:var(--text)] bg-[var(--bg2)] border-[0.5px] border-[var(--border)] rounded-md py-[3px] px-[6px]'
+
+// ── Sub-PR 3 additions: the former "shell" classes ──
+const PLAYER_POPUP_CLASSES = 'player-popup bg-[var(--bg1)] border-[0.5px] border-[var(--border-2)] rounded-t-[var(--radius-lg)] w-full max-w-[420px] max-h-[90vh] overflow-y-auto overflow-x-hidden shadow-[0_-8px_40px_rgba(0,0,0,0.5)] animate-[slide-up_0.2s_cubic-bezier(0.34,1.2,0.64,1)] min-[560px]:rounded-[var(--radius-lg)] min-[560px]:animate-[pop-in_0.2s_cubic-bezier(0.34,1.2,0.64,1)]'
+const PP_HEADER_BASE_CLASSES = 'pp-header flex p-4 border-b-[0.5px] border-[var(--border)] [background:linear-gradient(135deg,rgba(204,34,0,0.07)_0%,transparent_55%)] relative'
+const PP_HEADER_LAYOUT_DEFAULT_CLASSES = 'items-start gap-[14px]'
+const PP_HEADER_LAYOUT_REFLOW_CLASSES = 'items-center gap-[10px]'
+function ppHeaderClasses(reflow) { return `${PP_HEADER_BASE_CLASSES} ${reflow ? PP_HEADER_LAYOUT_REFLOW_CLASSES : PP_HEADER_LAYOUT_DEFAULT_CLASSES}` }
+const PP_IDENTITY_DEFAULT_CLASSES = 'flex-1 min-w-0 flex flex-col gap-1'
+const PP_IDENTITY_REFLOW_CLASSES = 'flex-[0_1_84px] min-w-[60px] flex flex-col gap-[3px]'
+const PP_NAME_CLASSES = 'pp-name flex flex-col leading-[1.1]'
+const PP_FIRST_CLASSES = 'pp-first text-[12px] text-[color:var(--text-muted)]'
+const PP_BIRTH_CLASSES = 'text-[10px] text-[color:var(--text-dim)] mt-[2px]'
+const PP_CLOSE_CLASSES = 'pp-close absolute top-3 right-3 w-[28px] h-[28px] rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]'
+const PP_BODY_CLASSES = 'pp-body pt-2 pb-4'
+const PP_NO_STATS_CLASSES = 'text-center p-5 text-[12px] text-[color:var(--text-dim)] italic'
+const PP_PHOTO_WRAP_CLASSES = 'shrink-0'
 
 const SEASON_LABEL = '2025–26';
 
@@ -412,7 +427,7 @@ function PWHLCompareSection({ label, stats, defs, loading }) {
     return (
       <div className="stat-section">
         <div className="stat-section-header"><span className="stat-section-label">{label}</span></div>
-        <div className="stat-section-body"><div className="pp-no-stats">No data for this player in {label}.</div></div>
+        <div className="stat-section-body"><div className={PP_NO_STATS_CLASSES}>No data for this player in {label}.</div></div>
       </div>
     );
   }
@@ -549,21 +564,21 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
 
   return (
     <div className="popup-backdrop" onClick={onClose}>
-      <div className="player-popup" onClick={e => e.stopPropagation()}>
+      <div className={PLAYER_POPUP_CLASSES} onClick={e => e.stopPropagation()}>
 
         {/* ── Header ── */}
-        <div className={`pp-header ${showHeaderReflow ? 'pp-header-reflow' : ''}`}>
-          <div className="pp-photo-wrap">
+        <div className={ppHeaderClasses(showHeaderReflow)}>
+          <div className={PP_PHOTO_WRAP_CLASSES}>
             {!imgErr ? (
               <img src={headshot} alt={name} className={PP_PHOTO_CLASSES} onError={() => setImgErr(true)} />
             ) : (
               <div className={PP_PHOTO_FALLBACK_CLASSES}>{initials}</div>
             )}
           </div>
-          <div className="pp-identity">
+          <div className={showHeaderReflow ? PP_IDENTITY_REFLOW_CLASSES : PP_IDENTITY_DEFAULT_CLASSES}>
             {p.jersey_number && <div className={PP_NUM_CLASSES}>#{p.jersey_number}</div>}
-            <div className="pp-name">
-              <span className="pp-first">{firstName}</span>
+            <div className={PP_NAME_CLASSES}>
+              <span className={PP_FIRST_CLASSES}>{firstName}</span>
               <span className={`${PP_LAST_CLASSES} ${showHeaderReflow ? PP_LAST_REFLOW_CLASSES : ''}`}>{lastName}</span>
             </div>
             <div className={PP_CHIPS_CLASSES}>
@@ -571,7 +586,7 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
               {!showHeaderReflow && p.shoots && <span className={PP_CHIP_CLASSES}>Shoots {p.shoots === 'L' ? 'Left' : p.shoots === 'R' ? 'Right' : p.shoots}</span>}
             </div>
             {!showHeaderReflow && p.birth_date && (
-              <div className="pp-birth">
+              <div className={PP_BIRTH_CLASSES}>
                 {fmtBirth(p.birth_date)} · Age {calcAge(p.birth_date)}
                 {p.birth_city ? ` · ${p.birth_city}` : ''}
               </div>
@@ -579,7 +594,7 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
           </div>
           {showHeaderReflow && <PWHLHeaderPanel percentiles={pctData.percentiles} comparisonEntry={comparisonEntry} />}
           {!showHeaderReflow && comparisonEntry}
-          <button className="pp-close" onClick={onClose} aria-label="Close">✕</button>
+          <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label="Close">✕</button>
         </div>
 
         {/* ── Bio row — full width, 6 evenly-spaced columns (Session 85) ── */}
@@ -606,7 +621,7 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
 
         {/* ── Stats tab ── */}
         {ppTab === 'stats' && (
-          <div className="pp-body">
+          <div className={PP_BODY_CLASSES}>
             {statsLoading ? (
               <div className={PP_HEATMAP_EMPTY_CLASSES}>
                 <div className={PP_HEATMAP_ICON_CLASSES}>📊</div>
@@ -622,7 +637,7 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
                       percentiles={!isGoalie ? pctData?.percentiles : undefined}
                       pctMap={PWHL_STAT_PCT_MAP}
                     />
-                  : <div className="pp-no-stats">No stats available for this player yet.</div>}
+                  : <div className={PP_NO_STATS_CLASSES}>No stats available for this player yet.</div>}
                 {(careerRegGroups.length > 0 || careerPOGroups.length > 0) && (
                   <div className="stat-section-peers">
                     {careerRegGroups.length > 0 && <TileStatSection label="Career Regular Season" groups={careerRegGroups} />}
@@ -646,7 +661,7 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
 
         {/* ── Compare tab — season-over-season (Session 64) ── */}
         {ppTab === 'compare' && (
-          <div className="pp-body">
+          <div className={PP_BODY_CLASSES}>
             <SeasonComparisonPicker
               league="pwhl"
               selected={compareSeasons}
@@ -654,7 +669,7 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
               maxSelected={4}
             />
             {compareSeasons.length === 0 && (
-              <div className="pp-no-stats">Select two or more seasons above to compare.</div>
+              <div className={PP_NO_STATS_CLASSES}>Select two or more seasons above to compare.</div>
             )}
             {chartableStatDefs.length > 0 && compareSeasons.length > 0 && (
               <div className="stat-section xg-overlay-section">
@@ -673,7 +688,7 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
                 </div>
                 <div className="stat-section-body">
                   {gameLogLoading
-                    ? <div className="pp-no-stats">Loading chart…</div>
+                    ? <div className={PP_NO_STATS_CLASSES}>Loading chart…</div>
                     : <SeasonOverlayChart series={chartSeries} metricLabel={activeChartDef.label} />}
                 </div>
               </div>

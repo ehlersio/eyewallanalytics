@@ -26,6 +26,14 @@ import './LeagueView.css';
 import '../components/PredictionCanvas.css';
 import DraftTab from '../components/DraftTab';
 
+// .pp-close (Session 97, Phase 3, sub-PR 3) -- was PlayersView.css's,
+// used here only via importing PlayerPopup (which imported that file as a
+// side effect). PlayersView.css is deleted now that every real consumer
+// has migrated; migrated this one direct usage too rather than leave it
+// stranded on dead CSS. Kept as a literal marker -- league.cy.js and
+// milestones.cy.js select on .pp-close directly.
+const PP_CLOSE_CLASSES = 'pp-close absolute top-3 right-3 w-[28px] h-[28px] rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]'
+
 const PRIMARY = TEAM_CONFIG.abbr;
 
 // Season used to be captured here as a module-level const (TEAM_CONFIG.season
@@ -723,7 +731,7 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
               {topWins > bottomWins ? `${top} leads` : topWins < bottomWins ? `${bottom} leads` : 'Tied'} {Math.max(topWins, bottomWins)}{dash}{Math.min(topWins, bottomWins)}
             </div>
           )}
-          <button className="pp-close" onClick={onClose} aria-label="Close series">✕</button>
+          <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label="Close series">✕</button>
         </div>
 
         {/* Round label */}

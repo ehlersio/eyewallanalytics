@@ -6,7 +6,6 @@ import { useSport } from '../utils/SportContext'
 import { isStandingsStale } from '../utils/standingsUtils'
 import TeamLogo from '../components/TeamLogo'
 import PlayerPopup from '../components/PlayerPopup'
-import './PlayersView.css'
 
 // ─── Stat definitions with tooltips ──────────────────────────
 // Moved to PlayerPopup.jsx (shared with LeagueView leaders modal)

@@ -11,17 +11,48 @@ import SeasonComparisonPicker from './SeasonComparisonPicker';
 import SeasonOverlayChart from './SeasonOverlayChart';
 import TeamOpponentPicker from './TeamOpponentPicker';
 import TeamLogo from './TeamLogo';
-// Reuses PlayerPopup's popup shell + stat-section/stat-row classes
-// (.popup-backdrop, .player-popup, .pp-header, .stat-section, .stat-row,
-// etc) rather than duplicating them in a new stylesheet.
-import '../views/PlayersView.css';
 // This component's own .h2h-*/.compare-mode-*/.cvt-* styles (Session 95,
 // Phase 1). They used to load transitively through SeasonComparisonPicker.jsx's
 // import of this same file -- that file dropped the import when its own
 // .season-picker/.season-chip rules migrated to Tailwind, since it no
 // longer needs anything from this CSS file itself. Importing it directly
 // here instead, since this is the component that actually still needs it.
+// Out of scope for the PlayersView.css Tailwind migration below -- a
+// separate file, untouched.
 import './SeasonComparisonPicker.css';
+
+// Tailwind migration (Session 97, Phase 3, sub-PR 3) -- this component used
+// to reuse PlayerPopup's popup-shell classes from PlayersView.css
+// (.player-popup, .pp-header, .stat-section, .stat-row, etc); that file is
+// deleted now that every consumer (PlayerPopup.jsx, PWHLPlayerPopup.jsx,
+// PlayerComparisonPopup.jsx, this file) has migrated. .popup-backdrop
+// stays a literal className -- it's a separate, permanently-shared global
+// class in index.css, not part of PlayersView.css.
+//
+// Cypress marker classnames kept (audited via grep): player-popup, pp-name,
+// pp-first, pp-close, pp-body (players.cy.js), stat-section (pwhl-team.cy.js,
+// team.cy.js), stat-row (pwhl-team.cy.js).
+const PLAYER_POPUP_CLASSES = 'player-popup bg-[var(--bg1)] border-[0.5px] border-[var(--border-2)] rounded-t-[var(--radius-lg)] w-full max-w-[420px] max-h-[90vh] overflow-y-auto overflow-x-hidden shadow-[0_-8px_40px_rgba(0,0,0,0.5)] animate-[slide-up_0.2s_cubic-bezier(0.34,1.2,0.64,1)] min-[560px]:rounded-[var(--radius-lg)] min-[560px]:animate-[pop-in_0.2s_cubic-bezier(0.34,1.2,0.64,1)]'
+const PP_HEADER_CLASSES = 'pp-header flex items-start gap-[14px] p-4 border-b-[0.5px] border-[var(--border)] [background:linear-gradient(135deg,rgba(204,34,0,0.07)_0%,transparent_55%)] relative'
+const PP_PHOTO_WRAP_CLASSES = 'shrink-0'
+const PP_IDENTITY_CLASSES = 'flex-1 min-w-0 flex flex-col gap-1'
+const PP_NAME_CLASSES = 'pp-name flex flex-col leading-[1.1]'
+const PP_FIRST_CLASSES = 'pp-first text-[12px] text-[color:var(--text-muted)]'
+const PP_BIRTH_CLASSES = 'text-[10px] text-[color:var(--text-dim)] mt-[2px]'
+const PP_CLOSE_CLASSES = 'pp-close absolute top-3 right-3 w-[28px] h-[28px] rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]'
+const PP_BODY_CLASSES = 'pp-body pt-2 pb-4'
+const PP_NO_STATS_CLASSES = 'text-center p-5 text-[12px] text-[color:var(--text-dim)] italic'
+
+const SECTION_CLASSES = 'stat-section border-b-[0.5px] border-[var(--border)]'
+const SECTION_HEADER_CLASSES = 'stat-section-header w-full flex items-center py-[10px] px-4 gap-2 bg-transparent border-0 cursor-pointer text-left [transition:background_0.12s] hover:bg-[var(--bg2)]'
+const SECTION_LABEL_CLASSES = 'flex-1 text-[13px] font-semibold text-[color:var(--text)]'
+const SECTION_BODY_CLASSES = 'stat-section-body py-1 px-4 pb-3'
+const SECTION_PEERS_CLASSES = 'stat-section-peers flex flex-wrap gap-[10px] px-4'
+
+const ROW_CLASSES = 'stat-row flex items-center justify-between py-[6px] border-b-[0.5px] border-[rgba(255,255,255,0.04)]'
+const ROW_LEFT_CLASSES = 'flex items-center gap-[6px] flex-1 min-w-0'
+const ROW_LABEL_CLASSES = 'text-[13px] text-[color:var(--text-muted)]'
+const ROW_VALUE_CLASSES = 'font-[family-name:var(--font-display)] text-[18px] font-bold text-[color:var(--text)] shrink-0 min-w-[48px] text-right'
 
 // A season with zero comparable seasons shouldn't lock the picker down to
 // maxSelected=0 (which would make every chip permanently disabled) --
@@ -89,22 +120,22 @@ function MetricRow({ label, value, fmt }) {
   // yet available" case in TeamCompareSeasonCard below.
   const display = value == null ? '—' : (fmt ? fmt(value) : value);
   return (
-    <div className="stat-row">
-      <div className="stat-row-left"><span className="stat-row-label">{label}</span></div>
-      <span className="stat-row-value">{display}</span>
+    <div className={ROW_CLASSES}>
+      <div className={ROW_LEFT_CLASSES}><span className={ROW_LABEL_CLASSES}>{label}</span></div>
+      <span className={ROW_VALUE_CLASSES}>{display}</span>
     </div>
   );
 }
 
 function TeamCompareSeasonCard({ label, row }) {
   return (
-    <div className="stat-section">
-      <div className="stat-section-header">
-        <span className="stat-section-label">{label}</span>
+    <div className={SECTION_CLASSES}>
+      <div className={SECTION_HEADER_CLASSES}>
+        <span className={SECTION_LABEL_CLASSES}>{label}</span>
       </div>
-      <div className="stat-section-body">
+      <div className={SECTION_BODY_CLASSES}>
         {!row && (
-          <div className="pp-no-stats">Not yet available for this season.</div>
+          <div className={PP_NO_STATS_CLASSES}>Not yet available for this season.</div>
         )}
         {row && METRICS.map(m => <MetricRow key={m.key} label={m.label} value={row[m.key]} fmt={m.fmt} />)}
       </div>
@@ -143,17 +174,17 @@ function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, oppon
       </div>
 
       {!opponent && (
-        <div className="pp-no-stats">Choose an opponent above and a season to compare.</div>
+        <div className={PP_NO_STATS_CLASSES}>Choose an opponent above and a season to compare.</div>
       )}
       {opponent && !selectedSeason && (
-        <div className="pp-no-stats">Choose a season above to compare.</div>
+        <div className={PP_NO_STATS_CLASSES}>Choose a season above to compare.</div>
       )}
 
       {loading && opponent && selectedSeason && (
-        <div className="pp-no-stats">Loading…</div>
+        <div className={PP_NO_STATS_CLASSES}>Loading…</div>
       )}
       {!loading && opponent && selectedSeason && (
-        <div className="stat-section-peers">
+        <div className={SECTION_PEERS_CLASSES}>
           <TeamCompareSeasonCard label={teamLabel} row={rowByTeam.get(String(teamValue))} />
           <TeamCompareSeasonCard label={opponentLabel} row={rowByTeam.get(String(opponent))} />
         </div>
@@ -249,13 +280,13 @@ function HeadToHeadPanel({ league, teamValue, opponent, teamLabel, opponentLabel
   );
 
   if (!opponent) {
-    return <div className="pp-no-stats">Choose an opponent above to see head-to-head history.</div>;
+    return <div className={PP_NO_STATS_CLASSES}>Choose an opponent above to see head-to-head history.</div>;
   }
   if (loading) {
-    return <div className="pp-no-stats">Loading…</div>;
+    return <div className={PP_NO_STATS_CLASSES}>Loading…</div>;
   }
   if (!h2h || h2h.totalMeetings === 0) {
-    return <div className="pp-no-stats">No meetings on record between these teams yet.</div>;
+    return <div className={PP_NO_STATS_CLASSES}>No meetings on record between these teams yet.</div>;
   }
 
   const { totalMeetings, allTimeRecord, recentWindow, currentStreak, isThinSample } = h2h;
@@ -289,7 +320,7 @@ function HeadToHeadPanel({ league, teamValue, opponent, teamLabel, opponentLabel
           )}
         </div>
         {isThinSample && (
-          <div className="pp-no-stats" style={{ marginTop: 10 }}>
+          <div className={PP_NO_STATS_CLASSES} style={{ marginTop: 10 }}>
             Only {totalMeetings} meeting{totalMeetings === 1 ? '' : 's'} on record — too few to call a trend.
           </div>
         )}
@@ -406,24 +437,24 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
 
   return (
     <div className="popup-backdrop" onClick={onClose}>
-      <div className="player-popup" onClick={e => e.stopPropagation()}>
-        <div className="pp-header">
+      <div className={PLAYER_POPUP_CLASSES} onClick={e => e.stopPropagation()}>
+        <div className={PP_HEADER_CLASSES}>
           <div className="cvt-team-logos">
-            <div className="pp-photo-wrap">
+            <div className={PP_PHOTO_WRAP_CLASSES}>
               <TeamLogo abbr={logoAbbr} sport={league === 'pwhl' ? 'pwhl' : 'nhl'} size={44} color={logoColor} />
             </div>
             {showOpponentInHeader && (
               <>
                 <span className="cvt-vs">vs</span>
-                <div className="pp-photo-wrap">
+                <div className={PP_PHOTO_WRAP_CLASSES}>
                   <TeamLogo abbr={opponentLogoAbbr} sport={league === 'pwhl' ? 'pwhl' : 'nhl'} size={44} color={opponentLogoColor} />
                 </div>
               </>
             )}
           </div>
-          <div className="pp-identity">
-            <div className="pp-name"><span className="pp-first">{headerTitle}</span></div>
-            <div className="pp-birth">{headerSubtitle}</div>
+          <div className={PP_IDENTITY_CLASSES}>
+            <div className={PP_NAME_CLASSES}><span className={PP_FIRST_CLASSES}>{headerTitle}</span></div>
+            <div className={PP_BIRTH_CLASSES}>{headerSubtitle}</div>
           </div>
           <div className="cvt-mode-switch" role="group" aria-label="Comparison mode">
             <button
@@ -447,10 +478,10 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
               🆚
             </button>
           </div>
-          <button className="pp-close" onClick={onClose} aria-label="Close">✕</button>
+          <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label="Close">✕</button>
         </div>
 
-        <div className="pp-body">
+        <div className={PP_BODY_CLASSES}>
           {mode === 'season' && (
             <>
               <SeasonComparisonPicker
@@ -460,7 +491,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
                 maxSelected={maxSelected}
               />
               {compareSeasons.length === 0 && (
-                <div className="pp-no-stats">Select two or more seasons above to compare.</div>
+                <div className={PP_NO_STATS_CLASSES}>Select two or more seasons above to compare.</div>
               )}
 
               {isNhl && compareSeasons.length > 0 && (
@@ -468,13 +499,13 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
                 // shell, header, body) but is deliberately excluded by that class
                 // alone -- team.cy.js counts ".stat-section" to mean "one card
                 // per selected season," and this section isn't one of those.
-                <div className="stat-section xg-overlay-section">
-                  <div className="stat-section-header">
-                    <span className="stat-section-label">xGF% per game · 5v5</span>
+                <div className={`${SECTION_CLASSES} xg-overlay-section`}>
+                  <div className={SECTION_HEADER_CLASSES}>
+                    <span className={SECTION_LABEL_CLASSES}>xGF% per game · 5v5</span>
                   </div>
-                  <div className="stat-section-body">
+                  <div className={SECTION_BODY_CLASSES}>
                     {xgLoading
-                      ? <div className="pp-no-stats">Loading chart…</div>
+                      ? <div className={PP_NO_STATS_CLASSES}>Loading chart…</div>
                       : (
                         <SeasonOverlayChart
                           series={chartSeries}
@@ -489,10 +520,10 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
               )}
 
               {loading && compareSeasons.length > 0 && (
-                <div className="pp-no-stats">Loading…</div>
+                <div className={PP_NO_STATS_CLASSES}>Loading…</div>
               )}
               {!loading && sortedDesc.length > 0 && (
-                <div className="stat-section-peers">
+                <div className={SECTION_PEERS_CLASSES}>
                   {sortedDesc.map(season => (
                     <TeamCompareSeasonCard
                       key={season}
