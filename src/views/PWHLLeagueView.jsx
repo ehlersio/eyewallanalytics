@@ -14,7 +14,6 @@ import {
 import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
 import './LeagueView.css';
-import './PlayersView.css';
 
 // Tailwind migration (Session 97, Phase 3, sub-PR 1) -- only the small
 // PlayersView.css-owned pieces this file actually uses (.players-tabs/.tab,

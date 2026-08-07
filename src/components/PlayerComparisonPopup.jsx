@@ -38,8 +38,21 @@ import {
 import { StatTileGrid } from './StatTileGrid'
 import PercentileBar from './PercentileBar'
 import TeamLogo from './TeamLogo'
-import '../views/PlayersView.css'
 import './PlayerComparisonPopup.css'
+
+// Tailwind migration (Session 97, Phase 3, sub-PR 3) -- this file's own
+// popup-shell classNames (player-popup, pp-header, pp-close, pp-body,
+// pp-no-stats, pp-radar-note) came from PlayersView.css; that file is
+// deleted now that every consumer has migrated. .popup-backdrop stays a
+// literal className -- separate, permanently-shared global class in
+// index.css, not part of PlayersView.css. Cypress marker classnames kept
+// (audited via grep): player-popup, pp-close, pp-body.
+const PLAYER_POPUP_CLASSES = 'player-popup bg-[var(--bg1)] border-[0.5px] border-[var(--border-2)] rounded-t-[var(--radius-lg)] w-full max-w-[420px] max-h-[90vh] overflow-y-auto overflow-x-hidden shadow-[0_-8px_40px_rgba(0,0,0,0.5)] animate-[slide-up_0.2s_cubic-bezier(0.34,1.2,0.64,1)] min-[560px]:rounded-[var(--radius-lg)] min-[560px]:animate-[pop-in_0.2s_cubic-bezier(0.34,1.2,0.64,1)]'
+const PP_HEADER_CLASSES = 'pp-header flex items-start gap-[14px] p-4 border-b-[0.5px] border-[var(--border)] [background:linear-gradient(135deg,rgba(204,34,0,0.07)_0%,transparent_55%)] relative'
+const PP_CLOSE_CLASSES = 'pp-close absolute top-3 right-3 w-[28px] h-[28px] rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]'
+const PP_BODY_CLASSES = 'pp-body pt-2 pb-4'
+const PP_NO_STATS_CLASSES = 'text-center p-5 text-[12px] text-[color:var(--text-dim)] italic'
+const PP_RADAR_NOTE_CLASSES = 'text-[9px] text-[color:var(--text-dim)] text-center leading-[1.4] px-1 mt-[-6px]'
 
 const NHL_SEASON = Number(TEAM_CONFIG.season.slice(0, 4) + TEAM_CONFIG.season.slice(4))
 
@@ -183,7 +196,7 @@ function ComparisonRadar({ axesA, axesB, colorA, colorB, abbrMap }) {
         </RadarChart>
       </ResponsiveContainer>
       {(missingA.length > 0 || missingB.length > 0) && (
-        <div className="pp-radar-note">
+        <div className={PP_RADAR_NOTE_CLASSES}>
           Not enough playing time yet: {[...new Set([...missingA, ...missingB])].join(', ')}
         </div>
       )}
@@ -336,19 +349,19 @@ export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose
 
   return (
     <div className="popup-backdrop pcp-backdrop" onClick={onClose}>
-      <div className="player-popup pcp-root" onClick={e => e.stopPropagation()}>
-        <div className="pp-header">
+      <div className={`${PLAYER_POPUP_CLASSES} pcp-root`} onClick={e => e.stopPropagation()}>
+        <div className={PP_HEADER_CLASSES}>
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <PlayerIdentity data={a} sport={sport} />
             <span className="text-xs font-semibold text-[color:var(--text-dim)] shrink-0 px-1">vs</span>
             <PlayerIdentity data={b} sport={sport} />
           </div>
-          <button className="pp-close" onClick={onClose} aria-label="Close">✕</button>
+          <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label="Close">✕</button>
         </div>
 
-        <div className="pp-body">
+        <div className={PP_BODY_CLASSES}>
           {(a.loading || b.loading) && (
-            <div className="pp-no-stats">Loading…</div>
+            <div className={PP_NO_STATS_CLASSES}>Loading…</div>
           )}
 
           {!a.loading && !b.loading && goalieMismatch && (

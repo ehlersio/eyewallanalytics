@@ -149,6 +149,32 @@
 .player-card:hover { border-color: var(--red-border); transform: translateY(-1px); }
 .player-card:active { transform: translateY(0); }
 
+/* .stat-section-peers nested overrides (StatTileGrid.jsx's TileStatSection,
+   TeamComparisonPopup.jsx's TeamCompareSeasonCard -- Session 97, Phase 3,
+   sub-PR 3) -- kept as real, unlayered CSS since both consumers render
+   .stat-section/.stat-section-header/.stat-section-body/.stat-tile-grid
+   with plain Tailwind base styling; there's no shared ancestor state to
+   pass a "compact" prop through cleanly across two unrelated components,
+   and an unlayered nested rule reliably overrides the base Tailwind
+   utilities regardless of layer order since it only ever ADDS the
+   peer-specific properties (flex/min-width/border on .stat-section,
+   tighter padding, a single-column .stat-tile-grid) rather than fighting
+   for the same property the base rule already owns. */
+.stat-section-peers { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 16px; }
+.stat-section-peers .stat-section {
+  flex: 1 1 160px;
+  min-width: 140px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.stat-section-peers .stat-section-header { padding: 8px 10px; }
+.stat-section-peers .stat-section-body { padding: 4px 10px 10px; }
+.stat-section-peers .stat-tile-grid { grid-template-columns: 1fr; }
+@media (max-width: 340px) {
+  .stat-section-peers { flex-direction: column; }
+  .stat-section-peers .stat-section { min-width: 0; }
+}
+
 .pill {
   display: inline-flex;
   align-items: center;
@@ -282,6 +308,17 @@
 @keyframes pop-in {
   from { transform: scale(0.94) translateY(8px); opacity: 0; }
   to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Hoisted here (Session 97, Phase 3, sub-PR 3) from PlayersView.css's
+   .player-popup entrance animation, referenced via Tailwind's
+   animate-[slide-up_...] arbitrary syntax now that .player-popup itself is
+   migrated. ScheduleView.css independently defines the same keyframe with
+   identical values for its own .game-popup -- left as-is, out of scope for
+   this phase. */
+@keyframes slide-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
 }
 
 /* ── Focus styles for keyboard navigation (WCAG 2.4.7) ── */

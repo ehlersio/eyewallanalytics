@@ -6,7 +6,6 @@ import { fetchPWHLPlayers, PWHL_TEAM_CONFIG, PWHL_TEAM_ID } from '../utils/pwhlA
 import { PWHL_CURRENT_SEASON, PWHL_REGULAR_SEASONS } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
-import './PlayersView.css';
 
 // Tailwind migration (Session 97, Phase 3, sub-PR 1) -- see PlayersView.jsx
 // for the full rationale (cascade-layer note on .player-card's hover/active

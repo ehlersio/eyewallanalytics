@@ -9,31 +9,25 @@ import { useState } from 'react'
 import InfoTip from './InfoTip'
 import { nhlSeasonLabel } from '../utils/seasonComparison'
 
-// Tailwind migration (Session 97, Phase 3, sub-PR 2). This file's own
-// classes (.stat-tile*, .stat-group*, .highlight-section's siblings) are
-// fully migrated. .stat-section/.stat-section-header/.stat-section-label/
-// .stat-section-body/.stat-section-peers stay as plain, literal classNames
-// -- TeamComparisonPopup.jsx (sub-PR 3, unmigrated) uses those same 5
-// classes directly in its own markup, so PlayersView.css's rules for them
-// can't be deleted yet. .highlight-section is ALSO kept plain rather than
-// migrated: its background is easy to Tailwind-ify, but the compound
-// selector `.stat-section.highlight-section .stat-section-label { color:
-// red-bright }` recolors a CHILD span that belongs to the still-shared
-// .stat-section-label class -- .stat-section-label's own unlayered color
-// rule would beat any Tailwind color utility placed directly on the span
-// (same cascade-layer bug as .card in Session 97, sub-PR 1), so the only
-// way to keep that conditional recolor working is to leave the whole
-// mechanism (marker class + both CSS rules) intact until sub-PR 3.
+// Tailwind migration (Session 97, Phase 3, sub-PR 2 + sub-PR 3). Now that
+// TeamComparisonPopup.jsx (sub-PR 3) is also migrated, .stat-section/
+// .stat-section-header/.stat-section-label/.stat-section-body are fully
+// Tailwind here too -- the highlight-section -> label-color coupling that
+// used to require real CSS is now a plain ternary, since this component
+// controls both the section and its label in the same render (no more
+// cross-component ancestor-selector dependency).
 //
-// .stat-tile-grid is kept as a literal marker (base grid/gap IS migrated to
-// Tailwind, base rule deleted) because `.stat-section-peers .stat-tile-grid
-// { grid-template-columns: 1fr }` -- a real, unlayered rule keyed off the
-// still-shared .stat-section-peers -- needs the classname to keep firing;
-// that specific nested rule stays in PlayersView.css.
+// .stat-section, .stat-section-header, .stat-section-body, .stat-tile-grid
+// are kept as literal markers even though their base rules are gone: a
+// small set of `.stat-section-peers .stat-section*`/`.stat-tile-grid`
+// nested overrides still live in index.css as real CSS (shared with
+// TeamComparisonPopup.jsx's own TeamCompareSeasonCard, which independently
+// renders the same class names) -- see the comment there for why.
 //
-// Cypress marker classnames kept (audited via grep): .pp-tab is not in this
-// file; this file's own markers are .stat-tile, .stat-tile-label,
-// .stat-tile-value (pwhl-players.cy.js, player-comparison.cy.js).
+// Cypress marker classnames kept (audited via grep, including the
+// comma-separated-selector gap found in sub-PR 2): .stat-tile,
+// .stat-tile-label, .stat-tile-value (pwhl-players.cy.js,
+// player-comparison.cy.js), .stat-section (pwhl-team.cy.js, team.cy.js).
 
 const LEGEND_CLASSES = 'flex flex-wrap gap-3 text-[11px] text-[color:var(--text-muted)] px-4 mb-2'
 const LEGEND_ITEM_CLASSES = 'flex items-center gap-1'
@@ -60,6 +54,14 @@ const SECTION_BADGE_BASE_CLASSES = 'text-[9px] py-[2px] px-[7px] rounded-[10px] 
 const SECTION_BADGE_CURRENT_CLASSES = 'font-bold bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[var(--red-border)] uppercase tracking-[0.06em]'
 const SECTION_BADGE_STALE_CLASSES = 'font-semibold italic bg-[var(--bg3)] text-[color:var(--text-dim)] border-[var(--border-2)] normal-case tracking-normal'
 const SECTION_ARROW_CLASSES = 'text-[10px] text-[color:var(--text-dim)]'
+
+const SECTION_CLASSES = 'stat-section border-b-[0.5px] border-[var(--border)]'
+const SECTION_HIGHLIGHT_BG_CLASSES = 'highlight-section bg-[rgba(204,34,0,0.02)]'
+const SECTION_HEADER_CLASSES = 'stat-section-header w-full flex items-center py-[10px] px-4 gap-2 bg-transparent border-0 cursor-pointer text-left [transition:background_0.12s] hover:bg-[var(--bg2)]'
+const SECTION_LABEL_CLASSES = 'flex-1 text-[13px] font-semibold'
+const SECTION_LABEL_COLOR_CLASSES = 'text-[color:var(--text)]'
+const SECTION_LABEL_HIGHLIGHT_COLOR_CLASSES = 'text-[color:var(--red-bright)]'
+const SECTION_BODY_CLASSES = 'stat-section-body py-1 px-4 pb-3'
 
 function ordinalSuffix(n) {
   const v = Math.round(n)
@@ -243,9 +245,9 @@ export function StatTileGrid({ groups, percentiles, showPercentiles = true, pctM
 export function TileStatSection({ label, groups, highlight, percentiles, showPercentiles, statsStale, statsSeason, pctMap }) {
   const [open, setOpen] = useState(true)
   return (
-    <div className={`stat-section ${highlight ? 'highlight-section' : ''}`}>
-      <button className="stat-section-header" onClick={() => setOpen(o => !o)}>
-        <span className="stat-section-label">{label}</span>
+    <div className={`${SECTION_CLASSES} ${highlight ? SECTION_HIGHLIGHT_BG_CLASSES : ''}`}>
+      <button className={SECTION_HEADER_CLASSES} onClick={() => setOpen(o => !o)}>
+        <span className={`${SECTION_LABEL_CLASSES} ${highlight ? SECTION_LABEL_HIGHLIGHT_COLOR_CLASSES : SECTION_LABEL_COLOR_CLASSES}`}>{label}</span>
         {highlight && (
           statsStale
             ? <span className={`${SECTION_BADGE_BASE_CLASSES} ${SECTION_BADGE_STALE_CLASSES}`} title={`Not enough games yet this season — showing ${nhlSeasonLabel(statsSeason)}`}>
@@ -256,7 +258,7 @@ export function TileStatSection({ label, groups, highlight, percentiles, showPer
         <span className={SECTION_ARROW_CLASSES}>{open ? '▲' : '▼'}</span>
       </button>
       {open && (
-        <div className="stat-section-body">
+        <div className={SECTION_BODY_CLASSES}>
           <StatTileGrid
             groups={groups}
             percentiles={percentiles}
