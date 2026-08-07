@@ -156,6 +156,16 @@
    text-align and the icon/title/sub children's sizing are still Tailwind. */
 .empty-state { padding: 28px 16px; }
 
+/* .news-header, .news-error/.news-empty (NewsView.jsx, PWHLNewsView.jsx,
+   MilestonesFeed.jsx, TriviaFeed.jsx -- Phase 4) -- same collision shape as
+   .player-card/.empty-state above: combined with the shared .card class,
+   their non-14px paddings would silently lose to .card's unlayered
+   padding: 14px. (.news-card and .news-skeleton also combine with .card,
+   but their own padding is exactly 14px already, so no override is needed
+   for those two -- .card's own padding passes through unchanged.) */
+.news-header { padding: 14px 16px 10px; }
+.news-error, .news-empty { padding: 32px 20px; }
+
 /* .stat-section-peers nested overrides (StatTileGrid.jsx's TileStatSection,
    TeamComparisonPopup.jsx's TeamCompareSeasonCard -- Session 97, Phase 3,
    sub-PR 3) -- kept as real, unlayered CSS since both consumers render
@@ -351,6 +361,18 @@
 @keyframes ppPulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.6; }
+}
+
+/* Hoisted here (Phase 4, NewsView.css deleted) from NewsView.css's .skel
+   loading-shimmer animation. Named news-skel-shimmer, NOT shimmer -- this
+   file already has an unrelated @keyframes shimmer above (background-position
+   slide, used by .skeleton); NewsView.css's own shimmer was a same-named but
+   different (opacity-based) animation that would silently collide with the
+   existing one if hoisted under the same name. */
+@keyframes news-skel-shimmer {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { opacity: 1; }
 }
 
 /* ── Focus styles for keyboard navigation (WCAG 2.4.7) ── */
