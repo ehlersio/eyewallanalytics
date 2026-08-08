@@ -115,6 +115,23 @@ const DRAFT_PREV_SCHOOL_CLASSES = 'text-[color:var(--text-muted)] max-[600px]:hi
 const DRAFT_PREV_BADGE_CLASSES = 'draft-prev-badge inline-block text-[9px] font-bold bg-[rgba(255,255,255,0.06)] py-[1px] px-1 rounded-[3px] ml-1 text-[color:var(--text-dim)] align-middle max-[600px]:ml-0'
 const DRAFT_TD_PLAYER_CLASSES = 'max-[600px]:max-w-[90px] max-[600px]:overflow-hidden max-[600px]:text-ellipsis max-[600px]:whitespace-nowrap'
 
+// ── Tailwind class constants -- LEADERS (Phase 4, LeagueView.css sub-PR 2) --
+// Duplicated from LeagueView.jsx per established per-file convention; see
+// that file's header comment for the light-mode/property-race/interpolated-
+// dead-code checks (all clean here too). Unlike NHL, PWHL's Leaders rows
+// are ALWAYS clickable and NEVER highlight "your" team (--you doesn't
+// exist in this file's Leaders scope), so LV_LEADERS_ROW_CLASSES below is
+// a single static string rather than NHL's per-row helper function.
+const LV_LEADERS_GRID_CLASSES = 'grid grid-cols-2 gap-3 max-[600px]:grid-cols-1'
+const LV_LEADERS_CARD_CLASSES = 'lv-leaders-card bg-[var(--bg1)] border-[0.5px] border-[var(--border)] rounded-[var(--radius)] overflow-hidden'
+const LV_LEADERS_CARD_HEADER_CLASSES = 'text-[12px] font-semibold text-[color:var(--text-muted)] py-2 px-3 border-b-[0.5px] border-[var(--border)] bg-[var(--bg2)] flex justify-between items-center'
+const LV_LEADERS_CARD_STAT_LABEL_CLASSES = 'font-bold text-[color:var(--text-dim)] text-[11px] font-[family-name:var(--font-display)]'
+const LV_LEADERS_ROW_CLASSES = 'lv-leaders-row lv-leaders-row--clickable flex items-center py-[6px] px-3 text-[12px] border-b-[0.5px] border-[rgba(255,255,255,0.04)] gap-[6px] last:border-b-0 cursor-pointer [transition:background_0.12s_ease] hover:bg-[rgba(255,255,255,0.05)] hover:rounded-[4px] active:bg-[rgba(255,255,255,0.09)] focus-visible:outline focus-visible:outline-[1.5px] focus-visible:outline-[var(--red-bright)] focus-visible:-outline-offset-[1px] focus-visible:rounded-[4px]'
+const LV_LEADERS_RANK_CLASSES = 'text-[color:var(--text-dim)] min-w-[16px] text-[11px]'
+const LV_LEADERS_NAME_CLASSES = 'lv-leaders-name flex-1 text-[color:var(--text)] whitespace-nowrap overflow-hidden text-ellipsis'
+const LV_LEADERS_TEAM_CLASSES = 'lv-leaders-team text-[11px] min-w-[28px] text-right font-[family-name:var(--font-display)] font-bold'
+const LV_LEADERS_STAT_CLASSES = 'lv-leaders-stat font-bold text-[color:var(--text)] min-w-[36px] text-right font-[family-name:var(--font-mono)]'
+
 function teamAbbr(teamId) {
   return getPWHLTeamById(teamId)?.abbr;
 }
@@ -580,10 +597,10 @@ function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
 // ── Leaders ───────────────────────────────────────────────────
 function LeadersCard({ title, statLabel, rows, formatStat, onPlayerClick }) {
   return (
-    <div className="lv-leaders-card">
-      <div className="lv-leaders-card__header">
+    <div className={LV_LEADERS_CARD_CLASSES}>
+      <div className={LV_LEADERS_CARD_HEADER_CLASSES}>
         <span>{title}</span>
-        <span className="lv-leaders-card__stat-label">{statLabel}</span>
+        <span className={LV_LEADERS_CARD_STAT_LABEL_CLASSES}>{statLabel}</span>
       </div>
       {rows.map((p, i) => {
         const abbr   = teamAbbr(p.team_id) || '—';
@@ -591,14 +608,14 @@ function LeadersCard({ title, statLabel, rows, formatStat, onPlayerClick }) {
         const name   = p.player_name || '—';
         return (
           <div key={p.player_id ?? i}
-            className="lv-leaders-row lv-leaders-row--clickable"
+            className={LV_LEADERS_ROW_CLASSES}
             onClick={() => onPlayerClick?.(p)}
             role="button" tabIndex={0}
             onKeyDown={e => e.key === 'Enter' && onPlayerClick?.(p)}>
-            <span className="lv-leaders-rank">{i + 1}</span>
-            <span className="lv-leaders-name">{name}</span>
-            <span className="lv-leaders-team" style={{ color }}>{abbr}</span>
-            <span className="lv-leaders-stat">
+            <span className={LV_LEADERS_RANK_CLASSES}>{i + 1}</span>
+            <span className={LV_LEADERS_NAME_CLASSES}>{name}</span>
+            <span className={LV_LEADERS_TEAM_CLASSES} style={{ color }}>{abbr}</span>
+            <span className={LV_LEADERS_STAT_CLASSES}>
               {formatStat ? formatStat(p) : (p.points ?? '—')}
             </span>
           </div>
@@ -623,7 +640,7 @@ function LeadersPanel({ skaters, goalies, loading, season, seasonLabel }) {
 
   return (
     <>
-      <div className="lv-leaders-grid">
+      <div className={LV_LEADERS_GRID_CLASSES}>
         <LeadersCard title="Points" statLabel="PTS" rows={top10pts}
           formatStat={p => p.points ?? '—'} onPlayerClick={setSelected} />
         <LeadersCard title="Goals" statLabel="G" rows={top10g}
