@@ -192,6 +192,28 @@
   .stat-section-peers .stat-section { min-width: 0; }
 }
 
+/* LeagueView.jsx/PWHLLeagueView.jsx (Phase 4, sub-PR 4 -- LeagueView.css
+   deleted entirely, these 2 rules hoisted here rather than dropped) --
+   .bkt-root's --bkt-line custom property is consumed via
+   stroke="var(--bkt-line)" on inline SVG bracket-connector lines in both
+   files, can't be a Tailwind utility. .series-modal__header .pp-close
+   positions the already-Tailwind PP_CLOSE_CLASSES component at 14px/14px
+   here (vs. its own 12px/12px default) -- same unlayered-beats-layered
+   mechanism as .player-card above, needed since .pp-close's own position
+   is a layered Tailwind utility. Both classnames are kept as literal
+   markers on the migrated elements so these rules keep applying. */
+.bkt-root {
+  --bkt-line: rgba(255, 255, 255, 0.25); /* dark mode connector lines */
+}
+[data-theme="light"] .bkt-root {
+  --bkt-line: rgba(0, 0, 0, 0.22);
+}
+.series-modal__header .pp-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
 .pill {
   display: inline-flex;
   align-items: center;
@@ -322,6 +344,23 @@
 @media (min-width: 560px) {
   .popup-backdrop { align-items: center; padding: 16px; }
 }
+
+/* .popup-backdrop--centered (LeagueView.jsx/PWHLLeagueView.jsx's Series
+   Modal only, Phase 4 sub-PR 4) -- forces centered alignment below 600px
+   regardless of .popup-backdrop's own >=560px breakpoint above. Hoisted
+   here rather than kept in a per-component file since it's a modifier of
+   THIS shared class -- can't be a Tailwind utility on the Series Modal's
+   backdrop element, since .popup-backdrop is unlayered CSS and per the
+   cascade-layers rule (see .player-card below) a layered Tailwind utility
+   could never safely override it regardless of specificity. */
+@media (max-width: 600px) {
+  .popup-backdrop--centered {
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 16px !important;
+  }
+}
+
 @keyframes pop-in {
   from { transform: scale(0.94) translateY(8px); opacity: 0; }
   to   { transform: scale(1) translateY(0); opacity: 1; }
