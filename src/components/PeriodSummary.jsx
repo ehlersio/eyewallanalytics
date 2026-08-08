@@ -5,6 +5,161 @@ import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
 import './PeriodSummary.css';
 
+// ── Tailwind class constants -- POPUP HALF ONLY (Phase 4, sub-PR 5a) ──
+// PeriodSummary.css's ps-canvas-* export-image classes are a separate,
+// structurally distinct half (dark-only, off-screen export canvas) --
+// deferred to sub-PR 5b, left as literal classNames for now, PeriodSummary.css
+// NOT deleted yet. Duplicated in PWHLPeriodSummary.jsx per established
+// per-file convention.
+//
+// light-mode-overrides.css's "PeriodSummary.css — IN-APP popup/carousel
+// section only" block turned out to have only ONE real, live override --
+// .ps-carousel-dot(+.opp/.active.opp/.car) -- the other 7 selectors named
+// there (ps-backdrop, ps-header-badge, etc) were confirmed dead via
+// full-tree grep and removed from that file in this same sub-PR; see its
+// own comment. ps-carousel-dot kept literal here so that override keeps
+// applying.
+
+const PS_OVERLAY_CLASSES = 'ps-overlay fixed inset-0 z-[600] [backdrop-filter:blur(4px)] flex items-center justify-center p-4 animate-[psOverlayIn_0.2s_ease] bg-[rgba(0,0,0,0.75)]';
+const PS_CARD_CLASSES = 'ps-card w-full max-w-[460px] max-h-[88vh] overflow-y-auto bg-[var(--bg1)] rounded-[20px] pb-[env(safe-area-inset-bottom,16px)] animate-[psCardIn_0.3s_cubic-bezier(0.34,1.3,0.64,1)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+
+const PS_HEADER_CLASSES = 'ps-header flex items-center justify-between pt-4 px-[18px] sticky top-0 bg-[var(--bg1)] z-[2]';
+const PS_PERIOD_BADGE_CLASSES = 'ps-period-badge text-[11px] font-extrabold tracking-[0.12em] uppercase text-[color:var(--red-bright)] bg-[rgba(var(--team-primary-rgb),0.12)] py-1 px-[10px] rounded-[20px]';
+const PS_BTN_ICON_CLASSES = 'ps-btn-icon bg-[var(--bg3)] border-none rounded-[8px] py-[6px] px-2 text-[14px] cursor-pointer text-[color:var(--text-muted)] [transition:background_0.15s,color_0.15s] hover:bg-[var(--bg2)] hover:text-[color:var(--text)]';
+
+const PS_SCORE_BANNER_CLASSES = 'ps-score-banner flex items-center justify-center gap-3 pt-[18px] px-[18px] pb-3 border-b-[0.5px] border-[var(--border)]';
+const PS_TEAM_SCORE_CLASSES = 'ps-team-score flex flex-col items-center gap-[2px] min-w-[60px]';
+const PS_TEAM_ABBR_BASE_CLASSES = 'ps-team-abbr text-[11px] font-bold tracking-[0.08em]';
+const PS_TEAM_ABBR_DEFAULT_CLASSES = 'text-[color:var(--text-muted)]';
+const PS_TEAM_ABBR_CAR_CLASSES = 'car text-[color:var(--red-bright)]';
+function psTeamAbbrClasses(isCar) {
+  return `${PS_TEAM_ABBR_BASE_CLASSES} ${isCar ? PS_TEAM_ABBR_CAR_CLASSES : PS_TEAM_ABBR_DEFAULT_CLASSES}`;
+}
+const PS_SCORE_NUM_CLASSES = 'ps-score-num text-[36px] font-extrabold text-[color:var(--text)] leading-none [font-variant-numeric:tabular-nums]';
+const PS_SCORE_DIVIDER_CLASSES = 'text-[20px] text-[color:var(--text-dim)] mt-2';
+const PS_TEAM_LOGO_CLASSES = 'ps-team-logo w-11 h-11 object-contain mb-1';
+
+const PS_STAT_GRID_CLASSES = 'ps-stat-grid grid grid-cols-3 gap-2 pt-[14px] px-[14px]';
+const PS_STAT_CELL_CLASSES = 'ps-stat-cell bg-[var(--bg2)] rounded-[10px] py-[10px] px-2 flex flex-col items-center gap-[2px]';
+const PS_STAT_VAL_BASE_CLASSES = 'text-[18px] font-extrabold [font-variant-numeric:tabular-nums]';
+const PS_STAT_VAL_DEFAULT_CLASSES = 'text-[color:var(--text)]';
+const PS_STAT_VAL_GOOD_CLASSES = 'good text-[color:var(--green)]';
+const PS_STAT_VAL_BAD_CLASSES = 'bad text-[color:var(--red-bright)]';
+function psStatValClasses(color) {
+  const variant = color === 'good' ? PS_STAT_VAL_GOOD_CLASSES : color === 'bad' ? PS_STAT_VAL_BAD_CLASSES : PS_STAT_VAL_DEFAULT_CLASSES;
+  return `${PS_STAT_VAL_BASE_CLASSES} ${variant}`;
+}
+const PS_STAT_LABEL_CLASSES = 'text-[9px] font-bold tracking-[0.1em] uppercase text-[color:var(--text-dim)]';
+
+const PS_SECTION_LABEL_CLASSES = 'ps-section-label text-[9px] font-bold tracking-[0.1em] uppercase text-[color:var(--text-dim)] pt-[14px] px-4 pb-[6px]';
+
+// .ps-goals/.ps-goal-row confirmed dead (zero JSX consumers in either file --
+// period-summary.cy.js's own conditional checks for them, confirming they've
+// never existed here) -- not migrated, not replicated.
+const PS_GOAL_INFO_CLASSES = 'flex items-center gap-[10px] py-[10px] px-3';
+const PS_GOAL_HEADSHOT_CLASSES = 'w-9 h-9 rounded-full object-cover border-[1.5px] border-[var(--border-2)] flex-shrink-0';
+const PS_GOAL_HEADSHOT_PLACEHOLDER_CLASSES = 'w-9 h-9 rounded-full bg-[var(--bg3)] flex-shrink-0 flex items-center justify-center text-[16px]';
+const PS_GOAL_TEXT_CLASSES = 'flex-1 min-w-0';
+const PS_GOAL_SCORER_BASE_CLASSES = 'ps-goal-scorer text-[13px] font-bold whitespace-nowrap overflow-hidden text-ellipsis';
+const PS_GOAL_SCORER_DEFAULT_CLASSES = 'text-[color:var(--text)]';
+const PS_GOAL_SCORER_CAR_CLASSES = 'car text-[color:var(--red-bright)]';
+function psGoalScorerClasses(isCar) {
+  return `${PS_GOAL_SCORER_BASE_CLASSES} ${isCar ? PS_GOAL_SCORER_CAR_CLASSES : PS_GOAL_SCORER_DEFAULT_CLASSES}`;
+}
+const PS_GOAL_META_CLASSES = 'text-[11px] text-[color:var(--text-muted)] mt-[1px]';
+const PS_STRENGTH_BADGE_BASE_CLASSES = 'text-[9px] font-bold tracking-[0.06em] py-[2px] px-[6px] rounded-[4px] uppercase flex-shrink-0';
+const PS_STRENGTH_BADGE_PP_CLASSES = 'bg-[rgba(240,160,48,0.15)] text-[color:var(--amber)]';
+const PS_STRENGTH_BADGE_SH_CLASSES = 'bg-[rgba(74,144,226,0.15)] text-[color:var(--blue-bright)]';
+const PS_STRENGTH_BADGE_EV_CLASSES = 'bg-[var(--bg3)] text-[color:var(--text-dim)]';
+// 'en' (empty net) had zero CSS coverage in the original PeriodSummary.css --
+// only .pp/.sh/.ev existed, so PWHL's strengthLabel() returning 'en' rendered
+// an unstyled badge (base font-size/padding/radius only, no bg/color). Fixed
+// here rather than replicated: 'en' gets the same treatment as 'sh' (both
+// are "our opponent had an advantage" states, closest existing semantic match).
+function psStrengthBadgeClasses(sl) {
+  const variant = sl === 'pp' ? PS_STRENGTH_BADGE_PP_CLASSES
+    : (sl === 'sh' || sl === 'en') ? PS_STRENGTH_BADGE_SH_CLASSES
+    : PS_STRENGTH_BADGE_EV_CLASSES;
+  return `${PS_STRENGTH_BADGE_BASE_CLASSES} ${variant}`;
+}
+const PS_GOAL_VIDEO_CLASSES = 'w-full [aspect-ratio:16/9] border-none block border-t-[0.5px] border-[var(--border)]';
+
+const PS_PENALTIES_CLASSES = 'ps-penalties px-[14px] flex flex-col gap-1';
+const PS_PENALTY_ROW_CLASSES = 'ps-penalty-row flex items-center gap-2 py-2 px-[10px] bg-[var(--bg2)] rounded-[8px] text-[12px] text-[color:var(--text-muted)]';
+const PS_PENALTY_TEAM_BASE_CLASSES = 'ps-penalty-team text-[10px] font-bold py-[2px] px-[6px] rounded-[4px] flex-shrink-0';
+const PS_PENALTY_TEAM_CAR_CLASSES = 'car bg-[rgba(var(--team-primary-rgb),0.15)] text-[color:var(--red-bright)]';
+const PS_PENALTY_TEAM_OPP_CLASSES = 'opp bg-[var(--bg3)] text-[color:var(--text-dim)]';
+function psPenaltyTeamClasses(isCar) {
+  return `${PS_PENALTY_TEAM_BASE_CLASSES} ${isCar ? PS_PENALTY_TEAM_CAR_CLASSES : PS_PENALTY_TEAM_OPP_CLASSES}`;
+}
+const PS_PENALTY_INFO_CLASSES = 'flex flex-col gap-px flex-1 min-w-0';
+const PS_PENALTY_PLAYER_CLASSES = 'ps-penalty-player text-[12px] font-bold text-[color:var(--text)] whitespace-nowrap overflow-hidden text-ellipsis';
+const PS_PENALTY_TYPE_CLASSES = 'text-[11px] text-[color:var(--text-dim)] capitalize';
+const PS_PENALTIES_TOGGLE_CLASSES = 'ps-penalties-toggle w-full py-2 bg-transparent border-[0.5px] border-[var(--border)] rounded-[8px] text-[color:var(--text-dim)] text-[12px] font-semibold cursor-pointer [transition:background_0.15s,color_0.15s] mt-[2px] hover:bg-[var(--bg2)] hover:text-[color:var(--text-muted)]';
+
+const PS_NARRATIVE_CLASSES = 'ps-narrative mx-[14px] [background:linear-gradient(135deg,rgba(var(--team-primary-rgb),0.06),rgba(74,144,226,0.04))] border-[0.5px] border-[rgba(var(--team-primary-rgb),0.2)] rounded-[12px] p-[14px]';
+const PS_NARRATIVE_LABEL_CLASSES = 'text-[9px] font-bold tracking-[0.1em] uppercase text-[color:var(--red-bright)] mb-2 flex items-center gap-[6px]';
+const PS_NARRATIVE_TEXT_CLASSES = 'ps-narrative-text text-[13px] text-[color:var(--text-muted)] leading-[1.6]';
+const PS_NARRATIVE_LOADING_CLASSES = 'ps-narrative-loading flex items-center gap-2 text-[12px] text-[color:var(--text-dim)]';
+const PS_NARRATIVE_DOT_CLASSES = 'w-[6px] h-[6px] bg-[var(--red-bright)] rounded-full animate-[psDotPulse_1.2s_ease-in-out_infinite]';
+
+const PS_THREE_STARS_CLASSES = 'ps-three-stars px-[14px] flex gap-2';
+const PS_STAR_CARD_CLASSES = 'ps-star-card flex-1 bg-[var(--bg2)] rounded-[10px] py-[10px] px-2 flex flex-col items-center gap-1 text-center';
+const PS_STAR_RANK_CLASSES = 'text-[14px]';
+const PS_STAR_HEADSHOT_CLASSES = 'w-10 h-10 rounded-full object-cover border-[1.5px] border-[var(--border-2)]';
+const PS_STAR_NAME_CLASSES = 'ps-star-name text-[11px] font-bold text-[color:var(--text)]';
+const PS_STAR_TEAM_CLASSES = 'text-[10px] text-[color:var(--text-dim)]';
+
+const PS_SHARE_SECTION_CLASSES = 'ps-share-section py-3 px-[14px] pb-5 flex flex-col items-center gap-2';
+
+const PS_CAROUSEL_CLASSES = 'ps-carousel px-[14px]';
+const PS_CAROUSEL_NAV_CLASSES = 'ps-carousel-nav flex items-center justify-between mb-2';
+const PS_CAROUSEL_ARROW_CLASSES = 'ps-carousel-arrow bg-[var(--bg3)] border-none rounded-[8px] w-8 h-8 text-[18px] text-[color:var(--text-muted)] cursor-pointer flex items-center justify-center [transition:background_0.15s,color_0.15s] disabled:opacity-25 disabled:cursor-default enabled:hover:bg-[var(--bg2)] enabled:hover:text-[color:var(--text)]';
+const PS_CAROUSEL_DOTS_CLASSES = 'ps-carousel-dots flex gap-[6px] items-center';
+// .ps-carousel-dot combines car/opp (bg color) with active (bg color when
+// active + scale transform) -- both dimensions set bg unconditionally in the
+// original CSS's compound selectors, so this needs a full 4-way lookup table
+// rather than concatenating independent Tailwind utilities (lesson #9).
+const PS_CAROUSEL_DOT_BASE_CLASSES = 'ps-carousel-dot w-2 h-2 rounded-full cursor-pointer [transition:transform_0.15s,background_0.15s]';
+const PS_CAROUSEL_DOT_VARIANTS = {
+  'car-inactive': 'car bg-[rgba(var(--team-primary-rgb),0.4)]',
+  'opp-inactive': 'opp bg-[rgba(255,255,255,0.15)]',
+  'car-active':   'active car scale-[1.4] bg-[var(--red-bright)]',
+  'opp-active':   'active opp scale-[1.4] bg-[rgba(255,255,255,0.5)]',
+};
+function psCarouselDotClasses(isCar, isActive) {
+  const key = `${isCar ? 'car' : 'opp'}-${isActive ? 'active' : 'inactive'}`;
+  return `${PS_CAROUSEL_DOT_BASE_CLASSES} ${PS_CAROUSEL_DOT_VARIANTS[key]}`;
+}
+const PS_CAROUSEL_COUNTER_CLASSES = 'ps-carousel-counter text-center text-[11px] text-[color:var(--text-dim)] mt-2 mb-1';
+
+const PS_GOAL_CARD_CLASSES = 'ps-goal-card bg-[var(--bg2)] rounded-[12px] overflow-hidden';
+
+const PS_PERIOD_BREAKDOWN_CLASSES = 'ps-period-breakdown px-[14px] flex flex-col gap-2';
+const PS_PERIOD_ROW_CLASSES = 'ps-period-row flex items-center gap-[10px]';
+const PS_PERIOD_ROW_LABEL_CLASSES = 'text-[11px] font-bold text-[color:var(--text-dim)] w-5 flex-shrink-0';
+const PS_PERIOD_ROW_BAR_WRAP_CLASSES = 'flex-1 h-[6px] bg-[var(--bg3)] rounded-[3px] overflow-hidden';
+const PS_PERIOD_ROW_BAR_BASE_CLASSES = 'h-full rounded-[3px] [transition:width_0.4s_ease]';
+const PS_PERIOD_ROW_BAR_GOOD_CLASSES = 'good bg-[var(--green)]';
+const PS_PERIOD_ROW_BAR_BAD_CLASSES = 'bad bg-[var(--red-bright)]';
+const PS_PERIOD_ROW_BAR_NEUTRAL_CLASSES = 'neutral bg-[var(--text-dim)]';
+function psPeriodRowBarClasses(pct) {
+  const variant = pct >= 55 ? PS_PERIOD_ROW_BAR_GOOD_CLASSES : pct <= 45 ? PS_PERIOD_ROW_BAR_BAD_CLASSES : PS_PERIOD_ROW_BAR_NEUTRAL_CLASSES;
+  return `${PS_PERIOD_ROW_BAR_BASE_CLASSES} ${variant}`;
+}
+const PS_PERIOD_ROW_PCT_BASE_CLASSES = 'ps-period-row-pct text-[12px] font-bold w-[38px] text-right flex-shrink-0';
+const PS_PERIOD_ROW_PCT_DEFAULT_CLASSES = 'text-[color:var(--text-muted)]';
+const PS_PERIOD_ROW_PCT_GOOD_CLASSES = 'good text-[color:var(--green)]';
+const PS_PERIOD_ROW_PCT_BAD_CLASSES = 'bad text-[color:var(--red-bright)]';
+function psPeriodRowPctClasses(pct) {
+  const variant = pct >= 55 ? PS_PERIOD_ROW_PCT_GOOD_CLASSES : pct <= 45 ? PS_PERIOD_ROW_PCT_BAD_CLASSES : PS_PERIOD_ROW_PCT_DEFAULT_CLASSES;
+  return `${PS_PERIOD_ROW_PCT_BASE_CLASSES} ${variant}`;
+}
+const PS_PERIOD_ROW_SOG_CLASSES = 'text-[11px] text-[color:var(--text-dim)] w-[60px] text-right flex-shrink-0';
+
+const PS_HAT_TRICKS_CLASSES = 'flex flex-col items-center gap-[6px] my-[6px]';
+const PS_HAT_TRICK_CHIP_CLASSES = 'inline-flex items-center gap-[6px] [background:linear-gradient(90deg,var(--team-primary)_0%,color-mix(in_srgb,var(--team-primary)_60%,transparent)_100%)] text-white text-[13px] font-semibold py-[6px] px-[14px] rounded-[20px] tracking-[0.02em] whitespace-nowrap';
+
 // Brightcove embed — autoplay=false prevents simultaneous playback
 const BRIGHTCOVE_URL = (id) =>
   `https://players.brightcove.net/6415718365001/EXtG1xJ7H_default/index.html?videoId=${id}&autoplay=false`;
@@ -165,47 +320,47 @@ function GoalCarousel({ goals, carAbbr }) {
   const sl = strengthLabel(g.strength);
 
   return (
-    <div className="ps-carousel" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <div className={PS_CAROUSEL_CLASSES} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {/* Nav arrows */}
-      <div className="ps-carousel-nav">
-        <button className="ps-carousel-arrow" onClick={prev} disabled={idx === 0}>‹</button>
-        <div className="ps-carousel-dots">
+      <div className={PS_CAROUSEL_NAV_CLASSES}>
+        <button className={PS_CAROUSEL_ARROW_CLASSES} onClick={prev} disabled={idx === 0}>‹</button>
+        <div className={PS_CAROUSEL_DOTS_CLASSES}>
           {goals.map((_, i) => (
             <div
               key={i}
-              className={`ps-carousel-dot ${i === idx ? 'active' : ''} ${goals[i].isCar ? 'car' : 'opp'}`}
+              className={psCarouselDotClasses(goals[i].isCar, i === idx)}
               onClick={() => { setIdx(i); }}
             />
           ))}
         </div>
-        <button className="ps-carousel-arrow" onClick={next} disabled={idx === goals.length - 1}>›</button>
+        <button className={PS_CAROUSEL_ARROW_CLASSES} onClick={next} disabled={idx === goals.length - 1}>›</button>
       </div>
 
       {/* Goal card */}
-      <div className="ps-goal-card">
-        <div className="ps-goal-info">
+      <div className={PS_GOAL_CARD_CLASSES}>
+        <div className={PS_GOAL_INFO_CLASSES}>
           {g.scorerHeadshot ? (
-            <img className="ps-goal-headshot" src={g.scorerHeadshot} alt={g.scorerName || ''} onError={e => { e.target.style.display='none'; }} />
+            <img className={PS_GOAL_HEADSHOT_CLASSES} src={g.scorerHeadshot} alt={g.scorerName || ''} onError={e => { e.target.style.display='none'; }} />
           ) : (
-            <div className="ps-goal-headshot-placeholder">🏒</div>
+            <div className={PS_GOAL_HEADSHOT_PLACEHOLDER_CLASSES}>🏒</div>
           )}
-          <div className="ps-goal-text">
-            <div className={`ps-goal-scorer ${g.isCar ? 'car' : ''}`}>
+          <div className={PS_GOAL_TEXT_CLASSES}>
+            <div className={psGoalScorerClasses(g.isCar)}>
               {g.scorerName || (g.isCar ? carAbbr : 'OPP')}
             </div>
-            <div className="ps-goal-meta">
+            <div className={PS_GOAL_META_CLASSES}>
               {g.time}
               {g.assists?.length > 0 && <> · {g.assists.map(a => a.name?.default).filter(Boolean).join(', ')}</>}
               {g.shotType && <> · {g.shotType}</>}
             </div>
           </div>
-          <div className={`ps-strength-badge ${sl}`}>{sl.toUpperCase()}</div>
+          <div className={psStrengthBadgeClasses(sl)}>{sl.toUpperCase()}</div>
         </div>
 
         {/* Video — rendered directly since carousel shows one at a time */}
         {g.discreteClip && (
           <iframe
-            className="ps-goal-video"
+            className={PS_GOAL_VIDEO_CLASSES}
             src={BRIGHTCOVE_URL(g.discreteClip)}
             allow="fullscreen"
             allowFullScreen
@@ -215,7 +370,7 @@ function GoalCarousel({ goals, carAbbr }) {
       </div>
 
       {/* Goal counter */}
-      <div className="ps-carousel-counter">{idx + 1} / {goals.length}</div>
+      <div className={PS_CAROUSEL_COUNTER_CLASSES}>{idx + 1} / {goals.length}</div>
     </div>
   );
 }
@@ -451,16 +606,16 @@ function PenaltiesSection({ penalties, carAbbr, oppAbbr }) {
   const hasMore = penalties.length > PENALTY_COLLAPSE_AT;
   return (
     <>
-      <div className="ps-section-label">Penalties ({penalties.length})</div>
-      <div className="ps-penalties">
+      <div className={PS_SECTION_LABEL_CLASSES}>Penalties ({penalties.length})</div>
+      <div className={PS_PENALTIES_CLASSES}>
         {visible.map((p, i) => (
-          <div key={i} className="ps-penalty-row">
-            <span className={`ps-penalty-team ${p.isCar ? 'car' : 'opp'}`}>
+          <div key={i} className={PS_PENALTY_ROW_CLASSES}>
+            <span className={psPenaltyTeamClasses(p.isCar)}>
               {p.isCar ? carAbbr : oppAbbr}
             </span>
-            <div className="ps-penalty-info">
-              <span className="ps-penalty-player">{p.playerName || 'Unknown'}</span>
-              <span className="ps-penalty-type">
+            <div className={PS_PENALTY_INFO_CLASSES}>
+              <span className={PS_PENALTY_PLAYER_CLASSES}>{p.playerName || 'Unknown'}</span>
+              <span className={PS_PENALTY_TYPE_CLASSES}>
                 {p.type || 'Penalty'}{p.duration ? ` · ${p.duration} min` : ''}
                 {p.period ? ` · P${p.period}` : ''}
               </span>
@@ -469,7 +624,7 @@ function PenaltiesSection({ penalties, carAbbr, oppAbbr }) {
           </div>
         ))}
         {hasMore && (
-          <button className="ps-penalties-toggle" onClick={() => setExpanded(e => !e)}>
+          <button className={PS_PENALTIES_TOGGLE_CLASSES} onClick={() => setExpanded(e => !e)}>
             {expanded ? '▲ Show less' : `▼ Show ${penalties.length - PENALTY_COLLAPSE_AT} more`}
           </button>
         )}
@@ -536,69 +691,69 @@ export default function PeriodSummary({
 
   return (
     <>
-      <div className="ps-overlay" onClick={readOnly ? undefined : onDismiss}>
-        <div className="ps-card" onClick={e => e.stopPropagation()}>
+      <div className={PS_OVERLAY_CLASSES} onClick={readOnly ? undefined : onDismiss}>
+        <div className={PS_CARD_CLASSES} onClick={e => e.stopPropagation()}>
 
           {/* Header */}
-          <div className="ps-header">
-            <span className="ps-period-badge">{summary.periodShort} Summary</span>
-            <button className="ps-btn-icon" onClick={onDismiss} title="Close" aria-label="Close">✕</button>
+          <div className={PS_HEADER_CLASSES}>
+            <span className={PS_PERIOD_BADGE_CLASSES}>{summary.periodShort} Summary</span>
+            <button className={PS_BTN_ICON_CLASSES} onClick={onDismiss} title="Close" aria-label="Close">✕</button>
           </div>
 
           {/* Score */}
-          <div className="ps-score-banner">
-            <div className="ps-team-score">
+          <div className={PS_SCORE_BANNER_CLASSES}>
+            <div className={PS_TEAM_SCORE_CLASSES}>
               <img
                 src={`https://assets.nhle.com/logos/nhl/svg/${carAbbr}_dark.svg`}
                 alt={carAbbr}
-                className="ps-team-logo"
+                className={PS_TEAM_LOGO_CLASSES}
                 onError={e => { e.target.style.display='none'; }}
               />
-              <div className="ps-team-abbr car">{carAbbr}</div>
-              <div className="ps-score-num">{carScore ?? '–'}</div>
+              <div className={psTeamAbbrClasses(true)}>{carAbbr}</div>
+              <div className={PS_SCORE_NUM_CLASSES}>{carScore ?? '–'}</div>
             </div>
-            <div className="ps-score-divider">–</div>
-            <div className="ps-team-score">
+            <div className={PS_SCORE_DIVIDER_CLASSES}>–</div>
+            <div className={PS_TEAM_SCORE_CLASSES}>
               <img
                 src={`https://assets.nhle.com/logos/nhl/svg/${oppAbbr}_dark.svg`}
                 alt={oppAbbr}
-                className="ps-team-logo"
+                className={PS_TEAM_LOGO_CLASSES}
                 onError={e => { e.target.style.display='none'; }}
               />
-              <div className="ps-team-abbr">{oppAbbr}</div>
-              <div className="ps-score-num">{oppScore ?? '–'}</div>
+              <div className={psTeamAbbrClasses(false)}>{oppAbbr}</div>
+              <div className={PS_SCORE_NUM_CLASSES}>{oppScore ?? '–'}</div>
             </div>
           </div>
 
           {/* Stat grid — same source as canvas for consistency */}
-          <div className="ps-stat-grid">
+          <div className={PS_STAT_GRID_CLASSES}>
             {getPeriodStats(summary, carAbbr).map((s, i) => (
-              <div key={i} className="ps-stat-cell">
-                <div className={`ps-stat-val ${s.color || ''}`}>{s.val}</div>
-                <div className="ps-stat-label">{s.label}</div>
+              <div key={i} className={PS_STAT_CELL_CLASSES}>
+                <div className={psStatValClasses(s.color)}>{s.val}</div>
+                <div className={PS_STAT_LABEL_CLASSES}>{s.label}</div>
               </div>
             ))}
           </div>
 
           {/* AI Narrative */}
-          <div className="ps-section-label">EyeWall AI</div>
-          <div className="ps-narrative">
-            <div className="ps-narrative-label"><span>⚡</span> Period Analysis</div>
+          <div className={PS_SECTION_LABEL_CLASSES}>EyeWall AI</div>
+          <div className={PS_NARRATIVE_CLASSES}>
+            <div className={PS_NARRATIVE_LABEL_CLASSES}><span>⚡</span> Period Analysis</div>
             {summary.aiLoading && !summary.aiNarrative ? (
-              <div className="ps-narrative-loading">
-                <div className="ps-narrative-dot" />
+              <div className={PS_NARRATIVE_LOADING_CLASSES}>
+                <div className={PS_NARRATIVE_DOT_CLASSES} />
                 Generating analysis…
               </div>
             ) : (
-              <div className="ps-narrative-text">{summary.aiNarrative || 'Analysis unavailable.'}</div>
+              <div className={PS_NARRATIVE_TEXT_CLASSES}>{summary.aiNarrative || 'Analysis unavailable.'}</div>
             )}
           </div>
 
           {/* Hat trick highlights */}
           {detectHatTricks(summary.goals).length > 0 && (
-            <div className="ps-hat-tricks">
+            <div className={PS_HAT_TRICKS_CLASSES}>
               {detectHatTricks(summary.goals).map((ht, i) => (
-                <div key={i} className="ps-hat-trick-chip">
+                <div key={i} className={PS_HAT_TRICK_CHIP_CLASSES}>
                   🎩 {ht.isNatural ? 'Natural Hat Trick' : 'Hat Trick'}
                   {ht.scorerName ? ` — ${ht.scorerName}` : ''}
                 </div>
@@ -609,7 +764,7 @@ export default function PeriodSummary({
           {/* Goals carousel */}
           {summary.goals.length > 0 && (
             <>
-              <div className="ps-section-label">Goals ({summary.goals.length})</div>
+              <div className={PS_SECTION_LABEL_CLASSES}>Goals ({summary.goals.length})</div>
               <GoalCarousel goals={summary.goals} carAbbr={carAbbr} />
             </>
           )}
@@ -622,21 +777,21 @@ export default function PeriodSummary({
           {/* Period breakdown — game summary only */}
           {summary.isGameSummary && summary.periodStats?.length > 0 && (
             <>
-              <div className="ps-section-label">Period Breakdown</div>
-              <div className="ps-period-breakdown">
+              <div className={PS_SECTION_LABEL_CLASSES}>Period Breakdown</div>
+              <div className={PS_PERIOD_BREAKDOWN_CLASSES}>
                 {summary.periodStats.map(ps => (
-                  <div key={ps.period} className="ps-period-row">
-                    <span className="ps-period-row-label">P{ps.period}</span>
-                    <div className="ps-period-row-bar-wrap">
+                  <div key={ps.period} className={PS_PERIOD_ROW_CLASSES}>
+                    <span className={PS_PERIOD_ROW_LABEL_CLASSES}>P{ps.period}</span>
+                    <div className={PS_PERIOD_ROW_BAR_WRAP_CLASSES}>
                       <div
-                        className={`ps-period-row-bar ${ps.corsiForPct >= 55 ? 'good' : ps.corsiForPct <= 45 ? 'bad' : 'neutral'}`}
+                        className={psPeriodRowBarClasses(ps.corsiForPct)}
                         style={{ width: `${ps.corsiForPct}%` }}
                       />
                     </div>
-                    <span className={`ps-period-row-pct ${ps.corsiForPct >= 55 ? 'good' : ps.corsiForPct <= 45 ? 'bad' : ''}`}>
+                    <span className={psPeriodRowPctClasses(ps.corsiForPct)}>
                       {ps.corsiForPct}%
                     </span>
-                    <span className="ps-period-row-sog">{ps.carSOG}–{ps.oppSOG} SOG</span>
+                    <span className={PS_PERIOD_ROW_SOG_CLASSES}>{ps.carSOG}–{ps.oppSOG} SOG</span>
                   </div>
                 ))}
               </div>
@@ -646,14 +801,14 @@ export default function PeriodSummary({
           {/* Three stars — game summary only */}
           {summary.isGameSummary && summary.threeStars?.length > 0 && (
             <>
-              <div className="ps-section-label">Three Stars</div>
-              <div className="ps-three-stars">
+              <div className={PS_SECTION_LABEL_CLASSES}>Three Stars</div>
+              <div className={PS_THREE_STARS_CLASSES}>
                 {summary.threeStars.slice(0, 3).map((s, i) => (
-                  <div key={i} className="ps-star-card">
-                    <div className="ps-star-rank">{'⭐'.repeat(3 - i)}</div>
-                    <img className="ps-star-headshot" src={s.headshot || ''} alt={s.name?.default || ''} onError={e => { e.target.style.display='none'; }} />
-                    <div className="ps-star-name">{s.name?.default || '—'}</div>
-                    <div className="ps-star-team">{s.teamAbbrev?.default || ''}</div>
+                  <div key={i} className={PS_STAR_CARD_CLASSES}>
+                    <div className={PS_STAR_RANK_CLASSES}>{'⭐'.repeat(3 - i)}</div>
+                    <img className={PS_STAR_HEADSHOT_CLASSES} src={s.headshot || ''} alt={s.name?.default || ''} onError={e => { e.target.style.display='none'; }} />
+                    <div className={PS_STAR_NAME_CLASSES}>{s.name?.default || '—'}</div>
+                    <div className={PS_STAR_TEAM_CLASSES}>{s.teamAbbrev?.default || ''}</div>
                   </div>
                 ))}
               </div>
@@ -661,7 +816,7 @@ export default function PeriodSummary({
           )}
 
           {/* Share */}
-          <div className="ps-share-section">
+          <div className={PS_SHARE_SECTION_CLASSES}>
             <ShareButtons
               onSave={handleSave}
               onShareX={handleShareX}
