@@ -48,6 +48,129 @@ const PP_INDICATOR_BASE_CLASSES = 'text-[10px] font-bold py-0.5 px-2 rounded-[4p
 const CAR_PP_CLASSES = 'car-pp bg-[rgba(61,186,126,0.2)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.4)]';
 const OPP_PP_CLASSES = 'opp-pp bg-[rgba(240,160,48,0.2)] text-[color:var(--amber)] border-[0.5px] border-[rgba(240,160,48,0.3)]';
 
+// ── Score bar / boxscore basics (Phase 5, sub-PR 1 -- ShotMapView.css
+// migrating to Tailwind; file stays imported until the final sub-PR
+// deletes it entirely, same multi-sub-PR lifecycle as LeagueView.css.
+// Duplicated in PWHLShotMapView.jsx per convention (period-grid/event-log
+// are NHL-only -- PWHL has neither, confirmed via full-file grep).
+// .score-card/.danger-cell are kept as literal markers (Cypress:
+// pwhl-dev.cy.js, pwhl-shots-live.cy.js, pwhl-shot-map.cy.js); nothing
+// else in this section has a live Cypress dependency (re-verified with a
+// word-boundary marker audit against cypress/e2e + cypress/support, not
+// just grep -- generic single-word class names like .goal/.high/.regular
+// otherwise produce false-positive "markers" from unrelated selectors
+// elsewhere in the suite).
+// .danger-cell's original .high/.med/.lo modifiers only ever colored the
+// nested .danger-num via a descendant selector (.danger-cell.high
+// .danger-num{color}) -- rather than keep that as real CSS (lesson #14),
+// the level is threaded straight into dangerNumClasses() below instead,
+// so .high/.med/.lo/.clickable don't need to survive as literal classes
+// at all (every existing .danger-cell usage is unconditionally clickable,
+// so that state was folded into the base rather than kept conditional).
+// .log-badge raced with its 5 log-* modifiers on background+color (base
+// set both unconditionally, same shape as every other base+modifier
+// property race this migration) -- pulled out of the shared base into a
+// complete per-variant set via LOG_BADGE_VARIANTS.
+// .goalie-stat-val/.goalie-svpct is the SAME race in a different shape --
+// two separate classes (not a compound modifier) of equal specificity
+// colliding on `color`, resolved only by source order today -- converted
+// the same way, color pulled fully into goalieStatValClasses()'s variant.
+// .team-primary-text (index.css, global, unlayered) is left as a literal
+// marker wherever used rather than reproduced as a Tailwind color utility
+// -- per the cascade-layers rule, a Tailwind color utility could never
+// safely override it, and it already provides the exact color needed.
+const SCORE_CARD_CLASSES = 'score-card card mb-[10px]';
+const SCORE_INNER_CLASSES = 'flex items-center justify-between gap-[10px]';
+const SCORE_TEAM_CLASSES = 'flex items-center gap-2';
+const scoreAbbrClasses = (variant) => {
+  const base = 'font-[family-name:var(--font-display)] text-[18px] font-bold tracking-[.04em]';
+  if (variant === 'team-primary') return `${base} team-primary-text`;
+  const color = variant === 'red' ? 'text-[color:var(--red-bright)]'
+    : variant === 'muted' ? 'text-[color:var(--text-muted)]' : '';
+  return `${base} ${color}`;
+};
+const scoreNumClasses = (variant) => {
+  const base = 'font-[family-name:var(--font-display)] text-[36px] font-bold leading-none';
+  if (variant === 'team-primary') return `${base} team-primary-text`;
+  const color = variant === 'red' ? 'text-[color:var(--red-bright)]'
+    : variant === 'muted' ? 'text-[color:var(--text-muted)]' : '';
+  return `${base} ${color}`;
+};
+const SCORE_CENTER_CLASSES = 'text-center';
+const SCORE_PERIOD_CLASSES = 'text-[11px] text-[color:var(--amber)] font-semibold uppercase tracking-[.06em]';
+const SCORE_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[22px] text-[color:var(--text)] leading-[1.2]';
+const SCORE_STATE_CLASSES = 'text-[10px] text-[color:var(--text-dim)]';
+
+const metricsGridClasses = (cols) => cols === 4
+  ? 'grid grid-cols-4 gap-2 mb-2'
+  : 'grid grid-cols-3 gap-2 mb-[10px]';
+
+const PERIOD_GRID_CLASSES = 'flex flex-col gap-[3px]';
+const PERIOD_GRID_ROW_SHAPE = 'grid grid-cols-[36px_repeat(auto-fill,minmax(28px,1fr))] gap-1 text-[12px] text-center';
+const PERIOD_GRID_HEADER_CLASSES = `${PERIOD_GRID_ROW_SHAPE} text-[10px] text-[color:var(--text-dim)]`;
+const PERIOD_GRID_ROW_CLASSES = PERIOD_GRID_ROW_SHAPE;
+const PERIOD_GRID_ROW_LABEL_CLASSES = 'text-left text-[11px] font-semibold';
+const PERIOD_TOTAL_CLASSES = 'font-bold text-[color:var(--text)]';
+
+const DANGER_GRID_CLASSES = 'grid grid-cols-3 gap-2 mt-2';
+const DANGER_CELL_CLASSES =
+  "danger-cell text-center p-[10px_6px] rounded-[var(--radius-sm)] bg-[var(--bg3)] relative cursor-pointer [transition:background_0.15s,transform_0.1s] hover:bg-[var(--bg2)] hover:-translate-y-px active:translate-y-0 after:content-['›'] after:absolute after:bottom-1 after:right-1.5 after:text-[10px] after:text-[color:var(--text-dim)] after:opacity-50";
+const dangerNumClasses = (level) => {
+  const color = level === 'high' ? 'text-[color:var(--red-bright)]'
+    : level === 'med' ? 'text-[color:var(--amber)]' : 'text-[color:var(--text-muted)]';
+  return `font-[family-name:var(--font-display)] text-[28px] font-bold leading-none mb-1 ${color}`;
+};
+const DANGER_LABEL_CLASSES = 'text-[10px] text-[color:var(--text-muted)] mb-0.5';
+const DANGER_SUB_CLASSES = 'text-[9px] text-[color:var(--text-dim)]';
+
+const SCORER_ROW_CLASSES = 'flex items-center justify-between gap-2 py-[6px] border-b-[0.5px] border-[color:var(--border)]';
+const SCORER_NAME_CLASSES = 'text-[13px] text-[color:var(--text)] flex-1';
+const SCORER_STATS_CLASSES = 'flex gap-1';
+const SCORER_CHIP_VARIANTS = {
+  goal: 'bg-[rgba(61,186,126,.15)] text-[color:var(--green)]',
+  assist: 'bg-[rgba(100,120,200,.15)] text-[#8899dd]',
+  pts: 'bg-[var(--bg3)] text-[color:var(--text-muted)]',
+};
+const scorerChipClasses = (variant) =>
+  `text-[10px] font-semibold py-[2px] px-[6px] rounded-[4px] font-[family-name:var(--font-mono)] ${SCORER_CHIP_VARIANTS[variant]}`;
+
+const GOALIE_CARD_CLASSES = 'py-2 border-b-[0.5px] border-[color:var(--border)]';
+const GOALIE_HEADER_CLASSES = 'flex items-center gap-2 mb-2';
+const GOALIE_ABBR_CLASSES = 'font-[family-name:var(--font-display)] text-[13px] font-bold shrink-0';
+const GOALIE_NAME_CLASSES = 'text-[13px] font-medium text-[color:var(--text)]';
+const GOALIE_STATS_GRID_CLASSES = 'flex gap-4 flex-wrap';
+const GOALIE_STAT_COL_CLASSES = 'flex flex-col gap-0.5 min-w-[48px]';
+const GOALIE_STAT_LABEL_CLASSES = 'text-[9px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-dim)] flex items-center gap-0.5';
+const goalieStatValClasses = (isSvPct) =>
+  `font-[family-name:var(--font-mono)] text-[13px] font-semibold ${isSvPct ? 'text-[color:var(--green)]' : 'text-[color:var(--text-muted)]'}`;
+
+const GM_STAT_HEADER_CLASSES = 'grid grid-cols-[42px_1fr_42px] gap-2 text-[11px] font-semibold text-center mb-[6px]';
+const GM_STAT_ROW_CLASSES = 'grid grid-cols-[42px_1fr_42px] gap-2 items-center mb-[7px]';
+const GM_STAT_MID_CLASSES = 'flex flex-col gap-[3px]';
+const GM_STAT_LABEL_CLASSES = 'text-[10px] text-[color:var(--text-muted)] text-center flex items-center justify-center gap-[3px]';
+const gmStatValClasses = (variant) => {
+  const base = 'font-[family-name:var(--font-mono)] text-[13px] font-medium text-center';
+  if (variant === 'team-primary') return `${base} team-primary-text`;
+  return `${base} ${variant === 'red' ? 'text-[color:var(--red-bright)]' : 'text-[color:var(--text-muted)]'}`;
+};
+
+const LOG_ROW_CLASSES = 'flex items-start gap-2 py-[7px] border-b-[0.5px] border-[color:var(--border)]';
+const LOG_LEFT_CLASSES = 'flex flex-col gap-[3px] min-w-16 shrink-0';
+const LOG_RIGHT_CLASSES = 'flex flex-col gap-0.5 flex-1 min-w-0';
+const LOG_TIME_CLASSES = 'font-[family-name:var(--font-mono)] text-[10px] text-[color:var(--text-dim)]';
+const LOG_BADGE_BASE = 'text-[9px] font-bold uppercase tracking-[0.05em] py-[2px] px-[5px] rounded-[3px] w-fit';
+const LOG_BADGE_VARIANTS = {
+  goal: 'bg-[rgba(255,68,34,0.18)] text-[color:var(--red-bright)]',
+  shot: 'bg-[rgba(61,186,126,0.15)] text-[color:var(--green)]',
+  pen: 'bg-[rgba(240,160,48,0.15)] text-[color:var(--amber)]',
+  hit: 'bg-[rgba(68,119,238,0.15)] text-[color:var(--blue-bright)]',
+  block: 'bg-[rgba(136,102,221,0.15)] text-[color:var(--purple)]',
+};
+const logBadgeClasses = (typeKey) =>
+  `${LOG_BADGE_BASE} ${LOG_BADGE_VARIANTS[typeKey] || 'bg-[var(--bg3)] text-[color:var(--text-muted)]'}`;
+const LOG_PLAYER_CLASSES = 'text-[12px] font-medium text-[color:var(--text)]';
+const LOG_SUB_CLASSES = 'text-[10px] text-[color:var(--text-muted)] leading-[1.3]';
+
 export default function ShotMapView() {
   // ── Dev replay injection ──────────────────────────────────────
   const devGame = useDevGame();
@@ -1322,14 +1445,14 @@ export default function ShotMapView() {
       )}
 
       {/* ── Score bar ── */}
-      <div className="score-card card" onClick={handleDebugTap} style={{ userSelect: 'none' }}>
-        <div className="score-inner">
+      <div className={SCORE_CARD_CLASSES} onClick={handleDebugTap} style={{ userSelect: 'none' }}>
+        <div className={SCORE_INNER_CLASSES}>
             {/* CAR side */}
             <div className={SCORE_TEAM_WRAP_CLASSES}>
-              <div className="score-team">
+              <div className={SCORE_TEAM_CLASSES}>
                 <TeamLogo abbr={TEAM_CONFIG.abbr} size={30} />
-                <span className="score-abbr team-primary-text">{TEAM_CONFIG.abbr}</span>
-                <span className="score-num team-primary-text">{carScore ?? '—'}</span>
+                <span className={scoreAbbrClasses('team-primary')}>{TEAM_CONFIG.abbr}</span>
+                <span className={scoreNumClasses('team-primary')}>{carScore ?? '—'}</span>
               </div>
               {/* CAR PP indicator */}
               {(isLive || debugSituation) && (debugSituation?.team === TEAM_CONFIG.abbr ||
@@ -1344,13 +1467,13 @@ export default function ShotMapView() {
             </div>
 
             {/* Center — period/clock/state */}
-            <div className="score-center">
+            <div className={SCORE_CENTER_CLASSES}>
               {isLive ? (
                 <>
                   {/* Intermission display */}
                   {pbp?.clock?.inIntermission ? (
                     <>
-                      <div className="score-period">
+                      <div className={SCORE_PERIOD_CLASSES}>
                         {(() => {
                           const n = pbp.periodDescriptor?.number;
                           if (n === 1) return '1st';
@@ -1360,11 +1483,11 @@ export default function ShotMapView() {
                           return `OT${n - 3}`;
                         })()} Intermission
                       </div>
-                      <div className="score-clock">{displayClock || pbp.clock.timeRemaining}</div>
+                      <div className={SCORE_CLOCK_CLASSES}>{displayClock || pbp.clock.timeRemaining}</div>
                     </>
                   ) : (
                     <>
-                      <div className="score-period">
+                      <div className={SCORE_PERIOD_CLASSES}>
                         {(() => {
                           const n = pbp?.periodDescriptor?.number;
                           const t = pbp?.periodDescriptor?.periodType; // eslint-disable-line no-unused-vars
@@ -1376,34 +1499,34 @@ export default function ShotMapView() {
                           return n === 4 ? 'OT' : 'SO';
                         })()}
                       </div>
-                      <div className="score-clock">
+                      <div className={SCORE_CLOCK_CLASSES}>
                         {displayClock || pbp?.clock?.timeRemaining || '—'}
-                        {!clockRunning && <span className="clock-stopped">⏸</span>}
+                        {!clockRunning && <span className="text-[#fbbf24] text-[12px] ml-1">⏸</span>}
                       </div>
                     </>
                   )}
-                  <div className="score-state pill pill-red" style={{marginTop:4}}>🔴 LIVE</div>
+                  <div className={`${SCORE_STATE_CLASSES} pill pill-red`} style={{marginTop:4}}>🔴 LIVE</div>
                 </>
               ) : activeGame ? (
                 <>
-                  <div className="score-period">Final</div>
-                  <div className="score-state" style={{fontSize:10,color:'var(--text-dim)'}}>
+                  <div className={SCORE_PERIOD_CLASSES}>Final</div>
+                  <div className={SCORE_STATE_CLASSES}>
                     {activeIsPlayoff ? '🏒 Playoff · ' : ''}{formatGameDate(activeGame.gameDate)}
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="score-period">Shot Map</div>
-                  <div className="score-state" style={{fontSize:10,color:'var(--text-dim)'}}>Loading game data…</div>
+                  <div className={SCORE_PERIOD_CLASSES}>Shot Map</div>
+                  <div className={SCORE_STATE_CLASSES}>Loading game data…</div>
                 </>
               )}
             </div>
 
             {/* OPP side */}
             <div className={SCORE_TEAM_WRAP_CLASSES}>
-              <div className="score-team">
-                <span className="score-num muted">{oppScore ?? '—'}</span>
-                <span className="score-abbr muted">{oppAbbr}</span>
+              <div className={SCORE_TEAM_CLASSES}>
+                <span className={scoreNumClasses('muted')}>{oppScore ?? '—'}</span>
+                <span className={scoreAbbrClasses('muted')}>{oppAbbr}</span>
                 <TeamLogo abbr={oppAbbr} size={30} color={oppColor} />
               </div>
               {/* Opponent PP indicator */}
@@ -1471,7 +1594,7 @@ export default function ShotMapView() {
       )}
 
       {/* ── Game metrics — top row: SOG, Hits, Blocks, Penalties ── */}
-      <div className="metrics-grid metrics-grid-4">
+      <div className={metricsGridClasses(4)}>
         <MetCard
           label="Shots on goal"
           value={gameSog.car ?? '—'}
@@ -1516,7 +1639,7 @@ export default function ShotMapView() {
       </div>
 
       {/* ── Game metrics — bottom row: FO%, PP%, PK% ── */}
-      <div className="metrics-grid metrics-grid-3">
+      <div className={metricsGridClasses(3)}>
         {(() => {
           // "All N": teamStats.faceoffWinPct comes from the NHL team/summary
           // endpoint (nhlApi.js fetchTeamFaceoffWinPct) -- season-wide, so it
@@ -1603,21 +1726,21 @@ export default function ShotMapView() {
       {dangerCounts.total > 0 && (
         <div className="card danger-quality-card">
           <div className="sec-label">{TEAM_CONFIG.abbr} shot quality</div>
-          <div className="danger-grid">
-            <div className="danger-cell high clickable" onClick={() => buildDangerDrill('hi')}>
-              <div className="danger-num">{dangerCounts.hi}</div>
-              <div className="danger-label">🔴 High danger</div>
-              <div className="danger-sub">&lt;15 ft</div>
+          <div className={DANGER_GRID_CLASSES}>
+            <div className={DANGER_CELL_CLASSES} onClick={() => buildDangerDrill('hi')}>
+              <div className={dangerNumClasses('high')}>{dangerCounts.hi}</div>
+              <div className={DANGER_LABEL_CLASSES}>🔴 High danger</div>
+              <div className={DANGER_SUB_CLASSES}>&lt;15 ft</div>
             </div>
-            <div className="danger-cell med clickable" onClick={() => buildDangerDrill('med')}>
-              <div className="danger-num">{dangerCounts.med}</div>
-              <div className="danger-label">🟡 Medium</div>
-              <div className="danger-sub">15–30 ft</div>
+            <div className={DANGER_CELL_CLASSES} onClick={() => buildDangerDrill('med')}>
+              <div className={dangerNumClasses('med')}>{dangerCounts.med}</div>
+              <div className={DANGER_LABEL_CLASSES}>🟡 Medium</div>
+              <div className={DANGER_SUB_CLASSES}>15–30 ft</div>
             </div>
-            <div className="danger-cell lo clickable" onClick={() => buildDangerDrill('lo')}>
-              <div className="danger-num">{dangerCounts.lo}</div>
-              <div className="danger-label">⚪ Low</div>
-              <div className="danger-sub">&gt;30 ft</div>
+            <div className={DANGER_CELL_CLASSES} onClick={() => buildDangerDrill('lo')}>
+              <div className={dangerNumClasses('lo')}>{dangerCounts.lo}</div>
+              <div className={DANGER_LABEL_CLASSES}>⚪ Low</div>
+              <div className={DANGER_SUB_CLASSES}>&gt;30 ft</div>
             </div>
           </div>
         </div>
@@ -1658,21 +1781,21 @@ export default function ShotMapView() {
           {periods.length > 0 && (
             <div className="card">
               <div className="sec-label">Scoring by period</div>
-              <div className="period-grid">
-                <div className="period-grid-header">
+              <div className={PERIOD_GRID_CLASSES}>
+                <div className={PERIOD_GRID_HEADER_CLASSES}>
                   <span />
                   {periods.map(p => <span key={p.label}>{p.label}</span>)}
                   <span>T</span>
                 </div>
-                <div className="period-grid-row car">
-                  <span>{TEAM_CONFIG.abbr}</span>
+                <div className={PERIOD_GRID_ROW_CLASSES}>
+                  <span className={`${PERIOD_GRID_ROW_LABEL_CLASSES} text-[color:var(--red-bright)]`}>{TEAM_CONFIG.abbr}</span>
                   {periods.map(p => <span key={p.label}>{p.carG}</span>)}
-                  <span className="period-total">{carScore ?? '—'}</span>
+                  <span className={PERIOD_TOTAL_CLASSES}>{carScore ?? '—'}</span>
                 </div>
-                <div className="period-grid-row">
-                  <span style={{color:'var(--text-muted)'}}>{oppAbbr}</span>
+                <div className={PERIOD_GRID_ROW_CLASSES}>
+                  <span className={PERIOD_GRID_ROW_LABEL_CLASSES} style={{color:'var(--text-muted)'}}>{oppAbbr}</span>
                   {periods.map(p => <span key={p.label}>{p.oppG}</span>)}
-                  <span className="period-total">{oppScore ?? '—'}</span>
+                  <span className={PERIOD_TOTAL_CLASSES}>{oppScore ?? '—'}</span>
                 </div>
               </div>
             </div>
@@ -1683,12 +1806,12 @@ export default function ShotMapView() {
             <div className="card">
               <div className="sec-label">{TEAM_CONFIG.abbr} scoring — this game</div>
               {topScorers.map((p, i) => (
-                <div key={i} className="scorer-row">
-                  <span className="scorer-name">{p.name || `#${p.sweaterNumber}`}</span>
-                  <div className="scorer-stats">
-                    {p.goals > 0 && <span className="scorer-chip goal">{p.goals}G</span>}
-                    {p.assists > 0 && <span className="scorer-chip assist">{p.assists}A</span>}
-                    <span className="scorer-chip pts">{p.points}PTS</span>
+                <div key={i} className={SCORER_ROW_CLASSES}>
+                  <span className={SCORER_NAME_CLASSES}>{p.name || `#${p.sweaterNumber}`}</span>
+                  <div className={SCORER_STATS_CLASSES}>
+                    {p.goals > 0 && <span className={scorerChipClasses('goal')}>{p.goals}G</span>}
+                    {p.assists > 0 && <span className={scorerChipClasses('assist')}>{p.assists}A</span>}
+                    <span className={scorerChipClasses('pts')}>{p.points}PTS</span>
                   </div>
                 </div>
               ))}
@@ -1742,7 +1865,7 @@ export default function ShotMapView() {
           {teamGameStats.length > 0 && (
             <div className="card">
               <div className="sec-label">Team stats — this game</div>
-              <div className="gm-stat-header">
+              <div className={GM_STAT_HEADER_CLASSES}>
                 <span style={{color:'var(--team-primary)'}}>{TEAM_CONFIG.abbr}</span>
                 <span />
                 <span style={{color:oppColor}}>{oppAbbr}</span>
@@ -1772,10 +1895,10 @@ export default function ShotMapView() {
                   const total = (carN || 0) + (oppN || 0) || 1;
                   const fmt   = v => v == null ? '—' : isDecimal ? v.toFixed(2) : v;
                   return (
-                    <div key={label} className="gm-stat-row">
-                      <span className="gm-stat-val team-primary-text">{fmt(carN)}</span>
-                      <div className="gm-stat-mid">
-                        <div className="gm-stat-label">
+                    <div key={label} className={GM_STAT_ROW_CLASSES}>
+                      <span className={gmStatValClasses('team-primary')}>{fmt(carN)}</span>
+                      <div className={GM_STAT_MID_CLASSES}>
+                        <div className={GM_STAT_LABEL_CLASSES}>
                           {label}
                           <InfoTip text={help} position="above" />
                         </div>
@@ -1784,7 +1907,7 @@ export default function ShotMapView() {
                           <div className="fill-blue" style={{width:`${Math.round((oppN||0)/total*100)}%`}} />
                         </div>
                       </div>
-                      <span className="gm-stat-val muted">{fmt(oppN)}</span>
+                      <span className={gmStatValClasses('muted')}>{fmt(oppN)}</span>
                     </div>
                   );
                 });
@@ -1807,16 +1930,16 @@ export default function ShotMapView() {
                 const oppN   = isPct ? parsePct(oppVal) : (parseFloat(String(oppVal).replace('%','')) || 0);
                 const total  = carN + oppN || 1;
                 return (
-                  <div key={i} className="gm-stat-row">
-                    <span className="gm-stat-val team-primary-text">{fmtVal(carVal)}</span>
-                    <div className="gm-stat-mid">
-                      <div className="gm-stat-label">{humanLabel(row.category)}</div>
+                  <div key={i} className={GM_STAT_ROW_CLASSES}>
+                    <span className={gmStatValClasses('team-primary')}>{fmtVal(carVal)}</span>
+                    <div className={GM_STAT_MID_CLASSES}>
+                      <div className={GM_STAT_LABEL_CLASSES}>{humanLabel(row.category)}</div>
                       <div className="dual-bar">
                         <div className="fill-team-primary" style={{width:`${Math.round(carN/total*100)}%`}} />
                         <div className="fill-blue"         style={{width:`${Math.round(oppN/total*100)}%`}} />
                       </div>
                     </div>
-                    <span className="gm-stat-val muted">{fmtVal(oppVal)}</span>
+                    <span className={gmStatValClasses('muted')}>{fmtVal(oppVal)}</span>
                   </div>
                 );
               })}
@@ -1924,35 +2047,35 @@ function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color, seasonDat
     : 'var(--red-bright)';
 
   return (
-    <div className="goalie-card">
-      <div className="goalie-header">
-        <span className="goalie-abbr" style={{color}}>{abbr}</span>
-        <span className="goalie-name">{name}</span>
+    <div className={GOALIE_CARD_CLASSES}>
+      <div className={GOALIE_HEADER_CLASSES}>
+        <span className={GOALIE_ABBR_CLASSES} style={{color}}>{abbr}</span>
+        <span className={GOALIE_NAME_CLASSES}>{name}</span>
       </div>
-      <div className="goalie-stats-grid">
-        <div className="goalie-stat-col">
-          <span className="goalie-stat-label">SV/SA</span>
-          <span className="goalie-stat-val">{saves ?? '—'}/{shotsAgainst ?? '—'}</span>
+      <div className={GOALIE_STATS_GRID_CLASSES}>
+        <div className={GOALIE_STAT_COL_CLASSES}>
+          <span className={GOALIE_STAT_LABEL_CLASSES}>SV/SA</span>
+          <span className={goalieStatValClasses(false)}>{saves ?? '—'}/{shotsAgainst ?? '—'}</span>
         </div>
-        <div className="goalie-stat-col">
-          <span className="goalie-stat-label">SV%</span>
-          <span className="goalie-stat-val goalie-svpct">{svPct}</span>
+        <div className={GOALIE_STAT_COL_CLASSES}>
+          <span className={GOALIE_STAT_LABEL_CLASSES}>SV%</span>
+          <span className={goalieStatValClasses(true)}>{svPct}</span>
         </div>
         {seasonGsax != null ? (
-          <div className="goalie-stat-col">
-            <span className="goalie-stat-label">
+          <div className={GOALIE_STAT_COL_CLASSES}>
+            <span className={GOALIE_STAT_LABEL_CLASSES}>
               GSAX <InfoTip text={`Regular season goals saved above expected (MoneyPuck flurry-adjusted xGoals model). Shown year-round as the larger sample is more reliable than playoff sample sizes. Positive = saving more goals than an average goalie on the same shots. ${seasonGp ? seasonGp + ' GP this season.' : ''}`} position="above" />
             </span>
-            <span className="goalie-stat-val" style={{color: gsaxColor}}>
+            <span className={goalieStatValClasses(false)} style={{color: gsaxColor}}>
               {seasonGsax > 0 ? '+' : ''}{seasonGsax}
             </span>
           </div>
         ) : gameGsax ? (
-          <div className="goalie-stat-col">
-            <span className="goalie-stat-label">
+          <div className={GOALIE_STAT_COL_CLASSES}>
+            <span className={GOALIE_STAT_LABEL_CLASSES}>
               GSAx <InfoTip text={gameGsax.note} position="above" />
             </span>
-            <span className="goalie-stat-val" style={{color: gameGsax.color}}>{gameGsax.label}</span>
+            <span className={goalieStatValClasses(false)} style={{color: gameGsax.color}}>{gameGsax.label}</span>
           </div>
         ) : null}
       </div>
@@ -2035,11 +2158,11 @@ function EventLog({ plays, playerMap = {} }) {
     .slice(0, 12);
 
   const typeStyle = {
-    'goal':         'log-goal',
-    'shot-on-goal': 'log-shot',
-    'penalty':      'log-pen',
-    'hit':          'log-hit',
-    'blocked-shot': 'log-block',
+    'goal':         'goal',
+    'shot-on-goal': 'shot',
+    'penalty':      'pen',
+    'hit':          'hit',
+    'blocked-shot': 'block',
   };
 
   const typeLabel = {
@@ -2051,7 +2174,7 @@ function EventLog({ plays, playerMap = {} }) {
   };
 
   return (
-    <div className="event-log" style={{maxHeight:'240px', overflowY:'auto'}}>
+    <div className="flex flex-col" style={{maxHeight:'240px', overflowY:'auto'}}>
       {relevant.map((p, i) => {
         const d    = p.details || {};
         const per  = periodLabel(p.periodDescriptor?.number);
@@ -2091,16 +2214,16 @@ function EventLog({ plays, playerMap = {} }) {
         }
 
         return (
-          <div key={i} className="log-row">
-            <div className="log-left">
-              <span className="log-time">{per} {time}</span>
-              <span className={`log-badge ${typeStyle[type] || ''}`}>
+          <div key={i} className={LOG_ROW_CLASSES}>
+            <div className={LOG_LEFT_CLASSES}>
+              <span className={LOG_TIME_CLASSES}>{per} {time}</span>
+              <span className={logBadgeClasses(typeStyle[type])}>
                 {typeLabel[type] || type}
               </span>
             </div>
-            <div className="log-right">
-              {headline && <span className="log-player">{headline}</span>}
-              {sub      && <span className="log-sub">{sub}</span>}
+            <div className={LOG_RIGHT_CLASSES}>
+              {headline && <span className={LOG_PLAYER_CLASSES}>{headline}</span>}
+              {sub      && <span className={LOG_SUB_CLASSES}>{sub}</span>}
             </div>
           </div>
         );

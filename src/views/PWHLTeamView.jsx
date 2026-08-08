@@ -11,13 +11,22 @@ import { useSport } from '../utils/SportContext';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
 import TeamComparisonPopup from '../components/TeamComparisonPopup';
-import './ShotMapView.css';
+// ShotMapView.css import removed (Phase 5, sub-PR 1) -- this file's only
+// dependency on it was .metrics-grid/.metrics-grid-4, now fully migrated
+// to METRICS_GRID_4_CLASSES below. ShotMapView.jsx/PWHLShotMapView.jsx
+// each import the CSS file directly themselves, so its still-unmigrated
+// rules stay loaded regardless of this file dropping the import.
 
 // .view-title / .players-tabs / .players-tab (Session 97, Phase 3) -- were
 // PlayersView.css's, genuinely shared with PlayersView.jsx/
 // PWHLPlayersView.jsx/TeamView.jsx. Migrated here too so these rules can be
 // deleted from PlayersView.css without leaving this file's usages stranded
 // on dead CSS.
+// METRICS_GRID_4_CLASSES (Phase 5, ShotMapView.css sub-PR 1) -- .metrics-grid
+// is genuinely shared by ShotMapView.jsx/PWHLShotMapView.jsx too, but this
+// file only ever uses the 4-column variant, so no need to duplicate the
+// full parameterized helper from those files.
+const METRICS_GRID_4_CLASSES = 'grid grid-cols-4 gap-2 mb-2'
 const VIEW_TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[20px] font-bold flex items-center gap-2 mb-[2px]'
 const TABS_WRAP_CLASSES = 'flex border-b-[0.5px] border-[var(--border)] mx-[-14px] mb-[14px] px-[14px]'
 const TAB_BASE_CLASSES = 'flex-1 py-[10px] text-[13px] font-semibold bg-transparent border-0 border-b-2 cursor-pointer [transition:all_0.15s]'
@@ -506,7 +515,7 @@ function StatsTab({ skaters, goalies, loading, abbr: _abbr, color }) {
     <>
       {/* Team totals MetCards */}
       {teamTotals && (
-        <div className="metrics-grid metrics-grid-4" style={{ marginTop: 10 }}>
+        <div className={METRICS_GRID_4_CLASSES} style={{ marginTop: 10 }}>
           <MetCard label="Goals"   value={teamTotals.goals}   sub="Team total" />
           <MetCard label="Assists" value={teamTotals.assists} sub="Team total" />
           <MetCard label="Points"  value={teamTotals.points}  sub="Team total" color="green" />
