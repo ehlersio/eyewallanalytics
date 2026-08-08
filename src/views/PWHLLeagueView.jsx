@@ -13,12 +13,13 @@ import {
 } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
-import './LeagueView.css';
 
 // Tailwind migration (Session 97, Phase 3, sub-PR 1) -- only the small
 // PlayersView.css-owned pieces this file actually uses (.players-tabs/.tab,
-// .pp-close, .sst-hint, .sst-sort-icon); LeagueView.css's own .lv-* classes
-// are untouched. .pp-close is kept as a literal marker -- league.cy.js,
+// .pp-close, .sst-hint, .sst-sort-icon); at the time, LeagueView.css's own
+// .lv-* classes were untouched -- that file is now fully migrated and
+// deleted too (Phase 4, sub-PRs 1-4), see this file's other constant
+// blocks below. .pp-close is kept as a literal marker -- league.cy.js,
 // milestones.cy.js, player-search.cy.js, and pwhl-league.cy.js select on it
 // directly.
 const TABS_WRAP_CLASSES = 'flex border-b-[0.5px] border-[var(--border)] mx-[-14px] mb-[14px] px-[14px]'
@@ -204,6 +205,26 @@ function seriesModalScoreClasses(isWin) {
 }
 const SERIES_MODAL_SEPARATOR_CLASSES = 'text-[color:var(--text-dim)] text-center text-[13px]'
 const SERIES_MODAL_EXTRA_CLASSES = 'text-[10px] font-bold text-[color:var(--text-dim)] tracking-[0.04em] text-right'
+
+// ── Tailwind class constants -- POWER RANKINGS (Phase 4, LeagueView.css
+// sub-PR 4 -- LAST sub-PR for this file) --
+// PWHL's own rankings TABLE is entirely inline-styled (style={{}}
+// throughout PowerRankingsPanel, never used a .pr-* class) -- only the
+// shared "How is this calculated?" toggle reuses LeagueView.css's
+// .pr-how-* classes, so that's the only piece migrated here. See
+// LeagueView.jsx's header comment for the full light-mode/property-race/
+// interpolated-dead-code reasoning (all applies, nothing new found in this
+// file specifically since it doesn't touch the NHL-only pr-row/pr-rank-
+// num/pr-gd/pr-mvmt/pr-sparkline/pr-narrative classes at all).
+const PR_HOW_TOGGLE_CLASSES = 'pr-how-toggle flex justify-between items-center w-full bg-transparent border-0 py-3 px-3 cursor-pointer text-[color:var(--text)] text-[13px] font-semibold'
+const PR_HOW_CHEVRON_CLASSES = 'text-[10px] text-[color:var(--text-dim)]'
+const PR_HOW_BODY_CLASSES = 'pr-how-body px-3 pb-3 flex flex-col gap-[10px]'
+const PR_HOW_TEXT_CLASSES = 'pr-how-text text-[12px] text-[color:var(--text-muted)] leading-[1.55] m-0'
+const PR_HOW_ITEM_CLASSES = 'pr-how-item p-[10px_12px] bg-[rgba(255,255,255,0.03)] rounded-[6px] border border-[var(--border)] flex flex-col gap-1'
+const PR_HOW_ITEM_HEADER_CLASSES = 'flex justify-between items-baseline'
+const PR_HOW_ITEM_LABEL_CLASSES = 'text-[13px] font-semibold text-[color:var(--text)]'
+const PR_HOW_WEIGHT_CLASSES = 'pr-how-weight text-[11px] font-bold text-[color:var(--green)]'
+const PR_HOW_SOURCE_CLASSES = 'text-[11px] text-[color:var(--text-dim)]'
 
 function teamAbbr(teamId) {
   return getPWHLTeamById(teamId)?.abbr;
@@ -790,13 +811,13 @@ function PowerRankingsPanel({ standings, loading, myTeamId, myAbbr: _myAbbr, myC
 
       {/* How it's calculated */}
       <div className="card" style={{ padding:0, overflow:'hidden' }}>
-        <button className="pr-how-toggle" onClick={() => setShowHow(s=>!s)}>
+        <button className={PR_HOW_TOGGLE_CLASSES} onClick={() => setShowHow(s=>!s)}>
           <span>How is this calculated?</span>
-          <span className="pr-how-chevron">{showHow ? '▲' : '▼'}</span>
+          <span className={PR_HOW_CHEVRON_CLASSES}>{showHow ? '▲' : '▼'}</span>
         </button>
         {showHow && (
-          <div className="pr-how-body">
-            <p className="pr-how-text">
+          <div className={PR_HOW_BODY_CLASSES}>
+            <p className={PR_HOW_TEXT_CLASSES}>
               PWHL Power Rankings combine five factors into a composite score. Each metric is
               normalized 0–1 across all 8 teams, then weighted and summed.
             </p>
@@ -807,12 +828,12 @@ function PowerRankingsPanel({ standings, loading, myTeamId, myAbbr: _myAbbr, myC
               ['CF% (Corsi)',      `${(W.cf*100).toFixed(0)}%`,  'Shot attempt share — proxy for possession'],
               ['Special Teams',   `${(W.sp*100).toFixed(0)}%`,  'Average of PP% and PK%'],
             ].map(([label, weight, source]) => (
-              <div key={label} className="pr-how-item">
-                <div className="pr-how-item-header">
-                  <span className="pr-how-item-label">{label}</span>
-                  <span className="pr-how-weight">{weight}</span>
+              <div key={label} className={PR_HOW_ITEM_CLASSES}>
+                <div className={PR_HOW_ITEM_HEADER_CLASSES}>
+                  <span className={PR_HOW_ITEM_LABEL_CLASSES}>{label}</span>
+                  <span className={PR_HOW_WEIGHT_CLASSES}>{weight}</span>
                 </div>
-                <span className="pr-how-source">{source}</span>
+                <span className={PR_HOW_SOURCE_CLASSES}>{source}</span>
               </div>
             ))}
           </div>

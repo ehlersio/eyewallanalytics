@@ -22,7 +22,6 @@ import TeamLogo from '../components/TeamLogo';
 import PlayerPopup from '../components/PlayerPopup';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from '../components/ShareButtons';
-import './LeagueView.css';
 import '../components/PredictionCanvas.css';
 import DraftTab from '../components/DraftTab';
 
@@ -309,6 +308,102 @@ function seriesModalScoreClasses(isWin) {
 }
 const SERIES_MODAL_SEPARATOR_CLASSES = 'text-[color:var(--text-dim)] text-center text-[13px]'
 const SERIES_MODAL_EXTRA_CLASSES = 'text-[10px] font-bold text-[color:var(--text-dim)] tracking-[0.04em] text-right'
+
+// ── Tailwind class constants -- POWER RANKINGS (Phase 4, LeagueView.css
+// sub-PR 4 -- LAST sub-PR for this file; LeagueView.css deleted entirely
+// once this lands) --
+//
+// Re-checked the same 3 things again. Light mode found ONE more real
+// spot: .pr-how-item's `background: var(--surface-dim, rgba(255,255,255,
+// 0.03))` looks theme-reactive (references a custom property) but
+// --surface-dim is never actually DEFINED anywhere in the app (confirmed
+// via full-tree grep of every .css file) -- it always resolves to the
+// hardcoded fallback, so this is a persistent (not hover-only) light-mode
+// gap exactly like every plain rgba(255,255,255,X) background fixed this
+// migration. .pr-row:hover's identically-shaped `var(--surface-hover,
+// rgba(255,255,255,0.04))` was left alone -- hover-only, matching the
+// established pattern. Property-race collisions: closed out the 2
+// instances already identified in the original investigation --
+// .pr-rank-num/--top/--bot and .pr-col-stat/--gd-pos/--neg, both racing
+// on `color` (base sets it unconditionally, modifiers override it) -- no
+// NEW instances found this pass (.pr-mvmt/--up/--down/--flat and
+// .pr-row/--you were both re-confirmed clean, base sets neither
+// background nor color/font-weight that the modifiers also set).
+// Interpolated-suffix dead-code false positives: none -- every modifier
+// here is a static ternary in both files.
+//
+// PWHL's main rankings table is entirely inline-styled (style={{}}
+// throughout, never used any .pr-* class) -- only the shared "How is this
+// calculated?" toggle (.pr-how-*) is real there. So PWHL's Power Rankings
+// migration is just that one small shared piece, not a parallel table.
+//
+// .lv-skeleton-wrap/.lv-skeleton-row (from sub-PR 1) and .lv-div-card/
+// --wide (from sub-PR 1) get their FINAL remaining call sites here --
+// RankingsPanel had its own separate loading-skeleton render (flagged as
+// out-of-scope-for-now back in sub-PR 1's investigation) and its own
+// .lv-div-card-wrapped table/narrative cards. After this sub-PR, both
+// classes have zero remaining consumers anywhere in the app.
+const PR_TABLE_HEADER_ROW_CLASSES = 'pr-table-header-row grid [grid-template-columns:32px_24px_1fr_56px_64px_56px_56px] items-center gap-1 py-[6px] px-2 text-[10px] font-semibold uppercase tracking-[0.05em] text-[color:var(--text-dim)] border-b border-[var(--border)] pb-2 mb-[2px]'
+
+const PR_ROW_BASE_CLASSES = 'pr-row grid [grid-template-columns:32px_24px_1fr_56px_64px_56px_56px] items-center gap-1 py-[6px] px-2 rounded-[6px] border-l-[3px] border-transparent [transition:background_0.15s] hover:bg-[var(--surface-hover,rgba(255,255,255,0.04))]'
+const PR_ROW_YOU_CLASSES = 'pr-row--you font-semibold'
+function prRowClasses(isYou) {
+  return `${PR_ROW_BASE_CLASSES}${isYou ? ` ${PR_ROW_YOU_CLASSES}` : ''}`
+}
+
+const PR_COL_RANK_CLASSES = 'text-center'
+const PR_COL_TEAM_CLASSES = 'flex items-center gap-[6px] min-w-0'
+const PR_COL_STAT_BASE_CLASSES = 'pr-col-stat text-right text-[12px] [font-variant-numeric:tabular-nums]'
+const PR_COL_STAT_DEFAULT_CLASSES = 'text-[color:var(--text)]'
+const PR_COL_STAT_GD_POS_CLASSES = 'pr-gd--pos text-[color:var(--green)]'
+const PR_COL_STAT_GD_NEG_CLASSES = 'pr-gd--neg text-[color:var(--red-bright)]'
+function prColStatClasses(gdColor) {
+  const variant = gdColor === 'pos' ? PR_COL_STAT_GD_POS_CLASSES : gdColor === 'neg' ? PR_COL_STAT_GD_NEG_CLASSES : PR_COL_STAT_DEFAULT_CLASSES
+  return `${PR_COL_STAT_BASE_CLASSES} ${variant}`
+}
+
+const PR_ABBR_CLASSES = 'pr-abbr text-[13px] font-bold'
+
+const PR_RANK_NUM_BASE_CLASSES = 'pr-rank-num text-[13px] font-bold'
+const PR_RANK_NUM_DEFAULT_CLASSES = 'text-[color:var(--text-muted)]'
+const PR_RANK_TOP_CLASSES = 'pr-rank--top text-[color:var(--green)]'
+const PR_RANK_BOT_CLASSES = 'pr-rank--bot text-[color:var(--red-bright)]'
+function prRankNumClasses(isTop, isBot) {
+  const variant = isTop ? PR_RANK_TOP_CLASSES : isBot ? PR_RANK_BOT_CLASSES : PR_RANK_NUM_DEFAULT_CLASSES
+  return `${PR_RANK_NUM_BASE_CLASSES} ${variant}`
+}
+
+const PR_HOW_TOGGLE_CLASSES = 'pr-how-toggle flex justify-between items-center w-full bg-transparent border-0 py-3 px-3 cursor-pointer text-[color:var(--text)] text-[13px] font-semibold'
+const PR_HOW_CHEVRON_CLASSES = 'text-[10px] text-[color:var(--text-dim)]'
+const PR_HOW_BODY_CLASSES = 'pr-how-body px-3 pb-3 flex flex-col gap-[10px]'
+const PR_HOW_TEXT_CLASSES = 'pr-how-text text-[12px] text-[color:var(--text-muted)] leading-[1.55] m-0'
+const PR_HOW_ITEM_CLASSES = 'pr-how-item p-[10px_12px] bg-[rgba(255,255,255,0.03)] rounded-[6px] border border-[var(--border)] flex flex-col gap-1'
+const PR_HOW_ITEM_HEADER_CLASSES = 'flex justify-between items-baseline'
+const PR_HOW_ITEM_LABEL_CLASSES = 'text-[13px] font-semibold text-[color:var(--text)]'
+const PR_HOW_WEIGHT_CLASSES = 'pr-how-weight text-[11px] font-bold text-[color:var(--green)]'
+const PR_HOW_SOURCE_CLASSES = 'text-[11px] text-[color:var(--text-dim)]'
+
+const PR_COL_MVMT_CLASSES = 'text-center'
+const PR_MVMT_BASE_CLASSES = 'pr-mvmt text-[10px] font-bold [font-variant-numeric:tabular-nums]'
+const PR_MVMT_UP_CLASSES = 'text-[color:var(--green)]'
+const PR_MVMT_DOWN_CLASSES = 'text-[color:var(--red-bright)]'
+const PR_MVMT_FLAT_CLASSES = 'text-[color:var(--text-dim)]'
+
+const PR_NARRATIVE_CARD_CLASSES = 'pr-narrative-card p-[14px_16px]'
+const PR_NARRATIVE_LABEL_CLASSES = 'pr-narrative-label text-[11px] font-extrabold tracking-[0.1em] uppercase text-[color:var(--team-primary,var(--green))] mb-2'
+const PR_NARRATIVE_TEXT_CLASSES = 'text-[13px] leading-[1.6] text-[color:var(--text-muted)] m-[0_0_8px]'
+const PR_NARRATIVE_DATE_CLASSES = 'text-[11px] text-[color:var(--text-dim)]'
+const PR_NARRATIVE_CARD_TOP_CLASSES = 'flex gap-4 items-start max-[420px]:flex-col'
+const PR_NARRATIVE_CARD_TOP_FIRST_CHILD_CLASSES = 'flex-1 min-w-0'
+
+const PR_SPARKLINE_CLASSES = 'pr-sparkline shrink-0 w-[90px] flex flex-col gap-[3px] max-[420px]:w-full'
+const PR_SPARKLINE_HEADER_CLASSES = 'flex justify-between items-baseline'
+const PR_SPARKLINE_LABEL_CLASSES = 'text-[8px] font-semibold uppercase tracking-[0.06em] text-[color:var(--text-dim)]'
+const PR_SPARKLINE_TREND_CLASSES = 'text-[10px] font-bold [font-variant-numeric:tabular-nums]'
+const PR_SPARKLINE_PERIOD_CLASSES = 'text-[8px] font-normal text-[color:var(--text-dim)]'
+const PR_SPARKLINE_SVG_CLASSES = 'w-full h-auto [aspect-ratio:200/56] overflow-visible'
+const PR_SPARKLINE_DATES_CLASSES = 'flex justify-between text-[8px] text-[color:var(--text-dim)]'
+const PR_SPARKLINE_EMPTY_CLASSES = 'pr-sparkline-empty text-[10px] text-[color:var(--text-dim)] italic py-1'
 
 const PRIMARY = TEAM_CONFIG.abbr;
 
@@ -1296,9 +1391,9 @@ function computePowerRankings(standings, xgData) {
 function MovementArrow({ current, prior }) {
   if (prior == null) return null;
   const diff = prior - current; // positive = moved up
-  if (diff === 0) return <span className="pr-mvmt pr-mvmt--flat">—</span>;
-  if (diff > 0)   return <span className="pr-mvmt pr-mvmt--up">▲{diff}</span>;
-  return              <span className="pr-mvmt pr-mvmt--down">▼{Math.abs(diff)}</span>;
+  if (diff === 0) return <span className={`${PR_MVMT_BASE_CLASSES} ${PR_MVMT_FLAT_CLASSES}`}>—</span>;
+  if (diff > 0)   return <span className={`${PR_MVMT_BASE_CLASSES} ${PR_MVMT_UP_CLASSES}`}>▲{diff}</span>;
+  return              <span className={`${PR_MVMT_BASE_CLASSES} ${PR_MVMT_DOWN_CLASSES}`}>▼{Math.abs(diff)}</span>;
 }
 
 // ─── Rank Sparkline ───────────────────────────────────────────────────────────
@@ -1306,7 +1401,7 @@ function MovementArrow({ current, prior }) {
 function RankSparkline({ history, primaryColor }) {
   if (!history?.length) {
     return (
-      <div className="pr-sparkline-empty">
+      <div className={PR_SPARKLINE_EMPTY_CLASSES}>
         <span>Rank trend data accumulates nightly</span>
       </div>
     );
@@ -1326,18 +1421,18 @@ function RankSparkline({ history, primaryColor }) {
   const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
   return (
-    <div className="pr-sparkline" style={{ minWidth: 140 }}>
-      <div className="pr-sparkline-header">
-        <span className="pr-sparkline-label">Rank trend</span>
+    <div className={PR_SPARKLINE_CLASSES} style={{ minWidth: 140 }}>
+      <div className={PR_SPARKLINE_HEADER_CLASSES}>
+        <span className={PR_SPARKLINE_LABEL_CLASSES}>Rank trend</span>
         {trendLabel && (
-          <span className="pr-sparkline-trend" style={{ color: trendColor }}>
+          <span className={PR_SPARKLINE_TREND_CLASSES} style={{ color: trendColor }}>
             {trendLabel}
-            <span className="pr-sparkline-period"> ({history.length}d)</span>
+            <span className={PR_SPARKLINE_PERIOD_CLASSES}> ({history.length}d)</span>
           </span>
         )}
       </div>
       <Sparkline
-        className="pr-sparkline-svg"
+        className={PR_SPARKLINE_SVG_CLASSES}
         points={history.map(r => ({ value: r.rank }))}
         color={primaryColor}
         width={240} height={80} padding={16}
@@ -1345,7 +1440,7 @@ function RankSparkline({ history, primaryColor }) {
         showEndpoints
         formatEndpointLabel={v => `#${v}`}
       />
-      <div className="pr-sparkline-dates">
+      <div className={PR_SPARKLINE_DATES_CLASSES}>
         <span>{fmtDate(earliest.generated_date)}</span>
         {!single && <span>{fmtDate(latest.generated_date)}</span>}
       </div>
@@ -1398,9 +1493,9 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
 
   if (loading) {
     return (
-      <div className="lv-skeleton-wrap" aria-busy="true">
+      <div className={LV_SKELETON_WRAP_CLASSES} aria-busy="true">
         {[85, 90, 85, 95, 85, 90, 85, 90, 85, 95].map((w, i) => (
-          <div key={i} className="lv-skeleton-row" style={{ width: `${w}%` }} />
+          <div key={i} className={LV_SKELETON_ROW_CLASSES} style={{ width: `${w}%` }} />
         ))}
       </div>
     );
@@ -1415,14 +1510,14 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
 
       {/* Narrative + sparkline card — shows when either exists */}
       {(narrative?.narrative || history?.length) ? (
-        <div className="lv-div-card lv-div-card--wide pr-narrative-card" style={{ marginTop: 4 }}>
-          <div className="pr-narrative-card-top">
+        <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES} ${PR_NARRATIVE_CARD_CLASSES}`} style={{ marginTop: 4 }}>
+          <div className={PR_NARRATIVE_CARD_TOP_CLASSES}>
             {narrative?.narrative && (
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="pr-narrative-label">⚡ EyeWall AI — {PRIMARY} Rankings Report</div>
-                <p className="pr-narrative-text">{narrative.narrative}</p>
+              <div className={PR_NARRATIVE_CARD_TOP_FIRST_CHILD_CLASSES}>
+                <div className={PR_NARRATIVE_LABEL_CLASSES}>⚡ EyeWall AI — {PRIMARY} Rankings Report</div>
+                <p className={PR_NARRATIVE_TEXT_CLASSES}>{narrative.narrative}</p>
                 {narrative.generated_date && (
-                  <span className="pr-narrative-date">
+                  <span className={PR_NARRATIVE_DATE_CLASSES}>
                     Updated {new Date(narrative.generated_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
                 )}
@@ -1434,15 +1529,15 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
       ) : null}
 
       {/* Rankings table */}
-      <div className="lv-div-card lv-div-card--wide">
-        <div className="pr-table-header-row">
-          <span className="pr-col-rank">#</span>
-          <span className="pr-col-mvmt" />
-          <span className="pr-col-team">Team</span>
-          <span className="pr-col-stat">Pts%</span>
-          <span className="pr-col-stat">L10</span>
-          <span className="pr-col-stat">xGF%</span>
-          <span className="pr-col-stat">GD/GP</span>
+      <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES}`}>
+        <div className={PR_TABLE_HEADER_ROW_CLASSES}>
+          <span className={PR_COL_RANK_CLASSES}>#</span>
+          <span className={PR_COL_MVMT_CLASSES} />
+          <span className={PR_COL_TEAM_CLASSES}>Team</span>
+          <span className={PR_COL_STAT_BASE_CLASSES}>Pts%</span>
+          <span className={PR_COL_STAT_BASE_CLASSES}>L10</span>
+          <span className={PR_COL_STAT_BASE_CLASSES}>xGF%</span>
+          <span className={PR_COL_STAT_BASE_CLASSES}>GD/GP</span>
         </div>
 
         {ranked.map(t => {
@@ -1452,33 +1547,33 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
           return (
             <div
               key={t.abbr}
-              className={`pr-row${isPrimary ? ' pr-row--you' : ''}`}
+              className={prRowClasses(isPrimary)}
               style={isPrimary ? {
                 '--row-accent': PRIMARY_COLOR,
                 borderLeft: `3px solid ${PRIMARY_COLOR}`,
                 background: `color-mix(in srgb, ${PRIMARY_COLOR} 8%, var(--surface))`,
               } : {}}
             >
-              <span className="pr-col-rank">
-                <span className={`pr-rank-num${t.rank <= 8 ? ' pr-rank--top' : t.rank >= 25 ? ' pr-rank--bot' : ''}`}>
+              <span className={PR_COL_RANK_CLASSES}>
+                <span className={prRankNumClasses(t.rank <= 8, t.rank >= 25)}>
                   {t.rank}
                 </span>
               </span>
-              <span className="pr-col-mvmt">
+              <span className={PR_COL_MVMT_CLASSES}>
                 {showArrow && <MovementArrow current={t.rank} prior={priorRank} />}
               </span>
-              <span className="pr-col-team">
+              <span className={PR_COL_TEAM_CLASSES}>
                 <TeamLogo abbr={t.abbr} size={16} />
-                <span className="pr-abbr" style={{ color: TEAM_COLORS[t.abbr] ?? 'var(--text)' }}>
+                <span className={PR_ABBR_CLASSES} style={{ color: TEAM_COLORS[t.abbr] ?? 'var(--text)' }}>
                   {t.abbr}
                 </span>
               </span>
-              <span className="pr-col-stat">{(t.ptsPct * 100).toFixed(1)}%</span>
-              <span className="pr-col-stat">{t.l10}</span>
-              <span className="pr-col-stat">
+              <span className={prColStatClasses()}>{(t.ptsPct * 100).toFixed(1)}%</span>
+              <span className={prColStatClasses()}>{t.l10}</span>
+              <span className={prColStatClasses()}>
                 {t.xgfPct != null ? `${(t.xgfPct * 100).toFixed(1)}%` : '—'}
               </span>
-              <span className={`pr-col-stat${t.gdPG > 0 ? ' pr-gd--pos' : t.gdPG < 0 ? ' pr-gd--neg' : ''}`}>
+              <span className={prColStatClasses(t.gdPG > 0 ? 'pos' : t.gdPG < 0 ? 'neg' : null)}>
                 {t.gdPG > 0 ? '+' : ''}{t.gdPG.toFixed(2)}
               </span>
             </div>
@@ -1497,15 +1592,15 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
       />
 
       {/* How is this calculated? */}
-      <div className="lv-div-card lv-div-card--wide">
-        <button className="pr-how-toggle" onClick={() => setShowHow(v => !v)} aria-expanded={showHow}>
+      <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES}`}>
+        <button className={PR_HOW_TOGGLE_CLASSES} onClick={() => setShowHow(v => !v)} aria-expanded={showHow}>
           <span>How is this calculated?</span>
-          <span className="pr-how-chevron">{showHow ? '▲' : '▼'}</span>
+          <span className={PR_HOW_CHEVRON_CLASSES}>{showHow ? '▲' : '▼'}</span>
         </button>
 
         {showHow && (
-          <div className="pr-how-body">
-            <p className="pr-how-text">
+          <div className={PR_HOW_BODY_CLASSES}>
+            <p className={PR_HOW_TEXT_CLASSES}>
               Rankings are computed from five components plus a roster talent prior
               that tapers off as the season progresses. Each component is normalised
               relative to the rest of the league (best team = 1.0, worst = 0.0) before
@@ -1544,17 +1639,17 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
                 source: 'MoneyPuck / EyeWall RAPM model (updated nightly)',
               },
             ].map(c => (
-              <div key={c.label} className="pr-how-item">
-                <div className="pr-how-item-header">
-                  <span className="pr-how-item-label">{c.label}</span>
-                  <span className="pr-how-weight">{c.weight}</span>
+              <div key={c.label} className={PR_HOW_ITEM_CLASSES}>
+                <div className={PR_HOW_ITEM_HEADER_CLASSES}>
+                  <span className={PR_HOW_ITEM_LABEL_CLASSES}>{c.label}</span>
+                  <span className={PR_HOW_WEIGHT_CLASSES}>{c.weight}</span>
                 </div>
-                <p className="pr-how-text">{c.desc}</p>
-                <span className="pr-how-source">Source: {c.source}</span>
+                <p className={PR_HOW_TEXT_CLASSES}>{c.desc}</p>
+                <span className={PR_HOW_SOURCE_CLASSES}>Source: {c.source}</span>
               </div>
             ))}
 
-            <p className="pr-how-text" style={{ marginTop: 4 }}>
+            <p className={PR_HOW_TEXT_CLASSES} style={{ marginTop: 4 }}>
               xGF% and Roster WAR show <em>—</em> until the first nightly pipeline
               run populates them. All other components still produce a valid rank.
             </p>
