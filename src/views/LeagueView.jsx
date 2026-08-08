@@ -149,6 +149,44 @@ const LV_SEASON_EMPTY_CLASSES = 'lv-season-empty text-[color:var(--text-dim)] te
 
 const LV_SCROLL_TOP_CLASSES = 'fixed bottom-[72px] right-4 z-[200] py-[7px] px-[14px] rounded-[20px] text-[12px] font-semibold text-[color:var(--text-muted)] bg-[var(--bg2,#1e1e1e)] border-[0.5px] border-[var(--border)] cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.4)] [transition:opacity_0.15s,color_0.15s] hover:text-[color:var(--text)] hover:border-[var(--text-dim)]'
 
+// ── Tailwind class constants -- LEADERS (Phase 4, LeagueView.css sub-PR 2) --
+// Checked against the same 3 things sub-PR 1 found real issues in: light
+// mode (found one real divider needing an override, same shape as the
+// Standings one -- .lv-leaders-row--clickable's hover/active white tints
+// were considered too, but left alone, matching the rest of the app's
+// established pattern of never overriding transient hover states);
+// generalized property-race collisions (none found -- .lv-leaders-row base
+// sets no background/color that --you/--clickable also set, and
+// --clickable's own races are all :hover/:active-pseudo-scoped, which
+// lesson #9 already carves out as safe); interpolated-suffix dead-code
+// false positives (none -- --you/--clickable are both static ternaries,
+// not `` `prefix--${var}` `` interpolation, so nothing to trip up a literal
+// grep here).
+//
+// .lv-leaders-row--you is a DIRECT class on the row (not a descendant
+// selector like Standings' .lv-row--you .lv-td), so unlike that one it
+// migrates cleanly to a plain Tailwind arbitrary-value utility instead of
+// staying real CSS -- the --row-accent custom property it reads is set via
+// inline style on the SAME element.
+const LV_LEADERS_GRID_CLASSES = 'grid grid-cols-2 gap-3 max-[600px]:grid-cols-1'
+const LV_LEADERS_CARD_CLASSES = 'lv-leaders-card bg-[var(--bg1)] border-[0.5px] border-[var(--border)] rounded-[var(--radius)] overflow-hidden'
+const LV_LEADERS_CARD_HEADER_CLASSES = 'text-[12px] font-semibold text-[color:var(--text-muted)] py-2 px-3 border-b-[0.5px] border-[var(--border)] bg-[var(--bg2)] flex justify-between items-center'
+const LV_LEADERS_CARD_STAT_LABEL_CLASSES = 'font-bold text-[color:var(--text-dim)] text-[11px] font-[family-name:var(--font-display)]'
+
+const LV_LEADERS_ROW_BASE_CLASSES = 'lv-leaders-row flex items-center py-[6px] px-3 text-[12px] border-b-[0.5px] border-[rgba(255,255,255,0.04)] gap-[6px] last:border-b-0'
+const LV_LEADERS_ROW_CLICKABLE_CLASSES = 'lv-leaders-row--clickable cursor-pointer [transition:background_0.12s_ease] hover:bg-[rgba(255,255,255,0.05)] hover:rounded-[4px] active:bg-[rgba(255,255,255,0.09)] focus-visible:outline focus-visible:outline-[1.5px] focus-visible:outline-[var(--red-bright)] focus-visible:-outline-offset-[1px] focus-visible:rounded-[4px]'
+const LV_LEADERS_ROW_YOU_CLASSES = 'lv-leaders-row--you bg-[color-mix(in_srgb,var(--row-accent,var(--green))_8%,transparent)]'
+function lvLeadersRowClasses(isClickable, isYou) {
+  const clickable = isClickable ? ` ${LV_LEADERS_ROW_CLICKABLE_CLASSES}` : ''
+  const you = isYou ? ` ${LV_LEADERS_ROW_YOU_CLASSES}` : ''
+  return `${LV_LEADERS_ROW_BASE_CLASSES}${clickable}${you}`
+}
+
+const LV_LEADERS_RANK_CLASSES = 'text-[color:var(--text-dim)] min-w-[16px] text-[11px]'
+const LV_LEADERS_NAME_CLASSES = 'lv-leaders-name flex-1 text-[color:var(--text)] whitespace-nowrap overflow-hidden text-ellipsis'
+const LV_LEADERS_TEAM_CLASSES = 'lv-leaders-team text-[11px] min-w-[28px] text-right font-[family-name:var(--font-display)] font-bold'
+const LV_LEADERS_STAT_CLASSES = 'lv-leaders-stat font-bold text-[color:var(--text)] min-w-[36px] text-right font-[family-name:var(--font-mono)]'
+
 const PRIMARY = TEAM_CONFIG.abbr;
 
 // Season used to be captured here as a module-level const (TEAM_CONFIG.season
@@ -390,10 +428,10 @@ function StandingsPanel({ entries, teamSeasonData }) {
 
 function LeadersCard({ title, statLabel, rows, formatStat, onPlayerClick }) {
   return (
-    <div className="lv-leaders-card">
-      <div className="lv-leaders-card__header">
+    <div className={LV_LEADERS_CARD_CLASSES}>
+      <div className={LV_LEADERS_CARD_HEADER_CLASSES}>
         <span>{title}</span>
-        <span className="lv-leaders-card__stat-label">{statLabel}</span>
+        <span className={LV_LEADERS_CARD_STAT_LABEL_CLASSES}>{statLabel}</span>
       </div>
       {rows.map((p, i) => {
         const abbrev    = p.teamAbbrev ?? '—';
@@ -415,17 +453,17 @@ function LeadersCard({ title, statLabel, rows, formatStat, onPlayerClick }) {
         return (
           <div
             key={pid ?? i}
-            className={`lv-leaders-row${pid ? ' lv-leaders-row--clickable' : ''}${isPrimary ? ' lv-leaders-row--you' : ''}`}
+            className={lvLeadersRowClasses(!!pid, isPrimary)}
             style={isPrimary ? { '--row-accent': PRIMARY_COLOR } : undefined}
             onClick={playerObj ? () => onPlayerClick?.(playerObj) : undefined}
             role={playerObj ? 'button' : undefined}
             tabIndex={playerObj ? 0 : undefined}
             onKeyDown={playerObj ? (e => e.key === 'Enter' && onPlayerClick?.(playerObj)) : undefined}
           >
-            <span className="lv-leaders-rank">{i + 1}</span>
-            <span className="lv-leaders-name">{name}</span>
-            <span className="lv-leaders-team" style={{ color: teamColor }}>{abbrev}</span>
-            <span className="lv-leaders-stat">{formatStat ? formatStat(stat) : stat}</span>
+            <span className={LV_LEADERS_RANK_CLASSES}>{i + 1}</span>
+            <span className={LV_LEADERS_NAME_CLASSES}>{name}</span>
+            <span className={LV_LEADERS_TEAM_CLASSES} style={{ color: teamColor }}>{abbrev}</span>
+            <span className={LV_LEADERS_STAT_CLASSES}>{formatStat ? formatStat(stat) : stat}</span>
           </div>
         );
       })}
@@ -443,7 +481,7 @@ function LeadersPanel({ scoring, goals, gaa, svp }) {
 
   return (
     <>
-      <div className="lv-leaders-grid">
+      <div className={LV_LEADERS_GRID_CLASSES}>
         <LeadersCard title="Points"           statLabel="PTS" rows={scoring ?? []} onPlayerClick={setSelectedPlayer} />
         <LeadersCard title="Goals"            statLabel="G"   rows={goals   ?? []} onPlayerClick={setSelectedPlayer} />
         <LeadersCard

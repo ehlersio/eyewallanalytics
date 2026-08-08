@@ -69,107 +69,11 @@
    dead code before this migration (zero real consumers, confirmed via
    full-tree grep) -- dropped, not migrated. */
 
-/* ── Leaders ── */
-
-.lv-leaders-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.lv-leaders-card {
-  background: var(--bg1);
-  border: 0.5px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.lv-leaders-card__header {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  padding: 8px 12px;
-  border-bottom: 0.5px solid var(--border);
-  background: var(--bg2);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.lv-leaders-card__stat-label {
-  font-weight: 700;
-  color: var(--text-dim);
-  font-size: 11px;
-  font-family: var(--font-display);
-}
-
-.lv-leaders-row {
-  display: flex;
-  align-items: center;
-  padding: 6px 12px;
-  font-size: 12px;
-  border-bottom: 0.5px solid rgba(255,255,255,0.04);
-  gap: 6px;
-}
-
-.lv-leaders-row:last-child {
-  border-bottom: none;
-}
-
-.lv-leaders-row--you {
-  background: color-mix(in srgb, var(--row-accent, var(--green)) 8%, transparent);
-}
-
-.lv-leaders-rank {
-  color: var(--text-dim);
-  min-width: 16px;
-  font-size: 11px;
-}
-
-.lv-leaders-name {
-  flex: 1;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.lv-leaders-team {
-  /* color set inline per row via TEAM_COLORS */
-  font-size: 11px;
-  min-width: 28px;
-  text-align: right;
-  font-family: var(--font-display);
-  font-weight: 700;
-}
-
-.lv-leaders-row--clickable {
-  cursor: pointer;
-  transition: background 0.12s ease;
-}
-
-.lv-leaders-row--clickable:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-}
-
-.lv-leaders-row--clickable:active {
-  background: rgba(255, 255, 255, 0.09);
-}
-
-.lv-leaders-row--clickable:focus-visible {
-  outline: 1.5px solid var(--red-bright);
-  outline-offset: -1px;
-  border-radius: 4px;
-}
-
-.lv-leaders-stat {
-  font-weight: 700;
-  color: var(--text);
-  min-width: 36px;
-  text-align: right;
-  font-family: var(--font-mono);
-}
+/* Leaders (.lv-leaders-*) was fully retired (migrated to Tailwind, Phase 4
+   sub-PR 2) and removed. Unlike Standings' .lv-row--you, .lv-leaders-row--
+   you was a direct class on the row (not a descendant selector), so it
+   migrated cleanly to a Tailwind arbitrary-value utility instead of
+   staying real CSS. */
 
 /* ── Bracket Panel (Phase 2) ── */
 

@@ -164,6 +164,17 @@
   border-bottom-color: rgba(0,0,0,0.06);
 }
 
+/* Leaders (Phase 4, sub-PR 2). .lv-leaders-row's own border-b (not a
+   descendant selector this time -- direct on the row, migrated to
+   Tailwind, kept as a literal marker) has the same rgba(255,255,255,0.04)
+   invisible-on-light shape. .lv-leaders-row--clickable's transient
+   hover/active white tints were considered but deliberately left alone,
+   matching how the rest of the app treats hover-only tints (never
+   overridden anywhere in this file). */
+[data-theme="light"] .lv-leaders-row {
+  border-bottom-color: rgba(0,0,0,0.06);
+}
+
 /* draft-prev-badge: rgba(255,255,255,0.06) background is invisible on light */
 [data-theme="light"] .draft-prev-badge {
   background: rgba(0,0,0,0.06);
