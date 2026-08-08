@@ -1,107 +1,12 @@
 /* LeagueView.css */
 
-/* ── Layout ── */
-
-.league-view {
-  display: flex;
-  flex-direction: column;
-  padding: 14px 14px 0;
-}
-
-.league-content {
-  padding-bottom: 24px;
-}
-
-/* ── Tab bar ── */
-
-.league-tabs {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 14px;
-  border-bottom: 0.5px solid var(--border);
-  padding-bottom: 10px;
-  flex-wrap: wrap;
-}
-
-.league-tab {
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-muted);
-  border: 0.5px solid transparent;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.league-tab--active {
-  background: var(--red-dim);
-  color: var(--red-bright);
-  border-color: var(--red-border);
-}
-
-/* ── Filter row ── */
-
-.lv-filter-row {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-
-.lv-filter-btn {
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
-  border: 0.5px solid var(--border);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: background 0.1s, color 0.1s;
-}
-
-.lv-filter-btn--active {
-  background: var(--bg2);
-  color: var(--text);
-  border-color: var(--border-2);
-  font-weight: 500;
-}
-
-/* ── Legend ── */
-
-.lv-legend {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-
-.lv-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--text-dim);
-}
-
-.lv-legend-bar {
-  width: 3px;
-  height: 14px;
-  border-radius: 1px;
-  flex-shrink: 0;
-}
-
-.lv-legend-bar--playoff { background: var(--green); }
-.lv-legend-bar--wc      { background: #5B8FD4; }
+/* Phase 4, sub-PR 1 (Shell + Standings + draft skeleton) migrated to
+   Tailwind and removed from here -- see LeagueView.jsx/PWHLLeagueView.jsx's
+   header comments. Leaders/Bracket/SeriesModal/PowerRankings classes below
+   are still real CSS, migrated in later sub-PRs; this file stays imported
+   until the last one. */
 
 /* ── Conference sections ── */
-
-.lv-conf-section {
-  margin-bottom: 1.5rem;
-}
 
 .lv-conf-label {
   font-size: 10px;
@@ -113,13 +18,10 @@
   margin-bottom: 8px;
 }
 
-/* ── Division cards ── */
-
-.lv-div-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
+/* ── Division cards ──
+   .lv-div-card/--wide/__header stay real CSS -- still used by Power
+   Rankings (out of scope, sub-PR 4). .lv-div-grid/--wc were Standings-only,
+   fully retired and removed. */
 
 .lv-div-card {
   background: var(--bg1);
@@ -132,10 +34,6 @@
   grid-column: 1 / -1;
 }
 
-.lv-div-card--wc {
-  margin-top: 12px;
-}
-
 .lv-div-card__header {
   font-size: 12px;
   font-weight: 600;
@@ -145,58 +43,13 @@
   background: var(--bg2);
 }
 
-/* ── Standings table ── */
-
-.lv-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-
-.lv-th {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-dim);
-  padding: 5px 8px;
-  text-align: right;
-  border-bottom: 0.5px solid var(--border);
-  white-space: nowrap;
-  background: var(--bg2);
-}
-
-.lv-th--team {
-  text-align: left;
-}
-
-.lv-td {
-  padding: 5px 4px;
-  text-align: right;
-  color: var(--text-muted);
-  white-space: nowrap;
-  font-family: var(--font-mono);
-}
-
-.lv-td--rank {
-  color: var(--text-dim);
-  font-size: 11px;
-  min-width: 18px;
-  text-align: center;
-  font-family: inherit;
-}
-
-.lv-td--team {
-  text-align: left;
-  color: var(--text);
-  padding-left: 6px;
-  padding-right: 4px;
-  font-family: inherit;
-  max-width: 90px;
-}
-
-.lv-td--pts {
-  font-weight: 700;
-  color: var(--text);
-}
+/* ── Standings table ──
+   .lv-table/.lv-th/.lv-td (+ modifiers) direct declarations are fully
+   retired (migrated to Tailwind) and removed below. The 3 descendant-
+   selector rules on .lv-row/.lv-row--you are kept as real CSS -- see
+   LeagueView.jsx's header comment for why (not force-fit into Tailwind).
+   .lv-row/.lv-td/.lv-row--you/.lv-td--team are kept as literal marker
+   classes on the migrated elements so these rules keep applying. */
 
 .lv-row:not(:last-child) .lv-td {
   border-bottom: 0.5px solid rgba(255,255,255,0.04);
@@ -210,76 +63,11 @@
   font-weight: 600;
 }
 
-/* ── Team cell ── */
-
-.lv-team-cell {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.lv-team-abbrev {
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--text);
-}
-
-.lv-you-badge {
-  font-size: 8px;
-  font-weight: 700;
-  color: var(--row-accent, var(--green));
-  background: color-mix(in srgb, var(--row-accent, var(--green)) 15%, transparent);
-  padding: 1px 3px;
-  border-radius: 3px;
-  letter-spacing: 0.04em;
-  font-family: var(--font-display);
-}
-
-.lv-clinch-badge {
-  font-size: 9px;
-  font-weight: 500;
-  color: var(--text-dim);
-  letter-spacing: 0.04em;
-}
-
-.lv-magic-badge {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  padding: 1px 3px;
-  border-radius: 3px;
-  font-family: var(--font-display);
-}
-
-.lv-magic-badge--clinch {
-  color: var(--green);
-  background: color-mix(in srgb, var(--green) 15%, transparent);
-}
-
-.lv-magic-badge--elim {
-  color: var(--red-bright);
-  background: color-mix(in srgb, var(--red-bright) 12%, transparent);
-}
-
-/* ── L10 dots ── */
-
-.l10-dots {
-  display: inline-flex;
-  gap: 2px;
-  align-items: center;
-}
-
-.l10-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.l10-dot--w { background: var(--green); }
-.l10-dot--o { background: #5B8FD4; }
-.l10-dot--l { background: var(--border-2); }
+/* .lv-team-cell/.lv-team-abbrev/.lv-clinch-badge/.lv-magic-badge (+
+   modifiers)/.l10-dots/.l10-dot (+ modifiers) were Standings-only, fully
+   retired (migrated to Tailwind) and removed. .lv-you-badge was already
+   dead code before this migration (zero real consumers, confirmed via
+   full-tree grep) -- dropped, not migrated. */
 
 /* ── Leaders ── */
 
@@ -539,7 +327,13 @@
 
 /* winner-line color is applied inline via style={{ color }} using TEAM_COLORS */
 
-/* ── Empty / loading / error ── */
+/* ── Empty / loading / error ──
+   .lv-empty/.lv-empty-msg stay real CSS -- NHL's Bracket tab and PWHL's
+   Bracket/Leaders/PowerRankings tabs still use them (out of scope).
+   .lv-skeleton-wrap/.lv-skeleton-row/@keyframes lv-pulse (hoisted to
+   index.css) and .lv-error/.lv-season-empty were fully retired (migrated
+   to Tailwind, shared LoadingRows/ErrorState/SeasonNotStartedState
+   components) and removed. */
 
 .lv-empty {
   padding: 2rem 0;
@@ -551,45 +345,11 @@
   color: var(--text-dim);
 }
 
-.lv-skeleton-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 4px 0;
-}
-
-.lv-skeleton-row {
-  height: 14px;
-  background: var(--bg2);
-  border-radius: var(--radius-sm);
-  animation: lv-pulse 1.4s ease-in-out infinite;
-}
-
-@keyframes lv-pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.45; }
-}
-
-.lv-error {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text-muted);
-  padding: 1.5rem 0;
-}
-
-.lv-season-empty {
-  color: var(--text-dim);
-  font-size: 13px;
-  padding: 2.5rem 1rem;
-  text-align: center;
-}
-
-/* ── Responsive ── */
+/* ── Responsive ──
+   .lv-div-grid was Standings-only, fully retired (migrated to Tailwind's
+   max-[600px]:grid-cols-1) and removed from this selector list. */
 
 @media (max-width: 600px) {
-  .lv-div-grid,
   .lv-leaders-grid {
     grid-template-columns: 1fr;
   }
@@ -979,49 +739,14 @@
   text-align: right;
 }
 
-/* ── Scroll-to-top button ── */
-
-.lv-scroll-top {
-  position: fixed;
-  bottom: 72px; /* above bottom nav */
-  right: 16px;
-  z-index: 200;
-  padding: 7px 14px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: var(--bg2, #1e1e1e);
-  border: 0.5px solid var(--border);
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-  transition: opacity 0.15s, color 0.15s;
-}
-
-.lv-scroll-top:hover {
-  color: var(--text);
-  border-color: var(--text-dim);
-}
+/* .lv-scroll-top (+ :hover) was fully retired (migrated to Tailwind,
+   shared ScrollTopButton component) and removed. */
 
 /* ── Mobile polish ──────────────────────────────────────────── */
+/* League tabs mobile rule was fully retired (migrated to Tailwind's
+   max-[600px]:* variants) and removed from here. */
 
 @media (max-width: 600px) {
-  /* League tabs: horizontal scroll instead of wrapping */
-  .league-tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 10px;
-    gap: 4px;
-  }
-  .league-tabs::-webkit-scrollbar { display: none; }
-  .league-tab {
-    flex-shrink: 0;
-    padding: 5px 12px;
-    font-size: 12px;
-  }
-
   /* Series modal: force centered on mobile regardless of backdrop default */
   .popup-backdrop--centered {
     align-items: center !important;
@@ -1035,30 +760,5 @@
   }
 }
 
-/* ── Draft table ─────────────────────────────────────────────────────────── */
-.draft-prev-school { color: var(--text-muted); }
-.draft-prev-badge {
-  display: inline-block;
-  font-size: 9px;
-  font-weight: 700;
-  background: rgba(255,255,255,0.06);
-  padding: 1px 4px;
-  border-radius: 3px;
-  margin-left: 4px;
-  color: var(--text-dim);
-  vertical-align: middle;
-}
-
-@media (max-width: 600px) {
-  /* Mobile: hide school name, keep only the league badge */
-  .draft-prev-school { display: none; }
-  .draft-prev-badge  { margin-left: 0; }
-
-  /* Player name: truncate gracefully */
-  .draft-td--player {
-    max-width: 90px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
+/* Draft table (.draft-prev-school/.draft-prev-badge/.draft-td--player) was
+   PWHL-only, fully retired (migrated to Tailwind) and removed. */

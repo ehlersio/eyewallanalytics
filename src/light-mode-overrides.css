@@ -145,3 +145,26 @@
 [data-theme="light"] .ps-carousel-dot.car {
   background: rgba(var(--team-primary-rgb), 0.4);
 }
+
+/* ════════════════════════════════════════════════════════════════
+   LeagueView.css additions (Phase 4, sub-PR 1 -- Shell + Standings +
+   draft skeleton). Found up front this time (now a standing check) rather
+   than mid-migration -- unlike TeamView.css/PeriodSummary.css, this file
+   had NO existing "LeagueView.css additions" block here at all; its one
+   other light-mode need (.bkt-root's --bkt-line custom property, feeding
+   inline SVG stroke attributes) is handled inline in LeagueView.css itself
+   via its own [data-theme="light"] rule, not here -- Bracket scope, out of
+   this sub-PR.
+   ════════════════════════════════════════════════════════════════ */
+
+/* .lv-row:not(:last-child) .lv-td divider: rgba(255,255,255,0.04) is
+   invisible on light, same shape as PlayersView.css's/ShotMapView.css's
+   row dividers above */
+[data-theme="light"] .lv-row:not(:last-child) .lv-td {
+  border-bottom-color: rgba(0,0,0,0.06);
+}
+
+/* draft-prev-badge: rgba(255,255,255,0.06) background is invisible on light */
+[data-theme="light"] .draft-prev-badge {
+  background: rgba(0,0,0,0.06);
+}

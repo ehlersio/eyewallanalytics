@@ -32,6 +32,89 @@ const PP_CLOSE_CLASSES = 'pp-close absolute top-3 right-3 w-[28px] h-[28px] roun
 const SST_SORT_ICON_CLASSES = 'text-[10px]'
 const SST_HINT_CLASSES = 'text-[10px] text-[color:var(--text-dim)] text-center mt-[6px]'
 
+// ── Tailwind class constants -- SHELL + STANDINGS + DRAFT (Phase 4,
+// LeagueView.css sub-PR 1) --
+// Duplicated from LeagueView.jsx per established per-file convention (no
+// shared module -- each NHL/PWHL pair keeps its own copy). See that file's
+// header comment for the full reasoning on what's deliberately kept as real
+// CSS (.lv-row/.lv-td descendant-selector rules) vs migrated here, and the
+// generalized property-race check (background/color/text-align/
+// justify-content -- not just background) applied throughout this file too.
+// Leaders/Bracket/SeriesModal/PowerRankings classes are still plain CSS,
+// migrated in later sub-PRs.
+//
+// Unlike NHL, PWHL has no conference/division split (single flat sortable
+// table) and no ScrollTopButton (not used anywhere in this file). PWHL DOES
+// use .lv-empty across 4 tabs including Standings (NHL only uses it for
+// Bracket, out of scope here) -- migrated just the Standings call site,
+// left the other 3 (Bracket/Leaders/PowerRankings) as literal strings for
+// their own later sub-PRs, since .lv-empty's CSS rule stays in
+// LeagueView.css until every consumer is migrated.
+const LEAGUE_VIEW_CLASSES = 'league-view flex flex-col pt-[14px] px-[14px]'
+const LEAGUE_CONTENT_CLASSES = 'league-content pb-6'
+const LEAGUE_TABS_CLASSES = 'league-tabs flex flex-wrap mb-[14px] pb-[10px] border-b-[0.5px] border-[var(--border)] max-[600px]:flex-nowrap max-[600px]:overflow-x-auto max-[600px]:[-webkit-overflow-scrolling:touch] max-[600px]:[scrollbar-width:none] max-[600px]:gap-1 max-[600px]:[&::-webkit-scrollbar]:hidden'
+
+const LEAGUE_TAB_BASE_CLASSES = 'league-tab py-[6px] px-4 rounded-[20px] text-[13px] font-medium border-[0.5px] flex items-center cursor-pointer [transition:all_0.15s] max-[600px]:shrink-0 max-[600px]:py-[5px] max-[600px]:px-3 max-[600px]:text-[12px]'
+const LEAGUE_TAB_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] bg-transparent border-transparent'
+const LEAGUE_TAB_ACTIVE_CLASSES = 'league-tab--active text-[color:var(--red-bright)] bg-[var(--red-dim)] border-[var(--red-border)]'
+function leagueTabClasses(isActive) {
+  return `${LEAGUE_TAB_BASE_CLASSES} ${isActive ? LEAGUE_TAB_ACTIVE_CLASSES : LEAGUE_TAB_INACTIVE_CLASSES}`
+}
+
+const LV_FILTER_ROW_CLASSES = 'flex gap-[6px] mb-4 flex-wrap'
+const LV_FILTER_BTN_BASE_CLASSES = 'lv-filter-btn text-[12px] py-1 px-[10px] rounded-[var(--radius-sm)] border-[0.5px] cursor-pointer [transition:background_0.1s,color_0.1s]'
+const LV_FILTER_BTN_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] bg-transparent border-[var(--border)]'
+const LV_FILTER_BTN_ACTIVE_CLASSES = 'lv-filter-btn--active text-[color:var(--text)] bg-[var(--bg2)] border-[var(--border-2)] font-medium'
+function lvFilterBtnClasses(isActive) {
+  return `${LV_FILTER_BTN_BASE_CLASSES} ${isActive ? LV_FILTER_BTN_ACTIVE_CLASSES : LV_FILTER_BTN_INACTIVE_CLASSES}`
+}
+
+const LV_DIV_CARD_BASE_CLASSES = 'lv-div-card bg-[var(--bg1)] border-[0.5px] border-[var(--border)] rounded-[var(--radius)] overflow-hidden'
+const LV_DIV_CARD_WIDE_CLASSES = '[grid-column:1/-1]'
+const LV_DIV_CARD_HEADER_CLASSES = 'text-[12px] font-semibold text-[color:var(--text-muted)] py-2 px-3 border-b-[0.5px] border-[var(--border)] bg-[var(--bg2)]'
+
+const LV_TABLE_CLASSES = 'lv-table w-full border-collapse text-[12px]'
+const LV_TH_BASE_CLASSES = 'lv-th text-[11px] font-bold text-[color:var(--text-dim)] py-[5px] px-2 border-b-[0.5px] border-[var(--border)] whitespace-nowrap bg-[var(--bg2)]'
+const LV_TH_DEFAULT_CLASSES = 'text-right'
+const LV_TH_TEAM_CLASSES = 'text-left'
+function lvThClasses(isTeam) {
+  return `${LV_TH_BASE_CLASSES} ${isTeam ? LV_TH_TEAM_CLASSES : LV_TH_DEFAULT_CLASSES}`
+}
+
+// .lv-td (bare, no modifier) kept as a literal marker purely so
+// .lv-row:not(:last-child) .lv-td's real-CSS divider (see LeagueView.jsx's
+// header comment) keeps resolving -- not itself a Cypress marker.
+const LV_TD_SHARED_CLASSES = 'lv-td py-[5px] pr-[4px] whitespace-nowrap'
+function lvTdClasses(variant) {
+  switch (variant) {
+    case 'rank': return `${LV_TD_SHARED_CLASSES} lv-td--rank pl-[4px] text-center text-[11px] min-w-[18px] text-[color:var(--text-dim)] font-sans`
+    case 'team': return `${LV_TD_SHARED_CLASSES} lv-td--team pl-[6px] text-left max-w-[90px] text-[color:var(--text)] font-sans`
+    case 'pts':  return `${LV_TD_SHARED_CLASSES} pl-[4px] text-right font-bold text-[color:var(--text)] font-[family-name:var(--font-mono)]`
+    default:     return `${LV_TD_SHARED_CLASSES} pl-[4px] text-right text-[color:var(--text-muted)] font-[family-name:var(--font-mono)]`
+  }
+}
+
+const LV_TEAM_CELL_CLASSES = 'flex items-center gap-[5px]'
+const LV_TEAM_ABBREV_CLASSES = 'lv-team-abbrev font-[family-name:var(--font-display)] font-bold tracking-[0.02em]'
+
+const L10_DOTS_CLASSES = 'l10-dots inline-flex gap-[2px] items-center'
+const L10_DOT_BASE_CLASSES = 'l10-dot w-[7px] h-[7px] rounded-full inline-block'
+const L10_DOT_W_CLASSES = 'bg-[var(--green)]'
+const L10_DOT_O_CLASSES = 'bg-[#5B8FD4]'
+const L10_DOT_L_CLASSES = 'bg-[var(--border-2)]'
+function l10DotClasses(r) {
+  const variant = r === 'w' ? L10_DOT_W_CLASSES : r === 'o' ? L10_DOT_O_CLASSES : L10_DOT_L_CLASSES
+  return `${L10_DOT_BASE_CLASSES} ${variant}`
+}
+
+const LV_EMPTY_CLASSES = 'py-8 text-center'
+
+// Draft table -- PWHL-only, not shared with NHL's DraftTab.jsx (which only
+// reuses .lv-skeleton-wrap/.lv-skeleton-row, migrated there instead).
+const DRAFT_PREV_SCHOOL_CLASSES = 'text-[color:var(--text-muted)] max-[600px]:hidden'
+const DRAFT_PREV_BADGE_CLASSES = 'draft-prev-badge inline-block text-[9px] font-bold bg-[rgba(255,255,255,0.06)] py-[1px] px-1 rounded-[3px] ml-1 text-[color:var(--text-dim)] align-middle max-[600px]:ml-0'
+const DRAFT_TD_PLAYER_CLASSES = 'max-[600px]:max-w-[90px] max-[600px]:overflow-hidden max-[600px]:text-ellipsis max-[600px]:whitespace-nowrap'
+
 function teamAbbr(teamId) {
   return getPWHLTeamById(teamId)?.abbr;
 }
@@ -142,7 +225,7 @@ export default function PWHLLeagueView() {
   }
 
   return (
-    <div className="league-view">
+    <div className={LEAGUE_VIEW_CLASSES}>
       {/* Season picker */}
       <div className={TABS_WRAP_CLASSES} style={{ marginBottom: 8 }}>
         {SEASONS.map(s => (
@@ -152,18 +235,18 @@ export default function PWHLLeagueView() {
       </div>
 
       {/* Tab bar — mirrors NHL */}
-      <nav className="league-tabs" role="tablist">
+      <nav className={LEAGUE_TABS_CLASSES} role="tablist">
         {TABS.map(t => (
           <button key={t.id} role="tab"
             aria-selected={activeTab === t.id}
-            className={`league-tab${activeTab === t.id ? ' league-tab--active' : ''}`}
+            className={leagueTabClasses(activeTab === t.id)}
             onClick={() => setActiveTab(t.id)}>
             {t.label}
           </button>
         ))}
       </nav>
 
-      <div className="league-content">
+      <div className={LEAGUE_CONTENT_CLASSES}>
         {activeTab === 'standings' && (
           <StandingsPanel
             standings={standings || []}
@@ -214,9 +297,9 @@ function L10Dots({ w, otl, l }) {
     ...Array(l).fill('l'),
   ].slice(0, 10);
   return (
-    <span className="l10-dots">
+    <span className={L10_DOTS_CLASSES}>
       {results.map((r, i) => (
-        <span key={i} className={`l10-dot l10-dot--${r}`} />
+        <span key={i} className={l10DotClasses(r)} />
       ))}
     </span>
   );
@@ -264,18 +347,18 @@ function StandingsPanel({ standings, loading, myTeamId, myColor }) {
   }
 
   if (loading) return <LoadingRows />;
-  if (!sorted.length) return <div className="lv-empty">No standings data.</div>;
+  if (!sorted.length) return <div className={LV_EMPTY_CLASSES}>No standings data.</div>;
 
   return (
-    <div className="lv-div-card lv-div-card--wide">
-      <div className="lv-div-card__header">PWHL League Standings · 3-2-1-0 pts system</div>
+    <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES}`}>
+      <div className={LV_DIV_CARD_HEADER_CLASSES}>PWHL League Standings · 3-2-1-0 pts system</div>
       <div style={{ overflowX: 'auto' }}>
-        <table className="lv-table" style={{ minWidth: 560 }}>
+        <table className={LV_TABLE_CLASSES} style={{ minWidth: 560 }}>
           <thead>
             <tr>
               {COLS.map(col => (
                 <th key={col.key}
-                  className={`lv-th${col.key === 'team' ? ' lv-th--team' : ''}${sortKey === col.key ? ' sorted' : ''}`}
+                  className={`${lvThClasses(col.key === 'team')}${sortKey === col.key ? ' sorted' : ''}`}
                   style={{ cursor: col.sortable ? 'pointer' : 'default', textAlign: col.align, width: col.width }}
                   onClick={col.sortable ? () => handleSort(col.key) : undefined}>
                   {col.label}
@@ -294,31 +377,31 @@ function StandingsPanel({ standings, loading, myTeamId, myColor }) {
                 <tr key={row.team_id}
                   className={`lv-row${isMe ? ' lv-row--you' : ''}`}
                   style={isMe ? { '--row-accent': myColor } : undefined}>
-                  <td className="lv-td lv-td--rank">{i + 1}</td>
-                  <td className="lv-td lv-td--team">
-                    <span className="lv-team-cell">
+                  <td className={lvTdClasses('rank')}>{i + 1}</td>
+                  <td className={lvTdClasses('team')}>
+                    <span className={LV_TEAM_CELL_CLASSES}>
                       <TeamLogo abbr={abbr} sport="pwhl" size={18} color={color} />
-                      <span className="lv-team-abbrev" style={{ color }}>{abbr}</span>
+                      <span className={LV_TEAM_ABBREV_CLASSES} style={{ color }}>{abbr}</span>
                     </span>
                   </td>
-                  <td className="lv-td">{row.gp ?? '—'}</td>
-                  <td className="lv-td">{row.reg_wins ?? '—'}</td>
-                  <td className="lv-td">{row.non_reg_wins ?? '—'}</td>
-                  <td className="lv-td">{row.ot_losses ?? '—'}</td>
-                  <td className="lv-td">{row.losses ?? '—'}</td>
-                  <td className="lv-td lv-td--pts">{row.points ?? '—'}</td>
-                  <td className="lv-td">{row._ptsPct !== '—' ? `${row._ptsPct}%` : '—'}</td>
-                  <td className="lv-td">{row.goals_for ?? '—'}</td>
-                  <td className="lv-td">{row.goals_against ?? '—'}</td>
-                  <td className="lv-td" style={{ color: diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red-bright)' : 'inherit' }}>
+                  <td className={lvTdClasses()}>{row.gp ?? '—'}</td>
+                  <td className={lvTdClasses()}>{row.reg_wins ?? '—'}</td>
+                  <td className={lvTdClasses()}>{row.non_reg_wins ?? '—'}</td>
+                  <td className={lvTdClasses()}>{row.ot_losses ?? '—'}</td>
+                  <td className={lvTdClasses()}>{row.losses ?? '—'}</td>
+                  <td className={lvTdClasses('pts')}>{row.points ?? '—'}</td>
+                  <td className={lvTdClasses()}>{row._ptsPct !== '—' ? `${row._ptsPct}%` : '—'}</td>
+                  <td className={lvTdClasses()}>{row.goals_for ?? '—'}</td>
+                  <td className={lvTdClasses()}>{row.goals_against ?? '—'}</td>
+                  <td className={lvTdClasses()} style={{ color: diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red-bright)' : 'inherit' }}>
                     {diff != null ? (diff > 0 ? `+${diff}` : diff) : '—'}
                   </td>
-                  <td className="lv-td" style={{ textAlign: 'center' }}>
+                  <td className={lvTdClasses()} style={{ textAlign: 'center' }}>
                     {row.l10W != null
                       ? <L10Dots w={row.l10W} otl={row.l10OTL || 0} l={row.l10L || 0} />
                       : '—'}
                   </td>
-                  <td className="lv-td" style={{ textAlign: 'center' }}>
+                  <td className={lvTdClasses()} style={{ textAlign: 'center' }}>
                     {row.streakType && row.streakCount
                       ? <span style={{ color: row.streakType==='W' ? 'var(--green)' : 'var(--red-bright)', fontWeight: 600 }}>
                           {row.streakType}{row.streakCount}
@@ -887,33 +970,33 @@ function DraftPanel({ season }) {
 
       {/* Filters */}
       <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-        <div className="lv-filter-row" style={{ margin:0, gap:6 }}>
+        <div className={LV_FILTER_ROW_CLASSES} style={{ margin:0, gap:6 }}>
           {[['all','All'],['F','Forwards'],['D','Defence'],['G','Goalies']].map(([k,l]) => (
-            <button key={k} className={`lv-filter-btn${filter===k?' lv-filter-btn--active':''}`}
+            <button key={k} className={lvFilterBtnClasses(filter===k)}
               onClick={() => setFilter(k)}>{l}</button>
           ))}
         </div>
-        <div className="lv-filter-row" style={{ margin:0, gap:6 }}>
-          <button className={`lv-filter-btn${roundFilter===0?' lv-filter-btn--active':''}`}
+        <div className={LV_FILTER_ROW_CLASSES} style={{ margin:0, gap:6 }}>
+          <button className={lvFilterBtnClasses(roundFilter===0)}
             onClick={() => setRound(0)}>All Rounds</button>
           {rounds.map(r => (
-            <button key={r} className={`lv-filter-btn${roundFilter===r?' lv-filter-btn--active':''}`}
+            <button key={r} className={lvFilterBtnClasses(roundFilter===r)}
               onClick={() => setRound(r)}>Rd {r}</button>
           ))}
         </div>
       </div>
 
       {/* Picks table */}
-      <div className="lv-div-card lv-div-card--wide">
-        <div className="lv-div-card__header">
+      <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES}`}>
+        <div className={LV_DIV_CARD_HEADER_CLASSES}>
           {draftYear} PWHL Draft · {filtered.length} pick{filtered.length!==1?'s':''}
         </div>
         <div style={{ overflowX:'auto' }}>
-          <table className="lv-table" style={{ minWidth:340 }}>
+          <table className={LV_TABLE_CLASSES} style={{ minWidth:340 }}>
             <thead>
               <tr>
                 {['Pick','Rd','Team','Player','Pos','Previous Team','Nat'].map(h => (
-                  <th key={h} className={`lv-th${h==='Player'||h==='Previous Team'?' lv-th--team':''}`}
+                  <th key={h} className={lvThClasses(h==='Player'||h==='Previous Team')}
                     style={{ textAlign: h==='Pick'||h==='Rd'||h==='Team'||h==='Pos'||h==='Nat' ? 'center' : 'left' }}>
                     {h}
                   </th>
@@ -925,35 +1008,35 @@ function DraftPanel({ season }) {
                 const color = PWHL_ABBR_COLOR[p.teamAbbr] || 'var(--text-dim)';
                 return (
                   <tr key={p.pick} className={`lv-row${i%2===0?' even':''}`}>
-                    <td className="lv-td" style={{ textAlign:'center', fontWeight:700, color:'var(--text-muted)' }}>{p.pick}</td>
-                    <td className="lv-td" style={{ textAlign:'center', color:'var(--text-dim)' }}>{p.round}</td>
-                    <td className="lv-td" style={{ textAlign:'center' }}>
+                    <td className={lvTdClasses()} style={{ textAlign:'center', fontWeight:700, color:'var(--text-muted)' }}>{p.pick}</td>
+                    <td className={lvTdClasses()} style={{ textAlign:'center', color:'var(--text-dim)' }}>{p.round}</td>
+                    <td className={lvTdClasses()} style={{ textAlign:'center' }}>
                       <span style={{ color, fontWeight:700, fontFamily:'var(--font-display)', fontSize:12 }}>{p.teamAbbr}</span>
                     </td>
-                    <td className="lv-td draft-td--player" style={{ fontWeight:600, color:'var(--text)' }}>{p.player}</td>
-                    <td className="lv-td" style={{ textAlign:'center' }}>
+                    <td className={`${lvTdClasses()} ${DRAFT_TD_PLAYER_CLASSES}`} style={{ fontWeight:600, color:'var(--text)' }}>{p.player}</td>
+                    <td className={lvTdClasses()} style={{ textAlign:'center' }}>
                       <span style={{ fontSize:10, fontWeight:700, padding:'1px 4px', borderRadius:3,
                         background: p.pos==='F'?'rgba(74,222,128,0.1)':p.pos==='D'?'rgba(96,165,250,0.1)':'rgba(251,191,36,0.1)',
                         color: p.pos==='F'?'var(--green)':p.pos==='D'?'var(--blue-bright)':'var(--amber)' }}>
                         {p.pos}
                       </span>
                     </td>
-                    <td className="lv-td draft-td--prev" style={{ fontSize:11, color:'var(--text-dim)' }}>
+                    <td className={`${lvTdClasses()} draft-td--prev`} style={{ fontSize:11, color:'var(--text-dim)' }}>
                       {(() => {
                         const m = p.prev.match(/^(.+?)\s*\(([^)]+)\)$/);
                         const school = m ? m[1] : p.prev;
                         const league = m ? m[2] : null;
                         return (
                           <>
-                            <span className="draft-prev-school">{school}</span>
+                            <span className={DRAFT_PREV_SCHOOL_CLASSES}>{school}</span>
                             {league && (
-                              <span className="draft-prev-badge">{league}</span>
+                              <span className={DRAFT_PREV_BADGE_CLASSES}>{league}</span>
                             )}
                           </>
                         );
                       })()}
                     </td>
-                    <td className="lv-td" style={{ textAlign:'center', fontSize:11, color:'var(--text-dim)' }}>{p.nat}</td>
+                    <td className={lvTdClasses()} style={{ textAlign:'center', fontSize:11, color:'var(--text-dim)' }}>{p.nat}</td>
                   </tr>
                 );
               })}

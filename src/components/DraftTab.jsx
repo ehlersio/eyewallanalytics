@@ -8,6 +8,13 @@ import { getDraftRankings, getDraftPicks } from '../utils/nhlApi';
 import TeamLogo from '../components/TeamLogo';
 import './DraftTab.css';
 
+// .lv-skeleton-wrap/.lv-skeleton-row are LeagueView.css's (Phase 4,
+// LeagueView.css sub-PR 1) -- this file's only real dependency on that CSS
+// file (everything else here uses its own DraftTab.css). lv-skeleton-wrap
+// is a required Cypress marker (league.cy.js); lv-skeleton-row is not.
+const LV_SKELETON_WRAP_CLASSES = 'lv-skeleton-wrap flex flex-col gap-2 py-1'
+const LV_SKELETON_ROW_CLASSES = 'h-[14px] bg-[var(--bg2)] rounded-[var(--radius-sm)] animate-[lv-pulse_1.4s_ease-in-out_infinite]'
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const TOTAL_PICKS = 224; // 32 teams × 7 rounds
@@ -500,9 +507,9 @@ export default function DraftTab({ overrideRankings = null, overridePicks = null
 
 function LoadingSkeleton() {
   return (
-    <div className="lv-skeleton-wrap" aria-busy="true" aria-label="Loading">
+    <div className={LV_SKELETON_WRAP_CLASSES} aria-busy="true" aria-label="Loading">
       {[90, 85, 90, 80, 90, 85, 90, 80, 85, 90].map((w, i) => (
-        <div key={i} className="lv-skeleton-row" style={{ width: `${w}%` }} />
+        <div key={i} className={LV_SKELETON_ROW_CLASSES} style={{ width: `${w}%` }} />
       ))}
     </div>
   );
