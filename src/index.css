@@ -375,6 +375,15 @@
   100% { opacity: 1; }
 }
 
+/* Hoisted here (Phase 4, LeagueView.css sub-PR 1) from LeagueView.css's
+   .lv-skeleton-row loading animation. Name checked against every existing
+   keyframe in this file first (Phase 4 lesson #11) -- no collision, kept
+   the original name as-is. */
+@keyframes lv-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
 /* ── Focus styles for keyboard navigation (WCAG 2.4.7) ── */
 /* Deliberately left unlayered (unlike the resets in @layer base above) --
  * this is meant to be the single, always-wins source of truth for

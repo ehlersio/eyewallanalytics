@@ -34,6 +34,121 @@ import DraftTab from '../components/DraftTab';
 // milestones.cy.js select on .pp-close directly.
 const PP_CLOSE_CLASSES = 'pp-close absolute top-3 right-3 w-[28px] h-[28px] rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]'
 
+// ── Tailwind class constants -- SHELL + STANDINGS + DRAFT SKELETON
+// (Phase 4, LeagueView.css sub-PR 1) --
+// Leaders/Bracket/SeriesModal/PowerRankings classes (.lv-leaders-*, .bkt-*,
+// .series-modal__*, .pr-*) are still plain CSS via LeagueView.css, migrated
+// in later sub-PRs; that file stays imported until the last one.
+// LoadingRows/ErrorState/SeasonNotStartedState/ScrollTopButton are shared
+// across ALL tabs (not just Standings/Draft), so migrating them here fully
+// retires their classes for every tab at once -- later sub-PRs won't need
+// to touch them again.
+// Several rules involving descendant selectors or CSS-custom-property
+// values consumed elsewhere are deliberately kept as real, unlayered CSS in
+// LeagueView.css rather than force-fit into Tailwind (same judgment as
+// PeriodSummary.css's --team-canvas/--bkt-line patterns): the row-divider
+// and "you"-row accent background (.lv-row:not(:last-child) .lv-td,
+// .lv-row--you .lv-td, .lv-row--you .lv-td--team). .lv-row/.lv-td/
+// .lv-row--you/.lv-td--rank/.lv-td--team are kept as literal marker classes
+// on the migrated elements so those rules keep applying -- same pattern as
+// TeamView.css's .adv-stat-row/.cap-row.
+//
+// Generalized property-race check (base + modifier both set the same CSS
+// property -- previously found as background-only, now confirmed to also
+// hit color/text-align/justify-content elsewhere in this file): found and
+// fixed 3 more instances here -- .league-tab/--active (color+background+
+// border-color), .lv-filter-btn/--active (color+background+border-color),
+// .lv-th/--team (text-align). All split into non-overlapping per-state
+// variants, none left in a shared base.
+const LEAGUE_VIEW_CLASSES = 'league-view flex flex-col pt-[14px] px-[14px]'
+const LEAGUE_CONTENT_CLASSES = 'league-content pb-6'
+const LEAGUE_TABS_CLASSES = 'league-tabs flex flex-wrap mb-[14px] pb-[10px] border-b-[0.5px] border-[var(--border)] max-[600px]:flex-nowrap max-[600px]:overflow-x-auto max-[600px]:[-webkit-overflow-scrolling:touch] max-[600px]:[scrollbar-width:none] max-[600px]:gap-1 max-[600px]:[&::-webkit-scrollbar]:hidden'
+
+const LEAGUE_TAB_BASE_CLASSES = 'league-tab py-[6px] px-4 rounded-[20px] text-[13px] font-medium border-[0.5px] flex items-center cursor-pointer [transition:all_0.15s] max-[600px]:shrink-0 max-[600px]:py-[5px] max-[600px]:px-3 max-[600px]:text-[12px]'
+const LEAGUE_TAB_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] bg-transparent border-transparent'
+const LEAGUE_TAB_ACTIVE_CLASSES = 'league-tab--active text-[color:var(--red-bright)] bg-[var(--red-dim)] border-[var(--red-border)]'
+function leagueTabClasses(isActive) {
+  return `${LEAGUE_TAB_BASE_CLASSES} ${isActive ? LEAGUE_TAB_ACTIVE_CLASSES : LEAGUE_TAB_INACTIVE_CLASSES}`
+}
+
+const LV_FILTER_ROW_CLASSES = 'flex gap-[6px] mb-4 flex-wrap'
+const LV_FILTER_BTN_BASE_CLASSES = 'lv-filter-btn text-[12px] py-1 px-[10px] rounded-[var(--radius-sm)] border-[0.5px] cursor-pointer [transition:background_0.1s,color_0.1s]'
+const LV_FILTER_BTN_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] bg-transparent border-[var(--border)]'
+const LV_FILTER_BTN_ACTIVE_CLASSES = 'lv-filter-btn--active text-[color:var(--text)] bg-[var(--bg2)] border-[var(--border-2)] font-medium'
+function lvFilterBtnClasses(isActive) {
+  return `${LV_FILTER_BTN_BASE_CLASSES} ${isActive ? LV_FILTER_BTN_ACTIVE_CLASSES : LV_FILTER_BTN_INACTIVE_CLASSES}`
+}
+
+const LV_LEGEND_CLASSES = 'lv-legend flex gap-4 mb-[14px] flex-wrap'
+const LV_LEGEND_ITEM_CLASSES = 'flex items-center gap-[6px] text-[11px] text-[color:var(--text-dim)]'
+const LV_LEGEND_BAR_PLAYOFF_CLASSES = 'w-[3px] h-[14px] rounded-[1px] shrink-0 bg-[var(--green)]'
+const LV_LEGEND_BAR_WC_CLASSES = 'w-[3px] h-[14px] rounded-[1px] shrink-0 bg-[#5B8FD4]'
+
+const LV_CONF_SECTION_CLASSES = 'mb-6'
+const LV_CONF_LABEL_CLASSES = 'lv-conf-label text-[10px] font-bold text-[color:var(--text-dim)] tracking-[0.08em] uppercase font-[family-name:var(--font-display)] mb-2'
+const LV_DIV_GRID_CLASSES = 'grid grid-cols-2 gap-3 max-[600px]:grid-cols-1'
+const LV_DIV_CARD_BASE_CLASSES = 'lv-div-card bg-[var(--bg1)] border-[0.5px] border-[var(--border)] rounded-[var(--radius)] overflow-hidden'
+const LV_DIV_CARD_WIDE_CLASSES = '[grid-column:1/-1]'
+const LV_DIV_CARD_WC_CLASSES = 'lv-div-card--wc mt-3'
+const LV_DIV_CARD_HEADER_CLASSES = 'text-[12px] font-semibold text-[color:var(--text-muted)] py-2 px-3 border-b-[0.5px] border-[var(--border)] bg-[var(--bg2)]'
+
+const LV_TABLE_CLASSES = 'lv-table w-full border-collapse text-[12px]'
+const LV_TH_BASE_CLASSES = 'lv-th text-[11px] font-bold text-[color:var(--text-dim)] py-[5px] px-2 border-b-[0.5px] border-[var(--border)] whitespace-nowrap bg-[var(--bg2)]'
+const LV_TH_DEFAULT_CLASSES = 'text-right'
+const LV_TH_TEAM_CLASSES = 'text-left'
+function lvThClasses(isTeam) {
+  return `${LV_TH_BASE_CLASSES} ${isTeam ? LV_TH_TEAM_CLASSES : LV_TH_DEFAULT_CLASSES}`
+}
+
+// .lv-td (bare, no modifier) is kept as a literal marker purely so
+// .lv-row:not(:last-child) .lv-td's real-CSS divider (see file header
+// comment) keeps resolving -- it's not itself a Cypress marker.
+const LV_TD_SHARED_CLASSES = 'lv-td py-[5px] pr-[4px] whitespace-nowrap'
+function lvTdClasses(variant) {
+  switch (variant) {
+    case 'rank': return `${LV_TD_SHARED_CLASSES} lv-td--rank pl-[4px] text-center text-[11px] min-w-[18px] text-[color:var(--text-dim)] font-sans`
+    case 'team': return `${LV_TD_SHARED_CLASSES} lv-td--team pl-[6px] text-left max-w-[90px] text-[color:var(--text)] font-sans`
+    case 'pts':  return `${LV_TD_SHARED_CLASSES} pl-[4px] text-right font-bold text-[color:var(--text)] font-[family-name:var(--font-mono)]`
+    default:     return `${LV_TD_SHARED_CLASSES} pl-[4px] text-right text-[color:var(--text-muted)] font-[family-name:var(--font-mono)]`
+  }
+}
+
+const LV_TEAM_CELL_CLASSES = 'flex items-center gap-[5px]'
+const LV_TEAM_ABBREV_CLASSES = 'lv-team-abbrev font-[family-name:var(--font-display)] font-bold tracking-[0.02em]'
+const LV_CLINCH_BADGE_CLASSES = 'lv-clinch-badge text-[9px] font-medium text-[color:var(--text-dim)] tracking-[0.04em]'
+
+const LV_MAGIC_BADGE_BASE_CLASSES = 'lv-magic-badge text-[9px] font-semibold tracking-[0.02em] py-[1px] px-[3px] rounded-[3px] font-[family-name:var(--font-display)]'
+const LV_MAGIC_BADGE_CLINCH_CLASSES = 'lv-magic-badge--clinch text-[color:var(--green)] bg-[color-mix(in_srgb,var(--green)_15%,transparent)]'
+const LV_MAGIC_BADGE_ELIM_CLASSES = 'lv-magic-badge--elim text-[color:var(--red-bright)] bg-[color-mix(in_srgb,var(--red-bright)_12%,transparent)]'
+function lvMagicBadgeClasses(modifier) {
+  return `${LV_MAGIC_BADGE_BASE_CLASSES} ${modifier === 'clinch' ? LV_MAGIC_BADGE_CLINCH_CLASSES : LV_MAGIC_BADGE_ELIM_CLASSES}`
+}
+
+// l10-dot--w/-o/-l are built dynamically (`l10-dot--${r}`) in the original
+// CSS/JSX -- not literal markers individually (only the bare l10-dot/
+// l10-dots base classes are Cypress-required), so no per-suffix literal
+// needed here, just the right color per state.
+const L10_DOTS_CLASSES = 'l10-dots inline-flex gap-[2px] items-center'
+const L10_DOT_BASE_CLASSES = 'l10-dot w-[7px] h-[7px] rounded-full inline-block'
+const L10_DOT_W_CLASSES = 'bg-[var(--green)]'
+const L10_DOT_O_CLASSES = 'bg-[#5B8FD4]'
+const L10_DOT_L_CLASSES = 'bg-[var(--border-2)]'
+function l10DotClasses(r) {
+  const variant = r === 'w' ? L10_DOT_W_CLASSES : r === 'o' ? L10_DOT_O_CLASSES : L10_DOT_L_CLASSES
+  return `${L10_DOT_BASE_CLASSES} ${variant}`
+}
+
+const LV_SKELETON_WRAP_CLASSES = 'lv-skeleton-wrap flex flex-col gap-2 py-1'
+const LV_SKELETON_ROW_CLASSES = 'h-[14px] bg-[var(--bg2)] rounded-[var(--radius-sm)] animate-[lv-pulse_1.4s_ease-in-out_infinite]'
+const LV_ERROR_CLASSES = 'lv-error flex items-center gap-2 text-[13px] text-[color:var(--text-muted)] py-6'
+const LV_SEASON_EMPTY_CLASSES = 'lv-season-empty text-[color:var(--text-dim)] text-[13px] py-10 px-4 text-center'
+
+// .lv-empty/.lv-empty-msg are bracket-only in NHL (out of scope, untouched
+// literal strings below) -- PWHL reuses them across 4 tabs including
+// Standings, migrated there instead.
+
+const LV_SCROLL_TOP_CLASSES = 'fixed bottom-[72px] right-4 z-[200] py-[7px] px-[14px] rounded-[20px] text-[12px] font-semibold text-[color:var(--text-muted)] bg-[var(--bg2,#1e1e1e)] border-[0.5px] border-[var(--border)] cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.4)] [transition:opacity_0.15s,color_0.15s] hover:text-[color:var(--text)] hover:border-[var(--text-dim)]'
+
 const PRIMARY = TEAM_CONFIG.abbr;
 
 // Season used to be captured here as a module-level const (TEAM_CONFIG.season
@@ -67,9 +182,9 @@ function L10Dots({ wins, losses, otl }) {
   ].slice(0, 10);
 
   return (
-    <span className="l10-dots" aria-label={`Last 10: ${wins}-${losses}-${otl}`}>
+    <span className={L10_DOTS_CLASSES} aria-label={`Last 10: ${wins}-${losses}-${otl}`}>
       {results.map((r, i) => (
-        <span key={i} className={`l10-dot l10-dot--${r}`} />
+        <span key={i} className={l10DotClasses(r)} />
       ))}
     </span>
   );
@@ -115,32 +230,32 @@ function StandingsRow({ entry, rank, teamSeasonData }) {
       className={`lv-row${isPrimary ? ' lv-row--you' : ''}`}
       style={isPrimary ? { '--row-accent': PRIMARY_COLOR } : undefined}
     >
-      <td className="lv-td lv-td--rank">{rank}</td>
+      <td className={lvTdClasses('rank')}>{rank}</td>
       <td
-        className="lv-td lv-td--team"
+        className={lvTdClasses('team')}
         style={clinchColor ? { borderLeft: `2.5px solid ${clinchColor}` } : undefined}
       >
-        <span className="lv-team-cell">
-          <span className="lv-team-abbrev" style={{ color: TEAM_COLORS[abbrev] ?? 'var(--text)' }}>{abbrev}</span>
+        <span className={LV_TEAM_CELL_CLASSES}>
+          <span className={LV_TEAM_ABBREV_CLASSES} style={{ color: TEAM_COLORS[abbrev] ?? 'var(--text)' }}>{abbrev}</span>
           {entry.clinchIndicator && (
-            <span className="lv-clinch-badge">{entry.clinchIndicator.toUpperCase()}</span>
+            <span className={LV_CLINCH_BADGE_CLASSES}>{entry.clinchIndicator.toUpperCase()}</span>
           )}
           {magicBadge && (
-            <span className={`lv-magic-badge lv-magic-badge--${magicBadge.modifier}`} title={magicBadge.title}>
+            <span className={lvMagicBadgeClasses(magicBadge.modifier)} title={magicBadge.title}>
               {magicBadge.text}
             </span>
           )}
         </span>
       </td>
-      <td className="lv-td">{entry.gamesPlayed}</td>
-      <td className="lv-td">{entry.wins}</td>
-      <td className="lv-td">{entry.losses}</td>
-      <td className="lv-td">{entry.otLosses}</td>
-      <td className="lv-td lv-td--pts">{entry.points}</td>
-      <td className="lv-td">
+      <td className={lvTdClasses()}>{entry.gamesPlayed}</td>
+      <td className={lvTdClasses()}>{entry.wins}</td>
+      <td className={lvTdClasses()}>{entry.losses}</td>
+      <td className={lvTdClasses()}>{entry.otLosses}</td>
+      <td className={lvTdClasses('pts')}>{entry.points}</td>
+      <td className={lvTdClasses()}>
         <L10Dots wins={entry.l10Wins ?? 0} losses={entry.l10Losses ?? 0} otl={entry.l10OtLosses ?? 0} />
       </td>
-      <td className="lv-td">
+      <td className={lvTdClasses()}>
         {(() => {
           if (!entry.streakCode || !entry.streakCount) return '—';
           const code = entry.streakCode === 'W' ? 'W' : 'L';
@@ -154,11 +269,11 @@ function StandingsRow({ entry, rank, teamSeasonData }) {
 
 function StandingsTable({ rows, caption, teamSeasonData }) {
   return (
-    <table className="lv-table" aria-label={caption}>
+    <table className={LV_TABLE_CLASSES} aria-label={caption}>
       <thead>
         <tr>
           {COL_HEADERS.map((h) => (
-            <th key={h} className={`lv-th${h === 'Team' ? ' lv-th--team' : ''}`}>{h}</th>
+            <th key={h} className={lvThClasses(h === 'Team')}>{h}</th>
           ))}
         </tr>
       </thead>
@@ -197,11 +312,11 @@ function StandingsPanel({ entries, teamSeasonData }) {
 
   return (
     <div>
-      <div className="lv-filter-row" role="group" aria-label="Standings view">
+      <div className={LV_FILTER_ROW_CLASSES} role="group" aria-label="Standings view">
         {FILTERS.map((f) => (
           <button
             key={f.id}
-            className={`lv-filter-btn${filter === f.id ? ' lv-filter-btn--active' : ''}`}
+            className={lvFilterBtnClasses(filter === f.id)}
             onClick={() => { setFilter(f.id); capture('league_standings_filter', { filter: f.id }); }}
           >
             {f.label}
@@ -209,24 +324,24 @@ function StandingsPanel({ entries, teamSeasonData }) {
         ))}
       </div>
 
-      <div className="lv-legend">
-        <span className="lv-legend-item">
-          <span className="lv-legend-bar lv-legend-bar--playoff" /> Clinched / in playoff position
+      <div className={LV_LEGEND_CLASSES}>
+        <span className={LV_LEGEND_ITEM_CLASSES}>
+          <span className={LV_LEGEND_BAR_PLAYOFF_CLASSES} /> Clinched / in playoff position
         </span>
-        <span className="lv-legend-item">
-          <span className="lv-legend-bar lv-legend-bar--wc" /> Wild card position
+        <span className={LV_LEGEND_ITEM_CLASSES}>
+          <span className={LV_LEGEND_BAR_WC_CLASSES} /> Wild card position
         </span>
       </div>
 
       {filter === 'division' && ['Eastern', 'Western'].map((confName) => {
         const divs = Object.entries(byDivision).filter(([, v]) => v.conf === confName);
         return (
-          <section key={confName} className="lv-conf-section">
-            <h3 className="lv-conf-label">{confName} Conference</h3>
-            <div className="lv-div-grid">
+          <section key={confName} className={LV_CONF_SECTION_CLASSES}>
+            <h3 className={LV_CONF_LABEL_CLASSES}>{confName} Conference</h3>
+            <div className={LV_DIV_GRID_CLASSES}>
               {divs.map(([divName, { rows }]) => (
-                <div key={divName} className="lv-div-card">
-                  <div className="lv-div-card__header">{divName}</div>
+                <div key={divName} className={LV_DIV_CARD_BASE_CLASSES}>
+                  <div className={LV_DIV_CARD_HEADER_CLASSES}>{divName}</div>
                   <StandingsTable rows={rows} caption={`${divName} Division standings`} teamSeasonData={teamSeasonData} />
                 </div>
               ))}
@@ -236,33 +351,33 @@ function StandingsPanel({ entries, teamSeasonData }) {
       })}
 
       {filter === 'conference' && Object.entries(byConference).map(([confName, rows]) => (
-        <section key={confName} className="lv-conf-section">
-          <h3 className="lv-conf-label">{confName} Conference</h3>
-          <div className="lv-div-card lv-div-card--wide">
+        <section key={confName} className={LV_CONF_SECTION_CLASSES}>
+          <h3 className={LV_CONF_LABEL_CLASSES}>{confName} Conference</h3>
+          <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES}`}>
             <StandingsTable rows={rows} caption={`${confName} Conference standings`} teamSeasonData={teamSeasonData} />
           </div>
         </section>
       ))}
 
       {filter === 'league' && (
-        <div className="lv-div-card lv-div-card--wide">
+        <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES}`}>
           <StandingsTable rows={byLeague} caption="League standings" teamSeasonData={teamSeasonData} />
         </div>
       )}
 
       {filter === 'wildcard' && Object.entries(wildCard).map(([confName, { divLeaders, wcPool }]) => (
-        <section key={confName} className="lv-conf-section">
-          <h3 className="lv-conf-label">{confName} Conference</h3>
-          <div className="lv-div-grid">
+        <section key={confName} className={LV_CONF_SECTION_CLASSES}>
+          <h3 className={LV_CONF_LABEL_CLASSES}>{confName} Conference</h3>
+          <div className={LV_DIV_GRID_CLASSES}>
             {Object.entries(divLeaders).map(([divName, rows]) => (
-              <div key={divName} className="lv-div-card">
-                <div className="lv-div-card__header">{divName} — Division leaders</div>
+              <div key={divName} className={LV_DIV_CARD_BASE_CLASSES}>
+                <div className={LV_DIV_CARD_HEADER_CLASSES}>{divName} — Division leaders</div>
                 <StandingsTable rows={rows} caption={`${divName} division leaders`} teamSeasonData={teamSeasonData} />
               </div>
             ))}
           </div>
-          <div className="lv-div-card lv-div-card--wide lv-div-card--wc">
-            <div className="lv-div-card__header">Wild card race</div>
+          <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES} ${LV_DIV_CARD_WC_CLASSES}`}>
+            <div className={LV_DIV_CARD_HEADER_CLASSES}>Wild card race</div>
             <StandingsTable rows={wcPool} caption={`${confName} wild card`} teamSeasonData={teamSeasonData} />
           </div>
         </section>
@@ -867,9 +982,9 @@ function BracketPanel({ data }) {
 
 function LoadingRows() {
   return (
-    <div className="lv-skeleton-wrap" aria-busy="true" aria-label="Loading">
+    <div className={LV_SKELETON_WRAP_CLASSES} aria-busy="true" aria-label="Loading">
       {[85, 90, 85, 95, 85, 90, 85, 90].map((w, i) => (
-        <div key={i} className="lv-skeleton-row" style={{ width: `${w}%` }} />
+        <div key={i} className={LV_SKELETON_ROW_CLASSES} style={{ width: `${w}%` }} />
       ))}
     </div>
   );
@@ -877,7 +992,7 @@ function LoadingRows() {
 
 function ErrorState({ message }) {
   return (
-    <div className="lv-error">
+    <div className={LV_ERROR_CLASSES}>
       <span>⚠</span>
       <p>{message ?? 'Something went wrong. Try refreshing.'}</p>
     </div>
@@ -892,7 +1007,7 @@ function ErrorState({ message }) {
 function SeasonNotStartedState({ children }) {
   const { currentSeason } = useSport();
   return (
-    <div className="lv-season-empty">
+    <div className={LV_SEASON_EMPTY_CLASSES}>
       <p>{children ?? `The ${seasonLabelFor(currentSeason)} season hasn't started yet — check back once games begin.`}</p>
     </div>
   );
@@ -1459,7 +1574,7 @@ function ScrollTopButton() {
 
   return (
     <button
-      className="lv-scroll-top"
+      className={LV_SCROLL_TOP_CLASSES}
       onClick={() => document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' })}
       aria-label="Scroll to top"
     >
@@ -1533,14 +1648,14 @@ export default function LeagueView() {
   const standingsEntries = standingsAreStale ? [] : (Array.isArray(standings) ? standings : []);
 
   return (
-    <div className="league-view">
-      <nav className="league-tabs" role="tablist" aria-label="League sections">
+    <div className={LEAGUE_VIEW_CLASSES}>
+      <nav className={LEAGUE_TABS_CLASSES} role="tablist" aria-label="League sections">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             role="tab"
             aria-selected={activeTab === tab.id}
-            className={`league-tab${activeTab === tab.id ? ' league-tab--active' : ''}`}
+            className={leagueTabClasses(activeTab === tab.id)}
             onClick={() => handleTabChange(tab.id)}
           >
             {tab.label}
@@ -1548,7 +1663,7 @@ export default function LeagueView() {
         ))}
       </nav>
 
-      <div className="league-content">
+      <div className={LEAGUE_CONTENT_CLASSES}>
         {activeTab === 'standings' && (
           <>
             {standingsLoading && <LoadingRows />}
