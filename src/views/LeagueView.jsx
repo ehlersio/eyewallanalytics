@@ -187,6 +187,129 @@ const LV_LEADERS_NAME_CLASSES = 'lv-leaders-name flex-1 text-[color:var(--text)]
 const LV_LEADERS_TEAM_CLASSES = 'lv-leaders-team text-[11px] min-w-[28px] text-right font-[family-name:var(--font-display)] font-bold'
 const LV_LEADERS_STAT_CLASSES = 'lv-leaders-stat font-bold text-[color:var(--text)] min-w-[36px] text-right font-[family-name:var(--font-mono)]'
 
+// ── Tailwind class constants -- BRACKET + SERIES MODAL (Phase 4,
+// LeagueView.css sub-PR 3) -- tightly-coupled pairing per the original
+// split plan (the modal is only ever reachable from a bracket-card click).
+//
+// Re-checked against the same 3 things: light mode found ONE more real
+// spot (.series-modal__game-row:nth-child(even)'s zebra-stripe background,
+// same rgba(255,255,255,X)-invisible-on-light shape as every other
+// persistent background in this migration -- .bkt-card--clickable's and
+// .series-modal__game-row's OWN hover-adjacent tints were considered and
+// left alone, matching the established "never override transient hover
+// states" pattern). Property-race collisions: confirmed the 2 already
+// flagged in the original investigation (.series-modal__team-score/--home
+// on justify-content, .series-modal__score/--win on color/font-weight),
+// PLUS the already-known .bkt-card/--empty/--primary (background AND
+// border -- --primary changes border-width 0.5px->1px too, not just
+// color, so border is split out of the base entirely, same treatment),
+// PLUS one NEW instance this pass turned up: .bkt-abbr/--dim races on
+// `opacity` (base 0.4, --dim 0.3) -- a property this migration hadn't hit
+// a race on before. Interpolated-suffix dead-code false positives: none
+// -- every modifier here (--empty/--primary/--clickable/--dim/--home/
+// --win) is a static ternary/array-join in both JSX files.
+//
+// --bkt-line (the connector-line custom property, consumed via
+// stroke="var(--bkt-line)" on inline SVG lines in both JSX files) and
+// .popup-backdrop--centered's mobile-forced-centering override (can't
+// safely convert to Tailwind -- .popup-backdrop is a SHARED unlayered
+// class used by 13 other files across the app, defined in index.css, and
+// per lesson #1 unlayered CSS always beats a layered Tailwind utility
+// regardless of specificity) both stay real, unlayered CSS in
+// LeagueView.css, untouched by this sub-PR. .bkt-root/.popup-backdrop--
+// centered are kept as literal markers on the migrated elements so these
+// rules keep applying. Same judgment as lesson #14's row-divider/accent-
+// background patterns, just for a shared-global-class collision instead
+// of a descendant-selector shape.
+//
+// .series-modal__header .pp-close's 14px positioning (overriding
+// PP_CLOSE_CLASSES's default 12px via the same unlayered-beats-layered
+// mechanism) is likewise kept as real CSS -- .series-modal__header stays
+// a literal marker for it.
+//
+// Migrated the NHL Bracket .lv-empty/.lv-empty-msg call site here (the
+// only NHL consumer), plus PWHL's now-orphaned Leaders .lv-empty call site
+// (sub-PR 2 already shipped and won't revisit it) -- left PWHL's
+// PowerRankings .lv-empty call site alone, that tab is still coming up in
+// sub-PR 4.
+const BKT_CARD_BASE_CLASSES = 'bkt-card w-full rounded-[var(--radius-sm)] p-[6px_8px] box-border'
+const BKT_CARD_DEFAULT_CLASSES = 'bg-[var(--bg1)] border-[0.5px] border-[var(--border)]'
+const BKT_CARD_PRIMARY_CLASSES = 'bkt-card--primary bg-[var(--bg2)] border'
+const BKT_CARD_EMPTY_CLASSES = 'bkt-card--empty bg-transparent border-[0.5px] border-transparent min-h-[56px]'
+const BKT_CARD_FINAL_CLASSES = 'bkt-card--final w-[110px]'
+const BKT_CARD_CLICKABLE_CLASSES = 'bkt-card--clickable cursor-pointer [transition:background_0.12s_ease,border-color_0.12s_ease] hover:bg-[rgba(255,255,255,0.06)] focus-visible:outline focus-visible:outline-[1.5px] focus-visible:outline-[var(--red-bright)] focus-visible:outline-offset-[1px]'
+function bktCardClasses({ variant = 'default', isFinal = false, isClickable = false } = {}) {
+  const v = variant === 'empty' ? BKT_CARD_EMPTY_CLASSES : variant === 'primary' ? BKT_CARD_PRIMARY_CLASSES : BKT_CARD_DEFAULT_CLASSES
+  const final = isFinal ? ` ${BKT_CARD_FINAL_CLASSES}` : ''
+  const clickable = isClickable ? ` ${BKT_CARD_CLICKABLE_CLASSES}` : ''
+  return `${BKT_CARD_BASE_CLASSES} ${v}${final}${clickable}`
+}
+
+const BKT_ROOT_CLASSES = 'bkt-root w-full overflow-x-auto pb-2'
+const BKT_BRACKET_CLASSES = 'bkt-bracket flex items-stretch min-w-[760px]'
+const BKT_ROUND_COL_CLASSES = 'bkt-round-col flex-1 flex flex-col min-w-[96px]'
+const BKT_ROUND_LABEL_CLASSES = 'bkt-round-label text-[10px] font-bold text-[color:var(--text-dim)] uppercase tracking-[0.07em] text-center px-1 mb-2 whitespace-nowrap font-[family-name:var(--font-display)]'
+const BKT_ROUND_SERIES_CLASSES = 'flex flex-col flex-1 justify-around gap-[6px]'
+const BKT_SERIES_SLOT_CLASSES = 'flex-1 flex items-center'
+const BKT_TEAM_ROW_CLASSES = 'bkt-team-row flex items-center gap-[6px] py-[2px]'
+
+const BKT_ABBR_BASE_CLASSES = 'bkt-abbr font-[family-name:var(--font-display)] text-[11px] font-bold text-[color:var(--text)] min-w-[28px] tracking-[0.02em]'
+const BKT_ABBR_DEFAULT_CLASSES = 'opacity-40'
+const BKT_ABBR_DIM_CLASSES = 'bkt-abbr--dim opacity-30'
+function bktAbbrClasses(isEliminated) {
+  return `${BKT_ABBR_BASE_CLASSES} ${isEliminated ? BKT_ABBR_DIM_CLASSES : BKT_ABBR_DEFAULT_CLASSES}`
+}
+// .bkt-abbr--lit (opacity:1) is confirmed dead -- never applied in either
+// JSX file (the non-eliminated branch is just the empty string, not this
+// class) -- not migrated.
+
+const BKT_DOTS_CLASSES = 'bkt-dots flex gap-[3px]'
+const BKT_DOT_CLASSES = 'bkt-dot w-[7px] h-[7px] rounded-full border border-[var(--border-2)] bg-transparent shrink-0'
+// .bkt-dot--won is confirmed dead -- the win-dot fill is applied via
+// inline style={{background,borderColor}} using TEAM_COLORS, not this
+// class -- not migrated.
+
+const BKT_SERIES_LABEL_CLASSES = 'bkt-series-label text-[9px] text-[color:var(--text-dim)] mt-[3px] whitespace-nowrap overflow-hidden text-ellipsis'
+const BKT_CONNECTOR_CLASSES = 'bkt-connector w-5 shrink-0 self-stretch'
+const BKT_FINAL_COL_CLASSES = 'bkt-final-col flex-[0_0_130px] flex flex-col items-center'
+const BKT_FINAL_CENTER_CLASSES = 'flex-1 flex items-center justify-center'
+const BKT_WINNER_LINE_CLASSES = 'bkt-winner-line text-[10px] font-semibold text-[color:var(--text-dim)] font-[family-name:var(--font-display)] mt-[6px] pt-[5px] border-t-[0.5px] border-[var(--border)] tracking-[0.03em]'
+
+const LV_EMPTY_CLASSES = 'py-8 text-center'
+const LV_EMPTY_MSG_CLASSES = 'text-[13px] text-[color:var(--text-dim)]'
+
+const SERIES_MODAL_CLASSES = 'series-modal bg-[var(--bg1)] border-[0.5px] border-[var(--border-2)] rounded-[var(--radius)] p-0 w-[min(420px,92vw)] max-h-[80vh] overflow-y-auto relative max-[600px]:w-[calc(100vw-32px)] max-[600px]:max-h-[85vh]'
+const SERIES_MODAL_HEADER_CLASSES = 'series-modal__header flex flex-col items-center gap-[6px] pt-5 px-12 pb-3 border-b-[0.5px] border-[var(--border)] relative'
+const SERIES_MODAL_TEAMS_CLASSES = 'flex items-center gap-3'
+const SERIES_MODAL_ABBREV_CLASSES = 'series-modal__abbrev font-[family-name:var(--font-display)] text-[22px] font-extrabold tracking-[0.02em] min-w-[44px] text-center'
+const SERIES_MODAL_DOTS_WRAP_CLASSES = 'flex flex-col items-center gap-1'
+const SERIES_MODAL_DASH_CLASSES = 'text-[11px] text-[color:var(--text-dim)]'
+const SERIES_MODAL_RESULT_CLASSES = 'text-[13px] font-semibold text-[color:var(--text-muted)]'
+const SERIES_MODAL_ROUND_LABEL_CLASSES = 'text-[10px] font-bold tracking-[0.08em] uppercase text-[color:var(--text-dim)] text-center pt-2 px-4'
+const SERIES_MODAL_GAMES_CLASSES = 'series-modal__games p-[12px_16px_16px] flex flex-col gap-1'
+const SERIES_MODAL_LOADING_CLASSES = 'series-modal__loading py-2'
+const SERIES_MODAL_EMPTY_CLASSES = 'series-modal__empty text-[13px] text-[color:var(--text-dim)] text-center py-4'
+const SERIES_MODAL_GAME_ROW_CLASSES = 'series-modal__game-row grid [grid-template-columns:24px_52px_1fr_16px_1fr_28px] items-center gap-1 p-[7px_8px] rounded-[6px] text-[13px] even:bg-[rgba(255,255,255,0.03)]'
+const SERIES_MODAL_GAME_NUM_CLASSES = 'text-[10px] font-bold text-[color:var(--text-dim)] tracking-[0.04em]'
+const SERIES_MODAL_GAME_DATE_CLASSES = 'text-[11px] text-[color:var(--text-dim)]'
+
+const SERIES_MODAL_TEAM_SCORE_BASE_CLASSES = 'flex items-center gap-[6px]'
+const SERIES_MODAL_TEAM_SCORE_DEFAULT_CLASSES = 'justify-end'
+const SERIES_MODAL_TEAM_SCORE_HOME_CLASSES = 'series-modal__team-score--home justify-start'
+function seriesModalTeamScoreClasses(isHome) {
+  return `${SERIES_MODAL_TEAM_SCORE_BASE_CLASSES} ${isHome ? SERIES_MODAL_TEAM_SCORE_HOME_CLASSES : SERIES_MODAL_TEAM_SCORE_DEFAULT_CLASSES}`
+}
+const SERIES_MODAL_TEAM_ABBREV_CLASSES = 'font-[family-name:var(--font-display)] text-[12px] tracking-[0.03em]'
+
+const SERIES_MODAL_SCORE_BASE_CLASSES = 'series-modal__score font-[family-name:var(--font-mono)] text-[15px] min-w-[18px] text-center'
+const SERIES_MODAL_SCORE_DEFAULT_CLASSES = 'font-medium text-[color:var(--text-muted)]'
+const SERIES_MODAL_SCORE_WIN_CLASSES = 'series-modal__score--win font-extrabold text-[color:var(--text)]'
+function seriesModalScoreClasses(isWin) {
+  return `${SERIES_MODAL_SCORE_BASE_CLASSES} ${isWin ? SERIES_MODAL_SCORE_WIN_CLASSES : SERIES_MODAL_SCORE_DEFAULT_CLASSES}`
+}
+const SERIES_MODAL_SEPARATOR_CLASSES = 'text-[color:var(--text-dim)] text-center text-[13px]'
+const SERIES_MODAL_EXTRA_CLASSES = 'text-[10px] font-bold text-[color:var(--text-dim)] tracking-[0.04em] text-right'
+
 const PRIMARY = TEAM_CONFIG.abbr;
 
 // Season used to be captured here as a module-level const (TEAM_CONFIG.season
@@ -636,11 +759,11 @@ function parseBracketData(raw) {
 
 function WinDots({ wins, color }) {
   return (
-    <span className="bkt-dots" aria-hidden="true">
+    <span className={BKT_DOTS_CLASSES} aria-hidden="true">
       {Array.from({ length: 4 }).map((_, i) => (
         <span
           key={i}
-          className="bkt-dot"
+          className={BKT_DOT_CLASSES}
           style={i < wins && color ? { background: color, borderColor: color } : undefined}
         />
       ))}
@@ -654,7 +777,7 @@ function TeamAbbr({ abbrev, _isWinner, isEliminated }) {
   const color = TEAM_COLORS[abbrev];
   return (
     <span
-      className={['bkt-abbr', isEliminated ? 'bkt-abbr--dim' : ''].filter(Boolean).join(' ')}
+      className={bktAbbrClasses(isEliminated)}
       style={!isEliminated && color ? { color } : undefined}
     >
       {abbrev}
@@ -663,7 +786,7 @@ function TeamAbbr({ abbrev, _isWinner, isEliminated }) {
 }
 
 function SeriesCard({ series, onSeriesClick }) {
-  if (!series) return <div className="bkt-card bkt-card--empty" />;
+  if (!series) return <div className={bktCardClasses({ variant: 'empty' })} />;
 
   const { top, bottom, topWins, bottomWins } = series;
   const isPrimary  = top === PRIMARY || bottom === PRIMARY;
@@ -682,22 +805,22 @@ function SeriesCard({ series, onSeriesClick }) {
 
   return (
     <div
-      className={['bkt-card', isPrimary ? 'bkt-card--primary' : '', hasGames ? 'bkt-card--clickable' : ''].filter(Boolean).join(' ')}
+      className={bktCardClasses({ variant: isPrimary ? 'primary' : 'default', isClickable: hasGames })}
       style={isPrimary ? { borderColor: PRIMARY_COLOR } : undefined}
       onClick={hasGames && onSeriesClick ? () => onSeriesClick(series) : undefined}
       role={hasGames && onSeriesClick ? 'button' : undefined}
       tabIndex={hasGames && onSeriesClick ? 0 : undefined}
       onKeyDown={hasGames && onSeriesClick ? (e => e.key === 'Enter' && onSeriesClick(series)) : undefined}
     >
-      <div className="bkt-team-row">
+      <div className={BKT_TEAM_ROW_CLASSES}>
         <TeamAbbr abbrev={top} isEliminated={isComplete && topWins !== 4} />
         <WinDots wins={topWins} color={TEAM_COLORS[top]} />
       </div>
-      <div className="bkt-team-row">
+      <div className={BKT_TEAM_ROW_CLASSES}>
         <TeamAbbr abbrev={bottom} isEliminated={isComplete && bottomWins !== 4} />
         <WinDots wins={bottomWins} color={TEAM_COLORS[bottom]} />
       </div>
-      {label && <div className="bkt-series-label">{label}</div>}
+      {label && <div className={BKT_SERIES_LABEL_CLASSES}>{label}</div>}
     </div>
   );
 }
@@ -716,7 +839,7 @@ function Connector({ count, direction, straight }) {
   if (straight) {
     return (
       <svg
-        className="bkt-connector"
+        className={BKT_CONNECTOR_CLASSES}
         viewBox="0 0 20 100"
         preserveAspectRatio="none"
         aria-hidden="true"
@@ -731,7 +854,7 @@ function Connector({ count, direction, straight }) {
 
   return (
     <svg
-      className="bkt-connector"
+      className={BKT_CONNECTOR_CLASSES}
       viewBox={`0 0 20 ${totalH}`}
       preserveAspectRatio="none"
       aria-hidden="true"
@@ -759,11 +882,11 @@ const ROUND_LABELS = { 1: 'First round', 2: 'Second round', 3: 'Conf. finals' };
 
 function RoundCol({ round, label, onSeriesClick }) {
   return (
-    <div className="bkt-round-col">
-      <div className="bkt-round-label">{label ?? ROUND_LABELS[round.round] ?? `Round ${round.round}`}</div>
-      <div className="bkt-round-series">
+    <div className={BKT_ROUND_COL_CLASSES}>
+      <div className={BKT_ROUND_LABEL_CLASSES}>{label ?? ROUND_LABELS[round.round] ?? `Round ${round.round}`}</div>
+      <div className={BKT_ROUND_SERIES_CLASSES}>
         {round.series.map((s, i) => (
-          <div key={i} className="bkt-series-slot">
+          <div key={i} className={BKT_SERIES_SLOT_CLASSES}>
             <SeriesCard series={s} onSeriesClick={onSeriesClick} />
           </div>
         ))}
@@ -782,26 +905,26 @@ function CupFinalCol({ series, onSeriesClick }) {
   const hasGames    = topWins + bottomWins > 0;
 
   return (
-    <div className="bkt-final-col">
-      <div className="bkt-round-label">Stanley Cup Final</div>
-      <div className="bkt-final-center">
+    <div className={BKT_FINAL_COL_CLASSES}>
+      <div className={BKT_ROUND_LABEL_CLASSES}>Stanley Cup Final</div>
+      <div className={BKT_FINAL_CENTER_CLASSES}>
         <div
-          className={['bkt-card bkt-card--final', hasGames ? 'bkt-card--clickable' : ''].join(' ')}
+          className={bktCardClasses({ isFinal: true, isClickable: hasGames })}
           onClick={hasGames && onSeriesClick ? () => onSeriesClick(series) : undefined}
           role={hasGames && onSeriesClick ? 'button' : undefined}
           tabIndex={hasGames && onSeriesClick ? 0 : undefined}
           onKeyDown={hasGames && onSeriesClick ? (e => e.key === 'Enter' && onSeriesClick(series)) : undefined}
         >
-          <div className="bkt-team-row">
+          <div className={BKT_TEAM_ROW_CLASSES}>
             <TeamAbbr abbrev={top} isEliminated={isComplete && topWins !== 4} />
             <WinDots wins={topWins} color={TEAM_COLORS[top]} />
           </div>
-          <div className="bkt-team-row">
+          <div className={BKT_TEAM_ROW_CLASSES}>
             <TeamAbbr abbrev={bottom} isEliminated={isComplete && bottomWins !== 4} />
             <WinDots wins={bottomWins} color={TEAM_COLORS[bottom]} />
           </div>
           {winner && (
-            <div className="bkt-winner-line" style={{ color: TEAM_COLORS[winner] ?? 'var(--text)' }}>
+            <div className={BKT_WINNER_LINE_CLASSES} style={{ color: TEAM_COLORS[winner] ?? 'var(--text)' }}>
               {winner} champion 🏆
             </div>
           )}
@@ -861,26 +984,26 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
 
   return (
     <div className="popup-backdrop popup-backdrop--centered" onClick={onClose}>
-      <div className="series-modal" onClick={e => e.stopPropagation()}>
+      <div className={SERIES_MODAL_CLASSES} onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div className="series-modal__header">
-          <div className="series-modal__teams">
-            <span className="series-modal__abbrev" style={{ color: topColor }}>{top}</span>
-            <div className="series-modal__dots-wrap">
+        <div className={SERIES_MODAL_HEADER_CLASSES}>
+          <div className={SERIES_MODAL_TEAMS_CLASSES}>
+            <span className={SERIES_MODAL_ABBREV_CLASSES} style={{ color: topColor }}>{top}</span>
+            <div className={SERIES_MODAL_DOTS_WRAP_CLASSES}>
               <WinDots wins={topWins} color={topColor} />
-              <span className="series-modal__dash">{dash}</span>
+              <span className={SERIES_MODAL_DASH_CLASSES}>{dash}</span>
               <WinDots wins={bottomWins} color={bottomColor} />
             </div>
-            <span className="series-modal__abbrev" style={{ color: bottomColor }}>{bottom}</span>
+            <span className={SERIES_MODAL_ABBREV_CLASSES} style={{ color: bottomColor }}>{bottom}</span>
           </div>
           {winner && (
-            <div className="series-modal__result" style={{ color: TEAM_COLORS[winner] }}>
+            <div className={SERIES_MODAL_RESULT_CLASSES} style={{ color: TEAM_COLORS[winner] }}>
               {winner} wins 4{dash}{winner === top ? bottomWins : topWins} 🏆
             </div>
           )}
           {!winner && topWins + bottomWins > 0 && (
-            <div className="series-modal__result">
+            <div className={SERIES_MODAL_RESULT_CLASSES}>
               {topWins > bottomWins ? `${top} leads` : topWins < bottomWins ? `${bottom} leads` : 'Tied'} {Math.max(topWins, bottomWins)}{dash}{Math.min(topWins, bottomWins)}
             </div>
           )}
@@ -889,15 +1012,15 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
 
         {/* Round label */}
         {carouselSeries && (
-          <div className="series-modal__round-label">
+          <div className={SERIES_MODAL_ROUND_LABEL_CLASSES}>
             {carouselSeries.seriesLabel ?? `Series ${seriesLetter}`}
           </div>
         )}
 
         {/* Game-by-game */}
-        <div className="series-modal__games">
+        <div className={SERIES_MODAL_GAMES_CLASSES}>
           {gamesLoading && (
-            <div className="series-modal__loading">
+            <div className={SERIES_MODAL_LOADING_CLASSES}>
               {[70, 85, 70, 85].map((w, i) => (
                 <div key={i} className="skeleton" style={{ height: 32, width: `${w}%`, marginBottom: 6, borderRadius: 6 }} />
               ))}
@@ -905,7 +1028,7 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
           )}
 
           {!gamesLoading && games?.length === 0 && (
-            <div className="series-modal__empty">Game data unavailable for this series.</div>
+            <div className={SERIES_MODAL_EMPTY_CLASSES}>Game data unavailable for this series.</div>
           )}
 
           {!gamesLoading && games?.map((g, i) => {
@@ -915,19 +1038,19 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
             const awayColor = TEAM_COLORS[g.awayAbbrev] ?? 'var(--text)';
             const homeColor = TEAM_COLORS[g.homeAbbrev] ?? 'var(--text)';
             return (
-              <div key={g.gameId} className="series-modal__game-row">
-                <span className="series-modal__game-num">G{i + 1}</span>
-                <span className="series-modal__game-date">{fmtDate(g.gameDate)}</span>
-                <span className="series-modal__team-score">
-                  <span className="series-modal__team-abbrev" style={{ color: awayColor, fontWeight: awayWon ? 700 : 400 }}>{g.awayAbbrev}</span>
-                  <span className={`series-modal__score ${awayWon ? 'series-modal__score--win' : ''}`}>{g.awayScore}</span>
+              <div key={g.gameId} className={SERIES_MODAL_GAME_ROW_CLASSES}>
+                <span className={SERIES_MODAL_GAME_NUM_CLASSES}>G{i + 1}</span>
+                <span className={SERIES_MODAL_GAME_DATE_CLASSES}>{fmtDate(g.gameDate)}</span>
+                <span className={seriesModalTeamScoreClasses(false)}>
+                  <span className={SERIES_MODAL_TEAM_ABBREV_CLASSES} style={{ color: awayColor, fontWeight: awayWon ? 700 : 400 }}>{g.awayAbbrev}</span>
+                  <span className={seriesModalScoreClasses(awayWon)}>{g.awayScore}</span>
                 </span>
-                <span className="series-modal__separator">–</span>
-                <span className="series-modal__team-score series-modal__team-score--home">
-                  <span className={`series-modal__score ${homeWon ? 'series-modal__score--win' : ''}`}>{g.homeScore}</span>
-                  <span className="series-modal__team-abbrev" style={{ color: homeColor, fontWeight: homeWon ? 700 : 400 }}>{g.homeAbbrev}</span>
+                <span className={SERIES_MODAL_SEPARATOR_CLASSES}>–</span>
+                <span className={seriesModalTeamScoreClasses(true)}>
+                  <span className={seriesModalScoreClasses(homeWon)}>{g.homeScore}</span>
+                  <span className={SERIES_MODAL_TEAM_ABBREV_CLASSES} style={{ color: homeColor, fontWeight: homeWon ? 700 : 400 }}>{g.homeAbbrev}</span>
                 </span>
-                {extra && <span className="series-modal__extra">{extra}</span>}
+                {extra && <span className={SERIES_MODAL_EXTRA_CLASSES}>{extra}</span>}
               </div>
             );
           })}
@@ -956,8 +1079,8 @@ function BracketPanel({ data }) {
 
   if (!bracket) {
     return (
-      <div className="lv-empty">
-        <p className="lv-empty-msg">Playoff bracket will appear here once the postseason begins.</p>
+      <div className={LV_EMPTY_CLASSES}>
+        <p className={LV_EMPTY_MSG_CLASSES}>Playoff bracket will appear here once the postseason begins.</p>
       </div>
     );
   }
@@ -966,8 +1089,8 @@ function BracketPanel({ data }) {
 
   return (
     <>
-      <div className="bkt-root">
-        <div className="bkt-bracket">
+      <div className={BKT_ROOT_CLASSES}>
+        <div className={BKT_BRACKET_CLASSES}>
 
           {/* East rounds — left side, connectors flow right */}
           {east.map((round, ri) => (

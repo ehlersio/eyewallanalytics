@@ -175,6 +175,16 @@
   border-bottom-color: rgba(0,0,0,0.06);
 }
 
+/* Bracket + Series Modal (Phase 4, sub-PR 3). .series-modal__game-row's
+   :nth-child(even) zebra-stripe background is a persistent (not
+   hover-only) rgba(255,255,255,0.03) tint, same invisible-on-light shape
+   as every other row-level background/divider fixed this migration.
+   .bkt-card--clickable's hover-only tint and --bkt-line (handled inline in
+   LeagueView.css itself) were both out of scope for this file. */
+[data-theme="light"] .series-modal__game-row:nth-child(even) {
+  background: rgba(0,0,0,0.03);
+}
+
 /* draft-prev-badge: rgba(255,255,255,0.06) background is invisible on light */
 [data-theme="light"] .draft-prev-badge {
   background: rgba(0,0,0,0.06);
