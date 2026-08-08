@@ -13,7 +13,25 @@ import TeamLogo from '../components/TeamLogo';
 import PWHLGameStatsPopup from '../components/PWHLGameStatsPopup';
 import PWHLGamePreviewPopup from '../components/PWHLGamePreviewPopup';
 import './ScheduleView.css';
-import './ShotMapView.css';
+// ShotMapView.css import removed (Phase 5, sub-PR 1) -- this file's only
+// dependency on it was .context-pill (+.playoffs/.regular), now fully
+// migrated to CONTEXT_PILL_VARIANTS/contextPillClasses() below. Found and
+// fixed a real bug along the way: 2 of 3 usages here applied the modifier
+// as `playoff` (singular) while the CSS only ever defined `.playoffs`
+// (plural) -- those "Playoff" tags rendered with zero green styling, just
+// the bare pill shape, since .context-pill is used nowhere else in the
+// app to have surfaced this any other way.
+
+// CONTEXT_PILL_VARIANTS/contextPillClasses (Phase 5, ShotMapView.css
+// sub-PR 1) -- the rest of this file is still plain CSS (ScheduleView.css,
+// a later phase), this is a lone shared-class migration same shape as
+// PWHLTeamView.jsx's METRICS_GRID_4_CLASSES.
+const CONTEXT_PILL_VARIANTS = {
+  playoffs: 'bg-[rgba(61,186,126,0.12)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.3)]',
+  regular: 'bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[0.5px] border-[color:var(--red-border)]',
+};
+const contextPillClasses = (variant) =>
+  `text-[11px] font-semibold py-[3px] px-[10px] rounded-[20px] ${CONTEXT_PILL_VARIANTS[variant]}`;
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -473,7 +491,7 @@ function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
                                     {won ? 'W' : (isExtra ? 'OT' : 'L')}{suffix}
                                   </span>
                                 )}
-                                {!done && <span className="context-pill regular" style={{fontSize:9}}>Upcoming</span>}
+                                {!done && <span className={contextPillClasses('regular')} style={{fontSize:9}}>Upcoming</span>}
                                 {done && <span className="result-tap-hint">Tap for stats →</span>}
                               </div>
                               <div className="result-score">
@@ -608,7 +626,7 @@ function CompletedCard({ game: g, teamId, abbr, color, onClick, isPlayoff }) {
         <span className={`result-outcome ${won ? 'win' : 'loss'}`}>
           {outcomeLabel}{suffix}
         </span>
-        {isPlayoff && <span className="context-pill playoff" style={{ fontSize: 9 }}>Playoff</span>}
+        {isPlayoff && <span className={contextPillClasses('playoffs')} style={{ fontSize: 9 }}>Playoff</span>}
         <span className="result-tap-hint">Tap for stats →</span>
       </div>
       <div className="result-score">
@@ -638,7 +656,7 @@ function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff, onClick }) {
       onClick={onClick}>
       <div className="result-top" style={{ marginBottom: 6 }}>
         <span className="result-date">{dayOfWeek(g)} {formatDate(g)}</span>
-        <span className={`context-pill ${isPlayoff ? 'playoff' : 'regular'}`} style={{ fontSize: 10 }}>
+        <span className={contextPillClasses(isPlayoff ? 'playoffs' : 'regular')} style={{ fontSize: 10 }}>
           {isPlayoff ? '🏆 Playoff' : 'Upcoming'}
         </span>
         <span className="result-venue">{isHome ? 'Home' : 'Away'}</span>

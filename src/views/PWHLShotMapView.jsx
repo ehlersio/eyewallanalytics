@@ -56,6 +56,82 @@ const PP_INDICATOR_BASE_CLASSES = 'text-[10px] font-bold py-0.5 px-2 rounded-[4p
 const CAR_PP_CLASSES = 'car-pp bg-[rgba(61,186,126,0.2)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.4)]';
 const OPP_PP_CLASSES = 'opp-pp bg-[rgba(240,160,48,0.2)] text-[color:var(--amber)] border-[0.5px] border-[rgba(240,160,48,0.3)]';
 
+// ── Score bar / boxscore basics (Phase 5, sub-PR 1 -- ShotMapView.css
+// migrating to Tailwind; duplicated from ShotMapView.jsx per convention.
+// PWHL has no period-grid or event-log rendering (confirmed via full-file
+// grep -- PWHLGameEvents.jsx handles live events differently), so those
+// constants aren't duplicated here. See ShotMapView.jsx's header comment
+// for the .log-badge / .goalie-stat-val property-race fixes and the
+// .team-primary-text unlayered-marker reasoning -- same fixes, same
+// reasoning, applied here too.
+const SCORE_CARD_CLASSES = 'score-card card mb-[10px]';
+const SCORE_INNER_CLASSES = 'flex items-center justify-between gap-[10px]';
+const SCORE_TEAM_CLASSES = 'flex items-center gap-2';
+const scoreAbbrClasses = (variant) => {
+  const base = 'font-[family-name:var(--font-display)] text-[18px] font-bold tracking-[.04em]';
+  if (variant === 'team-primary') return `${base} team-primary-text`;
+  const color = variant === 'red' ? 'text-[color:var(--red-bright)]'
+    : variant === 'muted' ? 'text-[color:var(--text-muted)]' : '';
+  return `${base} ${color}`;
+};
+const scoreNumClasses = (variant) => {
+  const base = 'font-[family-name:var(--font-display)] text-[36px] font-bold leading-none';
+  if (variant === 'team-primary') return `${base} team-primary-text`;
+  const color = variant === 'red' ? 'text-[color:var(--red-bright)]'
+    : variant === 'muted' ? 'text-[color:var(--text-muted)]' : '';
+  return `${base} ${color}`;
+};
+const SCORE_CENTER_CLASSES = 'text-center';
+const SCORE_PERIOD_CLASSES = 'text-[11px] text-[color:var(--amber)] font-semibold uppercase tracking-[.06em]';
+const SCORE_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[22px] text-[color:var(--text)] leading-[1.2]';
+const SCORE_STATE_CLASSES = 'text-[10px] text-[color:var(--text-dim)]';
+
+const metricsGridClasses = (cols) => cols === 4
+  ? 'grid grid-cols-4 gap-2 mb-2'
+  : 'grid grid-cols-3 gap-2 mb-[10px]';
+
+const DANGER_GRID_CLASSES = 'grid grid-cols-3 gap-2 mt-2';
+const DANGER_CELL_CLASSES =
+  "danger-cell text-center p-[10px_6px] rounded-[var(--radius-sm)] bg-[var(--bg3)] relative cursor-pointer [transition:background_0.15s,transform_0.1s] hover:bg-[var(--bg2)] hover:-translate-y-px active:translate-y-0 after:content-['›'] after:absolute after:bottom-1 after:right-1.5 after:text-[10px] after:text-[color:var(--text-dim)] after:opacity-50";
+const dangerNumClasses = (level) => {
+  const color = level === 'high' ? 'text-[color:var(--red-bright)]'
+    : level === 'med' ? 'text-[color:var(--amber)]' : 'text-[color:var(--text-muted)]';
+  return `font-[family-name:var(--font-display)] text-[28px] font-bold leading-none mb-1 ${color}`;
+};
+const DANGER_LABEL_CLASSES = 'text-[10px] text-[color:var(--text-muted)] mb-0.5';
+const DANGER_SUB_CLASSES = 'text-[9px] text-[color:var(--text-dim)]';
+
+const SCORER_ROW_CLASSES = 'flex items-center justify-between gap-2 py-[6px] border-b-[0.5px] border-[color:var(--border)]';
+const SCORER_NAME_CLASSES = 'text-[13px] text-[color:var(--text)] flex-1';
+const SCORER_STATS_CLASSES = 'flex gap-1';
+const SCORER_CHIP_VARIANTS = {
+  goal: 'bg-[rgba(61,186,126,.15)] text-[color:var(--green)]',
+  assist: 'bg-[rgba(100,120,200,.15)] text-[#8899dd]',
+  pts: 'bg-[var(--bg3)] text-[color:var(--text-muted)]',
+};
+const scorerChipClasses = (variant) =>
+  `text-[10px] font-semibold py-[2px] px-[6px] rounded-[4px] font-[family-name:var(--font-mono)] ${SCORER_CHIP_VARIANTS[variant]}`;
+
+const GOALIE_CARD_CLASSES = 'py-2 border-b-[0.5px] border-[color:var(--border)]';
+const GOALIE_HEADER_CLASSES = 'flex items-center gap-2 mb-2';
+const GOALIE_ABBR_CLASSES = 'font-[family-name:var(--font-display)] text-[13px] font-bold shrink-0';
+const GOALIE_NAME_CLASSES = 'text-[13px] font-medium text-[color:var(--text)]';
+const GOALIE_STATS_GRID_CLASSES = 'flex gap-4 flex-wrap';
+const GOALIE_STAT_COL_CLASSES = 'flex flex-col gap-0.5 min-w-[48px]';
+const GOALIE_STAT_LABEL_CLASSES = 'text-[9px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-dim)] flex items-center gap-0.5';
+const goalieStatValClasses = (isSvPct) =>
+  `font-[family-name:var(--font-mono)] text-[13px] font-semibold ${isSvPct ? 'text-[color:var(--green)]' : 'text-[color:var(--text-muted)]'}`;
+
+const GM_STAT_HEADER_CLASSES = 'grid grid-cols-[42px_1fr_42px] gap-2 text-[11px] font-semibold text-center mb-[6px]';
+const GM_STAT_ROW_CLASSES = 'grid grid-cols-[42px_1fr_42px] gap-2 items-center mb-[7px]';
+const GM_STAT_MID_CLASSES = 'flex flex-col gap-[3px]';
+const GM_STAT_LABEL_CLASSES = 'text-[10px] text-[color:var(--text-muted)] text-center flex items-center justify-center gap-[3px]';
+const gmStatValClasses = (variant) => {
+  const base = 'font-[family-name:var(--font-mono)] text-[13px] font-medium text-center';
+  if (variant === 'team-primary') return `${base} team-primary-text`;
+  return `${base} ${variant === 'red' ? 'text-[color:var(--red-bright)]' : 'text-[color:var(--text-muted)]'}`;
+};
+
 // ── Shot adapters ─────────────────────────────────────────────
 
 function mapEventType(t) {
@@ -492,7 +568,7 @@ function TeamStatsCard({ pbpStats, shotStats, abbr, oppAbbr, color, oppColor, fa
   return (
     <div className="card">
       <div className="sec-label" style={{ marginBottom: 8 }}>Team stats — this game</div>
-      <div className="gm-stat-header">
+      <div className={GM_STAT_HEADER_CLASSES}>
         <span style={{ color: color || 'var(--team-primary)' }}>{abbr}</span>
         <span />
         <span style={{ color: oppColor || 'var(--text-muted)' }}>{oppAbbr || 'OPP'}</span>
@@ -502,10 +578,10 @@ function TeamStatsCard({ pbpStats, shotStats, abbr, oppAbbr, color, oppColor, fa
         const on  = Number(oppN) || 0;
         const tot = cn + on || 1;
         return (
-          <div key={label} className="gm-stat-row">
-            <span className="gm-stat-val team-primary-text">{carDisplay ?? cn}</span>
-            <div className="gm-stat-mid">
-              <div className="gm-stat-label">
+          <div key={label} className={GM_STAT_ROW_CLASSES}>
+            <span className={gmStatValClasses('team-primary')}>{carDisplay ?? cn}</span>
+            <div className={GM_STAT_MID_CLASSES}>
+              <div className={GM_STAT_LABEL_CLASSES}>
                 {label}
                 <InfoTip text={help} position="above" />
               </div>
@@ -514,7 +590,7 @@ function TeamStatsCard({ pbpStats, shotStats, abbr, oppAbbr, color, oppColor, fa
                 <div className="fill-blue"         style={{ width: `${Math.round(on / tot * 100)}%` }} />
               </div>
             </div>
-            <span className="gm-stat-val muted">{oppDisplay ?? on}</span>
+            <span className={gmStatValClasses('muted')}>{oppDisplay ?? on}</span>
           </div>
         );
       })}
@@ -699,24 +775,24 @@ function GoalieCard({ goalies, teamId, abbr, oppAbbr, color, oppColor }) {
     const svPct = sa > 0 ? (sv / sa).toFixed(3).replace('0.', '.') : '—';
     const gaa  = g.toi ? parseFloat(((g.goals_against || 0) / (parseFloat(g.toi) || 1) * 60).toFixed(2)) : null;
     return (
-      <div className="goalie-card">
-        <div className="goalie-header">
-          <span className="goalie-abbr" style={{ color: col }}>{teamAbbr}</span>
-          <span className="goalie-name">{g.name}</span>
+      <div className={GOALIE_CARD_CLASSES}>
+        <div className={GOALIE_HEADER_CLASSES}>
+          <span className={GOALIE_ABBR_CLASSES} style={{ color: col }}>{teamAbbr}</span>
+          <span className={GOALIE_NAME_CLASSES}>{g.name}</span>
         </div>
-        <div className="goalie-stats-grid">
-          <div className="goalie-stat-col">
-            <span className="goalie-stat-label">SV/SA</span>
-            <span className="goalie-stat-val">{sv ?? '—'}/{sa ?? '—'}</span>
+        <div className={GOALIE_STATS_GRID_CLASSES}>
+          <div className={GOALIE_STAT_COL_CLASSES}>
+            <span className={GOALIE_STAT_LABEL_CLASSES}>SV/SA</span>
+            <span className={goalieStatValClasses(false)}>{sv ?? '—'}/{sa ?? '—'}</span>
           </div>
-          <div className="goalie-stat-col">
-            <span className="goalie-stat-label">SV%</span>
-            <span className="goalie-stat-val goalie-svpct">{svPct}</span>
+          <div className={GOALIE_STAT_COL_CLASSES}>
+            <span className={GOALIE_STAT_LABEL_CLASSES}>SV%</span>
+            <span className={goalieStatValClasses(true)}>{svPct}</span>
           </div>
           {gaa != null && (
-            <div className="goalie-stat-col">
-              <span className="goalie-stat-label">GAA</span>
-              <span className="goalie-stat-val">{gaa}</span>
+            <div className={GOALIE_STAT_COL_CLASSES}>
+              <span className={GOALIE_STAT_LABEL_CLASSES}>GAA</span>
+              <span className={goalieStatValClasses(false)}>{gaa}</span>
             </div>
           )}
         </div>
@@ -1563,16 +1639,16 @@ export default function PWHLShotMapView() {
     <div className="page">
 
       {/* ── Score bar ── */}
-      <div className="score-card card" onClick={handleDebugTap} style={{ userSelect: 'none' }}>
-        <div className="score-inner">
+      <div className={SCORE_CARD_CLASSES} onClick={handleDebugTap} style={{ userSelect: 'none' }}>
+        <div className={SCORE_INNER_CLASSES}>
           <div className={SCORE_TEAM_WRAP_CLASSES}>
-            <div className="score-team">
+            <div className={SCORE_TEAM_CLASSES}>
               <TeamLogo abbr={abbr} sport="pwhl" size={30} color={color} />
-              <span className="score-abbr" style={{ color }}>{abbr}</span>
-              <span className="score-abbr" style={{ color:'var(--text-dim)', fontWeight:400, fontSize:'0.75rem' }}>
+              <span className={scoreAbbrClasses()} style={{ color }}>{abbr}</span>
+              <span className={scoreAbbrClasses()} style={{ color:'var(--text-dim)', fontWeight:400, fontSize:'0.75rem' }}>
                 {team.shortName}
               </span>
-              {scoreBarData && <span className="score-num" style={{ color }}>{scoreBarData.myScore}</span>}
+              {scoreBarData && <span className={scoreNumClasses()} style={{ color }}>{scoreBarData.myScore}</span>}
             </div>
             {(isLive && liveSituation?.ourPP) || debugSituation?.ourPP ? (
               <div className={`${PP_INDICATOR_BASE_CLASSES} ${CAR_PP_CLASSES}`}>⚡ Power Play</div>
@@ -1581,40 +1657,40 @@ export default function PWHLShotMapView() {
               <div className={`${PP_INDICATOR_BASE_CLASSES} en-indicator car-en`}>🥅 {abbr} Empty Net</div>
             ) : null}
           </div>
-          <div className="score-center">
+          <div className={SCORE_CENTER_CLASSES}>
             {isLive && selectedGameId === liveGame?.gameId ? (
               <>
-                <div className="score-period">
+                <div className={SCORE_PERIOD_CLASSES}>
                   {liveClock ? pLabel(liveClock.period) : '—'}
                 </div>
-                <div className="score-clock" style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
+                <div className={SCORE_CLOCK_CLASSES} style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
                   {liveClock?.time || '—'}
                 </div>
-                <div className="score-state pill pill-red" style={{ marginTop: 4 }}>
+                <div className={`${SCORE_STATE_CLASSES} pill pill-red`} style={{ marginTop: 4 }}>
                   {devGame ? '🟡 DEV' : '🔴 LIVE'}
                 </div>
               </>
             ) : scoreBarData ? (
               <>
-                <div className="score-period">Final{scoreBarData.ot?' OT':scoreBarData.shootout?' SO':''}</div>
+                <div className={SCORE_PERIOD_CLASSES}>Final{scoreBarData.ot?' OT':scoreBarData.shootout?' SO':''}</div>
                 <div style={{ fontSize:10, color:'var(--text-dim)', marginTop:2 }}>
                   {scoreBarData.won ? '✓ Win' : '✗ Loss'} · {scoreBarData.isHome ? 'Home' : 'Away'}
                 </div>
               </>
             ) : (
               <>
-                <div className="score-period">Shot Map</div>
+                <div className={SCORE_PERIOD_CLASSES}>Shot Map</div>
                 <div style={{ fontSize:10, color:'var(--text-dim)' }}>Historical</div>
               </>
             )}
           </div>
           {scoreBarData ? (
             <div className={SCORE_TEAM_WRAP_CLASSES}>
-              <div className="score-team">
-                <span className="score-num muted">{scoreBarData.oppScore}</span>
-                <span className="score-abbr muted">{scoreBarData.oppAbbr}</span>
+              <div className={SCORE_TEAM_CLASSES}>
+                <span className={scoreNumClasses('muted')}>{scoreBarData.oppScore}</span>
+                <span className={scoreAbbrClasses('muted')}>{scoreBarData.oppAbbr}</span>
                 {oppTeam && (
-                  <span className="score-abbr" style={{ color:'var(--text-dim)', fontWeight:400, fontSize:'0.75rem' }}>
+                  <span className={scoreAbbrClasses()} style={{ color:'var(--text-dim)', fontWeight:400, fontSize:'0.75rem' }}>
                     {oppTeam.shortName}
                   </span>
                 )}
@@ -1699,7 +1775,7 @@ export default function PWHLShotMapView() {
           N. Hits/Penalties similarly switch from the "Select a game"
           placeholder to seasonSummary once it's the same "All N" data. */}
       {shotStats && (
-        <div className="metrics-grid metrics-grid-4">
+        <div className={metricsGridClasses(4)}>
           <MetCard label="Shots on Goal" value={shotStats.sog}
             sub={`${shotStats.goals}G · Opp ${(isAllN ? seasonSummary?.sog.opp : shotStats.oppSOG) ?? '—'}`}
             onClick={() => buildDrillDown('sog')} />
@@ -1728,7 +1804,7 @@ export default function PWHLShotMapView() {
           (gated on hasPBP && pbpStats, both per-game-only) -- seasonSummary
           (Session 80) is the first season-wide source for any of these. */}
       {isAllN && (
-        <div className="metrics-grid metrics-grid-3">
+        <div className={metricsGridClasses(3)}>
           <MetCard label="Faceoff %"
             value={seasonSummary?.faceoff.pct != null ? `${seasonSummary.faceoff.pct.toFixed(1)}%` : '—'}
             sub={seasonSummary ? `${seasonSummary.faceoff.car}W – ${seasonSummary.faceoff.opp}L` : 'Loading…'}
@@ -1744,7 +1820,7 @@ export default function PWHLShotMapView() {
 
       {/* ── Row 2: Faceoff%, PP%, PK% (game only) ── */}
       {hasPBP && pbpStats && (
-        <div className="metrics-grid metrics-grid-3">
+        <div className={metricsGridClasses(3)}>
           {(() => {
             // Filter faceoffStats to our team only — both teams are included
             const ourFO = Object.values(faceoffStats).filter(p => p.team_id === teamId);
@@ -1860,21 +1936,21 @@ export default function PWHLShotMapView() {
       {dangerCounts.total > 0 && (
         <div className="card danger-quality-card">
           <div className="sec-label">{abbr} Shot Quality</div>
-          <div className="danger-grid">
-            <div className="danger-cell high clickable" onClick={() => buildDangerDrill('hi')}>
-              <div className="danger-num">{dangerCounts.hiN}</div>
-              <div className="danger-label">🔴 High danger</div>
-              <div className="danger-sub">&lt;15 ft</div>
+          <div className={DANGER_GRID_CLASSES}>
+            <div className={DANGER_CELL_CLASSES} onClick={() => buildDangerDrill('hi')}>
+              <div className={dangerNumClasses('high')}>{dangerCounts.hiN}</div>
+              <div className={DANGER_LABEL_CLASSES}>🔴 High danger</div>
+              <div className={DANGER_SUB_CLASSES}>&lt;15 ft</div>
             </div>
-            <div className="danger-cell med clickable" onClick={() => buildDangerDrill('mid')}>
-              <div className="danger-num">{dangerCounts.midN}</div>
-              <div className="danger-label">🟡 Medium</div>
-              <div className="danger-sub">15–30 ft</div>
+            <div className={DANGER_CELL_CLASSES} onClick={() => buildDangerDrill('mid')}>
+              <div className={dangerNumClasses('med')}>{dangerCounts.midN}</div>
+              <div className={DANGER_LABEL_CLASSES}>🟡 Medium</div>
+              <div className={DANGER_SUB_CLASSES}>15–30 ft</div>
             </div>
-            <div className="danger-cell lo clickable" onClick={() => buildDangerDrill('lo')}>
-              <div className="danger-num">{dangerCounts.loN}</div>
-              <div className="danger-label">⚪ Low</div>
-              <div className="danger-sub">&gt;30 ft</div>
+            <div className={DANGER_CELL_CLASSES} onClick={() => buildDangerDrill('lo')}>
+              <div className={dangerNumClasses('lo')}>{dangerCounts.loN}</div>
+              <div className={DANGER_LABEL_CLASSES}>⚪ Low</div>
+              <div className={DANGER_SUB_CLASSES}>&gt;30 ft</div>
             </div>
           </div>
         </div>
@@ -1902,12 +1978,12 @@ export default function PWHLShotMapView() {
             <div className="card">
               <div className="sec-label">{abbr} scoring — this game</div>
               {topScorers.map((p,i) => (
-                <div key={i} className="scorer-row">
-                  <span className="scorer-name">{p.name}</span>
-                  <div className="scorer-stats">
-                    {p.goals   > 0 && <span className="scorer-chip goal">{p.goals}G</span>}
-                    {p.assists > 0 && <span className="scorer-chip assist">{p.assists}A</span>}
-                    <span className="scorer-chip pts">{p.points}PTS</span>
+                <div key={i} className={SCORER_ROW_CLASSES}>
+                  <span className={SCORER_NAME_CLASSES}>{p.name}</span>
+                  <div className={SCORER_STATS_CLASSES}>
+                    {p.goals   > 0 && <span className={scorerChipClasses('goal')}>{p.goals}G</span>}
+                    {p.assists > 0 && <span className={scorerChipClasses('assist')}>{p.assists}A</span>}
+                    <span className={scorerChipClasses('pts')}>{p.points}PTS</span>
                   </div>
                 </div>
               ))}
