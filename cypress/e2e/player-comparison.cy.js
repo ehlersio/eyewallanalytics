@@ -193,6 +193,19 @@ describe('PWHL player comparison', () => {
     })
     cy.get('.player-popup', { timeout: 10000 }).should('exist')
     cy.contains('Goals', { timeout: 10000 }).should('exist')
+    // Same race as the NHL describe block above, different trigger: PWHL's
+    // header has no Recharts radar, but PWHLHeaderPanel (the 2x2 percentile
+    // tile grid) only mounts once the async /pwhl/player/percentiles fetch
+    // resolves (showHeaderReflow flips false->true in PWHLPlayerPopup.jsx),
+    // reflowing the header shortly after "Goals" is already visible --
+    // clicking "vs Player" while that's still in flight can race Cypress's
+    // click against React swapping the toggle button's DOM node, same as
+    // the Recharts case. Confirmed live (reproduced locally 1-in-3 runs
+    // before this fix) after this test flaked 3 times in CI across 3
+    // separate unrelated PRs -- the original "PWHL never showed this flake"
+    // note above was right that it isn't Recharts-specific, but wrong that
+    // PWHL has no equivalent async reflow at all.
+    cy.wait(500)
   })
 
   it('opens a same-league (PWHL) scoped search panel', () => {
