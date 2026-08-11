@@ -214,3 +214,15 @@
 [data-theme="light"] .draft-prev-badge {
   background: rgba(0,0,0,0.06);
 }
+
+/* ════════════════════════════════════════════════════════════════
+   PWHLGameStatsPopup.css additions (Phase 6) -- host file fully deleted,
+   .pbs-row/.has-points kept as literal markers on the migrated Tailwind
+   elements in PWHLBoxScoreTable.jsx specifically so this rule keeps
+   applying.
+   ════════════════════════════════════════════════════════════════ */
+
+/* pbs-row.has-points: rgba(255,255,255,0.02) background is invisible on light */
+[data-theme="light"] .pbs-row.has-points {
+  background: rgba(0,0,0,0.02);
+}
