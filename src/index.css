@@ -156,6 +156,12 @@
    text-align and the icon/title/sub children's sizing are still Tailwind. */
 .empty-state { padding: 28px 16px; }
 
+/* .onice-card (ShotMapView.jsx -- Phase 5, sub-PR 3) -- same collision
+   shape as .player-card/.empty-state above: combined with the shared
+   .card class, its padding: 10px 12px would silently lose to .card's
+   unlayered padding: 14px if written as a Tailwind utility. */
+.onice-card { padding: 10px 12px; }
+
 /* .news-header, .news-error/.news-empty (NewsView.jsx, PWHLNewsView.jsx,
    MilestonesFeed.jsx, TriviaFeed.jsx -- Phase 4) -- same collision shape as
    .player-card/.empty-state above: combined with the shared .card class,
