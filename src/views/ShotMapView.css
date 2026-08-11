@@ -12,41 +12,15 @@
   padding: 24px 16px; text-align: center;
 }
 
-/* ── On-Ice Panel ── */
-.onice-card { padding: 10px 12px; }
-.onice-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 8px;
-}
-.onice-strength {
-  font-size: 11px; font-weight: 700; padding: 2px 8px;
-  border-radius: 4px; letter-spacing: 0.04em;
-}
-.strength-pp  { background: rgba(61,186,126,0.2); color: var(--green); }
-.strength-sh  { background: rgba(240,160,48,0.2);  color: var(--amber); }
-.strength-ev  { background: var(--bg3); color: var(--text-muted); }
-
-.onice-team   { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; }
-.onice-opp    { border-top: 0.5px solid var(--border); padding-top: 6px; margin-top: 2px; opacity: 0.75; }
-.onice-team-label {
-  font-size: 9px; font-weight: 700; text-transform: uppercase;
-  color: var(--text-dim); min-width: 28px; padding-top: 2px;
-}
-.car-label { color: var(--red-bright); opacity: 1; }
-.onice-lines  { display: flex; flex-direction: column; gap: 3px; flex: 1; }
-.onice-row    { display: flex; align-items: center; gap: 5px; }
-.onice-pos    { font-size: 9px; font-weight: 700; color: var(--text-dim); min-width: 10px; }
-.onice-names  { display: flex; flex-wrap: wrap; gap: 4px; }
-.onice-chip {
-  font-size: 11px; font-weight: 500; color: var(--text);
-  background: var(--bg3); padding: 1px 6px; border-radius: 4px;
-}
-.onice-goalie { background: var(--bg4); color: var(--text-muted); font-style: italic; }
-
-/* Situation pill in score bar */
-.situation-pill { font-size: 10px; padding: 2px 7px; }
-.pill-green { background: rgba(61,186,126,0.2); color: var(--green); border: 0.5px solid rgba(61,186,126,0.3); }
-.pill-amber { background: rgba(240,160,48,0.2);  color: var(--amber); border: 0.5px solid rgba(240,160,48,0.3); }
+/* On-Ice Panel rules removed (Phase 5, sub-PR 3) -- migrated to Tailwind
+   in ShotMapView.jsx (NHL-only, no PWHL equivalent exists). .onice-card's
+   padding:10px 12px collision with the shared .card class lives on as
+   real CSS in index.css instead, same mechanism as .player-card/
+   .empty-state. .situation-pill/.pill-green/.pill-amber were confirmed
+   100% dead -- zero consumers anywhere in the app -- and dropped without
+   migrating anything; the "collides with index.css's own .pill-green/
+   .pill-amber" concern flagged during the original investigation turned
+   out to be moot since neither copy is ever actually applied. */
 
 /* ── Shot Volume Bar ── */
 .shot-volume-section { padding: 10px 12px; margin-bottom: 10px; }

@@ -247,6 +247,46 @@ const PEN_DESC_CLASSES = 'text-[11px] text-[color:var(--text-muted)] capitalize'
 const PEN_TYPE_CLASSES = 'text-[10px] text-[color:var(--text-dim)] py-[1px] px-[5px] bg-[var(--bg3)] rounded-[4px]';
 const PEN_TOTALS_CLASSES = 'flex items-center gap-2 flex-wrap py-2 px-4 mt-1 border-t border-t-[color:var(--border)] font-bold';
 
+// ── On-Ice Panel (Phase 5, ShotMapView.css sub-PR 3) ────────────────────
+// NHL-only -- OnIcePanel has no PWHL equivalent at all (confirmed via
+// full-file grep of PWHLShotMapView.jsx), unlike every prior sub-PR's
+// parallel NHL/PWHL structure, so nothing is duplicated there this time.
+// .situation-pill/.pill-green/.pill-amber turned out to be 100% dead CSS
+// -- zero consumers anywhere in the entire app, not just this file, so
+// the "index.css vs ShotMapView.css .pill-green/.pill-amber collision"
+// flagged during the original investigation is moot and both copies are
+// simply dropped rather than resolved. .onice-chip/.onice-goalie and
+// .onice-team-label/.car-label are both separate-class pairs (lesson #18
+// shape) racing on background+color and color respectively -- pulled into
+// onicChipClasses()/onicTeamLabelClasses(). .onice-team/.onice-opp raced
+// on padding-top (separate classes, source order) -- given its own
+// precomputed constant rather than composed. .onice-card races with the
+// global .card on padding (10px 12px vs .card's 14px) -- same cascade-
+// layer collision as .player-card/.empty-state, fixed the same way: a
+// small real, unlayered CSS rule in index.css, "onice-card" kept as a
+// literal marker (not needed by Cypress, but required for the override to
+// keep applying).
+const ONICE_CARD_CLASSES = 'onice-card card';
+const ONICE_HEADER_CLASSES = 'flex items-center justify-between mb-2';
+const ONICE_STRENGTH_VARIANTS = {
+  pp: 'bg-[rgba(61,186,126,0.2)] text-[color:var(--green)]',
+  sh: 'bg-[rgba(240,160,48,0.2)] text-[color:var(--amber)]',
+  ev: 'bg-[var(--bg3)] text-[color:var(--text-muted)]',
+};
+const onicStrengthClasses = (variant) =>
+  `text-[11px] font-bold py-0.5 px-2 rounded-[4px] tracking-[0.04em] ${ONICE_STRENGTH_VARIANTS[variant]}`;
+const ONICE_TEAM_CLASSES = 'flex items-start gap-2 py-1';
+const ONICE_TEAM_OPP_CLASSES = 'flex items-start gap-2 pt-[6px] pb-1 border-t-[0.5px] border-t-[color:var(--border)] mt-0.5 opacity-75';
+const onicTeamLabelClasses = (isCar) =>
+  `text-[9px] font-bold uppercase min-w-[28px] pt-0.5 ${isCar ? 'text-[color:var(--red-bright)]' : 'text-[color:var(--text-dim)]'}`;
+const ONICE_LINES_CLASSES = 'flex flex-col gap-[3px] flex-1';
+const ONICE_ROW_CLASSES = 'flex items-center gap-[5px]';
+const ONICE_POS_CLASSES = 'text-[9px] font-bold text-[color:var(--text-dim)] min-w-[10px]';
+const ONICE_NAMES_CLASSES = 'flex flex-wrap gap-1';
+const onicChipClasses = (isGoalie) => `text-[11px] font-medium py-[1px] px-[6px] rounded-[4px] ${isGoalie
+  ? 'bg-[var(--bg4)] text-[color:var(--text-muted)] italic'
+  : 'bg-[var(--bg3)] text-[color:var(--text)]'}`;
+
 export default function ShotMapView() {
   // ── Dev replay injection ──────────────────────────────────────
   const devGame = useDevGame();
@@ -2168,11 +2208,11 @@ function OnIcePanel({ car, opp, oppAbbr, situation }) {
   const Row = ({ players, label }) => {
     if (!players.length) return null;
     return (
-      <div className="onice-row">
-        <span className="onice-pos">{label}</span>
-        <div className="onice-names">
+      <div className={ONICE_ROW_CLASSES}>
+        <span className={ONICE_POS_CLASSES}>{label}</span>
+        <div className={ONICE_NAMES_CLASSES}>
           {players.map((p, i) => (
-            <span key={i} className={`onice-chip ${goal(p) ? 'onice-goalie' : ''}`}>
+            <span key={i} className={onicChipClasses(goal(p))}>
               {p.name.split(' ').pop()}{/* Last name only for space */}
             </span>
           ))}
@@ -2185,28 +2225,28 @@ function OnIcePanel({ car, opp, oppAbbr, situation }) {
   const isSH  = situation?.strength?.startsWith('SH');
 
   return (
-    <div className="card onice-card">
-      <div className="onice-header">
+    <div className={ONICE_CARD_CLASSES}>
+      <div className={ONICE_HEADER_CLASSES}>
         <div className="sec-label" style={{marginBottom:0}}>On Ice</div>
         {situation && (
-          <span className={`onice-strength ${isPP ? 'strength-pp' : isSH ? 'strength-sh' : 'strength-ev'}`}>
+          <span className={onicStrengthClasses(isPP ? 'pp' : isSH ? 'sh' : 'ev')}>
             {situation.strength} {situation.carSkaters}v{situation.oppSkaters}
           </span>
         )}
       </div>
 
-      <div className="onice-team">
-        <span className="onice-team-label car-label">{TEAM_CONFIG.abbr}</span>
-        <div className="onice-lines">
+      <div className={ONICE_TEAM_CLASSES}>
+        <span className={onicTeamLabelClasses(true)}>{TEAM_CONFIG.abbr}</span>
+        <div className={ONICE_LINES_CLASSES}>
           <Row players={car.filter(fwd)}  label="F" />
           <Row players={car.filter(def)}  label="D" />
           <Row players={car.filter(goal)} label="G" />
         </div>
       </div>
 
-      <div className="onice-team onice-opp">
-        <span className="onice-team-label">{oppAbbr}</span>
-        <div className="onice-lines">
+      <div className={ONICE_TEAM_OPP_CLASSES}>
+        <span className={onicTeamLabelClasses(false)}>{oppAbbr}</span>
+        <div className={ONICE_LINES_CLASSES}>
           <Row players={opp.filter(fwd)}  label="F" />
           <Row players={opp.filter(def)}  label="D" />
           <Row players={opp.filter(goal)} label="G" />
