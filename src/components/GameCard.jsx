@@ -6,60 +6,77 @@ import {
 import TeamLogo from '../components/TeamLogo';
 import { fmtOdds } from '../utils/nhlApi';
 
+// Styling used to come from ScheduleView.css -- migrated to Tailwind here
+// (Phase 6, ScheduleView.css sub-PR 2). .series-card.series-active collides
+// with .card on background+border-color, hoisted to index.css same as
+// .matchup-detail; .series-card's own non-active border-color was a no-op
+// (matched .card's own default) and was dropped rather than migrated.
+// Fixed a real pre-existing bug along the way: the CAR-side .series-abbr
+// used `style={{ color: 'var(team-primary)' }}` -- missing the `--` prefix,
+// so it was invalid CSS the browser silently ignored, meaning the CAR
+// abbreviation has never actually rendered in team color here.
+const SERIES_PIP_BASE = 'pip w-[11px] h-[11px] rounded-full border-[1.5px] border-[color:var(--border-2)] shrink-0';
+function seriesPipClasses(filled, side) {
+  if (!filled) return `${SERIES_PIP_BASE} pip-empty bg-transparent`;
+  return side === 'car'
+    ? `${SERIES_PIP_BASE} pip-red bg-[var(--red)] border-[color:var(--red)]`
+    : `${SERIES_PIP_BASE} pip-opp bg-[var(--opp-color,#7a8899)] border-[color:var(--opp-color,#7a8899)]`;
+}
+
 function SeriesCard({ series }) {
   const oppAbbr  = series.opponent?.abbrev || '???';
   const oppColor = TEAM_COLORS[oppAbbr] || '#7a8899';
   const total    = series.carWins + series.oppWins;
   return (
-    <div className={`series-card card ${series.isActive ? 'series-active' : ''}`}>
-      <div className="series-top">
-        <div className="series-top-left">
-          <span className="series-round-label">{series.roundLabel}</span>
-          <span className="series-status">
+    <div className={`series-card card mb-2.5${series.isActive ? ' series-active' : ''}`}>
+      <div className="series-top flex items-start justify-between mb-3 gap-2">
+        <div className="series-top-left flex flex-col gap-0.5">
+          <span className="series-round-label font-[family-name:var(--font-display)] text-[13px] font-bold tracking-[0.04em] text-[color:var(--text)] uppercase">{series.roundLabel}</span>
+          <span className="series-status text-[11px] text-[color:var(--text-muted)] font-medium">
             {series.isActive ? '🔴 In progress' : series.carAdvance ? '✅ Advanced' : '❌ Eliminated'}
           </span>
         </div>
-        <span className="series-games-played">{total} game{total !== 1 ? 's' : ''} played</span>
+        <span className="series-games-played text-[11px] text-[color:var(--text-dim)] whitespace-nowrap pt-0.5">{total} game{total !== 1 ? 's' : ''} played</span>
         {series.carWins === 4 && series.oppWins === 0 && (
-          <span className="series-sweep">🧹 Sweep!</span>
+          <span className="series-sweep text-[11px] font-bold text-[color:var(--green)] ml-1.5">🧹 Sweep!</span>
         )}
         {series.oppWins === 4 && series.carWins === 0 && (
-          <span className="series-swept">🧹 Swept</span>
+          <span className="series-swept text-[11px] font-bold text-[color:var(--text-dim)] ml-1.5">🧹 Swept</span>
         )}
       </div>
-      <div className="series-body">
+      <div className="series-body flex items-center gap-1 mb-1">
 
         {/* CAR column: logo+name+score in a row, pips underneath */}
-        <div className="series-side">
-          <div className="series-row">
+        <div className="series-side flex-1 flex flex-col gap-2">
+          <div className="series-row flex items-center gap-[7px] flex-nowrap">
             <TeamLogo abbr={TEAM_CONFIG.abbr} size={30} />
-            <span className="series-abbr" style={{ color: 'var(team-primary)' }}>{TEAM_CONFIG.abbr}</span>
-            <span className="series-city">{TEAM_CONFIG.fullNameFragment}</span>
-            <span className="series-wins">{series.carWins}</span>
+            <span className="series-abbr font-[family-name:var(--font-display)] text-[18px] font-bold leading-none whitespace-nowrap text-[color:var(--team-primary)]">{TEAM_CONFIG.abbr}</span>
+            <span className="series-city text-[11px] text-[color:var(--text-dim)] whitespace-nowrap">{TEAM_CONFIG.fullNameFragment}</span>
+            <span className="series-wins font-[family-name:var(--font-display)] text-[36px] font-bold text-[color:var(--text)] leading-none">{series.carWins}</span>
           </div>
-          <div className="series-pips">
+          <div className="series-pips flex items-center gap-[5px]">
             {Array.from({ length: 4 }).map((_, i) => (
-              <span key={i} className={`pip ${i < series.carWins ? 'pip-red' : 'pip-empty'}`} />
+              <span key={i} className={seriesPipClasses(i < series.carWins, 'car')} />
             ))}
           </div>
         </div>
 
         {/* Centre dash */}
-        <div className="series-centre">
-          <span className="series-divider">–</span>
+        <div className="series-centre shrink-0 flex items-center mb-[22px] px-0.5">
+          <span className="series-divider font-[family-name:var(--font-display)] text-[22px] font-light text-[color:var(--text-dim)]">–</span>
         </div>
 
         {/* OPP column: mirror layout, right-aligned */}
-        <div className="series-side right">
-          <div className="series-row right">
-            <span className="series-wins">{series.oppWins}</span>
-            <span className="series-city">{series.opponent?.placeName?.default || oppAbbr}</span>
-            <span className="series-abbr" style={{ color: oppColor }}>{oppAbbr}</span>
+        <div className="series-side right flex-1 flex flex-col gap-2 items-end">
+          <div className="series-row right flex items-center gap-[7px] flex-nowrap justify-end">
+            <span className="series-wins font-[family-name:var(--font-display)] text-[36px] font-bold text-[color:var(--text)] leading-none">{series.oppWins}</span>
+            <span className="series-city text-[11px] text-[color:var(--text-dim)] whitespace-nowrap">{series.opponent?.placeName?.default || oppAbbr}</span>
+            <span className="series-abbr font-[family-name:var(--font-display)] text-[18px] font-bold leading-none whitespace-nowrap" style={{ color: oppColor }}>{oppAbbr}</span>
             <TeamLogo abbr={oppAbbr} size={30} color={oppColor} />
           </div>
-          <div className="series-pips">
+          <div className="series-pips flex items-center gap-[5px] justify-end">
             {Array.from({ length: 4 }).map((_, i) => (
-              <span key={i} className={`pip ${i < series.oppWins ? 'pip-opp' : 'pip-empty'}`} style={{ '--opp-color': oppColor }} />
+              <span key={i} className={seriesPipClasses(i < series.oppWins, 'opp')} style={{ '--opp-color': oppColor }} />
             ))}
           </div>
         </div>

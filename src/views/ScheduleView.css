@@ -3,199 +3,27 @@
    Tailwind (Phase 6, ScheduleView.css sub-PR 1) -- see GameCard.jsx,
    MatchupDetail.jsx, ScheduleView.jsx, PWHLScheduleView.jsx. .sched-sub and
    .gc-record were confirmed dead (zero JSX consumers) and dropped rather
-   than migrated. .matchup-detail's background/border-color/border-radius
-   collide with .card's own unlayered properties -- that piece lives in
-   index.css now, same pattern as .player-card/.empty-state/.onice-card. */
+   than migrated. .matchup-detail background/border-color/border-radius
+   collide with the shared .card own unlayered properties -- that piece
+   lives in index.css now, same pattern as .player-card/.empty-state/
+   .onice-card. */
 
-/* ── Tab switcher ── */
-.sched-tabs {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 14px;
-  border-bottom: 0.5px solid var(--border);
-  padding-bottom: 10px;
-}
-/* Push view-mode-toggle to the far right within the tab row */
+/* .sched-tabs/.sched-tab/.tab-badge, .sched-record/.pts-badge/.div-badge,
+   .series-card and its series- family, .pip and its variants all migrated
+   to Tailwind (Phase 6, ScheduleView.css sub-PR 2). .sched-tabs stays a
+   literal marker on
+   ScheduleView.jsx own usage purely so the descendant rule directly below
+   keeps resolving -- .view-mode-toggle itself is still real, unmigrated CSS
+   until sub-PR 4. .series-card.series-active background+border-color
+   collide with .card same as .matchup-detail -- that piece lives in
+   index.css now. .series-card own non-active border-color was a no-op
+   (matched .card own default) and was dropped rather than migrated.
+   Fixed a real pre-existing bug along the way in GameCard.jsx SeriesCard:
+   the CAR-side .series-abbr used the literal string "var(team-primary)"
+   (missing the -- prefix) as an inline style, silently invalid CSS the
+   browser ignored -- the CAR abbreviation had never actually rendered in
+   team color there. */
 .sched-tabs .view-mode-toggle { margin-left: auto; }
-.sched-tab {
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-muted);
-  border: 0.5px solid transparent;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.15s;
-}
-.sched-tab.active {
-  background: var(--red-dim);
-  color: var(--red-bright);
-  border-color: var(--red-border);
-}
-.tab-badge {
-  background: var(--green);
-  color: #000;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 10px;
-}
-
-/* ── Record header ── */
-.sched-record {
-  font-size: 12px;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-.pts-badge {
-  background: rgba(240,160,48,0.15);
-  color: var(--amber);
-  font-size: 11px;
-  padding: 1px 7px;
-  border-radius: 10px;
-  font-weight: 500;
-}
-.div-badge {
-  background: var(--bg3);
-  color: var(--text-dim);
-  font-size: 10px;
-  padding: 1px 7px;
-  border-radius: 10px;
-}
-
-/* ── Series card ── */
-.series-card {
-  margin-bottom: 10px;
-  border-color: var(--border);
-}
-.series-card.series-active {
-  border-color: var(--red-border);
-  background: rgba(204,34,0,0.04);
-}
-.series-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  gap: 8px;
-}
-.series-top-left {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.series-round-label {
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--text);
-  text-transform: uppercase;
-}
-.series-status {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-.series-games-played {
-  font-size: 11px;
-  color: var(--text-dim);
-  white-space: nowrap;
-  padding-top: 2px;
-}
-
-/* ── Series card body ── */
-.series-body {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 4px;
-}
-
-/* Each team side is a column: row on top, pips below */
-.series-side {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.series-side.right {
-  align-items: flex-end;
-}
-
-/* Horizontal row: logo + city + abbr + score (left side)
-   or score + city + abbr + logo (right side, reversed order in JSX) */
-.series-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-wrap: nowrap;
-}
-.series-row.right {
-  justify-content: flex-end;
-}
-
-.series-abbr {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
-}
-.series-city {
-  font-size: 11px;
-  color: var(--text-dim);
-  white-space: nowrap;
-}
-.series-wins {
-  font-family: var(--font-display);
-  font-size: 36px;
-  font-weight: 700;
-  color: var(--text);
-  line-height: 1;
-}
-
-/* Centre divider — vertically centred between the two rows */
-.series-centre {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  /* Nudge up slightly so it aligns with the score numbers */
-  margin-bottom: 22px;
-  padding: 0 2px;
-}
-.series-divider {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 300;
-  color: var(--text-dim);
-}
-
-/* Pip dots — centred under their side */
-.series-pips {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.series-side.right .series-pips {
-  justify-content: flex-end;
-}
-.pip {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border-2);
-  flex-shrink: 0;
-}
-.pip.pip-red   { background: var(--red);  border-color: var(--red); }
-.pip.pip-opp   { background: var(--opp-color, #7a8899); border-color: var(--opp-color, #7a8899); }
-.pip.pip-empty { background: transparent; }
 
 /* ── Game stats popup backdrop ── */
 .popup-backdrop {
@@ -507,85 +335,6 @@
 }
 
 
-
-/* ── Round section grouping ── */
-.round-section { margin-bottom: 20px; }
-
-.round-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  border: none;
-  width: 100%;
-  text-align: left;
-  transition: background 0.15s;
-}
-.round-section-header.current {
-  background: var(--red-dim);
-  border: 0.5px solid var(--red-border);
-}
-.round-section-header.older {
-  background: var(--bg2);
-  border: 0.5px solid var(--border);
-}
-.round-section-header:hover { filter: brightness(1.08); }
-
-.round-section-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.round-collapse-icon {
-  font-size: 10px;
-  color: var(--text-dim);
-  width: 10px;
-  flex-shrink: 0;
-}
-.round-section-label {
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text);
-}
-.round-live-pill {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 7px;
-  border-radius: 10px;
-  background: rgba(61,186,126,0.15);
-  color: var(--green);
-  border: 0.5px solid rgba(61,186,126,0.3);
-}
-.round-section-record {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  white-space: nowrap;
-}
-
-/* ── Matchup detail enhancements ── */
-.md-series-score {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.md-series-label {
-  font-size: 11px;
-  color: var(--text-dim);
-  font-weight: 400;
-  font-family: var(--font-body);
-  margin-left: 6px;
-}
 
 /* Win probability bar */
 .md-prediction { margin-bottom: 14px; }
@@ -1260,25 +1009,6 @@
   font-size: 9px; color: var(--text-dim); text-align: center; margin-top: 2px;
   text-transform: uppercase; letter-spacing: 0.06em;
 }
-
-/* Sweep badge */
-.series-sweep { font-size: 11px; font-weight: 700; color: var(--green); margin-left: 6px; }
-.series-swept { font-size: 11px; font-weight: 700; color: var(--text-dim); margin-left: 6px; }
-
-/* ── Combined round header improvements ── */
-.round-header-info {
-  display: flex; align-items: center; gap: 8px;
-}
-.round-series-opp {
-  font-size: 11px; font-weight: 600;
-}
-.round-section-right {
-  display: flex; align-items: center; gap: 6px;
-}
-.round-sweep-badge  { font-size: 14px; }
-.round-result-badge { font-size: 14px; }
-.round-result-badge.adv  { color: var(--green); }
-.round-result-badge.elim { color: var(--red-bright); }
 
 /* ── EyeWall AI Prediction Analysis ── */
 .md-ai-section {

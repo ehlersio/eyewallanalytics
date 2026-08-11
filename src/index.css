@@ -180,6 +180,17 @@
   border-radius: 0 0 var(--radius) var(--radius);
 }
 
+/* .series-card.series-active (GameCard.jsx's SeriesCard, PWHLScheduleView.jsx's
+   PWHLSeriesCard -- Phase 6, ScheduleView.css sub-PR 2) -- same collision
+   shape as .matchup-detail above (background AND border-color both hit
+   .card's unlayered properties at once). .series-card's own non-active
+   `border-color: var(--border)` was dropped entirely rather than migrated --
+   it was already a no-op, exactly matching .card's own default border-color. */
+.series-card.series-active {
+  background: rgba(204,34,0,0.04);
+  border-color: var(--red-border);
+}
+
 /* .chip-disabled (GameChipsRow.jsx/SeasonChipRow.jsx/SeasonTypeToggle.jsx
    -- Phase 5, ShotMapView.css sub-PR 6, the file's final sub-PR) -- hoisted
    here rather than force-converted to Tailwind: its descendant selector
