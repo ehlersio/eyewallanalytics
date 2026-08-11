@@ -14,6 +14,20 @@
 
 import React from 'react';
 
+// Styling used to come from PWHLGameStatsPopup.css -- migrated to Tailwind
+// here (Phase 6). This file never imported that CSS itself despite being
+// its real consumer for the .pbs-* classes -- it depended on
+// PWHLGameStatsPopup.jsx (the parent) having already loaded it, the same
+// "child depends on an unrelated parent's import" shape flagged in the
+// Phase 6 investigation. .pbs-row.has-points's background is a real
+// light-mode gap (invisible-on-light rgba(255,255,255,0.02) tint) --
+// fixed via light-mode-overrides.css, same pattern as every other
+// row/card background this migration.
+const PBS_GRID_COLS = '[grid-template-columns:1fr_22px_22px_28px_32px_28px_26px_28px_34px_44px] max-[400px]:text-[10px] max-[400px]:[grid-template-columns:1fr_18px_18px_24px_28px_24px_22px_24px_30px_38px]';
+const PBS_COL_NAME_CLASSES = 'col-name text-left';
+const PBS_GOALIE_STAT_CLASSES = 'pbs-goalie-stat flex flex-col items-center gap-[1px] text-[13px] font-medium';
+const PBS_GOALIE_LABEL_CLASSES = 'pbs-goalie-label text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]';
+
 function fmtToi(seconds) {
   if (seconds == null) return '—';
   const m = Math.floor(seconds / 60);
@@ -40,9 +54,9 @@ export default function PWHLBoxScoreTable({ skaters, goalies, playerNames }) {
 
   return (
     <>
-      <div className="pbs-table">
-        <div className="pbs-header">
-          <span className="col-name">Player</span>
+      <div className="pbs-table flex flex-col">
+        <div className={`pbs-header grid gap-1 items-center text-center text-[11px] text-[color:var(--text-dim)] text-[10px] mb-1 ${PBS_GRID_COLS}`}>
+          <span className={PBS_COL_NAME_CLASSES}>Player</span>
           <span title="Goals">G</span>
           <span title="Assists">A</span>
           <span title="Points">PTS</span>
@@ -57,36 +71,37 @@ export default function PWHLBoxScoreTable({ skaters, goalies, playerNames }) {
           const pm      = p.plus_minus;
           const pmStr   = pm != null ? (pm >= 0 ? `+${pm}` : `${pm}`) : '—';
           const pmColor = pm > 0 ? 'var(--green)' : pm < 0 ? 'var(--red-bright)' : 'var(--text-muted)';
+          const hasPoints = (p.points ?? 0) > 0;
           return (
-            <div key={p.player_id} className={`pbs-row${(p.points ?? 0) > 0 ? ' has-points' : ''}`}>
-              <span className="col-name">
-                <span className="pbs-player-name">{nameFor(p.player_id, p.jersey_number)}</span>
-                <span className="pbs-player-num">#{p.jersey_number ?? '—'}</span>
+            <div key={p.player_id} className={`pbs-row grid gap-1 items-center text-center text-[11px] py-1.5 border-b-[0.5px] border-b-[color:var(--border)] ${hasPoints ? 'has-points bg-[rgba(255,255,255,0.02)]' : ''} ${PBS_GRID_COLS}`}>
+              <span className={PBS_COL_NAME_CLASSES}>
+                <span className="pbs-player-name block text-[color:var(--text)] text-[12px]">{nameFor(p.player_id, p.jersey_number)}</span>
+                <span className="pbs-player-num block text-[color:var(--text-dim)] text-[10px]">#{p.jersey_number ?? '—'}</span>
               </span>
               <span>{p.goals ?? 0}</span>
               <span>{p.assists ?? 0}</span>
-              <span className={(p.points ?? 0) > 0 ? 'pbs-pts-highlight' : ''}>{p.points ?? 0}</span>
+              <span className={hasPoints ? 'pbs-pts-highlight text-[color:var(--green)] font-semibold' : ''}>{p.points ?? 0}</span>
               <span style={{ color: pmColor }}>{pmStr}</span>
               <span>{p.shots ?? 0}</span>
               <span>{p.hits ?? 0}</span>
               <span>{p.blocked_shots ?? 0}</span>
               <span>{fmtFOPct(p.faceoff_attempts, p.faceoff_wins)}</span>
-              <span className="pbs-toi">{fmtToi(p.toi_seconds)}</span>
+              <span className="pbs-toi font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--text-muted)]">{fmtToi(p.toi_seconds)}</span>
             </div>
           );
         })}
-        {!sortedSkaters.length && <div className="pbs-empty">No skater stats available for this game.</div>}
+        {!sortedSkaters.length && <div className="pbs-empty text-[12px] text-[color:var(--text-dim)] text-center py-3 italic">No skater stats available for this game.</div>}
       </div>
 
       {goalies.map(g => (
-        <div key={g.player_id} className="pbs-goalie-row">
-          <span className="pbs-player-name">{nameFor(g.player_id, g.jersey_number)}</span>
-          <div className="pbs-goalie-stats">
-            <span className="pbs-goalie-stat"><span className="pbs-goalie-label">SA</span>{g.shots_against ?? '—'}</span>
-            <span className="pbs-goalie-stat"><span className="pbs-goalie-label">SV</span>{g.saves ?? '—'}</span>
-            <span className="pbs-goalie-stat"><span className="pbs-goalie-label">SV%</span>{fmtSvPct(g.shots_against, g.saves)}</span>
-            <span className="pbs-goalie-stat"><span className="pbs-goalie-label">GA</span>{g.goals_against ?? '—'}</span>
-            <span className="pbs-goalie-stat"><span className="pbs-goalie-label">TOI</span>{fmtToi(g.toi_seconds)}</span>
+        <div key={g.player_id} className="pbs-goalie-row flex items-center justify-between py-2 border-b-[0.5px] border-b-[color:var(--border)] flex-wrap gap-2">
+          <span className="pbs-player-name block text-[color:var(--text)] text-[12px]">{nameFor(g.player_id, g.jersey_number)}</span>
+          <div className="pbs-goalie-stats flex gap-3">
+            <span className={PBS_GOALIE_STAT_CLASSES}><span className={PBS_GOALIE_LABEL_CLASSES}>SA</span>{g.shots_against ?? '—'}</span>
+            <span className={PBS_GOALIE_STAT_CLASSES}><span className={PBS_GOALIE_LABEL_CLASSES}>SV</span>{g.saves ?? '—'}</span>
+            <span className={PBS_GOALIE_STAT_CLASSES}><span className={PBS_GOALIE_LABEL_CLASSES}>SV%</span>{fmtSvPct(g.shots_against, g.saves)}</span>
+            <span className={PBS_GOALIE_STAT_CLASSES}><span className={PBS_GOALIE_LABEL_CLASSES}>GA</span>{g.goals_against ?? '—'}</span>
+            <span className={PBS_GOALIE_STAT_CLASSES}><span className={PBS_GOALIE_LABEL_CLASSES}>TOI</span>{fmtToi(g.toi_seconds)}</span>
           </div>
         </div>
       ))}

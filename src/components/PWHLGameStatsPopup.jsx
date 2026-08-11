@@ -30,7 +30,18 @@ import { getPWHLTeamById } from '../utils/pwhlConfig';
 import TeamLogo from './TeamLogo';
 import { capture } from '../utils/analytics';
 import PWHLBoxScoreTable from './PWHLBoxScoreTable';
-import './PWHLGameStatsPopup.css';
+// PWHLGameStatsPopup.css import removed (Phase 6) -- migrated to Tailwind.
+// .pgs-toggle-btn.active's color/border always come from an inline style
+// (dynamic per PWHL team, never a CSS custom property -- see this file's
+// own header comment), never a CSS class rule, so there's no
+// hover-vs-active cascade race to worry about here the way there was for
+// ScheduleView.css's .sort-btn/.vm-btn/.skater-toggle-btn -- inline styles
+// always win over a plain (non-!important) CSS :hover rule regardless.
+
+const PGS_TEAM_COL_CLASSES = 'pgs-team-col flex flex-col items-center gap-1 flex-1';
+const PGS_SECTION_LABEL_CLASSES = 'pgs-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2';
+const PGS_STAT_VAL_CLASSES = 'pgs-stat-val font-[family-name:var(--font-mono)] text-[13px] font-medium text-center';
+const PGS_TOGGLE_BTN_CLASSES = 'pgs-toggle-btn flex items-center gap-[5px] py-[5px] px-3 rounded-[20px] text-[12px] font-medium border-[0.5px] border-[color:var(--border-2)] bg-transparent text-[color:var(--text-muted)] cursor-pointer [transition:all_0.15s] hover:text-[color:var(--text)]';
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -119,72 +130,72 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
   const mvps    = summary?.mvps || [];
 
   return (
-    <div className="pgs-backdrop" onClick={onClose}>
-      <div className="pgs-card" onClick={e => e.stopPropagation()}>
+    <div className="pgs-backdrop fixed inset-0 bg-[rgba(0,0,0,0.6)] flex items-end justify-center z-[200] min-[560px]:items-center min-[560px]:p-4" onClick={onClose}>
+      <div className="pgs-card bg-[var(--bg1)] border-[0.5px] border-[color:var(--border-2)] rounded-t-[var(--radius-lg)] w-full max-w-[480px] max-h-[90vh] overflow-y-auto shadow-[0_-8px_40px_rgba(0,0,0,0.5)] min-[560px]:rounded-[var(--radius-lg)]" onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className={`pgs-header ${won ? 'pgs-win' : 'pgs-loss'}`}>
-          <div className="pgs-header-inner">
-            <div className="pgs-team-col">
+        <div className={`pgs-header p-4 border-b-[0.5px] border-b-[color:var(--border)] relative ${won ? 'pgs-win bg-[rgba(61,186,126,0.06)]' : 'pgs-loss bg-[rgba(255,68,34,0.06)]'}`}>
+          <div className="pgs-header-inner flex items-center justify-between gap-3">
+            <div className={PGS_TEAM_COL_CLASSES}>
               <TeamLogo abbr={abbr} sport="pwhl" size={36} color={color} />
-              <span className="pgs-abbr" style={{ color }}>{abbr}</span>
-              <span className="pgs-score-big" style={{ color }}>{my ?? '—'}</span>
+              <span className="pgs-abbr font-[family-name:var(--font-display)] text-[14px] font-bold tracking-[0.06em]" style={{ color }}>{abbr}</span>
+              <span className="pgs-score-big font-[family-name:var(--font-display)] text-[42px] font-bold leading-none" style={{ color }}>{my ?? '—'}</span>
             </div>
-            <div className="pgs-center-col">
-              <div className={`pgs-result-badge ${won ? 'win' : 'loss'}`}>{won ? 'W' : 'L'}{suffix}</div>
-              <div className="pgs-date">{formatDateLong(game.game_date)}</div>
-              <div className="pgs-venue">{isHome ? '📍 Home' : '✈ Away'}</div>
+            <div className="pgs-center-col flex flex-col items-center gap-1">
+              <div className={`pgs-result-badge font-[family-name:var(--font-display)] text-[12px] font-bold py-[3px] px-2.5 rounded-[20px] ${won ? 'win bg-[rgba(61,186,126,0.2)] text-[color:var(--green)]' : 'loss bg-[rgba(255,68,34,0.15)] text-[color:var(--red-bright)]'}`}>{won ? 'W' : 'L'}{suffix}</div>
+              <div className="pgs-date text-[11px] text-[color:var(--text-muted)]">{formatDateLong(game.game_date)}</div>
+              <div className="pgs-venue text-[10px] text-[color:var(--text-dim)]">{isHome ? '📍 Home' : '✈ Away'}</div>
             </div>
-            <div className="pgs-team-col right">
+            <div className={`${PGS_TEAM_COL_CLASSES} right`}>
               <TeamLogo abbr={oppAbbr} sport="pwhl" size={36} color={oppColor} />
-              <span className="pgs-abbr" style={{ color: oppColor }}>{oppAbbr}</span>
-              <span className="pgs-score-big" style={{ color: oppColor }}>{op ?? '—'}</span>
+              <span className="pgs-abbr font-[family-name:var(--font-display)] text-[14px] font-bold tracking-[0.06em]" style={{ color: oppColor }}>{oppAbbr}</span>
+              <span className="pgs-score-big font-[family-name:var(--font-display)] text-[42px] font-bold leading-none" style={{ color: oppColor }}>{op ?? '—'}</span>
             </div>
           </div>
-          <button className="pgs-close" onClick={onClose} aria-label="Close game details">✕</button>
+          <button className="pgs-close absolute top-3 right-3 w-7 h-7 rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]" onClick={onClose} aria-label="Close game details">✕</button>
         </div>
 
-        <div className="pgs-body">
+        <div className="pgs-body pt-4 px-4 pb-6">
           {/* Period scoring + three stars */}
           {(periods.length > 0 || mvps.length > 0) && (
-            <div className="pgs-period-stars-row">
+            <div className="pgs-period-stars-row flex gap-4 flex-wrap">
               {periods.length > 0 && (
-                <div className="pgs-section pgs-period-col">
-                  <div className="pgs-section-label">Scoring by period</div>
-                  <div className="pgs-period-table">
-                    <div className="pgs-period-row header">
+                <div className="pgs-section pgs-period-col mt-4.5 flex-1 min-w-[140px]">
+                  <div className={PGS_SECTION_LABEL_CLASSES}>Scoring by period</div>
+                  <div className="pgs-period-table flex flex-col gap-1">
+                    <div className="pgs-period-row header grid gap-1 text-[13px] text-center text-[10px] text-[color:var(--text-dim)] [grid-template-columns:40px_repeat(auto-fill,minmax(24px,1fr))] [&>span:first-child]:text-left [&>span:first-child]:font-semibold">
                       <span />
                       {periods.map((p, i) => <span key={i}>{periodLabel(p.info?.id, i)}</span>)}
                       <span>T</span>
                     </div>
-                    <div className="pgs-period-row">
+                    <div className="pgs-period-row grid gap-1 text-[13px] text-center [grid-template-columns:40px_repeat(auto-fill,minmax(24px,1fr))] [&>span:first-child]:text-left [&>span:first-child]:font-semibold">
                       <span style={{ color }}>{abbr}</span>
                       {periods.map((p, i) => (
                         <span key={i}>{isHome ? (p.stats?.homeGoals ?? 0) : (p.stats?.visitingGoals ?? 0)}</span>
                       ))}
-                      <span className="pgs-period-total">{my ?? '—'}</span>
+                      <span className="pgs-period-total font-bold text-[color:var(--text)]">{my ?? '—'}</span>
                     </div>
-                    <div className="pgs-period-row">
+                    <div className="pgs-period-row grid gap-1 text-[13px] text-center [grid-template-columns:40px_repeat(auto-fill,minmax(24px,1fr))] [&>span:first-child]:text-left [&>span:first-child]:font-semibold">
                       <span style={{ color: oppColor }}>{oppAbbr}</span>
                       {periods.map((p, i) => (
                         <span key={i}>{isHome ? (p.stats?.visitingGoals ?? 0) : (p.stats?.homeGoals ?? 0)}</span>
                       ))}
-                      <span className="pgs-period-total">{op ?? '—'}</span>
+                      <span className="pgs-period-total font-bold text-[color:var(--text)]">{op ?? '—'}</span>
                     </div>
                   </div>
                 </div>
               )}
               {mvps.length > 0 && (
-                <div className="pgs-section pgs-stars-col">
-                  <div className="pgs-section-label">Three stars</div>
+                <div className="pgs-section pgs-stars-col mt-4.5 flex-1 min-w-[140px]">
+                  <div className={PGS_SECTION_LABEL_CLASSES}>Three stars</div>
                   {mvps.slice(0, 3).map((mvp, i) => {
                     const name = `${mvp.player?.info?.firstName || ''} ${mvp.player?.info?.lastName || ''}`.trim();
                     const isCarStar = mvp.team?.id === teamId;
                     return (
-                      <div key={i} className="pgs-star-row">
-                        <span className="pgs-star-num">{i === 0 ? '⭐' : i === 1 ? '⭐⭐' : '⭐⭐⭐'}</span>
-                        <div className="pgs-star-info">
-                          <span className="pgs-star-name">{name || '—'}</span>
-                          <span className="pgs-star-team" style={{ color: isCarStar ? color : oppColor }}>
+                      <div key={i} className="pgs-star-row flex items-center gap-2.5 py-1.5 border-b-[0.5px] border-b-[color:var(--border)] text-[13px]">
+                        <span className="pgs-star-num text-[12px] w-11">{i === 0 ? '⭐' : i === 1 ? '⭐⭐' : '⭐⭐⭐'}</span>
+                        <div className="pgs-star-info flex-1 flex flex-col">
+                          <span className="pgs-star-name text-[color:var(--text)] font-medium">{name || '—'}</span>
+                          <span className="pgs-star-team font-[family-name:var(--font-display)] text-[11px] font-bold" style={{ color: isCarStar ? color : oppColor }}>
                             {mvp.team?.abbreviation || ''}
                           </span>
                         </div>
@@ -196,7 +207,7 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
             </div>
           )}
           {summaryLoading && !summary && (
-            <div className="pgs-loading">
+            <div className="pgs-loading py-3">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="skeleton" style={{ height: 12, marginBottom: 10, width: `${60 + i * 8}%` }} />
               ))}
@@ -205,9 +216,9 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
 
           {/* Team stats comparison */}
           {!boxLoading && skaters.length > 0 && (
-            <div className="pgs-section">
-              <div className="pgs-section-label">Team stats</div>
-              <div className="pgs-team-stat-header">
+            <div className="pgs-section mt-4.5">
+              <div className={PGS_SECTION_LABEL_CLASSES}>Team stats</div>
+              <div className="pgs-team-stat-header grid gap-2 text-[11px] font-semibold text-center mb-1.5 [grid-template-columns:48px_1fr_48px]">
                 <span style={{ color }}>{abbr}</span>
                 <span />
                 <span style={{ color: oppColor }}>{oppAbbr}</span>
@@ -218,16 +229,16 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
                 const total  = carVal + oppVal || 1;
                 const carPct = Math.round((carVal / total) * 100);
                 return (
-                  <div key={i} className="pgs-stat-row">
-                    <span className="pgs-stat-val" style={{ color }}>{row.car == null ? '—' : row.isPct ? `${row.car}%` : row.car}</span>
-                    <div className="pgs-stat-center">
-                      <div className="pgs-stat-label">{row.label}</div>
-                      <div className="pgs-dual-bar">
-                        <div className="pgs-fill-car" style={{ width: `${carPct}%`, background: color }} />
-                        <div className="pgs-fill-opp" style={{ width: `${100 - carPct}%`, background: oppColor }} />
+                  <div key={i} className="pgs-stat-row grid gap-2 items-center mb-2 [grid-template-columns:48px_1fr_48px]">
+                    <span className={PGS_STAT_VAL_CLASSES} style={{ color }}>{row.car == null ? '—' : row.isPct ? `${row.car}%` : row.car}</span>
+                    <div className="pgs-stat-center flex flex-col gap-[3px]">
+                      <div className="pgs-stat-label text-[10px] text-[color:var(--text-muted)] text-center">{row.label}</div>
+                      <div className="pgs-dual-bar flex h-[5px] rounded-[3px] overflow-hidden bg-[var(--bg3)]">
+                        <div className="pgs-fill-car h-full" style={{ width: `${carPct}%`, background: color }} />
+                        <div className="pgs-fill-opp h-full" style={{ width: `${100 - carPct}%`, background: oppColor }} />
                       </div>
                     </div>
-                    <span className="pgs-stat-val opp" style={{ color: oppColor }}>{row.opp == null ? '—' : row.isPct ? `${row.opp}%` : row.opp}</span>
+                    <span className={`${PGS_STAT_VAL_CLASSES} opp`} style={{ color: oppColor }}>{row.opp == null ? '—' : row.isPct ? `${row.opp}%` : row.opp}</span>
                   </div>
                 );
               })}
@@ -236,17 +247,17 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
 
           {/* Skater/goalie box score with team toggle */}
           {boxLoading && (
-            <div className="pgs-loading">
+            <div className="pgs-loading py-3">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="skeleton" style={{ height: 12, marginBottom: 10, width: `${60 + i * 8}%` }} />
               ))}
             </div>
           )}
           {!boxLoading && (skaters.length > 0 || goalies.length > 0) && (
-            <div className="pgs-section">
-              <div className="pgs-skater-toggle">
+            <div className="pgs-section mt-4.5">
+              <div className="pgs-skater-toggle flex gap-2 mb-2.5">
                 <button
-                  className={`pgs-toggle-btn${skaterTeam === 'car' ? ' active' : ''}`}
+                  className={`${PGS_TOGGLE_BTN_CLASSES}${skaterTeam === 'car' ? ' active' : ''}`}
                   style={skaterTeam === 'car' ? { borderColor: color, color } : undefined}
                   onClick={() => setSkaterTeam('car')}
                 >
@@ -254,7 +265,7 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
                   {abbr} Skaters
                 </button>
                 <button
-                  className={`pgs-toggle-btn${skaterTeam === 'opp' ? ' active' : ''}`}
+                  className={`${PGS_TOGGLE_BTN_CLASSES}${skaterTeam === 'opp' ? ' active' : ''}`}
                   style={skaterTeam === 'opp' ? { borderColor: oppColor, color: oppColor } : undefined}
                   onClick={() => setSkaterTeam('opp')}
                 >
@@ -270,13 +281,13 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
             </div>
           )}
           {!boxLoading && !skaters.length && !goalies.length && (
-            <div className="pgs-no-data">Box score not available for this game yet.</div>
+            <div className="pgs-no-data text-[12px] text-[color:var(--text-dim)] text-center py-4 italic">Box score not available for this game yet.</div>
           )}
 
           {/* Shot map CTA */}
-          <div className="pgs-cta-wrap">
+          <div className="pgs-cta-wrap pt-4.5">
             <button
-              className="pgs-cta-btn"
+              className="pgs-cta-btn w-full py-2.5 text-[#fff] border-none rounded-[8px] font-bold text-[14px] cursor-pointer tracking-[0.02em]"
               style={{ background: color }}
               onClick={() => {
                 if (onViewShotMap) { onViewShotMap(); return; }
