@@ -162,6 +162,10 @@
    unlayered padding: 14px if written as a Tailwind utility. */
 .onice-card { padding: 10px 12px; }
 
+/* .shot-volume-section (ShotMapView.jsx/PWHLShotMapView.jsx -- Phase 5,
+   sub-PR 4) -- same collision shape as .onice-card above. */
+.shot-volume-section { padding: 10px 12px; }
+
 /* .news-header, .news-error/.news-empty (NewsView.jsx, PWHLNewsView.jsx,
    MilestonesFeed.jsx, TriviaFeed.jsx -- Phase 4) -- same collision shape as
    .player-card/.empty-state above: combined with the shared .card class,
