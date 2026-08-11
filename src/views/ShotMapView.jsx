@@ -23,7 +23,8 @@ import GameChipsRow from '../components/GameChipsRow';
 import SeasonChipRow from '../components/SeasonChipRow';
 import SeasonTypeToggle from '../components/SeasonTypeToggle';
 import DisabledHint from '../components/DisabledHint';
-import './ShotMapView.css';
+// ShotMapView.css import removed (Phase 5, sub-PR 6) -- the file is now
+// fully deleted, every rule migrated to Tailwind across all 6 sub-PRs.
 
 const LIVE_SELECTOR_DISABLED_REASON = 'Available after the game ends.';
 import { publishClock, getClockDisplay, publishMomentum } from '../utils/liveClockStore';
@@ -132,7 +133,7 @@ const SCORER_CHIP_VARIANTS = {
   pts: 'bg-[var(--bg3)] text-[color:var(--text-muted)]',
 };
 const scorerChipClasses = (variant) =>
-  `text-[10px] font-semibold py-[2px] px-[6px] rounded-[4px] font-[family-name:var(--font-mono)] ${SCORER_CHIP_VARIANTS[variant]}`;
+  `scorer-chip ${variant} text-[10px] font-semibold py-[2px] px-[6px] rounded-[4px] font-[family-name:var(--font-mono)] ${SCORER_CHIP_VARIANTS[variant]}`;
 
 const GOALIE_CARD_CLASSES = 'py-2 border-b-[0.5px] border-[color:var(--border)]';
 const GOALIE_HEADER_CLASSES = 'flex items-center gap-2 mb-2';

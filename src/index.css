@@ -166,6 +166,34 @@
    sub-PR 4) -- same collision shape as .onice-card above. */
 .shot-volume-section { padding: 10px 12px; }
 
+/* .chip-disabled (GameChipsRow.jsx/SeasonChipRow.jsx/SeasonTypeToggle.jsx
+   -- Phase 5, ShotMapView.css sub-PR 6, the file's final sub-PR) -- hoisted
+   here rather than force-converted to Tailwind: its descendant selector
+   grays out three different component families' buttons at once,
+   including `.rink-btn` from IceRink.css (a different file entirely, out
+   of scope), which a Tailwind utility on any single element could never
+   express. `.chip-disabled`/`.rink-btn`/`.game-chip`/
+   `.season-type-toggle-btn` are all kept as literal marker classnames on
+   the migrated elements so this rule keeps resolving. */
+.chip-disabled { cursor: default; }
+.chip-disabled .rink-btn,
+.chip-disabled .game-chip,
+.chip-disabled .season-type-toggle-btn {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* .en-indicator/.car-en/.opp-en (ShotMapView.jsx/PWHLShotMapView.jsx --
+   Phase 5, sub-PR 6) -- hoisted from ShotMapView.css (now fully deleted)
+   rather than converted: established in Phase 4 sub-PR 2 as real,
+   deliberately-`!important` CSS that must keep overriding
+   `.pp-indicator`'s Tailwind base regardless of cascade-layer order --
+   the same reasoning that kept these two untouched through every prior
+   Phase 5 sub-PR. */
+.en-indicator { font-size: 11px !important; }
+.car-en { background: rgba(248,113,113,0.15) !important; color: #f87171 !important; border-color: rgba(248,113,113,0.3) !important; }
+.opp-en { background: rgba(74,222,128,0.15) !important; color: #4ade80 !important; border-color: rgba(74,222,128,0.3) !important; }
+
 /* .news-header, .news-error/.news-empty (NewsView.jsx, PWHLNewsView.jsx,
    MilestonesFeed.jsx, TriviaFeed.jsx -- Phase 4) -- same collision shape as
    .player-card/.empty-state above: combined with the shared .card class,

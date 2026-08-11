@@ -8,6 +8,11 @@
 // practice, not a component meant to float near arbitrary edge content.
 import { useEffect, useRef } from 'react';
 
+// .disabled-hint-popup migrated to Tailwind (Phase 5, ShotMapView.css
+// sub-PR 6, the final sub-PR for that file) -- kept as a literal marker,
+// asserted on directly by shot-map.cy.js.
+const DISABLED_HINT_POPUP_CLASSES = 'disabled-hint-popup absolute top-[calc(100%+4px)] right-0 z-20 py-[6px] px-[10px] text-[11px] text-[color:var(--text)] bg-[var(--bg2)] border-[0.5px] border-[color:var(--border-2)] rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.35)] whitespace-nowrap';
+
 export default function DisabledHint({ text, active, onDismiss }) {
   const ref = useRef(null);
 
@@ -31,7 +36,7 @@ export default function DisabledHint({ text, active, onDismiss }) {
 
   if (!active) return null;
   return (
-    <div ref={ref} className="disabled-hint-popup" role="tooltip" onClick={e => e.stopPropagation()}>
+    <div ref={ref} className={DISABLED_HINT_POPUP_CLASSES} role="tooltip" onClick={e => e.stopPropagation()}>
       {text}
     </div>
   );
