@@ -28,7 +28,11 @@
 }
 
 /* ════════════════════════════════════════════════════════════════
-   ShotMapView.css additions
+   ShotMapView.css additions -- ShotMapView.css itself is fully deleted
+   as of Phase 5, sub-PR 6 (the file's final sub-PR); every selector below
+   is still valid because the relevant classnames are kept as literal
+   markers on the migrated Tailwind elements in ShotMapView.jsx/
+   PWHLShotMapView.jsx.
    ════════════════════════════════════════════════════════════════ */
 
 /* Row dividers that use rgba(255,255,255,0.04) — invisible on light.
@@ -40,7 +44,14 @@
   border-bottom-color: rgba(0,0,0,0.06);
 }
 
-/* scorer-chip assist: hardcoded #8899dd — works on dark, too light on light bg */
+/* scorer-chip assist: hardcoded #8899dd — works on dark, too light on light bg.
+   Found broken during Phase 5 sub-PR 6's final cleanup pass: sub-PR 1
+   (before lesson #19 existed) dropped the literal "scorer-chip" classname
+   entirely since it wasn't a Cypress marker, silently orphaning this
+   selector from the moment sub-PR 1 shipped -- nothing caught it since
+   nothing re-checked earlier sub-PRs against the lesson once it was
+   learned. scorerChipClasses() now includes "scorer-chip" (and the
+   variant name, e.g. "assist") as literal markers again. */
 [data-theme="light"] .scorer-chip.assist {
   background: rgba(68,85,200,0.12);
   color: #3344aa;

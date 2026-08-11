@@ -21,18 +21,39 @@
 // mobile (native `title` alone doesn't reliably respond to a tap).
 // `aria-disabled` + a guarded onClick keeps the element genuinely
 // interactive while still reading as non-functional.
+//
+// Styling used to come from ShotMapView.css -- migrated to Tailwind here
+// (Phase 5, ShotMapView.css sub-PR 6, the final sub-PR for that file).
+// `.season-type-toggle`/`.season-type-toggle-btn`/`.on`/`.chip-disabled`
+// are all kept as literal markers -- heavily asserted on by Cypress
+// (shot-map.cy.js/pwhl-shot-map.cy.js: `.season-type-toggle-btn.on`,
+// `cy.get('.season-type-toggle').should('have.class', 'chip-disabled')`).
+// `.season-type-toggle-btn`/`.on` raced on background+color (standard
+// compound base+modifier shape) -- pulled into seasonTypeToggleBtnClasses().
+// `.chip-disabled`'s own descendant-selector rule (grays out `.rink-btn`/
+// `.game-chip`/`.season-type-toggle-btn` together, spanning IceRink.css's
+// `.rink-btn` too) stays real CSS, hoisted to index.css now that
+// ShotMapView.css is fully retired -- see that file for the reasoning.
+const SEASON_TYPE_TOGGLE_CLASSES = 'season-type-toggle flex border-[0.5px] border-[color:var(--border-2)] rounded-[20px] overflow-hidden w-fit';
+const seasonTypeToggleBtnClasses = (on) => {
+  const base = 'season-type-toggle-btn py-0.5 px-2 text-[10px] font-medium whitespace-nowrap min-h-0 min-w-0';
+  return on
+    ? `${base} on bg-[var(--red-dim)] text-[color:var(--red-bright)]`
+    : `${base} bg-transparent text-[color:var(--text-muted)]`;
+};
+
 export default function SeasonTypeToggle({ value, onChange, disabled = false, disabledReason, onDisabledTap }) {
   const handleClick = (type) => disabled ? onDisabledTap?.() : onChange(type);
   return (
-    <div className={`season-type-toggle${disabled ? ' chip-disabled' : ''}`} title={disabled ? disabledReason : undefined}>
+    <div className={`${SEASON_TYPE_TOGGLE_CLASSES}${disabled ? ' chip-disabled' : ''}`} title={disabled ? disabledReason : undefined}>
       <button
-        className={`season-type-toggle-btn${value === 'regular' ? ' on' : ''}`}
+        className={seasonTypeToggleBtnClasses(value === 'regular')}
         aria-disabled={disabled}
         onClick={() => handleClick('regular')}>
         Regular
       </button>
       <button
-        className={`season-type-toggle-btn${value === 'playoffs' ? ' on' : ''}`}
+        className={seasonTypeToggleBtnClasses(value === 'playoffs')}
         aria-disabled={disabled}
         onClick={() => handleClick('playoffs')}>
         Playoffs

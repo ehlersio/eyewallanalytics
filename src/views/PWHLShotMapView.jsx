@@ -31,7 +31,8 @@ import InfoTip from '../components/InfoTip';
 import GameChipsRow, { LiveGameChip } from '../components/GameChipsRow';
 import SeasonChipRow from '../components/SeasonChipRow';
 import SeasonTypeToggle from '../components/SeasonTypeToggle';
-import './ShotMapView.css';
+// ShotMapView.css import removed (Phase 5, sub-PR 6) -- the file is now
+// fully deleted, every rule migrated to Tailwind across all 6 sub-PRs.
 
 // SEASONS moved to pwhlConfig.js's PWHL_REGULAR_SEASONS (Session 43) — was
 // an independent 5th copy of the same regular-season id/label list.
@@ -110,7 +111,7 @@ const SCORER_CHIP_VARIANTS = {
   pts: 'bg-[var(--bg3)] text-[color:var(--text-muted)]',
 };
 const scorerChipClasses = (variant) =>
-  `text-[10px] font-semibold py-[2px] px-[6px] rounded-[4px] font-[family-name:var(--font-mono)] ${SCORER_CHIP_VARIANTS[variant]}`;
+  `scorer-chip ${variant} text-[10px] font-semibold py-[2px] px-[6px] rounded-[4px] font-[family-name:var(--font-mono)] ${SCORER_CHIP_VARIANTS[variant]}`;
 
 const GOALIE_CARD_CLASSES = 'py-2 border-b-[0.5px] border-[color:var(--border)]';
 const GOALIE_HEADER_CLASSES = 'flex items-center gap-2 mb-2';
