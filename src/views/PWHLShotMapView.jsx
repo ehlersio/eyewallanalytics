@@ -180,6 +180,67 @@ const PEN_BADGE_CLASSES = 'text-[10px] font-bold py-0.5 px-[6px] rounded-[4px]';
 const PEN_PERIOD_CLASSES = 'text-[10px] text-[color:var(--text-dim)] ml-auto';
 const PEN_DESC_CLASSES = 'text-[11px] text-[color:var(--text-muted)] capitalize';
 
+// ── Shot Volume Bar / Advanced Game Panel / Debug panel (Phase 5,
+// ShotMapView.css sub-PR 4) -- duplicated from ShotMapView.jsx per
+// convention. No Live Insights or shotmap-top-btn here -- Live Insights
+// is PWHLGameEvents.jsx's PWHLInsightsCard (migrated there directly), and
+// the top-button is NHL-only. .debug-panel-cols here wraps a single plain
+// <div> (no .debug-col children) -- a real structural asymmetry from
+// NHL's two real columns, not a bug, preserved as-is. See ShotMapView.jsx
+// for the full property-race/card-combo reasoning (.shot-volume-section
+// vs .card, .sv-num text-align race, .debug-btn's non-racing modifiers).
+const SHOT_VOLUME_SECTION_CLASSES = 'shot-volume-section card';
+const SV_WRAP_CLASSES = 'flex flex-col gap-[6px]';
+const SV_HEADER_CLASSES = 'flex justify-between items-center mb-1';
+const svTeamClasses = (variant) => {
+  const base = 'text-[10px] font-bold uppercase min-w-[30px]';
+  if (variant === 'muted') return `${base} text-[color:var(--text-muted)] text-right`;
+  return base;
+};
+const SV_DIFF_CLASSES = 'font-[family-name:var(--font-mono)] text-[13px] font-bold';
+const SV_ROW_CLASSES = 'grid grid-cols-[80px_28px_1fr_28px] gap-[6px] items-center';
+const SV_LABEL_CLASSES = 'text-[10px] text-[color:var(--text-muted)] cursor-help';
+const svNumClasses = (variant) => {
+  const base = 'font-[family-name:var(--font-mono)] text-[12px] font-semibold';
+  if (variant === 'muted') return `${base} text-right text-[color:var(--text-muted)]`;
+  return `${base} text-right`;
+};
+const SV_BAR_WRAP_CLASSES = 'h-[6px] rounded-[3px] bg-[var(--bg3)] flex overflow-hidden';
+const svFillClasses = (variant) => {
+  const base = 'h-full [transition:width_0.3s_ease]';
+  if (variant === 'muted') return `${base} bg-[color:var(--text-dim)] rounded-[0_3px_3px_0]`;
+  return base;
+};
+const SV_LABEL_WRAP_CLASSES = 'flex items-center gap-0.5';
+
+const ADV_CHIPS_ROW_CLASSES = 'flex gap-2 flex-nowrap justify-between mt-[10px] pt-2 border-t-[0.5px] border-t-[color:var(--border)]';
+const ADV_CHIP_CLASSES = 'flex flex-col items-center bg-[var(--bg3)] rounded-[8px] py-[6px] px-[10px] flex-1 cursor-help';
+const ADV_CHIP_LABEL_CLASSES = 'text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]';
+const ADV_CHIP_VAL_CLASSES = 'font-[family-name:var(--font-mono)] text-[14px] font-bold mt-0.5';
+
+const DANGER_QUALITY_CARD_CLASSES = 'mb-[10px]';
+
+const DEBUG_PANEL_CLASSES = 'debug-panel fixed left-1/2 -translate-x-1/2 bg-[var(--bg1)] border-[1.5px] border-[color:var(--red-bright)] rounded-[var(--radius)] p-[14px] w-[min(420px,94vw)] z-[999] shadow-[0_8px_32px_rgba(0,0,0,0.6)]';
+const DEBUG_PANEL_BOTTOM_STYLE = { bottom: 'calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 16px)' };
+const DEBUG_PANEL_HEADER_CLASSES = 'flex items-start justify-between mb-[10px]';
+const DEBUG_CLOSE_BTN_CLASSES = 'debug-close-btn bg-[var(--bg3)] border-0 text-[color:var(--text-dim)] text-[13px] py-1 px-2 rounded-[6px] cursor-pointer shrink-0 ml-2 min-h-0 min-w-0 hover:text-[color:var(--text)]';
+const DEBUG_PANEL_TITLE_CLASSES = 'text-[14px] font-bold mb-0.5';
+const DEBUG_PANEL_SUB_CLASSES = 'text-[11px] text-[color:var(--text-dim)]';
+const DEBUG_PANEL_COLS_CLASSES = 'grid grid-cols-2 gap-x-[14px] gap-y-[10px]';
+const DEBUG_SECTION_LABEL_CLASSES = 'text-[9px] font-bold tracking-[0.1em] uppercase text-[color:var(--text-dim)] mb-0.5';
+const DEBUG_PANEL_BTNS_CLASSES = 'flex flex-col gap-[5px]';
+const DEBUG_BTN_BASE = 'py-[7px] px-[10px] rounded-[7px] text-[11px] font-semibold cursor-pointer border-0 text-left min-h-0 min-w-0 w-full';
+const DEBUG_BTN_VARIANTS = {
+  goal: 'bg-[rgba(200,30,30,0.2)] text-[#f87171]',
+  penalty: 'bg-[rgba(250,190,30,0.2)] text-[#fbbf24]',
+  win: 'bg-[rgba(74,222,128,0.2)] text-[#4ade80]',
+  push: 'bg-[var(--bg3)] text-[color:var(--text)]',
+  close: 'bg-[var(--bg3)] text-[color:var(--text-dim)]',
+  'pp-car': 'bg-[rgba(74,222,128,0.2)] text-[#4ade80]',
+  'pp-opp': 'bg-[rgba(250,190,30,0.2)] text-[#fbbf24]',
+};
+const debugBtnClasses = (variant) => `${DEBUG_BTN_BASE} ${DEBUG_BTN_VARIANTS[variant] || ''}`.trim();
+
 // ── Shot adapters ─────────────────────────────────────────────
 
 function mapEventType(t) {
@@ -487,47 +548,47 @@ function ShotAttemptsPanel({ ourShots, oppShotRows, abbr, oppAbbr, color, goalie
   const Row = ({ label, car, opp, help }) => {
     const cn = Number(car) || 0, on = Number(opp) || 0, tot = cn + on || 1;
     return (
-      <div className="sv-row">
-        <div className="sv-label-wrap">
-          <span className="sv-label">{label}</span>
+      <div className={SV_ROW_CLASSES}>
+        <div className={SV_LABEL_WRAP_CLASSES}>
+          <span className={SV_LABEL_CLASSES}>{label}</span>
           <InfoTip text={help} position="above" />
         </div>
-        <span className="sv-num" style={{ color: color || 'var(--team-primary)' }}>{car ?? '—'}</span>
-        <div className="sv-bar-wrap">
-          <div className="sv-fill" style={{ width: `${Math.round(cn / tot * 100)}%`, background: color || 'var(--team-primary)' }} />
-          <div className="sv-fill muted" style={{ width: `${Math.round(on / tot * 100)}%` }} />
+        <span className={svNumClasses()} style={{ color: color || 'var(--team-primary)' }}>{car ?? '—'}</span>
+        <div className={SV_BAR_WRAP_CLASSES}>
+          <div className={svFillClasses()} style={{ width: `${Math.round(cn / tot * 100)}%`, background: color || 'var(--team-primary)' }} />
+          <div className={svFillClasses('muted')} style={{ width: `${Math.round(on / tot * 100)}%` }} />
         </div>
-        <span className="sv-num muted">{opp ?? '—'}</span>
+        <span className={svNumClasses('muted')}>{opp ?? '—'}</span>
       </div>
     );
   };
 
   const StatChip = ({ label, value, color, help }) => (
-    <div className="adv-chip" onClick={e => e.stopPropagation()}>
+    <div className={ADV_CHIP_CLASSES} onClick={e => e.stopPropagation()}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <span className="adv-chip-label">{label}</span>
+        <span className={ADV_CHIP_LABEL_CLASSES}>{label}</span>
         <InfoTip text={help} position="above" />
       </div>
-      <span className="adv-chip-val" style={{ color }}>{value}</span>
+      <span className={ADV_CHIP_VAL_CLASSES} style={{ color }}>{value}</span>
     </div>
   );
 
   return (
-    <div className="card shot-volume-section">
+    <div className={SHOT_VOLUME_SECTION_CLASSES}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <div className="sec-label" style={{ marginBottom: 0 }}>Shot Attempts</div>
         <span style={{ fontSize: 9, color: 'var(--text-dim)' }}>Corsi = all attempts · Fenwick excludes blocks</span>
       </div>
 
-      <div className="sv-header">
-        <span className="sv-team" style={{ color: color || 'var(--team-primary)' }}>{abbr}</span>
-        <span className="sv-diff" style={{ color: cfPct != null && cfPct >= 50 ? 'var(--green)' : 'var(--red-bright)' }}>
+      <div className={SV_HEADER_CLASSES}>
+        <span className={svTeamClasses()} style={{ color: color || 'var(--team-primary)' }}>{abbr}</span>
+        <span className={SV_DIFF_CLASSES} style={{ color: cfPct != null && cfPct >= 50 ? 'var(--green)' : 'var(--red-bright)' }}>
           {cfPct != null ? `${cfPct >= 50 ? '+' : ''}${carCorsi - oppCorsi} CF` : ''}
         </span>
-        <span className="sv-team muted">{oppAbbr || 'OPP'}</span>
+        <span className={svTeamClasses('muted')}>{oppAbbr || 'OPP'}</span>
       </div>
 
-      <div className="sv-wrap">
+      <div className={SV_WRAP_CLASSES}>
         <Row label="Corsi (CF)"    car={carCorsi}   opp={oppCorsi}
           help="All shot attempts: goals + SOG + missed + blocked. Best possession proxy." />
         <Row label="Fenwick (FF)"  car={carFenwick} opp={oppFenwick}
@@ -538,7 +599,7 @@ function ShotAttemptsPanel({ ourShots, oppShotRows, abbr, oppAbbr, color, goalie
           help="Attempts blocked by a skater before reaching the goalie." />
       </div>
 
-      <div className="adv-chips-row">
+      <div className={ADV_CHIPS_ROW_CLASSES}>
         <StatChip label="CF%"
           value={cfPct != null ? `${cfPct}%` : 'N/A'}
           color={cfPct != null && cfPct >= 50 ? 'var(--green)' : (color || 'var(--team-primary)')}
@@ -1982,7 +2043,7 @@ export default function PWHLShotMapView() {
 
       {/* ── Shot danger (clickable) ── */}
       {dangerCounts.total > 0 && (
-        <div className="card danger-quality-card">
+        <div className={`card ${DANGER_QUALITY_CARD_CLASSES}`}>
           <div className="sec-label">{abbr} Shot Quality</div>
           <div className={DANGER_GRID_CLASSES}>
             <div className={DANGER_CELL_CLASSES} onClick={() => buildDangerDrill('hi')}>
@@ -2102,43 +2163,43 @@ export default function PWHLShotMapView() {
 
       {/* ── Debug panel (5 taps on score card, dev only) ── */}
       {import.meta.env.DEV && debugOpen && (
-        <div className="debug-panel">
-          <div className="debug-panel-header">
+        <div className={DEBUG_PANEL_CLASSES} style={DEBUG_PANEL_BOTTOM_STYLE}>
+          <div className={DEBUG_PANEL_HEADER_CLASSES}>
             <div>
-              <div className="debug-panel-title">🛠 PWHL Event Debug</div>
-              <div className="debug-panel-sub">Tap to fire game events</div>
+              <div className={DEBUG_PANEL_TITLE_CLASSES}>🛠 PWHL Event Debug</div>
+              <div className={DEBUG_PANEL_SUB_CLASSES}>Tap to fire game events</div>
             </div>
-            <button className="debug-close-btn" onClick={() => setDebugOpen(false)}>✕</button>
+            <button className={DEBUG_CLOSE_BTN_CLASSES} onClick={() => setDebugOpen(false)}>✕</button>
           </div>
-          <div className="debug-panel-cols">
+          <div className={DEBUG_PANEL_COLS_CLASSES}>
             <div>
-              <div className="debug-section-label">Popups</div>
-              <div className="debug-panel-btns">
-                <button className="debug-btn goal" onClick={() => setDebugGoalPopup({
+              <div className={DEBUG_SECTION_LABEL_CLASSES}>Popups</div>
+              <div className={DEBUG_PANEL_BTNS_CLASSES}>
+                <button className={debugBtnClasses('goal')} onClick={() => setDebugGoalPopup({
                   scorer: 'Marie-Philip Poulin', assists: ['Laura Stacey', 'Kayla Kosowski'],
                   shotType: 'Wrist', isPowerPlay: false, isShortHanded: false,
                   isEmptyNet: false, isPenaltyShot: false, periodLabel: 'P2', time: '14:32',
                 })}>🚨 Goal</button>
-                <button className="debug-btn goal" onClick={() => setDebugGoalPopup({
+                <button className={debugBtnClasses('goal')} onClick={() => setDebugGoalPopup({
                   scorer: 'Laura Stacey', assists: [],
                   shotType: 'Snap', isPowerPlay: true, isShortHanded: false,
                   isEmptyNet: false, isPenaltyShot: false, periodLabel: 'P1', time: '08:11',
                 })}>⚡ PP Goal</button>
-                <button className="debug-btn" style={{ background: 'rgba(204,34,0,0.15)', color: 'var(--red-bright)' }}
+                <button className={debugBtnClasses()} style={{ background: 'rgba(204,34,0,0.15)', color: 'var(--red-bright)' }}
                   onClick={() => setDebugPuckPopup({ gameId: 'debug' })}>🏒 Puck Drop</button>
-                <button className="debug-btn penalty" onClick={() => setDebugPenaltyPopup({
+                <button className={debugBtnClasses('penalty')} onClick={() => setDebugPenaltyPopup({
                   id: 'debug-1', player: 'Blayre Turnbull',
                   desc: 'Tripping', severity: null, duration: 2, periodLabel: 'P2', time: '08:17',
                 })}>⚡ PP Alert</button>
-                <button className="debug-btn penalty" onClick={() => setDebugPenaltyPopup({
+                <button className={debugBtnClasses('penalty')} onClick={() => setDebugPenaltyPopup({
                   id: 'debug-2', player: 'Sarah Nurse',
                   desc: 'Fighting', severity: 'Major', duration: 5, periodLabel: 'P3', time: '12:04',
                 })}>🟠 Major</button>
-                <button className="debug-btn win" onClick={() => setDebugWinPopup({
+                <button className={debugBtnClasses('win')} onClick={() => setDebugWinPopup({
                   teamAbbr: abbr || 'MTL',
                   score: `${abbr || 'MTL'} 3 – BOS 2`,
                 })}>🏆 Win</button>
-                <button className="debug-btn" style={{ background: 'rgba(200,169,81,0.15)', color: '#c8a951' }}
+                <button className={debugBtnClasses()} style={{ background: 'rgba(200,169,81,0.15)', color: '#c8a951' }}
                   onClick={() => setDebugHatTrickPopup({
                     scorer: 'Marie-Philip Poulin', assists: ['Laura Stacey'],
                     shotType: 'Wrist', isPowerPlay: false, isShortHanded: false,
@@ -2146,21 +2207,21 @@ export default function PWHLShotMapView() {
                     teamColor: color,
                   })}>🧢 Hat Trick</button>
               </div>
-              <div className="debug-section-label">Situation</div>
-              <div className="debug-panel-btns">
-                <button className="debug-btn pp-car"
+              <div className={DEBUG_SECTION_LABEL_CLASSES}>Situation</div>
+              <div className={DEBUG_PANEL_BTNS_CLASSES}>
+                <button className={debugBtnClasses('pp-car')}
                   onClick={() => { setDebugSituation({ ourPP: true }); setTimeout(() => setDebugSituation(null), 15000); }}>
                   🟢 Our PP
                 </button>
-                <button className="debug-btn pp-opp"
+                <button className={debugBtnClasses('pp-opp')}
                   onClick={() => { setDebugSituation({ oppPP: true }); setTimeout(() => setDebugSituation(null), 15000); }}>
                   🟡 Opp PP
                 </button>
-                <button className="debug-btn" style={{ background: 'rgba(250,190,30,0.1)', color: '#fbbf24' }}
+                <button className={debugBtnClasses()} style={{ background: 'rgba(250,190,30,0.1)', color: '#fbbf24' }}
                   onClick={() => { setDebugSituation({ ourEN: true }); setTimeout(() => setDebugSituation(null), 15000); }}>
                   🥅 Our EN
                 </button>
-                <button className="debug-btn" style={{ background: 'rgba(250,190,30,0.1)', color: '#fbbf24' }}
+                <button className={debugBtnClasses()} style={{ background: 'rgba(250,190,30,0.1)', color: '#fbbf24' }}
                   onClick={() => { setDebugSituation({ oppEN: true }); setTimeout(() => setDebugSituation(null), 15000); }}>
                   🥅 Opp EN
                 </button>

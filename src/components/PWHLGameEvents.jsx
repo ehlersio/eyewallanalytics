@@ -21,9 +21,12 @@ import { HatTrickPopup as _HatTrickPopup } from './GameEvents'; // reuse hat tri
 // ── Tailwind class constants (Phase 4, sub-PR 2 -- GameEvents.css deleted) ──
 // Duplicated from GameEvents.jsx per established per-file convention
 // (see DevReplayView.jsx / PWHLDevReplayView.jsx, Phase 4 sub-PR 1).
-// PWHLLiveInsights/PWHLInsightsCard below are OUT OF SCOPE for this phase --
-// their classNames (`card`, `live-insights`, `insights-*`, `insight-*`,
-// `sec-label`) belong to ShotMapView.css and are left completely untouched.
+// PWHLLiveInsights/PWHLInsightsCard's own classNames (`card`, `live-insights`,
+// `insights-*`, `insight-*`) belonged to ShotMapView.css -- were left
+// untouched here in Phase 4 (out of scope for GameEvents.css), migrated in
+// Phase 5, ShotMapView.css sub-PR 4 (see the constants block right before
+// PWHLLiveInsights below). `sec-label` stays literal, untouched -- a global
+// index.css class, not ShotMapView.css's.
 
 const OVERLAY_BASE_CLASSES = 'fixed inset-0 z-[500] flex items-center justify-center animate-[fade-in_0.2s_ease]';
 function overlayClasses(darker) {
@@ -433,6 +436,29 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
   };
 }
 
+// ── Live Insights Tailwind constants (Phase 5, ShotMapView.css sub-PR 4)
+// -- PWHLInsightsCard below was flagged as an undeclared consumer of
+// ShotMapView.css during the Phase 5 investigation (found via full-tree
+// grep, not from ShotMapView.jsx/PWHLShotMapView.jsx's own declared
+// consumer list) -- explicitly out of scope back in Phase 4 sub-PR 2 (see
+// this file's header comment above), in scope now. Mirrors ShotMapView.jsx's
+// LiveInsightsCard constants exactly -- same classes, same property-race
+// fix (.insights-header/.insights-header-collapsed on margin-bottom).
+const liveInsightsClasses = (collapsed) => `card mb-[10px] ${collapsed ? 'cursor-pointer' : ''}`;
+const insightsHeaderClasses = (collapsed) => collapsed ? 'flex items-center gap-2' : 'flex items-center gap-2 mb-[10px]';
+const INSIGHTS_PEEK_CLASSES = 'text-[11px] text-[color:var(--text-muted)] font-[family-name:var(--font-body)] font-normal tracking-normal normal-case overflow-hidden text-ellipsis whitespace-nowrap flex-1';
+const INSIGHTS_CHEVRON_CLASSES = 'text-[16px] text-[color:var(--text-dim)] leading-none shrink-0 [transition:transform_0.2s_ease] ml-auto';
+const INSIGHTS_LIST_CLASSES = 'grid grid-cols-1 gap-[6px] mt-2 min-[480px]:grid-cols-2';
+const INSIGHT_ROW_VARIANTS = {
+  good: 'bg-[rgba(74,222,128,0.10)] border-l-[3px] border-l-[#4ade80]',
+  warn: 'bg-[rgba(251,191,36,0.10)] border-l-[3px] border-l-[#fbbf24]',
+  neutral: 'bg-[rgba(148,163,184,0.10)] border-l-[3px] border-l-[#94a3b8]',
+};
+const insightRowClasses = (type) =>
+  `insight-row flex items-center gap-[10px] py-2 px-[10px] rounded-[8px] text-[13px] font-medium text-[color:var(--text)] ${INSIGHT_ROW_VARIANTS[type]}`;
+const INSIGHT_ICON_CLASSES = 'text-[16px] shrink-0';
+const INSIGHT_TEXT_CLASSES = 'leading-[1.35]';
+
 // ── PWHLLiveInsights ──────────────────────────────────────────
 /**
  * Derives game insights from normalized pbpEvents + live shot events.
@@ -662,30 +688,30 @@ function PWHLInsightsCard({ insights, isLive }) {
 
   return (
     <div
-      className={`card live-insights${isLive && !expanded ? ' insights-collapsed' : ''}`}
+      className={liveInsightsClasses(isLive && !expanded)}
       onClick={handleTap}
     >
-      <div className={`insights-header${expanded ? '' : ' insights-header-collapsed'}`}>
+      <div className={insightsHeaderClasses(!expanded)}>
         <span className="sec-label" style={{ marginBottom: 0 }}>
           {isLive ? '🔴 Live Insights' : '📊 Game Insights'}
         </span>
         {isLive && !expanded && (
-          <span className="insights-peek">
+          <span className={INSIGHTS_PEEK_CLASSES}>
             {insights[0]?.icon} {insights[0]?.text}
           </span>
         )}
         {isLive && (
-          <span className="insights-chevron" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+          <span className={INSIGHTS_CHEVRON_CLASSES} style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
             ›
           </span>
         )}
       </div>
       {expanded && (
-        <div className="insights-list">
+        <div className={INSIGHTS_LIST_CLASSES}>
           {insights.map((ins, i) => (
-            <div key={i} className={`insight-row insight-${ins.type}`}>
-              <span className="insight-icon">{ins.icon}</span>
-              <span className="insight-text">{ins.text}</span>
+            <div key={i} className={insightRowClasses(ins.type)}>
+              <span className={INSIGHT_ICON_CLASSES}>{ins.icon}</span>
+              <span className={INSIGHT_TEXT_CLASSES}>{ins.text}</span>
             </div>
           ))}
         </div>
