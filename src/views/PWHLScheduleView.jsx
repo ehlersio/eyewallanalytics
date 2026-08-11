@@ -12,7 +12,9 @@ import {
 import TeamLogo from '../components/TeamLogo';
 import PWHLGameStatsPopup from '../components/PWHLGameStatsPopup';
 import PWHLGamePreviewPopup from '../components/PWHLGamePreviewPopup';
-import './ScheduleView.css';
+// ScheduleView.css import removed (Phase 6, ScheduleView.css sub-PR 5, the
+// final sub-PR) -- the file is now fully deleted, all classes migrated to
+// Tailwind across sub-PRs 1-5.
 // ShotMapView.css import removed (Phase 5, sub-PR 1) -- this file's only
 // dependency on it was .context-pill (+.playoffs/.regular), now fully
 // migrated to CONTEXT_PILL_VARIANTS/contextPillClasses() below. Found and

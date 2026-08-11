@@ -51,6 +51,13 @@ const GP_ADV_ROW_CLASSES = 'gp-adv-row grid gap-1.5 items-center text-[12px] [gr
 // non-competing bg/border pair instead.
 const SKATER_TOGGLE_BTN_BASE = 'skater-toggle-btn flex items-center gap-[5px] py-[5px] px-3 rounded-[20px] text-[12px] font-medium border-[0.5px] cursor-pointer [transition:all_0.15s]';
 
+// AI Game Summary Card (Phase 6, ScheduleView.css sub-PR 5, the final
+// sub-PR -- ScheduleView.css is now fully deleted). Deferred from sub-PR 3
+// since it's a self-contained AI/prediction feature, migrated together
+// with MatchupDetail.jsx's own AI/prediction surface here.
+const GP_SUMMARY_CARD_CLASSES = 'gp-summary-card rounded-[12px] py-4 px-4 pb-3 mb-4 border-[0.5px] border-[rgba(204,34,0,0.25)] bg-[linear-gradient(135deg,var(--bg2)_0%,rgba(204,34,0,0.06)_100%)]';
+const GP_SUMMARY_CHIP_CLASSES = 'gp-summary-chip text-[11px] font-semibold bg-[var(--bg3)] text-[color:var(--text-muted)] py-[3px] px-2 rounded-[6px]';
+
 function GameStatsPopup({ game, onClose }) {
   const { data, loading } = useFetch(() => getCompletedGameStats(game.id), [game.id]);
   const [skaterTeam, setSkaterTeam] = useState('car');
@@ -204,21 +211,21 @@ function GameStatsPopup({ game, onClose }) {
         <div className="gp-body pt-4 px-4 pb-6">
           {/* ── AI Game Summary Card ── */}
           {summary && (
-            <div className="gp-summary-card">
-              <div className="gp-summary-header">
-                <span className="gp-summary-label">Game Summary</span>
-                <span className="gp-summary-badge">⚡ EyeWall AI</span>
+            <div className={GP_SUMMARY_CARD_CLASSES}>
+              <div className="gp-summary-header flex justify-between items-center mb-2.5">
+                <span className="gp-summary-label text-[9px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)]">Game Summary</span>
+                <span className="gp-summary-badge text-[9px] font-bold bg-[rgba(204,34,0,0.15)] text-[color:var(--red-bright)] py-[2px] px-[7px] rounded-[10px] tracking-[0.04em]">⚡ EyeWall AI</span>
               </div>
-              <p className="gp-summary-narrative">{summary.narrative}</p>
-              <div className="gp-summary-chips">
-                <span className="gp-summary-chip" style={{color: summary.cfPct >= 50 ? 'var(--green)' : 'var(--red-bright)'}}>
+              <p className="gp-summary-narrative text-[13px] leading-[1.65] text-[color:var(--text)] mt-0 mb-3">{summary.narrative}</p>
+              <div className="gp-summary-chips flex gap-1.5 flex-wrap justify-center items-center mb-2.5">
+                <span className={GP_SUMMARY_CHIP_CLASSES} style={{color: summary.cfPct >= 50 ? 'var(--green)' : 'var(--red-bright)'}}>
                   CF% {summary.cfPct}%
                 </span>
                 {summary.topScorer && summary.topScorer !== 'Unknown' && (
-                  <span className="gp-summary-chip">🚨 {summary.topScorer}</span>
+                  <span className={GP_SUMMARY_CHIP_CLASSES}>🚨 {summary.topScorer}</span>
                 )}
                 {summary.carGoalie && summary.carGoalie.svPct != null && (
-                  <span className="gp-summary-chip">
+                  <span className={GP_SUMMARY_CHIP_CLASSES}>
                     🥅 {summary.carGoalie.name.split(' ').pop()}{' '}
                     {typeof summary.carGoalie.svPct === 'number'
                       ? (summary.carGoalie.svPct <= 1
@@ -227,12 +234,12 @@ function GameStatsPopup({ game, onClose }) {
                       : summary.carGoalie.svPct}
                   </span>
                 )}
-                <span className="gp-summary-chip" style={{color: summary.won ? 'var(--green)' : 'var(--red-bright)'}}>
+                <span className={GP_SUMMARY_CHIP_CLASSES} style={{color: summary.won ? 'var(--green)' : 'var(--red-bright)'}}>
                   {summary.won ? '✓ W' : '✗ L'} {summary.carScore}–{summary.oppScore}
                 </span>
               </div>
               <button
-                className="gp-summary-share"
+                className="gp-summary-share block mx-auto bg-none border-[0.5px] border-[color:var(--border-2)] text-[color:var(--text-muted)] text-[11px] font-semibold py-[5px] px-[18px] rounded-[6px] cursor-pointer min-h-0 min-w-0 [transition:all_0.15s] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]"
                 onClick={() => {
                   const text = `${TEAM_CONFIG.abbr} ${summary.carScore}–${summary.oppScore} ${summary.oppAbbr} | ${summary.narrative} — EyeWall Analytics eyewallanalytics.com`;
                   if (navigator.share) {

@@ -116,10 +116,10 @@ function CalendarView({ games, calMonth, setCalMonth, onGamePopup }) {
 
       {/* Legend */}
       <div className="cal-legend flex gap-3 flex-wrap mt-2.5 pt-2 border-t-[0.5px] border-t-[color:var(--border)]">
-        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot win w-2.5 h-2.5 rounded-sm shrink-0 bg-[rgba(61,186,126,0.4)] border-[0.5px] border-[rgba(61,186,126,0.5)]" />Win</span>
-        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot otl w-2.5 h-2.5 rounded-sm shrink-0 bg-[rgba(240,160,48,0.35)] border-[0.5px] border-[rgba(240,160,48,0.5)]" />OT Loss</span>
-        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot loss w-2.5 h-2.5 rounded-sm shrink-0 bg-[rgba(204,34,0,0.35)] border-[0.5px] border-[rgba(204,34,0,0.5)]" />Loss</span>
-        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot upcoming w-2.5 h-2.5 rounded-sm shrink-0 bg-[var(--bg3)] border-[0.5px] border-[color:var(--border-2)]" />Upcoming</span>
+        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot win w-2.5 h-2.5 rounded-[2px] shrink-0 bg-[rgba(61,186,126,0.4)] border-[0.5px] border-[rgba(61,186,126,0.5)]" />Win</span>
+        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot otl w-2.5 h-2.5 rounded-[2px] shrink-0 bg-[rgba(240,160,48,0.35)] border-[0.5px] border-[rgba(240,160,48,0.5)]" />OT Loss</span>
+        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot loss w-2.5 h-2.5 rounded-[2px] shrink-0 bg-[rgba(204,34,0,0.35)] border-[0.5px] border-[rgba(204,34,0,0.5)]" />Loss</span>
+        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot upcoming w-2.5 h-2.5 rounded-[2px] shrink-0 bg-[var(--bg3)] border-[0.5px] border-[color:var(--border-2)]" />Upcoming</span>
         <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-home text-[10px] text-[color:var(--text-dim)]">●</span>Home</span>
         <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-home text-[10px] text-[color:var(--text-dim)]">○</span>Away</span>
       </div>
