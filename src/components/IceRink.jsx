@@ -1,7 +1,35 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useWindowWidth } from '../hooks/useFetch';
 import { TEAM_CONFIG } from '../utils/teamConfig';
-import './IceRink.css';
+import { rinkBtnClasses } from '../utils/rinkBtnClasses';
+// IceRink.css import removed (Phase 6) -- migrated to Tailwind. .rink-btn's
+// shared style now lives in utils/rinkBtnClasses.js since 3 other files
+// (SeasonChipRow.jsx, PWHLShotMapView.jsx, ShotMapView.jsx) also render it
+// without importing this component's CSS themselves.
+
+const ZOOM_BTN_CLASSES = 'zoom-btn w-6 h-6 rounded-full border-[0.5px] border-[color:var(--border-2)] bg-[var(--bg3)] text-[color:var(--text-muted)] text-[14px] leading-none flex items-center justify-center shrink-0 [transition:all_0.12s] disabled:opacity-30 disabled:cursor-default enabled:hover:bg-[var(--bg4)] enabled:hover:text-[color:var(--text)]';
+const LEG_DOT_CLASSES = 'leg-dot w-2 h-2 rounded-full shrink-0';
+const TIP_ROW_CLASSES = 'tip-row flex justify-between gap-2 text-[11px] py-0.5';
+const POPUP_SECTION_LABEL_CLASSES = 'popup-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] mb-1.5 pb-1 border-b-[0.5px] border-b-[color:var(--border)]';
+const POPUP_ROW_CLASSES = 'popup-row flex justify-between items-baseline gap-3 py-1 text-[13px]';
+
+function popupHeaderClasses(isGoal, isCanes) {
+  // .popup-header.popup-goal is declared after .popup-car/.popup-opp in the
+  // original CSS -- same specificity, so a goal's green background always
+  // wins over the team-color background regardless of which team scored.
+  // Computed directly here rather than stacked, the same reasoning as every
+  // other same-property Tailwind-stacking risk found this migration.
+  const bg = isGoal ? 'bg-[rgba(61,186,126,0.08)]' : isCanes ? 'bg-[rgba(204,34,0,0.08)]' : 'bg-[rgba(34,68,170,0.08)]';
+  return `popup-header ${isGoal ? 'popup-goal ' : ''}${isCanes ? 'popup-car' : 'popup-opp'} flex items-center justify-between py-3.5 px-4 border-b-[0.5px] border-b-[color:var(--border)] rounded-t-[var(--radius-lg)] ${bg}`;
+}
+function popupTeamBadgeClasses(isCanes) {
+  // .popup-header.popup-car/.popup-opp .popup-team-badge -- descendant
+  // selectors keyed off car/opp only, independent of popup-goal (no
+  // .popup-goal .popup-team-badge rule exists).
+  return isCanes
+    ? 'popup-team-badge font-[family-name:var(--font-display)] text-[11px] font-bold py-0.5 px-2 rounded-[4px] bg-[var(--red-dim)] text-[color:var(--red-bright)]'
+    : 'popup-team-badge font-[family-name:var(--font-display)] text-[11px] font-bold py-0.5 px-2 rounded-[4px] bg-[var(--blue-dim)] text-[color:var(--blue-bright)]';
+}
 
 // ─── Constants ───────────────────────────────────────────────
 // NHL ice: 200ft x 85ft. Origin (0,0) = center ice.
@@ -289,56 +317,56 @@ export default function IceRink({ events = [], _roster = {}, hidePlayerFilter = 
   }, [filtered]);
 
   return (
-    <div className="ice-rink-wrap" ref={wrapRef}>
+    <div className="ice-rink-wrap flex flex-col gap-2 relative" ref={wrapRef}>
 
       {/* Toolbar */}
       {!readOnly && (
-      <div className="rink-toolbar">
-        <div className="rink-filters">
+      <div className="rink-toolbar flex items-center justify-between gap-2 flex-wrap">
+        <div className="rink-filters flex gap-[5px] flex-wrap">
           {/* Regular periods always shown */}
           {['all','1','2','3'].map(p => (
-            <button key={p} className={`rink-btn ${period === p ? 'on' : ''}`}
+            <button key={p} className={rinkBtnClasses({ active: period === p })}
               onClick={() => { setPeriod(p); setSelectedPlayer(null); }}>
               {p === 'all' ? 'All' : `P${p}`}
             </button>
           ))}
           {/* OT periods — only rendered if that period has events */}
           {otPeriods.map(p => (
-            <button key={`ot${p}`} className={`rink-btn ot-btn ${period === `ot${p}` ? 'on' : ''}`}
+            <button key={`ot${p}`} className={rinkBtnClasses({ active: period === `ot${p}`, variant: 'ot' })}
               onClick={() => setPeriod(`ot${p}`)}>
               {otLabel(p)}
             </button>
           ))}
         </div>
-        <div className="rink-right-controls">
+        <div className="rink-right-controls flex gap-[5px]">
           {/* Player filter popover */}
           {carShooters.length > 0 && !hidePlayerFilter && (
-            <div className="rink-filter-wrap" ref={filterRef}>
+            <div className="rink-filter-wrap relative" ref={filterRef}>
               <button
-                className={`rink-btn rink-filter-btn${selectedPlayer ? ' on' : ''}`}
+                className={rinkBtnClasses({ active: !!selectedPlayer, variant: 'filter' })}
                 onClick={() => setFilterOpen(o => !o)}
                 aria-expanded={filterOpen}
               >
                 {selectedPlayer
-                  ? <>{carShooters.find(s => s.id === selectedPlayer)?.name.split(' ').pop() || 'Player'} <span className="rink-filter-clear" onClick={e => { e.stopPropagation(); setSelectedPlayer(null); setFilterOpen(false); }}>✕</span></>
+                  ? <>{carShooters.find(s => s.id === selectedPlayer)?.name.split(' ').pop() || 'Player'} <span className="rink-filter-clear text-[10px] opacity-70 py-0 px-px rounded-full hover:opacity-100" onClick={e => { e.stopPropagation(); setSelectedPlayer(null); setFilterOpen(false); }}>✕</span></>
                   : <>Player ▾</>
                 }
               </button>
               {filterOpen && (
-                <div className="rink-filter-dropdown" role="listbox">
+                <div className="rink-filter-dropdown absolute top-[calc(100%+4px)] right-0 z-[200] bg-[var(--bg1)] border-[0.5px] border-[color:var(--border-2)] rounded-[10px] shadow-[0_8px_28px_rgba(0,0,0,0.5)] min-w-[160px] max-h-[280px] overflow-y-auto p-1" role="listbox">
                   <button
-                    className={`rink-filter-option${selectedPlayer === null ? ' active' : ''}`}
+                    className={`rink-filter-option flex items-center w-full bg-none border-none py-[7px] px-[10px] rounded-[7px] text-[12px] cursor-pointer text-left min-h-0 min-w-0 [transition:background_0.1s] ${selectedPlayer === null ? 'active bg-[rgba(204,34,0,0.15)] text-[color:var(--red-bright)] font-semibold' : 'text-[color:var(--text-muted)] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]'}`}
                     onClick={() => { setSelectedPlayer(null); setFilterOpen(false); }}
                     role="option"
                   >All players</button>
                   {carShooters.map(s => (
                     <button
                       key={s.id}
-                      className={`rink-filter-option${selectedPlayer === s.id ? ' active' : ''}`}
+                      className={`rink-filter-option flex items-center w-full bg-none border-none py-[7px] px-[10px] rounded-[7px] text-[12px] cursor-pointer text-left min-h-0 min-w-0 [transition:background_0.1s] ${selectedPlayer === s.id ? 'active bg-[rgba(204,34,0,0.15)] text-[color:var(--red-bright)] font-semibold' : 'text-[color:var(--text-muted)] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]'}`}
                       onClick={() => { setSelectedPlayer(s.id); setFilterOpen(false); }}
                       role="option"
                     >
-                      <span className="rink-filter-name">{s.name}</span>
+                      <span className="rink-filter-name flex-1">{s.name}</span>
                     </button>
                   ))}
                 </div>
@@ -346,13 +374,13 @@ export default function IceRink({ events = [], _roster = {}, hidePlayerFilter = 
             </div>
           )}
           <button
-            className={`rink-btn ${viewMode === 'heat' ? 'on heat-on' : ''}`}
+            className={rinkBtnClasses({ active: viewMode === 'heat', variant: 'heat' })}
             onClick={() => setViewMode(m => m === 'dots' ? 'heat' : 'dots')}
           >
             {viewMode === 'heat' ? '🔥 Heat' : '🔥 Heat'}
           </button>
           {!isMobile && (
-            <button className="rink-btn rink-toggle" onClick={() => setHalfRink(h => !h)}>
+            <button className={rinkBtnClasses({ active: false })} onClick={() => setHalfRink(h => !h)}>
               {showHalf ? 'Full rink' : 'Half rink'}
             </button>
           )}
@@ -362,52 +390,52 @@ export default function IceRink({ events = [], _roster = {}, hidePlayerFilter = 
 
       {/* Zoom controls */}
       {!readOnly && (
-      <div className="zoom-bar">
-        <button className="zoom-btn" onClick={() => zoomToward(-0.5, 0, 0)} disabled={zoom <= MIN_ZOOM}>−</button>
-        <div className="zoom-track">
-          <div className="zoom-fill" style={{ width: `${((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100}%` }} />
+      <div className="zoom-bar flex items-center gap-2">
+        <button className={ZOOM_BTN_CLASSES} onClick={() => zoomToward(-0.5, 0, 0)} disabled={zoom <= MIN_ZOOM}>−</button>
+        <div className="zoom-track flex-1 h-1 rounded-[2px] bg-[var(--bg4)] overflow-hidden max-w-[120px]">
+          <div className="zoom-fill h-full bg-[var(--red)] rounded-[2px] [transition:width_0.15s]" style={{ width: `${((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100}%` }} />
         </div>
-        <button className="zoom-btn" onClick={() => zoomToward(0.5, 0, 0)} disabled={zoom >= MAX_ZOOM}>+</button>
+        <button className={ZOOM_BTN_CLASSES} onClick={() => zoomToward(0.5, 0, 0)} disabled={zoom >= MAX_ZOOM}>+</button>
         {(zoom > 1 || pan.x !== 0 || pan.y !== 0) && (
-          <button className="zoom-reset" onClick={resetView}>Reset</button>
+          <button className="zoom-reset text-[10px] text-[color:var(--text-dim)] border-[0.5px] border-[color:var(--border)] rounded-[4px] py-0.5 px-[7px] bg-transparent [transition:color_0.12s] hover:text-[color:var(--text-muted)]" onClick={resetView}>Reset</button>
         )}
-        <span className="zoom-label">{Math.round(zoom * 100)}%</span>
+        <span className="zoom-label text-[10px] font-[family-name:var(--font-mono)] text-[color:var(--text-dim)] w-9 text-right">{Math.round(zoom * 100)}%</span>
       </div>
       )}
 
       {/* Heat team selector — only in heat mode */}
       {!readOnly && viewMode === 'heat' && (
-        <div className="heat-controls">
-          <span className="heat-label">Show:</span>
+        <div className="heat-controls flex items-center gap-1.5 flex-wrap">
+          <span className="heat-label text-[11px] text-[color:var(--text-dim)] shrink-0">Show:</span>
           {[['car',`${displayAbbr} shots`],['opp','Opp shots'],['both','Both']].map(([val, lbl]) => (
             <button
               key={val}
-              className={`rink-btn ${heatTeam === val ? 'on' : ''}`}
+              className={rinkBtnClasses({ active: heatTeam === val })}
               onClick={() => setHeatTeam(val)}
             >{lbl}</button>
           ))}
-          <span className="heat-scale">
-            <span className="heat-scale-low">Low</span>
-            <span className="heat-scale-bar" />
-            <span className="heat-scale-high">High</span>
+          <span className="heat-scale flex items-center gap-[5px] ml-auto text-[10px] text-[color:var(--text-dim)]">
+            <span className="heat-scale-low text-[9px] text-[color:var(--text-dim)]">Low</span>
+            <span className="heat-scale-bar w-[60px] h-1.5 rounded-[3px] bg-[linear-gradient(to_right,#0050c8,#ffb400,#ff6600,#ff0000)] shrink-0" />
+            <span className="heat-scale-high text-[9px] text-[color:var(--text-dim)]">High</span>
           </span>
         </div>
       )}
 
       {/* Legend — only in dots mode, not readOnly */}
       {!readOnly && viewMode === 'dots' && (
-        <div className="rink-legend">
-          <div className="legend-item"><span className="leg-dot" style={{background:displayColor,opacity:0.65}} />{displayAbbr} shot</div>
-          <div className="legend-item"><span className="leg-dot leg-goal" style={{background:displayColor}} />{displayAbbr} goal</div>
-          <div className="legend-item"><span className="leg-dot" style={{background:'#4477ee',opacity:0.55}} />Opp shot</div>
-          <div className="legend-item"><span className="leg-dot leg-goal" style={{background:'#4477ee'}} />Opp goal</div>
-          <div className="legend-item"><span className="leg-dot" style={{background:'#8899aa',opacity:0.45}} />Blocked</div>
+        <div className="rink-legend flex gap-3 flex-wrap">
+          <div className="legend-item flex items-center gap-[5px] text-[11px] text-[color:var(--text-muted)]"><span className={LEG_DOT_CLASSES} style={{background:displayColor,opacity:0.65}} />{displayAbbr} shot</div>
+          <div className="legend-item flex items-center gap-[5px] text-[11px] text-[color:var(--text-muted)]"><span className={`${LEG_DOT_CLASSES} leg-goal shadow-[0_0_0_2px_#333,0_0_0_3px_rgba(255,255,255,0.4)]`} style={{background:displayColor}} />{displayAbbr} goal</div>
+          <div className="legend-item flex items-center gap-[5px] text-[11px] text-[color:var(--text-muted)]"><span className={LEG_DOT_CLASSES} style={{background:'#4477ee',opacity:0.55}} />Opp shot</div>
+          <div className="legend-item flex items-center gap-[5px] text-[11px] text-[color:var(--text-muted)]"><span className={`${LEG_DOT_CLASSES} leg-goal shadow-[0_0_0_2px_#333,0_0_0_3px_rgba(255,255,255,0.4)]`} style={{background:'#4477ee'}} />Opp goal</div>
+          <div className="legend-item flex items-center gap-[5px] text-[11px] text-[color:var(--text-muted)]"><span className={LEG_DOT_CLASSES} style={{background:'#8899aa',opacity:0.45}} />Blocked</div>
         </div>
       )}
 
       {/* SVG rink */}
       <div
-        className="rink-svg-container"
+        className="rink-svg-container overflow-hidden rounded-[var(--radius-sm)] leading-none select-none"
         style={{ cursor: isPanning ? 'grabbing' : zoom > 1 ? 'grab' : 'default' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -420,7 +448,7 @@ export default function IceRink({ events = [], _roster = {}, hidePlayerFilter = 
       >
         <svg
           ref={svgRef}
-          className="rink-svg"
+          className="rink-svg w-full block"
           viewBox={viewBox}
           xmlns="http://www.w3.org/2000/svg"
           style={{
@@ -467,7 +495,7 @@ export default function IceRink({ events = [], _roster = {}, hidePlayerFilter = 
       )}
 
       {events.length === 0 && (
-        <div className="rink-empty">Shot data appears here during and after games.</div>
+        <div className="rink-empty text-center py-5 text-[12px] text-[color:var(--text-dim)] italic">Shot data appears here during and after games.</div>
       )}
     </div>
   );
@@ -646,22 +674,22 @@ function HoverTooltip({ event: e, screenX, screenY, _playerNames, wrapRef }) {
   const isGoal = e.type === 'goal';
 
   return (
-    <div ref={ref} className="hover-tip" style={{ top: pos.top, left: pos.left }}>
-      <div className={`tip-type tip-${e.isCanes ? 'car' : 'opp'}`}>
+    <div ref={ref} className="hover-tip absolute pointer-events-none z-50 bg-[var(--bg1)] border-[0.5px] border-[color:var(--border-2)] rounded-[var(--radius-sm)] py-2 px-2.5 min-w-[160px] max-w-[210px] shadow-[0_4px_16px_rgba(0,0,0,0.4)] animate-[tip-in_0.1s_ease]" style={{ top: pos.top, left: pos.left }}>
+      <div className={`tip-type text-[12px] font-semibold mb-1.5 pb-[5px] border-b-[0.5px] border-b-[color:var(--border)] ${e.isCanes ? 'tip-car text-[color:var(--red-bright)]' : 'tip-opp text-[color:var(--blue-bright)]'}`}>
         {isGoal ? '🚨 ' : ''}{TYPE_LABELS[e.type] || e.type}
       </div>
-      {e.shooterName && <div className="tip-row"><span className="tip-label">{isGoal ? 'Scorer' : 'Shooter'}</span><span className="tip-val">{e.shooterName}</span></div>}
-      {isGoal && e.assist1Name && <div className="tip-row"><span className="tip-label">Assist</span><span className="tip-val">{e.assist1Name}{e.assist2Name ? `, ${e.assist2Name}` : ''}</span></div>}
-      <div className="tip-row">
-        <span className="tip-label">Period</span>
-        <span className="tip-val">
+      {e.shooterName && <div className={TIP_ROW_CLASSES}><span className="tip-label text-[color:var(--text-dim)] shrink-0">{isGoal ? 'Scorer' : 'Shooter'}</span><span className="tip-val text-[color:var(--text)] text-right">{e.shooterName}</span></div>}
+      {isGoal && e.assist1Name && <div className={TIP_ROW_CLASSES}><span className="tip-label text-[color:var(--text-dim)] shrink-0">Assist</span><span className="tip-val text-[color:var(--text)] text-right">{e.assist1Name}{e.assist2Name ? `, ${e.assist2Name}` : ''}</span></div>}
+      <div className={TIP_ROW_CLASSES}>
+        <span className="tip-label text-[color:var(--text-dim)] shrink-0">Period</span>
+        <span className="tip-val text-[color:var(--text)] text-right">
           {e.period <= 3 ? `P${e.period}` : e.period === 4 ? 'OT' : `OT${e.period - 3}`} · {e.timeInPeriod}
         </span>
       </div>
-      <div className="tip-row"><span className="tip-label">Distance</span><span className="tip-val">{dist} ft</span></div>
-      {e.shotType && <div className="tip-row"><span className="tip-label">Type</span><span className="tip-val">{e.shotType}</span></div>}
-      {e.shotSpeed && <div className="tip-row"><span className="tip-label">Speed</span><span className="tip-val tip-speed">{e.shotSpeed} mph</span></div>}
-      <div className="tip-footer">Click for full details</div>
+      <div className={TIP_ROW_CLASSES}><span className="tip-label text-[color:var(--text-dim)] shrink-0">Distance</span><span className="tip-val text-[color:var(--text)] text-right">{dist} ft</span></div>
+      {e.shotType && <div className={TIP_ROW_CLASSES}><span className="tip-label text-[color:var(--text-dim)] shrink-0">Type</span><span className="tip-val text-[color:var(--text)] text-right">{e.shotType}</span></div>}
+      {e.shotSpeed && <div className={TIP_ROW_CLASSES}><span className="tip-label text-[color:var(--text-dim)] shrink-0">Speed</span><span className="tip-val tip-speed text-[color:var(--amber)] font-semibold font-[family-name:var(--font-mono)] text-right">{e.shotSpeed} mph</span></div>}
+      <div className="tip-footer text-[10px] text-[color:var(--text-dim)] mt-1.5 pt-[5px] border-t-[0.5px] border-t-[color:var(--border)] text-center italic">Click for full details</div>
     </div>
   );
 }
@@ -687,112 +715,112 @@ function ShotPopup({ event: e, _playerNames, onClose, displayAbbr }) {
   else if (distNum < 25)                      danger = '🟡 Medium danger';
 
   return (
-    <div className="shot-popup-backdrop" onClick={onClose}>
-      <div className="shot-popup" onClick={e => e.stopPropagation()}>
+    <div className="shot-popup-backdrop fixed inset-0 z-[200] bg-[rgba(0,0,0,0.5)] flex items-center justify-center p-4 animate-[fade-in_0.15s_ease]" onClick={onClose}>
+      <div className="shot-popup bg-[var(--bg1)] border-[0.5px] border-[color:var(--border-2)] rounded-[var(--radius-lg)] w-full max-w-[360px] max-h-[85vh] overflow-y-auto shadow-[0_20px_60px_rgba(0,0,0,0.6)] animate-[pop-in_0.18s_cubic-bezier(0.34,1.56,0.64,1)]" onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div className={`popup-header ${isGoal ? 'popup-goal' : ''} ${isCanes ? 'popup-car' : 'popup-opp'}`}>
-          <div className="popup-type-row">
-            <span className="popup-type-icon">{isGoal ? '🚨' : e.type === 'blocked-shot' ? '🛡' : e.type === 'missed-shot' ? '↗' : '🏒'}</span>
-            <span className="popup-type-label">{TYPE_LABELS[e.type] || e.type}</span>
-            <span className="popup-team-badge">{isCanes ? displayAbbr : 'OPP'}</span>
+        <div className={popupHeaderClasses(isGoal, isCanes)}>
+          <div className="popup-type-row flex items-center gap-2">
+            <span className="popup-type-icon text-[18px]">{isGoal ? '🚨' : e.type === 'blocked-shot' ? '🛡' : e.type === 'missed-shot' ? '↗' : '🏒'}</span>
+            <span className="popup-type-label font-[family-name:var(--font-display)] text-[16px] font-bold text-[color:var(--text)]">{TYPE_LABELS[e.type] || e.type}</span>
+            <span className={popupTeamBadgeClasses(isCanes)}>{isCanes ? displayAbbr : 'OPP'}</span>
           </div>
-          <button className="popup-close" onClick={onClose}>✕</button>
+          <button className="popup-close w-7 h-7 rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center shrink-0 [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]" onClick={onClose}>✕</button>
         </div>
 
-        <div className="popup-body">
+        <div className="popup-body py-0 px-4 pb-4">
           {/* Time */}
-          <div className="popup-section">
-            <div className="popup-section-label">When</div>
-            <div className="popup-row">
-              <span className="popup-field">Period</span>
-              <span className="popup-value">{
+          <div className="popup-section mt-3.5">
+            <div className={POPUP_SECTION_LABEL_CLASSES}>When</div>
+            <div className={POPUP_ROW_CLASSES}>
+              <span className="popup-field text-[color:var(--text-muted)] shrink-0 text-[12px]">Period</span>
+              <span className="popup-value text-[color:var(--text)] text-right">{
                 e.period <= 3
                   ? `Period ${e.period}`
                   : e.period === 4 ? 'Overtime'
                   : `OT${e.period - 3}`
               }</span>
             </div>
-            <div className="popup-row">
-              <span className="popup-field">Time</span>
-              <span className="popup-value">{e.timeInPeriod}</span>
+            <div className={POPUP_ROW_CLASSES}>
+              <span className="popup-field text-[color:var(--text-muted)] shrink-0 text-[12px]">Time</span>
+              <span className="popup-value text-[color:var(--text)] text-right">{e.timeInPeriod}</span>
             </div>
           </div>
 
           {/* Players */}
-          <div className="popup-section">
-            <div className="popup-section-label">Players</div>
-            <div className="popup-row">
-              <span className="popup-field">{isGoal ? 'Goal scorer' : e.type === 'blocked-shot' ? 'Shot by' : 'Shot by'}</span>
-              <span className="popup-value popup-name">{shooterName}</span>
+          <div className="popup-section mt-3.5">
+            <div className={POPUP_SECTION_LABEL_CLASSES}>Players</div>
+            <div className={POPUP_ROW_CLASSES}>
+              <span className="popup-field text-[color:var(--text-muted)] shrink-0 text-[12px]">{isGoal ? 'Goal scorer' : e.type === 'blocked-shot' ? 'Shot by' : 'Shot by'}</span>
+              <span className="popup-value popup-name text-[color:var(--text)] font-medium text-right">{shooterName}</span>
             </div>
             {isGoal && assists.length > 0 && (
-              <div className="popup-row">
-                <span className="popup-field">Assists</span>
-                <span className="popup-value popup-name">{assists.join(', ')}</span>
+              <div className={POPUP_ROW_CLASSES}>
+                <span className="popup-field text-[color:var(--text-muted)] shrink-0 text-[12px]">Assists</span>
+                <span className="popup-value popup-name text-[color:var(--text)] font-medium text-right">{assists.join(', ')}</span>
               </div>
             )}
             {blockerName && (
-              <div className="popup-row">
-                <span className="popup-field">Blocked by</span>
-                <span className="popup-value popup-name">{blockerName}</span>
+              <div className={POPUP_ROW_CLASSES}>
+                <span className="popup-field text-[color:var(--text-muted)] shrink-0 text-[12px]">Blocked by</span>
+                <span className="popup-value popup-name text-[color:var(--text)] font-medium text-right">{blockerName}</span>
               </div>
             )}
             {goalieName && (
-              <div className="popup-row">
-                <span className="popup-field">Goalie</span>
-                <span className="popup-value popup-name">{goalieName}</span>
+              <div className={POPUP_ROW_CLASSES}>
+                <span className="popup-field text-[color:var(--text-muted)] shrink-0 text-[12px]">Goalie</span>
+                <span className="popup-value popup-name text-[color:var(--text)] font-medium text-right">{goalieName}</span>
               </div>
             )}
           </div>
 
           {/* Location */}
-          <div className="popup-section">
-            <div className="popup-section-label">Location</div>
-            <div className="popup-row">
-              <span className="popup-field">Distance</span>
-              <span className="popup-value">{dist} ft from goal</span>
+          <div className="popup-section mt-3.5">
+            <div className={POPUP_SECTION_LABEL_CLASSES}>Location</div>
+            <div className={POPUP_ROW_CLASSES}>
+              <span className="popup-field text-[color:var(--text-muted)] shrink-0 text-[12px]">Distance</span>
+              <span className="popup-value text-[color:var(--text)] text-right">{dist} ft from goal</span>
             </div>
-            <div className="popup-row">
-              <span className="popup-field">Angle</span>
-              <span className="popup-value">{angle}°</span>
+            <div className={POPUP_ROW_CLASSES}>
+              <span className="popup-field text-[color:var(--text-muted)] shrink-0 text-[12px]">Angle</span>
+              <span className="popup-value text-[color:var(--text)] text-right">{angle}°</span>
             </div>
-            <div className="popup-row">
-              <span className="popup-field">Zone</span>
-              <span className="popup-value">{zone}</span>
+            <div className={POPUP_ROW_CLASSES}>
+              <span className="popup-field text-[color:var(--text-muted)] shrink-0 text-[12px]">Zone</span>
+              <span className="popup-value text-[color:var(--text)] text-right">{zone}</span>
             </div>
 
           </div>
 
           {/* Shot details */}
-          <div className="popup-section">
-            <div className="popup-section-label">Shot details</div>
+          <div className="popup-section mt-3.5">
+            <div className={POPUP_SECTION_LABEL_CLASSES}>Shot details</div>
             {e.shotType && (
-              <div className="popup-row">
-                <span className="popup-field">Shot type</span>
-                <span className="popup-value">{e.shotType}</span>
+              <div className={POPUP_ROW_CLASSES}>
+                <span className="popup-field text-[color:var(--text-muted)] shrink-0 text-[12px]">Shot type</span>
+                <span className="popup-value text-[color:var(--text)] text-right">{e.shotType}</span>
               </div>
             )}
             {e.shotSpeed != null && (
-              <div className="popup-row">
-                <span className="popup-field">Shot speed</span>
-                <span className="popup-value popup-speed">{e.shotSpeed} mph</span>
+              <div className={POPUP_ROW_CLASSES}>
+                <span className="popup-field text-[color:var(--text-muted)] shrink-0 text-[12px]">Shot speed</span>
+                <span className="popup-value popup-speed text-[color:var(--amber)] font-semibold font-[family-name:var(--font-mono)] text-right">{e.shotSpeed} mph</span>
               </div>
             )}
             {e.shotSpeed == null && (
-              <div className="popup-row">
-                <span className="popup-field">Shot speed</span>
-                <span className="popup-value" style={{color:'var(--text-dim)',fontSize:11}}>Not tracked</span>
+              <div className={POPUP_ROW_CLASSES}>
+                <span className="popup-field text-[color:var(--text-muted)] shrink-0 text-[12px]">Shot speed</span>
+                <span className="popup-value text-right" style={{color:'var(--text-dim)',fontSize:11}}>Not tracked</span>
               </div>
             )}
-            <div className="popup-row">
-              <span className="popup-field">Danger</span>
-              <span className="popup-value">{danger}</span>
+            <div className={POPUP_ROW_CLASSES}>
+              <span className="popup-field text-[color:var(--text-muted)] shrink-0 text-[12px]">Danger</span>
+              <span className="popup-value text-[color:var(--text)] text-right">{danger}</span>
             </div>
             {e.zoneCode && (
-              <div className="popup-row">
-                <span className="popup-field">Zone code</span>
-                <span className="popup-value">{e.zoneCode === 'O' ? 'Offensive' : e.zoneCode === 'D' ? 'Defensive' : 'Neutral'}</span>
+              <div className={POPUP_ROW_CLASSES}>
+                <span className="popup-field text-[color:var(--text-muted)] shrink-0 text-[12px]">Zone code</span>
+                <span className="popup-value text-[color:var(--text)] text-right">{e.zoneCode === 'O' ? 'Offensive' : e.zoneCode === 'D' ? 'Defensive' : 'Neutral'}</span>
               </div>
             )}
           </div>

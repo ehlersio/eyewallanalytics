@@ -195,11 +195,13 @@
    -- Phase 5, ShotMapView.css sub-PR 6, the file's final sub-PR) -- hoisted
    here rather than force-converted to Tailwind: its descendant selector
    grays out three different component families' buttons at once,
-   including `.rink-btn` from IceRink.css (a different file entirely, out
-   of scope), which a Tailwind utility on any single element could never
-   express. `.chip-disabled`/`.rink-btn`/`.game-chip`/
-   `.season-type-toggle-btn` are all kept as literal marker classnames on
-   the migrated elements so this rule keeps resolving. */
+   including `.rink-btn` (originally IceRink.css, now also fully Tailwind
+   as of Phase 6 -- rinkBtnClasses() in utils/rinkBtnClasses.js keeps "rink-
+   btn" as a literal marker for exactly this reason), which a Tailwind
+   utility on any single element could never express. `.chip-disabled`/
+   `.rink-btn`/`.game-chip`/`.season-type-toggle-btn` are all kept as
+   literal marker classnames on the migrated elements so this rule keeps
+   resolving. */
 .chip-disabled { cursor: default; }
 .chip-disabled .rink-btn,
 .chip-disabled .game-chip,
@@ -427,6 +429,18 @@
 @keyframes pop-in {
   from { transform: scale(0.94) translateY(8px); opacity: 0; }
   to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Hoisted from IceRink.css (Phase 6) for its .hover-tip entrance --
+   IceRink.css's own copy of pop-in used scale(0.92) instead of this file's
+   0.94 (a genuine value conflict, not just a name collision); decided to
+   standardize on 0.94 rather than keep IceRink's animation visually
+   distinct, so .shot-popup now references this same shared keyframe
+   instead of carrying its own. tip-in has no collision anywhere else in
+   the app -- unique to this component's hover tooltip. */
+@keyframes tip-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Hoisted here (Session 97, Phase 3, sub-PR 3) from PlayersView.css's
