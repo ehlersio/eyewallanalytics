@@ -12,6 +12,11 @@ import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
 // state, Cypress marker classes kept: .player-card, .player-card-skeleton,
 // .pc-last, .sst-table). This file mirrors that one's class constants since
 // there's no shared component between the NHL/PWHL roster views.
+// DRILL_EMPTY_CLASSES (Phase 5, ShotMapView.css sub-PR 2) -- see
+// PlayersView.jsx's identical comment: "drill-empty" here was a
+// coincidental same-name marker with zero real CSS backing it, since this
+// file never imported ShotMapView.css. Fixed here too.
+const DRILL_EMPTY_CLASSES = 'drill-empty text-[color:var(--text-dim)] text-[13px] py-[24px] px-[16px] text-center'
 const HEADER_WRAP_CLASSES = 'mb-[14px]'
 const VIEW_TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[20px] font-bold flex items-center gap-2 mb-[2px]'
 const PLAYERS_SUB_CLASSES = 'text-[12px] text-[color:var(--text-muted)]'
@@ -356,7 +361,7 @@ function SortableTable({ rows, cols, defaultSort, loading, emptyMsg, onRowClick 
     </div>
   );
 
-  if (!rows?.length) return <div className="drill-empty">{emptyMsg}</div>;
+  if (!rows?.length) return <div className={DRILL_EMPTY_CLASSES}>{emptyMsg}</div>;
 
   return (
     <div className={SST_WRAP_CLASSES}>

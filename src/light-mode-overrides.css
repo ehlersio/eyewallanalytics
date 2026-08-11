@@ -31,9 +31,11 @@
    ShotMapView.css additions
    ════════════════════════════════════════════════════════════════ */
 
-/* Row dividers that use rgba(255,255,255,0.04) — invisible on light */
+/* Row dividers that use rgba(255,255,255,0.04) — invisible on light.
+   Phase 5, sub-PR 2: .drill-row-grid/.pen-row kept as literal marker
+   classnames on the migrated Tailwind elements specifically so this rule
+   keeps applying (.drill-row was folded into .pen-row, never used bare). */
 [data-theme="light"] .drill-row-grid,
-[data-theme="light"] .drill-row,
 [data-theme="light"] .pen-row {
   border-bottom-color: rgba(0,0,0,0.06);
 }

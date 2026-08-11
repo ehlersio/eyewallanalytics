@@ -1,107 +1,15 @@
-/* ── Stat Drill-Down Popup ── */
-.drill-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  z-index: 300;
-  background: rgba(0,0,0,0.65);
-  display: flex;
-  align-items: center;       /* centre vertically — avoids bottom-nav clipping */
-  justify-content: center;
-  padding: 16px 0 72px;      /* 72px bottom padding clears the nav bar */
-  box-sizing: border-box;
-}
-.drill-popup {
-  background: var(--bg1);
-  border-radius: 14px;
-  width: calc(100% - 32px);
-  max-width: 460px;
-  max-height: 100%;          /* constrained by overlay padding */
-  display: flex;
-  flex-direction: column;
-  border: 0.5px solid var(--border);
-  box-shadow: 0 8px 48px rgba(0,0,0,0.6);
-  overflow: hidden;
-}
-.drill-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 13px 16px 11px;
-  border-bottom: 0.5px solid var(--border);
-  flex-shrink: 0;
-}
-.drill-title {
-  font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--text);
-}
-.drill-close {
-  font-size: 18px; color: var(--text-dim); background: none; border: none;
-  cursor: pointer; padding: 2px 8px; border-radius: 6px; line-height: 1;
-}
-.drill-close:hover { background: var(--bg3); color: var(--text); }
-.drill-body { overflow-y: auto; flex: 1; }
+/* ── Stat Drill-Down Popup ──
+   Phase 5, sub-PR 2: every rule here except .drill-empty is now fully
+   retired -- migrated to Tailwind in ShotMapView.jsx/PWHLShotMapView.jsx.
+   .drill-period-badge/.drill-assists were confirmed genuinely dead (zero
+   consumers anywhere) and dropped rather than migrated. .drill-empty
+   stays real CSS: PPAnalysisPanel/PKAnalysisPanel (both files) still use
+   it as a bare literal class and are out of this sub-PR's scope (PP
+   Analysis Panel, a later sub-PR) -- remove this rule only once those
+   migrate too. */
 .drill-empty {
   color: var(--text-dim); font-size: 13px;
   padding: 24px 16px; text-align: center;
-}
-
-/* All rows + headers use matching CSS grid so columns line up perfectly */
-.drill-table { display: flex; flex-direction: column; }
-
-.drill-col-header {
-  display: grid;
-  padding: 5px 16px;
-  font-size: 9px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.08em; color: var(--text-dim);
-  border-bottom: 0.5px solid var(--border);
-  background: var(--bg2);
-}
-.drill-row-grid {
-  display: grid;
-  padding: 7px 16px;
-  border-bottom: 0.5px solid rgba(255,255,255,0.04);
-  align-items: center;
-}
-
-/* Shots/Hits: Name | P1 | P2 | P3 | OT | Total */
-.drill-col-header.shots,
-.drill-row-grid.shots {
-  /* grid-template-columns set dynamically via inline style in StatDrillPopup
-     to accommodate variable number of OT periods */
-}
-/* Faceoff: Name | Won | Lost | Win% */
-.drill-col-header.fo,
-.drill-row-grid.fo {
-  grid-template-columns: 1fr 46px 46px 52px;
-}
-
-/* All non-first children (the number columns) align right */
-.drill-col-header > *,
-.drill-row-grid > * { display: flex; align-items: center; }
-.drill-col-header > *:not(:first-child),
-.drill-row-grid > *:not(:first-child) { justify-content: flex-end; }
-
-/* Plain flex row (PP goals, faceoff period chips) */
-.drill-row {
-  padding: 8px 16px;
-  border-bottom: 0.5px solid rgba(255,255,255,0.04);
-}
-
-.drill-name  { font-size: 13px; font-weight: 500; color: var(--text); min-width: 0; }
-.drill-val   { font-family: var(--font-mono); font-size: 12px; color: var(--text); }
-.drill-val.dim   { color: var(--text-dim); }
-.drill-val.total { font-weight: 700; }
-.drill-val.green { color: var(--green); font-weight: 600; }
-.drill-val.red   { color: var(--red-bright); font-weight: 600; }
-
-.drill-periods { display: flex; gap: 5px; flex-wrap: wrap; padding: 2px 16px 8px; }
-.period-chip {
-  font-size: 10px; padding: 2px 7px; border-radius: 4px;
-  background: var(--bg3); color: var(--text-muted);
-}
-.c-green { color: var(--green); }
-.c-red   { color: var(--red-bright); }
-.drill-assists { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
-.drill-period-badge {
-  font-size: 11px; background: var(--bg3); color: var(--amber);
-  padding: 2px 7px; border-radius: 4px;
 }
 
 /* ── On-Ice Panel ── */
@@ -347,38 +255,9 @@
 .car-en { background: rgba(248,113,113,0.15) !important; color: #f87171 !important; border-color: rgba(248,113,113,0.3) !important; }
 .opp-en { background: rgba(74,222,128,0.15) !important; color: #4ade80 !important; border-color: rgba(74,222,128,0.3) !important; }
 
-/* ── Drill popup tabs ── */
-.drill-tabs {
-  display: flex;
-  border-bottom: 0.5px solid var(--border);
-  padding: 0 16px;
-}
-.drill-tab {
-  flex: 1; padding: 8px 0; font-size: 12px; font-weight: 600;
-  color: var(--text-dim); background: none; border: none;
-  border-bottom: 2px solid transparent; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-}
-.drill-tab.active { color: var(--red-bright); border-bottom-color: var(--red-bright); }
-
-/* ── Totals row ── */
-.drill-totals-row {
-  border-top: 1px solid var(--border);
-  margin-top: 4px;
-  padding-top: 4px;
-  font-weight: 700;
-}
-.drill-totals-label { font-size: 11px; color: var(--text-dim); }
-
-/* ── Penalty rows ── */
-.pen-row { padding: 8px 16px; border-bottom: 0.5px solid rgba(255,255,255,0.04); }
-.pen-row-top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
-.pen-row-bottom { display: flex; align-items: center; gap: 8px; }
-.pen-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
-.pen-period { font-size: 10px; color: var(--text-dim); margin-left: auto; }
-.pen-desc { font-size: 11px; color: var(--text-muted); text-transform: capitalize; }
-.pen-type { font-size: 10px; color: var(--text-dim); padding: 1px 5px; background: var(--bg3); border-radius: 4px; }
-.pen-totals { display: flex; align-items: center; gap: 8px; padding: 8px 16px; flex-wrap: wrap; }
+/* .drill-tabs/.drill-tab/.drill-totals-row/.drill-totals-label/.pen-row*
+   removed (Phase 5, sub-PR 2) -- all migrated to Tailwind alongside the
+   rest of the Stat Drill-Down Popup, see that section's comment above. */
 
 /* ── PP Analysis Panel ────────────────────────────────────── */
 .pp-analysis { display: flex; flex-direction: column; gap: 12px; padding: 4px 0; }
