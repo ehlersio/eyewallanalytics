@@ -56,6 +56,21 @@ const schedTabClasses = (active) => {
     : `${base} text-[color:var(--text-muted)] border-transparent`;
 };
 
+// .vm-btn:hover and .active are equal-specificity compound selectors in the
+// original CSS with active winning on hover too (later in source) -- same
+// shape as .sort-btn/.skater-toggle-btn, so hover is scoped to the
+// non-active variant only.
+const vmBtnClasses = (active) => {
+  const base = 'vm-btn py-1 px-2.5 rounded-[14px] text-[14px] border-none cursor-pointer [transition:all_0.15s] leading-none';
+  return active
+    ? `${base} active bg-[var(--bg4)] text-[color:var(--text)] shadow-[0_1px_4px_rgba(0,0,0,0.3)]`
+    : `${base} bg-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text)]`;
+};
+
+// .scroll-top-btn's bottom position uses BottomNav's real height incl.
+// safe-area inset (Session 43).
+const SCROLL_TOP_BTN_CLASSES = 'scroll-top-btn fixed [bottom:calc(var(--nav-height)+env(safe-area-inset-bottom,0px)+16px)] right-4 z-[150] bg-[var(--bg2)] border-[0.5px] border-[color:var(--border-2)] rounded-[20px] py-[7px] px-3.5 text-[12px] font-medium text-[color:var(--text-muted)] cursor-pointer shadow-[0_4px_16px_rgba(0,0,0,0.4)] [transition:all_0.15s] [animation:fade-in_0.2s_ease] hover:bg-[var(--bg3)] hover:text-[color:var(--text)] hover:border-[color:var(--red-border)]';
+
 const roundSectionHeaderClasses = (current) => {
   const base = 'round-section-header flex items-center justify-between py-2.5 px-3 mb-2 rounded-[var(--radius-sm)] cursor-pointer w-full text-left [transition:background_0.15s] hover:[filter:brightness(1.08)]';
   return current
@@ -210,10 +225,10 @@ export default function PWHLScheduleView() {
         ))}
 
         {/* List / Calendar toggle — matches NHL icons */}
-        <div className="view-mode-toggle" style={{ marginLeft: 'auto' }}>
-          <button className={`vm-btn${viewMode === 'list' ? ' active' : ''}`}
+        <div className="view-mode-toggle flex gap-0.5 bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)] rounded-[20px] p-[3px] shrink-0 ml-auto">
+          <button className={vmBtnClasses(viewMode === 'list')}
             onClick={() => setViewMode('list')} title="Card view">≡</button>
-          <button className={`vm-btn${viewMode === 'calendar' ? ' active' : ''}`}
+          <button className={vmBtnClasses(viewMode === 'calendar')}
             onClick={() => setViewMode('calendar')} title="Calendar view">📅</button>
         </div>
       </div>
@@ -327,7 +342,7 @@ export default function PWHLScheduleView() {
       )}
 
       {showScrollTop && (
-        <button className="scroll-top-btn" onClick={scrollToTop} aria-label="Back to top">
+        <button className={SCROLL_TOP_BTN_CLASSES} onClick={scrollToTop} aria-label="Back to top">
           ↑ Top
         </button>
       )}
@@ -616,23 +631,34 @@ function PWHLSeriesCard({ series, teamId: _teamId, abbr, color, oppAbbr, oppColo
 }
 
 // ── SortBar — exact match of NHL GameCard SortBar ────────────
+// .sort-btn:hover and .active are equal-specificity compound selectors in
+// the original CSS with active winning on hover too (later in source) --
+// same shape as .skater-toggle-btn in GameStatsPopup.jsx (sub-PR 3), so the
+// hover color is scoped to the non-active variant only.
+const sortBtnClasses = (active) => {
+  const base = 'sort-btn py-1 px-2.5 rounded-[20px] text-[11px] font-medium border-[0.5px] cursor-pointer [transition:all_0.15s]';
+  return active
+    ? `${base} active bg-[var(--red-dim)] border-[color:var(--red-border)] text-[color:var(--red-bright)]`
+    : `${base} bg-transparent border-[color:var(--border-2)] text-[color:var(--text-muted)] hover:text-[color:var(--text)]`;
+};
+
 function PWHLSortBar({ sortOrder, setSortOrder, completedCount, upcomingCount }) {
   return (
-    <div className="sort-bar">
-      <span className="sort-bar-count">
+    <div className="sort-bar flex items-center justify-between gap-2.5 py-2 pb-2.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2.5 flex-wrap">
+      <span className="sort-bar-count text-[11px] text-[color:var(--text-dim)]">
         {completedCount} played{upcomingCount > 0 ? ` · ${upcomingCount} upcoming` : ''}
       </span>
-      <div className="sort-bar-controls">
-        <span className="sort-bar-label">Sort:</span>
+      <div className="sort-bar-controls flex items-center gap-[5px]">
+        <span className="sort-bar-label text-[11px] text-[color:var(--text-dim)] mr-0.5">Sort:</span>
         <button
-          className={`sort-btn ${sortOrder === 'desc' ? 'active' : ''}`}
+          className={sortBtnClasses(sortOrder === 'desc')}
           onClick={() => setSortOrder('desc')}
           title="Newest first"
         >
           Newest first
         </button>
         <button
-          className={`sort-btn ${sortOrder === 'asc' ? 'active' : ''}`}
+          className={sortBtnClasses(sortOrder === 'asc')}
           onClick={() => setSortOrder('asc')}
           title="Oldest first"
         >

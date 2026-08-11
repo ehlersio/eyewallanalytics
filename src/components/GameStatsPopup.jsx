@@ -41,8 +41,15 @@ const GP_ADV_ROW_CLASSES = 'gp-adv-row grid gap-1.5 items-center text-[12px] [gr
 // active wins on hover too since it's later in source. A plain Tailwind
 // hover: utility would instead win on specificity regardless of source
 // order, so the hover color only gets added for the non-active variant here
-// rather than stacked unconditionally on the shared base.
-const SKATER_TOGGLE_BTN_BASE = 'skater-toggle-btn flex items-center gap-[5px] py-[5px] px-3 rounded-[20px] text-[12px] font-medium border-[0.5px] border-[color:var(--border-2)] bg-transparent cursor-pointer [transition:all_0.15s]';
+// rather than stacked unconditionally on the shared base. `bg-transparent`
+// and the base border-color were also dropped from this shared base (Phase
+// 6, ScheduleView.css sub-PR 4 follow-up fix) -- they had been stacked
+// unconditionally alongside active-opp's own bg-[var(--blue-dim)]/
+// border-color, the same "two conflicting arbitrary-value utilities in one
+// class string" ambiguity caught and fixed elsewhere this same sub-PR
+// (.sort-btn/.vm-btn) -- each state now supplies its own complete,
+// non-competing bg/border pair instead.
+const SKATER_TOGGLE_BTN_BASE = 'skater-toggle-btn flex items-center gap-[5px] py-[5px] px-3 rounded-[20px] text-[12px] font-medium border-[0.5px] cursor-pointer [transition:all_0.15s]';
 
 function GameStatsPopup({ game, onClose }) {
   const { data, loading } = useFetch(() => getCompletedGameStats(game.id), [game.id]);
@@ -389,14 +396,14 @@ function GameStatsPopup({ game, onClose }) {
                 <div className="gp-section mt-4.5">
                   <div className="gp-skater-toggle flex gap-1.5 mb-2.5">
                     <button
-                      className={SKATER_TOGGLE_BTN_BASE + (skaterTeam === "car" ? " active-car border-[color:var(--team-primary)] text-[color:var(--team-primary)]" : " text-[color:var(--text-muted)] hover:text-[color:var(--text)]")}
+                      className={SKATER_TOGGLE_BTN_BASE + (skaterTeam === "car" ? " active-car bg-transparent border-[color:var(--team-primary)] text-[color:var(--team-primary)]" : " bg-transparent border-[color:var(--border-2)] text-[color:var(--text-muted)] hover:text-[color:var(--text)]")}
                       onClick={() => setSkaterTeam("car")}
                     >
                       <TeamLogo abbr={TEAM_CONFIG.abbr} size={14} />
                       {TEAM_CONFIG.abbr} Skaters
                     </button>
                     <button
-                      className={SKATER_TOGGLE_BTN_BASE + (skaterTeam === "opp" ? " active-opp bg-[var(--blue-dim)] border-[rgba(68,119,238,0.35)] text-[color:var(--blue-bright)]" : " text-[color:var(--text-muted)] hover:text-[color:var(--text)]")}
+                      className={SKATER_TOGGLE_BTN_BASE + (skaterTeam === "opp" ? " active-opp bg-[var(--blue-dim)] border-[rgba(68,119,238,0.35)] text-[color:var(--blue-bright)]" : " bg-transparent border-[color:var(--border-2)] text-[color:var(--text-muted)] hover:text-[color:var(--text)]")}
                       onClick={() => setSkaterTeam("opp")}
                     >
                       <TeamLogo abbr={oppAbbr} size={14} color={oppColor} />

@@ -87,24 +87,37 @@ function SeriesCard({ series }) {
 }
 
 // ── Sort bar ─────────────────────────────────────────────────
+// Styling used to come from ScheduleView.css -- migrated to Tailwind here
+// (Phase 6, ScheduleView.css sub-PR 4). .sort-btn:hover and .active are
+// equal-specificity compound selectors in the original CSS with active
+// winning on hover too (later in source) -- same shape as
+// .skater-toggle-btn in GameStatsPopup.jsx (sub-PR 3), so the hover color
+// is scoped to the non-active variant only rather than stacked
+// unconditionally on a shared base.
+const sortBtnClasses = (active) => {
+  const base = 'sort-btn py-1 px-2.5 rounded-[20px] text-[11px] font-medium border-[0.5px] cursor-pointer [transition:all_0.15s]';
+  return active
+    ? `${base} active bg-[var(--red-dim)] border-[color:var(--red-border)] text-[color:var(--red-bright)]`
+    : `${base} bg-transparent border-[color:var(--border-2)] text-[color:var(--text-muted)] hover:text-[color:var(--text)]`;
+};
 
 function SortBar({ sortOrder, setSortOrder, completedCount, upcomingCount, _label }) {
   return (
-    <div className="sort-bar">
-      <span className="sort-bar-count">
+    <div className="sort-bar flex items-center justify-between gap-2.5 py-2 pb-2.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2.5 flex-wrap">
+      <span className="sort-bar-count text-[11px] text-[color:var(--text-dim)]">
         {completedCount} played{upcomingCount > 0 ? ` · ${upcomingCount} upcoming` : ''}
       </span>
-      <div className="sort-bar-controls">
-        <span className="sort-bar-label">Sort:</span>
+      <div className="sort-bar-controls flex items-center gap-[5px]">
+        <span className="sort-bar-label text-[11px] text-[color:var(--text-dim)] mr-0.5">Sort:</span>
         <button
-          className={`sort-btn ${sortOrder === 'desc' ? 'active' : ''}`}
+          className={sortBtnClasses(sortOrder === 'desc')}
           onClick={() => setSortOrder('desc')}
           title="Newest first"
         >
           Newest first
         </button>
         <button
-          className={`sort-btn ${sortOrder === 'asc' ? 'active' : ''}`}
+          className={sortBtnClasses(sortOrder === 'asc')}
           onClick={() => setSortOrder('asc')}
           title="Oldest first"
         >

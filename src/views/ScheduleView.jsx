@@ -29,10 +29,12 @@ const EMPTY_ICON_CLASSES = 'empty-icon text-[32px] mb-2.5';
 const EMPTY_TITLE_CLASSES = 'empty-title text-[14px] font-medium mb-1';
 const EMPTY_SUB_CLASSES = 'empty-sub text-[12px] text-[color:var(--text-muted)]';
 
-// .sched-tabs is kept as a literal marker (Phase 6, ScheduleView.css sub-PR
-// 2) specifically so ScheduleView.css's `.sched-tabs .view-mode-toggle {
-// margin-left: auto }` descendant rule keeps resolving -- .view-mode-toggle
-// itself is still real, unmigrated CSS until sub-PR 4.
+// .sched-tabs was kept as a literal marker through Phase 6 sub-PR 2/3
+// specifically so ScheduleView.css's `.sched-tabs .view-mode-toggle {
+// margin-left: auto }` descendant rule kept resolving while .view-mode-toggle
+// itself was still real, unmigrated CSS -- now that .view-mode-toggle is
+// migrated too (sub-PR 4), that margin-left:auto lives directly on its own
+// Tailwind classes below instead, and the descendant rule is retired.
 const SCHED_TABS_CLASSES = 'sched-tabs flex items-center gap-1.5 mb-3.5 border-b-[0.5px] border-b-[color:var(--border)] pb-2.5';
 const schedTabClasses = (active) => {
   const base = 'sched-tab py-1.5 px-4 rounded-[20px] text-[13px] font-medium flex items-center gap-1.5 [transition:all_0.15s] border-[0.5px]';
@@ -47,6 +49,22 @@ const roundSectionHeaderClasses = (current) => {
     ? `${base} current bg-[var(--red-dim)] border-[0.5px] border-[color:var(--red-border)]`
     : `${base} older bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)]`;
 };
+
+// .vm-btn:hover and .active are equal-specificity compound selectors in the
+// original CSS with active winning on hover too (later in source) -- same
+// shape as .sort-btn/.skater-toggle-btn, so hover is scoped to the
+// non-active variant only.
+const vmBtnClasses = (active) => {
+  const base = 'vm-btn py-1 px-2.5 rounded-[14px] text-[14px] border-none cursor-pointer [transition:all_0.15s] leading-none';
+  return active
+    ? `${base} active bg-[var(--bg4)] text-[color:var(--text)] shadow-[0_1px_4px_rgba(0,0,0,0.3)]`
+    : `${base} bg-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text)]`;
+};
+
+// .scroll-top-btn's bottom position uses BottomNav's real height incl.
+// safe-area inset (Session 43) -- kept as the same calc() via an arbitrary
+// Tailwind value rather than an inline style.
+const SCROLL_TOP_BTN_CLASSES = 'scroll-top-btn fixed [bottom:calc(var(--nav-height)+env(safe-area-inset-bottom,0px)+16px)] right-4 z-[150] bg-[var(--bg2)] border-[0.5px] border-[color:var(--border-2)] rounded-[20px] py-[7px] px-3.5 text-[12px] font-medium text-[color:var(--text-muted)] cursor-pointer shadow-[0_4px_16px_rgba(0,0,0,0.4)] [transition:all_0.15s] [animation:fade-in_0.2s_ease] hover:bg-[var(--bg3)] hover:text-[color:var(--text)] hover:border-[color:var(--red-border)]';
 
 export default function ScheduleView() {
   const [tab, setTab]                   = useState('Playoffs');
@@ -164,9 +182,9 @@ export default function ScheduleView() {
         ))}
 
         {/* View mode toggle — sits on the right end of the same tab row */}
-        <div className="view-mode-toggle">
-          <button className={`vm-btn ${viewMode === 'cards' ? 'active' : ''}`} onClick={() => setViewMode('cards')} title="Card view">≡</button>
-          <button className={`vm-btn ${viewMode === 'calendar' ? 'active' : ''}`} onClick={() => setViewMode('calendar')} title="Calendar view">📅</button>
+        <div className="view-mode-toggle flex gap-0.5 bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)] rounded-[20px] p-[3px] shrink-0 ml-auto">
+          <button className={vmBtnClasses(viewMode === 'cards')} onClick={() => setViewMode('cards')} title="Card view">≡</button>
+          <button className={vmBtnClasses(viewMode === 'calendar')} onClick={() => setViewMode('calendar')} title="Calendar view">📅</button>
         </div>
       </div>
 
@@ -215,7 +233,7 @@ export default function ScheduleView() {
       )}
 
       {showScrollTop && (
-        <button className="scroll-top-btn" onClick={scrollToTop} aria-label="Back to top">
+        <button className={SCROLL_TOP_BTN_CLASSES} onClick={scrollToTop} aria-label="Back to top">
           ↑ Top
         </button>
       )}
