@@ -166,6 +166,20 @@
    sub-PR 4) -- same collision shape as .onice-card above. */
 .shot-volume-section { padding: 10px 12px; }
 
+/* .matchup-detail (MatchupDetail.jsx -- Phase 6, ScheduleView.css sub-PR 1)
+   -- same collision shape as .player-card/.empty-state/.onice-card above,
+   but hits three of .card's unlayered properties at once (background,
+   border-color, border-radius) rather than just padding. The original
+   also had redundant border-top-left-radius:0/border-top-right-radius:0
+   declarations that duplicated what the border-radius shorthand below
+   already sets to 0 -- dropped as dead weight, not carried forward. */
+.matchup-detail {
+  background: rgba(204,34,0,0.03);
+  border-color: var(--red-border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
 /* .chip-disabled (GameChipsRow.jsx/SeasonChipRow.jsx/SeasonTypeToggle.jsx
    -- Phase 5, ShotMapView.css sub-PR 6, the file's final sub-PR) -- hoisted
    here rather than force-converted to Tailwind: its descendant selector

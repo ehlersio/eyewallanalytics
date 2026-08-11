@@ -146,8 +146,8 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   // preseason, not a rare edge case.
   if (!carStanding || !oppStanding) {
     return (
-      <div className="matchup-detail card">
-        <div className="md-note">
+      <div className="matchup-detail card mb-2 -mt-1">
+        <div className="md-note text-[11px] text-[color:var(--text-dim)] bg-[var(--bg3)] rounded-[var(--radius-sm)] py-2 px-2.5 mt-2">
           📊 Prediction needs this season's standings — not available until games begin.
         </div>
         {odds && (
@@ -251,7 +251,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   // ── Save prediction + track record ───────────────────────
   const predStats   = getPredictionStats();
   return (
-    <div className="matchup-detail card">
+    <div className="matchup-detail card mb-2 -mt-1">
       {/* Tab bar: Prediction vs Scouting */}
       <div className="md-tabs">
         <button className={`md-tab${mdTab === 'prediction' ? ' active' : ''}`}
@@ -263,11 +263,11 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       {mdTab === 'scouting' ? (
         <ScoutingTab oppAbbr={oppAbbr} oppStanding={oppStanding} carStanding={carStanding} isPlayoff={game?.gameType === 3} gameId={game?.id} />
       ) : (<>
-      <div className="md-header">
+      <div className="md-header mb-3">
         <div>
-          <span className="md-title">{TEAM_CONFIG.abbr} vs {oppAbbr} — Matchup breakdown</span>
+          <span className="md-title text-[13px] font-medium">{TEAM_CONFIG.abbr} vs {oppAbbr} — Matchup breakdown</span>
           {predStats.total > 0 && (
-            <div className="md-track-record" >
+            <div className="md-track-record text-[10px] text-[color:var(--text-muted)] mt-0.5" >
               📊 {predStats.correct}/{predStats.total} correct ({predStats.pct}%)
             </div>
           )}
@@ -340,7 +340,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       {/* Odds unavailable — show nothing, no prompt needed */}
 
       {/* Stat comparison */}
-      <div className="md-stats" style={{ marginTop: 12 }}>
+      <div className="md-stats mb-2.5" style={{ marginTop: 12 }}>
         {!isPlayoff_ && (
           <StatBar label="Points in standings"
             leftPct={Math.round((carPts/(carPts+oppPts||1))*100)}

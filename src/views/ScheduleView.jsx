@@ -18,6 +18,17 @@ import './ScheduleView.css';
 
 const TABS = ['Playoffs', 'Regular Season'];
 
+// .empty-state's own padding is owned by index.css (shared, unlayered --
+// see the .empty-state comment there); the 2px-narrower horizontal padding
+// ScheduleView.css used to carry on top of it (14px vs index.css's 16px)
+// is dropped here as an imperceptible, no-longer-worth-a-bespoke-override
+// delta -- margin-bottom:8px is real and kept as a plain Tailwind utility
+// since margin doesn't collide with .card's own properties.
+const EMPTY_STATE_CLASSES = 'empty-state text-center mb-2';
+const EMPTY_ICON_CLASSES = 'empty-icon text-[32px] mb-2.5';
+const EMPTY_TITLE_CLASSES = 'empty-title text-[14px] font-medium mb-1';
+const EMPTY_SUB_CLASSES = 'empty-sub text-[12px] text-[color:var(--text-muted)]';
+
 export default function ScheduleView() {
   const [tab, setTab]                   = useState('Playoffs');
   const [selectedGame, setSelectedGame] = useState(null);
@@ -109,8 +120,8 @@ export default function ScheduleView() {
 
   return (
     <div className="page" ref={pageRef}>
-      <div className="sched-header">
-        <h2 className="sched-title">{TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} Schedule</h2>
+      <div className="sched-header mb-3">
+        <h2 className="sched-title font-[family-name:var(--font-display)] text-[18px] font-bold mb-0.5">{TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} Schedule</h2>
         {carStanding && (
           <div className="sched-record">
             Regular season: <strong>{carStanding.wins}–{carStanding.losses}–{carStanding.otLosses}</strong>
@@ -222,20 +233,20 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
     // League-wide rounds exist but this team has no games → missed playoffs
     if (playoffRounds.length > 0) {
       return (
-        <div className="card empty-state">
-          <div className="empty-icon">🏒</div>
-          <div className="empty-title">{TEAM_CONFIG.abbr} did not qualify for the playoffs</div>
-          <div className="empty-sub">Better luck next season. Go {TEAM_CONFIG.abbr}!</div>
+        <div className={`card ${EMPTY_STATE_CLASSES}`}>
+          <div className={EMPTY_ICON_CLASSES}>🏒</div>
+          <div className={EMPTY_TITLE_CLASSES}>{TEAM_CONFIG.abbr} did not qualify for the playoffs</div>
+          <div className={EMPTY_SUB_CLASSES}>Better luck next season. Go {TEAM_CONFIG.abbr}!</div>
         </div>
       );
     }
     // No league-wide rounds either → offseason, tab should already be hidden
     // but render a fallback just in case
     return (
-      <div className="card empty-state">
-        <div className="empty-icon">🏒</div>
-        <div className="empty-title">Playoffs not yet started</div>
-        <div className="empty-sub">Check back once the {TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} playoffs begin.</div>
+      <div className={`card ${EMPTY_STATE_CLASSES}`}>
+        <div className={EMPTY_ICON_CLASSES}>🏒</div>
+        <div className={EMPTY_TITLE_CLASSES}>Playoffs not yet started</div>
+        <div className={EMPTY_SUB_CLASSES}>Check back once the {TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} playoffs begin.</div>
       </div>
     );
   }
@@ -368,10 +379,10 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
   if (!games.length) {
     const isOffseason = new Date() > new Date('2026-07-01');
     return (
-      <div className="card empty-state">
-        <div className="empty-icon">📅</div>
-        <div className="empty-title">Regular season complete</div>
-        <div className="empty-sub">
+      <div className={`card ${EMPTY_STATE_CLASSES}`}>
+        <div className={EMPTY_ICON_CLASSES}>📅</div>
+        <div className={EMPTY_TITLE_CLASSES}>Regular season complete</div>
+        <div className={EMPTY_SUB_CLASSES}>
           {isOffseason
             ? 'Final record shown above. See you next season.'
             : 'Final record shown above. Playoffs are underway.'}
@@ -425,27 +436,27 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
           return (
             <div
               key={game.id}
-              className="result-card card clickable"
+              className="result-card card clickable mb-2 cursor-pointer [transition:border-color_0.15s] hover:border-[color:var(--border-2)]"
               onClick={() => onGamePopup(game)}
             >
-              <div className="result-top">
-                <span className="result-date">{formatGameDate(game.gameDate)}</span>
+              <div className="result-top flex items-center gap-2 mb-1.5">
+                <span className="result-date text-[11px] text-[color:var(--text-muted)]">{formatGameDate(game.gameDate)}</span>
                 {carScore != null && (
-                  <span className={`result-outcome ${won ? 'win' : 'loss'}`}>
+                  <span className={`result-outcome font-[family-name:var(--font-display)] text-[12px] font-bold py-[2px] px-2 rounded ${won ? 'win bg-[rgba(61,186,126,0.15)] text-[color:var(--green)]' : 'loss bg-[rgba(255,68,34,0.1)] text-[color:var(--red-bright)]'}`}>
                     {won ? 'W' : lost ? 'L' : 'OT'}
                   </span>
                 )}
-                <span className="result-tap-hint">Tap for stats →</span>
+                <span className="result-tap-hint text-[10px] text-[color:var(--text-dim)] ml-auto">Tap for stats →</span>
               </div>
-              <div className="result-score">
+              <div className="result-score flex items-center gap-2 font-[family-name:var(--font-display)]">
                 <TeamLogo abbr={TEAM_CONFIG.abbr} size={20} />
-                <span className="result-abbr team-primary-text">{TEAM_CONFIG.abbr}</span>
-                <span className="result-num team-primary-text">{carScore ?? '—'}</span>
-                <span className="result-sep">–</span>
-                <span className="result-num muted">{oppScore ?? '—'}</span>
-                <span className="result-abbr muted">{opp?.abbrev}</span>
+                <span className="result-abbr team-primary-text text-[16px] font-semibold text-[color:var(--team-primary)]">{TEAM_CONFIG.abbr}</span>
+                <span className="result-num team-primary-text text-[22px] font-semibold text-[color:var(--team-primary)]">{carScore ?? '—'}</span>
+                <span className="result-sep text-[color:var(--text-dim)]">–</span>
+                <span className="result-num muted text-[22px] font-bold text-[color:var(--text-muted)]">{oppScore ?? '—'}</span>
+                <span className="result-abbr muted text-[16px] font-bold text-[color:var(--text-muted)]">{opp?.abbrev}</span>
                 <TeamLogo abbr={opp?.abbrev} size={20} color={TEAM_COLORS[opp?.abbrev]} />
-                <span className="result-venue">{isHomeGame(game) ? 'Home' : 'Away'}</span>
+                <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHomeGame(game) ? 'Home' : 'Away'}</span>
               </div>
             </div>
           );

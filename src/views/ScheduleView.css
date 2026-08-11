@@ -1,146 +1,11 @@
-.sched-header { margin-bottom: 12px; }
-.sched-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; margin-bottom: 2px; }
-.sched-sub { font-size: 12px; color: var(--text-muted); }
-
-.game-card {
-  margin-bottom: 8px;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-.game-card:hover { border-color: var(--border-2); }
-.game-card.selected { border-color: var(--red-border); background: rgba(204,34,0,0.04); }
-
-.gc-top {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
-.gc-date { font-size: 12px; color: var(--text-muted); }
-.gc-time { font-size: 11px; color: var(--amber); font-family: var(--font-mono); }
-.gc-venue { font-size: 10px; color: var(--text-dim); margin-left: auto; }
-
-.gc-matchup {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 8px;
-}
-
-/* gc-team-block: row with logo + text, fills available width */
-.gc-team-block {
-  flex: 1;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-  min-width: 0; /* allow text truncation */
-}
-.gc-team-block.right {
-  flex-direction: row-reverse;
-}
-/* Text stack inside the team block */
-.gc-team-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.gc-team-text.right {
-  align-items: flex-end;
-  text-align: right;
-}
-
-.gc-abbr {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-.gc-full { font-size: 11px; color: var(--text-muted); }
-.gc-record { font-size: 10px; color: var(--text-dim); }
-.gc-vs {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-dim);
-  flex-shrink: 0;
-}
-
-.gc-expand-hint {
-  font-size: 10px;
-  color: var(--text-dim);
-  text-align: right;
-  flex: 1;
-}
-
-/* Matchup detail panel */
-.matchup-detail {
-  margin-bottom: 8px;
-  margin-top: -4px;
-  border-top: none;
-  border-radius: 0 0 var(--radius) var(--radius);
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  background: rgba(204,34,0,0.03);
-  border-color: var(--red-border);
-}
-
-.md-header { margin-bottom: 12px; }
-.md-title { font-size: 13px; font-weight: 500; }
-
-.md-stats { margin-bottom: 10px; }
-
-.md-note {
-  font-size: 11px;
-  color: var(--text-dim);
-  background: var(--bg3);
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
-  margin-top: 8px;
-}
-
-/* Result cards */
-.result-card {
-  margin-bottom: 8px;
-}
-.result-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.result-date { font-size: 11px; color: var(--text-muted); }
-.result-outcome {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-.result-outcome.win  { background: rgba(61,186,126,0.15); color: var(--green); }
-.result-outcome.loss { background: rgba(255,68,34,0.1);   color: var(--red-bright); }
-
-.result-score {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-display);
-}
-.result-abbr { font-size: 16px; font-weight: 700; }
-.result-abbr.red   { color: var(--red-bright); }
-.result-abbr.muted { color: var(--text-muted); }
-.result-num  { font-size: 22px; font-weight: 700; }
-.result-num.red   { color: var(--red-bright); }
-.result-num.muted { color: var(--text-muted); }
-.result-sep  { color: var(--text-dim); }
-.result-venue { font-size: 10px; color: var(--text-dim); margin-left: auto; font-family: var(--font-body); }
-.result-abbr.team-primary-text,
-.result-num.team-primary-text {
-  color: var(--team-primary);
-  font-weight: 600;
-}
+/* .sched-header/.sched-title, .game-card/.gc-*, .matchup-detail/.md-header/
+   .md-title/.md-stats/.md-note, .result-card/.result-* all migrated to
+   Tailwind (Phase 6, ScheduleView.css sub-PR 1) -- see GameCard.jsx,
+   MatchupDetail.jsx, ScheduleView.jsx, PWHLScheduleView.jsx. .sched-sub and
+   .gc-record were confirmed dead (zero JSX consumers) and dropped rather
+   than migrated. .matchup-detail's background/border-color/border-radius
+   collide with .card's own unlayered properties -- that piece lives in
+   index.css now, same pattern as .player-card/.empty-state/.onice-card. */
 
 /* ── Tab switcher ── */
 .sched-tabs {
@@ -331,33 +196,6 @@
 .pip.pip-red   { background: var(--red);  border-color: var(--red); }
 .pip.pip-opp   { background: var(--opp-color, #7a8899); border-color: var(--opp-color, #7a8899); }
 .pip.pip-empty { background: transparent; }
-
-/* ── Playoff game card accent ── */
-.game-card.playoff-game {
-  border-left: 2px solid var(--red-border);
-}
-.gc-result {
-  font-weight: 600;
-  font-size: 12px;
-}
-.gc-result.won  { color: var(--green); }
-.gc-result.lost { color: var(--red-bright); }
-
-/* ── Empty state ── */
-.empty-state {
-  text-align: center;
-  padding: 28px 14px;
-  margin-bottom: 8px;
-}
-.empty-icon  { font-size: 32px; margin-bottom: 10px; }
-.empty-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
-.empty-sub   { font-size: 12px; color: var(--text-muted); }
-
-/* ── Clickable result cards ── */
-.result-card.clickable  { cursor: pointer; transition: border-color 0.15s; }
-.result-card.clickable:hover { border-color: var(--border-2); }
-.result-tap-hint { font-size: 10px; color: var(--text-dim); margin-left: auto; }
-.gc-tap-hint { font-size: 10px; color: var(--text-dim); }
 
 /* ── Game stats popup backdrop ── */
 .popup-backdrop {
@@ -730,28 +568,6 @@
   font-family: var(--font-mono);
   white-space: nowrap;
 }
-
-/* ── Upcoming game card hover state ── */
-.game-card.upcoming-clickable {
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-.game-card.upcoming-clickable:hover { border-color: var(--border-2); }
-.game-card.selected { border-color: var(--red-border); background: rgba(204,34,0,0.04); }
-
-/* ── Odds in game card ── */
-.gc-odds {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  margin-left: auto;
-}
-.gc-odds-car  { color: var(--red-bright); font-weight: 600; }
-.gc-odds-sep  { color: var(--text-dim); }
-.gc-odds-opp  { color: var(--text-muted); font-weight: 600; }
-.gc-odds-book { font-size: 9px; color: var(--text-dim); margin-left: 2px; }
 
 /* ── Matchup detail enhancements ── */
 .md-series-score {
@@ -1501,22 +1317,6 @@
   transition: background 0.15s;
 }
 .md-ai-btn:hover { background: rgba(204,34,0,0.25); }
-
-/* ── Game card favoured chip + bottom row ── */
-.gc-bottom-row {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-top: 6px;
-}
-.gc-favoured-chip {
-  font-size: 10px; font-weight: 700;
-  padding: 2px 8px; border-radius: 10px;
-}
-.gc-favoured-chip.fav {
-  background: rgba(61,186,126,0.15); color: var(--green);
-}
-.gc-favoured-chip.dog {
-  background: rgba(204,34,0,0.12); color: var(--red-bright);
-}
 
 /* ── Game popup scroll-to-top button ── */
 .game-popup { position: relative; }
