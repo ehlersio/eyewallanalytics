@@ -241,6 +241,53 @@ const DEBUG_BTN_VARIANTS = {
 };
 const debugBtnClasses = (variant) => `${DEBUG_BTN_BASE} ${DEBUG_BTN_VARIANTS[variant] || ''}`.trim();
 
+// ── PP Analysis Panel (Phase 5, ShotMapView.css sub-PR 5) -- duplicated
+// from ShotMapView.jsx per convention. PWHL's PP/PK panels are simpler:
+// no PP/PK units feature (ppUnit1/ppUnit2/pkUnit1/pkUnit2 are destructured
+// but unused, confirmed via full-file grep), no assists shown, no shot-
+// type/blocker breakdown row -- so no unit-chip/unit-badge/unit-note/
+// goal-assists/shottype constants are needed here at all.
+const PP_ANALYSIS_CLASSES = 'flex flex-col gap-3 py-1';
+const PP_SUMMARY_ROW_CLASSES = 'flex items-center justify-around bg-[var(--bg3)] rounded-[10px] py-[12px] px-2 mx-4';
+const PP_SUMMARY_STAT_CLASSES = 'flex flex-col items-center gap-0.5';
+const PP_SUMMARY_VAL_CLASSES = 'text-[20px] font-bold text-[color:var(--text)] leading-none';
+const PP_SUMMARY_LABEL_CLASSES = 'text-[10px] text-[color:var(--text-dim)] flex items-center gap-0.5';
+const PP_SUMMARY_DIVIDER_CLASSES = 'w-px h-8 bg-[var(--border)]';
+
+const PP_OPPS_LIST_CLASSES = 'flex flex-col gap-0';
+const PP_OPP_ITEM_CLASSES = 'border-t-[0.5px] border-t-[color:var(--border)] last:border-b-[0.5px] last:border-b-[color:var(--border)]';
+const PP_OPP_HEADER_CLASSES = 'flex items-center justify-between py-[10px] px-4 cursor-pointer active:bg-[var(--bg3)]';
+const PP_OPP_LEFT_CLASSES = 'flex items-center gap-2';
+const PP_OPP_RIGHT_CLASSES = 'flex items-center gap-2';
+const PP_OPP_NUM_CLASSES = 'text-[11px] font-bold text-[color:var(--text-muted)]';
+const PP_OPP_TIME_CLASSES = 'text-[11px] text-[color:var(--text-dim)]';
+const PP_OPP_SOG_CLASSES = 'text-[11px] text-[color:var(--text-dim)]';
+const PP_OPP_CHEVRON_CLASSES = 'text-[10px] text-[color:var(--text-dim)]';
+const PP_ENTRY_BADGE_CLASSES = 'text-[9px] font-semibold py-[1px] px-[6px] bg-[rgba(250,190,30,0.12)] text-[#fbbf24] rounded-[20px] border-[0.5px] border-[rgba(250,190,30,0.25)]';
+
+const PP_OUTCOME_VARIANTS = {
+  goal: 'bg-[rgba(74,222,128,0.15)] text-[color:var(--green)] border-[0.5px] border-[rgba(74,222,128,0.3)]',
+  shots: 'bg-[rgba(148,163,184,0.12)] text-[color:var(--text-muted)] border-[0.5px] border-[color:var(--border)]',
+  none: 'bg-[rgba(248,113,113,0.1)] text-[color:var(--red-bright)] border-[0.5px] border-[rgba(248,113,113,0.2)]',
+};
+const ppOutcomeClasses = (variant) =>
+  `text-[10px] font-bold py-0.5 px-[7px] rounded-[20px] ${PP_OUTCOME_VARIANTS[variant]}`;
+
+const PP_OPP_DETAIL_CLASSES = 'px-4 pb-[14px] flex flex-col gap-[10px] bg-[var(--bg3)] border-t-[0.5px] border-t-[color:var(--border)]';
+const PP_GOAL_ROW_CLASSES = 'flex items-start gap-2 pt-2 pb-1';
+const PP_GOAL_ICON_CLASSES = 'text-[16px] leading-[1.2]';
+const PP_GOAL_SCORER_CLASSES = 'text-[13px] font-semibold text-[color:var(--text)]';
+const PP_GOAL_SHOTTYPE_CLASSES = 'text-[10px] text-[color:var(--text-dim)] ml-[6px] py-[1px] px-[5px] bg-[var(--bg2)] rounded-[4px]';
+const PP_GOAL_TIME_CLASSES = 'text-[11px] text-[color:var(--text-dim)] ml-auto whitespace-nowrap';
+
+const PP_DETAIL_STATS_CLASSES = 'flex gap-0 bg-[var(--bg2)] rounded-[8px] overflow-hidden';
+const PP_DETAIL_STAT_CLASSES = 'flex-1 flex flex-col items-center py-2 px-1 gap-0.5 border-r-[0.5px] border-r-[color:var(--border)] last:border-r-0';
+const PP_DETAIL_VAL_CLASSES = 'text-[15px] font-bold text-[color:var(--text)]';
+const PP_DETAIL_LABEL_CLASSES = 'text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.04em]';
+
+const PP_MINI_RINK_CLASSES = 'mt-1';
+const PP_MINI_RINK_LABEL_CLASSES = 'text-[10px] text-[color:var(--text-dim)] mb-1';
+
 // ── Shot adapters ─────────────────────────────────────────────
 
 function mapEventType(t) {
@@ -711,75 +758,75 @@ function TeamStatsCard({ pbpStats, shotStats, abbr, oppAbbr, color, oppColor, fa
 function PPAnalysisPanel({ drillStat, abbr, color }) {
   const [openIdx, setOpenIdx] = useState(null);
   const { ppOpps, summary, ppUnit1, ppUnit2 } = drillStat; // eslint-disable-line no-unused-vars
-  if (!ppOpps?.length) return <div className="drill-empty">No {abbr} power plays this game.</div>;
+  if (!ppOpps?.length) return <div className={DRILL_EMPTY_CLASSES}>No {abbr} power plays this game.</div>;
   const toggle    = idx => setOpenIdx(o => o === idx ? null : idx);
   const pctColor  = (g, o) => g/o >= 0.25 ? 'var(--green)' : g > 0 ? 'var(--text-muted)' : 'var(--red-bright)';
   const oIcon     = opp => opp.scored ? '⚡' : opp.sog >= 3 ? '🎯' : opp.shots === 0 ? '❌' : '🔲';
   const oLabel    = opp => opp.scored ? 'GOAL' : opp.sog >= 3 ? 'Shots' : opp.shots === 0 ? 'No shots' : 'No score';
-  const oClass    = opp => opp.scored ? 'pp-outcome goal' : opp.sog >= 3 ? 'pp-outcome shots' : 'pp-outcome none';
+  const oVariant  = opp => opp.scored ? 'goal' : opp.sog >= 3 ? 'shots' : 'none';
   return (
-    <div className="pp-analysis">
-      <div className="pp-summary-row">
-        <div className="pp-summary-stat">
-          <span className="pp-summary-val" style={{ color: pctColor(summary.goals, summary.opps) }}>
+    <div className={PP_ANALYSIS_CLASSES}>
+      <div className={PP_SUMMARY_ROW_CLASSES}>
+        <div className={PP_SUMMARY_STAT_CLASSES}>
+          <span className={PP_SUMMARY_VAL_CLASSES} style={{ color: pctColor(summary.goals, summary.opps) }}>
             {summary.goals}/{summary.opps}
           </span>
-          <span className="pp-summary-label">PP Goals</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>PP Goals</span>
         </div>
-        <div className="pp-summary-divider" />
-        <div className="pp-summary-stat">
-          <span className="pp-summary-val">{summary.opps > 0 ? `${Math.round(summary.goals/summary.opps*100)}%` : '—'}</span>
-          <span className="pp-summary-label">PP%</span>
+        <div className={PP_SUMMARY_DIVIDER_CLASSES} />
+        <div className={PP_SUMMARY_STAT_CLASSES}>
+          <span className={PP_SUMMARY_VAL_CLASSES}>{summary.opps > 0 ? `${Math.round(summary.goals/summary.opps*100)}%` : '—'}</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>PP%</span>
         </div>
-        <div className="pp-summary-divider" />
-        <div className="pp-summary-stat">
-          <span className="pp-summary-val">{summary.sog}</span>
-          <span className="pp-summary-label">SOG</span>
+        <div className={PP_SUMMARY_DIVIDER_CLASSES} />
+        <div className={PP_SUMMARY_STAT_CLASSES}>
+          <span className={PP_SUMMARY_VAL_CLASSES}>{summary.sog}</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>SOG</span>
         </div>
-        <div className="pp-summary-divider" />
-        <div className="pp-summary-stat">
-          <span className="pp-summary-val">{summary.xg}</span>
-          <span className="pp-summary-label">
+        <div className={PP_SUMMARY_DIVIDER_CLASSES} />
+        <div className={PP_SUMMARY_STAT_CLASSES}>
+          <span className={PP_SUMMARY_VAL_CLASSES}>{summary.xg}</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>
             xG <InfoTip text="Expected goals on PP shots — estimated from shot distance and angle." position="above" />
           </span>
         </div>
       </div>
-      <div className="pp-opps-list">
+      <div className={PP_OPPS_LIST_CLASSES}>
         {ppOpps.map((opp, i) => (
-          <div key={i} className="pp-opp-item">
-            <div className="pp-opp-header" onClick={() => toggle(i)}>
-              <div className="pp-opp-left">
-                <span className="pp-opp-num">PP {i+1}</span>
-                <span className="pp-opp-time">{opp.period} · {opp.startTime}</span>
-                {opp.quickEntry && <span className="pp-entry-badge">⚡ Quick entry</span>}
+          <div key={i} className={PP_OPP_ITEM_CLASSES}>
+            <div className={PP_OPP_HEADER_CLASSES} onClick={() => toggle(i)}>
+              <div className={PP_OPP_LEFT_CLASSES}>
+                <span className={PP_OPP_NUM_CLASSES}>PP {i+1}</span>
+                <span className={PP_OPP_TIME_CLASSES}>{opp.period} · {opp.startTime}</span>
+                {opp.quickEntry && <span className={PP_ENTRY_BADGE_CLASSES}>⚡ Quick entry</span>}
               </div>
-              <div className="pp-opp-right">
-                <span className={oClass(opp)}>{oIcon(opp)} {oLabel(opp)}</span>
-                <span className="pp-opp-sog">{opp.sog} SOG</span>
-                <span className="pp-opp-chevron">{openIdx === i ? '▲' : '▼'}</span>
+              <div className={PP_OPP_RIGHT_CLASSES}>
+                <span className={ppOutcomeClasses(oVariant(opp))}>{oIcon(opp)} {oLabel(opp)}</span>
+                <span className={PP_OPP_SOG_CLASSES}>{opp.sog} SOG</span>
+                <span className={PP_OPP_CHEVRON_CLASSES}>{openIdx === i ? '▲' : '▼'}</span>
               </div>
             </div>
             {openIdx === i && (
-              <div className="pp-opp-detail">
+              <div className={PP_OPP_DETAIL_CLASSES}>
                 {opp.goals.map((g, gi) => (
-                  <div key={gi} className="pp-goal-row">
-                    <span className="pp-goal-icon">🚨</span>
+                  <div key={gi} className={PP_GOAL_ROW_CLASSES}>
+                    <span className={PP_GOAL_ICON_CLASSES}>🚨</span>
                     <div>
-                      <span className="pp-goal-scorer">{g.scorer}</span>
-                      {g.shotType && <span className="pp-goal-shottype">{g.shotType}</span>}
+                      <span className={PP_GOAL_SCORER_CLASSES}>{g.scorer}</span>
+                      {g.shotType && <span className={PP_GOAL_SHOTTYPE_CLASSES}>{g.shotType}</span>}
                     </div>
-                    <span className="pp-goal-time">{g.time}</span>
+                    <span className={PP_GOAL_TIME_CLASSES}>{g.time}</span>
                   </div>
                 ))}
-                <div className="pp-detail-stats">
-                  <div className="pp-detail-stat"><span className="pp-detail-val">{opp.sog}</span><span className="pp-detail-label">SOG</span></div>
-                  <div className="pp-detail-stat"><span className="pp-detail-val">{opp.shots}</span><span className="pp-detail-label">SA</span></div>
-                  <div className="pp-detail-stat"><span className="pp-detail-val">{opp.xg}</span><span className="pp-detail-label">xG</span></div>
-                  <div className="pp-detail-stat"><span className="pp-detail-val">{opp.duration}s</span><span className="pp-detail-label">Duration</span></div>
+                <div className={PP_DETAIL_STATS_CLASSES}>
+                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.sog}</span><span className={PP_DETAIL_LABEL_CLASSES}>SOG</span></div>
+                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.shots}</span><span className={PP_DETAIL_LABEL_CLASSES}>SA</span></div>
+                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.xg}</span><span className={PP_DETAIL_LABEL_CLASSES}>xG</span></div>
+                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.duration}s</span><span className={PP_DETAIL_LABEL_CLASSES}>Duration</span></div>
                 </div>
                 {opp.shotEvents.length > 0 && (
-                  <div className="pp-mini-rink">
-                    <div className="pp-mini-rink-label">Shot locations</div>
+                  <div className={PP_MINI_RINK_CLASSES}>
+                    <div className={PP_MINI_RINK_LABEL_CLASSES}>Shot locations</div>
                     <IceRink events={opp.shotEvents} roster={{}} readOnly teamAbbr={abbr} teamColor={color} />
                   </div>
                 )}
@@ -796,71 +843,71 @@ function PPAnalysisPanel({ drillStat, abbr, color }) {
 function PKAnalysisPanel({ drillStat, abbr, color }) {
   const [openIdx, setOpenIdx] = useState(null);
   const { pkOpps, summary, pkUnit1, pkUnit2 } = drillStat; // eslint-disable-line no-unused-vars
-  if (!pkOpps?.length) return <div className="drill-empty">No {abbr} penalty kills this game.</div>;
+  if (!pkOpps?.length) return <div className={DRILL_EMPTY_CLASSES}>No {abbr} penalty kills this game.</div>;
   const toggle   = idx => setOpenIdx(o => o === idx ? null : idx);
   const pctColor = (ga, o) => ga === 0 ? 'var(--green)' : ga/o <= 0.25 ? 'var(--text-muted)' : 'var(--red-bright)';
   const oIcon    = opp => opp.allowed ? '🚨' : opp.sog >= 4 ? '🛡️' : '✅';
   const oLabel   = opp => opp.allowed ? 'Goal' : opp.sog >= 4 ? 'Held' : 'Killed';
-  const oClass   = opp => opp.allowed ? 'pp-outcome none' : opp.sog >= 4 ? 'pp-outcome shots' : 'pp-outcome goal';
+  const oVariant = opp => opp.allowed ? 'none' : opp.sog >= 4 ? 'shots' : 'goal';
   const survived = summary.opps - summary.goalsAgainst;
   return (
-    <div className="pp-analysis">
-      <div className="pp-summary-row">
-        <div className="pp-summary-stat">
-          <span className="pp-summary-val" style={{ color: pctColor(summary.goalsAgainst, summary.opps) }}>
+    <div className={PP_ANALYSIS_CLASSES}>
+      <div className={PP_SUMMARY_ROW_CLASSES}>
+        <div className={PP_SUMMARY_STAT_CLASSES}>
+          <span className={PP_SUMMARY_VAL_CLASSES} style={{ color: pctColor(summary.goalsAgainst, summary.opps) }}>
             {survived}/{summary.opps}
           </span>
-          <span className="pp-summary-label">PK Kills</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>PK Kills</span>
         </div>
-        <div className="pp-summary-divider" />
-        <div className="pp-summary-stat">
-          <span className="pp-summary-val">{summary.opps > 0 ? `${Math.round(survived/summary.opps*100)}%` : '—'}</span>
-          <span className="pp-summary-label">PK%</span>
+        <div className={PP_SUMMARY_DIVIDER_CLASSES} />
+        <div className={PP_SUMMARY_STAT_CLASSES}>
+          <span className={PP_SUMMARY_VAL_CLASSES}>{summary.opps > 0 ? `${Math.round(survived/summary.opps*100)}%` : '—'}</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>PK%</span>
         </div>
-        <div className="pp-summary-divider" />
-        <div className="pp-summary-stat">
-          <span className="pp-summary-val">{summary.sogAgainst}</span>
-          <span className="pp-summary-label">SOG vs</span>
+        <div className={PP_SUMMARY_DIVIDER_CLASSES} />
+        <div className={PP_SUMMARY_STAT_CLASSES}>
+          <span className={PP_SUMMARY_VAL_CLASSES}>{summary.sogAgainst}</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>SOG vs</span>
         </div>
-        <div className="pp-summary-divider" />
-        <div className="pp-summary-stat">
-          <span className="pp-summary-val">{summary.xgAgainst}</span>
-          <span className="pp-summary-label">
+        <div className={PP_SUMMARY_DIVIDER_CLASSES} />
+        <div className={PP_SUMMARY_STAT_CLASSES}>
+          <span className={PP_SUMMARY_VAL_CLASSES}>{summary.xgAgainst}</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>
             xGA <InfoTip text="Expected goals against on PK — from shot locations. Lower is better." position="above" />
           </span>
         </div>
       </div>
-      <div className="pp-opps-list">
+      <div className={PP_OPPS_LIST_CLASSES}>
         {pkOpps.map((opp, i) => (
-          <div key={i} className="pp-opp-item">
-            <div className="pp-opp-header" onClick={() => toggle(i)}>
-              <div className="pp-opp-left">
-                <span className="pp-opp-num">PK {i+1}</span>
-                <span className="pp-opp-time">{opp.period} · {opp.startTime}</span>
+          <div key={i} className={PP_OPP_ITEM_CLASSES}>
+            <div className={PP_OPP_HEADER_CLASSES} onClick={() => toggle(i)}>
+              <div className={PP_OPP_LEFT_CLASSES}>
+                <span className={PP_OPP_NUM_CLASSES}>PK {i+1}</span>
+                <span className={PP_OPP_TIME_CLASSES}>{opp.period} · {opp.startTime}</span>
               </div>
-              <div className="pp-opp-right">
-                <span className={oClass(opp)}>{oIcon(opp)} {oLabel(opp)}</span>
-                <span className="pp-opp-sog">{opp.sog} SOG vs</span>
-                <span className="pp-opp-chevron">{openIdx === i ? '▲' : '▼'}</span>
+              <div className={PP_OPP_RIGHT_CLASSES}>
+                <span className={ppOutcomeClasses(oVariant(opp))}>{oIcon(opp)} {oLabel(opp)}</span>
+                <span className={PP_OPP_SOG_CLASSES}>{opp.sog} SOG vs</span>
+                <span className={PP_OPP_CHEVRON_CLASSES}>{openIdx === i ? '▲' : '▼'}</span>
               </div>
             </div>
             {openIdx === i && (
-              <div className="pp-opp-detail">
+              <div className={PP_OPP_DETAIL_CLASSES}>
                 {opp.goalDetails.map((g, gi) => (
-                  <div key={gi} className="pp-goal-row">
-                    <span className="pp-goal-icon">🚨</span>
-                    <div><span className="pp-goal-scorer">{g.scorer}</span></div>
-                    <span className="pp-goal-time">{g.time}</span>
+                  <div key={gi} className={PP_GOAL_ROW_CLASSES}>
+                    <span className={PP_GOAL_ICON_CLASSES}>🚨</span>
+                    <div><span className={PP_GOAL_SCORER_CLASSES}>{g.scorer}</span></div>
+                    <span className={PP_GOAL_TIME_CLASSES}>{g.time}</span>
                   </div>
                 ))}
-                <div className="pp-detail-stats">
-                  <div className="pp-detail-stat"><span className="pp-detail-val">{opp.sog}</span><span className="pp-detail-label">SOG vs</span></div>
-                  <div className="pp-detail-stat"><span className="pp-detail-val">{opp.shots}</span><span className="pp-detail-label">SA</span></div>
-                  <div className="pp-detail-stat"><span className="pp-detail-val">{opp.xgAgainst}</span><span className="pp-detail-label">xGA</span></div>
+                <div className={PP_DETAIL_STATS_CLASSES}>
+                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.sog}</span><span className={PP_DETAIL_LABEL_CLASSES}>SOG vs</span></div>
+                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.shots}</span><span className={PP_DETAIL_LABEL_CLASSES}>SA</span></div>
+                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.xgAgainst}</span><span className={PP_DETAIL_LABEL_CLASSES}>xGA</span></div>
                 </div>
                 {opp.shotEvents.length > 0 && (
-                  <div className="pp-mini-rink">
-                    <div className="pp-mini-rink-label">OPP shot locations</div>
+                  <div className={PP_MINI_RINK_CLASSES}>
+                    <div className={PP_MINI_RINK_LABEL_CLASSES}>OPP shot locations</div>
                     <IceRink events={opp.shotEvents} roster={{}} readOnly flipPerspective teamAbbr={abbr} teamColor={color} />
                   </div>
                 )}
