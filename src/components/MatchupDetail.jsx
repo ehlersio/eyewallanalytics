@@ -276,11 +276,11 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
 
       {/* Series score if in playoffs */}
       {seriesEntry && (
-        <div className="md-series-score">
+        <div className="md-series-score font-[family-name:var(--font-display)] text-[16px] font-bold mb-3 flex items-center gap-1">
           <span style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr} {seriesEntry.carWins}</span>
           <span style={{ color: 'var(--text-dim)' }}> – </span>
           <span style={{ color: oppColor }}>{seriesEntry.oppWins} {oppAbbr}</span>
-          <span className="md-series-label">in this series</span>
+          <span className="md-series-label text-[11px] text-[color:var(--text-dim)] font-normal font-[family-name:var(--font-body)] ml-1.5">in this series</span>
         </div>
       )}
 

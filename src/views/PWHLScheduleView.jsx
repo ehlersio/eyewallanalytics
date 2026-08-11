@@ -42,6 +42,27 @@ const EMPTY_ICON_CLASSES = 'empty-icon text-[32px] mb-2.5';
 const EMPTY_TITLE_CLASSES = 'empty-title text-[14px] font-medium mb-1';
 const EMPTY_SUB_CLASSES = 'empty-sub text-[12px] text-[color:var(--text-muted)]';
 
+// .sched-tabs (Phase 6, ScheduleView.css sub-PR 2) -- same reasoning as
+// ScheduleView.jsx's own copy of these constants. This file sets
+// .view-mode-toggle's margin-left inline rather than depending on
+// ScheduleView.css's `.sched-tabs .view-mode-toggle` descendant rule, so
+// .sched-tabs is kept as a literal marker here purely for consistency, not
+// because anything still depends on it functionally.
+const SCHED_TABS_CLASSES = 'sched-tabs flex items-center gap-1.5 mb-3.5 border-b-[0.5px] border-b-[color:var(--border)] pb-2.5';
+const schedTabClasses = (active) => {
+  const base = 'sched-tab py-1.5 px-4 rounded-[20px] text-[13px] font-medium flex items-center gap-1.5 [transition:all_0.15s] border-[0.5px]';
+  return active
+    ? `${base} active bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[color:var(--red-border)]`
+    : `${base} text-[color:var(--text-muted)] border-transparent`;
+};
+
+const roundSectionHeaderClasses = (current) => {
+  const base = 'round-section-header flex items-center justify-between py-2.5 px-3 mb-2 rounded-[var(--radius-sm)] cursor-pointer w-full text-left [transition:background_0.15s] hover:[filter:brightness(1.08)]';
+  return current
+    ? `${base} current bg-[var(--red-dim)] border-[0.5px] border-[color:var(--red-border)]`
+    : `${base} older bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)]`;
+};
+
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function _gameStr(g) {
@@ -153,24 +174,24 @@ export default function PWHLScheduleView() {
 
   return (
     <div className="page" ref={pageRef}>
-      <div className="sched-header">
-        <h2 className="sched-title">
+      <div className="sched-header mb-3">
+        <h2 className="sched-title font-[family-name:var(--font-display)] text-[18px] font-bold mb-0.5">
           <TeamLogo abbr={abbr} sport="pwhl" size={22} color={color} />
           {seasonLabel} Schedule
         </h2>
-        <div className="sched-record">
+        <div className="sched-record text-[12px] text-[color:var(--text-muted)] flex items-center gap-2 mt-1">
           {teamRecord ? (
             <>
               <strong>
                 {teamRecord.reg_wins ?? teamRecord.wins ?? regRecord.w}–{teamRecord.non_reg_wins ?? regRecord.otw}–{teamRecord.ot_losses ?? regRecord.otl}–{teamRecord.losses ?? regRecord.l}
               </strong>
-              <span className="pts-badge">{teamRecord.points ?? regRecord.pts} pts</span>
+              <span className="pts-badge bg-[rgba(240,160,48,0.15)] text-[color:var(--amber)] text-[11px] py-[1px] px-[7px] rounded-[10px] font-medium">{teamRecord.points ?? regRecord.pts} pts</span>
               <span style={{ fontSize:9, color:'var(--text-dim)', marginLeft:4 }}>W-OTW-OTL-L</span>
             </>
           ) : (
             <>
               <strong>{regRecord.w}–{regRecord.otw}–{regRecord.otl}–{regRecord.l}</strong>
-              <span className="pts-badge">{regRecord.pts} pts</span>
+              <span className="pts-badge bg-[rgba(240,160,48,0.15)] text-[color:var(--amber)] text-[11px] py-[1px] px-[7px] rounded-[10px] font-medium">{regRecord.pts} pts</span>
               <span style={{ fontSize:9, color:'var(--text-dim)', marginLeft:4 }}>W-OTW-OTL-L</span>
             </>
           )}
@@ -178,12 +199,12 @@ export default function PWHLScheduleView() {
       </div>
 
       {/* Tab bar */}
-      <div className="sched-tabs">
+      <div className={SCHED_TABS_CLASSES}>
         {['Regular Season', 'Playoffs'].map(t => (
-          <button key={t} className={`sched-tab${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
+          <button key={t} className={schedTabClasses(tab === t)} onClick={() => setTab(t)}>
             {t}
             {t === 'Playoffs' && (poRecord.w + poRecord.otw) > 0 && (
-              <span className="tab-badge">{poRecord.w + poRecord.otw}–{poRecord.otl + poRecord.l}</span>
+              <span className="tab-badge bg-[var(--green)] text-[#000] text-[10px] font-bold py-[1px] px-1.5 rounded-[10px]">{poRecord.w + poRecord.otw}–{poRecord.otl + poRecord.l}</span>
             )}
           </button>
         ))}
@@ -201,9 +222,9 @@ export default function PWHLScheduleView() {
       {tab === 'Regular Season' && (
         <>
           {/* Season picker */}
-          <div className="sched-tabs" style={{ marginBottom: 4, marginTop: 0 }}>
+          <div className={SCHED_TABS_CLASSES} style={{ marginBottom: 4, marginTop: 0 }}>
             {REGULAR_SEASONS.map(s => (
-              <button key={s.id} className={`sched-tab${season === s.id ? ' active' : ''}`}
+              <button key={s.id} className={schedTabClasses(season === s.id)}
                 onClick={() => { userPickedSeason.current = true; setSeason(s.id); }}>{s.label}</button>
             ))}
           </div>
@@ -257,9 +278,9 @@ export default function PWHLScheduleView() {
       {tab === 'Playoffs' && (
         <>
           {/* Playoff season picker */}
-          <div className="sched-tabs" style={{ marginBottom: 4, marginTop: 0 }}>
+          <div className={SCHED_TABS_CLASSES} style={{ marginBottom: 4, marginTop: 0 }}>
             {PLAYOFF_SEASONS.map(s => (
-              <button key={s.id} className={`sched-tab${poSeason === s.id ? ' active' : ''}`}
+              <button key={s.id} className={schedTabClasses(poSeason === s.id)}
                 onClick={() => setPoSeason(s.id)}>{s.label}</button>
             ))}
           </div>
@@ -407,23 +428,23 @@ function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
         const isCollapsed    = collapsed[round] ?? (round < maxRound);
 
         return (
-          <div key={round} className="round-section">
+          <div key={round} className="round-section mb-5">
             {/* Collapsible round header */}
             <button
-              className={`round-section-header ${isCurrentRound ? 'current' : 'older'}`}
+              className={roundSectionHeaderClasses(isCurrentRound)}
               onClick={() => toggle(round)}
               aria-expanded={!isCollapsed}
             >
-              <div className="round-section-left">
-                <span className="round-collapse-icon">{isCollapsed ? '▶' : '▼'}</span>
-                <div className="round-header-info">
-                  <span className="round-section-label">{label}</span>
+              <div className="round-section-left flex items-center gap-2">
+                <span className="round-collapse-icon text-[10px] text-[color:var(--text-dim)] w-2.5 shrink-0">{isCollapsed ? '▶' : '▼'}</span>
+                <div className="round-header-info flex items-center gap-2">
+                  <span className="round-section-label font-[family-name:var(--font-display)] text-[14px] font-bold uppercase tracking-[0.06em] text-[color:var(--text)]">{label}</span>
                 </div>
                 {isCurrentRound && series.some(s => s.winsA < 3 && s.winsB < 3 && s.games.some(g => g.game_state === 'Final')) && (
-                  <span className="round-live-pill">In progress</span>
+                  <span className="round-live-pill text-[10px] font-semibold py-[2px] px-[7px] rounded-[10px] bg-[rgba(61,186,126,0.15)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.3)]">In progress</span>
                 )}
               </div>
-              <div className="round-section-right">
+              <div className="round-section-right flex items-center gap-1.5">
                 {/* Show our team's record across series in this round */}
                 {(() => {
                   const ourSeries = series.find(s => s.teamA === teamId || s.teamB === teamId);
@@ -434,9 +455,9 @@ function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
                   const elim = oppWins >= 3;
                   return (
                     <>
-                      <span className="round-section-record">{ourWins}–{oppWins}</span>
-                      {adv  && <span className="round-result-badge adv">✅</span>}
-                      {elim && <span className="round-result-badge elim">❌</span>}
+                      <span className="round-section-record text-[12px] text-[color:var(--text-muted)] font-[family-name:var(--font-mono)] whitespace-nowrap">{ourWins}–{oppWins}</span>
+                      {adv  && <span className="round-result-badge adv text-[14px] text-[color:var(--green)]">✅</span>}
+                      {elim && <span className="round-result-badge elim text-[14px] text-[color:var(--red-bright)]">❌</span>}
                     </>
                   );
                 })()}
@@ -530,6 +551,15 @@ function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
 }
 
 // ── PWHL Series Card — best-of-5 (3 wins to advance) ─────────
+// .pip's own "pip-opp" variant color always comes from the --opp-color CSS
+// var set inline per span -- reused generically here for PWHL's own team
+// pips too (not literally "the opponent"), same convention as elsewhere in
+// this app (see IceRink.jsx's isCanes role naming).
+const SERIES_PIP_BASE = 'pip w-[11px] h-[11px] rounded-full border-[1.5px] border-[color:var(--border-2)] shrink-0';
+const seriesPipClasses = (filled) =>
+  filled ? `${SERIES_PIP_BASE} pip-opp bg-[var(--opp-color,#7a8899)] border-[color:var(--opp-color,#7a8899)]`
+         : `${SERIES_PIP_BASE} pip-empty bg-transparent`;
+
 function PWHLSeriesCard({ series, teamId: _teamId, abbr, color, oppAbbr, oppColor, ourWins, oppWins, isFinal }) {
   const adv      = ourWins >= 3;
   const elim     = oppWins >= 3;
@@ -537,45 +567,45 @@ function PWHLSeriesCard({ series, teamId: _teamId, abbr, color, oppAbbr, oppColo
   const total    = series.games.length;
 
   return (
-    <div className={`series-card card ${isActive ? 'series-active' : ''}`}>
-      <div className="series-top">
-        <div className="series-top-left">
-          <span className="series-status">
+    <div className={`series-card card mb-2.5${isActive ? ' series-active' : ''}`}>
+      <div className="series-top flex items-start justify-between mb-3 gap-2">
+        <div className="series-top-left flex flex-col gap-0.5">
+          <span className="series-status text-[11px] text-[color:var(--text-muted)] font-medium">
             {isActive ? '🔴 In progress' : adv ? (isFinal ? '🏆 Walter Cup Champions' : '✅ Advanced') : elim ? '❌ Eliminated' : '🗓 Upcoming'}
           </span>
         </div>
-        <span className="series-games-played">{total} game{total !== 1 ? 's' : ''} played</span>
-        {ourWins === 3 && oppWins === 0 && <span className="series-sweep">🧹 Sweep!</span>}
-        {oppWins === 3 && ourWins === 0 && <span className="series-swept">🧹 Swept</span>}
+        <span className="series-games-played text-[11px] text-[color:var(--text-dim)] whitespace-nowrap pt-0.5">{total} game{total !== 1 ? 's' : ''} played</span>
+        {ourWins === 3 && oppWins === 0 && <span className="series-sweep text-[11px] font-bold text-[color:var(--green)] ml-1.5">🧹 Sweep!</span>}
+        {oppWins === 3 && ourWins === 0 && <span className="series-swept text-[11px] font-bold text-[color:var(--text-dim)] ml-1.5">🧹 Swept</span>}
       </div>
-      <div className="series-body">
+      <div className="series-body flex items-center gap-1 mb-1">
         {/* Our team */}
-        <div className="series-side">
-          <div className="series-row">
+        <div className="series-side flex-1 flex flex-col gap-2">
+          <div className="series-row flex items-center gap-[7px] flex-nowrap">
             <TeamLogo abbr={abbr} sport="pwhl" size={30} color={color} />
-            <span className="series-abbr" style={{ color }}>{abbr}</span>
-            <span className="series-wins">{ourWins}</span>
+            <span className="series-abbr font-[family-name:var(--font-display)] text-[18px] font-bold leading-none whitespace-nowrap" style={{ color }}>{abbr}</span>
+            <span className="series-wins font-[family-name:var(--font-display)] text-[36px] font-bold text-[color:var(--text)] leading-none">{ourWins}</span>
           </div>
-          <div className="series-pips">
+          <div className="series-pips flex items-center gap-[5px]">
             {Array.from({ length: 3 }).map((_, i) => (
-              <span key={i} className={`pip ${i < ourWins ? 'pip-opp' : 'pip-empty'}`}
+              <span key={i} className={seriesPipClasses(i < ourWins)}
                 style={{ '--opp-color': color }} />
             ))}
           </div>
         </div>
-        <div className="series-centre">
-          <span className="series-divider">–</span>
+        <div className="series-centre shrink-0 flex items-center mb-[22px] px-0.5">
+          <span className="series-divider font-[family-name:var(--font-display)] text-[22px] font-light text-[color:var(--text-dim)]">–</span>
         </div>
         {/* Opponent */}
-        <div className="series-side right">
-          <div className="series-row right">
-            <span className="series-wins">{oppWins}</span>
-            <span className="series-abbr" style={{ color: oppColor }}>{oppAbbr}</span>
+        <div className="series-side right flex-1 flex flex-col gap-2 items-end">
+          <div className="series-row right flex items-center gap-[7px] flex-nowrap justify-end">
+            <span className="series-wins font-[family-name:var(--font-display)] text-[36px] font-bold text-[color:var(--text)] leading-none">{oppWins}</span>
+            <span className="series-abbr font-[family-name:var(--font-display)] text-[18px] font-bold leading-none whitespace-nowrap" style={{ color: oppColor }}>{oppAbbr}</span>
             <TeamLogo abbr={oppAbbr} sport="pwhl" size={30} color={oppColor} />
           </div>
-          <div className="series-pips">
+          <div className="series-pips flex items-center gap-[5px] justify-end">
             {Array.from({ length: 3 }).map((_, i) => (
-              <span key={i} className={`pip ${i < oppWins ? 'pip-opp' : 'pip-empty'}`}
+              <span key={i} className={seriesPipClasses(i < oppWins)}
                 style={{ '--opp-color': oppColor }} />
             ))}
           </div>

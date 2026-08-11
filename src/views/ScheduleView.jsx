@@ -29,6 +29,25 @@ const EMPTY_ICON_CLASSES = 'empty-icon text-[32px] mb-2.5';
 const EMPTY_TITLE_CLASSES = 'empty-title text-[14px] font-medium mb-1';
 const EMPTY_SUB_CLASSES = 'empty-sub text-[12px] text-[color:var(--text-muted)]';
 
+// .sched-tabs is kept as a literal marker (Phase 6, ScheduleView.css sub-PR
+// 2) specifically so ScheduleView.css's `.sched-tabs .view-mode-toggle {
+// margin-left: auto }` descendant rule keeps resolving -- .view-mode-toggle
+// itself is still real, unmigrated CSS until sub-PR 4.
+const SCHED_TABS_CLASSES = 'sched-tabs flex items-center gap-1.5 mb-3.5 border-b-[0.5px] border-b-[color:var(--border)] pb-2.5';
+const schedTabClasses = (active) => {
+  const base = 'sched-tab py-1.5 px-4 rounded-[20px] text-[13px] font-medium flex items-center gap-1.5 [transition:all_0.15s] border-[0.5px]';
+  return active
+    ? `${base} active bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[color:var(--red-border)]`
+    : `${base} text-[color:var(--text-muted)] border-transparent`;
+};
+
+const roundSectionHeaderClasses = (current) => {
+  const base = 'round-section-header flex items-center justify-between py-2.5 px-3 mb-2 rounded-[var(--radius-sm)] cursor-pointer w-full text-left [transition:background_0.15s] hover:[filter:brightness(1.08)]';
+  return current
+    ? `${base} current bg-[var(--red-dim)] border-[0.5px] border-[color:var(--red-border)]`
+    : `${base} older bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)]`;
+};
+
 export default function ScheduleView() {
   const [tab, setTab]                   = useState('Playoffs');
   const [selectedGame, setSelectedGame] = useState(null);
@@ -123,23 +142,23 @@ export default function ScheduleView() {
       <div className="sched-header mb-3">
         <h2 className="sched-title font-[family-name:var(--font-display)] text-[18px] font-bold mb-0.5">{TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} Schedule</h2>
         {carStanding && (
-          <div className="sched-record">
+          <div className="sched-record text-[12px] text-[color:var(--text-muted)] flex items-center gap-2 mt-1">
             Regular season: <strong>{carStanding.wins}–{carStanding.losses}–{carStanding.otLosses}</strong>
-            <span className="pts-badge">{carStanding.points} pts</span>
-            <span className="div-badge">{carStanding.divisionName}</span>
+            <span className="pts-badge bg-[rgba(240,160,48,0.15)] text-[color:var(--amber)] text-[11px] py-[1px] px-[7px] rounded-[10px] font-medium">{carStanding.points} pts</span>
+            <span className="div-badge bg-[var(--bg3)] text-[color:var(--text-dim)] text-[10px] py-[1px] px-[7px] rounded-[10px]">{carStanding.divisionName}</span>
           </div>
         )}
       </div>
 
-      <div className="sched-tabs">
+      <div className={SCHED_TABS_CLASSES}>
         {TABS
           // Hide the Playoffs tab entirely during offseason (no rounds scheduled yet)
           .filter(t => t !== 'Playoffs' || (playoffRounds?.length > 0 || (playoffGames?.length > 0)))
           .map(t => (
-          <button key={t} className={`sched-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
+          <button key={t} className={schedTabClasses(tab === t)} onClick={() => setTab(t)}>
             {t}
             {t === 'Playoffs' && poRecord.w > 0 && (
-              <span className="tab-badge">{poRecord.w}–{poRecord.l}</span>
+              <span className="tab-badge bg-[var(--green)] text-[#000] text-[10px] font-bold py-[1px] px-1.5 rounded-[10px]">{poRecord.w}–{poRecord.l}</span>
             )}
           </button>
         ))}
@@ -276,37 +295,37 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
         const winsOpp      = done.filter(g => getCarScore(g) < getOppScore(g)).length;
 
         return (
-          <div key={round} className="round-section">
+          <div key={round} className="round-section mb-5">
 
             {/* Collapsible header — contains series info */}
             <button
-              className={`round-section-header ${isCurrent ? 'current' : 'older'}`}
+              className={roundSectionHeaderClasses(isCurrent)}
               onClick={() => toggleRound(round)}
               aria-expanded={!isCollapsed}
             >
-              <div className="round-section-left">
-                <span className="round-collapse-icon">{isCollapsed ? '▶' : '▼'}</span>
-                <div className="round-header-info">
-                  <span className="round-section-label">
+              <div className="round-section-left flex items-center gap-2">
+                <span className="round-collapse-icon text-[10px] text-[color:var(--text-dim)] w-2.5 shrink-0">{isCollapsed ? '▶' : '▼'}</span>
+                <div className="round-header-info flex items-center gap-2">
+                  <span className="round-section-label font-[family-name:var(--font-display)] text-[14px] font-bold uppercase tracking-[0.06em] text-[color:var(--text)]">
                     {ROUND_LABELS[round] || `Round ${round}`}
                   </span>
                   {series && (
-                    <span className="round-series-opp" style={{ color: TEAM_COLORS[series.opponent?.abbrev] || 'var(--text-dim)' }}>
+                    <span className="round-series-opp text-[11px] font-semibold" style={{ color: TEAM_COLORS[series.opponent?.abbrev] || 'var(--text-dim)' }}>
                       vs {series.opponent?.abbrev}
                     </span>
                   )}
                 </div>
                 {isCurrent && pending.length > 0 && (
-                  <span className="round-live-pill">In progress</span>
+                  <span className="round-live-pill text-[10px] font-semibold py-[2px] px-[7px] rounded-[10px] bg-[rgba(61,186,126,0.15)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.3)]">In progress</span>
                 )}
               </div>
-              <div className="round-section-right">
-                <span className="round-section-record">{winsCAR}–{winsOpp}</span>
+              <div className="round-section-right flex items-center gap-1.5">
+                <span className="round-section-record text-[12px] text-[color:var(--text-muted)] font-[family-name:var(--font-mono)] whitespace-nowrap">{winsCAR}–{winsOpp}</span>
                 {series?.carWins === 4 && series?.oppWins === 0 && (
-                  <span className="round-sweep-badge">🧹</span>
+                  <span className="round-sweep-badge text-[14px]">🧹</span>
                 )}
                 {series && !series.isActive && (
-                  <span className={`round-result-badge ${series.carAdvance ? 'adv' : 'elim'}`}>
+                  <span className={`round-result-badge text-[14px] ${series.carAdvance ? 'adv text-[color:var(--green)]' : 'elim text-[color:var(--red-bright)]'}`}>
                     {series.carAdvance ? '✅' : '❌'}
                   </span>
                 )}
