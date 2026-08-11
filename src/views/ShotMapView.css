@@ -1,16 +1,9 @@
-/* ── Stat Drill-Down Popup ──
-   Phase 5, sub-PR 2: every rule here except .drill-empty is now fully
-   retired -- migrated to Tailwind in ShotMapView.jsx/PWHLShotMapView.jsx.
-   .drill-period-badge/.drill-assists were confirmed genuinely dead (zero
-   consumers anywhere) and dropped rather than migrated. .drill-empty
-   stays real CSS: PPAnalysisPanel/PKAnalysisPanel (both files) still use
-   it as a bare literal class and are out of this sub-PR's scope (PP
-   Analysis Panel, a later sub-PR) -- remove this rule only once those
-   migrate too. */
-.drill-empty {
-  color: var(--text-dim); font-size: 13px;
-  padding: 24px 16px; text-align: center;
-}
+/* Stat Drill-Down Popup rules (Phase 5, sub-PR 2) and .drill-empty (its
+   last holdout, PPAnalysisPanel/PKAnalysisPanel -- Phase 5, sub-PR 5) are
+   now fully retired -- migrated to Tailwind in ShotMapView.jsx/
+   PWHLShotMapView.jsx. .drill-period-badge/.drill-assists were confirmed
+   genuinely dead (zero consumers anywhere) and dropped rather than
+   migrated. */
 
 /* On-Ice Panel rules removed (Phase 5, sub-PR 3) -- migrated to Tailwind
    in ShotMapView.jsx (NHL-only, no PWHL equivalent exists). .onice-card's
@@ -44,130 +37,13 @@
    removed (Phase 5, sub-PR 2) -- all migrated to Tailwind alongside the
    rest of the Stat Drill-Down Popup, see that section's comment above. */
 
-/* ── PP Analysis Panel ────────────────────────────────────── */
-.pp-analysis { display: flex; flex-direction: column; gap: 12px; padding: 4px 0; }
-
-/* Summary bar */
-.pp-summary-row {
-  display: flex; align-items: center; justify-content: space-around;
-  background: var(--bg3); border-radius: 10px; padding: 12px 8px;
-  margin: 0 16px;
-}
-.pp-summary-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.pp-summary-val  { font-size: 20px; font-weight: 700; color: var(--text); line-height: 1; }
-.pp-summary-label { font-size: 10px; color: var(--text-dim); display: flex; align-items: center; gap: 2px; }
-.pp-summary-divider { width: 1px; height: 32px; background: var(--border); }
-
-/* PP Unit */
-.pp-unit-row {
-  display: flex; align-items: center; gap: 8px;
-  padding: 0 16px;
-}
-.pp-unit-label { font-size: 10px; color: var(--text-dim); white-space: nowrap; }
-.pp-unit-chips { display: flex; flex-wrap: wrap; gap: 4px; }
-.pp-unit-chip {
-  font-size: 11px; font-weight: 500; padding: 2px 8px;
-  background: rgba(204,34,0,0.12); color: var(--red-bright);
-  border-radius: 20px; border: 0.5px solid rgba(204,34,0,0.25);
-}
-
-/* Per-opportunity list */
-.pp-opps-list { display: flex; flex-direction: column; gap: 0; }
-.pp-opp-item { border-top: 0.5px solid var(--border); }
-.pp-opp-item:last-child { border-bottom: 0.5px solid var(--border); }
-
-/* Opportunity header row */
-.pp-opp-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 16px; cursor: pointer;
-}
-.pp-opp-header:active { background: var(--bg3); }
-.pp-opp-left  { display: flex; align-items: center; gap: 8px; }
-.pp-opp-right { display: flex; align-items: center; gap: 8px; }
-.pp-opp-num   { font-size: 11px; font-weight: 700; color: var(--text-muted); }
-.pp-opp-time  { font-size: 11px; color: var(--text-dim); }
-.pp-opp-sog   { font-size: 11px; color: var(--text-dim); }
-.pp-opp-chevron { font-size: 10px; color: var(--text-dim); }
-
-/* Zone entry badge */
-.pp-entry-badge {
-  font-size: 9px; font-weight: 600; padding: 1px 6px;
-  background: rgba(250,190,30,0.12); color: #fbbf24;
-  border-radius: 20px; border: 0.5px solid rgba(250,190,30,0.25);
-}
-
-/* Outcome badge */
-.pp-outcome {
-  font-size: 10px; font-weight: 700; padding: 2px 7px;
-  border-radius: 20px;
-}
-.pp-outcome.goal  { background: rgba(74,222,128,0.15); color: var(--green); border: 0.5px solid rgba(74,222,128,0.3); }
-.pp-outcome.shots { background: rgba(148,163,184,0.12); color: var(--text-muted); border: 0.5px solid var(--border); }
-.pp-outcome.none  { background: rgba(248,113,113,0.1);  color: var(--red-bright);  border: 0.5px solid rgba(248,113,113,0.2); }
-
-/* Expanded detail */
-.pp-opp-detail {
-  padding: 0 16px 14px;
-  display: flex; flex-direction: column; gap: 10px;
-  background: var(--bg3); border-top: 0.5px solid var(--border);
-}
-
-/* Goal row inside detail */
-.pp-goal-row {
-  display: flex; align-items: flex-start; gap: 8px;
-  padding: 8px 0 4px;
-}
-.pp-goal-icon   { font-size: 16px; line-height: 1.2; }
-.pp-goal-scorer { font-size: 13px; font-weight: 600; color: var(--text); }
-.pp-goal-shottype {
-  font-size: 10px; color: var(--text-dim); margin-left: 6px;
-  padding: 1px 5px; background: var(--bg2); border-radius: 4px;
-}
-.pp-goal-assists { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
-.pp-goal-time   { font-size: 11px; color: var(--text-dim); margin-left: auto; white-space: nowrap; }
-
-/* Detail stats chips */
-.pp-detail-stats {
-  display: flex; gap: 0;
-  background: var(--bg2); border-radius: 8px; overflow: hidden;
-}
-.pp-detail-stat {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
-  padding: 8px 4px; gap: 2px;
-  border-right: 0.5px solid var(--border);
-}
-.pp-detail-stat:last-child { border-right: none; }
-.pp-detail-val   { font-size: 15px; font-weight: 700; color: var(--text); }
-.pp-detail-label { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
-
-/* Shot type chips */
-.pp-shottype-row { display: flex; flex-wrap: wrap; gap: 4px; }
-.pp-shottype-chip {
-  font-size: 10px; padding: 2px 7px; border-radius: 20px;
-  background: var(--bg2); color: var(--text-muted);
-  border: 0.5px solid var(--border);
-}
-
-/* Mini rink */
-.pp-mini-rink { margin-top: 4px; }
-.pp-mini-rink-label { font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
-
-/* PP1 / PP2 unit chip variants */
-.pp-unit-chip.pp1 { background: rgba(204,34,0,0.12); color: var(--red-bright); border-color: rgba(204,34,0,0.25); }
-.pp-unit-chip.pp2 { background: rgba(96,165,250,0.12); color: #60a5fa; border-color: rgba(96,165,250,0.25); }
-
-/* Per-opp unit badge */
-.pp-unit-badge {
-  font-size: 9px; font-weight: 700; padding: 1px 5px;
-  border-radius: 4px; letter-spacing: 0.03em;
-}
-.pp-unit-badge.pp1 { background: rgba(204,34,0,0.15); color: var(--red-bright); }
-.pp-unit-badge.pp2 { background: rgba(96,165,250,0.15); color: #60a5fa; }
-
-.pp-unit-note {
-  font-size: 10px; color: var(--text-dim);
-  padding: 0 16px; line-height: 1.4;
-}
+/* PP Analysis Panel rules removed (Phase 5, sub-PR 5) -- migrated to
+   Tailwind in ShotMapView.jsx/PWHLShotMapView.jsx. No property races or
+   Cypress markers found anywhere in this section (re-checked against both
+   exact-class and `[class*=]` substring selector patterns, lesson #20).
+   PWHL's PP/PK panels don't use the units feature (.pp-unit-*) or show
+   assists/shot-type breakdowns -- a real, confirmed structural asymmetry,
+   not a bug. */
 
 /* ── Game chips (PWHL per-game selector) ─────────────────────── */
 .game-chips-wrap {
