@@ -29,6 +29,17 @@ import PlayerPopup from '../components/PlayerPopup'
 // regardless of specificity (the same bug class fixed for button/a/svg in
 // Session 94, Phase 0). Kept as a small real, unlayered CSS rule in
 // index.css instead of trying to out-specificity it.
+// DRILL_EMPTY_CLASSES (Phase 5, ShotMapView.css sub-PR 2) -- "drill-empty"
+// here was a coincidental same-name marker with ZERO real CSS backing it:
+// this file never imported ShotMapView.css (the only place `.drill-empty`
+// was ever defined), so this empty-state has been rendering completely
+// unstyled (no color/padding/centering) since before this migration
+// touched anything. Found while migrating ShotMapView.css's own
+// `.drill-empty` and fixed here too, since it's the same class name and
+// the intended styling is now documented right here instead of a CSS file
+// this component never actually depended on. Marker string kept for
+// players.cy.js's `cy.skipIfEither('.drill-empty', ...)` skip-gate.
+const DRILL_EMPTY_CLASSES = 'drill-empty text-[color:var(--text-dim)] text-[13px] py-[24px] px-[16px] text-center'
 const HEADER_WRAP_CLASSES = 'mb-[14px]'
 const VIEW_TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[20px] font-bold flex items-center gap-2 mb-[2px]'
 const PLAYERS_SUB_CLASSES = 'text-[12px] text-[color:var(--text-muted)]'
@@ -283,7 +294,7 @@ function SkaterStatsTable({ skaters, loading, gameType = 2, onSelect }) {
   );
 
   if (!skaters?.length) return (
-    <div className="drill-empty">
+    <div className={DRILL_EMPTY_CLASSES}>
       {gameType === 3
         ? `No playoff stats yet — data populates once ${TEAM_CONFIG.displayName} advances.`
         : 'No stats available.'}

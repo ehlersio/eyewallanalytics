@@ -132,6 +132,54 @@ const gmStatValClasses = (variant) => {
   return `${base} ${variant === 'red' ? 'text-[color:var(--red-bright)]' : 'text-[color:var(--text-muted)]'}`;
 };
 
+// ── Stat Drill-Down Popup (Phase 5, ShotMapView.css sub-PR 2) --
+// duplicated from ShotMapView.jsx per convention. PWHL's drill popup is
+// simpler: no per-period faceoff breakdown chips (no .drill-periods/
+// .period-chip/.c-green/.c-red here), no penalty totals row, no
+// penaltyType badge -- see ShotMapView.jsx's header comment for the full
+// property-race reasoning (.drill-val, .drill-tab, the drill-row-grid/
+// drill-totals-row and drill-totals-row/pen-totals separate-class pairs).
+// PPAnalysisPanel/PKAnalysisPanel's own "drill-empty" usages stay literal
+// for now -- out of this sub-PR's scope (PP Analysis Panel, later sub-PR),
+// and ShotMapView.css's `.drill-empty` rule stays in the file until those
+// migrate too.
+const DRILL_OVERLAY_CLASSES = 'drill-overlay fixed inset-0 z-[300] bg-[rgba(0,0,0,0.65)] flex items-center justify-center pt-4 px-0 pb-[72px] box-border';
+const DRILL_POPUP_CLASSES = 'drill-popup bg-[var(--bg1)] rounded-[14px] w-[calc(100%-32px)] max-w-[460px] max-h-full flex flex-col border-[0.5px] border-[color:var(--border)] shadow-[0_8px_48px_rgba(0,0,0,0.6)] overflow-hidden';
+const DRILL_HEADER_CLASSES = 'flex items-center justify-between pt-[13px] pb-[11px] px-4 border-b-[0.5px] border-[color:var(--border)] shrink-0';
+const DRILL_TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[15px] font-bold text-[color:var(--text)]';
+const DRILL_CLOSE_CLASSES = 'drill-close text-[18px] text-[color:var(--text-dim)] bg-transparent border-0 cursor-pointer py-0.5 px-2 rounded-[6px] leading-none hover:bg-[var(--bg3)] hover:text-[color:var(--text)]';
+const DRILL_BODY_CLASSES = 'overflow-y-auto flex-1';
+const DRILL_EMPTY_CLASSES = 'text-[color:var(--text-dim)] text-[13px] py-6 px-4 text-center';
+const DRILL_TABLE_CLASSES = 'flex flex-col';
+const DRILL_CHILD_ALIGN = '[&>*]:flex [&>*]:items-center [&>*:not(:first-child)]:justify-end';
+const DRILL_COL_HEADER_CLASSES = `grid py-[5px] px-4 text-[9px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] border-b-[0.5px] border-[color:var(--border)] bg-[var(--bg2)] ${DRILL_CHILD_ALIGN}`;
+const DRILL_COL_HEADER_FO_CLASSES = `${DRILL_COL_HEADER_CLASSES} grid-cols-[1fr_46px_46px_52px]`;
+const DRILL_ROW_GRID_CLASSES = `drill-row-grid grid pt-[7px] pb-[7px] px-4 border-b-[0.5px] border-[rgba(255,255,255,0.04)] items-center ${DRILL_CHILD_ALIGN}`;
+const DRILL_ROW_GRID_FO_CLASSES = `${DRILL_ROW_GRID_CLASSES} grid-cols-[1fr_46px_46px_52px]`;
+const DRILL_ROW_GRID_SHOTS_TOTALS_CLASSES = `drill-row-grid grid pt-1 pb-[7px] px-4 mt-1 border-t border-t-[color:var(--border)] border-b-[0.5px] border-b-[rgba(255,255,255,0.04)] font-bold items-center ${DRILL_CHILD_ALIGN}`;
+const DRILL_NAME_CLASSES = 'text-[13px] font-medium text-[color:var(--text)] min-w-0';
+const DRILL_NAME_TOTALS_LABEL_CLASSES = 'text-[11px] font-medium text-[color:var(--text-dim)] min-w-0';
+const DRILL_VAL_BASE = 'font-[family-name:var(--font-mono)] text-[12px]';
+const drillValClasses = (variant) => {
+  if (variant === 'green') return `${DRILL_VAL_BASE} text-[color:var(--green)] font-semibold`;
+  if (variant === 'red') return `${DRILL_VAL_BASE} text-[color:var(--red-bright)] font-semibold`;
+  if (variant === 'dim') return `${DRILL_VAL_BASE} text-[color:var(--text-dim)]`;
+  if (variant === 'total') return `${DRILL_VAL_BASE} text-[color:var(--text)] font-bold`;
+  if (variant === 'total-dim') return `${DRILL_VAL_BASE} text-[color:var(--text-dim)] font-bold`;
+  return `${DRILL_VAL_BASE} text-[color:var(--text)]`;
+};
+const DRILL_TABS_CLASSES = 'flex border-b-[0.5px] border-[color:var(--border)] px-4';
+const DRILL_TAB_BASE = 'flex-1 py-2 text-[12px] font-semibold bg-transparent border-0 border-b-2 cursor-pointer flex items-center justify-center gap-[6px]';
+const drillTabClasses = (active) => `${DRILL_TAB_BASE} ${active
+  ? 'text-[color:var(--red-bright)] border-b-[color:var(--red-bright)]'
+  : 'text-[color:var(--text-dim)] border-b-transparent'}`;
+const PEN_ROW_CLASSES = 'pen-row px-4 py-2 border-b-[0.5px] border-[rgba(255,255,255,0.04)]';
+const PEN_ROW_TOP_CLASSES = 'flex items-center gap-2 mb-[3px]';
+const PEN_ROW_BOTTOM_CLASSES = 'flex items-center gap-2';
+const PEN_BADGE_CLASSES = 'text-[10px] font-bold py-0.5 px-[6px] rounded-[4px]';
+const PEN_PERIOD_CLASSES = 'text-[10px] text-[color:var(--text-dim)] ml-auto';
+const PEN_DESC_CLASSES = 'text-[11px] text-[color:var(--text-muted)] capitalize';
+
 // ── Shot adapters ─────────────────────────────────────────────
 
 function mapEventType(t) {
@@ -277,58 +325,58 @@ function StatDrillPopup({ drillStat, onClose, abbr, oppAbbr, color }) {
   const grandTotal = rows.reduce((s, r) => s + (r.total || 0), 0);
 
   return (
-    <div className="drill-overlay" onClick={onClose}>
-      <div className="drill-popup" onClick={e => e.stopPropagation()}>
-        <div className="drill-header">
-          <span className="drill-title">{drillStat.label}</span>
-          <button className="drill-close" onClick={onClose} aria-label="Close">✕</button>
+    <div className={DRILL_OVERLAY_CLASSES} onClick={onClose}>
+      <div className={DRILL_POPUP_CLASSES} onClick={e => e.stopPropagation()}>
+        <div className={DRILL_HEADER_CLASSES}>
+          <span className={DRILL_TITLE_CLASSES}>{drillStat.label}</span>
+          <button className={DRILL_CLOSE_CLASSES} onClick={onClose} aria-label="Close">✕</button>
         </div>
 
         {hasOpp && (
-          <div className="drill-tabs">
-            <button className={`drill-tab${tab === 'car' ? ' active' : ''}`} onClick={() => setTab('car')}>
+          <div className={DRILL_TABS_CLASSES}>
+            <button className={drillTabClasses(tab === 'car')} onClick={() => setTab('car')}>
               <TeamLogo abbr={abbr} sport="pwhl" size={18} /> {abbr}
             </button>
-            <button className={`drill-tab${tab === 'opp' ? ' active' : ''}`} onClick={() => setTab('opp')}>
+            <button className={drillTabClasses(tab === 'opp')} onClick={() => setTab('opp')}>
               <TeamLogo abbr={oppAbbr} sport="pwhl" size={18} /> {oppAbbr || 'OPP'}
             </button>
           </div>
         )}
 
-        <div className="drill-body">
+        <div className={DRILL_BODY_CLASSES}>
           {drillStat.type === 'shots' && (
             rows.length === 0
-              ? <div className="drill-empty">No {teamLabel} data for this game.</div>
+              ? <div className={DRILL_EMPTY_CLASSES}>No {teamLabel} data for this game.</div>
               : (
-                <div className="drill-table">
-                  <div className="drill-col-header shots"
+                <div className={DRILL_TABLE_CLASSES}>
+                  <div className={DRILL_COL_HEADER_CLASSES}
                     style={{ gridTemplateColumns: `1fr ${periods.map(() => '34px').join(' ')} 42px` }}>
                     <span>Player</span>
                     {periods.map(p => <span key={p}>{p}</span>)}
                     <span>Total</span>
                   </div>
                   {rows.map((r, i) => (
-                    <div key={i} className="drill-row-grid shots"
+                    <div key={i} className={DRILL_ROW_GRID_CLASSES}
                       style={{ gridTemplateColumns: `1fr ${periods.map(() => '34px').join(' ')} 42px` }}>
-                      <span className="drill-name">{r.name}</span>
+                      <span className={DRILL_NAME_CLASSES}>{r.name}</span>
                       {periods.map(p => (
-                        <span key={p} className={`drill-val${r.periods?.[p] ? '' : ' dim'}`}>
+                        <span key={p} className={drillValClasses(r.periods?.[p] ? undefined : 'dim')}>
                           {r.periods?.[p] || '—'}
                         </span>
                       ))}
-                      <span className="drill-val total">{r.total}</span>
+                      <span className={drillValClasses('total')}>{r.total}</span>
                     </div>
                   ))}
                   {grandTotal > 0 && (
-                    <div className="drill-row-grid shots drill-totals-row"
+                    <div className={DRILL_ROW_GRID_SHOTS_TOTALS_CLASSES}
                       style={{ gridTemplateColumns: `1fr ${periods.map(() => '34px').join(' ')} 42px` }}>
-                      <span className="drill-name drill-totals-label">Total</span>
+                      <span className={DRILL_NAME_TOTALS_LABEL_CLASSES}>Total</span>
                       {periods.map(p => (
-                        <span key={p} className={`drill-val total${periodTots[p] ? '' : ' dim'}`}>
+                        <span key={p} className={drillValClasses(periodTots[p] ? 'total' : 'total-dim')}>
                           {periodTots[p] || '—'}
                         </span>
                       ))}
-                      <span className="drill-val total">{grandTotal}</span>
+                      <span className={drillValClasses('total')}>{grandTotal}</span>
                     </div>
                   )}
                 </div>
@@ -336,20 +384,20 @@ function StatDrillPopup({ drillStat, onClose, abbr, oppAbbr, color }) {
           )}
 
           {drillStat.type === 'faceoff' && (
-            <div className="drill-table">
+            <div className={DRILL_TABLE_CLASSES}>
               {rows.length === 0
-                ? <div className="drill-empty">No faceoff data for this game.</div>
+                ? <div className={DRILL_EMPTY_CLASSES}>No faceoff data for this game.</div>
                 : (
                   <>
-                    <div className="drill-col-header fo">
+                    <div className={DRILL_COL_HEADER_FO_CLASSES}>
                       <span>Player</span><span>Won</span><span>Lost</span><span>Win%</span>
                     </div>
                     {rows.map((r, i) => (
-                      <div key={i} className="drill-row-grid fo">
-                        <span className="drill-name">{r.name}</span>
-                        <span className="drill-val green">{r.totalWon}</span>
-                        <span className="drill-val red">{r.totalLost}</span>
-                        <span className="drill-val">
+                      <div key={i} className={DRILL_ROW_GRID_FO_CLASSES}>
+                        <span className={DRILL_NAME_CLASSES}>{r.name}</span>
+                        <span className={drillValClasses('green')}>{r.totalWon}</span>
+                        <span className={drillValClasses('red')}>{r.totalLost}</span>
+                        <span className={drillValClasses()}>
                           {r.total > 0 ? `${Math.round(r.totalWon / r.total * 100)}%` : '—'}
                         </span>
                       </div>
@@ -369,24 +417,24 @@ function StatDrillPopup({ drillStat, onClose, abbr, oppAbbr, color }) {
           )}
 
           {drillStat.type === 'penalties' && (
-            <div className="drill-table">
+            <div className={DRILL_TABLE_CLASSES}>
               {rows.length === 0
-                ? <div className="drill-empty">No {teamLabel} penalties.</div>
+                ? <div className={DRILL_EMPTY_CLASSES}>No {teamLabel} penalties.</div>
                 : rows.map((r, i) => (
-                  <div key={i} className="drill-row pen-row">
-                    <div className="pen-row-top">
-                      <span className="drill-name">{r.name}</span>
-                      <span className="pen-badge"
+                  <div key={i} className={PEN_ROW_CLASSES}>
+                    <div className={PEN_ROW_TOP_CLASSES}>
+                      <span className={DRILL_NAME_CLASSES}>{r.name}</span>
+                      <span className={PEN_BADGE_CLASSES}
                         style={{
                           background: r.minutes <= 2 ? 'rgba(251,191,36,0.15)' : 'rgba(248,113,113,0.2)',
                           color:      r.minutes <= 2 ? '#fbbf24'               : '#f87171',
                         }}>
                         {r.minutes} min
                       </span>
-                      <span className="pen-period">{r.period}</span>
+                      <span className={PEN_PERIOD_CLASSES}>{r.period}</span>
                     </div>
-                    <div className="pen-row-bottom">
-                      <span className="pen-desc">{r.description}</span>
+                    <div className={PEN_ROW_BOTTOM_CLASSES}>
+                      <span className={PEN_DESC_CLASSES}>{r.description}</span>
                     </div>
                   </div>
                 ))
