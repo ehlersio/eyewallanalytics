@@ -33,6 +33,15 @@ const CONTEXT_PILL_VARIANTS = {
 const contextPillClasses = (variant) =>
   `text-[11px] font-semibold py-[3px] px-[10px] rounded-[20px] ${CONTEXT_PILL_VARIANTS[variant]}`;
 
+// .empty-state (Phase 6, ScheduleView.css sub-PR 1) -- same reasoning as
+// ScheduleView.jsx's own copy of these constants: .empty-state's padding
+// is owned by index.css (shared, unlayered), margin-bottom:8px kept as a
+// plain Tailwind utility since it doesn't collide with .card.
+const EMPTY_STATE_CLASSES = 'empty-state text-center mb-2';
+const EMPTY_ICON_CLASSES = 'empty-icon text-[32px] mb-2.5';
+const EMPTY_TITLE_CLASSES = 'empty-title text-[14px] font-medium mb-1';
+const EMPTY_SUB_CLASSES = 'empty-sub text-[12px] text-[color:var(--text-muted)]';
+
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function _gameStr(g) {
@@ -212,10 +221,10 @@ export default function PWHLScheduleView() {
           {regLoading && <LoadingCards count={5} />}
 
           {!regLoading && !regSchedule?.length && (
-            <div className="card empty-state">
-              <div className="empty-icon">📅</div>
-              <div className="empty-title">No games found</div>
-              <div className="empty-sub">No regular season data for {seasonLabel}.</div>
+            <div className={`card ${EMPTY_STATE_CLASSES}`}>
+              <div className={EMPTY_ICON_CLASSES}>📅</div>
+              <div className={EMPTY_TITLE_CLASSES}>No games found</div>
+              <div className={EMPTY_SUB_CLASSES}>No regular season data for {seasonLabel}.</div>
             </div>
           )}
 
@@ -258,10 +267,10 @@ export default function PWHLScheduleView() {
           {poLoading && <LoadingCards count={4} />}
 
           {!poLoading && !poSchedule?.length && (
-            <div className="card empty-state">
-              <div className="empty-icon">🏆</div>
-              <div className="empty-title">No playoff games</div>
-              <div className="empty-sub">{abbr} did not participate in the {poLabel}.</div>
+            <div className={`card ${EMPTY_STATE_CLASSES}`}>
+              <div className={EMPTY_ICON_CLASSES}>🏆</div>
+              <div className={EMPTY_TITLE_CLASSES}>No playoff games</div>
+              <div className={EMPTY_SUB_CLASSES}>{abbr} did not participate in the {poLabel}.</div>
             </div>
           )}
 
@@ -479,30 +488,30 @@ function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
 
                           return (
                             <div key={g.game_id}
-                              className={`result-card card${done ? ' clickable' : ''}`}
+                              className={`result-card card mb-2${done ? ' clickable cursor-pointer [transition:border-color_0.15s] hover:border-[color:var(--border-2)]' : ''}`}
                               onClick={done ? () => onGamePopup(g) : undefined}
                             >
-                              <div className="result-top">
-                                <span className="result-date">
+                              <div className="result-top flex items-center gap-2 mb-1.5">
+                                <span className="result-date text-[11px] text-[color:var(--text-muted)]">
                                   Game {gi + 1} · {dayOfWeek(g)} {formatDate(g)}
                                 </span>
                                 {done && (
-                                  <span className={`result-outcome ${won ? 'win' : 'loss'}`}>
+                                  <span className={`result-outcome font-[family-name:var(--font-display)] text-[12px] font-bold py-[2px] px-2 rounded ${won ? 'win bg-[rgba(61,186,126,0.15)] text-[color:var(--green)]' : 'loss bg-[rgba(255,68,34,0.1)] text-[color:var(--red-bright)]'}`}>
                                     {won ? 'W' : (isExtra ? 'OT' : 'L')}{suffix}
                                   </span>
                                 )}
                                 {!done && <span className={contextPillClasses('regular')} style={{fontSize:9}}>Upcoming</span>}
-                                {done && <span className="result-tap-hint">Tap for stats →</span>}
+                                {done && <span className="result-tap-hint text-[10px] text-[color:var(--text-dim)] ml-auto">Tap for stats →</span>}
                               </div>
-                              <div className="result-score">
+                              <div className="result-score flex items-center gap-2 font-[family-name:var(--font-display)]">
                                 <TeamLogo abbr={abbr} sport="pwhl" size={20} color={color} />
-                                <span className="result-abbr" style={{ color }}>{abbr}</span>
-                                {done && <span className="result-num" style={{ color }}>{my}</span>}
-                                <span className="result-sep">{done ? '–' : 'vs'}</span>
-                                {done && <span className="result-num muted">{op}</span>}
-                                <span className="result-abbr muted">{gOppAbbr}</span>
+                                <span className="result-abbr text-[16px] font-bold" style={{ color }}>{abbr}</span>
+                                {done && <span className="result-num text-[22px] font-bold" style={{ color }}>{my}</span>}
+                                <span className="result-sep text-[color:var(--text-dim)]">{done ? '–' : 'vs'}</span>
+                                {done && <span className="result-num muted text-[22px] font-bold text-[color:var(--text-muted)]">{op}</span>}
+                                <span className="result-abbr muted text-[16px] font-bold text-[color:var(--text-muted)]">{gOppAbbr}</span>
                                 <TeamLogo abbr={gOppAbbr} sport="pwhl" size={20} color={gOppColor} />
-                                <span className="result-venue">{isHome ? 'Home' : 'Away'}</span>
+                                <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHome ? 'Home' : 'Away'}</span>
                               </div>
                             </div>
                           );
@@ -620,24 +629,24 @@ function CompletedCard({ game: g, teamId, abbr, color, onClick, isPlayoff }) {
   const outcomeLabel = won ? 'W' : (isExtra ? 'OT' : 'L');
 
   return (
-    <div className="result-card card clickable" onClick={onClick}>
-      <div className="result-top">
-        <span className="result-date">{dayOfWeek(g)} {formatDate(g)}</span>
-        <span className={`result-outcome ${won ? 'win' : 'loss'}`}>
+    <div className="result-card card clickable mb-2 cursor-pointer [transition:border-color_0.15s] hover:border-[color:var(--border-2)]" onClick={onClick}>
+      <div className="result-top flex items-center gap-2 mb-1.5">
+        <span className="result-date text-[11px] text-[color:var(--text-muted)]">{dayOfWeek(g)} {formatDate(g)}</span>
+        <span className={`result-outcome font-[family-name:var(--font-display)] text-[12px] font-bold py-[2px] px-2 rounded ${won ? 'win bg-[rgba(61,186,126,0.15)] text-[color:var(--green)]' : 'loss bg-[rgba(255,68,34,0.1)] text-[color:var(--red-bright)]'}`}>
           {outcomeLabel}{suffix}
         </span>
         {isPlayoff && <span className={contextPillClasses('playoffs')} style={{ fontSize: 9 }}>Playoff</span>}
-        <span className="result-tap-hint">Tap for stats →</span>
+        <span className="result-tap-hint text-[10px] text-[color:var(--text-dim)] ml-auto">Tap for stats →</span>
       </div>
-      <div className="result-score">
+      <div className="result-score flex items-center gap-2 font-[family-name:var(--font-display)]">
         <TeamLogo abbr={abbr} sport="pwhl" size={20} color={color} />
-        <span className="result-abbr" style={{ color }}>{abbr}</span>
-        <span className="result-num" style={{ color }}>{my ?? '—'}</span>
-        <span className="result-sep">–</span>
-        <span className="result-num muted">{op ?? '—'}</span>
-        <span className="result-abbr muted">{oppAbbr}</span>
+        <span className="result-abbr text-[16px] font-bold" style={{ color }}>{abbr}</span>
+        <span className="result-num text-[22px] font-bold" style={{ color }}>{my ?? '—'}</span>
+        <span className="result-sep text-[color:var(--text-dim)]">–</span>
+        <span className="result-num muted text-[22px] font-bold text-[color:var(--text-muted)]">{op ?? '—'}</span>
+        <span className="result-abbr muted text-[16px] font-bold text-[color:var(--text-muted)]">{oppAbbr}</span>
         <TeamLogo abbr={oppAbbr} sport="pwhl" size={20} color={oppColor} />
-        <span className="result-venue">{isHome ? 'Home' : 'Away'}</span>
+        <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHome ? 'Home' : 'Away'}</span>
       </div>
     </div>
   );

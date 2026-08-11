@@ -99,6 +99,25 @@ function SortBar({ sortOrder, setSortOrder, completedCount, upcomingCount, _labe
 }
 
 // ── Shared game card ─────────────────────────────────────────
+// Styling used to come from ScheduleView.css -- migrated to Tailwind here
+// (Phase 6, ScheduleView.css sub-PR 1). Every classname below is kept as a
+// literal marker alongside the Tailwind utilities. .gc-record (never
+// rendered anywhere) and .sched-sub (ScheduleView.jsx's own dead sibling,
+// see that file) were confirmed dead via full-tree grep and dropped rather
+// than migrated.
+//
+// None of .game-card's own properties (margin-bottom, cursor, hover
+// border-color, .selected/.playoff-game modifiers) collide with the
+// shared .card class's own unlayered background/border/border-radius/
+// padding, so this is a plain Tailwind conversion -- no index.css entry
+// needed (unlike .matchup-detail in MatchupDetail.jsx, which does collide).
+const GAME_CARD_BASE = 'game-card card mb-2 cursor-pointer [transition:border-color_0.15s] hover:border-[color:var(--border-2)]';
+const gameCardClasses = ({ isSelected, isPlayoff, isCompleted }) => {
+  const selected = isSelected ? ' selected bg-[rgba(204,34,0,0.04)] border-[color:var(--red-border)]' : '';
+  const playoff  = isPlayoff ? ' playoff-game border-l-2 border-l-[color:var(--red-border)]' : '';
+  const clickable = isCompleted ? ' clickable' : ' upcoming-clickable';
+  return `${GAME_CARD_BASE}${selected}${playoff}${clickable}`;
+};
 
 function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, cardFavoured }) {
   const home     = isHomeGame(game);
@@ -113,54 +132,54 @@ function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, car
 
   return (
     <div
-      className={`game-card card ${isSelected ? 'selected' : ''} ${isPlayoff ? 'playoff-game' : ''} ${isCompleted ? 'clickable' : 'upcoming-clickable'}`}
+      className={gameCardClasses({ isSelected, isPlayoff, isCompleted })}
       onClick={onClick}
     >
-      <div className="gc-top">
-        <span className="gc-date">{formatGameDate(game.gameDate)}</span>
+      <div className="gc-top flex items-center gap-2.5 mb-2.5 flex-wrap">
+        <span className="gc-date text-[12px] text-[color:var(--text-muted)]">{formatGameDate(game.gameDate)}</span>
         {isCompleted && carScore != null ? (
-          <span className={`gc-result ${won ? 'won' : 'lost'}`}>
+          <span className={`gc-result font-semibold text-[12px] ${won ? 'won text-[color:var(--green)]' : 'lost text-[color:var(--red-bright)]'}`}>
             {won ? 'W' : lost ? 'L' : 'OT'} {carScore}–{oppScore}
           </span>
         ) : (
-          <span className="gc-time">{formatGameTime(game.startTimeUTC)}</span>
+          <span className="gc-time text-[11px] text-[color:var(--amber)] font-[family-name:var(--font-mono)]">{formatGameTime(game.startTimeUTC)}</span>
         )}
-        <span className="gc-venue">{home ? '📍 Lenovo Center' : '✈ Away'}</span>
-        {isCompleted && <span className="gc-tap-hint">Tap for stats →</span>}
+        <span className="gc-venue text-[10px] text-[color:var(--text-dim)] ml-auto">{home ? '📍 Lenovo Center' : '✈ Away'}</span>
+        {isCompleted && <span className="gc-tap-hint text-[10px] text-[color:var(--text-dim)]">Tap for stats →</span>}
         {!isCompleted && odds && (
-          <div className="gc-odds">
-            <span className="gc-odds-car" title="${TEAM_CONFIG.abbr} moneyline">{fmtOdds(odds.carOdds)}</span>
-            <span className="gc-odds-sep">/</span>
-            <span className="gc-odds-opp" title="OPP moneyline">{fmtOdds(odds.oppOdds)}</span>
-            <span className="gc-odds-book">{odds.book}</span>
+          <div className="gc-odds flex items-center gap-1 font-[family-name:var(--font-mono)] text-[11px] ml-auto">
+            <span className="gc-odds-car text-[color:var(--red-bright)] font-semibold" title="${TEAM_CONFIG.abbr} moneyline">{fmtOdds(odds.carOdds)}</span>
+            <span className="gc-odds-sep text-[color:var(--text-dim)]">/</span>
+            <span className="gc-odds-opp text-[color:var(--text-muted)] font-semibold" title="OPP moneyline">{fmtOdds(odds.oppOdds)}</span>
+            <span className="gc-odds-book text-[9px] text-[color:var(--text-dim)] ml-0.5">{odds.book}</span>
           </div>
         )}
       </div>
-      <div className="gc-matchup">
-        <div className="gc-team-block">
+      <div className="gc-matchup flex items-center gap-3.5 mb-2">
+        <div className="gc-team-block flex-1 flex flex-row items-center gap-2.5 min-w-0">
           <TeamLogo abbr={TEAM_CONFIG.abbr} size={32} />
-          <div className="gc-team-text">
-            <span className="gc-abbr" style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
-            <span className="gc-full">{TEAM_CONFIG.displayName}</span>
+          <div className="gc-team-text flex flex-col gap-0.5 min-w-0">
+            <span className="gc-abbr font-[family-name:var(--font-display)] text-[20px] font-bold tracking-[0.04em]" style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
+            <span className="gc-full text-[11px] text-[color:var(--text-muted)]">{TEAM_CONFIG.displayName}</span>
           </div>
         </div>
-        <div className="gc-vs">{home ? 'vs' : '@'}</div>
-        <div className="gc-team-block right">
-          <div className="gc-team-text right">
-            <span className="gc-abbr" style={{ color: oppColor }}>{opp?.abbrev}</span>
-            <span className="gc-full">{oppCity} {oppName}</span>
+        <div className="gc-vs font-[family-name:var(--font-display)] text-[12px] font-semibold text-[color:var(--text-dim)] shrink-0">{home ? 'vs' : '@'}</div>
+        <div className="gc-team-block right flex-1 flex flex-row-reverse items-center gap-2.5 min-w-0">
+          <div className="gc-team-text right flex flex-col gap-0.5 min-w-0 items-end text-right">
+            <span className="gc-abbr font-[family-name:var(--font-display)] text-[20px] font-bold tracking-[0.04em]" style={{ color: oppColor }}>{opp?.abbrev}</span>
+            <span className="gc-full text-[11px] text-[color:var(--text-muted)]">{oppCity} {oppName}</span>
           </div>
           <TeamLogo abbr={opp?.abbrev} size={32} color={oppColor} />
         </div>
       </div>
       {!isCompleted && (
-        <div className="gc-bottom-row">
+        <div className="gc-bottom-row flex items-center justify-between mt-1.5">
           {cardFavoured && (
-            <span className={`gc-favoured-chip ${cardFavoured.favoured ? 'fav' : 'dog'}`}>
+            <span className={`gc-favoured-chip text-[10px] font-bold py-[2px] px-2 rounded-[10px] ${cardFavoured.favoured ? 'fav bg-[rgba(61,186,126,0.15)] text-[color:var(--green)]' : 'dog bg-[rgba(204,34,0,0.12)] text-[color:var(--red-bright)]'}`}>
               {cardFavoured.favoured ? `✓ ${TEAM_CONFIG.abbr} ${cardFavoured.pct}%` : `⚠ ${opp?.abbrev} ${100 - cardFavoured.pct}%`}
             </span>
           )}
-          <span className="gc-expand-hint">{isSelected ? '▲ Close' : '▼ Matchup breakdown'}</span>
+          <span className="gc-expand-hint text-[10px] text-[color:var(--text-dim)] text-right flex-1">{isSelected ? '▲ Close' : '▼ Matchup breakdown'}</span>
         </div>
       )}
     </div>
