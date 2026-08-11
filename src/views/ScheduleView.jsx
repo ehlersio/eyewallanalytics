@@ -14,7 +14,9 @@ import { GameStatsPopup } from '../components/GameStatsPopup';
 import { SeriesCard, SortBar, GameCard } from '../components/GameCard';
 import { MatchupDetail, computeWinPct } from '../components/MatchupDetail';
 import { isStandingsStale } from '../utils/standingsUtils';
-import './ScheduleView.css';
+// ScheduleView.css import removed (Phase 6, ScheduleView.css sub-PR 5, the
+// final sub-PR) -- the file is now fully deleted, all classes migrated to
+// Tailwind across sub-PRs 1-5.
 
 const TABS = ['Playoffs', 'Regular Season'];
 
