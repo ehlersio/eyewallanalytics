@@ -14,6 +14,36 @@ import { TEAM_CONFIG } from '../utils/teamConfig';
 // ── Game stats popup ─────────────────────────────────────────
 import { PeriodTable, SkaterTable, GoalsList } from '../components/GameStatsComponents';
 
+// Styling used to come from ScheduleView.css -- migrated to Tailwind here
+// (Phase 6, ScheduleView.css sub-PR 3). The AI Game Summary Card block
+// below (.gp-summary-*) is deliberately left untouched -- out of scope,
+// migrates in sub-PR 5 alongside the rest of the AI/prediction surface.
+// .game-popup { position: relative } was a second, later declaration of
+// the same selector in the original CSS (the base rule earlier only set
+// background/border/etc, no position) -- folded into one Tailwind
+// className here rather than carried as two separate rules.
+// .gp-star-row/.gp-star-num/.gp-star-name/.gp-star-team below are also
+// each split across two non-adjacent sections in the original CSS with
+// real value conflicts (gap, padding, width vs flex-shrink, font-size) --
+// the classes here use the final cascade-resolved values (confirmed via
+// the Phase 6 investigation), not either section's raw values alone.
+// Fixed a real pre-existing bug along the way: the "OPP" label in the
+// advanced-stats header row used a bare `.muted` class that was never
+// actually defined anywhere in the app (only ever `.X.muted` compound
+// modifiers existed elsewhere) -- it rendered with zero styling instead of
+// the dimmed color every sibling `.muted` label in this same popup uses.
+const GP_TEAM_COL_CLASSES = 'gp-team-col flex flex-col items-center gap-1 flex-1';
+const GP_RESULT_BADGE_CLASSES = 'gp-result-badge font-[family-name:var(--font-display)] text-[12px] font-bold py-[3px] px-2.5 rounded-[20px]';
+const GP_STAT_VAL_CLASSES = 'gp-stat-val font-[family-name:var(--font-mono)] text-[13px] font-medium text-center';
+const GP_ADV_ROW_CLASSES = 'gp-adv-row grid gap-1.5 items-center text-[12px] [grid-template-columns:90px_28px_1fr_28px]';
+// .skater-toggle-btn:hover{color:var(--text)} and .active-car/.active-opp's
+// own color are equal-specificity compound selectors in the original CSS --
+// active wins on hover too since it's later in source. A plain Tailwind
+// hover: utility would instead win on specificity regardless of source
+// order, so the hover color only gets added for the non-active variant here
+// rather than stacked unconditionally on the shared base.
+const SKATER_TOGGLE_BTN_BASE = 'skater-toggle-btn flex items-center gap-[5px] py-[5px] px-3 rounded-[20px] text-[12px] font-medium border-[0.5px] border-[color:var(--border-2)] bg-transparent cursor-pointer [transition:all_0.15s]';
+
 function GameStatsPopup({ game, onClose }) {
   const { data, loading } = useFetch(() => getCompletedGameStats(game.id), [game.id]);
   const [skaterTeam, setSkaterTeam] = useState('car');
@@ -134,37 +164,37 @@ function GameStatsPopup({ game, onClose }) {
 
   return (
     <div className="popup-backdrop" onClick={onClose}>
-      <div className="game-popup" ref={modalRef} onClick={e => e.stopPropagation()}
+      <div className="game-popup relative" ref={modalRef} onClick={e => e.stopPropagation()}
         onScroll={e => setShowTop(e.target.scrollTop > 200)}>
         {showTop && (
-          <button className="gsp-top-btn" onClick={() => modalRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <button className="gsp-top-btn sticky top-2 float-right mt-2 mr-3 py-[5px] px-3 bg-[var(--bg3)] border-[0.5px] border-[color:var(--border)] rounded-[20px] text-[11px] font-semibold text-[color:var(--text-muted)] cursor-pointer z-10 hover:text-[color:var(--text)] hover:bg-[var(--bg2)]" onClick={() => modalRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}>
             ↑ Top
           </button>
         )}
 
         {/* Header */}
-        <div className={`gp-header ${won ? 'gp-win' : 'gp-loss'}`}>
-          <div className="gp-header-inner">
-            <div className="gp-team-col">
+        <div className={`gp-header p-4 border-b-[0.5px] border-b-[color:var(--border)] relative ${won ? 'gp-win bg-[rgba(61,186,126,0.06)]' : 'gp-loss bg-[rgba(204,34,0,0.06)]'}`}>
+          <div className="gp-header-inner flex items-center justify-between gap-3">
+            <div className={GP_TEAM_COL_CLASSES}>
               <TeamLogo abbr={TEAM_CONFIG.abbr} size={36} />
-              <span className="gp-abbr" style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
-              <span className="gp-score-big" style={{ color: 'var(--team-primary)' }}>{carScore ?? '—'}</span>
+              <span className="gp-abbr font-[family-name:var(--font-display)] text-[14px] font-bold tracking-[0.06em]" style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
+              <span className="gp-score-big font-[family-name:var(--font-display)] text-[42px] font-bold leading-none" style={{ color: 'var(--team-primary)' }}>{carScore ?? '—'}</span>
             </div>
-            <div className="gp-center-col">
-              <div className={`gp-result-badge ${won ? 'win' : 'loss'}`}>{won ? 'W' : 'L'}</div>
-              <div className="gp-date">{formatGameDate(game.gameDate)}</div>
-              <div className="gp-venue">{home ? '📍 Home' : '✈ Away'}</div>
+            <div className="gp-center-col flex flex-col items-center gap-1">
+              <div className={`${GP_RESULT_BADGE_CLASSES} ${won ? 'win bg-[rgba(61,186,126,0.2)] text-[color:var(--green)]' : 'loss bg-[rgba(204,34,0,0.15)] text-[color:var(--red-bright)]'}`}>{won ? 'W' : 'L'}</div>
+              <div className="gp-date text-[11px] text-[color:var(--text-muted)]">{formatGameDate(game.gameDate)}</div>
+              <div className="gp-venue text-[10px] text-[color:var(--text-dim)]">{home ? '📍 Home' : '✈ Away'}</div>
             </div>
-            <div className="gp-team-col right">
+            <div className={`${GP_TEAM_COL_CLASSES} right`}>
               <TeamLogo abbr={oppAbbr} size={36} color={oppColor} />
-              <span className="gp-abbr" style={{ color: oppColor }}>{oppAbbr}</span>
-              <span className="gp-score-big" style={{ color: oppColor }}>{oppScore ?? '—'}</span>
+              <span className="gp-abbr font-[family-name:var(--font-display)] text-[14px] font-bold tracking-[0.06em]" style={{ color: oppColor }}>{oppAbbr}</span>
+              <span className="gp-score-big font-[family-name:var(--font-display)] text-[42px] font-bold leading-none" style={{ color: oppColor }}>{oppScore ?? '—'}</span>
             </div>
           </div>
-          <button className="gp-close" onClick={onClose} aria-label="Close game details">✕</button>
+          <button className="gp-close absolute top-3 right-3 w-7 h-7 rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]" onClick={onClose} aria-label="Close game details">✕</button>
         </div>
 
-        <div className="gp-body">
+        <div className="gp-body pt-4 px-4 pb-6">
           {/* ── AI Game Summary Card ── */}
           {summary && (
             <div className="gp-summary-card">
@@ -213,7 +243,7 @@ function GameStatsPopup({ game, onClose }) {
           )}
 
           {loading && (
-            <div className="gp-loading">
+            <div className="gp-loading pt-5">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="skeleton" style={{ height: 12, marginBottom: 10, width: `${60 + i * 8}%` }} />
               ))}
@@ -224,22 +254,22 @@ function GameStatsPopup({ game, onClose }) {
             <>
               {/* Period table + three stars side by side */}
               {scoring.length > 0 && (
-                <div className="gp-period-stars-row">
-                  <div className="gp-section gp-period-col">
-                    <div className="gp-section-label">Scoring by period</div>
+                <div className="gp-period-stars-row grid gap-4 items-start [grid-template-columns:1fr_1fr] max-[420px]:[grid-template-columns:1fr]">
+                  <div className="gp-section gp-period-col mt-4.5 min-w-0">
+                    <div className="gp-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2">Scoring by period</div>
                     <PeriodTable scoring={scoring} home={home} carAbbr={TEAM_CONFIG.abbr} oppAbbr={oppAbbr} />
                   </div>
                   {starsList.length > 0 && (
-                    <div className="gp-section gp-stars-col">
-                      <div className="gp-section-label">Three stars</div>
+                    <div className="gp-section gp-stars-col mt-4.5 min-w-0 max-[420px]:border-t-[0.5px] max-[420px]:border-t-[color:var(--border)] max-[420px]:pt-3">
+                      <div className="gp-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2">Three stars</div>
                       {starsList.map((s, i) => (
-                        <div key={i} className="gp-star-row">
-                          <span className="gp-star-num">
+                        <div key={i} className="gp-star-row flex items-center gap-2 py-[5px] border-b-[0.5px] border-b-[color:var(--border)] text-[13px]">
+                          <span className="gp-star-num text-[13px] w-[50px] shrink-0">
                             {i === 0 ? '⭐' : i === 1 ? '⭐⭐' : '⭐⭐⭐'}
                           </span>
-                          <div className="gp-star-info">
-                            <span className="gp-star-name">{s.name?.default || s.player}</span>
-                            <span className="gp-star-team" style={{ color: TEAM_COLORS[s.teamAbbrev?.default || s.teamAbbrev] || 'var(--text-muted)' }}>
+                          <div className="gp-star-info flex flex-col gap-[1px] min-w-0">
+                            <span className="gp-star-name flex-1 text-[color:var(--text)] font-medium text-[12px] whitespace-nowrap overflow-hidden text-ellipsis">{s.name?.default || s.player}</span>
+                            <span className="gp-star-team text-[10px] font-[family-name:var(--font-display)] font-bold" style={{ color: TEAM_COLORS[s.teamAbbrev?.default || s.teamAbbrev] || 'var(--text-muted)' }}>
                               {s.teamAbbrev?.default || s.teamAbbrev}
                             </span>
                           </div>
@@ -252,17 +282,17 @@ function GameStatsPopup({ game, onClose }) {
 
               {/* Goals — CAR on left, opponent on right */}
               {scoring.length > 0 && (
-                <div className="gp-section">
-                  <div className="gp-section-label">Goals</div>
+                <div className="gp-section mt-4.5">
+                  <div className="gp-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2">Goals</div>
                   <GoalsList scoring={scoring} carAbbr={TEAM_CONFIG.abbr} oppAbbr={oppAbbr} oppColor={oppColor} />
                 </div>
               )}
 
               {/* Team stats comparison */}
               {teamStats.length > 0 && (
-                <div className="gp-section">
-                  <div className="gp-section-label">Team stats</div>
-                  <div className="gp-team-stat-header">
+                <div className="gp-section mt-4.5">
+                  <div className="gp-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2">Team stats</div>
+                  <div className="gp-team-stat-header grid gap-2 text-[11px] font-semibold text-center mb-1.5 [grid-template-columns:48px_1fr_48px]">
                     <span style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
                     <span />
                     <span style={{ color: oppColor }}>{oppAbbr}</span>
@@ -279,16 +309,16 @@ function GameStatsPopup({ game, onClose }) {
                     const total  = carNum + oppNum || 1;
                     const carPct = Math.round((carNum / total) * 100);
                     return (
-                      <div key={i} className="gp-stat-row">
-                        <span className="gp-stat-val team-primary-text">{carDisplay}</span>
-                        <div className="gp-stat-center">
-                          <div className="gp-stat-label">{label}</div>
+                      <div key={i} className="gp-stat-row grid gap-2 items-center mb-2 [grid-template-columns:48px_1fr_48px]">
+                        <span className={`${GP_STAT_VAL_CLASSES} car team-primary-text`}>{carDisplay}</span>
+                        <div className="gp-stat-center flex flex-col gap-[3px]">
+                          <div className="gp-stat-label text-[10px] text-[color:var(--text-muted)] text-center">{label}</div>
                           <div className="dual-bar">
                             <div className="fill-team-primary" style={{ width: `${carPct}%` }} />
                             <div className="fill-opp"          style={{ width: `${100 - carPct}%` }} />
                           </div>
                         </div>
-                        <span className="gp-stat-val opp">{oppDisplay}</span>
+                        <span className={`${GP_STAT_VAL_CLASSES} opp text-[color:var(--text-muted)]`}>{oppDisplay}</span>
                       </div>
                     );
                   })}
@@ -298,14 +328,14 @@ function GameStatsPopup({ game, onClose }) {
               {/* Skater table with team toggle */}
               {/* ── Corsi / Fenwick / PDO / Puck Luck ── */}
               {advStats && (
-                <div className="gp-section">
-                  <div className="gp-section-label">
+                <div className="gp-section mt-4.5">
+                  <div className="gp-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2">
                     Shot Attempts &amp; Puck Luck
                     <InfoTip position="above" text="Corsi = all shot attempts (goals+shots+misses+blocks). Fenwick excludes blocks. PDO = SH%+SV%×100, avg=100. Puck Luck = actual goals vs expected from shot share." />
                   </div>
-                  <div className="gp-adv-grid">
-                    <div className="gp-adv-row header">
-                      <span /><span className="team-primary-text">{TEAM_CONFIG.abbr}</span><span /><span className="muted">OPP</span>
+                  <div className="gp-adv-grid flex flex-col gap-[5px]">
+                    <div className={`${GP_ADV_ROW_CLASSES} header text-[9px] font-bold uppercase tracking-[0.05em] text-[color:var(--text-dim)] mb-0.5`}>
+                      <span /><span className="team-primary-text">{TEAM_CONFIG.abbr}</span><span /><span className="text-[color:var(--text-muted)]">OPP</span>
                     </div>
                     {[
                       ['Corsi (CF)',   advStats.carCorsi,   advStats.oppCorsi,   'All shot attempts incl. blocked'],
@@ -316,35 +346,35 @@ function GameStatsPopup({ game, onClose }) {
                     ].map(([label, car, opp, _help]) => {
                       const tot = car + opp || 1;
                       return (
-                        <div key={label} className="gp-adv-row">
-                          <span className="gp-adv-label">{label}</span>
+                        <div key={label} className={GP_ADV_ROW_CLASSES}>
+                          <span className="gp-adv-label text-[11px] text-[color:var(--text-muted)]">{label}</span>
                           <span className="team-primary-text">{car}</span>
-                          <div className="gp-adv-bar">
-                            <div className="gp-adv-fill team-primary-fill" style={{width:`${Math.round(car/tot*100)}%`}} />
-                            <div className="gp-adv-fill muted" style={{width:`${Math.round(opp/tot*100)}%`}} />
+                          <div className="gp-adv-bar h-1.5 rounded-[3px] bg-[var(--bg3)] flex overflow-hidden">
+                            <div className="gp-adv-fill team-primary-fill h-full" style={{width:`${Math.round(car/tot*100)}%`}} />
+                            <div className="gp-adv-fill muted h-full bg-[color:var(--text-dim)] rounded-[0_3px_3px_0]" style={{width:`${Math.round(opp/tot*100)}%`}} />
                           </div>
-                          <span className="muted">{opp}</span>
+                          <span className="text-[color:var(--text-muted)]">{opp}</span>
                         </div>
                       );
                     })}
-                    <div className="gp-adv-chips">
-                      <span className="gp-adv-chip"
+                    <div className="gp-adv-chips flex gap-1.5 flex-wrap mt-2 justify-center">
+                      <span className="gp-adv-chip text-[11px] font-semibold bg-[var(--bg3)] py-[3px] px-2 rounded-[5px] cursor-help"
                         style={{color: advStats.corsiForPct>=50?'var(--green)':'var(--team-primary)'}}>
                         CF% {advStats.corsiForPct}%
                       <InfoTip text={`Corsi For% — ${TEAM_CONFIG.abbr} share of all shot attempts`} position="above" /></span>
-                      <span className="gp-adv-chip"
+                      <span className="gp-adv-chip text-[11px] font-semibold bg-[var(--bg3)] py-[3px] px-2 rounded-[5px] cursor-help"
                         style={{color: advStats.fenwickForPct>=50?'var(--green)':'var(--team-primary)'}}>
                         FF% {advStats.fenwickForPct}%
                       <InfoTip text={`Fenwick For% — ${TEAM_CONFIG.abbr} share of unblocked attempts`} position="above" /></span>
                       {pdoStats && (
-                        <span className="gp-adv-chip"
+                        <span className="gp-adv-chip text-[11px] font-semibold bg-[var(--bg3)] py-[3px] px-2 rounded-[5px] cursor-help"
                           style={{color: pdoStats.pdo>102?'var(--amber)':pdoStats.pdo<98?'var(--blue-bright)':'var(--text-muted)'}}>
                           PDO {pdoStats.pdo}
                           <InfoTip text={`PDO = SH%+SV%×100. League avg=100. ${pdoStats.luck}`} position="above" />
                         </span>
                       )}
                       {luckStats && (
-                        <span className="gp-adv-chip"
+                        <span className="gp-adv-chip text-[11px] font-semibold bg-[var(--bg3)] py-[3px] px-2 rounded-[5px] cursor-help"
                           style={{color: luckStats.color}}>
                           Luck {luckStats.luckDelta>=0?'+':''}{luckStats.luckDelta}G
                         <InfoTip text={`Puck Luck: ${luckStats.label}. Expected ${luckStats.expectedGF}G from ${luckStats.fenwickForPct}% shot share.`} position="above" /></span>
@@ -356,17 +386,17 @@ function GameStatsPopup({ game, onClose }) {
 
               {/* Skater table with team toggle */}
               {(carPlayers.length > 0 || oppPlayers.length > 0) && (
-                <div className="gp-section">
-                  <div className="gp-skater-toggle">
+                <div className="gp-section mt-4.5">
+                  <div className="gp-skater-toggle flex gap-1.5 mb-2.5">
                     <button
-                      className={"skater-toggle-btn" + (skaterTeam === "car" ? " active-car" : "")}
+                      className={SKATER_TOGGLE_BTN_BASE + (skaterTeam === "car" ? " active-car border-[color:var(--team-primary)] text-[color:var(--team-primary)]" : " text-[color:var(--text-muted)] hover:text-[color:var(--text)]")}
                       onClick={() => setSkaterTeam("car")}
                     >
                       <TeamLogo abbr={TEAM_CONFIG.abbr} size={14} />
                       {TEAM_CONFIG.abbr} Skaters
                     </button>
                     <button
-                      className={"skater-toggle-btn" + (skaterTeam === "opp" ? " active-opp" : "")}
+                      className={SKATER_TOGGLE_BTN_BASE + (skaterTeam === "opp" ? " active-opp bg-[var(--blue-dim)] border-[rgba(68,119,238,0.35)] text-[color:var(--blue-bright)]" : " text-[color:var(--text-muted)] hover:text-[color:var(--text)]")}
                       onClick={() => setSkaterTeam("opp")}
                     >
                       <TeamLogo abbr={oppAbbr} size={14} color={oppColor} />
@@ -383,7 +413,7 @@ function GameStatsPopup({ game, onClose }) {
               )}
 
               {!teamStats.length && !carPlayers.length && !scoring.length && (
-                <div className="gp-no-data">
+                <div className="gp-no-data text-[12px] text-[color:var(--text-dim)] text-center py-4 italic">
                   Detailed stats not available for this game yet.
                 </div>
               )}
