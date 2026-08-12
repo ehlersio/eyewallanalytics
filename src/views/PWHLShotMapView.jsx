@@ -87,6 +87,10 @@ const SCORE_CENTER_CLASSES = 'text-center';
 const SCORE_PERIOD_CLASSES = 'text-[11px] text-[color:var(--amber)] font-semibold uppercase tracking-[.06em]';
 const SCORE_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[22px] text-[color:var(--text)] leading-[1.2]';
 const SCORE_STATE_CLASSES = 'text-[10px] text-[color:var(--text-dim)]';
+// .pill/.pill-red (index.css, Phase 7b) -- shape + live-state color, this
+// file's only real consumer of either class (.pill-green/.pill-amber were
+// confirmed 100% dead app-wide during Phase 5 sub-PR 3's investigation).
+const PILL_RED_CLASSES = 'inline-flex items-center gap-[5px] py-[3px] px-[10px] rounded-[20px] text-[11px] font-medium bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[0.5px] border-[color:var(--red-border)]';
 
 const metricsGridClasses = (cols) => cols === 4
   ? 'grid grid-cols-4 gap-2 mb-2'
@@ -1824,7 +1828,7 @@ export default function PWHLShotMapView() {
                 <div className={SCORE_CLOCK_CLASSES} style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
                   {liveClock?.time || '—'}
                 </div>
-                <div className={`${SCORE_STATE_CLASSES} pill pill-red`} style={{ marginTop: 4 }}>
+                <div className={`${SCORE_STATE_CLASSES} ${PILL_RED_CLASSES}`} style={{ marginTop: 4 }}>
                   {devGame ? '🟡 DEV' : '🔴 LIVE'}
                 </div>
               </>
