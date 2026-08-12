@@ -14,9 +14,9 @@
 // PWHLDevReplayView.jsx's DEV_REPLAY_CLASSES used the identical formula
 // since Phase 4. --topbar-height (54px) has exactly one consumer besides
 // this: Topbar.jsx's own height. --nav-height (52px) has three: this,
-// App.jsx's .app-main padding-bottom, and BottomNav.css's .bottom-nav height
-// calc (the still-open WebKit regression -- untouched here, this only reads
-// the same --nav-height token, doesn't redefine it).
+// App.jsx's .app-main padding-bottom, and BottomNav.jsx's BOTTOM_NAV_CLASSES
+// height calc (Phase 7c -- the still-open WebKit regression -- untouched
+// here, this only reads the same --nav-height token, doesn't redefine it).
 //
 // No light-mode override (checked light-mode-overrides.css) and no Cypress
 // selector dependency (checked cypress/e2e/*.js) -- clean conversion, no
