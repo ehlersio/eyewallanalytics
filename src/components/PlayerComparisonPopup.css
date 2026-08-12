@@ -23,10 +23,11 @@
  * this popup's bottom edge even after raising z-index well above both
  * .popup-backdrop (300) and .bottom-nav (100), so this isn't a plain
  * z-index fight. Sidestepping it entirely: reserve the same --nav-height
- * space other bottom-pinned UI in this app already reserves (App.css's
- * .app-shell padding-bottom, ScheduleView/ShotMapView's floating buttons)
- * so this sheet's own content never geometrically overlaps .bottom-nav's
- * footprint in the first place. z-index:400 kept as defense in depth. */
+ * space other bottom-pinned UI in this app already reserves (App.jsx's
+ * .app-main padding-bottom -- Tailwind since Phase 7b, App.css itself is
+ * gone -- and ScheduleView/ShotMapView's floating buttons) so this sheet's
+ * own content never geometrically overlaps .bottom-nav's footprint in the
+ * first place. z-index:400 kept as defense in depth. */
 .pcp-backdrop {
   z-index: 400;
   padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
