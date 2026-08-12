@@ -331,8 +331,11 @@ const SERIES_MODAL_EXTRA_CLASSES = 'text-[10px] font-bold text-[color:var(--text
 // hardcoded fallback, so this is a persistent (not hover-only) light-mode
 // gap exactly like every plain rgba(255,255,255,X) background fixed this
 // migration. .pr-row:hover's identically-shaped `var(--surface-hover,
-// rgba(255,255,255,0.04))` was left alone -- hover-only, matching the
-// established pattern. Property-race collisions: closed out the 2
+// rgba(255,255,255,0.04))` was left alone at the time -- hover-only,
+// matching the established pattern. Follow-up (post-migration): --surface-
+// hover now has a real definition in index.css, so the fallback here is
+// dead weight -- dropped. Still no light-mode value (separate hover-tint
+// sweep). Property-race collisions: closed out the 2
 // instances already identified in the original investigation --
 // .pr-rank-num/--top/--bot and .pr-col-stat/--gd-pos/--neg, both racing
 // on `color` (base sets it unconditionally, modifiers override it) -- no
@@ -355,7 +358,7 @@ const SERIES_MODAL_EXTRA_CLASSES = 'text-[10px] font-bold text-[color:var(--text
 // classes have zero remaining consumers anywhere in the app.
 const PR_TABLE_HEADER_ROW_CLASSES = 'pr-table-header-row grid [grid-template-columns:32px_24px_1fr_56px_64px_56px_56px] items-center gap-1 py-[6px] px-2 text-[10px] font-semibold uppercase tracking-[0.05em] text-[color:var(--text-dim)] border-b border-[var(--border)] pb-2 mb-[2px]'
 
-const PR_ROW_BASE_CLASSES = 'pr-row grid [grid-template-columns:32px_24px_1fr_56px_64px_56px_56px] items-center gap-1 py-[6px] px-2 rounded-[6px] border-l-[3px] border-transparent [transition:background_0.15s] hover:bg-[var(--surface-hover,rgba(255,255,255,0.04))]'
+const PR_ROW_BASE_CLASSES = 'pr-row grid [grid-template-columns:32px_24px_1fr_56px_64px_56px_56px] items-center gap-1 py-[6px] px-2 rounded-[6px] border-l-[3px] border-transparent [transition:background_0.15s] hover:bg-[var(--surface-hover)]'
 const PR_ROW_YOU_CLASSES = 'pr-row--you font-semibold'
 function prRowClasses(isYou) {
   return `${PR_ROW_BASE_CLASSES}${isYou ? ` ${PR_ROW_YOU_CLASSES}` : ''}`

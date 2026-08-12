@@ -40,6 +40,19 @@
   --border: rgba(255, 255, 255, 0.06);
   --border-2: rgba(255, 255, 255, 0.12);
 
+  /* Follow-up to the Tailwind migration: was an undefined custom property
+     (`var(--surface-hover, rgba(255,255,255,0.04))`) in DraftTab.jsx's
+     .dt-row--clickable:hover and LeagueView.jsx's .pr-row:hover -- same
+     dead-fallback shape as --surface-dim (which was properly hunted down
+     and fixed via a light-mode-overrides.css entry during the migration
+     itself), but this one slipped through since it's hover-only, not a
+     persistent background. Defined here with the exact value both call
+     sites' fallback already resolved to, so this change alone is a pure
+     hygiene fix with zero visual difference in dark mode. No
+     [data-theme="light"] override yet -- that's the separate hover-tint
+     light-mode sweep, which needs this token to actually exist first. */
+  --surface-hover: rgba(255, 255, 255, 0.04);
+
   --radius: 10px;
   --radius-sm: 6px;
   --radius-lg: 14px;

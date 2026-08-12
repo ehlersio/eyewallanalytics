@@ -142,13 +142,24 @@ const LV_LEADERS_STAT_CLASSES = 'lv-leaders-stat font-bold text-[color:var(--tex
 // from NHL: this file's series modal is inline within BracketPanel (no
 // separate SeriesModal component), .bkt-card--final is never used (the
 // Walter Cup Final card renders via the same BktSeriesCard as semis, no
-// width variant), and .bkt-abbr--dim is never actually applied here either
-// -- the existing `` `bkt-abbr${doneB && !doneA ? '' : ''}` `` ternary
-// always resolves to the empty string on both branches (pre-existing dead
-// logic, left as-is, not "fixed" as part of this migration). No
-// series-modal__round-label/__loading/__empty in this file (no carousel
-// lookup, no async games fetch -- games are already loaded by
-// BracketPanel's own effect before the modal can open).
+// width variant). No series-modal__round-label/__loading/__empty in this
+// file (no carousel lookup, no async games fetch -- games are already
+// loaded by BracketPanel's own effect before the modal can open).
+//
+// Follow-up (post-migration): .bkt-abbr--dim WAS never applied here --
+// the pre-migration original had a `` `bkt-abbr${doneB && !doneA ? '' :
+// ''}` `` ternary that always resolved to the empty string on both
+// branches. `doneB && !doneA` is exactly "team A is eliminated" (doneA/
+// doneB are mutually exclusive, so it reduces to plain `doneB`) --
+// confirms this was meant to conditionally add a dim/elimination modifier
+// and both ternary branches were accidentally left empty, not that no
+// modifier was ever intended. Rebuilt to match NHL's already-correct
+// bktAbbrClasses(isEliminated) pattern exactly (BKT_ABBR_DEFAULT_CLASSES
+// opacity-40 / BKT_ABBR_DIM_CLASSES 'bkt-abbr--dim opacity-30', color only
+// applied to the non-eliminated side) -- team A's isEliminated is doneB,
+// team B's is doneA, matching the label logic below which already
+// computes these correctly for the "X wins 3-Y" text, just never passed
+// them to the abbreviation rendering.
 const BKT_CARD_BASE_CLASSES = 'bkt-card w-full rounded-[var(--radius-sm)] p-[6px_8px] box-border'
 const BKT_CARD_DEFAULT_CLASSES = 'bg-[var(--bg1)] border-[0.5px] border-[var(--border)]'
 const BKT_CARD_PRIMARY_CLASSES = 'bkt-card--primary bg-[var(--bg2)] border'
@@ -167,7 +178,12 @@ const BKT_ROUND_LABEL_CLASSES = 'bkt-round-label text-[10px] font-bold text-[col
 const BKT_ROUND_SERIES_CLASSES = 'flex flex-col flex-1 justify-around gap-[6px]'
 const BKT_SERIES_SLOT_CLASSES = 'flex-1 flex items-center'
 const BKT_TEAM_ROW_CLASSES = 'bkt-team-row flex items-center gap-[6px] py-[2px]'
-const BKT_ABBR_CLASSES = 'bkt-abbr font-[family-name:var(--font-display)] text-[11px] font-bold text-[color:var(--text)] min-w-[28px] tracking-[0.02em] opacity-40'
+const BKT_ABBR_BASE_CLASSES = 'bkt-abbr font-[family-name:var(--font-display)] text-[11px] font-bold text-[color:var(--text)] min-w-[28px] tracking-[0.02em]'
+const BKT_ABBR_DEFAULT_CLASSES = 'opacity-40'
+const BKT_ABBR_DIM_CLASSES = 'bkt-abbr--dim opacity-30'
+function bktAbbrClasses(isEliminated) {
+  return `${BKT_ABBR_BASE_CLASSES} ${isEliminated ? BKT_ABBR_DIM_CLASSES : BKT_ABBR_DEFAULT_CLASSES}`
+}
 const BKT_DOTS_CLASSES = 'bkt-dots flex gap-[3px]'
 const BKT_DOT_CLASSES = 'bkt-dot w-[7px] h-[7px] rounded-full border border-[var(--border-2)] bg-transparent shrink-0'
 const BKT_SERIES_LABEL_CLASSES = 'bkt-series-label text-[9px] text-[color:var(--text-dim)] mt-[3px] whitespace-nowrap overflow-hidden text-ellipsis'
@@ -278,11 +294,11 @@ function BktSeriesCard({ series, onClick, myTeamId, myColor }) {
       tabIndex={hasGames ? 0 : undefined}
       onKeyDown={hasGames && onClick ? (e => e.key==='Enter' && onClick()) : undefined}>
       <div className={BKT_TEAM_ROW_CLASSES}>
-        <span className={BKT_ABBR_CLASSES} style={{ color: colorA }}>{abbrA}</span>
+        <span className={bktAbbrClasses(doneB)} style={!doneB && colorA ? { color: colorA } : undefined}>{abbrA}</span>
         <WinDots wins={series.winsA} color={colorA} />
       </div>
       <div className={BKT_TEAM_ROW_CLASSES}>
-        <span className={BKT_ABBR_CLASSES} style={{ color: colorB }}>{abbrB}</span>
+        <span className={bktAbbrClasses(doneA)} style={!doneA && colorB ? { color: colorB } : undefined}>{abbrB}</span>
         <WinDots wins={series.winsB} color={colorB} />
       </div>
       {series.games.length > 0 && <div className={BKT_SERIES_LABEL_CLASSES}>{label}</div>}
