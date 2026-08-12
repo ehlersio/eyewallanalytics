@@ -292,18 +292,19 @@
 .pill-red { background: var(--red-dim); color: var(--red-bright); border: 0.5px solid var(--red-border); }
 .pill-green { background: rgba(61,186,126,0.12); color: var(--green); }
 .pill-amber { background: rgba(240,160,48,0.12); color: var(--amber); }
-.pill-muted { background: var(--bg3); color: var(--text-muted); border: 0.5px solid var(--border-2); }
+/* .pill-muted confirmed genuinely dead (Phase 7b) -- zero consumers via
+   literal-string grep, interpolation-pattern grep (pill-${...}/pill ${...}),
+   and cross-CSS-file grep -- dropped rather than migrated. */
 
-.stat-value { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
-.stat-value.green { color: var(--green); }
-.stat-value.red { color: var(--red-bright); }
-.stat-value.amber { color: var(--amber); }
+/* .stat-value(.green/.red/.amber) confirmed genuinely dead (Phase 7b) --
+   same triple-check as .pill-muted above -- dropped. */
 
 /* Dual bar (team vs opponent) */
 .dual-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.07); display: flex; overflow: hidden; }
-.dual-bar .fill-red { background: var(--red); height: 100%; transition: width 0.4s ease; }
+/* .dual-bar .fill-red/.fill-green confirmed genuinely dead (Phase 7b) --
+   same triple-check as above -- dropped. .fill-blue is real (ShotMapView.jsx/
+   PWHLShotMapView.jsx), kept. */
 .dual-bar .fill-blue { background: var(--blue-bright); height: 100%; transition: width 0.4s ease; }
-.dual-bar .fill-green { background: var(--green); height: 100%; transition: width 0.4s ease; }
 
 [data-theme="light"] .dual-bar { background: rgba(0,0,0,0.07); }
 
@@ -345,7 +346,8 @@
 
 @media (max-width: 700px) {
   .two-col { grid-template-columns: 1fr; }
-  .hide-mobile { display: none !important; }
+  /* .hide-mobile confirmed genuinely dead (Phase 7b) -- same triple-check
+     as the other dead classes above -- dropped. */
   .page { padding: 10px; }
 }
 
