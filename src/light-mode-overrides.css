@@ -127,6 +127,15 @@
 /* adv-stat-indicator / adv-stat-val good/bad — #4ade80 and #f87171
    are readable on both backgrounds, no change needed */
 
+/* Hover-tint light-mode sweep (post-migration follow-up): picks-made-row's
+   hover:bg-[rgba(255,255,255,0.04)] was invisible on light, same
+   same-alpha RGB-channel-flip formula as every other fix in this file.
+   NHL-only -- confirmed no PWHL equivalent (TeamView.jsx has no Picks tab
+   counterpart in PWHLTeamView.jsx). */
+[data-theme="light"] .picks-made-row:hover {
+  background: rgba(0,0,0,0.04);
+}
+
 /* NotificationBell.css's light-mode popup-shadow override moved to
    index.css's --popup-shadow token (Session 95, Phase 1) -- the migrated
    component references the token directly via Tailwind's
@@ -188,11 +197,21 @@
    descendant selector this time -- direct on the row, migrated to
    Tailwind, kept as a literal marker) has the same rgba(255,255,255,0.04)
    invisible-on-light shape. .lv-leaders-row--clickable's transient
-   hover/active white tints were considered but deliberately left alone,
-   matching how the rest of the app treats hover-only tints (never
-   overridden anywhere in this file). */
+   hover/active white tints were considered but deliberately left alone at
+   the time, matching how the rest of the app treated hover-only tints
+   then (never overridden anywhere in this file). Follow-up (post-
+   migration hover-tint sweep): given a proper pass now, same-alpha
+   RGB-channel-flip formula as every other fix here. Applies to both
+   LeagueView.jsx and PWHLLeagueView.jsx -- identical literal marker in
+   both files. */
 [data-theme="light"] .lv-leaders-row {
   border-bottom-color: rgba(0,0,0,0.06);
+}
+[data-theme="light"] .lv-leaders-row--clickable:hover {
+  background: rgba(0,0,0,0.05);
+}
+[data-theme="light"] .lv-leaders-row--clickable:active {
+  background: rgba(0,0,0,0.09);
 }
 
 /* Bracket + Series Modal (Phase 4, sub-PR 3). .series-modal__game-row's
@@ -200,9 +219,18 @@
    hover-only) rgba(255,255,255,0.03) tint, same invisible-on-light shape
    as every other row-level background/divider fixed this migration.
    .bkt-card--clickable's hover-only tint and --bkt-line (handled inline in
-   LeagueView.css itself) were both out of scope for this file. */
+   LeagueView.css itself) were both out of scope for this file at the
+   time. Follow-up (post-migration hover-tint sweep): .bkt-card--clickable
+   given the same treatment as every other hover tint in this pass --
+   applies to both LeagueView.jsx and PWHLLeagueView.jsx (identical
+   literal marker in both). --bkt-line remains untouched, still handled
+   inline in each file's own [data-theme="light"] rule, unrelated to this
+   sweep. */
 [data-theme="light"] .series-modal__game-row:nth-child(even) {
   background: rgba(0,0,0,0.03);
+}
+[data-theme="light"] .bkt-card--clickable:hover {
+  background: rgba(0,0,0,0.06);
 }
 
 /* Power Rankings (Phase 4, sub-PR 4). .pr-how-item's background looked

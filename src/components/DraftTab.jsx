@@ -61,8 +61,9 @@ const DT_TD_CLASSES = 'dt-td py-[7px] px-2 text-[color:var(--text)] border-b-[0.
 // dt-row--clickable:hover's --surface-hover token now has a real
 // definition in index.css (follow-up to the Tailwind migration) -- was
 // previously an undefined custom property relying on this exact rgba
-// fallback value, the same dead-fallback shape as --surface-dim. Still no
-// light-mode value (that's the separate hover-tint light-mode sweep).
+// fallback value, the same dead-fallback shape as --surface-dim. Now has
+// a light-mode value too (hover-tint sweep) -- see index.css's
+// [data-theme="light"] block.
 const DT_ROW_CLICKABLE_CLASSES = 'dt-row dt-row--clickable cursor-pointer [transition:background_0.1s] focus-visible:outline-2 focus-visible:outline-[color:var(--red-bright)] focus-visible:outline-offset-[-1px] hover:bg-[var(--surface-hover)]';
 
 // ─── Constants ───────────────────────────────────────────────────────────────

@@ -48,9 +48,9 @@
      itself), but this one slipped through since it's hover-only, not a
      persistent background. Defined here with the exact value both call
      sites' fallback already resolved to, so this change alone is a pure
-     hygiene fix with zero visual difference in dark mode. No
-     [data-theme="light"] override yet -- that's the separate hover-tint
-     light-mode sweep, which needs this token to actually exist first. */
+     hygiene fix with zero visual difference in dark mode. Light-mode
+     value added in the [data-theme="light"] block below (hover-tint
+     sweep). */
   --surface-hover: rgba(255, 255, 255, 0.04);
 
   --radius: 10px;
@@ -102,6 +102,15 @@
 
   --border: rgba(0, 0, 0, 0.08);
   --border-2: rgba(0, 0, 0, 0.14);
+
+  /* Hover-tint light-mode sweep -- same-alpha RGB-channel-flip formula
+     already established by every other persistent-background light-mode
+     fix in this app (.draft-prev-badge/.pbs-row.has-points/.scouting-
+     goalie-row/.pr-how-item/.series-modal__game-row all do rgba(255,255,
+     255,X) -> rgba(0,0,0,X), alpha unchanged). Fixes both .dt-row--
+     clickable:hover and .pr-row:hover in one place, since both already
+     share this token. */
+  --surface-hover: rgba(0, 0, 0, 0.04);
 
   --popup-shadow: 0 16px 48px rgba(0,0,0,0.15);
 }
