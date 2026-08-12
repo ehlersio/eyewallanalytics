@@ -20,7 +20,7 @@ import {
   FIXTURE_PICKS_SEQUENCE,
   getOrderForTeam,
 } from '../utils/draftFixtures';
-import '../components/DraftTab.css';
+// DraftTab.css import removed (Phase 6) -- migrated to Tailwind.
 
 const TEAMS = [
   'CAR', 'TOR', 'SJS', 'VAN', 'CHI', 'NYR', 'CGY', 'SEA',

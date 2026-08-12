@@ -6,7 +6,9 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { capture } from '../utils/analytics';
 import { getDraftRankings, getDraftPicks } from '../utils/nhlApi';
 import TeamLogo from '../components/TeamLogo';
-import './DraftTab.css';
+// DraftTab.css import removed (Phase 6) -- migrated to Tailwind. NHL-only,
+// no PWHL equivalent (PWHLLeagueView.jsx's own draft table is a separate,
+// self-contained implementation, confirmed via full-tree grep).
 
 // .lv-skeleton-wrap/.lv-skeleton-row are LeagueView.css's (Phase 4,
 // LeagueView.css sub-PR 1) -- this file's only real dependency on that CSS
@@ -14,6 +16,62 @@ import './DraftTab.css';
 // is a required Cypress marker (league.cy.js); lv-skeleton-row is not.
 const LV_SKELETON_WRAP_CLASSES = 'lv-skeleton-wrap flex flex-col gap-2 py-1'
 const LV_SKELETON_ROW_CLASSES = 'h-[14px] bg-[var(--bg2)] rounded-[var(--radius-sm)] animate-[lv-pulse_1.4s_ease-in-out_infinite]'
+
+// ── Draft banner (dt-banner / --live / --done) ──
+// .dt-banner--live/.dt-banner--done are single-class modifiers in the
+// original CSS (not compound .dt-banner.dt-banner--X selectors), same
+// specificity as .dt-banner itself -- the modifier wins on background/
+// border-color/color purely by being declared later in source. Computed as
+// one full non-competing set per variant rather than stacked, the same
+// reasoning as every other base+modifier race this migration.
+const DT_BANNER_BASE = 'dt-banner flex items-center gap-2 py-2 px-3 mb-3 rounded-[8px] text-[13px] border-[0.5px]';
+function dtBannerClasses(variant) {
+  if (variant === 'live') return `${DT_BANNER_BASE} dt-banner--live bg-[color-mix(in_srgb,var(--green)_10%,transparent)] border-[color-mix(in_srgb,var(--green)_30%,transparent)] text-[color:var(--green)]`;
+  if (variant === 'done') return `${DT_BANNER_BASE} dt-banner--done bg-[color-mix(in_srgb,var(--red-bright)_8%,transparent)] border-[color:var(--red-border)] text-[color:var(--text-muted)]`;
+  return `${DT_BANNER_BASE} bg-[var(--bg2)] border-[color:var(--border)] text-[color:var(--text-muted)]`;
+}
+
+// ── Rankings/Board toggle (dt-toggle / --active) -- same base+modifier
+// race shape as dt-banner above. ──
+function dtToggleClasses(active) {
+  const base = 'dt-toggle py-[5px] px-[14px] rounded-[20px] text-[12px] font-medium border-[0.5px] cursor-pointer [transition:all_0.15s]';
+  return active
+    ? `${base} dt-toggle--active bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[color:var(--red-border)]`
+    : `${base} text-[color:var(--text-muted)] border-transparent bg-transparent`;
+}
+
+// ── Category sub-tabs (dt-cat-tab / --active) -- same shape again. ──
+function dtCatTabClasses(active) {
+  const base = 'dt-cat-tab flex items-center gap-[5px] py-1 px-3 rounded-[16px] text-[12px] font-medium border-[0.5px] cursor-pointer [transition:all_0.15s]';
+  return active
+    ? `${base} dt-cat-tab--active text-[color:var(--text)] bg-[var(--bg3)] border-[color:var(--text-muted)]`
+    : `${base} text-[color:var(--text-dim)] bg-[var(--bg2)] border-[color:var(--border)]`;
+}
+
+// ── Rank badge (dt-popup-rank-badge / --unranked) -- same shape. ──
+function dtRankBadgeClasses(unranked) {
+  const base = 'dt-popup-rank-badge text-[12px] font-bold py-[3px] px-[10px] rounded-[20px] border-[0.5px]';
+  return unranked
+    ? `${base} dt-popup-rank-badge--unranked bg-[var(--bg2)] text-[color:var(--text-dim)] border-[color:var(--border)]`
+    : `${base} bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[color:var(--red-border)]`;
+}
+
+const DT_TH_CLASSES = 'dt-th text-left py-[6px] px-2 text-[11px] font-semibold text-[color:var(--text-dim)] border-b-[0.5px] border-b-[color:var(--border)] whitespace-nowrap uppercase tracking-[0.03em]';
+const DT_TD_CLASSES = 'dt-td py-[7px] px-2 text-[color:var(--text)] border-b-[0.5px] border-b-[color:var(--border)] whitespace-nowrap';
+// dt-row--clickable:hover's `var(--surface-hover, rgba(255,255,255,0.04))`
+// is the identical undefined-token shape as --surface-dim (Phase 4) --
+// but unlike --surface-dim (a PERSISTENT background), this is a hover-only
+// transient tint, the same shape as LeagueView.css's own `.pr-row:hover`
+// (identical variable, identical fallback value), which Phase 4 sub-PR 4
+// deliberately left unfixed: "hover-only, matching the established
+// pattern [of never overriding hover-only tints in this app]." Applying
+// that same precedent here rather than the Phase 6 brief's framing of this
+// as a --surface-dim-shaped gap needing a light-mode value -- the two
+// tokens are the same dead-fallback shape, but --surface-dim's usage is
+// persistent (always visible) while --surface-hover's is transient
+// (visible only while the pointer is over the row), which is exactly the
+// distinction the rest of this migration has consistently drawn.
+const DT_ROW_CLICKABLE_CLASSES = 'dt-row dt-row--clickable cursor-pointer [transition:background_0.1s] focus-visible:outline-2 focus-visible:outline-[color:var(--red-bright)] focus-visible:outline-offset-[-1px] hover:bg-[rgba(255,255,255,0.04)]';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -44,11 +102,12 @@ function fmtWeight(lbs) {
 
 // Midterm → Final rank delta arrow (same logic as MovementArrow in LeagueView)
 function RankDelta({ final: finalRank, midterm }) {
-  if (!midterm || !finalRank) return <span className="dt-delta dt-delta--none">—</span>;
+  const base = 'dt-delta text-[11px] font-semibold';
+  if (!midterm || !finalRank) return <span className={`${base} dt-delta--none text-[color:var(--text-dim)]`}>—</span>;
   const diff = midterm - finalRank; // positive = rose, negative = fell
-  if (diff === 0) return <span className="dt-delta dt-delta--flat">—</span>;
-  if (diff > 0)   return <span className="dt-delta dt-delta--up">▲{diff}</span>;
-  return               <span className="dt-delta dt-delta--down">▼{Math.abs(diff)}</span>;
+  if (diff === 0) return <span className={`${base} dt-delta--flat text-[color:var(--text-dim)]`}>—</span>;
+  if (diff > 0)   return <span className={`${base} dt-delta--up text-[color:var(--green)]`}>▲{diff}</span>;
+  return               <span className={`${base} dt-delta--down text-[color:var(--red-bright)]`}>▼{Math.abs(diff)}</span>;
 }
 
 // ─── Draft Popup ──────────────────────────────────────────────────────────────
@@ -97,27 +156,27 @@ export function DraftPopup({ item, mode, onClose }) {
 
   return (
     <div
-      className="dt-popup-overlay"
+      className="dt-popup-overlay fixed inset-0 bg-[rgba(0,0,0,0.55)] flex items-center justify-center z-[1000] p-4"
       ref={overlayRef}
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
       aria-label={`${firstName} ${lastName} draft profile`}
     >
-      <div className="dt-popup">
-        <button className="dt-popup-close" onClick={onClose} aria-label="Close">✕</button>
+      <div className="dt-popup bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)] rounded-[14px] p-5 w-full max-w-[440px] relative max-h-[90vh] overflow-y-auto max-[600px]:p-4 max-[600px]:rounded-[12px] max-[600px]:max-w-[calc(100vw-32px)] max-[600px]:max-h-[85vh]">
+        <button className="dt-popup-close absolute top-[14px] right-[14px] bg-none border-none text-[color:var(--text-dim)] text-[14px] cursor-pointer py-1 px-[6px] rounded-[6px] leading-none [transition:color_0.15s] hover:text-[color:var(--text)]" onClick={onClose} aria-label="Close">✕</button>
 
         {/* Header */}
-        <div className="dt-popup-header">
+        <div className="dt-popup-header flex items-start gap-[10px] mb-1.5 pr-7">
           {isPick && teamAbbrev && (
-            <div className="dt-popup-team">
+            <div className="dt-popup-team flex flex-col items-center gap-[3px] shrink-0">
               <TeamLogo abbr={teamAbbrev} size={36} />
-              <span className="dt-popup-team-abbr">{teamAbbrev}</span>
+              <span className="dt-popup-team-abbr text-[10px] font-bold text-[color:var(--text-dim)] uppercase">{teamAbbrev}</span>
             </div>
           )}
-          <div className="dt-popup-name-block">
-            <span className="dt-popup-name">{firstName} {lastName}</span>
-            <span className="dt-popup-meta">
+          <div className="dt-popup-name-block flex flex-col gap-[2px]">
+            <span className="dt-popup-name text-[18px] font-bold text-[color:var(--text)] leading-[1.2]">{firstName} {lastName}</span>
+            <span className="dt-popup-meta text-[12px] text-[color:var(--text-muted)]">
               {position}{shoots ? ` · ${shoots}` : ''}
               {country ? ` · ${country}` : ''}
             </span>
@@ -126,19 +185,19 @@ export function DraftPopup({ item, mode, onClose }) {
 
         {/* Pick context */}
         {isPick && (
-          <div className="dt-popup-pick-context">
+          <div className="dt-popup-pick-context text-[12px] text-[color:var(--text-dim)] mb-2.5">
             Pick #{pickOverall} · Round {round}, #{pickInRound} in round
           </div>
         )}
 
         {/* Rank badge */}
         {isRanked && (
-          <div className="dt-popup-rank-row">
-            <span className="dt-popup-rank-badge">
+          <div className="dt-popup-rank-row flex items-center gap-[10px] mb-3.5">
+            <span className={dtRankBadgeClasses(false)}>
               #{finalRank} {categoryLabel}
             </span>
             {midtermRank && (
-              <span className="dt-popup-rank-midterm">
+              <span className="dt-popup-rank-midterm text-[12px] text-[color:var(--text-muted)] flex items-center gap-1">
                 Midterm: #{midtermRank}
                 {' '}<RankDelta final={finalRank} midterm={midtermRank} />
               </span>
@@ -146,42 +205,42 @@ export function DraftPopup({ item, mode, onClose }) {
           </div>
         )}
         {!isRanked && (
-          <div className="dt-popup-rank-row">
-            <span className="dt-popup-rank-badge dt-popup-rank-badge--unranked">Unranked</span>
+          <div className="dt-popup-rank-row flex items-center gap-[10px] mb-3.5">
+            <span className={dtRankBadgeClasses(true)}>Unranked</span>
           </div>
         )}
 
         {/* Bio grid */}
-        <div className="dt-popup-bio">
-          <div className="dt-popup-bio-item">
-            <span className="dt-popup-bio-label">Height</span>
-            <span className="dt-popup-bio-value">{fmtHeight(heightIn)}</span>
+        <div className="dt-popup-bio grid [grid-template-columns:1fr_1fr] gap-x-4 gap-y-2 mb-4 p-3 bg-[var(--bg3)] rounded-[8px]">
+          <div className="dt-popup-bio-item flex flex-col gap-px">
+            <span className="dt-popup-bio-label text-[10px] font-semibold uppercase tracking-[0.05em] text-[color:var(--text-dim)]">Height</span>
+            <span className="dt-popup-bio-value text-[13px] font-medium text-[color:var(--text)]">{fmtHeight(heightIn)}</span>
           </div>
-          <div className="dt-popup-bio-item">
-            <span className="dt-popup-bio-label">Weight</span>
-            <span className="dt-popup-bio-value">{weightLbs ? `${weightLbs} lbs` : '—'}</span>
+          <div className="dt-popup-bio-item flex flex-col gap-px">
+            <span className="dt-popup-bio-label text-[10px] font-semibold uppercase tracking-[0.05em] text-[color:var(--text-dim)]">Weight</span>
+            <span className="dt-popup-bio-value text-[13px] font-medium text-[color:var(--text)]">{weightLbs ? `${weightLbs} lbs` : '—'}</span>
           </div>
-          <div className="dt-popup-bio-item">
-            <span className="dt-popup-bio-label">Club</span>
-            <span className="dt-popup-bio-value">{club || '—'}</span>
+          <div className="dt-popup-bio-item flex flex-col gap-px">
+            <span className="dt-popup-bio-label text-[10px] font-semibold uppercase tracking-[0.05em] text-[color:var(--text-dim)]">Club</span>
+            <span className="dt-popup-bio-value text-[13px] font-medium text-[color:var(--text)]">{club || '—'}</span>
           </div>
-          <div className="dt-popup-bio-item">
-            <span className="dt-popup-bio-label">League</span>
-            <span className="dt-popup-bio-value">{league || '—'}</span>
+          <div className="dt-popup-bio-item flex flex-col gap-px">
+            <span className="dt-popup-bio-label text-[10px] font-semibold uppercase tracking-[0.05em] text-[color:var(--text-dim)]">League</span>
+            <span className="dt-popup-bio-value text-[13px] font-medium text-[color:var(--text)]">{league || '—'}</span>
           </div>
         </div>
 
         {/* AI Analysis (pick mode only) */}
         {isPick && (
-          <div className="dt-popup-ai">
-            <span className="dt-popup-ai-label">Sticks says</span>
+          <div className="dt-popup-ai flex flex-col gap-1.5 pt-3.5 border-t-[0.5px] border-t-[color:var(--border)]">
+            <span className="dt-popup-ai-label text-[10px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-dim)]">Sticks says</span>
             {aiPending ? (
-              <div className="dt-popup-ai-pending">
-                <span className="dt-spinner" />
+              <div className="dt-popup-ai-pending flex items-center gap-2 text-[12px] text-[color:var(--text-dim)] py-2">
+                <span className="dt-spinner w-[14px] h-[14px] border-2 border-[color:var(--border)] border-t-[color:var(--text-muted)] rounded-full animate-[spin_0.7s_linear_infinite] shrink-0" />
                 <span>Analysis generating…</span>
               </div>
             ) : (
-              <p className="dt-popup-ai-text">{aiAnalysis}</p>
+              <p className="dt-popup-ai-text text-[13px] leading-[1.55] text-[color:var(--text-muted)] m-0">{aiAnalysis}</p>
             )}
           </div>
         )}
@@ -202,48 +261,48 @@ function RankingsTable({ prospects, onSelect }) {
   }
 
   if (!prospects?.length) {
-    return <div className="dt-empty">No prospects found.</div>;
+    return <div className="dt-empty py-8 text-center text-[color:var(--text-dim)] text-[13px]">No prospects found.</div>;
   }
 
   return (
-    <div className="dt-table-container">
-      <div className="dt-table-wrap" ref={wrapRef} onScroll={handleScroll}>
-      <table className="dt-table" aria-label="Central Scouting rankings">
+    <div className="dt-table-container relative">
+      <div className="dt-table-wrap overflow-x-auto [-webkit-overflow-scrolling:touch]" ref={wrapRef} onScroll={handleScroll}>
+      <table className="dt-table w-full border-collapse text-[12.5px]" aria-label="Central Scouting rankings">
         <thead>
           <tr>
-            <th className="dt-th dt-th--rank">Rank</th>
-            <th className="dt-th dt-th--name">Name</th>
-            <th className="dt-th dt-th--pos">Pos</th>
-            <th className="dt-th dt-th--shoots">S/C</th>
-            <th className="dt-th dt-th--ht">Ht</th>
-            <th className="dt-th dt-th--wt">Wt</th>
-            <th className="dt-th dt-th--club">Club</th>
-            <th className="dt-th dt-th--league">League</th>
-            <th className="dt-th dt-th--country">Ctry</th>
-            <th className="dt-th dt-th--mid" title="Midterm rank → Final rank change">Mid→Fin</th>
+            <th className={`${DT_TH_CLASSES} dt-th--rank w-[42px]`}>Rank</th>
+            <th className={`${DT_TH_CLASSES} dt-th--name`}>Name</th>
+            <th className={`${DT_TH_CLASSES} dt-th--pos w-9`}>Pos</th>
+            <th className={`${DT_TH_CLASSES} dt-th--shoots w-8 max-[600px]:hidden`}>S/C</th>
+            <th className={`${DT_TH_CLASSES} dt-th--ht w-11 max-[600px]:hidden`}>Ht</th>
+            <th className={`${DT_TH_CLASSES} dt-th--wt w-11 max-[600px]:hidden`}>Wt</th>
+            <th className={`${DT_TH_CLASSES} dt-th--club`}>Club</th>
+            <th className={`${DT_TH_CLASSES} dt-th--league`}>League</th>
+            <th className={`${DT_TH_CLASSES} dt-th--country`}>Ctry</th>
+            <th className={`${DT_TH_CLASSES} dt-th--mid w-[60px]`} title="Midterm rank → Final rank change">Mid→Fin</th>
           </tr>
         </thead>
         <tbody>
           {prospects.map((p) => (
             <tr
               key={`${p.category_id}-${p.final_rank}`}
-              className="dt-row dt-row--clickable"
+              className={DT_ROW_CLICKABLE_CLASSES}
               onClick={() => { onSelect(p); capture('draft_prospect_clicked', { rank: p.final_rank, category: p.category_id }); }}
               tabIndex={0}
               onKeyDown={(e) => e.key === 'Enter' && onSelect(p)}
             >
-              <td className="dt-td dt-td--rank">{p.final_rank}</td>
-              <td className="dt-td dt-td--name">
+              <td className={`${DT_TD_CLASSES} dt-td--rank font-bold text-[color:var(--text-muted)]`}>{p.final_rank}</td>
+              <td className={`${DT_TD_CLASSES} dt-td--name font-medium`}>
                 {p.first_name} {p.last_name}
               </td>
-              <td className="dt-td dt-td--pos">{p.position_code ?? '—'}</td>
-              <td className="dt-td dt-td--shoots">{p.shoots_catches ?? '—'}</td>
-              <td className="dt-td dt-td--ht">{fmtHeight(p.height_inches)}</td>
-              <td className="dt-td dt-td--wt">{fmtWeight(p.weight_pounds)}</td>
-              <td className="dt-td dt-td--club">{p.last_amateur_club ?? '—'}</td>
-              <td className="dt-td dt-td--league">{p.last_amateur_league ?? '—'}</td>
-              <td className="dt-td dt-td--country">{p.birth_country ?? '—'}</td>
-              <td className="dt-td dt-td--mid">
+              <td className={`${DT_TD_CLASSES} dt-td--pos`}>{p.position_code ?? '—'}</td>
+              <td className={`${DT_TD_CLASSES} dt-td--shoots max-[600px]:hidden`}>{p.shoots_catches ?? '—'}</td>
+              <td className={`${DT_TD_CLASSES} dt-td--ht max-[600px]:hidden`}>{fmtHeight(p.height_inches)}</td>
+              <td className={`${DT_TD_CLASSES} dt-td--wt max-[600px]:hidden`}>{fmtWeight(p.weight_pounds)}</td>
+              <td className={`${DT_TD_CLASSES} dt-td--club text-[color:var(--text-muted)] text-[12px]`}>{p.last_amateur_club ?? '—'}</td>
+              <td className={`${DT_TD_CLASSES} dt-td--league text-[color:var(--text-muted)] text-[12px]`}>{p.last_amateur_league ?? '—'}</td>
+              <td className={`${DT_TD_CLASSES} dt-td--country`}>{p.birth_country ?? '—'}</td>
+              <td className={`${DT_TD_CLASSES} dt-td--mid`}>
                 <RankDelta final={p.final_rank} midterm={p.midterm_rank} />
               </td>
             </tr>
@@ -251,7 +310,7 @@ function RankingsTable({ prospects, onSelect }) {
         </tbody>
       </table>
       </div>
-      <div className={`dt-table-fade${atEnd ? ' dt-table-fade--hidden' : ''}`} />
+      <div className={`dt-table-fade absolute top-0 right-0 w-9 h-full bg-[linear-gradient(to_right,transparent,var(--bg1))] pointer-events-none [transition:opacity_0.2s] ${atEnd ? 'dt-table-fade--hidden opacity-0' : ''}`} />
     </div>
   );
 }
@@ -260,7 +319,7 @@ function RankingsTable({ prospects, onSelect }) {
 
 function DraftBoard({ picks, onSelect }) {
   if (!picks?.length) {
-    return <div className="dt-empty">No picks yet. Check back once the draft begins.</div>;
+    return <div className="dt-empty py-8 text-center text-[color:var(--text-dim)] text-[13px]">No picks yet. Check back once the draft begins.</div>;
   }
 
   // Group picks by round
@@ -273,47 +332,47 @@ function DraftBoard({ picks, onSelect }) {
   const rounds = Object.keys(byRound).map(Number).sort((a, b) => a - b);
 
   return (
-    <div className="dt-board">
+    <div className="dt-board flex flex-col gap-5">
       {rounds.map((round) => (
         <div key={round} className="dt-board-round">
-          <div className="dt-board-round-header">Round {round}</div>
-          <div className="dt-table-wrap">
-            <table className="dt-table" aria-label={`Round ${round} picks`}>
+          <div className="dt-board-round-header text-[11px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-dim)] mb-1.5 pb-1 border-b-[0.5px] border-b-[color:var(--border)]">Round {round}</div>
+          <div className="dt-table-wrap overflow-x-auto [-webkit-overflow-scrolling:touch]">
+            <table className="dt-table w-full border-collapse text-[12.5px]" aria-label={`Round ${round} picks`}>
               <thead>
                 <tr>
-                  <th className="dt-th dt-th--pick">#</th>
-                  <th className="dt-th dt-th--team">Team</th>
-                  <th className="dt-th dt-th--name">Name</th>
-                  <th className="dt-th dt-th--pos">Pos</th>
-                  <th className="dt-th dt-th--club">Club</th>
-                  <th className="dt-th dt-th--league">League</th>
-                  <th className="dt-th dt-th--rank">CS Rank</th>
+                  <th className={`${DT_TH_CLASSES} dt-th--pick w-[42px]`}>#</th>
+                  <th className={`${DT_TH_CLASSES} dt-th--team w-[60px]`}>Team</th>
+                  <th className={`${DT_TH_CLASSES} dt-th--name`}>Name</th>
+                  <th className={`${DT_TH_CLASSES} dt-th--pos w-9`}>Pos</th>
+                  <th className={`${DT_TH_CLASSES} dt-th--club`}>Club</th>
+                  <th className={`${DT_TH_CLASSES} dt-th--league`}>League</th>
+                  <th className={`${DT_TH_CLASSES} dt-th--rank`}>CS Rank</th>
                 </tr>
               </thead>
               <tbody>
                 {byRound[round].map((pick) => (
                   <tr
                     key={pick.pick_overall}
-                    className="dt-row dt-row--clickable"
+                    className={DT_ROW_CLICKABLE_CLASSES}
                     onClick={() => { onSelect(pick); capture('draft_pick_clicked', { pick: pick.pick_overall }); }}
                     tabIndex={0}
                     onKeyDown={(e) => e.key === 'Enter' && onSelect(pick)}
                   >
-                    <td className="dt-td dt-td--pick">{pick.pick_overall}</td>
-                    <td className="dt-td dt-td--team">
-                      <span className="dt-board-team">
+                    <td className={`${DT_TD_CLASSES} dt-td--pick`}>{pick.pick_overall}</td>
+                    <td className={`${DT_TD_CLASSES} dt-td--team`}>
+                      <span className="dt-board-team flex items-center gap-[5px] font-semibold">
                         <TeamLogo abbr={pick.team_abbrev} size={20} />
                         <span>{pick.team_abbrev}</span>
                       </span>
                     </td>
-                    <td className="dt-td dt-td--name">
+                    <td className={`${DT_TD_CLASSES} dt-td--name font-medium`}>
                       {pick.prospect_first} {pick.prospect_last}
                     </td>
-                    <td className="dt-td dt-td--pos">{pick.position_code ?? '—'}</td>
-                    <td className="dt-td dt-td--club">{pick.last_amateur_club ?? '—'}</td>
-                    <td className="dt-td dt-td--league">{pick.last_amateur_league ?? '—'}</td>
-                    <td className="dt-td dt-td--rank">
-                      {pick.final_rank ? `#${pick.final_rank}` : <span className="dt-unranked">UR</span>}
+                    <td className={`${DT_TD_CLASSES} dt-td--pos`}>{pick.position_code ?? '—'}</td>
+                    <td className={`${DT_TD_CLASSES} dt-td--club text-[color:var(--text-muted)] text-[12px]`}>{pick.last_amateur_club ?? '—'}</td>
+                    <td className={`${DT_TD_CLASSES} dt-td--league text-[color:var(--text-muted)] text-[12px]`}>{pick.last_amateur_league ?? '—'}</td>
+                    <td className={`${DT_TD_CLASSES} dt-td--rank`}>
+                      {pick.final_rank ? `#${pick.final_rank}` : <span className="dt-unranked text-[10px] font-semibold text-[color:var(--text-dim)] bg-[var(--border)] rounded-[4px] py-px px-1">UR</span>}
                     </td>
                   </tr>
                 ))}
@@ -405,41 +464,41 @@ export default function DraftTab({ overrideRankings = null, overridePicks = null
   }
 
   return (
-    <div className="dt-root">
+    <div className="dt-root flex flex-col">
       {/* Banner — pre-draft only */}
       {!draftStarted && (
-        <div className="dt-banner">
-          <span className="dt-banner-icon">🏒</span>
+        <div className={dtBannerClasses(null)}>
+          <span className="dt-banner-icon text-[15px]">🏒</span>
           <span>Draft begins <strong>June 26</strong> · Buffalo · 7 pm ET</span>
         </div>
       )}
 
       {/* Live indicator */}
       {draftInProgress && (
-        <div className="dt-banner dt-banner--live">
-          <span className="dt-live-dot" />
+        <div className={dtBannerClasses('live')}>
+          <span className="dt-live-dot w-[7px] h-[7px] rounded-full bg-[var(--green)] animate-[dt-pulse_1.4s_ease-in-out_infinite] shrink-0" />
           <span>Draft in progress · {picks.length} of {TOTAL_PICKS} picks</span>
         </div>
       )}
 
       {/* Draft complete */}
       {draftComplete && (
-        <div className="dt-banner dt-banner--done">
+        <div className={dtBannerClasses('done')}>
           <span>2026 Draft complete · {picks.length} picks</span>
         </div>
       )}
 
       {/* View toggle — only once draft has started */}
       {draftStarted && (
-        <div className="dt-toggle-row">
+        <div className="dt-toggle-row flex gap-[6px] mb-2.5">
           <button
-            className={`dt-toggle${boardView === 'rankings' ? ' dt-toggle--active' : ''}`}
+            className={dtToggleClasses(boardView === 'rankings')}
             onClick={() => setBoardView('rankings')}
           >
             Rankings
           </button>
           <button
-            className={`dt-toggle${boardView === 'board' ? ' dt-toggle--active' : ''}`}
+            className={dtToggleClasses(boardView === 'board')}
             onClick={() => setBoardView('board')}
           >
             Draft board
@@ -449,18 +508,18 @@ export default function DraftTab({ overrideRankings = null, overridePicks = null
 
       {/* Category sub-tabs (Rankings view) */}
       {boardView === 'rankings' && (
-        <div className="dt-cat-tabs" role="tablist" aria-label="Prospect categories">
+        <div className="dt-cat-tabs flex gap-1 mb-2.5 flex-wrap max-[600px]:flex-nowrap max-[600px]:overflow-x-auto max-[600px]:[-webkit-overflow-scrolling:touch] max-[600px]:[scrollbar-width:none] max-[600px]:pb-1 max-[600px]:gap-1.5 max-[600px]:[&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Prospect categories">
           {CATEGORY_TABS.map((cat) => (
             <button
               key={cat.id}
               role="tab"
               aria-selected={categoryId === cat.id}
-              className={`dt-cat-tab${categoryId === cat.id ? ' dt-cat-tab--active' : ''}`}
+              className={`${dtCatTabClasses(categoryId === cat.id)} max-[600px]:shrink-0`}
               onClick={() => { setCategoryId(cat.id); capture('draft_category_viewed', { category: cat.id }); }}
             >
               {cat.label}
               {rankings?.[cat.id] ? (
-                <span className="dt-cat-count">{rankings[cat.id].length}</span>
+                <span className="dt-cat-count text-[10px] font-semibold text-[color:var(--text-dim)] bg-[var(--border)] rounded-[8px] py-px px-[5px]">{rankings[cat.id].length}</span>
               ) : null}
             </button>
           ))}
@@ -468,7 +527,7 @@ export default function DraftTab({ overrideRankings = null, overridePicks = null
       )}
 
       {/* Content */}
-      <div className="dt-content">
+      <div className="dt-content min-h-[200px]">
         {boardView === 'rankings' && (
           <>
             {rankingsLoading && <LoadingSkeleton />}
