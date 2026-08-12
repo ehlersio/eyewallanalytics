@@ -8,7 +8,7 @@ import { PeriodSummaryProvider } from './utils/PeriodSummaryContext'
 import { SportProvider, useSport } from './utils/SportContext'
 import { AuthProvider } from './utils/AuthContext'
 import { capture } from './utils/analytics'
-import './App.css'
+// App.css import removed (Phase 7b) -- migrated to Tailwind.
 import { hasTeamConfig, TEAM_CONFIG } from './utils/teamConfig'
 import TeamPicker from './components/TeamPicker'
 import { applyTeamTheme } from './utils/applyTeamTheme';
@@ -110,11 +110,19 @@ export default function App() {
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <SportProvider>
             <PeriodSummaryProvider>
-              <div className="app-shell">
-                <a href="#main-content" className="skip-link">Skip to main content</a>
+              {/* App.css migrated to Tailwind (Phase 7b). .app-shell's original
+                  `height: 100vh; height: 100dvh;` double-declaration was a
+                  fallback for browsers predating dvh support -- dropped in
+                  favor of h-dvh alone, since dvh (Chrome 108+/Safari 15.4+/
+                  Firefox 101+) is already a LOWER browser-support floor than
+                  color-mix() (Chrome 111+/Safari 16.2+/Firefox 113+), which
+                  this app already ships and relies on elsewhere (LeagueView's
+                  Power Rankings YOU-row, ScoutingTab's badges). */}
+              <div className="app-shell flex flex-col h-dvh overflow-hidden">
+                <a href="#main-content" className="skip-link absolute -top-[100px] left-4 z-[9999] py-2 px-4 bg-[var(--red-bright)] text-white font-bold rounded-b-[8px] no-underline [transition:top_0.15s] focus:top-0 focus:outline-[3px] focus:outline-white focus:outline-offset-2">Skip to main content</a>
                 <PageTracker />
                 <Topbar />
-                <main id="main-content" className="app-main" aria-label="Main content">
+                <main id="main-content" className="app-main flex-1 overflow-y-auto overflow-x-hidden pb-[calc(var(--nav-height)+env(safe-area-inset-bottom,0px))]" aria-label="Main content">
                   <Suspense fallback={<ViewFallback />}>
                     <Routes>
                       <Route path="/"         element={<RootRoute />} />
