@@ -279,19 +279,14 @@
   right: 14px;
 }
 
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.pill-red { background: var(--red-dim); color: var(--red-bright); border: 0.5px solid var(--red-border); }
-.pill-green { background: rgba(61,186,126,0.12); color: var(--green); }
-.pill-amber { background: rgba(240,160,48,0.12); color: var(--amber); }
+/* .pill/.pill-red migrated to Tailwind (Phase 7b) -- ShotMapView.jsx/
+   PWHLShotMapView.jsx's PILL_RED_CLASSES constant, the only real consumer
+   of either class. .pill-green/.pill-amber confirmed 100% dead app-wide
+   (triple-checked: literal-string grep, interpolation-pattern grep, and
+   cross-CSS-file grep -- also independently confirmed by ShotMapView.css's
+   own now-deleted .situation-pill/.pill-green/.pill-amber copies during
+   Phase 5 sub-PR 3, which found the same zero-consumer result) -- dropped
+   rather than migrated, same as .pill-muted below. */
 /* .pill-muted confirmed genuinely dead (Phase 7b) -- zero consumers via
    literal-string grep, interpolation-pattern grep (pill-${...}/pill ${...}),
    and cross-CSS-file grep -- dropped rather than migrated. */
