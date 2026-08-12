@@ -14,7 +14,7 @@
 // SportContext.jsx/teamConfig.js's 'eyewall:*-season-updated' pattern.
 // triviaAnswers.js dispatches the same event name after recording an
 // answer, for the same reason.
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSport } from '../utils/SportContext';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { PWHL_TEAM_CONFIG } from '../utils/pwhlApi';
@@ -52,6 +52,21 @@ export function useReadState() {
   const [milestones, setMilestones] = useState({ unseen: false, latestId: null });
   const [trivia, setTrivia] = useState(false);
 
+  // markSeen reads these instead of closing over `news`/`milestones` state
+  // directly. A useCallback depending on that state only gets a fresh
+  // closure bound to the tab button's onClick once React re-renders and
+  // commits -- there's a real gap between refresh()'s fetch resolving and
+  // that commit landing, and a click in that gap silently no-ops (reads
+  // the stale latestId: null from before the fetch, skips the `&&
+  // milestones.latestId` guard entirely). Confirmed as the root cause of a
+  // recurring read-state-badges.cy.js CI flake (two different assertions
+  // across two runs, same underlying race) -- and a real, if narrow,
+  // production bug: a user clicking a tab fast enough after the page loads
+  // hits the same gap. Refs are updated at the same instant as the state
+  // setters below, independent of React's render/commit cycle entirely.
+  const newsRef = useRef(news);
+  const milestonesRef = useRef(milestones);
+
   const refresh = useCallback(async () => {
     if (!WORKER_URL || !team) return;
 
@@ -60,7 +75,9 @@ export function useReadState() {
       const res = await fetch(`${WORKER_URL}/news/latest?${params}`);
       if (res.ok) {
         const { latestId } = await res.json();
-        setNews({ unseen: !!latestId && latestId !== getSeen('news', sport, team), latestId });
+        const nextNews = { unseen: !!latestId && latestId !== getSeen('news', sport, team), latestId };
+        newsRef.current = nextNews;
+        setNews(nextNews);
       }
     } catch {
       // leave previous state — a failed check shouldn't flip the badge off
@@ -71,7 +88,9 @@ export function useReadState() {
       if (res.ok) {
         const { latestId } = await res.json();
         const idStr = latestId != null ? String(latestId) : null;
-        setMilestones({ unseen: idStr != null && idStr !== getSeen('milestones', sport, null), latestId: idStr });
+        const nextMilestones = { unseen: idStr != null && idStr !== getSeen('milestones', sport, null), latestId: idStr };
+        milestonesRef.current = nextMilestones;
+        setMilestones(nextMilestones);
       }
     } catch {
       // leave previous state
@@ -102,12 +121,14 @@ export function useReadState() {
 
   const markSeen = useCallback(
     (tab) => {
-      if (tab === 'news' && news.latestId) {
-        setSeen('news', sport, team, news.latestId);
+      if (tab === 'news' && newsRef.current.latestId) {
+        setSeen('news', sport, team, newsRef.current.latestId);
+        newsRef.current = { ...newsRef.current, unseen: false };
         setNews((s) => ({ ...s, unseen: false }));
         window.dispatchEvent(new window.CustomEvent(EVENT_NAME));
-      } else if (tab === 'milestones' && milestones.latestId) {
-        setSeen('milestones', sport, null, milestones.latestId);
+      } else if (tab === 'milestones' && milestonesRef.current.latestId) {
+        setSeen('milestones', sport, null, milestonesRef.current.latestId);
+        milestonesRef.current = { ...milestonesRef.current, unseen: false };
         setMilestones((s) => ({ ...s, unseen: false }));
         window.dispatchEvent(new window.CustomEvent(EVENT_NAME));
       }
@@ -115,7 +136,7 @@ export function useReadState() {
       // answering does (triviaAnswers.recordAnswer dispatches the same
       // event itself once an answer is recorded).
     },
-    [sport, team, news.latestId, milestones.latestId]
+    [sport, team]
   );
 
   return {
