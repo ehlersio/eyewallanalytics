@@ -33,6 +33,7 @@ import {
   PRED_CANVAS_AI_TEXT_CLASSES, PRED_CANVAS_FOOTER_CLASSES,
 } from '../utils/predCanvasClasses';
 import DraftTab from '../components/DraftTab';
+import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 
 // .pp-close (Session 97, Phase 3, sub-PR 3) -- was PlayersView.css's,
 // used here only via importing PlayerPopup (which imported that file as a
@@ -1126,7 +1127,7 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
           {gamesLoading && (
             <div className={SERIES_MODAL_LOADING_CLASSES}>
               {[70, 85, 70, 85].map((w, i) => (
-                <div key={i} className="skeleton" style={{ height: 32, width: `${w}%`, marginBottom: 6, borderRadius: 6 }} />
+                <div key={i} className={SKELETON_CLASSES} style={{ height: 32, width: `${w}%`, marginBottom: 6, borderRadius: 6 }} />
               ))}
             </div>
           )}

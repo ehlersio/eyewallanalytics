@@ -30,6 +30,7 @@ import { getPWHLTeamById } from '../utils/pwhlConfig';
 import TeamLogo from './TeamLogo';
 import { capture } from '../utils/analytics';
 import PWHLBoxScoreTable from './PWHLBoxScoreTable';
+import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 // PWHLGameStatsPopup.css import removed (Phase 6) -- migrated to Tailwind.
 // .pgs-toggle-btn.active's color/border always come from an inline style
 // (dynamic per PWHL team, never a CSS custom property -- see this file's
@@ -209,7 +210,7 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
           {summaryLoading && !summary && (
             <div className="pgs-loading py-3">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="skeleton" style={{ height: 12, marginBottom: 10, width: `${60 + i * 8}%` }} />
+                <div key={i} className={SKELETON_CLASSES} style={{ height: 12, marginBottom: 10, width: `${60 + i * 8}%` }} />
               ))}
             </div>
           )}
@@ -249,7 +250,7 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
           {boxLoading && (
             <div className="pgs-loading py-3">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="skeleton" style={{ height: 12, marginBottom: 10, width: `${60 + i * 8}%` }} />
+                <div key={i} className={SKELETON_CLASSES} style={{ height: 12, marginBottom: 10, width: `${60 + i * 8}%` }} />
               ))}
             </div>
           )}

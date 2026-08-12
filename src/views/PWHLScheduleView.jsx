@@ -13,6 +13,7 @@ import TeamLogo from '../components/TeamLogo';
 import PWHLGameStatsPopup from '../components/PWHLGameStatsPopup';
 import PWHLGamePreviewPopup from '../components/PWHLGamePreviewPopup';
 import { PAGE_CLASSES } from '../utils/pageClasses';
+import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 // ScheduleView.css import removed (Phase 6, ScheduleView.css sub-PR 5, the
 // final sub-PR) -- the file is now fully deleted, all classes migrated to
 // Tailwind across sub-PRs 1-5.
@@ -744,9 +745,9 @@ function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff, onClick }) {
 function LoadingCards({ count }) {
   return Array.from({ length: count }).map((_, i) => (
     <div key={i} className="card" style={{ marginBottom: 8, padding: 14 }}>
-      <div className="skeleton" style={{ height: 10, width: '40%', marginBottom: 12 }} />
-      <div className="skeleton" style={{ height: 20, width: '70%', marginBottom: 8 }} />
-      <div className="skeleton" style={{ height: 10, width: '30%' }} />
+      <div className={SKELETON_CLASSES} style={{ height: 10, width: '40%', marginBottom: 12 }} />
+      <div className={SKELETON_CLASSES} style={{ height: 20, width: '70%', marginBottom: 8 }} />
+      <div className={SKELETON_CLASSES} style={{ height: 10, width: '30%' }} />
     </div>
   ));
 }

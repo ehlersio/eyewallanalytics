@@ -15,6 +15,7 @@ import { SeriesCard, SortBar, GameCard } from '../components/GameCard';
 import { MatchupDetail, computeWinPct } from '../components/MatchupDetail';
 import { isStandingsStale } from '../utils/standingsUtils';
 import { PAGE_CLASSES } from '../utils/pageClasses';
+import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 // ScheduleView.css import removed (Phase 6, ScheduleView.css sub-PR 5, the
 // final sub-PR) -- the file is now fully deleted, all classes migrated to
 // Tailwind across sub-PRs 1-5.
@@ -538,9 +539,9 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
 function LoadingCards({ count }) {
   return Array.from({ length: count }).map((_, i) => (
     <div key={i} className="card" style={{ marginBottom: 8, padding: 14 }}>
-      <div className="skeleton" style={{ height: 10, width: '40%', marginBottom: 12 }} />
-      <div className="skeleton" style={{ height: 20, width: '70%', marginBottom: 8 }} />
-      <div className="skeleton" style={{ height: 10, width: '30%' }} />
+      <div className={SKELETON_CLASSES} style={{ height: 10, width: '40%', marginBottom: 12 }} />
+      <div className={SKELETON_CLASSES} style={{ height: 20, width: '70%', marginBottom: 8 }} />
+      <div className={SKELETON_CLASSES} style={{ height: 10, width: '30%' }} />
     </div>
   ));
 }

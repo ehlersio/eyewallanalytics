@@ -24,6 +24,7 @@ import { fetchPWHLPreview, fetchPWHLPrediction } from '../utils/pwhlApi';
 import { getPWHLTeamById } from '../utils/pwhlConfig';
 import TeamLogo from './TeamLogo';
 import { capture } from '../utils/analytics';
+import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 // PWHLGamePreviewPopup.css import removed (Phase 6) -- migrated to Tailwind.
 
 const PGP_TEAM_COL_CLASSES = 'pgp-team-col flex flex-col items-center gap-1 flex-1';
@@ -149,7 +150,7 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
             {predictionLoading && !prediction && (
               <div className="pgp-loading py-3">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="skeleton" style={{ height: 12, marginBottom: 10, width: `${60 + i * 8}%` }} />
+                  <div key={i} className={SKELETON_CLASSES} style={{ height: 12, marginBottom: 10, width: `${60 + i * 8}%` }} />
                 ))}
               </div>
             )}
@@ -189,7 +190,7 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
           {previewLoading && !preview && (
             <div className="pgp-section mt-4.5">
               <div className="pgp-loading py-3">
-                <div className="skeleton" style={{ height: 12, width: '50%' }} />
+                <div className={SKELETON_CLASSES} style={{ height: 12, width: '50%' }} />
               </div>
             </div>
           )}

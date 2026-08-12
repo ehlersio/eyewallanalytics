@@ -7,6 +7,7 @@ import { PWHL_CURRENT_SEASON, PWHL_REGULAR_SEASONS } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
 import { PAGE_CLASSES } from '../utils/pageClasses';
+import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 
 // Tailwind migration (Session 97, Phase 3, sub-PR 1) -- see PlayersView.jsx
 // for the full rationale (cascade-layer note on .player-card's hover/active
@@ -323,9 +324,9 @@ function RosterSkeleton() {
     <div className={ROSTER_GRID_CLASSES} style={{ marginTop: 8 }}>
       {Array.from({ length: 12 }).map((_, i) => (
         <div key={i} className={SKELETON_CARD_CLASSES}>
-          <div className="skeleton" style={{ width: '100%', aspectRatio: '1', borderRadius: 6, marginBottom: 8 }} />
-          <div className="skeleton" style={{ height: 10, width: '60%', marginBottom: 6 }} />
-          <div className="skeleton" style={{ height: 10, width: '40%' }} />
+          <div className={SKELETON_CLASSES} style={{ width: '100%', aspectRatio: '1', borderRadius: 6, marginBottom: 8 }} />
+          <div className={SKELETON_CLASSES} style={{ height: 10, width: '60%', marginBottom: 6 }} />
+          <div className={SKELETON_CLASSES} style={{ height: 10, width: '40%' }} />
         </div>
       ))}
     </div>
@@ -357,7 +358,7 @@ function SortableTable({ rows, cols, defaultSort, loading, emptyMsg, onRowClick 
   if (loading) return (
     <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', gap: 6 }}>
       {[80,65,72,58,70].map((w,i) => (
-        <div key={i} className="skeleton" style={{ height: 32, width: `${w}%`, borderRadius: 6 }} />
+        <div key={i} className={SKELETON_CLASSES} style={{ height: 32, width: `${w}%`, borderRadius: 6 }} />
       ))}
     </div>
   );

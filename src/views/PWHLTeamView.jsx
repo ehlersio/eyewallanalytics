@@ -12,6 +12,7 @@ import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
 import TeamComparisonPopup from '../components/TeamComparisonPopup';
 import { PAGE_CLASSES } from '../utils/pageClasses';
+import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 // ShotMapView.css import removed (Phase 5, sub-PR 1) -- this file's only
 // dependency on it was .metrics-grid/.metrics-grid-4, now fully migrated
 // to METRICS_GRID_4_CLASSES below. ShotMapView.jsx/PWHLShotMapView.jsx
@@ -366,7 +367,7 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
           <div className={RECORD_BLOCK_LABEL_CLASSES} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <TeamLogo abbr={abbr} sport="pwhl" size={14} color={color} /> Regular Season
           </div>
-          {loading ? <div className="skeleton" style={{ height: 28, width: '70%' }} /> : (
+          {loading ? <div className={SKELETON_CLASSES} style={{ height: 28, width: '70%' }} /> : (
             <div className={RECORD_MAIN_ROW_CLASSES}>
               <span className={RECORD_BIG_CLASSES}>{teamRow?.wins??0}–{teamRow?.losses??0}–{teamRow?.ot_losses??0}</span>
               <span className={PTS_CHIP_CLASSES}>{teamRow?.points??0} pts</span>
@@ -532,7 +533,7 @@ function StatsTab({ skaters, goalies, loading, abbr: _abbr, color }) {
       {loading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 0' }}>
           {[80,65,70,55,75].map((w,i) => (
-            <div key={i} className="skeleton" style={{ height: 32, width: `${w}%`, borderRadius: 6 }} />
+            <div key={i} className={SKELETON_CLASSES} style={{ height: 32, width: `${w}%`, borderRadius: 6 }} />
           ))}
         </div>
       )}
@@ -622,7 +623,7 @@ function SplitsTab({ schedule, poSchedule, teamId, abbr: _abbr, color: _color, l
 
   if (loading) return (
     <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:10 }}>
-      {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height:80, borderRadius:10 }} />)}
+      {[1,2,3].map(i => <div key={i} className={SKELETON_CLASSES} style={{ height:80, borderRadius:10 }} />)}
     </div>
   );
 
@@ -1114,7 +1115,7 @@ function SalariesTab({ salaries, loading, abbr, color }) {
   if (loading) return (
     <div style={{ display:'flex', flexDirection:'column', gap:6, marginTop:10 }}>
       {[80,65,72,58,70,63].map((w,i) => (
-        <div key={i} className="skeleton" style={{ height:32, width:`${w}%`, borderRadius:6 }} />
+        <div key={i} className={SKELETON_CLASSES} style={{ height:32, width:`${w}%`, borderRadius:6 }} />
       ))}
     </div>
   );

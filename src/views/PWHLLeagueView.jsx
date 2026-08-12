@@ -13,6 +13,7 @@ import {
 } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
+import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 
 // Tailwind migration (Session 97, Phase 3, sub-PR 1) -- only the small
 // PlayersView.css-owned pieces this file actually uses (.players-tabs/.tab,
@@ -907,7 +908,7 @@ function LoadingRows() {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:4 }}>
       {Array.from({length:8}).map((_,i) => (
-        <div key={i} className="skeleton" style={{ height:34, borderRadius:6 }} />
+        <div key={i} className={SKELETON_CLASSES} style={{ height:34, borderRadius:6 }} />
       ))}
     </div>
   );

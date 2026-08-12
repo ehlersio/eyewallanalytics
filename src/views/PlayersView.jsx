@@ -5,6 +5,7 @@ import { getTeamSkaterStatsFromDB } from '../utils/supabaseClient'
 import { useSport } from '../utils/SportContext'
 import { isStandingsStale } from '../utils/standingsUtils'
 import { PAGE_CLASSES } from '../utils/pageClasses'
+import { SKELETON_CLASSES } from '../utils/skeletonClasses'
 import TeamLogo from '../components/TeamLogo'
 import PlayerPopup from '../components/PlayerPopup'
 
@@ -239,9 +240,9 @@ function RosterSkeleton() {
     <div className={ROSTER_GRID_CLASSES} style={{ marginTop: 8 }}>
       {Array.from({ length: 12 }).map((_, i) => (
         <div key={i} className={SKELETON_CARD_CLASSES}>
-          <div className="skeleton" style={{ width: '100%', aspectRatio: '1', borderRadius: 6, marginBottom: 8 }} />
-          <div className="skeleton" style={{ height: 10, width: '60%', marginBottom: 6 }} />
-          <div className="skeleton" style={{ height: 10, width: '40%' }} />
+          <div className={SKELETON_CLASSES} style={{ width: '100%', aspectRatio: '1', borderRadius: 6, marginBottom: 8 }} />
+          <div className={SKELETON_CLASSES} style={{ height: 10, width: '60%', marginBottom: 6 }} />
+          <div className={SKELETON_CLASSES} style={{ height: 10, width: '40%' }} />
         </div>
       ))}
     </div>
@@ -289,7 +290,7 @@ function SkaterStatsTable({ skaters, loading, gameType = 2, onSelect }) {
   if (loading) return (
     <div style={{ padding: '16px 0' }}>
       {[80,65,72,58,70].map((w,i) => (
-        <div key={i} className="skeleton" style={{ height: 32, width: `${w}%`, marginBottom: 6, borderRadius: 6 }} />
+        <div key={i} className={SKELETON_CLASSES} style={{ height: 32, width: `${w}%`, marginBottom: 6, borderRadius: 6 }} />
       ))}
     </div>
   );

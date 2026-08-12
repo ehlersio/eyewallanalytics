@@ -19,6 +19,7 @@ import TeamComparisonPopup from '../components/TeamComparisonPopup'
 import Sparkline from '../components/Sparkline'
 import { TEAM_COLORS } from '../utils/nhlApi'
 import { PAGE_CLASSES } from '../utils/pageClasses'
+import { SKELETON_CLASSES } from '../utils/skeletonClasses'
 
 // .view-title (Session 97, Phase 3) -- was PlayersView.css's, genuinely
 // shared with PlayersView.jsx/PWHLPlayersView.jsx/PWHLTeamView.jsx. Migrated
@@ -349,7 +350,7 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
           <div className={RECORD_BLOCK_LABEL_CLASSES} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <TeamLogo abbr={TEAM_CONFIG.abbr} size={14} /> Regular Season
           </div>
-          {standLoading ? <div className="skeleton" style={{ height: 28, width: '70%' }} /> : (
+          {standLoading ? <div className={SKELETON_CLASSES} style={{ height: 28, width: '70%' }} /> : (
             <div className={RECORD_MAIN_ROW_CLASSES}>
               <span className={RECORD_BIG_CLASSES}>{wins}–{losses}–{otl}</span>
               {liveGame && !inPlayoffs && (
@@ -375,7 +376,7 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
         {inPlayoffs && (
           <div className={`card ${RECORD_BLOCK_CLASSES}`}>
             <div className={RECORD_BLOCK_LABEL_CLASSES}>Playoffs</div>
-            {poLoading ? <div className="skeleton" style={{ height: 28, width: '70%' }} /> : (
+            {poLoading ? <div className={SKELETON_CLASSES} style={{ height: 28, width: '70%' }} /> : (
               <div className={RECORD_MAIN_ROW_CLASSES}>
                 <span className={RECORD_BIG_CLASSES}>
                   {playoffSummary.reduce((s,x) => s+x.carWins, 0)}–
