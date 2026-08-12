@@ -443,6 +443,16 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Hoisted from DraftTab.css (Phase 6) for its .dt-live-dot pulse. Similar in
+   shape to .live-dot's pulse-dot (both 7x7 "live" indicator dots) and
+   LeagueView's lv-pulse, but genuinely different curves (opacity-only 1→0.35
+   here vs. pulse-dot's added scale(0.85) and lv-pulse's 0.45 mid-value) --
+   kept distinct rather than force-unified with either. */
+@keyframes dt-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
 /* Hoisted here (Session 97, Phase 3, sub-PR 3) from PlayersView.css's
    .player-popup entrance animation, referenced via Tailwind's
    animate-[slide-up_...] arbitrary syntax now that .player-popup itself is
