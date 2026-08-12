@@ -10,21 +10,46 @@ import TeamLogo from './TeamLogo';
 import InfoTip from './InfoTip';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
-import './ScoutingTab.css';
+// ScoutingTab.css import removed (Phase 6) -- migrated to Tailwind. NHL-only,
+// no PWHL equivalent by design.
 import { capture } from '../utils/analytics';
+
+const SCOUTING_EMPTY_CLASSES = 'scouting-empty text-[11px] text-[color:var(--text-dim)] py-1';
+const SCOUTING_SECTION_CLASSES = 'scouting-section py-[10px] border-b-[0.5px] border-b-[color:var(--border)] last:border-b-0';
+const SCOUTING_SECTION_LABEL_CLASSES = 'scouting-section-label text-[9px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] mb-2';
+
+// .scouting-goalie-row was declared twice in the original CSS (once for
+// background near the player-row rules, again for padding/border-bottom
+// near the goalie section) -- non-conflicting properties, so the real
+// cascade-resolved element gets all three at once. Its background is a
+// genuine light-mode gap (invisible rgba(255,255,255,0.02)), fixed via
+// light-mode-overrides.css, same shape fixed throughout this migration.
+const SCOUTING_GOALIE_ROW_CLASSES = 'scouting-goalie-row bg-[rgba(255,255,255,0.02)] py-[5px] border-b-[0.5px] border-b-[color:var(--border)] last:border-b-0';
+const SCOUTING_PLAYER_NAME_CLASSES = 'scouting-player-name text-[color:var(--text)] font-medium text-[10px] whitespace-nowrap overflow-hidden text-ellipsis';
+const SCOUTING_GOALIE_STAT_CLASSES = 'scouting-goalie-stat flex flex-col gap-px';
+const SCOUTING_GOALIE_LABEL_CLASSES = 'scouting-goalie-label text-[8px] font-bold uppercase tracking-[0.05em] text-[color:var(--text-dim)] flex items-center gap-[2px]';
+const SCOUTING_GOALIE_VAL_CLASSES = 'scouting-goalie-val font-[family-name:var(--font-mono)] text-[11px] font-semibold text-[color:var(--text-muted)]';
 
 // Recent form dots
 function FormDots({ games }) {
   const dots = (games || []).slice(0, 10).reverse();
-  if (!dots.length) return <span className="scouting-empty">No recent games</span>;
+  if (!dots.length) return <span className={SCOUTING_EMPTY_CLASSES}>No recent games</span>;
+  const dotVariant = {
+    w:   'bg-[rgba(61,186,126,0.2)] text-[color:var(--green)]',
+    l:   'bg-[rgba(204,34,0,0.2)] text-[color:var(--red-bright)]',
+    otl: 'bg-[rgba(240,160,48,0.18)] text-[color:var(--amber)]',
+  };
   return (
-    <div className="scouting-form-dots">
-      {dots.map((g, i) => (
-        <div key={i} className={`scouting-dot ${g.result.toLowerCase()}`}
-          title={`${g.date?.slice(5,10)} vs ${g.opp}: ${g.result} ${g.teamScore}–${g.oppScore}`}>
-          {g.result === 'OTL' ? 'O' : g.result}
-        </div>
-      ))}
+    <div className="scouting-form-dots flex gap-[3px] flex-wrap">
+      {dots.map((g, i) => {
+        const r = g.result.toLowerCase();
+        return (
+          <div key={i} className={`scouting-dot ${r} w-[22px] h-[22px] rounded-[5px] flex items-center justify-center text-[8px] font-bold cursor-default ${dotVariant[r] || ''}`}
+            title={`${g.date?.slice(5,10)} vs ${g.opp}: ${g.result} ${g.teamScore}–${g.oppScore}`}>
+            {g.result === 'OTL' ? 'O' : g.result}
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -38,21 +63,21 @@ function CompareRow({ label, carVal, oppVal, higherBetter = true, fmt = v => v?.
   const oppBetter = higherBetter ? o > c : o < c;
   const pct = (c + o) > 0 ? Math.round(c / (c + o) * 100) : 50;
   return (
-    <div className="scouting-compare-row">
-      <span className="scouting-compare-car"
+    <div className="scouting-compare-row grid [grid-template-columns:48px_1fr_48px] items-center gap-1.5 py-1">
+      <span className="scouting-compare-car font-[family-name:var(--font-mono)] text-[12px] font-bold text-left"
         style={{color: carBetter ? 'var(--green)' : oppBetter ? 'var(--red-bright)' : 'var(--text-muted)'}}>
         {fmt(carVal)}
       </span>
-      <div className="scouting-compare-mid">
-        <div className="scouting-compare-label">
+      <div className="scouting-compare-mid flex flex-col gap-[3px]">
+        <div className="scouting-compare-label text-[10px] text-[color:var(--text-dim)] text-center flex items-center justify-center gap-[3px]">
           {label}{tip && <InfoTip text={tip} position="above" />}
         </div>
-        <div className="scouting-compare-bar">
-          <div className="scouting-bar-car" style={{width:`${pct}%`}} />
-          <div className="scouting-bar-opp" style={{width:`${100-pct}%`}} />
+        <div className="scouting-compare-bar h-1 rounded-[2px] bg-[var(--bg3)] flex overflow-hidden">
+          <div className="scouting-bar-car bg-[var(--red-bright)] rounded-l-[2px]" style={{width:`${pct}%`}} />
+          <div className="scouting-bar-opp bg-[color:var(--text-dim)] rounded-r-[2px]" style={{width:`${100-pct}%`}} />
         </div>
       </div>
-      <span className="scouting-compare-opp"
+      <span className="scouting-compare-opp font-[family-name:var(--font-mono)] text-[12px] font-bold text-right"
         style={{color: oppBetter ? 'var(--amber)' : carBetter ? 'var(--text-muted)' : 'var(--text-muted)'}}>
         {fmt(oppVal)}
       </span>
@@ -64,26 +89,26 @@ function CompareRow({ label, carVal, oppVal, higherBetter = true, fmt = v => v?.
 
 // Player table for one team
 function PlayerTable({ players, loading, color, goalieAnalytics }) {
-  if (loading) return <div className="scouting-loading">Loading…</div>;
-  if (!players?.skaters?.length) return <div className="scouting-empty">No data</div>;
+  if (loading) return <div className="scouting-loading text-[11px] text-[color:var(--text-dim)] py-2">Loading…</div>;
+  if (!players?.skaters?.length) return <div className={SCOUTING_EMPTY_CLASSES}>No data</div>;
   return (
-    <div className="scouting-player-table">
-      <div className="scouting-player-header">
+    <div className="scouting-player-table flex flex-col">
+      <div className="scouting-player-header grid [grid-template-columns:1fr_18px_18px_24px] gap-[2px] py-[2px] text-[8px] text-[color:var(--text-dim)] uppercase border-b-[0.5px] border-b-[color:var(--border)] mb-px">
         <span>Player</span><span>G</span><span>A</span><span>PTS</span>
       </div>
       {players.skaters.map((p, i) => (
-        <div key={i} className="scouting-player-row">
-          <span className="scouting-player-name">
-            {p.name}<span className="scouting-player-pos">{p.pos}</span>
+        <div key={i} className="scouting-player-row grid [grid-template-columns:1fr_18px_18px_24px] gap-[2px] py-1 items-center border-b-[0.5px] border-b-[color:var(--border)] text-[11px] text-[color:var(--text-muted)] last:border-b-0">
+          <span className="scouting-player-name text-[color:var(--text)] font-medium text-[10px] whitespace-nowrap overflow-hidden text-ellipsis">
+            {p.name}<span className="scouting-player-pos text-[8px] text-[color:var(--text-dim)] ml-[3px]">{p.pos}</span>
           </span>
           <span>{p.goals}</span>
           <span>{p.assists}</span>
-          <span className="scouting-pts" style={{color}}>{p.points}</span>
+          <span className="scouting-pts font-bold" style={{color}}>{p.points}</span>
         </div>
       ))}
       {players.goalies?.length > 0 && (
         <>
-          <div className="scouting-goalie-divider">Goalies</div>
+          <div className="scouting-goalie-divider text-[8px] font-bold uppercase tracking-[0.07em] text-[color:var(--text-dim)] pt-[5px] pb-[3px] border-t-[0.5px] border-t-[color:var(--border)] mt-[3px]">Goalies</div>
           {players.goalies.map((g, i) => {
             // Use real GSAX from Supabase if available, fall back to estimate
             const seasonData  = goalieAnalytics?.[String(g.playerId)] || null;
@@ -109,26 +134,26 @@ function PlayerTable({ players, loading, color, goalieAnalytics }) {
               : 'var(--text-muted)'
               : 'var(--text-muted)';
             return (
-              <div key={`g${i}`} className="scouting-goalie-row">
-                <span className="scouting-player-name scouting-goalie-name">{g.name}</span>
-                <div className="scouting-goalie-stats">
-                  <div className="scouting-goalie-stat">
-                    <span className="scouting-goalie-label">W</span>
-                    <span className="scouting-goalie-val">{g.wins}</span>
+              <div key={`g${i}`} className={SCOUTING_GOALIE_ROW_CLASSES}>
+                <span className={`${SCOUTING_PLAYER_NAME_CLASSES} scouting-goalie-name block mb-1`}>{g.name}</span>
+                <div className="scouting-goalie-stats flex gap-[10px]">
+                  <div className={SCOUTING_GOALIE_STAT_CLASSES}>
+                    <span className={SCOUTING_GOALIE_LABEL_CLASSES}>W</span>
+                    <span className={SCOUTING_GOALIE_VAL_CLASSES}>{g.wins}</span>
                   </div>
-                  <div className="scouting-goalie-stat">
-                    <span className="scouting-goalie-label">GAA</span>
-                    <span className="scouting-goalie-val" style={{color: gaaColor}}>{gaaVal}</span>
+                  <div className={SCOUTING_GOALIE_STAT_CLASSES}>
+                    <span className={SCOUTING_GOALIE_LABEL_CLASSES}>GAA</span>
+                    <span className={SCOUTING_GOALIE_VAL_CLASSES} style={{color: gaaColor}}>{gaaVal}</span>
                   </div>
-                  <div className="scouting-goalie-stat">
-                    <span className="scouting-goalie-label">SV%</span>
-                    <span className="scouting-goalie-val">{svFmt}</span>
+                  <div className={SCOUTING_GOALIE_STAT_CLASSES}>
+                    <span className={SCOUTING_GOALIE_LABEL_CLASSES}>SV%</span>
+                    <span className={SCOUTING_GOALIE_VAL_CLASSES}>{svFmt}</span>
                   </div>
-                  <div className="scouting-goalie-stat">
-                    <span className="scouting-goalie-label">
+                  <div className={SCOUTING_GOALIE_STAT_CLASSES}>
+                    <span className={SCOUTING_GOALIE_LABEL_CLASSES}>
                       GSAX <InfoTip text={gsaxNote} position="above" />
                     </span>
-                    <span className="scouting-goalie-val" style={{color: gsaxColor}}>
+                    <span className={SCOUTING_GOALIE_VAL_CLASSES} style={{color: gsaxColor}}>
                       {gsaxLabel}
                     </span>
                   </div>
@@ -149,8 +174,13 @@ function GoalieMatchupCard({ carPlayers, oppPlayers, oppAbbr: _oppAbbr, oppColor
   const oppGoalie = oppPlayers?.goalies?.[0];
   if (!carGoalie && !oppGoalie) return null;
 
+  // .gmc-goalie.gmc-car is a genuine compound-selector override (higher
+  // specificity than .gmc-goalie alone), not a source-order race -- only
+  // border-color differs by team, computed directly per isCAR.
+  const gmcGoalieClasses = (isCAR) => `gmc-goalie${isCAR ? ' gmc-car' : ''} flex-1 bg-[var(--bg2)] rounded-[10px] p-3 border-[0.5px] ${isCAR ? 'border-[color:rgba(var(--team-primary-rgb),0.25)]' : 'border-[color:var(--border)]'}`;
+
   const renderGoalie = (g, isCAR, teamColor) => {
-    if (!g) return <div className="gmc-goalie"><span className="scouting-empty">No data</span></div>;
+    if (!g) return <div className={gmcGoalieClasses(isCAR)}><span className={SCOUTING_EMPTY_CLASSES}>No data</span></div>;
     const sv = g.savePct != null && g.savePct > 0
       ? (g.savePct <= 1 ? g.savePct.toFixed(4) : (g.savePct / 100).toFixed(4)) : '—';
     const gaa = g.gaa != null ? g.gaa.toFixed(2) : '—';
@@ -159,22 +189,22 @@ function GoalieMatchupCard({ carPlayers, oppPlayers, oppAbbr: _oppAbbr, oppColor
       : g.gaa > 3.0 ? 'var(--red-bright)'
       : 'var(--text-muted)' : 'var(--text-muted)';
     return (
-      <div className={`gmc-goalie${isCAR ? ' gmc-car' : ''}`}>
-        <div className="gmc-goalie-name" style={{color: teamColor}}>{g.name}</div>
-        <div className="gmc-stats-row">
-          <div className="gmc-stat"><div className="gmc-stat-val">{g.wins}</div><div className="gmc-stat-label">W</div></div>
-          <div className="gmc-stat"><div className="gmc-stat-val" style={{color: gaaColor}}>{gaa}</div><div className="gmc-stat-label">GAA</div></div>
-          <div className="gmc-stat"><div className="gmc-stat-val">{sv}</div><div className="gmc-stat-label">SV%</div></div>
+      <div className={gmcGoalieClasses(isCAR)}>
+        <div className="gmc-goalie-name text-[12px] font-bold mb-1.5" style={{color: teamColor}}>{g.name}</div>
+        <div className="gmc-stats-row flex gap-[10px]">
+          <div className="gmc-stat flex flex-col items-center gap-px"><div className="gmc-stat-val font-[family-name:var(--font-mono)] text-[13px] font-bold text-[color:var(--text-muted)]">{g.wins}</div><div className="gmc-stat-label text-[8px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]">W</div></div>
+          <div className="gmc-stat flex flex-col items-center gap-px"><div className="gmc-stat-val font-[family-name:var(--font-mono)] text-[13px] font-bold text-[color:var(--text-muted)]" style={{color: gaaColor}}>{gaa}</div><div className="gmc-stat-label text-[8px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]">GAA</div></div>
+          <div className="gmc-stat flex flex-col items-center gap-px"><div className="gmc-stat-val font-[family-name:var(--font-mono)] text-[13px] font-bold text-[color:var(--text-muted)]">{sv}</div><div className="gmc-stat-label text-[8px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]">SV%</div></div>
         </div>
       </div>
     );
   };
   return (
-    <div className="scouting-section">
-      <div className="scouting-section-label">Goalie matchup</div>
-      <div className="gmc-row">
+    <div className={SCOUTING_SECTION_CLASSES}>
+      <div className={SCOUTING_SECTION_LABEL_CLASSES}>Goalie matchup</div>
+      <div className="gmc-row flex items-center gap-2">
         {renderGoalie(carGoalie, true, 'var(--team-primary)')}
-        <div className="gmc-vs">vs</div>
+        <div className="gmc-vs text-[11px] text-[color:var(--text-dim)] shrink-0">vs</div>
         {renderGoalie(oppGoalie, false, oppColor)}
       </div>
     </div>
@@ -188,19 +218,19 @@ function TeamTotalCard({ carStats, oppStats, oppAbbr, isPlayoff }) {
   const oppExp = (oppStats.goalsForPerGame + carStats.goalsAgainstPerGame) / 2;
   const total  = +(carExp + oppExp).toFixed(1);
   return (
-    <div className="scouting-section">
-      <div className="scouting-section-label">
+    <div className={SCOUTING_SECTION_CLASSES}>
+      <div className={SCOUTING_SECTION_LABEL_CLASSES}>
         Team total projection
         <InfoTip text="Average of each team's GF/GP and opponent's GA/GP. Informational only." position="above" />
       </div>
-      <div className="ttc-wrap">
-        <div className="ttc-score">
+      <div className="ttc-wrap bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)] rounded-[8px] py-3 px-[14px]">
+        <div className="ttc-score text-[18px] font-extrabold flex gap-2 items-baseline mb-[3px]">
           <span style={{color:'var(--team-primary)'}}>{TEAM_CONFIG.abbr} {+carExp.toFixed(1)}</span>
-          <span className="ttc-dash">–</span>
+          <span className="ttc-dash text-[color:var(--text-dim)] font-normal">–</span>
           <span>{+oppExp.toFixed(1)} {oppAbbr}</span>
         </div>
-        <div className="ttc-total">Projected total goals: <strong>{total}</strong></div>
-        <div className="ttc-meta">Based on {isPlayoff ? 'playoff' : 'regular season'} GF/GP + GA/GP</div>
+        <div className="ttc-total text-[12px] text-[color:var(--text-muted)] mb-[2px]">Projected total goals: <strong>{total}</strong></div>
+        <div className="ttc-meta text-[10px] text-[color:var(--text-dim)]">Based on {isPlayoff ? 'playoff' : 'regular season'} GF/GP + GA/GP</div>
       </div>
     </div>
   );
@@ -221,28 +251,28 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
   // eslint-disable-next-line no-unused-vars
   const oppExp = ((oppStats.goalsForPerGame ?? 0) + (carStats.goalsAgainstPerGame ?? 0)) / 2;
   return (
-    <div className="sc-canvas" ref={canvasRef}>
+    <div className="sc-canvas fixed left-[-9999px] top-0 w-[1080px] h-[1080px] bg-[#1a1a2e] text-white flex flex-col [font-family:-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif] overflow-hidden" ref={canvasRef}>
       {/* Header */}
-      <div className="sc-header">
-        <img src="/eyewall-logo.svg" alt="EyeWall" className="sc-logo" onError={e=>{e.target.style.display='none';}} />
-        <span className="sc-badge">{isPlayoff ? 'Playoff ' : ''}Scouting Report</span>
+      <div className="sc-header flex items-center justify-between py-5 px-[52px] pb-2">
+        <img src="/eyewall-logo.svg" alt="EyeWall" className="sc-logo w-20 h-20 object-contain" onError={e=>{e.target.style.display='none';}} />
+        <span className="sc-badge text-[13px] font-extrabold tracking-[0.14em] uppercase text-[color:var(--team-canvas)] bg-[rgba(var(--team-canvas-rgb),0.12)] py-1.5 px-4 rounded-[20px]">{isPlayoff ? 'Playoff ' : ''}Scouting Report</span>
       </div>
 
       {/* Teams */}
-      <div className="sc-teams">
-        <div className="sc-team">
-          <img src={logoUrl(TEAM_CONFIG.abbr)} alt={TEAM_CONFIG.abbr} className="sc-team-logo" onError={e=>{e.target.style.display='none';}} />
-          <span className="sc-team-abbr car">CAR</span>
+      <div className="sc-teams flex items-center justify-center gap-5 pt-1 px-[52px] pb-2.5 border-b-[0.5px] border-b-[rgba(255,255,255,0.07)]">
+        <div className="sc-team flex flex-row items-center gap-2.5">
+          <img src={logoUrl(TEAM_CONFIG.abbr)} alt={TEAM_CONFIG.abbr} className="sc-team-logo w-9 h-9 object-contain" onError={e=>{e.target.style.display='none';}} />
+          <span className="sc-team-abbr car text-[20px] font-extrabold text-[color:var(--team-canvas)]">CAR</span>
         </div>
-        <span className="sc-vs">vs</span>
-        <div className="sc-team">
-          <img src={logoUrl(oppAbbr)} alt={oppAbbr} className="sc-team-logo" onError={e=>{e.target.style.display='none';}} />
-          <span className="sc-team-abbr" style={{color: oppColor}}>{oppAbbr}</span>
+        <span className="sc-vs text-[18px] text-[rgba(255,255,255,0.2)]">vs</span>
+        <div className="sc-team flex flex-row items-center gap-2.5">
+          <img src={logoUrl(oppAbbr)} alt={oppAbbr} className="sc-team-logo w-9 h-9 object-contain" onError={e=>{e.target.style.display='none';}} />
+          <span className="sc-team-abbr text-[20px] font-extrabold text-[rgba(255,255,255,0.7)]" style={{color: oppColor}}>{oppAbbr}</span>
         </div>
       </div>
 
       {/* Stats comparison */}
-      <div className="sc-stats">
+      <div className="sc-stats py-3.5 px-[52px] pb-2.5 flex flex-col gap-2.5">
         {[
           { label: 'Goals For / GP',    car: gpgFmt(carStats.goalsForPerGame),    opp: gpgFmt(oppStats.goalsForPerGame),    carBetter: (carStats.goalsForPerGame??0) > (oppStats.goalsForPerGame??0) },
           { label: 'Goals Against / GP',car: gpgFmt(carStats.goalsAgainstPerGame),opp: gpgFmt(oppStats.goalsAgainstPerGame),carBetter: (carStats.goalsAgainstPerGame??99) < (oppStats.goalsAgainstPerGame??99) },
@@ -250,10 +280,10 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
           { label: 'Penalty Kill %',    car: pctFmt(carStats.penaltyKillPct),     opp: pctFmt(oppStats.penaltyKillPct),     carBetter: (carStats.penaltyKillPct??0) > (oppStats.penaltyKillPct??0) },
           { label: 'Shots For / GP',    car: (carStats.shotsForPerGame??0).toFixed(1), opp: (oppStats.shotsForPerGame??0).toFixed(1), carBetter: (carStats.shotsForPerGame??0) > (oppStats.shotsForPerGame??0) },
         ].map((r, i) => (
-          <div key={i} className="sc-stat-row">
-            <span className={`sc-stat-val ${r.carBetter ? 'good' : 'muted'}`} style={{fontSize:17}}>{r.car}</span>
-            <span className="sc-stat-label" style={{fontSize:11}}>{r.label}</span>
-            <span className={`sc-stat-val ${!r.carBetter ? 'good-opp' : 'muted'}`} style={{fontSize:17}}>{r.opp}</span>
+          <div key={i} className="sc-stat-row flex items-center gap-3">
+            <span className={`sc-stat-val w-20 text-[23px] font-bold text-right ${r.carBetter ? 'good text-[#4ade80]' : 'muted text-[rgba(255,255,255,0.4)]'}`} style={{fontSize:17}}>{r.car}</span>
+            <span className="sc-stat-label flex-1 text-center text-[14px] text-[rgba(255,255,255,0.35)] uppercase tracking-[0.08em]" style={{fontSize:11}}>{r.label}</span>
+            <span className={`sc-stat-val w-20 text-[23px] font-bold text-left ${!r.carBetter ? 'good-opp text-[#fb923c]' : 'muted text-[rgba(255,255,255,0.4)]'}`} style={{fontSize:17}}>{r.opp}</span>
           </div>
         ))}
       </div>
@@ -391,7 +421,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
       )}
 
       {/* Footer */}
-      <div className="sc-footer">
+      <div className="sc-footer flex justify-between py-2 px-[52px] pb-5 text-[13px] text-[rgba(255,255,255,0.2)] mt-auto">
         <span>eyewallanalytics.com</span>
         <span>{TEAM_CONFIG.hashtags?.[0] || `#${TEAM_CONFIG.abbr}`}</span>
       </div>
@@ -420,10 +450,11 @@ const LINES_TIP =
   'Static lineups (shown when inference is unavailable) reflect the most recent known lines.';
 
 function XgfBadge({ pct }) {
-  if (pct == null) return <span className="sc-line-xgf sc-line-xgf-null">—</span>;
+  const base = 'sc-line-xgf text-[12px] font-bold';
+  if (pct == null) return <span className={`${base} sc-line-xgf-null text-[color:var(--text-dim)] font-normal`}>—</span>;
   const good = pct >= 50;
   return (
-    <span className={`sc-line-xgf ${good ? 'sc-line-xgf-good' : 'sc-line-xgf-bad'}`}>
+    <span className={`${base} ${good ? 'sc-line-xgf-good text-[color:var(--green)]' : 'sc-line-xgf-bad text-[color:var(--red-bright)]'}`}>
       {pct.toFixed(1)}%
     </span>
   );
@@ -432,27 +463,27 @@ function XgfBadge({ pct }) {
 function LineUnit({ unit, label, color, _isDefence }) {
   const toiLabel = unit.toiMins != null ? `${unit.toiMins} min together` : null;
   return (
-    <div className={`sc-line-unit${unit.isStatic ? ' sc-line-static' : ''}`}>
-      <div className="sc-line-header">
-        <span className="sc-line-label" style={{ color }}>{label}</span>
-        <div className="sc-line-meta">
+    <div className={`sc-line-unit${unit.isStatic ? ' sc-line-static border-dashed' : ''} bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)] rounded-[8px] py-[9px] px-[11px]`}>
+      <div className="sc-line-header flex items-center justify-between mb-1.5">
+        <span className="sc-line-label text-[11px] font-bold tracking-[0.03em] min-w-[44px]" style={{ color }}>{label}</span>
+        <div className="sc-line-meta flex items-center gap-2.5">
           {toiLabel && (
-            <span className="sc-line-toi">
+            <span className="sc-line-toi text-[10px] text-[color:var(--text-dim)] flex items-center gap-[3px]">
               {toiLabel}
               <InfoTip text={TOI_TIP} position="above" />
             </span>
           )}
-          <span className="sc-line-xgf-wrap">
-            <span className="sc-line-xgf-label">xGF%</span>
+          <span className="sc-line-xgf-wrap flex items-center gap-[3px]">
+            <span className="sc-line-xgf-label text-[10px] text-[color:var(--text-dim)] font-semibold">xGF%</span>
             <XgfBadge pct={unit.xgfPct} />
             <InfoTip text={XGF_TIP} position="above" />
           </span>
         </div>
       </div>
-      <div className="sc-line-players">
+      <div className="sc-line-players flex gap-y-1.5 gap-x-3.5 flex-wrap">
         {unit.players.map((p, i) => (
-          <span key={i} className="sc-line-player">
-            <span className="sc-line-pos">{POS_LABEL[p.pos] || p.pos}</span>
+          <span key={i} className="sc-line-player text-[12px] text-[color:var(--text)] flex items-baseline gap-1">
+            <span className="sc-line-pos text-[9px] font-bold text-[color:var(--text-dim)] uppercase tracking-[0.04em] min-w-[18px]">{POS_LABEL[p.pos] || p.pos}</span>
             {p.name}
           </span>
         ))}
@@ -468,30 +499,34 @@ function LinesSection({ lines, color, isPlayoff, abbr }) {
   const pairLabels = ['Pair 1', 'Pair 2', 'Pair 3'];
   const hasAnyStatic = [...(fLines || []), ...(dPairs || [])].some(u => u.isStatic);
   return (
-    <div className="scouting-section">
-      <div className="scouting-section-label">
+    <div className={SCOUTING_SECTION_CLASSES}>
+      <div className={SCOUTING_SECTION_LABEL_CLASSES}>
         {abbr} lines
-        {isPlayoff && <span className="sc-lines-playoff-badge">Playoffs</span>}
+        {isPlayoff && <span className="sc-lines-playoff-badge inline-block text-[9px] font-bold text-[color:var(--amber)] bg-[rgba(240,160,48,0.12)] rounded-[4px] py-px px-1.5 ml-1.5 align-middle uppercase tracking-[0.06em]">Playoffs</span>}
         <InfoTip text={LINES_TIP} position="above" />
       </div>
       {hasAnyStatic && (
-        <div className="sc-lines-note">
+        <div className="sc-lines-note text-[11px] text-[color:var(--text-dim)] italic mb-1">
           ⚡ Live xGF% where available · lineup from known line combinations
         </div>
       )}
-      <div className="sc-lines-note sc-lines-opponent-note">
+      {/* .sc-lines-note's own margin-bottom:4px loses to .sc-lines-opponent-note's
+          8px here -- both single-class selectors, equal specificity, opponent-note
+          declared later in the original file -- final resolved value is 8px, not
+          a stack of both. */}
+      <div className="sc-lines-note sc-lines-opponent-note text-[11px] text-[color:var(--text-dim)] italic mb-2">
         Opponent lines available when 32-team data is enabled
       </div>
       {fLines.length > 0 && (
-        <div className="sc-lines-group">
+        <div className="sc-lines-group flex flex-col gap-[6px] mb-2.5">
           {fLines.map((u, i) => (
             <LineUnit key={i} unit={u} label={lineLabels[i] || `Line ${u.rank}`} color={color} />
           ))}
         </div>
       )}
       {dPairs.length > 0 && (
-        <div className="sc-lines-group sc-lines-group-d">
-          <div className="sc-lines-subheader">Defence pairs</div>
+        <div className="sc-lines-group sc-lines-group-d flex flex-col gap-[6px] mb-2.5 border-t border-[color:var(--border)] pt-2.5 mt-[2px]">
+          <div className="sc-lines-subheader text-[9px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] mb-1">Defence pairs</div>
           {dPairs.map((u, i) => (
             <LineUnit key={i} unit={u} label={pairLabels[i] || `Pair ${u.rank}`} color={color} isDefence />
           ))}
@@ -568,37 +603,37 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
 
   return (
     <>
-    <div className="scouting-wrap">
+    <div className="scouting-wrap flex flex-col gap-[2px]">
       {/* AI Matchup Analysis */}
       {matchupData?.text && (
-        <div className="sc-matchup-section">
-          <div className="sc-matchup-label">⚡ AI Matchup Analysis</div>
-          <div className="sc-matchup-text">{matchupData.text}</div>
-          <div className="sc-matchup-footer">Generated by EyeWall AI · Updates nightly</div>
+        <div className="sc-matchup-section py-3 pb-3.5 border-b-[0.5px] border-b-[color:var(--border)] mb-1">
+          <div className="sc-matchup-label text-[10px] font-bold uppercase tracking-[0.1em] text-[color:var(--team-primary,var(--red-bright))] mb-2">⚡ AI Matchup Analysis</div>
+          <div className="sc-matchup-text text-[13px] leading-[1.65] text-[color:var(--text)] whitespace-pre-wrap">{matchupData.text}</div>
+          <div className="sc-matchup-footer text-[10px] text-[color:var(--text-dim)] mt-2">Generated by EyeWall AI · Updates nightly</div>
         </div>
       )}
 
       {isPlayoff && (
-        <div className="scouting-playoff-badge">🏒 Playoff stats · {SEASON_LABEL}</div>
+        <div className="scouting-playoff-badge text-[10px] font-bold text-[color:var(--amber)] bg-[rgba(240,160,48,0.1)] rounded-[6px] py-1 px-[10px] text-center mb-1.5">🏒 Playoff stats · {SEASON_LABEL}</div>
       )}
 
       {/* Team headers */}
-      <div className="scouting-teams-header">
-        <div className="scouting-team-col">
+      <div className="scouting-teams-header grid [grid-template-columns:1fr_auto_1fr] items-center gap-2 py-2 pb-3 border-b-[0.5px] border-b-[color:var(--border)] mb-1">
+        <div className="scouting-team-col flex flex-col items-center gap-1">
           <TeamLogo abbr={TEAM_CONFIG.abbr} size={32} />
-          <span className="scouting-team-abbr" style={{color: carColor}}>{TEAM_CONFIG.abbr}</span>
+          <span className="scouting-team-abbr font-[family-name:var(--font-display)] text-[18px] font-black" style={{color: carColor}}>{TEAM_CONFIG.abbr}</span>
           {carStanding && (
-            <span className="scouting-team-record">
+            <span className="scouting-team-record text-[11px] text-[color:var(--text-muted)]">
               {carStanding.wins}–{carStanding.losses}–{carStanding.otLosses || 0}
             </span>
           )}
         </div>
-        <div className="scouting-vs">vs</div>
-        <div className="scouting-team-col">
+        <div className="scouting-vs text-[11px] text-[color:var(--text-dim)] font-semibold">vs</div>
+        <div className="scouting-team-col flex flex-col items-center gap-1">
           <TeamLogo abbr={oppAbbr} size={32} color={oppColor} />
-          <span className="scouting-team-abbr" style={{color: oppColor}}>{oppAbbr}</span>
+          <span className="scouting-team-abbr font-[family-name:var(--font-display)] text-[18px] font-black" style={{color: oppColor}}>{oppAbbr}</span>
           {oppStanding && (
-            <span className="scouting-team-record">
+            <span className="scouting-team-record text-[11px] text-[color:var(--text-muted)]">
               {oppStanding.wins}–{oppStanding.losses}–{oppStanding.otLosses || 0}
             </span>
           )}
@@ -607,11 +642,11 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
 
       {/* Season/Playoff comparison — uses playoff stats when isPlayoff */}
       {(compCarStats || compOppStats) && (
-        <div className="scouting-section">
-          <div className="scouting-section-label">
+        <div className={SCOUTING_SECTION_CLASSES}>
+          <div className={SCOUTING_SECTION_LABEL_CLASSES}>
             {isPlayoff ? 'Playoff' : 'Season'} comparison
           </div>
-          <div className="scouting-compare-header">
+          <div className="scouting-compare-header grid [grid-template-columns:48px_1fr_48px] text-center text-[9px] font-bold uppercase tracking-[0.05em] mb-1.5 text-[color:var(--text-dim)]">
             <span style={{color: carColor}}>{TEAM_CONFIG.abbr}</span>
             <span />
             <span style={{color: oppColor}}>{oppAbbr}</span>
@@ -650,25 +685,25 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
       />
 
       {/* Recent form */}
-      <div className="scouting-section">
-        <div className="scouting-section-label">Recent form (last {isPlayoff ? 'playoff ' : ''}10)</div>
-        <div className="scouting-form-row">
-          <div className="scouting-form-col">
-            <div className="scouting-form-team" style={{color: carColor}}>{TEAM_CONFIG.abbr}</div>
+      <div className={SCOUTING_SECTION_CLASSES}>
+        <div className={SCOUTING_SECTION_LABEL_CLASSES}>Recent form (last {isPlayoff ? 'playoff ' : ''}10)</div>
+        <div className="scouting-form-row grid [grid-template-columns:1fr_1fr] gap-3">
+          <div className="scouting-form-col flex flex-col gap-[5px]">
+            <div className="scouting-form-team text-[10px] font-bold" style={{color: carColor}}>{TEAM_CONFIG.abbr}</div>
             <FormDots games={carRecentGames} />
             {carRecentGames && (
-              <div className="scouting-form-summary">
+              <div className="scouting-form-summary text-[10px] text-[color:var(--text-dim)]">
                 {carRecentGames.filter(g=>g.won).length}–
                 {carRecentGames.filter(g=>!g.won&&g.result!=='OTL').length}–
                 {carRecentGames.filter(g=>g.result==='OTL').length}
               </div>
             )}
           </div>
-          <div className="scouting-form-col">
-            <div className="scouting-form-team" style={{color: oppColor}}>{oppAbbr}</div>
+          <div className="scouting-form-col flex flex-col gap-[5px]">
+            <div className="scouting-form-team text-[10px] font-bold" style={{color: oppColor}}>{oppAbbr}</div>
             <FormDots games={oppRecentGames} />
             {oppRecentGames && (
-              <div className="scouting-form-summary">
+              <div className="scouting-form-summary text-[10px] text-[color:var(--text-dim)]">
                 {oppRecentGames.filter(g=>g.won).length}–
                 {oppRecentGames.filter(g=>!g.won&&g.result!=='OTL').length}–
                 {oppRecentGames.filter(g=>g.result==='OTL').length}
@@ -679,17 +714,17 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
       </div>
 
       {/* Top players */}
-      <div className="scouting-section">
-        <div className="scouting-section-label">
+      <div className={SCOUTING_SECTION_CLASSES}>
+        <div className={SCOUTING_SECTION_LABEL_CLASSES}>
           {isPlayoff ? 'Playoff ' : ''}Top skaters &amp; goalies
         </div>
-        <div className="scouting-players-row">
-          <div className="scouting-players-col">
-            <div className="scouting-players-team" style={{color: carColor}}>{TEAM_CONFIG.abbr}</div>
+        <div className="scouting-players-row grid [grid-template-columns:1fr_1fr] gap-3">
+          <div className="scouting-players-col flex flex-col gap-1">
+            <div className="scouting-players-team text-[10px] font-bold mb-[2px]" style={{color: carColor}}>{TEAM_CONFIG.abbr}</div>
             <PlayerTable players={carTopPlayers} loading={carPlayersLoading} color={carColor} goalieAnalytics={goalieAnalytics} />
           </div>
-          <div className="scouting-players-col">
-            <div className="scouting-players-team" style={{color: oppColor}}>{oppAbbr}</div>
+          <div className="scouting-players-col flex flex-col gap-1">
+            <div className="scouting-players-team text-[10px] font-bold mb-[2px]" style={{color: oppColor}}>{oppAbbr}</div>
             <PlayerTable players={oppTopPlayers} loading={oppPlayersLoading} color={oppColor} goalieAnalytics={goalieAnalytics} />
           </div>
         </div>
@@ -700,8 +735,11 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
         <LinesSection lines={carLines} color={carColor} isPlayoff={isPlayoff} abbr={TEAM_CONFIG.abbr} />
       )}
 
-      {/* Export / share */}
-      <div className="scouting-section scouting-export-row">
+      {/* Export / share -- .scouting-export-row's `border-bottom: none !important`
+          in the original CSS unconditionally kills .scouting-section's own
+          border-bottom regardless of :last-child, so this instance simply
+          omits the border-b utilities entirely rather than needing !important. */}
+      <div className="scouting-section scouting-export-row py-[10px]">
         <ShareButtons
           onSave={handleSaveWithCapture}
           onShareX={handleShareX}
