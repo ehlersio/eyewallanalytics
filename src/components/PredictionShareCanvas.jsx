@@ -13,7 +13,31 @@ import { capture } from '../utils/analytics';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
-import './PredictionCanvas.css';
+// PredictionCanvas.css import removed (Phase 6) -- migrated to Tailwind.
+// Shell classes (.pred-canvas/-header/-logo/-badge/-ai*/-footer) live in
+// utils/predCanvasClasses.js since LeagueView.jsx's PowerRankingsCanvas also
+// renders them without importing this component's CSS itself.
+import {
+  PRED_CANVAS_CLASSES, PRED_CANVAS_HEADER_CLASSES, PRED_CANVAS_LOGO_CLASSES,
+  PRED_CANVAS_BADGE_CLASSES, PRED_CANVAS_AI_CLASSES, PRED_CANVAS_AI_LABEL_CLASSES,
+  PRED_CANVAS_AI_TEXT_CLASSES, PRED_CANVAS_FOOTER_CLASSES,
+} from '../utils/predCanvasClasses';
+
+const PRED_CANVAS_TEAM_CLASSES = 'pred-canvas-team flex flex-col items-center gap-1.5 shrink-0';
+const PRED_CANVAS_TEAM_LOGO_CLASSES = 'pred-canvas-team-logo w-[52px] h-[52px] object-contain';
+const PRED_CANVAS_STAT_VAL_BASE = 'pred-canvas-stat-val w-[72px] text-[20px] font-bold';
+
+// .pred-canvas-stat-val:first-child/:last-child set text-align only, in the
+// structural position sense -- since the JSX always renders exactly car
+// first then opp last per row, applied directly rather than via a pseudo-
+// class utility.
+function predCanvasStatValClasses({ isCar, good }) {
+  const align = isCar ? 'text-right' : 'text-left';
+  if (!good) return `${PRED_CANVAS_STAT_VAL_BASE} muted ${align} text-[rgba(255,255,255,0.35)]`;
+  return isCar
+    ? `${PRED_CANVAS_STAT_VAL_BASE} good ${align} text-[#4ade80]`
+    : `${PRED_CANVAS_STAT_VAL_BASE} good-opp ${align} text-[#fb923c]`;
+}
 
 // ── Share canvas (off-screen, 1080×1080) ─────────────────────
 function PredictionCanvas({
@@ -25,76 +49,76 @@ function PredictionCanvas({
   if (carGpg == null || oppGpg == null || carGag == null || oppGag == null ||
       carWin == null || oppWin == null || carPP == null || oppPK == null ||
       predCarScore == null || predOppScore == null) {
-    return <div className="pred-canvas" ref={canvasRef} />;
+    return <div className={PRED_CANVAS_CLASSES} ref={canvasRef} />;
   }
 
   const logoUrl = (abbr) => `/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
   const projTotal = +(predCarScore + predOppScore).toFixed(1);
 
   return (
-    <div className="pred-canvas" ref={canvasRef}>
+    <div className={PRED_CANVAS_CLASSES} ref={canvasRef}>
 
       {/* Header */}
-      <div className="pred-canvas-header">
-        <img src="/eyewall-logo.svg" alt="EyeWall" className="pred-canvas-logo"
+      <div className={PRED_CANVAS_HEADER_CLASSES}>
+        <img src="/eyewall-logo.svg" alt="EyeWall" className={PRED_CANVAS_LOGO_CLASSES}
           onError={e => { e.target.style.display='none'; }} />
-        <span className="pred-canvas-badge">
+        <span className={PRED_CANVAS_BADGE_CLASSES}>
           {isPlayoff ? 'Playoff ' : ''}Prediction
         </span>
       </div>
 
       {/* Teams + win probability */}
-      <div className="pred-canvas-matchup">
-        <div className="pred-canvas-team">
-          <img src={logoUrl(TEAM_CONFIG.abbr)} alt={TEAM_CONFIG.abbr} className="pred-canvas-team-logo"
+      <div className="pred-canvas-matchup flex items-center gap-5 px-[52px] pb-4 border-b-[0.5px] border-b-[rgba(255,255,255,0.07)]">
+        <div className={PRED_CANVAS_TEAM_CLASSES}>
+          <img src={logoUrl(TEAM_CONFIG.abbr)} alt={TEAM_CONFIG.abbr} className={PRED_CANVAS_TEAM_LOGO_CLASSES}
             onError={e=>{e.target.style.display='none';}} />
-          <div className="pred-canvas-team-abbr car">{TEAM_CONFIG.abbr}</div>
+          <div className="pred-canvas-team-abbr car text-[19px] font-extrabold text-[color:var(--team-canvas)]">{TEAM_CONFIG.abbr}</div>
         </div>
 
-        <div className="pred-canvas-center">
+        <div className="pred-canvas-center flex-1 flex flex-col gap-1.5">
           {seriesEntry && (
-            <div className="pred-canvas-series">
+            <div className="pred-canvas-series text-[13px] text-[rgba(255,255,255,0.35)] text-center mb-0.5">
               Series: <span style={{color:'var(--team-canvas)'}}>{seriesEntry.carWins}</span>
               {' – '}
               <span style={{color: oppColor}}>{seriesEntry.oppWins}</span>
             </div>
           )}
-          <div className="pred-canvas-bar">
-            <div className="pred-canvas-bar-car" style={{width:`${carModelPct}%`}}>
+          <div className="pred-canvas-bar flex h-7 rounded-[6px] overflow-hidden">
+            <div className="pred-canvas-bar-car bg-[var(--team-canvas)] flex items-center justify-center text-[16px] font-bold [transition:width_0.4s]" style={{width:`${carModelPct}%`}}>
               {carModelPct >= 20 && <span>{carModelPct}%</span>}
             </div>
-            <div className="pred-canvas-bar-opp" style={{width:`${100-carModelPct}%`}}>
+            <div className="pred-canvas-bar-opp bg-[#3a4559] flex items-center justify-center text-[16px] font-bold [transition:width_0.4s]" style={{width:`${100-carModelPct}%`}}>
               {(100-carModelPct) >= 20 && <span>{100-carModelPct}%</span>}
             </div>
           </div>
-          <div className="pred-canvas-bar-labels">
+          <div className="pred-canvas-bar-labels flex justify-between text-[13px] text-[rgba(255,255,255,0.3)] px-0.5">
             <span style={{color:'var(--team-canvas)'}}>{TEAM_CONFIG.abbr}</span>
             <span style={{color: oppColor}}>{oppAbbr}</span>
           </div>
         </div>
 
-        <div className="pred-canvas-team">
-          <img src={logoUrl(oppAbbr)} alt={oppAbbr} className="pred-canvas-team-logo"
+        <div className={PRED_CANVAS_TEAM_CLASSES}>
+          <img src={logoUrl(oppAbbr)} alt={oppAbbr} className={PRED_CANVAS_TEAM_LOGO_CLASSES}
             onError={e=>{e.target.style.display='none';}} />
-          <div className="pred-canvas-team-abbr" style={{color: oppColor}}>{oppAbbr}</div>
+          <div className="pred-canvas-team-abbr text-[19px] font-extrabold text-[rgba(255,255,255,0.6)]" style={{color: oppColor}}>{oppAbbr}</div>
         </div>
       </div>
 
       {/* Predicted score + total */}
-      <div className="pred-canvas-score-row">
-        <div className="pred-canvas-score">
-          <div className="pred-canvas-score-label">Projected Score</div>
-          <div className="pred-canvas-score-val">
+      <div className="pred-canvas-score-row flex gap-5 py-3.5 px-[52px] border-b-[0.5px] border-b-[rgba(255,255,255,0.06)]">
+        <div className="pred-canvas-score flex-1 flex flex-col items-center text-center">
+          <div className="pred-canvas-score-label text-[12px] font-bold tracking-[0.1em] uppercase text-[rgba(255,255,255,0.25)] mb-1.5">Projected Score</div>
+          <div className="pred-canvas-score-val text-[26px] font-extrabold">
             <span style={{color:'var(--team-canvas)'}}>{TEAM_CONFIG.abbr} {predCarScore}</span>
             <span style={{color:'rgba(255,255,255,0.2)'}}> – </span>
             <span style={{color: oppColor}}>{predOppScore} {oppAbbr}</span>
           </div>
         </div>
-        <div className="pred-canvas-total">
-          <div className="pred-canvas-score-label">Projected Total</div>
-          <div className="pred-canvas-total-val">{projTotal}</div>
+        <div className="pred-canvas-total flex-1 flex flex-col items-center text-center">
+          <div className="pred-canvas-score-label text-[12px] font-bold tracking-[0.1em] uppercase text-[rgba(255,255,255,0.25)] mb-1.5">Projected Total</div>
+          <div className="pred-canvas-total-val text-[43px] font-black text-[rgba(255,255,255,0.8)]">{projTotal}</div>
           {odds?.total && (
-            <div className="pred-canvas-ou-line">
+            <div className="pred-canvas-ou-line text-[14px] text-[rgba(255,255,255,0.35)] mt-0.5">
               O/U line: {odds.total}
             </div>
           )}
@@ -103,24 +127,24 @@ function PredictionCanvas({
 
       {/* AI Analysis — between score and stats */}
       {aiNarrative && (
-        <div className="pred-canvas-ai">
-          <div className="pred-canvas-ai-label">⚡ EyeWall AI</div>
-          <div className="pred-canvas-ai-text">{aiNarrative}</div>
+        <div className={PRED_CANVAS_AI_CLASSES}>
+          <div className={PRED_CANVAS_AI_LABEL_CLASSES}>⚡ EyeWall AI</div>
+          <div className={PRED_CANVAS_AI_TEXT_CLASSES}>{aiNarrative}</div>
         </div>
       )}
-      <div className="pred-canvas-stats">
+      <div className="pred-canvas-stats py-3 px-[52px] flex flex-col gap-2.5">
         {[
           { label: 'Goals For/GP',     carVal: carGpg.toFixed(2),  oppVal: oppGpg.toFixed(2),  carBetter: carGpg >= oppGpg },
           { label: 'Goals Against/GP', carVal: carGag.toFixed(2),  oppVal: oppGag.toFixed(2),  carBetter: carGag <= oppGag },
           { label: 'Win Rate',         carVal: `${(carWin*100).toFixed(0)}%`, oppVal: `${(oppWin*100).toFixed(0)}%`, carBetter: carWin >= oppWin },
           { label: 'PP% vs PK%',       carVal: `${carPP.toFixed(1)}%`, oppVal: `${oppPK.toFixed(1)}%`, carBetter: carPP >= (100-oppPK) },
         ].map((row, i) => (
-          <div key={i} className="pred-canvas-stat-row">
-            <span className={`pred-canvas-stat-val ${row.carBetter ? 'good' : 'muted'}`}>
+          <div key={i} className="pred-canvas-stat-row flex items-center gap-3">
+            <span className={predCanvasStatValClasses({ isCar: true, good: row.carBetter })}>
               {row.carVal}
             </span>
-            <span className="pred-canvas-stat-label">{row.label}</span>
-            <span className={`pred-canvas-stat-val ${!row.carBetter ? 'good-opp' : 'muted'}`}>
+            <span className="pred-canvas-stat-label flex-1 text-center text-[13px] text-[rgba(255,255,255,0.3)] uppercase tracking-[0.07em]">{row.label}</span>
+            <span className={predCanvasStatValClasses({ isCar: false, good: !row.carBetter })}>
               {row.oppVal}
             </span>
           </div>
@@ -128,14 +152,14 @@ function PredictionCanvas({
       </div>
 
       {/* Edge factors — compact two-column */}
-      <div className="pred-canvas-factors">
-        <div className="pred-canvas-factors-label">Edge Analysis</div>
-        <div className="pred-canvas-factors-grid">
+      <div className="pred-canvas-factors px-[52px] pb-3">
+        <div className="pred-canvas-factors-label text-[12px] font-bold tracking-[0.12em] uppercase text-[rgba(255,255,255,0.2)] mb-2">Edge Analysis</div>
+        <div className="pred-canvas-factors-grid grid [grid-template-columns:1fr_1fr] gap-1.5">
           {factors.slice(0, 6).map((f, i) => (
-            <div key={i} className={`pred-canvas-factor ${f.carEdge ? 'car' : 'opp'}`}>
-              <span>{f.carEdge ? '✓' : '✗'}</span>
-              <span>{f.label}</span>
-              <span>{f.carEdge ? TEAM_CONFIG.abbr : oppAbbr}</span>
+            <div key={i} className={`pred-canvas-factor ${f.carEdge ? 'car' : 'opp'} flex gap-2 items-center text-[14px] py-[7px] px-2.5 rounded-[7px] bg-[rgba(255,255,255,0.03)] border-[0.5px] border-[rgba(255,255,255,0.06)]`}>
+              <span className={`shrink-0 ${f.carEdge ? 'text-[#4ade80]' : 'text-[rgba(255,255,255,0.3)]'}`}>{f.carEdge ? '✓' : '✗'}</span>
+              <span className="flex-1 text-[rgba(255,255,255,0.45)]">{f.label}</span>
+              <span className={`font-bold text-[13px] ${f.carEdge ? 'text-[color:var(--team-canvas)]' : 'text-[rgba(255,255,255,0.4)]'}`}>{f.carEdge ? TEAM_CONFIG.abbr : oppAbbr}</span>
             </div>
           ))}
         </div>
@@ -148,22 +172,22 @@ function PredictionCanvas({
         const good = xgf != null && xgf >= 50;
         const POS_LABEL = { L: 'LW', LW: 'LW', C: 'C', R: 'RW', RW: 'RW' };
         return (
-          <div className="pred-canvas-line1">
-            <div className="pred-canvas-line1-header">
-              <span className="pred-canvas-line1-label">{TEAM_CONFIG.abbr} Line 1 · 5v5</span>
+          <div className="pred-canvas-line1 mx-[52px] mb-2.5 py-2.5 px-3.5 bg-[rgba(255,255,255,0.04)] border-[0.5px] border-[rgba(255,255,255,0.08)] rounded-[10px]">
+            <div className="pred-canvas-line1-header flex items-center gap-3 mb-[7px]">
+              <span className="pred-canvas-line1-label text-[11px] font-bold uppercase tracking-[0.08em] text-[rgba(255,255,255,0.25)] flex-1">{TEAM_CONFIG.abbr} Line 1 · 5v5</span>
               {xgf != null && (
-                <span className={`pred-canvas-line1-xgf ${good ? 'good' : 'bad'}`}>
+                <span className={`pred-canvas-line1-xgf ${good ? 'good text-[#4ade80]' : 'bad text-[#ce1126]'} text-[15px] font-extrabold [font-variant-numeric:tabular-nums]`}>
                   {xgf.toFixed(1)}% xGF
                 </span>
               )}
               {line.toiMins != null && (
-                <span className="pred-canvas-line1-toi">{line.toiMins}m together</span>
+                <span className="pred-canvas-line1-toi text-[11px] text-[rgba(255,255,255,0.3)]">{line.toiMins}m together</span>
               )}
             </div>
-            <div className="pred-canvas-line1-players">
+            <div className="pred-canvas-line1-players flex gap-[18px] flex-wrap">
               {line.players.map((p, i) => (
-                <span key={i} className="pred-canvas-line1-player">
-                  <span className="pred-canvas-line1-pos">{POS_LABEL[p.pos] || p.pos}</span>
+                <span key={i} className="pred-canvas-line1-player text-[14px] font-semibold text-[rgba(255,255,255,0.8)] flex items-baseline gap-[5px]">
+                  <span className="pred-canvas-line1-pos text-[10px] font-bold text-[rgba(255,255,255,0.3)] uppercase tracking-[0.04em]">{POS_LABEL[p.pos] || p.pos}</span>
                   {p.name}
                 </span>
               ))}
@@ -174,21 +198,21 @@ function PredictionCanvas({
 
       {/* Odds */}
       {odds && (
-        <div className="pred-canvas-odds">
-          <div className="pred-canvas-odds-item">
-            <span className="pred-canvas-odds-team car">{TEAM_CONFIG.abbr}</span>
-            <span className="pred-canvas-odds-val">{odds.carOdds > 0 ? `+${odds.carOdds}` : odds.carOdds}</span>
+        <div className="pred-canvas-odds flex items-center justify-between py-2.5 px-[52px] border-t-[0.5px] border-t-[rgba(255,255,255,0.06)]">
+          <div className="pred-canvas-odds-item flex flex-col items-center gap-[3px]">
+            <span className="pred-canvas-odds-team car text-[14px] font-bold text-[color:var(--team-canvas)]">{TEAM_CONFIG.abbr}</span>
+            <span className="pred-canvas-odds-val text-[26px] font-extrabold text-[rgba(255,255,255,0.7)]">{odds.carOdds > 0 ? `+${odds.carOdds}` : odds.carOdds}</span>
           </div>
-          <div className="pred-canvas-odds-book">{odds.book}</div>
-          <div className="pred-canvas-odds-item">
-            <span className="pred-canvas-odds-team" style={{color: oppColor}}>{oppAbbr}</span>
-            <span className="pred-canvas-odds-val">{odds.oppOdds > 0 ? `+${odds.oppOdds}` : odds.oppOdds}</span>
+          <div className="pred-canvas-odds-book text-[13px] text-[rgba(255,255,255,0.2)]">{odds.book}</div>
+          <div className="pred-canvas-odds-item flex flex-col items-center gap-[3px]">
+            <span className="pred-canvas-odds-team text-[14px] font-bold text-[rgba(255,255,255,0.4)]" style={{color: oppColor}}>{oppAbbr}</span>
+            <span className="pred-canvas-odds-val text-[26px] font-extrabold text-[rgba(255,255,255,0.7)]">{odds.oppOdds > 0 ? `+${odds.oppOdds}` : odds.oppOdds}</span>
           </div>
         </div>
       )}
 
       {/* Footer */}
-      <div className="pred-canvas-footer">
+      <div className={PRED_CANVAS_FOOTER_CLASSES}>
         <span>eyewallanalytics.com</span>
         <span>{TEAM_CONFIG.hashtags?.[0] || `#${TEAM_CONFIG.abbr}`}</span>
       </div>
