@@ -474,7 +474,7 @@ function XgfSparkline({ data }) {
           </span>
           <span style={{
             marginLeft: 'auto', fontWeight: 500,
-            color: ttGame.xgfPct >= 50 ? 'var(--good)' : 'var(--bad)',
+            color: ttGame.xgfPct >= 50 ? 'var(--green)' : 'var(--red-bright)',
           }}>
             {ttGame.xgfPct.toFixed(1)}%
           </span>
@@ -484,6 +484,7 @@ function XgfSparkline({ data }) {
       <Sparkline
         points={games.map(g => ({ value: g.xgfPct, ...g }))}
         color={teamColor}
+        haloColor="var(--bg2)"
         width={320} height={72} padding={{ left: 28, right: 8, top: 8, bottom: 8 }}
         yDomain={{ min: 0, max: 100, pad: 5 }}
         referenceValue={50}

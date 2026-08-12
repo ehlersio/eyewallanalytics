@@ -69,15 +69,22 @@
    PlayersView.css additions
    ════════════════════════════════════════════════════════════════ */
 
-/* Row dividers */
+/* Row dividers. .sst-td's own descendant-selector shape
+   (.sst-row.even .sst-td:not(.sticky)) stopped matching anything during
+   Phase 3's Tailwind migration -- even/odd row state moved from a row-level
+   ".even" class + descendant selector to a flat per-cell "sst-td-even"
+   marker computed directly in tdClasses(), silently orphaning this rule
+   since PR #21/#22 merged (undetected until this phase's full-app sweep,
+   the same shape as lesson #21: a light-mode gap surviving several
+   sub-PRs past when the pattern it depended on changed shape). Retargeted
+   at the marker that actually exists now. */
 [data-theme="light"] .stat-row,
-[data-theme="light"] .sst-td,
-[data-theme="light"] .sst-row.even .sst-td:not(.sticky) {
+[data-theme="light"] .sst-td {
   border-bottom-color: rgba(0,0,0,0.06);
   background: transparent;
 }
 
-[data-theme="light"] .sst-row.even .sst-td:not(.sticky) {
+[data-theme="light"] .sst-td-even {
   background: rgba(0,0,0,0.02);
 }
 

@@ -456,9 +456,16 @@
 /* Hoisted here (Session 97, Phase 3, sub-PR 3) from PlayersView.css's
    .player-popup entrance animation, referenced via Tailwind's
    animate-[slide-up_...] arbitrary syntax now that .player-popup itself is
-   migrated. ScheduleView.css independently defines the same keyframe with
-   identical values for its own .game-popup -- left as-is, out of scope for
-   this phase. */
+   migrated. ScheduleView.css independently defined the same keyframe with
+   identical values for its own .game-popup -- that file is now fully
+   deleted (Phase 6); .game-popup's entrance animation (along with the rest
+   of its base card styling -- background/border/radius/sizing/shadow) was
+   silently dropped during that migration rather than ported to Tailwind on
+   GameStatsPopup.jsx's own element, undetected until this phase's
+   full-app dead-token/collision sweep. Fixed by giving GameStatsPopup.jsx
+   the same animate-[slide-up_...]/animate-[pop-in_...] pair the
+   player-popup family already uses, referencing this same shared
+   keyframe -- no new duplicate. */
 @keyframes slide-up {
   from { transform: translateY(40px); opacity: 0; }
   to   { transform: translateY(0); opacity: 1; }
