@@ -98,6 +98,9 @@ const PILL_RED_CLASSES = 'inline-flex items-center gap-[5px] py-[3px] px-[10px] 
 // shared-variant-function risk).
 const DUAL_BAR_CLASSES = 'dual-bar flex h-[5px] rounded-[3px] overflow-hidden bg-[rgba(255,255,255,0.07)]';
 const FILL_TEAM_PRIMARY_CLASSES = 'h-full bg-[var(--team-primary)] opacity-[0.85]';
+// .two-col (index.css, Phase 7b) -- see ShotMapView.jsx's identical comment
+// (only 2 real consumers app-wide, this file and ShotMapView.jsx).
+const TWO_COL_CLASSES = 'grid grid-cols-[1fr_260px] gap-3 min-h-[400px] items-start max-[700px]:grid-cols-1';
 const FILL_BLUE_CLASSES = 'h-full bg-[var(--blue-bright)] [transition:width_0.4s_ease]';
 
 const metricsGridClasses = (cols) => cols === 4
@@ -2127,7 +2130,7 @@ export default function PWHLShotMapView() {
       )}
 
       {/* ── two-col: left = rink, right = scorers + team stats ── */}
-      <div className="two-col">
+      <div className={TWO_COL_CLASSES}>
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <div className="card">
             <div className="sec-label">{abbr} Shot Locations</div>

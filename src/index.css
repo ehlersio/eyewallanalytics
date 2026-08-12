@@ -332,19 +332,14 @@
    since Phase 4. No light-mode override, no Cypress selector dependency --
    clean conversion, no marker class needed. */
 
-.two-col {
-  display: grid;
-  grid-template-columns: 1fr 260px;
-  gap: 12px;
-  min-height: 400px;  /* prevents CLS from content loading in */
-  align-items: start;
-}
-
-@media (max-width: 700px) {
-  .two-col { grid-template-columns: 1fr; }
-  /* .hide-mobile confirmed genuinely dead (Phase 7b) -- same triple-check
-     as the other dead classes above -- dropped. */
-}
+/* .two-col migrated to Tailwind (Phase 7b) -- only 2 real consumers
+   app-wide (ShotMapView.jsx/PWHLShotMapView.jsx's TWO_COL_CLASSES
+   constant, local to each file rather than a shared module). No
+   light-mode override, no Cypress selector dependency -- clean
+   conversion, no marker class needed.
+   .hide-mobile (previously in this same @media block) confirmed
+   genuinely dead (Phase 7b) -- same triple-check as the other dead
+   classes above -- dropped. */
 
 /* Shared popup-open animation (Session 95, Phase 1) -- was duplicated
    identically in AboutPopup.css and NotificationBell.css; hoisted here so
