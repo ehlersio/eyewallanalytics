@@ -32,6 +32,7 @@ import GameChipsRow, { LiveGameChip } from '../components/GameChipsRow';
 import SeasonChipRow from '../components/SeasonChipRow';
 import SeasonTypeToggle from '../components/SeasonTypeToggle';
 import { rinkBtnClasses } from '../utils/rinkBtnClasses';
+import { PAGE_CLASSES } from '../utils/pageClasses';
 // ShotMapView.css import removed (Phase 5, sub-PR 6) -- the file is now
 // fully deleted, every rule migrated to Tailwind across all 6 sub-PRs.
 
@@ -1797,7 +1798,7 @@ export default function PWHLShotMapView() {
   const oppAbbr = scoreBarData?.oppAbbr;
 
   if (!abbr) return (
-    <div className="page">
+    <div className={PAGE_CLASSES}>
       <div className="card" style={{ textAlign:'center', padding:32 }}>
         <p style={{ color:'var(--text-dim)' }}>No PWHL team selected.</p>
       </div>
@@ -1805,7 +1806,7 @@ export default function PWHLShotMapView() {
   );
 
   return (
-    <div className="page">
+    <div className={PAGE_CLASSES}>
 
       {/* ── Score bar ── */}
       <div className={SCORE_CARD_CLASSES} onClick={handleDebugTap} style={{ userSelect: 'none' }}>

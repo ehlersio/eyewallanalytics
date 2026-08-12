@@ -12,6 +12,7 @@ import {
 import TeamLogo from '../components/TeamLogo';
 import PWHLGameStatsPopup from '../components/PWHLGameStatsPopup';
 import PWHLGamePreviewPopup from '../components/PWHLGamePreviewPopup';
+import { PAGE_CLASSES } from '../utils/pageClasses';
 // ScheduleView.css import removed (Phase 6, ScheduleView.css sub-PR 5, the
 // final sub-PR) -- the file is now fully deleted, all classes migrated to
 // Tailwind across sub-PRs 1-5.
@@ -181,7 +182,7 @@ export default function PWHLScheduleView() {
 
   if (!abbr || !teamId) {
     return (
-      <div className="page">
+      <div className={PAGE_CLASSES}>
         <div className="card" style={{ textAlign: 'center', padding: 32 }}>
           <p style={{ color: 'var(--text-dim)' }}>No PWHL team selected.</p>
         </div>
@@ -190,7 +191,7 @@ export default function PWHLScheduleView() {
   }
 
   return (
-    <div className="page" ref={pageRef}>
+    <div className={PAGE_CLASSES} ref={pageRef}>
       <div className="sched-header mb-3">
         <h2 className="sched-title font-[family-name:var(--font-display)] text-[18px] font-bold mb-0.5">
           <TeamLogo abbr={abbr} sport="pwhl" size={22} color={color} />

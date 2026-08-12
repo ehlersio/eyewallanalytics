@@ -11,6 +11,7 @@ import { useSport } from '../utils/SportContext';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
 import TeamComparisonPopup from '../components/TeamComparisonPopup';
+import { PAGE_CLASSES } from '../utils/pageClasses';
 // ShotMapView.css import removed (Phase 5, sub-PR 1) -- this file's only
 // dependency on it was .metrics-grid/.metrics-grid-4, now fully migrated
 // to METRICS_GRID_4_CLASSES below. ShotMapView.jsx/PWHLShotMapView.jsx
@@ -215,7 +216,7 @@ export default function PWHLTeamView() {
 
   if (!abbr || !teamId) {
     return (
-      <div className="page">
+      <div className={PAGE_CLASSES}>
         <div className="card" style={{ textAlign: 'center', padding: 32 }}>
           <p style={{ color: 'var(--text-dim)' }}>No PWHL team selected.</p>
         </div>
@@ -229,7 +230,7 @@ export default function PWHLTeamView() {
   const seasonLabel = PWHL_SEASONS.find(s => s.id === currentSeason)?.label || `Season ${currentSeason}`;
 
   return (
-    <div className="page team-view">
+    <div className={`${PAGE_CLASSES} team-view`}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
         <TeamLogo abbr={abbr} sport="pwhl" size={28} color={color} />
         <h2 className={VIEW_TITLE_CLASSES} style={{ margin: 0 }}>{team.displayName}</h2>

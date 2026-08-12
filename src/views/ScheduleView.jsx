@@ -14,6 +14,7 @@ import { GameStatsPopup } from '../components/GameStatsPopup';
 import { SeriesCard, SortBar, GameCard } from '../components/GameCard';
 import { MatchupDetail, computeWinPct } from '../components/MatchupDetail';
 import { isStandingsStale } from '../utils/standingsUtils';
+import { PAGE_CLASSES } from '../utils/pageClasses';
 // ScheduleView.css import removed (Phase 6, ScheduleView.css sub-PR 5, the
 // final sub-PR) -- the file is now fully deleted, all classes migrated to
 // Tailwind across sub-PRs 1-5.
@@ -158,7 +159,7 @@ export default function ScheduleView() {
   }), { w: 0, l: 0 });
 
   return (
-    <div className="page" ref={pageRef}>
+    <div className={PAGE_CLASSES} ref={pageRef}>
       <div className="sched-header mb-3">
         <h2 className="sched-title font-[family-name:var(--font-display)] text-[18px] font-bold mb-0.5">{TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} Schedule</h2>
         {carStanding && (

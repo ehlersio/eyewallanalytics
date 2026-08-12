@@ -321,12 +321,16 @@
   color: var(--team-primary);
 }
 
-/* Responsive layout containers */
-.page { 
-  height: calc(100vh - var(--topbar-height) - var(--nav-height));
-  overflow-y: auto;
-  padding: 14px;
-}
+/* .page migrated to Tailwind (Phase 7b) -- src/utils/pageClasses.js's
+   PAGE_CLASSES constant, shared across its 10 real consumers (found via
+   literal-string grep AND template-literal interpolation grep --
+   NewsView.jsx/PWHLNewsView.jsx compose it as `${NEWS_VIEW_CLASSES} page`,
+   not a bare literal, which the first pass missed). The height calc had
+   an already-proven live precedent as a Tailwind arbitrary value --
+   DevReplayView.jsx/PWHLDevReplayView.jsx's DEV_REPLAY_CLASSES used the
+   identical `calc(100vh-var(--topbar-height)-var(--nav-height))` formula
+   since Phase 4. No light-mode override, no Cypress selector dependency --
+   clean conversion, no marker class needed. */
 
 .two-col {
   display: grid;
@@ -340,7 +344,6 @@
   .two-col { grid-template-columns: 1fr; }
   /* .hide-mobile confirmed genuinely dead (Phase 7b) -- same triple-check
      as the other dead classes above -- dropped. */
-  .page { padding: 10px; }
 }
 
 /* Shared popup-open animation (Session 95, Phase 1) -- was duplicated
