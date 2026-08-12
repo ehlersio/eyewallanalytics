@@ -1560,7 +1560,7 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
               style={isPrimary ? {
                 '--row-accent': PRIMARY_COLOR,
                 borderLeft: `3px solid ${PRIMARY_COLOR}`,
-                background: `color-mix(in srgb, ${PRIMARY_COLOR} 8%, var(--surface))`,
+                background: `color-mix(in srgb, ${PRIMARY_COLOR} 8%, var(--bg1))`,
               } : {}}
             >
               <span className={PR_COL_RANK_CLASSES}>

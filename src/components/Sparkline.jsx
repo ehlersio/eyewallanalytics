@@ -10,6 +10,14 @@
 export default function Sparkline({
   points,                            // [{ value: number, ...caller-owned fields }]
   color = 'var(--team-primary)',
+  // The hover-dot halo ring's stroke -- must match whatever background this
+  // instance is actually rendered on so the ring reads as a cutout rather
+  // than a visible edge. Was hardcoded `var(--bg)`, a token that's never
+  // been defined anywhere in the app (only --bg0 through --bg4 exist) --
+  // silently invalid, so the halo never rendered at all in either caller.
+  // No single default is correct for both: LeagueView's RankSparkline sits
+  // on --bg1 (its card), TeamView's XgfSparkline sits on --bg2 (.card).
+  haloColor = 'var(--bg1)',
   width = 240,
   height = 80,
   padding = 16,                      // number, or { left, right, top, bottom }
@@ -135,7 +143,7 @@ export default function Sparkline({
 
       {hoverIndex != null && points[hoverIndex] && (
         <circle cx={toX(hoverIndex)} cy={toY(points[hoverIndex].value)} r="4"
-          fill={color} stroke="var(--bg)" strokeWidth="2" />
+          fill={color} stroke={haloColor} strokeWidth="2" />
       )}
     </svg>
   );

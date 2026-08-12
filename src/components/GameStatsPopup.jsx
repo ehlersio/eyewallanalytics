@@ -178,7 +178,7 @@ function GameStatsPopup({ game, onClose }) {
 
   return (
     <div className="popup-backdrop" onClick={onClose}>
-      <div className="game-popup relative" ref={modalRef} onClick={e => e.stopPropagation()}
+      <div className="game-popup relative bg-[var(--bg1)] border-[0.5px] border-[color:var(--border-2)] rounded-t-[var(--radius-lg)] w-full max-w-[480px] max-h-[90vh] overflow-y-auto shadow-[0_-8px_40px_rgba(0,0,0,0.5)] animate-[slide-up_0.2s_cubic-bezier(0.34,1.2,0.64,1)] min-[560px]:rounded-[var(--radius-lg)] min-[560px]:animate-[pop-in_0.2s_cubic-bezier(0.34,1.2,0.64,1)]" ref={modalRef} onClick={e => e.stopPropagation()}
         onScroll={e => setShowTop(e.target.scrollTop > 200)}>
         {showTop && (
           <button className="gsp-top-btn sticky top-2 float-right mt-2 mr-3 py-[5px] px-3 bg-[var(--bg3)] border-[0.5px] border-[color:var(--border)] rounded-[20px] text-[11px] font-semibold text-[color:var(--text-muted)] cursor-pointer z-10 hover:text-[color:var(--text)] hover:bg-[var(--bg2)]" onClick={() => modalRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}>

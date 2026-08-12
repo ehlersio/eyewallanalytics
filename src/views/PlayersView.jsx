@@ -74,7 +74,7 @@ const SST_WRAP_CLASSES = 'mb-[12px]'
 const SST_SCROLL_CLASSES = 'overflow-x-auto [-webkit-overflow-scrolling:touch] rounded-[10px] border-[0.5px] border-[var(--border)]'
 const SST_TABLE_CLASSES = 'sst-table border-collapse w-full min-w-[680px] text-[12px]'
 const SST_TH_BASE_CLASSES = 'py-2 px-[6px] text-[11px] font-bold border-b-[0.5px] border-[var(--border)] whitespace-nowrap relative select-none'
-const SST_TD_BASE_CLASSES = 'py-2 px-[6px] border-b-[0.5px] border-[rgba(255,255,255,0.04)] whitespace-nowrap'
+const SST_TD_BASE_CLASSES = 'sst-td py-2 px-[6px] border-b-[0.5px] border-[rgba(255,255,255,0.04)] whitespace-nowrap'
 const STICKY_CLASSES = 'sticky left-0 z-[2] bg-[var(--bg2)] border-r-[0.5px] border-[var(--border)]'
 const SST_SORT_ICON_CLASSES = 'text-[10px]'
 const SST_ROW_CLASSES = 'sst-row cursor-pointer [transition:background_0.1s] hover:bg-[var(--bg3)]'
@@ -95,7 +95,7 @@ function tdClasses(col, isEvenRow) {
     : col.bold
       ? 'text-[color:var(--text)] font-bold font-[family-name:var(--font-mono)]'
       : 'text-[color:var(--text-muted)] font-[family-name:var(--font-mono)]'
-  const evenBg = isEvenRow && !col.sticky ? 'bg-[rgba(255,255,255,0.015)]' : ''
+  const evenBg = isEvenRow && !col.sticky ? 'sst-td-even bg-[rgba(255,255,255,0.015)]' : ''
   return `${SST_TD_BASE_CLASSES} ${alignClasses(col.align)} ${colorFont} ${evenBg}`
 }
 
