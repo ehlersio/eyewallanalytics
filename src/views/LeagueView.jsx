@@ -334,8 +334,9 @@ const SERIES_MODAL_EXTRA_CLASSES = 'text-[10px] font-bold text-[color:var(--text
 // rgba(255,255,255,0.04))` was left alone at the time -- hover-only,
 // matching the established pattern. Follow-up (post-migration): --surface-
 // hover now has a real definition in index.css, so the fallback here is
-// dead weight -- dropped. Still no light-mode value (separate hover-tint
-// sweep). Property-race collisions: closed out the 2
+// dead weight -- dropped. Now has a light-mode value too (hover-tint
+// sweep) -- see index.css's [data-theme="light"] block. Property-race
+// collisions: closed out the 2
 // instances already identified in the original investigation --
 // .pr-rank-num/--top/--bot and .pr-col-stat/--gd-pos/--neg, both racing
 // on `color` (base sets it unconditionally, modifiers override it) -- no
