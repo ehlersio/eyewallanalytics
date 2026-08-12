@@ -106,6 +106,20 @@ const SCORE_STATE_CLASSES = 'text-[10px] text-[color:var(--text-dim)]';
 // file's only real consumer of either class (.pill-green/.pill-amber were
 // confirmed 100% dead app-wide during Phase 5 sub-PR 3's investigation).
 const PILL_RED_CLASSES = 'inline-flex items-center gap-[5px] py-[3px] px-[10px] rounded-[20px] text-[11px] font-medium bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[0.5px] border-[color:var(--red-border)]';
+// .dual-bar/.fill-blue (index.css, Phase 7b) -- "dual-bar" is kept as a
+// literal marker class (no properties of its own left) since index.css's
+// `[data-theme="light"] .dual-bar {...}` override still targets it by
+// name; unlayered CSS always beats a layered Tailwind utility, so the dark
+// bg below stays a plain Tailwind class while only the light-mode
+// override needs the real selector. .fill-team-primary/.fill-blue have no
+// light-mode override (checked light-mode-overrides.css and index.css
+// itself) and no compositional risk like .team-primary-text's shared
+// variant functions (these are literal per-callsite classNames, not
+// composed through a shared xxxClasses(variant) factory), so both convert
+// cleanly with no marker needed.
+const DUAL_BAR_CLASSES = 'dual-bar flex h-[5px] rounded-[3px] overflow-hidden bg-[rgba(255,255,255,0.07)]';
+const FILL_TEAM_PRIMARY_CLASSES = 'h-full bg-[var(--team-primary)] opacity-[0.85]';
+const FILL_BLUE_CLASSES = 'h-full bg-[var(--blue-bright)] [transition:width_0.4s_ease]';
 
 const metricsGridClasses = (cols) => cols === 4
   ? 'grid grid-cols-4 gap-2 mb-2'
@@ -2206,9 +2220,9 @@ export default function ShotMapView() {
                           {label}
                           <InfoTip text={help} position="above" />
                         </div>
-                        <div className="dual-bar">
-                          <div className="fill-team-primary" style={{width:`${Math.round((carN||0)/total*100)}%`}} />
-                          <div className="fill-blue" style={{width:`${Math.round((oppN||0)/total*100)}%`}} />
+                        <div className={DUAL_BAR_CLASSES}>
+                          <div className={FILL_TEAM_PRIMARY_CLASSES} style={{width:`${Math.round((carN||0)/total*100)}%`}} />
+                          <div className={FILL_BLUE_CLASSES} style={{width:`${Math.round((oppN||0)/total*100)}%`}} />
                         </div>
                       </div>
                       <span className={gmStatValClasses('muted')}>{fmt(oppN)}</span>
@@ -2238,9 +2252,9 @@ export default function ShotMapView() {
                     <span className={gmStatValClasses('team-primary')}>{fmtVal(carVal)}</span>
                     <div className={GM_STAT_MID_CLASSES}>
                       <div className={GM_STAT_LABEL_CLASSES}>{humanLabel(row.category)}</div>
-                      <div className="dual-bar">
-                        <div className="fill-team-primary" style={{width:`${Math.round(carN/total*100)}%`}} />
-                        <div className="fill-blue"         style={{width:`${Math.round(oppN/total*100)}%`}} />
+                      <div className={DUAL_BAR_CLASSES}>
+                        <div className={FILL_TEAM_PRIMARY_CLASSES} style={{width:`${Math.round(carN/total*100)}%`}} />
+                        <div className={FILL_BLUE_CLASSES}         style={{width:`${Math.round(oppN/total*100)}%`}} />
                       </div>
                     </div>
                     <span className={gmStatValClasses('muted')}>{fmtVal(oppVal)}</span>
