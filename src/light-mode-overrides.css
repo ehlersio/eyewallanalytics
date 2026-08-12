@@ -226,3 +226,15 @@
 [data-theme="light"] .pbs-row.has-points {
   background: rgba(0,0,0,0.02);
 }
+
+/* ════════════════════════════════════════════════════════════════
+   ScoutingTab.css additions (Phase 6) -- host file fully deleted,
+   .scouting-goalie-row kept as a literal marker on the migrated Tailwind
+   element in ScoutingTab.jsx specifically so this rule keeps applying.
+   ════════════════════════════════════════════════════════════════ */
+
+/* scouting-goalie-row: rgba(255,255,255,0.02) background is invisible on light,
+   same shape as pbs-row.has-points above */
+[data-theme="light"] .scouting-goalie-row {
+  background: rgba(0,0,0,0.02);
+}
