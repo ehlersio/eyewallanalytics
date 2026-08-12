@@ -4,6 +4,7 @@ import { getRoster, getPlayoffGames, getStandings, TEAM_CONFIG } from '../utils/
 import { getTeamSkaterStatsFromDB } from '../utils/supabaseClient'
 import { useSport } from '../utils/SportContext'
 import { isStandingsStale } from '../utils/standingsUtils'
+import { PAGE_CLASSES } from '../utils/pageClasses'
 import TeamLogo from '../components/TeamLogo'
 import PlayerPopup from '../components/PlayerPopup'
 
@@ -130,7 +131,7 @@ export default function PlayersView() {
   )
 
   return (
-    <div className="page">
+    <div className={PAGE_CLASSES}>
       <div className={HEADER_WRAP_CLASSES}>
         <h2 className={VIEW_TITLE_CLASSES}>
           <TeamLogo abbr={TEAM_CONFIG.abbr} size={22} />

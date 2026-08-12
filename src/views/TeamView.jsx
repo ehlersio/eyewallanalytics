@@ -18,6 +18,7 @@ import TeamLogo from '../components/TeamLogo'
 import TeamComparisonPopup from '../components/TeamComparisonPopup'
 import Sparkline from '../components/Sparkline'
 import { TEAM_COLORS } from '../utils/nhlApi'
+import { PAGE_CLASSES } from '../utils/pageClasses'
 
 // .view-title (Session 97, Phase 3) -- was PlayersView.css's, genuinely
 // shared with PlayersView.jsx/PWHLPlayersView.jsx/PWHLTeamView.jsx. Migrated
@@ -291,7 +292,7 @@ export default function TeamView() {
   const sortedContracts = [...CONTRACTS].sort((a, b) => b.capHit - a.capHit)
 
   return (
-    <div className="page team-view">
+    <div className={`${PAGE_CLASSES} team-view`}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
         <TeamLogo abbr={TEAM_CONFIG.abbr} size={28} />
         <h2 className={VIEW_TITLE_CLASSES} style={{ margin: 0 }}>{TEAM_CONFIG.displayName}</h2>

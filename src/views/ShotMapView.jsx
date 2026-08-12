@@ -34,6 +34,7 @@ import { useWakeLock } from '../hooks/useWakeLock';
 import PeriodSummary from '../components/PeriodSummary';
 import { usePeriodSummary, useGameSummary } from '../hooks/usePeriodSummary';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
+import { PAGE_CLASSES } from '../utils/pageClasses';
 
 const WINDOW_MINS = 3; // rolling window for momentum calculation
 
@@ -1729,7 +1730,7 @@ export default function ShotMapView() {
 
   return (
     <>
-    <div className="page" ref={pageRef}>
+    <div className={PAGE_CLASSES} ref={pageRef}>
 
       {/* ── Period summary auto-popup ── */}
       {newSummary && !viewingSummary && (

@@ -16,6 +16,7 @@ import {
   NEWS_PAGE_INFO_CLASSES, NEWS_VIEW_TOGGLE_CLASSES, newsViewToggleBtnClasses,
   NEWS_VIEW_TOGGLE_DOT_CLASSES,
 } from '../utils/newsViewClasses';
+import { PAGE_CLASSES } from '../utils/pageClasses';
 
 const WORKER_URL  = import.meta.env.VITE_WORKER_URL || '';
 const PAGE_SIZE   = 10;
@@ -163,7 +164,7 @@ export default function NewsView() {
   );
 
   return (
-    <div className={`${NEWS_VIEW_CLASSES} page`}>
+    <div className={`${NEWS_VIEW_CLASSES} ${PAGE_CLASSES}`}>
       {/* News / Milestones toggle */}
       <div className={NEWS_VIEW_TOGGLE_CLASSES}>
         <button

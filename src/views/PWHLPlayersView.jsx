@@ -6,6 +6,7 @@ import { fetchPWHLPlayers, PWHL_TEAM_CONFIG, PWHL_TEAM_ID } from '../utils/pwhlA
 import { PWHL_CURRENT_SEASON, PWHL_REGULAR_SEASONS } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
+import { PAGE_CLASSES } from '../utils/pageClasses';
 
 // Tailwind migration (Session 97, Phase 3, sub-PR 1) -- see PlayersView.jsx
 // for the full rationale (cascade-layer note on .player-card's hover/active
@@ -155,7 +156,7 @@ export default function PWHLPlayersView() {
 
   if (!abbr || !teamId) {
     return (
-      <div className="page">
+      <div className={PAGE_CLASSES}>
         <div className="card" style={{ textAlign: 'center', padding: 32 }}>
           <p style={{ color: 'var(--text-dim)' }}>No PWHL team selected.</p>
         </div>
@@ -164,7 +165,7 @@ export default function PWHLPlayersView() {
   }
 
   return (
-    <div className="page">
+    <div className={PAGE_CLASSES}>
       <div className={HEADER_WRAP_CLASSES}>
         <h2 className={VIEW_TITLE_CLASSES}>
           <TeamLogo abbr={abbr} sport="pwhl" size={22} color={color} />
