@@ -31,6 +31,7 @@ import InfoTip from '../components/InfoTip';
 import GameChipsRow, { LiveGameChip } from '../components/GameChipsRow';
 import SeasonChipRow from '../components/SeasonChipRow';
 import SeasonTypeToggle from '../components/SeasonTypeToggle';
+import { rinkBtnClasses } from '../utils/rinkBtnClasses';
 // ShotMapView.css import removed (Phase 5, sub-PR 6) -- the file is now
 // fully deleted, every rule migrated to Tailwind across all 6 sub-PRs.
 
@@ -1907,14 +1908,14 @@ export default function PWHLShotMapView() {
       {hasPBP && periodSummaries.length > 0 && (
         <div style={{ display:'flex', gap:8, flexWrap:'wrap', padding:'0 0 4px' }}>
           {periodSummaries.map(s => (
-            <button key={s.period} className="rink-btn"
+            <button key={s.period} className={rinkBtnClasses({ active: false })}
               style={{ fontSize:11, padding:'3px 10px' }}
               onClick={() => setViewingSummaryPeriod(s.period)}>
               {s.periodShort} Summary
             </button>
           ))}
           {gameSummary && (
-            <button className="rink-btn"
+            <button className={rinkBtnClasses({ active: false })}
               style={{ fontSize:11, padding:'3px 10px', fontWeight:600 }}
               onClick={() => setViewingSummaryPeriod('game')}>
               📊 Game Summary

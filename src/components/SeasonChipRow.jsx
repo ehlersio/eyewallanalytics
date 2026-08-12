@@ -2,10 +2,10 @@
 // Shared season-selector chip stack (Session 77 — shot map history
 // selector). Extracted from PWHLShotMapView.jsx's inline season-button
 // stack so ShotMapView.jsx (NHL) uses the same UI/behavior rather than a
-// forked copy. Styling reuses the existing `.rink-btn` class (IceRink.css,
-// already loaded by both shot map views, out of scope, left untouched)
-// plus the overflow dropdown's own classes -- migrated to Tailwind here
-// (Phase 5, ShotMapView.css sub-PR 6, the final sub-PR for that file).
+// forked copy. Styling reuses the shared `rinkBtnClasses()` helper
+// (originally IceRink.css's `.rink-btn`, Phase 6) plus the overflow
+// dropdown's own classes -- migrated to Tailwind here (Phase 5,
+// ShotMapView.css sub-PR 6, the final sub-PR for that file).
 //
 // Only the recent/visible seasons show as inline chips — `archiveSeasons`
 // (older seasons) live behind a "More" overflow chip instead of crowding
@@ -23,6 +23,7 @@
 // adding a competing `hover:text-*` utility to the active variant would
 // just be dead weight, not a behavior match.
 import { useEffect, useRef, useState } from 'react';
+import { rinkBtnClasses } from '../utils/rinkBtnClasses';
 
 const SEASON_ARCHIVE_DROPDOWN_CLASSES = 'season-archive-dropdown absolute top-[calc(100%+4px)] right-0 z-20 flex flex-col gap-0.5 p-1.5 min-w-[96px] max-h-[220px] overflow-y-auto bg-[var(--bg2)] border-[0.5px] border-[color:var(--border-2)] rounded-[var(--radius-md,10px)] shadow-[0_8px_24px_rgba(0,0,0,0.35)]';
 const seasonArchiveItemClasses = (active) => {
@@ -63,7 +64,7 @@ export default function SeasonChipRow({ seasons, archiveSeasons = [], selected, 
       title={disabled ? disabledReason : undefined}>
       {seasons.map(s => (
         <button key={s.id}
-          className={`rink-btn${selected === s.id ? ' on' : ''}`}
+          className={rinkBtnClasses({ active: selected === s.id })}
           style={chipStyle}
           aria-disabled={disabled}
           onClick={() => handleSelect(s.id)}>
@@ -73,7 +74,7 @@ export default function SeasonChipRow({ seasons, archiveSeasons = [], selected, 
       {archiveSeasons.length > 0 && (
         <div className="relative">
           <button
-            className={`rink-btn${selectedArchiveSeason ? ' on' : ''}`}
+            className={rinkBtnClasses({ active: !!selectedArchiveSeason })}
             style={chipStyle}
             aria-disabled={disabled}
             onClick={handleMoreClick}

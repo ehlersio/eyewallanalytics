@@ -22,6 +22,7 @@ import TeamLogo from '../components/TeamLogo';
 import GameChipsRow from '../components/GameChipsRow';
 import SeasonChipRow from '../components/SeasonChipRow';
 import SeasonTypeToggle from '../components/SeasonTypeToggle';
+import { rinkBtnClasses } from '../utils/rinkBtnClasses';
 import DisabledHint from '../components/DisabledHint';
 // ShotMapView.css import removed (Phase 5, sub-PR 6) -- the file is now
 // fully deleted, every rule migrated to Tailwind across all 6 sub-PRs.
@@ -3706,7 +3707,7 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
         <div style={{ display: 'flex', gap: 4 }}>
           {[5, 10, 0].map(w => (
             <button key={w}
-              className={`rink-btn${window === w ? ' on' : ''}`}
+              className={rinkBtnClasses({ active: window === w })}
               style={{ padding: '2px 8px', fontSize: 10, minHeight: 'unset', minWidth: 'unset' }}
               onClick={() => setWindow(w)}>
               {w === 0 ? 'Full' : `${w}m`}
