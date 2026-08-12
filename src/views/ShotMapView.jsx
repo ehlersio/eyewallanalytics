@@ -120,6 +120,13 @@ const PILL_RED_CLASSES = 'inline-flex items-center gap-[5px] py-[3px] px-[10px] 
 // cleanly with no marker needed.
 const DUAL_BAR_CLASSES = 'dual-bar flex h-[5px] rounded-[3px] overflow-hidden bg-[rgba(255,255,255,0.07)]';
 const FILL_TEAM_PRIMARY_CLASSES = 'h-full bg-[var(--team-primary)] opacity-[0.85]';
+// .two-col (index.css, Phase 7b) -- only 2 real consumers app-wide
+// (ShotMapView.jsx/PWHLShotMapView.jsx's rink+stats layout), confirmed via
+// literal-string grep, interpolation-pattern grep, cross-CSS-file grep, and
+// Cypress spec grep (none). No light-mode override. Kept local to each file
+// rather than a shared module, matching PILL_RED_CLASSES/DUAL_BAR_CLASSES's
+// precedent above for this exact NHL/PWHL pair.
+const TWO_COL_CLASSES = 'grid grid-cols-[1fr_260px] gap-3 min-h-[400px] items-start max-[700px]:grid-cols-1';
 const FILL_BLUE_CLASSES = 'h-full bg-[var(--blue-bright)] [transition:width_0.4s_ease]';
 
 const metricsGridClasses = (cols) => cols === 4
@@ -2065,7 +2072,7 @@ export default function ShotMapView() {
         </div>
       )}
 
-      <div className="two-col">
+      <div className={TWO_COL_CLASSES}>
         {/* ── Left: rink + event log ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div className="card">
