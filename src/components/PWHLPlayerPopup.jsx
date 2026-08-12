@@ -32,6 +32,7 @@ import PlayerComparisonEntry from './PlayerComparisonEntry';
 import {
   SKATER_STATS, GOALIE_STATS, PWHL_STAT_PCT_MAP, posLabel, groupStats as pwhlGroupStats,
 } from '../utils/pwhlPlayerStats';
+import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 // Tailwind migration (Session 97, Phase 3, sub-PR 2 + sub-PR 3) -- see
 // PlayerPopup.jsx for the full rationale. The former shell classes
 // (player-popup, pp-header, pp-header-reflow, pp-close, pp-body,
@@ -371,7 +372,7 @@ function PWHLScout({ player, isGoalie, seasonLabel }) {
       <div className={SCOUT_WRAP_CLASSES}>
         <div className={SCOUT_LOADING_CLASSES}>
           {[95, 88, 72, 90, 65].map((w, i) => (
-            <div key={i} className="skeleton" style={{ height: 11, width: `${w}%`, marginBottom: 10, borderRadius: 4 }} />
+            <div key={i} className={SKELETON_CLASSES} style={{ height: 11, width: `${w}%`, marginBottom: 10, borderRadius: 4 }} />
           ))}
         </div>
       </div>
@@ -419,7 +420,7 @@ function PWHLCompareSection({ label, stats, defs, loading }) {
     return (
       <div className="stat-section">
         <div className="stat-section-header"><span className="stat-section-label">{label}</span></div>
-        <div className="stat-section-body"><div className="skeleton" style={{ height: 11, width: '60%', margin: '8px 0' }} /></div>
+        <div className="stat-section-body"><div className={SKELETON_CLASSES} style={{ height: 11, width: '60%', margin: '8px 0' }} /></div>
       </div>
     );
   }

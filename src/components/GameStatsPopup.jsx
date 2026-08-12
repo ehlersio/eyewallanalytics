@@ -13,6 +13,7 @@ import { TEAM_CONFIG } from '../utils/teamConfig';
 
 // ── Game stats popup ─────────────────────────────────────────
 import { PeriodTable, SkaterTable, GoalsList } from '../components/GameStatsComponents';
+import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 
 // Styling used to come from ScheduleView.css -- migrated to Tailwind here
 // (Phase 6, ScheduleView.css sub-PR 3). The AI Game Summary Card block
@@ -270,7 +271,7 @@ function GameStatsPopup({ game, onClose }) {
           {loading && (
             <div className="gp-loading pt-5">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="skeleton" style={{ height: 12, marginBottom: 10, width: `${60 + i * 8}%` }} />
+                <div key={i} className={SKELETON_CLASSES} style={{ height: 12, marginBottom: 10, width: `${60 + i * 8}%` }} />
               ))}
             </div>
           )}

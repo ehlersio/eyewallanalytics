@@ -42,6 +42,7 @@ import {
   SKATER_STATS, GOALIE_STATS, groupStats, posLabel,
   STAT_PCT_MAP, computeRadarAxes, RADAR_AXIS_ABBR,
 } from '../utils/nhlPlayerStats'
+import { SKELETON_CLASSES } from '../utils/skeletonClasses'
 // Tailwind migration (Session 97, Phase 3, sub-PR 2 + sub-PR 3). Most of
 // this file's classes were migrated in sub-PR 2. The remaining shell
 // classes -- player-popup, pp-header, pp-header-reflow, pp-close, pp-body,
@@ -782,7 +783,7 @@ function ResultsVsProcess({ onIceGfPct, resultsVsProcessDiff, narrativeData }) {
       {narrativeData === undefined ? (
         <div className={SCOUT_LOADING_CLASSES}>
           {[92, 85, 70].map((w, i) => (
-            <div key={i} className="skeleton" style={{ height: 11, width: `${w}%`, marginBottom: 10, borderRadius: 4 }} />
+            <div key={i} className={SKELETON_CLASSES} style={{ height: 11, width: `${w}%`, marginBottom: 10, borderRadius: 4 }} />
           ))}
         </div>
       ) : narrativeData?.blurb ? (
@@ -802,7 +803,7 @@ function ScoutingBlurb({ data, playerName }) {
       <div className={SCOUT_WRAP_CLASSES}>
         <div className={SCOUT_LOADING_CLASSES}>
           {[95, 88, 72, 90, 65].map((w, i) => (
-            <div key={i} className="skeleton" style={{ height: 11, width: `${w}%`, marginBottom: 10, borderRadius: 4 }} />
+            <div key={i} className={SKELETON_CLASSES} style={{ height: 11, width: `${w}%`, marginBottom: 10, borderRadius: 4 }} />
           ))}
         </div>
       </div>
@@ -1297,7 +1298,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
             {loading && (
               <div className={PP_LOADING_CLASSES}>
                 {[80,60,70,50].map((w,i) => (
-                  <div key={i} className="skeleton" style={{ height: 11, width: `${w}%`, marginBottom: 10 }} />
+                  <div key={i} className={SKELETON_CLASSES} style={{ height: 11, width: `${w}%`, marginBottom: 10 }} />
                 ))}
               </div>
             )}

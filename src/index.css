@@ -351,16 +351,20 @@
   to   { opacity: 1; transform: translateY(0)   scale(1); }
 }
 
-/* Loading skeleton */
+/* Loading skeleton -- .skeleton migrated to Tailwind (Phase 7b),
+   src/utils/skeletonClasses.js's SKELETON_CLASSES constant, shared across
+   its 14 real consumers (confirmed via literal-string grep,
+   interpolation-pattern grep, cross-CSS-file grep, and Cypress spec grep --
+   the only Cypress hits were .lv-skeleton-wrap/.player-card-skeleton,
+   unrelated already-migrated classes). Every consumer pairs it with an
+   inline `style` prop for sizing, so the border-radius conversion carries
+   none of the usual cascade-layer collision risk -- inline styles always
+   win over class-based CSS regardless of layer. @keyframes shimmer stays
+   here as permanent infrastructure -- still its only consumer, now
+   referenced via an `animate-[shimmer_...]` Tailwind arbitrary value. */
 @keyframes shimmer {
   0% { background-position: -400px 0; }
   100% { background-position: 400px 0; }
-}
-.skeleton {
-  background: linear-gradient(90deg, var(--bg2) 25%, var(--bg3) 50%, var(--bg2) 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.4s infinite;
-  border-radius: var(--radius-sm);
 }
 
 /* Season-picker skeleton pulse (Session 95, Phase 1) -- was defined inline

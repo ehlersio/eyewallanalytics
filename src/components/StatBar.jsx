@@ -1,3 +1,4 @@
+import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 // Tailwind migration (Session 95, Phase 1) -- previously StatBar.css.
 const ROW_CLASSES   = 'mb-2.5';
 const LABEL_CLASSES  = 'text-[11px] text-[color:var(--text-muted)] mb-1';
@@ -69,8 +70,8 @@ export function MetCard({ label, value, sub, color, onClick }) {
 export function MetCardSkeleton() {
   return (
     <div className={MET_CARD_CLASSES}>
-      <div className="skeleton" style={{ height: 10, width: '60%', marginBottom: 8 }} />
-      <div className="skeleton" style={{ height: 22, width: '40%' }} />
+      <div className={SKELETON_CLASSES} style={{ height: 10, width: '60%', marginBottom: 8 }} />
+      <div className={SKELETON_CLASSES} style={{ height: 22, width: '40%' }} />
     </div>
   );
 }
