@@ -22,7 +22,16 @@ import TeamLogo from '../components/TeamLogo';
 import PlayerPopup from '../components/PlayerPopup';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from '../components/ShareButtons';
-import '../components/PredictionCanvas.css';
+// PredictionCanvas.css import removed (Phase 6) -- migrated to Tailwind.
+// PowerRankingsCanvas below never imported this CSS itself, relying on
+// PredictionShareCanvas.jsx having already loaded it elsewhere in the app
+// (same hidden-consumer shape as IceRink.css's .rink-btn) -- now imports
+// the shared shell classes from utils/predCanvasClasses.js instead.
+import {
+  PRED_CANVAS_CLASSES, PRED_CANVAS_HEADER_CLASSES, PRED_CANVAS_LOGO_CLASSES,
+  PRED_CANVAS_BADGE_CLASSES, PRED_CANVAS_AI_CLASSES, PRED_CANVAS_AI_LABEL_CLASSES,
+  PRED_CANVAS_AI_TEXT_CLASSES, PRED_CANVAS_FOOTER_CLASSES,
+} from '../utils/predCanvasClasses';
 import DraftTab from '../components/DraftTab';
 
 // .pp-close (Session 97, Phase 3, sub-PR 3) -- was PlayersView.css's,
@@ -1688,14 +1697,14 @@ function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, primaryColo
   return (
     <div
       id="pr-export-canvas"
-      className="pred-canvas"
+      className={PRED_CANVAS_CLASSES}
       style={{ '--team-canvas': primaryColor, background: '#1a1a2e' }}
     >
       {/* Header */}
-      <div className="pred-canvas-header">
-        <img src="/eyewall-logo.svg" alt="EyeWall" className="pred-canvas-logo"
+      <div className={PRED_CANVAS_HEADER_CLASSES}>
+        <img src="/eyewall-logo.svg" alt="EyeWall" className={PRED_CANVAS_LOGO_CLASSES}
           onError={e => { e.target.style.display = 'none'; }} />
-        <span className="pred-canvas-badge">Power Rankings</span>
+        <span className={PRED_CANVAS_BADGE_CLASSES}>Power Rankings</span>
       </div>
 
       {/* Hero — team logo, rank, movement, component bars */}
@@ -1750,9 +1759,9 @@ function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, primaryColo
 
       {/* AI narrative */}
       {narrative && (
-        <div className="pred-canvas-ai">
-          <div className="pred-canvas-ai-label">⚡ EyeWall AI</div>
-          <div className="pred-canvas-ai-text">{narrative}</div>
+        <div className={PRED_CANVAS_AI_CLASSES}>
+          <div className={PRED_CANVAS_AI_LABEL_CLASSES}>⚡ EyeWall AI</div>
+          <div className={PRED_CANVAS_AI_TEXT_CLASSES}>{narrative}</div>
         </div>
       )}
 
@@ -1801,7 +1810,7 @@ function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, primaryColo
       </div>
 
       {/* Footer */}
-      <div className="pred-canvas-footer">
+      <div className={PRED_CANVAS_FOOTER_CLASSES}>
         <span>eyewallanalytics.com</span>
         <span>{TEAM_CONFIG.hashtags?.[0] || `#${myTeam.abbr}`}</span>
       </div>
