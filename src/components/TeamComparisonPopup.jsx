@@ -11,15 +11,18 @@ import SeasonComparisonPicker from './SeasonComparisonPicker';
 import SeasonOverlayChart from './SeasonOverlayChart';
 import TeamOpponentPicker from './TeamOpponentPicker';
 import TeamLogo from './TeamLogo';
-// This component's own .h2h-*/.compare-mode-*/.cvt-* styles (Session 95,
-// Phase 1). They used to load transitively through SeasonComparisonPicker.jsx's
-// import of this same file -- that file dropped the import when its own
-// .season-picker/.season-chip rules migrated to Tailwind, since it no
-// longer needs anything from this CSS file itself. Importing it directly
-// here instead, since this is the component that actually still needs it.
-// Out of scope for the PlayersView.css Tailwind migration below -- a
-// separate file, untouched.
-import './SeasonComparisonPicker.css';
+// This component's own .h2h-*/.compare-mode-*/.cvt-* styles migrated to
+// Tailwind (Phase 8) -- SeasonComparisonPicker.css deleted, closing out the
+// last real leftover from the Session 97/Phase 3 deferral documented below
+// (that phase migrated this component's popup-shell classes but explicitly
+// left these ones "out of scope... a separate file, untouched" -- never
+// picked up again until this phase). Confirmed via full-app grep this file
+// was this component's ONLY consumer for every one of its ~20 classes --
+// no hidden cross-file usage, no light-mode-overrides.css entries (every
+// color here already resolves through design tokens with their own
+// [data-theme="light"] :root variants, not raw rgba(255,255,255,x)
+// literals needing a component-level override), no Cypress selector
+// dependency.
 
 // Tailwind migration (Session 97, Phase 3, sub-PR 3) -- this component used
 // to reuse PlayerPopup's popup-shell classes from PlayersView.css
@@ -53,6 +56,77 @@ const ROW_CLASSES = 'stat-row flex items-center justify-between py-[6px] border-
 const ROW_LEFT_CLASSES = 'flex items-center gap-[6px] flex-1 min-w-0'
 const ROW_LABEL_CLASSES = 'text-[13px] text-[color:var(--text-muted)]'
 const ROW_VALUE_CLASSES = 'font-[family-name:var(--font-display)] text-[18px] font-bold text-[color:var(--text)] shrink-0 min-w-[48px] text-right'
+
+// Head-to-head scoreboard/narrative + team-vs-team mode-switch classes
+// (Phase 8, previously SeasonComparisonPicker.css -- see this file's own
+// header comment). Colors all reference design tokens, no light-mode
+// override needed. h2hDotPulse hoisted to index.css alongside the app's
+// other shared keyframes -- deliberately kept distinct from pulse-dot/
+// dt-pulse/ppPulse/lv-pulse (all superficially similar "pulse" animations
+// but each with genuinely different curves), matching this migration's
+// established precedent of not force-unifying near-identical keyframes.
+const H2H_SCOREBOARD_CLASSES = 'h2h-scoreboard bg-[var(--bg2)] border-[0.5px] border-[color:var(--border-2)] rounded-[12px] p-4.5 mt-3 mx-4 text-center'
+const H2H_SCOREBOARD_LABEL_CLASSES = 'h2h-scoreboard-label text-[11px] font-semibold uppercase tracking-[0.04em] text-[color:var(--text-dim)] mb-3'
+const H2H_SCOREBOARD_TEAMS_CLASSES = 'h2h-scoreboard-teams flex items-center justify-center gap-[18px] mb-3.5'
+const H2H_SCOREBOARD_TEAM_CLASSES = 'h2h-scoreboard-team flex flex-col items-center gap-1.5'
+const H2H_SCOREBOARD_WINS_CLASSES = 'h2h-scoreboard-wins font-[family-name:var(--font-display)] text-[28px] font-bold text-[color:var(--text)]'
+const H2H_SCOREBOARD_VS_CLASSES = 'h2h-scoreboard-vs text-[12px] text-[color:var(--text-dim)]'
+const H2H_SCOREBOARD_PILLS_CLASSES = 'h2h-scoreboard-pills flex justify-center gap-2 flex-wrap'
+const H2H_PILL_CLASSES = 'h2h-pill bg-[var(--red-dim)] text-[color:var(--red-bright)] text-[12px] font-semibold py-1 px-2.5 rounded-full'
+
+const H2H_NARRATIVE_CLASSES = 'h2h-narrative bg-[var(--bg2)] border-[0.5px] border-[color:var(--border-2)] rounded-[12px] p-3.5 mt-2.5 mx-4'
+const H2H_NARRATIVE_LABEL_CLASSES = 'h2h-narrative-label text-[9px] font-bold tracking-[0.1em] uppercase text-[color:var(--red-bright)] mb-2 flex items-center gap-1.5'
+const H2H_NARRATIVE_TEXT_CLASSES = 'h2h-narrative-text text-[13px] text-[color:var(--text-muted)] leading-[1.6] text-left'
+const H2H_NARRATIVE_LOADING_CLASSES = 'h2h-narrative-loading flex items-center gap-2 text-[12px] text-[color:var(--text-dim)]'
+const H2H_NARRATIVE_DOT_CLASSES = 'h2h-narrative-dot w-1.5 h-1.5 bg-[var(--red-bright)] rounded-full animate-[h2hDotPulse_1.2s_ease-in-out_infinite]'
+
+// .compare-mode-toggle is only ever used in this one place, always combined
+// with .compare-submode-toggle -- the original CSS's margin race (both
+// classes set margin/margin-bottom, .compare-submode-toggle's fuller
+// shorthand always won on source order) is resolved here by simply merging
+// both rules' resolved output into one class list rather than two.
+const COMPARE_SUBMODE_TOGGLE_CLASSES = 'compare-mode-toggle compare-submode-toggle flex gap-1.5 mt-1 mx-4 mb-3'
+// .compare-mode-btn/.compare-mode-btn-active originally relied on source
+// order + an explicit .compare-mode-btn-active:hover rule to keep an
+// active button red on hover (both .compare-mode-btn:hover and
+// .compare-mode-btn-active alone shared equal specificity, and without
+// that explicit hover rule, hovering an active button would have
+// incorrectly shown the inactive hover color). Rebuilt here as two
+// non-overlapping branches (lesson #9 shape) instead -- the active branch
+// never carries a hover utility at all, so there's nothing for it to lose
+// a specificity fight against.
+const COMPARE_MODE_BTN_BASE = 'rounded-[var(--radius-sm)] py-1.5 px-3 font-[family-name:var(--font-body)] text-[12px] font-semibold cursor-pointer min-h-0'
+function compareModeBtnClasses(isActive) {
+  return isActive
+    ? `compare-mode-btn compare-mode-btn-active ${COMPARE_MODE_BTN_BASE} bg-[var(--red-dim)] border-[0.5px] border-[color:var(--red-border)] text-[color:var(--text)]`
+    : `compare-mode-btn ${COMPARE_MODE_BTN_BASE} bg-[var(--bg2)] border-[0.5px] border-[color:var(--border-2)] text-[color:var(--text-muted)] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]`
+}
+
+const CVT_TEAM_LOGOS_CLASSES = 'cvt-team-logos flex items-center gap-2'
+const CVT_VS_CLASSES = 'cvt-vs text-[11px] font-semibold text-[color:var(--text-dim)]'
+const CVT_MODE_SWITCH_CLASSES = 'cvt-mode-switch flex gap-0.5 bg-[var(--bg2)] border-[0.5px] border-[color:var(--border-2)] rounded-full p-0.5 mr-8'
+// .cvt-mode-switch button had no base className of its own in the original
+// markup -- it relied entirely on the ".cvt-mode-switch button" descendant
+// selector for shape/sizing. Given explicit per-element Tailwind classes
+// instead, matching this migration's established practice of not
+// reproducing descendant selectors. .cvt-mode-switch-active originally
+// needed !important to beat ".cvt-mode-switch button:hover"'s higher
+// specificity ((0,2,1) vs (0,1,0)) -- not needed here for the same reason
+// as compareModeBtnClasses above: the active branch carries no hover
+// utility to lose a fight against. bg-transparent deliberately NOT in the
+// shared base -- live-verified this exact mistake: with bg-transparent in
+// CVT_MODE_BTN_BASE and bg-[var(--red-dim)] appended only in the active
+// branch, the active button rendered fully transparent instead of red-dim
+// (Tailwind's generated-stylesheet order, not className string order,
+// decided the winner between the two same-property utility classes --
+// lesson #9/#17/#18 shape). Each branch now supplies its own complete,
+// non-competing background instead.
+const CVT_MODE_BTN_BASE = 'w-[26px] h-6 flex items-center justify-center rounded-full text-[12px] leading-[1] cursor-pointer min-h-0'
+function cvtModeBtnClasses(isActive) {
+  return isActive
+    ? `cvt-mode-switch-active ${CVT_MODE_BTN_BASE} bg-[var(--red-dim)]`
+    : `${CVT_MODE_BTN_BASE} bg-transparent hover:bg-[var(--bg3)]`
+}
 
 // A season with zero comparable seasons shouldn't lock the picker down to
 // maxSelected=0 (which would make every chip permanently disabled) --
@@ -245,15 +319,15 @@ function HeadToHeadNarrativeCard({ league, h2h, teamADisplay, teamBDisplay }) {
   if (failed) return null;
 
   return (
-    <div className="h2h-narrative">
-      <div className="h2h-narrative-label"><span>⚡</span> EyeWall AI</div>
+    <div className={H2H_NARRATIVE_CLASSES}>
+      <div className={H2H_NARRATIVE_LABEL_CLASSES}><span>⚡</span> EyeWall AI</div>
       {loading ? (
-        <div className="h2h-narrative-loading">
-          <div className="h2h-narrative-dot" />
+        <div className={H2H_NARRATIVE_LOADING_CLASSES}>
+          <div className={H2H_NARRATIVE_DOT_CLASSES} />
           Generating analysis…
         </div>
       ) : (
-        <div className="h2h-narrative-text">{narrative}</div>
+        <div className={H2H_NARRATIVE_TEXT_CLASSES}>{narrative}</div>
       )}
     </div>
   );
@@ -298,25 +372,25 @@ function HeadToHeadPanel({ league, teamValue, opponent, teamLabel, opponentLabel
 
   return (
     <>
-      <div className="h2h-scoreboard">
-        <div className="h2h-scoreboard-label">Since 2023-24</div>
-        <div className="h2h-scoreboard-teams">
-          <div className="h2h-scoreboard-team">
+      <div className={H2H_SCOREBOARD_CLASSES}>
+        <div className={H2H_SCOREBOARD_LABEL_CLASSES}>Since 2023-24</div>
+        <div className={H2H_SCOREBOARD_TEAMS_CLASSES}>
+          <div className={H2H_SCOREBOARD_TEAM_CLASSES}>
             <TeamLogo abbr={teamAbbr} sport={sport} size={36} />
-            <div className="h2h-scoreboard-wins">{allTimeRecord.teamAWins}</div>
+            <div className={H2H_SCOREBOARD_WINS_CLASSES}>{allTimeRecord.teamAWins}</div>
           </div>
-          <div className="h2h-scoreboard-vs">wins</div>
-          <div className="h2h-scoreboard-team">
+          <div className={H2H_SCOREBOARD_VS_CLASSES}>wins</div>
+          <div className={H2H_SCOREBOARD_TEAM_CLASSES}>
             <TeamLogo abbr={opponentAbbr} sport={sport} size={36} />
-            <div className="h2h-scoreboard-wins">{allTimeRecord.teamBWins}</div>
+            <div className={H2H_SCOREBOARD_WINS_CLASSES}>{allTimeRecord.teamBWins}</div>
           </div>
         </div>
-        <div className="h2h-scoreboard-pills">
+        <div className={H2H_SCOREBOARD_PILLS_CLASSES}>
           {recentWindow.size < totalMeetings && (
-            <span className="h2h-pill">Last {recentWindow.size}: {recentWindow.teamAWins}-{recentWindow.teamBWins}</span>
+            <span className={H2H_PILL_CLASSES}>Last {recentWindow.size}: {recentWindow.teamAWins}-{recentWindow.teamBWins}</span>
           )}
           {currentStreak && (
-            <span className="h2h-pill">{streakAbbr} won {currentStreak.count} straight</span>
+            <span className={H2H_PILL_CLASSES}>{streakAbbr} won {currentStreak.count} straight</span>
           )}
         </div>
         {isThinSample && (
@@ -439,13 +513,13 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
     <div className="popup-backdrop" onClick={onClose}>
       <div className={PLAYER_POPUP_CLASSES} onClick={e => e.stopPropagation()}>
         <div className={PP_HEADER_CLASSES}>
-          <div className="cvt-team-logos">
+          <div className={CVT_TEAM_LOGOS_CLASSES}>
             <div className={PP_PHOTO_WRAP_CLASSES}>
               <TeamLogo abbr={logoAbbr} sport={league === 'pwhl' ? 'pwhl' : 'nhl'} size={44} color={logoColor} />
             </div>
             {showOpponentInHeader && (
               <>
-                <span className="cvt-vs">vs</span>
+                <span className={CVT_VS_CLASSES}>vs</span>
                 <div className={PP_PHOTO_WRAP_CLASSES}>
                   <TeamLogo abbr={opponentLogoAbbr} sport={league === 'pwhl' ? 'pwhl' : 'nhl'} size={44} color={opponentLogoColor} />
                 </div>
@@ -456,10 +530,10 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
             <div className={PP_NAME_CLASSES}><span className={PP_FIRST_CLASSES}>{headerTitle}</span></div>
             <div className={PP_BIRTH_CLASSES}>{headerSubtitle}</div>
           </div>
-          <div className="cvt-mode-switch" role="group" aria-label="Comparison mode">
+          <div className={CVT_MODE_SWITCH_CLASSES} role="group" aria-label="Comparison mode">
             <button
               type="button"
-              className={mode === 'season' ? 'cvt-mode-switch-active' : ''}
+              className={cvtModeBtnClasses(mode === 'season')}
               aria-pressed={mode === 'season'}
               onClick={() => setMode('season')}
               title="vs Season"
@@ -469,7 +543,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
             </button>
             <button
               type="button"
-              className={mode === 'team' ? 'cvt-mode-switch-active' : ''}
+              className={cvtModeBtnClasses(mode === 'team')}
               aria-pressed={mode === 'team'}
               onClick={() => setMode('team')}
               title="vs Team"
@@ -542,10 +616,10 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
                 <TeamOpponentPicker teams={opponentOptions} value={vsTeamOpponent} onChange={setVsTeamOpponent} excludeValue={teamValue} />
               </div>
 
-              <div className="compare-mode-toggle compare-submode-toggle" role="group" aria-label="Team comparison type">
+              <div className={COMPARE_SUBMODE_TOGGLE_CLASSES} role="group" aria-label="Team comparison type">
                 <button
                   type="button"
-                  className={'compare-mode-btn' + (teamSubMode === 'full' ? ' compare-mode-btn-active' : '')}
+                  className={compareModeBtnClasses(teamSubMode === 'full')}
                   aria-pressed={teamSubMode === 'full'}
                   onClick={() => setTeamSubMode('full')}
                 >
@@ -553,7 +627,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
                 </button>
                 <button
                   type="button"
-                  className={'compare-mode-btn' + (teamSubMode === 'h2h' ? ' compare-mode-btn-active' : '')}
+                  className={compareModeBtnClasses(teamSubMode === 'h2h')}
                   aria-pressed={teamSubMode === 'h2h'}
                   onClick={() => setTeamSubMode('h2h')}
                 >

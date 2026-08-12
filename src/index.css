@@ -513,6 +513,19 @@
   50%       { opacity: 0.45; }
 }
 
+/* Hoisted here (Phase 8) from SeasonComparisonPicker.css's .h2h-narrative-dot
+   loading pulse (TeamComparisonPopup.jsx's Head-to-Head AI narrative card).
+   Name checked against every existing keyframe in this file first -- no
+   collision, kept as-is. Superficially similar to pulse-dot/dt-pulse/ppPulse/
+   lv-pulse above (all "pulse" animations), but each has a genuinely
+   different curve (this one adds a scale() transform, unlike any of the
+   opacity-only ones) -- kept distinct rather than force-unified, matching
+   this file's established precedent for the rest of that cluster.  */
+@keyframes h2hDotPulse {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50%       { opacity: 1;   transform: scale(1.2); }
+}
+
 /* ── Focus styles for keyboard navigation (WCAG 2.4.7) ── */
 /* Deliberately left unlayered (unlike the resets in @layer base above) --
  * this is meant to be the single, always-wins source of truth for

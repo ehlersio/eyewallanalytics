@@ -4,10 +4,11 @@ import { normalizeComparisonSeasons } from '../utils/seasonComparison';
 
 // Tailwind migration (Session 95, Phase 1) -- previously the
 // .season-picker*/.season-chip* rules in SeasonComparisonPicker.css (that
-// file also carries TeamComparisonPopup's .h2h-*/.compare-mode-*/.cvt-*
+// file also carried TeamComparisonPopup's .h2h-*/.compare-mode-*/.cvt-*
 // rules, a later-phase file's styles that only ended up in this file
 // because TeamComparisonPopup renders this component as a child and never
-// imports its own CSS for them -- those rules are left untouched).
+// imported its own CSS for them -- those rules were migrated separately,
+// TeamComparisonPopup.jsx directly, and the file itself deleted, Phase 8).
 //
 // Chip color/background/border precedence (partial > selected > base) is
 // resolved explicitly in JS below rather than by stacking multiple
