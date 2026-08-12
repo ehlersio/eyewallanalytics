@@ -36,6 +36,17 @@ const GP_TEAM_COL_CLASSES = 'gp-team-col flex flex-col items-center gap-1 flex-1
 const GP_RESULT_BADGE_CLASSES = 'gp-result-badge font-[family-name:var(--font-display)] text-[12px] font-bold py-[3px] px-2.5 rounded-[20px]';
 const GP_STAT_VAL_CLASSES = 'gp-stat-val font-[family-name:var(--font-mono)] text-[13px] font-medium text-center';
 const GP_ADV_ROW_CLASSES = 'gp-adv-row grid gap-1.5 items-center text-[12px] [grid-template-columns:90px_28px_1fr_28px]';
+// .dual-bar/.fill-team-primary/.fill-opp/.gp-adv-fill.team-primary-fill
+// (index.css, Phase 7b) -- .dual-bar kept as a literal marker since
+// index.css's `[data-theme="light"] .dual-bar {...}` override still
+// targets it by name (unlayered CSS beats layered Tailwind regardless, so
+// the dark bg below stays plain Tailwind while only the light override
+// needs the real selector). The fill classes have no light-mode override
+// and no shared-variant-function composition risk (literal per-callsite
+// classNames, unlike .team-primary-text), so they convert cleanly.
+const DUAL_BAR_CLASSES = 'dual-bar flex h-[5px] rounded-[3px] overflow-hidden bg-[rgba(255,255,255,0.07)]';
+const FILL_TEAM_PRIMARY_CLASSES = 'h-full bg-[var(--team-primary)] opacity-[0.85]';
+const FILL_OPP_CLASSES = 'bg-[var(--blue-bright)] opacity-[0.7]';
 // .skater-toggle-btn:hover{color:var(--text)} and .active-car/.active-opp's
 // own color are equal-specificity compound selectors in the original CSS --
 // active wins on hover too since it's later in source. A plain Tailwind
@@ -327,9 +338,9 @@ function GameStatsPopup({ game, onClose }) {
                         <span className={`${GP_STAT_VAL_CLASSES} car team-primary-text`}>{carDisplay}</span>
                         <div className="gp-stat-center flex flex-col gap-[3px]">
                           <div className="gp-stat-label text-[10px] text-[color:var(--text-muted)] text-center">{label}</div>
-                          <div className="dual-bar">
-                            <div className="fill-team-primary" style={{ width: `${carPct}%` }} />
-                            <div className="fill-opp"          style={{ width: `${100 - carPct}%` }} />
+                          <div className={DUAL_BAR_CLASSES}>
+                            <div className={FILL_TEAM_PRIMARY_CLASSES} style={{ width: `${carPct}%` }} />
+                            <div className={FILL_OPP_CLASSES}          style={{ width: `${100 - carPct}%` }} />
                           </div>
                         </div>
                         <span className={`${GP_STAT_VAL_CLASSES} opp text-[color:var(--text-muted)]`}>{oppDisplay}</span>
@@ -364,7 +375,7 @@ function GameStatsPopup({ game, onClose }) {
                           <span className="gp-adv-label text-[11px] text-[color:var(--text-muted)]">{label}</span>
                           <span className="team-primary-text">{car}</span>
                           <div className="gp-adv-bar h-1.5 rounded-[3px] bg-[var(--bg3)] flex overflow-hidden">
-                            <div className="gp-adv-fill team-primary-fill h-full" style={{width:`${Math.round(car/tot*100)}%`}} />
+                            <div className={`gp-adv-fill ${FILL_TEAM_PRIMARY_CLASSES}`} style={{width:`${Math.round(car/tot*100)}%`}} />
                             <div className="gp-adv-fill muted h-full bg-[color:var(--text-dim)] rounded-[0_3px_3px_0]" style={{width:`${Math.round(opp/tot*100)}%`}} />
                           </div>
                           <span className="text-[color:var(--text-muted)]">{opp}</span>

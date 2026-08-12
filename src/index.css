@@ -294,34 +294,31 @@
 /* .stat-value(.green/.red/.amber) confirmed genuinely dead (Phase 7b) --
    same triple-check as .pill-muted above -- dropped. */
 
-/* Dual bar (team vs opponent) */
-.dual-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.07); display: flex; overflow: hidden; }
-/* .dual-bar .fill-red/.fill-green confirmed genuinely dead (Phase 7b) --
-   same triple-check as above -- dropped. .fill-blue is real (ShotMapView.jsx/
-   PWHLShotMapView.jsx), kept. */
-.dual-bar .fill-blue { background: var(--blue-bright); height: 100%; transition: width 0.4s ease; }
-
+/* Dual bar (team vs opponent) -- shape + dark bg migrated to Tailwind
+   (Phase 7b, ShotMapView.jsx/PWHLShotMapView.jsx/GameStatsPopup.jsx's
+   DUAL_BAR_CLASSES constant). ".dual-bar" itself stays as a literal
+   marker class purely so the light-mode override directly below still has
+   a stable selector -- unlayered CSS always beats a layered Tailwind
+   utility (see file header), so the light rule reliably wins over the
+   Tailwind dark bg without needing `!important` or extra specificity.
+   .dual-bar .fill-red/.fill-green confirmed genuinely dead (Phase 7b) --
+   same triple-check as above -- dropped without ever being migrated.
+   .fill-blue migrated alongside .dual-bar (FILL_BLUE_CLASSES) -- no
+   light-mode override of its own, so no marker needed. */
 [data-theme="light"] .dual-bar { background: rgba(0,0,0,0.07); }
 
-/* Team-primary utility classes — set by JS via --team-primary on :root */
+/* .team-primary-text (JS sets --team-primary on :root) stays unlayered CSS
+   -- used via shared xxxClasses(variant) factory functions across several
+   files where the color must reliably win regardless of what the `base`
+   Tailwind string in a given variant branch happens to already carry, per
+   the same cascade-layers reasoning as .card et al. .gp-adv-fill.team-
+   primary-fill/.fill-team-primary/.fill-opp migrated to Tailwind (Phase
+   7b) -- unlike .team-primary-text, all three are literal per-callsite
+   classNames (not composed through a shared variant factory) with no
+   light-mode override, so there's no compositional risk requiring an
+   unlayered escape valve. */
 .team-primary-text {
   color: var(--team-primary);
-}
-
-.gp-adv-fill.team-primary-fill {
-  background: var(--team-primary);
-  opacity: 0.85;
-}
-
-.fill-team-primary {
-  background: var(--team-primary);
-  opacity: 0.85;
-}
-
-/* Keep fill-opp for the opponent side of dual bars */
-.fill-opp {
-  background: var(--blue-bright);
-  opacity: 0.7;
 }
 
 /* Responsive layout containers */

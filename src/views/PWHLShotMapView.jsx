@@ -91,6 +91,13 @@ const SCORE_STATE_CLASSES = 'text-[10px] text-[color:var(--text-dim)]';
 // file's only real consumer of either class (.pill-green/.pill-amber were
 // confirmed 100% dead app-wide during Phase 5 sub-PR 3's investigation).
 const PILL_RED_CLASSES = 'inline-flex items-center gap-[5px] py-[3px] px-[10px] rounded-[20px] text-[11px] font-medium bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[0.5px] border-[color:var(--red-border)]';
+// .dual-bar/.fill-blue (index.css, Phase 7b) -- see ShotMapView.jsx's
+// identical comment for the full reasoning (marker kept for .dual-bar's
+// light-mode override, fill classes convert cleanly with no override or
+// shared-variant-function risk).
+const DUAL_BAR_CLASSES = 'dual-bar flex h-[5px] rounded-[3px] overflow-hidden bg-[rgba(255,255,255,0.07)]';
+const FILL_TEAM_PRIMARY_CLASSES = 'h-full bg-[var(--team-primary)] opacity-[0.85]';
+const FILL_BLUE_CLASSES = 'h-full bg-[var(--blue-bright)] [transition:width_0.4s_ease]';
 
 const metricsGridClasses = (cols) => cols === 4
   ? 'grid grid-cols-4 gap-2 mb-2'
@@ -747,9 +754,9 @@ function TeamStatsCard({ pbpStats, shotStats, abbr, oppAbbr, color, oppColor, fa
                 {label}
                 <InfoTip text={help} position="above" />
               </div>
-              <div className="dual-bar">
-                <div className="fill-team-primary" style={{ width: `${Math.round(cn / tot * 100)}%` }} />
-                <div className="fill-blue"         style={{ width: `${Math.round(on / tot * 100)}%` }} />
+              <div className={DUAL_BAR_CLASSES}>
+                <div className={FILL_TEAM_PRIMARY_CLASSES} style={{ width: `${Math.round(cn / tot * 100)}%` }} />
+                <div className={FILL_BLUE_CLASSES}         style={{ width: `${Math.round(on / tot * 100)}%` }} />
               </div>
             </div>
             <span className={gmStatValClasses('muted')}>{oppDisplay ?? on}</span>
