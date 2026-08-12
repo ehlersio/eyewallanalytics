@@ -58,20 +58,12 @@ function dtRankBadgeClasses(unranked) {
 
 const DT_TH_CLASSES = 'dt-th text-left py-[6px] px-2 text-[11px] font-semibold text-[color:var(--text-dim)] border-b-[0.5px] border-b-[color:var(--border)] whitespace-nowrap uppercase tracking-[0.03em]';
 const DT_TD_CLASSES = 'dt-td py-[7px] px-2 text-[color:var(--text)] border-b-[0.5px] border-b-[color:var(--border)] whitespace-nowrap';
-// dt-row--clickable:hover's `var(--surface-hover, rgba(255,255,255,0.04))`
-// is the identical undefined-token shape as --surface-dim (Phase 4) --
-// but unlike --surface-dim (a PERSISTENT background), this is a hover-only
-// transient tint, the same shape as LeagueView.css's own `.pr-row:hover`
-// (identical variable, identical fallback value), which Phase 4 sub-PR 4
-// deliberately left unfixed: "hover-only, matching the established
-// pattern [of never overriding hover-only tints in this app]." Applying
-// that same precedent here rather than the Phase 6 brief's framing of this
-// as a --surface-dim-shaped gap needing a light-mode value -- the two
-// tokens are the same dead-fallback shape, but --surface-dim's usage is
-// persistent (always visible) while --surface-hover's is transient
-// (visible only while the pointer is over the row), which is exactly the
-// distinction the rest of this migration has consistently drawn.
-const DT_ROW_CLICKABLE_CLASSES = 'dt-row dt-row--clickable cursor-pointer [transition:background_0.1s] focus-visible:outline-2 focus-visible:outline-[color:var(--red-bright)] focus-visible:outline-offset-[-1px] hover:bg-[rgba(255,255,255,0.04)]';
+// dt-row--clickable:hover's --surface-hover token now has a real
+// definition in index.css (follow-up to the Tailwind migration) -- was
+// previously an undefined custom property relying on this exact rgba
+// fallback value, the same dead-fallback shape as --surface-dim. Still no
+// light-mode value (that's the separate hover-tint light-mode sweep).
+const DT_ROW_CLICKABLE_CLASSES = 'dt-row dt-row--clickable cursor-pointer [transition:background_0.1s] focus-visible:outline-2 focus-visible:outline-[color:var(--red-bright)] focus-visible:outline-offset-[-1px] hover:bg-[var(--surface-hover)]';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
