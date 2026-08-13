@@ -150,18 +150,18 @@ describe('PWHL League view', () => {
     // Standings tab, so they share the same established-teams-only boundary
     // until DET/HAM/LV/SJS have played games (see Standings tab note above).
     it('shows all established-season teams ranked', () => {
-      cy.get('body').then($body => {
-        ['BOS', 'MIN', 'MTL', 'NY', 'OTT', 'TOR', 'SEA', 'VAN'].forEach(abbr => {
-          expect($body.text()).to.include(abbr)
-        })
+      // cy.get(...).should(...) retries until it passes or times out, unlike
+      // a raw expect() on a one-time $body snapshot -- the snapshot version
+      // flaked in production CI when the page hadn't finished rendering the
+      // instant .then() fired (Session: Dependabot audit investigation).
+      ['BOS', 'MIN', 'MTL', 'NY', 'OTT', 'TOR', 'SEA', 'VAN'].forEach(abbr => {
+        cy.get('body').should('contain', abbr)
       })
     })
 
     it('does not yet rank expansion teams (no games played)', () => {
-      cy.get('body', { timeout: 8000 }).then($body => {
-        ['DET', 'HAM', 'LV', 'SJS'].forEach(abbr => {
-          expect($body.text()).to.not.include(abbr)
-        })
+      ['DET', 'HAM', 'LV', 'SJS'].forEach(abbr => {
+        cy.get('body', { timeout: 8000 }).should('not.contain', abbr)
       })
     })
 
