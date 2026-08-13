@@ -199,9 +199,10 @@ describe('Schedule view — CAR (deep)', () => {
         cy.log('In-season — skipping offseason empty-state check')
         return
       }
-      cy.get('body').then($body => {
-        expect($body.find(':contains("Matchup breakdown")').length).to.equal(0)
-      })
+      // Retrying .should(), not a raw expect() on a one-time $body snapshot
+      // (Session: Dependabot audit investigation -- same flake class as
+      // pwhl-league.cy.js).
+      cy.get('body').should('not.contain', 'Matchup breakdown')
     })
 
     // ── Live-series tests — skipped during offseason ──────────────
