@@ -44,6 +44,18 @@ function formatGameDate(dateStr) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// time_seconds (PWHL) is elapsed time within the period (0 -> 1200),
+// matching NHL's own convention — confirmed against real recap data, see
+// pwhl_milestones.py. Safe to convert to mm:ss directly; no dependency on
+// period length (that only matters for cross-period-boundary math, not a
+// plain within-period elapsed display like this one).
+function formatElapsed(seconds) {
+  if (seconds == null) return null;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
 // Build the secondary detail line from milestones.py's `detail` JSONB.
 // Every milestone_type has a different shape here — see milestones.py's
 // (NHL) / pwhl_milestones.py's (PWHL) detect_* functions for what's
@@ -54,17 +66,26 @@ function renderDetailItems(item) {
 
   if (item.milestone_type === 'natural_hat_trick' && d.goal_periods?.length) {
     d.goal_periods.forEach((p, i) => {
-      // PWHL stores raw countdown seconds remaining, not an elapsed mm:ss
-      // clock (OT period length isn't confirmed, so no derived clock time
-      // is shown — see pwhl_milestones.py). NHL stores elapsed "12:34"
-      // strings under goal_times, which PWHL rows never have.
+      // NHL stores elapsed "12:34" strings under goal_times; PWHL rows
+      // never have that field (only a bare goal_time_seconds array isn't
+      // read here) — period-only display for PWHL is the original ship
+      // decision, not a data limitation.
       const t = item.is_pwhl ? null : d.goal_times?.[i];
       items.push(`P${p}${t ? ` ${t}` : ''}`);
     });
   } else if (item.milestone_type === 'hat_trick' && d.goal_count) {
     items.push(`${d.goal_count} goals`);
   } else if (item.milestone_type === 'sh_goal') {
-    if (d.period) items.push(`P${d.period}${d.time_in_period ? ` ${d.time_in_period}` : ''}`);
+    // NHL: detail.period / detail.time_in_period (already an "mm:ss"
+    // string). PWHL: detail.period_id / detail.time_seconds (elapsed
+    // seconds, formatted here) — different field names because PWHL used
+    // to write milestone_type "shorthanded_goal" (a different string from
+    // NHL's "sh_goal"), so this whole branch silently never matched PWHL
+    // rows at all. Fixed together with the milestone_type rename in
+    // pwhl_milestones.py.
+    const period = item.is_pwhl ? d.period_id : d.period;
+    const time   = item.is_pwhl ? formatElapsed(d.time_seconds) : d.time_in_period;
+    if (period) items.push(`P${period}${time ? ` ${time}` : ''}`);
   } else if (item.milestone_type?.startsWith('season_goals_') && d.season_goals != null) {
     items.push(`${d.season_goals} goals this season`);
   } else if (item.milestone_type?.startsWith('season_points_') && d.season_points != null) {
