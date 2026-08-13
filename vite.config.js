@@ -63,8 +63,38 @@ export default defineConfig(({ mode }) => {
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (['react', 'react-dom', 'react-router-dom'].some((pkg) => id.includes(`/node_modules/${pkg}/`))) {
+          // react-router-dom v7 is a thin wrapper -- its actual routing code
+          // lives in a nested react-router dependency, not in
+          // node_modules/react-router-dom/ itself, so that has to be matched
+          // too or none of it lands in 'vendor' (react-router-dom v6->v7
+          // migration).
+          if (['react', 'react-dom', 'react-router-dom', 'react-router'].some((pkg) => id.includes(`/node_modules/${pkg}/`))) {
             return 'vendor'
+          }
+          // SeasonOverlayChart/PlayerComparisonEntry are only ever statically
+          // imported from PlayerPopup.jsx/PWHLPlayerPopup.jsx, both of which
+          // are themselves only reachable via lazy-loaded route chunks --
+          // they'd previously landed in their own chunks purely via
+          // Rollup/Rolldown's automatic "shared by 2+ async chunks"
+          // heuristic, never an explicit lazy()/manualChunks boundary. That
+          // heuristic's decision flipped -- both got silently absorbed into
+          // the main entry chunk -- as a side effect of the unrelated
+          // react-router-dom v6->v7 dependency-graph shape change, growing
+          // the initial-load bundle by ~500 KiB. Pinning them explicitly so
+          // this doesn't happen again on some other unrelated future bump.
+          //
+          // IceRink deliberately excluded from this group: unlike the other
+          // two, it's ALSO statically imported by ShotMapView.jsx (the
+          // eager, non-lazy default route), so it's genuinely needed on
+          // initial load, not popup-only. Grouping it with these two was
+          // tried first and wrongly dragged the other two into eager
+          // modulepreload right alongside it -- verified via dist/index.html
+          // listing player-popup-extras as a modulepreload target when
+          // IceRink was included. Leaving it out lets it fall back to
+          // Rollup/Rolldown's default chunking for its own (correctly eager)
+          // dependency.
+          if (['SeasonOverlayChart', 'PlayerComparisonEntry'].some((name) => id.includes(`/src/components/${name}.jsx`))) {
+            return 'player-popup-extras'
           }
         },
       },
