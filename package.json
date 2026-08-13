@@ -3,6 +3,10 @@
   "private": true,
   "version": "1.1.0",
   "type": "module",
+  "overrides": {
+    "diff": "^8.0.4",
+    "serialize-javascript": "^7.1.0"
+  },
   "scripts": {
     "dev": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite",
     "build": "node node_modules/vite/bin/vite.js build",
