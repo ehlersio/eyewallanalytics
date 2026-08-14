@@ -42,6 +42,7 @@ import { TEAM_COLORS } from '../utils/nhlApi'
 const OVERLAY_CLASSES = 'fixed inset-0 z-[1000] bg-[#0d0d0f] overflow-y-auto flex justify-center pt-12 px-4 pb-24';
 const INNER_CLASSES = 'w-full max-w-[720px] pb-12';
 const HEADER_CLASSES = 'text-center mb-10 relative';
+const HEADER_LOGO_CLASSES = 'w-20 h-20 mx-auto mb-5 object-contain';
 const TITLE_CLASSES = 'text-[1.75rem] font-bold text-[color:var(--text)] mb-2 tracking-[-0.02em]';
 const SUB_CLASSES = 'text-[0.875rem] text-[color:var(--text-dim)] m-0';
 const BACK_CLASSES = 'absolute left-0 top-1/2 -translate-y-1/2 max-[480px]:static max-[480px]:translate-y-0 max-[480px]:block max-[480px]:mb-3 max-[480px]:text-left bg-transparent border-0 text-[color:var(--text-dim)] text-[0.875rem] cursor-pointer py-1 px-0 [transition:color_0.12s] hover:text-[color:var(--text)]';
@@ -113,6 +114,7 @@ function SportStep({ onPickSport }) {
   return (
     <>
       <div className={HEADER_CLASSES}>
+        <img src="/eyewall-logo.svg" alt="EyeWall Analytics" className={HEADER_LOGO_CLASSES} />
         <h1 className={TITLE_CLASSES}>Choose your league</h1>
         <p className={SUB_CLASSES}>You can change this any time from settings.</p>
       </div>
