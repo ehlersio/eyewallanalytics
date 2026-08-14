@@ -220,7 +220,7 @@ Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `m
 | `draft:picks:2026:{team&#124;all}:{round&#124;all}` | Draft picks (live + historical) | 60s while draft in progress (0 &lt; count &lt; 224), 24 hr once complete |
 | `draft:order:2026:{team&#124;all}` | Known R1 pick order | 24 hr |
 | `narrative:{period}:{gameId}:{carAbbr}` | AI period/game narrative per team perspective | 24 hr |
-| `milestones:{team&#124;all}:{limit}` | Recent milestones (hat tricks, shutouts, SH goals, season/career thresholds) | 1 hr |
+| `milestones:{sport}:{team&#124;all}:{limit}:{season}` | Recent milestones (hat tricks, shutouts, SH goals, season/career thresholds) — scoped to the live-resolved current season (added 2026-08, see [Live Season Resolution](#live-season-resolution)) so a leftover milestone from a prior season can't sit in the feed indefinitely once the table stops getting new rows (e.g. NHL offseason) | 1 hr |
 | `player:landing:{id}` | NHL API player landing proxy (bio, headshot, career totals) | 1 hr |
 | `config:season:nhl` | Live-resolved current NHL season (see [Live Season Resolution](#live-season-resolution)) | 6 hr |
 | `config:season:nhl:override` | Manual override, bypasses live resolution entirely | none (manual) |
@@ -233,7 +233,7 @@ Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `m
 | `GET /draft/picks?team=&round=` | Draft picks, filterable by team and/or round |
 | `GET /draft/order?team=` | Known R1 pick order |
 | `POST /draft/analyze` | Workers AI draft pick analysis (secret-protected, `X-Poll-Secret` header) — called by `draft_ingest.py` on draft day |
-| `GET /milestones?team=&limit=` | Recent milestones, league-wide by default, optional team filter (default limit 50, max 100) |
+| `GET /milestones?team=&sport=&limit=` | Recent milestones, NHL by default (`sport=pwhl` for PWHL), optional team filter (default limit 50, max 100) — scoped to the live-resolved current season |
 | `GET /player/landing?id=` | Proxies NHL API's `/player/{id}/landing` — browser can't call it directly (no CORS headers on the NHL side) |
 | `GET /config/seasons` | Live-resolved current NHL + PWHL season, both leagues in one response (see [Live Season Resolution](#live-season-resolution)) — consumed by `seasonClient.js` at app boot and by the pipeline's `season_lookup.py` |
 | `GET /players-search-index` | Flat NHL + PWHL player list (`{id, name, team, position, sport}`, ~1,600 players) for the global player-search autocomplete — see `playerSearch.js` / `PlayerSearch.jsx`. NHL entries may carry `teamStale: true` + `teamSeason` when the live season's own roster data doesn't exist yet (e.g. right after an early season flip) and `team` fell back to the prior season — `PlayerSearch.jsx` renders these dimmed/italic with a "As of `<season>`" tooltip rather than presenting a possibly-wrong team as current fact. |
@@ -328,7 +328,7 @@ All existing NHL features unchanged — see original documentation. Key features
 - **Power Rankings** — 5-factor weighted formula (Pts% 35%, L10 20%, GD/GP 20%, CF% 15%, Special Teams 10%), collapsible formula card
 - **Draft** — 2026 (72 picks, 12 teams) and 2025 (48 picks, 8 teams) with position and round filters
 
-**News** — Aggregated from Sportsnet, The Score, and others. Fetched by GH Actions `pwhl_news.py` and POSTed to Worker (CF datacenter IPs are blocked by RSS sources). 30-min KV cache.
+**News** — Aggregated from Sportsnet, The Score, and others. Fetched by GH Actions `pwhl_news.py` and POSTed to Worker (CF datacenter IPs are blocked by RSS sources). 25hr KV cache (fixed from 30min during the news-ingestion investigation — the short TTL meant it sat empty most of the day between this script's own infrequent runs).
 
 ---
 
@@ -418,6 +418,7 @@ All standings, record displays (W–OTW–OTL–L), and Splits calculations use 
 | `pwhl_shot_events.py` | Shot events with coordinates → `pwhl_shot_events` |
 | `pwhl_salaries.py` | PWHLPA PDF salary scraper → `pwhl_salaries` (190/194 player matches). `SEASON_LABEL` now derived from the live-resolved season (2026-07 fix — used to be separately hardcoded, same bug shape as `moneypuck.py`'s old `MP_URL`). |
 | `pwhl_news.py` | RSS news fetcher → POST to Worker `/pwhl/news/ingest` |
+| `pwhl_milestones.py` | Nightly milestone detection (hat tricks, natural hat tricks, shorthanded goals, shutouts, season goal/point thresholds, career point/win thresholds — no external API needed, unlike NHL's live lookup) → shared `milestones` table, `is_pwhl=true`. Thresholds tuned to real PWHL scoring volume, not scaled from NHL's. |
 
 ### PWHL Supabase Tables
 `pwhl_players` (no season dimension — one row per player, current team assignment only), `pwhl_player_seasons`, `pwhl_goalie_seasons`, `pwhl_team_seasons` (incl. `pp_pct`, `pk_pct`, `corsi_for_pct`, `fenwick_for_pct`), `pwhl_game_log` (incl. `game_date`, `venue_name`, `venue_city`), `pwhl_shot_events`, `pwhl_pbp_events`, `pwhl_salaries`, `pwhl_teams` (team master — `pwhl_players.team_id` has a foreign key against this table; a new team_id must be seeded here first or roster upserts fail with a `23503` FK violation)
@@ -635,7 +636,7 @@ VITE_SUPABASE_ANON=sb_publishable_...
 - [ ] Capacitor PWA wrapper for App Store / Play Store
 - [ ] Dependabot: supabase 2.31.x, ESLint 10, Vite 8 (October)
 - [ ] October: bump `OFFSEASON_BRACKET` — the only one of these four left after 2026-07's live season resolution work; `CURRENT_SEASON`/`PWHL_CURRENT_SEASON`/`NHL_SEASON` no longer need a manual bump
-- [ ] PWHL milestones (hat tricks, shutouts, etc.) — deferred pending PWHL schema confirmation, same pattern as NHL `milestones.py`
+- [x] ~~PWHL milestones (hat tricks, shutouts, etc.) — deferred pending PWHL schema confirmation~~ — actually shipped some time ago (`pwhl_milestones.py`, same shared `milestones` table as NHL) but this roadmap line was never checked off; caught during the 2026-08-13 milestones staleness/`sh_goal` naming-mismatch investigation
 - [ ] `ai_summaries.py`/`ai_predictions.py` appear to run twice nightly — once inside `run.py`'s `run_all()`, again via `ai_pipeline.yml`'s separate cron an hour later. Worth confirming whether that's intentional redundancy or wasted GH Actions minutes / duplicate Workers AI calls.
 - [ ] Migrate remaining pipeline scripts (`ai_summaries.py`, `ai_predictions.py`, `moneypuck.py`, etc.) to `db.py`/`pipeline_common.py` if they don't already use them
 - [ ] Expansion team logos/permanent names — still placeholders, waiting on official branding reveal (likely this fall)
