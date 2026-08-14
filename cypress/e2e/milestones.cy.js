@@ -90,8 +90,21 @@ describe('Milestones feed', () => {
       });
     });
 
+    // These three query the always-present `.milestones-feed` container and
+    // `.find()` inside `.then()` rather than `cy.get('.milestones-feed
+    // .news-card')` directly -- cy.get() itself implicitly retries until at
+    // least one match exists and fails with "never found it" if the true
+    // state is zero matches for the whole timeout window, which the inner
+    // `if ($cards.length === 0) return` guard never gets a chance to run
+    // against. This is no longer a hypothetical: NHL milestones now
+    // legitimately empties out for the whole offseason once the feed was
+    // scoped to the live-resolved current season (2026-08), so these three
+    // tests started hard-failing against real production data instead of
+    // no-oping the way they were clearly meant to.
+
     it('each card shows a milestone type badge and a date', () => {
-      cy.get('.milestones-feed .news-card').then($cards => {
+      cy.get('.milestones-feed', { timeout: 10000 }).then($feed => {
+        const $cards = $feed.find('.news-card');
         if ($cards.length === 0) return; // empty state — nothing to check
         cy.wrap($cards.first()).find('.milestone-icon-badge').should('exist');
         cy.wrap($cards.first()).find('.news-card-time').should('exist');
@@ -99,7 +112,8 @@ describe('Milestones feed', () => {
     });
 
     it('each card shows a team logo next to the description', () => {
-      cy.get('.milestones-feed .news-card').then($cards => {
+      cy.get('.milestones-feed', { timeout: 10000 }).then($feed => {
+        const $cards = $feed.find('.news-card');
         if ($cards.length === 0) return;
         cy.wrap($cards.first()).find('.milestone-card-title img, .milestone-card-title svg')
           .should('exist');
@@ -107,7 +121,8 @@ describe('Milestones feed', () => {
     });
 
     it('tapping a card opens the player popup', () => {
-      cy.get('.milestones-feed .news-card').then($cards => {
+      cy.get('.milestones-feed', { timeout: 10000 }).then($feed => {
+        const $cards = $feed.find('.news-card');
         if ($cards.length === 0) return;
         cy.wrap($cards.first()).click();
         // Player landing is a real network call (NHL API via Worker proxy),
@@ -136,7 +151,11 @@ describe('PWHL milestones', () => {
   });
 
   it('tapping a PWHL milestone card opens the popup with self-fetched identity + stats', () => {
-    cy.get('.milestones-feed .news-card').then($cards => {
+    // Same cy.get()-on-the-container-not-the-child fix as the NHL tests
+    // above -- cy.get('.milestones-feed .news-card') fails outright if it
+    // never finds a match, before the inner length===0 guard ever runs.
+    cy.get('.milestones-feed', { timeout: 10000 }).then($feed => {
+      const $cards = $feed.find('.news-card');
       if ($cards.length === 0) return; // no PWHL milestones today — nothing to check
       cy.wrap($cards.first()).click();
       cy.get('.popup-backdrop', { timeout: 10000 }).should('exist');
