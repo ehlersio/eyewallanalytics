@@ -66,11 +66,15 @@ function renderDetailItems(item) {
 
   if (item.milestone_type === 'natural_hat_trick' && d.goal_periods?.length) {
     d.goal_periods.forEach((p, i) => {
-      // NHL stores elapsed "12:34" strings under goal_times; PWHL rows
-      // never have that field (only a bare goal_time_seconds array isn't
-      // read here) — period-only display for PWHL is the original ship
-      // decision, not a data limitation.
-      const t = item.is_pwhl ? null : d.goal_times?.[i];
+      // NHL: detail.goal_times[i] (already an "mm:ss" string). PWHL:
+      // detail.goal_time_seconds[i] (elapsed seconds, formatted here) --
+      // same field-name/shape split as the sh_goal branch below. This used
+      // to be period-only for PWHL as a deliberate ship decision from when
+      // PWHL's time field was still (incorrectly) documented as a
+      // countdown of uncertain OT length; now that it's confirmed elapsed
+      // (pwhl_milestones.py, corrected 2026-07-04) the same formatElapsed()
+      // conversion used for sh_goal applies here too.
+      const t = item.is_pwhl ? formatElapsed(d.goal_time_seconds?.[i]) : d.goal_times?.[i];
       items.push(`P${p}${t ? ` ${t}` : ''}`);
     });
   } else if (item.milestone_type === 'hat_trick' && d.goal_count) {
