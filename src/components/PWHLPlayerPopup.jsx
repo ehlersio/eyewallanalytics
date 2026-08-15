@@ -13,8 +13,9 @@
 //   season {number}  — season_id to pin the self-fetched stat line to.
 //   seasonLabel, onClose — as before.
 import { useState, useMemo } from 'react';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { useFetch } from '../hooks/useFetch';
-import { fetchPWHLPlayerShots, fetchPWHLPlayerLanding, fetchPWHLPlayerGameLog, fetchPWHLPlayerCareer, fetchPWHLPlayerPercentiles } from '../utils/pwhlApi';
+import { fetchPWHLPlayerShots, fetchPWHLPlayerLanding, fetchPWHLPlayerGameLog, fetchPWHLPlayerCareer, fetchPWHLPlayerPercentiles, fetchPWHLGoaliePercentiles } from '../utils/pwhlApi';
 import { fetchComparisonSeasons } from '../utils/seasonClient';
 import { normalizeComparisonSeasons } from '../utils/seasonComparison';
 import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById } from '../utils/pwhlConfig';
@@ -31,6 +32,7 @@ import SeasonComparisonPicker from './SeasonComparisonPicker';
 import PlayerComparisonEntry from './PlayerComparisonEntry';
 import {
   SKATER_STATS, GOALIE_STATS, PWHL_STAT_PCT_MAP, posLabel, groupStats as pwhlGroupStats,
+  computeGoalieRadarAxes, RADAR_AXIS_ABBR,
 } from '../utils/pwhlPlayerStats';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 // Tailwind migration (Session 97, Phase 3, sub-PR 2 + sub-PR 3) -- see
@@ -50,6 +52,13 @@ const PP_QUICKSTAT_CLASSES = 'flex flex-col items-center bg-[var(--bg2)] rounded
 const PP_QUICKSTAT_VAL_CLASSES = 'font-[family-name:var(--font-display)] text-[13px] font-bold text-[color:var(--text)] leading-[1.1]'
 const PP_QUICKSTAT_LABEL_CLASSES = 'text-[8px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]'
 const PP_HEADER_RADAR_CLASSES = 'flex items-center gap-2 flex-[1_1_auto] min-w-0 max-[340px]:flex-col'
+// Goalie radar chart (added 2026-08, matching NHL PlayerPopup's own
+// pp-radar-wrap/-note classes) -- PWHL skaters still use PWHLHeaderPanel's
+// simpler 2x2 tile grid (4 percentile categories isn't a radar-worthy set,
+// per that component's own comment); goalies' 6 categories match NHL's
+// goalie radar richness exactly, so they get a real chart instead.
+const PP_RADAR_WRAP_CLASSES = 'pp-radar-wrap flex-[1_1_0%] min-w-[50px] max-w-[130px] max-[340px]:max-w-full'
+const PP_RADAR_NOTE_CLASSES = 'text-[9px] text-[color:var(--text-dim)] text-center leading-[1.4] px-1 mt-[-6px]'
 const PP_QUICKSTATS_COL_CLASSES = 'pp-quickstats-col flex flex-col gap-1 flex-none'
 const PP_QUICKSTATS_CLASSES = 'grid [grid-template-columns:38px_38px] gap-1 max-[340px]:w-full'
 
@@ -157,6 +166,19 @@ function PWHLPercentileTile({ label, pct }) {
   );
 }
 
+// Displays a value as-is, no rounding -- unlike PWHLPercentileTile above
+// (which always Math.round()s, correct for raw 0-100 percentiles but
+// would corrupt an already-formatted string like ".902" or "2.47" into a
+// rounded integer). Matches NHL PlayerPopup's QuickStatPill exactly.
+function PWHLQuickStatPill({ label, value }) {
+  return (
+    <div className={PP_QUICKSTAT_CLASSES}>
+      <span className={PP_QUICKSTAT_VAL_CLASSES}>{value ?? '—'}</span>
+      <span className={PP_QUICKSTAT_LABEL_CLASSES}>{label}</span>
+    </div>
+  );
+}
+
 // Header panel (Session 85) — PWHL's equivalent of NHL PlayerPopup's
 // SkaterHeaderPanel. Substitutes a 2x2 percentile-tile grid for NHL's
 // radar + G/A/P/TOI totals since PWHL only computes 4 percentile
@@ -183,6 +205,76 @@ function PWHLHeaderPanel({ percentiles, comparisonEntry }) {
             <PWHLPercentileTile key={t.statKey} label={t.label}
               pct={percentiles[PWHL_STAT_PCT_MAP[t.statKey]]?.pct} />
           ))}
+        </div>
+        {comparisonEntry}
+      </div>
+    </div>
+  );
+}
+
+// Own copy of NHL PlayerPopup's RadarAxisTick/PlayerRadarChart -- this
+// codebase's established convention for popup-owned UI helpers is
+// duplicate-per-file rather than cross-import (see hexToRgba/
+// seasonRampColor above for the same reasoning already applied in this
+// file). Abbreviates axis labels for the same reason NHL's does: this
+// radar renders inside a ~130px-wide flex slot, nowhere near enough room
+// for two-word labels like "5v5 SV%" at any legible size -- full names
+// are still available via the native SVG <title> on hover/tap.
+function GoalieRadarAxisTick({ x, y, payload, textAnchor }) {
+  const full = payload.value;
+  const short = RADAR_AXIS_ABBR[full] || full;
+  return (
+    <text x={x} y={y} textAnchor={textAnchor} fill="var(--text-dim)" fontSize={8.5}>
+      {short}
+      <title>{full}</title>
+    </text>
+  );
+}
+
+function GoalieRadarChart({ data, color }) {
+  const missing = data.filter(d => !d.hasData).map(d => d.axis);
+  return (
+    <div className={PP_RADAR_WRAP_CLASSES}>
+      <ResponsiveContainer width="100%" height={150}>
+        <RadarChart data={data} outerRadius="62%">
+          <PolarGrid stroke="var(--border-2)" />
+          <PolarAngleAxis dataKey="axis" tick={GoalieRadarAxisTick} />
+          <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} tickCount={2} />
+          <Radar dataKey="value" stroke={color} fill={color} fillOpacity={0.35} strokeWidth={2} isAnimationActive={false} />
+        </RadarChart>
+      </ResponsiveContainer>
+      {missing.length > 0 && (
+        <div className={PP_RADAR_NOTE_CLASSES}>Not enough playing time yet: {missing.join(', ')}</div>
+      )}
+    </div>
+  );
+}
+
+// PWHL goalie header panel (added 2026-08) -- goalie-side counterpart to
+// PWHLHeaderPanel above, but with a real radar chart instead of a 2x2 tile
+// grid (see PP_RADAR_WRAP_CLASSES' comment for why: 6 categories is a
+// genuinely radar-worthy set, same richness as NHL's own goalie radar).
+// `boxStats` is the current-season raw stat object (same `p` shape
+// pwhlGroupStats/GOALIE_STATS already read) -- wins/sv_pct/gaa/shutouts
+// reused directly for the quickstat pills rather than re-fetching
+// anything. sv_pct formatting matches this file's own groupStats()
+// convention (leading zero stripped, e.g. ".902" not "0.902"), not NHL's
+// (which keeps the leading zero) -- these are two independently-evolved
+// per-league formatting conventions, not a bug to unify here.
+function PWHLGoalieHeaderPanel({ percentiles, boxStats, teamColor, comparisonEntry }) {
+  if (!percentiles) return null;
+  const radarData = computeGoalieRadarAxes(percentiles);
+  const fmtSvPct = (raw) => raw == null ? null : Number(raw).toFixed(3).replace(/^0\./, '.');
+  const fmtGaa = (raw) => raw == null ? null : Number(raw).toFixed(2);
+  return (
+    <div className={PP_HEADER_RADAR_CLASSES}>
+      <GoalieRadarChart data={radarData} color={teamColor} />
+      <div className={PP_QUICKSTATS_COL_CLASSES}>
+        <div className={PP_QUICKSTATS_CLASSES}>
+          <PWHLQuickStatPill label="W"   value={boxStats?.wins} />
+          <PWHLQuickStatPill label="SV%" value={fmtSvPct(boxStats?.sv_pct)} />
+          <PWHLQuickStatPill label="GAA" value={fmtGaa(boxStats?.gaa)} />
+          <PWHLQuickStatPill label="SO"  value={boxStats?.shutouts} />
         </div>
         {comparisonEntry}
       </div>
@@ -473,13 +565,17 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
   const isGoalie  = p.position === 'G';
   const defs      = isGoalie ? GOALIE_STATS : SKATER_STATS;
   const currentGroups = pwhlGroupStats(defs, p);
+  const teamColor = getPWHLTeamById(p.team_id)?.displayColor || '#4d80f0';
 
-  // ── Percentiles (Session 80) — precomputed by eyewall-pipeline's
-  // pwhl_percentiles.py, served as-is by the poller's
-  // /pwhl/player/percentiles. Skaters only, current season only, same
-  // scope NHL's PlayerPopup already applies to its own percentile tiles.
+  // ── Percentiles — precomputed league-wide by eyewall-pipeline (Session
+  // 80's pwhl_percentiles.py for skaters, pwhl_goalie_percentiles.py for
+  // goalies added 2026-08), served as-is by the poller's
+  // /pwhl/player/percentiles or /pwhl/goalie/percentiles respectively.
+  // Current season only, same scope NHL's PlayerPopup already applies.
   const { data: pctData } = useFetch(
-    () => (!isGoalie && playerId) ? fetchPWHLPlayerPercentiles(playerId, season) : Promise.resolve(null),
+    () => playerId
+      ? (isGoalie ? fetchPWHLGoaliePercentiles(playerId, season) : fetchPWHLPlayerPercentiles(playerId, season))
+      : Promise.resolve(null),
     [playerId, season, isGoalie]
   );
 
@@ -540,14 +636,17 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
 
   // ── Header reflow (Session 85) — same two-column top row + full-width
   // 6-column bio row pattern as NHL PlayerPopup (Session 80). Scoped to
-  // skaters with percentile data, same condition NHL's showHeaderReflow
-  // uses -- goalies and the pre-percentiles loading flash keep the
-  // original single-block header.
-  const showHeaderReflow = !isGoalie && !!pctData?.percentiles;
+  // percentile data being present for whichever position this player is --
+  // goalies now reflow too (2026-08, previously always false here since
+  // goalieData had nowhere to render before PWHLGoalieHeaderPanel existed).
+  // The pre-percentiles loading flash still keeps the original
+  // single-block header for everyone.
+  const showHeaderReflow = !!pctData?.percentiles;
   const bioFields = [
     { label: 'Height',    value: fmtHeight(p.height_inches) },
     { label: 'Weight',    value: null },
-    { label: 'Shoots',    value: p.shoots ? (p.shoots === 'L' ? 'Left' : p.shoots === 'R' ? 'Right' : p.shoots) : null },
+    { label: isGoalie ? 'Catches' : 'Shoots',
+      value: p.shoots ? (p.shoots === 'L' ? 'Left' : p.shoots === 'R' ? 'Right' : p.shoots) : null },
     { label: 'Age',       value: p.birth_date ? calcAge(p.birth_date) : null },
     { label: 'Birthdate', value: p.birth_date ? fmtBirth(p.birth_date) : null },
     { label: 'Hometown',  value: p.birth_city || null },
@@ -584,7 +683,7 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
             </div>
             <div className={PP_CHIPS_CLASSES}>
               {p.position && <span className={PP_POS_CHIP_CLASSES}>{posLabel(p.position)}</span>}
-              {!showHeaderReflow && p.shoots && <span className={PP_CHIP_CLASSES}>Shoots {p.shoots === 'L' ? 'Left' : p.shoots === 'R' ? 'Right' : p.shoots}</span>}
+              {!showHeaderReflow && p.shoots && <span className={PP_CHIP_CLASSES}>{isGoalie ? 'Catches' : 'Shoots'} {p.shoots === 'L' ? 'Left' : p.shoots === 'R' ? 'Right' : p.shoots}</span>}
             </div>
             {!showHeaderReflow && p.birth_date && (
               <div className={PP_BIRTH_CLASSES}>
@@ -593,7 +692,15 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
               </div>
             )}
           </div>
-          {showHeaderReflow && <PWHLHeaderPanel percentiles={pctData.percentiles} comparisonEntry={comparisonEntry} />}
+          {showHeaderReflow && isGoalie && (
+            <PWHLGoalieHeaderPanel
+              percentiles={pctData.percentiles}
+              boxStats={p}
+              teamColor={teamColor}
+              comparisonEntry={comparisonEntry}
+            />
+          )}
+          {showHeaderReflow && !isGoalie && <PWHLHeaderPanel percentiles={pctData.percentiles} comparisonEntry={comparisonEntry} />}
           {!showHeaderReflow && comparisonEntry}
           <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label="Close">✕</button>
         </div>
