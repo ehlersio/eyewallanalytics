@@ -215,8 +215,15 @@ export async function getSeasonShots(team, season = currentSeason()) {
 }
 
 // ── Goalie analytics ──────────────────────────────────────────
+// Response shape changed (eyewall-poller#56) from a bare array to
+// { rows, statsStale, statsSeason } -- /goalie-analytics gained the same
+// whole-season-empty fallback /player-analytics already had (Session 66):
+// when the live season resolves ahead of any real games, it falls back
+// one season back rather than returning nothing for every goalie.
+// statsStale/statsSeason are stamped onto each goalie's object below,
+// same denormalized-per-player pattern getPlayerAnalytics() already uses.
 export async function getGoalieAnalytics(season = currentSeason()) {
-  const rows = await workerFetch(`/goalie-analytics?season=${season}`);
+  const { rows, statsStale, statsSeason } = await workerFetch(`/goalie-analytics?season=${season}`);
 
   const result = {};
   for (const r of (rows || [])) {
@@ -230,6 +237,8 @@ export async function getGoalieAnalytics(season = currentSeason()) {
       hdSvPct: r.hd_sv_pct != null ? Math.round(r.hd_sv_pct * 1000) / 10 : null,
       mdSvPct: r.md_sv_pct != null ? Math.round(r.md_sv_pct * 1000) / 10 : null,
       pkSvPct: r.pk_sv_pct != null ? Math.round(r.pk_sv_pct * 1000) / 10 : null,
+      statsStale:  !!statsStale,
+      statsSeason: statsSeason ?? null,
       percentiles: {
         gsax:   { pct: r.pct_gsax,   label: 'GSAX',            note: 'Goals saved above expected — total goals saved vs what an average goalie would save on the same shots (MoneyPuck flurry-adjusted xGoals model). Positive = saving more than expected. The most complete single goalie metric. Percentile vs all NHL goalies (min 10 GP).' },
         gsax60: { pct: r.pct_gsax60, label: 'GSAX/60',         note: 'Goals saved above expected per 60 minutes. Rate-adjusts GSAX so goalies with different workloads can be compared fairly. Useful for backups or goalies who missed time. Percentile vs all NHL goalies (min 10 GP).' },
