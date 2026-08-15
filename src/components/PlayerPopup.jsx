@@ -40,7 +40,7 @@ import PercentileBar from './PercentileBar'
 import PlayerComparisonEntry from './PlayerComparisonEntry'
 import {
   SKATER_STATS, GOALIE_STATS, groupStats, posLabel,
-  STAT_PCT_MAP, computeRadarAxes, RADAR_AXIS_ABBR,
+  STAT_PCT_MAP, computeRadarAxes, computeGoalieRadarAxes, RADAR_AXIS_ABBR,
 } from '../utils/nhlPlayerStats'
 import { SKELETON_CLASSES } from '../utils/skeletonClasses'
 // Tailwind migration (Session 97, Phase 3, sub-PR 2 + sub-PR 3). Most of
@@ -376,6 +376,54 @@ function SkaterHeaderPanel({ percentiles, boxStats, teamColor, statsStale, stats
           <QuickStatPill label="A"   value={boxStats?.assists} />
           <QuickStatPill label="P"   value={boxStats?.points} />
           <QuickStatPill label="TOI" value={fmtToi(boxStats?.avgToi)} />
+        </div>
+        {comparisonEntry}
+      </div>
+    </div>
+  )
+}
+
+// Goalie equivalent of SkaterHeaderPanel (added after skaters had this for
+// several sessions with no goalie counterpart -- the underlying percentile
+// data already existed via getGoalieAnalytics()/goalieData.percentiles,
+// already used by the Analytics tab's PercentileBar list and by
+// PlayerComparisonPopup's goalie-vs-goalie radar (computeGoalieRadarAxes,
+// Session 91) -- this was purely a missing wire-up in this single-player
+// header, not a data gap).
+//
+// `percentiles` here is goalieData.percentiles (getGoalieAnalytics's
+// shape: gsax/gsax60/evSv/hdSv/mdSv/pkSv), a different shape from
+// SkaterHeaderPanel's mpData.percentiles -- computeGoalieRadarAxes reads
+// it directly, no STAT_PCT_MAP translation needed (unlike skaters' 10-pct
+// -> 5-axis squeeze, goalies' 6 categories map 1:1 to 6 axes).
+//
+// `boxStats` is the same raw current-season stats object skaters get
+// (from `sections`, the live NHL API shape) -- wins/savePctg/
+// goalsAgainstAvg/shutouts are its real field names, matching GOALIE_STATS'
+// `key`s exactly, same as groupStats() already assumes elsewhere in this
+// file.
+function GoalieHeaderPanel({ percentiles, boxStats, teamColor, statsStale, statsSeason, comparisonEntry }) {
+  if (!percentiles) return null
+  const radarData = computeGoalieRadarAxes(percentiles)
+  const fmtSvPct = (raw) => {
+    if (raw == null) return null
+    const n = parseFloat(raw)
+    return isNaN(n) ? null : (n <= 1 ? n.toFixed(3) : (n / 100).toFixed(3))
+  }
+  const fmtGaa = (raw) => raw == null ? null : parseFloat(raw).toFixed(2)
+  // Same whole-season fallback pattern as SkaterHeaderPanel.
+  const staleNote = statsStale
+    ? `Not enough games yet this season — showing ${nhlSeasonLabel(statsSeason)}`
+    : null
+  return (
+    <div className={PP_HEADER_RADAR_CLASSES}>
+      <PlayerRadarChart data={radarData} color={teamColor} staleNote={staleNote} />
+      <div className={PP_QUICKSTATS_COL_CLASSES}>
+        <div className={PP_QUICKSTATS_CLASSES}>
+          <QuickStatPill label="W"   value={boxStats?.wins} />
+          <QuickStatPill label="SV%" value={fmtSvPct(boxStats?.savePctg)} />
+          <QuickStatPill label="GAA" value={fmtGaa(boxStats?.goalsAgainstAvg)} />
+          <QuickStatPill label="SO"  value={boxStats?.shutouts} />
         </div>
         {comparisonEntry}
       </div>
@@ -1057,15 +1105,18 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
   // ── Header reflow (Session 80) — two-column top row (compact identity |
   // radar + 2x2 totals) plus a full-width 6-column bio row underneath.
-  // Scoped to exactly the case SkaterHeaderPanel already renders for
-  // (!isGoalie && percentiles present) -- goalies and the pre-percentiles
-  // loading flash keep the original single-block header rather than
-  // splitting into a two-column layout with nothing to put on the right.
-  const showHeaderReflow = !isGoalie && !!mpData?.percentiles
+  // Scoped to exactly the case SkaterHeaderPanel/GoalieHeaderPanel already
+  // render for (percentiles present for whichever type this player is) --
+  // the pre-percentiles loading flash keeps the original single-block
+  // header rather than splitting into a two-column layout with nothing to
+  // put on the right. Goalies now reflow too (previously always false for
+  // goalies here, before goalieData.percentiles had anywhere to render).
+  const showHeaderReflow = isGoalie ? !!goalieData?.percentiles : !!mpData?.percentiles
   const bioFields = [
     { label: 'Height',    value: bio.heightInInches ? fmtHeight(bio.heightInInches) : null },
     { label: 'Weight',    value: bio.weightInPounds ? `${bio.weightInPounds} lbs` : null },
-    { label: 'Shoots',    value: p.shootsCatches ? (p.shootsCatches === 'L' ? 'Left' : 'Right') : null },
+    { label: isGoalie ? 'Catches' : 'Shoots',
+      value: p.shootsCatches ? (p.shootsCatches === 'L' ? 'Left' : 'Right') : null },
     { label: 'Age',       value: bio.birthDate ? calcAge(bio.birthDate) : null },
     { label: 'Birthdate', value: bio.birthDate ? fmtBirth(bio.birthDate) : null },
     { label: 'Hometown',  value: bio.birthCity?.default
@@ -1138,7 +1189,22 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
               </div>
             )}
           </div>
-          {showHeaderReflow && (
+          {showHeaderReflow && isGoalie && (
+            // goalieData.statsStale/statsSeason (eyewall-poller#56) -- the
+            // same whole-season-empty fallback flag mpData already carried
+            // for skaters, now that /goalie-analytics has the equivalent
+            // fallback. Same shape as SkaterHeaderPanel's props below, just
+            // sourced from goalieData instead of mpData.
+            <GoalieHeaderPanel
+              percentiles={goalieData.percentiles}
+              boxStats={currentBoxStats}
+              teamColor={teamColor}
+              statsStale={goalieData.statsStale}
+              statsSeason={goalieData.statsSeason}
+              comparisonEntry={comparisonEntry}
+            />
+          )}
+          {showHeaderReflow && !isGoalie && (
             <SkaterHeaderPanel
               percentiles={mpData.percentiles}
               boxStats={currentBoxStats}
