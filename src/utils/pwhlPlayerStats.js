@@ -135,4 +135,32 @@ export const RADAR_AXIS_ABBR = {
   '1st Assists':  'A1',
   'Finishing':    'FIN',
   'Penalties':    'PIM',
+  'GSAX':         'GSAX',
+  'GSAX/60':      'G60',
+  '5v5 SV%':      '5v5',
+  'HD SV%':       'HD',
+  'MD SV%':       'MD',
+  'PK SV%':       'PK',
+}
+
+// PWHL goalie radar axes -- 6 raw percentile categories, no compositing
+// needed (same shape as NHL's own computeGoalieRadarAxes in
+// nhlPlayerStats.js). Added alongside eyewall-poller's new
+// /pwhl/goalie/percentiles route and eyewall-pipeline's
+// pwhl_goalie_percentiles.py (2026-08) -- PWHL goalies had zero percentile
+// data of any kind before this; pwhl_percentiles.py (skaters) explicitly
+// excludes them. `percentiles` here is /pwhl/goalie/percentiles' own
+// shape (gsax/gsax60/evSv/hdSv/mdSv/pkSv keys), matching NHL's
+// getGoalieAnalytics() percentile shape exactly -- no key-name
+// translation needed between this function and its NHL counterpart.
+export function computeGoalieRadarAxes(percentiles) {
+  const p = percentiles || {}
+  return [
+    { axis: 'GSAX',        value: p.gsax?.pct ?? null },
+    { axis: 'GSAX/60',     value: p.gsax60?.pct ?? null },
+    { axis: '5v5 SV%',     value: p.evSv?.pct ?? null },
+    { axis: 'HD SV%',      value: p.hdSv?.pct ?? null },
+    { axis: 'MD SV%',      value: p.mdSv?.pct ?? null },
+    { axis: 'PK SV%',      value: p.pkSv?.pct ?? null },
+  ].map(d => ({ ...d, hasData: d.value != null, value: d.value ?? 0 }))
 }

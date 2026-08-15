@@ -84,6 +84,19 @@ export async function fetchPWHLPlayerPercentiles(playerId, season) {
 }
 
 /**
+ * Goalie-side analog of fetchPWHLPlayerPercentiles (GSAX, GSAX/60, 5v5/HD/
+ * MD/PK SV% -- see eyewall-pipeline's pwhl_goalie_percentiles.py, added
+ * 2026-08). Straight read of eyewall-poller's /pwhl/goalie/percentiles,
+ * same "null = not enough data yet, not an error" convention. Omit season
+ * to get the most recent regular-season row.
+ */
+export async function fetchPWHLGoaliePercentiles(playerId, season) {
+  if (!playerId) return null;
+  const qs = season ? `&season=${season}` : '';
+  return workerFetch(`/pwhl/goalie/percentiles?id=${playerId}${qs}`);
+}
+
+/**
  * Fetch one player's career Regular Season / Playoffs totals (Session 75).
  * Returns { player_id, regularSeason, playoffs }, either season object
  * `null` if the player has no rows in that section yet (e.g. hasn't made
