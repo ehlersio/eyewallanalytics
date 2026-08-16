@@ -128,40 +128,76 @@ function periodOrdinal(n) {
 }
 
 const CARD_LABEL_CLASSES = 'sec-label flex items-center justify-between';
-const RINK_WRAP_CLASSES = 'relative w-full rounded-[8px] overflow-hidden bg-[#d6eaf5]';
+// Mirrors IceRink.jsx's own rink-svg-container exactly (IceRink.jsx:440) --
+// no independent background/corner-radius of its own. The previous version
+// gave this wrapper its own bg + a small rounded-[8px] corner sitting behind
+// the SVG's much-more-rounded ice shape (rx=84), leaving a visible ring of
+// flat background outside the ice's curve at each corner. The SVG's own
+// rect IS the entire visible surface; the wrapper just needs to clip it.
+const RINK_WRAP_CLASSES = 'relative w-full overflow-hidden rounded-[var(--radius-sm)] leading-none select-none';
 const INTERMISSION_LABEL_CLASSES = 'text-[13px] font-bold text-[#0f1b2e] [text-shadow:0_1px_2px_rgba(255,255,255,0.5)]';
 const INTERMISSION_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[20px] font-extrabold text-[#0f1b2e] [text-shadow:0_1px_2px_rgba(255,255,255,0.5)]';
 
 // ── Zamboni (Session 100) — hand-built flat-icon SVG, not a raster asset.
-// No image-generation tool (Pixellab or otherwise) is available to build
-// this from; a crafted vector icon scales cleanly at any size/theme and
-// fits this rink's all-SVG rendering, unlike a hosted raster image would.
-// Side-profile resurfacer: body, cab + windshield, brush housing, wheels.
+// No image-generation tool (Pixellab or otherwise) is available in this
+// environment to build this from; a crafted vector icon scales cleanly at
+// any size/theme and fits this rink's all-SVG rendering, unlike a hosted
+// raster image would. Styled after a reference illustration the user
+// shared: angled white hood over a blue halftone-textured lower body, dark
+// angled front nose with a light accent stripe, a lime-green front
+// resurfacer blade, an OPEN driver platform (post + seat-back + cushion,
+// not an enclosed cab) with an antenna, and two wheels with a lug-dot hub
+// pattern. Drawn facing left by default; direction is flipped via scaleX
+// in the animation below (never rotated 180deg -- see that comment for why).
 function Zamboni() {
+  const hubDots = (cx, cy) => [0, 60, 120, 180, 240, 300].map(a => {
+    const rad = (a * Math.PI) / 180;
+    return <circle key={a} cx={cx + 2.1 * Math.cos(rad)} cy={cy + 2.1 * Math.sin(rad)} r="0.5" fill="#f4f7fb" />;
+  });
+
   return (
     <g
-      className="animate-[zamboni-drive_75s_linear_infinite]"
-      style={{ transformOrigin: '26px 12px' }} // vehicle's own visual center, so 180deg turns pivot in place
+      className="animate-[zamboni-drive_80s_linear_infinite]"
+      style={{ transformOrigin: '24px 9px' }} // vehicle's own visual center
     >
-      <ellipse cx="28" cy="24.5" rx="27" ry="2.5" fill="#000" opacity="0.22" />
-      {/* body */}
-      <rect x="4" y="9" width="48" height="14" rx="3" fill="#eef2f6" stroke="#26405f" strokeWidth="1.2" />
-      {/* accent stripe */}
-      <rect x="4" y="15" width="48" height="3.2" fill="#c0394b" opacity="0.9" />
-      {/* cab */}
-      <path d="M 33 9 L 33 1.5 Q 33 -1 35.5 -1 L 46 -1 Q 48.5 -1 48.5 1.5 L 48.5 9 Z"
-        fill="#dbe4ee" stroke="#26405f" strokeWidth="1.2" />
-      {/* windshield */}
-      <path d="M 35.5 1 L 46 1 L 45.3 6.5 L 36.2 6.5 Z" fill="#8fb8e0" opacity="0.9" />
-      {/* brush/auger housing at the front */}
-      <rect x="0" y="12" width="5" height="9" rx="1.5" fill="#3d4b5e" />
-      {/* exhaust */}
-      <rect x="30" y="4" width="2" height="6" rx="1" fill="#6b7a8c" />
+      <defs>
+        <pattern id="zamboniHalftone" width="3.2" height="3.2" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.55" fill="#1b2540" opacity="0.35" />
+        </pattern>
+      </defs>
+
+      <ellipse cx="30" cy="27.5" rx="29" ry="2.5" fill="#000" opacity="0.2" />
+
+      {/* lower body -- blue, halftone-textured */}
+      <rect x="8" y="14" width="44" height="10" rx="2" fill="#3355ee" stroke="#1b2540" strokeWidth="1.4" />
+      <rect x="8" y="14" width="44" height="10" rx="2" fill="url(#zamboniHalftone)" />
+
+      {/* angled white hood/tank top */}
+      <path d="M 10 14 L 14 3 L 46 3 L 52 14 Z" fill="#f4f7fb" stroke="#1b2540" strokeWidth="1.4" />
+      <path d="M 10 14 L 52 14" stroke="#b8e62e" strokeWidth="1.6" />
+
+      {/* dark angled front nose */}
+      <path d="M 2 20 L 10 14 L 10 24 L 5 24 Z" fill="#1b2540" />
+      <path d="M 4 19 L 9.4 15.3" stroke="#8fd8ff" strokeWidth="1.2" opacity="0.85" />
+
+      {/* front resurfacer blade, low near the ice */}
+      <rect x="-3" y="23" width="14" height="5" rx="1.2" fill="#b8e62e" stroke="#1b2540" strokeWidth="1.1" />
+      <rect x="-3" y="23" width="14" height="5" rx="1.2" fill="url(#zamboniHalftone)" />
+
+      {/* open driver platform */}
+      <rect x="43" y="1" width="2.4" height="13" fill="#1b2540" />
+      <path d="M 40 -6 Q 40 -9 43 -9 L 49 -9 Q 52 -9 52 -6 L 52 1 L 40 1 Z" fill="#3355ee" stroke="#1b2540" strokeWidth="1.3" />
+      <rect x="39" y="1" width="14" height="2.6" rx="1" fill="#1b2540" />
+      <line x1="37" y1="3" x2="37" y2="-8" stroke="#1b2540" strokeWidth="1" />
+      <circle cx="37" cy="-9" r="1.3" fill="#b8e62e" />
+
       {/* wheels */}
-      <circle cx="15" cy="24" r="4.2" fill="#1a2230" stroke="#0c1119" strokeWidth="0.8" />
-      <circle cx="15" cy="24" r="1.6" fill="#5a6b80" />
-      <circle cx="41" cy="24" r="4.2" fill="#1a2230" stroke="#0c1119" strokeWidth="0.8" />
-      <circle cx="41" cy="24" r="1.6" fill="#5a6b80" />
+      <circle cx="18" cy="24" r="5.2" fill="#1b2540" />
+      <circle cx="18" cy="24" r="3.2" fill="#3355ee" stroke="#1b2540" strokeWidth="0.8" />
+      {hubDots(18, 24)}
+      <circle cx="42" cy="24" r="5.2" fill="#1b2540" />
+      <circle cx="42" cy="24" r="3.2" fill="#3355ee" stroke="#1b2540" strokeWidth="0.8" />
+      {hubDots(42, 24)}
     </g>
   );
 }
