@@ -32,7 +32,7 @@ import SeasonComparisonPicker from './SeasonComparisonPicker';
 import PlayerComparisonEntry from './PlayerComparisonEntry';
 import {
   SKATER_STATS, GOALIE_STATS, PWHL_STAT_PCT_MAP, posLabel, groupStats as pwhlGroupStats,
-  computeGoalieRadarAxes, RADAR_AXIS_ABBR,
+  computeRadarAxes, computeGoalieRadarAxes, RADAR_AXIS_ABBR,
 } from '../utils/pwhlPlayerStats';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 // Tailwind migration (Session 97, Phase 3, sub-PR 2 + sub-PR 3) -- see
@@ -157,57 +157,13 @@ function fmtHeight(inches) {
   return `${Math.floor(inches / 12)}′${inches % 12}″`;
 }
 
-function PWHLPercentileTile({ label, pct }) {
-  return (
-    <div className={PP_QUICKSTAT_CLASSES}>
-      <span className={PP_QUICKSTAT_VAL_CLASSES}>{pct != null ? Math.round(pct) : '—'}</span>
-      <span className={PP_QUICKSTAT_LABEL_CLASSES}>{label}</span>
-    </div>
-  );
-}
-
-// Displays a value as-is, no rounding -- unlike PWHLPercentileTile above
-// (which always Math.round()s, correct for raw 0-100 percentiles but
-// would corrupt an already-formatted string like ".902" or "2.47" into a
-// rounded integer). Matches NHL PlayerPopup's QuickStatPill exactly.
+// Displays a value as-is, no rounding. Matches NHL PlayerPopup's
+// QuickStatPill exactly.
 function PWHLQuickStatPill({ label, value }) {
   return (
     <div className={PP_QUICKSTAT_CLASSES}>
       <span className={PP_QUICKSTAT_VAL_CLASSES}>{value ?? '—'}</span>
       <span className={PP_QUICKSTAT_LABEL_CLASSES}>{label}</span>
-    </div>
-  );
-}
-
-// Header panel (Session 85) — PWHL's equivalent of NHL PlayerPopup's
-// SkaterHeaderPanel. Substitutes a 2x2 percentile-tile grid for NHL's
-// radar + G/A/P/TOI totals since PWHL only computes 4 percentile
-// categories today (pwhl_percentiles.py) and has no radar-worthy stat
-// set to plot. Reuses the same percentiles/pctMap the Stats tab's
-// TileStatSection already fetches -- no second request.
-// `comparisonEntry` (the "vs Player" button, Session 91) stacks below the
-// quickstats grid rather than sitting inline as a sibling of this panel --
-// matching the fix applied to NHL's SkaterHeaderPanel after the inline
-// placement was reported to squeeze that header row.
-function PWHLHeaderPanel({ percentiles, comparisonEntry }) {
-  if (!percentiles) return null;
-  const tiles = [
-    { statKey: 'goals',    label: 'G' },
-    { statKey: 'assists',  label: 'A1' },
-    { statKey: 'pim',      label: 'PIM' },
-    { statKey: 'shot_pct', label: 'S%' },
-  ];
-  return (
-    <div className={PP_HEADER_RADAR_CLASSES}>
-      <div className={PP_QUICKSTATS_COL_CLASSES}>
-        <div className={PP_QUICKSTATS_CLASSES}>
-          {tiles.map(t => (
-            <PWHLPercentileTile key={t.statKey} label={t.label}
-              pct={percentiles[PWHL_STAT_PCT_MAP[t.statKey]]?.pct} />
-          ))}
-        </div>
-        {comparisonEntry}
-      </div>
     </div>
   );
 }
@@ -220,7 +176,13 @@ function PWHLHeaderPanel({ percentiles, comparisonEntry }) {
 // radar renders inside a ~130px-wide flex slot, nowhere near enough room
 // for two-word labels like "5v5 SV%" at any legible size -- full names
 // are still available via the native SVG <title> on hover/tap.
-function GoalieRadarAxisTick({ x, y, payload, textAnchor }) {
+//
+// Shared between skaters and goalies (added 2026-08) -- nothing here is
+// goalie-specific despite the name it originally shipped under; only the
+// axis DATA differs (computeRadarAxes' 4 skater categories vs
+// computeGoalieRadarAxes' 6 goalie ones), both already keyed into the same
+// RADAR_AXIS_ABBR map.
+function PWHLRadarAxisTick({ x, y, payload, textAnchor }) {
   const full = payload.value;
   const short = RADAR_AXIS_ABBR[full] || full;
   return (
@@ -231,14 +193,14 @@ function GoalieRadarAxisTick({ x, y, payload, textAnchor }) {
   );
 }
 
-function GoalieRadarChart({ data, color }) {
+function PWHLRadarChart({ data, color }) {
   const missing = data.filter(d => !d.hasData).map(d => d.axis);
   return (
     <div className={PP_RADAR_WRAP_CLASSES}>
       <ResponsiveContainer width="100%" height={150}>
         <RadarChart data={data} outerRadius="62%">
           <PolarGrid stroke="var(--border-2)" />
-          <PolarAngleAxis dataKey="axis" tick={GoalieRadarAxisTick} />
+          <PolarAngleAxis dataKey="axis" tick={PWHLRadarAxisTick} />
           <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} tickCount={2} />
           <Radar dataKey="value" stroke={color} fill={color} fillOpacity={0.35} strokeWidth={2} isAnimationActive={false} />
         </RadarChart>
@@ -250,10 +212,55 @@ function GoalieRadarChart({ data, color }) {
   );
 }
 
+// Header panel (Session 85, upgraded 2026-08) — PWHL's equivalent of NHL
+// PlayerPopup's SkaterHeaderPanel. Originally substituted a 2x2
+// percentile-tile grid for NHL's radar + G/A/P/TOI totals, on the
+// reasoning that PWHL's 4 percentile categories weren't "radar-worthy."
+// That reasoning didn't hold up once PWHL goalies shipped a real 6-axis
+// radar from the exact same category *count* class (see
+// PWHLGoalieHeaderPanel below) -- 4 categories is exactly what
+// PlayerComparisonPopup.jsx's own PWHL skater radar has already been
+// plotting since Session 91, just never in this single-player header.
+// `boxStats` is the current-season raw stat object (same `p` shape
+// pwhlGroupStats/SKATER_STATS already read) -- goals/assists/points/
+// toi_per_game reused directly for the quickstat pills rather than
+// re-fetching anything. toi_per_game comes back from the Worker as a
+// string (Postgres bigint, PostgREST's string-serialization convention
+// for those -- see pwhl_percentiles.py's own gotcha comment), in seconds;
+// formatted to mm:ss matching NHL's own TOI/G convention exactly.
+// `comparisonEntry` (the "vs Player" button, Session 91) stacks below the
+// quickstats grid rather than sitting inline as a sibling of this panel --
+// matching the fix applied to NHL's SkaterHeaderPanel after the inline
+// placement was reported to squeeze that header row.
+function PWHLHeaderPanel({ percentiles, boxStats, teamColor, comparisonEntry }) {
+  if (!percentiles) return null;
+  const radarData = computeRadarAxes(percentiles);
+  const fmtToi = (raw) => {
+    if (raw == null) return null;
+    const secs = Number(raw);
+    if (isNaN(secs)) return null;
+    const m = Math.floor(secs / 60), s = String(secs % 60).padStart(2, '0');
+    return `${m}:${s}`;
+  };
+  return (
+    <div className={PP_HEADER_RADAR_CLASSES}>
+      <PWHLRadarChart data={radarData} color={teamColor} />
+      <div className={PP_QUICKSTATS_COL_CLASSES}>
+        <div className={PP_QUICKSTATS_CLASSES}>
+          <PWHLQuickStatPill label="G"   value={boxStats?.goals} />
+          <PWHLQuickStatPill label="A"   value={boxStats?.assists} />
+          <PWHLQuickStatPill label="P"   value={boxStats?.points} />
+          <PWHLQuickStatPill label="TOI" value={fmtToi(boxStats?.toi_per_game)} />
+        </div>
+        {comparisonEntry}
+      </div>
+    </div>
+  );
+}
+
 // PWHL goalie header panel (added 2026-08) -- goalie-side counterpart to
-// PWHLHeaderPanel above, but with a real radar chart instead of a 2x2 tile
-// grid (see PP_RADAR_WRAP_CLASSES' comment for why: 6 categories is a
-// genuinely radar-worthy set, same richness as NHL's own goalie radar).
+// PWHLHeaderPanel above, same radar-chart treatment (6 genuinely
+// radar-worthy categories, same richness as NHL's own goalie radar).
 // `boxStats` is the current-season raw stat object (same `p` shape
 // pwhlGroupStats/GOALIE_STATS already read) -- wins/sv_pct/gaa/shutouts
 // reused directly for the quickstat pills rather than re-fetching
@@ -268,7 +275,7 @@ function PWHLGoalieHeaderPanel({ percentiles, boxStats, teamColor, comparisonEnt
   const fmtGaa = (raw) => raw == null ? null : Number(raw).toFixed(2);
   return (
     <div className={PP_HEADER_RADAR_CLASSES}>
-      <GoalieRadarChart data={radarData} color={teamColor} />
+      <PWHLRadarChart data={radarData} color={teamColor} />
       <div className={PP_QUICKSTATS_COL_CLASSES}>
         <div className={PP_QUICKSTATS_CLASSES}>
           <PWHLQuickStatPill label="W"   value={boxStats?.wins} />
@@ -700,7 +707,14 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
               comparisonEntry={comparisonEntry}
             />
           )}
-          {showHeaderReflow && !isGoalie && <PWHLHeaderPanel percentiles={pctData.percentiles} comparisonEntry={comparisonEntry} />}
+          {showHeaderReflow && !isGoalie && (
+            <PWHLHeaderPanel
+              percentiles={pctData.percentiles}
+              boxStats={p}
+              teamColor={teamColor}
+              comparisonEntry={comparisonEntry}
+            />
+          )}
           {!showHeaderReflow && comparisonEntry}
           <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label="Close">✕</button>
         </div>
