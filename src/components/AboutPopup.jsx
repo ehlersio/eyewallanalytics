@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import EyeWallLogo from './EyeWallLogo';
 
 // Tailwind migration (Session 95, Phase 1) -- previously AboutPopup.css.
 //
@@ -109,7 +110,7 @@ export default function AboutPopup({ isLive = false }) {
         aria-label="About EyeWall Analytics"
         aria-expanded={open}
       >
-        <img src="/eyewall-logo.svg" alt="" className={TOPBAR_LOGOIMG_CLASSES} width="36" height="36" />
+        <EyeWallLogo alt="" className={TOPBAR_LOGOIMG_CLASSES} width="36" height="36" />
         {!isLive && (
           <div>
             <div className={TOPBAR_NAME_CLASSES}>EyeWall Analytics</div>
@@ -123,7 +124,7 @@ export default function AboutPopup({ isLive = false }) {
           <button className={CLOSE_CLASSES} onClick={() => setOpen(false)} aria-label="Close">✕</button>
 
           <div className={LOGO_ROW_CLASSES}>
-            <img src="/eyewall-logo.svg" alt="EyeWall Analytics" width="48" height="48" />
+            <EyeWallLogo alt="EyeWall Analytics" width="48" height="48" />
             <div>
               <div className={TITLE_CLASSES}>EyeWall Analytics</div>
               <div className={SUBTITLE_CLASSES}>Hockey Intelligence</div>
