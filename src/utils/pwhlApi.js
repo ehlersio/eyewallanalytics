@@ -57,6 +57,12 @@ export async function fetchPWHLPlayerShots(playerId, season = PWHL_CURRENT_SEASO
   return workerFetch(`/pwhl/player-shots?playerId=${playerId}&season=${season}`);
 }
 
+/** Fetch shots faced by a specific goalie (for goalie heat map). */
+export async function fetchPWHLGoalieShots(goalieId, season = PWHL_CURRENT_SEASON) {
+  if (!goalieId) return null;
+  return workerFetch(`/pwhl/goalie-shots?goalieId=${goalieId}&season=${season}`);
+}
+
 /**
  * Fetch a single player's identity + one season's stat line, merged.
  * Powers PWHLPlayerPopup's self-fetch-by-id — pass the popup's own
