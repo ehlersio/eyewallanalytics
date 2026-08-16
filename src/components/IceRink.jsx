@@ -35,10 +35,12 @@ function popupTeamBadgeClasses(isCanes) {
 // NHL ice: 200ft x 85ft. Origin (0,0) = center ice.
 // x: -100 (left goal) → +100 (right goal)
 // y: -42.5 (bottom boards) → +42.5 (top boards)
-const W  = 600;
-const H  = 255;
-const CX = W / 2;
-const CY = H / 2;
+// Exported (Session 100) so LiveEventRink.jsx can render the exact same
+// rink markings -- see RinkMarkings' own export below.
+export const W  = 600;
+export const H  = 255;
+export const CX = W / 2;
+export const CY = H / 2;
 
 // Convert NHL ice coords → SVG pixel coords
 function toSvg(x, y) {
@@ -831,7 +833,10 @@ function ShotPopup({ event: e, _playerNames, onClose, displayAbbr }) {
 }
 
 // ─── Rink markings SVG ────────────────────────────────────────
-function RinkMarkings({ showHalf, flipPerspective = false, teamAbbr, teamColor }) {
+// Exported (Session 100) so LiveEventRink.jsx can render an identical rink
+// instead of its own approximation -- single source of truth for the
+// season shot map and the live event rink both.
+export function RinkMarkings({ showHalf, flipPerspective = false, teamAbbr, teamColor }) {
   return (
     <g>
             {/* ── Rink surface (corner radius 28ft = 84px) ── */}

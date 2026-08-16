@@ -463,26 +463,31 @@
 
 /* LiveEventRink.jsx's intermission Zamboni -- a stylized lane-by-lane
    resurfacing pass (drive a lane, turn, drive the adjacent lane back,
-   repeat) within LiveEventRink's 300x128 SVG viewBox. Pure transform
+   repeat) within LiveEventRink's real 600x255 rink viewBox (shared with
+   IceRink.jsx's RinkMarkings, Session 100). Pure transform
    (translate/rotate), so it's GPU-composited and cheap to run on
    `infinite` for a full ~15-18min intermission -- no JS interval drives
-   this, unlike the component's own dot-decay ticker. */
+   this, unlike the component's own dot-decay ticker. Lane y-values keep a
+   margin from the rink's heavily-rounded corners (rx=84 on a 600x255
+   rect); the Zamboni <g> itself sets transform-origin to its own visual
+   center so each 180deg turn rotates in place instead of pivoting around
+   the SVG's (0,0) origin. */
 @keyframes zamboni-drive {
-  0%   { transform: translate(12px, 24px)  rotate(0deg); }
-  11%  { transform: translate(262px, 24px) rotate(0deg); }
-  14%  { transform: translate(262px, 24px) rotate(180deg); }
-  25%  { transform: translate(12px, 48px)  rotate(180deg); }
-  28%  { transform: translate(12px, 48px)  rotate(0deg); }
-  39%  { transform: translate(262px, 48px) rotate(0deg); }
-  42%  { transform: translate(262px, 48px) rotate(180deg); }
-  53%  { transform: translate(12px, 72px)  rotate(180deg); }
-  56%  { transform: translate(12px, 72px)  rotate(0deg); }
-  67%  { transform: translate(262px, 72px) rotate(0deg); }
-  70%  { transform: translate(262px, 72px) rotate(180deg); }
-  81%  { transform: translate(12px, 96px)  rotate(180deg); }
-  84%  { transform: translate(12px, 96px)  rotate(0deg); }
-  95%  { transform: translate(262px, 96px) rotate(0deg); }
-  100% { transform: translate(12px, 24px)  rotate(0deg); }
+  0%   { transform: translate(25px, 40px)  rotate(0deg); }
+  11%  { transform: translate(510px, 40px) rotate(0deg); }
+  14%  { transform: translate(510px, 40px) rotate(180deg); }
+  25%  { transform: translate(25px, 100px) rotate(180deg); }
+  28%  { transform: translate(25px, 100px) rotate(0deg); }
+  39%  { transform: translate(510px, 100px) rotate(0deg); }
+  42%  { transform: translate(510px, 100px) rotate(180deg); }
+  53%  { transform: translate(25px, 160px) rotate(180deg); }
+  56%  { transform: translate(25px, 160px) rotate(0deg); }
+  67%  { transform: translate(510px, 160px) rotate(0deg); }
+  70%  { transform: translate(510px, 160px) rotate(180deg); }
+  81%  { transform: translate(25px, 220px) rotate(180deg); }
+  84%  { transform: translate(25px, 220px) rotate(0deg); }
+  95%  { transform: translate(510px, 220px) rotate(0deg); }
+  100% { transform: translate(25px, 40px)  rotate(0deg); }
 }
 
 /* Hoisted from DraftTab.css (Phase 6) for its .dt-live-dot pulse. Similar in
