@@ -71,7 +71,7 @@ canes-analytics-starter/
 │   │   ├── LeagueView.jsx              # NHL 5-tab league page — Tailwind (Phase 4, sub-PRs 1-4), no .css file
 │   │   ├── NewsView.jsx                # NHL news feed + News/Milestones/Trivia tab toggle (Trivia added Session 92) — Tailwind (Phase 4, sub-PR 4), no .css file
 │   │   ├── PWHLShotMapView.jsx         # PWHL shot map + PBP metrics — season/game history + Regular Season/Playoffs toggle (Session 77, new capability, not just NHL parity)
-│   │   ├── PWHLScheduleView.jsx        # PWHL schedule + calendar + playoffs
+│   │   ├── PWHLScheduleView.jsx        # PWHL schedule + calendar + playoffs. Auto-records prediction outcomes for completed games via `recordPWHLOutcome()` (Session 100), mirroring NHL `ScheduleView.jsx`'s own effect
 │   │   ├── PWHLTeamView.jsx            # PWHL 5-tab team analytics
 │   │   ├── PWHLPlayersView.jsx         # PWHL roster + stats + player popup
 │   │   ├── PWHLLeagueView.jsx          # PWHL 5-tab league page
@@ -96,6 +96,7 @@ canes-analytics-starter/
 │   │   ├── TriviaFeed.jsx              # Daily Trivia tab content (Session 92) — three tier cards, answer/reveal flow, aggregate correct/attempted stats. Same "rendered as a tab inside NewsView" pattern as MilestonesFeed.jsx. Tailwind (Phase 1 own classes; NewsView.css-owned classes finished Phase 4, sub-PR 4, imported from utils/newsViewClasses.js)
 │   │   ├── PeriodSummary.jsx           # Period/game summary popup + share canvas + hat trick badges — fully Tailwind (Phase 4, sub-PRs 5a/5b; PeriodSummary.css deleted)
 │   │   ├── PWHLPeriodSummary.jsx       # PWHL period/game summary popup + share canvas — fully Tailwind, same as above
+│   │   ├── PWHLPredictionShareCanvas.jsx # PWHL prediction track-record + share canvas (Session 100) — right-sized PWHL analogue of PredictionShareCanvas.jsx, scoped to what /pwhl/prediction actually returns (win%, expected score, narrative, streak, shot-attempt share); no odds/PP-PK-factors/line-combos section, since PWHLGamePreviewPopup.jsx doesn't fetch that for its Prediction section. Auto-save/track-record logic lives in utils/pwhlPredictionStore.js, an independent store (own localStorage key) rather than reusing predictionStore.js's Carolina-era `carActual`/`predictedCarWin` field names
 │   │   ├── ShareButtons.jsx/.css       # Shared Save/X/Share buttons across all export cards
 │   │   ├── HatTrickPopup              # (in GameEvents.jsx) — live hat trick celebration overlay
 │   │   ├── MilestonesFeed.jsx          # League-wide milestone feed (hat tricks, shutouts, SH goals, season/career thresholds) — tappable into PlayerPopup

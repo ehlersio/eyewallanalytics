@@ -4,6 +4,7 @@ import { PWHLCalendarView } from '../components/PWHLCalendarView';
 import { useNavigate } from 'react-router-dom';
 import { useFetch } from '../hooks/useFetch';
 import { fetchPWHLSchedule, fetchPWHLTeamRecord, PWHL_TEAM_CONFIG, PWHL_TEAM_ID } from '../utils/pwhlApi';
+import { recordPWHLOutcome } from '../utils/pwhlPredictionStore';
 import {
   PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById,
   PWHL_REGULAR_SEASONS as REGULAR_SEASONS,
@@ -173,6 +174,22 @@ export default function PWHLScheduleView() {
   const { completed: _poCompleted, upcoming: _poUpcoming, record: poRecord } = useMemo(() => {
     return splitGames(poSchedule, teamId);
   }, [poSchedule, teamId]);
+
+  // Auto-record prediction outcomes for any completed games -- mirrors
+  // NHL ScheduleView.jsx's own effect. PWHLGamePreviewPopup.jsx saves the
+  // prediction when a user opens a game's preview; this fills in the
+  // actual outcome once that game is Final, keyed by the same game_id.
+  useEffect(() => {
+    if (!teamId) return;
+    [...regCompleted, ..._poCompleted].forEach(g => {
+      const isHomeGame = g.home_team_id === teamId;
+      const teamActual = isHomeGame ? g.home_score : g.away_score;
+      const oppActual  = isHomeGame ? g.away_score : g.home_score;
+      if (teamActual != null && oppActual != null && g.game_id) {
+        recordPWHLOutcome(g.game_id, teamActual, oppActual);
+      }
+    });
+  }, [regCompleted, _poCompleted, teamId]);
 
   const sortedRegCompleted = useMemo(() =>
     [...regCompleted].sort((a,b) => regSort === 'desc' ? b.game_id - a.game_id : a.game_id - b.game_id),

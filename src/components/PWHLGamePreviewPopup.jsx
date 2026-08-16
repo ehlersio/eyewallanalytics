@@ -25,6 +25,8 @@ import { getPWHLTeamById } from '../utils/pwhlConfig';
 import TeamLogo from './TeamLogo';
 import { capture } from '../utils/analytics';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
+import { savePWHLPrediction, getPWHLPredictionStats } from '../utils/pwhlPredictionStore';
+import PWHLPredictionExportSection from './PWHLPredictionShareCanvas';
 // PWHLGamePreviewPopup.css import removed (Phase 6) -- migrated to Tailwind.
 
 const PGP_TEAM_COL_CLASSES = 'pgp-team-col flex flex-col items-center gap-1 flex-1';
@@ -99,6 +101,25 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
   const { data: preview,    loading: previewLoading }    = useFetch(() => fetchPWHLPreview(game.game_id), [game.game_id]);
   const { data: prediction, loading: predictionLoading } = useFetch(() => fetchPWHLPrediction(game.game_id), [game.game_id]);
 
+  // Auto-save this prediction for track-record tallying once the game
+  // completes -- recordPWHLOutcome() is called from PWHLScheduleView.jsx's
+  // completed-games sweep, keyed by the same game_id. Mirrors
+  // MatchupDetail.jsx's NHL auto-save effect.
+  useEffect(() => {
+    if (!game?.game_id || !prediction) return;
+    savePWHLPrediction({
+      gameId:              game.game_id,
+      gameDate:            game.game_date,
+      opponent:            oppAbbr,
+      predictedTeamWin:    (isHome ? prediction.homeWinPct : prediction.awayWinPct) >=
+                           (isHome ? prediction.awayWinPct : prediction.homeWinPct),
+      predictedTeamScore:  isHome ? prediction.expHome : prediction.expAway,
+      predictedOppScore:   isHome ? prediction.expAway : prediction.expHome,
+    });
+  }, [game?.game_id, prediction]);
+
+  const predStats = getPWHLPredictionStats();
+
   // Both routes are keyed by home/away, not by "my team" -- remap once here.
   const myWinPct  = prediction ? (isHome ? prediction.homeWinPct  : prediction.awayWinPct)  : null;
   const oppWinPct = prediction ? (isHome ? prediction.awayWinPct  : prediction.homeWinPct)  : null;
@@ -147,6 +168,11 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
           {/* Prediction */}
           <div className="pgp-section mt-4.5 first:mt-0">
             <div className={PGP_SECTION_LABEL_CLASSES}>Prediction</div>
+            {predStats.total > 0 && (
+              <div className="pgp-track-record text-[10px] text-[color:var(--text-muted)] mb-2 -mt-0.5">
+                📊 {predStats.correct}/{predStats.total} correct ({predStats.pct}%)
+              </div>
+            )}
             {predictionLoading && !prediction && (
               <div className="pgp-loading py-3">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -182,6 +208,13 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
                   </div>
                 </div>
                 {prediction.corsiCaveat && <div className="pgp-caveat text-[10px] text-[color:var(--text-dim)] italic mt-1.5">Shot-attempt share is {prediction.corsiCaveat.toLowerCase()}</div>}
+                <PWHLPredictionExportSection
+                  abbr={abbr} oppAbbr={oppAbbr} color={color} oppColor={oppColor}
+                  myWinPct={myWinPct} oppWinPct={oppWinPct} myExp={myExp} oppExp={oppExp}
+                  myStreak={myStreak} oppStreak={oppStreak}
+                  myCorsi={myCorsi} oppCorsi={oppCorsi} corsiCaveat={prediction.corsiCaveat}
+                  narrative={prediction.narrative} gameId={game.game_id}
+                />
               </>
             )}
           </div>
