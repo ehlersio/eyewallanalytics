@@ -209,18 +209,48 @@ function DevReplayViewInner() {
   const [recentGames, setRecentGames]   = useState([]);
   const playRef = useRef(null);
 
-  // Load recent CAR games for quick picks
+  // Load recent CAR games for quick picks. Re-run on
+  // teamConfig.js's 'eyewall:nhl-season-updated' event (same fix pattern
+  // PWHLScheduleView.jsx/PWHLPlayersView.jsx already use for their own
+  // season-picker defaults) -- defensive against CURRENT_SEASON correcting
+  // itself away from its hardcoded seed (teamConfig.js:31) after this
+  // effect already fired once.
+  //
+  // Whole-season-empty fallback: CURRENT_SEASON can correctly resolve to
+  // the new season before that season's first game (confirmed live 2026-08
+  // -- the real live resolver already treats 2026-27 as current, with
+  // CAR's entire 88-game schedule still 'FUT', first game 2026-09-20).
+  // That's not a bug to route around, just the expected steady state for
+  // the ~2 months between season flip and puck drop -- same reasoning
+  // eyewall-poller's /goalie-analytics and /player-analytics routes
+  // already use their own one-season-back fallback for. Mirrored here so
+  // this dev tool has real games to load against year-round instead of
+  // silently going empty for that whole window.
+  const [seasonVersion, setSeasonVersion] = useState(0);
   useEffect(() => {
-    fetch(`/nhl-api/v1/club-schedule-season/CAR/${CURRENT_SEASON}`)
-      .then(r => r.json())
-      .then(d => {
-        const completed = (d?.games || [])
-          .filter(g => ['OFF','FINAL','F'].includes(g.gameState))
-          .slice(-8).reverse();
-        setRecentGames(completed);
-      })
-      .catch(() => {});
+    const handler = () => setSeasonVersion(v => v + 1);
+    window.addEventListener('eyewall:nhl-season-updated', handler);
+    return () => window.removeEventListener('eyewall:nhl-season-updated', handler);
   }, []);
+  useEffect(() => {
+    async function fetchCompleted(season) {
+      const r = await fetch(`/nhl-api/v1/club-schedule-season/CAR/${season}`);
+      const d = await r.json();
+      return (d?.games || []).filter(g => ['OFF', 'FINAL', 'F'].includes(g.gameState));
+    }
+    (async () => {
+      try {
+        let completed = await fetchCompleted(CURRENT_SEASON);
+        if (completed.length === 0) {
+          const priorSeason = String(Number(CURRENT_SEASON) - 10001); // 20262027 -> 20252026
+          completed = await fetchCompleted(priorSeason);
+        }
+        setRecentGames(completed.slice(-8).reverse());
+      } catch {
+        // leave recentGames as-is -- the quick-pick list just stays empty/stale
+      }
+    })();
+  }, [seasonVersion]);
 
   const loadGame = async (id) => {
     if (!id) return;

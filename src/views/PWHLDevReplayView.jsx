@@ -190,7 +190,20 @@ function PWHLDevReplayViewInner() {
   const [recentGames, setRecentGames]   = useState([]);
   const playRef = useRef(null);
 
-  // Load recent completed games for the selected team
+  // Load recent completed games for the selected team. Same fix as
+  // DevReplayView.jsx's own "Recent CAR games" list: PWHL_CURRENT_SEASON
+  // starts out seeded with the new season and only corrects to the
+  // live-resolved value a moment later -- if this effect fired first (the
+  // common case), it queried a season with zero completed games and never
+  // re-fetched once the correction landed. Re-run on pwhlConfig.js's
+  // 'eyewall:pwhl-season-updated' event, same pattern
+  // PWHLScheduleView.jsx/PWHLPlayersView.jsx already use.
+  const [seasonVersion, setSeasonVersion] = useState(0);
+  useEffect(() => {
+    const handler = () => setSeasonVersion(v => v + 1);
+    window.addEventListener('eyewall:pwhl-season-updated', handler);
+    return () => window.removeEventListener('eyewall:pwhl-season-updated', handler);
+  }, []);
   useEffect(() => {
     const selectedTeamId = PWHL_TEAM_ID ? parseInt(PWHL_TEAM_ID, 10) : null;
     if (!selectedTeamId) return;
@@ -204,7 +217,7 @@ function PWHLDevReplayViewInner() {
         setRecentGames(completed);
       })
       .catch(() => {});
-  }, []);
+  }, [seasonVersion]);
 
   const loadGame = async (id) => {
     if (!id) return;
