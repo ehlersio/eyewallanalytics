@@ -143,6 +143,45 @@ PWHL_TEST_TEAMS.forEach(abbr => {
       })
     })
 
+    // Session 100: goalies previously had no Heat Map tab at all (the tab
+    // button itself was hidden via !isGoalie) -- pwhl_shot_events.goalie_id
+    // already existed and was already populated, this was purely an
+    // unwired frontend gap, same shape as the skater/goalie radar-chart
+    // gaps fixed earlier this session. Mirrors the skater popup block above.
+    describe('Player popup (goalie)', () => {
+      beforeEach(() => {
+        cy.contains('Stats', { timeout: 8000 }).click()
+        cy.contains('Goalies').click()
+        cy.contains(/SV%|GAA/i, { timeout: 8000 }).should('exist')
+        cy.get('tbody tr', { timeout: 10000 }).first().click()
+        cy.get('.pp-tab', { timeout: 10000 }).should('exist')
+      })
+
+      it('shows the Heat Map tab (previously hidden for goalies)', () => {
+        cy.get('.pp-tab').contains('Heat Map').should('exist')
+      })
+
+      it('Heat Map tab renders a goalie zone/dot map, not the skater rink', () => {
+        cy.get('.pp-tab').contains('Heat Map').click()
+        cy.get('svg', { timeout: 8000 }).should('exist')
+        cy.contains(/Shots faced/i, { timeout: 8000 }).should('exist')
+        cy.contains(/Dot map/i).should('exist')
+        cy.contains(/Zone SV%/i).should('exist')
+        cy.assertNoErrors()
+      })
+
+      it('can switch to Zone SV% mode without erroring', () => {
+        cy.get('.pp-tab').contains('Heat Map').click()
+        cy.contains(/Zone SV%/i, { timeout: 8000 }).click()
+        cy.assertNoErrors()
+      })
+
+      it('closes when X is clicked', () => {
+        cy.get('.pp-close').first().click({ force: true })
+        cy.get('.player-popup').should('not.exist')
+      })
+    })
+
     describe('Season picker', () => {
       beforeEach(() => cy.contains('Stats', { timeout: 8000 }).click())
 
