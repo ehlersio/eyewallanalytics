@@ -100,6 +100,37 @@ describe('Shot Map', () => {
     })
   })
 
+  // Session 100: live event rink + relocated/widened event ticker. This
+  // block only exercises the render/type-vocabulary path deterministically
+  // available via ?mockGame= -- the intermission/Zamboni path can't be
+  // forced through this harness (the pinned mock game's real PBP has no
+  // control over pbp.clock.inIntermission), so that path was verified live
+  // instead (temporarily hardcoding inIntermission=true, confirmed the
+  // animation/overlay render correctly, then reverted before commit).
+  describe('Live rink + event ticker', () => {
+    it('renders the live rink and event ticker side by side, live-only', () => {
+      cy.contains('Live rink').should('exist')
+      cy.contains('Recent events').should('exist')
+      cy.get('svg').should('have.length.greaterThan', 1) // rink SVG + season shot map SVG both present
+    })
+
+    it('plots dots on the live rink for at least one recent event', () => {
+      cy.contains('Live rink').parents('.card').find('svg circle').should('have.length.greaterThan', 0)
+    })
+
+    it('event ticker includes at least one of the newly-widened event types (faceoff/giveaway/takeaway), not just goal/shot/penalty/hit/block', () => {
+      // Not guaranteed for every single type every poll, but this pinned
+      // game's real last-12-events window (2025030311) reliably includes
+      // at least a faceoff or giveaway/takeaway.
+      cy.contains('Recent events').parents('.card')
+        .find('span').contains(/FACEOFF|GIVEAWAY|TAKEAWAY/).should('exist')
+    })
+
+    it('no console errors', () => {
+      cy.assertNoErrors()
+    })
+  })
+
   describe('Shot Attempts section', () => {
     it('shows section header', () => {
       cy.contains(/Shot Attempts/i).should('exist')
