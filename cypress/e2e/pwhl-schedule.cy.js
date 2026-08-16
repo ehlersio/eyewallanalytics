@@ -283,5 +283,46 @@ describe('PWHL Schedule', () => {
       cy.get('.pgp-close').click()
       cy.get('.pgp-card').should('not.exist')
     })
+
+    // Session 100: PWHL predictions had no track-record/share-card layer
+    // at all -- NHL's MatchupDetail.jsx auto-saves + reconciles + shows a
+    // running "X/Y correct" line and offers an export card; PWHL's own
+    // /pwhl/prediction route already had everything needed (win%, expected
+    // score, narrative), just the tracking/export plumbing was unwired.
+    it('auto-saves the prediction to localStorage for track-record tallying', () => {
+      cy.contains('Tap for preview', { timeout: 8000 }).click()
+      cy.wait(['@preview', '@prediction'])
+      cy.window().then(win => {
+        const preds = JSON.parse(win.localStorage.getItem('eyewall_pwhl_predictions_v1') || '[]')
+        const pred  = preds.find(p => p.gameId === UPCOMING_GAME_ID)
+        expect(pred).to.exist
+        expect(pred.opponent).to.eq('OTT')
+        expect(pred.predictedTeamWin).to.eq(true) // 65% > 35% in the fixture
+        expect(pred.predictedTeamScore).to.eq(3.1)
+        expect(pred.predictedOppScore).to.eq(2.2)
+      })
+    })
+
+    it('shows a track record line once a prior prediction has a recorded outcome', () => {
+      cy.window().then(win => {
+        win.localStorage.setItem('eyewall_pwhl_predictions_v1', JSON.stringify([
+          { gameId: 111, predictedTeamWin: true, teamActual: 4, oppActual: 2, teamWon: true, correct: true },
+          { gameId: 222, predictedTeamWin: true, teamActual: 1, oppActual: 3, teamWon: false, correct: false },
+        ]))
+      })
+      cy.contains('Tap for preview', { timeout: 8000 }).click()
+      cy.wait(['@preview', '@prediction'])
+      cy.contains(/📊 1\/2 correct \(50%\)/).should('exist')
+      cy.assertNoErrors()
+    })
+
+    it('shows Save Image / Post to X share buttons for the prediction card', () => {
+      cy.contains('Tap for preview', { timeout: 8000 }).click()
+      cy.wait(['@preview', '@prediction'])
+      cy.get('.share-buttons-row', { timeout: 8000 }).should('exist')
+      cy.contains(/Save Image/i).should('exist')
+      cy.contains(/Post to X/i).should('exist')
+      cy.assertNoErrors()
+    })
   })
 })
