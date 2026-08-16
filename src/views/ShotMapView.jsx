@@ -12,6 +12,7 @@ import {
 } from '../utils/nhlApi';
 import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON } from '../utils/teamConfig';
 import IceRink from '../components/IceRink';
+import LiveEventRink from '../components/LiveEventRink';
 import { GoalPopup, HatTrickPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getTeamSeasonData } from '../utils/supabaseClient';
@@ -128,6 +129,10 @@ const FILL_TEAM_PRIMARY_CLASSES = 'h-full bg-[var(--team-primary)] opacity-[0.85
 // precedent above for this exact NHL/PWHL pair.
 const TWO_COL_CLASSES = 'grid grid-cols-[1fr_260px] gap-3 min-h-[400px] items-start max-[700px]:grid-cols-1';
 const FILL_BLUE_CLASSES = 'h-full bg-[var(--blue-bright)] [transition:width_0.4s_ease]';
+// Live rink + relocated EventLog ticker (Session 100) -- reuses TWO_COL_CLASSES's
+// 700px breakpoint for consistency (side-by-side on desktop/tablet, stacked
+// on mobile), but its own column ratio (near-equal, not a fixed 260px sidebar).
+const LIVE_RINK_ROW_CLASSES = 'grid grid-cols-[1fr_1fr] gap-3 items-start max-[700px]:grid-cols-1 mb-2';
 
 const metricsGridClasses = (cols) => cols === 4
   ? 'grid grid-cols-4 gap-2 mb-2'
@@ -193,6 +198,13 @@ const LOG_BADGE_VARIANTS = {
   pen: 'bg-[rgba(240,160,48,0.15)] text-[color:var(--amber)]',
   hit: 'bg-[rgba(68,119,238,0.15)] text-[color:var(--blue-bright)]',
   block: 'bg-[rgba(136,102,221,0.15)] text-[color:var(--purple)]',
+  // Lower-signal, ambient types (Session 100, added alongside LiveEventRink's
+  // dot vocabulary so every dot has a matching ticker line) -- deliberately
+  // muted rather than reusing goal/shot/hit/block's colors, so the ticker's
+  // visual hierarchy still reads high-signal-first at a glance.
+  faceoff: 'bg-[rgba(148,163,184,0.15)] text-[color:var(--text-muted)]',
+  give: 'bg-[rgba(255,68,34,0.10)] text-[color:var(--text-dim)]',
+  take: 'bg-[rgba(61,186,126,0.10)] text-[color:var(--text-dim)]',
 };
 const logBadgeClasses = (typeKey) =>
   `${LOG_BADGE_BASE} ${LOG_BADGE_VARIANTS[typeKey] || 'bg-[var(--bg3)] text-[color:var(--text-muted)]'}`;
@@ -1919,6 +1931,26 @@ export default function ShotMapView() {
         />
       )}
 
+      {/* ── Live rink + event ticker (Session 100) — live games only ── */}
+      {isLive && pbp?.plays?.length > 0 && (
+        <div className={LIVE_RINK_ROW_CLASSES}>
+          <LiveEventRink
+            plays={pbp.plays}
+            playerMap={buildPlayerMap(pbp)}
+            oppAbbr={oppAbbr}
+            oppColor={oppColor}
+            isLive={isLive}
+            inIntermission={!!pbp?.clock?.inIntermission}
+            displayClock={displayClock || pbp?.clock?.timeRemaining}
+            periodNumber={pbp?.periodDescriptor?.number}
+          />
+          <div className="card">
+            <div className="sec-label">Recent events</div>
+            <EventLog plays={pbp.plays} playerMap={buildPlayerMap(pbp)} />
+          </div>
+        </div>
+      )}
+
       {/* ── Game metrics — top row: SOG, Hits, Blocks, Penalties ── */}
       <div className={metricsGridClasses(4)}>
         <MetCard
@@ -2091,13 +2123,6 @@ export default function ShotMapView() {
             />
           )}
 
-          {/* Event log — live only */}
-          {isLive && pbp?.plays?.length > 0 && (
-            <div className="card">
-              <div className="sec-label">Recent events</div>
-              <EventLog plays={pbp.plays} playerMap={buildPlayerMap(pbp)} />
-            </div>
-          )}
         </div>
 
         {/* ── Right: game summary panel ── */}
@@ -2480,7 +2505,7 @@ function EventLog({ plays, playerMap = {} }) {
 
   const relevant = [...plays]
     .reverse()
-    .filter(p => ['goal','shot-on-goal','penalty','hit','blocked-shot'].includes(p.typeDescKey))
+    .filter(p => ['goal','shot-on-goal','penalty','hit','blocked-shot','faceoff','giveaway','takeaway'].includes(p.typeDescKey))
     .slice(0, 12);
 
   const typeStyle = {
@@ -2489,6 +2514,9 @@ function EventLog({ plays, playerMap = {} }) {
     'penalty':      'pen',
     'hit':          'hit',
     'blocked-shot': 'block',
+    'faceoff':      'faceoff',
+    'giveaway':     'give',
+    'takeaway':     'take',
   };
 
   const typeLabel = {
@@ -2497,6 +2525,9 @@ function EventLog({ plays, playerMap = {} }) {
     'penalty':      'PENALTY',
     'hit':          'HIT',
     'blocked-shot': 'BLOCK',
+    'faceoff':      'FACEOFF',
+    'giveaway':     'GIVEAWAY',
+    'takeaway':     'TAKEAWAY',
   };
 
   return (
@@ -2537,6 +2568,14 @@ function EventLog({ plays, playerMap = {} }) {
           const shooter  = pName(d.shootingPlayerId);
           headline = blocker || '—';
           sub = shooter ? `blocked ${shooter}` : null;
+        } else if (type === 'faceoff') {
+          const winner = pName(d.winningPlayerId);
+          const loser  = pName(d.losingPlayerId);
+          headline = winner || '—';
+          sub = loser ? `won vs ${loser}` : null;
+        } else if (type === 'giveaway' || type === 'takeaway') {
+          headline = pName(d.playerId) || '—';
+          sub = d.zoneCode === 'O' ? 'offensive zone' : d.zoneCode === 'D' ? 'defensive zone' : null;
         }
 
         return (
