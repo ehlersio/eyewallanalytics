@@ -115,6 +115,13 @@
   --popup-shadow: 0 16px 48px rgba(0,0,0,0.15);
 }
 
+/* EyeWallLogo.jsx (Session 100) -- swap between the bright and
+   contrast-darkened logo variants purely via [data-theme], not a JS
+   getTheme() check, so it reacts instantly to a live theme toggle. */
+.eyewall-logo-light { display: none; }
+[data-theme="light"] .eyewall-logo-dark  { display: none; }
+[data-theme="light"] .eyewall-logo-light { display: inline-block; }
+
 @layer base {
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 

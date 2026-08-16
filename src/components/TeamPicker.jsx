@@ -14,6 +14,7 @@ import { PWHL_TEAMS } from '../utils/pwhlConfig'
 import { useAuth } from '../utils/AuthContext'
 import { upsertFavoriteTeam } from '../utils/favoriteTeamSync'
 import TeamLogo from './TeamLogo'
+import EyeWallLogo from './EyeWallLogo'
 import { TEAM_COLORS } from '../utils/nhlApi'
 
 // Tailwind migration (Session 95, Phase 1) -- previously TeamPicker.css.
@@ -114,7 +115,7 @@ function SportStep({ onPickSport }) {
   return (
     <>
       <div className={HEADER_CLASSES}>
-        <img src="/eyewall-logo.svg" alt="EyeWall Analytics" className={HEADER_LOGO_CLASSES} />
+        <EyeWallLogo alt="EyeWall Analytics" className={HEADER_LOGO_CLASSES} />
         <h1 className={TITLE_CLASSES}>Choose your league</h1>
         <p className={SUB_CLASSES}>You can change this any time from settings.</p>
       </div>

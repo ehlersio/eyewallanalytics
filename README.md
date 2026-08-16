@@ -54,7 +54,8 @@ canes-analytics-starter/
 │   ├── manifest.json             # PWA manifest
 │   ├── goal-horn.mp3
 │   ├── _headers                  # Cloudflare cache control headers
-│   ├── eyewall-logo.svg/.png
+│   ├── eyewall-logo.svg/.png     # Bright-colors mark, thin black outline baked into the pixels (Session 100) so it holds up against non-dark-theme backgrounds too. Rendered directly (not via EyeWallLogo.jsx) by the fixed-dark share-canvas components (PeriodSummary.jsx, PredictionShareCanvas.jsx, PWHLPeriodSummary.jsx, PWHLPredictionShareCanvas.jsx, LeagueView.jsx's PowerRankingsCanvas, ScoutingTab.jsx) since their canvas bg is always dark regardless of app theme. .svg is a base64-PNG wrapper (not real vector paths) — this was an image-processing fix (Pillow: alpha-dilate + composite), not a code change
+│   ├── eyewall-logo-light.svg/.png # Same mark + outline, with the low-saturation (white/gray) fills darkened (red accent untouched) for genuinely light backgrounds — og:image uses this (social link-preview cards are almost always white), and it's the [data-theme="light"] half of EyeWallLogo.jsx's toggle. Regenerate both -light and non--light files together from the same source if the art ever changes
 │   └── favicon-*.png / .ico
 ├── functions/                    # Cloudflare Pages Functions (API proxy)
 │   ├── nhl-api/[[path]].js
@@ -103,6 +104,7 @@ canes-analytics-starter/
 │   │   ├── MilestonesFeed.jsx          # League-wide milestone feed (hat tricks, shutouts, SH goals, season/career thresholds) — tappable into PlayerPopup
 │   │   ├── PlayerSearch.jsx/.css       # Global NHL+PWHL player search (Topbar) — Fuse.js fuzzy match against the Worker's flat player index
 │   │   ├── TeamLogo.jsx/.css           # NHL + PWHL team logo renderer
+│   │   ├── EyeWallLogo.jsx             # Theme-aware EyeWall wordmark (Session 100) — renders both eyewall-logo.svg (bright) and eyewall-logo-light.svg (contrast-darkened) stacked, toggled purely via CSS on [data-theme] (index.css), not a JS getTheme() check, so it reacts instantly to a live theme toggle. Only for logo placements on the app's own themed background (TeamPicker.jsx, AboutPopup.jsx) — the fixed-dark share-canvas components render /eyewall-logo.svg directly instead, since their canvas bg never changes with app theme
 │   │   ├── CalendarView.jsx            # NHL calendar month view
 │   │   ├── PWHLCalendarView.jsx        # PWHL calendar month view
 │   │   ├── InfoTip.jsx/.css            # Tap-to-open tooltip
