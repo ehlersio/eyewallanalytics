@@ -15,12 +15,14 @@
 // single natural "spot" the way a shot/hit/faceoff has one, better suited
 // to text-only detail in the paired EventLog ticker instead.
 //
-// Coordinate transform is an independent copy of IceRink.jsx's own
-// (IceRink.jsx:34-49), scaled down for a compact card — this codebase's
-// established convention for small shared math between independent
-// rendering surfaces is a local copy, not a cross-import (IceRink.jsx
-// exports nothing but its default and is a large monolith not meant to be
-// pulled apart for this).
+// Rink markings: reuses IceRink.jsx's own `RinkMarkings` component (and
+// its W/H/CX/CY constants) directly rather than an independent copy — the
+// user asked this rink look pixel-identical to the season shot map's, and
+// a shared component is the only way to actually guarantee that (a
+// hand-copied approximation would drift the next time IceRink.jsx's
+// geometry changes). The coordinate transform (toSvg) stays a tiny local
+// function since it's not exported, but it's driven by the same imported
+// W/H/CX/CY so the math is identical either way.
 //
 // Orientation: normalized via each play's own homeTeamDefendingSide field
 // so the home team's own net is always drawn on the left, away on the
@@ -36,7 +38,19 @@
 // over several minutes and dropped — no hard count/window cutoff, so a
 // quiet stretch reads as calm and a flurry reads as an overlapping
 // cluster rather than evicting arbitrarily. Goals are exempt (pinned)
-// since they're durable context, not ambient churn.
+// since they're durable context, not ambient churn. NOTE: this timing is
+// deliberately real-wall-clock-based, so it reads as "slow to fade" when
+// watched through the accelerated dev replay tool (a 5min/s replay speed
+// makes 45s of real hold-time cover 3+ hours of game time) — that's a
+// replay-tool artifact, not the real-game behavior; not re-tuned off a
+// replay-speed observation, see Session 100 conversation.
+//
+// Encoding: dot FILL is team color (mine vs. opponent) so the primary,
+// large-area signal is "who controls play"; dot STROKE is an event-type
+// ring color matching ShotMapView.jsx's EventLog ticker badge colors
+// (LOG_BADGE_VARIANTS) exactly, so "what happened" is readable as a
+// secondary signal without fighting the team-color grouping for
+// attention. Every dot gets a ring now, not just goals.
 //
 // Intermission: the tracked-event map is cleared and the rink switches to
 // a continuous Zamboni resurfacing animation (pure CSS transform, GPU-
@@ -47,10 +61,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TEAM_CONFIG } from '../utils/teamConfig';
+import { RinkMarkings, W, H, CX, CY } from './IceRink';
 
-// Compact rink viewBox — smaller than IceRink.jsx's 600x255, same NHL ice
-// convention (200ft x 85ft, origin = center ice, x -100..+100, y -42.5..+42.5).
-const W = 300, H = 128, CX = W / 2, CY = H / 2;
 function toSvg(x, y) {
   return { px: CX + (x / 100) * (W / 2), py: CY - (y / 42.5) * (H / 2) };
 }
@@ -62,15 +74,35 @@ const DOT_TYPES = new Set([
   'hit', 'giveaway', 'takeaway', 'faceoff',
 ]);
 
+// r/opacity scaled up from the old compact-viewBox version to match
+// IceRink.jsx's real 600x255 coordinate space (IceRink's own SHOT_STYLE
+// uses r:4-7 at this same scale).
 const DOT_STYLE = {
-  'goal':         { r: 7,   opacity: 1    },
-  'shot-on-goal': { r: 5,   opacity: 0.85 },
-  'missed-shot':  { r: 4,   opacity: 0.5  },
-  'blocked-shot': { r: 4,   opacity: 0.5  },
-  'hit':          { r: 4.5, opacity: 0.7  },
-  'giveaway':     { r: 3.5, opacity: 0.55 },
-  'takeaway':     { r: 3.5, opacity: 0.55 },
-  'faceoff':      { r: 3,   opacity: 0.4  },
+  'goal':         { r: 8,   opacity: 1    },
+  'shot-on-goal': { r: 5.5, opacity: 0.85 },
+  'missed-shot':  { r: 4.5, opacity: 0.5  },
+  'blocked-shot': { r: 4.5, opacity: 0.5  },
+  'hit':          { r: 5,   opacity: 0.7  },
+  'giveaway':     { r: 4,   opacity: 0.55 },
+  'takeaway':     { r: 4,   opacity: 0.55 },
+  'faceoff':      { r: 3.5, opacity: 0.4  },
+};
+
+// Ring color per type -- deliberately matches ShotMapView.jsx's
+// LOG_BADGE_VARIANTS (EventLog ticker badges) value-for-value, so a dot on
+// the rink and its line in the ticker read as the same event at a glance.
+// missed-shot has no ticker badge of its own (EventLog doesn't list it);
+// grouped visually with shot-on-goal's green rather than inventing a new
+// color for a type nothing else on screen shows.
+const TYPE_RING_COLOR = {
+  'goal':         'var(--red-bright)',
+  'shot-on-goal': 'var(--green)',
+  'missed-shot':  'var(--green)',
+  'blocked-shot': 'var(--purple)',
+  'hit':          'var(--blue-bright)',
+  'faceoff':      'var(--text-muted)',
+  'giveaway':     'var(--text-dim)',
+  'takeaway':     'var(--text-dim)',
 };
 
 const HOLD_MS = 45_000;        // full opacity for this long after first observed
@@ -96,9 +128,43 @@ function periodOrdinal(n) {
 }
 
 const CARD_LABEL_CLASSES = 'sec-label flex items-center justify-between';
-const RINK_WRAP_CLASSES = 'relative w-full rounded-[8px] overflow-hidden bg-[#0f1b2e]';
-const INTERMISSION_LABEL_CLASSES = 'text-[13px] font-bold text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]';
-const INTERMISSION_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[20px] font-extrabold text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]';
+const RINK_WRAP_CLASSES = 'relative w-full rounded-[8px] overflow-hidden bg-[#d6eaf5]';
+const INTERMISSION_LABEL_CLASSES = 'text-[13px] font-bold text-[#0f1b2e] [text-shadow:0_1px_2px_rgba(255,255,255,0.5)]';
+const INTERMISSION_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[20px] font-extrabold text-[#0f1b2e] [text-shadow:0_1px_2px_rgba(255,255,255,0.5)]';
+
+// ── Zamboni (Session 100) — hand-built flat-icon SVG, not a raster asset.
+// No image-generation tool (Pixellab or otherwise) is available to build
+// this from; a crafted vector icon scales cleanly at any size/theme and
+// fits this rink's all-SVG rendering, unlike a hosted raster image would.
+// Side-profile resurfacer: body, cab + windshield, brush housing, wheels.
+function Zamboni() {
+  return (
+    <g
+      className="animate-[zamboni-drive_75s_linear_infinite]"
+      style={{ transformOrigin: '26px 12px' }} // vehicle's own visual center, so 180deg turns pivot in place
+    >
+      <ellipse cx="28" cy="24.5" rx="27" ry="2.5" fill="#000" opacity="0.22" />
+      {/* body */}
+      <rect x="4" y="9" width="48" height="14" rx="3" fill="#eef2f6" stroke="#26405f" strokeWidth="1.2" />
+      {/* accent stripe */}
+      <rect x="4" y="15" width="48" height="3.2" fill="#c0394b" opacity="0.9" />
+      {/* cab */}
+      <path d="M 33 9 L 33 1.5 Q 33 -1 35.5 -1 L 46 -1 Q 48.5 -1 48.5 1.5 L 48.5 9 Z"
+        fill="#dbe4ee" stroke="#26405f" strokeWidth="1.2" />
+      {/* windshield */}
+      <path d="M 35.5 1 L 46 1 L 45.3 6.5 L 36.2 6.5 Z" fill="#8fb8e0" opacity="0.9" />
+      {/* brush/auger housing at the front */}
+      <rect x="0" y="12" width="5" height="9" rx="1.5" fill="#3d4b5e" />
+      {/* exhaust */}
+      <rect x="30" y="4" width="2" height="6" rx="1" fill="#6b7a8c" />
+      {/* wheels */}
+      <circle cx="15" cy="24" r="4.2" fill="#1a2230" stroke="#0c1119" strokeWidth="0.8" />
+      <circle cx="15" cy="24" r="1.6" fill="#5a6b80" />
+      <circle cx="41" cy="24" r="4.2" fill="#1a2230" stroke="#0c1119" strokeWidth="0.8" />
+      <circle cx="41" cy="24" r="1.6" fill="#5a6b80" />
+    </g>
+  );
+}
 
 export default function LiveEventRink({
   plays = [], playerMap = {}, oppAbbr, oppColor,
@@ -171,8 +237,8 @@ export default function LiveEventRink({
 
       return {
         key: p.eventId, px, py, r: style.r, opacity,
-        color: isMine ? 'var(--team-primary)' : (oppColor || 'var(--text-dim)'),
-        isGoal: type === 'goal',
+        fill: isMine ? 'var(--team-primary)' : (oppColor || 'var(--text-dim)'),
+        ring: TYPE_RING_COLOR[type] || 'var(--text-dim)',
         title: `${playerName || (isMine ? TEAM_CONFIG.abbr : oppAbbr) || ''} — ${type.replace(/-/g, ' ')}`.trim(),
       };
     })
@@ -185,25 +251,16 @@ export default function LiveEventRink({
       </div>
       <div className={RINK_WRAP_CLASSES}>
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}>
-          <rect x="4" y="4" width={W - 8} height={H - 8} rx="10" fill="#12233d" stroke="#26405f" strokeWidth="1" />
-          {/* Blue lines */}
-          <line x1={toSvg(-25, 0).px} y1="4" x2={toSvg(-25, 0).px} y2={H - 4} stroke="#3d6fb0" strokeWidth="2" opacity="0.6" />
-          <line x1={toSvg(25, 0).px} y1="4" x2={toSvg(25, 0).px} y2={H - 4} stroke="#3d6fb0" strokeWidth="2" opacity="0.6" />
-          {/* Center red line + faceoff dot */}
-          <line x1={CX} y1="4" x2={CX} y2={H - 4} stroke="#c0394b" strokeWidth="1.5" opacity="0.55" />
-          <circle cx={CX} cy={CY} r="2" fill="#c0394b" opacity="0.5" />
-          {/* Goal creases */}
-          <path d={`M ${toSvg(-89, -8).px} ${toSvg(-89, -8).py} A 10 8 0 0 1 ${toSvg(-89, 8).px} ${toSvg(-89, 8).py}`} fill="#3d6fb0" fillOpacity="0.15" stroke="#3d6fb0" strokeWidth="1" opacity="0.5" />
-          <path d={`M ${toSvg(89, 8).px} ${toSvg(89, 8).py} A 10 8 0 0 1 ${toSvg(89, -8).px} ${toSvg(89, -8).py}`} fill="#3d6fb0" fillOpacity="0.15" stroke="#3d6fb0" strokeWidth="1" opacity="0.5" />
+          <RinkMarkings showHalf={false} teamAbbr={TEAM_CONFIG.abbr} />
 
           {!inIntermission && dots.map(dot => (
             <circle
               key={dot.key}
               cx={dot.px} cy={dot.py} r={dot.r}
-              fill={dot.color}
+              fill={dot.fill}
               opacity={dot.opacity}
-              stroke={dot.isGoal ? '#111' : 'none'}
-              strokeWidth={dot.isGoal ? 1.5 : 0}
+              stroke={dot.ring}
+              strokeWidth={1.75}
               style={{ transition: 'opacity 2s ease' }}
               className="animate-[pop-in_0.3s_ease]"
             >
@@ -211,16 +268,11 @@ export default function LiveEventRink({
             </circle>
           ))}
 
-          {inIntermission && (
-            <g className="animate-[zamboni-drive_75s_linear_infinite]">
-              <rect x="0" y="0" width="26" height="14" rx="3" fill="#dbe4ee" stroke="#26405f" strokeWidth="1" />
-              <rect x="3" y="-4" width="12" height="7" rx="1.5" fill="#26405f" />
-            </g>
-          )}
+          {inIntermission && <Zamboni />}
         </svg>
 
         {inIntermission && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-[rgba(15,27,46,0.55)]">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-[rgba(214,234,245,0.72)]">
             <span className={INTERMISSION_LABEL_CLASSES}>{periodOrdinal(periodNumber)} Intermission — cleaning the ice</span>
             <span className={INTERMISSION_CLOCK_CLASSES}>{displayClock || '—'}</span>
           </div>
