@@ -54,7 +54,7 @@ canes-analytics-starter/
 │   ├── manifest.json             # PWA manifest
 │   ├── goal-horn.mp3
 │   ├── _headers                  # Cloudflare cache control headers
-│   ├── eyewall-logo.svg/.png
+│   ├── eyewall-logo.svg/.png     # Transparent-background mark (og:image + all in-app <img> uses — TeamPicker, AboutPopup, share canvases). Has a thin black outline baked into the pixels (Session 100) so the white/silver-dominant mark stays readable against ANY background, not just the app's dark theme — .svg is a base64-PNG wrapper (not real vector paths), so this was an image-processing fix (alpha-dilate + composite), not a code change. Regenerate both together if the source art ever changes; don't reintroduce a plain (unoutlined) export as either file. favicon-*.png/apple-touch-icon.png are separate, already-opaque assets with their own dark background baked in — not affected by this, no outline needed there
 │   └── favicon-*.png / .ico
 ├── functions/                    # Cloudflare Pages Functions (API proxy)
 │   ├── nhl-api/[[path]].js
