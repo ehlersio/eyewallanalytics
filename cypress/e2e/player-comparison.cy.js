@@ -252,7 +252,7 @@ describe('PWHL player comparison', () => {
   })
 })
 
-describe('PWHL goalie comparison — hard-blocked (no percentile data yet)', () => {
+describe('PWHL goalie comparison', () => {
   beforeEach(() => {
     cy.visit('/pwhl/players', {
       onBeforeLoad(win) {
@@ -269,14 +269,32 @@ describe('PWHL goalie comparison — hard-blocked (no percentile data yet)', () 
     cy.contains('GP', { timeout: 10000 }).should('exist')
   })
 
-  it('goalie vs goalie shows a not-available message, not a broken empty radar', () => {
+  // Regression: PWHL goalie-vs-goalie was hard-blocked ("percentile
+  // tracking for PWHL goalies hasn't been built") until 2026-08, when
+  // eyewall-pipeline's pwhl_goalie_percentiles.py + eyewall-poller's
+  // /pwhl/goalie/percentiles shipped real GSAX/GSAX-60/5v5/HD/MD/PK SV%
+  // data. Same shape as the NHL goalie comparison test above -- own
+  // Record/Performance/Advanced tabs, not the skater tab set, real radar.
+  it('compares two goalies with their own Record/Performance/Advanced tabs and a real radar, not a broken-empty one', () => {
     cy.get('.pce-toggle').click()
     cy.get('.pce-input').type('thiele')
     cy.contains('.pce-result', 'Thiele', { timeout: 8000 }).click()
 
     cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
-    cy.contains(/PWHL goalie comparison isn.t available yet/i).should('exist')
-    cy.get('.pcp-radar').should('not.exist')
-    cy.get('.pcp-tab').should('not.exist')
+    cy.contains('Frankel').should('exist')
+    cy.contains('Thiele').should('exist')
+    cy.contains(/PWHL goalie comparison isn.t available yet/i).should('not.exist')
+
+    ;['Record', 'Performance', 'Advanced'].forEach((tab) => {
+      cy.get('.pcp-tab').contains(tab).should('exist')
+    })
+    cy.get('.pcp-tab').contains('Scoring').should('not.exist')
+    cy.get('.pcp-radar svg', { timeout: 10000 }).should('exist')
+
+    cy.get('.pcp-tab').contains('Record').click()
+    cy.get('.stat-tile', { timeout: 10000 }).should('have.length.greaterThan', 0)
+
+    cy.get('.pcp-tab').contains('Advanced').click()
+    cy.get('.pcp-pct-col', { timeout: 10000 }).should('have.length.greaterThan', 0)
   })
 })

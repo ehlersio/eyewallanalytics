@@ -3,10 +3,18 @@
 // Player-vs-Player comparison. Same-league only (NHL-NHL or PWHL-PWHL) --
 // avoids reconciling NHL's 3-marker (league/conf/div) percentile depth
 // against PWHL's 1-marker (league-only) system. Goalie-vs-skater is a hard
-// block (non-overlapping stat schemas); PWHL goalie-vs-goalie is also a
-// hard block (PWHL has zero percentile data for goalies today -- confirmed
-// via investigation, PWHLPlayerPopup.jsx never renders a PercentileBar for
-// goalies). F-vs-D pairing is allowed with a soft, non-blocking badge.
+// block (non-overlapping stat schemas). F-vs-D pairing is allowed with a
+// soft, non-blocking badge.
+//
+// PWHL goalie-vs-goalie was ALSO a hard block until 2026-08 (PWHL had zero
+// percentile data for goalies at all) -- unblocked once eyewall-pipeline's
+// pwhl_goalie_percentiles.py + eyewall-poller's /pwhl/goalie/percentiles
+// shipped (built for PWHLPlayerPopup.jsx's own goalie radar first, reused
+// here). Its response shape matches NHL's getGoalieAnalytics() percentile
+// keys exactly (gsax/gsax60/evSv/hdSv/mdSv/pkSv), so the SAME
+// AdvancedGoalieColumn/radar-axis math works for both leagues' goalies
+// unmodified -- only the data-fetch and radar-axes/abbr-map SOURCE
+// function needed to become sport-aware (below).
 //
 // Both players self-fetch their own full data from a minimal identity
 // shape ({id, name, team, position}) -- same self-fetch-by-id convention
@@ -20,7 +28,7 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Responsi
 import { useFetch } from '../hooks/useFetch'
 import { getPlayerStats, TEAM_CONFIG } from '../utils/nhlApi'
 import { getPlayerAnalytics, getGoalieAnalytics } from '../utils/supabaseClient'
-import { fetchPWHLPlayerLanding, fetchPWHLPlayerPercentiles } from '../utils/pwhlApi'
+import { fetchPWHLPlayerLanding, fetchPWHLPlayerPercentiles, fetchPWHLGoaliePercentiles } from '../utils/pwhlApi'
 import { ALL_TEAMS } from '../utils/teamConfig'
 import { PWHL_CURRENT_SEASON, getPWHLTeamById } from '../utils/pwhlConfig'
 import {
@@ -32,7 +40,8 @@ import {
 import {
   SKATER_STATS as PWHL_SKATER_STATS, GOALIE_STATS as PWHL_GOALIE_STATS,
   groupStats as pwhlGroupStats, PWHL_STAT_PCT_MAP,
-  computeRadarAxes as pwhlSkaterRadarAxes, RADAR_AXIS_ABBR as PWHL_RADAR_AXIS_ABBR,
+  computeRadarAxes as pwhlSkaterRadarAxes, computeGoalieRadarAxes as pwhlGoalieRadarAxes,
+  RADAR_AXIS_ABBR as PWHL_RADAR_AXIS_ABBR,
   posLabel as pwhlPosLabel,
 } from '../utils/pwhlPlayerStats'
 import { StatTileGrid } from './StatTileGrid'
@@ -96,10 +105,15 @@ function usePlayerComparisonData(sport, player) {
     () => (isPwhl && id) ? fetchPWHLPlayerLanding(id, PWHL_CURRENT_SEASON) : Promise.resolve(null),
     [isPwhl, id]
   )
-  const { data: pwhlPct } = useFetch(
+  const { data: pwhlSkaterPct } = useFetch(
     () => (isPwhl && !isGoalie && id) ? fetchPWHLPlayerPercentiles(id, PWHL_CURRENT_SEASON) : Promise.resolve(null),
     [isPwhl, isGoalie, id]
   )
+  const { data: pwhlGoaliePct } = useFetch(
+    () => (isPwhl && isGoalie && id) ? fetchPWHLGoaliePercentiles(id, PWHL_CURRENT_SEASON) : Promise.resolve(null),
+    [isPwhl, isGoalie, id]
+  )
+  const pwhlPct = isGoalie ? pwhlGoaliePct : pwhlSkaterPct
 
   if (isPwhl) {
     const p = { ...player, ...(pwhlLanding || {}) }
@@ -311,8 +325,7 @@ export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose
 
   const positionsKnown = a.position && b.position
   const goalieMismatch = positionsKnown && a.isGoalie !== b.isGoalie
-  const pwhlGoalieBlocked = isPwhl && a.isGoalie && b.isGoalie
-  const blocked = goalieMismatch || pwhlGoalieBlocked
+  const blocked = goalieMismatch
 
   const bothGoalie = !goalieMismatch && a.isGoalie && b.isGoalie
   const positionMismatch = !blocked && !bothGoalie && positionsKnown && posGroup(a.position) !== posGroup(b.position)
@@ -339,13 +352,23 @@ export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose
   // pctMap for skaters.
   const showPct = !bothGoalie
 
+  // Sport-aware even for goalies now (was hardcoded to the NHL functions
+  // for the bothGoalie branch regardless of sport -- harmless while PWHL
+  // goalie comparison was hard-blocked below, and even now happens to
+  // produce identical numbers since pwhlGoalieRadarAxes/PWHL_RADAR_AXIS_ABBR
+  // were deliberately built with the same axis set/labels as NHL's -- but
+  // wrong to leave hardcoded, since a future divergence between the two
+  // leagues' goalie categories would silently apply NHL's axis math to
+  // PWHL percentile data).
+  const goalieRadarAxes = isPwhl ? pwhlGoalieRadarAxes : nhlGoalieRadarAxes
+  const goalieAbbrMap   = isPwhl ? PWHL_RADAR_AXIS_ABBR : NHL_RADAR_AXIS_ABBR
   const radarAxesA = bothGoalie
-    ? nhlGoalieRadarAxes(a.percentiles)
+    ? goalieRadarAxes(a.percentiles)
     : (isPwhl ? pwhlSkaterRadarAxes(a.percentiles) : nhlSkaterRadarAxes(a.percentiles))
   const radarAxesB = bothGoalie
-    ? nhlGoalieRadarAxes(b.percentiles)
+    ? goalieRadarAxes(b.percentiles)
     : (isPwhl ? pwhlSkaterRadarAxes(b.percentiles) : nhlSkaterRadarAxes(b.percentiles))
-  const abbrMap = bothGoalie ? NHL_RADAR_AXIS_ABBR : (isPwhl ? PWHL_RADAR_AXIS_ABBR : NHL_RADAR_AXIS_ABBR)
+  const abbrMap = bothGoalie ? goalieAbbrMap : (isPwhl ? PWHL_RADAR_AXIS_ABBR : NHL_RADAR_AXIS_ABBR)
 
   return (
     <div className="popup-backdrop pcp-backdrop" onClick={onClose}>
@@ -366,10 +389,6 @@ export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose
 
           {!a.loading && !b.loading && goalieMismatch && (
             <BlockMessage text="Goalies and skaters use different stat sets and can't be compared directly. Pick two skaters or two goalies." />
-          )}
-
-          {!a.loading && !b.loading && !goalieMismatch && pwhlGoalieBlocked && (
-            <BlockMessage text="PWHL goalie comparison isn't available yet — percentile tracking for PWHL goalies hasn't been built. Check back in a future update." />
           )}
 
           {!a.loading && !b.loading && !blocked && (
