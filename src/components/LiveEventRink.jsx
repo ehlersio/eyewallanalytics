@@ -138,66 +138,96 @@ const RINK_WRAP_CLASSES = 'relative w-full overflow-hidden rounded-[var(--radius
 const INTERMISSION_LABEL_CLASSES = 'text-[13px] font-bold text-[#0f1b2e] [text-shadow:0_1px_2px_rgba(255,255,255,0.5)]';
 const INTERMISSION_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[20px] font-extrabold text-[#0f1b2e] [text-shadow:0_1px_2px_rgba(255,255,255,0.5)]';
 
-// ── Zamboni (Session 100) — hand-built flat-icon SVG, not a raster asset.
-// No image-generation tool (Pixellab or otherwise) is available in this
-// environment to build this from; a crafted vector icon scales cleanly at
-// any size/theme and fits this rink's all-SVG rendering, unlike a hosted
-// raster image would. Styled after a reference illustration the user
-// shared: angled white hood over a blue halftone-textured lower body, dark
-// angled front nose with a light accent stripe, a lime-green front
-// resurfacer blade, an OPEN driver platform (post + seat-back + cushion,
-// not an enclosed cab) with an antenna, and two wheels with a lug-dot hub
-// pattern. Drawn facing left by default; direction is flipped via scaleX
-// in the animation below (never rotated 180deg -- see that comment for why).
+// ── Zamboni (Session 100, raster sprite added Session 101) -- a PixelLab
+// (top-down, 8-direction object + "drive" animation, 9 frames each) sprite
+// replaced the earlier hand-built SVG icon once an image-generation tool
+// became available. A logo decal was tried on the body panel and
+// explicitly rejected on review (Session 101) -- these frames are plain.
+//
+// First raster pass mirrored a single "west" sprite via scaleX for the
+// return trip, same trick the old hand-drawn SVG used -- but with real
+// per-direction art already generated, that read as fake (always
+// left/right, never actually facing the diagonal it was driving). Fixed
+// by using the true directional sprite for each leg of the path instead.
+//
+// ZAMBONI_PATH below is the single source of truth for BOTH position and
+// facing, replacing the old CSS @keyframes (still explained in
+// index.css's now-superseded comment). Each waypoint's `dir` is the
+// facing for the segment FROM that waypoint TO the next one, derived from
+// that segment's real direction of travel -- e.g. the lane-1 sweep moves
+// pure +x so it's "east"; the bulge past the edge moves +x+y (down-right
+// in this y-down SVG space) so it's "south-east". Position is linearly
+// interpolated between waypoints every tick; direction just switches at
+// the waypoint (no in-between blending -- there's no sprite for that).
+// This specific lane-sweep-and-glide path only ever travels 5 of the 8
+// generated directions -- it never moves purely south, or diagonally
+// upward, so north-east/north-west/south frames aren't imported here.
+//
+// One JS interval drives position + direction + walk-cycle frame together
+// (single tick, single source of truth) rather than splitting position
+// into GPU-composited CSS and direction into JS, which risked the two
+// drifting out of sync with each other. Cheap either way: Zamboni only
+// mounts while inIntermission is true, so the interval starts/stops with
+// mount/unmount and never runs mid-game.
+const ZAMBONI_FRAME_COUNT = 9;
+const ZAMBONI_TICK_MS = 110;
+const ZAMBONI_CYCLE_MS = 80_000;
+
+const ZAMBONI_PATH = [
+  { t: 0,    x: 60,  y: 45,  dir: 'east' },       // lane 1: sweep right
+  { t: 12,   x: 470, y: 45,  dir: 'south-east' }, // bulge past the edge
+  { t: 13.5, x: 490, y: 62,  dir: 'south-west' }, // curve down into lane 2
+  { t: 16,   x: 470, y: 100, dir: 'west' },       // lane 2: sweep left
+  { t: 28,   x: 60,  y: 100, dir: 'south-west' }, // bulge past the edge
+  { t: 29.5, x: 40,  y: 117, dir: 'south-east' }, // curve down into lane 3
+  { t: 32,   x: 60,  y: 155, dir: 'east' },       // lane 3: sweep right
+  { t: 44,   x: 470, y: 155, dir: 'south-east' },
+  { t: 45.5, x: 490, y: 172, dir: 'south-west' },
+  { t: 48,   x: 470, y: 205, dir: 'west' },       // lane 4: sweep left
+  { t: 60,   x: 60,  y: 205, dir: 'west' },       // small bulge, still west
+  { t: 61.5, x: 40,  y: 205, dir: 'north' },      // return glide up the left edge
+  { t: 66,   x: 40,  y: 45,  dir: 'east' },       // curve back to start
+  { t: 68,   x: 60,  y: 45,  dir: 'east' },       // settle, pause
+  { t: 100,  x: 60,  y: 45,  dir: 'east' },
+];
+
+function zamboniPose(elapsedMs) {
+  const pct = ((elapsedMs % ZAMBONI_CYCLE_MS) / ZAMBONI_CYCLE_MS) * 100;
+  let i = ZAMBONI_PATH.length - 2; // pct is always < 100, so this always gets overwritten below
+  for (let j = 0; j < ZAMBONI_PATH.length - 1; j++) {
+    if (pct < ZAMBONI_PATH[j + 1].t) { i = j; break; }
+  }
+  const seg = ZAMBONI_PATH[i], next = ZAMBONI_PATH[i + 1];
+  const frac = (pct - seg.t) / (next.t - seg.t);
+  return {
+    x: seg.x + (next.x - seg.x) * frac,
+    y: seg.y + (next.y - seg.y) * frac,
+    dir: seg.dir,
+  };
+}
+
 function Zamboni() {
-  const hubDots = (cx, cy) => [0, 60, 120, 180, 240, 300].map(a => {
-    const rad = (a * Math.PI) / 180;
-    return <circle key={a} cx={cx + 2.1 * Math.cos(rad)} cy={cy + 2.1 * Math.sin(rad)} r="0.5" fill="#f4f7fb" />;
-  });
+  const [pose, setPose] = useState(() => zamboniPose(0));
+  const [frame, setFrame] = useState(0);
+  const startRef = useRef(Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const elapsed = Date.now() - startRef.current;
+      setPose(zamboniPose(elapsed));
+      setFrame(Math.floor(elapsed / ZAMBONI_TICK_MS) % ZAMBONI_FRAME_COUNT);
+    }, ZAMBONI_TICK_MS);
+    return () => clearInterval(id);
+  }, []);
 
   return (
-    <g
-      className="animate-[zamboni-drive_80s_linear_infinite]"
-      style={{ transformOrigin: '24px 9px' }} // vehicle's own visual center
-    >
-      <defs>
-        <pattern id="zamboniHalftone" width="3.2" height="3.2" patternUnits="userSpaceOnUse">
-          <circle cx="1" cy="1" r="0.55" fill="#1b2540" opacity="0.35" />
-        </pattern>
-      </defs>
-
-      <ellipse cx="30" cy="27.5" rx="29" ry="2.5" fill="#000" opacity="0.2" />
-
-      {/* lower body -- blue, halftone-textured */}
-      <rect x="8" y="14" width="44" height="10" rx="2" fill="#3355ee" stroke="#1b2540" strokeWidth="1.4" />
-      <rect x="8" y="14" width="44" height="10" rx="2" fill="url(#zamboniHalftone)" />
-
-      {/* angled white hood/tank top */}
-      <path d="M 10 14 L 14 3 L 46 3 L 52 14 Z" fill="#f4f7fb" stroke="#1b2540" strokeWidth="1.4" />
-      <path d="M 10 14 L 52 14" stroke="#b8e62e" strokeWidth="1.6" />
-
-      {/* dark angled front nose */}
-      <path d="M 2 20 L 10 14 L 10 24 L 5 24 Z" fill="#1b2540" />
-      <path d="M 4 19 L 9.4 15.3" stroke="#8fd8ff" strokeWidth="1.2" opacity="0.85" />
-
-      {/* front resurfacer blade, low near the ice */}
-      <rect x="-3" y="23" width="14" height="5" rx="1.2" fill="#b8e62e" stroke="#1b2540" strokeWidth="1.1" />
-      <rect x="-3" y="23" width="14" height="5" rx="1.2" fill="url(#zamboniHalftone)" />
-
-      {/* open driver platform */}
-      <rect x="43" y="1" width="2.4" height="13" fill="#1b2540" />
-      <path d="M 40 -6 Q 40 -9 43 -9 L 49 -9 Q 52 -9 52 -6 L 52 1 L 40 1 Z" fill="#3355ee" stroke="#1b2540" strokeWidth="1.3" />
-      <rect x="39" y="1" width="14" height="2.6" rx="1" fill="#1b2540" />
-      <line x1="37" y1="3" x2="37" y2="-8" stroke="#1b2540" strokeWidth="1" />
-      <circle cx="37" cy="-9" r="1.3" fill="#b8e62e" />
-
-      {/* wheels */}
-      <circle cx="18" cy="24" r="5.2" fill="#1b2540" />
-      <circle cx="18" cy="24" r="3.2" fill="#3355ee" stroke="#1b2540" strokeWidth="0.8" />
-      {hubDots(18, 24)}
-      <circle cx="42" cy="24" r="5.2" fill="#1b2540" />
-      <circle cx="42" cy="24" r="3.2" fill="#3355ee" stroke="#1b2540" strokeWidth="0.8" />
-      {hubDots(42, 24)}
+    <g style={{ transform: `translate(${pose.x}px, ${pose.y}px)` }}>
+      <ellipse cx="0" cy="18" rx="18" ry="3" fill="#000" opacity="0.2" />
+      <image
+        href={`/zamboni/${pose.dir}/frame-${frame}.png`}
+        x="-22" y="-22" width="44" height="44"
+        style={{ imageRendering: 'pixelated' }}
+      />
     </g>
   );
 }

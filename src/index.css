@@ -468,45 +468,13 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* LiveEventRink.jsx's intermission Zamboni -- a lane-by-lane resurfacing
-   sweep (4 lanes down, then a curved return glide back up the left edge)
-   within LiveEventRink's real 600x255 rink viewBox (shared with
-   IceRink.jsx's RinkMarkings, Session 100). Pure transform (translate +
-   scaleX), so it's GPU-composited and cheap to run on `infinite` for a
-   full ~15-18min intermission -- no JS interval drives this, unlike the
-   component's own dot-decay ticker.
-
-   Deliberately NOT rotate(180deg) at the turns -- an instant 180deg spin
-   of a flat side-profile vehicle looks upside-down mid-transition (its
-   wheels end up on top). Instead each turn is a small curved bulge past
-   the lane's edge with a scaleX(1)<->scaleX(-1) flip at the bulge's peak
-   -- the vehicle stays right-side-up throughout and simply mirrors to
-   face its new direction of travel, which reads as "it turned around"
-   rather than "it flipped over". scaleX(1) = facing left (as drawn in
-   LiveEventRink.jsx's Zamboni component); scaleX(-1) = facing right.
-   Lane x/y values keep a margin from the rink's heavily-rounded corners
-   (rx=84 on a 600x255 rect). */
-@keyframes zamboni-drive {
-  0%     { transform: translate(60px, 45px)  scaleX(-1); } /* start, facing right */
-  12%    { transform: translate(470px, 45px) scaleX(-1); } /* end of lane 1 */
-  13.5%  { transform: translate(490px, 62px) scaleX(-1); } /* bulge past the edge */
-  14.5%  { transform: translate(490px, 62px) scaleX(1); }  /* flip -- now facing left */
-  16%    { transform: translate(470px, 100px) scaleX(1); } /* curve into lane 2 */
-  28%    { transform: translate(60px, 100px)  scaleX(1); } /* end of lane 2 */
-  29.5%  { transform: translate(40px, 117px)  scaleX(1); }
-  30.5%  { transform: translate(40px, 117px)  scaleX(-1); }
-  32%    { transform: translate(60px, 155px)  scaleX(-1); } /* curve into lane 3 */
-  44%    { transform: translate(470px, 155px) scaleX(-1); } /* end of lane 3 */
-  45.5%  { transform: translate(490px, 172px) scaleX(-1); }
-  46.5%  { transform: translate(490px, 172px) scaleX(1); }
-  48%    { transform: translate(470px, 205px) scaleX(1); }  /* curve into lane 4 */
-  60%    { transform: translate(60px, 205px)  scaleX(1); }  /* end of lane 4 */
-  61.5%  { transform: translate(40px, 205px)  scaleX(1); }
-  62.5%  { transform: translate(40px, 205px)  scaleX(-1); }
-  66%    { transform: translate(40px, 45px)   scaleX(-1); } /* return glide up the left edge */
-  68%    { transform: translate(60px, 45px)   scaleX(-1); } /* settle back at start */
-  100%   { transform: translate(60px, 45px)   scaleX(-1); } /* brief pause before the next pass */
-}
+/* LiveEventRink.jsx's intermission Zamboni no longer animates via CSS
+   keyframes (Session 101) -- once real per-direction sprite art replaced
+   the old single-facing hand-drawn icon, the drive path moved into JS
+   (ZAMBONI_PATH in that file) so position AND facing direction can be
+   derived from the exact same schedule instead of two systems (CSS
+   keyframes for position, something else for direction) that could drift
+   out of sync. See that file for the full explanation.
 
 /* Hoisted from DraftTab.css (Phase 6) for its .dt-live-dot pulse. Similar in
    shape to .live-dot's pulse-dot (both 7x7 "live" indicator dots) and
