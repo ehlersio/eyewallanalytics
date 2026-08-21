@@ -1,9 +1,17 @@
 // Shared `.rink-btn` toolbar-button style, originally IceRink.css (Phase 6
-// migration). Reused by SeasonChipRow.jsx (season chips), PWHLShotMapView.jsx
+// migration, back when IceRink.jsx was this app's own in-tree rink
+// component -- since extracted to the standalone react-hockey-rink npm
+// package and deleted from this tree; its own toolbar buttons now use a
+// bundled, library-scoped copy of this same class-building logic instead).
+// Reused by SeasonChipRow.jsx (season chips), PWHLShotMapView.jsx
 // (period-summary buttons), and ShotMapView.jsx (Momentum window buttons) --
 // none of which ever imported IceRink.css themselves; they relied on
-// IceRink.jsx having already loaded it elsewhere on the page, the same
-// hidden-consumer shape as PWHLBoxScoreTable.jsx/PWHLGameStatsPopup.css.
+// IceRink.jsx having already loaded it elsewhere on the page (back when that
+// was a real CSS-file side-effect import), the same hidden-consumer shape as
+// PWHLBoxScoreTable.jsx/PWHLGameStatsPopup.css. Tailwind's JIT scan no longer
+// depends on that import order -- the literal utility-class strings below
+// are enough on their own -- but the "rink-btn" classname itself still has
+// to stay literal for the Cypress assertions noted below.
 // "rink-btn"/"on" are kept as literal marker classnames on every call site:
 // shot-map.cy.js/pwhl-shot-map.cy.js assert `.rink-btn` and
 // `have.class('on')` directly, and index.css's `.chip-disabled .rink-btn`

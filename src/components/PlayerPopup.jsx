@@ -31,7 +31,8 @@ import {
 } from '../utils/supabaseClient'
 import { findContract, contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING } from '../utils/carContracts'
 import { nhlSeasonLabel } from '../utils/seasonComparison'
-import IceRink from '../components/IceRink'
+import { HockeyRink } from 'react-hockey-rink'
+import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents'
 import InfoTip from '../components/InfoTip'
 import SeasonComparisonPicker from '../components/SeasonComparisonPicker'
 import SeasonOverlayChart from './SeasonOverlayChart'
@@ -658,7 +659,7 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
         ))}
       </div>
       <div className={PP_HEATMAP_RINK_CLASSES}>
-        <IceRink events={filtered} roster={{}} hidePlayerFilter />
+        <HockeyRink events={toHockeyRinkEvents(filtered)} teamAbbr={TEAM_CONFIG.abbr} teamColor="var(--team-primary)" hidePlayerFilter />
       </div>
     </div>
   )

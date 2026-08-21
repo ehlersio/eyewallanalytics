@@ -228,17 +228,17 @@ describe('PWHL Shot Map', () => {
     })
 
     it('shows period filter buttons', () => {
-      cy.get('.rink-btn').contains('All').should('exist')
-      cy.get('.rink-btn').contains('P1').should('exist')
-      cy.get('.rink-btn').contains('P2').should('exist')
-      cy.get('.rink-btn').contains('P3').should('exist')
+      cy.get('.rhr-btn').contains('All').should('exist')
+      cy.get('.rhr-btn').contains('P1').should('exist')
+      cy.get('.rhr-btn').contains('P2').should('exist')
+      cy.get('.rhr-btn').contains('P3').should('exist')
     })
 
     it('period filter buttons are clickable', () => {
-      cy.get('.rink-btn').contains('P1').click()
-      cy.get('.rink-btn').contains('P1').should('have.class', 'on')
-      cy.get('.rink-btn').contains('All').click()
-      cy.get('.rink-btn').contains('All').should('have.class', 'on')
+      cy.get('.rhr-btn').contains('P1').click()
+      cy.get('.rhr-btn').contains('P1').should('have.class', 'rhr-btn-on')
+      cy.get('.rhr-btn').contains('All').click()
+      cy.get('.rhr-btn').contains('All').should('have.class', 'rhr-btn-on')
     })
 
     it('shows shot legend with team abbr', () => {
@@ -247,8 +247,8 @@ describe('PWHL Shot Map', () => {
     })
 
     it('shows zoom controls', () => {
-      cy.get('.zoom-btn').contains('−').should('exist')
-      cy.get('.zoom-btn').contains('+').should('exist')
+      cy.get('.rhr-zoom-btn').contains('−').should('exist')
+      cy.get('.rhr-zoom-btn').contains('+').should('exist')
     })
   })
 

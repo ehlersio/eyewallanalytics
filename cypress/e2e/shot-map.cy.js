@@ -220,22 +220,22 @@ describe('Shot Map', () => {
     })
 
     it('shows period filter buttons', () => {
-      cy.get('.rink-btn').contains('All').should('exist')
-      cy.get('.rink-btn').contains('P1').should('exist')
-      cy.get('.rink-btn').contains('P2').should('exist')
-      cy.get('.rink-btn').contains('P3').should('exist')
+      cy.get('.rhr-btn').contains('All').should('exist')
+      cy.get('.rhr-btn').contains('P1').should('exist')
+      cy.get('.rhr-btn').contains('P2').should('exist')
+      cy.get('.rhr-btn').contains('P3').should('exist')
     })
 
     it('period filter buttons are clickable', () => {
-      cy.get('.rink-btn').contains('P1').click()
-      cy.get('.rink-btn').contains('P1').should('have.class', 'on')
-      cy.get('.rink-btn').contains('All').click()
-      cy.get('.rink-btn').contains('All').should('have.class', 'on')
+      cy.get('.rhr-btn').contains('P1').click()
+      cy.get('.rhr-btn').contains('P1').should('have.class', 'rhr-btn-on')
+      cy.get('.rhr-btn').contains('All').click()
+      cy.get('.rhr-btn').contains('All').should('have.class', 'rhr-btn-on')
     })
 
     it('shows Player filter and Heat map toggles', () => {
-      cy.get('.rink-btn').contains('Player').should('exist')
-      cy.get('.rink-btn').contains('Heat').should('exist')
+      cy.get('.rhr-btn').contains('Player').should('exist')
+      cy.get('.rhr-btn').contains('Heat').should('exist')
     })
 
     it('shows shot legend with team abbr', () => {
@@ -246,13 +246,13 @@ describe('Shot Map', () => {
     })
 
     it('shows zoom controls', () => {
-      cy.get('.zoom-btn').contains('−').should('exist')
-      cy.get('.zoom-btn').contains('+').should('exist')
+      cy.get('.rhr-zoom-btn').contains('−').should('exist')
+      cy.get('.rhr-zoom-btn').contains('+').should('exist')
     })
 
     it('zoom buttons are clickable without crashing', () => {
-      cy.get('.zoom-btn').contains('+').click().click()
-      cy.get('.zoom-btn').contains('−').click()
+      cy.get('.rhr-zoom-btn').contains('+').click().click()
+      cy.get('.rhr-zoom-btn').contains('−').click()
       cy.get('svg').should('exist')
     })
   })

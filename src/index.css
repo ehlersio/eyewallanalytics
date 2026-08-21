@@ -75,6 +75,40 @@
   --nav-height: 52px;
 }
 
+/* react-hockey-rink theming (Phase 3 integration) -- aliases the package's
+   own --rink-* tokens onto this app's already-theme-reactive tokens instead
+   of duplicating literal color values per theme. Since these are var()
+   references (not literals), they automatically track both this app's
+   light/dark toggle AND the current --team-primary (JS-set per selected
+   team) with no separate [data-theme="light"] block needed here -- unlike
+   the package's own bundled defaults, which are static. Must stay unlayered
+   (not inside @layer) and load after 'react-hockey-rink/styles.css' is
+   imported in main.jsx, so this :root rule wins the same-specificity,
+   later-source-wins tiebreak against the package's own unlayered :root
+   defaults (see the @layer note at the top of this file). */
+:root {
+  --rink-bg1: var(--bg1);
+  --rink-bg3: var(--bg3);
+  --rink-bg4: var(--bg4);
+  --rink-red: var(--red);
+  --rink-red-bright: var(--red-bright);
+  --rink-red-dim: var(--red-dim);
+  --rink-red-border: var(--red-border);
+  --rink-blue-bright: var(--blue-bright);
+  --rink-blue-dim: var(--blue-dim);
+  --rink-amber: var(--amber);
+  --rink-text: var(--text);
+  --rink-text-muted: var(--text-muted);
+  --rink-text-dim: var(--text-dim);
+  --rink-border: var(--border);
+  --rink-border-2: var(--border-2);
+  --rink-radius-sm: var(--radius-sm);
+  --rink-radius-lg: var(--radius-lg);
+  --rink-font-display: var(--font-display);
+  --rink-font-mono: var(--font-mono);
+  --rink-team-primary: var(--team-primary);
+}
+
 /* ── Light mode token overrides ── */
 [data-theme="light"] {
   --bg0: #f4f6fa;
@@ -456,17 +490,11 @@
   to   { transform: scale(1) translateY(0); opacity: 1; }
 }
 
-/* Hoisted from IceRink.css (Phase 6) for its .hover-tip entrance --
-   IceRink.css's own copy of pop-in used scale(0.92) instead of this file's
-   0.94 (a genuine value conflict, not just a name collision); decided to
-   standardize on 0.94 rather than keep IceRink's animation visually
-   distinct, so .shot-popup now references this same shared keyframe
-   instead of carrying its own. tip-in has no collision anywhere else in
-   the app -- unique to this component's hover tooltip. */
-@keyframes tip-in {
-  from { opacity: 0; transform: translateY(3px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+/* tip-in (IceRink.jsx's .hover-tip entrance) removed -- that was its only
+   consumer, and IceRink.jsx has since been extracted to the standalone
+   react-hockey-rink npm package, which ships its own prefixed rhr-tip-in
+   keyframe instead. pop-in above stays; it's still shared by 8+ other
+   popups app-wide. */
 
 /* LiveEventRink.jsx's intermission Zamboni no longer animates via CSS
    keyframes (Session 101) -- once real per-direction sprite art replaced

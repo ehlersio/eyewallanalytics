@@ -83,14 +83,16 @@ export default defineConfig(({ mode }) => {
           // the initial-load bundle by ~500 KiB. Pinning them explicitly so
           // this doesn't happen again on some other unrelated future bump.
           //
-          // IceRink deliberately excluded from this group: unlike the other
-          // two, it's ALSO statically imported by ShotMapView.jsx (the
-          // eager, non-lazy default route), so it's genuinely needed on
-          // initial load, not popup-only. Grouping it with these two was
-          // tried first and wrongly dragged the other two into eager
+          // The season shot map's rink component (formerly the in-tree
+          // IceRink.jsx, now the react-hockey-rink npm package) is
+          // deliberately excluded from this group: unlike the other two,
+          // it's ALSO statically imported by ShotMapView.jsx (the eager,
+          // non-lazy default route), so it's genuinely needed on initial
+          // load, not popup-only. Grouping it with these two was tried
+          // first and wrongly dragged the other two into eager
           // modulepreload right alongside it -- verified via dist/index.html
-          // listing player-popup-extras as a modulepreload target when
-          // IceRink was included. Leaving it out lets it fall back to
+          // listing player-popup-extras as a modulepreload target when it
+          // was included. Leaving it out lets it fall back to
           // Rollup/Rolldown's default chunking for its own (correctly eager)
           // dependency.
           if (['SeasonOverlayChart', 'PlayerComparisonEntry'].some((name) => id.includes(`/src/components/${name}.jsx`))) {

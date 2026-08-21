@@ -15,21 +15,25 @@
 // single natural "spot" the way a shot/hit/faceoff has one, better suited
 // to text-only detail in the paired EventLog ticker instead.
 //
-// Rink markings: reuses IceRink.jsx's own `RinkMarkings` component (and
-// its W/H/CX/CY constants) directly rather than an independent copy — the
-// user asked this rink look pixel-identical to the season shot map's, and
-// a shared component is the only way to actually guarantee that (a
-// hand-copied approximation would drift the next time IceRink.jsx's
-// geometry changes). The coordinate transform (toSvg) stays a tiny local
-// function since it's not exported, but it's driven by the same imported
-// W/H/CX/CY so the math is identical either way.
+// Rink markings: reuses the `react-hockey-rink` package's own `RinkMarkings`
+// component (and its W/H/CX/CY constants) directly rather than an
+// independent copy — the user asked this rink look pixel-identical to the
+// season shot map's, and a shared component is the only way to actually
+// guarantee that (a hand-copied approximation would drift the next time the
+// package's geometry changes; this app's own IceRink.jsx, which the season
+// shot map used before it was extracted into the standalone react-hockey-
+// rink package, has been deleted). The coordinate transform (toSvg) stays
+// a tiny local function
+// since it's not exported, but it's driven by the same imported W/H/CX/CY
+// so the math is identical either way.
 //
 // Orientation: normalized via each play's own homeTeamDefendingSide field
 // so the home team's own net is always drawn on the left, away on the
 // right — stable for the whole game regardless of period parity, and
 // simpler than the season shot map's "my team always attacks right"
-// convention (IceRink.jsx's normalizeCoords), which isn't needed here
-// since dots never persist across a period boundary anyway (see below).
+// convention (HockeyRink's own normalizeCoords, in react-hockey-rink), which
+// isn't needed here since dots never persist across a period boundary
+// anyway (see below).
 //
 // Decay: each dot's age is tracked from when THIS CLIENT first observed
 // it (Date.now(), not NHL game-clock time — the game clock pauses during
@@ -61,7 +65,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TEAM_CONFIG } from '../utils/teamConfig';
-import { RinkMarkings, W, H, CX, CY } from './IceRink';
+import { RinkMarkings, W, H, CX, CY } from 'react-hockey-rink';
 
 function toSvg(x, y) {
   return { px: CX + (x / 100) * (W / 2), py: CY - (y / 42.5) * (H / 2) };
@@ -75,7 +79,7 @@ const DOT_TYPES = new Set([
 ]);
 
 // r/opacity scaled up from the old compact-viewBox version to match
-// IceRink.jsx's real 600x255 coordinate space (IceRink's own SHOT_STYLE
+// react-hockey-rink's real 600x255 coordinate space (its own SHOT_STYLE
 // uses r:4-7 at this same scale).
 const DOT_STYLE = {
   'goal':         { r: 8,   opacity: 1    },
@@ -128,8 +132,8 @@ function periodOrdinal(n) {
 }
 
 const CARD_LABEL_CLASSES = 'sec-label flex items-center justify-between';
-// Mirrors IceRink.jsx's own rink-svg-container exactly (IceRink.jsx:440) --
-// no independent background/corner-radius of its own. The previous version
+// Mirrors react-hockey-rink's own .rhr-svg-container rule exactly -- no
+// independent background/corner-radius of its own. The previous version
 // gave this wrapper its own bg + a small rounded-[8px] corner sitting behind
 // the SVG's much-more-rounded ice shape (rx=84), leaving a visible ring of
 // flat background outside the ice's curve at each corner. The SVG's own
@@ -180,8 +184,9 @@ const INTERMISSION_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[20
 //     naturally uses all 8 directions exactly once, no contrivance
 //     needed. Connects back to the lanes' own start point to close the
 //     full loop. Corner/edge coordinates were checked against the rink's
-//     rx=84 corner rounding (IceRink.jsx) to confirm every waypoint sits
-//     inside the actual ice surface, not just the nominal 600x255 box.
+//     rx=84 corner rounding (react-hockey-rink's RinkMarkings) to confirm
+//     every waypoint sits inside the actual ice surface, not just the
+//     nominal 600x255 box.
 //
 // One JS interval drives position + direction + walk-cycle frame together
 // (single tick, single source of truth) rather than splitting position

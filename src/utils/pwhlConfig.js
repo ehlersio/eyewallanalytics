@@ -3,7 +3,7 @@
 //
 // Storage key for selected PWHL team: 'eyewall:pwhl_team' in localStorage.
 // Shape is intentionally identical to NHL team objects in teamConfig.js so
-// all shared components (StatBar, IceRink, etc.) receive the same fields.
+// all shared components (StatBar, HockeyRink, etc.) receive the same fields.
 //
 // Fields:
 //   abbr          — HockeyTech team code (matches pwhl_teams.team_code in Supabase)
