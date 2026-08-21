@@ -159,9 +159,29 @@ const INTERMISSION_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[20
 // in this y-down SVG space) so it's "south-east". Position is linearly
 // interpolated between waypoints every tick; direction just switches at
 // the waypoint (no in-between blending -- there's no sprite for that).
-// This specific lane-sweep-and-glide path only ever travels 5 of the 8
-// generated directions -- it never moves purely south, or diagonally
-// upward, so north-east/north-west/south frames aren't imported here.
+// `t` is elapsed ms from loop start, not a percentage -- the loop used to
+// spend its last third (68%-100% of an arbitrary 80s) frozen in place
+// before wrapping (Session 101 review: visibly stalls at the start
+// position). Removed entirely rather than padded out.
+//
+// Two phases, back to back in one loop:
+//  1. LANES (0 - 54400ms, unchanged from the original hand-built-SVG-era
+//     path): a realistic lane-by-lane resurfacing sweep, 4 lanes down
+//     with a curved U-turn bulge at each edge. Only ever travels
+//     east/west/south-east/south-west -- there's no segment that moves
+//     purely south or diagonally upward, so on its own this phase can't
+//     reach north-east, north-west, or due-south.
+//  2. PERIMETER LAP (54400ms - 90137ms, added Session 101 so the vehicle
+//     actually visits all 8 generated directions, not just 5): one lap
+//     around the rink's edge, rectangular with a small diagonal poke
+//     rounding each corner. A rectangle's 4 straight edges are exactly
+//     east/south/west/north (one each) and its 4 rounded corners are
+//     exactly the 4 diagonals (one each) -- so a single clean lap
+//     naturally uses all 8 directions exactly once, no contrivance
+//     needed. Connects back to the lanes' own start point to close the
+//     full loop. Corner/edge coordinates were checked against the rink's
+//     rx=84 corner rounding (IceRink.jsx) to confirm every waypoint sits
+//     inside the actual ice surface, not just the nominal 600x255 box.
 //
 // One JS interval drives position + direction + walk-cycle frame together
 // (single tick, single source of truth) rather than splitting position
@@ -171,34 +191,69 @@ const INTERMISSION_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[20
 // mount/unmount and never runs mid-game.
 const ZAMBONI_FRAME_COUNT = 9;
 const ZAMBONI_TICK_MS = 110;
-const ZAMBONI_CYCLE_MS = 80_000;
+const ZAMBONI_CYCLE_MS = 90_137;
 
 const ZAMBONI_PATH = [
-  { t: 0,    x: 60,  y: 45,  dir: 'east' },       // lane 1: sweep right
-  { t: 12,   x: 470, y: 45,  dir: 'south-east' }, // bulge past the edge
-  { t: 13.5, x: 490, y: 62,  dir: 'south-west' }, // curve down into lane 2
-  { t: 16,   x: 470, y: 100, dir: 'west' },       // lane 2: sweep left
-  { t: 28,   x: 60,  y: 100, dir: 'south-west' }, // bulge past the edge
-  { t: 29.5, x: 40,  y: 117, dir: 'south-east' }, // curve down into lane 3
-  { t: 32,   x: 60,  y: 155, dir: 'east' },       // lane 3: sweep right
-  { t: 44,   x: 470, y: 155, dir: 'south-east' },
-  { t: 45.5, x: 490, y: 172, dir: 'south-west' },
-  { t: 48,   x: 470, y: 205, dir: 'west' },       // lane 4: sweep left
-  { t: 60,   x: 60,  y: 205, dir: 'west' },       // small bulge, still west
-  { t: 61.5, x: 40,  y: 205, dir: 'north' },      // return glide up the left edge
-  { t: 66,   x: 40,  y: 45,  dir: 'east' },       // curve back to start
-  { t: 68,   x: 60,  y: 45,  dir: 'east' },       // settle, pause
-  { t: 100,  x: 60,  y: 45,  dir: 'east' },
+  // -- Phase 1: lanes --
+  { t: 0,     x: 60,  y: 45,  dir: 'east' },        // lane 1: sweep right
+  { t: 9600,  x: 470, y: 45,  dir: 'south-east' },  // bulge past the edge
+  { t: 10800, x: 490, y: 62,  dir: 'south-west' },  // curve down into lane 2
+  { t: 12800, x: 470, y: 100, dir: 'west' },        // lane 2: sweep left
+  { t: 22400, x: 60,  y: 100, dir: 'south-west' },  // bulge past the edge
+  { t: 23600, x: 40,  y: 117, dir: 'south-east' },  // curve down into lane 3
+  { t: 25600, x: 60,  y: 155, dir: 'east' },        // lane 3: sweep right
+  { t: 35200, x: 470, y: 155, dir: 'south-east' },
+  { t: 36400, x: 490, y: 172, dir: 'south-west' },
+  { t: 38400, x: 470, y: 205, dir: 'west' },        // lane 4: sweep left
+  { t: 48000, x: 60,  y: 205, dir: 'west' },        // small bulge, still west
+  { t: 49200, x: 40,  y: 205, dir: 'north' },       // return glide up the left edge
+  { t: 52800, x: 40,  y: 45,  dir: 'east' },        // curve back to start
+  { t: 54400, x: 60,  y: 45,  dir: 'north-west' },  // lanes done -- peel off into the perimeter lap
+  // -- Phase 2: perimeter lap (clockwise from top-left) --
+  { t: 55364, x: 45,  y: 30,  dir: 'east' },        // top-left corner
+  { t: 65200, x: 465, y: 30,  dir: 'south-east' },  // top edge
+  { t: 67232, x: 505, y: 50,  dir: 'south' },       // rounded top-right corner
+  { t: 70745, x: 505, y: 200, dir: 'south-west' },  // right edge
+  { t: 72890, x: 465, y: 225, dir: 'west' },        // rounded bottom-right corner
+  { t: 82258, x: 65,  y: 225, dir: 'north-west' },  // bottom edge
+  { t: 84290, x: 25,  y: 205, dir: 'north' },       // rounded bottom-left corner
+  { t: 88037, x: 25,  y: 45,  dir: 'north-east' },  // left edge
+  { t: 89173, x: 45,  y: 30,  dir: 'south-east' },  // rounded top-left corner -- closes the lap
+  { t: 90137, x: 60,  y: 45,  dir: 'east' },        // back to the lanes' start -- loop point, no hold
 ];
 
+// Per-direction shadow geometry, tuned from each sprite's actual
+// painted-pixel bounds (not the 68px canvas, which has transparent
+// headroom above for the antenna) -- a single shared cy/rx made the
+// east/west legs look like the vehicle was floating a few px above the
+// ice, since those two directions' art sits noticeably higher in the
+// canvas than south-east/south-west/north's (Session 101 review). The
+// shadow is drawn BEHIND the sprite (z-order), so it also has to clear
+// the vehicle's own opaque silhouette to read as a shadow at all -- east
+// and west are a full side profile with no gaps under the body, so their
+// ellipse needs real vertical clearance below the sprite's visible
+// bottom edge, not just a few px past it (verified visually, not just
+// computed: a first pass placed it barely past the bottom and it
+// vanished completely, hidden under the opaque body).
+const ZAMBONI_SHADOW = {
+  east:         { cy: 15, rx: 19 },
+  west:         { cy: 15, rx: 19 },
+  'south-east': { cy: 16, rx: 18 },
+  'south-west': { cy: 16, rx: 18 },
+  'north-east': { cy: 16, rx: 18 },
+  'north-west': { cy: 16, rx: 18 },
+  north:        { cy: 15, rx: 10 },
+  south:        { cy: 15, rx: 10 },
+};
+
 function zamboniPose(elapsedMs) {
-  const pct = ((elapsedMs % ZAMBONI_CYCLE_MS) / ZAMBONI_CYCLE_MS) * 100;
-  let i = ZAMBONI_PATH.length - 2; // pct is always < 100, so this always gets overwritten below
+  const t = elapsedMs % ZAMBONI_CYCLE_MS;
+  let i = ZAMBONI_PATH.length - 2; // t is always < last stop, so this always gets overwritten below
   for (let j = 0; j < ZAMBONI_PATH.length - 1; j++) {
-    if (pct < ZAMBONI_PATH[j + 1].t) { i = j; break; }
+    if (t < ZAMBONI_PATH[j + 1].t) { i = j; break; }
   }
   const seg = ZAMBONI_PATH[i], next = ZAMBONI_PATH[i + 1];
-  const frac = (pct - seg.t) / (next.t - seg.t);
+  const frac = (t - seg.t) / (next.t - seg.t);
   return {
     x: seg.x + (next.x - seg.x) * frac,
     y: seg.y + (next.y - seg.y) * frac,
@@ -220,9 +275,11 @@ function Zamboni() {
     return () => clearInterval(id);
   }, []);
 
+  const shadow = ZAMBONI_SHADOW[pose.dir];
+
   return (
     <g style={{ transform: `translate(${pose.x}px, ${pose.y}px)` }}>
-      <ellipse cx="0" cy="18" rx="18" ry="3" fill="#000" opacity="0.2" />
+      <ellipse cx="0" cy={shadow.cy} rx={shadow.rx} ry="3" fill="#000" opacity="0.2" />
       <image
         href={`/zamboni/${pose.dir}/frame-${frame}.png`}
         x="-22" y="-22" width="44" height="44"
