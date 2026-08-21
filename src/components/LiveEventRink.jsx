@@ -191,7 +191,7 @@ const INTERMISSION_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[20
 // mount/unmount and never runs mid-game.
 const ZAMBONI_FRAME_COUNT = 9;
 const ZAMBONI_TICK_MS = 110;
-const ZAMBONI_CYCLE_MS = 90_137;
+const ZAMBONI_CYCLE_MS = 103_000;
 
 const ZAMBONI_PATH = [
   // -- Phase 1: lanes --
@@ -209,17 +209,24 @@ const ZAMBONI_PATH = [
   { t: 49200, x: 40,  y: 205, dir: 'north' },       // return glide up the left edge
   { t: 52800, x: 40,  y: 45,  dir: 'east' },        // curve back to start
   { t: 54400, x: 60,  y: 45,  dir: 'north-west' },  // lanes done -- peel off into the perimeter lap
-  // -- Phase 2: perimeter lap (clockwise from top-left) --
-  { t: 55364, x: 45,  y: 30,  dir: 'east' },        // top-left corner
-  { t: 65200, x: 465, y: 30,  dir: 'south-east' },  // top edge
-  { t: 67232, x: 505, y: 50,  dir: 'south' },       // rounded top-right corner
-  { t: 70745, x: 505, y: 200, dir: 'south-west' },  // right edge
-  { t: 72890, x: 465, y: 225, dir: 'west' },        // rounded bottom-right corner
-  { t: 82258, x: 65,  y: 225, dir: 'north-west' },  // bottom edge
-  { t: 84290, x: 25,  y: 205, dir: 'north' },       // rounded bottom-left corner
-  { t: 88037, x: 25,  y: 45,  dir: 'north-east' },  // left edge
-  { t: 89173, x: 45,  y: 30,  dir: 'south-east' },  // rounded top-left corner -- closes the lap
-  { t: 90137, x: 60,  y: 45,  dir: 'east' },        // back to the lanes' start -- loop point, no hold
+  // -- Phase 2: perimeter lap (clockwise from top-left). The 4 straight
+  // edges vary a lot in physical length (the rink is much wider than
+  // tall), so pure distance/speed pacing gave north/south only ~3.5s of
+  // screen time against east/west's ~9.4s -- easy to blink and miss
+  // (Session 101 review). Durations below are chosen per-segment instead
+  // of derived from a constant speed, so every direction gets a real,
+  // comparable dwell: ~9.8s for the long east/west edges, ~6s for the
+  // short north/south edges, ~3.5s for each corner-rounding diagonal.
+  { t: 55900,  x: 45,  y: 30,  dir: 'east' },        // top-left corner
+  { t: 65700,  x: 465, y: 30,  dir: 'south-east' },  // top edge
+  { t: 69200,  x: 505, y: 50,  dir: 'south' },       // rounded top-right corner
+  { t: 75200,  x: 505, y: 200, dir: 'south-west' },  // right edge
+  { t: 78700,  x: 465, y: 225, dir: 'west' },        // rounded bottom-right corner
+  { t: 88500,  x: 65,  y: 225, dir: 'north-west' },  // bottom edge
+  { t: 92000,  x: 25,  y: 205, dir: 'north' },       // rounded bottom-left corner
+  { t: 98000,  x: 25,  y: 45,  dir: 'north-east' },  // left edge
+  { t: 101500, x: 45,  y: 30,  dir: 'south-east' },  // rounded top-left corner -- closes the lap
+  { t: 103000, x: 60,  y: 45,  dir: 'east' },        // back to the lanes' start -- loop point, no hold
 ];
 
 // Per-direction shadow geometry, tuned from each sprite's actual
@@ -227,23 +234,26 @@ const ZAMBONI_PATH = [
 // headroom above for the antenna) -- a single shared cy/rx made the
 // east/west legs look like the vehicle was floating a few px above the
 // ice, since those two directions' art sits noticeably higher in the
-// canvas than south-east/south-west/north's (Session 101 review). The
-// shadow is drawn BEHIND the sprite (z-order), so it also has to clear
-// the vehicle's own opaque silhouette to read as a shadow at all -- east
-// and west are a full side profile with no gaps under the body, so their
+// canvas than the diagonal views' (Session 101 review). The shadow is
+// drawn BEHIND the sprite (z-order), so it also has to clear the
+// vehicle's own opaque silhouette to read as a shadow at all -- east and
+// west are a full side profile with no gaps under the body, so their
 // ellipse needs real vertical clearance below the sprite's visible
 // bottom edge, not just a few px past it (verified visually, not just
 // computed: a first pass placed it barely past the bottom and it
-// vanished completely, hidden under the opaque body).
+// vanished completely, hidden under the opaque body). Recomputed for the
+// asymmetric-platform sprite set (Session 101) -- re-measured per
+// direction rather than assumed unchanged, since moving the driver
+// platform/antenna off-center shifted each silhouette's bounds.
 const ZAMBONI_SHADOW = {
   east:         { cy: 15, rx: 19 },
   west:         { cy: 15, rx: 19 },
-  'south-east': { cy: 16, rx: 18 },
-  'south-west': { cy: 16, rx: 18 },
-  'north-east': { cy: 16, rx: 18 },
-  'north-west': { cy: 16, rx: 18 },
-  north:        { cy: 15, rx: 10 },
+  north:        { cy: 16, rx: 12 },
   south:        { cy: 15, rx: 10 },
+  'north-east': { cy: 16, rx: 19 },
+  'north-west': { cy: 16, rx: 19 },
+  'south-east': { cy: 16, rx: 19 },
+  'south-west': { cy: 16, rx: 19 },
 };
 
 function zamboniPose(elapsedMs) {
