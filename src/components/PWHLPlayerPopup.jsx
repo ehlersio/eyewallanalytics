@@ -26,7 +26,8 @@ import SeasonOverlayChart from './SeasonOverlayChart';
 // Use getPWHLTeamById instead (already imported below).
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
-import IceRink from './IceRink';
+import { HockeyRink } from 'react-hockey-rink';
+import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import { TileStatSection } from './StatTileGrid';
 import SeasonComparisonPicker from './SeasonComparisonPicker';
 import PlayerComparisonEntry from './PlayerComparisonEntry';
@@ -584,7 +585,7 @@ function PWHLHeatMap({ playerId, season, isGoalie, teamId }) {
         const tColor = tTeam?.displayColor || 'var(--team-primary)';
         return (
           <div className={PP_HEATMAP_RINK_CLASSES}>
-            <IceRink events={filtered} roster={{}} hidePlayerFilter
+            <HockeyRink events={toHockeyRinkEvents(filtered)} hidePlayerFilter
               teamAbbr={tAbbr} teamColor={tColor} />
           </div>
         );

@@ -24,7 +24,8 @@ import { HatTrickPopup } from '../components/GameEvents';
 import { usePWHLPeriodSummary, usePWHLGameSummary } from '../hooks/usePWHLPeriodSummary';
 import PWHLPeriodSummary from '../components/PWHLPeriodSummary';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
-import IceRink from '../components/IceRink';
+import { HockeyRink } from 'react-hockey-rink';
+import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
 import InfoTip from '../components/InfoTip';
@@ -844,7 +845,7 @@ function PPAnalysisPanel({ drillStat, abbr, color }) {
                 {opp.shotEvents.length > 0 && (
                   <div className={PP_MINI_RINK_CLASSES}>
                     <div className={PP_MINI_RINK_LABEL_CLASSES}>Shot locations</div>
-                    <IceRink events={opp.shotEvents} roster={{}} readOnly teamAbbr={abbr} teamColor={color} />
+                    <HockeyRink events={toHockeyRinkEvents(opp.shotEvents)} readOnly teamAbbr={abbr} teamColor={color} />
                   </div>
                 )}
               </div>
@@ -925,7 +926,7 @@ function PKAnalysisPanel({ drillStat, abbr, color }) {
                 {opp.shotEvents.length > 0 && (
                   <div className={PP_MINI_RINK_CLASSES}>
                     <div className={PP_MINI_RINK_LABEL_CLASSES}>OPP shot locations</div>
-                    <IceRink events={opp.shotEvents} roster={{}} readOnly flipPerspective teamAbbr={abbr} teamColor={color} />
+                    <HockeyRink events={toHockeyRinkEvents(opp.shotEvents)} readOnly flipPerspective teamAbbr={abbr} teamColor={color} />
                   </div>
                 )}
               </div>
@@ -2142,7 +2143,7 @@ export default function PWHLShotMapView() {
                 No shot data for this {selectedGameId ? 'game' : 'season'}.
               </div>
             )}
-            {rinkEvents.length > 0 && <IceRink events={rinkEvents} roster={{}} teamAbbr={abbr} teamColor={color} />}
+            {rinkEvents.length > 0 && <HockeyRink events={toHockeyRinkEvents(rinkEvents)} teamAbbr={abbr} teamColor={color} />}
           </div>
         </div>
 

@@ -11,7 +11,8 @@ import {
   bustLiveGameCache, TEAM_COLORS, GAME_TYPE, TEAM_CONFIG,
 } from '../utils/nhlApi';
 import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON } from '../utils/teamConfig';
-import IceRink from '../components/IceRink';
+import { HockeyRink } from 'react-hockey-rink';
+import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import LiveEventRink from '../components/LiveEventRink';
 import { GoalPopup, HatTrickPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
@@ -2109,7 +2110,7 @@ export default function ShotMapView() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div className="card">
             <div className="sec-label">Shot map</div>
-            <IceRink events={shotEvents} roster={roster || {}} />
+            <HockeyRink events={toHockeyRinkEvents(shotEvents)} teamAbbr={TEAM_CONFIG.abbr} teamColor="var(--team-primary)" />
           </div>
 
 
@@ -2956,9 +2957,10 @@ function PPAnalysisPanel({ drillStat }) {
                 {opp.shotEvents.length > 0 && (
                   <div className={PP_MINI_RINK_CLASSES}>
                     <div className={PP_MINI_RINK_LABEL_CLASSES}>Shot locations</div>
-                    <IceRink
-                      events={opp.shotEvents}
-                      roster={{}}
+                    <HockeyRink
+                      events={toHockeyRinkEvents(opp.shotEvents)}
+                      teamAbbr={TEAM_CONFIG.abbr}
+                      teamColor="var(--team-primary)"
                       readOnly
                     />
                   </div>
@@ -3123,9 +3125,10 @@ function PKAnalysisPanel({ drillStat }) {
                 {opp.shotEvents.length > 0 && (
                   <div className={PP_MINI_RINK_CLASSES}>
                     <div className={PP_MINI_RINK_LABEL_CLASSES}>OPP shot locations</div>
-                    <IceRink
-                      events={opp.shotEvents}
-                      roster={{}}
+                    <HockeyRink
+                      events={toHockeyRinkEvents(opp.shotEvents)}
+                      teamAbbr={TEAM_CONFIG.abbr}
+                      teamColor="var(--team-primary)"
                       readOnly
                       flipPerspective
                     />

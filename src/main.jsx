@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import posthog from 'posthog-js'
+import 'react-hockey-rink/styles.css'
 import './index.css'
 import './light-mode-overrides.css'
 import './tailwind.css'
