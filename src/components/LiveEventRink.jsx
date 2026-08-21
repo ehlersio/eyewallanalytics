@@ -138,66 +138,163 @@ const RINK_WRAP_CLASSES = 'relative w-full overflow-hidden rounded-[var(--radius
 const INTERMISSION_LABEL_CLASSES = 'text-[13px] font-bold text-[#0f1b2e] [text-shadow:0_1px_2px_rgba(255,255,255,0.5)]';
 const INTERMISSION_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[20px] font-extrabold text-[#0f1b2e] [text-shadow:0_1px_2px_rgba(255,255,255,0.5)]';
 
-// ── Zamboni (Session 100) — hand-built flat-icon SVG, not a raster asset.
-// No image-generation tool (Pixellab or otherwise) is available in this
-// environment to build this from; a crafted vector icon scales cleanly at
-// any size/theme and fits this rink's all-SVG rendering, unlike a hosted
-// raster image would. Styled after a reference illustration the user
-// shared: angled white hood over a blue halftone-textured lower body, dark
-// angled front nose with a light accent stripe, a lime-green front
-// resurfacer blade, an OPEN driver platform (post + seat-back + cushion,
-// not an enclosed cab) with an antenna, and two wheels with a lug-dot hub
-// pattern. Drawn facing left by default; direction is flipped via scaleX
-// in the animation below (never rotated 180deg -- see that comment for why).
+// ── Zamboni (Session 100, raster sprite added Session 101) -- a PixelLab
+// (top-down, 8-direction object + "drive" animation, 9 frames each) sprite
+// replaced the earlier hand-built SVG icon once an image-generation tool
+// became available. A logo decal was tried on the body panel and
+// explicitly rejected on review (Session 101) -- these frames are plain.
+//
+// First raster pass mirrored a single "west" sprite via scaleX for the
+// return trip, same trick the old hand-drawn SVG used -- but with real
+// per-direction art already generated, that read as fake (always
+// left/right, never actually facing the diagonal it was driving). Fixed
+// by using the true directional sprite for each leg of the path instead.
+//
+// ZAMBONI_PATH below is the single source of truth for BOTH position and
+// facing, replacing the old CSS @keyframes (still explained in
+// index.css's now-superseded comment). Each waypoint's `dir` is the
+// facing for the segment FROM that waypoint TO the next one, derived from
+// that segment's real direction of travel -- e.g. the lane-1 sweep moves
+// pure +x so it's "east"; the bulge past the edge moves +x+y (down-right
+// in this y-down SVG space) so it's "south-east". Position is linearly
+// interpolated between waypoints every tick; direction just switches at
+// the waypoint (no in-between blending -- there's no sprite for that).
+// `t` is elapsed ms from loop start, not a percentage -- the loop used to
+// spend its last third (68%-100% of an arbitrary 80s) frozen in place
+// before wrapping (Session 101 review: visibly stalls at the start
+// position). Removed entirely rather than padded out.
+//
+// Two phases, back to back in one loop:
+//  1. LANES (0 - 54400ms, unchanged from the original hand-built-SVG-era
+//     path): a realistic lane-by-lane resurfacing sweep, 4 lanes down
+//     with a curved U-turn bulge at each edge. Only ever travels
+//     east/west/south-east/south-west -- there's no segment that moves
+//     purely south or diagonally upward, so on its own this phase can't
+//     reach north-east, north-west, or due-south.
+//  2. PERIMETER LAP (54400ms - 90137ms, added Session 101 so the vehicle
+//     actually visits all 8 generated directions, not just 5): one lap
+//     around the rink's edge, rectangular with a small diagonal poke
+//     rounding each corner. A rectangle's 4 straight edges are exactly
+//     east/south/west/north (one each) and its 4 rounded corners are
+//     exactly the 4 diagonals (one each) -- so a single clean lap
+//     naturally uses all 8 directions exactly once, no contrivance
+//     needed. Connects back to the lanes' own start point to close the
+//     full loop. Corner/edge coordinates were checked against the rink's
+//     rx=84 corner rounding (IceRink.jsx) to confirm every waypoint sits
+//     inside the actual ice surface, not just the nominal 600x255 box.
+//
+// One JS interval drives position + direction + walk-cycle frame together
+// (single tick, single source of truth) rather than splitting position
+// into GPU-composited CSS and direction into JS, which risked the two
+// drifting out of sync with each other. Cheap either way: Zamboni only
+// mounts while inIntermission is true, so the interval starts/stops with
+// mount/unmount and never runs mid-game.
+const ZAMBONI_FRAME_COUNT = 9;
+const ZAMBONI_TICK_MS = 110;
+const ZAMBONI_CYCLE_MS = 103_000;
+
+const ZAMBONI_PATH = [
+  // -- Phase 1: lanes --
+  { t: 0,     x: 60,  y: 45,  dir: 'east' },        // lane 1: sweep right
+  { t: 9600,  x: 470, y: 45,  dir: 'south-east' },  // bulge past the edge
+  { t: 10800, x: 490, y: 62,  dir: 'south-west' },  // curve down into lane 2
+  { t: 12800, x: 470, y: 100, dir: 'west' },        // lane 2: sweep left
+  { t: 22400, x: 60,  y: 100, dir: 'south-west' },  // bulge past the edge
+  { t: 23600, x: 40,  y: 117, dir: 'south-east' },  // curve down into lane 3
+  { t: 25600, x: 60,  y: 155, dir: 'east' },        // lane 3: sweep right
+  { t: 35200, x: 470, y: 155, dir: 'south-east' },
+  { t: 36400, x: 490, y: 172, dir: 'south-west' },
+  { t: 38400, x: 470, y: 205, dir: 'west' },        // lane 4: sweep left
+  { t: 48000, x: 60,  y: 205, dir: 'west' },        // small bulge, still west
+  { t: 49200, x: 40,  y: 205, dir: 'north' },       // return glide up the left edge
+  { t: 52800, x: 40,  y: 45,  dir: 'east' },        // curve back to start
+  { t: 54400, x: 60,  y: 45,  dir: 'north-west' },  // lanes done -- peel off into the perimeter lap
+  // -- Phase 2: perimeter lap (clockwise from top-left). The 4 straight
+  // edges vary a lot in physical length (the rink is much wider than
+  // tall), so pure distance/speed pacing gave north/south only ~3.5s of
+  // screen time against east/west's ~9.4s -- easy to blink and miss
+  // (Session 101 review). Durations below are chosen per-segment instead
+  // of derived from a constant speed, so every direction gets a real,
+  // comparable dwell: ~9.8s for the long east/west edges, ~6s for the
+  // short north/south edges, ~3.5s for each corner-rounding diagonal.
+  { t: 55900,  x: 45,  y: 30,  dir: 'east' },        // top-left corner
+  { t: 65700,  x: 465, y: 30,  dir: 'south-east' },  // top edge
+  { t: 69200,  x: 505, y: 50,  dir: 'south' },       // rounded top-right corner
+  { t: 75200,  x: 505, y: 200, dir: 'south-west' },  // right edge
+  { t: 78700,  x: 465, y: 225, dir: 'west' },        // rounded bottom-right corner
+  { t: 88500,  x: 65,  y: 225, dir: 'north-west' },  // bottom edge
+  { t: 92000,  x: 25,  y: 205, dir: 'north' },       // rounded bottom-left corner
+  { t: 98000,  x: 25,  y: 45,  dir: 'north-east' },  // left edge
+  { t: 101500, x: 45,  y: 30,  dir: 'south-east' },  // rounded top-left corner -- closes the lap
+  { t: 103000, x: 60,  y: 45,  dir: 'east' },        // back to the lanes' start -- loop point, no hold
+];
+
+// Per-direction shadow geometry, tuned from each sprite's actual
+// painted-pixel bounds (not the 68px canvas, which has transparent
+// headroom above for the antenna) -- a single shared cy/rx made the
+// east/west legs look like the vehicle was floating a few px above the
+// ice, since those two directions' art sits noticeably higher in the
+// canvas than the diagonal views' (Session 101 review). The shadow is
+// drawn BEHIND the sprite (z-order), so it also has to clear the
+// vehicle's own opaque silhouette to read as a shadow at all -- east and
+// west are a full side profile with no gaps under the body, so their
+// ellipse needs real vertical clearance below the sprite's visible
+// bottom edge, not just a few px past it (verified visually, not just
+// computed: a first pass placed it barely past the bottom and it
+// vanished completely, hidden under the opaque body). Recomputed for the
+// asymmetric-platform sprite set (Session 101) -- re-measured per
+// direction rather than assumed unchanged, since moving the driver
+// platform/antenna off-center shifted each silhouette's bounds.
+const ZAMBONI_SHADOW = {
+  east:         { cy: 15, rx: 19 },
+  west:         { cy: 15, rx: 19 },
+  north:        { cy: 16, rx: 12 },
+  south:        { cy: 15, rx: 10 },
+  'north-east': { cy: 16, rx: 19 },
+  'north-west': { cy: 16, rx: 19 },
+  'south-east': { cy: 16, rx: 19 },
+  'south-west': { cy: 16, rx: 19 },
+};
+
+function zamboniPose(elapsedMs) {
+  const t = elapsedMs % ZAMBONI_CYCLE_MS;
+  let i = ZAMBONI_PATH.length - 2; // t is always < last stop, so this always gets overwritten below
+  for (let j = 0; j < ZAMBONI_PATH.length - 1; j++) {
+    if (t < ZAMBONI_PATH[j + 1].t) { i = j; break; }
+  }
+  const seg = ZAMBONI_PATH[i], next = ZAMBONI_PATH[i + 1];
+  const frac = (t - seg.t) / (next.t - seg.t);
+  return {
+    x: seg.x + (next.x - seg.x) * frac,
+    y: seg.y + (next.y - seg.y) * frac,
+    dir: seg.dir,
+  };
+}
+
 function Zamboni() {
-  const hubDots = (cx, cy) => [0, 60, 120, 180, 240, 300].map(a => {
-    const rad = (a * Math.PI) / 180;
-    return <circle key={a} cx={cx + 2.1 * Math.cos(rad)} cy={cy + 2.1 * Math.sin(rad)} r="0.5" fill="#f4f7fb" />;
-  });
+  const [pose, setPose] = useState(() => zamboniPose(0));
+  const [frame, setFrame] = useState(0);
+  const startRef = useRef(Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const elapsed = Date.now() - startRef.current;
+      setPose(zamboniPose(elapsed));
+      setFrame(Math.floor(elapsed / ZAMBONI_TICK_MS) % ZAMBONI_FRAME_COUNT);
+    }, ZAMBONI_TICK_MS);
+    return () => clearInterval(id);
+  }, []);
+
+  const shadow = ZAMBONI_SHADOW[pose.dir];
 
   return (
-    <g
-      className="animate-[zamboni-drive_80s_linear_infinite]"
-      style={{ transformOrigin: '24px 9px' }} // vehicle's own visual center
-    >
-      <defs>
-        <pattern id="zamboniHalftone" width="3.2" height="3.2" patternUnits="userSpaceOnUse">
-          <circle cx="1" cy="1" r="0.55" fill="#1b2540" opacity="0.35" />
-        </pattern>
-      </defs>
-
-      <ellipse cx="30" cy="27.5" rx="29" ry="2.5" fill="#000" opacity="0.2" />
-
-      {/* lower body -- blue, halftone-textured */}
-      <rect x="8" y="14" width="44" height="10" rx="2" fill="#3355ee" stroke="#1b2540" strokeWidth="1.4" />
-      <rect x="8" y="14" width="44" height="10" rx="2" fill="url(#zamboniHalftone)" />
-
-      {/* angled white hood/tank top */}
-      <path d="M 10 14 L 14 3 L 46 3 L 52 14 Z" fill="#f4f7fb" stroke="#1b2540" strokeWidth="1.4" />
-      <path d="M 10 14 L 52 14" stroke="#b8e62e" strokeWidth="1.6" />
-
-      {/* dark angled front nose */}
-      <path d="M 2 20 L 10 14 L 10 24 L 5 24 Z" fill="#1b2540" />
-      <path d="M 4 19 L 9.4 15.3" stroke="#8fd8ff" strokeWidth="1.2" opacity="0.85" />
-
-      {/* front resurfacer blade, low near the ice */}
-      <rect x="-3" y="23" width="14" height="5" rx="1.2" fill="#b8e62e" stroke="#1b2540" strokeWidth="1.1" />
-      <rect x="-3" y="23" width="14" height="5" rx="1.2" fill="url(#zamboniHalftone)" />
-
-      {/* open driver platform */}
-      <rect x="43" y="1" width="2.4" height="13" fill="#1b2540" />
-      <path d="M 40 -6 Q 40 -9 43 -9 L 49 -9 Q 52 -9 52 -6 L 52 1 L 40 1 Z" fill="#3355ee" stroke="#1b2540" strokeWidth="1.3" />
-      <rect x="39" y="1" width="14" height="2.6" rx="1" fill="#1b2540" />
-      <line x1="37" y1="3" x2="37" y2="-8" stroke="#1b2540" strokeWidth="1" />
-      <circle cx="37" cy="-9" r="1.3" fill="#b8e62e" />
-
-      {/* wheels */}
-      <circle cx="18" cy="24" r="5.2" fill="#1b2540" />
-      <circle cx="18" cy="24" r="3.2" fill="#3355ee" stroke="#1b2540" strokeWidth="0.8" />
-      {hubDots(18, 24)}
-      <circle cx="42" cy="24" r="5.2" fill="#1b2540" />
-      <circle cx="42" cy="24" r="3.2" fill="#3355ee" stroke="#1b2540" strokeWidth="0.8" />
-      {hubDots(42, 24)}
+    <g style={{ transform: `translate(${pose.x}px, ${pose.y}px)` }}>
+      <ellipse cx="0" cy={shadow.cy} rx={shadow.rx} ry="3" fill="#000" opacity="0.2" />
+      <image
+        href={`/zamboni/${pose.dir}/frame-${frame}.png`}
+        x="-22" y="-22" width="44" height="44"
+        style={{ imageRendering: 'pixelated' }}
+      />
     </g>
   );
 }
