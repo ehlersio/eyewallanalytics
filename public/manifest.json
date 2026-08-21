@@ -1,8 +1,10 @@
 {
+  "id": "/",
   "name": "EyeWall Analytics",
   "short_name": "EyeWall",
   "description": "NHL and PWHL advanced stats and analytics",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#12121e",
   "theme_color": "#12121e",
