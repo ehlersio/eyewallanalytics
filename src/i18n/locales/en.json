@@ -1,14 +1,98 @@
 {
+  "nav": {
+    "shotMap": "Shot Map",
+    "schedule": "Schedule",
+    "players": "Players",
+    "team": "Team",
+    "league": "League",
+    "news": "News"
+  },
+  "topbar": {
+    "offSeason": "Off season"
+  },
+  "about": {
+    "triggerAriaLabel": "About EyeWall Analytics",
+    "tagline": "Hockey Intelligence",
+    "description": "Advanced analytics for all 32 NHL teams and 12 PWHL teams — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, and WAR/percentile rankings.",
+    "statLiveValue": "Live",
+    "statLiveLabel": "Shot Maps",
+    "statPollLabel": "Live Poll",
+    "statFreeValue": "Free",
+    "statFreeLabel": "Always",
+    "supportText": "EyeWall Analytics is a passion project. If you find it useful, buying a coffee helps keep the servers running. 🙏",
+    "buyMeCoffee": "Buy me a coffee",
+    "builtFor": "Built with 🌀 for Canes Nation",
+    "dataVia": "Data via NHL API",
+    "contactPrefix": "For all inquiries:",
+    "privacyText": "EyeWall uses anonymous analytics to understand which features are most useful. No personal data is sold or shared. Read our",
+    "privacyPolicy": "Privacy Policy"
+  },
+  "search": {
+    "toggleAriaLabel": "Search players",
+    "closeAriaLabel": "Close search",
+    "placeholder": "Search NHL + PWHL players…",
+    "searching": "Searching…",
+    "noResults": "No players found.",
+    "noTeamAssigned": "No team assigned yet",
+    "asOfSeason": "As of {{season}} season"
+  },
   "settings": {
     "title": "Settings",
+    "preferences": "Preferences",
     "language": "Language",
     "appearance": "Appearance",
     "myTeam": "My Team",
     "change": "Change",
     "darkMode": "Dark mode",
-    "lightMode": "Light mode"
+    "lightMode": "Light mode",
+    "pushNotifications": "Push Notifications",
+    "iosInstructions": "On iPhone/iPad, push notifications require adding EyeWall Analytics to your Home Screen first: tap Share, then \"Add to Home Screen\" — then open it from there.",
+    "unsupported": "Push notifications aren't supported in this browser.",
+    "subscribedText": "Subscribed for {{team}} alerts.",
+    "getAlertsText": "Get instant alerts on your phone for {{team}} — even when the app is closed.",
+    "blockedText": "Notifications are blocked. Click 🔒 in your address bar and allow notifications for this site.",
+    "turnOff": "Turn off notifications",
+    "turnOn": "Turn on notifications",
+    "working": "Working…",
+    "alertPreferences": "Alert Preferences",
+    "customize": "Customize ›",
+    "hide": "Hide ›",
+    "gameSummaries": "Game Summaries",
+    "viewSummary": "View summary",
+    "prefGroup": {
+      "gameFlow": "Game Flow",
+      "goals": "Goals",
+      "specialTeams": "Special Teams",
+      "result": "Result"
+    },
+    "prefItem": {
+      "gameStart": "Game starts",
+      "periodStart": "Period starts (P2, P3, OT)",
+      "periodEnd": "Period ends",
+      "goal": "Team goal scored",
+      "oppGoal": "Opponent goal scored",
+      "hatTrick": "Hat trick",
+      "penalty": "Power play opportunity",
+      "goaliePulled": "Opponent pulls goalie",
+      "win": "Win",
+      "loss": "Loss"
+    }
+  },
+  "account": {
+    "signInPrompt": "Sign in to sync across devices",
+    "signInWithEmail": "Sign in with email",
+    "cancel": "Cancel",
+    "sendMagicLink": "Send magic link",
+    "sending": "Sending…",
+    "checkYourEmail": "Check your email",
+    "checkYourEmailDesc": "We sent a sign-in link to <strong>{{email}}</strong>. Open it on this device to finish signing in.",
+    "useDifferentEmail": "Use a different email",
+    "signOut": "Sign out",
+    "synced": "Synced",
+    "errorGeneric": "Could not send sign-in link. Try again."
   },
   "common": {
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "close": "Close"
   }
 }

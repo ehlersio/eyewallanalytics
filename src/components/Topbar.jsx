@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getLiveGame, getCarScore, getOppScore, getOpponent, getGameDetail, bustLiveGameCache } from '../utils/nhlApi';
 import TeamLogo from './TeamLogo';
 import { TEAM_COLORS, TEAM_CONFIG } from '../utils/nhlApi';
@@ -45,6 +46,7 @@ const MOM_FILL_CAR_CLASSES = 'absolute right-1/2 top-0 bottom-0 bg-[var(--red-br
 const MOM_FILL_OPP_CLASSES = 'absolute left-1/2 top-0 bottom-0 bg-[var(--text-dim)] rounded-[0_2px_2px_0] opacity-50 [transition:width_0.5s_ease]';
 
 export default function Topbar() {
+  const { t } = useTranslation();
   const { isPWHL } = useSport();
   const [liveGame,    setLiveGame]    = useState(null);
   const [liveMeta,    setLiveMeta]    = useState(null);
@@ -183,7 +185,7 @@ export default function Topbar() {
         ) : (
           <div className={STATUS_CLASSES}>
             <span className={STATUS_DOT_CLASSES} />
-            <span className={NO_LIVE_CLASSES}>{isPWHL ? 'PWHL' : 'Off season'}</span>
+            <span className={NO_LIVE_CLASSES}>{isPWHL ? 'PWHL' : t('topbar.offSeason')}</span>
           </div>
         )}
 

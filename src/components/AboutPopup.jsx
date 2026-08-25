@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import EyeWallLogo from './EyeWallLogo';
 
 // Tailwind migration (Session 95, Phase 1) -- previously AboutPopup.css.
@@ -88,6 +89,7 @@ function IconFacebook() {
 }
 
 export default function AboutPopup({ isLive = false }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -107,46 +109,46 @@ export default function AboutPopup({ isLive = false }) {
       <button
         className={TRIGGER_CLASSES}
         onClick={() => setOpen(o => !o)}
-        aria-label="About EyeWall Analytics"
+        aria-label={t('about.triggerAriaLabel')}
         aria-expanded={open}
       >
         <EyeWallLogo alt="" className={TOPBAR_LOGOIMG_CLASSES} width="36" height="36" />
         {!isLive && (
           <div>
             <div className={TOPBAR_NAME_CLASSES}>EyeWall Analytics</div>
-            <div className={TOPBAR_SUB_CLASSES}>Hockey Intelligence</div>
+            <div className={TOPBAR_SUB_CLASSES}>{t('about.tagline')}</div>
           </div>
         )}
       </button>
 
       {open && (
-        <div className={POPUP_CLASSES} role="dialog" aria-label="About EyeWall Analytics">
-          <button className={CLOSE_CLASSES} onClick={() => setOpen(false)} aria-label="Close">✕</button>
+        <div className={POPUP_CLASSES} role="dialog" aria-label={t('about.triggerAriaLabel')}>
+          <button className={CLOSE_CLASSES} onClick={() => setOpen(false)} aria-label={t('common.close')}>✕</button>
 
           <div className={LOGO_ROW_CLASSES}>
             <EyeWallLogo alt="EyeWall Analytics" width="48" height="48" />
             <div>
               <div className={TITLE_CLASSES}>EyeWall Analytics</div>
-              <div className={SUBTITLE_CLASSES}>Hockey Intelligence</div>
+              <div className={SUBTITLE_CLASSES}>{t('about.tagline')}</div>
             </div>
           </div>
 
           <p className={DESC_CLASSES}>
-            Advanced analytics for all 32 NHL teams and 12 PWHL teams — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, and WAR/percentile rankings.
+            {t('about.description')}
           </p>
 
           <div className={STATS_ROW_CLASSES}>
             <div className={STAT_CLASSES}>
-              <span className={STAT_VAL_CLASSES}>Live</span>
-              <span className={STAT_LABEL_CLASSES}>Shot Maps</span>
+              <span className={STAT_VAL_CLASSES}>{t('about.statLiveValue')}</span>
+              <span className={STAT_LABEL_CLASSES}>{t('about.statLiveLabel')}</span>
             </div>
             <div className={STAT_CLASSES}>
               <span className={STAT_VAL_CLASSES}>20s</span>
-              <span className={STAT_LABEL_CLASSES}>Live Poll</span>
+              <span className={STAT_LABEL_CLASSES}>{t('about.statPollLabel')}</span>
             </div>
             <div className={STAT_CLASSES}>
-              <span className={STAT_VAL_CLASSES}>Free</span>
-              <span className={STAT_LABEL_CLASSES}>Always</span>
+              <span className={STAT_VAL_CLASSES}>{t('about.statFreeValue')}</span>
+              <span className={STAT_LABEL_CLASSES}>{t('about.statFreeLabel')}</span>
             </div>
           </div>
 
@@ -171,8 +173,7 @@ export default function AboutPopup({ isLive = false }) {
 
           <div className={SUPPORT_CLASSES}>
             <p className={SUPPORT_TEXT_CLASSES}>
-              EyeWall Analytics is a passion project. If you find it useful,
-              buying a coffee helps keep the servers running. 🙏
+              {t('about.supportText')}
             </p>
             <a
               href="https://buymeacoffee.com/mattehlers"
@@ -181,29 +182,28 @@ export default function AboutPopup({ isLive = false }) {
               className={BMC_BTN_CLASSES}
             >
               <span className={BMC_ICON_CLASSES}>☕</span>
-              Buy me a coffee
+              {t('about.buyMeCoffee')}
             </a>
           </div>
 
           <div className={DIVIDER_CLASSES} />
 
           <div className={FOOTER_CLASSES}>
-            <span>Built with 🌀 for Canes Nation</span>
-            <span className={VERSION_CLASSES}>Data via NHL API</span>
+            <span>{t('about.builtFor')}</span>
+            <span className={VERSION_CLASSES}>{t('about.dataVia')}</span>
           </div>
 
           <div className={CONTACT_CLASSES}>
-            For all inquiries:{' '}
+            {t('about.contactPrefix')}{' '}
             <a href="mailto:matt@eyewallanalytics.com" className={EMAIL_CLASSES}>
               matt@eyewallanalytics.com
             </a>
           </div>
 
           <div className={PRIVACY_CLASSES}>
-            EyeWall uses anonymous analytics to understand which features
-            are most useful. No personal data is sold or shared. Read our{' '}
+            {t('about.privacyText')}{' '}
             <a href="/privacy.html" className={EMAIL_CLASSES}>
-              Privacy Policy
+              {t('about.privacyPolicy')}
             </a>
             .
           </div>

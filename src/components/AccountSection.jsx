@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { useAuth } from '../utils/AuthContext';
 
 // Tailwind migration (Session 95, Phase 1) -- previously AccountSection.css.
@@ -42,6 +43,7 @@ const SIGNIN_SENT_DESC_CLASSES = 'text-[12px] text-[color:var(--text-muted)] lea
 // Three states: signed-out row, two-step sign-in (email → check-your-email),
 // and signed-in (avatar + email + Synced badge, sign-out row below).
 export default function AccountSection() {
+  const { t } = useTranslation();
   const { user, loading, isAuthenticated, signInWithOtp, signOut } = useAuth();
   const [step, setStep] = useState('idle'); // 'idle' | 'email' | 'sent'
   const [email, setEmail] = useState('');
@@ -78,7 +80,7 @@ export default function AccountSection() {
     const { error: otpError } = await signInWithOtp(email.trim());
     setSending(false);
     if (otpError) {
-      setError(otpError.message || 'Could not send sign-in link. Try again.');
+      setError(otpError.message || t('account.errorGeneric'));
       return;
     }
     setStep('sent');
@@ -94,7 +96,7 @@ export default function AccountSection() {
       <div className={SECTION_CLASSES}>
         <div className={`${ROW_CLASSES} ${ROW_STATIC_CLASSES}`}>
           <span className={ROW_ICON_CLASSES}>✉️</span>
-          <span className={ROW_LABEL_CLASSES}>Loading…</span>
+          <span className={ROW_LABEL_CLASSES}>{t('common.loading')}</span>
         </div>
       </div>
     );
@@ -107,11 +109,11 @@ export default function AccountSection() {
         <div className={`${ROW_CLASSES} ${ROW_STATIC_CLASSES}`}>
           <span className={AVATAR_CLASSES}>{initial}</span>
           <span className={ROW_LABEL_CLASSES}>{user.email}</span>
-          <span className={BADGE_CLASSES}>Synced</span>
+          <span className={BADGE_CLASSES}>{t('account.synced')}</span>
         </div>
         <button className={`${ROW_CLASSES} ${ROW_BUTTON_CLASSES}`} onClick={handleSignOut}>
           <span className={ROW_ICON_CLASSES}>↩️</span>
-          <span className={`${ROW_LABEL_CLASSES} ${ROW_LABEL_MUTED_CLASSES}`}>Sign out</span>
+          <span className={`${ROW_LABEL_CLASSES} ${ROW_LABEL_MUTED_CLASSES}`}>{t('account.signOut')}</span>
         </button>
       </div>
     );
@@ -122,7 +124,7 @@ export default function AccountSection() {
       <div className={SECTION_CLASSES}>
         <form className={SIGNIN_FORM_CLASSES} onSubmit={handleSubmit}>
           <label className={SIGNIN_LABEL_CLASSES} htmlFor="account-email-input">
-            Sign in with email
+            {t('account.signInWithEmail')}
           </label>
           <input
             id="account-email-input"
@@ -137,10 +139,10 @@ export default function AccountSection() {
           {error && <p className={SIGNIN_ERROR_CLASSES}>{error}</p>}
           <div className={SIGNIN_ACTIONS_CLASSES}>
             <button type="button" className={SIGNIN_CANCEL_CLASSES} onClick={resetFlow}>
-              Cancel
+              {t('account.cancel')}
             </button>
             <button type="submit" className={SIGNIN_SUBMIT_CLASSES} disabled={sending}>
-              {sending ? 'Sending…' : 'Send magic link'}
+              {sending ? t('account.sending') : t('account.sendMagicLink')}
             </button>
           </div>
         </form>
@@ -152,12 +154,12 @@ export default function AccountSection() {
     return (
       <div className={SECTION_CLASSES}>
         <div>
-          <div className={SIGNIN_SENT_TITLE_CLASSES}>📬 Check your email</div>
+          <div className={SIGNIN_SENT_TITLE_CLASSES}>📬 {t('account.checkYourEmail')}</div>
           <p className={SIGNIN_SENT_DESC_CLASSES}>
-            We sent a sign-in link to <strong>{email}</strong>. Open it on this device to finish signing in.
+            <Trans i18nKey="account.checkYourEmailDesc" values={{ email }} components={{ strong: <strong /> }} />
           </p>
           <button className={SIGNIN_CANCEL_CLASSES} onClick={resetFlow}>
-            Use a different email
+            {t('account.useDifferentEmail')}
           </button>
         </div>
       </div>
@@ -168,7 +170,7 @@ export default function AccountSection() {
     <div className={SECTION_CLASSES} ref={compactRowRef}>
       <button className={`${ROW_CLASSES} ${ROW_BUTTON_CLASSES}`} onClick={() => setStep('email')}>
         <span className={ROW_ICON_CLASSES}>✉️</span>
-        <span className={ROW_LABEL_CLASSES}>Sign in to sync across devices</span>
+        <span className={ROW_LABEL_CLASSES}>{t('account.signInPrompt')}</span>
         <span className={ROW_CHEVRON_CLASSES}>›</span>
       </button>
     </div>

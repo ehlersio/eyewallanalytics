@@ -80,35 +80,37 @@ function isIOSBrowserTab() {
   return isIOS && !isStandalone;
 }
 
+// labelKey/itemLabelKey look up settings.prefGroup.*/settings.prefItem.* in
+// i18n/locales/*.json.
 const PREF_GROUPS = [
   {
-    label: 'Game Flow',
+    labelKey: 'settings.prefGroup.gameFlow',
     items: [
-      { key: 'gameStart',   icon: '🏒', label: 'Game starts' },
-      { key: 'periodStart', icon: '🔔', label: 'Period starts (P2, P3, OT)' },
-      { key: 'periodEnd',   icon: '🔕', label: 'Period ends' },
+      { key: 'gameStart',   icon: '🏒', labelKey: 'settings.prefItem.gameStart' },
+      { key: 'periodStart', icon: '🔔', labelKey: 'settings.prefItem.periodStart' },
+      { key: 'periodEnd',   icon: '🔕', labelKey: 'settings.prefItem.periodEnd' },
     ],
   },
   {
-    label: 'Goals',
+    labelKey: 'settings.prefGroup.goals',
     items: [
-      { key: 'goal',     icon: '🚨', label: 'Team goal scored' },
-      { key: 'oppGoal',  icon: '😬', label: 'Opponent goal scored' },
-      { key: 'hatTrick', icon: '🎩', label: 'Hat trick' },
+      { key: 'goal',     icon: '🚨', labelKey: 'settings.prefItem.goal' },
+      { key: 'oppGoal',  icon: '😬', labelKey: 'settings.prefItem.oppGoal' },
+      { key: 'hatTrick', icon: '🎩', labelKey: 'settings.prefItem.hatTrick' },
     ],
   },
   {
-    label: 'Special Teams',
+    labelKey: 'settings.prefGroup.specialTeams',
     items: [
-      { key: 'penalty',      icon: '⚡', label: 'Power play opportunity' },
-      { key: 'goaliePulled', icon: '🥅', label: 'Opponent pulls goalie' },
+      { key: 'penalty',      icon: '⚡', labelKey: 'settings.prefItem.penalty' },
+      { key: 'goaliePulled', icon: '🥅', labelKey: 'settings.prefItem.goaliePulled' },
     ],
   },
   {
-    label: 'Result',
+    labelKey: 'settings.prefGroup.result',
     items: [
-      { key: 'win',  icon: '🏆', label: 'Win' },
-      { key: 'loss', icon: '📉', label: 'Loss' },
+      { key: 'win',  icon: '🏆', labelKey: 'settings.prefItem.win' },
+      { key: 'loss', icon: '📉', labelKey: 'settings.prefItem.loss' },
     ],
   },
 ];
@@ -203,21 +205,21 @@ export default function NotificationBell() {
       <button
         className={BELL_CLASSES}
         onClick={() => (open ? closePopup() : setOpen(true))}
-        aria-label="Settings"
-        title="Settings"
+        aria-label={t('settings.title')}
+        title={t('settings.title')}
       >
         ⚙️
       </button>
 
       {open && (
         <div className={POPUP_CLASSES}>
-          <button className={CLOSE_CLASSES} onClick={closePopup} aria-label="Close">✕</button>
+          <button className={CLOSE_CLASSES} onClick={closePopup} aria-label={t('common.close')}>✕</button>
 
           <div className={TITLE_CLASSES}>⚙️ {t('settings.title')}</div>
 
           <AccountSection />
 
-          <div className={SECTION_LABEL_CLASSES}>Preferences</div>
+          <div className={SECTION_LABEL_CLASSES}>{t('settings.preferences')}</div>
 
           {/* My Team */}
           <div className={MY_TEAM_CLASSES}>
@@ -256,11 +258,11 @@ export default function NotificationBell() {
           {/* Push notifications */}
           {!supported && (
             <div className={MY_TEAM_CLASSES}>
-              <div className={EVENT_LABEL_CLASSES}>🔔 Push Notifications</div>
+              <div className={EVENT_LABEL_CLASSES}>🔔 {t('settings.pushNotifications')}</div>
               <p className={DESC_CLASSES}>
                 {isIOSBrowserTab()
-                  ? 'On iPhone/iPad, push notifications require adding EyeWall Analytics to your Home Screen first: tap Share, then "Add to Home Screen" — then open it from there.'
-                  : "Push notifications aren't supported in this browser."}
+                  ? t('settings.iosInstructions')
+                  : t('settings.unsupported')}
               </p>
             </div>
           )}
@@ -268,13 +270,13 @@ export default function NotificationBell() {
             <>
               <p className={DESC_CLASSES}>
                 {subscribed
-                  ? `Subscribed for ${activeTeamName} alerts.`
-                  : `Get instant alerts on your phone for ${activeTeamName} — even when the app is closed.`}
+                  ? t('settings.subscribedText', { team: activeTeamName })
+                  : t('settings.getAlertsText', { team: activeTeamName })}
               </p>
 
               {permission === 'denied' && (
                 <p className={BLOCKED_CLASSES}>
-                  Notifications are blocked. Click 🔒 in your address bar and allow notifications for this site.
+                  {t('settings.blockedText')}
                 </p>
               )}
 
@@ -287,22 +289,22 @@ export default function NotificationBell() {
                   disabled={loading}
                 >
                   {loading
-                    ? 'Working…'
+                    ? t('settings.working')
                     : subscribed
-                    ? 'Turn off notifications'
-                    : 'Turn on notifications'}
+                    ? t('settings.turnOff')
+                    : t('settings.turnOn')}
                 </button>
               )}
 
               {/* Preference toggles */}
               <div className={EVENTS_CLASSES}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div className={EVENT_LABEL_CLASSES} style={{ marginBottom: 0 }}>🔔 Alert Preferences</div>
+                  <div className={EVENT_LABEL_CLASSES} style={{ marginBottom: 0 }}>🔔 {t('settings.alertPreferences')}</div>
                   <button
                     style={{ background: 'none', border: 'none', fontSize: 11, color: 'var(--text-dim)', cursor: 'pointer', padding: '0 2px' }}
                     onClick={() => setShowPrefs(p => !p)}
                   >
-                    {showPrefs ? 'Hide ›' : 'Customize ›'}
+                    {showPrefs ? t('settings.hide') : t('settings.customize')}
                   </button>
                 </div>
 
@@ -313,21 +315,21 @@ export default function NotificationBell() {
                     .map(item => (
                       <div key={item.key} className={EVENT_ROW_CLASSES}>
                         <span>{item.icon}</span>
-                        <span>{item.label}</span>
+                        <span>{t(item.labelKey)}</span>
                         {subscribed && <span className={CHECK_CLASSES}>✓</span>}
                       </div>
                     ))
                 ) : (
                   // Expanded preference editor
                   PREF_GROUPS.map(group => (
-                    <div key={group.label} style={{ marginBottom: 10 }}>
-                      <div className={EVENT_LABEL_CLASSES} style={{ marginBottom: 4 }}>{group.label}</div>
+                    <div key={group.labelKey} style={{ marginBottom: 10 }}>
+                      <div className={EVENT_LABEL_CLASSES} style={{ marginBottom: 4 }}>{t(group.labelKey)}</div>
                       {group.items.map(item => (
                         <div key={item.key} className={EVENT_ROW_CLASSES} style={{ cursor: 'pointer' }}
                           onClick={() => handlePrefToggle(item.key)}>
                           <span>{item.icon}</span>
                           <span style={{ color: prefs[item.key] ? 'var(--text)' : 'var(--text-dim)' }}>
-                            {item.label}
+                            {t(item.labelKey)}
                           </span>
                           <span style={{ marginLeft: 'auto', fontSize: 14 }}>
                             {prefs[item.key] ? '✅' : '⬜'}
@@ -344,7 +346,7 @@ export default function NotificationBell() {
           {/* Period summaries */}
           {hasSummaries && (
             <div className={SUMMARIES_SECTION_CLASSES}>
-              <div className={SUMMARIES_LABEL_CLASSES}>📋 Game Summaries</div>
+              <div className={SUMMARIES_LABEL_CLASSES}>📋 {t('settings.gameSummaries')}</div>
               {summaries.map(s => (
                 <button
                   key={s.period}
@@ -357,7 +359,7 @@ export default function NotificationBell() {
                   <span className={SUMMARY_CHIP_SCORE_CLASSES}>
                     {s.carGoals !== undefined
                       ? `${activeTeamAbbr} ${s.carGoals}–${s.oppGoals}`
-                      : 'View summary'}
+                      : t('settings.viewSummary')}
                   </span>
                   <span className={SUMMARY_CHIP_ARROW_CLASSES}>›</span>
                 </button>
