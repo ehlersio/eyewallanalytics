@@ -390,6 +390,15 @@ export default function DraftTab({ overrideRankings = null, overridePicks = null
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedMode, setSelectedMode] = useState(null); // 'prospect' | 'pick'
   const pollRef = useRef(null);
+  // Guards the one-time auto-switch below -- without this, EVERY fetchPicks()
+  // resolution (not just the first) forces boardView back to 'board',
+  // including the 60s live-poll tick. That silently yanks a user back to
+  // Draft board mid-browse if they'd manually switched to Rankings -- a real
+  // bug, not just a test artifact (found via a Cypress flake: React 18
+  // StrictMode's dev-only double-invoked mount effect fires fetchPicks()
+  // twice, and the second call landing after a test's manual switch-to-
+  // Rankings click reproduced the exact same unwanted override).
+  const hasAutoSwitchedRef = useRef(false);
 
   // Fetch rankings once (or use override for dev/testing)
   useEffect(() => {
@@ -409,7 +418,10 @@ export default function DraftTab({ overrideRankings = null, overridePicks = null
     if (overridePicks !== null) {
       setPicks(overridePicks);
       setPicksLoading(false);
-      if (overridePicks.length > 0) setBoardView('board');
+      if (overridePicks.length > 0 && !hasAutoSwitchedRef.current) {
+        setBoardView('board');
+        hasAutoSwitchedRef.current = true;
+      }
       return;
     }
     const data = await getDraftPicks();
@@ -417,8 +429,13 @@ export default function DraftTab({ overrideRankings = null, overridePicks = null
     setPicks(arr);
     setPicksLoading(false);
 
-    // Auto-switch to board view once picks start coming in
-    if (arr.length > 0) setBoardView('board');
+    // Auto-switch to board view once picks start coming in -- only the
+    // first time, so a later poll tick doesn't override a manual switch
+    // back to Rankings (see hasAutoSwitchedRef's comment above).
+    if (arr.length > 0 && !hasAutoSwitchedRef.current) {
+      setBoardView('board');
+      hasAutoSwitchedRef.current = true;
+    }
 
     // Poll every 60s while draft is in progress
     if (arr.length > 0 && arr.length < TOTAL_PICKS) {
