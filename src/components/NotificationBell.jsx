@@ -1,10 +1,14 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { usePushNotifications, loadPrefs, savePrefs } from '../hooks/usePushNotifications';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { useSport } from '../utils/SportContext';
+import { useAuth } from '../utils/AuthContext';
 import { PWHL_TEAM_CONFIG } from '../utils/pwhlApi';
 import { getTheme, setTheme } from '../utils/themeConfig';
+import { getLocale, setLocale } from '../utils/localeConfig';
+import { upsertLocale } from '../utils/localeSync';
 import { applyTeamTheme } from '../utils/applyTeamTheme';
 import TeamLogo from '../components/TeamLogo';
 import AccountSection from './AccountSection';
@@ -110,13 +114,16 @@ const PREF_GROUPS = [
 ];
 
 export default function NotificationBell() {
+  const { t }                   = useTranslation();
   const [open, setOpen]         = useState(false);
   const [showPrefs, setShowPrefs] = useState(false);
   const { isPWHL }              = useSport();
+  const { user }                 = useAuth();
   const activeTeam              = isPWHL ? PWHL_TEAM_CONFIG : TEAM_CONFIG;
   const activeTeamAbbr          = activeTeam?.abbr || TEAM_CONFIG.abbr;
   const activeTeamName          = activeTeam?.displayName || TEAM_CONFIG.displayName;
   const [theme, setThemeState]  = useState(getTheme);
+  const [locale, setLocaleState] = useState(getLocale);
   const [prefs, setPrefsState]  = useState(() => loadPrefs());
 
   const { supported, permission, subscribed, subscribe, unsubscribe, updatePrefs, loading, error } =
@@ -154,6 +161,13 @@ export default function NotificationBell() {
     setTheme(next);
     applyTeamTheme(TEAM_CONFIG, next);
     setThemeState(next);
+  };
+
+  const handleLocaleToggle = () => {
+    const next = locale === 'en' ? 'fr' : 'en';
+    setLocale(next);
+    setLocaleState(next);
+    if (user?.id) upsertLocale(user.id, next);
   };
 
   const leagueTeamKey = isPWHL ? `PWHL:${activeTeamAbbr}` : `NHL:${activeTeamAbbr}`;
@@ -199,7 +213,7 @@ export default function NotificationBell() {
         <div className={POPUP_CLASSES}>
           <button className={CLOSE_CLASSES} onClick={closePopup} aria-label="Close">✕</button>
 
-          <div className={TITLE_CLASSES}>⚙️ Settings</div>
+          <div className={TITLE_CLASSES}>⚙️ {t('settings.title')}</div>
 
           <AccountSection />
 
@@ -207,23 +221,34 @@ export default function NotificationBell() {
 
           {/* My Team */}
           <div className={MY_TEAM_CLASSES}>
-            <div className={EVENT_LABEL_CLASSES}>🏒 My Team</div>
+            <div className={EVENT_LABEL_CLASSES}>🏒 {t('settings.myTeam')}</div>
             <div className={TEAM_ROW_CLASSES}>
               <TeamLogo abbr={activeTeamAbbr} size={28} sport={isPWHL ? 'pwhl' : 'nhl'} />
               <span className={TEAM_NAME_CLASSES}>{activeTeamName}</span>
               <button className={CHANGE_TEAM_BTN_CLASSES} onClick={handleChangeTeam}>
-                Change
+                {t('settings.change')}
               </button>
             </div>
           </div>
 
           {/* Appearance */}
           <div className={MY_TEAM_CLASSES}>
-            <div className={EVENT_LABEL_CLASSES}>🎨 Appearance</div>
+            <div className={EVENT_LABEL_CLASSES}>🎨 {t('settings.appearance')}</div>
             <div className={TEAM_ROW_CLASSES}>
               <span className={TEAM_NAME_CLASSES}>{theme === 'dark' ? '🌙 Dark' : '☀️ Light'}</span>
               <button className={CHANGE_TEAM_BTN_CLASSES} onClick={handleThemeToggle}>
-                {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                {theme === 'dark' ? t('settings.lightMode') : t('settings.darkMode')}
+              </button>
+            </div>
+          </div>
+
+          {/* Language */}
+          <div className={MY_TEAM_CLASSES}>
+            <div className={EVENT_LABEL_CLASSES}>🌐 {t('settings.language')}</div>
+            <div className={TEAM_ROW_CLASSES}>
+              <span className={TEAM_NAME_CLASSES}>{locale === 'en' ? 'English' : 'Français'}</span>
+              <button className={CHANGE_TEAM_BTN_CLASSES} onClick={handleLocaleToggle}>
+                {locale === 'en' ? 'Français' : 'English'}
               </button>
             </div>
           </div>

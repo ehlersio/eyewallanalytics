@@ -32,11 +32,13 @@
     "date-fns": "^4.4.0",
     "fuse.js": "^7.5.0",
     "html-to-image": "^1.11.13",
+    "i18next": "^26.4.0",
     "lucide-react": "^1.31.0",
     "posthog-js": "^1.418.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hockey-rink": "^0.1.0",
+    "react-i18next": "^17.0.12",
     "react-router-dom": "^7.18.2",
     "recharts": "^3.10.1"
   },
