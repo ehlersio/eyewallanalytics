@@ -1,6 +1,7 @@
 // views/PWHLLeagueView.jsx
 // Mirrors NHL LeagueView — Standings · Bracket · Leaders · Power Rankings
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import {
   fetchPWHLStandings, fetchPWHLLeaguePlayers,
@@ -271,6 +272,7 @@ function WinDots({ wins, color }) {
 }
 
 function BktSeriesCard({ series, onClick, myTeamId, myColor }) {
+  const { t } = useTranslation();
   if (!series) return <div className={bktCardClasses({ variant: 'empty' })} />;
   const abbrA   = teamAbbr(series.teamA) || '?';
   const abbrB   = teamAbbr(series.teamB) || '?';
@@ -280,11 +282,11 @@ function BktSeriesCard({ series, onClick, myTeamId, myColor }) {
   const doneB   = series.winsB >= 3;
   const hasGames = series.games.length > 0;
   const isPrimary = series.teamA === myTeamId || series.teamB === myTeamId;
-  const label = doneA ? `${abbrA} wins 3–${series.winsB}`
-    : doneB ? `${abbrB} wins 3–${series.winsA}`
-    : series.winsA > series.winsB ? `${abbrA} leads ${series.winsA}–${series.winsB}`
-    : series.winsB > series.winsA ? `${abbrB} leads ${series.winsB}–${series.winsA}`
-    : `Tied ${series.winsA}–${series.winsB}`;
+  const label = doneA ? t('league.bracket.wins',  { team: abbrA, score: `3–${series.winsB}` })
+    : doneB ? t('league.bracket.wins',  { team: abbrB, score: `3–${series.winsA}` })
+    : series.winsA > series.winsB ? t('league.bracket.leads', { team: abbrA, score: `${series.winsA}–${series.winsB}` })
+    : series.winsB > series.winsA ? t('league.bracket.leads', { team: abbrB, score: `${series.winsB}–${series.winsA}` })
+    : t('league.bracket.tied', { score: `${series.winsA}–${series.winsB}` });
 
   return (
     <div className={bktCardClasses({ variant: isPrimary ? 'primary' : 'default', isClickable: hasGames })}
@@ -306,15 +308,23 @@ function BktSeriesCard({ series, onClick, myTeamId, myColor }) {
   );
 }
 
+// bracket/rankings use pwhlLeagueView's own tab keys, not the shared
+// league.tabs.* ones -- NHL's LeagueView.jsx uses sentence case ("Playoff
+// bracket"/"Power rankings") while this file's Cypress coverage
+// (pwhl-league.cy.js) asserts on this file's original title case
+// ("Playoff Bracket"/"Power Rankings"). Sharing the key would've required
+// picking one casing and breaking the other file's tests -- not worth it
+// for a translate-only pass.
 const TABS = [
-  { id: 'standings', label: 'Standings'       },
-  { id: 'bracket',   label: 'Playoff Bracket' },
-  { id: 'leaders',   label: 'Leaders'         },
-  { id: 'rankings',  label: 'Power Rankings'  },
-  { id: 'draft',     label: 'Draft'           },
+  { id: 'standings', labelKey: 'league.tabs.standings' },
+  { id: 'bracket',   labelKey: 'pwhlLeagueView.tabs.bracket'   },
+  { id: 'leaders',   labelKey: 'league.tabs.leaders'   },
+  { id: 'rankings',  labelKey: 'pwhlLeagueView.tabs.rankings'  },
+  { id: 'draft',     labelKey: 'league.tabs.draft'     },
 ];
 
 export default function PWHLLeagueView() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('standings');
   const [season,    setSeason]    = useState(PWHL_CURRENT_SEASON);
   const myTeamId = PWHL_TEAM_ID;
@@ -364,12 +374,12 @@ export default function PWHLLeagueView() {
 
       {/* Tab bar — mirrors NHL */}
       <nav className={LEAGUE_TABS_CLASSES} role="tablist">
-        {TABS.map(t => (
-          <button key={t.id} role="tab"
-            aria-selected={activeTab === t.id}
-            className={leagueTabClasses(activeTab === t.id)}
-            onClick={() => setActiveTab(t.id)}>
-            {t.label}
+        {TABS.map(tab => (
+          <button key={tab.id} role="tab"
+            aria-selected={activeTab === tab.id}
+            className={leagueTabClasses(activeTab === tab.id)}
+            onClick={() => setActiveTab(tab.id)}>
+            {t(tab.labelKey)}
           </button>
         ))}
       </nav>
@@ -435,12 +445,13 @@ function L10Dots({ w, otl, l }) {
 
 // ── Standings ─────────────────────────────────────────────────
 function StandingsPanel({ standings, loading, myTeamId, myColor }) {
+  const { t } = useTranslation();
   const [sortKey, setSortKey] = useState('points');
   const [sortDir, setSortDir] = useState('desc');
 
   const COLS = [
-    { key: '#',            label: '#',    align: 'center', sortable: false, width: 18 },
-    { key: 'team',         label: 'Team', align: 'left',   sortable: false, sticky: true },
+    { key: '#',            label: '#',                        align: 'center', sortable: false, width: 18 },
+    { key: 'team',         label: t('league.standings.colTeam'), align: 'left', sortable: false, sticky: true },
     { key: 'gp',           label: 'GP',   align: 'right',  sortable: true },
     { key: 'reg_wins',     label: 'W',    align: 'right',  sortable: true },
     { key: 'non_reg_wins', label: 'OTW',  align: 'right',  sortable: true },
@@ -475,11 +486,11 @@ function StandingsPanel({ standings, loading, myTeamId, myColor }) {
   }
 
   if (loading) return <LoadingRows />;
-  if (!sorted.length) return <div className={LV_EMPTY_CLASSES}>No standings data.</div>;
+  if (!sorted.length) return <div className={LV_EMPTY_CLASSES}>{t('pwhlLeagueView.standings.emptyState')}</div>;
 
   return (
     <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES}`}>
-      <div className={LV_DIV_CARD_HEADER_CLASSES}>PWHL League Standings · 3-2-1-0 pts system</div>
+      <div className={LV_DIV_CARD_HEADER_CLASSES}>{t('pwhlLeagueView.standings.headerTitle')}</div>
       <div style={{ overflowX: 'auto' }}>
         <table className={LV_TABLE_CLASSES} style={{ minWidth: 560 }}>
           <thead>
@@ -543,7 +554,7 @@ function StandingsPanel({ standings, loading, myTeamId, myColor }) {
         </table>
       </div>
       <div className={SST_HINT_CLASSES} style={{ padding: '6px 0 8px' }}>
-        W–OTW–OTL–L · PTS = W×3 + OTW×2 + OTL×1 · Sort by any column · Source: HockeyTech / PWHL
+        W–OTW–OTL–L · PTS = W×3 + OTW×2 + OTL×1 · {t('pwhlLeagueView.standings.footerHintSort')} · {t('pwhlLeagueView.standings.footerHintSource')}
       </div>
     </div>
   );
@@ -552,6 +563,7 @@ function StandingsPanel({ standings, loading, myTeamId, myColor }) {
 // ── Bracket ───────────────────────────────────────────────────
 // Fetches all 8 teams' playoff schedules and builds the bracket
 function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
+  const { t } = useTranslation();
   const [allPoGames, setAllPoGames]   = useState(null);
   const [loading, setLoading]         = useState(true);
   const [selectedSeries, setSelected] = useState(null);
@@ -581,7 +593,7 @@ function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
 
   if (loading) return <LoadingRows />;
   if (!allPoGames?.length) return (
-    <div className={LV_EMPTY_CLASSES}>No playoff data for {seasonLabel}.</div>
+    <div className={LV_EMPTY_CLASSES}>{t('pwhlLeagueView.bracket.emptyState', { season: seasonLabel })}</div>
   );
 
   // Build series from games
@@ -609,7 +621,7 @@ function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
         <div className={BKT_BRACKET_CLASSES} style={{ minWidth: 380 }}>
           {/* Semifinals */}
           <div className={BKT_ROUND_COL_CLASSES}>
-            <div className={BKT_ROUND_LABEL_CLASSES}>Semifinals</div>
+            <div className={BKT_ROUND_LABEL_CLASSES}>{t('pwhlLeagueView.bracket.semifinalsHeading')}</div>
             <div className={BKT_ROUND_SERIES_CLASSES}>
               {semis.map((s,i) => (
                 <div key={i} className={BKT_SERIES_SLOT_CLASSES}>
@@ -628,13 +640,13 @@ function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
           </svg>
           {/* Walter Cup Final */}
           <div className={BKT_FINAL_COL_CLASSES}>
-            <div className={BKT_ROUND_LABEL_CLASSES}>Walter Cup Final</div>
+            <div className={BKT_ROUND_LABEL_CLASSES}>{t('pwhlLeagueView.bracket.walterCupFinalHeading')}</div>
             <div className={BKT_FINAL_CENTER_CLASSES}>
               {finals.length > 0
                 ? finals.map((s,i) => <BktSeriesCard key={i} series={s} onClick={() => setSelected(s)} myTeamId={myTeamId} myColor={myColor} />)
                 : <div className={bktCardClasses({ variant: 'empty' })} style={{ minHeight: 80 }}>
                     <div style={{ fontSize:11, color:'var(--text-dim)', textAlign:'center', padding:12 }}>
-                      Awaiting semi winners
+                      {t('pwhlLeagueView.bracket.awaitingSemiWinners')}
                     </div>
                   </div>
               }
@@ -643,7 +655,7 @@ function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
         </div>
       </div>
       <div style={{ fontSize:10, color:'var(--text-dim)', marginTop:8 }}>
-        Best-of-5 series · First to 3 wins advances
+        {t('pwhlLeagueView.bracket.formatExplainer')}
       </div>
       {selectedSeries && (
         <div className="popup-backdrop popup-backdrop--centered" onClick={() => setSelected(null)}>
@@ -667,7 +679,7 @@ function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
                       </div>
                       <span className={SERIES_MODAL_ABBREV_CLASSES} style={{ color: colorB }}>{abbrB}</span>
                     </div>
-                    {winner && <div className={SERIES_MODAL_RESULT_CLASSES}>{winner} wins the series 🏆</div>}
+                    {winner && <div className={SERIES_MODAL_RESULT_CLASSES}>{t('pwhlLeagueView.bracket.modalWinsSeries', { team: winner })}</div>}
                   </div>
                   <div className={SERIES_MODAL_GAMES_CLASSES}>
                     {[...s.games].sort((a,b)=>a.game_id-b.game_id).map((g, gi) => {
@@ -737,6 +749,7 @@ function LeadersCard({ title, statLabel, rows, formatStat, onPlayerClick }) {
 }
 
 function LeadersPanel({ skaters, goalies, loading, season, seasonLabel }) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState(null);
 
   const top10pts  = useMemo(() => [...skaters].filter(p=>p.player_name).sort((a,b)=>(b.points??0)-(a.points??0)).slice(0,10), [skaters]);
@@ -746,19 +759,19 @@ function LeadersPanel({ skaters, goalies, loading, season, seasonLabel }) {
 
   if (loading) return <LoadingRows />;
   if (!skaters.length && !goalies.length) return (
-    <div className={LV_EMPTY_CLASSES}>No player data for {seasonLabel}.</div>
+    <div className={LV_EMPTY_CLASSES}>{t('pwhlLeagueView.leaders.emptyState', { season: seasonLabel })}</div>
   );
 
   return (
     <>
       <div className={LV_LEADERS_GRID_CLASSES}>
-        <LeadersCard title="Points" statLabel="PTS" rows={top10pts}
+        <LeadersCard title={t('league.leaders.titlePoints')} statLabel="PTS" rows={top10pts}
           formatStat={p => p.points ?? '—'} onPlayerClick={setSelected} />
-        <LeadersCard title="Goals" statLabel="G" rows={top10g}
+        <LeadersCard title={t('league.leaders.titleGoals')} statLabel="G" rows={top10g}
           formatStat={p => p.goals ?? '—'} onPlayerClick={setSelected} />
-        <LeadersCard title="Goals Against Avg" statLabel="GAA" rows={top10gaa}
+        <LeadersCard title={t('league.leaders.titleGAA')} statLabel="GAA" rows={top10gaa}
           formatStat={p => p.gaa != null ? Number(p.gaa).toFixed(2) : '—'} onPlayerClick={setSelected} />
-        <LeadersCard title="Save Percentage" statLabel="SV%" rows={top10svp}
+        <LeadersCard title={t('league.leaders.titleSavePct')} statLabel="SV%" rows={top10svp}
           formatStat={p => p.sv_pct != null ? Number(p.sv_pct).toFixed(3).replace('0.','.') : '—'} onPlayerClick={setSelected} />
       </div>
       {selected && (
@@ -775,6 +788,7 @@ function LeadersPanel({ skaters, goalies, loading, season, seasonLabel }) {
 
 // ── Power Rankings ────────────────────────────────────────────
 function PowerRankingsPanel({ standings, loading, myTeamId, myAbbr: _myAbbr, myColor }) {
+  const { t } = useTranslation();
   const [showHow, setShowHow] = useState(false);
 
   // Weights — PWHL adapted (no xGF%, uses CF% instead; no roster WAR)
@@ -820,7 +834,7 @@ function PowerRankingsPanel({ standings, loading, myTeamId, myAbbr: _myAbbr, myC
   }, [standings]);
 
   if (loading) return <LoadingRows />;
-  if (!ranked.length) return <div className="lv-empty">No standings data for rankings.</div>;
+  if (!ranked.length) return <div className="lv-empty">{t('pwhlLeagueView.rankings.emptyState')}</div>;
 
 
   return (
@@ -829,21 +843,20 @@ function PowerRankingsPanel({ standings, loading, myTeamId, myAbbr: _myAbbr, myC
       {/* How it's calculated */}
       <div className="card" style={{ padding:0, overflow:'hidden' }}>
         <button className={PR_HOW_TOGGLE_CLASSES} onClick={() => setShowHow(s=>!s)}>
-          <span>How is this calculated?</span>
+          <span>{t('league.rankings.howCalculatedToggle')}</span>
           <span className={PR_HOW_CHEVRON_CLASSES}>{showHow ? '▲' : '▼'}</span>
         </button>
         {showHow && (
           <div className={PR_HOW_BODY_CLASSES}>
             <p className={PR_HOW_TEXT_CLASSES}>
-              PWHL Power Rankings combine five factors into a composite score. Each metric is
-              normalized 0–1 across all 8 teams, then weighted and summed.
+              {t('pwhlLeagueView.rankings.howCalculatedIntro')}
             </p>
             {[
-              ['Points%',          `${(W.pts*100).toFixed(0)}%`, 'Season points ÷ max possible (GP×3)'],
-              ['L10 Points%',      `${(W.l10*100).toFixed(0)}%`, 'Last 10 games performance'],
-              ['GD/GP',            `${(W.gd*100).toFixed(0)}%`,  'Goal differential per game'],
-              ['CF% (Corsi)',      `${(W.cf*100).toFixed(0)}%`,  'Shot attempt share — proxy for possession'],
-              ['Special Teams',   `${(W.sp*100).toFixed(0)}%`,  'Average of PP% and PK%'],
+              [t('pwhlLeagueView.rankings.componentPointsLabel'), `${(W.pts*100).toFixed(0)}%`, t('pwhlLeagueView.rankings.componentPointsDesc')],
+              [t('pwhlLeagueView.rankings.componentL10Label'),    `${(W.l10*100).toFixed(0)}%`, t('pwhlLeagueView.rankings.componentL10Desc')],
+              ['GD/GP',                                           `${(W.gd*100).toFixed(0)}%`,  t('pwhlLeagueView.rankings.componentGDDesc')],
+              [t('pwhlLeagueView.rankings.componentCFLabel'),     `${(W.cf*100).toFixed(0)}%`,  t('pwhlLeagueView.rankings.componentCFDesc')],
+              [t('league.rankings.componentSPLabel'),             `${(W.sp*100).toFixed(0)}%`,  t('pwhlLeagueView.rankings.componentSPDesc')],
             ].map(([label, weight, source]) => (
               <div key={label} className={PR_HOW_ITEM_CLASSES}>
                 <div className={PR_HOW_ITEM_HEADER_CLASSES}>
@@ -861,23 +874,26 @@ function PowerRankingsPanel({ standings, loading, myTeamId, myAbbr: _myAbbr, myC
       <div className="card" style={{ padding:0, overflow:'hidden' }}>
         <div style={{ padding:'8px 12px 6px', borderBottom:'0.5px solid var(--border)', background:'var(--bg2)' }}>
           <span style={{ fontSize:11, fontWeight:700, color:'var(--text-dim)', letterSpacing:'0.06em', textTransform:'uppercase' }}>
-            Power Rankings
+            {t('pwhlLeagueView.rankings.tableHeading')}
           </span>
         </div>
-        {/* Header */}
+        {/* Header -- h stays the literal English key for alignment logic,
+            only the rendered text is translated. */}
         <div style={{ display:'grid', gridTemplateColumns:'32px 1fr 64px 56px 56px 56px', gap:6,
           padding:'6px 12px', borderBottom:'0.5px solid var(--border)' }}>
           {['#','Team','Record','Pts%','GD/GP','CF%'].map(h => (
             <span key={h} style={{ fontSize:9, fontWeight:700, letterSpacing:'0.06em',
               textTransform:'uppercase', color:'var(--text-dim)',
-              textAlign: h==='#'||h==='Team' ? 'left' : 'right' }}>{h}</span>
+              textAlign: h==='#'||h==='Team' ? 'left' : 'right' }}>
+              {h === 'Team' ? t('league.rankings.colTeam') : h === 'Record' ? t('league.rankings.colRecord') : h}
+            </span>
           ))}
         </div>
-        {ranked.map(t => {
-          const isMe = t.team_id === myTeamId;
-          const color = teamColor(t.abbr);
+        {ranked.map(team => {
+          const isMe = team.team_id === myTeamId;
+          const color = teamColor(team.abbr);
           return (
-            <div key={t.team_id} style={{
+            <div key={team.team_id} style={{
               display:'grid', gridTemplateColumns:'32px 1fr 64px 56px 56px 56px',
               gap:6, padding:'6px 12px', alignItems:'center',
               borderBottom:'0.5px solid rgba(255,255,255,0.03)',
@@ -885,34 +901,34 @@ function PowerRankingsPanel({ standings, loading, myTeamId, myAbbr: _myAbbr, myC
               borderLeft: isMe ? `3px solid ${myColor}` : '3px solid transparent',
             }}>
               <span style={{ fontSize:12, fontWeight:700,
-                color: t.rank<=2 ? 'var(--green)' : t.rank>=7 ? 'var(--red-bright)' : 'var(--text-muted)',
+                color: team.rank<=2 ? 'var(--green)' : team.rank>=7 ? 'var(--red-bright)' : 'var(--text-muted)',
                 textAlign:'center' }}>
-                {t.rank}
+                {team.rank}
               </span>
               <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                <TeamLogo abbr={t.abbr} sport="pwhl" size={18} color={color} />
-                <span style={{ fontSize:13, fontWeight:700, color }}>{t.abbr}</span>
+                <TeamLogo abbr={team.abbr} sport="pwhl" size={18} color={color} />
+                <span style={{ fontSize:13, fontWeight:700, color }}>{team.abbr}</span>
               </div>
               <span style={{ fontSize:11, color:'var(--text-muted)', textAlign:'right',
                 fontVariantNumeric:'tabular-nums' }}>
-                {t.wins}–{t.otw}–{t.otl}–{t.losses}
+                {team.wins}–{team.otw}–{team.otl}–{team.losses}
               </span>
               <span style={{ fontSize:11, color:'var(--text-muted)', textAlign:'right' }}>
-                {(t.ptsPct*100).toFixed(1)}%
+                {(team.ptsPct*100).toFixed(1)}%
               </span>
               <span style={{ fontSize:11, textAlign:'right',
-                color: t.gdPG>0 ? 'var(--green)' : t.gdPG<0 ? 'var(--red-bright)' : 'var(--text-muted)',
+                color: team.gdPG>0 ? 'var(--green)' : team.gdPG<0 ? 'var(--red-bright)' : 'var(--text-muted)',
                 fontVariantNumeric:'tabular-nums' }}>
-                {t.gdPG > 0 ? '+' : ''}{t.gdPG.toFixed(2)}
+                {team.gdPG > 0 ? '+' : ''}{team.gdPG.toFixed(2)}
               </span>
               <span style={{ fontSize:11, color:'var(--text-muted)', textAlign:'right' }}>
-                {t.corsi_for_pct != null ? `${Number(t.corsi_for_pct).toFixed(1)}%` : '—'}
+                {team.corsi_for_pct != null ? `${Number(team.corsi_for_pct).toFixed(1)}%` : '—'}
               </span>
             </div>
           );
         })}
         <div className={SST_HINT_CLASSES} style={{ padding:'6px 0 8px' }}>
-          Composite of Pts%, L10, GD/GP, CF%, Special Teams · Updates with standings
+          {t('pwhlLeagueView.rankings.footerHint')}
         </div>
       </div>
     </div>
@@ -1070,7 +1086,18 @@ const PWHL_ABBR_COLOR = {
   LAS:'#B8960C',DET:'#CF0A2C',SJS:'#006D75',HAM:'#5C2D91',
 };
 
+const DRAFT_COL_LABEL_KEYS = {
+  Pick: 'pwhlLeagueView.draft.colPick',
+  Rd: 'pwhlLeagueView.draft.colRound',
+  Team: 'pwhlLeagueView.draft.colTeam',
+  Player: 'pwhlLeagueView.draft.colPlayer',
+  Pos: 'pwhlLeagueView.draft.colPos',
+  'Previous Team': 'pwhlLeagueView.draft.colPreviousTeam',
+  Nat: 'pwhlLeagueView.draft.colNationality',
+};
+
 function DraftPanel({ season }) {
+  const { t } = useTranslation();
   const [draftYear, setDraftYear] = useState(season === 8 ? 2026 : 2025);
   const [filter, setFilter]       = useState('all');
   const [roundFilter, setRound]   = useState(0); // 0 = all rounds
@@ -1092,24 +1119,24 @@ function DraftPanel({ season }) {
       <div className={TABS_WRAP_CLASSES} style={{ marginBottom:0 }}>
         {[2026, 2025].map(y => (
           <button key={y} className={tabClasses(draftYear === y)}
-            onClick={() => setDraftYear(y)}>{y} Draft</button>
+            onClick={() => setDraftYear(y)}>{t('pwhlLeagueView.draft.yearPicker', { year: y })}</button>
         ))}
       </div>
 
       {/* Filters */}
       <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
         <div className={LV_FILTER_ROW_CLASSES} style={{ margin:0, gap:6 }}>
-          {[['all','All'],['F','Forwards'],['D','Defence'],['G','Goalies']].map(([k,l]) => (
+          {[['all','filterAll'],['F','filterForwards'],['D','filterDefence'],['G','filterGoalies']].map(([k,labelKey]) => (
             <button key={k} className={lvFilterBtnClasses(filter===k)}
-              onClick={() => setFilter(k)}>{l}</button>
+              onClick={() => setFilter(k)}>{t(`pwhlLeagueView.draft.${labelKey}`)}</button>
           ))}
         </div>
         <div className={LV_FILTER_ROW_CLASSES} style={{ margin:0, gap:6 }}>
           <button className={lvFilterBtnClasses(roundFilter===0)}
-            onClick={() => setRound(0)}>All Rounds</button>
+            onClick={() => setRound(0)}>{t('pwhlLeagueView.draft.filterAllRounds')}</button>
           {rounds.map(r => (
             <button key={r} className={lvFilterBtnClasses(roundFilter===r)}
-              onClick={() => setRound(r)}>Rd {r}</button>
+              onClick={() => setRound(r)}>{t('pwhlLeagueView.draft.filterRound', { round: r })}</button>
           ))}
         </div>
       </div>
@@ -1117,7 +1144,7 @@ function DraftPanel({ season }) {
       {/* Picks table */}
       <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES}`}>
         <div className={LV_DIV_CARD_HEADER_CLASSES}>
-          {draftYear} PWHL Draft · {filtered.length} pick{filtered.length!==1?'s':''}
+          {t('pwhlLeagueView.draft.header', { year: draftYear, count: filtered.length })}
         </div>
         <div style={{ overflowX:'auto' }}>
           <table className={LV_TABLE_CLASSES} style={{ minWidth:340 }}>
@@ -1126,7 +1153,7 @@ function DraftPanel({ season }) {
                 {['Pick','Rd','Team','Player','Pos','Previous Team','Nat'].map(h => (
                   <th key={h} className={lvThClasses(h==='Player'||h==='Previous Team')}
                     style={{ textAlign: h==='Pick'||h==='Rd'||h==='Team'||h==='Pos'||h==='Nat' ? 'center' : 'left' }}>
-                    {h}
+                    {t(DRAFT_COL_LABEL_KEYS[h])}
                   </th>
                 ))}
               </tr>

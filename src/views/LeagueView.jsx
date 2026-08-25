@@ -2,6 +2,7 @@
 // Place in src/views/ alongside LeagueView.css
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { capture } from '../utils/analytics';
 import { useFetch } from '../hooks/useFetch';
 import Sparkline from '../components/Sparkline';
@@ -445,6 +446,7 @@ const CLINCH_COLOR = {
 // ─── L10 dots ────────────────────────────────────────────────────────────────
 
 function L10Dots({ wins, losses, otl }) {
+  const { t } = useTranslation();
   const results = [
     ...Array(wins).fill('w'),
     ...Array(otl).fill('o'),
@@ -452,7 +454,7 @@ function L10Dots({ wins, losses, otl }) {
   ].slice(0, 10);
 
   return (
-    <span className={L10_DOTS_CLASSES} aria-label={`Last 10: ${wins}-${losses}-${otl}`}>
+    <span className={L10_DOTS_CLASSES} aria-label={t('leagueView.standings.l10AriaLabel', { wins, losses, otl })}>
       {results.map((r, i) => (
         <span key={i} className={l10DotClasses(r)} />
       ))}
@@ -471,29 +473,30 @@ const COL_HEADERS = ['#', 'Team', 'GP', 'W', 'L', 'OTL', 'PTS', 'L10', 'STRK'];
 // only show whichever of the two is closer (smaller): that's the team's
 // actual near-term storyline — clinching soon, or in real elimination
 // danger — rather than showing both and burying the meaningful one.
-function magicTragicBadge(seasonData) {
+function magicTragicBadge(seasonData, t) {
   if (!seasonData) return null;
   const { magicNumber, tragicNumber } = seasonData;
   if (magicNumber == null && tragicNumber == null) return null;
   if (magicNumber != null && (tragicNumber == null || magicNumber <= tragicNumber)) {
     return {
       text:      `M${magicNumber}`,
-      title:     `Magic number: ${magicNumber} — combined regulation wins / rival losses needed to clinch a playoff spot`,
+      title:     t('leagueView.standings.magicNumberTitle', { n: magicNumber }),
       modifier:  'clinch',
     };
   }
   return {
     text:      `E${tragicNumber}`,
-    title:     `Elimination number: ${tragicNumber} — combined rival wins / regulation losses until eliminated`,
+    title:     t('leagueView.standings.eliminationNumberTitle', { n: tragicNumber }),
     modifier:  'elim',
   };
 }
 
 function StandingsRow({ entry, rank, teamSeasonData }) {
+  const { t } = useTranslation();
   const abbrev    = entry.teamAbbrev?.default ?? entry.teamAbbrev;
   const isPrimary = abbrev === PRIMARY;
   const clinchColor = CLINCH_COLOR[entry.clinchIndicator] ?? null;
-  const magicBadge  = entry.clinchIndicator ? null : magicTragicBadge(teamSeasonData?.[abbrev]);
+  const magicBadge  = entry.clinchIndicator ? null : magicTragicBadge(teamSeasonData?.[abbrev], t);
 
   return (
     <tr
@@ -538,12 +541,13 @@ function StandingsRow({ entry, rank, teamSeasonData }) {
 }
 
 function StandingsTable({ rows, caption, teamSeasonData }) {
+  const { t } = useTranslation();
   return (
     <table className={LV_TABLE_CLASSES} aria-label={caption}>
       <thead>
         <tr>
           {COL_HEADERS.map((h) => (
-            <th key={h} className={lvThClasses(h === 'Team')}>{h}</th>
+            <th key={h} className={lvThClasses(h === 'Team')}>{h === 'Team' ? t('league.standings.colTeam') : h}</th>
           ))}
         </tr>
       </thead>
@@ -562,6 +566,7 @@ import { isStandingsStale } from '../utils/standingsUtils';
 // ─── Standings Panel ──────────────────────────────────────────────────────────
 
 function StandingsPanel({ entries, teamSeasonData }) {
+  const { t } = useTranslation();
   const [filter, setFilter] = useState('division');
 
   const byDivision   = useMemo(() => groupByDivision(entries),  [entries]);
@@ -570,10 +575,10 @@ function StandingsPanel({ entries, teamSeasonData }) {
   const wildCard     = useMemo(() => buildWildCard(entries),     [entries]);
 
   const FILTERS = [
-    { id: 'division',   label: 'By division' },
-    { id: 'conference', label: 'By conference' },
-    { id: 'league',     label: 'League' },
-    { id: 'wildcard',   label: 'Wild card' },
+    { id: 'division',   label: t('leagueView.standings.filterDivision') },
+    { id: 'conference', label: t('leagueView.standings.filterConference') },
+    { id: 'league',     label: t('leagueView.standings.filterLeague') },
+    { id: 'wildcard',   label: t('leagueView.standings.filterWildcard') },
   ];
 
   if (entries.length === 0) {
@@ -582,7 +587,7 @@ function StandingsPanel({ entries, teamSeasonData }) {
 
   return (
     <div>
-      <div className={LV_FILTER_ROW_CLASSES} role="group" aria-label="Standings view">
+      <div className={LV_FILTER_ROW_CLASSES} role="group" aria-label={t('leagueView.standings.viewAriaLabel')}>
         {FILTERS.map((f) => (
           <button
             key={f.id}
@@ -596,10 +601,10 @@ function StandingsPanel({ entries, teamSeasonData }) {
 
       <div className={LV_LEGEND_CLASSES}>
         <span className={LV_LEGEND_ITEM_CLASSES}>
-          <span className={LV_LEGEND_BAR_PLAYOFF_CLASSES} /> Clinched / in playoff position
+          <span className={LV_LEGEND_BAR_PLAYOFF_CLASSES} /> {t('leagueView.standings.legendClinched')}
         </span>
         <span className={LV_LEGEND_ITEM_CLASSES}>
-          <span className={LV_LEGEND_BAR_WC_CLASSES} /> Wild card position
+          <span className={LV_LEGEND_BAR_WC_CLASSES} /> {t('leagueView.standings.legendWildcard')}
         </span>
       </div>
 
@@ -607,12 +612,12 @@ function StandingsPanel({ entries, teamSeasonData }) {
         const divs = Object.entries(byDivision).filter(([, v]) => v.conf === confName);
         return (
           <section key={confName} className={LV_CONF_SECTION_CLASSES}>
-            <h3 className={LV_CONF_LABEL_CLASSES}>{confName} Conference</h3>
+            <h3 className={LV_CONF_LABEL_CLASSES}>{t('leagueView.standings.conferenceHeading', { conf: confName })}</h3>
             <div className={LV_DIV_GRID_CLASSES}>
               {divs.map(([divName, { rows }]) => (
                 <div key={divName} className={LV_DIV_CARD_BASE_CLASSES}>
                   <div className={LV_DIV_CARD_HEADER_CLASSES}>{divName}</div>
-                  <StandingsTable rows={rows} caption={`${divName} Division standings`} teamSeasonData={teamSeasonData} />
+                  <StandingsTable rows={rows} caption={t('leagueView.standings.divisionCaption', { div: divName })} teamSeasonData={teamSeasonData} />
                 </div>
               ))}
             </div>
@@ -622,33 +627,33 @@ function StandingsPanel({ entries, teamSeasonData }) {
 
       {filter === 'conference' && Object.entries(byConference).map(([confName, rows]) => (
         <section key={confName} className={LV_CONF_SECTION_CLASSES}>
-          <h3 className={LV_CONF_LABEL_CLASSES}>{confName} Conference</h3>
+          <h3 className={LV_CONF_LABEL_CLASSES}>{t('leagueView.standings.conferenceHeading', { conf: confName })}</h3>
           <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES}`}>
-            <StandingsTable rows={rows} caption={`${confName} Conference standings`} teamSeasonData={teamSeasonData} />
+            <StandingsTable rows={rows} caption={t('leagueView.standings.conferenceCaption', { conf: confName })} teamSeasonData={teamSeasonData} />
           </div>
         </section>
       ))}
 
       {filter === 'league' && (
         <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES}`}>
-          <StandingsTable rows={byLeague} caption="League standings" teamSeasonData={teamSeasonData} />
+          <StandingsTable rows={byLeague} caption={t('leagueView.standings.leagueCaption')} teamSeasonData={teamSeasonData} />
         </div>
       )}
 
       {filter === 'wildcard' && Object.entries(wildCard).map(([confName, { divLeaders, wcPool }]) => (
         <section key={confName} className={LV_CONF_SECTION_CLASSES}>
-          <h3 className={LV_CONF_LABEL_CLASSES}>{confName} Conference</h3>
+          <h3 className={LV_CONF_LABEL_CLASSES}>{t('leagueView.standings.conferenceHeading', { conf: confName })}</h3>
           <div className={LV_DIV_GRID_CLASSES}>
             {Object.entries(divLeaders).map(([divName, rows]) => (
               <div key={divName} className={LV_DIV_CARD_BASE_CLASSES}>
-                <div className={LV_DIV_CARD_HEADER_CLASSES}>{divName} — Division leaders</div>
-                <StandingsTable rows={rows} caption={`${divName} division leaders`} teamSeasonData={teamSeasonData} />
+                <div className={LV_DIV_CARD_HEADER_CLASSES}>{t('leagueView.standings.divisionLeadersHeader', { div: divName })}</div>
+                <StandingsTable rows={rows} caption={t('leagueView.standings.divisionLeadersCaption', { div: divName })} teamSeasonData={teamSeasonData} />
               </div>
             ))}
           </div>
           <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES} ${LV_DIV_CARD_WC_CLASSES}`}>
-            <div className={LV_DIV_CARD_HEADER_CLASSES}>Wild card race</div>
-            <StandingsTable rows={wcPool} caption={`${confName} wild card`} teamSeasonData={teamSeasonData} />
+            <div className={LV_DIV_CARD_HEADER_CLASSES}>{t('leagueView.standings.wildcardRaceHeader')}</div>
+            <StandingsTable rows={wcPool} caption={t('leagueView.standings.wildcardCaption', { conf: confName })} teamSeasonData={teamSeasonData} />
           </div>
         </section>
       ))}
@@ -704,27 +709,28 @@ function LeadersCard({ title, statLabel, rows, formatStat, onPlayerClick }) {
 }
 
 function LeadersPanel({ scoring, goals, gaa, svp }) {
+  const { t } = useTranslation();
   const [selectedPlayer, setSelectedPlayer] = React.useState(null);
 
   const hasAnyData = [scoring, goals, gaa, svp].some((rows) => (rows ?? []).length > 0);
   if (!hasAnyData) {
-    return <SeasonNotStartedState>Stat leaders will appear once games begin.</SeasonNotStartedState>;
+    return <SeasonNotStartedState>{t('leagueView.leaders.emptyState')}</SeasonNotStartedState>;
   }
 
   return (
     <>
       <div className={LV_LEADERS_GRID_CLASSES}>
-        <LeadersCard title="Points"           statLabel="PTS" rows={scoring ?? []} onPlayerClick={setSelectedPlayer} />
-        <LeadersCard title="Goals"            statLabel="G"   rows={goals   ?? []} onPlayerClick={setSelectedPlayer} />
+        <LeadersCard title={t('league.leaders.titlePoints')} statLabel="PTS" rows={scoring ?? []} onPlayerClick={setSelectedPlayer} />
+        <LeadersCard title={t('league.leaders.titleGoals')}  statLabel="G"   rows={goals   ?? []} onPlayerClick={setSelectedPlayer} />
         <LeadersCard
-          title="Goals against avg."
+          title={t('league.leaders.titleGAA')}
           statLabel="GAA"
           rows={gaa ?? []}
           formatStat={(v) => Number(v).toFixed(2)}
           onPlayerClick={setSelectedPlayer}
         />
         <LeadersCard
-          title="Save percentage"
+          title={t('league.leaders.titleSavePct')}
           statLabel="SV%"
           rows={svp ?? []}
           formatStat={(v) => Number(v).toFixed(3).replace('0.', '.')}
@@ -895,6 +901,7 @@ function TeamAbbr({ abbrev, _isWinner, isEliminated }) {
 }
 
 function SeriesCard({ series, onSeriesClick }) {
+  const { t } = useTranslation();
   if (!series) return <div className={bktCardClasses({ variant: 'empty' })} />;
 
   const { top, bottom, topWins, bottomWins } = series;
@@ -905,11 +912,11 @@ function SeriesCard({ series, onSeriesClick }) {
 
   let label = null;
   if (hasGames) {
-    if      (topWins    === 4)          label = `${top} wins 4${dash}${bottomWins}`;
-    else if (bottomWins === 4)          label = `${bottom} wins 4${dash}${topWins}`;
-    else if (topWins    === bottomWins) label = `Tied ${topWins}${dash}${bottomWins}`;
-    else if (topWins    >  bottomWins)  label = `${top} leads ${topWins}${dash}${bottomWins}`;
-    else                                label = `${bottom} leads ${bottomWins}${dash}${topWins}`;
+    if      (topWins    === 4)          label = t('league.bracket.wins',  { team: top,    score: `4${dash}${bottomWins}` });
+    else if (bottomWins === 4)          label = t('league.bracket.wins',  { team: bottom, score: `4${dash}${topWins}` });
+    else if (topWins    === bottomWins) label = t('league.bracket.tied',  { score: `${topWins}${dash}${bottomWins}` });
+    else if (topWins    >  bottomWins)  label = t('league.bracket.leads', { team: top,    score: `${topWins}${dash}${bottomWins}` });
+    else                                label = t('league.bracket.leads', { team: bottom, score: `${bottomWins}${dash}${topWins}` });
   }
 
   return (
@@ -987,12 +994,18 @@ function Connector({ count, direction, straight }) {
 
 // ── Round column ──
 
-const ROUND_LABELS = { 1: 'First round', 2: 'Second round', 3: 'Conf. finals' };
+function roundLabel(roundNum, t) {
+  if (roundNum === 1) return t('leagueView.bracket.roundFirst');
+  if (roundNum === 2) return t('leagueView.bracket.roundSecond');
+  if (roundNum === 3) return t('leagueView.bracket.roundConfFinals');
+  return t('leagueView.bracket.roundFallback', { n: roundNum });
+}
 
 function RoundCol({ round, label, onSeriesClick }) {
+  const { t } = useTranslation();
   return (
     <div className={BKT_ROUND_COL_CLASSES}>
-      <div className={BKT_ROUND_LABEL_CLASSES}>{label ?? ROUND_LABELS[round.round] ?? `Round ${round.round}`}</div>
+      <div className={BKT_ROUND_LABEL_CLASSES}>{label ?? roundLabel(round.round, t)}</div>
       <div className={BKT_ROUND_SERIES_CLASSES}>
         {round.series.map((s, i) => (
           <div key={i} className={BKT_SERIES_SLOT_CLASSES}>
@@ -1007,6 +1020,7 @@ function RoundCol({ round, label, onSeriesClick }) {
 // ── Cup Final center ──
 
 function CupFinalCol({ series, onSeriesClick }) {
+  const { t } = useTranslation();
   if (!series) return null;
   const { top, bottom, topWins, bottomWins } = series;
   const winner      = topWins === 4 ? top : bottomWins === 4 ? bottom : null;
@@ -1015,7 +1029,7 @@ function CupFinalCol({ series, onSeriesClick }) {
 
   return (
     <div className={BKT_FINAL_COL_CLASSES}>
-      <div className={BKT_ROUND_LABEL_CLASSES}>Stanley Cup Final</div>
+      <div className={BKT_ROUND_LABEL_CLASSES}>{t('leagueView.bracket.cupFinalHeading')}</div>
       <div className={BKT_FINAL_CENTER_CLASSES}>
         <div
           className={bktCardClasses({ isFinal: true, isClickable: hasGames })}
@@ -1034,7 +1048,7 @@ function CupFinalCol({ series, onSeriesClick }) {
           </div>
           {winner && (
             <div className={BKT_WINNER_LINE_CLASSES} style={{ color: TEAM_COLORS[winner] ?? 'var(--text)' }}>
-              {winner} champion 🏆
+              {winner} {t('leagueView.bracket.championSuffix')}
             </div>
           )}
         </div>
@@ -1046,6 +1060,7 @@ function CupFinalCol({ series, onSeriesClick }) {
 // ── Series Modal ──
 
 function SeriesModal({ series, carouselRounds, season, onClose }) {
+  const { t } = useTranslation();
   const { top, bottom, topWins, bottomWins } = series;
   const dash = '\u2013';
 
@@ -1108,21 +1123,26 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
           </div>
           {winner && (
             <div className={SERIES_MODAL_RESULT_CLASSES} style={{ color: TEAM_COLORS[winner] }}>
-              {winner} wins 4{dash}{winner === top ? bottomWins : topWins} 🏆
+              {t('league.bracket.wins', { team: winner, score: `4${dash}${winner === top ? bottomWins : topWins}` })} 🏆
             </div>
           )}
           {!winner && topWins + bottomWins > 0 && (
             <div className={SERIES_MODAL_RESULT_CLASSES}>
-              {topWins > bottomWins ? `${top} leads` : topWins < bottomWins ? `${bottom} leads` : 'Tied'} {Math.max(topWins, bottomWins)}{dash}{Math.min(topWins, bottomWins)}
+              {topWins === bottomWins
+                ? t('league.bracket.tied', { score: `${topWins}${dash}${bottomWins}` })
+                : t('league.bracket.leads', {
+                    team: topWins > bottomWins ? top : bottom,
+                    score: `${Math.max(topWins, bottomWins)}${dash}${Math.min(topWins, bottomWins)}`,
+                  })}
             </div>
           )}
-          <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label="Close series">✕</button>
+          <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label={t('leagueView.bracket.closeSeriesAriaLabel')}>✕</button>
         </div>
 
         {/* Round label */}
         {carouselSeries && (
           <div className={SERIES_MODAL_ROUND_LABEL_CLASSES}>
-            {carouselSeries.seriesLabel ?? `Series ${seriesLetter}`}
+            {carouselSeries.seriesLabel ?? t('leagueView.bracket.seriesLabelFallback', { letter: seriesLetter })}
           </div>
         )}
 
@@ -1137,7 +1157,7 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
           )}
 
           {!gamesLoading && games?.length === 0 && (
-            <div className={SERIES_MODAL_EMPTY_CLASSES}>Game data unavailable for this series.</div>
+            <div className={SERIES_MODAL_EMPTY_CLASSES}>{t('leagueView.bracket.gameDataUnavailable')}</div>
           )}
 
           {!gamesLoading && games?.map((g, i) => {
@@ -1173,6 +1193,7 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
 // ── Main BracketPanel ──
 
 function BracketPanel({ data }) {
+  const { t } = useTranslation();
   const { currentSeason: SEASON } = useSport();
   const [selectedSeries, setSelectedSeries] = useState(null);
 
@@ -1189,7 +1210,7 @@ function BracketPanel({ data }) {
   if (!bracket) {
     return (
       <div className={LV_EMPTY_CLASSES}>
-        <p className={LV_EMPTY_MSG_CLASSES}>Playoff bracket will appear here once the postseason begins.</p>
+        <p className={LV_EMPTY_MSG_CLASSES}>{t('leagueView.bracket.emptyState')}</p>
       </div>
     );
   }
@@ -1251,8 +1272,9 @@ function BracketPanel({ data }) {
 // ─── Loading / Error ──────────────────────────────────────────────────────────
 
 function LoadingRows() {
+  const { t } = useTranslation();
   return (
-    <div className={LV_SKELETON_WRAP_CLASSES} aria-busy="true" aria-label="Loading">
+    <div className={LV_SKELETON_WRAP_CLASSES} aria-busy="true" aria-label={t('leagueView.loading.ariaLabel')}>
       {[85, 90, 85, 95, 85, 90, 85, 90].map((w, i) => (
         <div key={i} className={LV_SKELETON_ROW_CLASSES} style={{ width: `${w}%` }} />
       ))}
@@ -1261,10 +1283,11 @@ function LoadingRows() {
 }
 
 function ErrorState({ message }) {
+  const { t } = useTranslation();
   return (
     <div className={LV_ERROR_CLASSES}>
       <span>⚠</span>
-      <p>{message ?? 'Something went wrong. Try refreshing.'}</p>
+      <p>{message ?? t('leagueView.error.generic')}</p>
     </div>
   );
 }
@@ -1275,10 +1298,11 @@ function ErrorState({ message }) {
 // have zero rows). Distinct from ErrorState: this isn't a failure, so no
 // warning icon and a calmer tone.
 function SeasonNotStartedState({ children }) {
+  const { t } = useTranslation();
   const { currentSeason } = useSport();
   return (
     <div className={LV_SEASON_EMPTY_CLASSES}>
-      <p>{children ?? `The ${seasonLabelFor(currentSeason)} season hasn't started yet — check back once games begin.`}</p>
+      <p>{children ?? t('leagueView.seasonNotStarted.default', { season: seasonLabelFor(currentSeason) })}</p>
     </div>
   );
 }
@@ -1413,10 +1437,11 @@ function MovementArrow({ current, prior }) {
 // ─── Rank Sparkline ───────────────────────────────────────────────────────────
 
 function RankSparkline({ history, primaryColor }) {
+  const { t } = useTranslation();
   if (!history?.length) {
     return (
       <div className={PR_SPARKLINE_EMPTY_CLASSES}>
-        <span>Rank trend data accumulates nightly</span>
+        <span>{t('leagueView.rankings.sparklineEmpty')}</span>
       </div>
     );
   }
@@ -1437,11 +1462,11 @@ function RankSparkline({ history, primaryColor }) {
   return (
     <div className={PR_SPARKLINE_CLASSES} style={{ minWidth: 140 }}>
       <div className={PR_SPARKLINE_HEADER_CLASSES}>
-        <span className={PR_SPARKLINE_LABEL_CLASSES}>Rank trend</span>
+        <span className={PR_SPARKLINE_LABEL_CLASSES}>{t('leagueView.rankings.sparklineLabel')}</span>
         {trendLabel && (
           <span className={PR_SPARKLINE_TREND_CLASSES} style={{ color: trendColor }}>
             {trendLabel}
-            <span className={PR_SPARKLINE_PERIOD_CLASSES}> ({history.length}d)</span>
+            <span className={PR_SPARKLINE_PERIOD_CLASSES}>{t('leagueView.rankings.sparklineDaysSuffix', { days: history.length })}</span>
           </span>
         )}
       </div>
@@ -1465,6 +1490,7 @@ function RankSparkline({ history, primaryColor }) {
 // ─── Rankings Panel ───────────────────────────────────────────────────────────
 
 function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrative, history }) {
+  const { t } = useTranslation();
   const [showHow,    setShowHow]    = useState(false);
   const [canvasMounted, setCanvasMounted] = useState(false);
   const ranked  = computePowerRankings(standings, xgData);
@@ -1480,7 +1506,7 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
   const priorRank = narrative?.prior_rank ?? null;
 
   const xCaption = [
-    `${PRIMARY} Power Rankings — #${myData?.rank ?? '?'} in the NHL`,
+    t('leagueView.rankings.shareCaptionRank', { team: PRIMARY, rank: myData?.rank ?? '?' }),
     narrative?.narrative || '',
     `#${PRIMARY} #EyeWallAnalytics`,
   ].filter(Boolean).join('\n');
@@ -1516,7 +1542,7 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
   }
 
   if (empty) {
-    return <SeasonNotStartedState>Power rankings will appear once games begin.</SeasonNotStartedState>;
+    return <SeasonNotStartedState>{t('leagueView.rankings.emptyState')}</SeasonNotStartedState>;
   }
 
   return (
@@ -1528,11 +1554,11 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
           <div className={PR_NARRATIVE_CARD_TOP_CLASSES}>
             {narrative?.narrative && (
               <div className={PR_NARRATIVE_CARD_TOP_FIRST_CHILD_CLASSES}>
-                <div className={PR_NARRATIVE_LABEL_CLASSES}>⚡ EyeWall AI — {PRIMARY} Rankings Report</div>
+                <div className={PR_NARRATIVE_LABEL_CLASSES}>{t('leagueView.rankings.narrativeLabel', { team: PRIMARY })}</div>
                 <p className={PR_NARRATIVE_TEXT_CLASSES}>{narrative.narrative}</p>
                 {narrative.generated_date && (
                   <span className={PR_NARRATIVE_DATE_CLASSES}>
-                    Updated {new Date(narrative.generated_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {t('leagueView.rankings.narrativeUpdated', { date: new Date(narrative.generated_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) })}
                   </span>
                 )}
               </div>
@@ -1547,20 +1573,20 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
         <div className={PR_TABLE_HEADER_ROW_CLASSES}>
           <span className={PR_COL_RANK_CLASSES}>#</span>
           <span className={PR_COL_MVMT_CLASSES} />
-          <span className={PR_COL_TEAM_CLASSES}>Team</span>
+          <span className={PR_COL_TEAM_CLASSES}>{t('league.rankings.colTeam')}</span>
           <span className={PR_COL_STAT_BASE_CLASSES}>Pts%</span>
           <span className={PR_COL_STAT_BASE_CLASSES}>L10</span>
           <span className={PR_COL_STAT_BASE_CLASSES}>xGF%</span>
           <span className={PR_COL_STAT_BASE_CLASSES}>GD/GP</span>
         </div>
 
-        {ranked.map(t => {
-          const isPrimary = t.abbr === PRIMARY;
+        {ranked.map(team => {
+          const isPrimary = team.abbr === PRIMARY;
           // Show movement arrow only for the primary team (we only have their prior rank)
           const showArrow = isPrimary && priorRank != null;
           return (
             <div
-              key={t.abbr}
+              key={team.abbr}
               className={prRowClasses(isPrimary)}
               style={isPrimary ? {
                 '--row-accent': PRIMARY_COLOR,
@@ -1569,26 +1595,26 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
               } : {}}
             >
               <span className={PR_COL_RANK_CLASSES}>
-                <span className={prRankNumClasses(t.rank <= 8, t.rank >= 25)}>
-                  {t.rank}
+                <span className={prRankNumClasses(team.rank <= 8, team.rank >= 25)}>
+                  {team.rank}
                 </span>
               </span>
               <span className={PR_COL_MVMT_CLASSES}>
-                {showArrow && <MovementArrow current={t.rank} prior={priorRank} />}
+                {showArrow && <MovementArrow current={team.rank} prior={priorRank} />}
               </span>
               <span className={PR_COL_TEAM_CLASSES}>
-                <TeamLogo abbr={t.abbr} size={16} />
-                <span className={PR_ABBR_CLASSES} style={{ color: TEAM_COLORS[t.abbr] ?? 'var(--text)' }}>
-                  {t.abbr}
+                <TeamLogo abbr={team.abbr} size={16} />
+                <span className={PR_ABBR_CLASSES} style={{ color: TEAM_COLORS[team.abbr] ?? 'var(--text)' }}>
+                  {team.abbr}
                 </span>
               </span>
-              <span className={prColStatClasses()}>{(t.ptsPct * 100).toFixed(1)}%</span>
-              <span className={prColStatClasses()}>{t.l10}</span>
+              <span className={prColStatClasses()}>{(team.ptsPct * 100).toFixed(1)}%</span>
+              <span className={prColStatClasses()}>{team.l10}</span>
               <span className={prColStatClasses()}>
-                {t.xgfPct != null ? `${(t.xgfPct * 100).toFixed(1)}%` : '—'}
+                {team.xgfPct != null ? `${(team.xgfPct * 100).toFixed(1)}%` : '—'}
               </span>
-              <span className={prColStatClasses(t.gdPG > 0 ? 'pos' : t.gdPG < 0 ? 'neg' : null)}>
-                {t.gdPG > 0 ? '+' : ''}{t.gdPG.toFixed(2)}
+              <span className={prColStatClasses(team.gdPG > 0 ? 'pos' : team.gdPG < 0 ? 'neg' : null)}>
+                {team.gdPG > 0 ? '+' : ''}{team.gdPG.toFixed(2)}
               </span>
             </div>
           );
@@ -1608,49 +1634,46 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
       {/* How is this calculated? */}
       <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES}`}>
         <button className={PR_HOW_TOGGLE_CLASSES} onClick={() => setShowHow(v => !v)} aria-expanded={showHow}>
-          <span>How is this calculated?</span>
+          <span>{t('league.rankings.howCalculatedToggle')}</span>
           <span className={PR_HOW_CHEVRON_CLASSES}>{showHow ? '▲' : '▼'}</span>
         </button>
 
         {showHow && (
           <div className={PR_HOW_BODY_CLASSES}>
             <p className={PR_HOW_TEXT_CLASSES}>
-              Rankings are computed from five components plus a roster talent prior
-              that tapers off as the season progresses. Each component is normalised
-              relative to the rest of the league (best team = 1.0, worst = 0.0) before
-              weighting, so rankings reflect where a team stands <em>right now</em>.
+              <Trans i18nKey="leagueView.rankings.howCalculatedIntro" components={{ em: <em /> }} />
             </p>
 
             {[
               {
-                label: 'Points %', weight: '25%',
-                desc: 'Points earned divided by maximum possible (games played × 2). The primary measure of season-long success.',
-                source: 'NHL standings',
+                label: t('leagueView.rankings.componentPointsLabel'), weight: '25%',
+                desc: t('leagueView.rankings.componentPointsDesc'),
+                source: t('leagueView.rankings.sourceNHLStandings'),
               },
               {
-                label: 'L10 Points %', weight: '25%',
-                desc: 'Same formula applied to the last 10 games only. This is what moves rankings week to week — a hot team climbs, a cold team falls regardless of earlier results.',
-                source: 'NHL standings',
+                label: t('leagueView.rankings.componentL10Label'), weight: '25%',
+                desc: t('leagueView.rankings.componentL10Desc'),
+                source: t('leagueView.rankings.sourceNHLStandings'),
               },
               {
-                label: 'Goal Differential / GP', weight: '20%',
-                desc: 'Goals scored minus goals allowed per game. Teams that win convincingly rank higher than teams that constantly squeak by one goal.',
-                source: 'NHL standings',
+                label: t('leagueView.rankings.componentGDLabel'), weight: '20%',
+                desc: t('leagueView.rankings.componentGDDesc'),
+                source: t('leagueView.rankings.sourceNHLStandings'),
               },
               {
-                label: '5v5 xGF%', weight: '20%',
-                desc: 'Expected goals for % at even strength — the share of shot quality a team generates versus allows at 5-on-5. Filters out goaltending and shooting luck that inflate or deflate raw goal totals.',
-                source: 'MoneyPuck (updated nightly)',
+                label: t('leagueView.rankings.componentXGFLabel'), weight: '20%',
+                desc: t('leagueView.rankings.componentXGFDesc'),
+                source: t('leagueView.rankings.sourceMoneyPuckNightly'),
               },
               {
-                label: 'Special Teams', weight: '10%',
-                desc: 'Average of power play % and penalty kill %. Weighted lower than even-strength play because special teams frequency and opponent quality vary.',
-                source: 'NHL standings',
+                label: t('league.rankings.componentSPLabel'), weight: '10%',
+                desc: t('leagueView.rankings.componentSPDesc'),
+                source: t('leagueView.rankings.sourceNHLStandings'),
               },
               {
-                label: 'Roster WAR', weight: '0–15%',
-                desc: 'Sum of the top-18 skaters\' Wins Above Replacement plus the starter\'s Goals Saved Above Expected. Weighted at 15% at game 0, tapering to 0% by game 20. Ensures pre-season and early-season rankings reflect roster quality rather than a handful of fluky results.',
-                source: 'MoneyPuck / EyeWall RAPM model (updated nightly)',
+                label: t('leagueView.rankings.componentWARLabel'), weight: '0–15%',
+                desc: t('leagueView.rankings.componentWARDesc'),
+                source: t('leagueView.rankings.sourceMoneyPuckRAPM'),
               },
             ].map(c => (
               <div key={c.label} className={PR_HOW_ITEM_CLASSES}>
@@ -1659,13 +1682,12 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
                   <span className={PR_HOW_WEIGHT_CLASSES}>{c.weight}</span>
                 </div>
                 <p className={PR_HOW_TEXT_CLASSES}>{c.desc}</p>
-                <span className={PR_HOW_SOURCE_CLASSES}>Source: {c.source}</span>
+                <span className={PR_HOW_SOURCE_CLASSES}>{t('leagueView.rankings.sourcePrefix', { source: c.source })}</span>
               </div>
             ))}
 
             <p className={PR_HOW_TEXT_CLASSES} style={{ marginTop: 4 }}>
-              xGF% and Roster WAR show <em>—</em> until the first nightly pipeline
-              run populates them. All other components still produce a valid rank.
+              <Trans i18nKey="leagueView.rankings.howCalculatedFootnote" components={{ em: <em /> }} />
             </p>
           </div>
         )}
@@ -1688,6 +1710,7 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
 // ─── Power Rankings Export Canvas (1080×1080, off-screen) ────────────────────
 
 function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, primaryColor }) {
+  const { t } = useTranslation();
   const logoUrl = abbr => `/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
   const diff = priorRank != null ? priorRank - myTeam.rank : null;
   const mvmtLabel = diff == null ? null : diff === 0 ? '—' : diff > 0 ? `▲${diff}` : `▼${Math.abs(diff)}`;
@@ -1709,7 +1732,7 @@ function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, primaryColo
       <div className={PRED_CANVAS_HEADER_CLASSES}>
         <img src="/eyewall-logo.svg" alt="EyeWall" className={PRED_CANVAS_LOGO_CLASSES}
           onError={e => { e.target.style.display = 'none'; }} />
-        <span className={PRED_CANVAS_BADGE_CLASSES}>Power Rankings</span>
+        <span className={PRED_CANVAS_BADGE_CLASSES}>{t('leagueView.rankings.snapshotBadge')}</span>
       </div>
 
       {/* Hero — team logo, rank, movement, component bars */}
@@ -1730,7 +1753,7 @@ function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, primaryColo
               <span style={{ fontSize: 26, fontWeight: 700, color: mvmtColor }}>{mvmtLabel}</span>
             )}
           </div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>of 32 teams</div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{t('leagueView.rankings.ofTeams')}</div>
         </div>
 
         {/* Component bars */}
@@ -1773,12 +1796,15 @@ function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, primaryColo
       {/* League snapshot */}
       <div style={{ flex: 1, padding: '10px 52px 0', overflow: 'hidden' }}>
         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginBottom: 6 }}>
-          League snapshot
+          {t('leagueView.rankings.snapshotHeading')}
         </div>
-        {/* Column headers */}
+        {/* Column headers -- h stays the literal English key for alignment
+            logic below; only the rendered text is translated. */}
         <div style={{ display: 'grid', gridTemplateColumns: '28px 8px 52px 1fr 54px 60px 54px 54px', gap: 6, padding: '0 8px 4px', borderBottom: '0.5px solid rgba(255,255,255,0.07)', marginBottom: 3 }}>
           {['#', '', 'Team', 'Record', 'Pts%', 'L10', 'xGF%', 'GD/GP'].map(h => (
-            <span key={h} style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', textAlign: h === 'Record' ? 'left' : h === '#' || h === '' ? 'center' : 'right' }}>{h}</span>
+            <span key={h} style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', textAlign: h === 'Record' ? 'left' : h === '#' || h === '' ? 'center' : 'right' }}>
+              {h === 'Team' ? t('league.rankings.colTeam') : h === 'Record' ? t('league.rankings.colRecord') : h}
+            </span>
           ))}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -1830,6 +1856,7 @@ function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, primaryColo
 // Used by Power Rankings and Draft tabs which can be long.
 
 function ScrollTopButton() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -1846,9 +1873,9 @@ function ScrollTopButton() {
     <button
       className={LV_SCROLL_TOP_CLASSES}
       onClick={() => document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' })}
-      aria-label="Scroll to top"
+      aria-label={t('leagueView.rankings.scrollTopAriaLabel')}
     >
-      ↑ Top
+      ↑ {t('leagueView.rankings.scrollTopLabel')}
     </button>
   );
 }
@@ -1856,14 +1883,15 @@ function ScrollTopButton() {
 // ─── LeagueView ──────────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: 'standings', label: 'Standings' },
-  { id: 'bracket',   label: 'Playoff bracket' },
-  { id: 'leaders',   label: 'Leaders' },
-  { id: 'rankings',  label: 'Power rankings' },
-  { id: 'draft',     label: 'Draft' }
+  { id: 'standings', labelKey: 'league.tabs.standings' },
+  { id: 'bracket',   labelKey: 'league.tabs.bracket' },
+  { id: 'leaders',   labelKey: 'league.tabs.leaders' },
+  { id: 'rankings',  labelKey: 'league.tabs.rankings' },
+  { id: 'draft',     labelKey: 'league.tabs.draft' }
 ];
 
 export default function LeagueView() {
+  const { t } = useTranslation();
   const { currentSeason: SEASON } = useSport();
   const [activeTab, setActiveTab] = useState('standings');
 
@@ -1919,7 +1947,7 @@ export default function LeagueView() {
 
   return (
     <div className={LEAGUE_VIEW_CLASSES}>
-      <nav className={LEAGUE_TABS_CLASSES} role="tablist" aria-label="League sections">
+      <nav className={LEAGUE_TABS_CLASSES} role="tablist" aria-label={t('leagueView.tabsAriaLabel')}>
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -1928,7 +1956,7 @@ export default function LeagueView() {
             className={leagueTabClasses(activeTab === tab.id)}
             onClick={() => handleTabChange(tab.id)}
           >
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </nav>
@@ -1937,7 +1965,7 @@ export default function LeagueView() {
         {activeTab === 'standings' && (
           <>
             {standingsLoading && <LoadingRows />}
-            {standingsError   && <ErrorState message="Couldn't load standings." />}
+            {standingsError   && <ErrorState message={t('leagueView.error.standings')} />}
             {!standingsLoading && !standingsError && <StandingsPanel entries={standingsEntries} teamSeasonData={xgData} />}
           </>
         )}
@@ -1952,7 +1980,7 @@ export default function LeagueView() {
         {activeTab === 'leaders' && (
           <>
             {leadersLoading && <LoadingRows />}
-            {scoringError   && <ErrorState message="Couldn't load leaders." />}
+            {scoringError   && <ErrorState message={t('leagueView.error.leaders')} />}
             {!leadersLoading && !scoringError && (
               <LeadersPanel scoring={scoring} goals={goals} gaa={gaa} svp={svp} />
             )}
