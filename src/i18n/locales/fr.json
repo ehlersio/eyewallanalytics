@@ -1,0 +1,14 @@
+{
+  "settings": {
+    "title": "Paramètres",
+    "language": "Langue",
+    "appearance": "Apparence",
+    "myTeam": "Mon équipe",
+    "change": "Changer",
+    "darkMode": "Mode sombre",
+    "lightMode": "Mode clair"
+  },
+  "common": {
+    "loading": "Chargement…"
+  }
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../utils/AuthContext';
 
 // Tailwind migration (Session 95, Phase 1) -- previously AccountSection.css.
@@ -47,6 +47,22 @@ export default function AccountSection() {
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  const compactRowRef = useRef(null);
+
+  // Settings popup (.notif-popup, in NotificationBell.jsx) is a scrollable
+  // panel taller than its own max-height in every state (confirmed: adding
+  // the Language row, Session ~locale, pushed it into overflow even in the
+  // compact view). Cypress's click() scrolls the Cancel/Sign-out button
+  // into view before clicking it -- since those buttons sit lower in the
+  // taller "form open"/"signed in" states, that can leave the popup's
+  // scroll offset such that this row, back at the top of a now-shorter
+  // compact view, sits above the visible area. scrollIntoView('nearest')
+  // corrects it without assuming exact scroll math.
+  useEffect(() => {
+    if (step === 'idle') {
+      compactRowRef.current?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [step, isAuthenticated]);
 
   const resetFlow = () => {
     setStep('idle');
@@ -87,7 +103,7 @@ export default function AccountSection() {
   if (isAuthenticated) {
     const initial = (user.email || '?').charAt(0).toUpperCase();
     return (
-      <div className={SECTION_CLASSES}>
+      <div className={SECTION_CLASSES} ref={compactRowRef}>
         <div className={`${ROW_CLASSES} ${ROW_STATIC_CLASSES}`}>
           <span className={AVATAR_CLASSES}>{initial}</span>
           <span className={ROW_LABEL_CLASSES}>{user.email}</span>
@@ -149,7 +165,7 @@ export default function AccountSection() {
   }
 
   return (
-    <div className={SECTION_CLASSES}>
+    <div className={SECTION_CLASSES} ref={compactRowRef}>
       <button className={`${ROW_CLASSES} ${ROW_BUTTON_CLASSES}`} onClick={() => setStep('email')}>
         <span className={ROW_ICON_CLASSES}>✉️</span>
         <span className={ROW_LABEL_CLASSES}>Sign in to sync across devices</span>

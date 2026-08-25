@@ -93,7 +93,7 @@ canes-analytics-starter/
 │   │   ├── GameEvents.jsx              # Goal/penalty/win/puck drop popups — Tailwind (Phase 4, sub-PR 2), no .css file
 │   │   ├── ScoutingTab.jsx             # NHL opponent scouting — Tailwind (Phase 6), no .css file
 │   │   ├── DraftTab.jsx                # NHL draft board — Tailwind (Phase 6), no .css file
-│   │   ├── NotificationBell.jsx        # ⚙️ Settings drawer — Account section (sign-in/out, Session 90) at top, Preferences (My Team/Appearance/Push Notifications/Game Summaries) below
+│   │   ├── NotificationBell.jsx        # ⚙️ Settings drawer — Account section (sign-in/out, Session 90) at top, Preferences (My Team/Appearance/Language/Push Notifications/Game Summaries) below
 │   │   ├── AccountSection.jsx/.css     # Sign-in UI inside Settings (Session 90) — signed-out row, two-step email sign-in, signed-in row (avatar/email/Synced badge) + sign-out
 │   │   ├── TriviaFeed.jsx              # Daily Trivia tab content (Session 92) — three tier cards, answer/reveal flow, aggregate correct/attempted stats. Same "rendered as a tab inside NewsView" pattern as MilestonesFeed.jsx. Tailwind (Phase 1 own classes; NewsView.css-owned classes finished Phase 4, sub-PR 4, imported from utils/newsViewClasses.js)
 │   │   ├── PeriodSummary.jsx           # Period/game summary popup + share canvas + hat trick badges — fully Tailwind (Phase 4, sub-PRs 5a/5b; PeriodSummary.css deleted)
@@ -631,6 +631,7 @@ VITE_SUPABASE_ANON=sb_publishable_...
 - [x] Daily Trivia (Session 92, NHL + PWHL) — three tiers (easy/medium AI-generated with a verified-value guardrail, hard hand-curated), new Trivia tab on the News page, union-merge answer sync for signed-in users, read-state badges on News/Milestones/Trivia + `BottomNav`. Found and fixed two real guardrail bugs during live generation (a misread team abbreviation, then a hallucinated team-name substitution even when given the correct name) — team identity is now conveyed via a logo, never AI-generated text.
 
 ### Pending
+- [ ] French/English localization (Phase A0 done) — `i18next`/`react-i18next` infra, `localeConfig.js` (localStorage-backed, modeled on `themeConfig.js`), `localeSync.js` (cross-device sync for signed-in users via `user_preferences.preferred_locale`, modeled on `favoriteTeamSync.js`), Settings-popup Language toggle. Only the Settings popup itself is translated so far — the rest of the app's ~62 view/component files still need string extraction (Phase A1+), and the AI-generated narrative content (scouting blurbs, results-vs-process, game summaries, trivia) needs a `locale` column + dual-generation in `eyewall-pipeline` (Phase B, separate repo) before French narratives exist at all.
 - [ ] PWHL Analytics tab (xG model, WAR equivalent) — post-launch
 - [ ] PWHL PDO in playoffs (needs playoff player shot data)
 - [ ] Reddit ingest fix — October
