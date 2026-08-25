@@ -91,6 +91,170 @@
     "synced": "Synced",
     "errorGeneric": "Could not send sign-in link. Try again."
   },
+  "league": {
+    "tabs": {
+      "standings": "Standings",
+      "bracket": "Playoff bracket",
+      "leaders": "Leaders",
+      "rankings": "Power rankings",
+      "draft": "Draft"
+    },
+    "leaders": {
+      "titlePoints": "Points",
+      "titleGoals": "Goals",
+      "titleGAA": "Goals against avg.",
+      "titleSavePct": "Save percentage"
+    },
+    "rankings": {
+      "howCalculatedToggle": "How is this calculated?",
+      "componentSPLabel": "Special Teams",
+      "colTeam": "Team",
+      "colRecord": "Record"
+    },
+    "standings": {
+      "colTeam": "Team"
+    },
+    "bracket": {
+      "wins": "{{team}} wins {{score}}",
+      "leads": "{{team}} leads {{score}}",
+      "tied": "Tied {{score}}"
+    }
+  },
+  "leagueView": {
+    "tabsAriaLabel": "League sections",
+    "standings": {
+      "filterDivision": "By division",
+      "filterConference": "By conference",
+      "filterLeague": "League",
+      "filterWildcard": "Wild card",
+      "viewAriaLabel": "Standings view",
+      "legendClinched": "Clinched / in playoff position",
+      "legendWildcard": "Wild card position",
+      "conferenceHeading": "{{conf}} Conference",
+      "divisionCaption": "{{div}} Division standings",
+      "conferenceCaption": "{{conf}} Conference standings",
+      "leagueCaption": "League standings",
+      "divisionLeadersHeader": "{{div}} — Division leaders",
+      "divisionLeadersCaption": "{{div}} division leaders",
+      "wildcardRaceHeader": "Wild card race",
+      "wildcardCaption": "{{conf}} wild card",
+      "l10AriaLabel": "Last 10: {{wins}}-{{losses}}-{{otl}}",
+      "magicNumberTitle": "Magic number: {{n}} — combined regulation wins / rival losses needed to clinch a playoff spot",
+      "eliminationNumberTitle": "Elimination number: {{n}} — combined rival wins / regulation losses until eliminated"
+    },
+    "leaders": {
+      "emptyState": "Stat leaders will appear once games begin."
+    },
+    "bracket": {
+      "emptyState": "Playoff bracket will appear here once the postseason begins.",
+      "roundFirst": "First round",
+      "roundSecond": "Second round",
+      "roundConfFinals": "Conf. finals",
+      "roundFallback": "Round {{n}}",
+      "cupFinalHeading": "Stanley Cup Final",
+      "championSuffix": "champion 🏆",
+      "closeSeriesAriaLabel": "Close series",
+      "seriesLabelFallback": "Series {{letter}}",
+      "gameDataUnavailable": "Game data unavailable for this series."
+    },
+    "loading": {
+      "ariaLabel": "Loading"
+    },
+    "error": {
+      "generic": "Something went wrong. Try refreshing.",
+      "standings": "Couldn't load standings.",
+      "leaders": "Couldn't load leaders."
+    },
+    "seasonNotStarted": {
+      "default": "The {{season}} season hasn't started yet — check back once games begin."
+    },
+    "rankings": {
+      "sparklineEmpty": "Rank trend data accumulates nightly",
+      "sparklineLabel": "Rank trend",
+      "sparklineDaysSuffix": " ({{days}}d)",
+      "emptyState": "Power rankings will appear once games begin.",
+      "narrativeLabel": "⚡ EyeWall AI — {{team}} Rankings Report",
+      "narrativeUpdated": "Updated {{date}}",
+      "howCalculatedIntro": "Rankings are computed from five components plus a roster talent prior that tapers off as the season progresses. Each component is normalised relative to the rest of the league (best team = 1.0, worst = 0.0) before weighting, so rankings reflect where a team stands <em>right now</em>.",
+      "componentPointsLabel": "Points %",
+      "componentPointsDesc": "Points earned divided by maximum possible (games played × 2). The primary measure of season-long success.",
+      "componentL10Label": "L10 Points %",
+      "componentL10Desc": "Same formula applied to the last 10 games only. This is what moves rankings week to week — a hot team climbs, a cold team falls regardless of earlier results.",
+      "componentGDLabel": "Goal Differential / GP",
+      "componentGDDesc": "Goals scored minus goals allowed per game. Teams that win convincingly rank higher than teams that constantly squeak by one goal.",
+      "componentXGFLabel": "5v5 xGF%",
+      "componentXGFDesc": "Expected goals for % at even strength — the share of shot quality a team generates versus allows at 5-on-5. Filters out goaltending and shooting luck that inflate or deflate raw goal totals.",
+      "componentSPDesc": "Average of power play % and penalty kill %. Weighted lower than even-strength play because special teams frequency and opponent quality vary.",
+      "componentWARLabel": "Roster WAR",
+      "componentWARDesc": "Sum of the top-18 skaters' Wins Above Replacement plus the starter's Goals Saved Above Expected. Weighted at 15% at game 0, tapering to 0% by game 20. Ensures pre-season and early-season rankings reflect roster quality rather than a handful of fluky results.",
+      "sourceNHLStandings": "NHL standings",
+      "sourceMoneyPuckNightly": "MoneyPuck (updated nightly)",
+      "sourceMoneyPuckRAPM": "MoneyPuck / EyeWall RAPM model (updated nightly)",
+      "sourcePrefix": "Source: {{source}}",
+      "howCalculatedFootnote": "xGF% and Roster WAR show <em>—</em> until the first nightly pipeline run populates them. All other components still produce a valid rank.",
+      "snapshotHeading": "League snapshot",
+      "snapshotBadge": "Power Rankings",
+      "ofTeams": "of 32 teams",
+      "scrollTopAriaLabel": "Scroll to top",
+      "scrollTopLabel": "Top",
+      "shareCaptionRank": "{{team}} Power Rankings — #{{rank}} in the NHL"
+    }
+  },
+  "pwhlLeagueView": {
+    "standings": {
+      "emptyState": "No standings data.",
+      "headerTitle": "PWHL League Standings · 3-2-1-0 pts system",
+      "footerHintSort": "Sort by any column",
+      "footerHintSource": "Source: HockeyTech / PWHL"
+    },
+    "bracket": {
+      "emptyState": "No playoff data for {{season}}.",
+      "semifinalsHeading": "Semifinals",
+      "walterCupFinalHeading": "Walter Cup Final",
+      "awaitingSemiWinners": "Awaiting semi winners",
+      "formatExplainer": "Best-of-5 series · First to 3 wins advances",
+      "modalWinsSeries": "{{team}} wins the series 🏆"
+    },
+    "leaders": {
+      "emptyState": "No player data for {{season}}."
+    },
+    "rankings": {
+      "emptyState": "No standings data for rankings.",
+      "howCalculatedIntro": "PWHL Power Rankings combine five factors into a composite score. Each metric is normalized 0–1 across all 8 teams, then weighted and summed.",
+      "componentPointsLabel": "Points%",
+      "componentPointsDesc": "Season points ÷ max possible (GP×3)",
+      "componentL10Label": "L10 Points%",
+      "componentL10Desc": "Last 10 games performance",
+      "componentGDDesc": "Goal differential per game",
+      "componentCFLabel": "CF% (Corsi)",
+      "componentCFDesc": "Shot attempt share — proxy for possession",
+      "componentSPDesc": "Average of PP% and PK%",
+      "tableHeading": "Power Rankings",
+      "footerHint": "Composite of Pts%, L10, GD/GP, CF%, Special Teams · Updates with standings"
+    },
+    "tabs": {
+      "bracket": "Playoff Bracket",
+      "rankings": "Power Rankings"
+    },
+    "draft": {
+      "yearPicker": "{{year}} Draft",
+      "filterAll": "All",
+      "filterForwards": "Forwards",
+      "filterDefence": "Defence",
+      "filterGoalies": "Goalies",
+      "filterAllRounds": "All Rounds",
+      "filterRound": "Rd {{round}}",
+      "header_one": "{{year}} PWHL Draft · {{count}} pick",
+      "header_other": "{{year}} PWHL Draft · {{count}} picks",
+      "colPick": "Pick",
+      "colRound": "Rd",
+      "colTeam": "Team",
+      "colPlayer": "Player",
+      "colPos": "Pos",
+      "colPreviousTeam": "Previous Team",
+      "colNationality": "Nat"
+    }
+  },
   "common": {
     "loading": "Loading…",
     "close": "Close"

@@ -91,6 +91,170 @@
     "synced": "Synchronisé",
     "errorGeneric": "Impossible d'envoyer le lien de connexion. Réessayez."
   },
+  "league": {
+    "tabs": {
+      "standings": "Classement",
+      "bracket": "Tableau éliminatoire",
+      "leaders": "Meneurs",
+      "rankings": "Classement de puissance",
+      "draft": "Repêchage"
+    },
+    "leaders": {
+      "titlePoints": "Points",
+      "titleGoals": "Buts",
+      "titleGAA": "Moy. de buts accordés",
+      "titleSavePct": "Pourcentage d'arrêts"
+    },
+    "rankings": {
+      "howCalculatedToggle": "Comment ce classement est-il calculé?",
+      "componentSPLabel": "Unités spéciales",
+      "colTeam": "Équipe",
+      "colRecord": "Fiche"
+    },
+    "standings": {
+      "colTeam": "Équipe"
+    },
+    "bracket": {
+      "wins": "{{team}} gagne {{score}}",
+      "leads": "{{team}} mène {{score}}",
+      "tied": "Égalité {{score}}"
+    }
+  },
+  "leagueView": {
+    "tabsAriaLabel": "Sections de la ligue",
+    "standings": {
+      "filterDivision": "Par division",
+      "filterConference": "Par association",
+      "filterLeague": "Ligue",
+      "filterWildcard": "Repêchage général",
+      "viewAriaLabel": "Affichage du classement",
+      "legendClinched": "Qualifiée / en position éliminatoire",
+      "legendWildcard": "Position de qualification générale",
+      "conferenceHeading": "Association {{conf}}",
+      "divisionCaption": "Classement de la division {{div}}",
+      "conferenceCaption": "Classement de l'association {{conf}}",
+      "leagueCaption": "Classement de la ligue",
+      "divisionLeadersHeader": "{{div}} — Meneurs de division",
+      "divisionLeadersCaption": "Meneurs de la division {{div}}",
+      "wildcardRaceHeader": "Course à la qualification générale",
+      "wildcardCaption": "Qualification générale de l'association {{conf}}",
+      "l10AriaLabel": "10 derniers matchs : {{wins}}-{{losses}}-{{otl}}",
+      "magicNumberTitle": "Chiffre magique : {{n}} — victoires en temps réglementaire et défaites des rivaux combinées nécessaires pour se qualifier",
+      "eliminationNumberTitle": "Chiffre d'élimination : {{n}} — victoires des rivaux et défaites en temps réglementaire combinées avant l'élimination"
+    },
+    "leaders": {
+      "emptyState": "Les meneurs statistiques apparaîtront une fois les matchs commencés."
+    },
+    "bracket": {
+      "emptyState": "Le tableau éliminatoire apparaîtra ici une fois les séries commencées.",
+      "roundFirst": "Premier tour",
+      "roundSecond": "Deuxième tour",
+      "roundConfFinals": "Finales d'association",
+      "roundFallback": "Ronde {{n}}",
+      "cupFinalHeading": "Finale de la Coupe Stanley",
+      "championSuffix": "championne 🏆",
+      "closeSeriesAriaLabel": "Fermer la série",
+      "seriesLabelFallback": "Série {{letter}}",
+      "gameDataUnavailable": "Données de match indisponibles pour cette série."
+    },
+    "loading": {
+      "ariaLabel": "Chargement"
+    },
+    "error": {
+      "generic": "Une erreur est survenue. Essayez de rafraîchir.",
+      "standings": "Impossible de charger le classement.",
+      "leaders": "Impossible de charger les meneurs."
+    },
+    "seasonNotStarted": {
+      "default": "La saison {{season}} n'a pas encore commencé — revenez une fois les matchs débutés."
+    },
+    "rankings": {
+      "sparklineEmpty": "Les données de tendance s'accumulent chaque nuit",
+      "sparklineLabel": "Tendance du rang",
+      "sparklineDaysSuffix": " ({{days}} j)",
+      "emptyState": "Le classement de puissance apparaîtra une fois les matchs commencés.",
+      "narrativeLabel": "⚡ EyeWall AI — Rapport de classement {{team}}",
+      "narrativeUpdated": "Mis à jour {{date}}",
+      "howCalculatedIntro": "Le classement est calculé à partir de cinq composantes plus un facteur de talent d'effectif qui s'estompe au fil de la saison. Chaque composante est normalisée par rapport au reste de la ligue (meilleure équipe = 1,0, pire = 0,0) avant pondération, afin que le classement reflète la position d'une équipe <em>en ce moment</em>.",
+      "componentPointsLabel": "Pourcentage de points",
+      "componentPointsDesc": "Points obtenus divisés par le maximum possible (matchs joués × 2). La mesure principale du succès sur la saison.",
+      "componentL10Label": "Pourcentage de points (10 derniers)",
+      "componentL10Desc": "Même formule appliquée aux 10 derniers matchs seulement. C'est ce qui fait bouger le classement semaine après semaine — une équipe en forme grimpe, une équipe en difficulté descend peu importe les résultats précédents.",
+      "componentGDLabel": "Différentiel de buts / PJ",
+      "componentGDDesc": "Buts marqués moins buts accordés par match. Les équipes qui gagnent de façon convaincante se classent plus haut que celles qui l'emportent constamment par un seul but.",
+      "componentXGFLabel": "xGF% à 5 contre 5",
+      "componentXGFDesc": "Pourcentage de buts attendus à force égale — la part de qualité de tirs qu'une équipe génère par rapport à ce qu'elle accorde à 5 contre 5. Filtre la chance du gardien et des tireurs qui gonfle ou réduit les totaux de buts bruts.",
+      "componentSPDesc": "Moyenne du pourcentage d'avantage numérique et de désavantage numérique. Pondéré plus faiblement que le jeu à force égale car la fréquence des unités spéciales et la qualité de l'adversaire varient.",
+      "componentWARLabel": "WAR de l'effectif",
+      "componentWARDesc": "Somme des victoires au-dessus du remplaçant des 18 meilleurs patineurs plus les buts évités au-dessus de l'attendu du gardien partant. Pondéré à 15 % au match 0, s'estompant à 0 % au match 20. Assure que le classement pré-saison et début de saison reflète la qualité de l'effectif plutôt qu'une poignée de résultats chanceux.",
+      "sourceNHLStandings": "Classement de la LNH",
+      "sourceMoneyPuckNightly": "MoneyPuck (mis à jour chaque nuit)",
+      "sourceMoneyPuckRAPM": "Modèle MoneyPuck / EyeWall RAPM (mis à jour chaque nuit)",
+      "sourcePrefix": "Source : {{source}}",
+      "howCalculatedFootnote": "xGF% et WAR de l'effectif affichent <em>—</em> jusqu'à ce que le premier traitement nocturne les remplisse. Toutes les autres composantes produisent tout de même un rang valide.",
+      "snapshotHeading": "Aperçu de la ligue",
+      "snapshotBadge": "Classement de puissance",
+      "ofTeams": "sur 32 équipes",
+      "scrollTopAriaLabel": "Retour en haut",
+      "scrollTopLabel": "Haut",
+      "shareCaptionRank": "Classement de puissance {{team}} — #{{rank}} dans la LNH"
+    }
+  },
+  "pwhlLeagueView": {
+    "standings": {
+      "emptyState": "Aucune donnée de classement.",
+      "headerTitle": "Classement de la Ligue LPHF · système de points 3-2-1-0",
+      "footerHintSort": "Triez selon n'importe quelle colonne",
+      "footerHintSource": "Source : HockeyTech / LPHF"
+    },
+    "bracket": {
+      "emptyState": "Aucune donnée éliminatoire pour {{season}}.",
+      "semifinalsHeading": "Demi-finales",
+      "walterCupFinalHeading": "Finale de la Coupe Walter",
+      "awaitingSemiWinners": "En attente des gagnantes des demi-finales",
+      "formatExplainer": "Série trois de cinq · Première équipe à 3 victoires avance",
+      "modalWinsSeries": "{{team}} remporte la série 🏆"
+    },
+    "leaders": {
+      "emptyState": "Aucune donnée de joueuse pour {{season}}."
+    },
+    "rankings": {
+      "emptyState": "Aucune donnée de classement pour le classement de puissance.",
+      "howCalculatedIntro": "Le classement de puissance de la LPHF combine cinq facteurs en un score composite. Chaque mesure est normalisée de 0 à 1 parmi les 8 équipes, puis pondérée et additionnée.",
+      "componentPointsLabel": "Pourcentage de points",
+      "componentPointsDesc": "Points de saison ÷ maximum possible (PJ×3)",
+      "componentL10Label": "Pourcentage de points (10 derniers)",
+      "componentL10Desc": "Performance des 10 derniers matchs",
+      "componentGDDesc": "Différentiel de buts par match",
+      "componentCFLabel": "CF% (Corsi)",
+      "componentCFDesc": "Part des tentatives de tir — indicateur de possession",
+      "componentSPDesc": "Moyenne du % d'avantage numérique et du % de désavantage numérique",
+      "tableHeading": "Classement de puissance",
+      "footerHint": "Composite de %Pts, 10 derniers, Diff/PJ, CF%, unités spéciales · Mis à jour avec le classement"
+    },
+    "tabs": {
+      "bracket": "Tableau éliminatoire",
+      "rankings": "Classement de puissance"
+    },
+    "draft": {
+      "yearPicker": "Repêchage {{year}}",
+      "filterAll": "Toutes",
+      "filterForwards": "Attaquantes",
+      "filterDefence": "Défenseures",
+      "filterGoalies": "Gardiennes",
+      "filterAllRounds": "Toutes les rondes",
+      "filterRound": "Rde {{round}}",
+      "header_one": "Repêchage LPHF {{year}} · {{count}} choix",
+      "header_other": "Repêchage LPHF {{year}} · {{count}} choix",
+      "colPick": "Choix",
+      "colRound": "Rde",
+      "colTeam": "Équipe",
+      "colPlayer": "Joueuse",
+      "colPos": "Pos",
+      "colPreviousTeam": "Équipe précédente",
+      "colNationality": "Nat"
+    }
+  },
   "common": {
     "loading": "Chargement…",
     "close": "Fermer"
