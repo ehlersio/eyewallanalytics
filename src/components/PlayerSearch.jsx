@@ -6,6 +6,7 @@
 // self-fetch the rest, so this never needs a second network round trip
 // before opening.
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { searchPlayers } from '../utils/playerSearch';
 import { nhlSeasonLabel } from '../utils/seasonComparison';
 import PlayerPopup from './PlayerPopup';
@@ -59,6 +60,7 @@ function toPopupSelection(p) {
 }
 
 export default function PlayerSearch() {
+  const { t } = useTranslation();
   const [open, setOpen]         = useState(false);
   const [query, setQuery]       = useState('');
   const [results, setResults]   = useState([]);
@@ -121,7 +123,7 @@ export default function PlayerSearch() {
       <button
         className={TOGGLE_CLASSES}
         onClick={() => setOpen(o => !o)}
-        aria-label="Search players"
+        aria-label={t('search.toggleAriaLabel')}
         aria-expanded={open}
       >
         🔍
@@ -134,15 +136,15 @@ export default function PlayerSearch() {
               ref={inputRef}
               className={INPUT_CLASSES}
               type="text"
-              placeholder="Search NHL + PWHL players…"
+              placeholder={t('search.placeholder')}
               value={query}
               onChange={e => setQuery(e.target.value)}
               onKeyDown={e => e.key === 'Escape' && closeSearch()}
             />
-            <button className={CLOSE_CLASSES} onClick={closeSearch} aria-label="Close search">✕</button>
+            <button className={CLOSE_CLASSES} onClick={closeSearch} aria-label={t('search.closeAriaLabel')}>✕</button>
           </div>
 
-          {searching && <div className={STATUS_CLASSES}>Searching…</div>}
+          {searching && <div className={STATUS_CLASSES}>{t('search.searching')}</div>}
 
           {!searching && results.length > 0 && (
             <div className={RESULTS_CLASSES} role="listbox">
@@ -159,8 +161,8 @@ export default function PlayerSearch() {
                     <span
                       className={`${PSR_TEAM_CLASSES} ${p.teamStale ? PSR_TEAM_STALE_CLASSES : ''}`}
                       title={
-                        p.teamStale ? `As of ${nhlSeasonLabel(p.teamSeason)} season`
-                          : !p.team ? 'No team assigned yet'
+                        p.teamStale ? t('search.asOfSeason', { season: nhlSeasonLabel(p.teamSeason) })
+                          : !p.team ? t('search.noTeamAssigned')
                           : undefined
                       }
                     >
@@ -175,7 +177,7 @@ export default function PlayerSearch() {
           )}
 
           {!searching && query.trim().length >= 2 && results.length === 0 && (
-            <div className={STATUS_CLASSES}>No players found.</div>
+            <div className={STATUS_CLASSES}>{t('search.noResults')}</div>
           )}
         </div>
       )}

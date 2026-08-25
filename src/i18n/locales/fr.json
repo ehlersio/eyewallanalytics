@@ -1,14 +1,98 @@
 {
+  "nav": {
+    "shotMap": "Carte des tirs",
+    "schedule": "Calendrier",
+    "players": "Joueurs",
+    "team": "Équipe",
+    "league": "Ligue",
+    "news": "Actualités"
+  },
+  "topbar": {
+    "offSeason": "Hors saison"
+  },
+  "about": {
+    "triggerAriaLabel": "À propos d'EyeWall Analytics",
+    "tagline": "Intelligence hockey",
+    "description": "Analyses avancées pour les 32 équipes de la LNH et les 12 équipes de la LPHF — cartes de tirs en direct, résumés de période, suivi de l'élan, analyse des unités spéciales, notifications push, résumés de match générés par IA, cartes de chaleur des joueurs, analyses des gardiens et classements WAR/percentiles.",
+    "statLiveValue": "En direct",
+    "statLiveLabel": "Cartes de tirs",
+    "statPollLabel": "Fréq. en direct",
+    "statFreeValue": "Gratuit",
+    "statFreeLabel": "Toujours",
+    "supportText": "EyeWall Analytics est un projet passion. Si vous le trouvez utile, offrir un café aide à garder les serveurs en marche. 🙏",
+    "buyMeCoffee": "Offrez-moi un café",
+    "builtFor": "Fait avec 🌀 pour Canes Nation",
+    "dataVia": "Données via l'API NHL",
+    "contactPrefix": "Pour toute question :",
+    "privacyText": "EyeWall utilise des analyses anonymes pour comprendre quelles fonctionnalités sont les plus utiles. Aucune donnée personnelle n'est vendue ou partagée. Lisez notre",
+    "privacyPolicy": "Politique de confidentialité"
+  },
+  "search": {
+    "toggleAriaLabel": "Rechercher des joueurs",
+    "closeAriaLabel": "Fermer la recherche",
+    "placeholder": "Rechercher des joueurs LNH et LPHF…",
+    "searching": "Recherche…",
+    "noResults": "Aucun joueur trouvé.",
+    "noTeamAssigned": "Aucune équipe assignée",
+    "asOfSeason": "Saison {{season}}"
+  },
   "settings": {
     "title": "Paramètres",
+    "preferences": "Préférences",
     "language": "Langue",
     "appearance": "Apparence",
     "myTeam": "Mon équipe",
     "change": "Changer",
     "darkMode": "Mode sombre",
-    "lightMode": "Mode clair"
+    "lightMode": "Mode clair",
+    "pushNotifications": "Notifications",
+    "iosInstructions": "Sur iPhone/iPad, les notifications push nécessitent d'abord d'ajouter EyeWall Analytics à l'écran d'accueil : appuyez sur Partager, puis « Sur l'écran d'accueil » — puis ouvrez l'application depuis là.",
+    "unsupported": "Les notifications push ne sont pas prises en charge par ce navigateur.",
+    "subscribedText": "Abonné aux alertes de {{team}}.",
+    "getAlertsText": "Recevez des alertes instantanées sur votre téléphone pour {{team}} — même lorsque l'application est fermée.",
+    "blockedText": "Les notifications sont bloquées. Cliquez sur 🔒 dans la barre d'adresse et autorisez les notifications pour ce site.",
+    "turnOff": "Désactiver les notifications",
+    "turnOn": "Activer les notifications",
+    "working": "Chargement…",
+    "alertPreferences": "Préférences d'alerte",
+    "customize": "Personnaliser ›",
+    "hide": "Masquer ›",
+    "gameSummaries": "Résumés de match",
+    "viewSummary": "Voir le résumé",
+    "prefGroup": {
+      "gameFlow": "Déroulement du match",
+      "goals": "Buts",
+      "specialTeams": "Unités spéciales",
+      "result": "Résultat"
+    },
+    "prefItem": {
+      "gameStart": "Début du match",
+      "periodStart": "Début de période (P2, P3, prol.)",
+      "periodEnd": "Fin de période",
+      "goal": "But de l'équipe",
+      "oppGoal": "But de l'adversaire",
+      "hatTrick": "Tour du chapeau",
+      "penalty": "Avantage numérique",
+      "goaliePulled": "Retrait du gardien adverse",
+      "win": "Victoire",
+      "loss": "Défaite"
+    }
+  },
+  "account": {
+    "signInPrompt": "Connectez-vous pour synchroniser sur vos appareils",
+    "signInWithEmail": "Connexion par courriel",
+    "cancel": "Annuler",
+    "sendMagicLink": "Envoyer le lien magique",
+    "sending": "Envoi…",
+    "checkYourEmail": "Vérifiez vos courriels",
+    "checkYourEmailDesc": "Nous avons envoyé un lien de connexion à <strong>{{email}}</strong>. Ouvrez-le sur cet appareil pour terminer la connexion.",
+    "useDifferentEmail": "Utiliser un autre courriel",
+    "signOut": "Se déconnecter",
+    "synced": "Synchronisé",
+    "errorGeneric": "Impossible d'envoyer le lien de connexion. Réessayez."
   },
   "common": {
-    "loading": "Chargement…"
+    "loading": "Chargement…",
+    "close": "Fermer"
   }
 }

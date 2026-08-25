@@ -65,6 +65,11 @@ beforeEach(() => {
     const car = teams.find(t => t.abbr === 'CAR')
     cy.window().then(win => {
       win.localStorage.setItem('eyewall:team', JSON.stringify({ abbr: car.abbr }))
+      // Force English regardless of the runner's browser locale -- specs
+      // assert on English copy throughout; French coverage is a separate,
+      // deliberate concern (not yet added), not something every existing
+      // test should have to account for.
+      win.localStorage.setItem('eyewall:locale', 'en')
     })
   })
 })

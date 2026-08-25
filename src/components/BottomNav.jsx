@@ -1,25 +1,28 @@
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useSport } from '../utils/SportContext';
 import { useReadState } from '../hooks/useReadState';
 
 const NEWS_PATHS = ['/news', '/pwhl/news'];
 
+// labelKey looks up nav.* in i18n/locales/*.json -- tab labels are
+// translated, routes/icons are not.
 const NHL_TABS = [
-  { to: '/',         icon: '⬡',  label: 'Shot Map' },
-  { to: '/schedule', icon: '📅', label: 'Schedule' },
-  { to: '/players',  icon: '👤', label: 'Players'  },
-  { to: '/team',     icon: '📊', label: 'Team'     },
-  { to: '/league',   icon: '🏒', label: 'League'   },
-  { to: '/news',     icon: '📰', label: 'News'     },
+  { to: '/',         icon: '⬡',  labelKey: 'nav.shotMap'  },
+  { to: '/schedule', icon: '📅', labelKey: 'nav.schedule' },
+  { to: '/players',  icon: '👤', labelKey: 'nav.players'  },
+  { to: '/team',     icon: '📊', labelKey: 'nav.team'     },
+  { to: '/league',   icon: '🏒', labelKey: 'nav.league'   },
+  { to: '/news',     icon: '📰', labelKey: 'nav.news'     },
 ];
 
 const PWHL_TABS = [
-  { to: '/pwhl/shots',    icon: '⬡',  label: 'Shot Map' },
-  { to: '/pwhl/schedule', icon: '📅', label: 'Schedule' },
-  { to: '/pwhl/players',  icon: '👤', label: 'Players'  },
-  { to: '/pwhl/team',     icon: '📊', label: 'Team'     },
-  { to: '/pwhl/league',   icon: '🏒', label: 'League'   },
-  { to: '/pwhl/news',     icon: '📰', label: 'News'     },
+  { to: '/pwhl/shots',    icon: '⬡',  labelKey: 'nav.shotMap'  },
+  { to: '/pwhl/schedule', icon: '📅', labelKey: 'nav.schedule' },
+  { to: '/pwhl/players',  icon: '👤', labelKey: 'nav.players'  },
+  { to: '/pwhl/team',     icon: '📊', labelKey: 'nav.team'     },
+  { to: '/pwhl/league',   icon: '🏒', labelKey: 'nav.league'   },
+  { to: '/pwhl/news',     icon: '📰', labelKey: 'nav.news'     },
 ];
 
 // Tailwind migration (Phase 7c, final file of the migration) -- previously
@@ -74,6 +77,7 @@ const NAV_BADGE_DOT_CLASSES = 'nav-badge-dot absolute top-[-2px] right-[-4px] w-
 const NAV_LABEL_CLASSES = 'nav-label text-[10px] font-medium tracking-[0.04em]';
 
 export default function BottomNav() {
+  const { t } = useTranslation();
   const { isPWHL } = useSport();
   const tabs = isPWHL ? PWHL_TABS : NHL_TABS;
   // Combined dot on the News icon — OR across News/Milestones/Trivia's own
@@ -96,7 +100,7 @@ export default function BottomNav() {
             {tab.icon}
             {NEWS_PATHS.includes(tab.to) && readState.any && <span className={NAV_BADGE_DOT_CLASSES} />}
           </span>
-          <span className={NAV_LABEL_CLASSES}>{tab.label}</span>
+          <span className={NAV_LABEL_CLASSES}>{t(tab.labelKey)}</span>
         </NavLink>
       ))}
     </nav>
