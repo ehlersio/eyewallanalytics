@@ -33,8 +33,8 @@
     "fuse.js": "^7.5.0",
     "html-to-image": "^1.11.13",
     "i18next": "^26.4.0",
-    "lucide-react": "^1.31.0",
-    "posthog-js": "^1.418.1",
+    "lucide-react": "^1.33.0",
+    "posthog-js": "^1.418.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hockey-rink": "^0.1.0",
@@ -47,10 +47,10 @@
     "@tailwindcss/vite": "^4.3.3",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^6.0.5",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitejs/plugin-react": "^6.1.0",
+    "@vitest/coverage-v8": "^4.1.11",
     "cross-env": "^10.1.0",
-    "cypress": "^15.20.1",
+    "cypress": "^15.21.0",
     "cypress-multi-reporters": "^2.0.5",
     "cypress-visual-regression": "^6.0.0",
     "eslint": "^9.39.5",
@@ -61,7 +61,7 @@
     "mochawesome-merge": "^5.1.1",
     "mochawesome-report-generator": "^6.3.2",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.2.1",
+    "vite": "^8.2.2",
     "vitest": "^4.1.10"
   }
 }
