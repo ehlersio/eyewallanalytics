@@ -22,8 +22,13 @@ const VALID = ['en', 'fr'];
 
 // Only the language subtag matters here (a browser reporting 'fr-CA' or
 // 'fr-FR' should still resolve to our 'fr' resource bundle).
+// `navigator` itself can be entirely absent (e.g. a Node-environment unit
+// test importing this module transitively), not just `.language` -- guard
+// the whole reference (see i18n/index.js's initialLocale() for the same fix).
 function detectBrowserLocale() {
-  const lang = (navigator.language || '').slice(0, 2).toLowerCase();
+  const lang = typeof navigator !== 'undefined'
+    ? (navigator.language || '').slice(0, 2).toLowerCase()
+    : '';
   return VALID.includes(lang) ? lang : 'en';
 }
 

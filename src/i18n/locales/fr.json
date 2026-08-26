@@ -513,7 +513,8 @@
   "common": {
     "loading": "Chargement…",
     "close": "Fermer",
-    "trackRecordLine": "📊 {{correct}}/{{total}} correctes ({{pct}}%)"
+    "trackRecordLine": "📊 {{correct}}/{{total}} correctes ({{pct}}%)",
+    "gsaxEstimatedNote": "Estimation — le vrai GSAx nécessite des données de suivi (danger du tir selon l'emplacement)"
   },
   "shotMapView": {
     "scoreBar": {
@@ -1287,5 +1288,87 @@
       "headline": "{{abbr}} {{car}}–{{opp}} {{oppAbbr}} — Prédiction EyeWall",
       "winProbability": "Probabilité de victoire : {{abbr}} {{pct}} % · {{oppAbbr}} {{oppPct}} %"
     }
+  },
+  "scoutingTab": {
+    "vs": "c.",
+    "formDots": {
+      "empty": "Aucun match récent",
+      "tooltip": "{{date}} vs {{opp}} : {{result}} {{teamScore}}–{{oppScore}}"
+    },
+    "compare": {
+      "gfGp": "BP/PJ",
+      "gaGp": "BC/PJ",
+      "ppPct": "% AN",
+      "pkPct": "% DN",
+      "sfGp": "TAB/PJ",
+      "foWinPct": "% MEJ",
+      "tipGfGp": "Buts pour par match — plus élevé, mieux c'est",
+      "tipGaGp": "Buts contre par match — plus bas, mieux c'est",
+      "tipPpPct": "Pourcentage d'avantage numérique",
+      "tipPkPct": "Pourcentage de désavantage numérique",
+      "tipSfGp": "Tirs au but par match — indicateur de possession",
+      "tipFoWinPct": "Pourcentage de mises en jeu gagnées en séries"
+    },
+    "playerTable": {
+      "noData": "Aucune donnée",
+      "goalies": "Gardiens",
+      "gsaxRealNote": "Buts épargnés au-dessus des attentes en saison régulière (modèle MoneyPuck ajusté pour les rafales).",
+      "gsaxRealNoteWithGp": "Buts épargnés au-dessus des attentes en saison régulière (modèle MoneyPuck ajusté pour les rafales). {{gp}} PJ cette saison."
+    },
+    "goalieMatchup": {
+      "sectionLabel": "Confrontation des gardiens"
+    },
+    "teamTotal": {
+      "sectionLabel": "Projection du total d'équipe",
+      "tip": "Moyenne du BP/PJ de chaque équipe et du BC/PJ de l'adversaire. À titre informatif seulement.",
+      "projectedTotalGoals": "Total de buts projeté : ",
+      "basedOnPlayoff": "Basé sur le BP/PJ + BC/PJ en séries",
+      "basedOnRegularSeason": "Basé sur le BP/PJ + BC/PJ de la saison régulière"
+    },
+    "recentForm": {
+      "sectionLabel": "Forme récente ({{count}} derniers)",
+      "sectionLabelPlayoff": "Forme récente ({{count}} derniers en séries)"
+    },
+    "topSkatersGoalies": {
+      "sectionLabel": "Meilleurs patineurs et gardiens",
+      "sectionLabelPlayoff": "Meilleurs patineurs et gardiens des séries"
+    },
+    "seasonComparison": "Comparaison de saison",
+    "playoffComparison": "Comparaison des séries",
+    "playoffStatsBadge": "🏒 Statistiques des séries · {{season}}",
+    "aiMatchup": {
+      "sectionLabel": "⚡ Analyse du duel par IA",
+      "footer": "Généré par EyeWall AI · Mis à jour chaque nuit"
+    },
+    "lines": {
+      "xgfTip": "Pourcentage de buts attendus pour (xGF%) — part des buts attendus générés pendant que cette unité était sur la glace à 5 contre 5. Au-dessus de 50 % signifie que votre équipe a généré plus d'occasions que l'adversaire pendant que ces joueurs étaient ensemble. Basé sur l'emplacement et le type de tir, pas seulement le nombre de tirs.",
+      "toiTip": "Minutes que cette unité a jouées ensemble à 5 contre 5 cette saison. Plus de minutes = chiffre de xGF% plus fiable. Les unités avec moins de minutes peuvent refléter des changements de trio récents.",
+      "sectionTip": "Trios d'attaquants et paires de défenseurs déduits des données de présence simultanée sur la glace à 5 contre 5. Lorsque les données d'inférence sont complètes, le xGF% et le TDG sont en direct pour cette saison. Les formations statiques (affichées lorsque l'inférence n'est pas disponible) reflètent les derniers trios connus.",
+      "sectionLabel": "Trios de {{abbr}}",
+      "playoffsBadge": "Séries",
+      "liveNote": "⚡ xGF% en direct lorsque disponible · formation basée sur les combinaisons de trios connues",
+      "opponentNote": "Trios de l'adversaire disponibles lorsque les données des 32 équipes seront activées",
+      "toiTogether": "{{mins}} min ensemble",
+      "defencePairs": "Paires de défenseurs",
+      "line": "Trio {{n}}",
+      "pair": "Paire {{n}}"
+    },
+    "shareCanvas": {
+      "badge": "Rapport de dépistage",
+      "playoffBadge": "Rapport de dépistage — séries",
+      "stats": {
+        "goalsForGp": "Buts pour / PJ",
+        "goalsAgainstGp": "Buts contre / PJ",
+        "powerPlayPct": "% Avantage numérique",
+        "penaltyKillPct": "% Désavantage numérique",
+        "shotsForGp": "Tirs pour / PJ"
+      },
+      "leaders": "Meneurs — {{team}}",
+      "playoffLeaders": "Meneurs des séries — {{team}}",
+      "carLinesHeader": "Trios de {{abbr}} · 5c5 {{scope}}",
+      "thisSeason": "cette saison",
+      "playoffsScope": "(séries)"
+    },
+    "xCaption": "{{abbr}} c. {{oppAbbr}} — Rapport de dépistage"
   }
 }

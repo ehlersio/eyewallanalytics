@@ -3,6 +3,7 @@
 // All computable from public NHL API data
 
 import { TEAM_CONFIG } from './teamConfig';
+import i18n from '../i18n';
 
 // ── Shot attempt classification ───────────────────────────────
 // Corsi  = goals + shots on goal + missed shots + blocked shots
@@ -132,7 +133,7 @@ export function computeGSAx(shotsAgainst, saves, leagueAvgSv = LEAGUE_AVG_SV) {
     color: gsax >= 1  ? 'var(--green)'
          : gsax <= -1 ? 'var(--red-bright)'
          : 'var(--text-muted)',
-    note: 'Estimated — true GSAx requires tracking data (shot danger per location)',
+    note: i18n.t('common.gsaxEstimatedNote'),
   };
 }
 
