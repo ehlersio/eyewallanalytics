@@ -1416,5 +1416,44 @@
       "line1Pwhl": "{{period}} Summary | {{abbr}} {{car}}–{{opp}} {{oppAbbr}}",
       "line2Pwhl": "CF% {{cf}} · SOG {{carSog}}–{{oppSog}} · Goals {{carGoals}}–{{oppGoals}}"
     }
+  },
+  "playerPopup": {
+    "radar": {
+      "notEnoughData": "Not enough playing time yet: {{missing}}"
+    },
+    "heatMap": {
+      "goalie": {
+        "empty": "No shot data yet.",
+        "emptySub": "Data builds up as games complete.",
+        "saves": "Saves",
+        "shotsFaced": "Shots faced",
+        "zones": {
+          "highSlot": "High slot",
+          "lowSlot": "Low slot",
+          "leftCircle": "Left circle",
+          "rightCircle": "Right circle",
+          "leftWing": "Left wing",
+          "rightWing": "Right wing",
+          "perimeter": "Perimeter"
+        },
+        "dotMapToggle": "Dot map",
+        "zoneToggle": "Zone SV%",
+        "minShots": "min 5 shots",
+        "filterAll": "All ({{count}})",
+        "filterGoals": "Goals ({{count}})",
+        "filterSaves": "Saves ({{count}})",
+        "shooterCaption": "Shooter perspective · green = save · red = goal"
+      },
+      "skater": {
+        "empty": "No season shot data yet.",
+        "emptySub": "Data builds up as games complete.",
+        "missed": "Missed",
+        "games": "Games",
+        "filterAll": "All ({{count}})",
+        "filterGoals": "Goals ({{count}})",
+        "filterSog": "SOG ({{count}})",
+        "filterMissed": "Missed ({{count}})"
+      }
+    }
   }
 }

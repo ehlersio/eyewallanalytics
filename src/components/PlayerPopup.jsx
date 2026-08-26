@@ -17,6 +17,7 @@
  */
 
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts'
 import { useFetch } from '../hooks/useFetch'
 import { getPlayerStats, getPlayerGameLog, fetchPlayerRankings, TEAM_CONFIG, GAME_TYPE } from '../utils/nhlApi'
@@ -44,6 +45,7 @@ import {
   STAT_PCT_MAP, computeRadarAxes, computeGoalieRadarAxes, RADAR_AXIS_ABBR,
 } from '../utils/nhlPlayerStats'
 import { SKELETON_CLASSES } from '../utils/skeletonClasses'
+import { formatOrdinal } from '../utils/formatters'
 // Tailwind migration (Session 97, Phase 3, sub-PR 2 + sub-PR 3). Most of
 // this file's classes were migrated in sub-PR 2. The remaining shell
 // classes -- player-popup, pp-header, pp-header-reflow, pp-close, pp-body,
@@ -92,7 +94,6 @@ const PP_RANK_LABEL_CLASSES = 'text-[10px] text-[color:var(--text-dim)] uppercas
 const PP_RANK_ITEMS_CLASSES = 'flex gap-6 justify-center flex-wrap'
 const RANK_BADGE_CLASSES = 'flex flex-col items-center gap-[2px]'
 const RANK_NUM_CLASSES = 'font-[family-name:var(--font-display)] text-[22px] font-bold leading-none'
-const RANK_NUM_SUP_CLASSES = 'text-[11px]'
 const RANK_SCOPE_CLASSES = 'text-[10px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]'
 
 const PP_LOADING_CLASSES = 'p-4 flex flex-col gap-2'
@@ -264,11 +265,10 @@ function teamColorFor(abbr) {
 // ─── Sub-components ───────────────────────────────────────────
 
 function RankBadge({ label, rank }) {
-  const suffix = rank === 1 ? 'st' : rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th'
   const color  = rank <= 3 ? 'var(--green)' : rank <= 10 ? 'var(--amber)' : 'var(--text-muted)'
   return (
     <div className={RANK_BADGE_CLASSES}>
-      <span className={RANK_NUM_CLASSES} style={{ color }}>{rank}<sup className={RANK_NUM_SUP_CLASSES}>{suffix}</sup></span>
+      <span className={RANK_NUM_CLASSES} style={{ color }}>{formatOrdinal(rank)}</span>
       <span className={RANK_SCOPE_CLASSES}>{label}</span>
     </div>
   )
@@ -307,6 +307,7 @@ function RadarAxisTick({ x, y, payload, textAnchor }) {
 }
 
 function PlayerRadarChart({ data, color, staleNote }) {
+  const { t } = useTranslation()
   const missing = data.filter(d => !d.hasData).map(d => d.axis)
   return (
     <div className={PP_RADAR_WRAP_CLASSES}>
@@ -319,7 +320,7 @@ function PlayerRadarChart({ data, color, staleNote }) {
         </RadarChart>
       </ResponsiveContainer>
       {missing.length > 0 && (
-        <div className={PP_RADAR_NOTE_BASE_CLASSES}>Not enough playing time yet: {missing.join(', ')}</div>
+        <div className={PP_RADAR_NOTE_BASE_CLASSES}>{t('playerPopup.radar.notEnoughData', { missing: missing.join(', ') })}</div>
       )}
       {/* Whole-season fallback caption (Session 66) — rendered here, inside
           the narrow radar column, rather than as a sibling of .pp-quickstats
@@ -354,6 +355,7 @@ function QuickStatPill({ label, value }) {
 // left" after quickstats' protected fixed width, see PlayersView.css) and
 // visibly squeezed the radar. Reported live after shipping.
 function SkaterHeaderPanel({ percentiles, boxStats, teamColor, statsStale, statsSeason, comparisonEntry }) {
+  const { t } = useTranslation()
   if (!percentiles) return null
   const radarData = computeRadarAxes(percentiles)
   const fmtToi = (raw) => {
@@ -366,7 +368,7 @@ function SkaterHeaderPanel({ percentiles, boxStats, teamColor, statsStale, stats
   // the Stats tab's stat-section-stale badge, since this radar is built
   // from the same possibly-stale percentiles object.
   const staleNote = statsStale
-    ? `Not enough games yet this season — showing ${nhlSeasonLabel(statsSeason)}`
+    ? t('statTileGrid.section.staleTip', { season: nhlSeasonLabel(statsSeason) })
     : null
   return (
     <div className={PP_HEADER_RADAR_CLASSES}>
@@ -404,6 +406,7 @@ function SkaterHeaderPanel({ percentiles, boxStats, teamColor, statsStale, stats
 // `key`s exactly, same as groupStats() already assumes elsewhere in this
 // file.
 function GoalieHeaderPanel({ percentiles, boxStats, teamColor, statsStale, statsSeason, comparisonEntry }) {
+  const { t } = useTranslation()
   if (!percentiles) return null
   const radarData = computeGoalieRadarAxes(percentiles)
   const fmtSvPct = (raw) => {
@@ -414,7 +417,7 @@ function GoalieHeaderPanel({ percentiles, boxStats, teamColor, statsStale, stats
   const fmtGaa = (raw) => raw == null ? null : parseFloat(raw).toFixed(2)
   // Same whole-season fallback pattern as SkaterHeaderPanel.
   const staleNote = statsStale
-    ? `Not enough games yet this season — showing ${nhlSeasonLabel(statsSeason)}`
+    ? t('statTileGrid.section.staleTip', { season: nhlSeasonLabel(statsSeason) })
     : null
   return (
     <div className={PP_HEADER_RADAR_CLASSES}>
@@ -435,6 +438,7 @@ function GoalieHeaderPanel({ percentiles, boxStats, teamColor, statsStale, stats
 // ─── Heat Map ─────────────────────────────────────────────────
 
 function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
+  const { t } = useTranslation()
   const [filter, setFilter] = useState('all')
   const [mapMode, setMapMode] = useState('dots')
 
@@ -443,8 +447,8 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
       return (
         <div className={PP_HEATMAP_EMPTY_CLASSES}>
           <div className={PP_HEATMAP_ICON_CLASSES}>🥅</div>
-          <div>No shot data yet.</div>
-          <div className={PP_HEATMAP_SUB_CLASSES}>Data builds up as games complete.</div>
+          <div>{t('playerPopup.heatMap.goalie.empty')}</div>
+          <div className={PP_HEATMAP_SUB_CLASSES}>{t('playerPopup.heatMap.goalie.emptySub')}</div>
         </div>
       )
     }
@@ -456,13 +460,13 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
     const svPct  = total > 0 ? (saves / total).toFixed(3) : '—'
 
     const ZONES = [
-      { id: 'slot_hi',   label: 'High slot',    test: s => Math.abs(s.y) <= 22 && s.x >= 55 && s.x < 75 },
-      { id: 'slot_lo',   label: 'Low slot',     test: s => Math.abs(s.y) <= 22 && s.x >= 75 },
-      { id: 'left_hi',   label: 'Left circle',  test: s => s.y < -10 && s.x >= 55 && s.x < 80 },
-      { id: 'right_hi',  label: 'Right circle', test: s => s.y > 10  && s.x >= 55 && s.x < 80 },
-      { id: 'left_lo',   label: 'Left wing',    test: s => s.y < -22 && s.x >= 55 },
-      { id: 'right_lo',  label: 'Right wing',   test: s => s.y > 22  && s.x >= 55 },
-      { id: 'perimeter', label: 'Perimeter',    test: s => s.x < 55 },
+      { id: 'slot_hi',   label: t('playerPopup.heatMap.goalie.zones.highSlot'),    test: s => Math.abs(s.y) <= 22 && s.x >= 55 && s.x < 75 },
+      { id: 'slot_lo',   label: t('playerPopup.heatMap.goalie.zones.lowSlot'),     test: s => Math.abs(s.y) <= 22 && s.x >= 75 },
+      { id: 'left_hi',   label: t('playerPopup.heatMap.goalie.zones.leftCircle'),  test: s => s.y < -10 && s.x >= 55 && s.x < 80 },
+      { id: 'right_hi',  label: t('playerPopup.heatMap.goalie.zones.rightCircle'), test: s => s.y > 10  && s.x >= 55 && s.x < 80 },
+      { id: 'left_lo',   label: t('playerPopup.heatMap.goalie.zones.leftWing'),    test: s => s.y < -22 && s.x >= 55 },
+      { id: 'right_lo',  label: t('playerPopup.heatMap.goalie.zones.rightWing'),   test: s => s.y > 22  && s.x >= 55 },
+      { id: 'perimeter', label: t('playerPopup.heatMap.goalie.zones.perimeter'),   test: s => s.x < 55 },
     ]
 
     const zoneStats = ZONES.map(z => {
@@ -506,21 +510,21 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
     return (
       <div className={PP_HEATMAP_CLASSES}>
         <div className={PP_HEATMAP_SUMMARY_CLASSES}>
-          <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_GOAL_CLASSES}`}>{goals}</span><span>Goals</span></div>
-          <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_SOG_CLASSES}`}>{saves}</span><span>Saves</span></div>
-          <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{total}</span><span>Shots faced</span></div>
+          <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_GOAL_CLASSES}`}>{goals}</span><span>{t('gameStatsPopup.sections.goals')}</span></div>
+          <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_SOG_CLASSES}`}>{saves}</span><span>{t('playerPopup.heatMap.goalie.saves')}</span></div>
+          <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{total}</span><span>{t('playerPopup.heatMap.goalie.shotsFaced')}</span></div>
           <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{svPct}</span><span>SV%</span></div>
         </div>
         <div className={PP_HEATMAP_FILTERS_CLASSES} style={{ marginBottom: 6 }}>
-          <button className={heatmapChipClasses(mapMode === 'dots')} onClick={() => setMapMode('dots')}>Dot map</button>
-          <button className={heatmapChipClasses(mapMode === 'zones')} onClick={() => setMapMode('zones')}>Zone SV%</button>
+          <button className={heatmapChipClasses(mapMode === 'dots')} onClick={() => setMapMode('dots')}>{t('playerPopup.heatMap.goalie.dotMapToggle')}</button>
+          <button className={heatmapChipClasses(mapMode === 'zones')} onClick={() => setMapMode('zones')}>{t('playerPopup.heatMap.goalie.zoneToggle')}</button>
         </div>
         {mapMode === 'dots' && (
           <div className={PP_HEATMAP_FILTERS_CLASSES}>
             {[
-              { key: 'all',   label: `All (${total})` },
-              { key: 'goals', label: `Goals (${goals})` },
-              { key: 'saves', label: `Saves (${saves})` },
+              { key: 'all',   label: t('playerPopup.heatMap.goalie.filterAll', { count: total }) },
+              { key: 'goals', label: t('playerPopup.heatMap.goalie.filterGoals', { count: goals }) },
+              { key: 'saves', label: t('playerPopup.heatMap.goalie.filterSaves', { count: saves }) },
             ].map(f => (
               <button key={f.key} className={heatmapChipClasses(filter === f.key)}
                 onClick={() => setFilter(f.key)}>{f.label}</button>
@@ -534,7 +538,7 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
                 <span style={{ width:10, height:10, borderRadius:2, background:c, display:'inline-block' }} />{l}
               </span>
             ))}
-            <span style={{ color:'var(--text-dim)', marginLeft:'auto' }}>min 5 shots</span>
+            <span style={{ color:'var(--text-dim)', marginLeft:'auto' }}>{t('playerPopup.heatMap.goalie.minShots')}</span>
           </div>
         )}
         <div className={PP_HEATMAP_RINK_CLASSES}>
@@ -597,7 +601,7 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
               </>
             )}
             <text x="150" y="224" textAnchor="middle" fontSize="9" fill="var(--text-dim)">
-              Shooter perspective · green = save · red = goal
+              {t('playerPopup.heatMap.goalie.shooterCaption')}
             </text>
           </svg>
         </div>
@@ -610,8 +614,8 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
     return (
       <div className={PP_HEATMAP_EMPTY_CLASSES}>
         <div className={PP_HEATMAP_ICON_CLASSES}>🎯</div>
-        <div>No season shot data yet.</div>
-        <div className={PP_HEATMAP_SUB_CLASSES}>Data builds up as games complete.</div>
+        <div>{t('playerPopup.heatMap.skater.empty')}</div>
+        <div className={PP_HEATMAP_SUB_CLASSES}>{t('playerPopup.heatMap.skater.emptySub')}</div>
       </div>
     )
   }
@@ -640,19 +644,19 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
   return (
     <div className={PP_HEATMAP_CLASSES}>
       <div className={PP_HEATMAP_SUMMARY_CLASSES}>
-        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_GOAL_CLASSES}`}>{goals}</span><span>Goals</span></div>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_GOAL_CLASSES}`}>{goals}</span><span>{t('gameStatsPopup.sections.goals')}</span></div>
         <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_SOG_CLASSES}`}>{sog}</span><span>SOG</span></div>
-        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{missed}</span><span>Missed</span></div>
-        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{total}</span><span>Total</span></div>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{missed}</span><span>{t('playerPopup.heatMap.skater.missed')}</span></div>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{total}</span><span>{t('shotMapView.drillPopup.total')}</span></div>
         <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{sh}%</span><span>SH%</span></div>
-        {shotData.games && <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{shotData.games}</span><span>Games</span></div>}
+        {shotData.games && <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{shotData.games}</span><span>{t('playerPopup.heatMap.skater.games')}</span></div>}
       </div>
       <div className={PP_HEATMAP_FILTERS_CLASSES}>
         {[
-          { key: 'all',    label: `All (${total})` },
-          { key: 'goals',  label: `Goals (${goals})` },
-          { key: 'sog',    label: `SOG (${sog})` },
-          { key: 'missed', label: `Missed (${missed})` },
+          { key: 'all',    label: t('playerPopup.heatMap.skater.filterAll', { count: total }) },
+          { key: 'goals',  label: t('playerPopup.heatMap.skater.filterGoals', { count: goals }) },
+          { key: 'sog',    label: t('playerPopup.heatMap.skater.filterSog', { count: sog }) },
+          { key: 'missed', label: t('playerPopup.heatMap.skater.filterMissed', { count: missed }) },
         ].map(f => (
           <button key={f.key} className={heatmapChipClasses(filter === f.key)}
             onClick={() => setFilter(f.key)}>{f.label}</button>
