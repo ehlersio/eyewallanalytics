@@ -1454,6 +1454,85 @@
         "filterSog": "SOG ({{count}})",
         "filterMissed": "Missed ({{count}})"
       }
+    },
+    "analytics": {
+      "emptyState": "Analytics data not yet available.",
+      "emptyStateSub": "Updates daily from MoneyPuck.",
+      "dataSource": "Data: MoneyPuck.com · Updates nightly",
+      "percentileVsGoalies": "Percentile rankings vs all NHL goalies",
+      "percentileVsPosition": "Percentile rankings vs all NHL {{position}}",
+      "positionForwards": "forwards",
+      "positionDefensemen": "defensemen",
+      "goalie": {
+        "gpAndPer60": "{{gp}} GP · {{value}} per 60",
+        "gsaxCaption": "Goals saved above expected — flurry-adjusted xGoals model",
+        "tierElite": "Elite",
+        "tierAboveAverage": "Above average",
+        "tierAverage": "Average",
+        "tierBelowAverage": "Below average",
+        "tip5v5SvPct": "Save percentage at even strength (5-on-5 only). Removes special teams situations which can skew overall SV%. The most stable indicator of true goaltending ability.",
+        "tipHdSvPct": "Save percentage on high-danger shots — taken within ~15 feet of the net. The hardest shots to stop; the best quality-adjusted goalie metric.",
+        "tipMdSvPct": "Save percentage on medium-danger shots (15–30 feet from net). Complements HD SV% for a fuller picture of save quality across shot locations.",
+        "tipPkSvPct": "Save percentage while shorthanded. Penalty kill goaltending requires different positioning — some goalies are significantly better or worse in this situation than at even strength.",
+        "barGsax60": "GSAX/60",
+        "bar5v5SvPct": "5-on-5 SV%",
+        "barHighDangerSvPct": "High Danger SV%",
+        "barMedDangerSvPct": "Med Danger SV%",
+        "barPkSvPct": "PK SV%"
+      },
+      "skater": {
+        "gpAndGameScore": "{{gp}} GP · Game Score {{score}}",
+        "rapmCaption": "5v5 RAPM (beta) + PP/PK/finishing components",
+        "warTip": "Wins Above Replacement (beta). EV component uses 5v5 RAPM — ridge regression across 3 seasons of league-wide shift and shot data, controlling for teammates and opponents. PP/PK and finishing components are xGoals-based from MoneyPuck. RAPM is 5v5 only; special teams remain approximate. Zone-start adjustment in development — defensive defensemen may be slightly undervalued in current model. Validated periodically vs Evolving Hockey public RAPM.",
+        "tipEvXgfPct": "On-ice expected goals for % at 5-on-5. The share of total shot quality generated while this player is on the ice — above 50% means the team outshoots opponents in quality with him on the ice. Team metric, not individual.",
+        "tipXgf60": "Individual expected goals generated per 60 minutes — the shot quality this player personally produces, based on shot location and type. Measures how dangerous their own shots are, independent of linemates.",
+        "tipXga60": "On-ice expected goals against per 60 minutes at 5-on-5. Measures how many quality chances opponents generate while this player is on the ice — lower is better. Team metric reflecting the full line's defensive performance.",
+        "tipHdca60": "High-danger chances against per 60 minutes at 5-on-5. Shots from the slot and crease — the most likely to result in goals. Lower is better.",
+        "tipGoals60": "Goals scored per 60 minutes of ice time. Rate-adjusts for playing time so a player with 15 min/game and one with 22 min/game can be compared fairly.",
+        "tipA160": "Primary (first) assists per 60 minutes. First assists directly set up the goal scorer and are more meaningful than secondary assists, which can be coincidental.",
+        "tipPpToi": "Power play ice time this season. Presence here means the player has enough PP time for a reliable PP metric — see the Power Play percentile bar below.",
+        "tipPkToi": "Penalty kill ice time this season. Presence here means the player has enough PK time for a reliable PK metric — see the Penalty Kill percentile bar below.",
+        "tierMvp": "MVP candidate",
+        "tierTop": "Top player",
+        "tierSolid": "Solid contributor",
+        "tierReplacement": "Replacement level",
+        "tierBelowReplacement": "Below replacement",
+        "barEvOffence": "EV Offence",
+        "barEvDefence": "EV Defence",
+        "barPowerPlay": "Power Play",
+        "barPenaltyKill": "Penalty Kill",
+        "barFinishing": "Finishing",
+        "barFirstAssists": "1st Assists",
+        "barPenalties": "Penalties",
+        "barCompetition": "Competition",
+        "barTeammates": "Teammates"
+      }
+    },
+    "resultsVsProcess": {
+      "sectionLabel": "Results vs. Process",
+      "emptyState": "Not enough games yet for a reliable read.",
+      "emptyStateSub": "Needs a minimum sample of games played this season.",
+      "tipOnIceGf": "On-ice goals-for percentage at 5-on-5 -- the share of goals scored (not just shot attempts/quality) while this player is on the ice. The 'results' side of this pairing.",
+      "tipGapVsProcess": "On-Ice GF% minus EV xGF% (the process/shot-quality side, shown above in the percentile rankings). A large positive or negative gap suggests results are running hotter or colder than the underlying process -- often a sign of unsustainable luck rather than true talent.",
+      "gapVsProcessLabel": "Gap vs. Process",
+      "outperforming": "Outperforming process",
+      "underperforming": "Underperforming process",
+      "narrativeFallback": "Narrative generates nightly — check back after the next pipeline run."
+    },
+    "scoutingBlurb": {
+      "header": "Scouting Report",
+      "emptyState": "No scouting report yet for {{player}}.",
+      "emptyStateSub": "Reports generate nightly — check back after the next pipeline run.",
+      "footer": "AI-generated · Updated nightly"
     }
+  },
+  "percentileBar": {
+    "naFallback": "{{label}} data unavailable — player may not have enough ice time in this situation to generate a reliable percentile.",
+    "na": "N/A",
+    "tierElite": "Elite",
+    "tierGreat": "Great",
+    "tierAboveAvg": "Above avg",
+    "tierBelowAvg": "Below avg",
+    "tierPoor": "Poor"
   }
 }

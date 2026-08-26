@@ -45,7 +45,7 @@ import {
   STAT_PCT_MAP, computeRadarAxes, computeGoalieRadarAxes, RADAR_AXIS_ABBR,
 } from '../utils/nhlPlayerStats'
 import { SKELETON_CLASSES } from '../utils/skeletonClasses'
-import { formatOrdinal } from '../utils/formatters'
+import { formatOrdinal, formatDate } from '../utils/formatters'
 // Tailwind migration (Session 97, Phase 3, sub-PR 2 + sub-PR 3). Most of
 // this file's classes were migrated in sub-PR 2. The remaining shell
 // classes -- player-popup, pp-header, pp-header-reflow, pp-close, pp-body,
@@ -674,19 +674,20 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
 // PercentileBar moved to components/PercentileBar.jsx (Session 91).
 
 function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, narrativeData, isLeagueContext }) {
+  const { t } = useTranslation()
   if (isGoalie) {
     if (!goalieData) {
       return (
         <div className={PP_HEATMAP_EMPTY_CLASSES}>
           <div className={PP_HEATMAP_ICON_CLASSES}>🥅</div>
-          <div>Analytics data not yet available.</div>
-          <div className={PP_HEATMAP_SUB_CLASSES}>Updates daily from MoneyPuck.</div>
+          <div>{t('playerPopup.analytics.emptyState')}</div>
+          <div className={PP_HEATMAP_SUB_CLASSES}>{t('playerPopup.analytics.emptyStateSub')}</div>
         </div>
       )
     }
     const { gsax, gsax60, gp, evSvPct, hdSvPct, mdSvPct, pkSvPct, percentiles: p } = goalieData
     const gsaxColor = gsax >= 5 ? '#4ade80' : gsax >= 0 ? '#fbbf24' : '#f87171'
-    const gsaxLabel = gsax >= 10 ? 'Elite' : gsax >= 5 ? 'Above average' : gsax >= 0 ? 'Average' : 'Below average'
+    const gsaxLabel = gsax >= 10 ? t('playerPopup.analytics.goalie.tierElite') : gsax >= 5 ? t('playerPopup.analytics.goalie.tierAboveAverage') : gsax >= 0 ? t('playerPopup.analytics.goalie.tierAverage') : t('playerPopup.analytics.goalie.tierBelowAverage')
     return (
       <div className={PA_WRAP_CLASSES}>
         <div className={PA_WAR_CARD_CLASSES}>
@@ -696,28 +697,28 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
           </div>
           <div className={PA_WAR_META_CLASSES}>
             <span style={{ color: gsaxColor }}>{gsaxLabel}</span>
-            <span className={PA_WAR_SUB_CLASSES}>{gp} GP · {gsax60 != null ? `${gsax60 > 0 ? '+' : ''}${gsax60} per 60` : ''}</span>
+            <span className={PA_WAR_SUB_CLASSES}>{gsax60 != null ? t('playerPopup.analytics.goalie.gpAndPer60', { gp, value: `${gsax60 > 0 ? '+' : ''}${gsax60}` }) : `${gp} GP`}</span>
             <span className={PA_WAR_SUB_CLASSES} style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
-              Goals saved above expected — flurry-adjusted xGoals model
+              {t('playerPopup.analytics.goalie.gsaxCaption')}
             </span>
           </div>
         </div>
         <div className={`${PA_CONTEXT_CLASSES} ${PA_CONTEXT_CENTERED_CLASSES}`}>
-          {evSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{evSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>5on5 SV% <InfoTip text="Save percentage at even strength (5-on-5 only). Removes special teams situations which can skew overall SV%. The most stable indicator of true goaltending ability." position="above" /></span></div>}
-          {hdSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{hdSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>HD SV% <InfoTip text="Save percentage on high-danger shots — taken within ~15 feet of the net. The hardest shots to stop; the best quality-adjusted goalie metric." position="above" /></span></div>}
-          {mdSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{mdSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>MD SV% <InfoTip text="Save percentage on medium-danger shots (15–30 feet from net). Complements HD SV% for a fuller picture of save quality across shot locations." position="above" /></span></div>}
-          {pkSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{pkSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>PK SV% <InfoTip text="Save percentage while shorthanded. Penalty kill goaltending requires different positioning — some goalies are significantly better or worse in this situation than at even strength." position="above" /></span></div>}
+          {evSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{evSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>5on5 SV% <InfoTip text={t('playerPopup.analytics.goalie.tip5v5SvPct')} position="above" /></span></div>}
+          {hdSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{hdSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>HD SV% <InfoTip text={t('playerPopup.analytics.goalie.tipHdSvPct')} position="above" /></span></div>}
+          {mdSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{mdSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>MD SV% <InfoTip text={t('playerPopup.analytics.goalie.tipMdSvPct')} position="above" /></span></div>}
+          {pkSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{pkSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>PK SV% <InfoTip text={t('playerPopup.analytics.goalie.tipPkSvPct')} position="above" /></span></div>}
         </div>
-        <div className={PA_SECTION_LABEL_CLASSES}>Percentile rankings vs all NHL goalies</div>
+        <div className={PA_SECTION_LABEL_CLASSES}>{t('playerPopup.analytics.percentileVsGoalies')}</div>
         <div className={PA_BARS_CLASSES}>
           <PercentileBar label="GSAX"            pct={p.gsax?.pct}   note={p.gsax?.note} />
-          <PercentileBar label="GSAX/60"         pct={p.gsax60?.pct} note={p.gsax60?.note} />
-          <PercentileBar label="5-on-5 SV%"      pct={p.evSv?.pct}   note={p.evSv?.note} />
-          <PercentileBar label="High Danger SV%" pct={p.hdSv?.pct}   note={p.hdSv?.note} />
-          <PercentileBar label="Med Danger SV%"  pct={p.mdSv?.pct}   note={p.mdSv?.note} />
-          <PercentileBar label="PK SV%"          pct={p.pkSv?.pct}   note={p.pkSv?.note} />
+          <PercentileBar label={t('playerPopup.analytics.goalie.barGsax60')}         pct={p.gsax60?.pct} note={p.gsax60?.note} />
+          <PercentileBar label={t('playerPopup.analytics.goalie.bar5v5SvPct')}      pct={p.evSv?.pct}   note={p.evSv?.note} />
+          <PercentileBar label={t('playerPopup.analytics.goalie.barHighDangerSvPct')} pct={p.hdSv?.pct}   note={p.hdSv?.note} />
+          <PercentileBar label={t('playerPopup.analytics.goalie.barMedDangerSvPct')}  pct={p.mdSv?.pct}   note={p.mdSv?.note} />
+          <PercentileBar label={t('playerPopup.analytics.goalie.barPkSvPct')}          pct={p.pkSv?.pct}   note={p.pkSv?.note} />
         </div>
-        <div className={PA_SOURCE_CLASSES}>Data: MoneyPuck.com · Updates nightly</div>
+        <div className={PA_SOURCE_CLASSES}>{t('playerPopup.analytics.dataSource')}</div>
       </div>
     )
   }
@@ -726,20 +727,20 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
     return (
       <div className={PP_HEATMAP_EMPTY_CLASSES}>
         <div className={PP_HEATMAP_ICON_CLASSES}>🧮</div>
-        <div>Analytics data not yet available.</div>
-        <div className={PP_HEATMAP_SUB_CLASSES}>Updates daily from MoneyPuck.</div>
+        <div>{t('playerPopup.analytics.emptyState')}</div>
+        <div className={PP_HEATMAP_SUB_CLASSES}>{t('playerPopup.analytics.emptyStateSub')}</div>
       </div>
     )
   }
 
   const { war, percentiles, gp, xGF_pct, xGF60, xGA60, hdca60, goals60, a1_60, ppToi, pkToi, gameScore } = mpData
   const pos      = ['C','L','R','F'].includes(position) ? 'F' : 'D'
-  const posLbl   = pos === 'F' ? 'forwards' : 'defensemen'
+  const posLbl   = pos === 'F' ? t('playerPopup.analytics.positionForwards') : t('playerPopup.analytics.positionDefensemen')
   const p        = percentiles || {}
   const fmtToi   = (mins) => { if (mins == null) return null; const m = Math.floor(mins); const s = Math.round((mins - m) * 60); return `${m}:${String(s).padStart(2, '0')}` }
   const warColor = war >= 2 ? '#4ade80' : war >= 0.5 ? '#fbbf24' : '#f87171'
-  const warLabel = war >= 4 ? 'MVP candidate' : war >= 2 ? 'Top player'
-    : war >= 0.5 ? 'Solid contributor' : war >= -0.5 ? 'Replacement level' : 'Below replacement'
+  const warLabel = war >= 4 ? t('playerPopup.analytics.skater.tierMvp') : war >= 2 ? t('playerPopup.analytics.skater.tierTop')
+    : war >= 0.5 ? t('playerPopup.analytics.skater.tierSolid') : war >= -0.5 ? t('playerPopup.analytics.skater.tierReplacement') : t('playerPopup.analytics.skater.tierBelowReplacement')
 
   return (
     <div className={PA_WRAP_CLASSES}>
@@ -748,39 +749,39 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
           <span className={PA_WAR_NUM_CLASSES} style={{ color: warColor }}>{war > 0 ? '+' : ''}{war}</span>
           <span className={PA_WAR_LABEL_CLASSES}>
             WAR
-            <InfoTip text="Wins Above Replacement (beta). EV component uses 5v5 RAPM — ridge regression across 3 seasons of league-wide shift and shot data, controlling for teammates and opponents. PP/PK and finishing components are xGoals-based from MoneyPuck. RAPM is 5v5 only; special teams remain approximate. Zone-start adjustment in development — defensive defensemen may be slightly undervalued in current model. Validated periodically vs Evolving Hockey public RAPM." position="above" />
+            <InfoTip text={t('playerPopup.analytics.skater.warTip')} position="above" />
           </span>
         </div>
         <div className={PA_WAR_META_CLASSES}>
           <span style={{ color: warColor }}>{warLabel}</span>
-          <span className={PA_WAR_SUB_CLASSES}>{gp} GP · Game Score {gameScore}</span>
+          <span className={PA_WAR_SUB_CLASSES}>{t('playerPopup.analytics.skater.gpAndGameScore', { gp, score: gameScore })}</span>
           <span className={PA_WAR_SUB_CLASSES} style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
-            5v5 RAPM (beta) + PP/PK/finishing components
+            {t('playerPopup.analytics.skater.rapmCaption')}
           </span>
         </div>
       </div>
       <div className={PA_CONTEXT_CLASSES}>
-        {xGF_pct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{xGF_pct}%</span><span className={PA_CTX_LABEL_CLASSES}>EV xGF% <InfoTip text="On-ice expected goals for % at 5-on-5. The share of total shot quality generated while this player is on the ice — above 50% means the team outshoots opponents in quality with him on the ice. Team metric, not individual." position="above" /></span></div>}
-        {xGF60  != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{xGF60}</span><span className={PA_CTX_LABEL_CLASSES}>xGF/60 <InfoTip text="Individual expected goals generated per 60 minutes — the shot quality this player personally produces, based on shot location and type. Measures how dangerous their own shots are, independent of linemates." position="above" /></span></div>}
-        {xGA60  != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES} style={{ color: xGA60 < 2.0 ? 'var(--green)' : xGA60 > 2.8 ? 'var(--red-bright)' : 'inherit' }}>{xGA60}</span><span className={PA_CTX_LABEL_CLASSES}>xGA/60 <InfoTip text="On-ice expected goals against per 60 minutes at 5-on-5. Measures how many quality chances opponents generate while this player is on the ice — lower is better. Team metric reflecting the full line's defensive performance." position="above" /></span></div>}
-        {hdca60 != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES} style={{ color: hdca60 < 7 ? 'var(--green)' : hdca60 > 10 ? 'var(--red-bright)' : 'inherit' }}>{hdca60}</span><span className={PA_CTX_LABEL_CLASSES}>HDCA/60 <InfoTip text="High-danger chances against per 60 minutes at 5-on-5. Shots from the slot and crease — the most likely to result in goals. Lower is better." position="above" /></span></div>}
-        {goals60!= null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{goals60}</span><span className={PA_CTX_LABEL_CLASSES}>G/60 <InfoTip text="Goals scored per 60 minutes of ice time. Rate-adjusts for playing time so a player with 15 min/game and one with 22 min/game can be compared fairly." position="above" /></span></div>}
-        {a1_60  != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{a1_60}</span><span className={PA_CTX_LABEL_CLASSES}>A1/60 <InfoTip text="Primary (first) assists per 60 minutes. First assists directly set up the goal scorer and are more meaningful than secondary assists, which can be coincidental." position="above" /></span></div>}
-        {ppToi != null && ppToi > 0 && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{fmtToi(ppToi)}</span><span className={PA_CTX_LABEL_CLASSES}>PP TOI <InfoTip text="Power play ice time this season. Presence here means the player has enough PP time for a reliable PP metric — see the Power Play percentile bar below." position="above" /></span></div>}
-        {pkToi != null && pkToi > 0 && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{fmtToi(pkToi)}</span><span className={PA_CTX_LABEL_CLASSES}>PK TOI <InfoTip text="Penalty kill ice time this season. Presence here means the player has enough PK time for a reliable PK metric — see the Penalty Kill percentile bar below." position="above" /></span></div>}
+        {xGF_pct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{xGF_pct}%</span><span className={PA_CTX_LABEL_CLASSES}>EV xGF% <InfoTip text={t('playerPopup.analytics.skater.tipEvXgfPct')} position="above" /></span></div>}
+        {xGF60  != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{xGF60}</span><span className={PA_CTX_LABEL_CLASSES}>xGF/60 <InfoTip text={t('playerPopup.analytics.skater.tipXgf60')} position="above" /></span></div>}
+        {xGA60  != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES} style={{ color: xGA60 < 2.0 ? 'var(--green)' : xGA60 > 2.8 ? 'var(--red-bright)' : 'inherit' }}>{xGA60}</span><span className={PA_CTX_LABEL_CLASSES}>xGA/60 <InfoTip text={t('playerPopup.analytics.skater.tipXga60')} position="above" /></span></div>}
+        {hdca60 != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES} style={{ color: hdca60 < 7 ? 'var(--green)' : hdca60 > 10 ? 'var(--red-bright)' : 'inherit' }}>{hdca60}</span><span className={PA_CTX_LABEL_CLASSES}>HDCA/60 <InfoTip text={t('playerPopup.analytics.skater.tipHdca60')} position="above" /></span></div>}
+        {goals60!= null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{goals60}</span><span className={PA_CTX_LABEL_CLASSES}>G/60 <InfoTip text={t('playerPopup.analytics.skater.tipGoals60')} position="above" /></span></div>}
+        {a1_60  != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{a1_60}</span><span className={PA_CTX_LABEL_CLASSES}>A1/60 <InfoTip text={t('playerPopup.analytics.skater.tipA160')} position="above" /></span></div>}
+        {ppToi != null && ppToi > 0 && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{fmtToi(ppToi)}</span><span className={PA_CTX_LABEL_CLASSES}>PP TOI <InfoTip text={t('playerPopup.analytics.skater.tipPpToi')} position="above" /></span></div>}
+        {pkToi != null && pkToi > 0 && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{fmtToi(pkToi)}</span><span className={PA_CTX_LABEL_CLASSES}>PK TOI <InfoTip text={t('playerPopup.analytics.skater.tipPkToi')} position="above" /></span></div>}
       </div>
-      <div className={PA_SECTION_LABEL_CLASSES}>Percentile rankings vs all NHL {posLbl}</div>
+      <div className={PA_SECTION_LABEL_CLASSES}>{t('playerPopup.analytics.percentileVsPosition', { position: posLbl })}</div>
       <div className={PA_BARS_CLASSES}>
-        <PercentileBar label="EV Offence"    pct={p.evOff?.pct}     note={p.evOff?.note} />
-        <PercentileBar label="EV Defence"    pct={p.evDef?.pct}     note={p.evDef?.note} />
-        <PercentileBar label="Power Play"    pct={p.pp?.pct}        note={p.pp?.note}    na={p.pp?.pct == null} />
-        <PercentileBar label="Penalty Kill"  pct={p.pk?.pct}        note={p.pk?.note}    na={p.pk?.pct == null} />
-        <PercentileBar label="Finishing"     pct={p.finishing?.pct} note={p.finishing?.note} />
-        <PercentileBar label="Goals"         pct={p.goals?.pct}     note={p.goals?.note} />
-        <PercentileBar label="1st Assists"   pct={p.a1?.pct}        note={p.a1?.note} />
-        <PercentileBar label="Penalties"     pct={p.penalties?.pct} note={p.penalties?.note} />
-        <PercentileBar label="Competition"   pct={p.comp?.pct}      note={p.comp?.note} />
-        <PercentileBar label="Teammates"     pct={p.teammates?.pct} note={p.teammates?.note} />
+        <PercentileBar label={t('playerPopup.analytics.skater.barEvOffence')}    pct={p.evOff?.pct}     note={p.evOff?.note} />
+        <PercentileBar label={t('playerPopup.analytics.skater.barEvDefence')}    pct={p.evDef?.pct}     note={p.evDef?.note} />
+        <PercentileBar label={t('playerPopup.analytics.skater.barPowerPlay')}    pct={p.pp?.pct}        note={p.pp?.note}    na={p.pp?.pct == null} />
+        <PercentileBar label={t('playerPopup.analytics.skater.barPenaltyKill')}  pct={p.pk?.pct}        note={p.pk?.note}    na={p.pk?.pct == null} />
+        <PercentileBar label={t('playerPopup.analytics.skater.barFinishing')}     pct={p.finishing?.pct} note={p.finishing?.note} />
+        <PercentileBar label={t('gameStatsPopup.sections.goals')}         pct={p.goals?.pct}     note={p.goals?.note} />
+        <PercentileBar label={t('playerPopup.analytics.skater.barFirstAssists')}   pct={p.a1?.pct}        note={p.a1?.note} />
+        <PercentileBar label={t('playerPopup.analytics.skater.barPenalties')}     pct={p.penalties?.pct} note={p.penalties?.note} />
+        <PercentileBar label={t('playerPopup.analytics.skater.barCompetition')}   pct={p.comp?.pct}      note={p.comp?.note} />
+        <PercentileBar label={t('playerPopup.analytics.skater.barTeammates')}     pct={p.teammates?.pct} note={p.teammates?.note} />
       </div>
       {!isLeagueContext && (
         <ResultsVsProcess
@@ -789,7 +790,7 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
           narrativeData={narrativeData}
         />
       )}
-      <div className={PA_SOURCE_CLASSES}>Data: MoneyPuck.com · Updates nightly</div>
+      <div className={PA_SOURCE_CLASSES}>{t('playerPopup.analytics.dataSource')}</div>
     </div>
   )
 }
@@ -802,14 +803,15 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
 // here, no GP threshold is re-derived on this side.
 
 function ResultsVsProcess({ onIceGfPct, resultsVsProcessDiff, narrativeData }) {
+  const { t } = useTranslation()
   if (resultsVsProcessDiff == null) {
     return (
       <div className={RVP_WRAP_CLASSES}>
-        <div className={PA_SECTION_LABEL_CLASSES}>Results vs. Process</div>
+        <div className={PA_SECTION_LABEL_CLASSES}>{t('playerPopup.resultsVsProcess.sectionLabel')}</div>
         <div className={SCOUT_EMPTY_CLASSES}>
           <div className={SCOUT_EMPTY_ICON_CLASSES}>⏳</div>
-          <div>Not enough games yet for a reliable read.</div>
-          <div className={SCOUT_EMPTY_SUB_CLASSES}>Needs a minimum sample of games played this season.</div>
+          <div>{t('playerPopup.resultsVsProcess.emptyState')}</div>
+          <div className={SCOUT_EMPTY_SUB_CLASSES}>{t('playerPopup.resultsVsProcess.emptyStateSub')}</div>
         </div>
       </div>
     )
@@ -817,19 +819,19 @@ function ResultsVsProcess({ onIceGfPct, resultsVsProcessDiff, narrativeData }) {
 
   const outperforming = resultsVsProcessDiff > 0
   const diffColor = outperforming ? '#4ade80' : '#f87171'
-  const directionLabel = outperforming ? 'Outperforming process' : 'Underperforming process'
+  const directionLabel = outperforming ? t('playerPopup.resultsVsProcess.outperforming') : t('playerPopup.resultsVsProcess.underperforming')
 
   return (
     <div className={RVP_WRAP_CLASSES}>
-      <div className={PA_SECTION_LABEL_CLASSES}>Results vs. Process</div>
+      <div className={PA_SECTION_LABEL_CLASSES}>{t('playerPopup.resultsVsProcess.sectionLabel')}</div>
       <div className={RVP_CONTEXT_CLASSES}>
         <div className={PA_CTX_ITEM_CLASSES}>
           <span className={PA_CTX_VAL_CLASSES}>{onIceGfPct}%</span>
-          <span className={PA_CTX_LABEL_CLASSES}>On-Ice GF% <InfoTip text="On-ice goals-for percentage at 5-on-5 -- the share of goals scored (not just shot attempts/quality) while this player is on the ice. The 'results' side of this pairing." position="above" /></span>
+          <span className={PA_CTX_LABEL_CLASSES}>On-Ice GF% <InfoTip text={t('playerPopup.resultsVsProcess.tipOnIceGf')} position="above" /></span>
         </div>
         <div className={PA_CTX_ITEM_CLASSES}>
           <span className={PA_CTX_VAL_CLASSES} style={{ color: diffColor }}>{resultsVsProcessDiff > 0 ? '+' : ''}{resultsVsProcessDiff}%</span>
-          <span className={PA_CTX_LABEL_CLASSES}>Gap vs. Process <InfoTip text="On-Ice GF% minus EV xGF% (the process/shot-quality side, shown above in the percentile rankings). A large positive or negative gap suggests results are running hotter or colder than the underlying process -- often a sign of unsustainable luck rather than true talent." position="above" /></span>
+          <span className={PA_CTX_LABEL_CLASSES}>{t('playerPopup.resultsVsProcess.gapVsProcessLabel')} <InfoTip text={t('playerPopup.resultsVsProcess.tipGapVsProcess')} position="above" /></span>
         </div>
       </div>
       <div style={{ color: diffColor, fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{directionLabel}</div>
@@ -842,7 +844,7 @@ function ResultsVsProcess({ onIceGfPct, resultsVsProcessDiff, narrativeData }) {
       ) : narrativeData?.blurb ? (
         <div className={SCOUT_BLURB_CLASSES}>{narrativeData.blurb}</div>
       ) : (
-        <div className={SCOUT_EMPTY_SUB_CLASSES}>Narrative generates nightly — check back after the next pipeline run.</div>
+        <div className={SCOUT_EMPTY_SUB_CLASSES}>{t('playerPopup.resultsVsProcess.narrativeFallback')}</div>
       )}
     </div>
   )
@@ -851,6 +853,7 @@ function ResultsVsProcess({ onIceGfPct, resultsVsProcessDiff, narrativeData }) {
 // ─── Scouting Blurb ───────────────────────────────────────────
 
 function ScoutingBlurb({ data, playerName }) {
+  const { t } = useTranslation()
   if (data === undefined) {
     return (
       <div className={SCOUT_WRAP_CLASSES}>
@@ -867,26 +870,25 @@ function ScoutingBlurb({ data, playerName }) {
       <div className={SCOUT_WRAP_CLASSES}>
         <div className={SCOUT_EMPTY_CLASSES}>
           <div className={SCOUT_EMPTY_ICON_CLASSES}>📋</div>
-          <div>No scouting report yet for {playerName}.</div>
-          <div className={SCOUT_EMPTY_SUB_CLASSES}>Reports generate nightly — check back after the next pipeline run.</div>
+          <div>{t('playerPopup.scoutingBlurb.emptyState', { player: playerName })}</div>
+          <div className={SCOUT_EMPTY_SUB_CLASSES}>{t('playerPopup.scoutingBlurb.emptyStateSub')}</div>
         </div>
       </div>
     )
   }
   function fmtDate(iso) {
     if (!iso) return null
-    const d = new Date(iso)
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    return formatDate(iso, { month: 'short', day: 'numeric', year: 'numeric' })
   }
   return (
     <div className={SCOUT_WRAP_CLASSES}>
       <div className={SCOUT_HEADER_CLASSES}>
-        <span className={SCOUT_LABEL_CLASSES}>Scouting Report</span>
+        <span className={SCOUT_LABEL_CLASSES}>{t('playerPopup.scoutingBlurb.header')}</span>
         <span className={SCOUT_SEASON_CLASSES}>{SEASON_LABEL}</span>
       </div>
       <div className={SCOUT_BLURB_CLASSES}>{data.blurb}</div>
       <div className={SCOUT_FOOTER_CLASSES}>
-        AI-generated · Updated nightly
+        {t('playerPopup.scoutingBlurb.footer')}
         {data.generatedAt && ` · ${fmtDate(data.generatedAt)}`}
       </div>
     </div>

@@ -10,7 +10,9 @@
 // used the .pa-* classes directly (only via this shared component, which
 // PlayerComparisonPopup.jsx already renders and gets the new styling for
 // automatically).
+import { useTranslation } from 'react-i18next'
 import InfoTip from './InfoTip'
+import { formatOrdinal } from '../utils/formatters'
 
 const ROW_CLASSES = 'flex items-center gap-2'
 const LABEL_CLASSES = 'text-[11px] text-[color:var(--text-muted)] w-[90px] shrink-0'
@@ -22,21 +24,22 @@ const PCT_CLASSES = 'text-[11px] font-bold font-[family-name:var(--font-mono)] w
 const TIER_CLASSES = 'text-[10px] w-[72px] shrink-0'
 
 export default function PercentileBar({ label, pct, note, na }) {
+  const { t } = useTranslation()
   if (na || pct == null) {
-    const naNote = note || `${label} data unavailable — player may not have enough ice time in this situation to generate a reliable percentile.`
+    const naNote = note || t('percentileBar.naFallback', { label })
     return (
       <div className={ROW_CLASSES}>
         <span className={LABEL_CLASSES}>
           {label}
           {naNote && <InfoTip text={naNote} position="above" />}
         </span>
-        <span className={NA_CLASSES}>N/A</span>
+        <span className={NA_CLASSES}>{t('percentileBar.na')}</span>
       </div>
     )
   }
   const color = pct >= 67 ? '#4ade80' : pct >= 34 ? '#fbbf24' : '#f87171'
-  const tier  = pct >= 90 ? 'Elite' : pct >= 75 ? 'Great' : pct >= 50 ? 'Above avg'
-              : pct >= 25 ? 'Below avg' : 'Poor'
+  const tier  = pct >= 90 ? t('percentileBar.tierElite') : pct >= 75 ? t('percentileBar.tierGreat') : pct >= 50 ? t('percentileBar.tierAboveAvg')
+              : pct >= 25 ? t('percentileBar.tierBelowAvg') : t('percentileBar.tierPoor')
   return (
     <div className={ROW_CLASSES}>
       <span className={LABEL_CLASSES}>
@@ -47,7 +50,7 @@ export default function PercentileBar({ label, pct, note, na }) {
         <div className={BAR_TRACK_CLASSES}>
           <div className={BAR_FILL_CLASSES} style={{ width: `${pct}%`, background: color }} />
         </div>
-        <span className={PCT_CLASSES} style={{ color }}>{pct}th</span>
+        <span className={PCT_CLASSES} style={{ color }}>{formatOrdinal(pct)}</span>
         <span className={TIER_CLASSES} style={{ color }}>{tier}</span>
       </div>
     </div>
