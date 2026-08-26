@@ -13,6 +13,7 @@
 // resolves per-team colors itself.
 
 import { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { capture } from '../utils/analytics';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
@@ -33,6 +34,7 @@ function PWHLPredictionCanvas({
   myWinPct, oppWinPct, myExp, oppExp, myStreak, oppStreak,
   myCorsi, oppCorsi, corsiCaveat, narrative,
 }) {
+  const { t } = useTranslation();
   if (myWinPct == null || oppWinPct == null || myExp == null || oppExp == null) {
     return <div className={PRED_CANVAS_CLASSES} ref={canvasRef} />;
   }
@@ -45,7 +47,7 @@ function PWHLPredictionCanvas({
       <div className={PRED_CANVAS_HEADER_CLASSES}>
         <img src="/eyewall-logo.svg" alt="EyeWall" className={PRED_CANVAS_LOGO_CLASSES}
           onError={e => { e.target.style.display = 'none'; }} />
-        <span className={PRED_CANVAS_BADGE_CLASSES} style={{ color, background: 'rgba(255,255,255,0.08)' }}>Prediction</span>
+        <span className={PRED_CANVAS_BADGE_CLASSES} style={{ color, background: 'rgba(255,255,255,0.08)' }}>{t('pwhlGamePreview.prediction.sectionLabel')}</span>
       </div>
 
       {/* Teams + win probability */}
@@ -79,7 +81,7 @@ function PWHLPredictionCanvas({
       {/* Predicted score + total */}
       <div className="pred-canvas-score-row flex gap-5 py-3.5 px-[52px] border-b-[0.5px] border-b-[rgba(255,255,255,0.06)]">
         <div className="pred-canvas-score flex-1 flex flex-col items-center text-center">
-          <div className="pred-canvas-score-label text-[12px] font-bold tracking-[0.1em] uppercase text-[rgba(255,255,255,0.25)] mb-1.5">Expected Score</div>
+          <div className="pred-canvas-score-label text-[12px] font-bold tracking-[0.1em] uppercase text-[rgba(255,255,255,0.25)] mb-1.5">{t('predictionShareCanvas.scoreLabel.expected')}</div>
           <div className="pred-canvas-score-val text-[26px] font-extrabold">
             <span style={{ color }}>{abbr} {myExp}</span>
             <span style={{ color: 'rgba(255,255,255,0.2)' }}> – </span>
@@ -87,7 +89,7 @@ function PWHLPredictionCanvas({
           </div>
         </div>
         <div className="pred-canvas-total flex-1 flex flex-col items-center text-center">
-          <div className="pred-canvas-score-label text-[12px] font-bold tracking-[0.1em] uppercase text-[rgba(255,255,255,0.25)] mb-1.5">Projected Total</div>
+          <div className="pred-canvas-score-label text-[12px] font-bold tracking-[0.1em] uppercase text-[rgba(255,255,255,0.25)] mb-1.5">{t('predictionShareCanvas.scoreLabel.projectedTotal')}</div>
           <div className="pred-canvas-total-val text-[43px] font-black text-[rgba(255,255,255,0.8)]">{projTotal}</div>
         </div>
       </div>
@@ -95,16 +97,16 @@ function PWHLPredictionCanvas({
       {/* AI narrative */}
       {narrative && (
         <div className={PRED_CANVAS_AI_CLASSES}>
-          <div className={PRED_CANVAS_AI_LABEL_CLASSES} style={{ color }}>⚡ EyeWall AI</div>
+          <div className={PRED_CANVAS_AI_LABEL_CLASSES} style={{ color }}>{t('gameStatsPopup.summary.badge')}</div>
           <div className={PRED_CANVAS_AI_TEXT_CLASSES}>{narrative}</div>
         </div>
       )}
 
       <div className="pred-canvas-stats py-3 px-[52px] flex flex-col gap-2.5">
         {[
-          { label: 'Streak', teamVal: myStreak ?? '—', oppVal: oppStreak ?? '—' },
+          { label: t('pwhlGamePreview.prediction.streakLabel'), teamVal: myStreak ?? '—', oppVal: oppStreak ?? '—' },
           ...(myCorsi != null || oppCorsi != null
-            ? [{ label: 'Shot-attempt share', teamVal: myCorsi != null ? `${myCorsi.toFixed(1)}%` : '—', oppVal: oppCorsi != null ? `${oppCorsi.toFixed(1)}%` : '—' }]
+            ? [{ label: t('pwhlGamePreview.prediction.shotAttemptShareLabel'), teamVal: myCorsi != null ? `${myCorsi.toFixed(1)}%` : '—', oppVal: oppCorsi != null ? `${oppCorsi.toFixed(1)}%` : '—' }]
             : []),
         ].map((row, i) => (
           <div key={i} className="pred-canvas-stat-row flex items-center gap-3">
@@ -117,7 +119,7 @@ function PWHLPredictionCanvas({
             </span>
           </div>
         ))}
-        {corsiCaveat && <div className="text-[11px] text-[rgba(255,255,255,0.25)] italic text-center mt-1">Shot-attempt share is {corsiCaveat.toLowerCase()}</div>}
+        {corsiCaveat && <div className="text-[11px] text-[rgba(255,255,255,0.25)] italic text-center mt-1">{t('pwhlGamePreview.prediction.shotAttemptCaveatPrefix', { caveat: corsiCaveat.toLowerCase() })}</div>}
       </div>
 
       {/* Footer */}
@@ -135,6 +137,7 @@ export default function PWHLPredictionExportSection({
   myWinPct, oppWinPct, myExp, oppExp, myStreak, oppStreak,
   myCorsi, oppCorsi, corsiCaveat, narrative, gameId,
 }) {
+  const { t } = useTranslation();
   const canvasRef = useRef(null);
   const [canvasMounted, setCanvasMounted] = useState(false);
 
@@ -143,8 +146,8 @@ export default function PWHLPredictionExportSection({
   }, [canvasMounted, gameId, oppAbbr]);
 
   const xCaption = (myWinPct != null && myExp != null) ? [
-    `${abbr} ${myExp}–${oppExp} ${oppAbbr} — EyeWall Prediction`,
-    `Win probability: ${abbr} ${myWinPct}% · ${oppAbbr} ${oppWinPct}%`,
+    t('predictionShareCanvas.xCaption.headline', { abbr, car: myExp, opp: oppExp, oppAbbr }),
+    t('predictionShareCanvas.xCaption.winProbability', { abbr, pct: myWinPct, oppAbbr, oppPct: oppWinPct }),
     narrative || '',
     `#${abbr} #PWHL #EyeWallAnalytics`,
   ].filter(Boolean).join('\n') : '';
