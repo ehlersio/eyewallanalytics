@@ -1182,5 +1182,38 @@
       "asOf": "As of {{season}}",
       "staleTip": "Not enough games yet this season — showing {{season}}"
     }
+  },
+  "milestonesFeed": {
+    "type": {
+      "hatTrick": "Hat Trick",
+      "naturalHatTrick": "Natural Hat Trick",
+      "shGoal": "Shorthanded Goal",
+      "shutout": "Shutout",
+      "seasonMilestone": "Season Milestone",
+      "careerMilestone": "Career Milestone",
+      "milestone": "Milestone"
+    },
+    "detail": {
+      "goals": "{{count}} goals",
+      "goalsThisSeason": "{{count}} goals this season",
+      "pointsThisSeason": "{{count}} points this season",
+      "careerPoints": "{{count}} career points",
+      "careerWins": "{{count}} career wins"
+    },
+    "vsOpponent": "vs {{opponent}}",
+    "teamFilter": {
+      "allTeams": "All Teams"
+    },
+    "header": {
+      "title": "Milestones",
+      "recentCount": "{{count}} recent"
+    },
+    "loadingPlayer": "Loading player…",
+    "error": {
+      "notAvailable": "Milestones not available — check back soon",
+      "playerNotAvailable": "Player info not available"
+    },
+    "emptyState": "No milestones found yet.",
+    "emptyStateForTeam": "No milestones found for {{team}} yet."
   }
 }
