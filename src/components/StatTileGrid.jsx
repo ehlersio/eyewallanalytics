@@ -6,8 +6,10 @@
 // season fallback label) stays in each popup's own file and gets passed in
 // as props -- this module only knows about the generic {def, fmt} shape.
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import InfoTip from './InfoTip'
 import { nhlSeasonLabel } from '../utils/seasonComparison'
+import { formatOrdinal } from '../utils/formatters'
 
 // Tailwind migration (Session 97, Phase 3, sub-PR 2 + sub-PR 3). Now that
 // TeamComparisonPopup.jsx (sub-PR 3) is also migrated, .stat-section/
@@ -63,39 +65,24 @@ const SECTION_LABEL_COLOR_CLASSES = 'text-[color:var(--text)]'
 const SECTION_LABEL_HIGHLIGHT_COLOR_CLASSES = 'text-[color:var(--red-bright)]'
 const SECTION_BODY_CLASSES = 'stat-section-body py-1 px-4 pb-3'
 
-function ordinalSuffix(n) {
-  const v = Math.round(n)
-  const mod100 = v % 100
-  if (mod100 >= 11 && mod100 <= 13) return 'th'
-  switch (v % 10) {
-    case 1: return 'st'
-    case 2: return 'nd'
-    case 3: return 'rd'
-    default: return 'th'
-  }
-}
-function ordinal(n) {
-  const v = Math.round(n)
-  return `${v}${ordinalSuffix(v)}`
-}
-
 // ─── Percentile scope legend (PLAYER_CARD_PERCENTILE_DISPLAY_BRIEF) ────
 // Division/Conference are NHL-only (PR #56) -- PWHL has no conf/div
 // structure at all, so PWHLPlayerPopup.jsx never renders this legend, it
 // only ever has the League scope to show and a single marker needs no key.
 export const PCT_SCOPES = [
-  { key: 'div',    label: 'Division',   color: 'var(--amber)' },
-  { key: 'conf',   label: 'Conference', color: 'var(--purple)' },
-  { key: 'league', label: 'League',     color: 'var(--blue-bright)' },
+  { key: 'div',    color: 'var(--amber)' },
+  { key: 'conf',   color: 'var(--purple)' },
+  { key: 'league', color: 'var(--blue-bright)' },
 ]
 
 export function PercentileScopeLegend() {
+  const { t } = useTranslation()
   return (
     <div className={LEGEND_CLASSES}>
       {PCT_SCOPES.map(s => (
         <span key={s.key} className={LEGEND_ITEM_CLASSES}>
           <span className={LEGEND_DOT_CLASSES} style={{ background: s.color }} />
-          {s.label}
+          {t(`statTileGrid.scopes.${s.key}`)}
         </span>
       ))}
     </div>
@@ -115,6 +102,7 @@ export function PercentileScopeLegend() {
 // not present at all -- is what selects the 1-marker path, so this
 // degrades automatically rather than needing a separate PWHL code path.
 function StatTile({ def, fmt, pctInfo }) {
+  const { t } = useTranslation()
   const hasLeague = pctInfo && pctInfo.pct != null
   const hasScopes = pctInfo && (pctInfo.conf != null || pctInfo.div != null)
   const insufficientSample = !!pctInfo && !hasLeague && !hasScopes
@@ -163,8 +151,8 @@ function StatTile({ def, fmt, pctInfo }) {
           <InfoTip
             sections={[
               { text: def.tip },
-              def.calc && { label: 'Calculation', text: def.calc },
-              def.why  && { label: 'Why it matters', text: def.why },
+              def.calc && { label: t('statTileGrid.tip.calculation'), text: def.calc },
+              def.why  && { label: t('statTileGrid.tip.whyItMatters'), text: def.why },
             ].filter(Boolean)}
             position="above"
           />
@@ -184,7 +172,7 @@ function StatTile({ def, fmt, pctInfo }) {
                   className={m.above ? MARKER_VAL_ABOVE_CLASSES : MARKER_VAL_BELOW_CLASSES}
                   style={{ color: m.color, transform: `translateX(calc(-50% + ${m.offsetPx || 0}px))` }}
                 >
-                  {ordinal(m.value)}
+                  {formatOrdinal(m.value)}
                 </span>
               </div>
             ))}
@@ -193,7 +181,7 @@ function StatTile({ def, fmt, pctInfo }) {
         </div>
       )}
       {insufficientSample && (
-        <div className={TILE_NA_CLASSES}>Not enough playing time yet</div>
+        <div className={TILE_NA_CLASSES}>{t('statTileGrid.insufficientSample')}</div>
       )}
     </div>
   )
@@ -243,6 +231,7 @@ export function StatTileGrid({ groups, percentiles, showPercentiles = true, pctM
 // NHL sections never pass these, so `nhlSeasonLabel` is never called for
 // PWHL despite the shared import.
 export function TileStatSection({ label, groups, highlight, percentiles, showPercentiles, statsStale, statsSeason, pctMap }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(true)
   return (
     <div className={`${SECTION_CLASSES} ${highlight ? SECTION_HIGHLIGHT_BG_CLASSES : ''}`}>
@@ -250,10 +239,10 @@ export function TileStatSection({ label, groups, highlight, percentiles, showPer
         <span className={`${SECTION_LABEL_CLASSES} ${highlight ? SECTION_LABEL_HIGHLIGHT_COLOR_CLASSES : SECTION_LABEL_COLOR_CLASSES}`}>{label}</span>
         {highlight && (
           statsStale
-            ? <span className={`${SECTION_BADGE_BASE_CLASSES} ${SECTION_BADGE_STALE_CLASSES}`} title={`Not enough games yet this season — showing ${nhlSeasonLabel(statsSeason)}`}>
-                As of {nhlSeasonLabel(statsSeason)}
+            ? <span className={`${SECTION_BADGE_BASE_CLASSES} ${SECTION_BADGE_STALE_CLASSES}`} title={t('statTileGrid.section.staleTip', { season: nhlSeasonLabel(statsSeason) })}>
+                {t('statTileGrid.section.asOf', { season: nhlSeasonLabel(statsSeason) })}
               </span>
-            : <span className={`${SECTION_BADGE_BASE_CLASSES} ${SECTION_BADGE_CURRENT_CLASSES}`}>Current</span>
+            : <span className={`${SECTION_BADGE_BASE_CLASSES} ${SECTION_BADGE_CURRENT_CLASSES}`}>{t('statTileGrid.section.current')}</span>
         )}
         <span className={SECTION_ARROW_CLASSES}>{open ? '▲' : '▼'}</span>
       </button>

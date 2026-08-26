@@ -37,3 +37,21 @@ export function formatDate(date, options = { month: 'short', day: 'numeric' }) {
   if (Number.isNaN(d.getTime())) return '';
   return new Intl.DateTimeFormat(intlLocale(), options).format(d);
 }
+
+// French ordinals don't follow English's st/nd/rd/th pattern -- every
+// number but 1 just takes "e" (2e, 3e, 21e, 100e), with 1er/1re for one.
+// Intl.PluralRules' ordinal categories collapse to exactly that one/other
+// split for French, so a locale-keyed suffix table on top of it covers
+// both languages without hand-rolling French's simpler rule separately.
+const ORDINAL_SUFFIXES = {
+  en: { one: 'st', two: 'nd', few: 'rd', other: 'th' },
+  fr: { one: 'er', other: 'e' },
+};
+
+export function formatOrdinal(value) {
+  const v = Math.round(value);
+  const locale = getLocale();
+  const category = new Intl.PluralRules(intlLocale(), { type: 'ordinal' }).select(v);
+  const suffixes = ORDINAL_SUFFIXES[locale] || ORDINAL_SUFFIXES.en;
+  return `${v}${suffixes[category] ?? suffixes.other}`;
+}
