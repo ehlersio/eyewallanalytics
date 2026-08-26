@@ -1142,5 +1142,28 @@
     "table": {
       "emptyState": "No skater stats available for this game."
     }
+  },
+  "triviaFeed": {
+    "header": {
+      "title": "Daily Trivia",
+      "stats": "{{correct}}/{{attempted}} correct ({{pct}}%)"
+    },
+    "tier": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard"
+    },
+    "emptyState": {
+      "easy": "No easy question today yet — check back soon.",
+      "medium": "No medium question today yet — check back soon.",
+      "hard": "No hard question today yet — check back soon."
+    },
+    "resultCorrect": "✓ Correct",
+    "resultIncorrect": "✕ Incorrect",
+    "error": {
+      "workerNotConfigured": "Worker URL not configured",
+      "notAvailable": "Trivia not available — check back soon",
+      "tryAgain": "Try again"
+    }
   }
 }

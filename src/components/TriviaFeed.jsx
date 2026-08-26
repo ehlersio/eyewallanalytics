@@ -4,6 +4,7 @@
 // alongside News/Milestones, same pattern as MilestonesFeed — reuses
 // NewsView's card classes, adds its own tier/option classes.
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSport } from '../utils/SportContext';
 import { useAuth } from '../utils/AuthContext';
 import { TEAM_CONFIG } from '../utils/teamConfig';
@@ -51,14 +52,12 @@ const OPTION_DIMMED = 'dimmed opacity-50';
 const EXPLANATION_CLASSES = 'trivia-explanation text-[12px] text-[color:var(--text-muted)] leading-[1.5] m-0';
 const EMPTY_MSG_CLASSES = 'trivia-empty-msg text-[12px] text-[color:var(--text-dim)] m-0';
 
-const TIER_META = {
-  easy:   { label: 'Easy',   icon: '🟢' },
-  medium: { label: 'Medium', icon: '🟡' },
-  hard:   { label: 'Hard',   icon: '🔴' },
-};
+const TIER_ICON = { easy: '🟢', medium: '🟡', hard: '🔴' };
 
 function TierCard({ tier, question, answered, userId, onAnswered, sportKey }) {
-  const meta = TIER_META[tier];
+  const { t } = useTranslation();
+  const icon = TIER_ICON[tier];
+  const label = t(`triviaFeed.tier.${tier}`);
   // Medium-tier question text is deliberately team-name-free (see
   // trivia_questions.py's module docstring — the model hallucinated a
   // wrong team name even when given the correct one). Team identity comes
@@ -70,9 +69,9 @@ function TierCard({ tier, question, answered, userId, onAnswered, sportKey }) {
     return (
       <div className={`${CARD_CLASSES} card`}>
         <div className={CARD_HEADER_CLASSES}>
-          <span className={TIER_BADGE_CLASSES}>{meta.icon} {meta.label}</span>
+          <span className={TIER_BADGE_CLASSES}>{icon} {label}</span>
         </div>
-        <p className={EMPTY_MSG_CLASSES}>No {meta.label.toLowerCase()} question today yet — check back soon.</p>
+        <p className={EMPTY_MSG_CLASSES}>{t(`triviaFeed.emptyState.${tier}`)}</p>
       </div>
     );
   }
@@ -96,12 +95,12 @@ function TierCard({ tier, question, answered, userId, onAnswered, sportKey }) {
     <div className={`${CARD_CLASSES} card`}>
       <div className={CARD_HEADER_CLASSES}>
         <span className={TIER_BADGE_CLASSES}>
-          {meta.icon} {meta.label}
+          {icon} {label}
           {showTeamLogo && <TeamLogo abbr={question.team} sport={sportKey} size={18} />}
         </span>
         {answered && (
           <span className={`${RESULT_BADGE_BASE} ${answered.isCorrect ? RESULT_BADGE_COLOR.correct : RESULT_BADGE_COLOR.incorrect}`}>
-            {answered.isCorrect ? '✓ Correct' : '✕ Incorrect'}
+            {answered.isCorrect ? t('triviaFeed.resultCorrect') : t('triviaFeed.resultIncorrect')}
           </span>
         )}
       </div>
@@ -134,6 +133,7 @@ function TierCard({ tier, question, answered, userId, onAnswered, sportKey }) {
 }
 
 export default function TriviaFeed() {
+  const { t } = useTranslation();
   const { isPWHL } = useSport();
   const { user } = useAuth();
   const [questions, setQuestions] = useState({ easy: null, medium: null, hard: null });
@@ -146,13 +146,13 @@ export default function TriviaFeed() {
   const sportKey        = isPWHL ? 'pwhl' : 'nhl';
 
   const fetchQuestions = useCallback(async () => {
-    if (!WORKER_URL) { setError('Worker URL not configured'); setLoading(false); return; }
+    if (!WORKER_URL) { setError(t('triviaFeed.error.workerNotConfigured')); setLoading(false); return; }
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams({ sport: sportKey, team: activeTeamAbbr });
       const res = await fetch(`${WORKER_URL}/trivia/today?${params}`, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Trivia not available — check back soon');
+      if (!res.ok) throw new Error(t('triviaFeed.error.notAvailable'));
       const data = await res.json();
       setQuestions({ easy: data.easy, medium: data.medium, hard: data.hard });
     } catch (err) {
@@ -160,7 +160,7 @@ export default function TriviaFeed() {
     } finally {
       setLoading(false);
     }
-  }, [sportKey, activeTeamAbbr]);
+  }, [sportKey, activeTeamAbbr, t]);
 
   useEffect(() => { fetchQuestions(); }, [fetchQuestions]);
 
@@ -173,10 +173,14 @@ export default function TriviaFeed() {
       <div className={`${NEWS_HEADER_CLASSES} card`}>
         <div className={NEWS_HEADER_ROW_CLASSES}>
           <div>
-            <div className={NEWS_TITLE_CLASSES}>Daily Trivia</div>
+            <div className={NEWS_TITLE_CLASSES}>{t('triviaFeed.header.title')}</div>
             {stats.attempted > 0 && (
               <div className={NEWS_UPDATED_CLASSES}>
-                {stats.correct}/{stats.attempted} correct ({Math.round((stats.correct / stats.attempted) * 100)}%)
+                {t('triviaFeed.header.stats', {
+                  correct: stats.correct,
+                  attempted: stats.attempted,
+                  pct: Math.round((stats.correct / stats.attempted) * 100),
+                })}
               </div>
             )}
           </div>
@@ -199,7 +203,7 @@ export default function TriviaFeed() {
         <div className={`${NEWS_ERROR_CLASSES} card`}>
           <div className={NEWS_ERROR_ICON_CLASSES}>🏒</div>
           <div className={NEWS_ERROR_MSG_CLASSES}>{error}</div>
-          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={fetchQuestions}>Try again</button>
+          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={fetchQuestions}>{t('triviaFeed.error.tryAgain')}</button>
         </div>
       )}
 
