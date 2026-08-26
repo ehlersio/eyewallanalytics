@@ -466,7 +466,6 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
         setSortOrder={setSortOrder}
         completedCount={completed.length}
         upcomingCount={upcoming.length}
-        label={t('scheduleView.sortBar.label')}
       />
 
       {allGames.map(game => {

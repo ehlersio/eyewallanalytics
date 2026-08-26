@@ -1,7 +1,9 @@
 // components/PWHLCalendarView.jsx
 // Mirrors NHL CalendarView.jsx — monthly grid of PWHL games.
 // Completed games are clickable (fires onGamePopup). Upcoming shows date only.
+import { useTranslation } from 'react-i18next';
 import { PWHL_TEAM_MAP, getPWHLTeamById } from '../utils/pwhlConfig';
+import { formatDate as formatDateIntl } from '../utils/formatters';
 import TeamLogo from '../components/TeamLogo';
 
 // Styling used to come from ScheduleView.css -- migrated to Tailwind here
@@ -9,9 +11,17 @@ import TeamLogo from '../components/TeamLogo';
 // here -- PWHL's calendar genuinely never marks playoff cells specially,
 // confirmed via CalendarView.jsx's own consumer (this file never renders
 // either class), a real UI asymmetry not a bug.
-const MONTHS = ['January','February','March','April','May','June',
-                'July','August','September','October','November','December'];
-const DOW    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+// Month/weekday labels route through formatters.js's Intl wrapper (same fix
+// as PWHLScheduleView.jsx/CalendarView.jsx) rather than a hardcoded English
+// array, so French renders real month/day names. Jan 1 2023 was a Sunday,
+// used purely as a reference date to pull each weekday's short name.
+function monthLabel(year, month) {
+  return formatDateIntl(new Date(year, month, 1), { month: 'long' });
+}
+function dowLabel(i) {
+  return formatDateIntl(new Date(2023, 0, 1 + i), { weekday: 'short' });
+}
+const DOW_INDICES = [0, 1, 2, 3, 4, 5, 6];
 
 const CAL_CELL_BASE = 'cal-cell rounded-[var(--radius-sm)] min-h-[72px] pt-[5px] px-[5px] pb-1 flex flex-col gap-[3px] relative text-[11px] overflow-hidden max-[480px]:min-h-[58px] max-[480px]:py-1 max-[480px]:px-[3px]';
 const CAL_CELL_EMPTY_CLASSES = `${CAL_CELL_BASE} empty bg-transparent`;
@@ -35,6 +45,7 @@ function calCellClasses({ result, isToday }) {
 }
 
 export function PWHLCalendarView({ games, calMonth, setCalMonth, onGamePopup, teamId }) {
+  const { t } = useTranslation();
   const { year, month } = calMonth;
 
   // Build "YYYY-MM-DD" → game map using game_date (now populated by pipeline)
@@ -70,12 +81,12 @@ export function PWHLCalendarView({ games, calMonth, setCalMonth, onGamePopup, te
     <div className="calendar-wrap pb-4">
       <div className="cal-nav flex items-center justify-between mb-3">
         <button className="cal-nav-btn w-8 h-8 rounded-full border-[0.5px] border-[color:var(--border-2)] bg-[var(--bg2)] text-[color:var(--text-muted)] text-[18px] cursor-pointer flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]" onClick={prevMonth}>‹</button>
-        <span className="cal-month-label font-[family-name:var(--font-display)] text-[16px] font-bold text-[color:var(--text)] tracking-[0.04em]">{MONTHS[month]} {year}</span>
+        <span className="cal-month-label font-[family-name:var(--font-display)] text-[16px] font-bold text-[color:var(--text)] tracking-[0.04em]">{monthLabel(year, month)} {year}</span>
         <button className="cal-nav-btn w-8 h-8 rounded-full border-[0.5px] border-[color:var(--border-2)] bg-[var(--bg2)] text-[color:var(--text-muted)] text-[18px] cursor-pointer flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]" onClick={nextMonth}>›</button>
       </div>
 
       <div className="cal-grid grid gap-[3px] [grid-template-columns:repeat(7,1fr)]">
-        {DOW.map(d => <div key={d} className="cal-dow text-center text-[10px] font-semibold text-[color:var(--text-dim)] uppercase tracking-[0.06em] pt-1 pb-1.5 max-[480px]:text-[9px]">{d}</div>)}
+        {DOW_INDICES.map(i => <div key={i} className="cal-dow text-center text-[10px] font-semibold text-[color:var(--text-dim)] uppercase tracking-[0.06em] pt-1 pb-1.5 max-[480px]:text-[9px]">{dowLabel(i)}</div>)}
 
         {cells.map((day, i) => {
           if (!day) return <div key={`pad-${i}`} className={CAL_CELL_EMPTY_CLASSES} />;
@@ -98,18 +109,19 @@ export function PWHLCalendarView({ games, calMonth, setCalMonth, onGamePopup, te
       </div>
 
       <div className="cal-legend flex gap-3 flex-wrap mt-2.5 pt-2 border-t-[0.5px] border-t-[color:var(--border)]">
-        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot win w-2.5 h-2.5 rounded-[2px] shrink-0 bg-[rgba(61,186,126,0.4)] border-[0.5px] border-[rgba(61,186,126,0.5)]" />Win</span>
-        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot otl w-2.5 h-2.5 rounded-[2px] shrink-0 bg-[rgba(240,160,48,0.35)] border-[0.5px] border-[rgba(240,160,48,0.5)]" />OT Loss</span>
-        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot loss w-2.5 h-2.5 rounded-[2px] shrink-0 bg-[rgba(204,34,0,0.35)] border-[0.5px] border-[rgba(204,34,0,0.5)]" />Loss</span>
-        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot upcoming w-2.5 h-2.5 rounded-[2px] shrink-0 bg-[var(--bg3)] border-[0.5px] border-[color:var(--border-2)]" />Upcoming</span>
-        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-home text-[10px] text-[color:var(--text-dim)]">●</span>Home</span>
-        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-home text-[10px] text-[color:var(--text-dim)]">○</span>Away</span>
+        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot win w-2.5 h-2.5 rounded-[2px] shrink-0 bg-[rgba(61,186,126,0.4)] border-[0.5px] border-[rgba(61,186,126,0.5)]" />{t('calendarView.legend.win')}</span>
+        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot otl w-2.5 h-2.5 rounded-[2px] shrink-0 bg-[rgba(240,160,48,0.35)] border-[0.5px] border-[rgba(240,160,48,0.5)]" />{t('calendarView.legend.otLoss')}</span>
+        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot loss w-2.5 h-2.5 rounded-[2px] shrink-0 bg-[rgba(204,34,0,0.35)] border-[0.5px] border-[rgba(204,34,0,0.5)]" />{t('calendarView.legend.loss')}</span>
+        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-dot upcoming w-2.5 h-2.5 rounded-[2px] shrink-0 bg-[var(--bg3)] border-[0.5px] border-[color:var(--border-2)]" />{t('pwhlScheduleView.playoffs.upcomingBadge')}</span>
+        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-home text-[10px] text-[color:var(--text-dim)]">●</span>{t('scheduleView.resultCard.home')}</span>
+        <span className="cal-leg-item flex items-center gap-1 text-[10px] text-[color:var(--text-muted)]"><span className="cal-leg-home text-[10px] text-[color:var(--text-dim)]">○</span>{t('scheduleView.resultCard.away')}</span>
       </div>
     </div>
   );
 }
 
 function PWHLCalCell({ day, game, isToday, teamId, onGamePopup }) {
+  const { t } = useTranslation();
   if (!game) {
     return (
       <div className={calNoGameCellClasses(isToday)}>
@@ -143,7 +155,7 @@ function PWHLCalCell({ day, game, isToday, teamId, onGamePopup }) {
     >
       <div className="cal-cell-top flex justify-between items-start">
         <span className={`cal-day-num text-[11px] font-semibold leading-none ${isToday ? 'text-[color:var(--red-bright)]' : 'text-[color:var(--text-muted)]'}`}>{day}</span>
-        <span className="cal-home-dot text-[8px] text-[color:var(--text-dim)] leading-none" title={isHome ? 'Home' : 'Away'}>
+        <span className="cal-home-dot text-[8px] text-[color:var(--text-dim)] leading-none" title={isHome ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away')}>
           {isHome ? '●' : '○'}
         </span>
       </div>
