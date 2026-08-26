@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useFetch } from '../hooks/useFetch'
 import { getRoster, getPlayoffGames, getStandings, TEAM_CONFIG } from '../utils/nhlApi'
 import { getTeamSkaterStatsFromDB } from '../utils/supabaseClient'
@@ -104,6 +105,7 @@ function tdClasses(col, isEvenRow) {
 // ─── Main component ───────────────────────────────────────────
 
 export default function PlayersView() {
+  const { t } = useTranslation()
   // SEASON used to be a module-level const derived from TEAM_CONFIG.season
   // once at import time -- frozen at whatever value existed then, never
   // picking up the Worker's live season resolution landing afterward.
@@ -136,22 +138,22 @@ export default function PlayersView() {
       <div className={HEADER_WRAP_CLASSES}>
         <h2 className={VIEW_TITLE_CLASSES}>
           <TeamLogo abbr={TEAM_CONFIG.abbr} size={22} />
-          Roster
+          {t('players.roster')}
         </h2>
-        <p className={PLAYERS_SUB_CLASSES}>Tap a player for detailed stats &amp; rankings</p>
+        <p className={PLAYERS_SUB_CLASSES}>{t('playersView.subtitle')}</p>
       </div>
 
       {/* View toggle */}
       <div className={TABS_WRAP_CLASSES}>
-        <button className={tabClasses(view === 'roster')} onClick={() => setView('roster')}>Roster</button>
-        <button className={tabClasses(view === 'stats')} onClick={() => setView('stats')}>📊 Stats</button>
+        <button className={tabClasses(view === 'roster')} onClick={() => setView('roster')}>{t('players.roster')}</button>
+        <button className={tabClasses(view === 'stats')} onClick={() => setView('stats')}>{t('players.statsToggle')}</button>
       </div>
 
       {view === 'stats' && (
         <>
           <div className={TABS_WRAP_CLASSES} style={{ marginTop: 8, marginBottom: 4 }}>
-            <button className={tabClasses(gameType === 2)} onClick={() => setGameType(2)}>Regular Season</button>
-            <button className={tabClasses(gameType === 3)} onClick={() => setGameType(3)}>🏆 Playoffs</button>
+            <button className={tabClasses(gameType === 2)} onClick={() => setGameType(2)}>{t('team.regularSeason')}</button>
+            <button className={tabClasses(gameType === 3)} onClick={() => setGameType(3)}>{t('playersView.playoffsToggle')}</button>
           </div>
           <SkaterStatsTable skaters={skaterStats || []} loading={statsLoading} gameType={gameType} onSelect={(id) => {
             const p = roster?.all?.find(r => r.id === id);
@@ -165,9 +167,9 @@ export default function PlayersView() {
           {rosterLoading && <RosterSkeleton />}
           {!rosterLoading && roster && (
             <>
-              <RosterSection title="Forwards"   players={roster.forwards}   onSelect={setSelected} />
-              <RosterSection title="Defensemen" players={roster.defensemen} onSelect={setSelected} />
-              <RosterSection title="Goalies"    players={roster.goalies}    onSelect={setSelected} />
+              <RosterSection title={t('players.forwards')} players={roster.forwards}   onSelect={setSelected} />
+              <RosterSection title={t('playersView.defensemen')} players={roster.defensemen} onSelect={setSelected} />
+              <RosterSection title={t('players.goalies')} players={roster.goalies}    onSelect={setSelected} />
             </>
           )}
         </>
@@ -269,6 +271,7 @@ const COLS = [
 ];
 
 function SkaterStatsTable({ skaters, loading, gameType = 2, onSelect }) {
+  const { t } = useTranslation();
   const [sortKey, setSortKey] = useState('points');
   const [sortDir, setSortDir] = useState('desc');
 
@@ -298,8 +301,8 @@ function SkaterStatsTable({ skaters, loading, gameType = 2, onSelect }) {
   if (!skaters?.length) return (
     <div className={DRILL_EMPTY_CLASSES}>
       {gameType === 3
-        ? `No playoff stats yet — data populates once ${TEAM_CONFIG.displayName} advances.`
-        : 'No stats available.'}
+        ? t('playersView.emptyPlayoffStats', { team: TEAM_CONFIG.displayName })
+        : t('playersView.emptyNoStats')}
     </div>
   );
 
@@ -316,7 +319,7 @@ function SkaterStatsTable({ skaters, loading, gameType = 2, onSelect }) {
                   onClick={col.sortable ? () => handleSort(col.key) : undefined}
                   style={{ cursor: col.sortable ? 'pointer' : 'default' }}
                 >
-                  {col.label}
+                  {col.key === 'skaterFullName' ? t('players.colPlayer') : col.label}
                   {col.sortable && sortKey === col.key && (
                     <span className={SST_SORT_ICON_CLASSES}>{sortDir === 'desc' ? ' ↓' : ' ↑'}</span>
                   )}
@@ -346,7 +349,7 @@ function SkaterStatsTable({ skaters, loading, gameType = 2, onSelect }) {
           </tbody>
         </table>
       </div>
-      <div className={SST_HINT_CLASSES}>Tap a player row to open their profile · Sort by any column</div>
+      <div className={SST_HINT_CLASSES}>{t('playersView.tableHint')}</div>
     </div>
   );
 }

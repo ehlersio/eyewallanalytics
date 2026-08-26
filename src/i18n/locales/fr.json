@@ -484,6 +484,32 @@
       "playerSalariesTitle": "Salaires des joueuses de {{abbr}}"
     }
   },
+  "players": {
+    "roster": "Effectif",
+    "statsToggle": "📊 Statistiques",
+    "forwards": "Attaquants",
+    "goalies": "Gardiens",
+    "colPlayer": "Joueur"
+  },
+  "playersView": {
+    "subtitle": "Touchez un joueur pour ses statistiques détaillées et classements",
+    "playoffsToggle": "🏆 Séries éliminatoires",
+    "defensemen": "Défenseurs",
+    "emptyPlayoffStats": "Aucune statistique de séries pour l'instant — les données s'ajoutent une fois que {{team}} avance.",
+    "emptyNoStats": "Aucune statistique disponible.",
+    "tableHint": "Touchez la ligne d'un joueur pour ouvrir son profil · Triez selon n'importe quelle colonne"
+  },
+  "pwhlPlayersView": {
+    "subtitle": "Touchez une joueuse pour ses statistiques",
+    "skatersToggle": "Patineuses",
+    "defencemen": "Défenseures",
+    "failedToLoadRoster": "Échec du chargement de l'effectif.",
+    "noRosterData": "Aucune donnée d'effectif — essayez de vider le cache.",
+    "emptySkaterStats": "Aucune statistique de patineuses pour {{season}}.",
+    "emptyGoalieStats": "Aucune statistique de gardiennes pour {{season}}.",
+    "colGoalie": "Gardienne",
+    "tableHint": "Touchez une ligne pour ouvrir le profil de la joueuse · Triez selon n'importe quelle colonne"
+  },
   "common": {
     "loading": "Chargement…",
     "close": "Fermer"
