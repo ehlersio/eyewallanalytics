@@ -1215,5 +1215,36 @@
     },
     "emptyState": "No milestones found yet.",
     "emptyStateForTeam": "No milestones found for {{team}} yet."
+  },
+  "newsView": {
+    "tabs": {
+      "trivia": "Trivia"
+    },
+    "timeAgo": {
+      "justNow": "just now",
+      "minutes": "{{count}}m ago",
+      "hours": "{{count}}h ago",
+      "days": "{{count}}d ago"
+    },
+    "header": {
+      "teamNews": "{{team}} News",
+      "pwhlNews": "🏒 PWHL News",
+      "updated": "Updated {{time}} · {{count}} articles",
+      "refreshAriaLabel": "Refresh news",
+      "allSources": "All ({{count}})"
+    },
+    "error": {
+      "notAvailable": "News not yet available — check back soon"
+    },
+    "emptyState": "No articles found.",
+    "emptyStateFromSource": "No articles found from {{source}}.",
+    "pagination": {
+      "prev": "← Prev",
+      "next": "Next →"
+    },
+    "footer": {
+      "nhl": "Articles from team blogs, ESPN, Sportsnet, Bleacher Report, The Athletic, and Reddit. Tap any article to read the full story.",
+      "pwhl": "Articles from PWHL Official, ESPN, Sportsnet, and IIHF. Tap any article to read the full story."
+    }
   }
 }

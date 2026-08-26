@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { capture } from '../utils/analytics';
 import { TEAM_CONFIG } from '../utils/nhlApi';
 import MilestonesFeed from '../components/MilestonesFeed';
 import TriviaFeed from '../components/TriviaFeed';
 import { useReadState } from '../hooks/useReadState';
+import { formatDate, formatNumber } from '../utils/formatters';
 import {
   NEWS_VIEW_CLASSES, NEWS_HEADER_CLASSES, NEWS_HEADER_ROW_CLASSES, NEWS_TITLE_CLASSES,
   NEWS_UPDATED_CLASSES, NEWS_REFRESH_BTN_CLASSES, NEWS_FILTER_CHIPS_CLASSES, newsChipClasses,
@@ -28,14 +30,14 @@ const SOURCE_META = {
   thescore:     { label: 'The Score',     color: '#ffffff', bg: '#e8000d' },
 };
 
-function timeAgo(isoDate) {
+function timeAgo(isoDate, t) {
   if (!isoDate) return '';
   const diff = (Date.now() - new Date(isoDate)) / 1000;
-  if (diff < 60)     return 'just now';
-  if (diff < 3600)   return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400)  return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
-  return new Date(isoDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (diff < 60)     return t('newsView.timeAgo.justNow');
+  if (diff < 3600)   return t('newsView.timeAgo.minutes', { count: Math.floor(diff / 60) });
+  if (diff < 86400)  return t('newsView.timeAgo.hours', { count: Math.floor(diff / 3600) });
+  if (diff < 604800) return t('newsView.timeAgo.days', { count: Math.floor(diff / 86400) });
+  return formatDate(new Date(isoDate), { month: 'short', day: 'numeric' });
 }
 
 function SourceBadge({ sourceId, label, color, bg }) {
@@ -48,6 +50,7 @@ function SourceBadge({ sourceId, label, color, bg }) {
 }
 
 function ArticleCard({ item }) {
+  const { t } = useTranslation();
   const handleClick = () => {
     if (item.url) {
       capture('news_article_clicked', { source: item.source, title: item.title?.slice(0, 60) });
@@ -66,13 +69,13 @@ function ArticleCard({ item }) {
       <div className={NEWS_CARD_BODY_CLASSES}>
         <div className={NEWS_CARD_META_CLASSES}>
           <SourceBadge sourceId={item.source} label={item.sourceName} />
-          <span className={NEWS_CARD_TIME_CLASSES}>{timeAgo(item.publishedAt)}</span>
+          <span className={NEWS_CARD_TIME_CLASSES}>{timeAgo(item.publishedAt, t)}</span>
         </div>
         <h3 className={NEWS_CARD_TITLE_CLASSES}>{item.title}</h3>
         {item.excerpt && item.excerpt !== item.sourceName && (
           <p className={NEWS_CARD_EXCERPT_CLASSES}>
             {item.source === 'reddit' && item.score != null
-              ? `▲ ${item.score.toLocaleString()} · 💬 ${item.comments} · ${item.excerpt}`
+              ? `▲ ${formatNumber(item.score)} · 💬 ${item.comments} · ${item.excerpt}`
               : item.excerpt}
           </p>
         )}
@@ -83,6 +86,7 @@ function ArticleCard({ item }) {
 }
 
 export default function NewsView() {
+  const { t } = useTranslation();
   const [view,      setView]      = useState('news'); // 'news' | 'milestones' | 'trivia'
   const [articles,  setArticles]  = useState([]);
   const [loading,   setLoading]   = useState(true);
@@ -96,14 +100,14 @@ export default function NewsView() {
   const readState   = useReadState();
 
   const fetchArticles = useCallback(async (isRetry = false) => {
-    if (!WORKER_URL) { setError('Worker URL not configured'); setLoading(false); return; }
+    if (!WORKER_URL) { setError(t('triviaFeed.error.workerNotConfigured')); setLoading(false); return; }
     if (fetchingRef.current && !isRetry) return;
     fetchingRef.current = true;
     if (!isRetry) setLoading(true);
     setError(null);
     try {
       const res  = await fetch(`${WORKER_URL}/news?team=${TEAM_CONFIG.abbr}`, { cache: 'no-store' });
-      if (!res.ok) throw new Error('News not yet available — check back soon');
+      if (!res.ok) throw new Error(t('newsView.error.notAvailable'));
       const data = await res.json();
       const arr = Array.isArray(data) ? data : [];
       // Deduplicate by id — Worker may return duplicates if multiple sources
@@ -135,7 +139,7 @@ export default function NewsView() {
         fetchingRef.current = false;
       }
     }
-  }, [TEAM_CONFIG.abbr]);  
+  }, [TEAM_CONFIG.abbr, t]);
 
   useEffect(() => {
     if (view !== 'news') return;
@@ -171,19 +175,19 @@ export default function NewsView() {
           className={newsViewToggleBtnClasses(view === 'news')}
           onClick={() => { setView('news'); readState.markSeen('news'); }}
         >
-          News{readState.news && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
+          {t('nav.news')}{readState.news && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
         </button>
         <button
           className={newsViewToggleBtnClasses(view === 'milestones')}
           onClick={() => { setView('milestones'); capture('milestones_tab_viewed'); readState.markSeen('milestones'); }}
         >
-          Milestones{readState.milestones && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
+          {t('milestonesFeed.header.title')}{readState.milestones && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
         </button>
         <button
           className={newsViewToggleBtnClasses(view === 'trivia')}
           onClick={() => { setView('trivia'); capture('trivia_tab_viewed'); }}
         >
-          Trivia{readState.trivia && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
+          {t('newsView.tabs.trivia')}{readState.trivia && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
         </button>
       </div>
 
@@ -196,13 +200,13 @@ export default function NewsView() {
           <div className={`${NEWS_HEADER_CLASSES} card`}>
             <div className={NEWS_HEADER_ROW_CLASSES}>
               <div>
-                <div className={NEWS_TITLE_CLASSES}>{TEAM_CONFIG.displayName} News</div>
+                <div className={NEWS_TITLE_CLASSES}>{t('newsView.header.teamNews', { team: TEAM_CONFIG.displayName })}</div>
                 {lastFetch && (
-                  <div className={NEWS_UPDATED_CLASSES}>Updated {timeAgo(lastFetch.toISOString())} · {articles.length} articles</div>
+                  <div className={NEWS_UPDATED_CLASSES}>{t('newsView.header.updated', { time: timeAgo(lastFetch.toISOString(), t), count: articles.length })}</div>
                 )}
               </div>
               <button className={NEWS_REFRESH_BTN_CLASSES} onClick={fetchArticles} disabled={loading}
-                aria-label="Refresh news">
+                aria-label={t('newsView.header.refreshAriaLabel')}>
                 {loading ? '…' : '↻'}
               </button>
             </div>
@@ -215,7 +219,7 @@ export default function NewsView() {
                   className={newsChipClasses(filter === s)}
                   onClick={() => { setFilter(s); if (s !== 'all') capture('news_filter_changed', { source: s }); }}
                 >
-                  {s === 'all' ? `All (${articles.length})` : (SOURCE_META[s]?.label || s)}
+                  {s === 'all' ? t('newsView.header.allSources', { count: articles.length }) : (SOURCE_META[s]?.label || s)}
                 </button>
               ))}
             </div>
@@ -238,14 +242,14 @@ export default function NewsView() {
             <div className={`${NEWS_ERROR_CLASSES} card`}>
               <div className={NEWS_ERROR_ICON_CLASSES}>📰</div>
               <div className={NEWS_ERROR_MSG_CLASSES}>{error}</div>
-              <button className={NEWS_REFRESH_BTN_CLASSES} onClick={fetchArticles}>Try again</button>
+              <button className={NEWS_REFRESH_BTN_CLASSES} onClick={fetchArticles}>{t('triviaFeed.error.tryAgain')}</button>
             </div>
           )}
 
           {!loading && !error && filtered.length === 0 && (
             <div className={`${NEWS_EMPTY_CLASSES} card`}>
               <div className={NEWS_ERROR_ICON_CLASSES}>📰</div>
-              <div>No articles found{filter !== 'all' ? ` from ${SOURCE_META[filter]?.label || filter}` : ''}.</div>
+              <div>{filter !== 'all' ? t('newsView.emptyStateFromSource', { source: SOURCE_META[filter]?.label || filter }) : t('newsView.emptyState')}</div>
             </div>
           )}
 
@@ -262,21 +266,20 @@ export default function NewsView() {
                     className={NEWS_PAGE_BTN_CLASSES}
                     onClick={() => { setPage(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                     disabled={page === 1}
-                  >← Prev</button>
+                  >{t('newsView.pagination.prev')}</button>
                   <span className={NEWS_PAGE_INFO_CLASSES}>{page} / {totalPages}</span>
                   <button
                     className={NEWS_PAGE_BTN_CLASSES}
                     onClick={() => { setPage(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                     disabled={page === totalPages}
-                  >Next →</button>
+                  >{t('newsView.pagination.next')}</button>
                 </div>
               )}
             </>
           )}
 
           <div className={NEWS_FOOTER_CLASSES}>
-            Articles from team blogs, ESPN, Sportsnet, Bleacher Report, The Athletic, and Reddit.
-            Tap any article to read the full story.
+            {t('newsView.footer.nhl')}
           </div>
         </>
       )}

@@ -1,9 +1,11 @@
 // views/PWHLNewsView.jsx — mirrors NHL NewsView for PWHL
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import MilestonesFeed from '../components/MilestonesFeed';
 import TriviaFeed from '../components/TriviaFeed';
 import { capture } from '../utils/analytics';
 import { useReadState } from '../hooks/useReadState';
+import { formatDate } from '../utils/formatters';
 import {
   NEWS_VIEW_CLASSES, NEWS_HEADER_CLASSES, NEWS_HEADER_ROW_CLASSES, NEWS_TITLE_CLASSES,
   NEWS_UPDATED_CLASSES, NEWS_REFRESH_BTN_CLASSES, NEWS_FILTER_CHIPS_CLASSES, newsChipClasses,
@@ -28,14 +30,14 @@ const SOURCE_META = {
   'iihf':          { label: 'IIHF',       color: '#FFFFFF', bg: '#003087' },
 };
 
-function timeAgo(isoDate) {
+function timeAgo(isoDate, t) {
   if (!isoDate) return '';
   const diff = (Date.now() - new Date(isoDate)) / 1000;
-  if (diff < 60)     return 'just now';
-  if (diff < 3600)   return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400)  return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
-  return new Date(isoDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (diff < 60)     return t('newsView.timeAgo.justNow');
+  if (diff < 3600)   return t('newsView.timeAgo.minutes', { count: Math.floor(diff / 60) });
+  if (diff < 86400)  return t('newsView.timeAgo.hours', { count: Math.floor(diff / 3600) });
+  if (diff < 604800) return t('newsView.timeAgo.days', { count: Math.floor(diff / 86400) });
+  return formatDate(new Date(isoDate), { month: 'short', day: 'numeric' });
 }
 
 function SourceBadge({ sourceId }) {
@@ -48,6 +50,7 @@ function SourceBadge({ sourceId }) {
 }
 
 function ArticleCard({ item }) {
+  const { t } = useTranslation();
   function handleClick() {
     if (item.url) {
       capture('news_article_clicked', { source: item.source, title: item.title?.slice(0, 60), sport: 'pwhl' });
@@ -66,7 +69,7 @@ function ArticleCard({ item }) {
       <div className={NEWS_CARD_BODY_CLASSES}>
         <div className={NEWS_CARD_META_CLASSES}>
           <SourceBadge sourceId={item.source} />
-          <span className={NEWS_CARD_TIME_CLASSES}>{timeAgo(item.publishedAt)}</span>
+          <span className={NEWS_CARD_TIME_CLASSES}>{timeAgo(item.publishedAt, t)}</span>
         </div>
         <h3 className={NEWS_CARD_TITLE_CLASSES}>{item.title}</h3>
         {item.excerpt && item.excerpt !== item.sourceName && (
@@ -79,6 +82,7 @@ function ArticleCard({ item }) {
 }
 
 export default function PWHLNewsView() {
+  const { t } = useTranslation();
   const [view,      setView]      = useState('news'); // 'news' | 'milestones' | 'trivia'
   const [articles,  setArticles]  = useState([]);
   const [loading,   setLoading]   = useState(true);
@@ -92,14 +96,14 @@ export default function PWHLNewsView() {
   const readState   = useReadState();
 
   const fetchArticles = useCallback(async (isRetry = false) => {
-    if (!WORKER_URL) { setError('Worker URL not configured'); setLoading(false); return; }
+    if (!WORKER_URL) { setError(t('triviaFeed.error.workerNotConfigured')); setLoading(false); return; }
     if (fetchingRef.current && !isRetry) return;
     fetchingRef.current = true;
     if (!isRetry) setLoading(true);
     setError(null);
     try {
       const res = await fetch(`${WORKER_URL}/pwhl/news`, { cache: 'no-store' });
-      if (!res.ok) throw new Error('News not yet available — check back soon');
+      if (!res.ok) throw new Error(t('newsView.error.notAvailable'));
       const data = await res.json();
       const arr  = Array.isArray(data) ? data : [];
       const seen = new Set();
@@ -127,7 +131,7 @@ export default function PWHLNewsView() {
         fetchingRef.current = false;
       }
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (view !== 'news') return;
@@ -161,19 +165,19 @@ export default function PWHLNewsView() {
           className={newsViewToggleBtnClasses(view === 'news')}
           onClick={() => { setView('news'); readState.markSeen('news'); }}
         >
-          News{readState.news && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
+          {t('nav.news')}{readState.news && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
         </button>
         <button
           className={newsViewToggleBtnClasses(view === 'milestones')}
           onClick={() => { setView('milestones'); capture('milestones_tab_viewed', { sport: 'pwhl' }); readState.markSeen('milestones'); }}
         >
-          Milestones{readState.milestones && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
+          {t('milestonesFeed.header.title')}{readState.milestones && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
         </button>
         <button
           className={newsViewToggleBtnClasses(view === 'trivia')}
           onClick={() => { setView('trivia'); capture('trivia_tab_viewed', { sport: 'pwhl' }); }}
         >
-          Trivia{readState.trivia && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
+          {t('newsView.tabs.trivia')}{readState.trivia && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
         </button>
       </div>
 
@@ -185,15 +189,15 @@ export default function PWHLNewsView() {
           <div className={`${NEWS_HEADER_CLASSES} card`}>
             <div className={NEWS_HEADER_ROW_CLASSES}>
               <div>
-                <div className={NEWS_TITLE_CLASSES}>🏒 PWHL News</div>
+                <div className={NEWS_TITLE_CLASSES}>{t('newsView.header.pwhlNews')}</div>
                 {lastFetch && (
                   <div className={NEWS_UPDATED_CLASSES}>
-                    Updated {timeAgo(lastFetch.toISOString())} · {articles.length} articles
+                    {t('newsView.header.updated', { time: timeAgo(lastFetch.toISOString(), t), count: articles.length })}
                   </div>
                 )}
               </div>
               <button className={NEWS_REFRESH_BTN_CLASSES} onClick={fetchArticles} disabled={loading}
-                aria-label="Refresh news">
+                aria-label={t('newsView.header.refreshAriaLabel')}>
                 {loading ? '…' : '↻'}
               </button>
             </div>
@@ -203,7 +207,7 @@ export default function PWHLNewsView() {
                   className={newsChipClasses(filter === s)}
                   onClick={() => { setFilter(s); if (s !== 'all') capture('news_filter_changed', { source: s, sport: 'pwhl' }); }}>
                   {s === 'all'
-                    ? `All (${articles.length})`
+                    ? t('newsView.header.allSources', { count: articles.length })
                     : (SOURCE_META[s]?.label || s)}
                 </button>
               ))}
@@ -226,14 +230,14 @@ export default function PWHLNewsView() {
             <div className={`${NEWS_ERROR_CLASSES} card`}>
               <div className={NEWS_ERROR_ICON_CLASSES}>📰</div>
               <div className={NEWS_ERROR_MSG_CLASSES}>{error}</div>
-              <button className={NEWS_REFRESH_BTN_CLASSES} onClick={fetchArticles}>Try again</button>
+              <button className={NEWS_REFRESH_BTN_CLASSES} onClick={fetchArticles}>{t('triviaFeed.error.tryAgain')}</button>
             </div>
           )}
 
           {!loading && !error && filtered.length === 0 && (
             <div className={`${NEWS_EMPTY_CLASSES} card`}>
               <div className={NEWS_ERROR_ICON_CLASSES}>📰</div>
-              <div>No articles found{filter !== 'all' ? ` from ${SOURCE_META[filter]?.label || filter}` : ''}.</div>
+              <div>{filter !== 'all' ? t('newsView.emptyStateFromSource', { source: SOURCE_META[filter]?.label || filter }) : t('newsView.emptyState')}</div>
             </div>
           )}
 
@@ -246,19 +250,18 @@ export default function PWHLNewsView() {
                 <div className={NEWS_PAGINATION_CLASSES}>
                   <button className={NEWS_PAGE_BTN_CLASSES}
                     onClick={() => { setPage(p => p-1); window.scrollTo({ top:0, behavior:'smooth' }); }}
-                    disabled={page === 1}>← Prev</button>
+                    disabled={page === 1}>{t('newsView.pagination.prev')}</button>
                   <span className={NEWS_PAGE_INFO_CLASSES}>{page} / {totalPages}</span>
                   <button className={NEWS_PAGE_BTN_CLASSES}
                     onClick={() => { setPage(p => p+1); window.scrollTo({ top:0, behavior:'smooth' }); }}
-                    disabled={page === totalPages}>Next →</button>
+                    disabled={page === totalPages}>{t('newsView.pagination.next')}</button>
                 </div>
               )}
             </>
           )}
 
           <div className={NEWS_FOOTER_CLASSES}>
-            Articles from PWHL Official, ESPN, Sportsnet, and IIHF.
-            Tap any article to read the full story.
+            {t('newsView.footer.pwhl')}
           </div>
         </>
       )}

@@ -1215,5 +1215,36 @@
     },
     "emptyState": "Aucun jalon trouvé pour le moment.",
     "emptyStateForTeam": "Aucun jalon trouvé pour {{team}} pour le moment."
+  },
+  "newsView": {
+    "tabs": {
+      "trivia": "Trivia"
+    },
+    "timeAgo": {
+      "justNow": "à l'instant",
+      "minutes": "il y a {{count}} min",
+      "hours": "il y a {{count}} h",
+      "days": "il y a {{count}} j"
+    },
+    "header": {
+      "teamNews": "Actualités — {{team}}",
+      "pwhlNews": "🏒 Actualités LPHF",
+      "updated": "Mis à jour {{time}} · {{count}} articles",
+      "refreshAriaLabel": "Actualiser les actualités",
+      "allSources": "Toutes ({{count}})"
+    },
+    "error": {
+      "notAvailable": "Actualités pas encore disponibles — revenez bientôt"
+    },
+    "emptyState": "Aucun article trouvé.",
+    "emptyStateFromSource": "Aucun article trouvé de {{source}}.",
+    "pagination": {
+      "prev": "← Préc.",
+      "next": "Suiv. →"
+    },
+    "footer": {
+      "nhl": "Articles provenant des blogues d'équipe, ESPN, Sportsnet, Bleacher Report, The Athletic et Reddit. Touchez un article pour lire l'histoire complète.",
+      "pwhl": "Articles provenant de PWHL Official, ESPN, Sportsnet et IIHF. Touchez un article pour lire l'histoire complète."
+    }
   }
 }
