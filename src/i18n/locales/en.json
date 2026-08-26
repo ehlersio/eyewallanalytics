@@ -513,5 +513,126 @@
   "common": {
     "loading": "Loading…",
     "close": "Close"
+  },
+  "shotMapView": {
+    "scoreBar": {
+      "powerPlay": "{{prefix}}Power Play",
+      "emptyNet": "{{abbr}} Empty Net",
+      "intermission1st": "1st Intermission",
+      "intermission2nd": "2nd Intermission",
+      "intermission3rd": "3rd Intermission",
+      "intermissionOT": "OT{{n}} Intermission",
+      "final": "Final",
+      "playoffTag": "🏒 Playoff · ",
+      "loadingTitle": "Shot Map",
+      "loadingState": "Loading game data…",
+      "coincidental": "{{skaters}} — Coincidental",
+      "recentEvents": "Recent events",
+      "disabledReason": "Available after the game ends.",
+      "liveIndicator": "🔴 LIVE"
+    },
+    "metrics": {
+      "shotsOnGoal": "Shots on goal",
+      "hits": "Hits",
+      "blocks": "Blocks",
+      "blocksHelp": "Shots blocked by {{abbr}} skaters",
+      "penalties": "Penalties",
+      "faceoffPct": "Faceoff %",
+      "ppPct": "PP %",
+      "pkPct": "PK %",
+      "opp": "Opp {{value}}",
+      "thisGame": "this game",
+      "season": "season",
+      "gp": "{{gp}} GP",
+      "poAvg": "PO avg",
+      "sznAvg": "Szn avg",
+      "ppSub": "{{goals}}/{{opps}} · {{avgLabel}} {{avgPct}}%",
+      "pkSub": "{{survived}}/{{opps}} killed · {{avgLabel}} {{avgPct}}%"
+    },
+    "shotQuality": {
+      "heading": "{{abbr}} shot quality",
+      "highDanger": "🔴 High danger",
+      "highDangerSub": "<15 ft",
+      "medium": "🟡 Medium",
+      "mediumSub": "15–30 ft",
+      "low": "⚪ Low",
+      "lowSub": ">30 ft"
+    },
+    "boxscore": {
+      "shotMap": "Shot map",
+      "scoringByPeriod": "Scoring by period",
+      "total": "T",
+      "scoringThisGame": "{{abbr}} scoring — this game",
+      "goalies": "Goalies",
+      "goalieChange": "— goalie change —",
+      "teamStatsThisGame": "Team stats — this game",
+      "shotAttempts": "Shot Attempts (CF)",
+      "shotAttemptsHelp": "Corsi: all shot attempts including misses and blocks. Best possession proxy.",
+      "xgMoneyPuck": "xG 5v5",
+      "xgEstimate": "xG (est)",
+      "xgHelpMoneyPuck": "MoneyPuck 5v5 expected goals — their full xG model including shot quality, traffic, and pre-shot movement. Available a few hours after game end.",
+      "xgHelpEstimate": "xG estimated from shot distance and angle (live estimate). Replaced by MoneyPuck's full model once the game ends.",
+      "backToTop": "Back to top",
+      "backToTopShort": "↑ Top"
+    },
+    "goalieCard": {
+      "svSa": "SV/SA",
+      "svPct": "SV%",
+      "gsax": "GSAX",
+      "gsaxSeasonHelp": "Regular season goals saved above expected (MoneyPuck flurry-adjusted xGoals model). Shown year-round as the larger sample is more reliable than playoff sample sizes. Positive = saving more goals than an average goalie on the same shots. {{gpNote}}",
+      "gsaxSeasonGpNote": "{{gp}} GP this season."
+    },
+    "onIce": {
+      "title": "On Ice"
+    },
+    "statLabels": {
+      "shotsOnGoal": "Shots on Goal",
+      "hits": "Hits",
+      "blockedShots": "Blocked Shots",
+      "faceoffWinPct": "Faceoff Win %",
+      "powerPlayPct": "Power Play %",
+      "powerPlay": "Power Play",
+      "penaltyMin": "Penalty Min",
+      "giveaways": "Giveaways",
+      "takeaways": "Takeaways"
+    }
+  },
+  "pwhlShotMapView": {
+    "scoreBar": {
+      "win": "✓ Win",
+      "loss": "✗ Loss",
+      "home": "Home",
+      "away": "Away",
+      "historical": "Historical",
+      "periodSummary": "{{period}} Summary",
+      "gameSummary": "📊 Game Summary"
+    },
+    "metrics": {
+      "shotsOnGoal": "Shots on Goal",
+      "sogSub": "{{goals}}G · Opp {{opp}}",
+      "selectGame": "Select a game",
+      "faceoffWL": "{{won}}W – {{lost}}L",
+      "noPpOpps": "No PP opps",
+      "noPkOpps": "No PK opps",
+      "ppSub_one": "{{goals}}/{{opps}} · {{opps}} opp",
+      "ppSub_other": "{{goals}}/{{opps}} · {{opps}} opps",
+      "pkSub": "{{survived}}/{{opps}} killed"
+    },
+    "shotQuality": {
+      "heading": "{{abbr}} Shot Quality"
+    },
+    "rink": {
+      "shotLocations": "{{abbr}} Shot Locations",
+      "loadingShots": "Loading shots…",
+      "noShotDataGame": "No shot data for this game.",
+      "noShotDataSeason": "No shot data for this season."
+    },
+    "footer": {
+      "drillHint": "Tap any card or danger zone to drill down · ",
+      "coordsSource": "Coordinates normalised to attacking direction · Source: HockeyTech / PWHL"
+    },
+    "goalieCard": {
+      "gaa": "GAA"
+    }
   }
 }

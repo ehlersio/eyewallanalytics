@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, ReferenceLine,
 } from 'recharts';
@@ -29,7 +30,6 @@ import DisabledHint from '../components/DisabledHint';
 // ShotMapView.css import removed (Phase 5, sub-PR 6) -- the file is now
 // fully deleted, every rule migrated to Tailwind across all 6 sub-PRs.
 
-const LIVE_SELECTOR_DISABLED_REASON = 'Available after the game ends.';
 import { publishClock, getClockDisplay, publishMomentum } from '../utils/liveClockStore';
 import { useDevGame } from '../utils/DevGameContext';
 import { useWakeLock } from '../hooks/useWakeLock';
@@ -511,6 +511,9 @@ const PP_MINI_RINK_CLASSES = 'mt-1';
 const PP_MINI_RINK_LABEL_CLASSES = 'text-[10px] text-[color:var(--text-dim)] mb-1';
 
 export default function ShotMapView() {
+  const { t } = useTranslation();
+  const LIVE_SELECTOR_DISABLED_REASON = t('shotMapView.scoreBar.disabledReason');
+
   // ── Dev replay injection ──────────────────────────────────────
   const devGame = useDevGame();
 
@@ -724,8 +727,8 @@ export default function ShotMapView() {
 
     function playTimeSeconds(play) {
       const period = play.periodDescriptor?.number || 1;
-      const t = play.timeInPeriod || '00:00';
-      const [m, s] = t.split(':').map(Number);
+      const tip = play.timeInPeriod || '00:00';
+      const [m, s] = tip.split(':').map(Number);
       return (period - 1) * 1200 + m * 60 + (s || 0);
     }
 
@@ -751,8 +754,8 @@ export default function ShotMapView() {
 
     let carScore = 0, oppScore = 0, carShots = 0, oppShots = 0;
     plays.forEach(p => {
-      const t = playTimeSeconds(p);
-      if (t < cutoff) return;
+      const secs = playTimeSeconds(p);
+      if (secs < cutoff) return;
       carScore += weightedScore(p, true);
       oppScore += weightedScore(p, false);
       const SHOT_TYPES = new Set(['goal', 'shot-on-goal', 'missed-shot', 'blocked-shot']);
@@ -1797,11 +1800,11 @@ export default function ShotMapView() {
               {(isLive || debugSituation) && (debugSituation?.team === TEAM_CONFIG.abbr ||
                 (currentSituation?.strength === 'PP' && !currentSituation?.carEN)) && (
                 <div className={`${PP_INDICATOR_BASE_CLASSES} ${CAR_PP_CLASSES}`}>
-                  ⚡ {(debugSituation?.carSkaters === 5 && debugSituation?.oppSkaters === 3) ? '5v3 ' : currentSituation && currentSituation.carSkaters !== 5 ? `${currentSituation.carSkaters}v${currentSituation.oppSkaters} ` : ''}Power Play
+                  ⚡ {t('shotMapView.scoreBar.powerPlay', { prefix: (debugSituation?.carSkaters === 5 && debugSituation?.oppSkaters === 3) ? '5v3 ' : currentSituation && currentSituation.carSkaters !== 5 ? `${currentSituation.carSkaters}v${currentSituation.oppSkaters} ` : '' })}
                 </div>
               )}
               {(isLive || debugSituation?.carEN) && (currentSituation?.carEN || debugSituation?.carEN) && (
-                <div className={`${PP_INDICATOR_BASE_CLASSES} en-indicator car-en`}>🥅 {TEAM_CONFIG.abbr} Empty Net</div>
+                <div className={`${PP_INDICATOR_BASE_CLASSES} en-indicator car-en`}>🥅 {t('shotMapView.scoreBar.emptyNet', { abbr: TEAM_CONFIG.abbr })}</div>
               )}
             </div>
 
@@ -1815,12 +1818,12 @@ export default function ShotMapView() {
                       <div className={SCORE_PERIOD_CLASSES}>
                         {(() => {
                           const n = pbp.periodDescriptor?.number;
-                          if (n === 1) return '1st';
-                          if (n === 2) return '2nd';
-                          if (n === 3) return '3rd';
+                          if (n === 1) return t('shotMapView.scoreBar.intermission1st');
+                          if (n === 2) return t('shotMapView.scoreBar.intermission2nd');
+                          if (n === 3) return t('shotMapView.scoreBar.intermission3rd');
                           // OT intermissions: after OT1=period4, OT2=period5, etc.
-                          return `OT${n - 3}`;
-                        })()} Intermission
+                          return t('shotMapView.scoreBar.intermissionOT', { n: n - 3 });
+                        })()}
                       </div>
                       <div className={SCORE_CLOCK_CLASSES}>{displayClock || pbp.clock.timeRemaining}</div>
                     </>
@@ -1829,7 +1832,6 @@ export default function ShotMapView() {
                       <div className={SCORE_PERIOD_CLASSES}>
                         {(() => {
                           const n = pbp?.periodDescriptor?.number;
-                          const t = pbp?.periodDescriptor?.periodType; // eslint-disable-line no-unused-vars
                           if (!n) return '—';
                           if (n <= 3) return `P${n}`;
                           // Playoffs: OT1=4, OT2=5, OT3=6 — all full 20min periods
@@ -1844,19 +1846,19 @@ export default function ShotMapView() {
                       </div>
                     </>
                   )}
-                  <div className={`${SCORE_STATE_CLASSES} ${PILL_RED_CLASSES}`} style={{marginTop:4}}>🔴 LIVE</div>
+                  <div className={`${SCORE_STATE_CLASSES} ${PILL_RED_CLASSES}`} style={{marginTop:4}}>{t('shotMapView.scoreBar.liveIndicator')}</div>
                 </>
               ) : activeGame ? (
                 <>
-                  <div className={SCORE_PERIOD_CLASSES}>Final</div>
+                  <div className={SCORE_PERIOD_CLASSES}>{t('shotMapView.scoreBar.final')}</div>
                   <div className={SCORE_STATE_CLASSES}>
-                    {activeIsPlayoff ? '🏒 Playoff · ' : ''}{formatGameDate(activeGame.gameDate)}
+                    {activeIsPlayoff ? t('shotMapView.scoreBar.playoffTag') : ''}{formatGameDate(activeGame.gameDate)}
                   </div>
                 </>
               ) : (
                 <>
-                  <div className={SCORE_PERIOD_CLASSES}>Shot Map</div>
-                  <div className={SCORE_STATE_CLASSES}>Loading game data…</div>
+                  <div className={SCORE_PERIOD_CLASSES}>{t('shotMapView.scoreBar.loadingTitle')}</div>
+                  <div className={SCORE_STATE_CLASSES}>{t('shotMapView.scoreBar.loadingState')}</div>
                 </>
               )}
             </div>
@@ -1872,18 +1874,18 @@ export default function ShotMapView() {
               {(isLive || debugSituation) && (debugSituation?.team === 'OPP' ||
                 (currentSituation?.strength === 'SH' && !currentSituation?.oppEN)) && (
                 <div className={`${PP_INDICATOR_BASE_CLASSES} ${OPP_PP_CLASSES}`}>
-                  ⚡ {currentSituation && currentSituation.oppSkaters < 4
+                  ⚡ {t('shotMapView.scoreBar.powerPlay', { prefix: `${currentSituation && currentSituation.oppSkaters < 4
                     ? `${currentSituation.oppSkaters}v${currentSituation.carSkaters} `
-                    : ''}{oppAbbr || 'OPP'} Power Play
+                    : ''}${oppAbbr || 'OPP'} ` })}
                 </div>
               )}
               {(isLive || debugSituation?.oppEN) && (currentSituation?.oppEN || debugSituation?.oppEN) && (
-                <div className={`${PP_INDICATOR_BASE_CLASSES} en-indicator opp-en`}>🥅 {oppAbbr || 'OPP'} Empty Net</div>
+                <div className={`${PP_INDICATOR_BASE_CLASSES} en-indicator opp-en`}>🥅 {t('shotMapView.scoreBar.emptyNet', { abbr: oppAbbr || 'OPP' })}</div>
               )}
               {/* 4v4 or 3v3 (both teams penalized) — regular season only, playoffs use full strength */}
               {!inPlayoffs && ((isLive && currentSituation?.strength === '4v4') || debugSituation?.strength === '4v4') ? (
                 <div className={PP_INDICATOR_BASE_CLASSES} style={{ background: 'rgba(148,163,184,0.15)', color: 'var(--text-muted)', border: '0.5px solid rgba(148,163,184,0.3)' }}>
-                  {debugSituation?.carSkaters || currentSituation?.carSkaters}v{debugSituation?.oppSkaters || currentSituation?.oppSkaters} — Coincidental
+                  {t('shotMapView.scoreBar.coincidental', { skaters: `${debugSituation?.carSkaters || currentSituation?.carSkaters}v${debugSituation?.oppSkaters || currentSituation?.oppSkaters}` })}
                 </div>
               ) : null}
             </div>
@@ -1946,7 +1948,7 @@ export default function ShotMapView() {
             periodNumber={pbp?.periodDescriptor?.number}
           />
           <div className="card">
-            <div className="sec-label">Recent events</div>
+            <div className="sec-label">{t('shotMapView.scoreBar.recentEvents')}</div>
             <EventLog plays={pbp.plays} playerMap={buildPlayerMap(pbp)} />
           </div>
         </div>
@@ -1955,27 +1957,27 @@ export default function ShotMapView() {
       {/* ── Game metrics — top row: SOG, Hits, Blocks, Penalties ── */}
       <div className={metricsGridClasses(4)}>
         <MetCard
-          label="Shots on goal"
+          label={t('shotMapView.metrics.shotsOnGoal')}
           value={gameSog.car ?? '—'}
-          sub={gameSog.opp != null ? `Opp ${gameSog.opp}${isAllN ? ' · season' : ''}` : 'this game'}
+          sub={gameSog.opp != null ? `${t('shotMapView.metrics.opp', { value: gameSog.opp })}${isAllN ? ` · ${t('shotMapView.metrics.season')}` : ''}` : t('shotMapView.metrics.thisGame')}
           color={gameSog.car > gameSog.opp ? 'green' : null}
           onClick={!isAllN && pbp ? () => buildDrillDown('sog') : null}
         />
         <MetCard
-          label="Hits"
+          label={t('shotMapView.metrics.hits')}
           value={gameHits.car ?? '—'}
           sub={isAllN
-            ? (teamSeasonRow?.gp ? `${teamSeasonRow.gp} GP` : 'season')
-            : gameHits.opp != null ? `Opp ${gameHits.opp}` : 'this game'}
+            ? (teamSeasonRow?.gp ? t('shotMapView.metrics.gp', { gp: teamSeasonRow.gp }) : t('shotMapView.metrics.season'))
+            : gameHits.opp != null ? t('shotMapView.metrics.opp', { value: gameHits.opp }) : t('shotMapView.metrics.thisGame')}
           color={!isAllN && gameHits.car > gameHits.opp ? 'green' : null}
           onClick={!isAllN && pbp ? () => buildDrillDown('hits') : null}
         />
         <MetCard
-          label="Blocks"
+          label={t('shotMapView.metrics.blocks')}
           value={gameBlocked.car ?? '—'}
-          sub={gameBlocked.opp != null ? `Opp ${gameBlocked.opp}${isAllN ? ' · season' : ''}` : 'this game'}
+          sub={gameBlocked.opp != null ? `${t('shotMapView.metrics.opp', { value: gameBlocked.opp })}${isAllN ? ` · ${t('shotMapView.metrics.season')}` : ''}` : t('shotMapView.metrics.thisGame')}
           color={gameBlocked.car > gameBlocked.opp ? 'green' : null}
-          help={`Shots blocked by ${TEAM_CONFIG.abbr} skaters`}
+          help={t('shotMapView.metrics.blocksHelp', { abbr: TEAM_CONFIG.abbr })}
           onClick={!isAllN && pbp ? () => buildDrillDown('blocked') : null}
         />
         {(() => {
@@ -1985,11 +1987,11 @@ export default function ShotMapView() {
           const color = !isAllN && carP < oppP ? 'green' : null;
           return (
             <MetCard
-              label="Penalties"
+              label={t('shotMapView.metrics.penalties')}
               value={carP ?? '—'}
               sub={isAllN
-                ? (teamSeasonRow?.gp ? `${teamSeasonRow.gp} GP` : 'season')
-                : `Opp ${oppP ?? '—'}`}
+                ? (teamSeasonRow?.gp ? t('shotMapView.metrics.gp', { gp: teamSeasonRow.gp }) : t('shotMapView.metrics.season'))
+                : t('shotMapView.metrics.opp', { value: oppP ?? '—' })}
               color={color}
               onClick={!isAllN && pbp ? () => buildDrillDown('penalties') : null}
             />
@@ -2009,15 +2011,15 @@ export default function ShotMapView() {
           const hasSeasonFO = isAllN && seasonFO != null;
           return (
             <MetCard
-              label="Faceoff %"
+              label={t('shotMapView.metrics.faceoffPct')}
               value={hasGameFO
                 ? `${parsePct(gameFaceoff.car).toFixed(1)}%`
                 : hasSeasonFO
                   ? `${parsePct(seasonFO).toFixed(1)}%`
                   : '—'}
               sub={isAllN
-                ? (teamStats?.gamesPlayed ? `${teamStats.gamesPlayed} GP` : 'season')
-                : 'this game'}
+                ? (teamStats?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: teamStats.gamesPlayed }) : t('shotMapView.metrics.season'))
+                : t('shotMapView.metrics.thisGame')}
               color={hasGameFO
                 ? (parsePct(gameFaceoff.car) > 50 ? 'green' : null)
                 : hasSeasonFO ? (parsePct(seasonFO) > 50 ? 'green' : null) : null}
@@ -2033,15 +2035,15 @@ export default function ShotMapView() {
           const hasGamePP = !isAllN && gpp?.gamePPOpps > 0;
           const gamePPPct = hasGamePP ? gpp.gamePPGoals / gpp.gamePPOpps * 100 : null;
           const avgPct    = ppPct ? (ppPct <= 1 ? (ppPct * 100).toFixed(1) : parseFloat(ppPct).toFixed(1)) : null;
-          const avgLabel  = inPlayoffs ? 'PO avg' : 'Szn avg';
+          const avgLabel  = inPlayoffs ? t('shotMapView.metrics.poAvg') : t('shotMapView.metrics.sznAvg');
           return (
             <MetCard
-              label="PP %"
+              label={t('shotMapView.metrics.ppPct')}
               value={hasGamePP ? `${gamePPPct.toFixed(1)}%` : isAllN && avgPct ? `${avgPct}%` : '—'}
               sub={hasGamePP
-                ? `${gpp.gamePPGoals}/${gpp.gamePPOpps} · ${avgLabel} ${avgPct ?? '—'}%`
+                ? t('shotMapView.metrics.ppSub', { goals: gpp.gamePPGoals, opps: gpp.gamePPOpps, avgLabel, avgPct: avgPct ?? '—' })
                 : isAllN
-                  ? (teamStats?.gamesPlayed ? `${teamStats.gamesPlayed} GP` : avgLabel)
+                  ? (teamStats?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: teamStats.gamesPlayed }) : avgLabel)
                   : `${avgLabel}${avgPct ? ` ${avgPct}%` : ''}`}
               color={hasGamePP && avgPct && gamePPPct >= parseFloat(avgPct) ? 'green' : null}
               onClick={!isAllN && pbp ? () => buildDrillDown('pp') : null}
@@ -2054,15 +2056,15 @@ export default function ShotMapView() {
           const survived  = hasGamePK ? gpk.gamePKOpps - gpk.gamePKGoalsAgainst : null;
           const gamePKPct = hasGamePK ? survived / gpk.gamePKOpps * 100 : null;
           const avgPct    = pkPct ? (pkPct <= 1 ? (pkPct * 100).toFixed(1) : parseFloat(pkPct).toFixed(1)) : null;
-          const avgLabel  = inPlayoffs ? 'PO avg' : 'Szn avg';
+          const avgLabel  = inPlayoffs ? t('shotMapView.metrics.poAvg') : t('shotMapView.metrics.sznAvg');
           return (
             <MetCard
-              label="PK %"
+              label={t('shotMapView.metrics.pkPct')}
               value={hasGamePK ? `${gamePKPct.toFixed(1)}%` : isAllN && avgPct ? `${avgPct}%` : '—'}
               sub={hasGamePK
-                ? `${survived}/${gpk.gamePKOpps} killed · ${avgLabel} ${avgPct ?? '—'}%`
+                ? t('shotMapView.metrics.pkSub', { survived, opps: gpk.gamePKOpps, avgLabel, avgPct: avgPct ?? '—' })
                 : isAllN
-                  ? (teamStats?.gamesPlayed ? `${teamStats.gamesPlayed} GP` : avgLabel)
+                  ? (teamStats?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: teamStats.gamesPlayed }) : avgLabel)
                   : `${avgLabel}${avgPct ? ` ${avgPct}%` : ''}`}
               color={hasGamePK && avgPct && gamePKPct >= parseFloat(avgPct) ? 'green' : null}
               onClick={!isAllN && pbp ? () => buildDrillDown('pk') : null}
@@ -2084,22 +2086,22 @@ export default function ShotMapView() {
       {/* ── Shot Quality — below Shot Attempts ── */}
       {dangerCounts.total > 0 && (
         <div className={`card ${DANGER_QUALITY_CARD_CLASSES}`}>
-          <div className="sec-label">{TEAM_CONFIG.abbr} shot quality</div>
+          <div className="sec-label">{t('shotMapView.shotQuality.heading', { abbr: TEAM_CONFIG.abbr })}</div>
           <div className={DANGER_GRID_CLASSES}>
             <div className={DANGER_CELL_CLASSES} onClick={() => buildDangerDrill('hi')}>
               <div className={dangerNumClasses('high')}>{dangerCounts.hi}</div>
-              <div className={DANGER_LABEL_CLASSES}>🔴 High danger</div>
-              <div className={DANGER_SUB_CLASSES}>&lt;15 ft</div>
+              <div className={DANGER_LABEL_CLASSES}>{t('shotMapView.shotQuality.highDanger')}</div>
+              <div className={DANGER_SUB_CLASSES}>{t('shotMapView.shotQuality.highDangerSub')}</div>
             </div>
             <div className={DANGER_CELL_CLASSES} onClick={() => buildDangerDrill('med')}>
               <div className={dangerNumClasses('med')}>{dangerCounts.med}</div>
-              <div className={DANGER_LABEL_CLASSES}>🟡 Medium</div>
-              <div className={DANGER_SUB_CLASSES}>15–30 ft</div>
+              <div className={DANGER_LABEL_CLASSES}>{t('shotMapView.shotQuality.medium')}</div>
+              <div className={DANGER_SUB_CLASSES}>{t('shotMapView.shotQuality.mediumSub')}</div>
             </div>
             <div className={DANGER_CELL_CLASSES} onClick={() => buildDangerDrill('lo')}>
               <div className={dangerNumClasses('lo')}>{dangerCounts.lo}</div>
-              <div className={DANGER_LABEL_CLASSES}>⚪ Low</div>
-              <div className={DANGER_SUB_CLASSES}>&gt;30 ft</div>
+              <div className={DANGER_LABEL_CLASSES}>{t('shotMapView.shotQuality.low')}</div>
+              <div className={DANGER_SUB_CLASSES}>{t('shotMapView.shotQuality.lowSub')}</div>
             </div>
           </div>
         </div>
@@ -2109,7 +2111,7 @@ export default function ShotMapView() {
         {/* ── Left: rink + event log ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div className="card">
-            <div className="sec-label">Shot map</div>
+            <div className="sec-label">{t('shotMapView.boxscore.shotMap')}</div>
             <HockeyRink events={toHockeyRinkEvents(shotEvents)} teamAbbr={TEAM_CONFIG.abbr} teamColor="var(--team-primary)" />
           </div>
 
@@ -2132,12 +2134,12 @@ export default function ShotMapView() {
           {/* Period by period */}
           {periods.length > 0 && (
             <div className="card">
-              <div className="sec-label">Scoring by period</div>
+              <div className="sec-label">{t('shotMapView.boxscore.scoringByPeriod')}</div>
               <div className={PERIOD_GRID_CLASSES}>
                 <div className={PERIOD_GRID_HEADER_CLASSES}>
                   <span />
                   {periods.map(p => <span key={p.label}>{p.label}</span>)}
-                  <span>T</span>
+                  <span>{t('shotMapView.boxscore.total')}</span>
                 </div>
                 <div className={PERIOD_GRID_ROW_CLASSES}>
                   <span className={`${PERIOD_GRID_ROW_LABEL_CLASSES} text-[color:var(--red-bright)]`}>{TEAM_CONFIG.abbr}</span>
@@ -2156,7 +2158,7 @@ export default function ShotMapView() {
           {/* Top point-getters in this game */}
           {topScorers.length > 0 && (
             <div className="card">
-              <div className="sec-label">{TEAM_CONFIG.abbr} scoring — this game</div>
+              <div className="sec-label">{t('shotMapView.boxscore.scoringThisGame', { abbr: TEAM_CONFIG.abbr })}</div>
               {topScorers.map((p, i) => (
                 <div key={i} className={SCORER_ROW_CLASSES}>
                   <span className={SCORER_NAME_CLASSES}>{p.name || `#${p.sweaterNumber}`}</span>
@@ -2173,12 +2175,12 @@ export default function ShotMapView() {
           {/* Goalie comparison */}
           {(carGoalies.length > 0 || oppGoalies.length > 0) && (
             <div className="card">
-              <div className="sec-label">Goalies</div>
+              <div className="sec-label">{t('shotMapView.boxscore.goalies')}</div>
               {carGoalies.map((g, i) => (
                 <div key={g.playerId || i}>
                   {i === 1 && (
                     <div style={{ fontSize: 10, color: 'var(--text-dim)', textAlign: 'center', margin: '2px 0', letterSpacing: '0.05em' }}>
-                      — goalie change —
+                      {t('shotMapView.boxscore.goalieChange')}
                     </div>
                   )}
                   <GoalieRow
@@ -2196,7 +2198,7 @@ export default function ShotMapView() {
                 <div key={g.playerId || i}>
                   {i === 1 && (
                     <div style={{ fontSize: 10, color: 'var(--text-dim)', textAlign: 'center', margin: '2px 0', letterSpacing: '0.05em' }}>
-                      — goalie change —
+                      {t('shotMapView.boxscore.goalieChange')}
                     </div>
                   )}
                   <GoalieRow
@@ -2216,7 +2218,7 @@ export default function ShotMapView() {
           {/* Team stat bars — game level */}
           {teamGameStats.length > 0 && (
             <div className="card">
-              <div className="sec-label">Team stats — this game</div>
+              <div className="sec-label">{t('shotMapView.boxscore.teamStatsThisGame')}</div>
               <div className={GM_STAT_HEADER_CLASSES}>
                 <span style={{color:'var(--team-primary)'}}>{TEAM_CONFIG.abbr}</span>
                 <span />
@@ -2234,13 +2236,13 @@ export default function ShotMapView() {
                 const carXG    = mpXG ? xgCar.xgf : (liveStats?.xg?.car ?? 0);
                 const oppXG    = mpXG ? xgOpp.xgf : (liveStats?.xg?.opp ?? 0);
                 const xgHelp   = mpXG
-                  ? 'MoneyPuck 5v5 expected goals — their full xG model including shot quality, traffic, and pre-shot movement. Available a few hours after game end.'
-                  : `xG estimated from shot distance and angle (live estimate). Replaced by MoneyPuck's full model once the game ends.`;
+                  ? t('shotMapView.boxscore.xgHelpMoneyPuck')
+                  : t('shotMapView.boxscore.xgHelpEstimate');
 
                 const rows = [
-                  { label: 'Shot Attempts (CF)', carN: sa.carCorsi, oppN: sa.oppCorsi,
-                    help: 'Corsi: all shot attempts including misses and blocks. Best possession proxy.' },
-                  { label: `xG${mpXG ? ' 5v5' : ' (est)'}`, carN: carXG, oppN: oppXG,
+                  { label: t('shotMapView.boxscore.shotAttempts'), carN: sa.carCorsi, oppN: sa.oppCorsi,
+                    help: t('shotMapView.boxscore.shotAttemptsHelp') },
+                  { label: mpXG ? t('shotMapView.boxscore.xgMoneyPuck') : t('shotMapView.boxscore.xgEstimate'), carN: carXG, oppN: oppXG,
                     isDecimal: true, help: xgHelp },
                 ];
                 return rows.map(({ label, carN, oppN, isDecimal, help }) => {
@@ -2285,7 +2287,7 @@ export default function ShotMapView() {
                   <div key={i} className={GM_STAT_ROW_CLASSES}>
                     <span className={gmStatValClasses('team-primary')}>{fmtVal(carVal)}</span>
                     <div className={GM_STAT_MID_CLASSES}>
-                      <div className={GM_STAT_LABEL_CLASSES}>{humanLabel(row.category)}</div>
+                      <div className={GM_STAT_LABEL_CLASSES}>{humanLabel(row.category, t)}</div>
                       <div className={DUAL_BAR_CLASSES}>
                         <div className={FILL_TEAM_PRIMARY_CLASSES} style={{width:`${Math.round(carN/total*100)}%`}} />
                         <div className={FILL_BLUE_CLASSES}         style={{width:`${Math.round(oppN/total*100)}%`}} />
@@ -2376,8 +2378,8 @@ export default function ShotMapView() {
         <button
           className={SHOTMAP_TOP_BTN_CLASSES}
           onClick={() => pageRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
-          aria-label="Back to top"
-        >↑ Top</button>
+          aria-label={t('shotMapView.boxscore.backToTop')}
+        >{t('shotMapView.boxscore.backToTopShort')}</button>
       )}
     </>
   );
@@ -2386,6 +2388,7 @@ export default function ShotMapView() {
 // ── Sub-components ────────────────────────────────────────────
 
 function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color, seasonData }) {
+  const { t } = useTranslation();
   const svPct = savePctg != null
     ? (savePctg <= 1 ? savePctg.toFixed(3) : (savePctg / 100).toFixed(3))
     : '—';
@@ -2406,17 +2409,17 @@ function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color, seasonDat
       </div>
       <div className={GOALIE_STATS_GRID_CLASSES}>
         <div className={GOALIE_STAT_COL_CLASSES}>
-          <span className={GOALIE_STAT_LABEL_CLASSES}>SV/SA</span>
+          <span className={GOALIE_STAT_LABEL_CLASSES}>{t('shotMapView.goalieCard.svSa')}</span>
           <span className={goalieStatValClasses(false)}>{saves ?? '—'}/{shotsAgainst ?? '—'}</span>
         </div>
         <div className={GOALIE_STAT_COL_CLASSES}>
-          <span className={GOALIE_STAT_LABEL_CLASSES}>SV%</span>
+          <span className={GOALIE_STAT_LABEL_CLASSES}>{t('shotMapView.goalieCard.svPct')}</span>
           <span className={goalieStatValClasses(true)}>{svPct}</span>
         </div>
         {seasonGsax != null ? (
           <div className={GOALIE_STAT_COL_CLASSES}>
             <span className={GOALIE_STAT_LABEL_CLASSES}>
-              GSAX <InfoTip text={`Regular season goals saved above expected (MoneyPuck flurry-adjusted xGoals model). Shown year-round as the larger sample is more reliable than playoff sample sizes. Positive = saving more goals than an average goalie on the same shots. ${seasonGp ? seasonGp + ' GP this season.' : ''}`} position="above" />
+              {t('shotMapView.goalieCard.gsax')} <InfoTip text={t('shotMapView.goalieCard.gsaxSeasonHelp', { gpNote: seasonGp ? t('shotMapView.goalieCard.gsaxSeasonGpNote', { gp: seasonGp }) : '' })} position="above" />
             </span>
             <span className={goalieStatValClasses(false)} style={{color: gsaxColor}}>
               {seasonGsax > 0 ? '+' : ''}{seasonGsax}
@@ -2425,7 +2428,7 @@ function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color, seasonDat
         ) : gameGsax ? (
           <div className={GOALIE_STAT_COL_CLASSES}>
             <span className={GOALIE_STAT_LABEL_CLASSES}>
-              GSAx <InfoTip text={gameGsax.note} position="above" />
+              {t('shotMapView.goalieCard.gsax')} <InfoTip text={gameGsax.note} position="above" />
             </span>
             <span className={goalieStatValClasses(false)} style={{color: gameGsax.color}}>{gameGsax.label}</span>
           </div>
@@ -2437,6 +2440,7 @@ function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color, seasonDat
 
 // ── On-Ice Players Panel ─────────────────────────────────────
 function OnIcePanel({ car, opp, oppAbbr, situation }) {
+  const { t } = useTranslation();
   const fwd  = p => ['C','L','R','F'].includes(p.position);
   const def  = p => p.position === 'D';
   const goal = p => p.position === 'G';
@@ -2463,7 +2467,7 @@ function OnIcePanel({ car, opp, oppAbbr, situation }) {
   return (
     <div className={ONICE_CARD_CLASSES}>
       <div className={ONICE_HEADER_CLASSES}>
-        <div className="sec-label" style={{marginBottom:0}}>On Ice</div>
+        <div className="sec-label" style={{marginBottom:0}}>{t('shotMapView.onIce.title')}</div>
         {situation && (
           <span className={onicStrengthClasses(isPP ? 'pp' : isSH ? 'sh' : 'ev')}>
             {situation.strength} {situation.carSkaters}v{situation.oppSkaters}
@@ -3947,16 +3951,19 @@ function parsePct(val) {
 }
 
 const LABEL_MAP = {
-  sog: 'Shots on Goal', hits: 'Hits', blockedshots: 'Blocked Shots',
-  blockedshot: 'Blocked Shots', blocked: 'Blocked Shots',
-  faceoffwinningpctg: 'Faceoff Win %', faceoffwinpct: 'Faceoff Win %',
-  faceoffpct: 'Faceoff Win %', powerplaypctg: 'Power Play %',
-  powerplay: 'Power Play', pim: 'Penalty Min', penaltyminutes: 'Penalty Min',
-  giveaways: 'Giveaways', takeaways: 'Takeaways', shots: 'Shots on Goal',
+  sog: 'shotMapView.statLabels.shotsOnGoal', hits: 'shotMapView.statLabels.hits',
+  blockedshots: 'shotMapView.statLabels.blockedShots', blockedshot: 'shotMapView.statLabels.blockedShots',
+  blocked: 'shotMapView.statLabels.blockedShots',
+  faceoffwinningpctg: 'shotMapView.statLabels.faceoffWinPct', faceoffwinpct: 'shotMapView.statLabels.faceoffWinPct',
+  faceoffpct: 'shotMapView.statLabels.faceoffWinPct', powerplaypctg: 'shotMapView.statLabels.powerPlayPct',
+  powerplay: 'shotMapView.statLabels.powerPlay', pim: 'shotMapView.statLabels.penaltyMin',
+  penaltyminutes: 'shotMapView.statLabels.penaltyMin',
+  giveaways: 'shotMapView.statLabels.giveaways', takeaways: 'shotMapView.statLabels.takeaways',
+  shots: 'shotMapView.statLabels.shotsOnGoal',
 };
-function humanLabel(raw) {
+function humanLabel(raw, t) {
   if (!raw) return '';
   const key = raw.toLowerCase().replace(/[^a-z]/g, '');
-  if (LABEL_MAP[key]) return LABEL_MAP[key];
+  if (LABEL_MAP[key]) return t(LABEL_MAP[key]);
   return raw.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
 }
