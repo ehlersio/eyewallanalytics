@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { savePrediction, getPredictionStats } from '../utils/predictionStore';
 import { capture } from '../utils/analytics';
@@ -97,6 +98,7 @@ function computeWinPct(carStanding, oppStanding, game, playoffSeries) {
 
 // ── Top line callout for Prediction tab ──────────────────────
 function TopLineCard({ carLines }) {
+  const { t } = useTranslation();
   const line = carLines?.lines?.[0];
   if (!line) return null;
   const xgf  = line.xgfPct;
@@ -105,10 +107,10 @@ function TopLineCard({ carLines }) {
   return (
     <div className="md-topline-card bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)] rounded-[10px] py-3 px-3.5 my-2.5 mt-2 mb-1">
       <div className="md-topline-header flex items-center justify-between mb-[7px]">
-        <span className="md-topline-label text-[10px] font-bold uppercase tracking-[0.07em] text-[color:var(--text-dim)]">{TEAM_CONFIG.abbr} Line 1 · 5v5 this season</span>
+        <span className="md-topline-label text-[10px] font-bold uppercase tracking-[0.07em] text-[color:var(--text-dim)]">{t('matchupDetail.topLine.header', { abbr: TEAM_CONFIG.abbr })}</span>
         {xgf != null && (
           <span className={`md-topline-xgf text-[13px] font-extrabold font-[family-name:var(--font-mono)] ${good ? 'good text-[color:var(--green)]' : 'bad text-[color:var(--red-bright)]'}`}>
-            {xgf.toFixed(1)}% xGF
+            {t('matchupDetail.topLine.xgf', { pct: xgf.toFixed(1) })}
           </span>
         )}
       </div>
@@ -121,13 +123,14 @@ function TopLineCard({ carLines }) {
         ))}
       </div>
       {line.toiMins != null && (
-        <div className="md-topline-toi text-[10px] text-[color:var(--text-dim)] italic">{line.toiMins}m together · inferred from shift data</div>
+        <div className="md-topline-toi text-[10px] text-[color:var(--text-dim)] italic">{t('matchupDetail.topLine.toi', { mins: line.toiMins })}</div>
       )}
     </div>
   );
 }
 
 function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) {
+  const { t } = useTranslation();
   const [mdTab, setMdTab] = React.useState('prediction');
   const opp     = getOpponent(game);
   const oppAbbr = opp?.abbrev || 'OPP';
@@ -178,20 +181,20 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
     return (
       <div className="matchup-detail card mb-2 -mt-1">
         <div className="md-note text-[11px] text-[color:var(--text-dim)] bg-[var(--bg3)] rounded-[var(--radius-sm)] py-2 px-2.5 mt-2">
-          📊 Prediction needs this season's standings — not available until games begin.
+          {t('matchupDetail.prediction.needsStandings')}
         </div>
         {odds && (
           <div className={MD_ODDS_ROW_CLASSES} style={{ marginTop: 12 }}>
             <div className={MD_ODDS_ITEM_CLASSES}>
               <span className={MD_ODDS_TEAM_CLASSES} style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
               <span className={mdOddsValClasses(odds.carOdds < 0)}>{fmtOdds(odds.carOdds)}</span>
-              <span className={MD_ODDS_IMPLIED_CLASSES}>{oddsToImplied(odds.carOdds)}% implied</span>
+              <span className={MD_ODDS_IMPLIED_CLASSES}>{t('matchupDetail.odds.implied', { pct: oddsToImplied(odds.carOdds) })}</span>
             </div>
             <div className="md-odds-book text-[10px] text-[color:var(--text-dim)] text-center">{odds.book}</div>
             <div className={`${MD_ODDS_ITEM_CLASSES} right items-end`}>
               <span className={MD_ODDS_TEAM_CLASSES} style={{ color: oppColor }}>{oppAbbr}</span>
               <span className={mdOddsValClasses(odds.oppOdds < 0)}>{fmtOdds(odds.oppOdds)}</span>
-              <span className={MD_ODDS_IMPLIED_CLASSES}>{oddsToImplied(odds.oppOdds)}% implied</span>
+              <span className={MD_ODDS_IMPLIED_CLASSES}>{t('matchupDetail.odds.implied', { pct: oddsToImplied(odds.oppOdds) })}</span>
             </div>
           </div>
         )}
@@ -233,15 +236,15 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   const carStreak = carStanding.streakCode;
   const oppStreak = oppStanding.streakCode;
   const factors  = [
-    { label: 'Offence (GF/GP)',    carEdge: carGpg >= oppGpg },
-    { label: 'Defence (GA/GP)',    carEdge: carGag <= oppGag },
-    { label: 'Possession (SOG/GP)', carEdge: carSF >= oppSF },
-    { label: 'PP vs PK',           carEdge: ppEdge >= 0 },
-    ...(!isPlayoff_ ? [{ label: 'Standings', carEdge: carPts >= oppPts }] : []),
-    ...((carStreak || oppStreak) ? [{ label: 'Recent form', carEdge: carStreak === 'W' && oppStreak !== 'W' }] : []),
-    { label: 'Home ice',           carEdge: isHome_ },
-    ...(isPlayoff_ && seriesEntry ? [{ label: 'Series lead', carEdge: (seriesEntry.carWins - seriesEntry.oppWins) >= 0 }] : []),
-    ...(topLineXgf != null ? [{ label: 'Top line (5v5 xGF%)', carEdge: topLineXgf >= 50 }] : []),
+    { label: t('matchupDetail.factors.offence'),    carEdge: carGpg >= oppGpg },
+    { label: t('matchupDetail.factors.defence'),    carEdge: carGag <= oppGag },
+    { label: t('matchupDetail.factors.possession'), carEdge: carSF >= oppSF },
+    { label: t('matchupDetail.factors.ppVsPk'),     carEdge: ppEdge >= 0 },
+    ...(!isPlayoff_ ? [{ label: t('matchupDetail.factors.standings'), carEdge: carPts >= oppPts }] : []),
+    ...((carStreak || oppStreak) ? [{ label: t('matchupDetail.factors.recentForm'), carEdge: carStreak === 'W' && oppStreak !== 'W' }] : []),
+    { label: t('matchupDetail.factors.homeIce'),    carEdge: isHome_ },
+    ...(isPlayoff_ && seriesEntry ? [{ label: t('matchupDetail.factors.seriesLead'), carEdge: (seriesEntry.carWins - seriesEntry.oppWins) >= 0 }] : []),
+    ...(topLineXgf != null ? [{ label: t('matchupDetail.factors.topLine'), carEdge: topLineXgf >= 50 }] : []),
   ];
 
   // Get model win % from shared function
@@ -253,16 +256,16 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   let carModelPct = winResult?.pct ?? 50;
   if (carImplied) carModelPct = Math.round(carModelPct * 0.6 + carImplied * 0.4);
   const modelTooltip = [
-    'How we predict:',
-    '• GF/GP & GA/GP — offensive and defensive efficiency',
-    '• SOG/GP — possession proxy (shot attempt share)',
-    '• PP vs PK matchup — special teams edge',
-    isPlayoff_ ? '• Series record — current series lead/deficit' : '• Standings points — season performance',
-    '• Recent form — current streak',
-    '• Home ice — ~0.25 goal advantage',
-    topLineXgf != null ? `• Top line 5v5 xGF% — ${topLineXgf.toFixed(1)}% this season` : null,
-    carImplied ? '• Market odds — 40% weight when available' : null,
-    isPlayoff_ ? 'Playoff mode: standings points excluded.' : null,
+    t('matchupDetail.tooltip.title'),
+    t('matchupDetail.tooltip.gfGa'),
+    t('matchupDetail.tooltip.possession'),
+    t('matchupDetail.tooltip.ppPk'),
+    isPlayoff_ ? t('matchupDetail.tooltip.seriesRecord') : t('matchupDetail.tooltip.standingsPoints'),
+    t('matchupDetail.tooltip.recentForm'),
+    t('matchupDetail.tooltip.homeIce'),
+    topLineXgf != null ? t('matchupDetail.tooltip.topLineXgf', { pct: topLineXgf.toFixed(1) }) : null,
+    carImplied ? t('matchupDetail.tooltip.marketOdds') : null,
+    isPlayoff_ ? t('matchupDetail.tooltip.playoffMode') : null,
   ].filter(Boolean).join('\n');
 
 
@@ -285,9 +288,9 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       {/* Tab bar: Prediction vs Scouting */}
       <div className="md-tabs flex gap-0 border-b-[0.5px] border-b-[color:var(--border)] mb-3">
         <button className={mdTabClasses(mdTab === 'prediction')}
-          onClick={() => setMdTab('prediction')}>Prediction</button>
+          onClick={() => setMdTab('prediction')}>{t('matchupDetail.tabs.prediction')}</button>
         <button className={mdTabClasses(mdTab === 'scouting')}
-          onClick={() => { setMdTab('scouting'); capture('scouting_tab_viewed', { gameId: game?.id, opponent: oppAbbr, isPlayoff: game?.gameType === 3 }); }}>Scouting</button>
+          onClick={() => { setMdTab('scouting'); capture('scouting_tab_viewed', { gameId: game?.id, opponent: oppAbbr, isPlayoff: game?.gameType === 3 }); }}>{t('matchupDetail.tabs.scouting')}</button>
       </div>
 
       {mdTab === 'scouting' ? (
@@ -295,10 +298,10 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       ) : (<>
       <div className="md-header mb-3">
         <div>
-          <span className="md-title text-[13px] font-medium">{TEAM_CONFIG.abbr} vs {oppAbbr} — Matchup breakdown</span>
+          <span className="md-title text-[13px] font-medium">{t('matchupDetail.header.title', { car: TEAM_CONFIG.abbr, opp: oppAbbr })}</span>
           {predStats.total > 0 && (
             <div className="md-track-record text-[10px] text-[color:var(--text-muted)] mt-0.5" >
-              📊 {predStats.correct}/{predStats.total} correct ({predStats.pct}%)
+              {t('common.trackRecordLine', { correct: predStats.correct, total: predStats.total, pct: predStats.pct })}
             </div>
           )}
         </div>
@@ -310,17 +313,17 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
           <span style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr} {seriesEntry.carWins}</span>
           <span style={{ color: 'var(--text-dim)' }}> – </span>
           <span style={{ color: oppColor }}>{seriesEntry.oppWins} {oppAbbr}</span>
-          <span className="md-series-label text-[11px] text-[color:var(--text-dim)] font-normal font-[family-name:var(--font-body)] ml-1.5">in this series</span>
+          <span className="md-series-label text-[11px] text-[color:var(--text-dim)] font-normal font-[family-name:var(--font-body)] ml-1.5">{t('matchupDetail.series.inThisSeries')}</span>
         </div>
       )}
 
       {/* Win prediction bar */}
       <div className="md-prediction mb-3.5">
         <div className="md-pred-label flex justify-between text-[11px] text-[color:var(--text-muted)] mb-1.5">
-          <span>Predicted win probability</span>
+          <span>{t('matchupDetail.prediction.probabilityLabel')}</span>
           <InfoTip text={modelTooltip} position="above" />
-          {odds && <span className="md-pred-source text-[10px] text-[color:var(--text-dim)]">Stats + {odds.book} odds</span>}
-          {!odds && <span className="md-pred-source text-[10px] text-[color:var(--text-dim)]">Based on season stats</span>}
+          {odds && <span className="md-pred-source text-[10px] text-[color:var(--text-dim)]">{t('matchupDetail.prediction.sourceWithOdds', { book: odds.book })}</span>}
+          {!odds && <span className="md-pred-source text-[10px] text-[color:var(--text-dim)]">{t('matchupDetail.prediction.sourceStatsOnly')}</span>}
         </div>
         <div className="md-pred-bar h-7 rounded-[var(--radius-sm)] flex overflow-hidden mb-1">
           <div className="md-pred-fill car h-full flex items-center justify-center font-[family-name:var(--font-display)] text-[13px] font-bold text-[#fff] [transition:width_0.4s_ease] bg-[var(--red)]" style={{ width: `${carModelPct}%` }}>
@@ -338,14 +341,14 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
 
       {/* Predicted score — auto-saved when card opens (useEffect at top of component) */}
       <div className="md-score-pred text-center mt-2.5 mb-1">
-        <div className="md-score-pred-label text-[10px] text-[color:var(--text-dim)] mb-1">Predicted score</div>
+        <div className="md-score-pred-label text-[10px] text-[color:var(--text-dim)] mb-1">{t('matchupDetail.scorePred.label')}</div>
         <div className="md-score-pred-val font-[family-name:var(--font-display)] text-[20px] font-bold">
           <span style={{color:'var(--team-primary)'}}>{TEAM_CONFIG.abbr} {predCarScore}</span>
           <span style={{color:'var(--text-dim)'}}> – </span>
           <span style={{color:oppColor}}>{oppAbbr} {predOppScore}</span>
         </div>
-        <div className="md-score-pred-subtext text-[9px] text-[color:var(--text-dim)] text-center mt-0.5 uppercase tracking-[0.06em]">Expected goals projection</div>
-        <div className="md-pred-note text-[10px] text-[color:var(--text-dim)] text-center mt-1.5">Prediction auto-saved · {predStats.total > 0 ? `${predStats.correct}/${predStats.total} correct (${predStats.pct}%)` : 'No results yet'}</div>
+        <div className="md-score-pred-subtext text-[9px] text-[color:var(--text-dim)] text-center mt-0.5 uppercase tracking-[0.06em]">{t('matchupDetail.scorePred.subtext')}</div>
+        <div className="md-pred-note text-[10px] text-[color:var(--text-dim)] text-center mt-1.5">{t('matchupDetail.scorePred.autoSavedNote', { record: predStats.total > 0 ? t('matchupDetail.trackRecordShort', { correct: predStats.correct, total: predStats.total, pct: predStats.pct }) : t('matchupDetail.scorePred.noResultsYet') })}</div>
       </div>
 
       {/* EyeWall AI Analysis */}
@@ -357,13 +360,13 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
           <div className={MD_ODDS_ITEM_CLASSES}>
             <span className={MD_ODDS_TEAM_CLASSES} style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
             <span className={mdOddsValClasses(odds.carOdds < 0)}>{fmtOdds(odds.carOdds)}</span>
-            <span className={MD_ODDS_IMPLIED_CLASSES}>{carImplied}% implied</span>
+            <span className={MD_ODDS_IMPLIED_CLASSES}>{t('matchupDetail.odds.implied', { pct: carImplied })}</span>
           </div>
           <div className="md-odds-book text-[10px] text-[color:var(--text-dim)] text-center">{odds.book}</div>
           <div className={`${MD_ODDS_ITEM_CLASSES} right items-end`}>
             <span className={MD_ODDS_TEAM_CLASSES} style={{ color: oppColor }}>{oppAbbr}</span>
             <span className={mdOddsValClasses(odds.oppOdds < 0)}>{fmtOdds(odds.oppOdds)}</span>
-            <span className={MD_ODDS_IMPLIED_CLASSES}>{oppImplied}% implied</span>
+            <span className={MD_ODDS_IMPLIED_CLASSES}>{t('matchupDetail.odds.implied', { pct: oppImplied })}</span>
           </div>
         </div>
       )}
@@ -372,22 +375,22 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       {/* Stat comparison */}
       <div className="md-stats mb-2.5" style={{ marginTop: 12 }}>
         {!isPlayoff_ && (
-          <StatBar label="Points in standings"
+          <StatBar label={t('matchupDetail.stats.pointsInStandings')}
             leftPct={Math.round((carPts/(carPts+oppPts||1))*100)}
             leftVal={`${TEAM_CONFIG.abbr} ${carPts}`} rightVal={`${oppAbbr} ${oppPts}`} />
         )}
-        <StatBar label="Goals for / game"
+        <StatBar label={t('matchupDetail.stats.goalsForPerGame')}
           leftPct={Math.round((carGpg/(carGpg+oppGpg||1))*100)}
           leftVal={`${TEAM_CONFIG.abbr} ${carGpg.toFixed(2)}`} rightVal={`${oppAbbr} ${oppGpg.toFixed(2)}`} />
-        <StatBar label="Goals against / game"
+        <StatBar label={t('matchupDetail.stats.goalsAgainstPerGame')}
           leftPct={Math.round((oppGag/(carGag+oppGag||1))*100)}
           leftVal={`${TEAM_CONFIG.abbr} ${carGag.toFixed(2)}`} rightVal={`${oppAbbr} ${oppGag.toFixed(2)}`}
           leftColor="green" />
-        <StatBar label="Win rate"
+        <StatBar label={t('matchupDetail.stats.winRate')}
           leftPct={Math.round((carWin/(carWin+oppWin||1))*100)}
           leftVal={`${TEAM_CONFIG.abbr} ${(carWin*100).toFixed(0)}%`} rightVal={`${oppAbbr} ${(oppWin*100).toFixed(0)}%`}
           leftColor="green" />
-        <StatBar label="PP% vs opp PK%"
+        <StatBar label={t('matchupDetail.stats.ppVsPk')}
           leftPct={Math.round((carPP/(carPP+(100-oppPK)||1))*100)}
           leftVal={`${TEAM_CONFIG.abbr} PP ${carPP.toFixed(1)}%`} rightVal={`${oppAbbr} PK ${oppPK.toFixed(1)}%`}
           leftColor={carPP > (100-oppPK) ? 'green' : 'red'} />
@@ -434,6 +437,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   );
 }
 function PredictionAnalysis({ gameId, _oppAbbr, _oppColor }) {
+  const { t } = useTranslation();
   const [analysis,  setAnalysis]  = useState(null);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
@@ -475,7 +479,7 @@ function PredictionAnalysis({ gameId, _oppAbbr, _oppColor }) {
         <div className="md-ai-header flex items-center gap-1.5 mb-2">
           <span className={MD_AI_LABEL_CLASSES}>⚡ EyeWall AI</span>
         </div>
-        <div className="md-ai-loading text-[12px] text-[color:var(--text-dim)] italic">Loading analysis…</div>
+        <div className="md-ai-loading text-[12px] text-[color:var(--text-dim)] italic">{t('matchupDetail.ai.loading')}</div>
       </div>
     );
   }
@@ -487,7 +491,7 @@ function PredictionAnalysis({ gameId, _oppAbbr, _oppColor }) {
       <div className="md-ai-header flex items-center gap-1.5 mb-2">
         <span className={MD_AI_LABEL_CLASSES}>⚡ EyeWall AI</span>
         <InfoTip
-          text="AI analysis synthesizes possession metrics, recent form, head-to-head record, and key matchup factors into a plain-English preview. Generated nightly by the EyeWall pipeline."
+          text={t('matchupDetail.ai.tooltip')}
           position="above"
         />
       </div>

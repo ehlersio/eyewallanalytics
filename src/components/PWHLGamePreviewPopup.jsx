@@ -19,7 +19,9 @@
 // shown with the response's own corsiCaveat text, never bare.
 
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
+import { formatDate as formatDateIntl } from '../utils/formatters';
 import { fetchPWHLPreview, fetchPWHLPrediction } from '../utils/pwhlApi';
 import { getPWHLTeamById } from '../utils/pwhlConfig';
 import TeamLogo from './TeamLogo';
@@ -34,20 +36,21 @@ const PGP_SECTION_LABEL_CLASSES = 'pgp-section-label font-[family-name:var(--fon
 const PGP_STAT_GRID_ROW_CLASSES = 'pgp-stat-grid-row grid gap-2 items-center font-[family-name:var(--font-mono)] text-[13px] font-semibold [grid-template-columns:1fr_auto_1fr] [&>span:first-child]:text-right [&>span:last-child]:text-left';
 const PGP_STAT_GRID_LABEL_CLASSES = 'pgp-stat-grid-label font-[family-name:var(--font-body)] text-[10px] font-medium text-[color:var(--text-dim)] text-center';
 
-const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
+// Month names route through formatters.js's Intl wrapper (same fix as
+// PWHLScheduleView.jsx / CalendarView.jsx) rather than a hardcoded English
+// array, so French renders real month names.
 function formatDateLong(dateStr) {
   if (!dateStr) return '—';
   const d = new Date(dateStr + 'T12:00:00Z');
   if (isNaN(d)) return dateStr;
-  return `${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+  return `${formatDateIntl(d, { month: 'short', timeZone: 'UTC' })} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
 }
 
 function formatMeetingDate(dateStr) {
   if (!dateStr) return '—';
   const d = new Date(dateStr.slice(0, 10) + 'T12:00:00Z');
   if (isNaN(d)) return dateStr;
-  return `${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCDate()}`;
+  return `${formatDateIntl(d, { month: 'short', timeZone: 'UTC' })} ${d.getUTCDate()}`;
 }
 
 // HockeyTech leadingScorers[].stats field names aren't fully confirmed
@@ -88,6 +91,7 @@ function pctValue(splitStats) {
 }
 
 export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClose }) {
+  const { t } = useTranslation();
   const isHome   = game.home_team_id === teamId;
   const oppId    = isHome ? game.away_team_id : game.home_team_id;
   const oppTeam  = getPWHLTeamById(oppId);
@@ -151,9 +155,9 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
               {prediction && <span className="pgp-winpct font-[family-name:var(--font-display)] text-[22px] font-bold leading-none" style={{ color }}>{myWinPct}%</span>}
             </div>
             <div className="pgp-center-col flex flex-col items-center gap-1">
-              <div className="pgp-vs font-[family-name:var(--font-display)] text-[11px] font-bold tracking-[0.08em] uppercase text-[color:var(--text-dim)]">Preview</div>
+              <div className="pgp-vs font-[family-name:var(--font-display)] text-[11px] font-bold tracking-[0.08em] uppercase text-[color:var(--text-dim)]">{t('pwhlGamePreview.header.previewLabel')}</div>
               <div className="pgp-date text-[11px] text-[color:var(--text-muted)]">{formatDateLong(game.game_date)}</div>
-              <div className="pgp-venue text-[10px] text-[color:var(--text-dim)]">{isHome ? '📍 Home' : '✈ Away'}</div>
+              <div className="pgp-venue text-[10px] text-[color:var(--text-dim)]">{isHome ? `📍 ${t('scheduleView.resultCard.home')}` : `✈ ${t('scheduleView.resultCard.away')}`}</div>
             </div>
             <div className={`${PGP_TEAM_COL_CLASSES} right`}>
               <TeamLogo abbr={oppAbbr} sport="pwhl" size={36} color={oppColor} />
@@ -161,16 +165,16 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
               {prediction && <span className="pgp-winpct font-[family-name:var(--font-display)] text-[22px] font-bold leading-none" style={{ color: oppColor }}>{oppWinPct}%</span>}
             </div>
           </div>
-          <button className="pgp-close absolute top-3 right-3 w-7 h-7 rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]" onClick={onClose} aria-label="Close game preview">✕</button>
+          <button className="pgp-close absolute top-3 right-3 w-7 h-7 rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]" onClick={onClose} aria-label={t('pwhlGamePreview.header.closeAriaLabel')}>✕</button>
         </div>
 
         <div className="pgp-body pt-4 px-4 pb-6">
           {/* Prediction */}
           <div className="pgp-section mt-4.5 first:mt-0">
-            <div className={PGP_SECTION_LABEL_CLASSES}>Prediction</div>
+            <div className={PGP_SECTION_LABEL_CLASSES}>{t('pwhlGamePreview.prediction.sectionLabel')}</div>
             {predStats.total > 0 && (
               <div className="pgp-track-record text-[10px] text-[color:var(--text-muted)] mb-2 -mt-0.5">
-                📊 {predStats.correct}/{predStats.total} correct ({predStats.pct}%)
+                {t('common.trackRecordLine', { correct: predStats.correct, total: predStats.total, pct: predStats.pct })}
               </div>
             )}
             {predictionLoading && !prediction && (
@@ -181,7 +185,7 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
               </div>
             )}
             {!predictionLoading && !prediction && (
-              <div className="pgp-no-data text-[12px] text-[color:var(--text-dim)] text-center py-3 italic">Prediction not available for this game.</div>
+              <div className="pgp-no-data text-[12px] text-[color:var(--text-dim)] text-center py-3 italic">{t('pwhlGamePreview.prediction.notAvailable')}</div>
             )}
             {prediction && (
               <>
@@ -191,23 +195,23 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
                 </div>
                 <div className="pgp-exp-row grid gap-2 items-center font-[family-name:var(--font-mono)] text-[16px] font-semibold text-center mb-2.5 [grid-template-columns:1fr_auto_1fr] [&>span:first-child]:text-right [&>span:last-child]:text-left">
                   <span style={{ color }}>{myExp}</span>
-                  <span className="pgp-exp-label font-[family-name:var(--font-body)] text-[9px] font-semibold text-[color:var(--text-dim)] uppercase tracking-[0.06em]">Expected score</span>
+                  <span className="pgp-exp-label font-[family-name:var(--font-body)] text-[9px] font-semibold text-[color:var(--text-dim)] uppercase tracking-[0.06em]">{t('pwhlGamePreview.prediction.expectedScoreLabel')}</span>
                   <span style={{ color: oppColor }}>{oppExp}</span>
                 </div>
                 <p className="pgp-narrative text-[13px] leading-[1.5] text-[color:var(--text-muted)] my-0 mb-3">{prediction.narrative}</p>
                 <div className="pgp-stat-grid flex flex-col gap-2">
                   <div className={PGP_STAT_GRID_ROW_CLASSES}>
                     <span style={{ color }}>{myStreak}</span>
-                    <span className={PGP_STAT_GRID_LABEL_CLASSES}>Streak</span>
+                    <span className={PGP_STAT_GRID_LABEL_CLASSES}>{t('pwhlGamePreview.prediction.streakLabel')}</span>
                     <span style={{ color: oppColor }}>{oppStreak}</span>
                   </div>
                   <div className={PGP_STAT_GRID_ROW_CLASSES}>
                     <span style={{ color }}>{myCorsi != null ? `${myCorsi.toFixed(1)}%` : '—'}</span>
-                    <span className={PGP_STAT_GRID_LABEL_CLASSES}>Shot-attempt share</span>
+                    <span className={PGP_STAT_GRID_LABEL_CLASSES}>{t('pwhlGamePreview.prediction.shotAttemptShareLabel')}</span>
                     <span style={{ color: oppColor }}>{oppCorsi != null ? `${oppCorsi.toFixed(1)}%` : '—'}</span>
                   </div>
                 </div>
-                {prediction.corsiCaveat && <div className="pgp-caveat text-[10px] text-[color:var(--text-dim)] italic mt-1.5">Shot-attempt share is {prediction.corsiCaveat.toLowerCase()}</div>}
+                {prediction.corsiCaveat && <div className="pgp-caveat text-[10px] text-[color:var(--text-dim)] italic mt-1.5">{t('pwhlGamePreview.prediction.shotAttemptCaveatPrefix', { caveat: prediction.corsiCaveat.toLowerCase() })}</div>}
                 <PWHLPredictionExportSection
                   abbr={abbr} oppAbbr={oppAbbr} color={color} oppColor={oppColor}
                   myWinPct={myWinPct} oppWinPct={oppWinPct} myExp={myExp} oppExp={oppExp}
@@ -229,8 +233,8 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
           )}
           {preview && (
             <div className="pgp-section mt-4.5">
-              <div className={PGP_SECTION_LABEL_CLASSES}>Season Series</div>
-              {seasonSeries.length === 0 && <div className="pgp-no-data text-[12px] text-[color:var(--text-dim)] text-center py-3 italic">First meeting this season.</div>}
+              <div className={PGP_SECTION_LABEL_CLASSES}>{t('pwhlGamePreview.seasonSeries.header')}</div>
+              {seasonSeries.length === 0 && <div className="pgp-no-data text-[12px] text-[color:var(--text-dim)] text-center py-3 italic">{t('pwhlGamePreview.seasonSeries.empty')}</div>}
               {seasonSeries.length > 0 && (
                 <div className="pgp-series-list flex flex-col gap-0.5 max-h-[140px] overflow-y-auto">
                   {seasonSeries.map(m => {
@@ -253,7 +257,7 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
               {(myH2H?.previousFiveYears?.formattedRecord || oppH2H?.previousFiveYears?.formattedRecord) && (
                 <div className="pgp-h2h-row grid gap-2 items-center font-[family-name:var(--font-mono)] text-[12px] font-semibold mt-2.5 [grid-template-columns:auto_1fr_auto]">
                   <span style={{ color }}>{myH2H?.previousFiveYears?.formattedRecord || '—'}</span>
-                  <span className="pgp-h2h-label font-[family-name:var(--font-body)] text-[9px] font-medium text-[color:var(--text-dim)] text-center uppercase tracking-[0.04em]">Last 5 seasons vs {oppAbbr}</span>
+                  <span className="pgp-h2h-label font-[family-name:var(--font-body)] text-[9px] font-medium text-[color:var(--text-dim)] text-center uppercase tracking-[0.04em]">{t('pwhlGamePreview.seasonSeries.last5SeasonsVs', { oppAbbr })}</span>
                   <span style={{ color: oppColor }}>{oppH2H?.previousFiveYears?.formattedRecord || '—'}</span>
                 </div>
               )}
@@ -263,15 +267,15 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
           {/* Team form */}
           {preview && (myPreviewTeam?.overallRecord || oppPreviewTeam?.overallRecord) && (
             <div className="pgp-section mt-4.5">
-              <div className={PGP_SECTION_LABEL_CLASSES}>Team Form</div>
+              <div className={PGP_SECTION_LABEL_CLASSES}>{t('pwhlGamePreview.teamForm.header')}</div>
               <div className="pgp-form-row flex justify-between">
                 <div className="pgp-form-col flex flex-col gap-0.5">
                   <span className="pgp-form-record font-[family-name:var(--font-mono)] text-[14px] font-bold" style={{ color }}>{myPreviewTeam?.overallRecord || '—'}</span>
-                  <span className="pgp-form-sub text-[10px] text-[color:var(--text-dim)]">Last 10: {myPreviewTeam?.last10Record || '—'}</span>
+                  <span className="pgp-form-sub text-[10px] text-[color:var(--text-dim)]">{t('pwhlGamePreview.teamForm.last10', { record: myPreviewTeam?.last10Record || '—' })}</span>
                 </div>
                 <div className="pgp-form-col right flex flex-col gap-0.5 items-end">
                   <span className="pgp-form-record font-[family-name:var(--font-mono)] text-[14px] font-bold" style={{ color: oppColor }}>{oppPreviewTeam?.overallRecord || '—'}</span>
-                  <span className="pgp-form-sub text-[10px] text-[color:var(--text-dim)]">Last 10: {oppPreviewTeam?.last10Record || '—'}</span>
+                  <span className="pgp-form-sub text-[10px] text-[color:var(--text-dim)]">{t('pwhlGamePreview.teamForm.last10', { record: oppPreviewTeam?.last10Record || '—' })}</span>
                 </div>
               </div>
             </div>
@@ -280,20 +284,20 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
           {/* Player hot streaks — top entries only, per category, tight by design */}
           {preview && ((myStreaksList?.points?.length > 0) || (oppStreaksList?.points?.length > 0)) && (
             <div className="pgp-section mt-4.5">
-              <div className={PGP_SECTION_LABEL_CLASSES}>Hot Streaks</div>
+              <div className={PGP_SECTION_LABEL_CLASSES}>{t('pwhlGamePreview.hotStreaks.header')}</div>
               <div className="pgp-streaks-cols flex gap-4">
                 <div className="pgp-streaks-col flex-1 flex flex-col gap-1.5 min-w-0">
                   {(myStreaksList?.points || []).slice(0, 2).map((s, i) => (
                     <div key={i} className="pgp-streak-item flex flex-col gap-px">
                       <span className="pgp-streak-name text-[12px] text-[color:var(--text)] overflow-hidden text-ellipsis whitespace-nowrap max-w-full">{streakPlayerName(s.player)}</span>
-                      <span className="pgp-streak-val font-[family-name:var(--font-mono)] text-[11px] font-semibold" style={{ color }}>{s.length}-game pt streak</span>
+                      <span className="pgp-streak-val font-[family-name:var(--font-mono)] text-[11px] font-semibold" style={{ color }}>{t('pwhlGamePreview.hotStreaks.streakLine', { n: s.length })}</span>
                     </div>
                   ))}
                 </div>
                 <div className="pgp-streaks-col right flex-1 flex flex-col gap-1.5 min-w-0 items-end">
                   {(oppStreaksList?.points || []).slice(0, 2).map((s, i) => (
                     <div key={i} className="pgp-streak-item right flex flex-col gap-px items-end">
-                      <span className="pgp-streak-val font-[family-name:var(--font-mono)] text-[11px] font-semibold" style={{ color: oppColor }}>{s.length}-game pt streak</span>
+                      <span className="pgp-streak-val font-[family-name:var(--font-mono)] text-[11px] font-semibold" style={{ color: oppColor }}>{t('pwhlGamePreview.hotStreaks.streakLine', { n: s.length })}</span>
                       <span className="pgp-streak-name text-[12px] text-[color:var(--text)] overflow-hidden text-ellipsis whitespace-nowrap max-w-full">{streakPlayerName(s.player)}</span>
                     </div>
                   ))}
@@ -305,7 +309,7 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
           {/* Team leaders */}
           {preview && ((myPreviewTeam?.leadingScorers?.length > 0) || (oppPreviewTeam?.leadingScorers?.length > 0)) && (
             <div className="pgp-section mt-4.5">
-              <div className={PGP_SECTION_LABEL_CLASSES}>Team Leaders</div>
+              <div className={PGP_SECTION_LABEL_CLASSES}>{t('pwhlGamePreview.teamLeaders.header')}</div>
               <div className="pgp-leaders-cols flex gap-4">
                 <div className="pgp-leaders-col flex-1 flex flex-col gap-1.5 min-w-0">
                   {(myPreviewTeam?.leadingScorers || []).slice(0, 3).map((p, i) => (
@@ -330,16 +334,16 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
           {/* Special teams */}
           {preview && (myPreviewTeam?.powerPlay || oppPreviewTeam?.powerPlay) && (
             <div className="pgp-section mt-4.5">
-              <div className={PGP_SECTION_LABEL_CLASSES}>Special Teams</div>
+              <div className={PGP_SECTION_LABEL_CLASSES}>{t('pwhlGamePreview.specialTeams.header')}</div>
               <div className="pgp-stat-grid flex flex-col gap-1.5">
                 <div className={PGP_STAT_GRID_ROW_CLASSES}>
                   <span style={{ color }}>{pctValue(myPreviewTeam?.powerPlay) != null ? `${pctValue(myPreviewTeam.powerPlay).toFixed(1)}%` : '—'}</span>
-                  <span className={PGP_STAT_GRID_LABEL_CLASSES}>Power Play</span>
+                  <span className={PGP_STAT_GRID_LABEL_CLASSES}>{t('pwhlGamePreview.specialTeams.powerPlayLabel')}</span>
                   <span style={{ color: oppColor }}>{pctValue(oppPreviewTeam?.powerPlay) != null ? `${pctValue(oppPreviewTeam.powerPlay).toFixed(1)}%` : '—'}</span>
                 </div>
                 <div className={PGP_STAT_GRID_ROW_CLASSES}>
                   <span style={{ color }}>{pctValue(myPreviewTeam?.penaltyKill) != null ? `${pctValue(myPreviewTeam.penaltyKill).toFixed(1)}%` : '—'}</span>
-                  <span className={PGP_STAT_GRID_LABEL_CLASSES}>Penalty Kill</span>
+                  <span className={PGP_STAT_GRID_LABEL_CLASSES}>{t('pwhlGamePreview.specialTeams.penaltyKillLabel')}</span>
                   <span style={{ color: oppColor }}>{pctValue(oppPreviewTeam?.penaltyKill) != null ? `${pctValue(oppPreviewTeam.penaltyKill).toFixed(1)}%` : '—'}</span>
                 </div>
               </div>

@@ -512,7 +512,8 @@
   },
   "common": {
     "loading": "Loading…",
-    "close": "Close"
+    "close": "Close",
+    "trackRecordLine": "📊 {{correct}}/{{total}} correct ({{pct}}%)"
   },
   "shotMapView": {
     "scoreBar": {
@@ -960,6 +961,109 @@
       "win": "Win",
       "otLoss": "OT Loss",
       "loss": "Loss"
+    }
+  },
+  "matchupDetail": {
+    "topLine": {
+      "header": "{{abbr}} Line 1 · 5v5 this season",
+      "xgf": "{{pct}}% xGF",
+      "toi": "{{mins}}m together · inferred from shift data"
+    },
+    "prediction": {
+      "needsStandings": "📊 Prediction needs this season's standings — not available until games begin.",
+      "probabilityLabel": "Predicted win probability",
+      "sourceWithOdds": "Stats + {{book}} odds",
+      "sourceStatsOnly": "Based on season stats"
+    },
+    "odds": {
+      "implied": "{{pct}}% implied"
+    },
+    "factors": {
+      "offence": "Offence (GF/GP)",
+      "defence": "Defence (GA/GP)",
+      "possession": "Possession (SOG/GP)",
+      "ppVsPk": "PP vs PK",
+      "standings": "Standings",
+      "recentForm": "Recent form",
+      "homeIce": "Home ice",
+      "seriesLead": "Series lead",
+      "topLine": "Top line (5v5 xGF%)"
+    },
+    "tooltip": {
+      "title": "How we predict:",
+      "gfGa": "• GF/GP & GA/GP — offensive and defensive efficiency",
+      "possession": "• SOG/GP — possession proxy (shot attempt share)",
+      "ppPk": "• PP vs PK matchup — special teams edge",
+      "seriesRecord": "• Series record — current series lead/deficit",
+      "standingsPoints": "• Standings points — season performance",
+      "recentForm": "• Recent form — current streak",
+      "homeIce": "• Home ice — ~0.25 goal advantage",
+      "topLineXgf": "• Top line 5v5 xGF% — {{pct}}% this season",
+      "marketOdds": "• Market odds — 40% weight when available",
+      "playoffMode": "Playoff mode: standings points excluded."
+    },
+    "tabs": {
+      "prediction": "Prediction",
+      "scouting": "Scouting"
+    },
+    "header": {
+      "title": "{{car}} vs {{opp}} — Matchup breakdown"
+    },
+    "series": {
+      "inThisSeries": "in this series"
+    },
+    "trackRecordShort": "{{correct}}/{{total}} correct ({{pct}}%)",
+    "scorePred": {
+      "label": "Predicted score",
+      "subtext": "Expected goals projection",
+      "autoSavedNote": "Prediction auto-saved · {{record}}",
+      "noResultsYet": "No results yet"
+    },
+    "stats": {
+      "pointsInStandings": "Points in standings",
+      "goalsForPerGame": "Goals for / game",
+      "goalsAgainstPerGame": "Goals against / game",
+      "winRate": "Win rate",
+      "ppVsPk": "PP% vs opp PK%"
+    },
+    "ai": {
+      "loading": "Loading analysis…",
+      "tooltip": "AI analysis synthesizes possession metrics, recent form, head-to-head record, and key matchup factors into a plain-English preview. Generated nightly by the EyeWall pipeline."
+    }
+  },
+  "pwhlGamePreview": {
+    "header": {
+      "previewLabel": "Preview",
+      "closeAriaLabel": "Close game preview"
+    },
+    "prediction": {
+      "sectionLabel": "Prediction",
+      "notAvailable": "Prediction not available for this game.",
+      "expectedScoreLabel": "Expected score",
+      "streakLabel": "Streak",
+      "shotAttemptShareLabel": "Shot-attempt share",
+      "shotAttemptCaveatPrefix": "Shot-attempt share is {{caveat}}"
+    },
+    "seasonSeries": {
+      "header": "Season Series",
+      "empty": "First meeting this season.",
+      "last5SeasonsVs": "Last 5 seasons vs {{oppAbbr}}"
+    },
+    "teamForm": {
+      "header": "Team Form",
+      "last10": "Last 10: {{record}}"
+    },
+    "hotStreaks": {
+      "header": "Hot Streaks",
+      "streakLine": "{{n}}-game pt streak"
+    },
+    "teamLeaders": {
+      "header": "Team Leaders"
+    },
+    "specialTeams": {
+      "header": "Special Teams",
+      "powerPlayLabel": "Power Play",
+      "penaltyKillLabel": "Penalty Kill"
     }
   }
 }

@@ -512,7 +512,8 @@
   },
   "common": {
     "loading": "Chargement…",
-    "close": "Fermer"
+    "close": "Fermer",
+    "trackRecordLine": "📊 {{correct}}/{{total}} correctes ({{pct}}%)"
   },
   "shotMapView": {
     "scoreBar": {
@@ -960,6 +961,109 @@
       "win": "Victoire",
       "otLoss": "Défaite en prol.",
       "loss": "Défaite"
+    }
+  },
+  "matchupDetail": {
+    "topLine": {
+      "header": "Ligne 1 de {{abbr}} · 5v5 cette saison",
+      "xgf": "{{pct}}% xGF",
+      "toi": "{{mins}} min ensemble · déduit des données de présences"
+    },
+    "prediction": {
+      "needsStandings": "📊 La prédiction nécessite le classement de cette saison — non disponible avant le début des matchs.",
+      "probabilityLabel": "Probabilité de victoire prédite",
+      "sourceWithOdds": "Statistiques + cotes {{book}}",
+      "sourceStatsOnly": "Basé sur les statistiques de la saison"
+    },
+    "odds": {
+      "implied": "{{pct}}% implicite"
+    },
+    "factors": {
+      "offence": "Attaque (BP/PJ)",
+      "defence": "Défense (BC/PJ)",
+      "possession": "Possession (TAB/PJ)",
+      "ppVsPk": "AN contre DN",
+      "standings": "Classement",
+      "recentForm": "Forme récente",
+      "homeIce": "Avantage de la glace",
+      "seriesLead": "Avance dans la série",
+      "topLine": "Première ligne (xGF% 5v5)"
+    },
+    "tooltip": {
+      "title": "Comment nous prédisons :",
+      "gfGa": "• BP/PJ et BC/PJ — efficacité offensive et défensive",
+      "possession": "• TAB/PJ — indicateur de possession (part des tentatives de tir)",
+      "ppPk": "• Avantage numérique contre désavantage numérique — avantage des unités spéciales",
+      "seriesRecord": "• Fiche de la série — avance ou déficit actuel",
+      "standingsPoints": "• Points au classement — performance de la saison",
+      "recentForm": "• Forme récente — séquence actuelle",
+      "homeIce": "• Avantage de la glace — environ 0,25 but d'avance",
+      "topLineXgf": "• xGF% 5v5 de la première ligne — {{pct}}% cette saison",
+      "marketOdds": "• Cotes du marché — pondération de 40% lorsque disponibles",
+      "playoffMode": "Mode séries éliminatoires : points au classement exclus."
+    },
+    "tabs": {
+      "prediction": "Prédiction",
+      "scouting": "Dépistage"
+    },
+    "header": {
+      "title": "{{car}} contre {{opp}} — Détails du match"
+    },
+    "series": {
+      "inThisSeries": "dans cette série"
+    },
+    "trackRecordShort": "{{correct}}/{{total}} correctes ({{pct}}%)",
+    "scorePred": {
+      "label": "Score prédit",
+      "subtext": "Projection des buts attendus",
+      "autoSavedNote": "Prédiction enregistrée automatiquement · {{record}}",
+      "noResultsYet": "Aucun résultat pour l'instant"
+    },
+    "stats": {
+      "pointsInStandings": "Points au classement",
+      "goalsForPerGame": "Buts pour / match",
+      "goalsAgainstPerGame": "Buts contre / match",
+      "winRate": "Taux de victoire",
+      "ppVsPk": "% AN contre % DN adverse"
+    },
+    "ai": {
+      "loading": "Chargement de l'analyse…",
+      "tooltip": "L'analyse IA synthétise les statistiques de possession, la forme récente, la fiche face à face et les principaux facteurs du match en un aperçu en langage clair. Généré chaque nuit par le pipeline EyeWall."
+    }
+  },
+  "pwhlGamePreview": {
+    "header": {
+      "previewLabel": "Aperçu",
+      "closeAriaLabel": "Fermer l'aperçu du match"
+    },
+    "prediction": {
+      "sectionLabel": "Prédiction",
+      "notAvailable": "Prédiction non disponible pour ce match.",
+      "expectedScoreLabel": "Score attendu",
+      "streakLabel": "Séquence",
+      "shotAttemptShareLabel": "Part des tentatives de tir",
+      "shotAttemptCaveatPrefix": "La part des tentatives de tir est {{caveat}}"
+    },
+    "seasonSeries": {
+      "header": "Série de la saison",
+      "empty": "Première rencontre cette saison.",
+      "last5SeasonsVs": "5 dernières saisons contre {{oppAbbr}}"
+    },
+    "teamForm": {
+      "header": "Forme de l'équipe",
+      "last10": "10 derniers : {{record}}"
+    },
+    "hotStreaks": {
+      "header": "Séquences chaudes",
+      "streakLine": "{{n}} matchs de suite avec un point"
+    },
+    "teamLeaders": {
+      "header": "Meneuses de l'équipe"
+    },
+    "specialTeams": {
+      "header": "Unités spéciales",
+      "powerPlayLabel": "Avantage numérique",
+      "penaltyKillLabel": "Désavantage numérique"
     }
   }
 }
