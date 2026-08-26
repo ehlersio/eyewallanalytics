@@ -1056,7 +1056,7 @@ export default function ShotMapView() {
         plays.filter(p => (p.typeDescKey === 'shot-on-goal' || p.typeDescKey === 'goal') && p.details?.eventOwnerTeamId !== carId),
         p => p.details?.shootingPlayerId || p.details?.scoringPlayerId
       );
-      setDrillStat({ label: 'Shots on Goal', carRows, oppRows, type: 'shots' });
+      setDrillStat({ label: t('shotMapView.drillTitles.shotsOnGoal'), carRows, oppRows, type: 'shots' });
 
     } else if (statKey === 'hits') {
       const carRows = buildPlayerRows(
@@ -1067,7 +1067,7 @@ export default function ShotMapView() {
         plays.filter(p => p.typeDescKey === 'hit' && p.details?.eventOwnerTeamId !== carId),
         p => p.details?.hittingPlayerId
       );
-      setDrillStat({ label: 'Hits', carRows, oppRows, type: 'shots' });
+      setDrillStat({ label: t('shotMapView.drillTitles.hits'), carRows, oppRows, type: 'shots' });
 
     } else if (statKey === 'blocked') {
       // Build set of CAR player IDs from rosterSpots to verify blocker team
@@ -1094,7 +1094,7 @@ export default function ShotMapView() {
         ),
         p => p.details?.blockingPlayerId
       );
-      setDrillStat({ label: 'Blocked Shots', carRows, oppRows, type: 'shots' });
+      setDrillStat({ label: t('shotMapView.drillTitles.blockedShots'), carRows, oppRows, type: 'shots' });
 
     } else if (statKey === 'faceoff') {
       const fos = plays.filter(p => p.typeDescKey === 'faceoff');
@@ -1121,7 +1121,7 @@ export default function ShotMapView() {
       const rows = Object.values(byPlayer)
         .map(r => ({ ...r, total: r.totalWon + r.totalLost }))
         .sort((a, b) => b.total - a.total);
-      setDrillStat({ label: `${TEAM_CONFIG.abbr} Faceoffs`, rows, type: 'faceoff' });
+      setDrillStat({ label: t('shotMapView.drillTitles.teamFaceoffs', { abbr: TEAM_CONFIG.abbr }), rows, type: 'faceoff' });
 
     } else if (statKey === 'pp') {
       // ── Rich PP Analysis ────────────────────────────────────
@@ -1318,7 +1318,7 @@ export default function ShotMapView() {
       const totalXG    = parseFloat(ppOpps.reduce((s, o) => s + o.xg, 0).toFixed(2));
 
       setDrillStat({
-        label: `${TEAM_CONFIG.abbr} Power Play Analysis`,
+        label: t('shotMapView.drillTitles.ppAnalysis', { abbr: TEAM_CONFIG.abbr }),
         type: 'ppanalysis',
         ppOpps,
         summary: {
@@ -1344,7 +1344,7 @@ export default function ShotMapView() {
           time:        p.timeInPeriod || '—',
         }));
       setDrillStat({
-        label: 'Penalties',
+        label: t('shotMapView.drillTitles.penalties'),
         carRows:  buildPenRows(carId),
         oppRows:  buildPenRows(oppId),
         type: 'penalties',
@@ -1497,7 +1497,7 @@ export default function ShotMapView() {
       const totalBlocks       = pkOpps.reduce((s, o) => s + o.blockerList.reduce((b, bl) => b + bl.count, 0), 0);
 
       setDrillStat({
-        label: `${TEAM_CONFIG.abbr} Penalty Kill Analysis`,
+        label: t('shotMapView.drillTitles.pkAnalysis', { abbr: TEAM_CONFIG.abbr }),
         type: 'pkanalysis',
         pkOpps,
         summary: { goalsAgainst: totalGoalsAgainst, opps: pkOpps.length, sogAgainst: totalSOGAgainst, xgAgainst: totalXGAgainst, blocks: totalBlocks },
@@ -1505,7 +1505,7 @@ export default function ShotMapView() {
         rosterSpots: pbp.rosterSpots || [],
       });
     }
-  }, [pbp, roster, opp]);
+  }, [pbp, roster, opp, t]);
 
   // ── Live MetCard stats from PBP (updates every poll) ─────────
   // These replace rightRail.teamGameStats which only fetches once
@@ -1659,9 +1659,9 @@ export default function ShotMapView() {
     if (!dangerCounts.hiShots) return;
     const periodLabel = n => n <= 3 ? `P${n}` : inPlayoffs ? (n === 4 ? "OT" : `${n - 3}OT`) : n === 4 ? "OT" : "SO";
     const shotSets = {
-      hi:  { shots: dangerCounts.hiShots,  label: '🔴 High Danger Shots (<15 ft)' },
-      med: { shots: dangerCounts.medShots, label: '🟡 Medium Danger Shots (15–30 ft)' },
-      lo:  { shots: dangerCounts.loShots,  label: '⚪ Low Danger Shots (>30 ft)' },
+      hi:  { shots: dangerCounts.hiShots,  label: t('shotMapView.drillTitles.highDanger') },
+      med: { shots: dangerCounts.medShots, label: t('shotMapView.drillTitles.mediumDanger') },
+      lo:  { shots: dangerCounts.loShots,  label: t('shotMapView.drillTitles.lowDanger') },
     };
     const { shots, label } = shotSets[zone];
     // Shot events already have shooterName resolved from rosterSpots
@@ -1675,7 +1675,7 @@ export default function ShotMapView() {
     });
     const rows = Object.values(byPlayer).sort((a, b) => b.total - a.total);
     setDrillStat({ label, rows, type: 'shots' });
-  }, [dangerCounts]);
+  }, [dangerCounts, t]);
 
   // ── Top CAR scorers — built from PBP goals (always current, no boxscore lag) ──
   const topScorers = useMemo(() => {
@@ -2605,6 +2605,7 @@ function EventLog({ plays, playerMap = {} }) {
 
 // ── Stat Drill-Down Popup ───────────────────────────────────
 function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState('car');
   if (!drillStat) return null;
 
@@ -2657,7 +2658,7 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
       <div className={DRILL_POPUP_CLASSES} onClick={e => e.stopPropagation()}>
         <div className={DRILL_HEADER_CLASSES}>
           <span className={DRILL_TITLE_CLASSES}>{drillStat.label}</span>
-          <button className={DRILL_CLOSE_CLASSES} onClick={onClose} aria-label="Close">✕</button>
+          <button className={DRILL_CLOSE_CLASSES} onClick={onClose} aria-label={t('shotMapView.drillPopup.close')}>✕</button>
         </div>
 
         {/* CAR / OPP tab toggle */}
@@ -2674,13 +2675,13 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
 
         <div className={DRILL_BODY_CLASSES}>
           {rows.length === 0 && drillStat.type !== 'ppanalysis' && drillStat.type !== 'pkanalysis' && (
-            <div className={DRILL_EMPTY_CLASSES}>No {teamLabel} data for this game.</div>
+            <div className={DRILL_EMPTY_CLASSES}>{t('shotMapView.drillPopup.noData', { team: teamLabel })}</div>
           )}
 
           {drillStat.type === 'faceoff' && (
             <div className={DRILL_TABLE_CLASSES}>
               <div className={DRILL_COL_HEADER_FO_CLASSES}>
-                <span>Player</span><span>Won</span><span>Lost</span><span>Win%</span>
+                <span>{t('shotMapView.drillPopup.player')}</span><span>{t('shotMapView.drillPopup.won')}</span><span>{t('shotMapView.drillPopup.lost')}</span><span>{t('shotMapView.drillPopup.winPct')}</span>
               </div>
               {rows.map((r, i) => (
                 <div key={i}>
@@ -2718,9 +2719,9 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
                 className={DRILL_COL_HEADER_CLASSES}
                 style={{ gridTemplateColumns: `1fr ${periods.map(() => '34px').join(' ')} 42px` }}
               >
-                <span>Player</span>
+                <span>{t('shotMapView.drillPopup.player')}</span>
                 {periods.map(p => <span key={p}>{periodLabel(p)}</span>)}
-                <span>Total</span>
+                <span>{t('shotMapView.drillPopup.total')}</span>
               </div>
               {rows.map((r, i) => (
                 <div key={i} className={DRILL_ROW_GRID_CLASSES}
@@ -2738,7 +2739,7 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
               {grandTotal > 0 && (
                 <div className={DRILL_ROW_GRID_SHOTS_TOTALS_CLASSES}
                   style={{ gridTemplateColumns: `1fr ${periods.map(() => '34px').join(' ')} 42px` }}>
-                  <span className={DRILL_NAME_TOTALS_LABEL_CLASSES}>Total</span>
+                  <span className={DRILL_NAME_TOTALS_LABEL_CLASSES}>{t('shotMapView.drillPopup.total')}</span>
                   {periods.map(p => (
                     <span key={p} className={drillValClasses(periodTotals[p] ? 'total' : 'total-dim')}>
                       {periodTotals[p] || '—'}
@@ -2753,7 +2754,7 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
           {drillStat.type === 'penalties' && (
             <div className={DRILL_TABLE_CLASSES}>
               {rows.length === 0
-                ? <div className={DRILL_EMPTY_CLASSES}>No {teamLabel} penalties.</div>
+                ? <div className={DRILL_EMPTY_CLASSES}>{t('shotMapView.drillPopup.noPenalties', { team: teamLabel })}</div>
                 : rows.map((r, i) => {
                     const minor = r.duration <= 2;
                     return (
@@ -2761,7 +2762,7 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
                         <div className={PEN_ROW_TOP_CLASSES}>
                           <span className={DRILL_NAME_CLASSES}>{r.name}</span>
                           <span className={PEN_BADGE_CLASSES} style={{ background: minor ? 'rgba(251,191,36,0.15)' : 'rgba(248,113,113,0.2)', color: minor ? '#fbbf24' : '#f87171' }}>
-                            {r.duration} min
+                            {t('shotMapView.drillPopup.durationMin', { duration: r.duration })}
                           </span>
                           <span className={PEN_PERIOD_CLASSES}>{r.period} · {r.time}</span>
                         </div>
@@ -2783,7 +2784,7 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
                 }, {});
                 return (
                   <div className={PEN_TOTALS_CLASSES}>
-                    <span className={DRILL_TOTALS_LABEL_CLASSES}>Totals</span>
+                    <span className={DRILL_TOTALS_LABEL_CLASSES}>{t('shotMapView.drillPopup.totals')}</span>
                     {Object.keys(penByPeriod).sort((a, b) => {
                       const sk = l => {
                         if (l === 'SO') return 5;
@@ -2796,7 +2797,7 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
                     }).map(p => (
                       <span key={p} className={PERIOD_CHIP_CLASSES}>{p}: {penByPeriod[p]}</span>
                     ))}
-                    <span className={drillValClasses('total')}>{rows.length} total</span>
+                    <span className={drillValClasses('total')}>{t('shotMapView.drillPopup.grandTotal', { n: rows.length })}</span>
                   </div>
                 );
               })()}

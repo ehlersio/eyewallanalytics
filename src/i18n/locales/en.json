@@ -582,6 +582,32 @@
       "gsaxSeasonHelp": "Regular season goals saved above expected (MoneyPuck flurry-adjusted xGoals model). Shown year-round as the larger sample is more reliable than playoff sample sizes. Positive = saving more goals than an average goalie on the same shots. {{gpNote}}",
       "gsaxSeasonGpNote": "{{gp}} GP this season."
     },
+    "drillTitles": {
+      "shotsOnGoal": "Shots on Goal",
+      "hits": "Hits",
+      "blockedShots": "Blocked Shots",
+      "teamFaceoffs": "{{abbr}} Faceoffs",
+      "ppAnalysis": "{{abbr}} Power Play Analysis",
+      "penalties": "Penalties",
+      "pkAnalysis": "{{abbr}} Penalty Kill Analysis",
+      "highDanger": "🔴 High Danger Shots (<15 ft)",
+      "mediumDanger": "🟡 Medium Danger Shots (15–30 ft)",
+      "lowDanger": "⚪ Low Danger Shots (>30 ft)"
+    },
+    "drillPopup": {
+      "close": "Close",
+      "noData": "No {{team}} data for this game.",
+      "player": "Player",
+      "won": "Won",
+      "lost": "Lost",
+      "winPct": "Win%",
+      "total": "Total",
+      "noPenalties": "No {{team}} penalties.",
+      "noFaceoffData": "No faceoff data for this game.",
+      "durationMin": "{{duration}} min",
+      "totals": "Totals",
+      "grandTotal": "{{n}} total"
+    },
     "onIce": {
       "title": "On Ice"
     },
@@ -633,6 +659,19 @@
     },
     "goalieCard": {
       "gaa": "GAA"
+    },
+    "teamStats": {
+      "shotsOnGoalHelp": "Shots that reached the goalie (goals + saves).",
+      "blockedShotsHelp": "Attempts blocked by a skater before reaching the goalie.",
+      "hitsHelp": "Body checks delivered.",
+      "penaltiesHelp": "Penalties taken — fewer is better.",
+      "faceoffHelp": "Faceoff win %. {{won}}W – {{lost}}L."
+    },
+    "drillTitles": {
+      "faceoffsPlain": "Faceoffs",
+      "highDanger": "🔴 High Danger (<15 ft)",
+      "mediumDanger": "🟡 Medium Danger (15–30 ft)",
+      "lowDanger": "⚪ Low Danger (>30 ft)"
     }
   }
 }

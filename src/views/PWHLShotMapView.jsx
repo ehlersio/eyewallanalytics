@@ -425,6 +425,7 @@ function distFromGoal(x, y) {
 // ── Stat Drill Popup ──────────────────────────────────────────
 
 function StatDrillPopup({ drillStat, onClose, abbr, oppAbbr, color }) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState('car');
   if (!drillStat) return null;
 
@@ -456,7 +457,7 @@ function StatDrillPopup({ drillStat, onClose, abbr, oppAbbr, color }) {
       <div className={DRILL_POPUP_CLASSES} onClick={e => e.stopPropagation()}>
         <div className={DRILL_HEADER_CLASSES}>
           <span className={DRILL_TITLE_CLASSES}>{drillStat.label}</span>
-          <button className={DRILL_CLOSE_CLASSES} onClick={onClose} aria-label="Close">✕</button>
+          <button className={DRILL_CLOSE_CLASSES} onClick={onClose} aria-label={t('shotMapView.drillPopup.close')}>✕</button>
         </div>
 
         {hasOpp && (
@@ -473,14 +474,14 @@ function StatDrillPopup({ drillStat, onClose, abbr, oppAbbr, color }) {
         <div className={DRILL_BODY_CLASSES}>
           {drillStat.type === 'shots' && (
             rows.length === 0
-              ? <div className={DRILL_EMPTY_CLASSES}>No {teamLabel} data for this game.</div>
+              ? <div className={DRILL_EMPTY_CLASSES}>{t('shotMapView.drillPopup.noData', { team: teamLabel })}</div>
               : (
                 <div className={DRILL_TABLE_CLASSES}>
                   <div className={DRILL_COL_HEADER_CLASSES}
                     style={{ gridTemplateColumns: `1fr ${periods.map(() => '34px').join(' ')} 42px` }}>
-                    <span>Player</span>
+                    <span>{t('shotMapView.drillPopup.player')}</span>
                     {periods.map(p => <span key={p}>{p}</span>)}
-                    <span>Total</span>
+                    <span>{t('shotMapView.drillPopup.total')}</span>
                   </div>
                   {rows.map((r, i) => (
                     <div key={i} className={DRILL_ROW_GRID_CLASSES}
@@ -497,7 +498,7 @@ function StatDrillPopup({ drillStat, onClose, abbr, oppAbbr, color }) {
                   {grandTotal > 0 && (
                     <div className={DRILL_ROW_GRID_SHOTS_TOTALS_CLASSES}
                       style={{ gridTemplateColumns: `1fr ${periods.map(() => '34px').join(' ')} 42px` }}>
-                      <span className={DRILL_NAME_TOTALS_LABEL_CLASSES}>Total</span>
+                      <span className={DRILL_NAME_TOTALS_LABEL_CLASSES}>{t('shotMapView.drillPopup.total')}</span>
                       {periods.map(p => (
                         <span key={p} className={drillValClasses(periodTots[p] ? 'total' : 'total-dim')}>
                           {periodTots[p] || '—'}
@@ -513,11 +514,11 @@ function StatDrillPopup({ drillStat, onClose, abbr, oppAbbr, color }) {
           {drillStat.type === 'faceoff' && (
             <div className={DRILL_TABLE_CLASSES}>
               {rows.length === 0
-                ? <div className={DRILL_EMPTY_CLASSES}>No faceoff data for this game.</div>
+                ? <div className={DRILL_EMPTY_CLASSES}>{t('shotMapView.drillPopup.noFaceoffData')}</div>
                 : (
                   <>
                     <div className={DRILL_COL_HEADER_FO_CLASSES}>
-                      <span>Player</span><span>Won</span><span>Lost</span><span>Win%</span>
+                      <span>{t('shotMapView.drillPopup.player')}</span><span>{t('shotMapView.drillPopup.won')}</span><span>{t('shotMapView.drillPopup.lost')}</span><span>{t('shotMapView.drillPopup.winPct')}</span>
                     </div>
                     {rows.map((r, i) => (
                       <div key={i} className={DRILL_ROW_GRID_FO_CLASSES}>
@@ -546,7 +547,7 @@ function StatDrillPopup({ drillStat, onClose, abbr, oppAbbr, color }) {
           {drillStat.type === 'penalties' && (
             <div className={DRILL_TABLE_CLASSES}>
               {rows.length === 0
-                ? <div className={DRILL_EMPTY_CLASSES}>No {teamLabel} penalties.</div>
+                ? <div className={DRILL_EMPTY_CLASSES}>{t('shotMapView.drillPopup.noPenalties', { team: teamLabel })}</div>
                 : rows.map((r, i) => (
                   <div key={i} className={PEN_ROW_CLASSES}>
                     <div className={PEN_ROW_TOP_CLASSES}>
@@ -556,7 +557,7 @@ function StatDrillPopup({ drillStat, onClose, abbr, oppAbbr, color }) {
                           background: r.minutes <= 2 ? 'rgba(251,191,36,0.15)' : 'rgba(248,113,113,0.2)',
                           color:      r.minutes <= 2 ? '#fbbf24'               : '#f87171',
                         }}>
-                        {r.minutes} min
+                        {t('shotMapView.drillPopup.durationMin', { duration: r.minutes })}
                       </span>
                       <span className={PEN_PERIOD_CLASSES}>{r.period}</span>
                     </div>
@@ -692,22 +693,23 @@ function ShotAttemptsPanel({ ourShots, oppShotRows, abbr, oppAbbr, color, goalie
 // ── Team Stats card ───────────────────────────────────────────
 
 function TeamStatsCard({ pbpStats, shotStats, abbr, oppAbbr, color, oppColor, faceoffStats, teamId }) {
+  const { t } = useTranslation();
   const rows = [
     shotStats && {
-      label: 'Shots on Goal', carN: shotStats.sog,    oppN: shotStats.oppSOG,
-      help: 'Shots that reached the goalie (goals + saves).',
+      label: t('shotMapView.statLabels.shotsOnGoal'), carN: shotStats.sog,    oppN: shotStats.oppSOG,
+      help: t('pwhlShotMapView.teamStats.shotsOnGoalHelp'),
     },
     shotStats && {
-      label: 'Blocked Shots', carN: shotStats.blocks, oppN: shotStats.oppBlocked,
-      help: 'Attempts blocked by a skater before reaching the goalie.',
+      label: t('shotMapView.statLabels.blockedShots'), carN: shotStats.blocks, oppN: shotStats.oppBlocked,
+      help: t('pwhlShotMapView.teamStats.blockedShotsHelp'),
     },
     pbpStats && {
-      label: 'Hits', carN: pbpStats.hits.car, oppN: pbpStats.hits.opp,
-      help: 'Body checks delivered.',
+      label: t('shotMapView.statLabels.hits'), carN: pbpStats.hits.car, oppN: pbpStats.hits.opp,
+      help: t('pwhlShotMapView.teamStats.hitsHelp'),
     },
     pbpStats && {
-      label: 'Penalties', carN: pbpStats.penalties.car, oppN: pbpStats.penalties.opp,
-      help: 'Penalties taken — fewer is better.',
+      label: t('shotMapView.metrics.penalties'), carN: pbpStats.penalties.car, oppN: pbpStats.penalties.opp,
+      help: t('pwhlShotMapView.teamStats.penaltiesHelp'),
     },
     (() => {
       // faceoffStats has both teams' players — filter to ours via team_id
@@ -728,12 +730,12 @@ function TeamStatsCard({ pbpStats, shotStats, abbr, oppAbbr, color, oppColor, fa
       }
       if (carPct == null) return null;
       return {
-        label: 'Faceoff %',
+        label: t('shotMapView.metrics.faceoffPct'),
         carN:  carPct,
         oppN:  100 - carPct,
         carDisplay: `${carPct.toFixed(1)}%`,
         oppDisplay: `${(100 - carPct).toFixed(1)}%`,
-        help: `Faceoff win %. ${won}W – ${lost}L.`,
+        help: t('pwhlShotMapView.teamStats.faceoffHelp', { won, lost }),
       };
     })(),
   ].filter(Boolean);
@@ -742,7 +744,7 @@ function TeamStatsCard({ pbpStats, shotStats, abbr, oppAbbr, color, oppColor, fa
 
   return (
     <div className="card">
-      <div className="sec-label" style={{ marginBottom: 8 }}>Team stats — this game</div>
+      <div className="sec-label" style={{ marginBottom: 8 }}>{t('shotMapView.boxscore.teamStatsThisGame')}</div>
       <div className={GM_STAT_HEADER_CLASSES}>
         <span style={{ color: color || 'var(--team-primary)' }}>{abbr}</span>
         <span />
@@ -1599,7 +1601,7 @@ export default function PWHLShotMapView() {
       const carSOGEvts = ourShotEvents.filter(e => e.type === 'shot-on-goal' || e.type === 'goal');
       const oppSOGRows = oppOnlyShots.filter(r => r.event_type === 'shot' || r.event_type === 'goal');
       setDrill({
-        label:   'Shots on Goal', type: 'shots',
+        label:   t('shotMapView.drillTitles.shotsOnGoal'), type: 'shots',
         carRows: buildRows(carSOGEvts, e => e.shooterName, e => pLabel(e.period)),
         oppRows: buildRows(oppSOGRows, r => r.shooter_name || `#${r.shooter_id}`, r => pLabel(r.period_id)),
       });
@@ -1608,7 +1610,7 @@ export default function PWHLShotMapView() {
       const carBlkEvts = ourShotEvents.filter(e => e.type === 'blocked-shot');
       const oppBlkRows = oppOnlyShots.filter(r => r.event_type === 'blocked_shot');
       setDrill({
-        label:   'Blocked Shots', type: 'shots',
+        label:   t('shotMapView.drillTitles.blockedShots'), type: 'shots',
         carRows: buildRows(carBlkEvts, e => e.shooterName, e => pLabel(e.period)),
         oppRows: buildRows(oppBlkRows, r => r.shooter_name || `#${r.shooter_id}`, r => pLabel(r.period_id)),
       });
@@ -1620,7 +1622,7 @@ export default function PWHLShotMapView() {
       const carH = pbpByType(pbpEvents, 'hit').filter(e => e.team_id === teamId);
       const oppH = pbpByType(pbpEvents, 'hit').filter(e => e.team_id !== teamId && e.team_id != null);
       setDrill({
-        label:   'Hits', type: 'shots',
+        label:   t('shotMapView.drillTitles.hits'), type: 'shots',
         carRows: buildRows(carH, e => e.player_name || `#${e.player_id}`),
         oppRows: buildRows(oppH, e => e.player_name || `#${e.player_id}`),
       });
@@ -1635,7 +1637,7 @@ export default function PWHLShotMapView() {
         period:      pLabel(e.period_id),
         periods: {}, total: 1,
       }));
-      setDrill({ label: 'Penalties', type: 'penalties', carRows: toRows(carP), oppRows: toRows(oppP) });
+      setDrill({ label: t('shotMapView.drillTitles.penalties'), type: 'penalties', carRows: toRows(carP), oppRows: toRows(oppP) });
 
     } else if (statKey === 'faceoff') {
       // Prefer gameSummary faceoff data (per-player wins/attempts) over PBP reconstruction
@@ -1644,7 +1646,7 @@ export default function PWHLShotMapView() {
           .filter(p => p.attempts > 0)
           .sort((a,b) => b.attempts - a.attempts)
           .map(p => ({ name: p.name, totalWon: p.wins, totalLost: p.losses, total: p.attempts }));
-        setDrill({ label: `Faceoffs`, rows, type: 'faceoff' });
+        setDrill({ label: t('pwhlShotMapView.drillTitles.faceoffsPlain'), rows, type: 'faceoff' });
       } else {
         // Fallback: reconstruct from PBP events
         const foEvs  = pbpByType(pbpEvents, 'faceoff');
@@ -1669,7 +1671,7 @@ export default function PWHLShotMapView() {
           }
         });
         const rows = Object.values(by).filter(r => r.total > 0).sort((a,b) => b.total - a.total);
-        setDrill({ label: `${abbr} Faceoffs`, rows, type: 'faceoff' });
+        setDrill({ label: t('shotMapView.drillTitles.teamFaceoffs', { abbr }), rows, type: 'faceoff' });
       }
     } else if (statKey === 'pp') {
       // Power play analysis: each of our PP opportunities (from opp penalties)
@@ -1705,7 +1707,7 @@ export default function PWHLShotMapView() {
       const totalSOG   = ppOpps.reduce((s,o) => s + o.sog, 0);
       const totalXG    = parseFloat(ppOpps.reduce((s,o) => s + o.xg, 0).toFixed(2));
       setDrill({
-        label: `${abbr} Power Play Analysis`, type: 'ppanalysis',
+        label: t('shotMapView.drillTitles.ppAnalysis', { abbr }), type: 'ppanalysis',
         ppOpps, ppUnit1: [], ppUnit2: [],
         summary: { goals: totalGoals, opps: ppOpps.length, sog: totalSOG, xg: totalXG },
       });
@@ -1765,18 +1767,18 @@ export default function PWHLShotMapView() {
       const totalXGvs    = parseFloat(pkOpps.reduce((s,o) => s + o.xgAgainst, 0).toFixed(2));
       const totalBlocks2 = pkOpps.reduce((s,o) => s + o.blockerList.reduce((b,bl)=>b+bl.count,0), 0);
       setDrill({
-        label: `${abbr} Penalty Kill Analysis`, type: 'pkanalysis',
+        label: t('shotMapView.drillTitles.pkAnalysis', { abbr }), type: 'pkanalysis',
         pkOpps, pkUnit1: [], pkUnit2: [],
         summary: { goalsAgainst: totalGA, opps: pkOpps.length, sogAgainst: totalSOGvs, xgAgainst: totalXGvs, blocks: totalBlocks2 },
       });
     }
-  }, [pbpEvents, pbpStats, ourShotEvents, oppShotRows, rawShots, selectedGameId, teamId, abbr, scoreBarData, pbpHomeId, pbpAwayId]);
+  }, [pbpEvents, pbpStats, ourShotEvents, oppShotRows, rawShots, selectedGameId, teamId, abbr, scoreBarData, pbpHomeId, pbpAwayId, t]);
 
   const buildDangerDrill = useCallback((zone) => {
     const sets = {
-      hi:  { shots: dangerCounts.hi,  label: '🔴 High Danger (<15 ft)' },
-      mid: { shots: dangerCounts.mid, label: '🟡 Medium Danger (15–30 ft)' },
-      lo:  { shots: dangerCounts.lo,  label: '⚪ Low Danger (>30 ft)' },
+      hi:  { shots: dangerCounts.hi,  label: t('pwhlShotMapView.drillTitles.highDanger') },
+      mid: { shots: dangerCounts.mid, label: t('pwhlShotMapView.drillTitles.mediumDanger') },
+      lo:  { shots: dangerCounts.lo,  label: t('pwhlShotMapView.drillTitles.lowDanger') },
     };
     const { shots, label } = sets[zone];
     const by = {};
@@ -1788,7 +1790,7 @@ export default function PWHLShotMapView() {
       by[name].total++;
     });
     setDrill({ label, rows: Object.values(by).sort((a,b) => b.total - a.total), type: 'shots' });
-  }, [dangerCounts]);
+  }, [dangerCounts, t]);
 
   // ── Derived display ───────────────────────────────────────────
 
