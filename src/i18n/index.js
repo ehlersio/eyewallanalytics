@@ -21,7 +21,15 @@ function initialLocale() {
   } catch {
     // localStorage unavailable — fall through
   }
-  const browserLang = (navigator.language || '').slice(0, 2).toLowerCase();
+  // `navigator` itself (not just `.language`) is missing entirely in a
+  // plain Node environment (e.g. vitest's `environment: 'node'` test
+  // runner, or any non-browser import of a module that transitively
+  // pulls this file in) -- guard the whole reference, not just the
+  // property access, or this throws before the try/catch above even
+  // gets a chance to matter.
+  const browserLang = typeof navigator !== 'undefined'
+    ? (navigator.language || '').slice(0, 2).toLowerCase()
+    : '';
   return VALID.includes(browserLang) ? browserLang : 'en';
 }
 
