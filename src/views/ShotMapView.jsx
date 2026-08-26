@@ -3155,6 +3155,7 @@ function PKAnalysisPanel({ drillStat }) {
 
 // ── Live Insights ────────────────────────────────────────────
 function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers, isLive, debugInsight, gameLogInsights, isPlayoff = false }) {
+  const { t } = useTranslation();
   const insights = useMemo(() => {
     const plays   = pbp?.plays || [];
     const carTeam = gameHome ? pbp?.homeTeam?.id : pbp?.awayTeam?.id;
@@ -3186,8 +3187,8 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         results.push({
           icon: diff > 0 ? '🎯' : '😬',
           text: diff > 0
-            ? `${TEAM_CONFIG.abbr} dominated ${periodLabel} shots ${ps.car}–${ps.opp}`
-            : `${oppAbbr} dominated ${periodLabel} shots ${ps.opp}–${ps.car}`,
+            ? t('shotMapView.liveInsights.periodDominanceFor', { abbr: TEAM_CONFIG.abbr, period: periodLabel, car: ps.car, opp: ps.opp })
+            : t('shotMapView.liveInsights.periodDominanceAgainst', { oppAbbr, period: periodLabel, car: ps.car, opp: ps.opp }),
           type: diff > 0 ? 'good' : 'warn',
         });
       }
@@ -3201,8 +3202,8 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       if (recentAttempts.length >= 6) {
         const carRecent = recentAttempts.filter(p => p.details?.eventOwnerTeamId === carTeam).length;
         const oppRecent = recentAttempts.length - carRecent;
-        if (carRecent >= 7) results.push({ icon: '🌀', text: `${TEAM_CONFIG.abbr} on a roll — ${carRecent} of last ${recentAttempts.length} shot attempts`, type: 'good' });
-        else if (oppRecent >= 7) results.push({ icon: '🧱', text: `${oppAbbr} pressing — ${oppRecent} of last ${recentAttempts.length} shot attempts`, type: 'warn' });
+        if (carRecent >= 7) results.push({ icon: '🌀', text: t('shotMapView.liveInsights.onARoll', { abbr: TEAM_CONFIG.abbr, n: carRecent, total: recentAttempts.length }), type: 'good' });
+        else if (oppRecent >= 7) results.push({ icon: '🧱', text: t('shotMapView.liveInsights.oppPressing', { oppAbbr, n: oppRecent, total: recentAttempts.length }), type: 'warn' });
       }
     }
 
@@ -3214,7 +3215,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
           leader.goals > 0 ? `${leader.goals}G` : null,
           leader.assists > 0 ? `${leader.assists}A` : null,
         ].filter(Boolean).join(', ');
-        results.push({ icon: '⭐', text: `${leader.name} led ${TEAM_CONFIG.abbr} with ${pts} (${leader.points} pts)`, type: 'good' });
+        results.push({ icon: '⭐', text: t('shotMapView.liveInsights.topScorer', { name: leader.name, abbr: TEAM_CONFIG.abbr, pts, points: leader.points }), type: 'good' });
       }
     }
 
@@ -3248,9 +3249,9 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     })();
 
     if (carPens >= 2 && ppGoalsAgainst === 0 && !oppCurrentlyOnPP) {
-      results.push({ icon: '🛡️', text: `${TEAM_CONFIG.abbr} PK went ${carPens}-for-${carPens} — perfect penalty kill`, type: 'good' });
+      results.push({ icon: '🛡️', text: t('shotMapView.liveInsights.perfectPk', { abbr: TEAM_CONFIG.abbr, n: carPens }), type: 'good' });
     } else if (ppGoalsAgainst >= 2) {
-      results.push({ icon: '😤', text: `PK struggled — allowed ${ppGoalsAgainst} power play goals`, type: 'warn' });
+      results.push({ icon: '😤', text: t('shotMapView.liveInsights.pkStruggled', { n: ppGoalsAgainst }), type: 'warn' });
     }
 
     // ── Coach's challenges & video reviews ───────────────────
@@ -3265,10 +3266,10 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       const reason = chlg.details.reason; // e.g. 'chlg-hm-goal-interference'
       const isHome = reason.includes('-hm-');
       const isCar  = (isHome && gameHome) || (!isHome && !gameHome);
-      const type   = reason.includes('goal-interference') ? 'goal interference'
-                   : reason.includes('off-side')          ? 'offside'
-                   : reason.includes('missed-stoppage')   ? 'missed stoppage'
-                   : 'call';
+      const type   = reason.includes('goal-interference') ? t('shotMapView.liveInsights.challengeType.goalInterference')
+                   : reason.includes('off-side')          ? t('shotMapView.liveInsights.challengeType.offside')
+                   : reason.includes('missed-stoppage')   ? t('shotMapView.liveInsights.challengeType.missedStoppage')
+                   : t('shotMapView.liveInsights.challengeType.call');
 
       // Check if the next nearby penalty is an unsuccessful challenge
       const unsuccessful = plays.find(p =>
@@ -3283,16 +3284,16 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         results.push({
           icon: succeeded ? '✅' : '❌',
           text: succeeded
-            ? `${TEAM_CONFIG.abbr} challenge (${type}) succeeded — call overturned`
-            : `${TEAM_CONFIG.abbr} challenge (${type}) failed — 2-min penalty`,
+            ? t('shotMapView.liveInsights.challengeSucceededFor', { abbr: TEAM_CONFIG.abbr, type })
+            : t('shotMapView.liveInsights.challengeFailedFor', { abbr: TEAM_CONFIG.abbr, type }),
           type: succeeded ? 'good' : 'warn',
         });
       } else {
         results.push({
           icon: succeeded ? '😤' : '🛡️',
           text: succeeded
-            ? `${oppAbbr} challenge (${type}) succeeded — call overturned`
-            : `${oppAbbr} challenge (${type}) failed`,
+            ? t('shotMapView.liveInsights.challengeSucceededAgainst', { oppAbbr, type })
+            : t('shotMapView.liveInsights.challengeFailedAgainst', { oppAbbr, type }),
           type: succeeded ? 'warn' : 'good',
         });
       }
@@ -3301,7 +3302,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     if (leagueReviews.length > 0) {
       results.push({
         icon: '🎥',
-        text: `${leagueReviews.length} league-initiated video review${leagueReviews.length > 1 ? 's' : ''} this game`,
+        text: t('shotMapView.liveInsights.videoReviews', { count: leagueReviews.length }),
         type: 'neutral',
       });
     }
@@ -3354,19 +3355,19 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         // instead of two near-duplicate rows eating two of the six slots.
         results.push({
           icon: '🔒',
-          text: `${TEAM_CONFIG.abbr} held ${oppAbbr} to ${pa.opp} shot attempts and ${ps.opp} SOG in ${periodLabel}`,
+          text: t('shotMapView.liveInsights.limitedAttemptsAndSog', { abbr: TEAM_CONFIG.abbr, oppAbbr, attempts: pa.opp, sog: ps.opp, period: periodLabel }),
           type: 'good',
         });
       } else if (attemptsHit) {
         results.push({
           icon: '🔒',
-          text: `${TEAM_CONFIG.abbr} held ${oppAbbr} to just ${pa.opp} shot attempts in ${periodLabel}`,
+          text: t('shotMapView.liveInsights.limitedAttempts', { abbr: TEAM_CONFIG.abbr, oppAbbr, attempts: pa.opp, period: periodLabel }),
           type: 'good',
         });
       } else if (sogHit) {
         results.push({
           icon: '🧱',
-          text: `${TEAM_CONFIG.abbr} held ${oppAbbr} to ${ps.opp} shots on goal in ${periodLabel}`,
+          text: t('shotMapView.liveInsights.limitedSog', { abbr: TEAM_CONFIG.abbr, oppAbbr, sog: ps.opp, period: periodLabel }),
           type: 'good',
         });
       }
@@ -3385,13 +3386,13 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       if (foPct >= 58) {
         results.push({
           icon: '🏒',
-          text: `${TEAM_CONFIG.abbr} controlling faceoffs — winning ${foPct}% (${carFOW}/${totalFO})`,
+          text: t('shotMapView.liveInsights.faceoffControlFor', { abbr: TEAM_CONFIG.abbr, pct: foPct, won: carFOW, total: totalFO }),
           type: 'good',
         });
       } else if (foPct <= 42) {
         results.push({
           icon: '😬',
-          text: `${oppAbbr} winning faceoffs — ${TEAM_CONFIG.abbr} at ${foPct}% (${carFOW}/${totalFO})`,
+          text: t('shotMapView.liveInsights.faceoffControlAgainst', { oppAbbr, abbr: TEAM_CONFIG.abbr, pct: foPct, won: carFOW, total: totalFO }),
           type: 'warn',
         });
       }
@@ -3405,7 +3406,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       if (carGoals.length === 0) {
         results.push({
           icon: '🥶',
-          text: `${TEAM_CONFIG.abbr} hasn't scored yet — looking for the first one`,
+          text: t('shotMapView.liveInsights.scorelessSoFar', { abbr: TEAM_CONFIG.abbr }),
           type: 'warn',
         });
       } else {
@@ -3415,7 +3416,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         if (droughtPeriods >= 2) {
           results.push({
             icon: '🥶',
-            text: `${TEAM_CONFIG.abbr} hasn't scored in ${droughtPeriods} periods — last goal in P${lastGoalPeriod}`,
+            text: t('shotMapView.liveInsights.scoringDrought', { abbr: TEAM_CONFIG.abbr, n: droughtPeriods, period: `P${lastGoalPeriod}` }),
             type: 'warn',
           });
         }
@@ -3430,12 +3431,12 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       const winPct = carScoredFirst ? gl?.scoredFirstWinPct : gl?.didntScoreFirstWinPct;
       const gamesN = carScoredFirst ? gl?.scoredFirstGames : null;
       const teamStat = winPct != null && gamesN != null
-        ? `${TEAM_CONFIG.abbr} wins ${winPct}% of games when scoring first this season (${gamesN} games)`
+        ? t('shotMapView.liveInsights.scoredFirstWinPctFor', { abbr: TEAM_CONFIG.abbr, pct: winPct, n: gamesN })
         : winPct != null
-        ? `${oppAbbr} wins ${winPct}% of games when scoring first this season`
+        ? t('shotMapView.liveInsights.scoredFirstWinPctAgainst', { oppAbbr, pct: winPct })
         : carScoredFirst
-        ? `${TEAM_CONFIG.abbr} struck first — teams that score first win ~65% of NHL games`
-        : `${oppAbbr} struck first`;
+        ? t('shotMapView.liveInsights.struckFirst', { abbr: TEAM_CONFIG.abbr })
+        : t('shotMapView.liveInsights.oppStruckFirst', { oppAbbr });
       results.push({
         icon: carScoredFirst ? '🚀' : '😤',
         text: teamStat,
@@ -3462,7 +3463,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         const scorer2 = curr.details?.scoringPlayerId;
         results.push({
           icon: '🔥',
-          text: `${TEAM_CONFIG.abbr} scored twice in ${gap}s — two quick goals${scorer1 && scorer2 && scorer1 === scorer2 ? ' from the same player!' : ''}`,
+          text: t('shotMapView.liveInsights.backToBackGoals', { abbr: TEAM_CONFIG.abbr, gap, samePlayerNote: scorer1 && scorer2 && scorer1 === scorer2 ? t('shotMapView.liveInsights.backToBackGoalsSamePlayerNote') : '' }),
           type: 'good',
         });
         break; // only report the first back-to-back
@@ -3483,7 +3484,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     if (consecutiveSaves >= 15) {
       results.push({
         icon: '🧤',
-        text: `${TEAM_CONFIG.abbr} goalie has stopped ${consecutiveSaves} straight shots`,
+        text: t('shotMapView.liveInsights.consecutiveSaves', { abbr: TEAM_CONFIG.abbr, n: consecutiveSaves }),
         type: 'good',
       });
     }
@@ -3509,7 +3510,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         const pLabel = lastCompletedPer <= 3 ? `P${lastCompletedPer}` : 'OT';
         results.push({
           icon: '🔒',
-          text: `${TEAM_CONFIG.abbr} kept ${oppAbbr} to the perimeter in ${pLabel} — zero high danger attempts`,
+          text: t('shotMapView.liveInsights.highDangerSuppression', { abbr: TEAM_CONFIG.abbr, oppAbbr, period: pLabel }),
           type: 'good',
         });
       }
@@ -3536,7 +3537,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     if (totalCarPens >= 2 && oppPPAttempts.length <= totalCarPens * 3) {
       results.push({
         icon: '🛡️',
-        text: `PK limiting OPP chances — only ${oppPPAttempts.length} shot attempts across ${totalCarPens} penalties`,
+        text: t('shotMapView.liveInsights.pkLimitingChances', { n: oppPPAttempts.length, penalties: totalCarPens }),
         type: 'good',
       });
     }
@@ -3546,7 +3547,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       const { w, l, gp } = gameLogInsights.vsOppRecord;
       results.push({
         icon: w > l ? '📈' : w < l ? '📉' : '⚖️',
-        text: `${TEAM_CONFIG.abbr} is ${w}-${l} vs ${oppAbbr} this season (${gp} games)`,
+        text: t('shotMapView.liveInsights.headToHeadRecord', { abbr: TEAM_CONFIG.abbr, w, l, gp }),
         type: w > l ? 'good' : w < l ? 'warn' : 'neutral',
       });
     }
@@ -3555,11 +3556,11 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     if (isLive) {
       const diff = (carScore ?? 0) - (oppScore ?? 0);
       if (diff === 0 && (carScore ?? 0) > 0) {
-        results.push({ icon: '⚡', text: `Tied ${carScore}–${oppScore} — anyone's game`, type: 'neutral' });
+        results.push({ icon: '⚡', text: t('shotMapView.liveInsights.tiedGame', { car: carScore, opp: oppScore }), type: 'neutral' });
       } else if (diff >= 3) {
-        results.push({ icon: '🏒', text: `${TEAM_CONFIG.abbr} up ${diff} — dominant performance`, type: 'good' });
+        results.push({ icon: '🏒', text: t('shotMapView.liveInsights.leadingBig', { abbr: TEAM_CONFIG.abbr, diff }), type: 'good' });
       } else if (diff <= -2 && currentPeriod >= 3) {
-        results.push({ icon: '🚨', text: `${TEAM_CONFIG.abbr} down ${Math.abs(diff)} in P${currentPeriod} — need a push`, type: 'warn' });
+        results.push({ icon: '🚨', text: t('shotMapView.liveInsights.trailingLate', { abbr: TEAM_CONFIG.abbr, diff: Math.abs(diff), period: `P${currentPeriod}` }), type: 'warn' });
       }
     }
 
@@ -3574,8 +3575,10 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         results.push({
           icon: won ? '✅' : '📉',
           text: won
-            ? `${TEAM_CONFIG.abbr} won ${carScore}–${oppScore} and outshot ${oppAbbr} ${carTot}–${oppTot}`
-            : `${TEAM_CONFIG.abbr} lost ${carScore}–${oppScore} despite ${carTot > oppTot ? `outshooting ${oppAbbr} ${carTot}–${oppTot}` : `being outshot ${oppTot}–${carTot}`}`,
+            ? t('shotMapView.liveInsights.finalWinOutshot', { abbr: TEAM_CONFIG.abbr, car: carScore, opp: oppScore, oppAbbr, carTot, oppTot })
+            : t('shotMapView.liveInsights.finalLoss', { abbr: TEAM_CONFIG.abbr, car: carScore, opp: oppScore, clause: carTot > oppTot
+                ? t('shotMapView.liveInsights.outshootingClause', { oppAbbr, carTot, oppTot })
+                : t('shotMapView.liveInsights.outshotClause', { carTot, oppTot }) }),
           type: won ? 'good' : 'warn',
         });
       }
@@ -3589,12 +3592,12 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         const carEN = gameHome
           ? situation?.awayTeam?.situationDescriptions?.includes('EN')
           : situation?.homeTeam?.situationDescriptions?.includes('EN');
-        results.push({ icon: carEN ? '🥅' : '😤', text: carEN ? `${oppAbbr} has pulled their goalie` : 'CAR goalie pulled', type: carEN ? 'good' : 'warn' });
+        results.push({ icon: carEN ? '🥅' : '😤', text: carEN ? t('shotMapView.liveInsights.oppPulledGoalie', { oppAbbr }) : t('shotMapView.liveInsights.carPulledGoalie', { abbr: TEAM_CONFIG.abbr }), type: carEN ? 'good' : 'warn' });
       }
     }
 
     return results.slice(0, 6);
-  }, [pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers, isLive, gameLogInsights]);
+  }, [pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers, isLive, gameLogInsights, t]);
 
   if (!insights.length && !debugInsight) return null;
   const displayInsights = debugInsight ? [debugInsight, ...insights].slice(0, 5) : insights;
@@ -3603,6 +3606,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
 }
 
 function LiveInsightsCard({ insights, isLive }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(true);
   const timerRef = useRef(null);
 
@@ -3630,7 +3634,7 @@ function LiveInsightsCard({ insights, isLive }) {
     >
       <div className={insightsHeaderClasses(!expanded)}>
         <span className="sec-label" style={{ marginBottom: 0 }}>
-          {isLive ? '🔴 Live Insights' : '📊 Game Insights'}
+          {isLive ? t('shotMapView.liveInsightsCard.liveHeader') : t('shotMapView.liveInsightsCard.gameHeader')}
         </span>
         {isLive && !expanded && (
           <span className={INSIGHTS_PEEK_CLASSES}>
@@ -3659,6 +3663,7 @@ function LiveInsightsCard({ insights, isLive }) {
 
 // ── Momentum Card ─────────────────────────────────────────────
 function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
+  const { t } = useTranslation();
   const [window, setWindow] = useState(5);
   const plays = pbp?.plays || [];
   // zoneCode: O = offensive, N = neutral, D = defensive (from the event owner's perspective)
@@ -3770,13 +3775,13 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
     return <circle key="momentum-current" cx={cx} cy={cy} r={3} style={{ fill: 'var(--team-primary, #cc2200)' }} />;
   }
 
-  const tooltipText = `Weighted territorial score combining shot attempts, zone faceoff wins, offensive zone hits and takeaways — inspired by NHL Edge Ice Tilt. Zone location matters: an offensive zone shot counts more than a neutral zone attempt. Above 50% = ${TEAM_CONFIG.abbr} controlling play.`;
+  const tooltipText = t('shotMapView.momentum.tooltipExplainer', { abbr: TEAM_CONFIG.abbr });
 
   return (
     <div className="card momentum-card" style={{ marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <div className="sec-label" style={{ marginBottom: 0 }}>
-          Momentum
+          {t('shotMapView.momentum.sectionHeader')}
           <InfoTip text={tooltipText} position="above" />
         </div>
         <div style={{ display: 'flex', gap: 4 }}>
@@ -3785,7 +3790,7 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
               className={rinkBtnClasses({ active: window === w })}
               style={{ padding: '2px 8px', fontSize: 10, minHeight: 'unset', minWidth: 'unset' }}
               onClick={() => setWindow(w)}>
-              {w === 0 ? 'Full' : `${w}m`}
+              {w === 0 ? t('shotMapView.momentum.windowFull') : `${w}m`}
             </button>
           ))}
         </div>
@@ -3806,8 +3811,8 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
           <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'var(--border-2)' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-dim)', marginTop: 3 }}>
-          <span>{car} events</span>
-          <span>{opp} events</span>
+          <span>{t('shotMapView.momentum.eventsCount', { count: car })}</span>
+          <span>{t('shotMapView.momentum.eventsCount', { count: opp })}</span>
         </div>
       </div>
 
@@ -3829,20 +3834,20 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
         </ComposedChart>
       </ResponsiveContainer>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--text-dim)', marginTop: 3 }}>
-        <span>P1</span><span>P2</span><span>P3{nowSecs > 3600 ? '+' : ''}</span><span>Now</span>
+        <span>P1</span><span>P2</span><span>P3{nowSecs > 3600 ? '+' : ''}</span><span>{t('shotMapView.momentum.nowLabel')}</span>
       </div>
 
       <div style={{ display: 'flex', gap: 14, marginTop: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--team-primary)', opacity: 0.7 }} />
-          {TEAM_CONFIG.abbr} above neutral
+          {t('shotMapView.momentum.aboveNeutral', { abbr: TEAM_CONFIG.abbr })}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--text-dim)', opacity: 0.5 }} />
-          {oppAbbr} above neutral
+          {t('shotMapView.momentum.aboveNeutral', { abbr: oppAbbr })}
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-dim)', marginLeft: 'auto' }}>
-          Game: {totalGame.carPct}%
+          {t('shotMapView.momentum.gameLabel', { pct: totalGame.carPct })}
         </div>
       </div>
     </div>
@@ -3851,6 +3856,7 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
 
 // ── Advanced Game Panel ───────────────────────────────────────
 function AdvancedGamePanel({ pbp, _gameHome, _isLive, _boxscore }) {
+  const { t } = useTranslation();
   const plays = pbp?.plays || [];
   const sa    = computeShotAttempts(plays);
   const pdo   = computePDO(plays);
@@ -3882,9 +3888,9 @@ function AdvancedGamePanel({ pbp, _gameHome, _isLive, _boxscore }) {
   return (
     <div className={SHOT_VOLUME_SECTION_CLASSES}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
-        <div className="sec-label" style={{marginBottom:0}}>Shot Attempts</div>
+        <div className="sec-label" style={{marginBottom:0}}>{t('shotMapView.advanced.sectionHeader')}</div>
         <span style={{fontSize:9,color:'var(--text-dim)',textAlign:'right'}}>
-          Corsi = all attempts · Fenwick excludes blocks
+          {t('shotMapView.advanced.subtitle')}
         </span>
       </div>
 
@@ -3897,21 +3903,21 @@ function AdvancedGamePanel({ pbp, _gameHome, _isLive, _boxscore }) {
       </div>
 
       <div className={SV_WRAP_CLASSES}>
-        <Row label="Corsi (CF)"
+        <Row label={t('shotMapView.advanced.rowCorsiLabel')}
              car={sa.carCorsi} opp={sa.oppCorsi}
-             help="All shot attempts: goals + shots + misses + blocks. True possession proxy." />
-        <Row label="Fenwick (FF)"
+             help={t('shotMapView.advanced.helpCorsi')} />
+        <Row label={t('shotMapView.advanced.rowFenwickLabel')}
              car={sa.carFenwick} opp={sa.oppFenwick}
-             help="Shot attempts excluding blocked shots. More predictive than Corsi." />
-        <Row label="Shots on Goal"
+             help={t('shotMapView.advanced.helpFenwick')} />
+        <Row label={t('shotMapView.advanced.rowSogLabel')}
              car={sa.car.goals + sa.car.sog} opp={sa.opp.goals + sa.opp.sog}
-             help="Shots that reached the goalie (goals + saves)" />
-        <Row label="Missed Shots"
+             help={t('shotMapView.advanced.helpSog')} />
+        <Row label={t('shotMapView.advanced.rowMissedLabel')}
              car={sa.car.missed} opp={sa.opp.missed}
-             help="Attempts that missed the net" />
-        <Row label="Blocked Shots"
+             help={t('shotMapView.advanced.helpMissed')} />
+        <Row label={t('shotMapView.advanced.rowBlockedLabel')}
              car={sa.car.blocked} opp={sa.opp.blocked}
-             help="Attempts blocked by a skater before reaching the goalie" />
+             help={t('shotMapView.advanced.helpBlocked')} />
       </div>
 
       {/* Corsi%, Fenwick%, PDO, Puck Luck chips */}
@@ -3920,25 +3926,25 @@ function AdvancedGamePanel({ pbp, _gameHome, _isLive, _boxscore }) {
           label="CF%"
           value={`${sa.corsiForPct}%`}
           color={sa.corsiForPct >= 50 ? 'var(--green)' : 'var(--team-primary)'}
-          help={`Corsi For%: ${TEAM_CONFIG.abbr} share of all shot attempts. ≥50% = controlling play.`}
+          help={t('shotMapView.advanced.helpCfPct', { abbr: TEAM_CONFIG.abbr })}
         />
         <StatChip
           label="FF%"
           value={`${sa.fenwickForPct}%`}
           color={sa.fenwickForPct >= 50 ? 'var(--green)' : 'var(--team-primary)'}
-          help={`Fenwick For%: ${TEAM_CONFIG.abbr} share of unblocked attempts. Better predictor than Corsi.`}
+          help={t('shotMapView.advanced.helpFfPct', { abbr: TEAM_CONFIG.abbr })}
         />
         <StatChip
           label="PDO"
           value={pdo.pdo}
           color={pdo.pdo > 102 ? 'var(--amber)' : pdo.pdo < 98 ? 'var(--blue-bright)' : 'var(--text-muted)'}
-          help="PDO = SH% + SV% × 100. League avg = 100. Far from 100 suggests luck component."
+          help={t('shotMapView.advanced.helpPdo')}
         />
         <StatChip
-          label="Luck"
+          label={t('shotMapView.advanced.chipLabelLuck')}
           value={luck.luckDelta >= 0 ? `+${luck.luckDelta}G` : `${luck.luckDelta}G`}
           color={luck.color}
-          help={`Puck Luck: actual goals vs expected from shot share. ${luck.label}`}
+          help={t('shotMapView.advanced.helpLuck', { luckLabel: luck.label })}
         />
       </div>
     </div>
