@@ -4,6 +4,7 @@
 // NewsView alongside the news feed. Reuses NewsView's card/chip classes so
 // it inherits NewsView.css without needing new stylesheet work.
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ALL_TEAMS } from '../utils/teamConfig';
 import { PWHL_TEAMS } from '../utils/pwhlConfig';
 import { useSport } from '../utils/SportContext';
@@ -11,6 +12,7 @@ import TeamLogo from './TeamLogo';
 import PlayerPopup from './PlayerPopup';
 import PWHLPlayerPopup from './PWHLPlayerPopup';
 import { capture } from '../utils/analytics';
+import { formatDate, formatNumber } from '../utils/formatters';
 import {
   NEWS_HEADER_CLASSES, NEWS_HEADER_ROW_CLASSES, NEWS_TITLE_CLASSES, NEWS_UPDATED_CLASSES,
   NEWS_REFRESH_BTN_CLASSES, NEWS_FEED_CLASSES, NEWS_CARD_CLASSES, NEWS_CARD_BODY_CLASSES,
@@ -26,22 +28,22 @@ import {
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
 
 const MILESTONE_META = {
-  hat_trick:         { icon: '🎩', label: 'Hat Trick' },
-  natural_hat_trick: { icon: '🎩', label: 'Natural Hat Trick' },
-  sh_goal:           { icon: '⚡', label: 'Shorthanded Goal' },
-  shutout:           { icon: '🥅', label: 'Shutout' },
+  hat_trick:         { icon: '🎩', key: 'hatTrick' },
+  natural_hat_trick: { icon: '🎩', key: 'naturalHatTrick' },
+  sh_goal:           { icon: '⚡', key: 'shGoal' },
+  shutout:           { icon: '🥅', key: 'shutout' },
 };
 function milestoneMeta(type) {
   if (MILESTONE_META[type]) return MILESTONE_META[type];
-  if (type?.startsWith('season_'))  return { icon: '📈', label: 'Season Milestone' };
-  if (type?.startsWith('career_'))  return { icon: '🏆', label: 'Career Milestone' };
-  return { icon: '⭐', label: 'Milestone' };
+  if (type?.startsWith('season_'))  return { icon: '📈', key: 'seasonMilestone' };
+  if (type?.startsWith('career_'))  return { icon: '🏆', key: 'careerMilestone' };
+  return { icon: '⭐', key: 'milestone' };
 }
 
 function formatGameDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(`${dateStr}T00:00:00`);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return formatDate(d, { month: 'short', day: 'numeric' });
 }
 
 // time_seconds (PWHL) is elapsed time within the period (0 -> 1200),
@@ -60,7 +62,7 @@ function formatElapsed(seconds) {
 // Every milestone_type has a different shape here — see milestones.py's
 // (NHL) / pwhl_milestones.py's (PWHL) detect_* functions for what's
 // actually written.
-function renderDetailItems(item) {
+function renderDetailItems(item, t) {
   const d = item.detail || {};
   const items = [];
 
@@ -74,11 +76,11 @@ function renderDetailItems(item) {
       // countdown of uncertain OT length; now that it's confirmed elapsed
       // (pwhl_milestones.py, corrected 2026-07-04) the same formatElapsed()
       // conversion used for sh_goal applies here too.
-      const t = item.is_pwhl ? formatElapsed(d.goal_time_seconds?.[i]) : d.goal_times?.[i];
-      items.push(`P${p}${t ? ` ${t}` : ''}`);
+      const time = item.is_pwhl ? formatElapsed(d.goal_time_seconds?.[i]) : d.goal_times?.[i];
+      items.push(`P${p}${time ? ` ${time}` : ''}`);
     });
   } else if (item.milestone_type === 'hat_trick' && d.goal_count) {
-    items.push(`${d.goal_count} goals`);
+    items.push(t('milestonesFeed.detail.goals', { count: d.goal_count }));
   } else if (item.milestone_type === 'sh_goal') {
     // NHL: detail.period / detail.time_in_period (already an "mm:ss"
     // string). PWHL: detail.period_id / detail.time_seconds (elapsed
@@ -91,13 +93,13 @@ function renderDetailItems(item) {
     const time   = item.is_pwhl ? formatElapsed(d.time_seconds) : d.time_in_period;
     if (period) items.push(`P${period}${time ? ` ${time}` : ''}`);
   } else if (item.milestone_type?.startsWith('season_goals_') && d.season_goals != null) {
-    items.push(`${d.season_goals} goals this season`);
+    items.push(t('milestonesFeed.detail.goalsThisSeason', { count: d.season_goals }));
   } else if (item.milestone_type?.startsWith('season_points_') && d.season_points != null) {
-    items.push(`${d.season_points} points this season`);
+    items.push(t('milestonesFeed.detail.pointsThisSeason', { count: d.season_points }));
   } else if (item.milestone_type?.startsWith('career_points_') && d.career_points != null) {
-    items.push(`${d.career_points.toLocaleString()} career points`);
+    items.push(t('milestonesFeed.detail.careerPoints', { count: formatNumber(d.career_points) }));
   } else if (item.milestone_type?.startsWith('career_wins_') && d.career_wins != null) {
-    items.push(`${d.career_wins} career wins`);
+    items.push(t('milestonesFeed.detail.careerWins', { count: d.career_wins }));
   }
 
   return items;
@@ -106,6 +108,7 @@ function renderDetailItems(item) {
 // Custom team dropdown — native <select><option> can't render images
 // inside options in any browser, so this is a button + popover instead.
 function TeamFilterDropdown({ team, onChange, teams, sport }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
@@ -118,7 +121,7 @@ function TeamFilterDropdown({ team, onChange, teams, sport }) {
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [open]);
 
-  const selectedTeam = team !== 'all' ? teams.find(t => t.abbr === team) : null;
+  const selectedTeam = team !== 'all' ? teams.find(tm => tm.abbr === team) : null;
 
   function pick(abbr) {
     onChange(abbr);
@@ -134,7 +137,7 @@ function TeamFilterDropdown({ team, onChange, teams, sport }) {
         aria-expanded={open}
       >
         {selectedTeam ? <TeamLogo abbr={selectedTeam.abbr} sport={sport} size={16} /> : null}
-        {selectedTeam ? selectedTeam.abbr : 'All Teams'}
+        {selectedTeam ? selectedTeam.abbr : t('milestonesFeed.teamFilter.allTeams')}
       </button>
       {open && (
         <div className={MS_TEAM_MENU_CLASSES} role="listbox">
@@ -144,18 +147,18 @@ function TeamFilterDropdown({ team, onChange, teams, sport }) {
             role="option"
             aria-selected={team === 'all'}
           >
-            All Teams
+            {t('milestonesFeed.teamFilter.allTeams')}
           </button>
-          {teams.map(t => (
+          {teams.map(tm => (
             <button
-              key={t.abbr}
-              className={msTeamOptionClasses(team === t.abbr)}
-              onClick={() => pick(t.abbr)}
+              key={tm.abbr}
+              className={msTeamOptionClasses(team === tm.abbr)}
+              onClick={() => pick(tm.abbr)}
               role="option"
-              aria-selected={team === t.abbr}
+              aria-selected={team === tm.abbr}
             >
-              <TeamLogo abbr={t.abbr} sport={sport} size={18} />
-              {t.abbr} — {t.shortName}
+              <TeamLogo abbr={tm.abbr} sport={sport} size={18} />
+              {tm.abbr} — {tm.shortName}
             </button>
           ))}
         </div>
@@ -165,8 +168,10 @@ function TeamFilterDropdown({ team, onChange, teams, sport }) {
 }
 
 function MilestoneCard({ item, onOpenPlayer }) {
+  const { t } = useTranslation();
   const meta = milestoneMeta(item.milestone_type);
-  const detailItems = renderDetailItems(item);
+  const label = t(`milestonesFeed.type.${meta.key}`);
+  const detailItems = renderDetailItems(item, t);
   const tappable = item.player_id != null;
 
   const handleClick = () => {
@@ -186,7 +191,7 @@ function MilestoneCard({ item, onOpenPlayer }) {
     >
       <div className={NEWS_CARD_BODY_CLASSES}>
         <div className={NEWS_CARD_META_CLASSES}>
-          <span className={MILESTONE_ICON_BADGE_CLASSES}>{meta.icon} {meta.label}</span>
+          <span className={MILESTONE_ICON_BADGE_CLASSES}>{meta.icon} {label}</span>
           <span className={NEWS_CARD_TIME_CLASSES}>{formatGameDate(item.game_date)}</span>
         </div>
         <h3 className={MILESTONE_CARD_TITLE_CLASSES}>
@@ -194,7 +199,7 @@ function MilestoneCard({ item, onOpenPlayer }) {
           {item.description}
         </h3>
         {item.opponent && (
-          <p className={NEWS_CARD_EXCERPT_CLASSES}>vs {item.opponent}</p>
+          <p className={NEWS_CARD_EXCERPT_CLASSES}>{t('milestonesFeed.vsOpponent', { opponent: item.opponent })}</p>
         )}
         {detailItems.length > 0 && (
           <div className={MILESTONE_DETAIL_ROW_CLASSES}>
@@ -210,6 +215,7 @@ function MilestoneCard({ item, onOpenPlayer }) {
 }
 
 export default function MilestonesFeed() {
+  const { t } = useTranslation();
   const { isPWHL } = useSport();
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -225,7 +231,7 @@ export default function MilestonesFeed() {
   const sportKey  = isPWHL ? 'pwhl' : 'nhl';
 
   const fetchMilestones = useCallback(async (teamFilter, pwhl) => {
-    if (!WORKER_URL) { setError('Worker URL not configured'); setLoading(false); return; }
+    if (!WORKER_URL) { setError(t('triviaFeed.error.workerNotConfigured')); setLoading(false); return; }
     if (fetchingRef.current) return;
     fetchingRef.current = true;
     setLoading(true);
@@ -236,7 +242,7 @@ export default function MilestonesFeed() {
       if (teamFilter && teamFilter !== 'all') params.set('team', teamFilter);
       const qs  = params.toString() ? `?${params.toString()}` : '';
       const res = await fetch(`${WORKER_URL}/milestones${qs}`, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Milestones not available — check back soon');
+      if (!res.ok) throw new Error(t('milestonesFeed.error.notAvailable'));
       const data = await res.json();
       setMilestones(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -245,7 +251,7 @@ export default function MilestonesFeed() {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, []);
+  }, [t]);
 
   // Reset the team filter on sport switch — a team abbreviation selected
   // under one sport (e.g. "BOS") isn't guaranteed to mean the same team,
@@ -277,7 +283,7 @@ export default function MilestonesFeed() {
     setPopupError(null);
     try {
       const res = await fetch(`${WORKER_URL}/player/landing?id=${playerId}`);
-      if (!res.ok) throw new Error('Player info not available');
+      if (!res.ok) throw new Error(t('milestonesFeed.error.playerNotAvailable'));
       const p = await res.json();
       setPopupPlayer({
         id: p.playerId ?? playerId,
@@ -306,9 +312,9 @@ export default function MilestonesFeed() {
       <div className={`${NEWS_HEADER_CLASSES} card`}>
         <div className={NEWS_HEADER_ROW_CLASSES}>
           <div>
-            <div className={NEWS_TITLE_CLASSES}>Milestones</div>
+            <div className={NEWS_TITLE_CLASSES}>{t('milestonesFeed.header.title')}</div>
             {!loading && (
-              <div className={NEWS_UPDATED_CLASSES}>{milestones.length} recent</div>
+              <div className={NEWS_UPDATED_CLASSES}>{t('milestonesFeed.header.recentCount', { count: milestones.length })}</div>
             )}
           </div>
           <TeamFilterDropdown team={team} onChange={handleTeamChange} teams={teamList} sport={sportKey} />
@@ -317,7 +323,7 @@ export default function MilestonesFeed() {
 
       {popupLoading && (
         <div className={NEWS_UPDATED_CLASSES} style={{ textAlign: 'center', padding: '8px 0' }}>
-          Loading player…
+          {t('milestonesFeed.loadingPlayer')}
         </div>
       )}
       {popupError && (
@@ -342,14 +348,14 @@ export default function MilestonesFeed() {
         <div className={`${NEWS_ERROR_CLASSES} card`}>
           <div className={NEWS_ERROR_ICON_CLASSES}>🏒</div>
           <div className={NEWS_ERROR_MSG_CLASSES}>{error}</div>
-          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={() => fetchMilestones(team, isPWHL)}>Try again</button>
+          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={() => fetchMilestones(team, isPWHL)}>{t('triviaFeed.error.tryAgain')}</button>
         </div>
       )}
 
       {!loading && !error && milestones.length === 0 && (
         <div className={`${NEWS_EMPTY_CLASSES} card`}>
           <div className={NEWS_ERROR_ICON_CLASSES}>🏒</div>
-          <div>No milestones found{team !== 'all' ? ` for ${team}` : ''} yet.</div>
+          <div>{team !== 'all' ? t('milestonesFeed.emptyStateForTeam', { team }) : t('milestonesFeed.emptyState')}</div>
         </div>
       )}
 

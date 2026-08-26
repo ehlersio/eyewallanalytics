@@ -1182,5 +1182,38 @@
       "asOf": "En date de {{season}}",
       "staleTip": "Pas assez de matchs cette saison — affiche {{season}}"
     }
+  },
+  "milestonesFeed": {
+    "type": {
+      "hatTrick": "Tour du chapeau",
+      "naturalHatTrick": "Tour du chapeau naturel",
+      "shGoal": "But en désavantage numérique",
+      "shutout": "Blanchissage",
+      "seasonMilestone": "Jalon de la saison",
+      "careerMilestone": "Jalon de carrière",
+      "milestone": "Jalon"
+    },
+    "detail": {
+      "goals": "{{count}} buts",
+      "goalsThisSeason": "{{count}} buts cette saison",
+      "pointsThisSeason": "{{count}} points cette saison",
+      "careerPoints": "{{count}} points en carrière",
+      "careerWins": "{{count}} victoires en carrière"
+    },
+    "vsOpponent": "c. {{opponent}}",
+    "teamFilter": {
+      "allTeams": "Toutes les équipes"
+    },
+    "header": {
+      "title": "Jalons",
+      "recentCount": "{{count}} récents"
+    },
+    "loadingPlayer": "Chargement du profil…",
+    "error": {
+      "notAvailable": "Jalons non disponibles — revenez bientôt",
+      "playerNotAvailable": "Profil non disponible"
+    },
+    "emptyState": "Aucun jalon trouvé pour le moment.",
+    "emptyStateForTeam": "Aucun jalon trouvé pour {{team}} pour le moment."
   }
 }
