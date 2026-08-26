@@ -1412,7 +1412,9 @@
     "threeStars": "Trois étoiles",
     "xCaption": {
       "line1": "Sommaire — {{period}} | {{abbr}} {{car}}-{{opp}} {{oppAbbr}}",
-      "line2": "CF% {{cf}} · Tirs {{carSog}}-{{oppSog}} · Buts {{carGoals}}-{{oppGoals}}"
+      "line2": "CF% {{cf}} · Tirs {{carSog}}-{{oppSog}} · Buts {{carGoals}}-{{oppGoals}}",
+      "line1Pwhl": "Sommaire — {{period}} | {{abbr}} {{car}}–{{opp}} {{oppAbbr}}",
+      "line2Pwhl": "CF% {{cf}} · Tirs {{carSog}}–{{oppSog}} · Buts {{carGoals}}–{{oppGoals}}"
     }
   }
 }

@@ -1412,7 +1412,9 @@
     "threeStars": "Three Stars",
     "xCaption": {
       "line1": "{{period}} Summary | {{abbr}} {{car}}-{{opp}} {{oppAbbr}}",
-      "line2": "CF% {{cf}} · SOG {{carSog}}-{{oppSog}} · Goals {{carGoals}}-{{oppGoals}}"
+      "line2": "CF% {{cf}} · SOG {{carSog}}-{{oppSog}} · Goals {{carGoals}}-{{oppGoals}}",
+      "line1Pwhl": "{{period}} Summary | {{abbr}} {{car}}–{{opp}} {{oppAbbr}}",
+      "line2Pwhl": "CF% {{cf}} · SOG {{carSog}}–{{oppSog}} · Goals {{carGoals}}–{{oppGoals}}"
     }
   }
 }
