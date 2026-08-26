@@ -582,6 +582,32 @@
       "gsaxSeasonHelp": "Buts sauvés au-delà de l'attendu en saison régulière (modèle xButs pondéré par les rafales de MoneyPuck). Affiché toute l'année, l'échantillon étant plus fiable que celui des séries. Positif = sauve plus de buts qu'un gardien moyen sur les mêmes tirs. {{gpNote}}",
       "gsaxSeasonGpNote": "{{gp}} PJ cette saison."
     },
+    "drillTitles": {
+      "shotsOnGoal": "Tirs au but",
+      "hits": "Mises en échec",
+      "blockedShots": "Tirs bloqués",
+      "teamFaceoffs": "Mises en jeu — {{abbr}}",
+      "ppAnalysis": "Analyse de l'avantage numérique — {{abbr}}",
+      "penalties": "Pénalités",
+      "pkAnalysis": "Analyse du désavantage numérique — {{abbr}}",
+      "highDanger": "🔴 Tirs à danger élevé (<15 pi)",
+      "mediumDanger": "🟡 Tirs à danger moyen (15–30 pi)",
+      "lowDanger": "⚪ Tirs à danger faible (>30 pi)"
+    },
+    "drillPopup": {
+      "close": "Fermer",
+      "noData": "Aucune donnée pour {{team}} dans ce match.",
+      "player": "Joueur",
+      "won": "Gagnées",
+      "lost": "Perdues",
+      "winPct": "% gagnées",
+      "total": "Total",
+      "noPenalties": "Aucune pénalité pour {{team}}.",
+      "noFaceoffData": "Aucune donnée de mises en jeu pour ce match.",
+      "durationMin": "{{duration}} min",
+      "totals": "Totaux",
+      "grandTotal": "{{n}} au total"
+    },
     "onIce": {
       "title": "Sur la glace"
     },
@@ -633,6 +659,19 @@
     },
     "goalieCard": {
       "gaa": "MBA"
+    },
+    "teamStats": {
+      "shotsOnGoalHelp": "Tirs qui ont atteint la gardienne (buts + arrêts).",
+      "blockedShotsHelp": "Tentatives bloquées par une patineuse avant d'atteindre la gardienne.",
+      "hitsHelp": "Mises en échec effectuées.",
+      "penaltiesHelp": "Pénalités prises — moins il y en a, mieux c'est.",
+      "faceoffHelp": "% de mises en jeu gagnées. {{won}} G – {{lost}} P."
+    },
+    "drillTitles": {
+      "faceoffsPlain": "Mises en jeu",
+      "highDanger": "🔴 Danger élevé (<15 pi)",
+      "mediumDanger": "🟡 Danger moyen (15–30 pi)",
+      "lowDanger": "⚪ Danger faible (>30 pi)"
     }
   }
 }
