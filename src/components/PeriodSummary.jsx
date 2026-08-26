@@ -1,5 +1,6 @@
 // components/PeriodSummary.jsx
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
@@ -393,6 +394,7 @@ function detectHatTricks(goals) {
 }
 
 function GoalCarousel({ goals, carAbbr }) {
+  const { t } = useTranslation();
   const [idx, setIdx] = useState(0);
   const touchStartX = useRef(null);
 
@@ -457,7 +459,7 @@ function GoalCarousel({ goals, carAbbr }) {
             src={BRIGHTCOVE_URL(g.discreteClip)}
             allow="fullscreen"
             allowFullScreen
-            title={`Goal by ${g.scorerName || 'player'} at ${g.time}`}
+            title={t('periodSummary.goals.videoTitle', { scorer: g.scorerName || t('periodSummary.goals.playerFallback'), time: g.time })}
           />
         )}
       </div>
@@ -471,23 +473,24 @@ function GoalCarousel({ goals, carAbbr }) {
 // ── Share canvas (1080×1080, off-screen) ─────────────────────
 // Shared stat definitions — used by both the popup grid and the share canvas
 // so they're always in sync
-function getPeriodStats(summary, carAbbr) {
+function getPeriodStats(summary, carAbbr, t) {
   return [
-    { val: `${summary.corsiForPct}%`,  label: `${carAbbr} Corsi For%`,    color: corsiColor(summary.corsiForPct) },
-    { val: `${summary.carSOG}–${summary.oppSOG}`, label: 'Shots on Goal' },
-    { val: `${summary.fenwickForPct}%`, label: `${carAbbr} Fenwick For%`, color: corsiColor(summary.fenwickForPct) },
-    { val: summary.carHits,             label: `${carAbbr} Hits` },
-    { val: summary.carFOPct != null ? `${summary.carFOPct}%` : '—', label: 'Faceoff Win%' },
-    { val: `${summary.carHDCF ?? 0}–${summary.oppHDCF ?? 0}`, label: 'High Danger Chances',
+    { val: `${summary.corsiForPct}%`,  label: t('periodSummary.stats.corsiForPct', { abbr: carAbbr }),    color: corsiColor(summary.corsiForPct) },
+    { val: `${summary.carSOG}–${summary.oppSOG}`, label: t('gameStatsPopup.teamStats.shotsOnGoal') },
+    { val: `${summary.fenwickForPct}%`, label: t('periodSummary.stats.fenwickForPct', { abbr: carAbbr }), color: corsiColor(summary.fenwickForPct) },
+    { val: summary.carHits,             label: t('periodSummary.stats.hits', { abbr: carAbbr }) },
+    { val: summary.carFOPct != null ? `${summary.carFOPct}%` : '—', label: t('periodSummary.stats.faceoffWinPct') },
+    { val: `${summary.carHDCF ?? 0}–${summary.oppHDCF ?? 0}`, label: t('periodSummary.stats.highDangerChances'),
       color: (summary.carHDCF ?? 0) > (summary.oppHDCF ?? 0) ? 'good' : (summary.carHDCF ?? 0) < (summary.oppHDCF ?? 0) ? 'bad' : '' },
   ];
 }
 
 function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarrative }) {
+  const { t } = useTranslation();
   const carIsHome = homeAbbr === carAbbr;
   const carScore = carIsHome ? summary.homeScore : summary.awayScore;
   const oppScore = carIsHome ? summary.awayScore : summary.homeScore;
-  const stats = getPeriodStats(summary, carAbbr);
+  const stats = getPeriodStats(summary, carAbbr, t);
   const dominatedBy = summary.corsiForPct >= 55 ? carAbbr : summary.corsiForPct <= 45 ? oppAbbr : null;
   const carPenalties = summary.penalties.filter(p => p.isCar).length;
   const oppPenalties = summary.penalties.filter(p => !p.isCar).length;
@@ -502,7 +505,7 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarra
       <div className={PS_CANVAS_HEADER_CLASSES}>
         <img src="/eyewall-logo.svg" alt="EyeWall" className={PS_CANVAS_LOGO_LARGE_CLASSES}
           onError={e => { e.target.style.display='none'; }} />
-        <span className={PS_CANVAS_PERIOD_CLASSES}>{summary.periodLabel} Summary</span>
+        <span className={PS_CANVAS_PERIOD_CLASSES}>{t('periodSummary.header', { period: summary.periodLabel })}</span>
       </div>
 
       {/* Score + AI narrative — score compact left, narrative fills right */}
@@ -516,9 +519,9 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarra
         </div>
         <div className={PS_CANVAS_SCORE_AI_DIVIDER_CLASSES} />
         <div className={PS_CANVAS_NARRATIVE_FULL_CLASSES}>
-          <div className={PS_CANVAS_NARRATIVE_FULL_LABEL_CLASSES}>⚡ EyeWall AI</div>
+          <div className={PS_CANVAS_NARRATIVE_FULL_LABEL_CLASSES}>{t('gameStatsPopup.summary.badge')}</div>
           <div className={PS_CANVAS_NARRATIVE_FULL_TEXT_CLASSES}>
-            {cardNarrative || summary.cardNarrative || summary.aiNarrative || 'Analysis generating…'}
+            {cardNarrative || summary.cardNarrative || summary.aiNarrative || t('periodSummary.ai.generatingCanvas')}
           </div>
         </div>
       </div>
@@ -543,7 +546,7 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarra
               fontSize: 13, fontWeight: 600, padding: '6px 12px',
               borderRadius: 20, whiteSpace: 'nowrap',
             }}>
-              🎩 {ht.isNatural ? 'Natural Hat Trick' : 'Hat Trick'}{ht.scorerName ? ` — ${ht.scorerName}` : ''}
+              🎩 {ht.isNatural ? t('milestonesFeed.type.naturalHatTrick') : t('milestonesFeed.type.hatTrick')}{ht.scorerName ? ` — ${ht.scorerName}` : ''}
             </div>
           ))}
         </div>
@@ -552,7 +555,7 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarra
       {summary.goals.length > 0 && (
         <div className={PS_CANVAS_GOALS_CLASSES}>
           <div className={PS_CANVAS_SECTION_LABEL_CLASSES}>
-            {isGame ? 'Goals This Game' : 'Goals This Period'}
+            {isGame ? t('periodSummary.goals.thisGame') : t('periodSummary.goals.thisPeriod')}
           </div>
           {isGame ? (
             <div className={PS_CANVAS_GOALS_TWO_COL_CLASSES}>
@@ -635,17 +638,17 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarra
               <span className={dominatedBy === carAbbr ? 'good' : 'bad'}>
                 {dominatedBy === carAbbr ? '↑' : '↓'}
               </span>
-              {' '}{dominatedBy} dominated possession
+              {' '}{t('periodSummary.possession.dominated', { team: dominatedBy })}
             </div>
           )}
           {(carPenalties > 0 || oppPenalties > 0) && (
             <div className={PS_CANVAS_INSIGHT_CHIP_CLASSES}>
-              🚨 Penalties: {carAbbr} {carPenalties} – {oppPenalties} {oppAbbr}
+              {t('periodSummary.penalties.insight', { abbr: carAbbr, carCount: carPenalties, oppCount: oppPenalties, oppAbbr })}
             </div>
           )}
           {summary.carTK != null && (
             <div className={PS_CANVAS_INSIGHT_CHIP_CLASSES}>
-              {summary.carTK > summary.carGV ? '✓' : '✗'} Takeaways {summary.carTK} · Giveaways {summary.carGV}
+              {summary.carTK > summary.carGV ? '✓' : '✗'} {t('periodSummary.takeawaysGiveaways', { tk: summary.carTK, gv: summary.carGV })}
             </div>
           )}
         </div>
@@ -654,7 +657,7 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarra
       {/* Three stars — game summary only */}
       {isGame && summary.threeStars?.length > 0 && (
         <div className={PS_CANVAS_THREE_STARS_CLASSES}>
-          <div className={PS_CANVAS_SECTION_LABEL_CLASSES}>Three Stars</div>
+          <div className={PS_CANVAS_SECTION_LABEL_CLASSES}>{t('periodSummary.threeStars')}</div>
           <div className={PS_CANVAS_STARS_ROW_CLASSES}>
             {summary.threeStars.slice(0, 3).map((s, i) => {
               const name = s.name?.default || '—';
@@ -694,12 +697,13 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarra
 // ── Collapsible penalties section ───────────────────────────
 const PENALTY_COLLAPSE_AT = 3;
 function PenaltiesSection({ penalties, carAbbr, oppAbbr }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const visible = expanded ? penalties : penalties.slice(0, PENALTY_COLLAPSE_AT);
   const hasMore = penalties.length > PENALTY_COLLAPSE_AT;
   return (
     <>
-      <div className={PS_SECTION_LABEL_CLASSES}>Penalties ({penalties.length})</div>
+      <div className={PS_SECTION_LABEL_CLASSES}>{t('periodSummary.penalties.sectionLabel', { count: penalties.length })}</div>
       <div className={PS_PENALTIES_CLASSES}>
         {visible.map((p, i) => (
           <div key={i} className={PS_PENALTY_ROW_CLASSES}>
@@ -707,9 +711,9 @@ function PenaltiesSection({ penalties, carAbbr, oppAbbr }) {
               {p.isCar ? carAbbr : oppAbbr}
             </span>
             <div className={PS_PENALTY_INFO_CLASSES}>
-              <span className={PS_PENALTY_PLAYER_CLASSES}>{p.playerName || 'Unknown'}</span>
+              <span className={PS_PENALTY_PLAYER_CLASSES}>{p.playerName || t('periodSummary.penalties.unknown')}</span>
               <span className={PS_PENALTY_TYPE_CLASSES}>
-                {p.type || 'Penalty'}{p.duration ? ` · ${p.duration} min` : ''}
+                {p.type || t('periodSummary.penalties.typeFallback')}{p.duration ? ` · ${t('periodSummary.penalties.durationSuffix', { count: p.duration })}` : ''}
                 {p.period ? ` · P${p.period}` : ''}
               </span>
             </div>
@@ -718,7 +722,7 @@ function PenaltiesSection({ penalties, carAbbr, oppAbbr }) {
         ))}
         {hasMore && (
           <button className={PS_PENALTIES_TOGGLE_CLASSES} onClick={() => setExpanded(e => !e)}>
-            {expanded ? '▲ Show less' : `▼ Show ${penalties.length - PENALTY_COLLAPSE_AT} more`}
+            {expanded ? t('periodSummary.penalties.showLess') : t('periodSummary.penalties.showMore', { count: penalties.length - PENALTY_COLLAPSE_AT })}
           </button>
         )}
       </div>
@@ -738,6 +742,7 @@ export default function PeriodSummary({
   readOnly = false,
   isPlayoff = false,
 }) {
+  const { t } = useTranslation();
   const canvasRef = useRef(null);
   const [canvasMounted, setCanvasMounted] = useState(false);
   const [cardNarrative, setCardNarrative] = useState(summary?.cardNarrative || null);
@@ -761,8 +766,8 @@ export default function PeriodSummary({
   const oppScore  = carIsHome ? summary?.awayScore : summary?.homeScore;
 
   const xCaption = summary ? [
-    `${summary.periodLabel} Summary | ${carAbbr} ${carScore ?? '\u2013'}-${oppScore ?? '\u2013'} ${oppAbbr}`,
-    `CF% ${summary.corsiForPct} \u00b7 SOG ${summary.carSOG}-${summary.oppSOG} \u00b7 Goals ${summary.carGoals}-${summary.oppGoals}`,
+    t('periodSummary.xCaption.line1', { period: summary.periodLabel, abbr: carAbbr, car: carScore ?? '\u2013', opp: oppScore ?? '\u2013', oppAbbr }),
+    t('periodSummary.xCaption.line2', { cf: summary.corsiForPct, carSog: summary.carSOG, oppSog: summary.oppSOG, carGoals: summary.carGoals, oppGoals: summary.oppGoals }),
     summary.aiNarrative || '',
     `#${carAbbr} #EyeWallAnalytics`,
   ].filter(Boolean).join('\n') : '';
@@ -789,8 +794,8 @@ export default function PeriodSummary({
 
           {/* Header */}
           <div className={PS_HEADER_CLASSES}>
-            <span className={PS_PERIOD_BADGE_CLASSES}>{summary.periodShort} Summary</span>
-            <button className={PS_BTN_ICON_CLASSES} onClick={onDismiss} title="Close" aria-label="Close">✕</button>
+            <span className={PS_PERIOD_BADGE_CLASSES}>{t('periodSummary.header', { period: summary.periodShort })}</span>
+            <button className={PS_BTN_ICON_CLASSES} onClick={onDismiss} title={t('common.close')} aria-label={t('common.close')}>✕</button>
           </div>
 
           {/* Score */}
@@ -820,7 +825,7 @@ export default function PeriodSummary({
 
           {/* Stat grid — same source as canvas for consistency */}
           <div className={PS_STAT_GRID_CLASSES}>
-            {getPeriodStats(summary, carAbbr).map((s, i) => (
+            {getPeriodStats(summary, carAbbr, t).map((s, i) => (
               <div key={i} className={PS_STAT_CELL_CLASSES}>
                 <div className={psStatValClasses(s.color)}>{s.val}</div>
                 <div className={PS_STAT_LABEL_CLASSES}>{s.label}</div>
@@ -829,16 +834,16 @@ export default function PeriodSummary({
           </div>
 
           {/* AI Narrative */}
-          <div className={PS_SECTION_LABEL_CLASSES}>EyeWall AI</div>
+          <div className={PS_SECTION_LABEL_CLASSES}>{t('periodSummary.ai.label')}</div>
           <div className={PS_NARRATIVE_CLASSES}>
-            <div className={PS_NARRATIVE_LABEL_CLASSES}><span>⚡</span> Period Analysis</div>
+            <div className={PS_NARRATIVE_LABEL_CLASSES}>{t('periodSummary.ai.periodAnalysis')}</div>
             {summary.aiLoading && !summary.aiNarrative ? (
               <div className={PS_NARRATIVE_LOADING_CLASSES}>
                 <div className={PS_NARRATIVE_DOT_CLASSES} />
-                Generating analysis…
+                {t('periodSummary.ai.generating')}
               </div>
             ) : (
-              <div className={PS_NARRATIVE_TEXT_CLASSES}>{summary.aiNarrative || 'Analysis unavailable.'}</div>
+              <div className={PS_NARRATIVE_TEXT_CLASSES}>{summary.aiNarrative || t('periodSummary.ai.unavailable')}</div>
             )}
           </div>
 
@@ -847,7 +852,7 @@ export default function PeriodSummary({
             <div className={PS_HAT_TRICKS_CLASSES}>
               {detectHatTricks(summary.goals).map((ht, i) => (
                 <div key={i} className={PS_HAT_TRICK_CHIP_CLASSES}>
-                  🎩 {ht.isNatural ? 'Natural Hat Trick' : 'Hat Trick'}
+                  🎩 {ht.isNatural ? t('milestonesFeed.type.naturalHatTrick') : t('milestonesFeed.type.hatTrick')}
                   {ht.scorerName ? ` — ${ht.scorerName}` : ''}
                 </div>
               ))}
@@ -857,7 +862,7 @@ export default function PeriodSummary({
           {/* Goals carousel */}
           {summary.goals.length > 0 && (
             <>
-              <div className={PS_SECTION_LABEL_CLASSES}>Goals ({summary.goals.length})</div>
+              <div className={PS_SECTION_LABEL_CLASSES}>{t('periodSummary.goals.sectionLabel', { count: summary.goals.length })}</div>
               <GoalCarousel goals={summary.goals} carAbbr={carAbbr} />
             </>
           )}
@@ -870,7 +875,7 @@ export default function PeriodSummary({
           {/* Period breakdown — game summary only */}
           {summary.isGameSummary && summary.periodStats?.length > 0 && (
             <>
-              <div className={PS_SECTION_LABEL_CLASSES}>Period Breakdown</div>
+              <div className={PS_SECTION_LABEL_CLASSES}>{t('periodSummary.periodBreakdown')}</div>
               <div className={PS_PERIOD_BREAKDOWN_CLASSES}>
                 {summary.periodStats.map(ps => (
                   <div key={ps.period} className={PS_PERIOD_ROW_CLASSES}>
@@ -884,7 +889,7 @@ export default function PeriodSummary({
                     <span className={psPeriodRowPctClasses(ps.corsiForPct)}>
                       {ps.corsiForPct}%
                     </span>
-                    <span className={PS_PERIOD_ROW_SOG_CLASSES}>{ps.carSOG}–{ps.oppSOG} SOG</span>
+                    <span className={PS_PERIOD_ROW_SOG_CLASSES}>{t('periodSummary.sogSuffix', { car: ps.carSOG, opp: ps.oppSOG })}</span>
                   </div>
                 ))}
               </div>
@@ -894,7 +899,7 @@ export default function PeriodSummary({
           {/* Three stars — game summary only */}
           {summary.isGameSummary && summary.threeStars?.length > 0 && (
             <>
-              <div className={PS_SECTION_LABEL_CLASSES}>Three Stars</div>
+              <div className={PS_SECTION_LABEL_CLASSES}>{t('periodSummary.threeStars')}</div>
               <div className={PS_THREE_STARS_CLASSES}>
                 {summary.threeStars.slice(0, 3).map((s, i) => (
                   <div key={i} className={PS_STAR_CARD_CLASSES}>

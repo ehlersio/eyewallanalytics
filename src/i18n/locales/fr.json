@@ -1370,5 +1370,49 @@
       "playoffsScope": "(séries)"
     },
     "xCaption": "{{abbr}} c. {{oppAbbr}} — Rapport de dépistage"
+  },
+  "periodSummary": {
+    "header": "Sommaire — {{period}}",
+    "stats": {
+      "corsiForPct": "Corsi pour% — {{abbr}}",
+      "fenwickForPct": "Fenwick pour% — {{abbr}}",
+      "hits": "Mises en échec — {{abbr}}",
+      "faceoffWinPct": "% mises en jeu gagnées",
+      "highDangerChances": "Occasions à haut danger"
+    },
+    "ai": {
+      "label": "EyeWall AI",
+      "periodAnalysis": "⚡ Analyse de la période",
+      "generating": "Génération de l'analyse…",
+      "unavailable": "Analyse non disponible.",
+      "generatingCanvas": "Génération de l'analyse…"
+    },
+    "goals": {
+      "sectionLabel": "Buts ({{count}})",
+      "thisGame": "Buts du match",
+      "thisPeriod": "Buts de la période",
+      "videoTitle": "But de {{scorer}} à {{time}}",
+      "playerFallback": "joueur"
+    },
+    "possession": {
+      "dominated": "{{team}} a dominé la possession"
+    },
+    "penalties": {
+      "sectionLabel": "Pénalités ({{count}})",
+      "unknown": "Inconnu",
+      "typeFallback": "Pénalité",
+      "durationSuffix": "{{count}} min",
+      "showLess": "▲ Voir moins",
+      "showMore": "▼ Voir {{count}} de plus",
+      "insight": "🚨 Pénalités : {{abbr}} {{carCount}} – {{oppCount}} {{oppAbbr}}"
+    },
+    "takeawaysGiveaways": "Revirements provoqués {{tk}} · Revirements commis {{gv}}",
+    "periodBreakdown": "Répartition par période",
+    "sogSuffix": "{{car}}–{{opp}} tirs",
+    "threeStars": "Trois étoiles",
+    "xCaption": {
+      "line1": "Sommaire — {{period}} | {{abbr}} {{car}}-{{opp}} {{oppAbbr}}",
+      "line2": "CF% {{cf}} · Tirs {{carSog}}-{{oppSog}} · Buts {{carGoals}}-{{oppGoals}}"
+    }
   }
 }
