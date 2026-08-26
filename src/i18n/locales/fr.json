@@ -1142,5 +1142,28 @@
     "table": {
       "emptyState": "Aucune statistique de patineuses disponible pour ce match."
     }
+  },
+  "triviaFeed": {
+    "header": {
+      "title": "Trivia quotidien",
+      "stats": "{{correct}}/{{attempted}} correctes ({{pct}}%)"
+    },
+    "tier": {
+      "easy": "Facile",
+      "medium": "Moyen",
+      "hard": "Difficile"
+    },
+    "emptyState": {
+      "easy": "Aucune question facile aujourd'hui — revenez bientôt.",
+      "medium": "Aucune question moyenne aujourd'hui — revenez bientôt.",
+      "hard": "Aucune question difficile aujourd'hui — revenez bientôt."
+    },
+    "resultCorrect": "✓ Correct",
+    "resultIncorrect": "✕ Incorrect",
+    "error": {
+      "workerNotConfigured": "URL du Worker non configurée",
+      "notAvailable": "Trivia non disponible — revenez bientôt",
+      "tryAgain": "Réessayer"
+    }
   }
 }
