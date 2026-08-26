@@ -1,5 +1,6 @@
 // views/PWHLShotMapView.jsx
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useFetch, usePoll } from '../hooks/useFetch';
 import {
@@ -308,9 +309,9 @@ const PP_MINI_RINK_LABEL_CLASSES = 'text-[10px] text-[color:var(--text-dim)] mb-
 
 // ── Shot adapters ─────────────────────────────────────────────
 
-function mapEventType(t) {
-  if (t === 'goal')                                return 'goal';
-  if (t === 'blocked_shot' || t === 'blocked-shot') return 'blocked-shot';
+function mapEventType(evType) {
+  if (evType === 'goal')                                return 'goal';
+  if (evType === 'blocked_shot' || evType === 'blocked-shot') return 'blocked-shot';
   return 'shot-on-goal';
 }
 
@@ -940,6 +941,7 @@ function PKAnalysisPanel({ drillStat, abbr, color }) {
 
 // ── Goalie Card ───────────────────────────────────────────────
 function GoalieCard({ goalies, teamId, abbr, oppAbbr, color, oppColor }) {
+  const { t } = useTranslation();
   const our = goalies.filter(g => g.team_id === teamId);
   const opp = goalies.filter(g => g.team_id !== teamId);
 
@@ -956,16 +958,16 @@ function GoalieCard({ goalies, teamId, abbr, oppAbbr, color, oppColor }) {
         </div>
         <div className={GOALIE_STATS_GRID_CLASSES}>
           <div className={GOALIE_STAT_COL_CLASSES}>
-            <span className={GOALIE_STAT_LABEL_CLASSES}>SV/SA</span>
+            <span className={GOALIE_STAT_LABEL_CLASSES}>{t('shotMapView.goalieCard.svSa')}</span>
             <span className={goalieStatValClasses(false)}>{sv ?? '—'}/{sa ?? '—'}</span>
           </div>
           <div className={GOALIE_STAT_COL_CLASSES}>
-            <span className={GOALIE_STAT_LABEL_CLASSES}>SV%</span>
+            <span className={GOALIE_STAT_LABEL_CLASSES}>{t('shotMapView.goalieCard.svPct')}</span>
             <span className={goalieStatValClasses(true)}>{svPct}</span>
           </div>
           {gaa != null && (
             <div className={GOALIE_STAT_COL_CLASSES}>
-              <span className={GOALIE_STAT_LABEL_CLASSES}>GAA</span>
+              <span className={GOALIE_STAT_LABEL_CLASSES}>{t('pwhlShotMapView.goalieCard.gaa')}</span>
               <span className={goalieStatValClasses(false)}>{gaa}</span>
             </div>
           )}
@@ -976,7 +978,7 @@ function GoalieCard({ goalies, teamId, abbr, oppAbbr, color, oppColor }) {
 
   return (
     <div className="card">
-      <div className="sec-label">Goalies</div>
+      <div className="sec-label">{t('shotMapView.boxscore.goalies')}</div>
       {our.map((g, i) => <GoalieRow2 key={i} g={g} teamAbbr={abbr} col={color} />)}
       {opp.map((g, i) => <GoalieRow2 key={i} g={g} teamAbbr={oppAbbr || 'OPP'} col={oppColor} />)}
     </div>
@@ -986,6 +988,7 @@ function GoalieCard({ goalies, teamId, abbr, oppAbbr, color, oppColor }) {
 // ── Main view ─────────────────────────────────────────────────
 
 export default function PWHLShotMapView() {
+  const { t } = useTranslation();
   const team   = PWHL_TEAM_CONFIG;
   const teamId = PWHL_TEAM_ID ? parseInt(PWHL_TEAM_ID, 10) : null;
   const abbr   = team?.abbr || null;
@@ -1825,10 +1828,10 @@ export default function PWHLShotMapView() {
               {scoreBarData && <span className={scoreNumClasses()} style={{ color }}>{scoreBarData.myScore}</span>}
             </div>
             {(isLive && liveSituation?.ourPP) || debugSituation?.ourPP ? (
-              <div className={`${PP_INDICATOR_BASE_CLASSES} ${CAR_PP_CLASSES}`}>⚡ Power Play</div>
+              <div className={`${PP_INDICATOR_BASE_CLASSES} ${CAR_PP_CLASSES}`}>⚡ {t('shotMapView.scoreBar.powerPlay', { prefix: '' })}</div>
             ) : null}
             {(isLive && liveSituation?.ourEN) || debugSituation?.ourEN ? (
-              <div className={`${PP_INDICATOR_BASE_CLASSES} en-indicator car-en`}>🥅 {abbr} Empty Net</div>
+              <div className={`${PP_INDICATOR_BASE_CLASSES} en-indicator car-en`}>🥅 {t('shotMapView.scoreBar.emptyNet', { abbr })}</div>
             ) : null}
           </div>
           <div className={SCORE_CENTER_CLASSES}>
@@ -1841,20 +1844,20 @@ export default function PWHLShotMapView() {
                   {liveClock?.time || '—'}
                 </div>
                 <div className={`${SCORE_STATE_CLASSES} ${PILL_RED_CLASSES}`} style={{ marginTop: 4 }}>
-                  {devGame ? '🟡 DEV' : '🔴 LIVE'}
+                  {devGame ? '🟡 DEV' : t('shotMapView.scoreBar.liveIndicator')}
                 </div>
               </>
             ) : scoreBarData ? (
               <>
-                <div className={SCORE_PERIOD_CLASSES}>Final{scoreBarData.ot?' OT':scoreBarData.shootout?' SO':''}</div>
+                <div className={SCORE_PERIOD_CLASSES}>{t('shotMapView.scoreBar.final')}{scoreBarData.ot?' OT':scoreBarData.shootout?' SO':''}</div>
                 <div style={{ fontSize:10, color:'var(--text-dim)', marginTop:2 }}>
-                  {scoreBarData.won ? '✓ Win' : '✗ Loss'} · {scoreBarData.isHome ? 'Home' : 'Away'}
+                  {scoreBarData.won ? t('pwhlShotMapView.scoreBar.win') : t('pwhlShotMapView.scoreBar.loss')} · {scoreBarData.isHome ? t('pwhlShotMapView.scoreBar.home') : t('pwhlShotMapView.scoreBar.away')}
                 </div>
               </>
             ) : (
               <>
-                <div className={SCORE_PERIOD_CLASSES}>Shot Map</div>
-                <div style={{ fontSize:10, color:'var(--text-dim)' }}>Historical</div>
+                <div className={SCORE_PERIOD_CLASSES}>{t('shotMapView.scoreBar.loadingTitle')}</div>
+                <div style={{ fontSize:10, color:'var(--text-dim)' }}>{t('pwhlShotMapView.scoreBar.historical')}</div>
               </>
             )}
           </div>
@@ -1871,10 +1874,10 @@ export default function PWHLShotMapView() {
                 <TeamLogo abbr={scoreBarData.oppAbbr} sport="pwhl" size={30} color={oppColor} />
               </div>
               {(isLive && liveSituation?.oppPP) || debugSituation?.oppPP ? (
-                <div className={`${PP_INDICATOR_BASE_CLASSES} ${OPP_PP_CLASSES}`}>⚡ {scoreBarData.oppAbbr} Power Play</div>
+                <div className={`${PP_INDICATOR_BASE_CLASSES} ${OPP_PP_CLASSES}`}>⚡ {t('shotMapView.scoreBar.powerPlay', { prefix: `${scoreBarData.oppAbbr} ` })}</div>
               ) : null}
               {(isLive && liveSituation?.oppEN) || debugSituation?.oppEN ? (
-                <div className={`${PP_INDICATOR_BASE_CLASSES} en-indicator opp-en`}>🥅 {scoreBarData.oppAbbr} Empty Net</div>
+                <div className={`${PP_INDICATOR_BASE_CLASSES} en-indicator opp-en`}>🥅 {t('shotMapView.scoreBar.emptyNet', { abbr: scoreBarData.oppAbbr })}</div>
               ) : null}
             </div>
           ) : <div style={{ width:40 }} />}
@@ -1927,14 +1930,14 @@ export default function PWHLShotMapView() {
             <button key={s.period} className={rinkBtnClasses({ active: false })}
               style={{ fontSize:11, padding:'3px 10px' }}
               onClick={() => setViewingSummaryPeriod(s.period)}>
-              {s.periodShort} Summary
+              {t('pwhlShotMapView.scoreBar.periodSummary', { period: s.periodShort })}
             </button>
           ))}
           {gameSummary && (
             <button className={rinkBtnClasses({ active: false })}
               style={{ fontSize:11, padding:'3px 10px', fontWeight:600 }}
               onClick={() => setViewingSummaryPeriod('game')}>
-              📊 Game Summary
+              {t('pwhlShotMapView.scoreBar.gameSummary')}
             </button>
           )}
         </div>
@@ -1950,24 +1953,24 @@ export default function PWHLShotMapView() {
           placeholder to seasonSummary once it's the same "All N" data. */}
       {shotStats && (
         <div className={metricsGridClasses(4)}>
-          <MetCard label="Shots on Goal" value={shotStats.sog}
-            sub={`${shotStats.goals}G · Opp ${(isAllN ? seasonSummary?.sog.opp : shotStats.oppSOG) ?? '—'}`}
+          <MetCard label={t('pwhlShotMapView.metrics.shotsOnGoal')} value={shotStats.sog}
+            sub={t('pwhlShotMapView.metrics.sogSub', { goals: shotStats.goals, opp: (isAllN ? seasonSummary?.sog.opp : shotStats.oppSOG) ?? '—' })}
             onClick={() => buildDrillDown('sog')} />
-          <MetCard label="Blocks" value={shotStats.blocks}
-            sub={`Opp ${(isAllN ? seasonSummary?.blocked.opp : shotStats.oppBlocked) ?? '—'}`}
+          <MetCard label={t('shotMapView.metrics.blocks')} value={shotStats.blocks}
+            sub={t('shotMapView.metrics.opp', { value: (isAllN ? seasonSummary?.blocked.opp : shotStats.oppBlocked) ?? '—' })}
             onClick={() => buildDrillDown('blocked')} />
-          <MetCard label="Hits"
+          <MetCard label={t('shotMapView.metrics.hits')}
             value={isAllN ? (seasonSummary?.hits.car ?? '—') : hasPBP ? (pbpStats?.hits.car ?? '—') : '—'}
             sub={isAllN
-              ? (seasonSummary ? `Opp ${seasonSummary.hits.opp}` : 'Loading…')
-              : hasPBP && pbpStats ? `Opp ${pbpStats.hits.opp}` : selectedGameId ? 'Loading…' : 'Select a game'}
+              ? (seasonSummary ? t('shotMapView.metrics.opp', { value: seasonSummary.hits.opp }) : t('common.loading'))
+              : hasPBP && pbpStats ? t('shotMapView.metrics.opp', { value: pbpStats.hits.opp }) : selectedGameId ? t('common.loading') : t('pwhlShotMapView.metrics.selectGame')}
             color={!isAllN && hasPBP && pbpStats && pbpStats.hits.car > pbpStats.hits.opp ? 'green' : null}
             onClick={!isAllN && hasPBP ? () => buildDrillDown('hits') : null} />
-          <MetCard label="Penalties"
+          <MetCard label={t('shotMapView.metrics.penalties')}
             value={isAllN ? (seasonSummary?.penalties.car ?? '—') : hasPBP ? (pbpStats?.penalties.car ?? '—') : '—'}
             sub={isAllN
-              ? (seasonSummary ? `Opp ${seasonSummary.penalties.opp}` : 'Loading…')
-              : hasPBP && pbpStats ? `Opp ${pbpStats.penalties.opp}` : selectedGameId ? 'Loading…' : 'Select a game'}
+              ? (seasonSummary ? t('shotMapView.metrics.opp', { value: seasonSummary.penalties.opp }) : t('common.loading'))
+              : hasPBP && pbpStats ? t('shotMapView.metrics.opp', { value: pbpStats.penalties.opp }) : selectedGameId ? t('common.loading') : t('pwhlShotMapView.metrics.selectGame')}
             color={hasPBP && pbpStats && pbpStats.penalties.car < pbpStats.penalties.opp ? 'green' : null}
             onClick={hasPBP ? () => buildDrillDown('penalties') : null} />
         </div>
@@ -1979,16 +1982,16 @@ export default function PWHLShotMapView() {
           (Session 80) is the first season-wide source for any of these. */}
       {isAllN && (
         <div className={metricsGridClasses(3)}>
-          <MetCard label="Faceoff %"
+          <MetCard label={t('shotMapView.metrics.faceoffPct')}
             value={seasonSummary?.faceoff.pct != null ? `${seasonSummary.faceoff.pct.toFixed(1)}%` : '—'}
-            sub={seasonSummary ? `${seasonSummary.faceoff.car}W – ${seasonSummary.faceoff.opp}L` : 'Loading…'}
+            sub={seasonSummary ? t('pwhlShotMapView.metrics.faceoffWL', { won: seasonSummary.faceoff.car, lost: seasonSummary.faceoff.opp }) : t('common.loading')}
             color={seasonSummary?.faceoff.pct != null && seasonSummary.faceoff.pct > 50 ? 'green' : null} />
-          <MetCard label="PP %"
+          <MetCard label={t('shotMapView.metrics.ppPct')}
             value={seasonSummary?.ppPct != null ? `${(seasonSummary.ppPct * 100).toFixed(1)}%` : '—'}
-            sub={seasonSummary?.gamesPlayed ? `${seasonSummary.gamesPlayed} GP` : 'season'} />
-          <MetCard label="PK %"
+            sub={seasonSummary?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: seasonSummary.gamesPlayed }) : t('shotMapView.metrics.season')} />
+          <MetCard label={t('shotMapView.metrics.pkPct')}
             value={seasonSummary?.pkPct != null ? `${(seasonSummary.pkPct * 100).toFixed(1)}%` : '—'}
-            sub={seasonSummary?.gamesPlayed ? `${seasonSummary.gamesPlayed} GP` : 'season'} />
+            sub={seasonSummary?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: seasonSummary.gamesPlayed }) : t('shotMapView.metrics.season')} />
         </div>
       )}
 
@@ -2003,18 +2006,18 @@ export default function PWHLShotMapView() {
               const totalAtt = ourFO.reduce((s, p) => s + p.attempts, 0);
               const pct      = totalAtt > 0 ? (totalWon / totalAtt * 100) : null;
               return (
-                <MetCard label="Faceoff %"
+                <MetCard label={t('shotMapView.metrics.faceoffPct')}
                   value={pct != null ? `${pct.toFixed(1)}%` : '—'}
-                  sub={`${totalWon}W – ${totalAtt - totalWon}L`}
+                  sub={t('pwhlShotMapView.metrics.faceoffWL', { won: totalWon, lost: totalAtt - totalWon })}
                   color={pct != null && pct > 50 ? 'green' : null}
                   onClick={() => buildDrillDown('faceoff')} />
               );
             }
             // Fallback: PBP-derived (accurate now that away_team_id fixed in pipeline)
             return (
-              <MetCard label="Faceoff %"
+              <MetCard label={t('shotMapView.metrics.faceoffPct')}
                 value={pbpStats.faceoff.pct != null ? `${pbpStats.faceoff.pct.toFixed(1)}%` : '—'}
-                sub={`${pbpStats.faceoff.won}W – ${pbpStats.faceoff.lost}L`}
+                sub={t('pwhlShotMapView.metrics.faceoffWL', { won: pbpStats.faceoff.won, lost: pbpStats.faceoff.lost })}
                 color={pbpStats.faceoff.pct != null && pbpStats.faceoff.pct > 50 ? 'green' : null}
                 onClick={() => buildDrillDown('faceoff')} />
             );
@@ -2022,7 +2025,7 @@ export default function PWHLShotMapView() {
           {(() => {
             const opps = pbpStats.pp.opps;
             if (opps === 0) return (
-              <MetCard label="PP %" value="—" sub="No PP opps" />
+              <MetCard label={t('shotMapView.metrics.ppPct')} value="—" sub={t('pwhlShotMapView.metrics.noPpOpps')} />
             );
             // Count PP goals: goals scored by us during opponent penalty windows
             const penalties = pbpByType(pbpEvents || [], 'penalty');
@@ -2040,9 +2043,9 @@ export default function PWHLShotMapView() {
             }
             const ppPct = Math.round(ppGoals / opps * 100);
             return (
-              <MetCard label="PP %"
+              <MetCard label={t('shotMapView.metrics.ppPct')}
                 value={`${ppPct}%`}
-                sub={`${ppGoals}/${opps} · ${opps} opp${opps !== 1 ? 's' : ''}`}
+                sub={t('pwhlShotMapView.metrics.ppSub', { goals: ppGoals, opps, count: opps })}
                 color={ppPct >= 20 ? 'green' : null}
                 onClick={() => buildDrillDown('pp')} />
             );
@@ -2050,7 +2053,7 @@ export default function PWHLShotMapView() {
           {(() => {
             const opps = pbpStats.pp.pkOpps;
             if (opps === 0) return (
-              <MetCard label="PK %" value="—" sub="No PK opps" />
+              <MetCard label={t('shotMapView.metrics.pkPct')} value="—" sub={t('pwhlShotMapView.metrics.noPkOpps')} />
             );
             // Count goals allowed during our penalty windows
             const penalties  = pbpByType(pbpEvents || [], 'penalty');
@@ -2068,9 +2071,9 @@ export default function PWHLShotMapView() {
             const survived = opps - pkGoalsAgainst;
             const pkPct    = Math.round(survived / opps * 100);
             return (
-              <MetCard label="PK %"
+              <MetCard label={t('shotMapView.metrics.pkPct')}
                 value={`${pkPct}%`}
-                sub={`${survived}/${opps} killed`}
+                sub={t('pwhlShotMapView.metrics.pkSub', { survived, opps })}
                 color={pkPct >= 80 ? 'green' : pkPct < 50 ? null : null}
                 onClick={() => buildDrillDown('pk')} />
             );
@@ -2109,22 +2112,22 @@ export default function PWHLShotMapView() {
       {/* ── Shot danger (clickable) ── */}
       {dangerCounts.total > 0 && (
         <div className={`card ${DANGER_QUALITY_CARD_CLASSES}`}>
-          <div className="sec-label">{abbr} Shot Quality</div>
+          <div className="sec-label">{t('pwhlShotMapView.shotQuality.heading', { abbr })}</div>
           <div className={DANGER_GRID_CLASSES}>
             <div className={DANGER_CELL_CLASSES} onClick={() => buildDangerDrill('hi')}>
               <div className={dangerNumClasses('high')}>{dangerCounts.hiN}</div>
-              <div className={DANGER_LABEL_CLASSES}>🔴 High danger</div>
-              <div className={DANGER_SUB_CLASSES}>&lt;15 ft</div>
+              <div className={DANGER_LABEL_CLASSES}>{t('shotMapView.shotQuality.highDanger')}</div>
+              <div className={DANGER_SUB_CLASSES}>{t('shotMapView.shotQuality.highDangerSub')}</div>
             </div>
             <div className={DANGER_CELL_CLASSES} onClick={() => buildDangerDrill('mid')}>
               <div className={dangerNumClasses('med')}>{dangerCounts.midN}</div>
-              <div className={DANGER_LABEL_CLASSES}>🟡 Medium</div>
-              <div className={DANGER_SUB_CLASSES}>15–30 ft</div>
+              <div className={DANGER_LABEL_CLASSES}>{t('shotMapView.shotQuality.medium')}</div>
+              <div className={DANGER_SUB_CLASSES}>{t('shotMapView.shotQuality.mediumSub')}</div>
             </div>
             <div className={DANGER_CELL_CLASSES} onClick={() => buildDangerDrill('lo')}>
               <div className={dangerNumClasses('lo')}>{dangerCounts.loN}</div>
-              <div className={DANGER_LABEL_CLASSES}>⚪ Low</div>
-              <div className={DANGER_SUB_CLASSES}>&gt;30 ft</div>
+              <div className={DANGER_LABEL_CLASSES}>{t('shotMapView.shotQuality.low')}</div>
+              <div className={DANGER_SUB_CLASSES}>{t('shotMapView.shotQuality.lowSub')}</div>
             </div>
           </div>
         </div>
@@ -2134,13 +2137,13 @@ export default function PWHLShotMapView() {
       <div className={TWO_COL_CLASSES}>
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <div className="card">
-            <div className="sec-label">{abbr} Shot Locations</div>
+            <div className="sec-label">{t('pwhlShotMapView.rink.shotLocations', { abbr })}</div>
             {rawShots === null && (
-              <div style={{ textAlign:'center', padding:32, color:'var(--text-dim)' }}>Loading shots…</div>
+              <div style={{ textAlign:'center', padding:32, color:'var(--text-dim)' }}>{t('pwhlShotMapView.rink.loadingShots')}</div>
             )}
             {rawShots !== null && rinkEvents.length === 0 && (
               <div style={{ textAlign:'center', padding:32, color:'var(--text-dim)' }}>
-                No shot data for this {selectedGameId ? 'game' : 'season'}.
+                {selectedGameId ? t('pwhlShotMapView.rink.noShotDataGame') : t('pwhlShotMapView.rink.noShotDataSeason')}
               </div>
             )}
             {rinkEvents.length > 0 && <HockeyRink events={toHockeyRinkEvents(rinkEvents)} teamAbbr={abbr} teamColor={color} />}
@@ -2150,7 +2153,7 @@ export default function PWHLShotMapView() {
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           {selectedGameId && topScorers.length > 0 && (
             <div className="card">
-              <div className="sec-label">{abbr} scoring — this game</div>
+              <div className="sec-label">{t('shotMapView.boxscore.scoringThisGame', { abbr })}</div>
               {topScorers.map((p,i) => (
                 <div key={i} className={SCORER_ROW_CLASSES}>
                   <span className={SCORER_NAME_CLASSES}>{p.name}</span>
@@ -2189,8 +2192,8 @@ export default function PWHLShotMapView() {
       </div>
 
       <div style={{ fontSize:10, color:'var(--text-dim)', textAlign:'center', padding:'8px 16px' }}>
-        {selectedGameId ? 'Tap any card or danger zone to drill down · ' : ''}
-        Coordinates normalised to attacking direction · Source: HockeyTech / PWHL
+        {selectedGameId ? t('pwhlShotMapView.footer.drillHint') : ''}
+        {t('pwhlShotMapView.footer.coordsSource')}
       </div>
 
       {drillStat && (

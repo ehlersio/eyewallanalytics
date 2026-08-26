@@ -513,5 +513,126 @@
   "common": {
     "loading": "Chargement…",
     "close": "Fermer"
+  },
+  "shotMapView": {
+    "scoreBar": {
+      "powerPlay": "{{prefix}}Avantage numérique",
+      "emptyNet": "{{abbr}} filet vide",
+      "intermission1st": "Entracte — 1re période",
+      "intermission2nd": "Entracte — 2e période",
+      "intermission3rd": "Entracte — 3e période",
+      "intermissionOT": "Entracte — Prolongation {{n}}",
+      "final": "Final",
+      "playoffTag": "🏒 Séries · ",
+      "loadingTitle": "Carte des tirs",
+      "loadingState": "Chargement des données du match…",
+      "coincidental": "{{skaters}} — Coïncidentes",
+      "recentEvents": "Événements récents",
+      "disabledReason": "Disponible une fois le match terminé.",
+      "liveIndicator": "🔴 EN DIRECT"
+    },
+    "metrics": {
+      "shotsOnGoal": "Tirs au but",
+      "hits": "Mises en échec",
+      "blocks": "Tirs bloqués",
+      "blocksHelp": "Tirs bloqués par les patineurs de {{abbr}}",
+      "penalties": "Pénalités",
+      "faceoffPct": "% de mises en jeu",
+      "ppPct": "% avantage num.",
+      "pkPct": "% désavantage num.",
+      "opp": "Adv. {{value}}",
+      "thisGame": "ce match",
+      "season": "saison",
+      "gp": "{{gp}} PJ",
+      "poAvg": "Moy. séries",
+      "sznAvg": "Moy. saison",
+      "ppSub": "{{goals}}/{{opps}} · {{avgLabel}} {{avgPct}}%",
+      "pkSub": "{{survived}}/{{opps}} tués · {{avgLabel}} {{avgPct}}%"
+    },
+    "shotQuality": {
+      "heading": "Qualité des tirs — {{abbr}}",
+      "highDanger": "🔴 Danger élevé",
+      "highDangerSub": "<15 pi",
+      "medium": "🟡 Moyen",
+      "mediumSub": "15–30 pi",
+      "low": "⚪ Faible",
+      "lowSub": ">30 pi"
+    },
+    "boxscore": {
+      "shotMap": "Carte des tirs",
+      "scoringByPeriod": "Pointage par période",
+      "total": "T",
+      "scoringThisGame": "Pointage de {{abbr}} — ce match",
+      "goalies": "Gardiens",
+      "goalieChange": "— changement de gardien —",
+      "teamStatsThisGame": "Statistiques d'équipe — ce match",
+      "shotAttempts": "Tentatives de tir (CF)",
+      "shotAttemptsHelp": "Corsi : toutes les tentatives de tir, y compris les tirs ratés et bloqués. Meilleur indicateur de possession.",
+      "xgMoneyPuck": "xG 5v5",
+      "xgEstimate": "xG (est.)",
+      "xgHelpMoneyPuck": "Buts attendus MoneyPuck 5v5 — leur modèle xG complet incluant la qualité des tirs, le trafic devant le filet et le mouvement pré-tir. Disponible quelques heures après la fin du match.",
+      "xgHelpEstimate": "xG estimé selon la distance et l'angle du tir (estimation en direct). Remplacé par le modèle complet de MoneyPuck une fois le match terminé.",
+      "backToTop": "Retour en haut",
+      "backToTopShort": "↑ Haut"
+    },
+    "goalieCard": {
+      "svSa": "Arr./Tirs",
+      "svPct": "%Arr.",
+      "gsax": "BSAX",
+      "gsaxSeasonHelp": "Buts sauvés au-delà de l'attendu en saison régulière (modèle xButs pondéré par les rafales de MoneyPuck). Affiché toute l'année, l'échantillon étant plus fiable que celui des séries. Positif = sauve plus de buts qu'un gardien moyen sur les mêmes tirs. {{gpNote}}",
+      "gsaxSeasonGpNote": "{{gp}} PJ cette saison."
+    },
+    "onIce": {
+      "title": "Sur la glace"
+    },
+    "statLabels": {
+      "shotsOnGoal": "Tirs au but",
+      "hits": "Mises en échec",
+      "blockedShots": "Tirs bloqués",
+      "faceoffWinPct": "% de mises en jeu gagnées",
+      "powerPlayPct": "% avantage numérique",
+      "powerPlay": "Avantage numérique",
+      "penaltyMin": "Min. de pénalité",
+      "giveaways": "Revirements",
+      "takeaways": "Récupérations"
+    }
+  },
+  "pwhlShotMapView": {
+    "scoreBar": {
+      "win": "✓ Victoire",
+      "loss": "✗ Défaite",
+      "home": "Domicile",
+      "away": "Visiteur",
+      "historical": "Historique",
+      "periodSummary": "Résumé — {{period}}",
+      "gameSummary": "📊 Résumé du match"
+    },
+    "metrics": {
+      "shotsOnGoal": "Tirs au but",
+      "sogSub": "{{goals}} B · Adv. {{opp}}",
+      "selectGame": "Sélectionnez un match",
+      "faceoffWL": "{{won}} G – {{lost}} P",
+      "noPpOpps": "Aucune occasion d'avantage num.",
+      "noPkOpps": "Aucune occasion de désavantage num.",
+      "ppSub_one": "{{goals}}/{{opps}} · {{opps}} occasion",
+      "ppSub_other": "{{goals}}/{{opps}} · {{opps}} occasions",
+      "pkSub": "{{survived}}/{{opps}} tuées"
+    },
+    "shotQuality": {
+      "heading": "Qualité des tirs — {{abbr}}"
+    },
+    "rink": {
+      "shotLocations": "Emplacement des tirs — {{abbr}}",
+      "loadingShots": "Chargement des tirs…",
+      "noShotDataGame": "Aucune donnée de tirs pour ce match.",
+      "noShotDataSeason": "Aucune donnée de tirs pour cette saison."
+    },
+    "footer": {
+      "drillHint": "Touchez une carte ou une zone de danger pour explorer · ",
+      "coordsSource": "Coordonnées normalisées selon la direction d'attaque · Source : HockeyTech / PWHL"
+    },
+    "goalieCard": {
+      "gaa": "MBA"
+    }
   }
 }
