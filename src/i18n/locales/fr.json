@@ -1165,5 +1165,22 @@
       "notAvailable": "Trivia non disponible — revenez bientôt",
       "tryAgain": "Réessayer"
     }
+  },
+  "statTileGrid": {
+    "scopes": {
+      "div": "Division",
+      "conf": "Conférence",
+      "league": "Ligue"
+    },
+    "tip": {
+      "calculation": "Calcul",
+      "whyItMatters": "Pourquoi c'est important"
+    },
+    "insufficientSample": "Pas assez de temps de jeu",
+    "section": {
+      "current": "Actuel",
+      "asOf": "En date de {{season}}",
+      "staleTip": "Pas assez de matchs cette saison — affiche {{season}}"
+    }
   }
 }
