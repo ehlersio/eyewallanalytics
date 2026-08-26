@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   isHomeGame, getOpponent, getCarScore, getOppScore,
   formatGameDate, formatGameTime, TEAM_COLORS, TEAM_CONFIG,
@@ -24,6 +25,7 @@ function seriesPipClasses(filled, side) {
 }
 
 function SeriesCard({ series }) {
+  const { t } = useTranslation();
   const oppAbbr  = series.opponent?.abbrev || '???';
   const oppColor = TEAM_COLORS[oppAbbr] || '#7a8899';
   const total    = series.carWins + series.oppWins;
@@ -33,15 +35,15 @@ function SeriesCard({ series }) {
         <div className="series-top-left flex flex-col gap-0.5">
           <span className="series-round-label font-[family-name:var(--font-display)] text-[13px] font-bold tracking-[0.04em] text-[color:var(--text)] uppercase">{series.roundLabel}</span>
           <span className="series-status text-[11px] text-[color:var(--text-muted)] font-medium">
-            {series.isActive ? '🔴 In progress' : series.carAdvance ? '✅ Advanced' : '❌ Eliminated'}
+            {series.isActive ? t('pwhlScheduleView.seriesCard.statusInProgress') : series.carAdvance ? t('pwhlScheduleView.seriesCard.statusAdvanced') : t('pwhlScheduleView.seriesCard.statusEliminated')}
           </span>
         </div>
-        <span className="series-games-played text-[11px] text-[color:var(--text-dim)] whitespace-nowrap pt-0.5">{total} game{total !== 1 ? 's' : ''} played</span>
+        <span className="series-games-played text-[11px] text-[color:var(--text-dim)] whitespace-nowrap pt-0.5">{t('pwhlScheduleView.seriesCard.gamesPlayed', { count: total })}</span>
         {series.carWins === 4 && series.oppWins === 0 && (
-          <span className="series-sweep text-[11px] font-bold text-[color:var(--green)] ml-1.5">🧹 Sweep!</span>
+          <span className="series-sweep text-[11px] font-bold text-[color:var(--green)] ml-1.5">{t('pwhlScheduleView.seriesCard.sweepBadgeOurs')}</span>
         )}
         {series.oppWins === 4 && series.carWins === 0 && (
-          <span className="series-swept text-[11px] font-bold text-[color:var(--text-dim)] ml-1.5">🧹 Swept</span>
+          <span className="series-swept text-[11px] font-bold text-[color:var(--text-dim)] ml-1.5">{t('pwhlScheduleView.seriesCard.sweepBadgeTheirs')}</span>
         )}
       </div>
       <div className="series-body flex items-center gap-1 mb-1">
@@ -101,27 +103,28 @@ const sortBtnClasses = (active) => {
     : `${base} bg-transparent border-[color:var(--border-2)] text-[color:var(--text-muted)] hover:text-[color:var(--text)]`;
 };
 
-function SortBar({ sortOrder, setSortOrder, completedCount, upcomingCount, _label }) {
+function SortBar({ sortOrder, setSortOrder, completedCount, upcomingCount }) {
+  const { t } = useTranslation();
   return (
     <div className="sort-bar flex items-center justify-between gap-2.5 py-2 pb-2.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2.5 flex-wrap">
       <span className="sort-bar-count text-[11px] text-[color:var(--text-dim)]">
-        {completedCount} played{upcomingCount > 0 ? ` · ${upcomingCount} upcoming` : ''}
+        {t('pwhlScheduleView.sortBar.countSummary', { completedCount })}{upcomingCount > 0 ? t('pwhlScheduleView.sortBar.countSummaryUpcoming', { count: upcomingCount }) : ''}
       </span>
       <div className="sort-bar-controls flex items-center gap-[5px]">
-        <span className="sort-bar-label text-[11px] text-[color:var(--text-dim)] mr-0.5">Sort:</span>
+        <span className="sort-bar-label text-[11px] text-[color:var(--text-dim)] mr-0.5">{t('pwhlScheduleView.sortBar.label')}</span>
         <button
           className={sortBtnClasses(sortOrder === 'desc')}
           onClick={() => setSortOrder('desc')}
-          title="Newest first"
+          title={t('pwhlScheduleView.sortBar.newestFirst')}
         >
-          Newest first
+          {t('pwhlScheduleView.sortBar.newestFirst')}
         </button>
         <button
           className={sortBtnClasses(sortOrder === 'asc')}
           onClick={() => setSortOrder('asc')}
-          title="Oldest first"
+          title={t('pwhlScheduleView.sortBar.oldestFirst')}
         >
-          Oldest first
+          {t('pwhlScheduleView.sortBar.oldestFirst')}
         </button>
       </div>
     </div>
@@ -150,6 +153,7 @@ const gameCardClasses = ({ isSelected, isPlayoff, isCompleted }) => {
 };
 
 function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, cardFavoured }) {
+  const { t } = useTranslation();
   const home     = isHomeGame(game);
   const opp      = getOpponent(game);
   const oppColor = TEAM_COLORS[opp?.abbrev] || '#7a8899';
@@ -174,13 +178,13 @@ function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, car
         ) : (
           <span className="gc-time text-[11px] text-[color:var(--amber)] font-[family-name:var(--font-mono)]">{formatGameTime(game.startTimeUTC)}</span>
         )}
-        <span className="gc-venue text-[10px] text-[color:var(--text-dim)] ml-auto">{home ? '📍 Lenovo Center' : '✈ Away'}</span>
-        {isCompleted && <span className="gc-tap-hint text-[10px] text-[color:var(--text-dim)]">Tap for stats →</span>}
+        <span className="gc-venue text-[10px] text-[color:var(--text-dim)] ml-auto">{home ? '📍 Lenovo Center' : `✈ ${t('scheduleView.resultCard.away')}`}</span>
+        {isCompleted && <span className="gc-tap-hint text-[10px] text-[color:var(--text-dim)]">{t('scheduleView.resultCard.tapForStats')}</span>}
         {!isCompleted && odds && (
           <div className="gc-odds flex items-center gap-1 font-[family-name:var(--font-mono)] text-[11px] ml-auto">
-            <span className="gc-odds-car text-[color:var(--red-bright)] font-semibold" title="${TEAM_CONFIG.abbr} moneyline">{fmtOdds(odds.carOdds)}</span>
+            <span className="gc-odds-car text-[color:var(--red-bright)] font-semibold" title={t('gameCard.card.oddsCarTitle', { abbr: TEAM_CONFIG.abbr })}>{fmtOdds(odds.carOdds)}</span>
             <span className="gc-odds-sep text-[color:var(--text-dim)]">/</span>
-            <span className="gc-odds-opp text-[color:var(--text-muted)] font-semibold" title="OPP moneyline">{fmtOdds(odds.oppOdds)}</span>
+            <span className="gc-odds-opp text-[color:var(--text-muted)] font-semibold" title={t('gameCard.card.oddsOppTitle')}>{fmtOdds(odds.oppOdds)}</span>
             <span className="gc-odds-book text-[9px] text-[color:var(--text-dim)] ml-0.5">{odds.book}</span>
           </div>
         )}
@@ -193,7 +197,7 @@ function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, car
             <span className="gc-full text-[11px] text-[color:var(--text-muted)]">{TEAM_CONFIG.displayName}</span>
           </div>
         </div>
-        <div className="gc-vs font-[family-name:var(--font-display)] text-[12px] font-semibold text-[color:var(--text-dim)] shrink-0">{home ? 'vs' : '@'}</div>
+        <div className="gc-vs font-[family-name:var(--font-display)] text-[12px] font-semibold text-[color:var(--text-dim)] shrink-0">{home ? t('gameCard.card.vsLabel') : '@'}</div>
         <div className="gc-team-block right flex-1 flex flex-row-reverse items-center gap-2.5 min-w-0">
           <div className="gc-team-text right flex flex-col gap-0.5 min-w-0 items-end text-right">
             <span className="gc-abbr font-[family-name:var(--font-display)] text-[20px] font-bold tracking-[0.04em]" style={{ color: oppColor }}>{opp?.abbrev}</span>
@@ -209,7 +213,7 @@ function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, car
               {cardFavoured.favoured ? `✓ ${TEAM_CONFIG.abbr} ${cardFavoured.pct}%` : `⚠ ${opp?.abbrev} ${100 - cardFavoured.pct}%`}
             </span>
           )}
-          <span className="gc-expand-hint text-[10px] text-[color:var(--text-dim)] text-right flex-1">{isSelected ? '▲ Close' : '▼ Matchup breakdown'}</span>
+          <span className="gc-expand-hint text-[10px] text-[color:var(--text-dim)] text-right flex-1">{isSelected ? `▲ ${t('common.close')}` : `▼ ${t('gameCard.card.matchupBreakdownLabel')}`}</span>
         </div>
       )}
     </div>

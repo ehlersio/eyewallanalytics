@@ -896,9 +896,6 @@
       "completeSubOffseason": "Final record shown above. See you next season.",
       "completeSubPlayoffsUnderway": "Final record shown above. Playoffs are underway."
     },
-    "sortBar": {
-      "label": "games"
-    },
     "resultCard": {
       "tapForStats": "Tap for stats →",
       "home": "Home",
@@ -948,6 +945,21 @@
     "upcomingCard": {
       "playoffBadge": "🏆 Playoff",
       "tapForPreview": "Tap for preview →"
+    }
+  },
+  "gameCard": {
+    "card": {
+      "oddsCarTitle": "{{abbr}} moneyline",
+      "oddsOppTitle": "OPP moneyline",
+      "vsLabel": "vs",
+      "matchupBreakdownLabel": "Matchup breakdown"
+    }
+  },
+  "calendarView": {
+    "legend": {
+      "win": "Win",
+      "otLoss": "OT Loss",
+      "loss": "Loss"
     }
   }
 }
