@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import {
   getTeamStats, getTeamStatsPlayoff, getTeamRecentGames, getTeamTopPlayers,
@@ -32,8 +33,9 @@ const SCOUTING_GOALIE_VAL_CLASSES = 'scouting-goalie-val font-[family-name:var(-
 
 // Recent form dots
 function FormDots({ games }) {
+  const { t } = useTranslation();
   const dots = (games || []).slice(0, 10).reverse();
-  if (!dots.length) return <span className={SCOUTING_EMPTY_CLASSES}>No recent games</span>;
+  if (!dots.length) return <span className={SCOUTING_EMPTY_CLASSES}>{t('scoutingTab.formDots.empty')}</span>;
   const dotVariant = {
     w:   'bg-[rgba(61,186,126,0.2)] text-[color:var(--green)]',
     l:   'bg-[rgba(204,34,0,0.2)] text-[color:var(--red-bright)]',
@@ -45,7 +47,7 @@ function FormDots({ games }) {
         const r = g.result.toLowerCase();
         return (
           <div key={i} className={`scouting-dot ${r} w-[22px] h-[22px] rounded-[5px] flex items-center justify-center text-[8px] font-bold cursor-default ${dotVariant[r] || ''}`}
-            title={`${g.date?.slice(5,10)} vs ${g.opp}: ${g.result} ${g.teamScore}–${g.oppScore}`}>
+            title={t('scoutingTab.formDots.tooltip', { date: g.date?.slice(5,10), opp: g.opp, result: g.result, teamScore: g.teamScore, oppScore: g.oppScore })}>
             {g.result === 'OTL' ? 'O' : g.result}
           </div>
         );
@@ -89,12 +91,13 @@ function CompareRow({ label, carVal, oppVal, higherBetter = true, fmt = v => v?.
 
 // Player table for one team
 function PlayerTable({ players, loading, color, goalieAnalytics }) {
-  if (loading) return <div className="scouting-loading text-[11px] text-[color:var(--text-dim)] py-2">Loading…</div>;
-  if (!players?.skaters?.length) return <div className={SCOUTING_EMPTY_CLASSES}>No data</div>;
+  const { t } = useTranslation();
+  if (loading) return <div className="scouting-loading text-[11px] text-[color:var(--text-dim)] py-2">{t('common.loading')}</div>;
+  if (!players?.skaters?.length) return <div className={SCOUTING_EMPTY_CLASSES}>{t('scoutingTab.playerTable.noData')}</div>;
   return (
     <div className="scouting-player-table flex flex-col">
       <div className="scouting-player-header grid [grid-template-columns:1fr_18px_18px_24px] gap-[2px] py-[2px] text-[8px] text-[color:var(--text-dim)] uppercase border-b-[0.5px] border-b-[color:var(--border)] mb-px">
-        <span>Player</span><span>G</span><span>A</span><span>PTS</span>
+        <span>{t('gameStatsPopup.table.player')}</span><span>G</span><span>A</span><span>PTS</span>
       </div>
       {players.skaters.map((p, i) => (
         <div key={i} className="scouting-player-row grid [grid-template-columns:1fr_18px_18px_24px] gap-[2px] py-1 items-center border-b-[0.5px] border-b-[color:var(--border)] text-[11px] text-[color:var(--text-muted)] last:border-b-0">
@@ -108,7 +111,7 @@ function PlayerTable({ players, loading, color, goalieAnalytics }) {
       ))}
       {players.goalies?.length > 0 && (
         <>
-          <div className="scouting-goalie-divider text-[8px] font-bold uppercase tracking-[0.07em] text-[color:var(--text-dim)] pt-[5px] pb-[3px] border-t-[0.5px] border-t-[color:var(--border)] mt-[3px]">Goalies</div>
+          <div className="scouting-goalie-divider text-[8px] font-bold uppercase tracking-[0.07em] text-[color:var(--text-dim)] pt-[5px] pb-[3px] border-t-[0.5px] border-t-[color:var(--border)] mt-[3px]">{t('scoutingTab.playerTable.goalies')}</div>
           {players.goalies.map((g, i) => {
             // Use real GSAX from Supabase if available, fall back to estimate
             const seasonData  = goalieAnalytics?.[String(g.playerId)] || null;
@@ -122,8 +125,8 @@ function PlayerTable({ players, loading, color, goalieAnalytics }) {
               ? `${realGsax > 0 ? '+' : ''}${realGsax}`
               : estGsax?.label ?? '—';
             const gsaxNote    = realGsax != null
-              ? `Regular season goals saved above expected (MoneyPuck flurry-adjusted model). ${realGp ? `${realGp} GP this season.` : ''}`
-              : (estGsax?.note || 'Goals saved above expected vs league avg .900 SV%');
+              ? (realGp ? t('scoutingTab.playerTable.gsaxRealNoteWithGp', { gp: realGp }) : t('scoutingTab.playerTable.gsaxRealNote'))
+              : estGsax?.note;
             const svFmt = g.savePct != null && g.savePct > 0
               ? (g.savePct <= 1 ? g.savePct.toFixed(4) : (g.savePct / 100).toFixed(4))
               : '—';
@@ -170,6 +173,7 @@ function PlayerTable({ players, loading, color, goalieAnalytics }) {
 
 // ── Goalie matchup card ──────────────────────────────────────
 function GoalieMatchupCard({ carPlayers, oppPlayers, oppAbbr: _oppAbbr, oppColor }) {
+  const { t } = useTranslation();
   const carGoalie = carPlayers?.goalies?.[0];
   const oppGoalie = oppPlayers?.goalies?.[0];
   if (!carGoalie && !oppGoalie) return null;
@@ -180,7 +184,7 @@ function GoalieMatchupCard({ carPlayers, oppPlayers, oppAbbr: _oppAbbr, oppColor
   const gmcGoalieClasses = (isCAR) => `gmc-goalie${isCAR ? ' gmc-car' : ''} flex-1 bg-[var(--bg2)] rounded-[10px] p-3 border-[0.5px] ${isCAR ? 'border-[color:rgba(var(--team-primary-rgb),0.25)]' : 'border-[color:var(--border)]'}`;
 
   const renderGoalie = (g, isCAR, teamColor) => {
-    if (!g) return <div className={gmcGoalieClasses(isCAR)}><span className={SCOUTING_EMPTY_CLASSES}>No data</span></div>;
+    if (!g) return <div className={gmcGoalieClasses(isCAR)}><span className={SCOUTING_EMPTY_CLASSES}>{t('scoutingTab.playerTable.noData')}</span></div>;
     const sv = g.savePct != null && g.savePct > 0
       ? (g.savePct <= 1 ? g.savePct.toFixed(4) : (g.savePct / 100).toFixed(4)) : '—';
     const gaa = g.gaa != null ? g.gaa.toFixed(2) : '—';
@@ -201,10 +205,10 @@ function GoalieMatchupCard({ carPlayers, oppPlayers, oppAbbr: _oppAbbr, oppColor
   };
   return (
     <div className={SCOUTING_SECTION_CLASSES}>
-      <div className={SCOUTING_SECTION_LABEL_CLASSES}>Goalie matchup</div>
+      <div className={SCOUTING_SECTION_LABEL_CLASSES}>{t('scoutingTab.goalieMatchup.sectionLabel')}</div>
       <div className="gmc-row flex items-center gap-2">
         {renderGoalie(carGoalie, true, 'var(--team-primary)')}
-        <div className="gmc-vs text-[11px] text-[color:var(--text-dim)] shrink-0">vs</div>
+        <div className="gmc-vs text-[11px] text-[color:var(--text-dim)] shrink-0">{t('scoutingTab.vs')}</div>
         {renderGoalie(oppGoalie, false, oppColor)}
       </div>
     </div>
@@ -213,6 +217,7 @@ function GoalieMatchupCard({ carPlayers, oppPlayers, oppAbbr: _oppAbbr, oppColor
 
 // ── Team total projection ────────────────────────────────────
 function TeamTotalCard({ carStats, oppStats, oppAbbr, isPlayoff }) {
+  const { t } = useTranslation();
   if (!carStats || !oppStats) return null;
   const carExp = (carStats.goalsForPerGame + oppStats.goalsAgainstPerGame) / 2;
   const oppExp = (oppStats.goalsForPerGame + carStats.goalsAgainstPerGame) / 2;
@@ -220,8 +225,8 @@ function TeamTotalCard({ carStats, oppStats, oppAbbr, isPlayoff }) {
   return (
     <div className={SCOUTING_SECTION_CLASSES}>
       <div className={SCOUTING_SECTION_LABEL_CLASSES}>
-        Team total projection
-        <InfoTip text="Average of each team's GF/GP and opponent's GA/GP. Informational only." position="above" />
+        {t('scoutingTab.teamTotal.sectionLabel')}
+        <InfoTip text={t('scoutingTab.teamTotal.tip')} position="above" />
       </div>
       <div className="ttc-wrap bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)] rounded-[8px] py-3 px-[14px]">
         <div className="ttc-score text-[18px] font-extrabold flex gap-2 items-baseline mb-[3px]">
@@ -229,8 +234,8 @@ function TeamTotalCard({ carStats, oppStats, oppAbbr, isPlayoff }) {
           <span className="ttc-dash text-[color:var(--text-dim)] font-normal">–</span>
           <span>{+oppExp.toFixed(1)} {oppAbbr}</span>
         </div>
-        <div className="ttc-total text-[12px] text-[color:var(--text-muted)] mb-[2px]">Projected total goals: <strong>{total}</strong></div>
-        <div className="ttc-meta text-[10px] text-[color:var(--text-dim)]">Based on {isPlayoff ? 'playoff' : 'regular season'} GF/GP + GA/GP</div>
+        <div className="ttc-total text-[12px] text-[color:var(--text-muted)] mb-[2px]">{t('scoutingTab.teamTotal.projectedTotalGoals')}<strong>{total}</strong></div>
+        <div className="ttc-meta text-[10px] text-[color:var(--text-dim)]">{isPlayoff ? t('scoutingTab.teamTotal.basedOnPlayoff') : t('scoutingTab.teamTotal.basedOnRegularSeason')}</div>
       </div>
     </div>
   );
@@ -239,6 +244,7 @@ function TeamTotalCard({ carStats, oppStats, oppAbbr, isPlayoff }) {
 // ── Share canvas (off-screen 1080×1080) ──────────────────────
 function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPlayers,
   _carRecentGames, _oppRecentGames, oppAbbr, oppColor, isPlayoff, carLines, matchupText }) {
+  const { t } = useTranslation();
   if (!carStats || !oppStats) return null;
 
   const logoUrl    = abbr => `/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
@@ -255,7 +261,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
       {/* Header */}
       <div className="sc-header flex items-center justify-between py-5 px-[52px] pb-2">
         <img src="/eyewall-logo.svg" alt="EyeWall" className="sc-logo w-20 h-20 object-contain" onError={e=>{e.target.style.display='none';}} />
-        <span className="sc-badge text-[13px] font-extrabold tracking-[0.14em] uppercase text-[color:var(--team-canvas)] bg-[rgba(var(--team-canvas-rgb),0.12)] py-1.5 px-4 rounded-[20px]">{isPlayoff ? 'Playoff ' : ''}Scouting Report</span>
+        <span className="sc-badge text-[13px] font-extrabold tracking-[0.14em] uppercase text-[color:var(--team-canvas)] bg-[rgba(var(--team-canvas-rgb),0.12)] py-1.5 px-4 rounded-[20px]">{isPlayoff ? t('scoutingTab.shareCanvas.playoffBadge') : t('scoutingTab.shareCanvas.badge')}</span>
       </div>
 
       {/* Teams */}
@@ -264,7 +270,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
           <img src={logoUrl(TEAM_CONFIG.abbr)} alt={TEAM_CONFIG.abbr} className="sc-team-logo w-9 h-9 object-contain" onError={e=>{e.target.style.display='none';}} />
           <span className="sc-team-abbr car text-[20px] font-extrabold text-[color:var(--team-canvas)]">CAR</span>
         </div>
-        <span className="sc-vs text-[18px] text-[rgba(255,255,255,0.2)]">vs</span>
+        <span className="sc-vs text-[18px] text-[rgba(255,255,255,0.2)]">{t('scoutingTab.vs')}</span>
         <div className="sc-team flex flex-row items-center gap-2.5">
           <img src={logoUrl(oppAbbr)} alt={oppAbbr} className="sc-team-logo w-9 h-9 object-contain" onError={e=>{e.target.style.display='none';}} />
           <span className="sc-team-abbr text-[20px] font-extrabold text-[rgba(255,255,255,0.7)]" style={{color: oppColor}}>{oppAbbr}</span>
@@ -274,11 +280,11 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
       {/* Stats comparison */}
       <div className="sc-stats py-3.5 px-[52px] pb-2.5 flex flex-col gap-2.5">
         {[
-          { label: 'Goals For / GP',    car: gpgFmt(carStats.goalsForPerGame),    opp: gpgFmt(oppStats.goalsForPerGame),    carBetter: (carStats.goalsForPerGame??0) > (oppStats.goalsForPerGame??0) },
-          { label: 'Goals Against / GP',car: gpgFmt(carStats.goalsAgainstPerGame),opp: gpgFmt(oppStats.goalsAgainstPerGame),carBetter: (carStats.goalsAgainstPerGame??99) < (oppStats.goalsAgainstPerGame??99) },
-          { label: 'Power Play %',      car: pctFmt(carStats.powerPlayPct),       opp: pctFmt(oppStats.powerPlayPct),       carBetter: (carStats.powerPlayPct??0) > (oppStats.powerPlayPct??0) },
-          { label: 'Penalty Kill %',    car: pctFmt(carStats.penaltyKillPct),     opp: pctFmt(oppStats.penaltyKillPct),     carBetter: (carStats.penaltyKillPct??0) > (oppStats.penaltyKillPct??0) },
-          { label: 'Shots For / GP',    car: (carStats.shotsForPerGame??0).toFixed(1), opp: (oppStats.shotsForPerGame??0).toFixed(1), carBetter: (carStats.shotsForPerGame??0) > (oppStats.shotsForPerGame??0) },
+          { label: t('scoutingTab.shareCanvas.stats.goalsForGp'),    car: gpgFmt(carStats.goalsForPerGame),    opp: gpgFmt(oppStats.goalsForPerGame),    carBetter: (carStats.goalsForPerGame??0) > (oppStats.goalsForPerGame??0) },
+          { label: t('scoutingTab.shareCanvas.stats.goalsAgainstGp'),car: gpgFmt(carStats.goalsAgainstPerGame),opp: gpgFmt(oppStats.goalsAgainstPerGame),carBetter: (carStats.goalsAgainstPerGame??99) < (oppStats.goalsAgainstPerGame??99) },
+          { label: t('scoutingTab.shareCanvas.stats.powerPlayPct'),      car: pctFmt(carStats.powerPlayPct),       opp: pctFmt(oppStats.powerPlayPct),       carBetter: (carStats.powerPlayPct??0) > (oppStats.powerPlayPct??0) },
+          { label: t('scoutingTab.shareCanvas.stats.penaltyKillPct'),    car: pctFmt(carStats.penaltyKillPct),     opp: pctFmt(oppStats.penaltyKillPct),     carBetter: (carStats.penaltyKillPct??0) > (oppStats.penaltyKillPct??0) },
+          { label: t('scoutingTab.shareCanvas.stats.shotsForGp'),    car: (carStats.shotsForPerGame??0).toFixed(1), opp: (oppStats.shotsForPerGame??0).toFixed(1), carBetter: (carStats.shotsForPerGame??0) > (oppStats.shotsForPerGame??0) },
         ].map((r, i) => (
           <div key={i} className="sc-stat-row flex items-center gap-3">
             <span className={`sc-stat-val w-20 text-[23px] font-bold text-right ${r.carBetter ? 'good text-[#4ade80]' : 'muted text-[rgba(255,255,255,0.4)]'}`} style={{fontSize:17}}>{r.car}</span>
@@ -294,7 +300,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
           background:'rgba(255,255,255,0.04)', borderRadius:10,
           borderLeft:`3px solid ${TEAM_CONFIG.displayColor}`}}>
           <div style={{fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
-            color: TEAM_CONFIG.displayColor, marginBottom:8}}>⚡ AI Matchup Analysis</div>
+            color: TEAM_CONFIG.displayColor, marginBottom:8}}>{t('scoutingTab.aiMatchup.sectionLabel')}</div>
           <div style={{fontSize:12, lineHeight:1.55, color:'rgba(255,255,255,0.65)',
             display:'-webkit-box', WebkitLineClamp:7, WebkitBoxOrient:'vertical', overflow:'hidden'}}>
             {matchupText}
@@ -310,7 +316,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
         ].map(({ label, color, players }) => (
           <div key={label} style={{flex:1, background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'12px 14px'}}>
             <div style={{fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
-              color: color, marginBottom:8}}>{label} {isPlayoff ? 'Playoff ' : ''}Leaders</div>
+              color: color, marginBottom:8}}>{isPlayoff ? t('scoutingTab.shareCanvas.playoffLeaders', { team: label }) : t('scoutingTab.shareCanvas.leaders', { team: label })}</div>
             {players?.skaters?.slice(0,5).map((p, i) => (
               <div key={i} style={{display:'flex', justifyContent:'space-between', alignItems:'center',
                 fontSize:13, padding:'4px 0', borderBottom:'0.5px solid rgba(255,255,255,0.05)'}}>
@@ -341,7 +347,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
         <div style={{padding:'0 52px 12px'}}>
           <div style={{fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
             color:'rgba(255,255,255,0.25)', marginBottom:8}}>
-            CAR Lines · 5v5 {isPlayoff ? '(Playoffs)' : 'This Season'}
+            {t('scoutingTab.shareCanvas.carLinesHeader', { abbr: TEAM_CONFIG.abbr, scope: isPlayoff ? t('scoutingTab.shareCanvas.playoffsScope') : t('scoutingTab.shareCanvas.thisSeason') })}
           </div>
           <div style={{display:'flex', gap:12}}>
 
@@ -356,7 +362,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
                     padding:'6px 10px', background:'rgba(255,255,255,0.03)',
                     borderRadius:7, border:'0.5px solid rgba(255,255,255,0.06)'}}>
                     <span style={{fontSize:11, fontWeight:700, color: TEAM_CONFIG.displayColor, minWidth:42, flexShrink:0}}>
-                      Line {i + 1}
+                      {t('scoutingTab.lines.line', { n: i + 1 })}
                     </span>
                     <div style={{flex:1, display:'flex', gap:10, flexWrap:'wrap'}}>
                       {line.players.map((p, j) => (
@@ -394,7 +400,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
                       borderRadius:7, border:'0.5px solid rgba(255,255,255,0.06)'}}>
                       <span style={{fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.4)',
                         minWidth:38, flexShrink:0}}>
-                        Pair {i + 1}
+                        {t('scoutingTab.lines.pair', { n: i + 1 })}
                       </span>
                       <div style={{flex:1, display:'flex', flexDirection:'column', gap:2}}>
                         {pair.players.map((p, j) => (
@@ -435,20 +441,6 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
 // Position display: NHL API codes → readable labels
 const POS_LABEL = { L: 'LW', LW: 'LW', C: 'C', R: 'RW', RW: 'RW', D: 'D' };
 
-const XGF_TIP =
-  'Expected Goals For % (xGF%) — share of total expected goals generated while this unit ' +
-  'was on the ice at 5-on-5. Above 50% means your team outchanced the opponent when these players ' +
-  'were together. Based on shot location and type, not just shot count.';
-
-const TOI_TIP =
-  'Minutes this unit has played together at 5-on-5 this season. More minutes = more reliable ' +
-  'xGF% number. Units with fewer minutes may reflect recent line shuffles.';
-
-const LINES_TIP =
-  'Forward lines and defence pairs inferred from 5-on-5 shift co-occurrence data. ' +
-  'When inference data is complete, xGF% and TOI are live from this season. ' +
-  'Static lineups (shown when inference is unavailable) reflect the most recent known lines.';
-
 function XgfBadge({ pct }) {
   const base = 'sc-line-xgf text-[12px] font-bold';
   if (pct == null) return <span className={`${base} sc-line-xgf-null text-[color:var(--text-dim)] font-normal`}>—</span>;
@@ -461,7 +453,8 @@ function XgfBadge({ pct }) {
 }
 
 function LineUnit({ unit, label, color, _isDefence }) {
-  const toiLabel = unit.toiMins != null ? `${unit.toiMins} min together` : null;
+  const { t } = useTranslation();
+  const toiLabel = unit.toiMins != null ? t('scoutingTab.lines.toiTogether', { mins: unit.toiMins }) : null;
   return (
     <div className={`sc-line-unit${unit.isStatic ? ' sc-line-static border-dashed' : ''} bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)] rounded-[8px] py-[9px] px-[11px]`}>
       <div className="sc-line-header flex items-center justify-between mb-1.5">
@@ -470,13 +463,13 @@ function LineUnit({ unit, label, color, _isDefence }) {
           {toiLabel && (
             <span className="sc-line-toi text-[10px] text-[color:var(--text-dim)] flex items-center gap-[3px]">
               {toiLabel}
-              <InfoTip text={TOI_TIP} position="above" />
+              <InfoTip text={t('scoutingTab.lines.toiTip')} position="above" />
             </span>
           )}
           <span className="sc-line-xgf-wrap flex items-center gap-[3px]">
             <span className="sc-line-xgf-label text-[10px] text-[color:var(--text-dim)] font-semibold">xGF%</span>
             <XgfBadge pct={unit.xgfPct} />
-            <InfoTip text={XGF_TIP} position="above" />
+            <InfoTip text={t('scoutingTab.lines.xgfTip')} position="above" />
           </span>
         </div>
       </div>
@@ -493,21 +486,22 @@ function LineUnit({ unit, label, color, _isDefence }) {
 }
 
 function LinesSection({ lines, color, isPlayoff, abbr }) {
+  const { t } = useTranslation();
   if (!lines) return null;
   const { lines: fLines, pairs: dPairs, _isInferred } = lines;
-  const lineLabels = ['Line 1', 'Line 2', 'Line 3', 'Line 4'];
-  const pairLabels = ['Pair 1', 'Pair 2', 'Pair 3'];
+  const lineLabels = [0, 1, 2, 3].map(i => t('scoutingTab.lines.line', { n: i + 1 }));
+  const pairLabels = [0, 1, 2].map(i => t('scoutingTab.lines.pair', { n: i + 1 }));
   const hasAnyStatic = [...(fLines || []), ...(dPairs || [])].some(u => u.isStatic);
   return (
     <div className={SCOUTING_SECTION_CLASSES}>
       <div className={SCOUTING_SECTION_LABEL_CLASSES}>
-        {abbr} lines
-        {isPlayoff && <span className="sc-lines-playoff-badge inline-block text-[9px] font-bold text-[color:var(--amber)] bg-[rgba(240,160,48,0.12)] rounded-[4px] py-px px-1.5 ml-1.5 align-middle uppercase tracking-[0.06em]">Playoffs</span>}
-        <InfoTip text={LINES_TIP} position="above" />
+        {t('scoutingTab.lines.sectionLabel', { abbr })}
+        {isPlayoff && <span className="sc-lines-playoff-badge inline-block text-[9px] font-bold text-[color:var(--amber)] bg-[rgba(240,160,48,0.12)] rounded-[4px] py-px px-1.5 ml-1.5 align-middle uppercase tracking-[0.06em]">{t('scoutingTab.lines.playoffsBadge')}</span>}
+        <InfoTip text={t('scoutingTab.lines.sectionTip')} position="above" />
       </div>
       {hasAnyStatic && (
         <div className="sc-lines-note text-[11px] text-[color:var(--text-dim)] italic mb-1">
-          ⚡ Live xGF% where available · lineup from known line combinations
+          {t('scoutingTab.lines.liveNote')}
         </div>
       )}
       {/* .sc-lines-note's own margin-bottom:4px loses to .sc-lines-opponent-note's
@@ -515,20 +509,20 @@ function LinesSection({ lines, color, isPlayoff, abbr }) {
           declared later in the original file -- final resolved value is 8px, not
           a stack of both. */}
       <div className="sc-lines-note sc-lines-opponent-note text-[11px] text-[color:var(--text-dim)] italic mb-2">
-        Opponent lines available when 32-team data is enabled
+        {t('scoutingTab.lines.opponentNote')}
       </div>
       {fLines.length > 0 && (
         <div className="sc-lines-group flex flex-col gap-[6px] mb-2.5">
           {fLines.map((u, i) => (
-            <LineUnit key={i} unit={u} label={lineLabels[i] || `Line ${u.rank}`} color={color} />
+            <LineUnit key={i} unit={u} label={lineLabels[i] || t('scoutingTab.lines.line', { n: u.rank })} color={color} />
           ))}
         </div>
       )}
       {dPairs.length > 0 && (
         <div className="sc-lines-group sc-lines-group-d flex flex-col gap-[6px] mb-2.5 border-t border-[color:var(--border)] pt-2.5 mt-[2px]">
-          <div className="sc-lines-subheader text-[9px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] mb-1">Defence pairs</div>
+          <div className="sc-lines-subheader text-[9px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] mb-1">{t('scoutingTab.lines.defencePairs')}</div>
           {dPairs.map((u, i) => (
-            <LineUnit key={i} unit={u} label={pairLabels[i] || `Pair ${u.rank}`} color={color} isDefence />
+            <LineUnit key={i} unit={u} label={pairLabels[i] || t('scoutingTab.lines.pair', { n: u.rank })} color={color} isDefence />
           ))}
         </div>
       )}
@@ -538,6 +532,7 @@ function LinesSection({ lines, color, isPlayoff, abbr }) {
 
 
 export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayoff, gameId }) {
+  const { t } = useTranslation();
   const gameType = isPlayoff ? 3 : 2;
   const carColor = 'var(--team-primary)';
   const oppColor = TEAM_COLORS[oppAbbr] || 'var(--text-muted)';
@@ -546,7 +541,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
   const [canvasMounted, setCanvasMounted] = useState(false);
 
   const xCaption = [
-    `${TEAM_CONFIG.abbr} vs ${oppAbbr} Scouting Report`,
+    t('scoutingTab.xCaption', { abbr: TEAM_CONFIG.abbr, oppAbbr }),
     '#EyeWallAnalytics',
   ].join('\n');
 
@@ -607,14 +602,14 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
       {/* AI Matchup Analysis */}
       {matchupData?.text && (
         <div className="sc-matchup-section py-3 pb-3.5 border-b-[0.5px] border-b-[color:var(--border)] mb-1">
-          <div className="sc-matchup-label text-[10px] font-bold uppercase tracking-[0.1em] text-[color:var(--team-primary,var(--red-bright))] mb-2">⚡ AI Matchup Analysis</div>
+          <div className="sc-matchup-label text-[10px] font-bold uppercase tracking-[0.1em] text-[color:var(--team-primary,var(--red-bright))] mb-2">{t('scoutingTab.aiMatchup.sectionLabel')}</div>
           <div className="sc-matchup-text text-[13px] leading-[1.65] text-[color:var(--text)] whitespace-pre-wrap">{matchupData.text}</div>
-          <div className="sc-matchup-footer text-[10px] text-[color:var(--text-dim)] mt-2">Generated by EyeWall AI · Updates nightly</div>
+          <div className="sc-matchup-footer text-[10px] text-[color:var(--text-dim)] mt-2">{t('scoutingTab.aiMatchup.footer')}</div>
         </div>
       )}
 
       {isPlayoff && (
-        <div className="scouting-playoff-badge text-[10px] font-bold text-[color:var(--amber)] bg-[rgba(240,160,48,0.1)] rounded-[6px] py-1 px-[10px] text-center mb-1.5">🏒 Playoff stats · {SEASON_LABEL}</div>
+        <div className="scouting-playoff-badge text-[10px] font-bold text-[color:var(--amber)] bg-[rgba(240,160,48,0.1)] rounded-[6px] py-1 px-[10px] text-center mb-1.5">{t('scoutingTab.playoffStatsBadge', { season: SEASON_LABEL })}</div>
       )}
 
       {/* Team headers */}
@@ -628,7 +623,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
             </span>
           )}
         </div>
-        <div className="scouting-vs text-[11px] text-[color:var(--text-dim)] font-semibold">vs</div>
+        <div className="scouting-vs text-[11px] text-[color:var(--text-dim)] font-semibold">{t('scoutingTab.vs')}</div>
         <div className="scouting-team-col flex flex-col items-center gap-1">
           <TeamLogo abbr={oppAbbr} size={32} color={oppColor} />
           <span className="scouting-team-abbr font-[family-name:var(--font-display)] text-[18px] font-black" style={{color: oppColor}}>{oppAbbr}</span>
@@ -644,26 +639,26 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
       {(compCarStats || compOppStats) && (
         <div className={SCOUTING_SECTION_CLASSES}>
           <div className={SCOUTING_SECTION_LABEL_CLASSES}>
-            {isPlayoff ? 'Playoff' : 'Season'} comparison
+            {isPlayoff ? t('scoutingTab.playoffComparison') : t('scoutingTab.seasonComparison')}
           </div>
           <div className="scouting-compare-header grid [grid-template-columns:48px_1fr_48px] text-center text-[9px] font-bold uppercase tracking-[0.05em] mb-1.5 text-[color:var(--text-dim)]">
             <span style={{color: carColor}}>{TEAM_CONFIG.abbr}</span>
             <span />
             <span style={{color: oppColor}}>{oppAbbr}</span>
           </div>
-          <CompareRow label="GF/GP" carVal={compCarStats?.goalsForPerGame} oppVal={compOppStats?.goalsForPerGame} fmt={gpgFmt}
-            tip="Goals for per game — higher is better" />
-          <CompareRow label="GA/GP" carVal={compCarStats?.goalsAgainstPerGame} oppVal={compOppStats?.goalsAgainstPerGame} fmt={gpgFmt}
-            higherBetter={false} tip="Goals against per game — lower is better" />
-          <CompareRow label="PP%" carVal={compCarStats?.powerPlayPct} oppVal={compOppStats?.powerPlayPct} fmt={pctFmt}
-            tip="Power play percentage" />
-          <CompareRow label="PK%" carVal={compCarStats?.penaltyKillPct} oppVal={compOppStats?.penaltyKillPct} fmt={pctFmt}
-            tip="Penalty kill percentage" />
-          <CompareRow label="SF/GP" carVal={compCarStats?.shotsForPerGame} oppVal={compOppStats?.shotsForPerGame}
-            fmt={v => v?.toFixed(1) ?? '—'} tip="Shots for per game — possession proxy" />
+          <CompareRow label={t('scoutingTab.compare.gfGp')} carVal={compCarStats?.goalsForPerGame} oppVal={compOppStats?.goalsForPerGame} fmt={gpgFmt}
+            tip={t('scoutingTab.compare.tipGfGp')} />
+          <CompareRow label={t('scoutingTab.compare.gaGp')} carVal={compCarStats?.goalsAgainstPerGame} oppVal={compOppStats?.goalsAgainstPerGame} fmt={gpgFmt}
+            higherBetter={false} tip={t('scoutingTab.compare.tipGaGp')} />
+          <CompareRow label={t('scoutingTab.compare.ppPct')} carVal={compCarStats?.powerPlayPct} oppVal={compOppStats?.powerPlayPct} fmt={pctFmt}
+            tip={t('scoutingTab.compare.tipPpPct')} />
+          <CompareRow label={t('scoutingTab.compare.pkPct')} carVal={compCarStats?.penaltyKillPct} oppVal={compOppStats?.penaltyKillPct} fmt={pctFmt}
+            tip={t('scoutingTab.compare.tipPkPct')} />
+          <CompareRow label={t('scoutingTab.compare.sfGp')} carVal={compCarStats?.shotsForPerGame} oppVal={compOppStats?.shotsForPerGame}
+            fmt={v => v?.toFixed(1) ?? '—'} tip={t('scoutingTab.compare.tipSfGp')} />
           {isPlayoff && compCarStats?.faceoffWinPct != null && (
-            <CompareRow label="FO Win%" carVal={compCarStats?.faceoffWinPct} oppVal={compOppStats?.faceoffWinPct}
-              fmt={pctFmt} tip="Faceoff win percentage in playoffs" />
+            <CompareRow label={t('scoutingTab.compare.foWinPct')} carVal={compCarStats?.faceoffWinPct} oppVal={compOppStats?.faceoffWinPct}
+              fmt={pctFmt} tip={t('scoutingTab.compare.tipFoWinPct')} />
           )}
         </div>
       )}
@@ -686,7 +681,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
 
       {/* Recent form */}
       <div className={SCOUTING_SECTION_CLASSES}>
-        <div className={SCOUTING_SECTION_LABEL_CLASSES}>Recent form (last {isPlayoff ? 'playoff ' : ''}10)</div>
+        <div className={SCOUTING_SECTION_LABEL_CLASSES}>{isPlayoff ? t('scoutingTab.recentForm.sectionLabelPlayoff', { count: 10 }) : t('scoutingTab.recentForm.sectionLabel', { count: 10 })}</div>
         <div className="scouting-form-row grid [grid-template-columns:1fr_1fr] gap-3">
           <div className="scouting-form-col flex flex-col gap-[5px]">
             <div className="scouting-form-team text-[10px] font-bold" style={{color: carColor}}>{TEAM_CONFIG.abbr}</div>
@@ -716,7 +711,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
       {/* Top players */}
       <div className={SCOUTING_SECTION_CLASSES}>
         <div className={SCOUTING_SECTION_LABEL_CLASSES}>
-          {isPlayoff ? 'Playoff ' : ''}Top skaters &amp; goalies
+          {isPlayoff ? t('scoutingTab.topSkatersGoalies.sectionLabelPlayoff') : t('scoutingTab.topSkatersGoalies.sectionLabel')}
         </div>
         <div className="scouting-players-row grid [grid-template-columns:1fr_1fr] gap-3">
           <div className="scouting-players-col flex flex-col gap-1">
