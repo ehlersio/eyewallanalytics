@@ -858,5 +858,96 @@
       "struckFirst": "{{abbr}} struck first — teams that score first win ~65% of games",
       "backToBackGoals": "{{abbr}} scored twice in {{gap}}s — two quick goals"
     }
+  },
+  "scheduleView": {
+    "tabs": {
+      "playoffs": "Playoffs",
+      "regularSeason": "Regular Season"
+    },
+    "header": {
+      "title": "{{seasonStart}}–{{seasonEnd}} Schedule",
+      "regularSeasonLabel": "Regular season: ",
+      "record": "{{wins}}–{{losses}}–{{otLosses}}",
+      "pts": "{{pts}} pts"
+    },
+    "viewToggle": {
+      "cardView": "Card view",
+      "calendarView": "Calendar view"
+    },
+    "scrollTop": {
+      "ariaLabel": "Back to top",
+      "label": "↑ Top"
+    },
+    "playoffs": {
+      "notQualifiedTitle": "{{abbr}} did not qualify for the playoffs",
+      "notQualifiedSub": "Better luck next season. Go {{abbr}}!",
+      "notStartedTitle": "Playoffs not yet started",
+      "notStartedSub": "Check back once the {{seasonStart}}–{{seasonEnd}} playoffs begin.",
+      "round1": "First Round",
+      "round2": "Second Round",
+      "round3": "Conference Finals",
+      "round4": "Stanley Cup Final",
+      "roundFallback": "Round {{round}}",
+      "vsPrefix": "vs ",
+      "inProgress": "In progress"
+    },
+    "regularSeason": {
+      "completeTitle": "Regular season complete",
+      "completeSubOffseason": "Final record shown above. See you next season.",
+      "completeSubPlayoffsUnderway": "Final record shown above. Playoffs are underway."
+    },
+    "sortBar": {
+      "label": "games"
+    },
+    "resultCard": {
+      "tapForStats": "Tap for stats →",
+      "home": "Home",
+      "away": "Away"
+    }
+  },
+  "pwhlScheduleView": {
+    "noTeam": {
+      "message": "No PWHL team selected."
+    },
+    "header": {
+      "title": "{{seasonLabel}} Schedule"
+    },
+    "regularSeason": {
+      "noGamesTitle": "No games found",
+      "noGamesSub": "No regular season data for {{seasonLabel}}."
+    },
+    "playoffs": {
+      "noGamesTitle": "No playoff games",
+      "noGamesSub": "{{abbr}} did not participate in the {{poLabel}}.",
+      "roundFinal": "Walter Cup Final",
+      "roundSemifinal": "Semifinals",
+      "gameLabel": "Game {{gameNum}} · {{day}} {{date}}",
+      "upcomingBadge": "Upcoming"
+    },
+    "seriesCard": {
+      "statusInProgress": "🔴 In progress",
+      "statusChampions": "🏆 Walter Cup Champions",
+      "statusAdvanced": "✅ Advanced",
+      "statusEliminated": "❌ Eliminated",
+      "statusUpcoming": "🗓 Upcoming",
+      "gamesPlayed_one": "{{count}} game played",
+      "gamesPlayed_other": "{{count}} games played",
+      "sweepBadgeOurs": "🧹 Sweep!",
+      "sweepBadgeTheirs": "🧹 Swept"
+    },
+    "sortBar": {
+      "label": "Sort:",
+      "newestFirst": "Newest first",
+      "oldestFirst": "Oldest first",
+      "countSummary": "{{completedCount}} played",
+      "countSummaryUpcoming": " · {{count}} upcoming"
+    },
+    "resultCard": {
+      "playoffBadge": "Playoff"
+    },
+    "upcomingCard": {
+      "playoffBadge": "🏆 Playoff",
+      "tapForPreview": "Tap for preview →"
+    }
   }
 }

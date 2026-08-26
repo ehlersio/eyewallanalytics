@@ -1,5 +1,7 @@
 // views/PWHLScheduleView.jsx
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { formatDate as formatDateIntl } from '../utils/formatters';
 import { PWHLCalendarView } from '../components/PWHLCalendarView';
 import { useNavigate } from 'react-router-dom';
 import { useFetch } from '../hooks/useFetch';
@@ -83,36 +85,41 @@ const roundSectionHeaderClasses = (current) => {
     : `${base} older bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)]`;
 };
 
-const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
 function _gameStr(g) {
   // Always return a string or null — never the game object itself
   if (typeof g === 'string') return g;
   return (g?.game_date || g?.date_with_day) ?? null;
 }
 
+// `game_date` (a raw ISO-ish date, preferred by _gameStr) parses to a real
+// Date and formats via Intl (formatters.js) so French renders real French
+// month/day names. The `date_with_day` fallback (only used when game_date
+// is absent) is the API's own pre-formatted English text like "Fri, Nov
+// 21" — no year, so it can't be reliably re-parsed into a Date; it's kept
+// as a literal passthrough exactly like before rather than localized.
 function formatDate(g) {
   const str = _gameStr(g);
   if (!str) return '—';
   if (str.includes(',')) {
-    // "Fri, Nov 21" → "Nov 21"
+    // "Fri, Nov 21" → "Nov 21" — untranslatable API passthrough, see above
     return str.split(',').slice(1).join(',').trim();
   }
   const d = new Date(str + 'T12:00:00Z');
   if (isNaN(d)) return str;
-  return `${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCDate()}`;
+  return formatDateIntl(d, { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
 function dayOfWeek(g) {
   const str = _gameStr(g);
   if (!str) return '';
-  if (str.includes(',')) return str.split(',')[0].trim(); // "Fri"
+  if (str.includes(',')) return str.split(',')[0].trim(); // "Fri" — see formatDate's note
   const d = new Date(str + 'T12:00:00Z');
   if (isNaN(d)) return '';
-  return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getUTCDay()];
+  return formatDateIntl(d, { weekday: 'short', timeZone: 'UTC' });
 }
 
 export default function PWHLScheduleView() {
+  const { t } = useTranslation();
   const team     = PWHL_TEAM_CONFIG;
   const teamId   = PWHL_TEAM_ID;
   const abbr     = team?.abbr || '—';
@@ -202,7 +209,7 @@ export default function PWHLScheduleView() {
     return (
       <div className={PAGE_CLASSES}>
         <div className="card" style={{ textAlign: 'center', padding: 32 }}>
-          <p style={{ color: 'var(--text-dim)' }}>No PWHL team selected.</p>
+          <p style={{ color: 'var(--text-dim)' }}>{t('pwhlScheduleView.noTeam.message')}</p>
         </div>
       </div>
     );
@@ -213,7 +220,7 @@ export default function PWHLScheduleView() {
       <div className="sched-header mb-3">
         <h2 className="sched-title font-[family-name:var(--font-display)] text-[18px] font-bold mb-0.5">
           <TeamLogo abbr={abbr} sport="pwhl" size={22} color={color} />
-          {seasonLabel} Schedule
+          {t('pwhlScheduleView.header.title', { seasonLabel })}
         </h2>
         <div className="sched-record text-[12px] text-[color:var(--text-muted)] flex items-center gap-2 mt-1">
           {teamRecord ? (
@@ -236,10 +243,10 @@ export default function PWHLScheduleView() {
 
       {/* Tab bar */}
       <div className={SCHED_TABS_CLASSES}>
-        {['Regular Season', 'Playoffs'].map(t => (
-          <button key={t} className={schedTabClasses(tab === t)} onClick={() => setTab(t)}>
-            {t}
-            {t === 'Playoffs' && (poRecord.w + poRecord.otw) > 0 && (
+        {['Regular Season', 'Playoffs'].map(tabId => (
+          <button key={tabId} className={schedTabClasses(tab === tabId)} onClick={() => setTab(tabId)}>
+            {tabId === 'Playoffs' ? t('scheduleView.tabs.playoffs') : t('scheduleView.tabs.regularSeason')}
+            {tabId === 'Playoffs' && (poRecord.w + poRecord.otw) > 0 && (
               <span className="tab-badge bg-[var(--green)] text-[#000] text-[10px] font-bold py-[1px] px-1.5 rounded-[10px]">{poRecord.w + poRecord.otw}–{poRecord.otl + poRecord.l}</span>
             )}
           </button>
@@ -248,9 +255,9 @@ export default function PWHLScheduleView() {
         {/* List / Calendar toggle — matches NHL icons */}
         <div className="view-mode-toggle flex gap-0.5 bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)] rounded-[20px] p-[3px] shrink-0 ml-auto">
           <button className={vmBtnClasses(viewMode === 'list')}
-            onClick={() => setViewMode('list')} title="Card view">≡</button>
+            onClick={() => setViewMode('list')} title={t('scheduleView.viewToggle.cardView')}>≡</button>
           <button className={vmBtnClasses(viewMode === 'calendar')}
-            onClick={() => setViewMode('calendar')} title="Calendar view">📅</button>
+            onClick={() => setViewMode('calendar')} title={t('scheduleView.viewToggle.calendarView')}>📅</button>
         </div>
       </div>
 
@@ -280,8 +287,8 @@ export default function PWHLScheduleView() {
           {!regLoading && !regSchedule?.length && (
             <div className={`card ${EMPTY_STATE_CLASSES}`}>
               <div className={EMPTY_ICON_CLASSES}>📅</div>
-              <div className={EMPTY_TITLE_CLASSES}>No games found</div>
-              <div className={EMPTY_SUB_CLASSES}>No regular season data for {seasonLabel}.</div>
+              <div className={EMPTY_TITLE_CLASSES}>{t('pwhlScheduleView.regularSeason.noGamesTitle')}</div>
+              <div className={EMPTY_SUB_CLASSES}>{t('pwhlScheduleView.regularSeason.noGamesSub', { seasonLabel })}</div>
             </div>
           )}
 
@@ -326,8 +333,8 @@ export default function PWHLScheduleView() {
           {!poLoading && !poSchedule?.length && (
             <div className={`card ${EMPTY_STATE_CLASSES}`}>
               <div className={EMPTY_ICON_CLASSES}>🏆</div>
-              <div className={EMPTY_TITLE_CLASSES}>No playoff games</div>
-              <div className={EMPTY_SUB_CLASSES}>{abbr} did not participate in the {poLabel}.</div>
+              <div className={EMPTY_TITLE_CLASSES}>{t('pwhlScheduleView.playoffs.noGamesTitle')}</div>
+              <div className={EMPTY_SUB_CLASSES}>{t('pwhlScheduleView.playoffs.noGamesSub', { abbr, poLabel })}</div>
             </div>
           )}
 
@@ -363,8 +370,8 @@ export default function PWHLScheduleView() {
       )}
 
       {showScrollTop && (
-        <button className={SCROLL_TOP_BTN_CLASSES} onClick={scrollToTop} aria-label="Back to top">
-          ↑ Top
+        <button className={SCROLL_TOP_BTN_CLASSES} onClick={scrollToTop} aria-label={t('scheduleView.scrollTop.ariaLabel')}>
+          {t('scheduleView.scrollTop.label')}
         </button>
       )}
     </div>
@@ -398,6 +405,7 @@ function splitGames(schedule, teamId) {
 // Mirrors NHL PlayoffsTab: collapsible rounds, series card, game list.
 // PWHL-specific: 2 rounds (Semifinal + Final), best-of-5 (first to 3 wins).
 function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = React.useState({});
   const toggle = round => setCollapsed(p => ({ ...p, [round]: !p[round] }));
 
@@ -450,8 +458,8 @@ function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
   }
 
   const ROUNDS = [
-    { label: 'Walter Cup Final', series: finalSeries,    round: 2 },
-    { label: 'Semifinals',              series: semifinalSeries, round: 1 },
+    { label: t('pwhlScheduleView.playoffs.roundFinal'), series: finalSeries,    round: 2 },
+    { label: t('pwhlScheduleView.playoffs.roundSemifinal'),              series: semifinalSeries, round: 1 },
   ];
 
   const maxRound = finalSeries.length > 0 ? 2 : 1;
@@ -477,7 +485,7 @@ function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
                   <span className="round-section-label font-[family-name:var(--font-display)] text-[14px] font-bold uppercase tracking-[0.06em] text-[color:var(--text)]">{label}</span>
                 </div>
                 {isCurrentRound && series.some(s => s.winsA < 3 && s.winsB < 3 && s.games.some(g => g.game_state === 'Final')) && (
-                  <span className="round-live-pill text-[10px] font-semibold py-[2px] px-[7px] rounded-[10px] bg-[rgba(61,186,126,0.15)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.3)]">In progress</span>
+                  <span className="round-live-pill text-[10px] font-semibold py-[2px] px-[7px] rounded-[10px] bg-[rgba(61,186,126,0.15)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.3)]">{t('scheduleView.playoffs.inProgress')}</span>
                 )}
               </div>
               <div className="round-section-right flex items-center gap-1.5">
@@ -550,15 +558,15 @@ function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
                             >
                               <div className="result-top flex items-center gap-2 mb-1.5">
                                 <span className="result-date text-[11px] text-[color:var(--text-muted)]">
-                                  Game {gi + 1} · {dayOfWeek(g)} {formatDate(g)}
+                                  {t('pwhlScheduleView.playoffs.gameLabel', { gameNum: gi + 1, day: dayOfWeek(g), date: formatDate(g) })}
                                 </span>
                                 {done && (
                                   <span className={`result-outcome font-[family-name:var(--font-display)] text-[12px] font-bold py-[2px] px-2 rounded ${won ? 'win bg-[rgba(61,186,126,0.15)] text-[color:var(--green)]' : 'loss bg-[rgba(255,68,34,0.1)] text-[color:var(--red-bright)]'}`}>
                                     {won ? 'W' : (isExtra ? 'OT' : 'L')}{suffix}
                                   </span>
                                 )}
-                                {!done && <span className={contextPillClasses('regular')} style={{fontSize:9}}>Upcoming</span>}
-                                {done && <span className="result-tap-hint text-[10px] text-[color:var(--text-dim)] ml-auto">Tap for stats →</span>}
+                                {!done && <span className={contextPillClasses('regular')} style={{fontSize:9}}>{t('pwhlScheduleView.playoffs.upcomingBadge')}</span>}
+                                {done && <span className="result-tap-hint text-[10px] text-[color:var(--text-dim)] ml-auto">{t('scheduleView.resultCard.tapForStats')}</span>}
                               </div>
                               <div className="result-score flex items-center gap-2 font-[family-name:var(--font-display)]">
                                 <TeamLogo abbr={abbr} sport="pwhl" size={20} color={color} />
@@ -568,7 +576,7 @@ function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
                                 {done && <span className="result-num muted text-[22px] font-bold text-[color:var(--text-muted)]">{op}</span>}
                                 <span className="result-abbr muted text-[16px] font-bold text-[color:var(--text-muted)]">{gOppAbbr}</span>
                                 <TeamLogo abbr={gOppAbbr} sport="pwhl" size={20} color={gOppColor} />
-                                <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHome ? 'Home' : 'Away'}</span>
+                                <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHome ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away')}</span>
                               </div>
                             </div>
                           );
@@ -597,6 +605,7 @@ const seriesPipClasses = (filled) =>
          : `${SERIES_PIP_BASE} pip-empty bg-transparent`;
 
 function PWHLSeriesCard({ series, teamId: _teamId, abbr, color, oppAbbr, oppColor, ourWins, oppWins, isFinal }) {
+  const { t } = useTranslation();
   const adv      = ourWins >= 3;
   const elim     = oppWins >= 3;
   const isActive = !adv && !elim && series.games.some(g => g.game_state === 'Final');
@@ -607,12 +616,12 @@ function PWHLSeriesCard({ series, teamId: _teamId, abbr, color, oppAbbr, oppColo
       <div className="series-top flex items-start justify-between mb-3 gap-2">
         <div className="series-top-left flex flex-col gap-0.5">
           <span className="series-status text-[11px] text-[color:var(--text-muted)] font-medium">
-            {isActive ? '🔴 In progress' : adv ? (isFinal ? '🏆 Walter Cup Champions' : '✅ Advanced') : elim ? '❌ Eliminated' : '🗓 Upcoming'}
+            {isActive ? t('pwhlScheduleView.seriesCard.statusInProgress') : adv ? (isFinal ? t('pwhlScheduleView.seriesCard.statusChampions') : t('pwhlScheduleView.seriesCard.statusAdvanced')) : elim ? t('pwhlScheduleView.seriesCard.statusEliminated') : t('pwhlScheduleView.seriesCard.statusUpcoming')}
           </span>
         </div>
-        <span className="series-games-played text-[11px] text-[color:var(--text-dim)] whitespace-nowrap pt-0.5">{total} game{total !== 1 ? 's' : ''} played</span>
-        {ourWins === 3 && oppWins === 0 && <span className="series-sweep text-[11px] font-bold text-[color:var(--green)] ml-1.5">🧹 Sweep!</span>}
-        {oppWins === 3 && ourWins === 0 && <span className="series-swept text-[11px] font-bold text-[color:var(--text-dim)] ml-1.5">🧹 Swept</span>}
+        <span className="series-games-played text-[11px] text-[color:var(--text-dim)] whitespace-nowrap pt-0.5">{t('pwhlScheduleView.seriesCard.gamesPlayed', { count: total })}</span>
+        {ourWins === 3 && oppWins === 0 && <span className="series-sweep text-[11px] font-bold text-[color:var(--green)] ml-1.5">{t('pwhlScheduleView.seriesCard.sweepBadgeOurs')}</span>}
+        {oppWins === 3 && ourWins === 0 && <span className="series-swept text-[11px] font-bold text-[color:var(--text-dim)] ml-1.5">{t('pwhlScheduleView.seriesCard.sweepBadgeTheirs')}</span>}
       </div>
       <div className="series-body flex items-center gap-1 mb-1">
         {/* Our team */}
@@ -664,26 +673,27 @@ const sortBtnClasses = (active) => {
 };
 
 function PWHLSortBar({ sortOrder, setSortOrder, completedCount, upcomingCount }) {
+  const { t } = useTranslation();
   return (
     <div className="sort-bar flex items-center justify-between gap-2.5 py-2 pb-2.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2.5 flex-wrap">
       <span className="sort-bar-count text-[11px] text-[color:var(--text-dim)]">
-        {completedCount} played{upcomingCount > 0 ? ` · ${upcomingCount} upcoming` : ''}
+        {t('pwhlScheduleView.sortBar.countSummary', { completedCount })}{upcomingCount > 0 ? t('pwhlScheduleView.sortBar.countSummaryUpcoming', { count: upcomingCount }) : ''}
       </span>
       <div className="sort-bar-controls flex items-center gap-[5px]">
-        <span className="sort-bar-label text-[11px] text-[color:var(--text-dim)] mr-0.5">Sort:</span>
+        <span className="sort-bar-label text-[11px] text-[color:var(--text-dim)] mr-0.5">{t('pwhlScheduleView.sortBar.label')}</span>
         <button
           className={sortBtnClasses(sortOrder === 'desc')}
           onClick={() => setSortOrder('desc')}
-          title="Newest first"
+          title={t('pwhlScheduleView.sortBar.newestFirst')}
         >
-          Newest first
+          {t('pwhlScheduleView.sortBar.newestFirst')}
         </button>
         <button
           className={sortBtnClasses(sortOrder === 'asc')}
           onClick={() => setSortOrder('asc')}
-          title="Oldest first"
+          title={t('pwhlScheduleView.sortBar.oldestFirst')}
         >
-          Oldest first
+          {t('pwhlScheduleView.sortBar.oldestFirst')}
         </button>
       </div>
     </div>
@@ -692,6 +702,7 @@ function PWHLSortBar({ sortOrder, setSortOrder, completedCount, upcomingCount })
 
 // ── Completed game card ───────────────────────────────────────
 function CompletedCard({ game: g, teamId, abbr, color, onClick, isPlayoff }) {
+  const { t } = useTranslation();
   const isHome   = g.home_team_id === teamId;
   const my       = isHome ? g.home_score : g.away_score;
   const op       = isHome ? g.away_score : g.home_score;
@@ -712,8 +723,8 @@ function CompletedCard({ game: g, teamId, abbr, color, onClick, isPlayoff }) {
         <span className={`result-outcome font-[family-name:var(--font-display)] text-[12px] font-bold py-[2px] px-2 rounded ${won ? 'win bg-[rgba(61,186,126,0.15)] text-[color:var(--green)]' : 'loss bg-[rgba(255,68,34,0.1)] text-[color:var(--red-bright)]'}`}>
           {outcomeLabel}{suffix}
         </span>
-        {isPlayoff && <span className={contextPillClasses('playoffs')} style={{ fontSize: 9 }}>Playoff</span>}
-        <span className="result-tap-hint text-[10px] text-[color:var(--text-dim)] ml-auto">Tap for stats →</span>
+        {isPlayoff && <span className={contextPillClasses('playoffs')} style={{ fontSize: 9 }}>{t('pwhlScheduleView.resultCard.playoffBadge')}</span>}
+        <span className="result-tap-hint text-[10px] text-[color:var(--text-dim)] ml-auto">{t('scheduleView.resultCard.tapForStats')}</span>
       </div>
       <div className="result-score flex items-center gap-2 font-[family-name:var(--font-display)]">
         <TeamLogo abbr={abbr} sport="pwhl" size={20} color={color} />
@@ -723,7 +734,7 @@ function CompletedCard({ game: g, teamId, abbr, color, onClick, isPlayoff }) {
         <span className="result-num muted text-[22px] font-bold text-[color:var(--text-muted)]">{op ?? '—'}</span>
         <span className="result-abbr muted text-[16px] font-bold text-[color:var(--text-muted)]">{oppAbbr}</span>
         <TeamLogo abbr={oppAbbr} sport="pwhl" size={20} color={oppColor} />
-        <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHome ? 'Home' : 'Away'}</span>
+        <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHome ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away')}</span>
       </div>
     </div>
   );
@@ -731,6 +742,7 @@ function CompletedCard({ game: g, teamId, abbr, color, onClick, isPlayoff }) {
 
 // ── Upcoming game card ────────────────────────────────────────
 function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff, onClick }) {
+  const { t } = useTranslation();
   const isHome   = g.home_team_id === teamId;
   const oppId    = isHome ? g.away_team_id : g.home_team_id;
   const oppAbbr  = getPWHLTeamById(oppId)?.abbr || String(oppId);
@@ -743,9 +755,9 @@ function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff, onClick }) {
       <div className="result-top" style={{ marginBottom: 6 }}>
         <span className="result-date">{dayOfWeek(g)} {formatDate(g)}</span>
         <span className={contextPillClasses(isPlayoff ? 'playoffs' : 'regular')} style={{ fontSize: 10 }}>
-          {isPlayoff ? '🏆 Playoff' : 'Upcoming'}
+          {isPlayoff ? t('pwhlScheduleView.upcomingCard.playoffBadge') : t('pwhlScheduleView.playoffs.upcomingBadge')}
         </span>
-        <span className="result-venue">{isHome ? 'Home' : 'Away'}</span>
+        <span className="result-venue">{isHome ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away')}</span>
       </div>
       <div className="result-score">
         <TeamLogo abbr={abbr} sport="pwhl" size={20} color={color} />
@@ -754,7 +766,7 @@ function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff, onClick }) {
         <span className="result-abbr muted">{oppAbbr}</span>
         <TeamLogo abbr={oppAbbr} sport="pwhl" size={20} color={oppColor} />
       </div>
-      {onClick && <span className="result-tap-hint" style={{ marginTop: 6, display: 'inline-block' }}>Tap for preview →</span>}
+      {onClick && <span className="result-tap-hint" style={{ marginTop: 6, display: 'inline-block' }}>{t('pwhlScheduleView.upcomingCard.tapForPreview')}</span>}
     </div>
   );
 }
