@@ -484,6 +484,32 @@
       "playerSalariesTitle": "{{abbr}} Player Salaries"
     }
   },
+  "players": {
+    "roster": "Roster",
+    "statsToggle": "📊 Stats",
+    "forwards": "Forwards",
+    "goalies": "Goalies",
+    "colPlayer": "Player"
+  },
+  "playersView": {
+    "subtitle": "Tap a player for detailed stats & rankings",
+    "playoffsToggle": "🏆 Playoffs",
+    "defensemen": "Defensemen",
+    "emptyPlayoffStats": "No playoff stats yet — data populates once {{team}} advances.",
+    "emptyNoStats": "No stats available.",
+    "tableHint": "Tap a player row to open their profile · Sort by any column"
+  },
+  "pwhlPlayersView": {
+    "subtitle": "Tap a player for stats",
+    "skatersToggle": "Skaters",
+    "defencemen": "Defencemen",
+    "failedToLoadRoster": "Failed to load roster.",
+    "noRosterData": "No roster data — try busting the cache.",
+    "emptySkaterStats": "No skater stats for {{season}}.",
+    "emptyGoalieStats": "No goalie stats for {{season}}.",
+    "colGoalie": "Goalie",
+    "tableHint": "Tap a row to open player profile · Sort by any column"
+  },
   "common": {
     "loading": "Loading…",
     "close": "Close"

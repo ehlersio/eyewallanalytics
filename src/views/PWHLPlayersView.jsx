@@ -1,6 +1,7 @@
 // views/PWHLPlayersView.jsx
 // Mirrors NHL PlayersView — Roster tab (photo grid) + Stats tab (sortable table).
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { fetchPWHLPlayers, PWHL_TEAM_CONFIG, PWHL_TEAM_ID } from '../utils/pwhlApi';
 import { PWHL_CURRENT_SEASON, PWHL_REGULAR_SEASONS } from '../utils/pwhlConfig';
@@ -112,6 +113,7 @@ const GOALIE_COLS = [
 // ── Main view ─────────────────────────────────────────────────
 
 export default function PWHLPlayersView() {
+  const { t } = useTranslation();
   const team   = PWHL_TEAM_CONFIG;
   const teamId = PWHL_TEAM_ID;
   const abbr   = team?.abbr || '—';
@@ -159,7 +161,7 @@ export default function PWHLPlayersView() {
     return (
       <div className={PAGE_CLASSES}>
         <div className="card" style={{ textAlign: 'center', padding: 32 }}>
-          <p style={{ color: 'var(--text-dim)' }}>No PWHL team selected.</p>
+          <p style={{ color: 'var(--text-dim)' }}>{t('pwhlTeamView.noTeamSelected')}</p>
         </div>
       </div>
     );
@@ -170,18 +172,18 @@ export default function PWHLPlayersView() {
       <div className={HEADER_WRAP_CLASSES}>
         <h2 className={VIEW_TITLE_CLASSES}>
           <TeamLogo abbr={abbr} sport="pwhl" size={22} color={color} />
-          Roster
+          {t('players.roster')}
         </h2>
-        <p className={PLAYERS_SUB_CLASSES}>Tap a player for stats</p>
+        <p className={PLAYERS_SUB_CLASSES}>{t('pwhlPlayersView.subtitle')}</p>
       </div>
 
       {/* Roster / Stats toggle */}
       <div className={TABS_WRAP_CLASSES}>
         <button className={tabClasses(view === 'roster')} onClick={() => setView('roster')}>
-          Roster
+          {t('players.roster')}
         </button>
         <button className={tabClasses(view === 'stats')} onClick={() => setView('stats')}>
-          📊 Stats
+          {t('players.statsToggle')}
         </button>
       </div>
 
@@ -191,28 +193,28 @@ export default function PWHLPlayersView() {
           {loading && <RosterSkeleton />}
           {!loading && !data && (
             <div className="card" style={{ textAlign:'center', padding:32, color:'var(--text-dim)' }}>
-              Failed to load roster.
+              {t('pwhlPlayersView.failedToLoadRoster')}
             </div>
           )}
           {!loading && data && roster.length === 0 && (
             <div className="card" style={{ textAlign:'center', padding:32, color:'var(--text-dim)' }}>
-              No roster data — try busting the cache.
+              {t('pwhlPlayersView.noRosterData')}
             </div>
           )}
           {!loading && data && roster.length > 0 && (
             <>
               <RosterSection
-                title="Forwards"
+                title={t('players.forwards')}
                 players={roster.filter(p => ['C','LW','RW','F'].includes(p.position))}
                 onSelect={setSelected}
               />
               <RosterSection
-                title="Defencemen"
+                title={t('pwhlPlayersView.defencemen')}
                 players={roster.filter(p => ['D','LD','RD'].includes(p.position))}
                 onSelect={setSelected}
               />
               <RosterSection
-                title="Goalies"
+                title={t('players.goalies')}
                 players={roster.filter(p => p.position === 'G')}
                 onSelect={setSelected}
               />
@@ -234,22 +236,22 @@ export default function PWHLPlayersView() {
           {/* Skaters / Goalies sub-tabs */}
           <div className={TABS_WRAP_CLASSES} style={{ marginTop: 4, marginBottom: 4 }}>
             <button className={tabClasses(gameType === 'regular')}
-              onClick={() => setGameType('regular')}>Skaters</button>
+              onClick={() => setGameType('regular')}>{t('pwhlPlayersView.skatersToggle')}</button>
             <button className={tabClasses(gameType === 'goalies')}
-              onClick={() => setGameType('goalies')}>Goalies</button>
+              onClick={() => setGameType('goalies')}>{t('players.goalies')}</button>
           </div>
 
           {gameType === 'regular' && (
             <SortableTable
               rows={skaters} cols={SKATER_COLS} defaultSort="points"
-              loading={loading} emptyMsg={`No skater stats for ${seasonLabel}.`}
+              loading={loading} emptyMsg={t('pwhlPlayersView.emptySkaterStats', { season: seasonLabel })}
               onRowClick={setSelected}
             />
           )}
           {gameType === 'goalies' && (
             <SortableTable
               rows={goalies} cols={GOALIE_COLS} defaultSort="wins"
-              loading={loading} emptyMsg={`No goalie stats for ${seasonLabel}.`}
+              loading={loading} emptyMsg={t('pwhlPlayersView.emptyGoalieStats', { season: seasonLabel })}
               onRowClick={setSelected}
             />
           )}
@@ -257,7 +259,7 @@ export default function PWHLPlayersView() {
       )}
 
       <div style={{ fontSize: 10, color: 'var(--text-dim)', textAlign: 'center', padding: '8px 0' }}>
-        Source: HockeyTech / PWHL
+        {t('pwhlLeagueView.standings.footerHintSource')}
       </div>
 
       {selected && (
@@ -336,6 +338,7 @@ function RosterSkeleton() {
 // ── Sortable stats table ──────────────────────────────────────
 
 function SortableTable({ rows, cols, defaultSort, loading, emptyMsg, onRowClick }) {
+  const { t } = useTranslation();
   const [sortKey, setSortKey] = useState(defaultSort);
   const [sortDir, setSortDir] = useState('desc');
 
@@ -376,7 +379,7 @@ function SortableTable({ rows, cols, defaultSort, loading, emptyMsg, onRowClick 
                   className={thClasses(col, sortKey)}
                   style={{ cursor: col.sortable ? 'pointer' : 'default' }}
                   onClick={() => handleSort(col.key)}>
-                  {col.label}
+                  {col.key === 'player_name' ? (cols === GOALIE_COLS ? t('pwhlPlayersView.colGoalie') : t('players.colPlayer')) : col.label}
                   {col.sortable && sortKey === col.key && (
                     <span className={SST_SORT_ICON_CLASSES}>{sortDir === 'desc' ? ' ↓' : ' ↑'}</span>
                   )}
@@ -407,7 +410,7 @@ function SortableTable({ rows, cols, defaultSort, loading, emptyMsg, onRowClick 
           </tbody>
         </table>
       </div>
-      <div className={SST_HINT_CLASSES}>Tap a row to open player profile · Sort by any column</div>
+      <div className={SST_HINT_CLASSES}>{t('pwhlPlayersView.tableHint')}</div>
     </div>
   );
 }
