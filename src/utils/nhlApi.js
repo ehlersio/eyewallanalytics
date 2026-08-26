@@ -1,4 +1,5 @@
 import { cached, TTL, invalidate } from './cache.js'
+import { formatDate } from './formatters.js'
 
 // NHL API utility
 // Proxy routes (configured in vite.config.js):
@@ -963,7 +964,7 @@ export function extractShotEvents(playByPlay) {
 export function formatGameDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  return formatDate(d, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 export function formatGameTime(utcStr) {

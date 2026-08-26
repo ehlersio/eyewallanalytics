@@ -24,9 +24,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { fetchPWHLGameBox, fetchPWHLGameSummary, fetchPWHLRoster } from '../utils/pwhlApi';
 import { getPWHLTeamById } from '../utils/pwhlConfig';
+import { formatDate } from '../utils/formatters';
 import TeamLogo from './TeamLogo';
 import { capture } from '../utils/analytics';
 import PWHLBoxScoreTable from './PWHLBoxScoreTable';
@@ -44,13 +46,11 @@ const PGS_SECTION_LABEL_CLASSES = 'pgs-section-label font-[family-name:var(--fon
 const PGS_STAT_VAL_CLASSES = 'pgs-stat-val font-[family-name:var(--font-mono)] text-[13px] font-medium text-center';
 const PGS_TOGGLE_BTN_CLASSES = 'pgs-toggle-btn flex items-center gap-[5px] py-[5px] px-3 rounded-[20px] text-[12px] font-medium border-[0.5px] border-[color:var(--border-2)] bg-transparent text-[color:var(--text-muted)] cursor-pointer [transition:all_0.15s] hover:text-[color:var(--text)]';
 
-const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
 function formatDateLong(dateStr) {
   if (!dateStr) return '—';
   const d = new Date(dateStr + 'T12:00:00Z');
   if (isNaN(d)) return dateStr;
-  return `${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+  return formatDate(d, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
 
 function periodLabel(id, i) {
@@ -66,6 +66,7 @@ function playerFullName(p) {
 
 export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose, onViewShotMap }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [skaterTeam, setSkaterTeam] = useState('car');
 
   const isHome  = game.home_team_id === teamId;
@@ -119,13 +120,13 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
       return att > 0 ? Math.round((win / att) * 100) : null;
     };
     return [
-      { label: 'Shots on Goal', car: sum(carSkaters, 'shots'),        opp: sum(oppSkaters, 'shots') },
-      { label: 'Hits',          car: sum(carSkaters, 'hits'),         opp: sum(oppSkaters, 'hits') },
-      { label: 'Blocked Shots', car: sum(carSkaters, 'blocked_shots'),opp: sum(oppSkaters, 'blocked_shots') },
-      { label: 'Penalty Minutes', car: sum(carSkaters, 'penalty_minutes'), opp: sum(oppSkaters, 'penalty_minutes') },
-      { label: 'Faceoff Win %', car: foPct(carSkaters), opp: foPct(oppSkaters), isPct: true },
+      { label: t('gameStatsPopup.teamStats.shotsOnGoal'), car: sum(carSkaters, 'shots'),        opp: sum(oppSkaters, 'shots') },
+      { label: t('gameStatsPopup.teamStats.hits'),          car: sum(carSkaters, 'hits'),         opp: sum(oppSkaters, 'hits') },
+      { label: t('gameStatsPopup.teamStats.blockedShots'), car: sum(carSkaters, 'blocked_shots'),opp: sum(oppSkaters, 'blocked_shots') },
+      { label: t('gameStatsPopup.teamStats.penaltyMinutes'), car: sum(carSkaters, 'penalty_minutes'), opp: sum(oppSkaters, 'penalty_minutes') },
+      { label: t('gameStatsPopup.teamStats.faceoffWinPct'), car: foPct(carSkaters), opp: foPct(oppSkaters), isPct: true },
     ];
-  }, [carSkaters, oppSkaters]);
+  }, [carSkaters, oppSkaters, t]);
 
   const periods = summary?.periods || [];
   const mvps    = summary?.mvps || [];
@@ -142,9 +143,9 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
               <span className="pgs-score-big font-[family-name:var(--font-display)] text-[42px] font-bold leading-none" style={{ color }}>{my ?? '—'}</span>
             </div>
             <div className="pgs-center-col flex flex-col items-center gap-1">
-              <div className={`pgs-result-badge font-[family-name:var(--font-display)] text-[12px] font-bold py-[3px] px-2.5 rounded-[20px] ${won ? 'win bg-[rgba(61,186,126,0.2)] text-[color:var(--green)]' : 'loss bg-[rgba(255,68,34,0.15)] text-[color:var(--red-bright)]'}`}>{won ? 'W' : 'L'}{suffix}</div>
+              <div className={`pgs-result-badge font-[family-name:var(--font-display)] text-[12px] font-bold py-[3px] px-2.5 rounded-[20px] ${won ? 'win bg-[rgba(61,186,126,0.2)] text-[color:var(--green)]' : 'loss bg-[rgba(255,68,34,0.15)] text-[color:var(--red-bright)]'}`}>{won ? t('gameStatsPopup.header.resultWin') : t('gameStatsPopup.header.resultLoss')}{suffix}</div>
               <div className="pgs-date text-[11px] text-[color:var(--text-muted)]">{formatDateLong(game.game_date)}</div>
-              <div className="pgs-venue text-[10px] text-[color:var(--text-dim)]">{isHome ? '📍 Home' : '✈ Away'}</div>
+              <div className="pgs-venue text-[10px] text-[color:var(--text-dim)]">{isHome ? `📍 ${t('scheduleView.resultCard.home')}` : `✈ ${t('scheduleView.resultCard.away')}`}</div>
             </div>
             <div className={`${PGS_TEAM_COL_CLASSES} right`}>
               <TeamLogo abbr={oppAbbr} sport="pwhl" size={36} color={oppColor} />
@@ -152,7 +153,7 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
               <span className="pgs-score-big font-[family-name:var(--font-display)] text-[42px] font-bold leading-none" style={{ color: oppColor }}>{op ?? '—'}</span>
             </div>
           </div>
-          <button className="pgs-close absolute top-3 right-3 w-7 h-7 rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]" onClick={onClose} aria-label="Close game details">✕</button>
+          <button className="pgs-close absolute top-3 right-3 w-7 h-7 rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]" onClick={onClose} aria-label={t('gameStatsPopup.header.closeAriaLabel')}>✕</button>
         </div>
 
         <div className="pgs-body pt-4 px-4 pb-6">
@@ -161,12 +162,12 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
             <div className="pgs-period-stars-row flex gap-4 flex-wrap">
               {periods.length > 0 && (
                 <div className="pgs-section pgs-period-col mt-4.5 flex-1 min-w-[140px]">
-                  <div className={PGS_SECTION_LABEL_CLASSES}>Scoring by period</div>
+                  <div className={PGS_SECTION_LABEL_CLASSES}>{t('gameStatsPopup.sections.scoringByPeriod')}</div>
                   <div className="pgs-period-table flex flex-col gap-1">
                     <div className="pgs-period-row header grid gap-1 text-[13px] text-center text-[10px] text-[color:var(--text-dim)] [grid-template-columns:40px_repeat(auto-fill,minmax(24px,1fr))] [&>span:first-child]:text-left [&>span:first-child]:font-semibold">
                       <span />
                       {periods.map((p, i) => <span key={i}>{periodLabel(p.info?.id, i)}</span>)}
-                      <span>T</span>
+                      <span>{t('shotMapView.boxscore.total')}</span>
                     </div>
                     <div className="pgs-period-row grid gap-1 text-[13px] text-center [grid-template-columns:40px_repeat(auto-fill,minmax(24px,1fr))] [&>span:first-child]:text-left [&>span:first-child]:font-semibold">
                       <span style={{ color }}>{abbr}</span>
@@ -187,7 +188,7 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
               )}
               {mvps.length > 0 && (
                 <div className="pgs-section pgs-stars-col mt-4.5 flex-1 min-w-[140px]">
-                  <div className={PGS_SECTION_LABEL_CLASSES}>Three stars</div>
+                  <div className={PGS_SECTION_LABEL_CLASSES}>{t('gameStatsPopup.sections.threeStars')}</div>
                   {mvps.slice(0, 3).map((mvp, i) => {
                     const name = `${mvp.player?.info?.firstName || ''} ${mvp.player?.info?.lastName || ''}`.trim();
                     const isCarStar = mvp.team?.id === teamId;
@@ -218,7 +219,7 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
           {/* Team stats comparison */}
           {!boxLoading && skaters.length > 0 && (
             <div className="pgs-section mt-4.5">
-              <div className={PGS_SECTION_LABEL_CLASSES}>Team stats</div>
+              <div className={PGS_SECTION_LABEL_CLASSES}>{t('gameStatsPopup.sections.teamStats')}</div>
               <div className="pgs-team-stat-header grid gap-2 text-[11px] font-semibold text-center mb-1.5 [grid-template-columns:48px_1fr_48px]">
                 <span style={{ color }}>{abbr}</span>
                 <span />
@@ -263,7 +264,7 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
                   onClick={() => setSkaterTeam('car')}
                 >
                   <TeamLogo abbr={abbr} sport="pwhl" size={14} color={color} />
-                  {abbr} Skaters
+                  {t('gameStatsPopup.skaters.toggleButton', { abbr })}
                 </button>
                 <button
                   className={`${PGS_TOGGLE_BTN_CLASSES}${skaterTeam === 'opp' ? ' active' : ''}`}
@@ -271,7 +272,7 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
                   onClick={() => setSkaterTeam('opp')}
                 >
                   <TeamLogo abbr={oppAbbr} sport="pwhl" size={14} color={oppColor} />
-                  {oppAbbr} Skaters
+                  {t('gameStatsPopup.skaters.toggleButton', { abbr: oppAbbr })}
                 </button>
               </div>
               <PWHLBoxScoreTable
@@ -282,7 +283,7 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
             </div>
           )}
           {!boxLoading && !skaters.length && !goalies.length && (
-            <div className="pgs-no-data text-[12px] text-[color:var(--text-dim)] text-center py-4 italic">Box score not available for this game yet.</div>
+            <div className="pgs-no-data text-[12px] text-[color:var(--text-dim)] text-center py-4 italic">{t('pwhlGameStats.emptyState')}</div>
           )}
 
           {/* Shot map CTA */}
@@ -296,7 +297,7 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
                 navigate('/pwhl/shots', { state: { selectedGameId: game.game_id } });
               }}
             >
-              View Shot Map &amp; Stats →
+              {t('pwhlGameStats.cta.viewShotMap')}
             </button>
           </div>
         </div>

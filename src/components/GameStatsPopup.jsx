@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import {
   getCompletedGameStats, getOpponent, isHomeGame, getCarScore, getOppScore,
@@ -71,6 +72,7 @@ const GP_SUMMARY_CARD_CLASSES = 'gp-summary-card rounded-[12px] py-4 px-4 pb-3 m
 const GP_SUMMARY_CHIP_CLASSES = 'gp-summary-chip text-[11px] font-semibold bg-[var(--bg3)] text-[color:var(--text-muted)] py-[3px] px-2 rounded-[6px]';
 
 function GameStatsPopup({ game, onClose }) {
+  const { t } = useTranslation();
   const { data, loading } = useFetch(() => getCompletedGameStats(game.id), [game.id]);
   const [skaterTeam, setSkaterTeam] = useState('car');
   const [summary, setSummary]       = useState(null);
@@ -144,25 +146,25 @@ function GameStatsPopup({ game, onClose }) {
   // Map every raw NHL API category key -> human label + optional value transformer
   // The right-rail returns camelCase keys like "sog", "faceoffWinningPctg", "blockedShots", etc.
   const STAT_CONFIG = {
-    // key (lowercase)            label                          formatter
-    sog:                        { label: 'Shots on Goal',           fmt: null },
-    hits:                       { label: 'Hits',                    fmt: null },
-    blockedshots:               { label: 'Blocked Shots',           fmt: null },
-    blockedshot:                { label: 'Blocked Shots',           fmt: null },
-    blocked:                    { label: 'Blocked Shots',           fmt: null },
-    faceoffwinningpctg:         { label: 'Faceoff Win %',           fmt: v => `${(parseFloat(v)*100).toFixed(1)}%` },
-    faceoffwinpct:              { label: 'Faceoff Win %',           fmt: v => `${parseFloat(v).toFixed(1)}%` },
-    faceoffpct:                 { label: 'Faceoff Win %',           fmt: v => {
+    // key (lowercase)            label                                              formatter
+    sog:                        { label: t('gameStatsPopup.teamStats.shotsOnGoal'),  fmt: null },
+    hits:                       { label: t('gameStatsPopup.teamStats.hits'),         fmt: null },
+    blockedshots:               { label: t('gameStatsPopup.teamStats.blockedShots'), fmt: null },
+    blockedshot:                { label: t('gameStatsPopup.teamStats.blockedShots'), fmt: null },
+    blocked:                    { label: t('gameStatsPopup.teamStats.blockedShots'), fmt: null },
+    faceoffwinningpctg:         { label: t('gameStatsPopup.teamStats.faceoffWinPct'), fmt: v => `${(parseFloat(v)*100).toFixed(1)}%` },
+    faceoffwinpct:              { label: t('gameStatsPopup.teamStats.faceoffWinPct'), fmt: v => `${parseFloat(v).toFixed(1)}%` },
+    faceoffpct:                 { label: t('gameStatsPopup.teamStats.faceoffWinPct'), fmt: v => {
       const n = parseFloat(v);
       return n <= 1 ? `${(n*100).toFixed(1)}%` : `${n.toFixed(1)}%`;
     }},
-    powerplaypctg:              { label: 'Power Play %',            fmt: v => `${(parseFloat(v)*100).toFixed(1)}%` },
-    powerplay:                  { label: 'Power Play',              fmt: null },
-    pim:                        { label: 'Penalty Minutes',         fmt: null },
-    penaltyminutes:             { label: 'Penalty Minutes',         fmt: null },
-    giveaways:                  { label: 'Giveaways',               fmt: null },
-    takeaways:                  { label: 'Takeaways',               fmt: null },
-    shots:                      { label: 'Shots on Goal',           fmt: null },
+    powerplaypctg:              { label: t('gameStatsPopup.teamStats.powerPlayPct'), fmt: v => `${(parseFloat(v)*100).toFixed(1)}%` },
+    powerplay:                  { label: t('gameStatsPopup.teamStats.powerPlay'),    fmt: null },
+    pim:                        { label: t('gameStatsPopup.teamStats.penaltyMinutes'), fmt: null },
+    penaltyminutes:             { label: t('gameStatsPopup.teamStats.penaltyMinutes'), fmt: null },
+    giveaways:                  { label: t('gameStatsPopup.teamStats.giveaways'),    fmt: null },
+    takeaways:                  { label: t('gameStatsPopup.teamStats.takeaways'),    fmt: null },
+    shots:                      { label: t('gameStatsPopup.teamStats.shotsOnGoal'),  fmt: null },
   };
 
   function getStatConfig(rawCategory) {
@@ -194,7 +196,7 @@ function GameStatsPopup({ game, onClose }) {
         onScroll={e => setShowTop(e.target.scrollTop > 200)}>
         {showTop && (
           <button className="gsp-top-btn sticky top-2 float-right mt-2 mr-3 py-[5px] px-3 bg-[var(--bg3)] border-[0.5px] border-[color:var(--border)] rounded-[20px] text-[11px] font-semibold text-[color:var(--text-muted)] cursor-pointer z-10 hover:text-[color:var(--text)] hover:bg-[var(--bg2)]" onClick={() => modalRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}>
-            ↑ Top
+            {t('gameStatsPopup.header.scrollTopButton')}
           </button>
         )}
 
@@ -207,9 +209,9 @@ function GameStatsPopup({ game, onClose }) {
               <span className="gp-score-big font-[family-name:var(--font-display)] text-[42px] font-bold leading-none" style={{ color: 'var(--team-primary)' }}>{carScore ?? '—'}</span>
             </div>
             <div className="gp-center-col flex flex-col items-center gap-1">
-              <div className={`${GP_RESULT_BADGE_CLASSES} ${won ? 'win bg-[rgba(61,186,126,0.2)] text-[color:var(--green)]' : 'loss bg-[rgba(204,34,0,0.15)] text-[color:var(--red-bright)]'}`}>{won ? 'W' : 'L'}</div>
+              <div className={`${GP_RESULT_BADGE_CLASSES} ${won ? 'win bg-[rgba(61,186,126,0.2)] text-[color:var(--green)]' : 'loss bg-[rgba(204,34,0,0.15)] text-[color:var(--red-bright)]'}`}>{won ? t('gameStatsPopup.header.resultWin') : t('gameStatsPopup.header.resultLoss')}</div>
               <div className="gp-date text-[11px] text-[color:var(--text-muted)]">{formatGameDate(game.gameDate)}</div>
-              <div className="gp-venue text-[10px] text-[color:var(--text-dim)]">{home ? '📍 Home' : '✈ Away'}</div>
+              <div className="gp-venue text-[10px] text-[color:var(--text-dim)]">{home ? `📍 ${t('scheduleView.resultCard.home')}` : `✈ ${t('scheduleView.resultCard.away')}`}</div>
             </div>
             <div className={`${GP_TEAM_COL_CLASSES} right`}>
               <TeamLogo abbr={oppAbbr} size={36} color={oppColor} />
@@ -217,7 +219,7 @@ function GameStatsPopup({ game, onClose }) {
               <span className="gp-score-big font-[family-name:var(--font-display)] text-[42px] font-bold leading-none" style={{ color: oppColor }}>{oppScore ?? '—'}</span>
             </div>
           </div>
-          <button className="gp-close absolute top-3 right-3 w-7 h-7 rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]" onClick={onClose} aria-label="Close game details">✕</button>
+          <button className="gp-close absolute top-3 right-3 w-7 h-7 rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]" onClick={onClose} aria-label={t('gameStatsPopup.header.closeAriaLabel')}>✕</button>
         </div>
 
         <div className="gp-body pt-4 px-4 pb-6">
@@ -225,13 +227,13 @@ function GameStatsPopup({ game, onClose }) {
           {summary && (
             <div className={GP_SUMMARY_CARD_CLASSES}>
               <div className="gp-summary-header flex justify-between items-center mb-2.5">
-                <span className="gp-summary-label text-[9px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)]">Game Summary</span>
-                <span className="gp-summary-badge text-[9px] font-bold bg-[rgba(204,34,0,0.15)] text-[color:var(--red-bright)] py-[2px] px-[7px] rounded-[10px] tracking-[0.04em]">⚡ EyeWall AI</span>
+                <span className="gp-summary-label text-[9px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)]">{t('gameStatsPopup.summary.label')}</span>
+                <span className="gp-summary-badge text-[9px] font-bold bg-[rgba(204,34,0,0.15)] text-[color:var(--red-bright)] py-[2px] px-[7px] rounded-[10px] tracking-[0.04em]">{t('gameStatsPopup.summary.badge')}</span>
               </div>
               <p className="gp-summary-narrative text-[13px] leading-[1.65] text-[color:var(--text)] mt-0 mb-3">{summary.narrative}</p>
               <div className="gp-summary-chips flex gap-1.5 flex-wrap justify-center items-center mb-2.5">
                 <span className={GP_SUMMARY_CHIP_CLASSES} style={{color: summary.cfPct >= 50 ? 'var(--green)' : 'var(--red-bright)'}}>
-                  CF% {summary.cfPct}%
+                  {t('gameStatsPopup.summary.cfPctChip', { pct: summary.cfPct })}
                 </span>
                 {summary.topScorer && summary.topScorer !== 'Unknown' && (
                   <span className={GP_SUMMARY_CHIP_CLASSES}>🚨 {summary.topScorer}</span>
@@ -247,23 +249,29 @@ function GameStatsPopup({ game, onClose }) {
                   </span>
                 )}
                 <span className={GP_SUMMARY_CHIP_CLASSES} style={{color: summary.won ? 'var(--green)' : 'var(--red-bright)'}}>
-                  {summary.won ? '✓ W' : '✗ L'} {summary.carScore}–{summary.oppScore}
+                  {summary.won ? t('gameStatsPopup.summary.resultChipWin') : t('gameStatsPopup.summary.resultChipLoss')} {summary.carScore}–{summary.oppScore}
                 </span>
               </div>
               <button
                 className="gp-summary-share block mx-auto bg-none border-[0.5px] border-[color:var(--border-2)] text-[color:var(--text-muted)] text-[11px] font-semibold py-[5px] px-[18px] rounded-[6px] cursor-pointer min-h-0 min-w-0 [transition:all_0.15s] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]"
                 onClick={() => {
-                  const text = `${TEAM_CONFIG.abbr} ${summary.carScore}–${summary.oppScore} ${summary.oppAbbr} | ${summary.narrative} — EyeWall Analytics eyewallanalytics.com`;
+                  const text = t('gameStatsPopup.summary.shareText', {
+                    abbr: TEAM_CONFIG.abbr,
+                    car: summary.carScore,
+                    opp: summary.oppScore,
+                    oppAbbr: summary.oppAbbr,
+                    narrative: summary.narrative,
+                  });
                   if (navigator.share) {
-                    navigator.share({ title: 'EyeWall Analytics Game Summary', text }).catch(() => {});
+                    navigator.share({ title: t('gameStatsPopup.summary.shareTitle'), text }).catch(() => {});
                   } else {
                     navigator.clipboard.writeText(text).then(() =>
-                      alert('Summary copied to clipboard!')
+                      alert(t('gameStatsPopup.summary.shareCopiedAlert'))
                     ).catch(() => {});
                   }
                 }}
               >
-                ↗ Share summary
+                {t('gameStatsPopup.summary.shareButton')}
               </button>
             </div>
           )}
@@ -282,12 +290,12 @@ function GameStatsPopup({ game, onClose }) {
               {scoring.length > 0 && (
                 <div className="gp-period-stars-row grid gap-4 items-start [grid-template-columns:1fr_1fr] max-[420px]:[grid-template-columns:1fr]">
                   <div className="gp-section gp-period-col mt-4.5 min-w-0">
-                    <div className="gp-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2">Scoring by period</div>
+                    <div className="gp-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2">{t('gameStatsPopup.sections.scoringByPeriod')}</div>
                     <PeriodTable scoring={scoring} home={home} carAbbr={TEAM_CONFIG.abbr} oppAbbr={oppAbbr} />
                   </div>
                   {starsList.length > 0 && (
                     <div className="gp-section gp-stars-col mt-4.5 min-w-0 max-[420px]:border-t-[0.5px] max-[420px]:border-t-[color:var(--border)] max-[420px]:pt-3">
-                      <div className="gp-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2">Three stars</div>
+                      <div className="gp-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2">{t('gameStatsPopup.sections.threeStars')}</div>
                       {starsList.map((s, i) => (
                         <div key={i} className="gp-star-row flex items-center gap-2 py-[5px] border-b-[0.5px] border-b-[color:var(--border)] text-[13px]">
                           <span className="gp-star-num text-[13px] w-[50px] shrink-0">
@@ -309,7 +317,7 @@ function GameStatsPopup({ game, onClose }) {
               {/* Goals — CAR on left, opponent on right */}
               {scoring.length > 0 && (
                 <div className="gp-section mt-4.5">
-                  <div className="gp-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2">Goals</div>
+                  <div className="gp-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2">{t('gameStatsPopup.sections.goals')}</div>
                   <GoalsList scoring={scoring} carAbbr={TEAM_CONFIG.abbr} oppAbbr={oppAbbr} oppColor={oppColor} />
                 </div>
               )}
@@ -317,7 +325,7 @@ function GameStatsPopup({ game, onClose }) {
               {/* Team stats comparison */}
               {teamStats.length > 0 && (
                 <div className="gp-section mt-4.5">
-                  <div className="gp-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2">Team stats</div>
+                  <div className="gp-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2">{t('gameStatsPopup.sections.teamStats')}</div>
                   <div className="gp-team-stat-header grid gap-2 text-[11px] font-semibold text-center mb-1.5 [grid-template-columns:48px_1fr_48px]">
                     <span style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
                     <span />
@@ -356,19 +364,19 @@ function GameStatsPopup({ game, onClose }) {
               {advStats && (
                 <div className="gp-section mt-4.5">
                   <div className="gp-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2">
-                    Shot Attempts &amp; Puck Luck
-                    <InfoTip position="above" text="Corsi = all shot attempts (goals+shots+misses+blocks). Fenwick excludes blocks. PDO = SH%+SV%×100, avg=100. Puck Luck = actual goals vs expected from shot share." />
+                    {t('gameStatsPopup.sections.shotAttemptsPuckLuck')}
+                    <InfoTip position="above" text={t('gameStatsPopup.sections.shotAttemptsTip')} />
                   </div>
                   <div className="gp-adv-grid flex flex-col gap-[5px]">
                     <div className={`${GP_ADV_ROW_CLASSES} header text-[9px] font-bold uppercase tracking-[0.05em] text-[color:var(--text-dim)] mb-0.5`}>
-                      <span /><span className="team-primary-text">{TEAM_CONFIG.abbr}</span><span /><span className="text-[color:var(--text-muted)]">OPP</span>
+                      <span /><span className="team-primary-text">{TEAM_CONFIG.abbr}</span><span /><span className="text-[color:var(--text-muted)]">{t('gameStatsPopup.teamStats.oppLabel')}</span>
                     </div>
                     {[
-                      ['Corsi (CF)',   advStats.carCorsi,   advStats.oppCorsi,   'All shot attempts incl. blocked'],
-                      ['Fenwick (FF)', advStats.carFenwick, advStats.oppFenwick, 'Unblocked shot attempts (excl. blocks)'],
-                      ['Shots on Goal',advStats.car.goals+advStats.car.sog, advStats.opp.goals+advStats.opp.sog, 'Shots that reached the goalie'],
-                      ['Missed Shots', advStats.car.missed, advStats.opp.missed, 'Attempts that missed the net'],
-                      ['Blocked Shots',advStats.car.blocked,advStats.opp.blocked,'Attempts blocked by a skater'],
+                      [t('gameStatsPopup.advStats.corsi'),   advStats.carCorsi,   advStats.oppCorsi,   'All shot attempts incl. blocked'],
+                      [t('gameStatsPopup.advStats.fenwick'), advStats.carFenwick, advStats.oppFenwick, 'Unblocked shot attempts (excl. blocks)'],
+                      [t('gameStatsPopup.teamStats.shotsOnGoal'),advStats.car.goals+advStats.car.sog, advStats.opp.goals+advStats.opp.sog, 'Shots that reached the goalie'],
+                      [t('gameStatsPopup.advStats.missedShots'), advStats.car.missed, advStats.opp.missed, 'Attempts that missed the net'],
+                      [t('gameStatsPopup.teamStats.blockedShots'),advStats.car.blocked,advStats.opp.blocked,'Attempts blocked by a skater'],
                     ].map(([label, car, opp, _help]) => {
                       const tot = car + opp || 1;
                       return (
@@ -386,24 +394,24 @@ function GameStatsPopup({ game, onClose }) {
                     <div className="gp-adv-chips flex gap-1.5 flex-wrap mt-2 justify-center">
                       <span className="gp-adv-chip text-[11px] font-semibold bg-[var(--bg3)] py-[3px] px-2 rounded-[5px] cursor-help"
                         style={{color: advStats.corsiForPct>=50?'var(--green)':'var(--team-primary)'}}>
-                        CF% {advStats.corsiForPct}%
-                      <InfoTip text={`Corsi For% — ${TEAM_CONFIG.abbr} share of all shot attempts`} position="above" /></span>
+                        {t('gameStatsPopup.advStats.cfPctChip', { pct: advStats.corsiForPct })}
+                      <InfoTip text={t('gameStatsPopup.advStats.cfPctTip', { abbr: TEAM_CONFIG.abbr })} position="above" /></span>
                       <span className="gp-adv-chip text-[11px] font-semibold bg-[var(--bg3)] py-[3px] px-2 rounded-[5px] cursor-help"
                         style={{color: advStats.fenwickForPct>=50?'var(--green)':'var(--team-primary)'}}>
-                        FF% {advStats.fenwickForPct}%
-                      <InfoTip text={`Fenwick For% — ${TEAM_CONFIG.abbr} share of unblocked attempts`} position="above" /></span>
+                        {t('gameStatsPopup.advStats.ffPctChip', { pct: advStats.fenwickForPct })}
+                      <InfoTip text={t('gameStatsPopup.advStats.ffPctTip', { abbr: TEAM_CONFIG.abbr })} position="above" /></span>
                       {pdoStats && (
                         <span className="gp-adv-chip text-[11px] font-semibold bg-[var(--bg3)] py-[3px] px-2 rounded-[5px] cursor-help"
                           style={{color: pdoStats.pdo>102?'var(--amber)':pdoStats.pdo<98?'var(--blue-bright)':'var(--text-muted)'}}>
-                          PDO {pdoStats.pdo}
-                          <InfoTip text={`PDO = SH%+SV%×100. League avg=100. ${pdoStats.luck}`} position="above" />
+                          {t('gameStatsPopup.advStats.pdoChip', { pdo: pdoStats.pdo })}
+                          <InfoTip text={t('gameStatsPopup.advStats.pdoTip', { luck: pdoStats.luck })} position="above" />
                         </span>
                       )}
                       {luckStats && (
                         <span className="gp-adv-chip text-[11px] font-semibold bg-[var(--bg3)] py-[3px] px-2 rounded-[5px] cursor-help"
                           style={{color: luckStats.color}}>
-                          Luck {luckStats.luckDelta>=0?'+':''}{luckStats.luckDelta}G
-                        <InfoTip text={`Puck Luck: ${luckStats.label}. Expected ${luckStats.expectedGF}G from ${luckStats.fenwickForPct}% shot share.`} position="above" /></span>
+                          {t('gameStatsPopup.advStats.luckChip', { sign: luckStats.luckDelta>=0?'+':'', delta: luckStats.luckDelta })}
+                        <InfoTip text={t('gameStatsPopup.advStats.luckTip', { label: luckStats.label, expectedGF: luckStats.expectedGF, pct: luckStats.fenwickForPct })} position="above" /></span>
                       )}
                     </div>
                   </div>
@@ -419,14 +427,14 @@ function GameStatsPopup({ game, onClose }) {
                       onClick={() => setSkaterTeam("car")}
                     >
                       <TeamLogo abbr={TEAM_CONFIG.abbr} size={14} />
-                      {TEAM_CONFIG.abbr} Skaters
+                      {t('gameStatsPopup.skaters.toggleButton', { abbr: TEAM_CONFIG.abbr })}
                     </button>
                     <button
                       className={SKATER_TOGGLE_BTN_BASE + (skaterTeam === "opp" ? " active-opp bg-[var(--blue-dim)] border-[rgba(68,119,238,0.35)] text-[color:var(--blue-bright)]" : " bg-transparent border-[color:var(--border-2)] text-[color:var(--text-muted)] hover:text-[color:var(--text)]")}
                       onClick={() => setSkaterTeam("opp")}
                     >
                       <TeamLogo abbr={oppAbbr} size={14} color={oppColor} />
-                      {oppAbbr} Skaters
+                      {t('gameStatsPopup.skaters.toggleButton', { abbr: oppAbbr })}
                     </button>
                   </div>
                   <SkaterTable
@@ -440,7 +448,7 @@ function GameStatsPopup({ game, onClose }) {
 
               {!teamStats.length && !carPlayers.length && !scoring.length && (
                 <div className="gp-no-data text-[12px] text-[color:var(--text-dim)] text-center py-4 italic">
-                  Detailed stats not available for this game yet.
+                  {t('gameStatsPopup.emptyState')}
                 </div>
               )}
             </>
