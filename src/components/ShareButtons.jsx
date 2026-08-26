@@ -1,4 +1,5 @@
 // components/ShareButtons.jsx
+import { useTranslation } from 'react-i18next';
 //
 // Reusable share button row for all EyeWall export cards.
 // Renders: [📸 Save Image] [𝕏 Share to X] [📤 Share] (mobile only)
@@ -53,6 +54,7 @@ export default function ShareButtons({
   sharing  = false,
   className = '',
 }) {
+  const { t } = useTranslation();
   return (
     <div className={`${ROW_CLASSES} ${className}`}>
       {/* Save image */}
@@ -60,9 +62,9 @@ export default function ShareButtons({
         className={`${BTN_BASE} ${BTN_SAVE}`}
         onClick={onSave}
         disabled={saving || sharing}
-        aria-label="Save image"
+        aria-label={t('shareButtons.saveImage.ariaLabel')}
       >
-        {saving ? '⏳' : '📸'} {saving ? 'Saving…' : 'Save Image'}
+        {saving ? '⏳' : '📸'} {saving ? t('shareButtons.saveImage.saving') : t('shareButtons.saveImage.save')}
       </button>
 
       {/* Share to X */}
@@ -70,9 +72,9 @@ export default function ShareButtons({
         className={`${BTN_BASE} ${BTN_X}`}
         onClick={onShareX}
         disabled={saving || sharing}
-        aria-label="Share to X (Twitter)"
+        aria-label={t('shareButtons.shareX.ariaLabel')}
       >
-        𝕏 Post to X
+        {t('shareButtons.shareX.label')}
       </button>
 
       {/* Native share — always render but hidden on desktop via CSS when unsupported */}
@@ -80,9 +82,9 @@ export default function ShareButtons({
         className={`${BTN_BASE} ${BTN_NATIVE} ${!canNativeShare ? BTN_HIDDEN_DESKTOP : ''}`}
         onClick={onNativeShare}
         disabled={saving || sharing}
-        aria-label="Share via device share sheet"
+        aria-label={t('shareButtons.nativeShare.ariaLabel')}
       >
-        {sharing ? '⏳' : '📤'} {sharing ? 'Sharing…' : 'Share'}
+        {sharing ? '⏳' : '📤'} {sharing ? t('shareButtons.nativeShare.sharing') : t('shareButtons.nativeShare.share')}
       </button>
     </div>
   );

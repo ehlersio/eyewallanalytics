@@ -1246,5 +1246,46 @@
       "nhl": "Articles from team blogs, ESPN, Sportsnet, Bleacher Report, The Athletic, and Reddit. Tap any article to read the full story.",
       "pwhl": "Articles from PWHL Official, ESPN, Sportsnet, and IIHF. Tap any article to read the full story."
     }
+  },
+  "shareButtons": {
+    "saveImage": {
+      "ariaLabel": "Save image",
+      "saving": "Saving…",
+      "save": "Save Image"
+    },
+    "shareX": {
+      "ariaLabel": "Share to X (Twitter)",
+      "label": "𝕏 Post to X"
+    },
+    "nativeShare": {
+      "ariaLabel": "Share via device share sheet",
+      "sharing": "Sharing…",
+      "share": "Share"
+    }
+  },
+  "predictionShareCanvas": {
+    "badge": {
+      "playoffPrediction": "Playoff Prediction"
+    },
+    "seriesLabel": "Series: ",
+    "scoreLabel": {
+      "projected": "Projected Score",
+      "expected": "Expected Score",
+      "projectedTotal": "Projected Total"
+    },
+    "ouLine": "O/U line: {{line}}",
+    "stats": {
+      "goalsForPerGp": "Goals For/GP",
+      "goalsAgainstPerGp": "Goals Against/GP",
+      "winRate": "Win Rate",
+      "ppVsPk": "PP% vs PK%"
+    },
+    "edgeAnalysis": "Edge Analysis",
+    "line1Header": "{{abbr}} Line 1 · 5v5",
+    "toiTogether": "{{mins}}m together",
+    "xCaption": {
+      "headline": "{{abbr}} {{car}}–{{opp}} {{oppAbbr}} — EyeWall Prediction",
+      "winProbability": "Win probability: {{abbr}} {{pct}}% · {{oppAbbr}} {{oppPct}}%"
+    }
   }
 }

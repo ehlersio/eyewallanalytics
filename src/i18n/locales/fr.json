@@ -1246,5 +1246,46 @@
       "nhl": "Articles provenant des blogues d'équipe, ESPN, Sportsnet, Bleacher Report, The Athletic et Reddit. Touchez un article pour lire l'histoire complète.",
       "pwhl": "Articles provenant de PWHL Official, ESPN, Sportsnet et IIHF. Touchez un article pour lire l'histoire complète."
     }
+  },
+  "shareButtons": {
+    "saveImage": {
+      "ariaLabel": "Enregistrer l'image",
+      "saving": "Enregistrement…",
+      "save": "Enregistrer l'image"
+    },
+    "shareX": {
+      "ariaLabel": "Partager sur X (Twitter)",
+      "label": "𝕏 Publier sur X"
+    },
+    "nativeShare": {
+      "ariaLabel": "Partager via le menu de partage de l'appareil",
+      "sharing": "Partage…",
+      "share": "Partager"
+    }
+  },
+  "predictionShareCanvas": {
+    "badge": {
+      "playoffPrediction": "Prédiction éliminatoire"
+    },
+    "seriesLabel": "Série : ",
+    "scoreLabel": {
+      "projected": "Score projeté",
+      "expected": "Score attendu",
+      "projectedTotal": "Total projeté"
+    },
+    "ouLine": "Ligne O/U : {{line}}",
+    "stats": {
+      "goalsForPerGp": "Buts pour/PJ",
+      "goalsAgainstPerGp": "Buts contre/PJ",
+      "winRate": "Taux de victoire",
+      "ppVsPk": "% AN c. % DN"
+    },
+    "edgeAnalysis": "Analyse des avantages",
+    "line1Header": "{{abbr}} 1re ligne · 5c5",
+    "toiTogether": "{{mins}} min ensemble",
+    "xCaption": {
+      "headline": "{{abbr}} {{car}}–{{opp}} {{oppAbbr}} — Prédiction EyeWall",
+      "winProbability": "Probabilité de victoire : {{abbr}} {{pct}} % · {{oppAbbr}} {{oppPct}} %"
+    }
   }
 }
