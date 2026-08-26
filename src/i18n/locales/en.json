@@ -629,6 +629,86 @@
       "sogVsBadge": "{{n}} SOG vs",
       "oppShotLocations": "OPP shot locations"
     },
+    "liveInsights": {
+      "periodDominanceFor": "{{abbr}} dominated {{period}} shots {{car}}–{{opp}}",
+      "periodDominanceAgainst": "{{oppAbbr}} dominated {{period}} shots {{opp}}–{{car}}",
+      "onARoll": "{{abbr}} on a roll — {{n}} of last {{total}} shot attempts",
+      "oppPressing": "{{oppAbbr}} pressing — {{n}} of last {{total}} shot attempts",
+      "topScorer": "{{name}} led {{abbr}} with {{pts}} ({{points}} pts)",
+      "perfectPk": "{{abbr}} PK went {{n}}-for-{{n}} — perfect penalty kill",
+      "pkStruggled": "PK struggled — allowed {{n}} power play goals",
+      "challengeType": {
+        "goalInterference": "goal interference",
+        "offside": "offside",
+        "missedStoppage": "missed stoppage",
+        "call": "call"
+      },
+      "challengeSucceededFor": "{{abbr}} challenge ({{type}}) succeeded — call overturned",
+      "challengeFailedFor": "{{abbr}} challenge ({{type}}) failed — 2-min penalty",
+      "challengeSucceededAgainst": "{{oppAbbr}} challenge ({{type}}) succeeded — call overturned",
+      "challengeFailedAgainst": "{{oppAbbr}} challenge ({{type}}) failed",
+      "videoReviews_one": "{{count}} league-initiated video review this game",
+      "videoReviews_other": "{{count}} league-initiated video reviews this game",
+      "limitedAttemptsAndSog": "{{abbr}} held {{oppAbbr}} to {{attempts}} shot attempts and {{sog}} SOG in {{period}}",
+      "limitedAttempts": "{{abbr}} held {{oppAbbr}} to just {{attempts}} shot attempts in {{period}}",
+      "limitedSog": "{{abbr}} held {{oppAbbr}} to {{sog}} shots on goal in {{period}}",
+      "faceoffControlFor": "{{abbr}} controlling faceoffs — winning {{pct}}% ({{won}}/{{total}})",
+      "faceoffControlAgainst": "{{oppAbbr}} winning faceoffs — {{abbr}} at {{pct}}% ({{won}}/{{total}})",
+      "scorelessSoFar": "{{abbr}} hasn't scored yet — looking for the first one",
+      "scoringDrought": "{{abbr}} hasn't scored in {{n}} periods — last goal in {{period}}",
+      "scoredFirstWinPctFor": "{{abbr}} wins {{pct}}% of games when scoring first this season ({{n}} games)",
+      "scoredFirstWinPctAgainst": "{{oppAbbr}} wins {{pct}}% of games when scoring first this season",
+      "struckFirst": "{{abbr}} struck first — teams that score first win ~65% of NHL games",
+      "oppStruckFirst": "{{oppAbbr}} struck first",
+      "backToBackGoals": "{{abbr}} scored twice in {{gap}}s — two quick goals{{samePlayerNote}}",
+      "backToBackGoalsSamePlayerNote": " from the same player!",
+      "consecutiveSaves": "{{abbr}} goalie has stopped {{n}} straight shots",
+      "highDangerSuppression": "{{abbr}} kept {{oppAbbr}} to the perimeter in {{period}} — zero high danger attempts",
+      "pkLimitingChances": "PK limiting OPP chances — only {{n}} shot attempts across {{penalties}} penalties",
+      "headToHeadRecord": "{{abbr}} is {{w}}-{{l}} vs {{oppAbbr}} this season ({{gp}} games)",
+      "tiedGame": "Tied {{car}}–{{opp}} — anyone's game",
+      "leadingBig": "{{abbr}} up {{diff}} — dominant performance",
+      "trailingLate": "{{abbr}} down {{diff}} in {{period}} — need a push",
+      "finalWinOutshot": "{{abbr}} won {{car}}–{{opp}} and outshot {{oppAbbr}} {{carTot}}–{{oppTot}}",
+      "finalLoss": "{{abbr}} lost {{car}}–{{opp}} despite {{clause}}",
+      "outshootingClause": "outshooting {{oppAbbr}} {{carTot}}–{{oppTot}}",
+      "outshotClause": "being outshot {{oppTot}}–{{carTot}}",
+      "oppPulledGoalie": "{{oppAbbr}} has pulled their goalie",
+      "carPulledGoalie": "{{abbr}} goalie pulled"
+    },
+    "liveInsightsCard": {
+      "liveHeader": "🔴 Live Insights",
+      "gameHeader": "📊 Game Insights"
+    },
+    "momentum": {
+      "tooltipExplainer": "Weighted territorial score combining shot attempts, zone faceoff wins, offensive zone hits and takeaways — inspired by NHL Edge Ice Tilt. Zone location matters: an offensive zone shot counts more than a neutral zone attempt. Above 50% = {{abbr}} controlling play.",
+      "sectionHeader": "Momentum",
+      "windowFull": "Full",
+      "eventsCount_one": "{{count}} event",
+      "eventsCount_other": "{{count}} events",
+      "nowLabel": "Now",
+      "aboveNeutral": "{{abbr}} above neutral",
+      "gameLabel": "Game: {{pct}}%"
+    },
+    "advanced": {
+      "sectionHeader": "Shot Attempts",
+      "subtitle": "Corsi = all attempts · Fenwick excludes blocks",
+      "rowCorsiLabel": "Corsi (CF)",
+      "helpCorsi": "All shot attempts: goals + shots + misses + blocks. True possession proxy.",
+      "rowFenwickLabel": "Fenwick (FF)",
+      "helpFenwick": "Shot attempts excluding blocked shots. More predictive than Corsi.",
+      "rowSogLabel": "Shots on Goal",
+      "helpSog": "Shots that reached the goalie (goals + saves)",
+      "rowMissedLabel": "Missed Shots",
+      "helpMissed": "Attempts that missed the net",
+      "rowBlockedLabel": "Blocked Shots",
+      "helpBlocked": "Attempts blocked by a skater before reaching the goalie",
+      "helpCfPct": "Corsi For%: {{abbr}} share of all shot attempts. ≥50% = controlling play.",
+      "helpFfPct": "Fenwick For%: {{abbr}} share of unblocked attempts. Better predictor than Corsi.",
+      "helpPdo": "PDO = SH% + SV% × 100. League avg = 100. Far from 100 suggests luck component.",
+      "chipLabelLuck": "Luck",
+      "helpLuck": "Puck Luck: actual goals vs expected from shot share. {{luckLabel}}"
+    },
     "drillPopup": {
       "close": "Close",
       "noData": "No {{team}} data for this game.",
@@ -713,6 +793,17 @@
     },
     "pkAnalysis": {
       "xgaHelp": "Expected goals against on PK — from shot locations. Lower is better."
+    },
+    "advanced": {
+      "helpCorsi": "All shot attempts: goals + SOG + missed + blocked. Best possession proxy.",
+      "helpSog": "Shots that reached the goalie (goals + saves).",
+      "helpBlocked": "Attempts blocked by a skater before reaching the goalie.",
+      "helpCfPct": "Corsi For %: {{abbr}}'s share of all shot attempts. ≥50% = controlling play.",
+      "helpFfPct": "Fenwick For %: {{abbr}}'s share of unblocked attempts. Better predictor than Corsi.",
+      "pdoShFallback": "SH {{pct}}%",
+      "helpPdoComputed": "PDO = SH% ({{shPct}}%) + SV% ({{svPct}}%) = {{pdo}}. Values >103 suggest luck; <97 suggest bad luck.",
+      "helpPdoUnavailable": "PDO = SH% + SV%. Goalie data not yet available for this game.",
+      "helpLuck": "Goals ({{goals}}) vs expected goals from shot locations (xG {{xg}}). Positive = scoring above expectation."
     }
   }
 }

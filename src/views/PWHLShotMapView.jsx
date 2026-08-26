@@ -578,6 +578,7 @@ function StatDrillPopup({ drillStat, onClose, abbr, oppAbbr, color }) {
 // ── Shot Attempts panel ───────────────────────────────────────
 
 function ShotAttemptsPanel({ ourShots, oppShotRows, abbr, oppAbbr, color, goalieStats, teamId }) {
+  const { t } = useTranslation();
   const carSOG     = ourShots.filter(e => e.type === 'shot-on-goal' || e.type === 'goal').length;
   const carBlocked = ourShots.filter(e => e.type === 'blocked-shot').length;
   const carCorsi   = carSOG + carBlocked;
@@ -643,8 +644,8 @@ function ShotAttemptsPanel({ ourShots, oppShotRows, abbr, oppAbbr, color, goalie
   return (
     <div className={SHOT_VOLUME_SECTION_CLASSES}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <div className="sec-label" style={{ marginBottom: 0 }}>Shot Attempts</div>
-        <span style={{ fontSize: 9, color: 'var(--text-dim)' }}>Corsi = all attempts · Fenwick excludes blocks</span>
+        <div className="sec-label" style={{ marginBottom: 0 }}>{t('shotMapView.advanced.sectionHeader')}</div>
+        <span style={{ fontSize: 9, color: 'var(--text-dim)' }}>{t('shotMapView.advanced.subtitle')}</span>
       </div>
 
       <div className={SV_HEADER_CLASSES}>
@@ -656,35 +657,35 @@ function ShotAttemptsPanel({ ourShots, oppShotRows, abbr, oppAbbr, color, goalie
       </div>
 
       <div className={SV_WRAP_CLASSES}>
-        <Row label="Corsi (CF)"    car={carCorsi}   opp={oppCorsi}
-          help="All shot attempts: goals + SOG + missed + blocked. Best possession proxy." />
-        <Row label="Fenwick (FF)"  car={carFenwick} opp={oppFenwick}
-          help="Shot attempts excluding blocked shots. More predictive than Corsi." />
-        <Row label="Shots on Goal" car={carSOG}     opp={oppSOG}
-          help="Shots that reached the goalie (goals + saves)." />
-        <Row label="Blocked Shots" car={carBlocked} opp={oppBlocked}
-          help="Attempts blocked by a skater before reaching the goalie." />
+        <Row label={t('shotMapView.advanced.rowCorsiLabel')}    car={carCorsi}   opp={oppCorsi}
+          help={t('pwhlShotMapView.advanced.helpCorsi')} />
+        <Row label={t('shotMapView.advanced.rowFenwickLabel')}  car={carFenwick} opp={oppFenwick}
+          help={t('shotMapView.advanced.helpFenwick')} />
+        <Row label={t('shotMapView.advanced.rowSogLabel')} car={carSOG}     opp={oppSOG}
+          help={t('pwhlShotMapView.advanced.helpSog')} />
+        <Row label={t('shotMapView.advanced.rowBlockedLabel')} car={carBlocked} opp={oppBlocked}
+          help={t('pwhlShotMapView.advanced.helpBlocked')} />
       </div>
 
       <div className={ADV_CHIPS_ROW_CLASSES}>
         <StatChip label="CF%"
           value={cfPct != null ? `${cfPct}%` : 'N/A'}
           color={cfPct != null && cfPct >= 50 ? 'var(--green)' : (color || 'var(--team-primary)')}
-          help={`Corsi For %: ${abbr}'s share of all shot attempts. ≥50% = controlling play.`} />
+          help={t('pwhlShotMapView.advanced.helpCfPct', { abbr })} />
         <StatChip label="FF%"
           value={ffPct != null ? `${ffPct}%` : 'N/A'}
           color={ffPct != null && ffPct >= 50 ? 'var(--green)' : (color || 'var(--team-primary)')}
-          help={`Fenwick For %: ${abbr}'s share of unblocked attempts. Better predictor than Corsi.`} />
+          help={t('pwhlShotMapView.advanced.helpFfPct', { abbr })} />
         <StatChip label="PDO"
-          value={pdo != null ? pdo.toFixed(1) : `SH ${shPct}%`}
+          value={pdo != null ? pdo.toFixed(1) : t('pwhlShotMapView.advanced.pdoShFallback', { pct: shPct })}
           color={pdoColor}
           help={pdo != null
-            ? `PDO = SH% (${shPct}%) + SV% (${svPct?.toFixed(1)}%) = ${pdo}. Values >103 suggest luck; <97 suggest bad luck.`
-            : "PDO = SH% + SV%. Goalie data not yet available for this game."} />
-        <StatChip label="Luck"
+            ? t('pwhlShotMapView.advanced.helpPdoComputed', { shPct, svPct: svPct?.toFixed(1), pdo })
+            : t('pwhlShotMapView.advanced.helpPdoUnavailable')} />
+        <StatChip label={t('shotMapView.advanced.chipLabelLuck')}
           value={luckLabel}
           color={luckColor}
-          help={`Goals (${goals}) vs expected goals from shot locations (xG ${xg}). Positive = scoring above expectation.`} />
+          help={t('pwhlShotMapView.advanced.helpLuck', { goals, xg })} />
       </div>
     </div>
   );
