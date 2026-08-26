@@ -1370,5 +1370,49 @@
       "playoffsScope": "(Playoffs)"
     },
     "xCaption": "{{abbr}} vs {{oppAbbr}} Scouting Report"
+  },
+  "periodSummary": {
+    "header": "{{period}} Summary",
+    "stats": {
+      "corsiForPct": "{{abbr}} Corsi For%",
+      "fenwickForPct": "{{abbr}} Fenwick For%",
+      "hits": "{{abbr}} Hits",
+      "faceoffWinPct": "Faceoff Win%",
+      "highDangerChances": "High Danger Chances"
+    },
+    "ai": {
+      "label": "EyeWall AI",
+      "periodAnalysis": "⚡ Period Analysis",
+      "generating": "Generating analysis…",
+      "unavailable": "Analysis unavailable.",
+      "generatingCanvas": "Analysis generating…"
+    },
+    "goals": {
+      "sectionLabel": "Goals ({{count}})",
+      "thisGame": "Goals This Game",
+      "thisPeriod": "Goals This Period",
+      "videoTitle": "Goal by {{scorer}} at {{time}}",
+      "playerFallback": "player"
+    },
+    "possession": {
+      "dominated": "{{team}} dominated possession"
+    },
+    "penalties": {
+      "sectionLabel": "Penalties ({{count}})",
+      "unknown": "Unknown",
+      "typeFallback": "Penalty",
+      "durationSuffix": "{{count}} min",
+      "showLess": "▲ Show less",
+      "showMore": "▼ Show {{count}} more",
+      "insight": "🚨 Penalties: {{abbr}} {{carCount}} – {{oppCount}} {{oppAbbr}}"
+    },
+    "takeawaysGiveaways": "Takeaways {{tk}} · Giveaways {{gv}}",
+    "periodBreakdown": "Period Breakdown",
+    "sogSuffix": "{{car}}–{{opp}} SOG",
+    "threeStars": "Three Stars",
+    "xCaption": {
+      "line1": "{{period}} Summary | {{abbr}} {{car}}-{{opp}} {{oppAbbr}}",
+      "line2": "CF% {{cf}} · SOG {{carSog}}-{{oppSog}} · Goals {{carGoals}}-{{oppGoals}}"
+    }
   }
 }
