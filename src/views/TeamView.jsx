@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useFetch } from '../hooks/useFetch'
 import {
   getTeamStats, getStandings,
@@ -233,12 +234,25 @@ const EMPTY_ICON_CLASSES = 'empty-icon text-[28px] mb-2'
 const EMPTY_TITLE_CLASSES = 'empty-title text-[14px] font-semibold text-[color:var(--text)] mb-1'
 const EMPTY_SUB_CLASSES = 'empty-sub text-[12px] text-[color:var(--text-muted)]'
 
+// TABS holds internal English state ids (compared throughout this file via
+// `tab === 'Overview'` etc.) -- NOT display text. TAB_LABEL_KEYS is the
+// separate lookup for the translated label rendered in the tab bar; the
+// ids themselves stay untranslated since they're just state, never shown.
 const TABS = ['Overview', 'Advanced', 'Splits', 'Trends',
   ...(TEAM_CONFIG.abbr === 'CAR' ? ['Cap'] : []),
   'Picks',
 ]
+const TAB_LABEL_KEYS = {
+  Overview: 'teamView.tabs.overview',
+  Advanced: 'teamView.tabs.advanced',
+  Splits:   'teamView.tabs.splits',
+  Trends:   'teamView.tabs.trends',
+  Cap:      'teamView.tabs.cap',
+  Picks:    'teamView.tabs.picks',
+}
 
 export default function TeamView() {
+  const { t } = useTranslation()
   const [tab, setTab] = useState('Overview')
   const [compareOpen, setCompareOpen] = useState(false)
 
@@ -268,7 +282,7 @@ export default function TeamView() {
   const standingsAreStale = isStandingsStale(standings, TEAM_CONFIG.season)
   const carStanding    = standingsAreStale
     ? undefined
-    : standings?.find(t => t.teamAbbrev?.default === TEAM_CONFIG.abbr)
+    : standings?.find(row => row.teamAbbrev?.default === TEAM_CONFIG.abbr)
   const playoffSummary = buildCarPlayoffSummary(playoffGames || [])
   const inPlayoffs     = (playoffGames?.length || 0) > 0
 
@@ -299,8 +313,8 @@ export default function TeamView() {
         <h2 className={VIEW_TITLE_CLASSES} style={{ margin: 0 }}>{TEAM_CONFIG.displayName}</h2>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <p className={VIEW_SUB_CLASSES} style={{ margin: 0 }}>{TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} season</p>
-        <button className={TEAM_COMPARE_BTN_CLASSES} onClick={() => setCompareOpen(true)}>🆚 Compare Seasons</button>
+        <p className={VIEW_SUB_CLASSES} style={{ margin: 0 }}>{t('teamView.seasonSubtitle', { years: `${TEAM_CONFIG.season.slice(0,4)}–${TEAM_CONFIG.season.slice(6)}` })}</p>
+        <button className={TEAM_COMPARE_BTN_CLASSES} onClick={() => setCompareOpen(true)}>{t('team.compareSeasons')}</button>
       </div>
 
       {compareOpen && (
@@ -314,8 +328,8 @@ export default function TeamView() {
 
       {/* Tab bar */}
       <div className={TEAM_TABS_CLASSES}>
-        {TABS.map(t => (
-          <button key={t} className={teamTabClasses(tab === t)} onClick={() => setTab(t)}>{t}</button>
+        {TABS.map(tabId => (
+          <button key={tabId} className={teamTabClasses(tab === tabId)} onClick={() => setTab(tabId)}>{t(TAB_LABEL_KEYS[tabId])}</button>
         ))}
       </div>
 
@@ -331,6 +345,7 @@ export default function TeamView() {
 
 // ── Overview tab ──────────────────────────────────────────────
 function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStanding, playoffSummary, wins, losses, otl, pts, inPlayoffs, liveGame, _corsiReg, realtimeReg, rankings }) {
+  const { t } = useTranslation()
 
   function RankBadge({ r }) {
     if (!r) return null;
@@ -348,25 +363,25 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
       <div className={RECORDS_ROW_CLASSES}>
         <div className={`card ${RECORD_BLOCK_CLASSES}`}>
           <div className={RECORD_BLOCK_LABEL_CLASSES} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <TeamLogo abbr={TEAM_CONFIG.abbr} size={14} /> Regular Season
+            <TeamLogo abbr={TEAM_CONFIG.abbr} size={14} /> {t('team.regularSeason')}
           </div>
           {standLoading ? <div className={SKELETON_CLASSES} style={{ height: 28, width: '70%' }} /> : (
             <div className={RECORD_MAIN_ROW_CLASSES}>
               <span className={RECORD_BIG_CLASSES}>{wins}–{losses}–{otl}</span>
               {liveGame && !inPlayoffs && (
-                <span className={RECORD_LIVE_BADGE_CLASSES}>🔴 LIVE — record updates after final horn</span>
+                <span className={RECORD_LIVE_BADGE_CLASSES}>{t('team.liveRecordBadge')}</span>
               )}
               <span className={PTS_CHIP_CLASSES}>{pts} pts</span>
             </div>
           )}
           {carStanding && (
             <div className={RECORD_META_CLASSES}>
-              <span>Div: {carStanding.divisionName}</span>
+              <span>{t('teamView.overview.divLabel', { division: carStanding.divisionName })}</span>
               <span className={RECORD_META_SEP_CLASSES}>·</span>
-              <span>Conf: {carStanding.conferenceName}</span>
+              <span>{t('teamView.overview.confLabel', { conference: carStanding.conferenceName })}</span>
               {stats?.streakCode && (
                 <span className={streakChipClasses(stats.streakCode)}>
-                  {stats.streakCode}{stats.streakCount || ''} streak
+                  {t('teamView.overview.streakSuffix', { code: stats.streakCode, count: stats.streakCount || '' })}
                 </span>
               )}
             </div>
@@ -375,7 +390,7 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
 
         {inPlayoffs && (
           <div className={`card ${RECORD_BLOCK_CLASSES}`}>
-            <div className={RECORD_BLOCK_LABEL_CLASSES}>Playoffs</div>
+            <div className={RECORD_BLOCK_LABEL_CLASSES}>{t('team.playoffs')}</div>
             {poLoading ? <div className={SKELETON_CLASSES} style={{ height: 28, width: '70%' }} /> : (
               <div className={RECORD_MAIN_ROW_CLASSES}>
                 <span className={RECORD_BIG_CLASSES}>
@@ -383,7 +398,7 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
                   {playoffSummary.reduce((s,x) => s+x.oppWins, 0)}
                 </span>
                 {liveGame && (
-                  <span className={RECORD_LIVE_BADGE_CLASSES}>🔴 LIVE — record updates after final horn</span>
+                  <span className={RECORD_LIVE_BADGE_CLASSES}>{t('team.liveRecordBadge')}</span>
                 )}
               </div>
             )}
@@ -409,7 +424,7 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
       {/* Season stat quick-hits */}
       {stats && (
         <div className="card" style={{ marginTop: 10 }}>
-          <div className="sec-label" style={{ marginBottom: 10 }}>Season stats</div>
+          <div className="sec-label" style={{ marginBottom: 10 }}>{t('team.seasonStats')}</div>
           <div className={OVERVIEW_STAT_GRID_CLASSES}>
             {[
               ['Goals/GP',  (stats.goalsForPerGame??0).toFixed(2),   rankings?.goalsForPG],
@@ -437,6 +452,7 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
 
 // ── xGF% per-game sparkline ───────────────────────────────────
 function XgfSparkline({ data }) {
+  const { t } = useTranslation();
   const [view, setView] = useState('last10');
   const [hover, setHover] = useState(null); // { game, idx }
 
@@ -449,7 +465,7 @@ function XgfSparkline({ data }) {
   return (
     <div className="card" style={{ padding: '12px 14px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <div className="sec-label" style={{ margin: 0 }}>xGF% per game · 5v5</div>
+        <div className="sec-label" style={{ margin: 0 }}>{t('teamView.advanced.xgfSparklineTitle')}</div>
         <div className={ADV_TOGGLE_CLASSES} style={{ gap: 0, padding: 0 }}>
           <button
             className={advToggleBtnClasses(view === 'last10')}
@@ -460,7 +476,7 @@ function XgfSparkline({ data }) {
             className={advToggleBtnClasses(view === 'season')}
             style={{ padding: '3px 10px', fontSize: 12 }}
             onClick={() => setView('season')}
-          >Season</button>
+          >{t('teamView.advanced.seasonToggle')}</button>
         </div>
       </div>
 
@@ -470,7 +486,7 @@ function XgfSparkline({ data }) {
           display: 'flex', gap: 10, alignItems: 'center',
         }}>
           <span style={{ fontWeight: 500 }}>{ttGame.date}</span>
-          <span>vs {ttGame.opponent}</span>
+          <span>{t('teamView.advanced.vsOpponent', { opponent: ttGame.opponent })}</span>
           <span style={{ color: 'var(--text-dim)' }}>
             {ttGame.teamScore}–{ttGame.oppScore}
           </span>
@@ -494,7 +510,7 @@ function XgfSparkline({ data }) {
         formatAxisLabel={v => `${Math.round(v)}%`}
         onHover={(game, idx) => setHover(game ? { game, idx } : null)}
         hoverIndex={hover?.idx ?? null}
-        ariaLabel="xGF% per game sparkline"
+        ariaLabel={t('teamView.advanced.xgfSparklineAriaLabel')}
       />
       {/* First/last game date -- external row, same convention as LeagueView's rank sparkline */}
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--text-dim)', marginTop: 2 }}>
@@ -506,6 +522,7 @@ function XgfSparkline({ data }) {
 }
 
 function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, inPlayoffs, _homeSplit, xgTrend }) {
+  const { t } = useTranslation();
   const pdoData = seasonPDO(corsiReg);
   const [showPO, setShowPO] = useState(inPlayoffs);
   function pct(v) { if (v == null) return '—'; return `${(v*100).toFixed(1)}%`; }
@@ -552,28 +569,28 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, 
       {/* Reg / Playoff toggle */}
       {inPlayoffs && (
         <div className={ADV_TOGGLE_CLASSES}>
-          <button className={advToggleBtnClasses(!showPO)} onClick={() => setShowPO(false)} aria-pressed={!showPO}>📅 Regular Season</button>
-          <button className={advToggleBtnClasses(showPO)} onClick={() => setShowPO(true)} aria-pressed={showPO}>🏒 Playoffs</button>
+          <button className={advToggleBtnClasses(!showPO)} onClick={() => setShowPO(false)} aria-pressed={!showPO}>{t('team.regularSeasonToggle')}</button>
+          <button className={advToggleBtnClasses(showPO)} onClick={() => setShowPO(true)} aria-pressed={showPO}>{t('team.playoffsToggle')}</button>
         </div>
       )}
-      {!inPlayoffs && <div className={ADV_CONTEXT_NOTE_CLASSES}>Showing Regular Season stats</div>}
+      {!inPlayoffs && <div className={ADV_CONTEXT_NOTE_CLASSES}>{t('team.showingRegularSeason')}</div>}
 
       {/* Shot differential */}
       <div className="card">
-        <div className="sec-label" style={{ marginBottom: 8 }}>Shot Volume &amp; Possession</div>
+        <div className="sec-label" style={{ marginBottom: 8 }}>{t('team.shotVolumePossessionTitle')}</div>
         <div className={ADV_EXPLAIN_CLASSES}>
           {corsi?.isProxyCorsi === false
-            ? `Corsi For% (CF%) approximates all shot attempts using shots on goal + blocked shots from the NHL realtime report. Fenwick For% (FF%) uses shots on goal only, excluding blocked shots. Both measure territorial control — ≥50% means ${TEAM_CONFIG.abbr} is generating more attempts than opponents.`
-            : 'Shot For% is a SOG-based proxy. Realtime blocked shot data unavailable for this game type.'}
+            ? t('teamView.advanced.shotExplainFull', { abbr: TEAM_CONFIG.abbr })
+            : t('teamView.advanced.shotExplainProxy')}
         </div>
         {corsi?.isProxyCorsi === false ? (
           <>
             <AdvStatRow label="Corsi For% (CF%)"  val={pct(corsi?.corsiForPct)}
               rating={rateVal(corsi?.corsiForPct, LEAGUE_AVG.corsiForPct)} avg="50.0%"
-              note="All shot attempts for ÷ total. ≥50% = territorial control" />
+              note={t('teamView.advanced.cfNote')} />
             <AdvStatRow label="Fenwick For% (FF%)" val={pct(corsi?.fenwickForPct)}
               rating={rateVal(corsi?.fenwickForPct, LEAGUE_AVG.fenwickForPct)} avg="50.0%"
-              note="Unblocked attempts for ÷ total. Filters out shot-blocking luck" />
+              note={t('teamView.advanced.ffNote')} />
             <AdvStatRow label="Shot Attempts For/GP" val={corsi?.satForPerGame ? fmt(corsi.satForPerGame) : null}
               rating={rateVal(corsi?.satForPerGame, LEAGUE_AVG.satForPerGame)} avg={LEAGUE_AVG.satForPerGame.toFixed(1)} />
             <AdvStatRow label="Shot Attempts Against/GP" val={corsi?.satAgainstPerGame ? fmt(corsi.satAgainstPerGame) : null}
@@ -582,7 +599,7 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, 
         ) : (
           <AdvStatRow label="Shot For% (proxy)" val={pct(corsi?.corsiForPct)}
             rating={rateVal(corsi?.corsiForPct, LEAGUE_AVG.corsiForPct)} avg="50.0%"
-            note="SOG for ÷ total SOG. ≥50% = outshooting opponents" />
+            note={t('teamView.advanced.proxyNote')} />
         )}
         <AdvStatRow label="Shots For/GP" val={corsi?.shotsForPerGame ? fmt(corsi.shotsForPerGame) : null}
           rating={rateVal(corsi?.shotsForPerGame, LEAGUE_AVG.shotsForPerGame)} avg={LEAGUE_AVG.shotsForPerGame.toFixed(1)} />
@@ -591,14 +608,14 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, 
         <AdvStatRow label="Blocked For/GP"
           val={realtimeReg?.blockedShots != null ? fmt(realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1)) : null}
           rating={rateVal(realtimeReg?.blockedShots != null ? realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1) : null, LEAGUE_AVG.blockedForPerGame)}
-          avg={LEAGUE_AVG.blockedForPerGame.toFixed(1)} note={`Shots blocked by ${TEAM_CONFIG.abbr} skaters per game`} />
+          avg={LEAGUE_AVG.blockedForPerGame.toFixed(1)} note={t('teamView.advanced.blockedForNote', { abbr: TEAM_CONFIG.abbr })} />
         <AdvStatRow label="Blocked Against/GP"
           val={realtimeReg?.shotAttemptsBlocked != null ? fmt(realtimeReg.shotAttemptsBlocked / (realtimeReg.gamesPlayed || 1)) : null}
           rating={rateVal(realtimeReg?.shotAttemptsBlocked != null ? realtimeReg.shotAttemptsBlocked / (realtimeReg.gamesPlayed || 1) : null, LEAGUE_AVG.blockedAgainstPerGame, false)}
-          avg={LEAGUE_AVG.blockedAgainstPerGame.toFixed(1)} note={`${TEAM_CONFIG.abbr} shots blocked by opponents per game`} />
+          avg={LEAGUE_AVG.blockedAgainstPerGame.toFixed(1)} note={t('teamView.advanced.blockedAgainstNote', { abbr: TEAM_CONFIG.abbr })} />
         {corsi?.possessionPct != null && (
           <AdvStatRow label="Puck Possession%" val={pct(corsi.possessionPct / 100)}
-            rating={rateVal(corsi.possessionPct / 100, 0.5)} avg="50.0%" note="Time with puck ÷ total play time" />
+            rating={rateVal(corsi.possessionPct / 100, 0.5)} avg="50.0%" note={t('teamView.advanced.possessionNote')} />
         )}
         <AdvStatRow label="Goals For/GP" val={corsi?.goalsForPerGame ? fmt(corsi.goalsForPerGame) : null}
           rating={rateVal(corsi?.goalsForPerGame, LEAGUE_AVG.goalsForPerGame)} avg={LEAGUE_AVG.goalsForPerGame.toFixed(2)} />
@@ -612,17 +629,17 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, 
       {/* PDO & Puck Luck */}
       {pdoData && (
         <div className="card">
-          <div className="sec-label" style={{ marginBottom: 8 }}>PDO &amp; Puck Luck</div>
+          <div className="sec-label" style={{ marginBottom: 8 }}>{t('team.pdoPuckLuckTitle')}</div>
           <div className={ADV_EXPLAIN_CLASSES}>
-            PDO = team shooting% + save% × 100. League average = 100. Values above 102 suggest positive puck luck likely to regress; below 98 suggest negative luck. Useful for identifying unsustainable streaks.
+            {t('teamView.advanced.pdoExplain')}
           </div>
           <AdvStatRow label="PDO" val={pdoData.pdo} note={pdoData.luck}
             rating={rateVal(parseFloat(pdoData.pdo), LEAGUE_AVG.pdo)} avg="100" />
-          <AdvStatRow label="Team SH%" val={`${pdoData.shPct}%`} note="Season shooting %"
+          <AdvStatRow label="Team SH%" val={`${pdoData.shPct}%`} note={t('teamView.advanced.shNote')}
             rating={rateVal(parseFloat(pdoData.shPct), LEAGUE_AVG.shPct)} avg={`${LEAGUE_AVG.shPct}%`} />
-          <AdvStatRow label="Team SV%" 
+          <AdvStatRow label="Team SV%"
             val={pdoData.svPct != null ? (pdoData.svPct / 100).toFixed(3) : null}
-            note="Season save %"
+            note={t('teamView.advanced.svNote')}
             rating={rateVal(pdoData.svPct != null ? pdoData.svPct : null, LEAGUE_AVG.svPct)}
             avg=".900" />
         </div>
@@ -630,27 +647,27 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, 
 
       {/* Power Play */}
       <div className="card">
-        <div className="sec-label" style={{ marginBottom: 8 }}>Power Play</div>
-        <div className={ADV_EXPLAIN_CLASSES}>Net PP% excludes goals where the opposing team was also shorthanded simultaneously.</div>
+        <div className="sec-label" style={{ marginBottom: 8 }}>{t('teamView.advanced.powerPlayTitle')}</div>
+        <div className={ADV_EXPLAIN_CLASSES}>{t('teamView.advanced.netPpExplain')}</div>
         <AdvStatRow label="PP%" val={pp ? pct(pp.powerPlayPct) : null}
           rating={pp ? rateVal(pp.powerPlayPct, LEAGUE_AVG.ppPct / 100) : null} avg={`${LEAGUE_AVG.ppPct}%`}
-          note="League avg ~20%" />
+          note={t('teamView.advanced.ppAvgNote')} />
         <AdvStatRow label="Net PP%" val={pp ? pct(pp.powerPlayNetPct) : null}
           rating={pp ? rateVal(pp.powerPlayNetPct, LEAGUE_AVG.netPpPct / 100) : null} avg={`${LEAGUE_AVG.netPpPct}%`} />
         <AdvStatRow label="Faceoff Win%" val={pp ? pct(pp.faceoffWinPct) : null}
-          rating={pp ? rateVal(pp.faceoffWinPct, 0.5) : null} avg="50.0%" note="League avg ~50%" />
+          rating={pp ? rateVal(pp.faceoffWinPct, 0.5) : null} avg="50.0%" note={t('teamView.advanced.faceoffAvgNote')} />
       </div>
 
       {/* Penalty Kill */}
       <div className="card">
-        <div className="sec-label" style={{ marginBottom: 8 }}>Penalty Kill</div>
-        <div className={ADV_EXPLAIN_CLASSES}>Net PK% excludes goals while both teams were shorthanded simultaneously.</div>
+        <div className="sec-label" style={{ marginBottom: 8 }}>{t('teamView.advanced.penaltyKillTitle')}</div>
+        <div className={ADV_EXPLAIN_CLASSES}>{t('teamView.advanced.netPkExplain')}</div>
         <AdvStatRow label="PK%" val={pk ? pct(pk.penaltyKillPct) : null}
           rating={pk ? rateVal(pk.penaltyKillPct, LEAGUE_AVG.pkPct / 100) : null} avg={`${LEAGUE_AVG.pkPct}%`}
-          note="League avg ~80%" />
+          note={t('teamView.advanced.pkAvgNote')} />
         <AdvStatRow label="Net PK%" val={pk ? pct(pk.penaltyKillNetPct) : null}
           rating={pk ? rateVal(pk.penaltyKillNetPct, LEAGUE_AVG.netPkPct / 100) : null} avg={`${LEAGUE_AVG.netPkPct}%`} />
-        <AdvStatRow label="Team Shutouts" val={pk?.teamShutouts} />
+        <AdvStatRow label={t('teamView.advanced.teamShutoutsLabel')} val={pk?.teamShutouts} />
       </div>
 
 
@@ -658,8 +675,8 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, 
       {!corsiReg && !ppReg && (
         <div className={`card ${EMPTY_STATE_CLASSES}`}>
           <div className={EMPTY_ICON_CLASSES}>📊</div>
-          <div className={EMPTY_TITLE_CLASSES}>Loading advanced stats…</div>
-          <div className={EMPTY_SUB_CLASSES}>These come from the NHL stats API and may take a moment.</div>
+          <div className={EMPTY_TITLE_CLASSES}>{t('team.loadingAdvancedStats')}</div>
+          <div className={EMPTY_SUB_CLASSES}>{t('teamView.advanced.loadingSub')}</div>
         </div>
       )}
     </div>
@@ -668,6 +685,7 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, 
 
 // ── Splits tab ───────────────────────────────────────────────
 function SplitsTab({ homeSplit, homeSplitPO, _stats, _playoffSummary, inPlayoffs, _ppReg, _pkReg, _corsiReg }) {
+  const { t } = useTranslation();
   const [showPO, setShowPO] = React.useState(false);
 
   const split = showPO ? homeSplitPO : homeSplit;
@@ -713,7 +731,7 @@ function SplitsTab({ homeSplit, homeSplitPO, _stats, _playoffSummary, inPlayoffs
     );
   }
 
-  const gamesLabel = showPO ? 'Playoffs' : 'Regular Season';
+  const gamesLabel = showPO ? t('team.playoffs') : t('team.regularSeason');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -721,24 +739,24 @@ function SplitsTab({ homeSplit, homeSplitPO, _stats, _playoffSummary, inPlayoffs
       {/* Toggle */}
       {inPlayoffs && (
         <div className={ADV_TOGGLE_CLASSES}>
-          <button className={advToggleBtnClasses(!showPO)} onClick={() => setShowPO(false)}>📅 Regular Season</button>
-          <button className={advToggleBtnClasses(showPO)}  onClick={() => setShowPO(true)}>🏒 Playoffs</button>
+          <button className={advToggleBtnClasses(!showPO)} onClick={() => setShowPO(false)}>{t('team.regularSeasonToggle')}</button>
+          <button className={advToggleBtnClasses(showPO)}  onClick={() => setShowPO(true)}>{t('team.playoffsToggle')}</button>
         </div>
       )}
 
       {/* Combined record + advanced stats card */}
       <div className="card">
-        <div className="sec-label" style={{ marginBottom: 10 }}>Home vs Away — {gamesLabel}</div>
+        <div className="sec-label" style={{ marginBottom: 10 }}>{t('team.homeVsAwayTitle', { label: gamesLabel })}</div>
 
         {/* Record header */}
         <div className={SPLIT_ADV_HEADER_CLASSES}>
-          <span>🏠 Home</span>
+          <span>{t('team.homeLabel')}</span>
           <span />
-          <span>✈ Away</span>
+          <span>{t('team.awayLabel')}</span>
         </div>
         <div className={SPLIT_ADV_ROW_CLASSES} style={{ fontWeight: 700, fontSize: 14 }}>
           <span className={splitAdvValClasses(false, false)}>{rec(home)}</span>
-          <span className={SPLIT_ADV_LABEL_CLASSES} style={{ color: 'var(--text-dim)', fontSize: 11 }}>Record</span>
+          <span className={SPLIT_ADV_LABEL_CLASSES} style={{ color: 'var(--text-dim)', fontSize: 11 }}>{t('teamView.splits.recordLabel')}</span>
           <span className={splitAdvValClasses(false, true)}>{rec(away)}</span>
         </div>
         <div className={SPLIT_ADV_ROW_CLASSES}>
@@ -758,12 +776,12 @@ function SplitsTab({ homeSplit, homeSplitPO, _stats, _playoffSummary, inPlayoffs
           </span>
         </div>
 
-        <Section title="Scoring">
+        <Section title={t('teamView.splits.sectionScoring')}>
           <SplitRow label="GF/GP" hVal={home?.goalsForPerGame}     aVal={away?.goalsForPerGame}     better="higher" />
           <SplitRow label="GA/GP" hVal={home?.goalsAgainstPerGame} aVal={away?.goalsAgainstPerGame} better="lower" />
         </Section>
 
-        <Section title="Shot Volume">
+        <Section title={t('teamView.splits.sectionShotVolume')}>
           <SplitRow label="SOG/GP"    hVal={home?.shotsForPerGame}     aVal={away?.shotsForPerGame}     better="higher" fmt={v => fmtNum(v, 1)} />
           <SplitRow label="SOG-A/GP"  hVal={home?.shotsAgainstPerGame} aVal={away?.shotsAgainstPerGame} better="lower"  fmt={v => fmtNum(v, 1)} />
           <SplitRow label="Shot For%"
@@ -771,10 +789,10 @@ function SplitsTab({ homeSplit, homeSplitPO, _stats, _playoffSummary, inPlayoffs
               ? home.shotsForPerGame / (home.shotsForPerGame + home.shotsAgainstPerGame) : null}
             aVal={away?.shotsForPerGame != null && away?.shotsAgainstPerGame != null
               ? away.shotsForPerGame / (away.shotsForPerGame + away.shotsAgainstPerGame) : null}
-            better="higher" fmt={fmtPct} note="SOG proxy" />
+            better="higher" fmt={fmtPct} note={t('teamView.splits.sogProxyNote')} />
         </Section>
 
-        <Section title="Special Teams">
+        <Section title={t('team.sectionSpecialTeams')}>
           {/* powerPlayPct in team/summary is already 0-1 decimal */}
           <SplitRow label="PP%"
             hVal={home?.powerPlayPct}
@@ -790,13 +808,13 @@ function SplitsTab({ homeSplit, homeSplitPO, _stats, _playoffSummary, inPlayoffs
             better="higher" fmt={fmtPct} />
         </Section>
 
-        <Section title="Efficiency">
+        <Section title={t('teamView.splits.sectionEfficiency')}>
           <SplitRow label="SH%"
             hVal={home?.shotsForPerGame && home?.goalsForPerGame != null
               ? home.goalsForPerGame / home.shotsForPerGame : null}
             aVal={away?.shotsForPerGame && away?.goalsForPerGame != null
               ? away.goalsForPerGame / away.shotsForPerGame : null}
-            better="higher" fmt={fmtPct} note="shooting %" />
+            better="higher" fmt={fmtPct} note={t('teamView.splits.shootingPctNote')} />
           <SplitRow label="SV%"
             hVal={home?.shotsAgainstPerGame && home?.goalsAgainstPerGame != null
               ? 1 - (home.goalsAgainstPerGame / home.shotsAgainstPerGame) : null}
@@ -819,6 +837,7 @@ function SplitsTab({ homeSplit, homeSplitPO, _stats, _playoffSummary, inPlayoffs
 // ── Trends tab ───────────────────────────────────────────────
 
 function TrendsTab({ gameLog }) {
+  const { t } = useTranslation()
   const [dbGameLog, setDbGameLog] = React.useState(null)
 
   React.useEffect(() => {
@@ -837,7 +856,7 @@ function TrendsTab({ gameLog }) {
     return (
       <div className={`card ${EMPTY_STATE_CLASSES}`}>
         <div className={EMPTY_ICON_CLASSES}>📈</div>
-        <div className={EMPTY_TITLE_CLASSES}>Loading game log…</div>
+        <div className={EMPTY_TITLE_CLASSES}>{t('teamView.trends.loadingGameLog')}</div>
       </div>
     )
   }
@@ -919,17 +938,17 @@ function TrendsTab({ gameLog }) {
       <div className="card">
         <div className={TRENDS_QUICK_CLASSES}>
           <div className={TQ_ITEM_CLASSES}>
-            <div className={TQ_LABEL_CLASSES}>Current streak</div>
+            <div className={TQ_LABEL_CLASSES}>{t('team.currentStreak')}</div>
             <div className={TQ_VAL_CLASSES} style={{ color: streakType === 'W' ? 'var(--green)' : 'var(--red-bright)' }}>
               {streakType}{streak}
             </div>
           </div>
           <div className={TQ_ITEM_CLASSES}>
-            <div className={TQ_LABEL_CLASSES}>Last 10 games</div>
+            <div className={TQ_LABEL_CLASSES}>{t('team.last10Games')}</div>
             <div className={TQ_VAL_CLASSES}>{last10W}–{10 - last10W}</div>
           </div>
           <div className={TQ_ITEM_CLASSES}>
-            <div className={TQ_LABEL_CLASSES}>Win % L10</div>
+            <div className={TQ_LABEL_CLASSES}>{t('teamView.trends.winPctL10')}</div>
             <div className={TQ_VAL_CLASSES}>{Math.round(last10W / 10 * 100)}%</div>
           </div>
         </div>
@@ -937,13 +956,17 @@ function TrendsTab({ gameLog }) {
 
       {/* Game-by-game result dots */}
       <div className="card">
-        <div className="sec-label" style={{ marginBottom: 10 }}>Last {gameLog.length} games</div>
+        <div className="sec-label" style={{ marginBottom: 10 }}>{t('team.lastNGames', { count: gameLog.length })}</div>
         <div className={RESULT_DOTS_CLASSES}>
           {gameLog.map((g, i) => (
             <div
               key={i}
               className={resultDotClasses(g.result)}
-              title={`${g.date?.slice(5,10)} vs ${g.opp}: ${g.result} ${g.carScore}–${g.oppScore}${g.home ? ' (Home)' : ' (Away)'}`}
+              title={t('teamView.trends.dotTooltip', {
+                date: g.date?.slice(5,10), opp: g.opp, result: g.result,
+                carScore: g.carScore, oppScore: g.oppScore,
+                homeAway: g.home ? t('teamView.trends.homeSuffix') : t('teamView.trends.awaySuffix'),
+              })}
             >
               {g.result === 'OTL' ? 'O' : g.result}
             </div>
@@ -953,7 +976,7 @@ function TrendsTab({ gameLog }) {
 
       {/* Rolling 10-game win % */}
       <div className="card">
-        <div className="sec-label" style={{ marginBottom: 10 }}>Win % — rolling 10-game window</div>
+        <div className="sec-label" style={{ marginBottom: 10 }}>{t('teamView.trends.rollingWinPctTitle')}</div>
         <div className={ROLLING_CHART_CLASSES}>
           {rolling.map((g, i) => (
             <div key={i} className={ROLLING_BAR_WRAP_CLASSES}>
@@ -961,24 +984,24 @@ function TrendsTab({ gameLog }) {
               <div
                 className={rollingBarClasses(g.w10pct)}
                 style={{ height: `${g.w10pct}%` }}
-                title={`Game ${i+1}: ${g.w10pct}% win rate`}
+                title={t('teamView.trends.barTooltip', { n: i + 1, pct: g.w10pct })}
               />
               {i % 5 === 0 && <div className={ROLLING_LABEL_CLASSES}>{i + 1}</div>}
             </div>
           ))}
-          <div className={ROLLING_AVG_LINE_CLASSES} style={{ bottom: '50%' }} aria-label="50% reference" title="50% win rate reference" />
+          <div className={ROLLING_AVG_LINE_CLASSES} style={{ bottom: '50%' }} aria-label={t('teamView.trends.fiftyPctRefAria')} title={t('teamView.trends.fiftyPctRefTitle')} />
         </div>
         <div className={ROLLING_LEGEND_CLASSES}>
-          <span className={RL_HOT_CLASSES}>■ Hot (≥60%)</span>
-          <span className={RL_OK_CLASSES}>■ Average (40–60%)</span>
-          <span className={RL_COLD_CLASSES}>■ Cold (&lt;40%)</span>
-          <span style={{ color: 'var(--text-dim)', marginLeft: 'auto', fontSize: 9 }}>— 50% ref · each bar = 1 game</span>
+          <span className={RL_HOT_CLASSES}>{t('team.legendHot')}</span>
+          <span className={RL_OK_CLASSES}>{t('team.legendAverage')}</span>
+          <span className={RL_COLD_CLASSES}>{t('team.legendCold')}</span>
+          <span style={{ color: 'var(--text-dim)', marginLeft: 'auto', fontSize: 9 }}>{t('teamView.trends.legendFootnoteFull')}</span>
         </div>
       </div>
 
       {/* Goals For / Against rolling 5-game avg */}
       <div className="card">
-        <div className="sec-label" style={{ marginBottom: 10 }}>Goals — rolling 5-game average</div>
+        <div className="sec-label" style={{ marginBottom: 10 }}>{t('team.rollingGoalsAvgTitle')}</div>
         <div className={ROLLING_CHART_DUAL_CLASSES}>
           {gameLog.map((g, i) => {
             const gf = rollingGF[i]
@@ -991,12 +1014,12 @@ function TrendsTab({ gameLog }) {
                   <div
                     className={ROLLING_BAR_GF_CLASSES}
                     style={{ height: `${Math.min(gf / maxVal * 100, 100)}%` }}
-                    title={`GF avg: ${gf}`}
+                    title={t('team.gfAvgTooltip', { gf })}
                   />
                   <div
                     className={ROLLING_BAR_GA_CLASSES}
                     style={{ height: `${Math.min(ga / maxVal * 100, 100)}%` }}
-                    title={`GA avg: ${ga}`}
+                    title={t('team.gaAvgTooltip', { ga })}
                   />
                 </div>
                 <div className={ROLLING_BAR_LABEL_BOT_CLASSES} style={{ color: 'var(--blue-bright)' }}>{ga}</div>
@@ -1006,8 +1029,8 @@ function TrendsTab({ gameLog }) {
           })}
         </div>
         <div className={ROLLING_LEGEND_CLASSES}>
-          <span style={{ color: 'var(--red-bright)' }}>■ Goals For</span>
-          <span style={{ color: 'var(--blue-bright)', marginLeft: 12 }}>■ Goals Against</span>
+          <span style={{ color: 'var(--red-bright)' }}>{t('team.legendGoalsFor')}</span>
+          <span style={{ color: 'var(--blue-bright)', marginLeft: 12 }}>{t('team.legendGoalsAgainst')}</span>
         </div>
       </div>
 
@@ -1015,8 +1038,8 @@ function TrendsTab({ gameLog }) {
       {hasSF && (
         <div className="card">
           <div className="sec-label" style={{ marginBottom: 10 }}>
-            Score-first rate — rolling 10-game window
-            <InfoTip text={`How often ${TEAM_CONFIG.abbr} has scored the first goal of the game, rolling 10-game window. Each bar = one game; bar height = % of the last 10 games where ${TEAM_CONFIG.abbr} scored first.`} position="above" />
+            {t('teamView.trends.scoreFirstTitle')}
+            <InfoTip text={t('teamView.trends.scoreFirstInfoTip', { abbr: TEAM_CONFIG.abbr })} position="above" />
           </div>
           <div className={ROLLING_CHART_CLASSES}>
             {gameLogWithSF.map((g, i) => {
@@ -1034,7 +1057,7 @@ function TrendsTab({ gameLog }) {
                   <div
                     className={rollingBarClasses(val)}
                     style={{ height: `${val}%` }}
-                    title={`Game ${i+1}: scored first ${val}% of last 10`}
+                    title={t('teamView.trends.scoreFirstTooltip', { n: i + 1, val })}
                   />
                   {i % 5 === 0 && <div className={ROLLING_LABEL_CLASSES}>{i + 1}</div>}
                 </div>
@@ -1047,7 +1070,7 @@ function TrendsTab({ gameLog }) {
       {/* PP / PK rolling efficiency */}
       {hasPPPK && (
         <div className="card">
-          <div className="sec-label" style={{ marginBottom: 10 }}>PP% / PK% — rolling 5-game window</div>
+          <div className="sec-label" style={{ marginBottom: 10 }}>{t('teamView.trends.ppPkTitle')}</div>
           <div className={ROLLING_CHART_CLASSES}>
             {gameLogWithPPPK.map((g, i) => {
               const pp = rollingPP[i]
@@ -1060,14 +1083,14 @@ function TrendsTab({ gameLog }) {
                       <div
                         className={`${ROLLING_BAR_BASE_CLASSES} bg-[var(--amber)] flex-1`}
                         style={{ height: `${Math.min(pp / 40 * 100, 100)}%` }}
-                        title={`PP%: ${pp}%`}
+                        title={t('teamView.trends.ppTooltip', { pp })}
                       />
                     )}
                     {pk != null && (
                       <div
                         className={`${ROLLING_BAR_BASE_CLASSES} bg-[var(--green)] flex-1`}
                         style={{ height: `${Math.min(pk / 100 * 100, 100)}%` }}
-                        title={`PK%: ${pk}%`}
+                        title={t('teamView.trends.pkTooltip', { pk })}
                       />
                     )}
                   </div>
@@ -1078,15 +1101,15 @@ function TrendsTab({ gameLog }) {
             })}
           </div>
           <div className={ROLLING_LEGEND_CLASSES}>
-            <span style={{ color: 'var(--amber)' }}>■ PP%</span>
-            <span style={{ color: 'var(--green)', marginLeft: 12 }}>■ PK%</span>
+            <span style={{ color: 'var(--amber)' }}>{t('teamView.trends.legendPp')}</span>
+            <span style={{ color: 'var(--green)', marginLeft: 12 }}>{t('teamView.trends.legendPk')}</span>
           </div>
         </div>
       )}
 
       {/* Score differential trend */}
       <div className="card">
-        <div className="sec-label" style={{ marginBottom: 6 }}>Goal differential by game</div>
+        <div className="sec-label" style={{ marginBottom: 6 }}>{t('team.goalDiffTitle')}</div>
         <div className={GD_CHART_WRAP_CLASSES}>
           <div className={GD_BASELINE_LINE_CLASSES} />
           <div className={GD_BARS_CLASSES}>
@@ -1094,7 +1117,7 @@ function TrendsTab({ gameLog }) {
               const diff  = g.carScore - g.oppScore
               const absPx = Math.min(Math.abs(diff) * 12, 48)
               return (
-                <div key={i} className={GD_BAR_COL_CLASSES} title={`${g.date?.slice(5,10)} vs ${g.opp}: ${diff > 0 ? '+' : ''}${diff}`}>
+                <div key={i} className={GD_BAR_COL_CLASSES} title={t('teamView.trends.diffTooltip', { date: g.date?.slice(5,10), opp: g.opp, sign: diff > 0 ? '+' : '', diff })}>
                   <div className={GD_TOP_CLASSES}>
                     {diff > 0 && (
                       <>
@@ -1117,8 +1140,8 @@ function TrendsTab({ gameLog }) {
           </div>
         </div>
         <div className={GD_LEGEND_CLASSES}>
-          <span className={GD_LEG_POS_CLASSES}>■ Win (positive diff)</span>
-          <span className={GD_LEG_NEG_CLASSES}>■ Loss (negative diff)</span>
+          <span className={GD_LEG_POS_CLASSES}>{t('teamView.trends.legendWinDiff')}</span>
+          <span className={GD_LEG_NEG_CLASSES}>{t('teamView.trends.legendLossDiff')}</span>
         </div>
       </div>
     </div>
@@ -1127,25 +1150,26 @@ function TrendsTab({ gameLog }) {
 
 // ── Cap tab ───────────────────────────────────────────────────
 function CapTab({ capSummary, capPct, sortedContracts }) {
+  const { t } = useTranslation()
   return (
     <div className="card" style={{ marginTop: 4 }}>
-      <div className="sec-label" style={{ marginBottom: 10 }}>Salary Cap · {CURRENT_SEASON}</div>
+      <div className="sec-label" style={{ marginBottom: 10 }}>{t('teamView.cap.title', { season: CURRENT_SEASON })}</div>
       <div className={CAP_BAR_WRAP_CLASSES}>
         <div className={CAP_BAR_FILL_CLASSES} style={{ width: `${capPct}%` }} />
         <div className={CAP_BAR_TRACK_CLASSES} />
       </div>
       <div className={CAP_BAR_LABELS_CLASSES}>
-        <span className={CAP_COMMITTED_CLASSES}>${(capSummary.committed/1_000_000).toFixed(1)}M committed</span>
+        <span className={CAP_COMMITTED_CLASSES}>{t('teamView.cap.committed', { amount: (capSummary.committed/1_000_000).toFixed(1) })}</span>
         <span style={{ color: capSummary.space < 5_000_000 ? 'var(--red-bright)' : 'var(--green)' }}>
-          ${(capSummary.space/1_000_000).toFixed(1)}M cap space
+          {t('teamView.cap.capSpace', { amount: (capSummary.space/1_000_000).toFixed(1) })}
         </span>
       </div>
-      <div className={CAP_CEILING_LABEL_CLASSES}>Cap ceiling: ${(CAP_CEILING/1_000_000).toFixed(1)}M</div>
-      <div className={CAP_DATA_DATE_CLASSES}>Data as of {CONTRACT_DATA_DATE} · Source: PuckPedia</div>
+      <div className={CAP_CEILING_LABEL_CLASSES}>{t('teamView.cap.ceilingLabel', { amount: (CAP_CEILING/1_000_000).toFixed(1) })}</div>
+      <div className={CAP_DATA_DATE_CLASSES}>{t('teamView.cap.dataAsOf', { date: CONTRACT_DATA_DATE })}</div>
       <div className={CAP_TABLE_CLASSES}>
         <div className={CAP_TABLE_HEADER_CLASSES}>
-          <span>Player</span><span>Pos</span><span>Cap Hit</span>
-          <span>Type</span><span>Expires</span>
+          <span>{t('teamView.cap.colPlayer')}</span><span>{t('teamView.cap.colPos')}</span><span>{t('teamView.cap.colCapHit')}</span>
+          <span>{t('teamView.cap.colType')}</span><span>{t('teamView.cap.colExpires')}</span>
         </div>
         {sortedContracts.map((c, i) => {
           const barPct = Math.round((c.capHit / CAP_CEILING) * 100)
@@ -1170,7 +1194,10 @@ function CapTab({ capSummary, capPct, sortedContracts }) {
       </div>
       {capSummary.expiring.length > 0 && (
         <div className={CAP_EXPIRING_NOTE_CLASSES}>
-          ⚠ {capSummary.ufa.length} UFA{capSummary.ufa.length !== 1 ? 's' : ''} and {capSummary.rfa.length} RFA{capSummary.rfa.length !== 1 ? 's' : ''} expiring this summer
+          {t('teamView.cap.expiringNote', {
+            ufaPart: t('teamView.cap.ufaCount', { count: capSummary.ufa.length }),
+            rfaPart: t('teamView.cap.rfaCount', { count: capSummary.rfa.length }),
+          })}
         </div>
       )}
     </div>
@@ -1179,6 +1206,7 @@ function CapTab({ capSummary, capPct, sortedContracts }) {
 
 // ── Picks tab ─────────────────────────────────────────────────
 function PicksTab({ overridePicks = null, overrideOrder = null, _devTeamAbbr = null }) {
+  const { t } = useTranslation();
   const [order, setOrder]     = useState(null);
   const [picks, setPicks]     = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1223,30 +1251,30 @@ function PicksTab({ overridePicks = null, overrideOrder = null, _devTeamAbbr = n
     <>
       {/* 2026 Draft */}
       <div className="card" style={{ marginTop: 10 }}>
-        <div className="sec-label" style={{ marginBottom: 10 }}>2026 NHL Draft</div>
+        <div className="sec-label" style={{ marginBottom: 10 }}>{t('teamView.picks.draftTitle')}</div>
 
         {loading && (
-          <div className={PICKS_LOADING_CLASSES}>Loading…</div>
+          <div className={PICKS_LOADING_CLASSES}>{t('common.loading')}</div>
         )}
 
         {/* Pre-draft: R1 slot(s) from confirmed order */}
         {!loading && !draftStarted && order !== null && (
           <>
             {order.length === 0 ? (
-              <div className={PICKS_EMPTY_CLASSES}>No confirmed picks found for {teamAbbr}.</div>
+              <div className={PICKS_EMPTY_CLASSES}>{t('teamView.picks.noPicksFound', { abbr: teamAbbr })}</div>
             ) : (
               <>
                 {order.map((slot) => (
                   <div key={slot.pick_overall} className={PICKS_SLOT_CLASSES}>
-                    <span className={PICKS_SLOT_ROUND_CLASSES}>Round {slot.round}</span>
-                    <span className={PICKS_SLOT_OVERALL_CLASSES}>Pick #{slot.pick_overall}</span>
+                    <span className={PICKS_SLOT_ROUND_CLASSES}>{t('teamView.picks.roundLabel', { round: slot.round })}</span>
+                    <span className={PICKS_SLOT_OVERALL_CLASSES}>{t('teamView.picks.pickOverall', { n: slot.pick_overall })}</span>
                     {slot.original_team && (
-                      <span className={PICKS_SLOT_FROM_CLASSES}>via {slot.original_team}</span>
+                      <span className={PICKS_SLOT_FROM_CLASSES}>{t('teamView.picks.viaTeam', { team: slot.original_team })}</span>
                     )}
                   </div>
                 ))}
                 <div className={PICKS_NOTE_CLASSES} style={{ marginTop: 8 }}>
-                  Draft begins June 26 · Buffalo · 7 pm ET
+                  {t('teamView.picks.draftBeginsNote')}
                 </div>
               </>
             )}
@@ -1265,11 +1293,11 @@ function PicksTab({ overridePicks = null, overrideOrder = null, _devTeamAbbr = n
                 tabIndex={0}
                 onKeyDown={(e) => e.key === 'Enter' && openPick(pick, 'pick')}
               >
-                <span className={PICKS_MADE_ROUND_CLASSES}>R{pick.round} · #{pick.pick_overall}</span>
+                <span className={PICKS_MADE_ROUND_CLASSES}>{t('teamView.picks.madePickLabel', { round: pick.round, overall: pick.pick_overall })}</span>
                 <span className={PICKS_MADE_NAME_CLASSES}>{pick.prospect_first} {pick.prospect_last}</span>
                 <span className={PICKS_MADE_POS_CLASSES}>{pick.position_code}</span>
                 {pick.final_rank && (
-                  <span className={PICKS_MADE_RANK_CLASSES}>CS #{pick.final_rank}</span>
+                  <span className={PICKS_MADE_RANK_CLASSES}>{t('teamView.picks.csRankLabel', { rank: pick.final_rank })}</span>
                 )}
               </div>
             ))}
@@ -1286,6 +1314,7 @@ function PicksTab({ overridePicks = null, overrideOrder = null, _devTeamAbbr = n
 
 // ── Shared sub-components ────────────────────────────────────
 function AdvStatRow({ label, val, note, rating, avg }) {
+  const { t } = useTranslation();
   const indicator = rating === 'good' ? '▲' : rating === 'bad' ? '▼' : null;
   return (
     <div className={ADV_STAT_ROW_CLASSES}>
@@ -1299,7 +1328,7 @@ function AdvStatRow({ label, val, note, rating, avg }) {
         )}
         <span className={advStatValClasses(rating)}>{val ?? '—'}</span>
         {avg != null && val && val !== '—' && (
-          <span className={ADV_STAT_AVG_CLASSES}>avg {avg}</span>
+          <span className={ADV_STAT_AVG_CLASSES}>{t('team.avgLabel', { avg })}</span>
         )}
       </span>
     </div>
