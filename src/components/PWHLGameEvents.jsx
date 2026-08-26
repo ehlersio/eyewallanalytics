@@ -15,6 +15,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getPWHLTeamById } from '../utils/pwhlConfig';
 import { HatTrickPopup as _HatTrickPopup } from './GameEvents'; // reuse hat trick popup
 
@@ -66,6 +67,7 @@ const GAME_EVENT_DISMISS_CLASSES = 'game-event-dismiss mt-4 bg-transparent borde
 // ── Puck Drop ─────────────────────────────────────────────────
 
 export function PWHLPuckDropPopup({ data, onClose }) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!data) return;
     const t = setTimeout(onClose, 6000);
@@ -77,13 +79,13 @@ export function PWHLPuckDropPopup({ data, onClose }) {
     <div className={overlayClasses(false)} onClick={onClose}>
       <div className={PUCK_DROP_POPUP_CLASSES}>
         <div className={PUCK_DROP_SIREN_CLASSES}>🏒</div>
-        <div className={PUCK_DROP_TITLE_CLASSES}>PUCK DROP</div>
+        <div className={PUCK_DROP_TITLE_CLASSES}>{t('gameEvents.puckDrop.title')}</div>
         <div className={PUCK_DROP_TEXT_CLASSES}>
-          Pucks in deep. Pucks on net.<br />
-          Win the battles.<br />
-          Let's go!
+          {t('gameEvents.puckDrop.line1')}<br />
+          {t('gameEvents.puckDrop.line2')}<br />
+          {t('pwhlGameEvents.puckDrop.line3')}
         </div>
-        <div className={GAME_EVENT_DISMISS_CLASSES}>tap to dismiss</div>
+        <div className={GAME_EVENT_DISMISS_CLASSES}>{t('gameEvents.dismissHint')}</div>
       </div>
     </div>
   );
@@ -92,6 +94,7 @@ export function PWHLPuckDropPopup({ data, onClose }) {
 // ── Goal Popup ────────────────────────────────────────────────
 
 export function PWHLGoalPopup({ data, onClose }) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!data) return;
     const t = setTimeout(onClose, 8000);
@@ -101,29 +104,29 @@ export function PWHLGoalPopup({ data, onClose }) {
   if (!data) return null;
 
   const modifiers = [
-    data.isPowerPlay    && 'Power Play',
-    data.isShortHanded  && 'Short Handed',
-    data.isEmptyNet     && 'Empty Net',
-    data.isPenaltyShot  && 'Penalty Shot',
+    data.isPowerPlay    && t('pwhlGameEvents.goal.modifierPowerPlay'),
+    data.isShortHanded  && t('pwhlGameEvents.goal.modifierShortHanded'),
+    data.isEmptyNet     && t('pwhlGameEvents.goal.modifierEmptyNet'),
+    data.isPenaltyShot  && t('pwhlGameEvents.goal.modifierPenaltyShot'),
   ].filter(Boolean);
 
   return (
     <div className={overlayClasses(false)} onClick={onClose}>
       <div className={GOAL_POPUP_CLASSES}>
         <div className={GOAL_LIGHT_CLASSES}>🚨</div>
-        <div className={GOAL_WORD_CLASSES}>GOAL!</div>
+        <div className={GOAL_WORD_CLASSES}>{t('gameEvents.goal.title')}</div>
         {data.scorer && <div className={GOAL_SCORER_CLASSES}>{data.scorer}</div>}
         {data.assists?.length > 0 && (
-          <div className={GOAL_ASSISTS_CLASSES}>Assists: {data.assists.join(', ')}</div>
+          <div className={GOAL_ASSISTS_CLASSES}>{t('gameEvents.goal.assistsLabel', { assists: data.assists.join(', ') })}</div>
         )}
         {modifiers.length > 0 && (
           <div className={GOAL_SHOT_TYPE_CLASSES}>{modifiers.join(' · ')}</div>
         )}
         {data.shotType && <div className={GOAL_SHOT_TYPE_CLASSES}>{data.shotType}</div>}
         <div className={GOAL_PERIOD_CLASSES}>
-          {data.time ? `${data.periodLabel} · ${data.time}` : data.periodLabel}
+          {data.time ? t('gameEvents.goal.periodTime', { period: data.periodLabel, time: data.time }) : data.periodLabel}
         </div>
-        <div className={GAME_EVENT_DISMISS_CLASSES}>tap to dismiss</div>
+        <div className={GAME_EVENT_DISMISS_CLASSES}>{t('gameEvents.dismissHint')}</div>
       </div>
     </div>
   );
@@ -132,6 +135,7 @@ export function PWHLGoalPopup({ data, onClose }) {
 // ── Penalty Popup ─────────────────────────────────────────────
 
 export function PWHLPenaltyPopup({ data, onClose }) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!data) return;
     const t = setTimeout(onClose, 12000);
@@ -143,8 +147,8 @@ export function PWHLPenaltyPopup({ data, onClose }) {
     <div className={overlayClasses(false)} onClick={onClose}>
       <div className={PENALTY_POPUP_CLASSES}>
         <div className={PENALTY_WORDS_CLASSES}>
-          <span className={PENALTY_WORD_SPAN_CLASSES}>POWER</span>
-          <span className={PENALTY_WORD_SPAN_CLASSES}>PLAY!</span>
+          <span className={PENALTY_WORD_SPAN_CLASSES}>{t('pwhlGameEvents.penalty.word1')}</span>
+          <span className={PENALTY_WORD_SPAN_CLASSES}>{t('pwhlGameEvents.penalty.word2')}</span>
         </div>
         <div className={PENALTY_DIVIDER_CLASSES} />
         {data.player && <div className={PENALTY_PLAYER_CLASSES}>{data.player}</div>}
@@ -158,7 +162,7 @@ export function PWHLPenaltyPopup({ data, onClose }) {
         <div className={PENALTY_DURATION_CLASSES}>
           {data.duration} min · {data.time ? `${data.periodLabel} ${data.time}` : data.periodLabel}
         </div>
-        <div className={GAME_EVENT_DISMISS_CLASSES}>tap to dismiss</div>
+        <div className={GAME_EVENT_DISMISS_CLASSES}>{t('gameEvents.dismissHint')}</div>
       </div>
     </div>
   );
@@ -192,6 +196,7 @@ function Confetti() {
 // ── Win Popup ─────────────────────────────────────────────────
 
 export function PWHLWinPopup({ data, onClose }) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!data) return;
     const t = setTimeout(onClose, 12000);
@@ -204,9 +209,9 @@ export function PWHLWinPopup({ data, onClose }) {
       <Confetti />
       <div className={WIN_POPUP_CLASSES}>
         <div className={WIN_LOGO_CLASSES}>🏆</div>
-        <div className={WIN_TEXT_CLASSES}>{data.teamAbbr} WIN!</div>
+        <div className={WIN_TEXT_CLASSES}>{t('gameEvents.win.title', { teamAbbr: data.teamAbbr })}</div>
         <div className={WIN_SCORE_CLASSES}>{data.score}</div>
-        <div className={GAME_EVENT_DISMISS_CLASSES}>tap to dismiss</div>
+        <div className={GAME_EVENT_DISMISS_CLASSES}>{t('gameEvents.dismissHint')}</div>
       </div>
     </div>
   );
@@ -221,25 +226,25 @@ export function PWHLWinPopup({ data, onClose }) {
 //   Gm-   → game misconduct
 
 const PENALTY_PREFIX_MAP = {
-  'maj': 'Major',
-  'mis': 'Misconduct',
-  'gm':  'Game Misconduct',
+  'maj': 'pwhlGameEvents.penalty.severity.major',
+  'mis': 'pwhlGameEvents.penalty.severity.misconduct',
+  'gm':  'pwhlGameEvents.penalty.severity.gameMisconduct',
 };
 
 // Returns { desc, severity } where severity is null for minor/unknown
-function parsePenaltyDesc(raw) {
-  if (!raw) return { desc: 'Penalty', severity: null };
+function parsePenaltyDesc(raw, t) {
+  if (!raw) return { desc: t('gameEvents.penalty.fallbackDescription'), severity: null };
   const match = raw.match(/^([A-Za-z]+)-(.+)$/);
   if (!match) return { desc: raw, severity: null };
   const prefix = match[1].toLowerCase();
   const body   = match[2].trim();
-  const severity = PENALTY_PREFIX_MAP[prefix] || null;
+  const severity = PENALTY_PREFIX_MAP[prefix] ? t(PENALTY_PREFIX_MAP[prefix]) : null;
   return { desc: body, severity };
 }
 
 // Simple cleaner for use outside the popup (normalizer, drill-downs)
-function _cleanPenaltyDesc(raw) {
-  const { desc, severity } = parsePenaltyDesc(raw);
+function _cleanPenaltyDesc(raw, t) {
+  const { desc, severity } = parsePenaltyDesc(raw, t);
   return severity ? `${severity} — ${desc}` : desc;
 }
 
@@ -267,6 +272,7 @@ function periodLabel(n, isPlayoff = false) {
  * @param {boolean} isPlayoff    - is the current game a playoffs game (period 5+ labeling)
  */
 export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff = false) {
+  const { t } = useTranslation();
   const [goalPopup,     setGoalPopup]     = useState(null);
   const [hatTrickPopup, setHatTrickPopup] = useState(null);
   const [penaltyPopup,  setPenaltyPopup]  = useState(null);
@@ -381,7 +387,7 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
           setPenaltyPopup({
             id:          penId,
             player,
-            ...parsePenaltyDesc(ev.description),
+            ...parsePenaltyDesc(ev.description, t),
             duration:    ev.minutes || 2,
             periodLabel: per,
             time,
@@ -390,7 +396,7 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
         }
       }
     }
-  }, [eventsLength, isLive, teamId, gameId]);
+  }, [eventsLength, isLive, teamId, gameId, t]);
 
   // Puck drop — fires once when game goes live in P1
   useEffect(() => {
@@ -466,6 +472,7 @@ const INSIGHT_TEXT_CLASSES = 'leading-[1.35]';
  */
 export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
   teamId, abbr, oppAbbr, myScore, oppScore, isLive, liveData, isPlayoff = false }) {
+  const { t } = useTranslation();
 
   const insights = useMemo(() => {
     if (!pbpEvents?.length && !ourShotEvents?.length) return [];
@@ -500,8 +507,8 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
         results.push({
           icon: diff > 0 ? '🎯' : '😬',
           text: diff > 0
-            ? `${abbr} dominated ${pLabel} shots ${ps.car}–${ps.opp}`
-            : `${oppAbbr} dominated ${pLabel} shots ${ps.opp}–${ps.car}`,
+            ? t('shotMapView.liveInsights.periodDominanceFor', { abbr, period: pLabel, car: ps.car, opp: ps.opp })
+            : t('shotMapView.liveInsights.periodDominanceAgainst', { oppAbbr, period: pLabel, car: ps.car, opp: ps.opp }),
           type: diff > 0 ? 'good' : 'warn',
         });
       }
@@ -523,8 +530,8 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
       if (recentAttempts.length >= 6) {
         const carRecent = recentAttempts.filter(s => s.isCanes).length;
         const oppRecent = recentAttempts.length - carRecent;
-        if (carRecent >= 7) results.push({ icon: '🌀', text: `${abbr} on a roll — ${carRecent} of last ${recentAttempts.length} shot attempts`, type: 'good' });
-        else if (oppRecent >= 7) results.push({ icon: '🧱', text: `${oppAbbr} pressing — ${oppRecent} of last ${recentAttempts.length} shot attempts`, type: 'warn' });
+        if (carRecent >= 7) results.push({ icon: '🌀', text: t('shotMapView.liveInsights.onARoll', { abbr, n: carRecent, total: recentAttempts.length }), type: 'good' });
+        else if (oppRecent >= 7) results.push({ icon: '🧱', text: t('shotMapView.liveInsights.oppPressing', { oppAbbr, n: oppRecent, total: recentAttempts.length }), type: 'warn' });
       }
     }
 
@@ -535,7 +542,7 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
     });
     const topScorer = Object.entries(goalsByScorer).sort((a, b) => b[1] - a[1])[0];
     if (topScorer && topScorer[1] >= 2) {
-      results.push({ icon: '⭐', text: `${topScorer[0]} leads ${abbr} with ${topScorer[1]} goals`, type: 'good' });
+      results.push({ icon: '⭐', text: t('pwhlGameEvents.liveInsights.topScorer', { name: topScorer[0], abbr, n: topScorer[1] }), type: 'good' });
     }
 
     // ── Faceoff dominance ─────────────────────────────────────
@@ -545,9 +552,9 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
       const totalFO = faceoffs.length;
       const foPct   = Math.round(carFOW / totalFO * 100);
       if (foPct >= 58) {
-        results.push({ icon: '🏒', text: `${abbr} controlling faceoffs — winning ${foPct}% (${carFOW}/${totalFO})`, type: 'good' });
+        results.push({ icon: '🏒', text: t('shotMapView.liveInsights.faceoffControlFor', { abbr, pct: foPct, won: carFOW, total: totalFO }), type: 'good' });
       } else if (foPct <= 42) {
-        results.push({ icon: '😬', text: `${oppAbbr} winning faceoffs — ${abbr} at ${foPct}% (${carFOW}/${totalFO})`, type: 'warn' });
+        results.push({ icon: '😬', text: t('shotMapView.liveInsights.faceoffControlAgainst', { oppAbbr, abbr, pct: foPct, won: carFOW, total: totalFO }), type: 'warn' });
       }
     }
 
@@ -562,9 +569,9 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
     ).length;
 
     if (carPens.length >= 2 && ppGoalsAg === 0) {
-      results.push({ icon: '🛡️', text: `${abbr} PK went ${carPens.length}-for-${carPens.length} — perfect penalty kill`, type: 'good' });
+      results.push({ icon: '🛡️', text: t('shotMapView.liveInsights.perfectPk', { abbr, n: carPens.length }), type: 'good' });
     } else if (ppGoalsAg >= 2) {
-      results.push({ icon: '😤', text: `PK struggled — allowed ${ppGoalsAg} power play goals`, type: 'warn' });
+      results.push({ icon: '😤', text: t('shotMapView.liveInsights.pkStruggled', { n: ppGoalsAg }), type: 'warn' });
     }
 
     // ── Opp shots limited by period ───────────────────────────
@@ -573,7 +580,7 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
       if (!ps) return;
       const pLabel = periodLabel(per, isPlayoff);
       if (ps.opp <= 5 && ps.car >= 4) {
-        results.push({ icon: '🧱', text: `${abbr} held ${oppAbbr} to ${ps.opp} shots in ${pLabel}`, type: 'good' });
+        results.push({ icon: '🧱', text: t('pwhlGameEvents.liveInsights.limitedShots', { abbr, oppAbbr, n: ps.opp, period: pLabel }), type: 'good' });
       }
     });
 
@@ -581,12 +588,12 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
     if (isLive && currentPeriod >= 2) {
       const carGoals = ourShotEvents.filter(s => s.type === 'goal');
       if (carGoals.length === 0) {
-        results.push({ icon: '🥶', text: `${abbr} hasn't scored yet — looking for the first one`, type: 'warn' });
+        results.push({ icon: '🥶', text: t('shotMapView.liveInsights.scorelessSoFar', { abbr }), type: 'warn' });
       } else {
         const lastGoal = carGoals[carGoals.length - 1];
         const droughtPeriods = currentPeriod - (lastGoal.period || 1);
         if (droughtPeriods >= 2) {
-          results.push({ icon: '🥶', text: `${abbr} hasn't scored in ${droughtPeriods} periods`, type: 'warn' });
+          results.push({ icon: '🥶', text: t('pwhlGameEvents.liveInsights.scoringDrought', { abbr, n: droughtPeriods }), type: 'warn' });
         }
       }
     }
@@ -598,8 +605,8 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
       results.push({
         icon: carScoredFirst ? '🚀' : '😤',
         text: carScoredFirst
-          ? `${abbr} struck first — teams that score first win ~65% of games`
-          : `${oppAbbr} struck first`,
+          ? t('pwhlGameEvents.liveInsights.struckFirst', { abbr })
+          : t('shotMapView.liveInsights.oppStruckFirst', { oppAbbr }),
         type: carScoredFirst ? 'good' : 'warn',
       });
     }
@@ -615,7 +622,7 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
         ? parseInt(curr.timeInPeriod.split(':')[0]) * 60 + parseInt(curr.timeInPeriod.split(':')[1]) : 0);
       const gap = currSecs - prevSecs;
       if (gap <= 180) {
-        results.push({ icon: '🔥', text: `${abbr} scored twice in ${gap}s — two quick goals`, type: 'good' });
+        results.push({ icon: '🔥', text: t('pwhlGameEvents.liveInsights.backToBackGoals', { abbr, gap }), type: 'good' });
         break;
       }
     }
@@ -627,18 +634,18 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
       if (oppShotEvents[i].type === 'shot-on-goal') consecutiveSaves++;
     }
     if (consecutiveSaves >= 10) {
-      results.push({ icon: '🧤', text: `${abbr} goalie has stopped ${consecutiveSaves} straight shots`, type: 'good' });
+      results.push({ icon: '🧤', text: t('shotMapView.liveInsights.consecutiveSaves', { abbr, n: consecutiveSaves }), type: 'good' });
     }
 
     // ── Score situation (live only) ──────────────────────────
     if (isLive && myScore != null && oppScore != null) {
       const diff = myScore - oppScore;
       if (diff === 0 && myScore > 0) {
-        results.push({ icon: '⚡', text: `Tied ${myScore}–${oppScore} — anyone's game`, type: 'neutral' });
+        results.push({ icon: '⚡', text: t('shotMapView.liveInsights.tiedGame', { car: myScore, opp: oppScore }), type: 'neutral' });
       } else if (diff >= 3) {
-        results.push({ icon: '🏒', text: `${abbr} up ${diff} — dominant performance`, type: 'good' });
+        results.push({ icon: '🏒', text: t('shotMapView.liveInsights.leadingBig', { abbr, diff }), type: 'good' });
       } else if (diff <= -2 && currentPeriod >= 3) {
-        results.push({ icon: '🚨', text: `${abbr} down ${Math.abs(diff)} in ${periodLabel(currentPeriod, isPlayoff)} — need a push`, type: 'warn' });
+        results.push({ icon: '🚨', text: t('shotMapView.liveInsights.trailingLate', { abbr, diff: Math.abs(diff), period: periodLabel(currentPeriod, isPlayoff) }), type: 'warn' });
       }
     }
 
@@ -651,8 +658,10 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
         results.push({
           icon: won ? '✅' : '📉',
           text: won
-            ? `${abbr} won ${myScore}–${oppScore} and outshot ${oppAbbr} ${carTot}–${oppTot}`
-            : `${abbr} lost ${myScore}–${oppScore} — outshot ${carTot > oppTot ? `${abbr} ${carTot}–${oppTot}` : `${oppAbbr} ${oppTot}–${carTot}`}`,
+            ? t('shotMapView.liveInsights.finalWinOutshot', { abbr, car: myScore, opp: oppScore, oppAbbr, carTot, oppTot })
+            : t('shotMapView.liveInsights.finalLoss', { abbr, car: myScore, opp: oppScore, clause: carTot > oppTot
+                ? t('shotMapView.liveInsights.outshootingClause', { oppAbbr, carTot, oppTot })
+                : t('shotMapView.liveInsights.outshotClause', { carTot, oppTot }) }),
           type: won ? 'good' : 'warn',
         });
       }
@@ -660,13 +669,14 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
 
     return results.slice(0, 6);
   }, [pbpEvents, ourShotEvents, oppShotEvents, teamId, abbr, oppAbbr,
-      myScore, oppScore, isLive, liveData, isPlayoff]);
+      myScore, oppScore, isLive, liveData, isPlayoff, t]);
 
   if (!insights.length) return null;
   return <PWHLInsightsCard insights={insights} isLive={isLive} />;
 }
 
 function PWHLInsightsCard({ insights, isLive }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(true);
   const timerRef = useRef(null);
 
@@ -693,7 +703,7 @@ function PWHLInsightsCard({ insights, isLive }) {
     >
       <div className={insightsHeaderClasses(!expanded)}>
         <span className="sec-label" style={{ marginBottom: 0 }}>
-          {isLive ? '🔴 Live Insights' : '📊 Game Insights'}
+          {isLive ? t('shotMapView.liveInsightsCard.liveHeader') : t('shotMapView.liveInsightsCard.gameHeader')}
         </span>
         {isLive && !expanded && (
           <span className={INSIGHTS_PEEK_CLASSES}>

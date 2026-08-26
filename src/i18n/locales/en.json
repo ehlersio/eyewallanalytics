@@ -805,5 +805,58 @@
       "helpPdoUnavailable": "PDO = SH% + SV%. Goalie data not yet available for this game.",
       "helpLuck": "Goals ({{goals}}) vs expected goals from shot locations (xG {{xg}}). Positive = scoring above expectation."
     }
+  },
+  "gameEvents": {
+    "dismissHint": "tap to dismiss",
+    "puckDrop": {
+      "title": "PUCK DROP",
+      "line1": "Pucks in deep. Pucks on net.",
+      "line2": "Win the battles.",
+      "line3": "Here we go, boys!"
+    },
+    "goal": {
+      "title": "GOAL!",
+      "assistsLabel": "Assists: {{assists}}",
+      "periodTime": "{{period}} · {{time}}"
+    },
+    "penalty": {
+      "word1": "CHEATERS",
+      "word2": "NEVER",
+      "word3": "WIN",
+      "fallbackDescription": "Penalty"
+    },
+    "hatTrick": {
+      "title": "HAT TRICK!"
+    },
+    "win": {
+      "title": "{{teamAbbr}} WIN!"
+    }
+  },
+  "pwhlGameEvents": {
+    "puckDrop": {
+      "line3": "Let's go!"
+    },
+    "goal": {
+      "modifierPowerPlay": "Power Play",
+      "modifierShortHanded": "Short Handed",
+      "modifierEmptyNet": "Empty Net",
+      "modifierPenaltyShot": "Penalty Shot"
+    },
+    "penalty": {
+      "word1": "POWER",
+      "word2": "PLAY!",
+      "severity": {
+        "major": "Major",
+        "misconduct": "Misconduct",
+        "gameMisconduct": "Game Misconduct"
+      }
+    },
+    "liveInsights": {
+      "topScorer": "{{name}} leads {{abbr}} with {{n}} goals",
+      "limitedShots": "{{abbr}} held {{oppAbbr}} to {{n}} shots in {{period}}",
+      "scoringDrought": "{{abbr}} hasn't scored in {{n}} periods",
+      "struckFirst": "{{abbr}} struck first — teams that score first win ~65% of games",
+      "backToBackGoals": "{{abbr}} scored twice in {{gap}}s — two quick goals"
+    }
   }
 }

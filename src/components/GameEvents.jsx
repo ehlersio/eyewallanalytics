@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TEAM_CONFIG } from '../utils/nhlApi';
 
 // ── Tailwind class constants (Phase 4, sub-PR 2 -- GameEvents.css deleted) ──
@@ -51,6 +52,7 @@ const HAT_TRICK_WORD_CLASSES = 'font-[family-name:var(--font-display)] text-[40p
 
 // ── Puck Drop Popup ───────────────────────────────────────────
 export function PuckDropPopup({ data, onClose }) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!data) return;
     const t = setTimeout(onClose, 6000);
@@ -62,13 +64,13 @@ export function PuckDropPopup({ data, onClose }) {
     <div className={overlayClasses(false)} onClick={onClose}>
       <div className={PUCK_DROP_POPUP_CLASSES}>
         <div className={PUCK_DROP_SIREN_CLASSES}>🚨</div>
-        <div className={PUCK_DROP_TITLE_CLASSES}>PUCK DROP</div>
+        <div className={PUCK_DROP_TITLE_CLASSES}>{t('gameEvents.puckDrop.title')}</div>
         <div className={PUCK_DROP_TEXT_CLASSES}>
-          Pucks in deep. Pucks on net.<br />
-          Win the battles.<br />
-          Here we go, boys!
+          {t('gameEvents.puckDrop.line1')}<br />
+          {t('gameEvents.puckDrop.line2')}<br />
+          {t('gameEvents.puckDrop.line3')}
         </div>
-        <div className={GAME_EVENT_DISMISS_CLASSES}>tap to dismiss</div>
+        <div className={GAME_EVENT_DISMISS_CLASSES}>{t('gameEvents.dismissHint')}</div>
       </div>
     </div>
   );
@@ -85,6 +87,7 @@ function playGoalHorn() {
 
 // ── Goal Popup ────────────────────────────────────────────────
 export function GoalPopup({ data, onClose }) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!data) return;
     playGoalHorn();
@@ -97,14 +100,14 @@ export function GoalPopup({ data, onClose }) {
     <div className={overlayClasses(false)} onClick={onClose}>
       <div className={GOAL_POPUP_CLASSES}>
         <div className={GOAL_LIGHT_CLASSES}>🚨</div>
-        <div className={GOAL_WORD_CLASSES}>GOAL!</div>
+        <div className={GOAL_WORD_CLASSES}>{t('gameEvents.goal.title')}</div>
         {data.scorer && <div className={GOAL_SCORER_CLASSES}>{data.scorer}</div>}
         {data.assists?.length > 0 && (
-          <div className={GOAL_ASSISTS_CLASSES}>Assists: {data.assists.join(', ')}</div>
+          <div className={GOAL_ASSISTS_CLASSES}>{t('gameEvents.goal.assistsLabel', { assists: data.assists.join(', ') })}</div>
         )}
         {data.shotType && <div className={GOAL_SHOT_TYPE_CLASSES}>{data.shotType}</div>}
-        <div className={GOAL_PERIOD_CLASSES}>{data.time ? `${data.period} · ${data.time}` : data.period}</div>
-        <div className={GAME_EVENT_DISMISS_CLASSES}>tap to dismiss</div>
+        <div className={GOAL_PERIOD_CLASSES}>{data.time ? t('gameEvents.goal.periodTime', { period: data.period, time: data.time }) : data.period}</div>
+        <div className={GAME_EVENT_DISMISS_CLASSES}>{t('gameEvents.dismissHint')}</div>
       </div>
     </div>
   );
@@ -112,6 +115,7 @@ export function GoalPopup({ data, onClose }) {
 
 // ── Penalty Popup ─────────────────────────────────────────────
 export function PenaltyPopup({ data, onClose }) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!data) return;
     const t = setTimeout(onClose, 12000);
@@ -123,15 +127,15 @@ export function PenaltyPopup({ data, onClose }) {
     <div className={overlayClasses(false)} onClick={onClose}>
       <div className={PENALTY_POPUP_CLASSES}>
         <div className={PENALTY_WORDS_CLASSES}>
-          <span className={PENALTY_WORD_SPAN_CLASSES}>CHEATERS</span>
-          <span className={PENALTY_WORD_SPAN_CLASSES}>NEVER</span>
-          <span className={PENALTY_WORD_SPAN_CLASSES}>WIN</span>
+          <span className={PENALTY_WORD_SPAN_CLASSES}>{t('gameEvents.penalty.word1')}</span>
+          <span className={PENALTY_WORD_SPAN_CLASSES}>{t('gameEvents.penalty.word2')}</span>
+          <span className={PENALTY_WORD_SPAN_CLASSES}>{t('gameEvents.penalty.word3')}</span>
         </div>
         <div className={PENALTY_DIVIDER_CLASSES} />
         {data.player && <div className={PENALTY_PLAYER_CLASSES}>{data.player}</div>}
         <div className={PENALTY_DESC_CLASSES}>{data.description}</div>
         <div className={PENALTY_DURATION_CLASSES}>{data.duration} min · {data.time ? `${data.period} ${data.time}` : data.period}</div>
-        <div className={GAME_EVENT_DISMISS_CLASSES}>tap to dismiss</div>
+        <div className={GAME_EVENT_DISMISS_CLASSES}>{t('gameEvents.dismissHint')}</div>
       </div>
     </div>
   );
@@ -167,6 +171,7 @@ function HatRain({ teamColor }) {
 
 // ── Hat Trick Popup ───────────────────────────────────────────
 export function HatTrickPopup({ data, onClose }) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!data) return;
     const t = setTimeout(onClose, 12000);
@@ -179,14 +184,14 @@ export function HatTrickPopup({ data, onClose }) {
       <HatRain teamColor={data.teamColor} />
       <div className={HAT_TRICK_POPUP_CLASSES}>
         <div className={GOAL_LIGHT_CLASSES}>🚨</div>
-        <div className={HAT_TRICK_WORD_CLASSES}>HAT TRICK!</div>
+        <div className={HAT_TRICK_WORD_CLASSES}>{t('gameEvents.hatTrick.title')}</div>
         {data.scorer && <div className={GOAL_SCORER_CLASSES}>{data.scorer}</div>}
         {data.assists?.length > 0 && (
-          <div className={GOAL_ASSISTS_CLASSES}>Assists: {data.assists.join(', ')}</div>
+          <div className={GOAL_ASSISTS_CLASSES}>{t('gameEvents.goal.assistsLabel', { assists: data.assists.join(', ') })}</div>
         )}
         {data.shotType && <div className={GOAL_SHOT_TYPE_CLASSES}>{data.shotType}</div>}
-        <div className={GOAL_PERIOD_CLASSES}>{data.time ? `${data.period} · ${data.time}` : data.period}</div>
-        <div className={GAME_EVENT_DISMISS_CLASSES}>tap to dismiss</div>
+        <div className={GOAL_PERIOD_CLASSES}>{data.time ? t('gameEvents.goal.periodTime', { period: data.period, time: data.time }) : data.period}</div>
+        <div className={GAME_EVENT_DISMISS_CLASSES}>{t('gameEvents.dismissHint')}</div>
       </div>
     </div>
   );
@@ -218,6 +223,7 @@ function Confetti() {
 
 // ── Win Popup ─────────────────────────────────────────────────
 export function WinPopup({ data, onClose }) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!data) return;
     const t = setTimeout(onClose, 12000);
@@ -230,9 +236,9 @@ export function WinPopup({ data, onClose }) {
       <Confetti />
       <div className={WIN_POPUP_CLASSES}>
         <div className={WIN_LOGO_CLASSES}>🏆</div>
-        <div className={WIN_TEXT_CLASSES}>{data.teamAbbr || 'CANES'} WIN!</div>
+        <div className={WIN_TEXT_CLASSES}>{t('gameEvents.win.title', { teamAbbr: data.teamAbbr || 'CANES' })}</div>
         <div className={WIN_SCORE_CLASSES}>{data.score}</div>
-        <div className={GAME_EVENT_DISMISS_CLASSES}>tap to dismiss</div>
+        <div className={GAME_EVENT_DISMISS_CLASSES}>{t('gameEvents.dismissHint')}</div>
       </div>
     </div>
   );
@@ -240,6 +246,7 @@ export function WinPopup({ data, onClose }) {
 
 // ── Hook ──────────────────────────────────────────────────────
 export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr, teamColor) {
+  const { t } = useTranslation();
   // teamId: integer team ID (replaces hardcoded TEAM_CONFIG.teamId)
   // teamAbbr: e.g. 'CAR' for win popup
   // teamColor: displayColor for hat trick popup
@@ -356,7 +363,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr
           setPenaltyPopup({
             id:          penId,
             player:      pName(d.committedByPlayerId),
-            description: d.descKey ? d.descKey.replace(/-/g, ' ') : 'Penalty',
+            description: d.descKey ? d.descKey.replace(/-/g, ' ') : t('gameEvents.penalty.fallbackDescription'),
             duration:    d.duration || 2,
             period:      per,
             time,
@@ -365,7 +372,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr
         }
       }
     }
-  }, [pbp?.plays?.length, isLive]);
+  }, [pbp?.plays?.length, isLive, t]);
 
   // Puck drop detection — fires once when game goes live in P1
   useEffect(() => {
