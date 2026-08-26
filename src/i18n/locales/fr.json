@@ -858,5 +858,96 @@
       "struckFirst": "{{abbr}} a marqué en premier — les équipes qui marquent en premier gagnent environ 65% des matchs",
       "backToBackGoals": "{{abbr}} a marqué deux fois en {{gap}}s — deux buts rapides"
     }
+  },
+  "scheduleView": {
+    "tabs": {
+      "playoffs": "Séries éliminatoires",
+      "regularSeason": "Saison régulière"
+    },
+    "header": {
+      "title": "Calendrier {{seasonStart}}–{{seasonEnd}}",
+      "regularSeasonLabel": "Saison régulière : ",
+      "record": "{{wins}}–{{losses}}–{{otLosses}}",
+      "pts": "{{pts}} pts"
+    },
+    "viewToggle": {
+      "cardView": "Vue en cartes",
+      "calendarView": "Vue calendrier"
+    },
+    "scrollTop": {
+      "ariaLabel": "Retour en haut",
+      "label": "↑ Haut"
+    },
+    "playoffs": {
+      "notQualifiedTitle": "{{abbr}} ne s'est pas qualifiée pour les séries éliminatoires",
+      "notQualifiedSub": "Meilleure chance la saison prochaine. Allez {{abbr}} !",
+      "notStartedTitle": "Les séries éliminatoires n'ont pas encore commencé",
+      "notStartedSub": "Revenez une fois les séries éliminatoires {{seasonStart}}–{{seasonEnd}} commencées.",
+      "round1": "Premier tour",
+      "round2": "Deuxième tour",
+      "round3": "Finales de conférence",
+      "round4": "Finale de la Coupe Stanley",
+      "roundFallback": "Tour {{round}}",
+      "vsPrefix": "vs ",
+      "inProgress": "En cours"
+    },
+    "regularSeason": {
+      "completeTitle": "Saison régulière terminée",
+      "completeSubOffseason": "Fiche finale indiquée ci-dessus. À la saison prochaine.",
+      "completeSubPlayoffsUnderway": "Fiche finale indiquée ci-dessus. Les séries éliminatoires sont en cours."
+    },
+    "sortBar": {
+      "label": "matchs"
+    },
+    "resultCard": {
+      "tapForStats": "Touchez pour les stats →",
+      "home": "Domicile",
+      "away": "Visiteur"
+    }
+  },
+  "pwhlScheduleView": {
+    "noTeam": {
+      "message": "Aucune équipe LPHF sélectionnée."
+    },
+    "header": {
+      "title": "Calendrier {{seasonLabel}}"
+    },
+    "regularSeason": {
+      "noGamesTitle": "Aucun match trouvé",
+      "noGamesSub": "Aucune donnée de saison régulière pour {{seasonLabel}}."
+    },
+    "playoffs": {
+      "noGamesTitle": "Aucun match éliminatoire",
+      "noGamesSub": "{{abbr}} n'a pas participé aux {{poLabel}}.",
+      "roundFinal": "Finale de la Coupe Walter",
+      "roundSemifinal": "Demi-finales",
+      "gameLabel": "Match {{gameNum}} · {{day}} {{date}}",
+      "upcomingBadge": "À venir"
+    },
+    "seriesCard": {
+      "statusInProgress": "🔴 En cours",
+      "statusChampions": "🏆 Championnes de la Coupe Walter",
+      "statusAdvanced": "✅ Qualifiée",
+      "statusEliminated": "❌ Éliminée",
+      "statusUpcoming": "🗓 À venir",
+      "gamesPlayed_one": "{{count}} match joué",
+      "gamesPlayed_other": "{{count}} matchs joués",
+      "sweepBadgeOurs": "🧹 Balayage !",
+      "sweepBadgeTheirs": "🧹 Balayée"
+    },
+    "sortBar": {
+      "label": "Trier :",
+      "newestFirst": "Plus récents d'abord",
+      "oldestFirst": "Plus anciens d'abord",
+      "countSummary": "{{completedCount}} joués",
+      "countSummaryUpcoming": " · {{count}} à venir"
+    },
+    "resultCard": {
+      "playoffBadge": "Éliminatoire"
+    },
+    "upcomingCard": {
+      "playoffBadge": "🏆 Éliminatoire",
+      "tapForPreview": "Touchez pour l'aperçu →"
+    }
   }
 }

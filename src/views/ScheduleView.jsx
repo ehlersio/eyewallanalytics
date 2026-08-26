@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { recordOutcome } from '../utils/predictionStore';
 import {
@@ -71,6 +72,7 @@ const vmBtnClasses = (active) => {
 const SCROLL_TOP_BTN_CLASSES = 'scroll-top-btn fixed [bottom:calc(var(--nav-height)+env(safe-area-inset-bottom,0px)+16px)] right-4 z-[150] bg-[var(--bg2)] border-[0.5px] border-[color:var(--border-2)] rounded-[20px] py-[7px] px-3.5 text-[12px] font-medium text-[color:var(--text-muted)] cursor-pointer shadow-[0_4px_16px_rgba(0,0,0,0.4)] [transition:all_0.15s] [animation:fade-in_0.2s_ease] hover:bg-[var(--bg3)] hover:text-[color:var(--text)] hover:border-[color:var(--red-border)]';
 
 export default function ScheduleView() {
+  const { t } = useTranslation();
   const [tab, setTab]                   = useState('Playoffs');
   const [selectedGame, setSelectedGame] = useState(null);
   const [popupGame, setPopupGame]       = useState(null);
@@ -112,7 +114,7 @@ export default function ScheduleView() {
   useEffect(() => {
     if (poLoading || prLoading) return;
     const hasPlayoffData = (playoffRounds?.length > 0) || (playoffGames?.length > 0);
-    if (!hasPlayoffData) setTab(t => t === 'Playoffs' ? 'Regular Season' : t);
+    if (!hasPlayoffData) setTab(prev => prev === 'Playoffs' ? 'Regular Season' : prev);
   }, [poLoading, prLoading, playoffRounds, playoffGames]);
 
   // The NHL's own /standings/now redirects to whatever date it last actually
@@ -128,12 +130,12 @@ export default function ScheduleView() {
   const standingsAreStale = isStandingsStale(standings, TEAM_CONFIG.season);
 
   const standingMap = {};
-  if (!standingsAreStale) (standings || []).forEach(t => {
+  if (!standingsAreStale) (standings || []).forEach(row => {
     // Key by the abbreviation — handle both { default: "CAR" } and plain "CAR"
-    const abbr = t.teamAbbrev?.default || t.teamAbbrev;
+    const abbr = row.teamAbbrev?.default || row.teamAbbrev;
     if (abbr) {
-      standingMap[abbr] = t;
-      standingMap[abbr.toLowerCase()] = t; // also store lowercase for safe lookup
+      standingMap[abbr] = row;
+      standingMap[abbr.toLowerCase()] = row; // also store lowercase for safe lookup
     }
   });
 
@@ -162,11 +164,11 @@ export default function ScheduleView() {
   return (
     <div className={PAGE_CLASSES} ref={pageRef}>
       <div className="sched-header mb-3">
-        <h2 className="sched-title font-[family-name:var(--font-display)] text-[18px] font-bold mb-0.5">{TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} Schedule</h2>
+        <h2 className="sched-title font-[family-name:var(--font-display)] text-[18px] font-bold mb-0.5">{t('scheduleView.header.title', { seasonStart: TEAM_CONFIG.season.slice(0,4), seasonEnd: TEAM_CONFIG.season.slice(6) })}</h2>
         {carStanding && (
           <div className="sched-record text-[12px] text-[color:var(--text-muted)] flex items-center gap-2 mt-1">
-            Regular season: <strong>{carStanding.wins}–{carStanding.losses}–{carStanding.otLosses}</strong>
-            <span className="pts-badge bg-[rgba(240,160,48,0.15)] text-[color:var(--amber)] text-[11px] py-[1px] px-[7px] rounded-[10px] font-medium">{carStanding.points} pts</span>
+            {t('scheduleView.header.regularSeasonLabel')}<strong>{t('scheduleView.header.record', { wins: carStanding.wins, losses: carStanding.losses, otLosses: carStanding.otLosses })}</strong>
+            <span className="pts-badge bg-[rgba(240,160,48,0.15)] text-[color:var(--amber)] text-[11px] py-[1px] px-[7px] rounded-[10px] font-medium">{t('scheduleView.header.pts', { pts: carStanding.points })}</span>
             <span className="div-badge bg-[var(--bg3)] text-[color:var(--text-dim)] text-[10px] py-[1px] px-[7px] rounded-[10px]">{carStanding.divisionName}</span>
           </div>
         )}
@@ -175,11 +177,11 @@ export default function ScheduleView() {
       <div className={SCHED_TABS_CLASSES}>
         {TABS
           // Hide the Playoffs tab entirely during offseason (no rounds scheduled yet)
-          .filter(t => t !== 'Playoffs' || (playoffRounds?.length > 0 || (playoffGames?.length > 0)))
-          .map(t => (
-          <button key={t} className={schedTabClasses(tab === t)} onClick={() => setTab(t)}>
-            {t}
-            {t === 'Playoffs' && poRecord.w > 0 && (
+          .filter(tabId => tabId !== 'Playoffs' || (playoffRounds?.length > 0 || (playoffGames?.length > 0)))
+          .map(tabId => (
+          <button key={tabId} className={schedTabClasses(tab === tabId)} onClick={() => setTab(tabId)}>
+            {tabId === 'Playoffs' ? t('scheduleView.tabs.playoffs') : t('scheduleView.tabs.regularSeason')}
+            {tabId === 'Playoffs' && poRecord.w > 0 && (
               <span className="tab-badge bg-[var(--green)] text-[#000] text-[10px] font-bold py-[1px] px-1.5 rounded-[10px]">{poRecord.w}–{poRecord.l}</span>
             )}
           </button>
@@ -187,8 +189,8 @@ export default function ScheduleView() {
 
         {/* View mode toggle — sits on the right end of the same tab row */}
         <div className="view-mode-toggle flex gap-0.5 bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)] rounded-[20px] p-[3px] shrink-0 ml-auto">
-          <button className={vmBtnClasses(viewMode === 'cards')} onClick={() => setViewMode('cards')} title="Card view">≡</button>
-          <button className={vmBtnClasses(viewMode === 'calendar')} onClick={() => setViewMode('calendar')} title="Calendar view">📅</button>
+          <button className={vmBtnClasses(viewMode === 'cards')} onClick={() => setViewMode('cards')} title={t('scheduleView.viewToggle.cardView')}>≡</button>
+          <button className={vmBtnClasses(viewMode === 'calendar')} onClick={() => setViewMode('calendar')} title={t('scheduleView.viewToggle.calendarView')}>📅</button>
         </div>
       </div>
 
@@ -237,8 +239,8 @@ export default function ScheduleView() {
       )}
 
       {showScrollTop && (
-        <button className={SCROLL_TOP_BTN_CLASSES} onClick={scrollToTop} aria-label="Back to top">
-          ↑ Top
+        <button className={SCROLL_TOP_BTN_CLASSES} onClick={scrollToTop} aria-label={t('scheduleView.scrollTop.ariaLabel')}>
+          {t('scheduleView.scrollTop.label')}
         </button>
       )}
     </div>
@@ -249,6 +251,7 @@ export default function ScheduleView() {
 
 function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup, oddsData }) {
   // Hooks must be called before any early returns
+  const { t } = useTranslation();
   const isCompletedGame = g => ['OFF','FINAL','F'].includes(g.gameState);
 
   const byRound = {};
@@ -276,8 +279,8 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
       return (
         <div className={`card ${EMPTY_STATE_CLASSES}`}>
           <div className={EMPTY_ICON_CLASSES}>🏒</div>
-          <div className={EMPTY_TITLE_CLASSES}>{TEAM_CONFIG.abbr} did not qualify for the playoffs</div>
-          <div className={EMPTY_SUB_CLASSES}>Better luck next season. Go {TEAM_CONFIG.abbr}!</div>
+          <div className={EMPTY_TITLE_CLASSES}>{t('scheduleView.playoffs.notQualifiedTitle', { abbr: TEAM_CONFIG.abbr })}</div>
+          <div className={EMPTY_SUB_CLASSES}>{t('scheduleView.playoffs.notQualifiedSub', { abbr: TEAM_CONFIG.abbr })}</div>
         </div>
       );
     }
@@ -286,15 +289,15 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
     return (
       <div className={`card ${EMPTY_STATE_CLASSES}`}>
         <div className={EMPTY_ICON_CLASSES}>🏒</div>
-        <div className={EMPTY_TITLE_CLASSES}>Playoffs not yet started</div>
-        <div className={EMPTY_SUB_CLASSES}>Check back once the {TEAM_CONFIG.season.slice(0,4)}–{TEAM_CONFIG.season.slice(6)} playoffs begin.</div>
+        <div className={EMPTY_TITLE_CLASSES}>{t('scheduleView.playoffs.notStartedTitle')}</div>
+        <div className={EMPTY_SUB_CLASSES}>{t('scheduleView.playoffs.notStartedSub', { seasonStart: TEAM_CONFIG.season.slice(0,4), seasonEnd: TEAM_CONFIG.season.slice(6) })}</div>
       </div>
     );
   }
 
   const ROUND_LABELS = {
-    1: 'First Round', 2: 'Second Round',
-    3: 'Conference Finals', 4: 'Stanley Cup Final',
+    1: t('scheduleView.playoffs.round1'), 2: t('scheduleView.playoffs.round2'),
+    3: t('scheduleView.playoffs.round3'), 4: t('scheduleView.playoffs.round4'),
   };
 
   // Build series map keyed by round
@@ -329,16 +332,16 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
                 <span className="round-collapse-icon text-[10px] text-[color:var(--text-dim)] w-2.5 shrink-0">{isCollapsed ? '▶' : '▼'}</span>
                 <div className="round-header-info flex items-center gap-2">
                   <span className="round-section-label font-[family-name:var(--font-display)] text-[14px] font-bold uppercase tracking-[0.06em] text-[color:var(--text)]">
-                    {ROUND_LABELS[round] || `Round ${round}`}
+                    {ROUND_LABELS[round] || t('scheduleView.playoffs.roundFallback', { round })}
                   </span>
                   {series && (
                     <span className="round-series-opp text-[11px] font-semibold" style={{ color: TEAM_COLORS[series.opponent?.abbrev] || 'var(--text-dim)' }}>
-                      vs {series.opponent?.abbrev}
+                      {t('scheduleView.playoffs.vsPrefix')}{series.opponent?.abbrev}
                     </span>
                   )}
                 </div>
                 {isCurrent && pending.length > 0 && (
-                  <span className="round-live-pill text-[10px] font-semibold py-[2px] px-[7px] rounded-[10px] bg-[rgba(61,186,126,0.15)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.3)]">In progress</span>
+                  <span className="round-live-pill text-[10px] font-semibold py-[2px] px-[7px] rounded-[10px] bg-[rgba(61,186,126,0.15)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.3)]">{t('scheduleView.playoffs.inProgress')}</span>
                 )}
               </div>
               <div className="round-section-right flex items-center gap-1.5">
@@ -415,6 +418,7 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
 
 
 function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup, sortOrder, setSortOrder, oddsData }) {
+  const { t } = useTranslation();
   if (loading) return <LoadingCards count={4} />;
 
   if (!games.length) {
@@ -422,11 +426,11 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
     return (
       <div className={`card ${EMPTY_STATE_CLASSES}`}>
         <div className={EMPTY_ICON_CLASSES}>📅</div>
-        <div className={EMPTY_TITLE_CLASSES}>Regular season complete</div>
+        <div className={EMPTY_TITLE_CLASSES}>{t('scheduleView.regularSeason.completeTitle')}</div>
         <div className={EMPTY_SUB_CLASSES}>
           {isOffseason
-            ? 'Final record shown above. See you next season.'
-            : 'Final record shown above. Playoffs are underway.'}
+            ? t('scheduleView.regularSeason.completeSubOffseason')
+            : t('scheduleView.regularSeason.completeSubPlayoffsUnderway')}
         </div>
       </div>
     );
@@ -462,7 +466,7 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
         setSortOrder={setSortOrder}
         completedCount={completed.length}
         upcomingCount={upcoming.length}
-        label="games"
+        label={t('scheduleView.sortBar.label')}
       />
 
       {allGames.map(game => {
@@ -487,7 +491,7 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
                     {won ? 'W' : lost ? 'L' : 'OT'}
                   </span>
                 )}
-                <span className="result-tap-hint text-[10px] text-[color:var(--text-dim)] ml-auto">Tap for stats →</span>
+                <span className="result-tap-hint text-[10px] text-[color:var(--text-dim)] ml-auto">{t('scheduleView.resultCard.tapForStats')}</span>
               </div>
               <div className="result-score flex items-center gap-2 font-[family-name:var(--font-display)]">
                 <TeamLogo abbr={TEAM_CONFIG.abbr} size={20} />
@@ -497,7 +501,7 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
                 <span className="result-num muted text-[22px] font-bold text-[color:var(--text-muted)]">{oppScore ?? '—'}</span>
                 <span className="result-abbr muted text-[16px] font-bold text-[color:var(--text-muted)]">{opp?.abbrev}</span>
                 <TeamLogo abbr={opp?.abbrev} size={20} color={TEAM_COLORS[opp?.abbrev]} />
-                <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHomeGame(game) ? 'Home' : 'Away'}</span>
+                <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHomeGame(game) ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away')}</span>
               </div>
             </div>
           );
