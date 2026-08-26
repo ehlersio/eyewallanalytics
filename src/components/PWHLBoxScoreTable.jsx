@@ -13,6 +13,7 @@
 //     field on pwhl_goalie_game_box (see SESSION_50_B1_IMPLEMENTATION.md).
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 // Styling used to come from PWHLGameStatsPopup.css -- migrated to Tailwind
 // here (Phase 6). This file never imported that CSS itself despite being
@@ -46,6 +47,7 @@ function fmtSvPct(shotsAgainst, saves) {
 }
 
 export default function PWHLBoxScoreTable({ skaters, goalies, playerNames }) {
+  const { t } = useTranslation();
   const nameFor = (playerId, jersey) => playerNames?.[playerId] || `#${jersey ?? '—'}`;
 
   const sortedSkaters = [...skaters].sort((a, b) =>
@@ -56,16 +58,16 @@ export default function PWHLBoxScoreTable({ skaters, goalies, playerNames }) {
     <>
       <div className="pbs-table flex flex-col">
         <div className={`pbs-header grid gap-1 items-center text-center text-[11px] text-[color:var(--text-dim)] text-[10px] mb-1 ${PBS_GRID_COLS}`}>
-          <span className={PBS_COL_NAME_CLASSES}>Player</span>
-          <span title="Goals">G</span>
-          <span title="Assists">A</span>
-          <span title="Points">PTS</span>
-          <span title="Plus/Minus">+/−</span>
-          <span title="Shots on Goal">SOG</span>
-          <span title="Hits">HIT</span>
-          <span title="Blocked Shots">BLK</span>
-          <span title="Faceoff Win %">FO%</span>
-          <span title="Time on Ice">TOI</span>
+          <span className={PBS_COL_NAME_CLASSES}>{t('gameStatsPopup.table.player')}</span>
+          <span title={t('gameStatsPopup.table.tipGoals')}>G</span>
+          <span title={t('gameStatsPopup.table.tipAssists')}>A</span>
+          <span title={t('gameStatsPopup.table.tipPoints')}>PTS</span>
+          <span title={t('gameStatsPopup.table.tipPlusMinus')}>+/−</span>
+          <span title={t('gameStatsPopup.teamStats.shotsOnGoal')}>SOG</span>
+          <span title={t('gameStatsPopup.teamStats.hits')}>HIT</span>
+          <span title={t('gameStatsPopup.teamStats.blockedShots')}>BLK</span>
+          <span title={t('gameStatsPopup.teamStats.faceoffWinPct')}>FO%</span>
+          <span title={t('gameStatsPopup.table.tipTimeOnIce')}>TOI</span>
         </div>
         {sortedSkaters.map(p => {
           const pm      = p.plus_minus;
@@ -90,7 +92,7 @@ export default function PWHLBoxScoreTable({ skaters, goalies, playerNames }) {
             </div>
           );
         })}
-        {!sortedSkaters.length && <div className="pbs-empty text-[12px] text-[color:var(--text-dim)] text-center py-3 italic">No skater stats available for this game.</div>}
+        {!sortedSkaters.length && <div className="pbs-empty text-[12px] text-[color:var(--text-dim)] text-center py-3 italic">{t('pwhlGameStats.table.emptyState')}</div>}
       </div>
 
       {goalies.map(g => (

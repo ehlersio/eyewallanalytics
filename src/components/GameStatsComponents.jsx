@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { computeGSAx } from '../utils/advancedStats';
 import InfoTip from '../components/InfoTip';
 
@@ -19,6 +20,7 @@ import InfoTip from '../components/InfoTip';
 const PERIOD_ROW_BASE = 'period-row grid gap-1 text-[13px] text-center [grid-template-columns:40px_repeat(auto-fill,minmax(28px,1fr))] [&>span:first-child]:text-left';
 
 function PeriodTable({ scoring, _home, carAbbr, oppAbbr }) {
+  const { t } = useTranslation();
   // scoring is array of periods, each with goals array
   const periods = scoring.map((p, i) => {
     const num = p.period || i + 1;
@@ -39,7 +41,7 @@ function PeriodTable({ scoring, _home, carAbbr, oppAbbr }) {
       <div className={`${PERIOD_ROW_BASE} header text-[10px] text-[color:var(--text-dim)]`}>
         <span />
         {periods.map(p => <span key={p.label}>{p.label}</span>)}
-        <span>T</span>
+        <span>{t('shotMapView.boxscore.total')}</span>
       </div>
       <div className={`${PERIOD_ROW_BASE} car-row text-[color:var(--text)]`}>
         <span style={{ color: 'var(--team-primary)', fontWeight: 600 }}>{carAbbr}</span>
@@ -61,6 +63,7 @@ const SKATER_GRID_COLS = '[grid-template-columns:1fr_28px_28px_34px_34px_34px_34
 const SKATER_COL_NAME_CLASSES = 'col-name text-left flex items-center gap-1 min-w-0';
 
 function SkaterTable({ players, goalies }) {
+  const { t } = useTranslation();
   function fmtSvPct(v) {
     if (v == null) return '—';
     return v <= 1 ? v.toFixed(3) : (v / 100).toFixed(3);
@@ -70,15 +73,15 @@ function SkaterTable({ players, goalies }) {
     <>
       <div className="gp-skater-table w-full">
         <div className={`gp-skater-header grid gap-0.5 items-center text-[11px] text-center text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.06em] pb-[5px] border-b-[0.5px] border-b-[color:var(--border)] mb-0.5 ${SKATER_GRID_COLS}`}>
-          <span className={SKATER_COL_NAME_CLASSES}>Player</span>
-          <span title="Goals">G</span>
-          <span title="Assists">A</span>
-          <span title="Points">PTS</span>
-          <span title="Plus/Minus">+/−</span>
-          <span title="Shots on Goal">SOG</span>
-          <span title="Hits">HIT</span>
-          <span title="Blocked Shots">BLK</span>
-          <span title="Time on Ice">TOI</span>
+          <span className={SKATER_COL_NAME_CLASSES}>{t('gameStatsPopup.table.player')}</span>
+          <span title={t('gameStatsPopup.table.tipGoals')}>G</span>
+          <span title={t('gameStatsPopup.table.tipAssists')}>A</span>
+          <span title={t('gameStatsPopup.table.tipPoints')}>PTS</span>
+          <span title={t('gameStatsPopup.table.tipPlusMinus')}>+/−</span>
+          <span title={t('gameStatsPopup.teamStats.shotsOnGoal')}>SOG</span>
+          <span title={t('gameStatsPopup.teamStats.hits')}>HIT</span>
+          <span title={t('gameStatsPopup.teamStats.blockedShots')}>BLK</span>
+          <span title={t('gameStatsPopup.table.tipTimeOnIce')}>TOI</span>
         </div>
         {players.map((p, i) => {
           const pm = p.plusMinus;
@@ -151,6 +154,7 @@ function strengthChip(strength) {
 }
 
 function GoalsList({ scoring, carAbbr, oppAbbr, oppColor }) {
+  const { t } = useTranslation();
   // Flatten all goals, annotating each with period label and team side
   const allGoals = scoring.flatMap((p, pi) => {
     const num = p.period || pi + 1;
@@ -158,7 +162,7 @@ function GoalsList({ scoring, carAbbr, oppAbbr, oppColor }) {
     return (p.goals || []).map(g => ({ ...g, periodLabel, periodNum: num }));
   });
 
-  if (!allGoals.length) return <div className="gp-no-data text-[12px] text-[color:var(--text-dim)] text-center py-4 italic">No scoring data available.</div>;
+  if (!allGoals.length) return <div className="gp-no-data text-[12px] text-[color:var(--text-dim)] text-center py-4 italic">{t('gameStatsPopup.goals.emptyState')}</div>;
 
   // Group goals by period for the side-by-side layout
   const byPeriod = {};
@@ -222,6 +226,7 @@ function GoalsList({ scoring, carAbbr, oppAbbr, oppColor }) {
 }
 
 function GoalEntry({ goal: g, isCar, side }) {
+  const { t } = useTranslation();
   const scorer = g.name?.default ||
     [g.firstName?.default, g.lastName?.default].filter(Boolean).join(' ') ||
     'Unknown';
@@ -262,7 +267,7 @@ function GoalEntry({ goal: g, isCar, side }) {
         </div>
       ) : (
         <div className="goal-entry-assists unassisted text-[10px] leading-[1.3] italic text-[color:var(--text-dim)]" style={{ textAlign: align }}>
-          Unassisted
+          {t('gameStatsPopup.goals.unassisted')}
         </div>
       )}
     </div>

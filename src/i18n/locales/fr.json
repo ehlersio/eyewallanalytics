@@ -1065,5 +1065,82 @@
       "powerPlayLabel": "Avantage numérique",
       "penaltyKillLabel": "Désavantage numérique"
     }
+  },
+  "gameStatsPopup": {
+    "header": {
+      "resultWin": "V",
+      "resultLoss": "D",
+      "closeAriaLabel": "Fermer les détails du match",
+      "scrollTopButton": "↑ Haut"
+    },
+    "summary": {
+      "label": "Résumé du match",
+      "badge": "⚡ EyeWall AI",
+      "cfPctChip": "CF% {{pct}}%",
+      "resultChipWin": "✓ V",
+      "resultChipLoss": "✗ D",
+      "shareText": "{{abbr}} {{car}}–{{opp}} {{oppAbbr}} | {{narrative}} — EyeWall Analytics eyewallanalytics.com",
+      "shareTitle": "Résumé de match EyeWall Analytics",
+      "shareCopiedAlert": "Résumé copié dans le presse-papiers !",
+      "shareButton": "↗ Partager le résumé"
+    },
+    "sections": {
+      "scoringByPeriod": "Pointage par période",
+      "threeStars": "Trois étoiles",
+      "goals": "Buts",
+      "teamStats": "Statistiques d'équipe",
+      "shotAttemptsPuckLuck": "Tentatives de tir et chance à la rondelle",
+      "shotAttemptsTip": "Corsi = toutes les tentatives de tir (buts+tirs+ratés+bloqués). Fenwick exclut les tirs bloqués. PDO = %T+%A×100, moy.=100. Chance à la rondelle = buts réels par rapport à l'attendu selon la part des tirs."
+    },
+    "teamStats": {
+      "shotsOnGoal": "Tirs au but",
+      "hits": "Mises en échec",
+      "blockedShots": "Tirs bloqués",
+      "faceoffWinPct": "% de mises en jeu gagnées",
+      "powerPlayPct": "% avantage numérique",
+      "powerPlay": "Avantage numérique",
+      "penaltyMinutes": "Minutes de pénalité",
+      "giveaways": "Revirements",
+      "takeaways": "Récupérations",
+      "oppLabel": "ADV"
+    },
+    "advStats": {
+      "corsi": "Corsi (CF)",
+      "fenwick": "Fenwick (FF)",
+      "missedShots": "Tirs ratés",
+      "cfPctChip": "CF% {{pct}}%",
+      "cfPctTip": "Corsi pour % — part de {{abbr}} de toutes les tentatives de tir",
+      "ffPctChip": "FF% {{pct}}%",
+      "ffPctTip": "Fenwick pour % — part de {{abbr}} des tentatives non bloquées",
+      "pdoChip": "PDO {{pdo}}",
+      "pdoTip": "PDO = %T+%A×100. Moy. de la ligue=100. {{luck}}",
+      "luckChip": "Chance {{sign}}{{delta}} B",
+      "luckTip": "Chance à la rondelle : {{label}}. {{expectedGF}} B attendus selon une part de tirs de {{pct}}%."
+    },
+    "skaters": {
+      "toggleButton": "Patineurs — {{abbr}}"
+    },
+    "emptyState": "Statistiques détaillées non disponibles pour ce match pour l'instant.",
+    "table": {
+      "player": "Joueur",
+      "tipGoals": "Buts",
+      "tipAssists": "Aides",
+      "tipPoints": "Points",
+      "tipPlusMinus": "Différentiel",
+      "tipTimeOnIce": "Temps de glace"
+    },
+    "goals": {
+      "emptyState": "Aucune donnée de pointage disponible.",
+      "unassisted": "Sans aide"
+    }
+  },
+  "pwhlGameStats": {
+    "emptyState": "Sommaire du match pas encore disponible.",
+    "cta": {
+      "viewShotMap": "Voir la carte des tirs et les stats →"
+    },
+    "table": {
+      "emptyState": "Aucune statistique de patineuses disponible pour ce match."
+    }
   }
 }

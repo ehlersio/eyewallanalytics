@@ -1065,5 +1065,82 @@
       "powerPlayLabel": "Power Play",
       "penaltyKillLabel": "Penalty Kill"
     }
+  },
+  "gameStatsPopup": {
+    "header": {
+      "resultWin": "W",
+      "resultLoss": "L",
+      "closeAriaLabel": "Close game details",
+      "scrollTopButton": "↑ Top"
+    },
+    "summary": {
+      "label": "Game Summary",
+      "badge": "⚡ EyeWall AI",
+      "cfPctChip": "CF% {{pct}}%",
+      "resultChipWin": "✓ W",
+      "resultChipLoss": "✗ L",
+      "shareText": "{{abbr}} {{car}}–{{opp}} {{oppAbbr}} | {{narrative}} — EyeWall Analytics eyewallanalytics.com",
+      "shareTitle": "EyeWall Analytics Game Summary",
+      "shareCopiedAlert": "Summary copied to clipboard!",
+      "shareButton": "↗ Share summary"
+    },
+    "sections": {
+      "scoringByPeriod": "Scoring by period",
+      "threeStars": "Three stars",
+      "goals": "Goals",
+      "teamStats": "Team stats",
+      "shotAttemptsPuckLuck": "Shot Attempts & Puck Luck",
+      "shotAttemptsTip": "Corsi = all shot attempts (goals+shots+misses+blocks). Fenwick excludes blocks. PDO = SH%+SV%×100, avg=100. Puck Luck = actual goals vs expected from shot share."
+    },
+    "teamStats": {
+      "shotsOnGoal": "Shots on Goal",
+      "hits": "Hits",
+      "blockedShots": "Blocked Shots",
+      "faceoffWinPct": "Faceoff Win %",
+      "powerPlayPct": "Power Play %",
+      "powerPlay": "Power Play",
+      "penaltyMinutes": "Penalty Minutes",
+      "giveaways": "Giveaways",
+      "takeaways": "Takeaways",
+      "oppLabel": "OPP"
+    },
+    "advStats": {
+      "corsi": "Corsi (CF)",
+      "fenwick": "Fenwick (FF)",
+      "missedShots": "Missed Shots",
+      "cfPctChip": "CF% {{pct}}%",
+      "cfPctTip": "Corsi For% — {{abbr}} share of all shot attempts",
+      "ffPctChip": "FF% {{pct}}%",
+      "ffPctTip": "Fenwick For% — {{abbr}} share of unblocked attempts",
+      "pdoChip": "PDO {{pdo}}",
+      "pdoTip": "PDO = SH%+SV%×100. League avg=100. {{luck}}",
+      "luckChip": "Luck {{sign}}{{delta}}G",
+      "luckTip": "Puck Luck: {{label}}. Expected {{expectedGF}}G from {{pct}}% shot share."
+    },
+    "skaters": {
+      "toggleButton": "{{abbr}} Skaters"
+    },
+    "emptyState": "Detailed stats not available for this game yet.",
+    "table": {
+      "player": "Player",
+      "tipGoals": "Goals",
+      "tipAssists": "Assists",
+      "tipPoints": "Points",
+      "tipPlusMinus": "Plus/Minus",
+      "tipTimeOnIce": "Time on Ice"
+    },
+    "goals": {
+      "emptyState": "No scoring data available.",
+      "unassisted": "Unassisted"
+    }
+  },
+  "pwhlGameStats": {
+    "emptyState": "Box score not available for this game yet.",
+    "cta": {
+      "viewShotMap": "View Shot Map & Stats →"
+    },
+    "table": {
+      "emptyState": "No skater stats available for this game."
+    }
   }
 }
