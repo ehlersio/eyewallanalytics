@@ -594,6 +594,41 @@
       "mediumDanger": "🟡 Medium Danger Shots (15–30 ft)",
       "lowDanger": "⚪ Low Danger Shots (>30 ft)"
     },
+    "ppkShared": {
+      "duration": "Duration",
+      "durationHelp": "Duration — time in seconds between the first and last tracked play of this opportunity. Scores early = shorter duration. May be shorter than the full 2-minute penalty if there were no events near the start or end.",
+      "assists": "Assists: {{names}}"
+    },
+    "ppAnalysis": {
+      "emptyState": "No {{abbr}} power plays this game.",
+      "ppGoals": "PP Goals",
+      "ppPctLabel": "PP%",
+      "xgHelp": "Expected goals on PP shots — estimated from shot distance and angle. Higher = better quality looks.",
+      "unitNote": "Units inferred from play-by-play — players who didn't touch the puck may not appear. Some PPs may be untagged if there wasn't enough data to identify the unit.",
+      "oppNum": "PP {{n}}",
+      "quickEntry": "⚡ Quick entry",
+      "outcomeGoal": "GOAL",
+      "outcomeShots": "Shots",
+      "outcomeNoShots": "No shots",
+      "outcomeNoScore": "No score",
+      "sogBadge": "{{n}} SOG",
+      "shotLocations": "Shot locations"
+    },
+    "pkAnalysis": {
+      "emptyState": "No {{abbr}} penalty kills this game.",
+      "pkKills": "PK Kills",
+      "pkPctLabel": "PK%",
+      "sogVs": "SOG vs",
+      "blocks": "Blocks",
+      "xgaHelp": "Expected goals against on PK shots — estimated from shot distance and angle. Lower is better.",
+      "unitNote": "Units inferred from play-by-play — players who didn't touch the puck may not appear.",
+      "oppNum": "PK {{n}}",
+      "outcomeGoal": "Goal",
+      "outcomeHeld": "Held",
+      "outcomeKilled": "Killed",
+      "sogVsBadge": "{{n}} SOG vs",
+      "oppShotLocations": "OPP shot locations"
+    },
     "drillPopup": {
       "close": "Close",
       "noData": "No {{team}} data for this game.",
@@ -672,6 +707,12 @@
       "highDanger": "🔴 High Danger (<15 ft)",
       "mediumDanger": "🟡 Medium Danger (15–30 ft)",
       "lowDanger": "⚪ Low Danger (>30 ft)"
+    },
+    "ppAnalysis": {
+      "xgHelp": "Expected goals on PP shots — estimated from shot distance and angle."
+    },
+    "pkAnalysis": {
+      "xgaHelp": "Expected goals against on PK — from shot locations. Lower is better."
     }
   }
 }

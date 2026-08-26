@@ -594,6 +594,41 @@
       "mediumDanger": "🟡 Tirs à danger moyen (15–30 pi)",
       "lowDanger": "⚪ Tirs à danger faible (>30 pi)"
     },
+    "ppkShared": {
+      "duration": "Durée",
+      "durationHelp": "Durée — temps en secondes entre la première et la dernière action suivie de cette occasion. Un but rapide = durée plus courte. Peut être plus courte que les 2 minutes complètes s'il n'y a pas eu d'action près du début ou de la fin.",
+      "assists": "Aides : {{names}}"
+    },
+    "ppAnalysis": {
+      "emptyState": "Aucun avantage numérique pour {{abbr}} dans ce match.",
+      "ppGoals": "Buts AN",
+      "ppPctLabel": "AN%",
+      "xgHelp": "Buts attendus sur les tirs en avantage numérique — estimés selon la distance et l'angle du tir. Plus élevé = occasions de meilleure qualité.",
+      "unitNote": "Unités déduites du jeu par jeu — les joueuses qui n'ont pas touché la rondelle peuvent ne pas apparaître. Certains avantages numériques peuvent ne pas être associés à une unité si les données étaient insuffisantes.",
+      "oppNum": "AN {{n}}",
+      "quickEntry": "⚡ Entrée rapide",
+      "outcomeGoal": "BUT",
+      "outcomeShots": "Tirs",
+      "outcomeNoShots": "Aucun tir",
+      "outcomeNoScore": "Aucun but",
+      "sogBadge": "{{n}} tirs",
+      "shotLocations": "Emplacement des tirs"
+    },
+    "pkAnalysis": {
+      "emptyState": "Aucun désavantage numérique pour {{abbr}} dans ce match.",
+      "pkKills": "DN réussis",
+      "pkPctLabel": "DN%",
+      "sogVs": "Tirs contre",
+      "blocks": "Bloqués",
+      "xgaHelp": "Buts attendus contre sur les tirs en désavantage numérique — estimés selon la distance et l'angle du tir. Plus bas = meilleur.",
+      "unitNote": "Unités déduites du jeu par jeu — les joueuses qui n'ont pas touché la rondelle peuvent ne pas apparaître.",
+      "oppNum": "DN {{n}}",
+      "outcomeGoal": "But",
+      "outcomeHeld": "Contenu",
+      "outcomeKilled": "Tué",
+      "sogVsBadge": "{{n}} tirs contre",
+      "oppShotLocations": "Emplacement des tirs adverses"
+    },
     "drillPopup": {
       "close": "Fermer",
       "noData": "Aucune donnée pour {{team}} dans ce match.",
@@ -672,6 +707,12 @@
       "highDanger": "🔴 Danger élevé (<15 pi)",
       "mediumDanger": "🟡 Danger moyen (15–30 pi)",
       "lowDanger": "⚪ Danger faible (>30 pi)"
+    },
+    "ppAnalysis": {
+      "xgHelp": "Buts attendus sur les tirs en avantage numérique — estimés selon la distance et l'angle du tir."
+    },
+    "pkAnalysis": {
+      "xgaHelp": "Buts attendus contre en désavantage numérique — selon l'emplacement des tirs. Plus bas = meilleur."
     }
   }
 }
