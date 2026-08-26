@@ -1416,5 +1416,44 @@
       "line1Pwhl": "Sommaire — {{period}} | {{abbr}} {{car}}–{{opp}} {{oppAbbr}}",
       "line2Pwhl": "CF% {{cf}} · Tirs {{carSog}}–{{oppSog}} · Buts {{carGoals}}–{{oppGoals}}"
     }
+  },
+  "playerPopup": {
+    "radar": {
+      "notEnoughData": "Pas assez de temps de jeu : {{missing}}"
+    },
+    "heatMap": {
+      "goalie": {
+        "empty": "Aucune donnée de tir pour l'instant.",
+        "emptySub": "Les données s'accumulent au fil des matchs.",
+        "saves": "Arrêts",
+        "shotsFaced": "Tirs affrontés",
+        "zones": {
+          "highSlot": "Haut de la zone slot",
+          "lowSlot": "Bas de la zone slot",
+          "leftCircle": "Cercle gauche",
+          "rightCircle": "Cercle droit",
+          "leftWing": "Aile gauche",
+          "rightWing": "Aile droite",
+          "perimeter": "Périmètre"
+        },
+        "dotMapToggle": "Carte des points",
+        "zoneToggle": "% Arr. par zone",
+        "minShots": "min. 5 tirs",
+        "filterAll": "Tous ({{count}})",
+        "filterGoals": "Buts ({{count}})",
+        "filterSaves": "Arrêts ({{count}})",
+        "shooterCaption": "Point de vue du tireur · vert = arrêt · rouge = but"
+      },
+      "skater": {
+        "empty": "Aucune donnée de tir cette saison.",
+        "emptySub": "Les données s'accumulent au fil des matchs.",
+        "missed": "Ratés",
+        "games": "Matchs",
+        "filterAll": "Tous ({{count}})",
+        "filterGoals": "Buts ({{count}})",
+        "filterSog": "TAB ({{count}})",
+        "filterMissed": "Ratés ({{count}})"
+      }
+    }
   }
 }
