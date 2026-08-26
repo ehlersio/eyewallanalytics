@@ -777,13 +777,14 @@ function TeamStatsCard({ pbpStats, shotStats, abbr, oppAbbr, color, oppColor, fa
 
 // ── PP Analysis Panel ────────────────────────────────────────
 function PPAnalysisPanel({ drillStat, abbr, color }) {
+  const { t } = useTranslation();
   const [openIdx, setOpenIdx] = useState(null);
   const { ppOpps, summary, ppUnit1, ppUnit2 } = drillStat; // eslint-disable-line no-unused-vars
-  if (!ppOpps?.length) return <div className={DRILL_EMPTY_CLASSES}>No {abbr} power plays this game.</div>;
+  if (!ppOpps?.length) return <div className={DRILL_EMPTY_CLASSES}>{t('shotMapView.ppAnalysis.emptyState', { abbr })}</div>;
   const toggle    = idx => setOpenIdx(o => o === idx ? null : idx);
   const pctColor  = (g, o) => g/o >= 0.25 ? 'var(--green)' : g > 0 ? 'var(--text-muted)' : 'var(--red-bright)';
   const oIcon     = opp => opp.scored ? '⚡' : opp.sog >= 3 ? '🎯' : opp.shots === 0 ? '❌' : '🔲';
-  const oLabel    = opp => opp.scored ? 'GOAL' : opp.sog >= 3 ? 'Shots' : opp.shots === 0 ? 'No shots' : 'No score';
+  const oLabel    = opp => opp.scored ? t('shotMapView.ppAnalysis.outcomeGoal') : opp.sog >= 3 ? t('shotMapView.ppAnalysis.outcomeShots') : opp.shots === 0 ? t('shotMapView.ppAnalysis.outcomeNoShots') : t('shotMapView.ppAnalysis.outcomeNoScore');
   const oVariant  = opp => opp.scored ? 'goal' : opp.sog >= 3 ? 'shots' : 'none';
   return (
     <div className={PP_ANALYSIS_CLASSES}>
@@ -792,12 +793,12 @@ function PPAnalysisPanel({ drillStat, abbr, color }) {
           <span className={PP_SUMMARY_VAL_CLASSES} style={{ color: pctColor(summary.goals, summary.opps) }}>
             {summary.goals}/{summary.opps}
           </span>
-          <span className={PP_SUMMARY_LABEL_CLASSES}>PP Goals</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>{t('shotMapView.ppAnalysis.ppGoals')}</span>
         </div>
         <div className={PP_SUMMARY_DIVIDER_CLASSES} />
         <div className={PP_SUMMARY_STAT_CLASSES}>
           <span className={PP_SUMMARY_VAL_CLASSES}>{summary.opps > 0 ? `${Math.round(summary.goals/summary.opps*100)}%` : '—'}</span>
-          <span className={PP_SUMMARY_LABEL_CLASSES}>PP%</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>{t('shotMapView.ppAnalysis.ppPctLabel')}</span>
         </div>
         <div className={PP_SUMMARY_DIVIDER_CLASSES} />
         <div className={PP_SUMMARY_STAT_CLASSES}>
@@ -808,7 +809,7 @@ function PPAnalysisPanel({ drillStat, abbr, color }) {
         <div className={PP_SUMMARY_STAT_CLASSES}>
           <span className={PP_SUMMARY_VAL_CLASSES}>{summary.xg}</span>
           <span className={PP_SUMMARY_LABEL_CLASSES}>
-            xG <InfoTip text="Expected goals on PP shots — estimated from shot distance and angle." position="above" />
+            xG <InfoTip text={t('pwhlShotMapView.ppAnalysis.xgHelp')} position="above" />
           </span>
         </div>
       </div>
@@ -817,13 +818,13 @@ function PPAnalysisPanel({ drillStat, abbr, color }) {
           <div key={i} className={PP_OPP_ITEM_CLASSES}>
             <div className={PP_OPP_HEADER_CLASSES} onClick={() => toggle(i)}>
               <div className={PP_OPP_LEFT_CLASSES}>
-                <span className={PP_OPP_NUM_CLASSES}>PP {i+1}</span>
+                <span className={PP_OPP_NUM_CLASSES}>{t('shotMapView.ppAnalysis.oppNum', { n: i + 1 })}</span>
                 <span className={PP_OPP_TIME_CLASSES}>{opp.period} · {opp.startTime}</span>
-                {opp.quickEntry && <span className={PP_ENTRY_BADGE_CLASSES}>⚡ Quick entry</span>}
+                {opp.quickEntry && <span className={PP_ENTRY_BADGE_CLASSES}>{t('shotMapView.ppAnalysis.quickEntry')}</span>}
               </div>
               <div className={PP_OPP_RIGHT_CLASSES}>
                 <span className={ppOutcomeClasses(oVariant(opp))}>{oIcon(opp)} {oLabel(opp)}</span>
-                <span className={PP_OPP_SOG_CLASSES}>{opp.sog} SOG</span>
+                <span className={PP_OPP_SOG_CLASSES}>{t('shotMapView.ppAnalysis.sogBadge', { n: opp.sog })}</span>
                 <span className={PP_OPP_CHEVRON_CLASSES}>{openIdx === i ? '▲' : '▼'}</span>
               </div>
             </div>
@@ -843,11 +844,11 @@ function PPAnalysisPanel({ drillStat, abbr, color }) {
                   <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.sog}</span><span className={PP_DETAIL_LABEL_CLASSES}>SOG</span></div>
                   <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.shots}</span><span className={PP_DETAIL_LABEL_CLASSES}>SA</span></div>
                   <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.xg}</span><span className={PP_DETAIL_LABEL_CLASSES}>xG</span></div>
-                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.duration}s</span><span className={PP_DETAIL_LABEL_CLASSES}>Duration</span></div>
+                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.duration}s</span><span className={PP_DETAIL_LABEL_CLASSES}>{t('shotMapView.ppkShared.duration')}</span></div>
                 </div>
                 {opp.shotEvents.length > 0 && (
                   <div className={PP_MINI_RINK_CLASSES}>
-                    <div className={PP_MINI_RINK_LABEL_CLASSES}>Shot locations</div>
+                    <div className={PP_MINI_RINK_LABEL_CLASSES}>{t('shotMapView.ppAnalysis.shotLocations')}</div>
                     <HockeyRink events={toHockeyRinkEvents(opp.shotEvents)} readOnly teamAbbr={abbr} teamColor={color} />
                   </div>
                 )}
@@ -862,13 +863,14 @@ function PPAnalysisPanel({ drillStat, abbr, color }) {
 
 // ── PK Analysis Panel ─────────────────────────────────────────
 function PKAnalysisPanel({ drillStat, abbr, color }) {
+  const { t } = useTranslation();
   const [openIdx, setOpenIdx] = useState(null);
   const { pkOpps, summary, pkUnit1, pkUnit2 } = drillStat; // eslint-disable-line no-unused-vars
-  if (!pkOpps?.length) return <div className={DRILL_EMPTY_CLASSES}>No {abbr} penalty kills this game.</div>;
+  if (!pkOpps?.length) return <div className={DRILL_EMPTY_CLASSES}>{t('shotMapView.pkAnalysis.emptyState', { abbr })}</div>;
   const toggle   = idx => setOpenIdx(o => o === idx ? null : idx);
   const pctColor = (ga, o) => ga === 0 ? 'var(--green)' : ga/o <= 0.25 ? 'var(--text-muted)' : 'var(--red-bright)';
   const oIcon    = opp => opp.allowed ? '🚨' : opp.sog >= 4 ? '🛡️' : '✅';
-  const oLabel   = opp => opp.allowed ? 'Goal' : opp.sog >= 4 ? 'Held' : 'Killed';
+  const oLabel   = opp => opp.allowed ? t('shotMapView.pkAnalysis.outcomeGoal') : opp.sog >= 4 ? t('shotMapView.pkAnalysis.outcomeHeld') : t('shotMapView.pkAnalysis.outcomeKilled');
   const oVariant = opp => opp.allowed ? 'none' : opp.sog >= 4 ? 'shots' : 'goal';
   const survived = summary.opps - summary.goalsAgainst;
   return (
@@ -878,23 +880,23 @@ function PKAnalysisPanel({ drillStat, abbr, color }) {
           <span className={PP_SUMMARY_VAL_CLASSES} style={{ color: pctColor(summary.goalsAgainst, summary.opps) }}>
             {survived}/{summary.opps}
           </span>
-          <span className={PP_SUMMARY_LABEL_CLASSES}>PK Kills</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>{t('shotMapView.pkAnalysis.pkKills')}</span>
         </div>
         <div className={PP_SUMMARY_DIVIDER_CLASSES} />
         <div className={PP_SUMMARY_STAT_CLASSES}>
           <span className={PP_SUMMARY_VAL_CLASSES}>{summary.opps > 0 ? `${Math.round(survived/summary.opps*100)}%` : '—'}</span>
-          <span className={PP_SUMMARY_LABEL_CLASSES}>PK%</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>{t('shotMapView.pkAnalysis.pkPctLabel')}</span>
         </div>
         <div className={PP_SUMMARY_DIVIDER_CLASSES} />
         <div className={PP_SUMMARY_STAT_CLASSES}>
           <span className={PP_SUMMARY_VAL_CLASSES}>{summary.sogAgainst}</span>
-          <span className={PP_SUMMARY_LABEL_CLASSES}>SOG vs</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>{t('shotMapView.pkAnalysis.sogVs')}</span>
         </div>
         <div className={PP_SUMMARY_DIVIDER_CLASSES} />
         <div className={PP_SUMMARY_STAT_CLASSES}>
           <span className={PP_SUMMARY_VAL_CLASSES}>{summary.xgAgainst}</span>
           <span className={PP_SUMMARY_LABEL_CLASSES}>
-            xGA <InfoTip text="Expected goals against on PK — from shot locations. Lower is better." position="above" />
+            xGA <InfoTip text={t('pwhlShotMapView.pkAnalysis.xgaHelp')} position="above" />
           </span>
         </div>
       </div>
@@ -903,12 +905,12 @@ function PKAnalysisPanel({ drillStat, abbr, color }) {
           <div key={i} className={PP_OPP_ITEM_CLASSES}>
             <div className={PP_OPP_HEADER_CLASSES} onClick={() => toggle(i)}>
               <div className={PP_OPP_LEFT_CLASSES}>
-                <span className={PP_OPP_NUM_CLASSES}>PK {i+1}</span>
+                <span className={PP_OPP_NUM_CLASSES}>{t('shotMapView.pkAnalysis.oppNum', { n: i + 1 })}</span>
                 <span className={PP_OPP_TIME_CLASSES}>{opp.period} · {opp.startTime}</span>
               </div>
               <div className={PP_OPP_RIGHT_CLASSES}>
                 <span className={ppOutcomeClasses(oVariant(opp))}>{oIcon(opp)} {oLabel(opp)}</span>
-                <span className={PP_OPP_SOG_CLASSES}>{opp.sog} SOG vs</span>
+                <span className={PP_OPP_SOG_CLASSES}>{t('shotMapView.pkAnalysis.sogVsBadge', { n: opp.sog })}</span>
                 <span className={PP_OPP_CHEVRON_CLASSES}>{openIdx === i ? '▲' : '▼'}</span>
               </div>
             </div>
@@ -922,13 +924,13 @@ function PKAnalysisPanel({ drillStat, abbr, color }) {
                   </div>
                 ))}
                 <div className={PP_DETAIL_STATS_CLASSES}>
-                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.sog}</span><span className={PP_DETAIL_LABEL_CLASSES}>SOG vs</span></div>
+                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.sog}</span><span className={PP_DETAIL_LABEL_CLASSES}>{t('shotMapView.pkAnalysis.sogVs')}</span></div>
                   <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.shots}</span><span className={PP_DETAIL_LABEL_CLASSES}>SA</span></div>
                   <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.xgAgainst}</span><span className={PP_DETAIL_LABEL_CLASSES}>xGA</span></div>
                 </div>
                 {opp.shotEvents.length > 0 && (
                   <div className={PP_MINI_RINK_CLASSES}>
-                    <div className={PP_MINI_RINK_LABEL_CLASSES}>OPP shot locations</div>
+                    <div className={PP_MINI_RINK_LABEL_CLASSES}>{t('shotMapView.pkAnalysis.oppShotLocations')}</div>
                     <HockeyRink events={toHockeyRinkEvents(opp.shotEvents)} readOnly flipPerspective teamAbbr={abbr} teamColor={color} />
                   </div>
                 )}

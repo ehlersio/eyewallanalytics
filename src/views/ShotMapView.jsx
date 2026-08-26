@@ -2812,11 +2812,12 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
 
 // ── PP Analysis Panel ─────────────────────────────────────────
 function PPAnalysisPanel({ drillStat }) {
+  const { t } = useTranslation();
   const [openIdx, setOpenIdx] = useState(null);
   const { ppOpps, summary, ppUnit1, ppUnit2 } = drillStat;
 
   if (!ppOpps?.length) {
-    return <div className={DRILL_EMPTY_CLASSES}>No {TEAM_CONFIG.abbr} power plays this game.</div>;
+    return <div className={DRILL_EMPTY_CLASSES}>{t('shotMapView.ppAnalysis.emptyState', { abbr: TEAM_CONFIG.abbr })}</div>;
   }
 
   const toggle = idx => setOpenIdx(o => o === idx ? null : idx);
@@ -2827,7 +2828,7 @@ function PPAnalysisPanel({ drillStat }) {
   };
 
   const outcomeIcon = opp => opp.scored ? '⚡' : opp.sog >= 3 ? '🎯' : opp.shots === 0 ? '❌' : '🔲';
-  const outcomeLabel = opp => opp.scored ? 'GOAL' : opp.sog >= 3 ? 'Shots' : opp.shots === 0 ? 'No shots' : 'No score';
+  const outcomeLabel = opp => opp.scored ? t('shotMapView.ppAnalysis.outcomeGoal') : opp.sog >= 3 ? t('shotMapView.ppAnalysis.outcomeShots') : opp.shots === 0 ? t('shotMapView.ppAnalysis.outcomeNoShots') : t('shotMapView.ppAnalysis.outcomeNoScore');
   const outcomeVariant = opp => opp.scored ? 'goal' : opp.sog >= 3 ? 'shots' : 'none';
 
   return (
@@ -2839,12 +2840,12 @@ function PPAnalysisPanel({ drillStat }) {
           <span className={PP_SUMMARY_VAL_CLASSES} style={{ color: pctColor(summary.goals, summary.opps) }}>
             {summary.goals}/{summary.opps}
           </span>
-          <span className={PP_SUMMARY_LABEL_CLASSES}>PP Goals</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>{t('shotMapView.ppAnalysis.ppGoals')}</span>
         </div>
         <div className={PP_SUMMARY_DIVIDER_CLASSES} />
         <div className={PP_SUMMARY_STAT_CLASSES}>
           <span className={PP_SUMMARY_VAL_CLASSES}>{summary.opps > 0 ? `${Math.round(summary.goals / summary.opps * 100)}%` : '—'}</span>
-          <span className={PP_SUMMARY_LABEL_CLASSES}>PP%</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>{t('shotMapView.ppAnalysis.ppPctLabel')}</span>
         </div>
         <div className={PP_SUMMARY_DIVIDER_CLASSES} />
         <div className={PP_SUMMARY_STAT_CLASSES}>
@@ -2855,7 +2856,7 @@ function PPAnalysisPanel({ drillStat }) {
         <div className={PP_SUMMARY_STAT_CLASSES}>
           <span className={PP_SUMMARY_VAL_CLASSES}>{summary.xg}</span>
           <span className={PP_SUMMARY_LABEL_CLASSES}>
-            xG <InfoTip text="Expected goals on PP shots — estimated from shot distance and angle. Higher = better quality looks." position="above" />
+            xG <InfoTip text={t('shotMapView.ppAnalysis.xgHelp')} position="above" />
           </span>
         </div>
       </div>
@@ -2883,7 +2884,7 @@ function PPAnalysisPanel({ drillStat }) {
       )}
       {(ppUnit1?.length > 0 || ppUnit2?.length > 0) && (
         <div className={PP_UNIT_NOTE_CLASSES}>
-          Units inferred from play-by-play — players who didn't touch the puck may not appear. Some PPs may be untagged if there wasn't enough data to identify the unit.
+          {t('shotMapView.ppAnalysis.unitNote')}
         </div>
       )}
 
@@ -2894,16 +2895,16 @@ function PPAnalysisPanel({ drillStat }) {
             {/* Collapsed header — always visible */}
             <div className={PP_OPP_HEADER_CLASSES} onClick={() => toggle(i)}>
               <div className={PP_OPP_LEFT_CLASSES}>
-                <span className={PP_OPP_NUM_CLASSES}>PP {i + 1}</span>
+                <span className={PP_OPP_NUM_CLASSES}>{t('shotMapView.ppAnalysis.oppNum', { n: i + 1 })}</span>
                 {opp.unit && (
                   <span className={ppUnitBadgeClasses(opp.unit)}>PP{opp.unit}</span>
                 )}
                 <span className={PP_OPP_TIME_CLASSES}>{opp.period} · {opp.startTime}</span>
-                {opp.quickEntry && <span className={PP_ENTRY_BADGE_CLASSES}>⚡ Quick entry</span>}
+                {opp.quickEntry && <span className={PP_ENTRY_BADGE_CLASSES}>{t('shotMapView.ppAnalysis.quickEntry')}</span>}
               </div>
               <div className={PP_OPP_RIGHT_CLASSES}>
                 <span className={ppOutcomeClasses(outcomeVariant(opp))}>{outcomeIcon(opp)} {outcomeLabel(opp)}</span>
-                <span className={PP_OPP_SOG_CLASSES}>{opp.sog} SOG</span>
+                <span className={PP_OPP_SOG_CLASSES}>{t('shotMapView.ppAnalysis.sogBadge', { n: opp.sog })}</span>
                 <span className={PP_OPP_CHEVRON_CLASSES}>{openIdx === i ? '▲' : '▼'}</span>
               </div>
             </div>
@@ -2920,7 +2921,7 @@ function PPAnalysisPanel({ drillStat }) {
                       <span className={PP_GOAL_SCORER_CLASSES}>{g.scorer}</span>
                       {g.shotType && <span className={PP_GOAL_SHOTTYPE_CLASSES}>{g.shotType}</span>}
                       {g.assists.length > 0 && (
-                        <div className={PP_GOAL_ASSISTS_CLASSES}>Assists: {g.assists.join(', ')}</div>
+                        <div className={PP_GOAL_ASSISTS_CLASSES}>{t('shotMapView.ppkShared.assists', { names: g.assists.join(', ') })}</div>
                       )}
                     </div>
                     <span className={PP_GOAL_TIME_CLASSES}>{g.time}</span>
@@ -2943,7 +2944,7 @@ function PPAnalysisPanel({ drillStat }) {
                   </div>
                   <div className={PP_DETAIL_STAT_CLASSES}>
                     <span className={PP_DETAIL_VAL_CLASSES}>{opp.duration}s</span>
-                    <span className={PP_DETAIL_LABEL_CLASSES} style={{display:'flex',alignItems:'center',gap:2}}>Duration <InfoTip text="Duration — time in seconds between the first and last tracked play of this opportunity. Scores early = shorter duration. May be shorter than the full 2-minute penalty if there were no events near the start or end." position="above" /></span>
+                    <span className={PP_DETAIL_LABEL_CLASSES} style={{display:'flex',alignItems:'center',gap:2}}>{t('shotMapView.ppkShared.duration')} <InfoTip text={t('shotMapView.ppkShared.durationHelp')} position="above" /></span>
                   </div>
                 </div>
 
@@ -2961,7 +2962,7 @@ function PPAnalysisPanel({ drillStat }) {
                 {/* Mini shot map */}
                 {opp.shotEvents.length > 0 && (
                   <div className={PP_MINI_RINK_CLASSES}>
-                    <div className={PP_MINI_RINK_LABEL_CLASSES}>Shot locations</div>
+                    <div className={PP_MINI_RINK_LABEL_CLASSES}>{t('shotMapView.ppAnalysis.shotLocations')}</div>
                     <HockeyRink
                       events={toHockeyRinkEvents(opp.shotEvents)}
                       teamAbbr={TEAM_CONFIG.abbr}
@@ -2983,11 +2984,12 @@ function PPAnalysisPanel({ drillStat }) {
 
 // ── PK Analysis Panel ─────────────────────────────────────────
 function PKAnalysisPanel({ drillStat }) {
+  const { t } = useTranslation();
   const [openIdx, setOpenIdx] = useState(null);
   const { pkOpps, summary, pkUnit1, pkUnit2 } = drillStat;
 
   if (!pkOpps?.length) {
-    return <div className={DRILL_EMPTY_CLASSES}>No {TEAM_CONFIG.abbr} penalty kills this game.</div>;
+    return <div className={DRILL_EMPTY_CLASSES}>{t('shotMapView.pkAnalysis.emptyState', { abbr: TEAM_CONFIG.abbr })}</div>;
   }
 
   const toggle = idx => setOpenIdx(o => o === idx ? null : idx);
@@ -2998,7 +3000,7 @@ function PKAnalysisPanel({ drillStat }) {
   };
 
   const outcomeIcon  = opp => opp.allowed ? '🚨' : opp.sog >= 4 ? '🛡️' : '✅';
-  const outcomeLabel = opp => opp.allowed ? 'Goal' : opp.sog >= 4 ? 'Held' : 'Killed';
+  const outcomeLabel = opp => opp.allowed ? t('shotMapView.pkAnalysis.outcomeGoal') : opp.sog >= 4 ? t('shotMapView.pkAnalysis.outcomeHeld') : t('shotMapView.pkAnalysis.outcomeKilled');
   const outcomeVariant = opp => opp.allowed ? 'none' : opp.sog >= 4 ? 'shots' : 'goal';
 
   const survived = summary.opps - summary.goalsAgainst;
@@ -3012,28 +3014,28 @@ function PKAnalysisPanel({ drillStat }) {
           <span className={PP_SUMMARY_VAL_CLASSES} style={{ color: pctColor(summary.goalsAgainst, summary.opps) }}>
             {survived}/{summary.opps}
           </span>
-          <span className={PP_SUMMARY_LABEL_CLASSES}>PK Kills</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>{t('shotMapView.pkAnalysis.pkKills')}</span>
         </div>
         <div className={PP_SUMMARY_DIVIDER_CLASSES} />
         <div className={PP_SUMMARY_STAT_CLASSES}>
           <span className={PP_SUMMARY_VAL_CLASSES}>{summary.opps > 0 ? `${Math.round(survived / summary.opps * 100)}%` : '—'}</span>
-          <span className={PP_SUMMARY_LABEL_CLASSES}>PK%</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>{t('shotMapView.pkAnalysis.pkPctLabel')}</span>
         </div>
         <div className={PP_SUMMARY_DIVIDER_CLASSES} />
         <div className={PP_SUMMARY_STAT_CLASSES}>
           <span className={PP_SUMMARY_VAL_CLASSES}>{summary.sogAgainst}</span>
-          <span className={PP_SUMMARY_LABEL_CLASSES}>SOG vs</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>{t('shotMapView.pkAnalysis.sogVs')}</span>
         </div>
         <div className={PP_SUMMARY_DIVIDER_CLASSES} />
         <div className={PP_SUMMARY_STAT_CLASSES}>
           <span className={PP_SUMMARY_VAL_CLASSES}>{summary.blocks}</span>
-          <span className={PP_SUMMARY_LABEL_CLASSES}>Blocks</span>
+          <span className={PP_SUMMARY_LABEL_CLASSES}>{t('shotMapView.pkAnalysis.blocks')}</span>
         </div>
         <div className={PP_SUMMARY_DIVIDER_CLASSES} />
         <div className={PP_SUMMARY_STAT_CLASSES}>
           <span className={PP_SUMMARY_VAL_CLASSES}>{summary.xgAgainst}</span>
           <span className={PP_SUMMARY_LABEL_CLASSES}>
-            xGA <InfoTip text="Expected goals against on PK shots — estimated from shot distance and angle. Lower is better." position="above" />
+            xGA <InfoTip text={t('shotMapView.pkAnalysis.xgaHelp')} position="above" />
           </span>
         </div>
       </div>
@@ -3061,7 +3063,7 @@ function PKAnalysisPanel({ drillStat }) {
       )}
       {(pkUnit1?.length > 0 || pkUnit2?.length > 0) && (
         <div className={PP_UNIT_NOTE_CLASSES}>
-          Units inferred from play-by-play — players who didn't touch the puck may not appear.
+          {t('shotMapView.pkAnalysis.unitNote')}
         </div>
       )}
 
@@ -3071,7 +3073,7 @@ function PKAnalysisPanel({ drillStat }) {
           <div key={i} className={PP_OPP_ITEM_CLASSES}>
             <div className={PP_OPP_HEADER_CLASSES} onClick={() => toggle(i)}>
               <div className={PP_OPP_LEFT_CLASSES}>
-                <span className={PP_OPP_NUM_CLASSES}>PK {i + 1}</span>
+                <span className={PP_OPP_NUM_CLASSES}>{t('shotMapView.pkAnalysis.oppNum', { n: i + 1 })}</span>
                 {opp.unit && (
                   <span className={ppUnitBadgeClasses(opp.unit)}>PK{opp.unit}</span>
                 )}
@@ -3079,7 +3081,7 @@ function PKAnalysisPanel({ drillStat }) {
               </div>
               <div className={PP_OPP_RIGHT_CLASSES}>
                 <span className={ppOutcomeClasses(outcomeVariant(opp))}>{outcomeIcon(opp)} {outcomeLabel(opp)}</span>
-                <span className={PP_OPP_SOG_CLASSES}>{opp.sog} SOG vs</span>
+                <span className={PP_OPP_SOG_CLASSES}>{t('shotMapView.pkAnalysis.sogVsBadge', { n: opp.sog })}</span>
                 <span className={PP_OPP_CHEVRON_CLASSES}>{openIdx === i ? '▲' : '▼'}</span>
               </div>
             </div>
@@ -3093,7 +3095,7 @@ function PKAnalysisPanel({ drillStat }) {
                     <div>
                       <span className={PP_GOAL_SCORER_CLASSES}>{g.scorer}</span>
                       {g.shotType && <span className={PP_GOAL_SHOTTYPE_CLASSES}>{g.shotType}</span>}
-                      {g.assists.length > 0 && <div className={PP_GOAL_ASSISTS_CLASSES}>Assists: {g.assists.join(', ')}</div>}
+                      {g.assists.length > 0 && <div className={PP_GOAL_ASSISTS_CLASSES}>{t('shotMapView.ppkShared.assists', { names: g.assists.join(', ') })}</div>}
                     </div>
                     <span className={PP_GOAL_TIME_CLASSES}>{g.time}</span>
                   </div>
@@ -3101,11 +3103,11 @@ function PKAnalysisPanel({ drillStat }) {
 
                 {/* Stat chips */}
                 <div className={PP_DETAIL_STATS_CLASSES}>
-                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.sog}</span><span className={PP_DETAIL_LABEL_CLASSES}>SOG vs</span></div>
+                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.sog}</span><span className={PP_DETAIL_LABEL_CLASSES}>{t('shotMapView.pkAnalysis.sogVs')}</span></div>
                   <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.shots}</span><span className={PP_DETAIL_LABEL_CLASSES}>SA</span></div>
                   <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.xgAgainst}</span><span className={PP_DETAIL_LABEL_CLASSES}>xGA</span></div>
-                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.blockerList.reduce((s, b) => s + b.count, 0)}</span><span className={PP_DETAIL_LABEL_CLASSES}>Blocks</span></div>
-                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.duration}s</span><span className={PP_DETAIL_LABEL_CLASSES} style={{display:'flex',alignItems:'center',gap:2}}>Duration <InfoTip text="Duration — time in seconds between the first and last tracked play of this opportunity. Scores early = shorter duration. May be shorter than the full 2-minute penalty if there were no events near the start or end." position="above" /></span></div>
+                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.blockerList.reduce((s, b) => s + b.count, 0)}</span><span className={PP_DETAIL_LABEL_CLASSES}>{t('shotMapView.pkAnalysis.blocks')}</span></div>
+                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.duration}s</span><span className={PP_DETAIL_LABEL_CLASSES} style={{display:'flex',alignItems:'center',gap:2}}>{t('shotMapView.ppkShared.duration')} <InfoTip text={t('shotMapView.ppkShared.durationHelp')} position="above" /></span></div>
                 </div>
 
                 {/* Blockers */}
@@ -3129,7 +3131,7 @@ function PKAnalysisPanel({ drillStat }) {
                 {/* Mini shot map — OPP shots against, shown from OPP offensive zone perspective */}
                 {opp.shotEvents.length > 0 && (
                   <div className={PP_MINI_RINK_CLASSES}>
-                    <div className={PP_MINI_RINK_LABEL_CLASSES}>OPP shot locations</div>
+                    <div className={PP_MINI_RINK_LABEL_CLASSES}>{t('shotMapView.pkAnalysis.oppShotLocations')}</div>
                     <HockeyRink
                       events={toHockeyRinkEvents(opp.shotEvents)}
                       teamAbbr={TEAM_CONFIG.abbr}
