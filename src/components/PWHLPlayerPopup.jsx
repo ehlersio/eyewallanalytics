@@ -13,6 +13,7 @@
 //   season {number}  — season_id to pin the self-fetched stat line to.
 //   seasonLabel, onClose — as before.
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { useFetch } from '../hooks/useFetch';
 import { fetchPWHLPlayerShots, fetchPWHLGoalieShots, fetchPWHLPlayerLanding, fetchPWHLPlayerGameLog, fetchPWHLPlayerCareer, fetchPWHLPlayerPercentiles, fetchPWHLGoaliePercentiles } from '../utils/pwhlApi';
@@ -194,6 +195,7 @@ function PWHLRadarAxisTick({ x, y, payload, textAnchor }) {
 }
 
 function PWHLRadarChart({ data, color }) {
+  const { t } = useTranslation();
   const missing = data.filter(d => !d.hasData).map(d => d.axis);
   return (
     <div className={PP_RADAR_WRAP_CLASSES}>
@@ -206,7 +208,7 @@ function PWHLRadarChart({ data, color }) {
         </RadarChart>
       </ResponsiveContainer>
       {missing.length > 0 && (
-        <div className={PP_RADAR_NOTE_CLASSES}>Not enough playing time yet: {missing.join(', ')}</div>
+        <div className={PP_RADAR_NOTE_CLASSES}>{t('playerPopup.radar.notEnoughData', { missing: missing.join(', ') })}</div>
       )}
     </div>
   );
@@ -329,16 +331,6 @@ const CHART_DASH_PATTERNS = [undefined, '6 4', '2 3'];
 // independent copy rather than a shared import, consistent with this
 // codebase's convention of not cross-importing between the NHL and PWHL
 // component trees (they're only coupled at the API-fetch/config layer).
-const GOALIE_ZONES = [
-  { id: 'slot_hi',   label: 'High slot',    test: s => Math.abs(s.y) <= 22 && s.x >= 55 && s.x < 75 },
-  { id: 'slot_lo',   label: 'Low slot',     test: s => Math.abs(s.y) <= 22 && s.x >= 75 },
-  { id: 'left_hi',   label: 'Left circle',  test: s => s.y < -10 && s.x >= 55 && s.x < 80 },
-  { id: 'right_hi',  label: 'Right circle', test: s => s.y > 10  && s.x >= 55 && s.x < 80 },
-  { id: 'left_lo',   label: 'Left wing',    test: s => s.y < -22 && s.x >= 55 },
-  { id: 'right_lo',  label: 'Right wing',   test: s => s.y > 22  && s.x >= 55 },
-  { id: 'perimeter', label: 'Perimeter',    test: s => s.x < 55 },
-];
-
 const GOALIE_ZONE_RECTS = {
   slot_hi:   { x: 105, y: 45,  w: 90, h: 48 },
   slot_lo:   { x: 105, y: 93,  w: 90, h: 45 },
@@ -365,15 +357,26 @@ function goalieToSvg(nx, ny) {
 }
 
 function PWHLGoalieHeatMap({ goalieShotData }) {
+  const { t } = useTranslation();
   const [filter, setFilter] = useState('all');
   const [mapMode, setMapMode] = useState('dots');
+
+  const GOALIE_ZONES = [
+    { id: 'slot_hi',   label: t('playerPopup.heatMap.goalie.zones.highSlot'),    test: s => Math.abs(s.y) <= 22 && s.x >= 55 && s.x < 75 },
+    { id: 'slot_lo',   label: t('playerPopup.heatMap.goalie.zones.lowSlot'),     test: s => Math.abs(s.y) <= 22 && s.x >= 75 },
+    { id: 'left_hi',   label: t('playerPopup.heatMap.goalie.zones.leftCircle'), test: s => s.y < -10 && s.x >= 55 && s.x < 80 },
+    { id: 'right_hi',  label: t('playerPopup.heatMap.goalie.zones.rightCircle'), test: s => s.y > 10  && s.x >= 55 && s.x < 80 },
+    { id: 'left_lo',   label: t('playerPopup.heatMap.goalie.zones.leftWing'),    test: s => s.y < -22 && s.x >= 55 },
+    { id: 'right_lo',  label: t('playerPopup.heatMap.goalie.zones.rightWing'),   test: s => s.y > 22  && s.x >= 55 },
+    { id: 'perimeter', label: t('playerPopup.heatMap.goalie.zones.perimeter'),   test: s => s.x < 55 },
+  ];
 
   if (!goalieShotData || !goalieShotData.shots?.length) {
     return (
       <div className={PP_HEATMAP_EMPTY_CLASSES}>
         <div className={PP_HEATMAP_ICON_CLASSES}>🥅</div>
-        <div>No shot data yet.</div>
-        <div className={PP_HEATMAP_SUB_CLASSES}>Data builds up as games complete.</div>
+        <div>{t('playerPopup.heatMap.goalie.empty')}</div>
+        <div className={PP_HEATMAP_SUB_CLASSES}>{t('playerPopup.heatMap.goalie.emptySub')}</div>
       </div>
     );
   }
@@ -400,21 +403,21 @@ function PWHLGoalieHeatMap({ goalieShotData }) {
   return (
     <div className={PP_HEATMAP_CLASSES}>
       <div className={PP_HEATMAP_SUMMARY_CLASSES}>
-        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_GOAL_CLASSES}`}>{goals}</span><span>Goals</span></div>
-        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_SOG_CLASSES}`}>{saves}</span><span>Saves</span></div>
-        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{total}</span><span>Shots faced</span></div>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_GOAL_CLASSES}`}>{goals}</span><span>{t('gameStatsPopup.sections.goals')}</span></div>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_SOG_CLASSES}`}>{saves}</span><span>{t('playerPopup.heatMap.goalie.saves')}</span></div>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{total}</span><span>{t('playerPopup.heatMap.goalie.shotsFaced')}</span></div>
         <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{svPct}</span><span>SV%</span></div>
       </div>
       <div className={PP_HEATMAP_FILTERS_CLASSES} style={{ marginBottom: 6 }}>
-        <button className={heatmapChipClasses(mapMode === 'dots')} onClick={() => setMapMode('dots')}>Dot map</button>
-        <button className={heatmapChipClasses(mapMode === 'zones')} onClick={() => setMapMode('zones')}>Zone SV%</button>
+        <button className={heatmapChipClasses(mapMode === 'dots')} onClick={() => setMapMode('dots')}>{t('playerPopup.heatMap.goalie.dotMapToggle')}</button>
+        <button className={heatmapChipClasses(mapMode === 'zones')} onClick={() => setMapMode('zones')}>{t('playerPopup.heatMap.goalie.zoneToggle')}</button>
       </div>
       {mapMode === 'dots' && (
         <div className={PP_HEATMAP_FILTERS_CLASSES}>
           {[
-            { key: 'all',   label: `All (${total})` },
-            { key: 'goals', label: `Goals (${goals})` },
-            { key: 'saves', label: `Saves (${saves})` },
+            { key: 'all',   label: t('playerPopup.heatMap.goalie.filterAll', { count: total }) },
+            { key: 'goals', label: t('playerPopup.heatMap.goalie.filterGoals', { count: goals }) },
+            { key: 'saves', label: t('playerPopup.heatMap.goalie.filterSaves', { count: saves }) },
           ].map(f => (
             <button key={f.key} className={heatmapChipClasses(filter === f.key)}
               onClick={() => setFilter(f.key)}>{f.label}</button>
@@ -428,7 +431,7 @@ function PWHLGoalieHeatMap({ goalieShotData }) {
               <span style={{ width: 10, height: 10, borderRadius: 2, background: c, display: 'inline-block' }} />{l}
             </span>
           ))}
-          <span style={{ color: 'var(--text-dim)', marginLeft: 'auto' }}>min 5 shots</span>
+          <span style={{ color: 'var(--text-dim)', marginLeft: 'auto' }}>{t('playerPopup.heatMap.goalie.minShots')}</span>
         </div>
       )}
       <div className={PP_HEATMAP_RINK_CLASSES}>
@@ -462,7 +465,7 @@ function PWHLGoalieHeatMap({ goalieShotData }) {
                         <text x={r.x + r.w / 2} y={r.y + r.h / 2 + 11} textAnchor="middle"
                           fontSize="9" fontWeight="600" fill="#333"
                           style={{ filter: 'drop-shadow(0px 0px 2px rgba(255,255,255,0.9))' }}>
-                          {z.total} shots
+                          {t('playerPopup.heatMap.goalie.zoneShotsCount', { count: z.total })}
                         </text>
                       </>
                     )}
@@ -470,7 +473,7 @@ function PWHLGoalieHeatMap({ goalieShotData }) {
                       <text x={r.x + r.w / 2} y={r.y + r.h / 2 + 4} textAnchor="middle"
                         fontSize="9" fontWeight="600" fill="#333"
                         style={{ filter: 'drop-shadow(0px 0px 2px rgba(255,255,255,0.9))' }}>
-                        {z.total} shots
+                        {t('playerPopup.heatMap.goalie.zoneShotsCount', { count: z.total })}
                       </text>
                     )}
                   </g>
@@ -491,7 +494,7 @@ function PWHLGoalieHeatMap({ goalieShotData }) {
             </>
           )}
           <text x="150" y="224" textAnchor="middle" fontSize="9" fill="var(--text-dim)">
-            Shooter perspective · green = save · red = goal
+            {t('playerPopup.heatMap.goalie.shooterCaption')}
           </text>
         </svg>
       </div>
@@ -500,6 +503,7 @@ function PWHLGoalieHeatMap({ goalieShotData }) {
 }
 
 function PWHLHeatMap({ playerId, season, isGoalie, teamId }) {
+  const { t } = useTranslation();
   const [filter, setFilter] = useState('all');
 
   const { data: shotData, loading } = useFetch(
@@ -516,7 +520,7 @@ function PWHLHeatMap({ playerId, season, isGoalie, teamId }) {
       return (
         <div className={PP_HEATMAP_EMPTY_CLASSES}>
           <div className={PP_HEATMAP_ICON_CLASSES}>🥅</div>
-          <div>Loading shot data…</div>
+          <div>{t('playerPopup.heatMap.loading')}</div>
         </div>
       );
     }
@@ -527,7 +531,7 @@ function PWHLHeatMap({ playerId, season, isGoalie, teamId }) {
     return (
       <div className={PP_HEATMAP_EMPTY_CLASSES}>
         <div className={PP_HEATMAP_ICON_CLASSES}>🎯</div>
-        <div>Loading shot data…</div>
+        <div>{t('playerPopup.heatMap.loading')}</div>
       </div>
     );
   }
@@ -536,8 +540,8 @@ function PWHLHeatMap({ playerId, season, isGoalie, teamId }) {
     return (
       <div className={PP_HEATMAP_EMPTY_CLASSES}>
         <div className={PP_HEATMAP_ICON_CLASSES}>🎯</div>
-        <div>No shot data for this player.</div>
-        <div className={PP_HEATMAP_SUB_CLASSES}>Data builds up as games complete.</div>
+        <div>{t('playerPopup.heatMap.skater.emptyPwhl')}</div>
+        <div className={PP_HEATMAP_SUB_CLASSES}>{t('playerPopup.heatMap.skater.emptySub')}</div>
       </div>
     );
   }
@@ -564,16 +568,16 @@ function PWHLHeatMap({ playerId, season, isGoalie, teamId }) {
   return (
     <div className={PP_HEATMAP_CLASSES}>
       <div className={PP_HEATMAP_SUMMARY_CLASSES}>
-        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_GOAL_CLASSES}`}>{goals}</span><span>Goals</span></div>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_GOAL_CLASSES}`}>{goals}</span><span>{t('gameStatsPopup.sections.goals')}</span></div>
         <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_SOG_CLASSES}`}>{sog}</span><span>SOG</span></div>
-        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{total}</span><span>Total</span></div>
+        <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{total}</span><span>{t('shotMapView.drillPopup.total')}</span></div>
         <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{sh}%</span><span>SH%</span></div>
       </div>
       <div className={PP_HEATMAP_FILTERS_CLASSES}>
         {[
-          { key: 'all',   label: `All (${total})` },
-          { key: 'goals', label: `Goals (${goals})` },
-          { key: 'sog',   label: `SOG (${sog})` },
+          { key: 'all',   label: t('playerPopup.heatMap.skater.filterAll', { count: total }) },
+          { key: 'goals', label: t('playerPopup.heatMap.skater.filterGoals', { count: goals }) },
+          { key: 'sog',   label: t('playerPopup.heatMap.skater.filterSog', { count: sog }) },
         ].map(f => (
           <button key={f.key} className={heatmapChipClasses(filter === f.key)}
             onClick={() => setFilter(f.key)}>{f.label}</button>
@@ -597,6 +601,7 @@ function PWHLHeatMap({ playerId, season, isGoalie, teamId }) {
 // ── Scouting blurb ────────────────────────────────────────────
 
 function PWHLScout({ player, isGoalie, seasonLabel }) {
+  const { t } = useTranslation();
   const [blurb, setBlurb] = useState(undefined); // undefined=loading, null=failed, string=ready
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState(false);
@@ -632,7 +637,7 @@ function PWHLScout({ player, isGoalie, seasonLabel }) {
       <div className={SCOUT_WRAP_CLASSES}>
         <div className={SCOUT_EMPTY_CLASSES}>
           <div className={SCOUT_EMPTY_ICON_CLASSES}>📋</div>
-          <div style={{ marginBottom: 12 }}>Generate an AI scouting report for {name}.</div>
+          <div style={{ marginBottom: 12 }}>{t('playerPopup.pwhlScout.generatePrompt', { name })}</div>
           <button
             onClick={generate}
             style={{
@@ -640,7 +645,7 @@ function PWHLScout({ player, isGoalie, seasonLabel }) {
               color: '#fff', border: 'none', borderRadius: 8,
               fontWeight: 700, fontSize: 13, cursor: 'pointer',
             }}>
-            Generate Report
+            {t('playerPopup.pwhlScout.generateButton')}
           </button>
         </div>
       </div>
@@ -664,8 +669,8 @@ function PWHLScout({ player, isGoalie, seasonLabel }) {
       <div className={SCOUT_WRAP_CLASSES}>
         <div className={SCOUT_EMPTY_CLASSES}>
           <div className={SCOUT_EMPTY_ICON_CLASSES}>📋</div>
-          <div>Failed to generate report. Try again.</div>
-          <button onClick={() => { setGenerated(false); }} style={{ marginTop: 8, padding: '6px 16px', cursor: 'pointer' }}>Retry</button>
+          <div>{t('playerPopup.pwhlScout.failedState')}</div>
+          <button onClick={() => { setGenerated(false); }} style={{ marginTop: 8, padding: '6px 16px', cursor: 'pointer' }}>{t('playerPopup.pwhlScout.retryButton')}</button>
         </div>
       </div>
     );
@@ -674,11 +679,11 @@ function PWHLScout({ player, isGoalie, seasonLabel }) {
   return (
     <div className={SCOUT_WRAP_CLASSES}>
       <div className={SCOUT_HEADER_CLASSES}>
-        <span className={SCOUT_LABEL_CLASSES}>Scouting Report</span>
+        <span className={SCOUT_LABEL_CLASSES}>{t('playerPopup.scoutingBlurb.header')}</span>
         <span className={SCOUT_SEASON_CLASSES}>{seasonLabel}</span>
       </div>
       <div className={SCOUT_BLURB_CLASSES}>{blurb}</div>
-      <div className={SCOUT_FOOTER_CLASSES}>AI-generated · EyeWall Analytics</div>
+      <div className={SCOUT_FOOTER_CLASSES}>{t('playerPopup.pwhlScout.footer')}</div>
     </div>
   );
 }

@@ -1422,6 +1422,7 @@
       "notEnoughData": "Not enough playing time yet: {{missing}}"
     },
     "heatMap": {
+      "loading": "Loading shot data…",
       "goalie": {
         "empty": "No shot data yet.",
         "emptySub": "Data builds up as games complete.",
@@ -1442,10 +1443,12 @@
         "filterAll": "All ({{count}})",
         "filterGoals": "Goals ({{count}})",
         "filterSaves": "Saves ({{count}})",
+        "zoneShotsCount": "{{count}} shots",
         "shooterCaption": "Shooter perspective · green = save · red = goal"
       },
       "skater": {
         "empty": "No season shot data yet.",
+        "emptyPwhl": "No shot data for this player.",
         "emptySub": "Data builds up as games complete.",
         "missed": "Missed",
         "games": "Games",
@@ -1454,6 +1457,13 @@
         "filterSog": "SOG ({{count}})",
         "filterMissed": "Missed ({{count}})"
       }
+    },
+    "pwhlScout": {
+      "generatePrompt": "Generate an AI scouting report for {{name}}.",
+      "generateButton": "Generate Report",
+      "failedState": "Failed to generate report. Try again.",
+      "retryButton": "Retry",
+      "footer": "AI-generated · EyeWall Analytics"
     },
     "analytics": {
       "emptyState": "Analytics data not yet available.",

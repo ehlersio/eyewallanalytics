@@ -1422,6 +1422,7 @@
       "notEnoughData": "Pas assez de temps de jeu : {{missing}}"
     },
     "heatMap": {
+      "loading": "Chargement des données de tirs…",
       "goalie": {
         "empty": "Aucune donnée de tir pour l'instant.",
         "emptySub": "Les données s'accumulent au fil des matchs.",
@@ -1442,10 +1443,12 @@
         "filterAll": "Tous ({{count}})",
         "filterGoals": "Buts ({{count}})",
         "filterSaves": "Arrêts ({{count}})",
+        "zoneShotsCount": "{{count}} tirs",
         "shooterCaption": "Point de vue du tireur · vert = arrêt · rouge = but"
       },
       "skater": {
         "empty": "Aucune donnée de tir cette saison.",
+        "emptyPwhl": "Aucune donnée de tir pour ce joueur.",
         "emptySub": "Les données s'accumulent au fil des matchs.",
         "missed": "Ratés",
         "games": "Matchs",
@@ -1454,6 +1457,13 @@
         "filterSog": "TAB ({{count}})",
         "filterMissed": "Ratés ({{count}})"
       }
+    },
+    "pwhlScout": {
+      "generatePrompt": "Générer un rapport de dépistage IA pour {{name}}.",
+      "generateButton": "Générer le rapport",
+      "failedState": "Échec de la génération du rapport. Réessayez.",
+      "retryButton": "Réessayer",
+      "footer": "Généré par IA · EyeWall Analytics"
     },
     "analytics": {
       "emptyState": "Données analytiques pas encore disponibles.",
