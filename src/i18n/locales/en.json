@@ -1742,5 +1742,41 @@
     "fullStatComparison": "Full Stat Comparison",
     "headToHead": "Head-to-Head",
     "xgfMetricLabel": "xGF% (5v5)"
+  },
+  "draftTab": {
+    "categories": {
+      "naSkaters": "NA Skaters",
+      "intlSkaters": "Intl Skaters",
+      "naGoalies": "NA Goalies",
+      "intlGoalies": "Intl Goalies"
+    },
+    "profileAriaLabel": "{{name}} draft profile",
+    "pickContext": "Pick #{{overall}} · Round {{round}}, #{{pickInRound}} in round",
+    "midtermLabel": "Midterm: #{{rank}}",
+    "unranked": "Unranked",
+    "club": "Club",
+    "sticksSays": "Sticks says",
+    "analysisGenerating": "Analysis generating…",
+    "noProspects": "No prospects found.",
+    "rankingsTableAriaLabel": "Central Scouting rankings",
+    "colRank": "Rank",
+    "colName": "Name",
+    "colShoots": "S/C",
+    "colHeight": "Ht",
+    "colWeight": "Wt",
+    "colCountry": "Ctry",
+    "colMidFin": "Mid→Fin",
+    "midFinTitle": "Midterm rank → Final rank change",
+    "noPicks": "No picks yet. Check back once the draft begins.",
+    "roundPicksAriaLabel": "Round {{round}} picks",
+    "colPickNum": "#",
+    "colCsRank": "CS Rank",
+    "unrankedBadge": "UR",
+    "draftBegins": "Draft begins <strong>June 26</strong> · Buffalo · 7 pm ET",
+    "inProgress": "Draft in progress · {{count}} of {{total}} picks",
+    "draftComplete": "2026 Draft complete · {{count}} picks",
+    "rankingsToggle": "Rankings",
+    "draftBoardToggle": "Draft board",
+    "prospectCategoriesAriaLabel": "Prospect categories"
   }
 }

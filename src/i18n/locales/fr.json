@@ -1742,5 +1742,41 @@
     "fullStatComparison": "Comparaison complète des statistiques",
     "headToHead": "Confrontation directe",
     "xgfMetricLabel": "xGF% (5v5)"
+  },
+  "draftTab": {
+    "categories": {
+      "naSkaters": "Patineurs NA",
+      "intlSkaters": "Patineurs int'l",
+      "naGoalies": "Gardiens NA",
+      "intlGoalies": "Gardiens int'l"
+    },
+    "profileAriaLabel": "Profil de repêchage de {{name}}",
+    "pickContext": "Choix n° {{overall}} · Ronde {{round}}, n° {{pickInRound}} de la ronde",
+    "midtermLabel": "Mi-saison : n° {{rank}}",
+    "unranked": "Non classé",
+    "club": "Club",
+    "sticksSays": "Sticks dit",
+    "analysisGenerating": "Analyse en cours de génération…",
+    "noProspects": "Aucun espoir trouvé.",
+    "rankingsTableAriaLabel": "Classement du Bureau central de recrutement",
+    "colRank": "Rang",
+    "colName": "Nom",
+    "colShoots": "L/A",
+    "colHeight": "Ta",
+    "colWeight": "Po",
+    "colCountry": "Pays",
+    "colMidFin": "Mi→Fin",
+    "midFinTitle": "Changement du rang mi-saison → rang final",
+    "noPicks": "Aucun choix pour l'instant. Revenez une fois le repêchage commencé.",
+    "roundPicksAriaLabel": "Choix de la ronde {{round}}",
+    "colPickNum": "#",
+    "colCsRank": "Rang BCR",
+    "unrankedBadge": "NC",
+    "draftBegins": "Le repêchage commence le <strong>26 juin</strong> · Buffalo · 19 h HE",
+    "inProgress": "Repêchage en cours · {{count}} de {{total}} choix",
+    "draftComplete": "Repêchage 2026 terminé · {{count}} choix",
+    "rankingsToggle": "Classement",
+    "draftBoardToggle": "Tableau du repêchage",
+    "prospectCategoriesAriaLabel": "Catégories d'espoirs"
   }
 }

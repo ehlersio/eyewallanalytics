@@ -3,6 +3,7 @@
 // Rendered by LeagueView when activeTab === 'draft'
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { capture } from '../utils/analytics';
 import { getDraftRankings, getDraftPicks } from '../utils/nhlApi';
 import TeamLogo from '../components/TeamLogo';
@@ -71,11 +72,16 @@ const DT_ROW_CLICKABLE_CLASSES = 'dt-row dt-row--clickable cursor-pointer [trans
 const TOTAL_PICKS = 224; // 32 teams × 7 rounds
 
 const CATEGORY_TABS = [
-  { id: 1, label: 'NA Skaters' },
-  { id: 2, label: 'Intl Skaters' },
-  { id: 3, label: 'NA Goalies' },
-  { id: 4, label: 'Intl Goalies' },
+  { id: 1, key: 'naSkaters' },
+  { id: 2, key: 'intlSkaters' },
+  { id: 3, key: 'naGoalies' },
+  { id: 4, key: 'intlGoalies' },
 ];
+
+function getCategoryLabel(t, id) {
+  const cat = CATEGORY_TABS.find(c => c.id === id);
+  return cat ? t(`draftTab.categories.${cat.key}`) : null;
+}
 
 // NA Skater (1) and NA Goalie (3) categories should only show North American players.
 // NHL Central Scouting occasionally places international players in NA categories
@@ -107,6 +113,7 @@ function RankDelta({ final: finalRank, midterm }) {
 // mode: 'prospect' (from rankings, pre-draft) | 'pick' (from draft board)
 
 export function DraftPopup({ item, mode, onClose }) {
+  const { t } = useTranslation();
   const overlayRef = useRef(null);
 
   useEffect(() => {
@@ -136,7 +143,7 @@ export function DraftPopup({ item, mode, onClose }) {
   const midtermRank  = item.midterm_rank;
   const categoryId   = item.category_id;
 
-  const categoryLabel = CATEGORY_TABS.find(c => c.id === categoryId)?.label ?? null;
+  const categoryLabel = getCategoryLabel(t, categoryId);
   const isRanked      = !!finalRank;
 
   // Pick-mode extras
@@ -154,10 +161,10 @@ export function DraftPopup({ item, mode, onClose }) {
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
-      aria-label={`${firstName} ${lastName} draft profile`}
+      aria-label={t('draftTab.profileAriaLabel', { name: `${firstName} ${lastName}` })}
     >
       <div className="dt-popup bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)] rounded-[14px] p-5 w-full max-w-[440px] relative max-h-[90vh] overflow-y-auto max-[600px]:p-4 max-[600px]:rounded-[12px] max-[600px]:max-w-[calc(100vw-32px)] max-[600px]:max-h-[85vh]">
-        <button className="dt-popup-close absolute top-[14px] right-[14px] bg-none border-none text-[color:var(--text-dim)] text-[14px] cursor-pointer py-1 px-[6px] rounded-[6px] leading-none [transition:color_0.15s] hover:text-[color:var(--text)]" onClick={onClose} aria-label="Close">✕</button>
+        <button className="dt-popup-close absolute top-[14px] right-[14px] bg-none border-none text-[color:var(--text-dim)] text-[14px] cursor-pointer py-1 px-[6px] rounded-[6px] leading-none [transition:color_0.15s] hover:text-[color:var(--text)]" onClick={onClose} aria-label={t('common.close')}>✕</button>
 
         {/* Header */}
         <div className="dt-popup-header flex items-start gap-[10px] mb-1.5 pr-7">
@@ -179,7 +186,7 @@ export function DraftPopup({ item, mode, onClose }) {
         {/* Pick context */}
         {isPick && (
           <div className="dt-popup-pick-context text-[12px] text-[color:var(--text-dim)] mb-2.5">
-            Pick #{pickOverall} · Round {round}, #{pickInRound} in round
+            {t('draftTab.pickContext', { overall: pickOverall, round, pickInRound })}
           </div>
         )}
 
@@ -191,7 +198,7 @@ export function DraftPopup({ item, mode, onClose }) {
             </span>
             {midtermRank && (
               <span className="dt-popup-rank-midterm text-[12px] text-[color:var(--text-muted)] flex items-center gap-1">
-                Midterm: #{midtermRank}
+                {t('draftTab.midtermLabel', { rank: midtermRank })}
                 {' '}<RankDelta final={finalRank} midterm={midtermRank} />
               </span>
             )}
@@ -199,26 +206,26 @@ export function DraftPopup({ item, mode, onClose }) {
         )}
         {!isRanked && (
           <div className="dt-popup-rank-row flex items-center gap-[10px] mb-3.5">
-            <span className={dtRankBadgeClasses(true)}>Unranked</span>
+            <span className={dtRankBadgeClasses(true)}>{t('draftTab.unranked')}</span>
           </div>
         )}
 
         {/* Bio grid */}
         <div className="dt-popup-bio grid [grid-template-columns:1fr_1fr] gap-x-4 gap-y-2 mb-4 p-3 bg-[var(--bg3)] rounded-[8px]">
           <div className="dt-popup-bio-item flex flex-col gap-px">
-            <span className="dt-popup-bio-label text-[10px] font-semibold uppercase tracking-[0.05em] text-[color:var(--text-dim)]">Height</span>
+            <span className="dt-popup-bio-label text-[10px] font-semibold uppercase tracking-[0.05em] text-[color:var(--text-dim)]">{t('playerPopup.bio.height')}</span>
             <span className="dt-popup-bio-value text-[13px] font-medium text-[color:var(--text)]">{fmtHeight(heightIn)}</span>
           </div>
           <div className="dt-popup-bio-item flex flex-col gap-px">
-            <span className="dt-popup-bio-label text-[10px] font-semibold uppercase tracking-[0.05em] text-[color:var(--text-dim)]">Weight</span>
-            <span className="dt-popup-bio-value text-[13px] font-medium text-[color:var(--text)]">{weightLbs ? `${weightLbs} lbs` : '—'}</span>
+            <span className="dt-popup-bio-label text-[10px] font-semibold uppercase tracking-[0.05em] text-[color:var(--text-dim)]">{t('playerPopup.bio.weight')}</span>
+            <span className="dt-popup-bio-value text-[13px] font-medium text-[color:var(--text)]">{weightLbs ? t('playerPopup.bio.weightLbs', { weight: weightLbs }) : '—'}</span>
           </div>
           <div className="dt-popup-bio-item flex flex-col gap-px">
-            <span className="dt-popup-bio-label text-[10px] font-semibold uppercase tracking-[0.05em] text-[color:var(--text-dim)]">Club</span>
+            <span className="dt-popup-bio-label text-[10px] font-semibold uppercase tracking-[0.05em] text-[color:var(--text-dim)]">{t('draftTab.club')}</span>
             <span className="dt-popup-bio-value text-[13px] font-medium text-[color:var(--text)]">{club || '—'}</span>
           </div>
           <div className="dt-popup-bio-item flex flex-col gap-px">
-            <span className="dt-popup-bio-label text-[10px] font-semibold uppercase tracking-[0.05em] text-[color:var(--text-dim)]">League</span>
+            <span className="dt-popup-bio-label text-[10px] font-semibold uppercase tracking-[0.05em] text-[color:var(--text-dim)]">{t('nav.league')}</span>
             <span className="dt-popup-bio-value text-[13px] font-medium text-[color:var(--text)]">{league || '—'}</span>
           </div>
         </div>
@@ -226,11 +233,11 @@ export function DraftPopup({ item, mode, onClose }) {
         {/* AI Analysis (pick mode only) */}
         {isPick && (
           <div className="dt-popup-ai flex flex-col gap-1.5 pt-3.5 border-t-[0.5px] border-t-[color:var(--border)]">
-            <span className="dt-popup-ai-label text-[10px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-dim)]">Sticks says</span>
+            <span className="dt-popup-ai-label text-[10px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-dim)]">{t('draftTab.sticksSays')}</span>
             {aiPending ? (
               <div className="dt-popup-ai-pending flex items-center gap-2 text-[12px] text-[color:var(--text-dim)] py-2">
                 <span className="dt-spinner w-[14px] h-[14px] border-2 border-[color:var(--border)] border-t-[color:var(--text-muted)] rounded-full animate-[spin_0.7s_linear_infinite] shrink-0" />
-                <span>Analysis generating…</span>
+                <span>{t('draftTab.analysisGenerating')}</span>
               </div>
             ) : (
               <p className="dt-popup-ai-text text-[13px] leading-[1.55] text-[color:var(--text-muted)] m-0">{aiAnalysis}</p>
@@ -245,6 +252,7 @@ export function DraftPopup({ item, mode, onClose }) {
 // ─── Rankings Table ───────────────────────────────────────────────────────────
 
 function RankingsTable({ prospects, onSelect }) {
+  const { t } = useTranslation();
   const wrapRef = useRef(null);
   const [atEnd, setAtEnd] = useState(false);
 
@@ -254,25 +262,25 @@ function RankingsTable({ prospects, onSelect }) {
   }
 
   if (!prospects?.length) {
-    return <div className="dt-empty py-8 text-center text-[color:var(--text-dim)] text-[13px]">No prospects found.</div>;
+    return <div className="dt-empty py-8 text-center text-[color:var(--text-dim)] text-[13px]">{t('draftTab.noProspects')}</div>;
   }
 
   return (
     <div className="dt-table-container relative">
       <div className="dt-table-wrap overflow-x-auto [-webkit-overflow-scrolling:touch]" ref={wrapRef} onScroll={handleScroll}>
-      <table className="dt-table w-full border-collapse text-[12.5px]" aria-label="Central Scouting rankings">
+      <table className="dt-table w-full border-collapse text-[12.5px]" aria-label={t('draftTab.rankingsTableAriaLabel')}>
         <thead>
           <tr>
-            <th className={`${DT_TH_CLASSES} dt-th--rank w-[42px]`}>Rank</th>
-            <th className={`${DT_TH_CLASSES} dt-th--name`}>Name</th>
-            <th className={`${DT_TH_CLASSES} dt-th--pos w-9`}>Pos</th>
-            <th className={`${DT_TH_CLASSES} dt-th--shoots w-8 max-[600px]:hidden`}>S/C</th>
-            <th className={`${DT_TH_CLASSES} dt-th--ht w-11 max-[600px]:hidden`}>Ht</th>
-            <th className={`${DT_TH_CLASSES} dt-th--wt w-11 max-[600px]:hidden`}>Wt</th>
-            <th className={`${DT_TH_CLASSES} dt-th--club`}>Club</th>
-            <th className={`${DT_TH_CLASSES} dt-th--league`}>League</th>
-            <th className={`${DT_TH_CLASSES} dt-th--country`}>Ctry</th>
-            <th className={`${DT_TH_CLASSES} dt-th--mid w-[60px]`} title="Midterm rank → Final rank change">Mid→Fin</th>
+            <th className={`${DT_TH_CLASSES} dt-th--rank w-[42px]`}>{t('draftTab.colRank')}</th>
+            <th className={`${DT_TH_CLASSES} dt-th--name`}>{t('draftTab.colName')}</th>
+            <th className={`${DT_TH_CLASSES} dt-th--pos w-9`}>{t('pwhlLeagueView.draft.colPos')}</th>
+            <th className={`${DT_TH_CLASSES} dt-th--shoots w-8 max-[600px]:hidden`}>{t('draftTab.colShoots')}</th>
+            <th className={`${DT_TH_CLASSES} dt-th--ht w-11 max-[600px]:hidden`}>{t('draftTab.colHeight')}</th>
+            <th className={`${DT_TH_CLASSES} dt-th--wt w-11 max-[600px]:hidden`}>{t('draftTab.colWeight')}</th>
+            <th className={`${DT_TH_CLASSES} dt-th--club`}>{t('draftTab.club')}</th>
+            <th className={`${DT_TH_CLASSES} dt-th--league`}>{t('nav.league')}</th>
+            <th className={`${DT_TH_CLASSES} dt-th--country`}>{t('draftTab.colCountry')}</th>
+            <th className={`${DT_TH_CLASSES} dt-th--mid w-[60px]`} title={t('draftTab.midFinTitle')}>{t('draftTab.colMidFin')}</th>
           </tr>
         </thead>
         <tbody>
@@ -311,8 +319,9 @@ function RankingsTable({ prospects, onSelect }) {
 // ─── Draft Board ──────────────────────────────────────────────────────────────
 
 function DraftBoard({ picks, onSelect }) {
+  const { t } = useTranslation();
   if (!picks?.length) {
-    return <div className="dt-empty py-8 text-center text-[color:var(--text-dim)] text-[13px]">No picks yet. Check back once the draft begins.</div>;
+    return <div className="dt-empty py-8 text-center text-[color:var(--text-dim)] text-[13px]">{t('draftTab.noPicks')}</div>;
   }
 
   // Group picks by round
@@ -328,18 +337,18 @@ function DraftBoard({ picks, onSelect }) {
     <div className="dt-board flex flex-col gap-5">
       {rounds.map((round) => (
         <div key={round} className="dt-board-round">
-          <div className="dt-board-round-header text-[11px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-dim)] mb-1.5 pb-1 border-b-[0.5px] border-b-[color:var(--border)]">Round {round}</div>
+          <div className="dt-board-round-header text-[11px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-dim)] mb-1.5 pb-1 border-b-[0.5px] border-b-[color:var(--border)]">{t('teamView.picks.roundLabel', { round })}</div>
           <div className="dt-table-wrap overflow-x-auto [-webkit-overflow-scrolling:touch]">
-            <table className="dt-table w-full border-collapse text-[12.5px]" aria-label={`Round ${round} picks`}>
+            <table className="dt-table w-full border-collapse text-[12.5px]" aria-label={t('draftTab.roundPicksAriaLabel', { round })}>
               <thead>
                 <tr>
-                  <th className={`${DT_TH_CLASSES} dt-th--pick w-[42px]`}>#</th>
-                  <th className={`${DT_TH_CLASSES} dt-th--team w-[60px]`}>Team</th>
-                  <th className={`${DT_TH_CLASSES} dt-th--name`}>Name</th>
-                  <th className={`${DT_TH_CLASSES} dt-th--pos w-9`}>Pos</th>
-                  <th className={`${DT_TH_CLASSES} dt-th--club`}>Club</th>
-                  <th className={`${DT_TH_CLASSES} dt-th--league`}>League</th>
-                  <th className={`${DT_TH_CLASSES} dt-th--rank`}>CS Rank</th>
+                  <th className={`${DT_TH_CLASSES} dt-th--pick w-[42px]`}>{t('draftTab.colPickNum')}</th>
+                  <th className={`${DT_TH_CLASSES} dt-th--team w-[60px]`}>{t('pwhlLeagueView.draft.colTeam')}</th>
+                  <th className={`${DT_TH_CLASSES} dt-th--name`}>{t('draftTab.colName')}</th>
+                  <th className={`${DT_TH_CLASSES} dt-th--pos w-9`}>{t('pwhlLeagueView.draft.colPos')}</th>
+                  <th className={`${DT_TH_CLASSES} dt-th--club`}>{t('draftTab.club')}</th>
+                  <th className={`${DT_TH_CLASSES} dt-th--league`}>{t('nav.league')}</th>
+                  <th className={`${DT_TH_CLASSES} dt-th--rank`}>{t('draftTab.colCsRank')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -365,7 +374,7 @@ function DraftBoard({ picks, onSelect }) {
                     <td className={`${DT_TD_CLASSES} dt-td--club text-[color:var(--text-muted)] text-[12px]`}>{pick.last_amateur_club ?? '—'}</td>
                     <td className={`${DT_TD_CLASSES} dt-td--league text-[color:var(--text-muted)] text-[12px]`}>{pick.last_amateur_league ?? '—'}</td>
                     <td className={`${DT_TD_CLASSES} dt-td--rank`}>
-                      {pick.final_rank ? `#${pick.final_rank}` : <span className="dt-unranked text-[10px] font-semibold text-[color:var(--text-dim)] bg-[var(--border)] rounded-[4px] py-px px-1">UR</span>}
+                      {pick.final_rank ? `#${pick.final_rank}` : <span className="dt-unranked text-[10px] font-semibold text-[color:var(--text-dim)] bg-[var(--border)] rounded-[4px] py-px px-1">{t('draftTab.unrankedBadge')}</span>}
                     </td>
                   </tr>
                 ))}
@@ -381,6 +390,7 @@ function DraftBoard({ picks, onSelect }) {
 // ─── DraftTab ─────────────────────────────────────────────────────────────────
 
 export default function DraftTab({ overrideRankings = null, overridePicks = null }) {
+  const { t } = useTranslation();
   const [categoryId, setCategoryId]   = useState(1);
   const [boardView, setBoardView]     = useState('rankings'); // 'rankings' | 'board'
   const [rankings, setRankings]       = useState(null);      // { 1: [], 2: [], 3: [], 4: [] }
@@ -479,7 +489,7 @@ export default function DraftTab({ overrideRankings = null, overridePicks = null
       {!draftStarted && (
         <div className={dtBannerClasses(null)}>
           <span className="dt-banner-icon text-[15px]">🏒</span>
-          <span>Draft begins <strong>June 26</strong> · Buffalo · 7 pm ET</span>
+          <span><Trans i18nKey="draftTab.draftBegins" components={{ strong: <strong /> }} /></span>
         </div>
       )}
 
@@ -487,14 +497,14 @@ export default function DraftTab({ overrideRankings = null, overridePicks = null
       {draftInProgress && (
         <div className={dtBannerClasses('live')}>
           <span className="dt-live-dot w-[7px] h-[7px] rounded-full bg-[var(--green)] animate-[dt-pulse_1.4s_ease-in-out_infinite] shrink-0" />
-          <span>Draft in progress · {picks.length} of {TOTAL_PICKS} picks</span>
+          <span>{t('draftTab.inProgress', { count: picks.length, total: TOTAL_PICKS })}</span>
         </div>
       )}
 
       {/* Draft complete */}
       {draftComplete && (
         <div className={dtBannerClasses('done')}>
-          <span>2026 Draft complete · {picks.length} picks</span>
+          <span>{t('draftTab.draftComplete', { count: picks.length })}</span>
         </div>
       )}
 
@@ -505,20 +515,20 @@ export default function DraftTab({ overrideRankings = null, overridePicks = null
             className={dtToggleClasses(boardView === 'rankings')}
             onClick={() => setBoardView('rankings')}
           >
-            Rankings
+            {t('draftTab.rankingsToggle')}
           </button>
           <button
             className={dtToggleClasses(boardView === 'board')}
             onClick={() => setBoardView('board')}
           >
-            Draft board
+            {t('draftTab.draftBoardToggle')}
           </button>
         </div>
       )}
 
       {/* Category sub-tabs (Rankings view) */}
       {boardView === 'rankings' && (
-        <div className="dt-cat-tabs flex gap-1 mb-2.5 flex-wrap max-[600px]:flex-nowrap max-[600px]:overflow-x-auto max-[600px]:[-webkit-overflow-scrolling:touch] max-[600px]:[scrollbar-width:none] max-[600px]:pb-1 max-[600px]:gap-1.5 max-[600px]:[&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Prospect categories">
+        <div className="dt-cat-tabs flex gap-1 mb-2.5 flex-wrap max-[600px]:flex-nowrap max-[600px]:overflow-x-auto max-[600px]:[-webkit-overflow-scrolling:touch] max-[600px]:[scrollbar-width:none] max-[600px]:pb-1 max-[600px]:gap-1.5 max-[600px]:[&::-webkit-scrollbar]:hidden" role="tablist" aria-label={t('draftTab.prospectCategoriesAriaLabel')}>
           {CATEGORY_TABS.map((cat) => (
             <button
               key={cat.id}
@@ -527,7 +537,7 @@ export default function DraftTab({ overrideRankings = null, overridePicks = null
               className={`${dtCatTabClasses(categoryId === cat.id)} max-[600px]:shrink-0`}
               onClick={() => { setCategoryId(cat.id); capture('draft_category_viewed', { category: cat.id }); }}
             >
-              {cat.label}
+              {getCategoryLabel(t, cat.id)}
               {rankings?.[cat.id] ? (
                 <span className="dt-cat-count text-[10px] font-semibold text-[color:var(--text-dim)] bg-[var(--border)] rounded-[8px] py-px px-[5px]">{rankings[cat.id].length}</span>
               ) : null}
@@ -575,8 +585,9 @@ export default function DraftTab({ overrideRankings = null, overridePicks = null
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
 
 function LoadingSkeleton() {
+  const { t } = useTranslation();
   return (
-    <div className={LV_SKELETON_WRAP_CLASSES} aria-busy="true" aria-label="Loading">
+    <div className={LV_SKELETON_WRAP_CLASSES} aria-busy="true" aria-label={t('leagueView.loading.ariaLabel')}>
       {[90, 85, 90, 80, 90, 85, 90, 80, 85, 90].map((w, i) => (
         <div key={i} className={LV_SKELETON_ROW_CLASSES} style={{ width: `${w}%` }} />
       ))}
