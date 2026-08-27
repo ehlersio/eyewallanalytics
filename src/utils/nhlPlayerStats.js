@@ -1,4 +1,5 @@
 // utils/nhlPlayerStats.js
+import i18n from '../i18n';
 // NHL skater/goalie stat definitions + formatters + radar-axis composites,
 // extracted from PlayerPopup.jsx (Session 91) so PlayerComparisonPopup.jsx
 // can reuse the exact same stat list/percentile mapping/radar logic without
@@ -151,7 +152,13 @@ export function groupStats(defs, stats, _isGoalie) {
 }
 
 export function posLabel(code) {
-  return { C:'Centre', LW:'Left Wing', RW:'Right Wing', D:'Defence', G:'Goalie' }[code] || code
+  return {
+    C:  i18n.t('posLabel.nhl.centre'),
+    LW: i18n.t('posLabel.nhl.leftWing'),
+    RW: i18n.t('posLabel.nhl.rightWing'),
+    D:  i18n.t('posLabel.nhl.defence'),
+    G:  i18n.t('posLabel.nhl.goalie'),
+  }[code] || code
 }
 
 // Box-score stat keys (from SKATER_STATS above) that have a percentile

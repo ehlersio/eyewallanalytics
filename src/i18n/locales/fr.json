@@ -1685,5 +1685,35 @@
     "pwhlExpansionLabel": "Expansion 2026–2027",
     "comingSoonAriaLabel": "{{team}} — bientôt disponible",
     "soonBadge": "Bientôt"
+  },
+  "playerComparisonPopup": {
+    "vs": "vs",
+    "goalieMismatch": "Les gardiens et les patineurs utilisent des statistiques différentes et ne peuvent pas être comparés directement. Choisissez deux patineurs ou deux gardiens.",
+    "positionMismatch": "Écart de position : {{posA}} contre {{posB}} — les statistiques ci-dessous sont tout de même affichées, mais l'utilisation diffère selon la position.",
+    "possessionUnavailablePwhl": "Pas encore disponible pour la LPHF — les mesures de possession (WAR/RAPM) nécessitent des données de jeu par présence que la LPHF n'a pas encore, en attendant que le suivi de la ligue soit à niveau (prévu en octobre).",
+    "tabs": {
+      "possession": "Possession",
+      "physical": "Physique",
+      "performance": "Performance"
+    }
+  },
+  "posLabel": {
+    "nhl": {
+      "centre": "Centre",
+      "leftWing": "Ailier gauche",
+      "rightWing": "Ailier droit",
+      "defence": "Défenseur",
+      "goalie": "Gardien"
+    },
+    "pwhl": {
+      "centre": "Centre",
+      "leftWing": "Ailière gauche",
+      "rightWing": "Ailière droite",
+      "defence": "Défenseure",
+      "leftDefence": "Défenseure gauche",
+      "rightDefence": "Défenseure droite",
+      "goalie": "Gardienne",
+      "forward": "Attaquante"
+    }
   }
 }

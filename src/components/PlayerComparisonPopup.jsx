@@ -24,6 +24,7 @@
 // symmetric is simpler than plumbing one player's data in via props and
 // fetching only the other.
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts'
 import { useFetch } from '../hooks/useFetch'
 import { getPlayerStats, TEAM_CONFIG } from '../utils/nhlApi'
@@ -195,6 +196,7 @@ function RadarTick(abbrMap) {
 }
 
 function ComparisonRadar({ axesA, axesB, colorA, colorB, abbrMap }) {
+  const { t } = useTranslation()
   const data = mergeRadarSeries(axesA, axesB)
   const missingA = axesA.filter(d => !d.hasData).map(d => d.axis)
   const missingB = axesB.filter(d => !d.hasData).map(d => d.axis)
@@ -211,7 +213,7 @@ function ComparisonRadar({ axesA, axesB, colorA, colorB, abbrMap }) {
       </ResponsiveContainer>
       {(missingA.length > 0 || missingB.length > 0) && (
         <div className={PP_RADAR_NOTE_CLASSES}>
-          Not enough playing time yet: {[...new Set([...missingA, ...missingB])].join(', ')}
+          {t('playerPopup.radar.notEnoughData', { missing: [...new Set([...missingA, ...missingB])].join(', ') })}
         </div>
       )}
     </div>
@@ -261,18 +263,6 @@ const GOALIE_TAB_GROUPS = {
   performance:   ['Performance'],
 }
 
-const SKATER_TABS = [
-  { key: 'scoring',      label: 'Scoring' },
-  { key: 'possession',   label: 'Possession' },
-  { key: 'physical',     label: 'Physical' },
-  { key: 'specialTeams', label: 'Special Teams' },
-]
-const GOALIE_TABS = [
-  { key: 'record',       label: 'Record' },
-  { key: 'performance',  label: 'Performance' },
-  { key: 'advanced',     label: 'Advanced' },
-]
-
 function filterGroups(groups, names) {
   return groups.filter(g => names.includes(g.group))
 }
@@ -284,41 +274,42 @@ function filterGroups(groups, names) {
 // possession-flavored percentile data at all (WAR/RAPM blocked until
 // shift-level PBP data exists, expected October) -- shows a placeholder.
 function PossessionColumn({ sport, percentiles }) {
+  const { t } = useTranslation()
   if (sport === 'pwhl') {
     return (
       <div className="text-xs text-[color:var(--text-dim)] px-1 py-3">
-        Not available for PWHL yet — possession metrics (WAR/RAPM) need shift-level
-        play-by-play data PWHL doesn't have until the league's tracking catches up
-        (expected October).
+        {t('playerComparisonPopup.possessionUnavailablePwhl')}
       </div>
     )
   }
   const p = percentiles || {}
   return (
     <div className="pcp-pct-col">
-      <PercentileBar label="EV Offence"  pct={p.evOff?.pct}     note={p.evOff?.note} />
-      <PercentileBar label="EV Defence"  pct={p.evDef?.pct}     note={p.evDef?.note} />
-      <PercentileBar label="Competition" pct={p.comp?.pct}      note={p.comp?.note} />
-      <PercentileBar label="Teammates"   pct={p.teammates?.pct} note={p.teammates?.note} />
+      <PercentileBar label={t('playerPopup.analytics.skater.barEvOffence')}  pct={p.evOff?.pct}     note={p.evOff?.note} />
+      <PercentileBar label={t('playerPopup.analytics.skater.barEvDefence')}  pct={p.evDef?.pct}     note={p.evDef?.note} />
+      <PercentileBar label={t('playerPopup.analytics.skater.barCompetition')} pct={p.comp?.pct}      note={p.comp?.note} />
+      <PercentileBar label={t('playerPopup.analytics.skater.barTeammates')}   pct={p.teammates?.pct} note={p.teammates?.note} />
     </div>
   )
 }
 
 function AdvancedGoalieColumn({ percentiles }) {
+  const { t } = useTranslation()
   const p = percentiles || {}
   return (
     <div className="pcp-pct-col">
-      <PercentileBar label="GSAX"            pct={p.gsax?.pct}   note={p.gsax?.note} />
-      <PercentileBar label="GSAX/60"         pct={p.gsax60?.pct} note={p.gsax60?.note} />
-      <PercentileBar label="5-on-5 SV%"      pct={p.evSv?.pct}   note={p.evSv?.note} />
-      <PercentileBar label="High Danger SV%" pct={p.hdSv?.pct}   note={p.hdSv?.note} />
-      <PercentileBar label="Med Danger SV%"  pct={p.mdSv?.pct}   note={p.mdSv?.note} />
-      <PercentileBar label="PK SV%"          pct={p.pkSv?.pct}   note={p.pkSv?.note} />
+      <PercentileBar label={t('shotMapView.goalieCard.gsax')}                pct={p.gsax?.pct}   note={p.gsax?.note} />
+      <PercentileBar label={t('playerPopup.analytics.goalie.barGsax60')}         pct={p.gsax60?.pct} note={p.gsax60?.note} />
+      <PercentileBar label={t('playerPopup.analytics.goalie.bar5v5SvPct')}       pct={p.evSv?.pct}   note={p.evSv?.note} />
+      <PercentileBar label={t('playerPopup.analytics.goalie.barHighDangerSvPct')} pct={p.hdSv?.pct}   note={p.hdSv?.note} />
+      <PercentileBar label={t('playerPopup.analytics.goalie.barMedDangerSvPct')}  pct={p.mdSv?.pct}   note={p.mdSv?.note} />
+      <PercentileBar label={t('playerPopup.analytics.goalie.barPkSvPct')}         pct={p.pkSv?.pct}   note={p.pkSv?.note} />
     </div>
   )
 }
 
 export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose }) {
+  const { t } = useTranslation()
   const isPwhl = sport === 'pwhl'
   const a = usePlayerComparisonData(sport, playerA)
   const b = usePlayerComparisonData(sport, playerB)
@@ -330,9 +321,20 @@ export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose
   const bothGoalie = !goalieMismatch && a.isGoalie && b.isGoalie
   const positionMismatch = !blocked && !bothGoalie && positionsKnown && posGroup(a.position) !== posGroup(b.position)
 
+  const SKATER_TABS = [
+    { key: 'scoring',      label: t('teamView.splits.sectionScoring') },
+    { key: 'possession',   label: t('playerComparisonPopup.tabs.possession') },
+    { key: 'physical',     label: t('playerComparisonPopup.tabs.physical') },
+    { key: 'specialTeams', label: t('team.sectionSpecialTeams') },
+  ]
+  const GOALIE_TABS = [
+    { key: 'record',       label: t('teamView.splits.recordLabel') },
+    { key: 'performance',  label: t('playerComparisonPopup.tabs.performance') },
+    { key: 'advanced',     label: t('teamView.tabs.advanced') },
+  ]
   const tabs = bothGoalie ? GOALIE_TABS : SKATER_TABS
   const [tab, setTab] = useState(tabs[0].key)
-  const activeTab = tabs.find(t => t.key === tab) ? tab : tabs[0].key
+  const activeTab = tabs.find(tabDef => tabDef.key === tab) ? tab : tabs[0].key
 
   const defs      = bothGoalie
     ? (isPwhl ? PWHL_GOALIE_STATS : NHL_GOALIE_STATS)
@@ -376,42 +378,42 @@ export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose
         <div className={PP_HEADER_CLASSES}>
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <PlayerIdentity data={a} sport={sport} />
-            <span className="text-xs font-semibold text-[color:var(--text-dim)] shrink-0 px-1">vs</span>
+            <span className="text-xs font-semibold text-[color:var(--text-dim)] shrink-0 px-1">{t('playerComparisonPopup.vs')}</span>
             <PlayerIdentity data={b} sport={sport} />
           </div>
-          <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label="Close">✕</button>
+          <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label={t('common.close')}>✕</button>
         </div>
 
         <div className={PP_BODY_CLASSES}>
           {(a.loading || b.loading) && (
-            <div className={PP_NO_STATS_CLASSES}>Loading…</div>
+            <div className={PP_NO_STATS_CLASSES}>{t('common.loading')}</div>
           )}
 
           {!a.loading && !b.loading && goalieMismatch && (
-            <BlockMessage text="Goalies and skaters use different stat sets and can't be compared directly. Pick two skaters or two goalies." />
+            <BlockMessage text={t('playerComparisonPopup.goalieMismatch')} />
           )}
 
           {!a.loading && !b.loading && !blocked && (
             <>
               {positionMismatch && (
                 <div className="pcp-mismatch-badge">
-                  Position mismatch: {posLabelFn(a.position)} vs {posLabelFn(b.position)} — stats below are still shown, but usage differs by position.
+                  {t('playerComparisonPopup.positionMismatch', { posA: posLabelFn(a.position), posB: posLabelFn(b.position) })}
                 </div>
               )}
 
               <ComparisonRadar axesA={radarAxesA} axesB={radarAxesB} colorA={a.teamColor} colorB={b.teamColor} abbrMap={abbrMap} />
 
               <div className="pcp-tabbar" role="tablist">
-                {tabs.map(t => (
+                {tabs.map(tabDef => (
                   <button
-                    key={t.key}
+                    key={tabDef.key}
                     type="button"
                     role="tab"
-                    aria-selected={activeTab === t.key}
-                    className={`pcp-tab ${activeTab === t.key ? 'pcp-tab-active' : ''}`}
-                    onClick={() => setTab(t.key)}
+                    aria-selected={activeTab === tabDef.key}
+                    className={`pcp-tab ${activeTab === tabDef.key ? 'pcp-tab-active' : ''}`}
+                    onClick={() => setTab(tabDef.key)}
                   >
-                    {t.label}
+                    {tabDef.label}
                   </button>
                 ))}
               </div>
