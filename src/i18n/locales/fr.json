@@ -1715,5 +1715,32 @@
       "goalie": "Gardienne",
       "forward": "Attaquante"
     }
+  },
+  "teamComparisonPopup": {
+    "notYetAvailable": "Pas encore disponible pour cette saison.",
+    "chooseOpponentAndSeason": "Choisissez un adversaire ci-dessus et une saison à comparer.",
+    "chooseSeason": "Choisissez une saison ci-dessus pour comparer.",
+    "chooseOpponentForH2h": "Choisissez un adversaire ci-dessus pour voir l'historique des confrontations.",
+    "noMeetings": "Aucune confrontation enregistrée entre ces équipes pour l'instant.",
+    "since2023": "Depuis 2023-24",
+    "wins": "victoires",
+    "lastN": "Derniers {{count}} : {{winsA}}-{{winsB}}",
+    "streakPill": "{{abbr}} a gagné {{count}} de suite",
+    "thinSample_one": "Seulement {{count}} confrontation enregistrée — trop peu pour dégager une tendance.",
+    "thinSample_other": "Seulement {{count}} confrontations enregistrées — trop peu pour dégager une tendance.",
+    "opponentFallback": "Adversaire",
+    "seasonFallback": "Saison {{val}}",
+    "headerVs": "{{team}} vs {{opponent}}",
+    "headerCompareTeams": "Comparer les équipes",
+    "headerCompareSeasons": "Comparer les saisons",
+    "comparisonModeAriaLabel": "Mode de comparaison",
+    "vsSeasonTitle": "vs Saison",
+    "compareVsSeasonAriaLabel": "Comparer par saison",
+    "vsTeamTitle": "vs Équipe",
+    "compareVsTeamAriaLabel": "Comparer par équipe",
+    "teamComparisonTypeAriaLabel": "Type de comparaison d'équipe",
+    "fullStatComparison": "Comparaison complète des statistiques",
+    "headToHead": "Confrontation directe",
+    "xgfMetricLabel": "xGF% (5v5)"
   }
 }
