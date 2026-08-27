@@ -572,7 +572,7 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
                           <text x={r.x + r.w/2} y={r.y + r.h/2 + 11} textAnchor="middle"
                             fontSize="9" fontWeight="600" fill="#333"
                             style={{ filter: 'drop-shadow(0px 0px 2px rgba(255,255,255,0.9))' }}>
-                            {z.total} shots
+                            {t('playerPopup.heatMap.goalie.zoneShotsCount', { count: z.total })}
                           </text>
                         </>
                       )}
@@ -580,7 +580,7 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
                         <text x={r.x + r.w/2} y={r.y + r.h/2 + 4} textAnchor="middle"
                           fontSize="9" fontWeight="600" fill="#333"
                           style={{ filter: 'drop-shadow(0px 0px 2px rgba(255,255,255,0.9))' }}>
-                          {z.total} shots
+                          {t('playerPopup.heatMap.goalie.zoneShotsCount', { count: z.total })}
                         </text>
                       )}
                     </g>
