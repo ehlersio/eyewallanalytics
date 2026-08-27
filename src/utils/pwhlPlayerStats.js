@@ -1,4 +1,5 @@
 // utils/pwhlPlayerStats.js
+import i18n from '../i18n';
 // PWHL skater/goalie stat definitions + formatters, extracted from
 // PWHLPlayerPopup.jsx (Session 91) so PlayerComparisonPopup.jsx can reuse
 // them without a circular import -- same reasoning as nhlPlayerStats.js.
@@ -88,8 +89,16 @@ export const GOALIE_STATS = [
 ]
 
 export function posLabel(code) {
-  return { C:'Centre', LW:'Left Wing', RW:'Right Wing', D:'Defence',
-           LD:'Left Defence', RD:'Right Defence', G:'Goalie', F:'Forward' }[code] || code
+  return {
+    C:  i18n.t('posLabel.pwhl.centre'),
+    LW: i18n.t('posLabel.pwhl.leftWing'),
+    RW: i18n.t('posLabel.pwhl.rightWing'),
+    D:  i18n.t('posLabel.pwhl.defence'),
+    LD: i18n.t('posLabel.pwhl.leftDefence'),
+    RD: i18n.t('posLabel.pwhl.rightDefence'),
+    G:  i18n.t('posLabel.pwhl.goalie'),
+    F:  i18n.t('posLabel.pwhl.forward'),
+  }[code] || code
 }
 
 // PWHL's own version of NHL's groupStats(), keyed on this file's field

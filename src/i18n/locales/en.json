@@ -1685,5 +1685,35 @@
     "pwhlExpansionLabel": "2026–27 Expansion",
     "comingSoonAriaLabel": "{{team}} — coming soon",
     "soonBadge": "Soon"
+  },
+  "playerComparisonPopup": {
+    "vs": "vs",
+    "goalieMismatch": "Goalies and skaters use different stat sets and can't be compared directly. Pick two skaters or two goalies.",
+    "positionMismatch": "Position mismatch: {{posA}} vs {{posB}} — stats below are still shown, but usage differs by position.",
+    "possessionUnavailablePwhl": "Not available for PWHL yet — possession metrics (WAR/RAPM) need shift-level play-by-play data PWHL doesn't have until the league's tracking catches up (expected October).",
+    "tabs": {
+      "possession": "Possession",
+      "physical": "Physical",
+      "performance": "Performance"
+    }
+  },
+  "posLabel": {
+    "nhl": {
+      "centre": "Centre",
+      "leftWing": "Left Wing",
+      "rightWing": "Right Wing",
+      "defence": "Defence",
+      "goalie": "Goalie"
+    },
+    "pwhl": {
+      "centre": "Centre",
+      "leftWing": "Left Wing",
+      "rightWing": "Right Wing",
+      "defence": "Defence",
+      "leftDefence": "Left Defence",
+      "rightDefence": "Right Defence",
+      "goalie": "Goalie",
+      "forward": "Forward"
+    }
   }
 }
