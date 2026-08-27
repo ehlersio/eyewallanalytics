@@ -262,11 +262,11 @@ const BRIGHTCOVE_URL = (id) =>
 const SUPABASE_URL  = import.meta.env.VITE_SUPABASE_URL  || 'https://mqgasjzywoibdgxjjkux.supabase.co';
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON || 'sb_publishable_e_zwr1UA7GnHq4OuQSas5Q_kO8bQ_Ct';
 
-async function fetchGameSummaryFromDB(gameId, team) {
+async function fetchGameSummaryFromDB(gameId, team, locale = 'en') {
   if (!gameId || !team) return null;
   try {
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/game_summaries?game_id=eq.${gameId}&team=eq.${team}&select=summary_text,card_text&limit=1`,
+      `${SUPABASE_URL}/rest/v1/game_summaries?game_id=eq.${gameId}&team=eq.${team}&locale=eq.${locale}&select=summary_text,card_text&limit=1`,
       { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } }
     );
     if (!r.ok) return null;
@@ -293,7 +293,7 @@ function corsiColor(pct) {
 // Fetch narrative — DB-first for game summaries, then Worker, then direct AI.
 // Period summaries are not stored in DB (only full game summaries are), so
 // periods always go straight to Worker → direct AI.
-async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false) {
+async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false, locale = 'en') {
   const workerUrl = typeof import.meta !== 'undefined'
     ? import.meta.env?.VITE_WORKER_URL
     : null;
@@ -301,8 +301,12 @@ async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false) {
   const periodKey = summary.isGameSummary ? 'game' : String(summary.period);
 
   // ── Path 0: DB lookup (game summaries only) ───────────────────
+  // French/English localization, Track B Phase B2. Path 1 below
+  // (/summary/narrative, live on-demand generation) is a separate,
+  // older mechanism from the pipeline's nightly-pregenerated
+  // game_summaries -- out of scope for Track B, not locale-aware here.
   if (summary.isGameSummary && summary.gameId) {
-    const dbResult = await fetchGameSummaryFromDB(summary.gameId, carAbbr);
+    const dbResult = await fetchGameSummaryFromDB(summary.gameId, carAbbr, locale);
     if (dbResult?.text) return { narrative: dbResult.text, cardNarrative: dbResult.cardText };
   }
 
@@ -742,24 +746,29 @@ export default function PeriodSummary({
   readOnly = false,
   isPlayoff = false,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const canvasRef = useRef(null);
   const [canvasMounted, setCanvasMounted] = useState(false);
   const [cardNarrative, setCardNarrative] = useState(summary?.cardNarrative || null);
 
   // Generate AI narrative on mount — Worker generates once and caches in KV for all users.
+  // i18n.language in the deps array re-triggers this on a language toggle,
+  // but the `summary.aiNarrative` guard below still short-circuits if the
+  // parent already populated it from a prior fetch -- a mid-view language
+  // switch won't refetch an already-set narrative. Not chased further here;
+  // out of scope for wiring the locale param itself.
   useEffect(() => {
     if (!summary || summary.aiNarrative) return;
     if (!summary.isGameSummary && !summary.aiLoading) return;
-    generateNarrative(summary, carAbbr, oppAbbr, isPlayoff).then(result => {
+    generateNarrative(summary, carAbbr, oppAbbr, isPlayoff, i18n.language).then(result => {
       if (!result) return;
       const text = typeof result === 'string' ? result : result.narrative;
       const card = typeof result === 'string' ? null : result.cardNarrative;
       if (text && onNarrativeReady) onNarrativeReady(summary.period, text);
       if (card) setCardNarrative(card);
     });
-   
-  }, [summary?.period]);
+
+  }, [summary?.period, i18n.language]);
 
   const carIsHome = homeAbbr === carAbbr;
   const carScore  = carIsHome ? summary?.homeScore : summary?.awayScore;

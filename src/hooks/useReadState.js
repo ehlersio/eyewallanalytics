@@ -15,6 +15,7 @@
 // triviaAnswers.js dispatches the same event name after recording an
 // answer, for the same reason.
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSport } from '../utils/SportContext';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { PWHL_TEAM_CONFIG } from '../utils/pwhlApi';
@@ -45,6 +46,7 @@ function setSeen(kind, sport, team, id) {
 
 export function useReadState() {
   const { isPWHL } = useSport();
+  const { i18n } = useTranslation();
   const sport = isPWHL ? 'pwhl' : 'nhl';
   const team = (isPWHL ? PWHL_TEAM_CONFIG : TEAM_CONFIG)?.abbr;
 
@@ -97,7 +99,15 @@ export function useReadState() {
     }
 
     try {
-      const params = new URLSearchParams({ sport, team });
+      // French/English localization, Track B Phase B2 -- trivia_questions
+      // rows are keyed per-locale now (Phase B0/B1, eyewall-pipeline), so
+      // the en and fr rows for the same day/tier/sport/team are different
+      // rows with different ids. This must fetch the same locale the user
+      // is actually viewing (TriviaFeed.jsx), or `answered[String(q.id)]`
+      // below compares against the wrong row's id -- the badge could stay
+      // "unseen" after a real answer, or clear without the shown question
+      // actually being answered.
+      const params = new URLSearchParams({ sport, team, locale: i18n.language });
       const res = await fetch(`${WORKER_URL}/trivia/today?${params}`);
       if (res.ok) {
         const data = await res.json();
@@ -111,7 +121,7 @@ export function useReadState() {
     } catch {
       // leave previous state
     }
-  }, [sport, team]);
+  }, [sport, team, i18n.language]);
 
   useEffect(() => {
     refresh();
