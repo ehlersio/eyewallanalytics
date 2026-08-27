@@ -20,6 +20,7 @@ import { fetchPWHLPlayerShots, fetchPWHLGoalieShots, fetchPWHLPlayerLanding, fet
 import { fetchComparisonSeasons } from '../utils/seasonClient';
 import { normalizeComparisonSeasons } from '../utils/seasonComparison';
 import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById } from '../utils/pwhlConfig';
+import { formatDate } from '../utils/formatters';
 import SeasonOverlayChart from './SeasonOverlayChart';
 
 // Local TEAM_CODES (team_id -> abbr) map removed Session 85 — stale
@@ -139,7 +140,7 @@ const SEASON_LABEL = '2025–26';
 function fmtBirth(str) {
   if (!str) return null;
   const d = new Date(str + 'T12:00:00');
-  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  return formatDate(d, { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
 function calcAge(str) {
@@ -700,6 +701,7 @@ function PWHLScout({ player, isGoalie, seasonLabel }) {
 // row-list version used; only the populated case hands off to the shared
 // TileStatSection, which is what actually needs the tile grid + toggle.
 function PWHLCompareSection({ label, stats, defs, loading }) {
+  const { t } = useTranslation();
   const groups = stats ? pwhlGroupStats(defs, stats) : [];
   if (loading) {
     return (
@@ -713,7 +715,7 @@ function PWHLCompareSection({ label, stats, defs, loading }) {
     return (
       <div className="stat-section">
         <div className="stat-section-header"><span className="stat-section-label">{label}</span></div>
-        <div className="stat-section-body"><div className={PP_NO_STATS_CLASSES}>No data for this player in {label}.</div></div>
+        <div className="stat-section-body"><div className={PP_NO_STATS_CLASSES}>{t('playerPopup.compareTab.noDataPwhl', { label })}</div></div>
       </div>
     );
   }
@@ -731,6 +733,7 @@ function PWHLCompareSeasonCard({ playerId, seasonValue, label, defs }) {
 // ── Main popup ────────────────────────────────────────────────
 
 export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_LABEL, season = PWHL_CURRENT_SEASON, onClose }) {
+  const { t } = useTranslation();
   const [imgErr, setImgErr] = useState(false);
   const [ppTab, setPpTab]   = useState('stats');
   const [compareSeasons, setCompareSeasons] = useState([]);
@@ -836,13 +839,13 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
   // single-block header for everyone.
   const showHeaderReflow = !!pctData?.percentiles;
   const bioFields = [
-    { label: 'Height',    value: fmtHeight(p.height_inches) },
-    { label: 'Weight',    value: null },
-    { label: isGoalie ? 'Catches' : 'Shoots',
-      value: p.shoots ? (p.shoots === 'L' ? 'Left' : p.shoots === 'R' ? 'Right' : p.shoots) : null },
-    { label: 'Age',       value: p.birth_date ? calcAge(p.birth_date) : null },
-    { label: 'Birthdate', value: p.birth_date ? fmtBirth(p.birth_date) : null },
-    { label: 'Hometown',  value: p.birth_city || null },
+    { label: t('playerPopup.bio.height'),    value: fmtHeight(p.height_inches) },
+    { label: t('playerPopup.bio.weight'),    value: null },
+    { label: isGoalie ? t('playerPopup.bio.catches') : t('playerPopup.bio.shoots'),
+      value: p.shoots ? (p.shoots === 'L' ? t('playerPopup.bio.left') : p.shoots === 'R' ? t('playerPopup.bio.right') : p.shoots) : null },
+    { label: t('playerPopup.bio.age'),       value: p.birth_date ? calcAge(p.birth_date) : null },
+    { label: t('playerPopup.bio.birthdate'), value: p.birth_date ? fmtBirth(p.birth_date) : null },
+    { label: t('playerPopup.bio.hometown'),  value: p.birth_city || null },
   ];
 
   // Built once, placed either inline in .pp-header (goalies/loading) or
@@ -876,11 +879,11 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
             </div>
             <div className={PP_CHIPS_CLASSES}>
               {p.position && <span className={PP_POS_CHIP_CLASSES}>{posLabel(p.position)}</span>}
-              {!showHeaderReflow && p.shoots && <span className={PP_CHIP_CLASSES}>{isGoalie ? 'Catches' : 'Shoots'} {p.shoots === 'L' ? 'Left' : p.shoots === 'R' ? 'Right' : p.shoots}</span>}
+              {!showHeaderReflow && p.shoots && <span className={PP_CHIP_CLASSES}>{isGoalie ? t('playerPopup.bio.catches') : t('playerPopup.bio.shoots')} {p.shoots === 'L' ? t('playerPopup.bio.left') : p.shoots === 'R' ? t('playerPopup.bio.right') : p.shoots}</span>}
             </div>
             {!showHeaderReflow && p.birth_date && (
               <div className={PP_BIRTH_CLASSES}>
-                {fmtBirth(p.birth_date)} · Age {calcAge(p.birth_date)}
+                {t('playerPopup.bio.birthAge', { birth: fmtBirth(p.birth_date), age: calcAge(p.birth_date) })}
                 {p.birth_city ? ` · ${p.birth_city}` : ''}
               </div>
             )}
@@ -902,7 +905,7 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
             />
           )}
           {!showHeaderReflow && comparisonEntry}
-          <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label="Close">✕</button>
+          <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label={t('common.close')}>✕</button>
         </div>
 
         {/* ── Bio row — full width, 6 evenly-spaced columns (Session 85) ── */}
@@ -919,10 +922,10 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
 
         {/* ── Tabs ── */}
         <div className={PP_TABS_CLASSES}>
-          <button className={ppTabClasses(ppTab === 'stats')} onClick={() => setPpTab('stats')}>📊 Stats</button>
-          <button className={ppTabClasses(ppTab === 'heatmap')} onClick={() => setPpTab('heatmap')}>🎯 Heat Map</button>
-          <button className={ppTabClasses(ppTab === 'scout')} onClick={() => setPpTab('scout')}>🔍 Scout</button>
-          <button className={ppTabClasses(ppTab === 'compare')} onClick={() => setPpTab('compare')}>🆚 Compare</button>
+          <button className={ppTabClasses(ppTab === 'stats')} onClick={() => setPpTab('stats')}>{t('playerPopup.tabs.stats')}</button>
+          <button className={ppTabClasses(ppTab === 'heatmap')} onClick={() => setPpTab('heatmap')}>{t('playerPopup.tabs.heatMap')}</button>
+          <button className={ppTabClasses(ppTab === 'scout')} onClick={() => setPpTab('scout')}>{t('playerPopup.tabs.scout')}</button>
+          <button className={ppTabClasses(ppTab === 'compare')} onClick={() => setPpTab('compare')}>{t('playerPopup.tabs.compare')}</button>
         </div>
 
         {/* ── Stats tab ── */}
@@ -931,23 +934,23 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
             {statsLoading ? (
               <div className={PP_HEATMAP_EMPTY_CLASSES}>
                 <div className={PP_HEATMAP_ICON_CLASSES}>📊</div>
-                <div>Loading stats…</div>
+                <div>{t('playerPopup.loadingStats')}</div>
               </div>
             ) : (
               <>
                 {currentGroups.length > 0
                   ? <TileStatSection
-                      label={`${seasonLabel} Regular Season`}
+                      label={t('playerPopup.sections.seasonRegularPwhl', { season: seasonLabel })}
                       groups={currentGroups}
                       highlight
                       percentiles={!isGoalie ? pctData?.percentiles : undefined}
                       pctMap={PWHL_STAT_PCT_MAP}
                     />
-                  : <div className={PP_NO_STATS_CLASSES}>No stats available for this player yet.</div>}
+                  : <div className={PP_NO_STATS_CLASSES}>{t('playerPopup.bio.noStats')}</div>}
                 {(careerRegGroups.length > 0 || careerPOGroups.length > 0) && (
                   <div className="stat-section-peers">
-                    {careerRegGroups.length > 0 && <TileStatSection label="Career Regular Season" groups={careerRegGroups} />}
-                    {careerPOGroups.length > 0 && <TileStatSection label="Career Playoffs" groups={careerPOGroups} />}
+                    {careerRegGroups.length > 0 && <TileStatSection label={t('playerPopup.sections.careerRegularPwhl')} groups={careerRegGroups} />}
+                    {careerPOGroups.length > 0 && <TileStatSection label={t('playerPopup.sections.careerPlayoffs')} groups={careerPOGroups} />}
                   </div>
                 )}
               </>
@@ -975,17 +978,17 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
               maxSelected={4}
             />
             {compareSeasons.length === 0 && (
-              <div className={PP_NO_STATS_CLASSES}>Select two or more seasons above to compare.</div>
+              <div className={PP_NO_STATS_CLASSES}>{t('playerPopup.compareTab.selectSeasons')}</div>
             )}
             {chartableStatDefs.length > 0 && compareSeasons.length > 0 && (
               <div className="stat-section xg-overlay-section">
                 <div className="stat-section-header">
-                  <span className="stat-section-label">Per-game trend</span>
+                  <span className="stat-section-label">{t('playerPopup.compareTab.perGameTrend')}</span>
                   <select
                     className={PP_METRIC_SELECT_CLASSES}
                     value={activeChartDef?.key || ''}
                     onChange={e => setChartMetricKey(e.target.value)}
-                    aria-label="Trend metric"
+                    aria-label={t('playerPopup.compareTab.trendMetricAriaLabel')}
                   >
                     {chartableStatDefs.map(d => (
                       <option key={d.key} value={d.key}>{d.label}</option>
@@ -994,7 +997,7 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
                 </div>
                 <div className="stat-section-body">
                   {gameLogLoading
-                    ? <div className={PP_NO_STATS_CLASSES}>Loading chart…</div>
+                    ? <div className={PP_NO_STATS_CLASSES}>{t('playerPopup.compareTab.loadingChart')}</div>
                     : <SeasonOverlayChart series={chartSeries} metricLabel={activeChartDef.label} />}
                 </div>
               </div>
