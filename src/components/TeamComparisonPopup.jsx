@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { fetchTeamSeasonsCompare, fetchTeamSeasonsCompareTeams, fetchTeamHeadToHead } from '../utils/nhlApi';
 import { fetchPWHLTeamSeasonsCompare, fetchPWHLTeamSeasonsCompareTeams, fetchPWHLTeamHeadToHead } from '../utils/pwhlApi';
@@ -202,6 +203,7 @@ function MetricRow({ label, value, fmt }) {
 }
 
 function TeamCompareSeasonCard({ label, row }) {
+  const { t } = useTranslation();
   return (
     <div className={SECTION_CLASSES}>
       <div className={SECTION_HEADER_CLASSES}>
@@ -209,7 +211,7 @@ function TeamCompareSeasonCard({ label, row }) {
       </div>
       <div className={SECTION_BODY_CLASSES}>
         {!row && (
-          <div className={PP_NO_STATS_CLASSES}>Not yet available for this season.</div>
+          <div className={PP_NO_STATS_CLASSES}>{t('teamComparisonPopup.notYetAvailable')}</div>
         )}
         {row && METRICS.map(m => <MetricRow key={m.key} label={m.label} value={row[m.key]} fmt={m.fmt} />)}
       </div>
@@ -227,6 +229,7 @@ function TeamCompareSeasonCard({ label, row }) {
 // HeadToHeadPanel below, one picker for both sub-tabs) and rendered once
 // by the parent, not here -- this panel only owns the season picker.
 function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, opponentLabel, season, onSeasonChange }) {
+  const { t } = useTranslation();
   const selectedSeason = season[0] ?? null;
   const fetchFn = league === 'pwhl' ? fetchPWHLTeamSeasonsCompareTeams : fetchTeamSeasonsCompareTeams;
   const { data: rows, loading } = useFetch(
@@ -248,14 +251,14 @@ function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, oppon
       </div>
 
       {!opponent && (
-        <div className={PP_NO_STATS_CLASSES}>Choose an opponent above and a season to compare.</div>
+        <div className={PP_NO_STATS_CLASSES}>{t('teamComparisonPopup.chooseOpponentAndSeason')}</div>
       )}
       {opponent && !selectedSeason && (
-        <div className={PP_NO_STATS_CLASSES}>Choose a season above to compare.</div>
+        <div className={PP_NO_STATS_CLASSES}>{t('teamComparisonPopup.chooseSeason')}</div>
       )}
 
       {loading && opponent && selectedSeason && (
-        <div className={PP_NO_STATS_CLASSES}>Loading…</div>
+        <div className={PP_NO_STATS_CLASSES}>{t('common.loading')}</div>
       )}
       {!loading && opponent && selectedSeason && (
         <div className={SECTION_PEERS_CLASSES}>
@@ -277,6 +280,7 @@ function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, oppon
 // pair pays the generation cost, same UX pattern as PeriodSummary.jsx's
 // game/period narratives.
 function HeadToHeadNarrativeCard({ league, h2h, teamADisplay, teamBDisplay }) {
+  const { t } = useTranslation();
   const [narrative, setNarrative] = useState(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -320,11 +324,11 @@ function HeadToHeadNarrativeCard({ league, h2h, teamADisplay, teamBDisplay }) {
 
   return (
     <div className={H2H_NARRATIVE_CLASSES}>
-      <div className={H2H_NARRATIVE_LABEL_CLASSES}><span>⚡</span> EyeWall AI</div>
+      <div className={H2H_NARRATIVE_LABEL_CLASSES}>{t('gameStatsPopup.summary.badge')}</div>
       {loading ? (
         <div className={H2H_NARRATIVE_LOADING_CLASSES}>
           <div className={H2H_NARRATIVE_DOT_CLASSES} />
-          Generating analysis…
+          {t('periodSummary.ai.generating')}
         </div>
       ) : (
         <div className={H2H_NARRATIVE_TEXT_CLASSES}>{narrative}</div>
@@ -347,6 +351,7 @@ function HeadToHeadNarrativeCard({ league, h2h, teamADisplay, teamBDisplay }) {
 // HEAD_TO_HEAD_BRIEF.md's historical-depth note. Don't relabel this
 // "all-time" even though the underlying route has no season filter.
 function HeadToHeadPanel({ league, teamValue, opponent, teamLabel, opponentLabel }) {
+  const { t } = useTranslation();
   const fetchFn = league === 'pwhl' ? fetchPWHLTeamHeadToHead : fetchTeamHeadToHead;
   const { data: h2h, loading } = useFetch(
     () => opponent ? fetchFn(teamValue, opponent) : Promise.resolve(null),
@@ -354,13 +359,13 @@ function HeadToHeadPanel({ league, teamValue, opponent, teamLabel, opponentLabel
   );
 
   if (!opponent) {
-    return <div className={PP_NO_STATS_CLASSES}>Choose an opponent above to see head-to-head history.</div>;
+    return <div className={PP_NO_STATS_CLASSES}>{t('teamComparisonPopup.chooseOpponentForH2h')}</div>;
   }
   if (loading) {
-    return <div className={PP_NO_STATS_CLASSES}>Loading…</div>;
+    return <div className={PP_NO_STATS_CLASSES}>{t('common.loading')}</div>;
   }
   if (!h2h || h2h.totalMeetings === 0) {
-    return <div className={PP_NO_STATS_CLASSES}>No meetings on record between these teams yet.</div>;
+    return <div className={PP_NO_STATS_CLASSES}>{t('teamComparisonPopup.noMeetings')}</div>;
   }
 
   const { totalMeetings, allTimeRecord, recentWindow, currentStreak, isThinSample } = h2h;
@@ -373,13 +378,13 @@ function HeadToHeadPanel({ league, teamValue, opponent, teamLabel, opponentLabel
   return (
     <>
       <div className={H2H_SCOREBOARD_CLASSES}>
-        <div className={H2H_SCOREBOARD_LABEL_CLASSES}>Since 2023-24</div>
+        <div className={H2H_SCOREBOARD_LABEL_CLASSES}>{t('teamComparisonPopup.since2023')}</div>
         <div className={H2H_SCOREBOARD_TEAMS_CLASSES}>
           <div className={H2H_SCOREBOARD_TEAM_CLASSES}>
             <TeamLogo abbr={teamAbbr} sport={sport} size={36} />
             <div className={H2H_SCOREBOARD_WINS_CLASSES}>{allTimeRecord.teamAWins}</div>
           </div>
-          <div className={H2H_SCOREBOARD_VS_CLASSES}>wins</div>
+          <div className={H2H_SCOREBOARD_VS_CLASSES}>{t('teamComparisonPopup.wins')}</div>
           <div className={H2H_SCOREBOARD_TEAM_CLASSES}>
             <TeamLogo abbr={opponentAbbr} sport={sport} size={36} />
             <div className={H2H_SCOREBOARD_WINS_CLASSES}>{allTimeRecord.teamBWins}</div>
@@ -387,15 +392,15 @@ function HeadToHeadPanel({ league, teamValue, opponent, teamLabel, opponentLabel
         </div>
         <div className={H2H_SCOREBOARD_PILLS_CLASSES}>
           {recentWindow.size < totalMeetings && (
-            <span className={H2H_PILL_CLASSES}>Last {recentWindow.size}: {recentWindow.teamAWins}-{recentWindow.teamBWins}</span>
+            <span className={H2H_PILL_CLASSES}>{t('teamComparisonPopup.lastN', { count: recentWindow.size, winsA: recentWindow.teamAWins, winsB: recentWindow.teamBWins })}</span>
           )}
           {currentStreak && (
-            <span className={H2H_PILL_CLASSES}>{streakAbbr} won {currentStreak.count} straight</span>
+            <span className={H2H_PILL_CLASSES}>{t('teamComparisonPopup.streakPill', { abbr: streakAbbr, count: currentStreak.count })}</span>
           )}
         </div>
         {isThinSample && (
           <div className={PP_NO_STATS_CLASSES} style={{ marginTop: 10 }}>
-            Only {totalMeetings} meeting{totalMeetings === 1 ? '' : 's'} on record — too few to call a trend.
+            {t('teamComparisonPopup.thinSample', { count: totalMeetings })}
           </div>
         )}
       </div>
@@ -410,6 +415,7 @@ function HeadToHeadPanel({ league, teamValue, opponent, teamLabel, opponentLabel
 // NHL, a numeric team_id for PWHL — whatever fetchTeamSeasonsCompare /
 // fetchPWHLTeamSeasonsCompare expect.
 export default function TeamComparisonPopup({ league, teamValue, teamLabel, onClose }) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState('season'); // 'season' | 'team'
   const [teamSubMode, setTeamSubMode] = useState('full'); // 'full' | 'h2h', only relevant when mode === 'team'
   const [compareSeasons, setCompareSeasons] = useState([]);
@@ -420,8 +426,8 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
   const [vsTeamOpponent, setVsTeamOpponent] = useState(null);
   const [vsTeamSeason, setVsTeamSeason] = useState([]); // SeasonComparisonPicker-shaped: 0 or 1 value
   const opponentOptions = league === 'pwhl'
-    ? PWHL_TEAMS.map(t => ({ value: t.teamId, label: t.displayName }))
-    : ALL_TEAMS.map(t => ({ value: t.abbr, label: t.displayName }));
+    ? PWHL_TEAMS.map(team => ({ value: team.teamId, label: team.displayName }))
+    : ALL_TEAMS.map(team => ({ value: team.abbr, label: team.displayName }));
 
   // Header logo -- current team, always; opponent, once picked (Option C:
   // the header itself becomes the toggle). Opponent selection is shared
@@ -435,7 +441,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
     ? resolveTeamLogo(league, vsTeamOpponent)
     : {};
   const opponentLabel = vsTeamOpponent
-    ? (opponentOptions.find(t => String(t.value) === String(vsTeamOpponent))?.label || 'Opponent')
+    ? (opponentOptions.find(opt => String(opt.value) === String(vsTeamOpponent))?.label || t('teamComparisonPopup.opponentFallback'))
     : null;
 
   const fetchFn = league === 'pwhl' ? fetchPWHLTeamSeasonsCompare : fetchTeamSeasonsCompare;
@@ -448,7 +454,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
   // purely for season labels ("2025-26 Playoffs" etc), no second request.
   const { data: comparisonConfig } = useFetch(fetchComparisonSeasons, []);
   const seasonOptions = normalizeComparisonSeasons(league, comparisonConfig?.[league]?.seasons);
-  const labelFor = (val) => seasonOptions.find(s => s.value === val)?.label || `Season ${val}`;
+  const labelFor = (val) => seasonOptions.find(s => s.value === val)?.label || t('teamComparisonPopup.seasonFallback', { val });
 
   // Session 66: no artificial 4-season ceiling. This is the same
   // /config/seasons/comparison-backed list SeasonComparisonPicker itself
@@ -502,12 +508,14 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
   // every other state (vs-Season mode, or vs-Team mode with nothing picked
   // yet) so there's no empty/broken-looking header while the user is still
   // choosing.
-  const headerTitle = showOpponentInHeader ? `${teamLabel} vs ${opponentLabel}` : (mode === 'team' ? 'Compare Teams' : 'Compare Seasons');
+  const headerTitle = showOpponentInHeader
+    ? t('teamComparisonPopup.headerVs', { team: teamLabel, opponent: opponentLabel })
+    : (mode === 'team' ? t('teamComparisonPopup.headerCompareTeams') : t('teamComparisonPopup.headerCompareSeasons'));
   // Season label only applies to Full Stat Comparison -- Head-to-Head
   // spans all seasons, so it has no single season to show here.
   const headerSubtitle = showOpponentInHeader && teamSubMode === 'full' && vsTeamSeason[0]
     ? labelFor(vsTeamSeason[0])
-    : (showOpponentInHeader && teamSubMode === 'h2h' ? 'Since 2023-24' : teamLabel);
+    : (showOpponentInHeader && teamSubMode === 'h2h' ? t('teamComparisonPopup.since2023') : teamLabel);
 
   return (
     <div className="popup-backdrop" onClick={onClose}>
@@ -519,7 +527,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
             </div>
             {showOpponentInHeader && (
               <>
-                <span className={CVT_VS_CLASSES}>vs</span>
+                <span className={CVT_VS_CLASSES}>{t('playerComparisonPopup.vs')}</span>
                 <div className={PP_PHOTO_WRAP_CLASSES}>
                   <TeamLogo abbr={opponentLogoAbbr} sport={league === 'pwhl' ? 'pwhl' : 'nhl'} size={44} color={opponentLogoColor} />
                 </div>
@@ -530,14 +538,14 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
             <div className={PP_NAME_CLASSES}><span className={PP_FIRST_CLASSES}>{headerTitle}</span></div>
             <div className={PP_BIRTH_CLASSES}>{headerSubtitle}</div>
           </div>
-          <div className={CVT_MODE_SWITCH_CLASSES} role="group" aria-label="Comparison mode">
+          <div className={CVT_MODE_SWITCH_CLASSES} role="group" aria-label={t('teamComparisonPopup.comparisonModeAriaLabel')}>
             <button
               type="button"
               className={cvtModeBtnClasses(mode === 'season')}
               aria-pressed={mode === 'season'}
               onClick={() => setMode('season')}
-              title="vs Season"
-              aria-label="Compare vs season"
+              title={t('teamComparisonPopup.vsSeasonTitle')}
+              aria-label={t('teamComparisonPopup.compareVsSeasonAriaLabel')}
             >
               📅
             </button>
@@ -546,13 +554,13 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
               className={cvtModeBtnClasses(mode === 'team')}
               aria-pressed={mode === 'team'}
               onClick={() => setMode('team')}
-              title="vs Team"
-              aria-label="Compare vs team"
+              title={t('teamComparisonPopup.vsTeamTitle')}
+              aria-label={t('teamComparisonPopup.compareVsTeamAriaLabel')}
             >
               🆚
             </button>
           </div>
-          <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label="Close">✕</button>
+          <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label={t('common.close')}>✕</button>
         </div>
 
         <div className={PP_BODY_CLASSES}>
@@ -565,7 +573,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
                 maxSelected={maxSelected}
               />
               {compareSeasons.length === 0 && (
-                <div className={PP_NO_STATS_CLASSES}>Select two or more seasons above to compare.</div>
+                <div className={PP_NO_STATS_CLASSES}>{t('playerPopup.compareTab.selectSeasons')}</div>
               )}
 
               {isNhl && compareSeasons.length > 0 && (
@@ -575,15 +583,15 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
                 // per selected season," and this section isn't one of those.
                 <div className={`${SECTION_CLASSES} xg-overlay-section`}>
                   <div className={SECTION_HEADER_CLASSES}>
-                    <span className={SECTION_LABEL_CLASSES}>xGF% per game · 5v5</span>
+                    <span className={SECTION_LABEL_CLASSES}>{t('teamView.advanced.xgfSparklineTitle')}</span>
                   </div>
                   <div className={SECTION_BODY_CLASSES}>
                     {xgLoading
-                      ? <div className={PP_NO_STATS_CLASSES}>Loading chart…</div>
+                      ? <div className={PP_NO_STATS_CLASSES}>{t('playerPopup.compareTab.loadingChart')}</div>
                       : (
                         <SeasonOverlayChart
                           series={chartSeries}
-                          metricLabel="xGF% (5v5)"
+                          metricLabel={t('teamComparisonPopup.xgfMetricLabel')}
                           valueFormatter={(v) => `${v}%`}
                           yDomain={[0, 100]}
                           referenceValue={50}
@@ -594,7 +602,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
               )}
 
               {loading && compareSeasons.length > 0 && (
-                <div className={PP_NO_STATS_CLASSES}>Loading…</div>
+                <div className={PP_NO_STATS_CLASSES}>{t('common.loading')}</div>
               )}
               {!loading && sortedDesc.length > 0 && (
                 <div className={SECTION_PEERS_CLASSES}>
@@ -616,14 +624,14 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
                 <TeamOpponentPicker teams={opponentOptions} value={vsTeamOpponent} onChange={setVsTeamOpponent} excludeValue={teamValue} />
               </div>
 
-              <div className={COMPARE_SUBMODE_TOGGLE_CLASSES} role="group" aria-label="Team comparison type">
+              <div className={COMPARE_SUBMODE_TOGGLE_CLASSES} role="group" aria-label={t('teamComparisonPopup.teamComparisonTypeAriaLabel')}>
                 <button
                   type="button"
                   className={compareModeBtnClasses(teamSubMode === 'full')}
                   aria-pressed={teamSubMode === 'full'}
                   onClick={() => setTeamSubMode('full')}
                 >
-                  Full Stat Comparison
+                  {t('teamComparisonPopup.fullStatComparison')}
                 </button>
                 <button
                   type="button"
@@ -631,7 +639,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
                   aria-pressed={teamSubMode === 'h2h'}
                   onClick={() => setTeamSubMode('h2h')}
                 >
-                  Head-to-Head
+                  {t('teamComparisonPopup.headToHead')}
                 </button>
               </div>
 

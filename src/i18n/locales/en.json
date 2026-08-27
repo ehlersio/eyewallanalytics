@@ -1715,5 +1715,32 @@
       "goalie": "Goalie",
       "forward": "Forward"
     }
+  },
+  "teamComparisonPopup": {
+    "notYetAvailable": "Not yet available for this season.",
+    "chooseOpponentAndSeason": "Choose an opponent above and a season to compare.",
+    "chooseSeason": "Choose a season above to compare.",
+    "chooseOpponentForH2h": "Choose an opponent above to see head-to-head history.",
+    "noMeetings": "No meetings on record between these teams yet.",
+    "since2023": "Since 2023-24",
+    "wins": "wins",
+    "lastN": "Last {{count}}: {{winsA}}-{{winsB}}",
+    "streakPill": "{{abbr}} won {{count}} straight",
+    "thinSample_one": "Only {{count}} meeting on record — too few to call a trend.",
+    "thinSample_other": "Only {{count}} meetings on record — too few to call a trend.",
+    "opponentFallback": "Opponent",
+    "seasonFallback": "Season {{val}}",
+    "headerVs": "{{team}} vs {{opponent}}",
+    "headerCompareTeams": "Compare Teams",
+    "headerCompareSeasons": "Compare Seasons",
+    "comparisonModeAriaLabel": "Comparison mode",
+    "vsSeasonTitle": "vs Season",
+    "compareVsSeasonAriaLabel": "Compare vs season",
+    "vsTeamTitle": "vs Team",
+    "compareVsTeamAriaLabel": "Compare vs team",
+    "teamComparisonTypeAriaLabel": "Team comparison type",
+    "fullStatComparison": "Full Stat Comparison",
+    "headToHead": "Head-to-Head",
+    "xgfMetricLabel": "xGF% (5v5)"
   }
 }
