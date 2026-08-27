@@ -9,6 +9,7 @@
 // After the user taps a team, this calls the appropriate setTeamConfig()
 // then onSelect(). The caller decides whether to reload the page.
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ALL_TEAMS, setTeamConfig } from '../utils/teamConfig'
 import { PWHL_TEAMS } from '../utils/pwhlConfig'
 import { useAuth } from '../utils/AuthContext'
@@ -97,18 +98,19 @@ const pwhlTeamByAbbr = Object.fromEntries(PWHL_TEAMS.map(t => [t.abbr, t]));
 
 // ── Sport step ────────────────────────────────────────────────────────────────
 function SportStep({ onPickSport }) {
+  const { t } = useTranslation();
   const [hovered, setHovered] = useState(null);
 
   const sports = [
     {
       id: 'nhl',
       logo: '/nhl-assets/logos/nhl/svg/NHL_dark.svg',
-      description: 'All 32 teams · Full analytics',
+      description: t('teamPicker.nhlDescription'),
     },
     {
       id: 'pwhl',
       logo: '/pwhl-logo.svg',
-      description: `All ${PWHL_ACTIVE_ABBRS.length} teams · Full analytics`,
+      description: t('teamPicker.pwhlDescription', { count: PWHL_ACTIVE_ABBRS.length }),
     },
   ];
 
@@ -116,8 +118,8 @@ function SportStep({ onPickSport }) {
     <>
       <div className={HEADER_CLASSES}>
         <EyeWallLogo alt="EyeWall Analytics" className={HEADER_LOGO_CLASSES} />
-        <h1 className={TITLE_CLASSES}>Choose your league</h1>
-        <p className={SUB_CLASSES}>You can change this any time from settings.</p>
+        <h1 className={TITLE_CLASSES}>{t('teamPicker.chooseLeague')}</h1>
+        <p className={SUB_CLASSES}>{t('teamPicker.settingsHint')}</p>
       </div>
       <div className={SPORT_GRID_CLASSES}>
         {sports.map(({ id, logo, description }) => {
@@ -146,7 +148,7 @@ function SportStep({ onPickSport }) {
         })}
       </div>
       <p className={DISCLAIMER_CLASSES}>
-        EyeWall Analytics is not affiliated with, endorsed by, or sponsored by the National Hockey League (NHL), the Professional Women's Hockey League (PWHL), or any of their teams. All NHL and PWHL team names, logos, and trademarks are the property of their respective owners. Statistics and data are sourced from publicly available APIs and are provided for informational purposes only.
+        {t('teamPicker.disclaimer')}
       </p>
     </>
   );
@@ -154,14 +156,15 @@ function SportStep({ onPickSport }) {
 
 // ── NHL team grid ─────────────────────────────────────────────────────────────
 function NHLTeamStep({ onBack, onSelect }) {
+  const { t } = useTranslation();
   const [hovered, setHovered] = useState(null);
 
   return (
     <>
       <div className={HEADER_CLASSES}>
-        <button className={BACK_CLASSES} onClick={onBack}>← Back</button>
-        <h1 className={TITLE_CLASSES}>Choose your team</h1>
-        <p className={SUB_CLASSES}>You can change this any time from settings.</p>
+        <button className={BACK_CLASSES} onClick={onBack}>{t('teamPicker.back')}</button>
+        <h1 className={TITLE_CLASSES}>{t('teamPicker.chooseTeam')}</h1>
+        <p className={SUB_CLASSES}>{t('teamPicker.settingsHint')}</p>
       </div>
       <div className={DIVISIONS_CLASSES}>
         {NHL_DIVISIONS.map(division => (
@@ -204,14 +207,15 @@ function NHLTeamStep({ onBack, onSelect }) {
 
 // ── PWHL team grid ────────────────────────────────────────────────────────────
 function PWHLTeamStep({ onBack, onSelect }) {
+  const { t } = useTranslation();
   const [hovered, setHovered] = useState(null);
 
   return (
     <>
       <div className={HEADER_CLASSES}>
-        <button className={BACK_CLASSES} onClick={onBack}>← Back</button>
-        <h1 className={TITLE_CLASSES}>Choose your team</h1>
-        <p className={SUB_CLASSES}>You can change this any time from settings.</p>
+        <button className={BACK_CLASSES} onClick={onBack}>{t('teamPicker.back')}</button>
+        <h1 className={TITLE_CLASSES}>{t('teamPicker.chooseTeam')}</h1>
+        <p className={SUB_CLASSES}>{t('teamPicker.settingsHint')}</p>
       </div>
       <div className={DIVISIONS_CLASSES}>
         {/* Active teams */}
@@ -249,7 +253,7 @@ function PWHLTeamStep({ onBack, onSelect }) {
         {/* Expansion teams — disabled. Hidden entirely once none are left. */}
         {PWHL_EXPANSION_ABBRS.length > 0 && (
         <div>
-          <span className={DIVISION_LABEL_CLASSES}>2026–27 Expansion</span>
+          <span className={DIVISION_LABEL_CLASSES}>{t('teamPicker.pwhlExpansionLabel')}</span>
           <div className={GRID_CLASSES}>
             {PWHL_EXPANSION_ABBRS.map(abbr => {
               const team = pwhlTeamByAbbr[abbr];
@@ -259,12 +263,12 @@ function PWHLTeamStep({ onBack, onSelect }) {
                   key={abbr}
                   className={`${TILE_CLASSES} ${TILE_DISABLED_CLASSES}`}
                   disabled
-                  aria-label={`${team.displayName} — coming soon`}
+                  aria-label={t('teamPicker.comingSoonAriaLabel', { team: team.displayName })}
                 >
                   <TeamLogo abbr={abbr} sport="pwhl" size={48} color="var(--text-dim)" />
                   <span className={ABBR_CLASSES}>{abbr}</span>
                   <span className={NAME_CLASSES}>{team.shortName}</span>
-                  <span className={COMING_SOON_CLASSES}>Soon</span>
+                  <span className={COMING_SOON_CLASSES}>{t('teamPicker.soonBadge')}</span>
                 </button>
               );
             })}

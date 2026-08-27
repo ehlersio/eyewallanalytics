@@ -1673,5 +1673,17 @@
     "partialDataTitle_one": "Seulement {{count}} équipe a des données pour cette saison jusqu'à présent",
     "partialDataTitle_other": "Seulement {{count}} équipes ont des données pour cette saison jusqu'à présent",
     "partialBadge": "Partielles"
+  },
+  "teamPicker": {
+    "chooseLeague": "Choisissez votre ligue",
+    "settingsHint": "Vous pouvez le modifier à tout moment depuis les paramètres.",
+    "nhlDescription": "Les 32 équipes de la LNH · Analyses complètes",
+    "pwhlDescription": "Les {{count}} équipes · Analyses complètes",
+    "disclaimer": "EyeWall Analytics n'est affilié à, approuvé par, ni commandité par la Ligue nationale de hockey (LNH), la Ligue professionnelle de hockey féminin (LPHF), ni aucune de leurs équipes. Tous les noms d'équipes, logos et marques de commerce de la LNH et de la LPHF sont la propriété de leurs détenteurs respectifs. Les statistiques et les données proviennent d'API accessibles au public et sont fournies à titre informatif seulement.",
+    "back": "← Retour",
+    "chooseTeam": "Choisissez votre équipe",
+    "pwhlExpansionLabel": "Expansion 2026–2027",
+    "comingSoonAriaLabel": "{{team}} — bientôt disponible",
+    "soonBadge": "Bientôt"
   }
 }
