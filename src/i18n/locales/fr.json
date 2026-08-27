@@ -1454,6 +1454,85 @@
         "filterSog": "TAB ({{count}})",
         "filterMissed": "Ratés ({{count}})"
       }
+    },
+    "analytics": {
+      "emptyState": "Données analytiques pas encore disponibles.",
+      "emptyStateSub": "Mis à jour quotidiennement à partir de MoneyPuck.",
+      "dataSource": "Données : MoneyPuck.com · Mis à jour chaque nuit",
+      "percentileVsGoalies": "Classement centile parmi tous les gardiens de la LNH",
+      "percentileVsPosition": "Classement centile parmi tous les {{position}} de la LNH",
+      "positionForwards": "attaquants",
+      "positionDefensemen": "défenseurs",
+      "goalie": {
+        "gpAndPer60": "{{gp}} PJ · {{value}} par 60",
+        "gsaxCaption": "Buts épargnés au-dessus des attentes — modèle de xButs ajusté pour les rafales",
+        "tierElite": "Élite",
+        "tierAboveAverage": "Au-dessus de la moyenne",
+        "tierAverage": "Moyen",
+        "tierBelowAverage": "Sous la moyenne",
+        "tip5v5SvPct": "Pourcentage d'arrêts à force égale (5 contre 5 seulement). Élimine les situations d'unités spéciales qui peuvent fausser le % d'arrêts global. L'indicateur le plus stable du véritable talent de gardien.",
+        "tipHdSvPct": "Pourcentage d'arrêts sur les tirs à haut danger — pris à environ 15 pieds du filet. Les tirs les plus difficiles à arrêter; la meilleure mesure de gardien ajustée pour la qualité.",
+        "tipMdSvPct": "Pourcentage d'arrêts sur les tirs à danger moyen (15 à 30 pieds du filet). Complète le % d'arrêts à haut danger pour un portrait plus complet de la qualité des arrêts selon l'emplacement des tirs.",
+        "tipPkSvPct": "Pourcentage d'arrêts en désavantage numérique. Le jeu de gardien en désavantage numérique exige un positionnement différent — certains gardiens sont nettement meilleurs ou pires dans cette situation qu'à force égale.",
+        "barGsax60": "BEA/60",
+        "bar5v5SvPct": "% Arr. à 5c5",
+        "barHighDangerSvPct": "% Arr. à haut danger",
+        "barMedDangerSvPct": "% Arr. à danger moyen",
+        "barPkSvPct": "% Arr. en désav. num."
+      },
+      "skater": {
+        "gpAndGameScore": "{{gp}} PJ · Pointage du match {{score}}",
+        "rapmCaption": "RAPM à 5c5 (bêta) + composantes avantage/désavantage numérique et finition",
+        "warTip": "Victoires au-dessus du joueur de remplacement (bêta). La composante à force égale utilise le RAPM à 5c5 — une régression ridge sur 3 saisons de données de présences et de tirs à l'échelle de la ligue, en tenant compte des coéquipiers et des adversaires. Les composantes d'avantage/désavantage numérique et de finition sont basées sur les xButs de MoneyPuck. Le RAPM ne couvre que le 5c5; les unités spéciales demeurent approximatives. L'ajustement selon le début de zone est en développement — les défenseurs défensifs pourraient être légèrement sous-évalués dans le modèle actuel. Validé périodiquement par rapport au RAPM public d'Evolving Hockey.",
+        "tipEvXgfPct": "Pourcentage de buts attendus pour sur la glace à 5c5. La part de la qualité totale des tirs générée pendant que ce joueur est sur la glace — au-dessus de 50 % signifie que l'équipe surpasse ses adversaires en qualité pendant qu'il est sur la glace. Mesure d'équipe, pas individuelle.",
+        "tipXgf60": "Buts attendus individuels générés par 60 minutes — la qualité de tir que ce joueur produit personnellement, selon l'emplacement et le type de tir. Mesure à quel point ses propres tirs sont dangereux, indépendamment de ses coéquipiers de trio.",
+        "tipXga60": "Buts attendus contre sur la glace par 60 minutes à 5c5. Mesure le nombre d'occasions de qualité générées par les adversaires pendant que ce joueur est sur la glace — plus bas, c'est mieux. Mesure d'équipe reflétant la performance défensive de tout le trio.",
+        "tipHdca60": "Occasions à haut danger contre par 60 minutes à 5c5. Des tirs de la zone slot et de l'enclave — les plus susceptibles de mener à un but. Plus bas, c'est mieux.",
+        "tipGoals60": "Buts marqués par 60 minutes de temps de glace. Ajuste selon le temps de jeu pour comparer équitablement un joueur avec 15 min/match à un autre avec 22 min/match.",
+        "tipA160": "Premières passes par 60 minutes. Les premières passes préparent directement le but du marqueur et sont plus significatives que les passes secondaires, qui peuvent être fortuites.",
+        "tipPpToi": "Temps de glace en avantage numérique cette saison. Une présence ici signifie que le joueur a assez de temps en avantage numérique pour une mesure fiable — voir la barre de centile Avantage numérique ci-dessous.",
+        "tipPkToi": "Temps de glace en désavantage numérique cette saison. Une présence ici signifie que le joueur a assez de temps en désavantage numérique pour une mesure fiable — voir la barre de centile Désavantage numérique ci-dessous.",
+        "tierMvp": "Candidat au titre de MVP",
+        "tierTop": "Joueur de premier plan",
+        "tierSolid": "Contributeur solide",
+        "tierReplacement": "Niveau de remplacement",
+        "tierBelowReplacement": "Sous le niveau de remplacement",
+        "barEvOffence": "Attaque à force égale",
+        "barEvDefence": "Défense à force égale",
+        "barPowerPlay": "Avantage numérique",
+        "barPenaltyKill": "Désavantage numérique",
+        "barFinishing": "Finition",
+        "barFirstAssists": "1res passes",
+        "barPenalties": "Pénalités",
+        "barCompetition": "Compétition",
+        "barTeammates": "Coéquipiers"
+      }
+    },
+    "resultsVsProcess": {
+      "sectionLabel": "Résultats c. processus",
+      "emptyState": "Pas assez de matchs pour une lecture fiable.",
+      "emptyStateSub": "Nécessite un échantillon minimum de matchs joués cette saison.",
+      "tipOnIceGf": "Pourcentage de buts pour sur la glace à 5c5 — la part des buts marqués (pas seulement les tentatives de tir/la qualité) pendant que ce joueur est sur la glace. Le côté « résultats » de cette comparaison.",
+      "tipGapVsProcess": "% de buts pour sur la glace moins le % de buts attendus pour à force égale (le côté processus/qualité de tir, montré ci-dessus dans le classement centile). Un grand écart positif ou négatif suggère que les résultats sont plus chauds ou plus froids que le processus sous-jacent — souvent un signe de chance non durable plutôt que de véritable talent.",
+      "gapVsProcessLabel": "Écart c. processus",
+      "outperforming": "Surperforme le processus",
+      "underperforming": "Sous-performe le processus",
+      "narrativeFallback": "L'analyse est générée chaque nuit — revenez après la prochaine exécution du pipeline."
+    },
+    "scoutingBlurb": {
+      "header": "Rapport de dépistage",
+      "emptyState": "Aucun rapport de dépistage pour {{player}} pour l'instant.",
+      "emptyStateSub": "Les rapports sont générés chaque nuit — revenez après la prochaine exécution du pipeline.",
+      "footer": "Généré par IA · Mis à jour chaque nuit"
     }
+  },
+  "percentileBar": {
+    "naFallback": "Données {{label}} non disponibles — le joueur n'a peut-être pas assez de temps de glace dans cette situation pour générer un centile fiable.",
+    "na": "N/D",
+    "tierElite": "Élite",
+    "tierGreat": "Excellent",
+    "tierAboveAvg": "Au-dessus moy.",
+    "tierBelowAvg": "Sous la moy.",
+    "tierPoor": "Faible"
   }
 }
