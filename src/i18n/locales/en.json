@@ -1539,8 +1539,11 @@
       "seasonPlayoffs": "{{season}} Playoffs",
       "careerPlayoffs": "Career Playoffs",
       "seasonRegular": "{{season}} Regular season",
-      "careerRegular": "Career Regular season"
+      "careerRegular": "Career Regular season",
+      "seasonRegularPwhl": "{{season}} Regular Season",
+      "careerRegularPwhl": "Career Regular Season"
     },
+    "loadingStats": "Loading stats…",
     "bio": {
       "height": "Height",
       "weight": "Weight",
@@ -1602,7 +1605,8 @@
       "trendMetricAriaLabel": "Trend metric",
       "seasonTotalSuffix": "{{label}} (season total)",
       "loadingChart": "Loading chart…",
-      "noRegularSeasonData": "No regular-season data for {{season}}."
+      "noRegularSeasonData": "No regular-season data for {{season}}.",
+      "noDataPwhl": "No data for this player in {{label}}."
     }
   },
   "percentileBar": {

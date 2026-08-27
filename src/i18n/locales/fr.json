@@ -1539,8 +1539,11 @@
       "seasonPlayoffs": "Séries {{season}}",
       "careerPlayoffs": "Séries en carrière",
       "seasonRegular": "Saison régulière {{season}}",
-      "careerRegular": "Saison régulière en carrière"
+      "careerRegular": "Saison régulière en carrière",
+      "seasonRegularPwhl": "Saison régulière {{season}}",
+      "careerRegularPwhl": "Saison régulière en carrière"
     },
+    "loadingStats": "Chargement des statistiques…",
     "bio": {
       "height": "Taille",
       "weight": "Poids",
@@ -1602,7 +1605,8 @@
       "trendMetricAriaLabel": "Statistique de tendance",
       "seasonTotalSuffix": "{{label}} (total de la saison)",
       "loadingChart": "Chargement du graphique…",
-      "noRegularSeasonData": "Aucune donnée de saison régulière pour {{season}}."
+      "noRegularSeasonData": "Aucune donnée de saison régulière pour {{season}}.",
+      "noDataPwhl": "Aucune donnée pour cette joueuse en {{label}}."
     }
   },
   "percentileBar": {
