@@ -11,6 +11,7 @@
  */
 
 import { CURRENT_SEASON } from './teamConfig';
+import i18n from '../i18n';
 
 // Season as a number for filter defaults — actual value normally comes
 // from the caller (view components track season state themselves); this
@@ -493,8 +494,11 @@ export async function getGameSummary(gameId, team) {
 
 // ── Player scouting blurb ─────────────────────────────────────
 // Returns the AI-generated scouting blurb for a player, or null if none exists.
+// French/English localization, Track B Phase B2 -- i18n.language rather than
+// a React hook, since this is a plain util outside component scope (same
+// singleton-import pattern as carContracts.js/nhlPlayerStats.js).
 export async function getScoutingBlurb(playerId, season = currentSeason()) {
-  const rows = await workerFetch(`/player-scouting?playerId=${playerId}&season=${season}`).catch(() => []);
+  const rows = await workerFetch(`/player-scouting?playerId=${playerId}&season=${season}&locale=${i18n.language}`).catch(() => []);
   if (!rows?.length) return null;
   return { blurb: rows[0].scouting_text, generatedAt: rows[0].generated_at };
 }
@@ -503,7 +507,7 @@ export async function getScoutingBlurb(playerId, season = currentSeason()) {
 // Returns the AI-generated "results vs. process" blurb for a player, or
 // null if none exists yet (either not enough games, or not generated yet).
 export async function getResultsVsProcessNarrative(playerId, season = currentSeason()) {
-  const rows = await workerFetch(`/player-results-vs-process?playerId=${playerId}&season=${season}`).catch(() => []);
+  const rows = await workerFetch(`/player-results-vs-process?playerId=${playerId}&season=${season}&locale=${i18n.language}`).catch(() => []);
   if (!rows?.length) return null;
   return { blurb: rows[0].narrative_text, generatedAt: rows[0].generated_at };
 }

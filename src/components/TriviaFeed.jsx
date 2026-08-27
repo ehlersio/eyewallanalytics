@@ -133,7 +133,7 @@ function TierCard({ tier, question, answered, userId, onAnswered, sportKey }) {
 }
 
 export default function TriviaFeed() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isPWHL } = useSport();
   const { user } = useAuth();
   const [questions, setQuestions] = useState({ easy: null, medium: null, hard: null });
@@ -150,7 +150,7 @@ export default function TriviaFeed() {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ sport: sportKey, team: activeTeamAbbr });
+      const params = new URLSearchParams({ sport: sportKey, team: activeTeamAbbr, locale: i18n.language });
       const res = await fetch(`${WORKER_URL}/trivia/today?${params}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(t('triviaFeed.error.notAvailable'));
       const data = await res.json();
@@ -160,7 +160,7 @@ export default function TriviaFeed() {
     } finally {
       setLoading(false);
     }
-  }, [sportKey, activeTeamAbbr, t]);
+  }, [sportKey, activeTeamAbbr, t, i18n.language]);
 
   useEffect(() => { fetchQuestions(); }, [fetchQuestions]);
 
