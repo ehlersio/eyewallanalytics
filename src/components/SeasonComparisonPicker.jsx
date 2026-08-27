@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { fetchComparisonSeasons } from '../utils/seasonClient';
 import { normalizeComparisonSeasons } from '../utils/seasonComparison';
@@ -48,6 +49,7 @@ export default function SeasonComparisonPicker({
   maxSelected = null,   // null = unlimited
   filterSeasons = null, // optional (normalizedSeason) => boolean, applied before rendering
 }) {
+  const { t } = useTranslation();
   const { data, loading, error, refetch } = useFetch(fetchComparisonSeasons, []);
 
   const rawSeasons = data?.[league]?.seasons ?? [];
@@ -66,7 +68,7 @@ export default function SeasonComparisonPicker({
 
   if (loading) {
     return (
-      <div className={PICKER_LOADING_CLASSES} role="status" aria-label="Loading seasons">
+      <div className={PICKER_LOADING_CLASSES} role="status" aria-label={t('seasonComparisonPicker.loadingAriaLabel')}>
         <div className={SKELETON_CLASSES} />
         <div className={SKELETON_CLASSES} />
       </div>
@@ -76,18 +78,18 @@ export default function SeasonComparisonPicker({
   if (error) {
     return (
       <div className={PICKER_MESSAGE_CLASSES}>
-        <span>Couldn't load seasons.</span>
-        <button className={RETRY_CLASSES} onClick={refetch}>Retry</button>
+        <span>{t('seasonComparisonPicker.loadError')}</span>
+        <button className={RETRY_CLASSES} onClick={refetch}>{t('playerPopup.pwhlScout.retryButton')}</button>
       </div>
     );
   }
 
   if (seasons.length === 0) {
-    return <div className={PICKER_MESSAGE_CLASSES}>No seasons available to compare yet.</div>;
+    return <div className={PICKER_MESSAGE_CLASSES}>{t('seasonComparisonPicker.noSeasons')}</div>;
   }
 
   return (
-    <div className={PICKER_CLASSES} role="group" aria-label="Select seasons to compare">
+    <div className={PICKER_CLASSES} role="group" aria-label={t('seasonComparisonPicker.groupAriaLabel')}>
       {seasons.map(s => {
         const isSelected = selected.includes(s.value);
         const atCap = maxSelected != null && selected.length >= maxSelected && !isSelected;
@@ -114,10 +116,10 @@ export default function SeasonComparisonPicker({
             aria-pressed={isSelected}
             disabled={atCap}
             onClick={() => toggle(s.value)}
-            title={s.comparable ? undefined : `Only ${s.teamCount} team${s.teamCount === 1 ? '' : 's'} have data for this season so far`}
+            title={s.comparable ? undefined : t('seasonComparisonPicker.partialDataTitle', { count: s.teamCount })}
           >
             {s.label}
-            {!s.comparable && <span className={CHIP_BADGE_CLASSES}>Partial</span>}
+            {!s.comparable && <span className={CHIP_BADGE_CLASSES}>{t('seasonComparisonPicker.partialBadge')}</span>}
           </button>
         );
       })}

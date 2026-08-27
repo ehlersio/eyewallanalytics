@@ -64,6 +64,7 @@
 // distinct "intermission" message.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { RinkMarkings, W, H, CX, CY } from 'react-hockey-rink';
 
@@ -121,14 +122,6 @@ function eventPlayerId(type, d) {
   if (type === 'giveaway' || type === 'takeaway') return d.playerId;
   if (type === 'faceoff') return d.winningPlayerId;
   return null;
-}
-
-function periodOrdinal(n) {
-  if (!n) return '—';
-  if (n === 1) return '1st';
-  if (n === 2) return '2nd';
-  if (n === 3) return '3rd';
-  return `OT${n - 3}`; // OT intermissions: period 4 -> OT1, period 5 -> OT2, ...
 }
 
 const CARD_LABEL_CLASSES = 'sec-label flex items-center justify-between';
@@ -308,6 +301,22 @@ export default function LiveEventRink({
   plays = [], playerMap = {}, oppAbbr, oppColor,
   isLive, inIntermission, displayClock, periodNumber,
 }) {
+  const { t } = useTranslation();
+  const EVENT_TYPE_LABEL = {
+    'goal':         t('liveEventRink.eventTypes.goal'),
+    'shot-on-goal': t('liveEventRink.eventTypes.shotOnGoal'),
+    'missed-shot':  t('liveEventRink.eventTypes.missedShot'),
+    'blocked-shot': t('liveEventRink.eventTypes.blockedShot'),
+    'hit':          t('liveEventRink.eventTypes.hit'),
+    'giveaway':     t('liveEventRink.eventTypes.giveaway'),
+    'takeaway':     t('liveEventRink.eventTypes.takeaway'),
+    'faceoff':      t('liveEventRink.eventTypes.faceoff'),
+  };
+  const intermissionLabel = !periodNumber ? '—'
+    : periodNumber === 1 ? t('shotMapView.scoreBar.intermission1st')
+    : periodNumber === 2 ? t('shotMapView.scoreBar.intermission2nd')
+    : periodNumber === 3 ? t('shotMapView.scoreBar.intermission3rd')
+    : t('shotMapView.scoreBar.intermissionOT', { n: periodNumber - 3 });
   const seenRef = useRef(new Map()); // eventId -> firstSeenAtMs
   // Bumped every TICK_MS purely to force a repaint so opacityFor() (a pure
   // function of Date.now()) gets recomputed -- the value itself is never
@@ -377,7 +386,7 @@ export default function LiveEventRink({
         key: p.eventId, px, py, r: style.r, opacity,
         fill: isMine ? 'var(--team-primary)' : (oppColor || 'var(--text-dim)'),
         ring: TYPE_RING_COLOR[type] || 'var(--text-dim)',
-        title: `${playerName || (isMine ? TEAM_CONFIG.abbr : oppAbbr) || ''} — ${type.replace(/-/g, ' ')}`.trim(),
+        title: `${playerName || (isMine ? TEAM_CONFIG.abbr : oppAbbr) || ''} — ${EVENT_TYPE_LABEL[type] || type.replace(/-/g, ' ')}`.trim(),
       };
     })
     .filter(Boolean);
@@ -385,7 +394,7 @@ export default function LiveEventRink({
   return (
     <div className="card">
       <div className={CARD_LABEL_CLASSES}>
-        <span>Live rink</span>
+        <span>{t('liveEventRink.title')}</span>
       </div>
       <div className={RINK_WRAP_CLASSES}>
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}>
@@ -411,7 +420,7 @@ export default function LiveEventRink({
 
         {inIntermission && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-[rgba(214,234,245,0.72)]">
-            <span className={INTERMISSION_LABEL_CLASSES}>{periodOrdinal(periodNumber)} Intermission — cleaning the ice</span>
+            <span className={INTERMISSION_LABEL_CLASSES}>{t('liveEventRink.intermissionCleaning', { intermission: intermissionLabel })}</span>
             <span className={INTERMISSION_CLOCK_CLASSES}>{displayClock || '—'}</span>
           </div>
         )}

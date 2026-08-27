@@ -1639,5 +1639,39 @@
   "app": {
     "skipToMainContent": "Passer au contenu principal",
     "mainContentAriaLabel": "Contenu principal"
+  },
+  "seasonOverlayChart": {
+    "defaultMetricLabel": "Valeur",
+    "defaultXAxisLabel": "Match n°",
+    "emptyState": "Aucune donnée par match disponible pour les saisons sélectionnées pour l'instant.",
+    "tooltipTitle": "{{metric}} · Match {{game}}"
+  },
+  "liveEventRink": {
+    "title": "Patinoire en direct",
+    "intermissionCleaning": "{{intermission}} — nettoyage de la glace",
+    "eventTypes": {
+      "goal": "but",
+      "shotOnGoal": "tir cadré",
+      "missedShot": "tir raté",
+      "blockedShot": "tir bloqué",
+      "hit": "mise en échec",
+      "giveaway": "revirement",
+      "takeaway": "récupération",
+      "faceoff": "mise au jeu"
+    }
+  },
+  "playerComparisonEntry": {
+    "toggleLabel": "Comparer avec un autre joueur",
+    "toggleText": "c. Joueur",
+    "searchPlaceholder": "Rechercher des joueurs {{league}}…"
+  },
+  "seasonComparisonPicker": {
+    "loadingAriaLabel": "Chargement des saisons",
+    "loadError": "Impossible de charger les saisons.",
+    "noSeasons": "Aucune saison disponible à comparer pour l'instant.",
+    "groupAriaLabel": "Sélectionner les saisons à comparer",
+    "partialDataTitle_one": "Seulement {{count}} équipe a des données pour cette saison jusqu'à présent",
+    "partialDataTitle_other": "Seulement {{count}} équipes ont des données pour cette saison jusqu'à présent",
+    "partialBadge": "Partielles"
   }
 }

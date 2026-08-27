@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ReferenceLine,
@@ -31,14 +32,17 @@ const TOOLTIP_VALUE_CLASSES = 'font-semibold';
 // }]
 export default function SeasonOverlayChart({
   series = [],
-  metricLabel = 'Value',
-  xAxisLabel = 'Game #',
+  metricLabel,
+  xAxisLabel,
   valueFormatter = (v) => `${v}`,
   referenceValue = null,
   yDomain = ['auto', 'auto'],
   height = 260,
   onToggleSeason = null,
 }) {
+  const { t } = useTranslation();
+  const resolvedMetricLabel = metricLabel ?? t('seasonOverlayChart.defaultMetricLabel');
+  const resolvedXAxisLabel  = xAxisLabel  ?? t('seasonOverlayChart.defaultXAxisLabel');
   // Recharts' own recommended pattern for a toggleable legend is a `hide`
   // prop on the graphical element (Line here), not opacity -- `hide`
   // removes that series from the synced Tooltip's payload too, so a hidden
@@ -85,7 +89,7 @@ export default function SeasonOverlayChart({
   const hasAnyData = chartData.length > 0;
 
   if (!hasAnyData) {
-    return <div className={EMPTY_CLASSES}>No per-game data available for the selected seasons yet.</div>;
+    return <div className={EMPTY_CLASSES}>{t('seasonOverlayChart.emptyState')}</div>;
   }
 
   return (
@@ -100,7 +104,7 @@ export default function SeasonOverlayChart({
             allowDecimals={false}
             tick={{ fill: 'var(--text-dim)', fontSize: 11 }}
             stroke="var(--border-2)"
-            label={{ value: xAxisLabel, position: 'insideBottom', offset: -2, fill: 'var(--text-dim)', fontSize: 11 }}
+            label={{ value: resolvedXAxisLabel, position: 'insideBottom', offset: -2, fill: 'var(--text-dim)', fontSize: 11 }}
           />
           <YAxis
             domain={yDomain}
@@ -115,7 +119,7 @@ export default function SeasonOverlayChart({
           <Tooltip
             content={
               <OverlayTooltip
-                metricLabel={metricLabel}
+                metricLabel={resolvedMetricLabel}
                 valueFormatter={valueFormatter}
                 hiddenSeasons={hiddenSeasons}
               />
@@ -156,12 +160,13 @@ export default function SeasonOverlayChart({
 }
 
 function OverlayTooltip({ active, payload, label, metricLabel, valueFormatter, hiddenSeasons }) {
+  const { t } = useTranslation();
   if (!active || !payload?.length) return null;
   const visible = payload.filter(p => p.value != null && !hiddenSeasons.has(p.dataKey));
   if (!visible.length) return null;
   return (
     <div className={TOOLTIP_CLASSES}>
-      <div className={TOOLTIP_TITLE_CLASSES}>{metricLabel} · Game {label}</div>
+      <div className={TOOLTIP_TITLE_CLASSES}>{t('seasonOverlayChart.tooltipTitle', { metric: metricLabel, game: label })}</div>
       {visible.map(p => (
         <div key={p.dataKey} className={TOOLTIP_ROW_CLASSES}>
           <span className={TOOLTIP_SWATCH_CLASSES} style={{ background: p.color }} />

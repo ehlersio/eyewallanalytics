@@ -11,6 +11,7 @@
 // sport as `player` (same-league-only scope decision) and with `player`
 // itself excluded from results.
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { searchPlayers } from '../utils/playerSearch';
 import PlayerComparisonPopup from './PlayerComparisonPopup';
 import './PlayerComparisonPopup.css';
@@ -18,6 +19,7 @@ import './PlayerComparisonPopup.css';
 const DEBOUNCE_MS = 250;
 
 export default function PlayerComparisonEntry({ sport, player }) {
+  const { t } = useTranslation();
   const [open, setOpen]         = useState(false);
   const [query, setQuery]       = useState('');
   const [results, setResults]   = useState([]);
@@ -74,10 +76,10 @@ export default function PlayerComparisonEntry({ sport, player }) {
         className="pce-toggle"
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
-        aria-label="Compare against another player"
-        title="Compare against another player"
+        aria-label={t('playerComparisonEntry.toggleLabel')}
+        title={t('playerComparisonEntry.toggleLabel')}
       >
-        vs Player
+        {t('playerComparisonEntry.toggleText')}
       </button>
 
       {open && (
@@ -86,12 +88,12 @@ export default function PlayerComparisonEntry({ sport, player }) {
             ref={inputRef}
             className="pce-input"
             type="text"
-            placeholder={`Search ${sport === 'pwhl' ? 'PWHL' : 'NHL'} players…`}
+            placeholder={t('playerComparisonEntry.searchPlaceholder', { league: sport === 'pwhl' ? 'PWHL' : 'NHL' })}
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Escape' && setOpen(false)}
           />
-          {searching && <div className="pce-status">Searching…</div>}
+          {searching && <div className="pce-status">{t('search.searching')}</div>}
           {!searching && results.length > 0 && (
             <div className="pce-results" role="listbox">
               {results.map(p => (
@@ -103,7 +105,7 @@ export default function PlayerComparisonEntry({ sport, player }) {
             </div>
           )}
           {!searching && query.trim().length >= 2 && results.length === 0 && (
-            <div className="pce-status">No players found.</div>
+            <div className="pce-status">{t('search.noResults')}</div>
           )}
         </div>
       )}
