@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // Tailwind migration (Session 95, Phase 1) -- previously InfoTip.css.
 const WRAP_CLASSES = 'relative inline-flex items-center align-middle';
@@ -15,6 +16,7 @@ const SECTION_LABEL_CLASSES = 'text-[10px] font-bold text-[color:var(--text-dim)
 const CLOSE_CLASSES = 'absolute top-1.5 right-2 bg-transparent border-0 text-[13px] text-[color:var(--text-dim)] cursor-pointer px-1 py-0.5 leading-none hover:text-[color:var(--text)]';
 
 export default function InfoTip({ label, text, sections, position = 'auto' }) {
+  const { t } = useTranslation();
   const items = sections ?? (text ? [{ text }] : []);
   const [open,  setOpen]  = useState(false);
   const [style, setStyle] = useState({ visibility: 'hidden' });
@@ -91,7 +93,7 @@ export default function InfoTip({ label, text, sections, position = 'auto' }) {
       <button
         className={BTN_CLASSES}
         onClick={handleOpen}
-        aria-label={label ? `Info about ${label}` : 'More information'}
+        aria-label={label ? t('infoTip.aboutLabel', { label }) : t('infoTip.moreInfo')}
         aria-expanded={open}
       >ⓘ</button>
       {open && (

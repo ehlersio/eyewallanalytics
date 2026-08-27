@@ -1617,5 +1617,27 @@
     "tierAboveAvg": "Au-dessus moy.",
     "tierBelowAvg": "Sous la moy.",
     "tierPoor": "Faible"
+  },
+  "teamOpponentPicker": {
+    "ariaLabel": "Choisir l'équipe adverse",
+    "placeholder": "Choisir un adversaire…"
+  },
+  "seasonTypeToggle": {
+    "regular": "Régulière",
+    "playoffs": "Séries"
+  },
+  "seasonChipRow": {
+    "moreSeasonsAriaLabel": "Plus de saisons"
+  },
+  "gameChipsRow": {
+    "all": "Tous {{count}}"
+  },
+  "infoTip": {
+    "aboutLabel": "Info sur {{label}}",
+    "moreInfo": "Plus d'informations"
+  },
+  "app": {
+    "skipToMainContent": "Passer au contenu principal",
+    "mainContentAriaLabel": "Contenu principal"
   }
 }

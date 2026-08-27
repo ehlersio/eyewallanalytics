@@ -34,6 +34,8 @@
 // `.game-chip`/`.season-type-toggle-btn` together, spanning IceRink.css's
 // `.rink-btn` too) stays real CSS, hoisted to index.css now that
 // ShotMapView.css is fully retired -- see that file for the reasoning.
+import { useTranslation } from 'react-i18next';
+
 const SEASON_TYPE_TOGGLE_CLASSES = 'season-type-toggle flex border-[0.5px] border-[color:var(--border-2)] rounded-[20px] overflow-hidden w-fit';
 const seasonTypeToggleBtnClasses = (on) => {
   const base = 'season-type-toggle-btn py-0.5 px-2 text-[10px] font-medium whitespace-nowrap min-h-0 min-w-0';
@@ -43,6 +45,7 @@ const seasonTypeToggleBtnClasses = (on) => {
 };
 
 export default function SeasonTypeToggle({ value, onChange, disabled = false, disabledReason, onDisabledTap }) {
+  const { t } = useTranslation();
   const handleClick = (type) => disabled ? onDisabledTap?.() : onChange(type);
   return (
     <div className={`${SEASON_TYPE_TOGGLE_CLASSES}${disabled ? ' chip-disabled' : ''}`} title={disabled ? disabledReason : undefined}>
@@ -50,13 +53,13 @@ export default function SeasonTypeToggle({ value, onChange, disabled = false, di
         className={seasonTypeToggleBtnClasses(value === 'regular')}
         aria-disabled={disabled}
         onClick={() => handleClick('regular')}>
-        Regular
+        {t('seasonTypeToggle.regular')}
       </button>
       <button
         className={seasonTypeToggleBtnClasses(value === 'playoffs')}
         aria-disabled={disabled}
         onClick={() => handleClick('playoffs')}>
-        Playoffs
+        {t('seasonTypeToggle.playoffs')}
       </button>
     </div>
   );

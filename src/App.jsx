@@ -1,5 +1,6 @@
 // EyeWall Analytics v1.1
 import { lazy, Suspense, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Topbar from './components/Topbar'
 import BottomNav from './components/BottomNav'
@@ -40,11 +41,14 @@ const PWHLDevReplayView = import.meta.env.DEV
   ? lazy(() => import('./views/PWHLDevReplayView'))
   : null;
 
-const ViewFallback = () => (
-  <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-dim)' }}>
-    Loading…
-  </div>
-);
+const ViewFallback = () => {
+  const { t } = useTranslation();
+  return (
+    <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-dim)' }}>
+      {t('common.loading')}
+    </div>
+  );
+};
 
 // Redirects PWHL users from / to /pwhl/shots
 function RootRoute() {
@@ -80,6 +84,7 @@ function PageTracker() {
 }
 
 export default function App() {
+  const { t } = useTranslation();
   // In App component body, before the return:
   useEffect(() => {
     applyTeamTheme(TEAM_CONFIG, getTheme());
@@ -119,10 +124,10 @@ export default function App() {
                   this app already ships and relies on elsewhere (LeagueView's
                   Power Rankings YOU-row, ScoutingTab's badges). */}
               <div className="app-shell flex flex-col h-dvh overflow-hidden">
-                <a href="#main-content" className="skip-link absolute -top-[100px] left-4 z-[9999] py-2 px-4 bg-[var(--red-bright)] text-white font-bold rounded-b-[8px] no-underline [transition:top_0.15s] focus:top-0 focus:outline-[3px] focus:outline-white focus:outline-offset-2">Skip to main content</a>
+                <a href="#main-content" className="skip-link absolute -top-[100px] left-4 z-[9999] py-2 px-4 bg-[var(--red-bright)] text-white font-bold rounded-b-[8px] no-underline [transition:top_0.15s] focus:top-0 focus:outline-[3px] focus:outline-white focus:outline-offset-2">{t('app.skipToMainContent')}</a>
                 <PageTracker />
                 <Topbar />
-                <main id="main-content" className="app-main flex-1 overflow-y-auto overflow-x-hidden pb-[calc(var(--nav-height)+env(safe-area-inset-bottom,0px))]" aria-label="Main content">
+                <main id="main-content" className="app-main flex-1 overflow-y-auto overflow-x-hidden pb-[calc(var(--nav-height)+env(safe-area-inset-bottom,0px))]" aria-label={t('app.mainContentAriaLabel')}>
                   <Suspense fallback={<ViewFallback />}>
                     <Routes>
                       <Route path="/"         element={<RootRoute />} />
