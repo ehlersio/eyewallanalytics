@@ -3,6 +3,8 @@
 // Cap figures are cap hit (AAV). Salary cap = $95,500,000.
 // yearsLeft = years remaining AFTER 2025-26 (0 = expires this summer)
 
+import i18n from '../i18n';
+
 // Update this date whenever contracts.js is manually refreshed
 export const CONTRACT_DATA_DATE = 'May 2026';
 
@@ -170,20 +172,20 @@ export function goalieContractValue(gsax, gamesPlayed, capHit, isELC) {
 
 export function goalieValueLabel(score) {
   if (score == null) return null;
-  if (score >=  4.0) return { label: 'Exceptional value', color: '#3dba7e' };
-  if (score >=  2.0) return { label: 'Great value',       color: '#5ab4f0' };
-  if (score >=  0.0) return { label: 'Fair value',        color: '#a0c878' };
-  if (score >= -2.0) return { label: 'Below average',     color: '#f0c030' };
-  return               { label: 'Overpaid',               color: '#e04040' };
+  if (score >=  4.0) return { label: i18n.t('playerPopup.contract.tierExceptional'), color: '#3dba7e' };
+  if (score >=  2.0) return { label: i18n.t('playerPopup.contract.tierGreat'),       color: '#5ab4f0' };
+  if (score >=  0.0) return { label: i18n.t('playerPopup.contract.tierFair'),        color: '#a0c878' };
+  if (score >= -2.0) return { label: i18n.t('playerPopup.contract.tierBelowAvg'),    color: '#f0c030' };
+  return               { label: i18n.t('playerPopup.contract.tierOverpaid'),         color: '#e04040' };
 }
 
 // ─── Value rating label ───────────────────────────────────────
 export function valueLabel(score) {
   if (score == null) return null;
-  if (score >= 8.0)  return { label: 'Exceptional value', color: '#3dba7e' };
-  if (score >= 5.0)  return { label: 'Great value',       color: '#5ab4f0' };
-  if (score >= 3.0)  return { label: 'Good value',        color: '#a0c878' };
-  if (score >= 1.8)  return { label: 'Fair value',        color: '#f0c030' };
-  if (score >= 1.0)  return { label: 'Below average',     color: '#f07830' };
-  return               { label: 'Overpaid',               color: '#e04040' };
+  if (score >= 8.0)  return { label: i18n.t('playerPopup.contract.tierExceptional'), color: '#3dba7e' };
+  if (score >= 5.0)  return { label: i18n.t('playerPopup.contract.tierGreat'),       color: '#5ab4f0' };
+  if (score >= 3.0)  return { label: i18n.t('playerPopup.contract.tierGood'),        color: '#a0c878' };
+  if (score >= 1.8)  return { label: i18n.t('playerPopup.contract.tierFair'),        color: '#f0c030' };
+  if (score >= 1.0)  return { label: i18n.t('playerPopup.contract.tierBelowAvg'),    color: '#f07830' };
+  return               { label: i18n.t('playerPopup.contract.tierOverpaid'),         color: '#e04040' };
 }
