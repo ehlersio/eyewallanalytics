@@ -88,7 +88,7 @@ export default function BottomNav() {
   const readState = useReadState();
 
   return (
-    <nav className={BOTTOM_NAV_CLASSES} aria-label="Main navigation">
+    <nav className={BOTTOM_NAV_CLASSES} aria-label={t('nav.mainNavigationAriaLabel')}>
       {tabs.map(tab => (
         <NavLink
           key={tab.to}

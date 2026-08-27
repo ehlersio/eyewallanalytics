@@ -984,6 +984,7 @@ export default function ShotMapView() {
   const [debugInsight,      setDebugInsight]      = useState(null); // injected Live Insight row
 
   const handleDebugTap = () => {
+    if (!import.meta.env.DEV) return;
     const next = debugTaps + 1;
     setDebugTaps(next);
     clearTimeout(debugTapRef.current);
@@ -2317,7 +2318,7 @@ export default function ShotMapView() {
     {debugPuckDropPopup && <PuckDropPopup data={debugPuckDropPopup} onClose={() => setDebugPuckDropPopup(null)} />}
 
     {/* ── Debug panel (5 taps on score bar) ── */}
-    {debugOpen && (
+    {import.meta.env.DEV && debugOpen && (
       <div className={DEBUG_PANEL_CLASSES} style={DEBUG_PANEL_BOTTOM_STYLE}>
         <div className={DEBUG_PANEL_HEADER_CLASSES}>
           <div>
@@ -2498,6 +2499,7 @@ function OnIcePanel({ car, opp, oppAbbr, situation }) {
 
 // ── Event Log ─────────────────────────────────────────────────
 function EventLog({ plays, playerMap = {} }) {
+  const { t } = useTranslation();
   const pName = id => {
     if (!id) return null;
     const n = playerMap[String(id)];
@@ -2525,14 +2527,14 @@ function EventLog({ plays, playerMap = {} }) {
   };
 
   const typeLabel = {
-    'goal':         'GOAL',
-    'shot-on-goal': 'SHOT',
-    'penalty':      'PENALTY',
-    'hit':          'HIT',
-    'blocked-shot': 'BLOCK',
-    'faceoff':      'FACEOFF',
-    'giveaway':     'GIVEAWAY',
-    'takeaway':     'TAKEAWAY',
+    'goal':         t('shotMapView.eventLog.badgeGoal'),
+    'shot-on-goal': t('shotMapView.eventLog.badgeShot'),
+    'penalty':      t('shotMapView.eventLog.badgePenalty'),
+    'hit':          t('shotMapView.eventLog.badgeHit'),
+    'blocked-shot': t('shotMapView.eventLog.badgeBlock'),
+    'faceoff':      t('shotMapView.eventLog.badgeFaceoff'),
+    'giveaway':     t('shotMapView.eventLog.badgeGiveaway'),
+    'takeaway':     t('shotMapView.eventLog.badgeTakeaway'),
   };
 
   return (
@@ -2552,7 +2554,7 @@ function EventLog({ plays, playerMap = {} }) {
           const a2      = pName(d.assist2PlayerId);
           const assists = [a1, a2].filter(Boolean);
           headline = scorer || '—';
-          sub = assists.length ? `Assists: ${assists.join(', ')}` : 'Unassisted';
+          sub = assists.length ? t('shotMapView.ppkShared.assists', { names: assists.join(', ') }) : t('gameStatsPopup.goals.unassisted');
         } else if (type === 'shot-on-goal') {
           headline = pName(d.shootingPlayerId) || '—';
           sub = d.shotType ? d.shotType : null;
@@ -2560,27 +2562,27 @@ function EventLog({ plays, playerMap = {} }) {
           const committed = pName(d.committedByPlayerId);
           const drawn     = pName(d.drawnByPlayerId);
           headline = committed || '—';
-          const mins = d.duration != null ? `${d.duration} min` : '';
+          const mins = d.duration != null ? t('shotMapView.eventLog.penaltyMinutes', { count: d.duration }) : '';
           const desc = d.descKey ? d.descKey.replace(/-/g, ' ') : '';
-          sub = [mins, desc, drawn ? `drawn by ${drawn}` : ''].filter(Boolean).join(' · ');
+          sub = [mins, desc, drawn ? t('shotMapView.eventLog.penaltyDrawnBy', { name: drawn }) : ''].filter(Boolean).join(' · ');
         } else if (type === 'hit') {
           const hitter = pName(d.hittingPlayerId);
           const hittee = pName(d.hitteePlayerId);
           headline = hitter || '—';
-          sub = hittee ? `hit ${hittee}` : null;
+          sub = hittee ? t('shotMapView.eventLog.hitSub', { name: hittee }) : null;
         } else if (type === 'blocked-shot') {
           const blocker  = pName(d.blockingPlayerId);
           const shooter  = pName(d.shootingPlayerId);
           headline = blocker || '—';
-          sub = shooter ? `blocked ${shooter}` : null;
+          sub = shooter ? t('shotMapView.eventLog.blockedSub', { name: shooter }) : null;
         } else if (type === 'faceoff') {
           const winner = pName(d.winningPlayerId);
           const loser  = pName(d.losingPlayerId);
           headline = winner || '—';
-          sub = loser ? `won vs ${loser}` : null;
+          sub = loser ? t('shotMapView.eventLog.faceoffWonVs', { name: loser }) : null;
         } else if (type === 'giveaway' || type === 'takeaway') {
           headline = pName(d.playerId) || '—';
-          sub = d.zoneCode === 'O' ? 'offensive zone' : d.zoneCode === 'D' ? 'defensive zone' : null;
+          sub = d.zoneCode === 'O' ? t('shotMapView.eventLog.offensiveZone') : d.zoneCode === 'D' ? t('shotMapView.eventLog.defensiveZone') : null;
         }
 
         return (
@@ -3701,8 +3703,8 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
     const cutoff = mins === 0 ? 0 : nowSecs - mins * 60;
     let car = 0, opp = 0, carEvents = 0, oppEvents = 0;
     plays.forEach(p => {
-      const t = playTimeSecs(p);
-      if (t < cutoff) return;
+      const evtTime = playTimeSecs(p);
+      if (evtTime < cutoff) return;
       const cs = eventScore(p, TEAM_CONFIG.teamId);
       // Recalculate for opp by checking if owner is not CAR
       const oppOwned = p.details?.eventOwnerTeamId && p.details.eventOwnerTeamId !== TEAM_CONFIG.teamId;
@@ -3732,11 +3734,11 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
   const waveData = useMemo(() => {
     const pts = [];
     const WAVE_WIN = 180, STEP = 60;
-    for (let t = WAVE_WIN; t <= nowSecs + STEP; t += STEP) {
+    for (let sampleT = WAVE_WIN; sampleT <= nowSecs + STEP; sampleT += STEP) {
       let wc = 0, wo = 0;
       plays.forEach(p => {
         const pt = playTimeSecs(p);
-        if (pt < t - WAVE_WIN || pt > t) return;
+        if (pt < sampleT - WAVE_WIN || pt > sampleT) return;
         const d = p.details || {};
         const zone = d.zoneCode;
         const type = p.typeDescKey;
@@ -3759,7 +3761,7 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
       const v = Math.round(wc / wt * 100);
       // carArea/oppArea + a shared baseValue of 50 reproduce the old canvas's
       // two-tone fill (CAR above midline, OPP below) as two Recharts <Area>s.
-      pts.push({ minute: t / 60, v, carArea: Math.max(50, v), oppArea: Math.min(50, v) });
+      pts.push({ minute: sampleT / 60, v, carArea: Math.max(50, v), oppArea: Math.min(50, v) });
     }
     return pts;
   }, [plays.length]);
