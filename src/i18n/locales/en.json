@@ -1639,5 +1639,39 @@
   "app": {
     "skipToMainContent": "Skip to main content",
     "mainContentAriaLabel": "Main content"
+  },
+  "seasonOverlayChart": {
+    "defaultMetricLabel": "Value",
+    "defaultXAxisLabel": "Game #",
+    "emptyState": "No per-game data available for the selected seasons yet.",
+    "tooltipTitle": "{{metric}} · Game {{game}}"
+  },
+  "liveEventRink": {
+    "title": "Live rink",
+    "intermissionCleaning": "{{intermission}} — cleaning the ice",
+    "eventTypes": {
+      "goal": "goal",
+      "shotOnGoal": "shot on goal",
+      "missedShot": "missed shot",
+      "blockedShot": "blocked shot",
+      "hit": "hit",
+      "giveaway": "giveaway",
+      "takeaway": "takeaway",
+      "faceoff": "faceoff"
+    }
+  },
+  "playerComparisonEntry": {
+    "toggleLabel": "Compare against another player",
+    "toggleText": "vs Player",
+    "searchPlaceholder": "Search {{league}} players…"
+  },
+  "seasonComparisonPicker": {
+    "loadingAriaLabel": "Loading seasons",
+    "loadError": "Couldn't load seasons.",
+    "noSeasons": "No seasons available to compare yet.",
+    "groupAriaLabel": "Select seasons to compare",
+    "partialDataTitle_one": "Only {{count}} team has data for this season so far",
+    "partialDataTitle_other": "Only {{count}} teams have data for this season so far",
+    "partialBadge": "Partial"
   }
 }
