@@ -1812,7 +1812,7 @@ export default function PWHLShotMapView() {
   if (!abbr) return (
     <div className={PAGE_CLASSES}>
       <div className="card" style={{ textAlign:'center', padding:32 }}>
-        <p style={{ color:'var(--text-dim)' }}>No PWHL team selected.</p>
+        <p style={{ color:'var(--text-dim)' }}>{t('pwhlTeamView.noTeamSelected')}</p>
       </div>
     </div>
   );

@@ -5,7 +5,8 @@
     "players": "Joueurs",
     "team": "Équipe",
     "league": "Ligue",
-    "news": "Actualités"
+    "news": "Actualités",
+    "mainNavigationAriaLabel": "Navigation principale"
   },
   "topbar": {
     "offSeason": "Hors saison"
@@ -600,6 +601,23 @@
       "duration": "Durée",
       "durationHelp": "Durée — temps en secondes entre la première et la dernière action suivie de cette occasion. Un but rapide = durée plus courte. Peut être plus courte que les 2 minutes complètes s'il n'y a pas eu d'action près du début ou de la fin.",
       "assists": "Aides : {{names}}"
+    },
+    "eventLog": {
+      "badgeGoal": "BUT",
+      "badgeShot": "TIR",
+      "badgePenalty": "PÉNALITÉ",
+      "badgeHit": "MISE EN ÉCHEC",
+      "badgeBlock": "BLOQUÉ",
+      "badgeFaceoff": "MISE AU JEU",
+      "badgeGiveaway": "REVIREMENT",
+      "badgeTakeaway": "RÉCUPÉRATION",
+      "hitSub": "a frappé {{name}}",
+      "blockedSub": "a bloqué {{name}}",
+      "faceoffWonVs": "gagnée contre {{name}}",
+      "penaltyDrawnBy": "provoquée par {{name}}",
+      "penaltyMinutes": "{{count}} min",
+      "offensiveZone": "zone offensive",
+      "defensiveZone": "zone défensive"
     },
     "ppAnalysis": {
       "emptyState": "Aucun avantage numérique pour {{abbr}} dans ce match.",

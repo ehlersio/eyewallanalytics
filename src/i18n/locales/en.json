@@ -5,7 +5,8 @@
     "players": "Players",
     "team": "Team",
     "league": "League",
-    "news": "News"
+    "news": "News",
+    "mainNavigationAriaLabel": "Main navigation"
   },
   "topbar": {
     "offSeason": "Off season"
@@ -600,6 +601,23 @@
       "duration": "Duration",
       "durationHelp": "Duration — time in seconds between the first and last tracked play of this opportunity. Scores early = shorter duration. May be shorter than the full 2-minute penalty if there were no events near the start or end.",
       "assists": "Assists: {{names}}"
+    },
+    "eventLog": {
+      "badgeGoal": "GOAL",
+      "badgeShot": "SHOT",
+      "badgePenalty": "PENALTY",
+      "badgeHit": "HIT",
+      "badgeBlock": "BLOCK",
+      "badgeFaceoff": "FACEOFF",
+      "badgeGiveaway": "GIVEAWAY",
+      "badgeTakeaway": "TAKEAWAY",
+      "hitSub": "hit {{name}}",
+      "blockedSub": "blocked {{name}}",
+      "faceoffWonVs": "won vs {{name}}",
+      "penaltyDrawnBy": "drawn by {{name}}",
+      "penaltyMinutes": "{{count}} min",
+      "offensiveZone": "offensive zone",
+      "defensiveZone": "defensive zone"
     },
     "ppAnalysis": {
       "emptyState": "No {{abbr}} power plays this game.",
