@@ -10,21 +10,24 @@
 // `:focus-visible` rule already applies the identical outline to every
 // focusable element site-wide (Tailwind's preflight is never imported, so
 // that global rule stays in effect after migration).
+import { useTranslation } from 'react-i18next';
+
 const PICKER_CLASSES = 'bg-[var(--bg2)] border-[0.5px] border-[var(--border-2)] rounded-[var(--radius-sm)] py-1.5 px-2.5 font-[family-name:var(--font-body)] text-[13px] font-semibold text-[color:var(--text)] cursor-pointer ml-4 hover:bg-[var(--bg3)]';
 
 export default function TeamOpponentPicker({ teams, value, onChange, excludeValue }) {
-  const options = teams.filter(t => t.value !== excludeValue);
+  const { t } = useTranslation();
+  const options = teams.filter(team => team.value !== excludeValue);
 
   return (
     <select
       className={PICKER_CLASSES}
       value={value ?? ''}
       onChange={e => onChange(e.target.value || null)}
-      aria-label="Choose opponent team"
+      aria-label={t('teamOpponentPicker.ariaLabel')}
     >
-      <option value="">Choose opponent…</option>
-      {options.map(t => (
-        <option key={t.value} value={t.value}>{t.label}</option>
+      <option value="">{t('teamOpponentPicker.placeholder')}</option>
+      {options.map(team => (
+        <option key={team.value} value={team.value}>{team.label}</option>
       ))}
     </select>
   );

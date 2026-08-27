@@ -37,6 +37,7 @@
 // nobody asked to change. `.game-chip-live` itself carried zero CSS
 // (confirmed dead in the original investigation) and is dropped entirely
 // -- not a Cypress marker either.
+import { useTranslation } from 'react-i18next';
 import TeamLogo from './TeamLogo';
 
 const GAME_CHIP_BASE = 'game-chip flex items-center gap-[5px] py-[5px] px-[10px] border rounded-[20px] whitespace-nowrap cursor-pointer [transition:border-color_0.12s,background_0.12s] shrink-0 text-[11px]';
@@ -75,13 +76,14 @@ function GameChip({ game, sport, selected, onClick }) {
 }
 
 export function LiveGameChip({ liveGame, sport, selected, onSelect }) {
+  const { t } = useTranslation();
   if (!liveGame) return null;
   return (
     <button
       className={gameChipClasses({ active: selected, live: true })}
       onClick={onSelect}
     >
-      <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.05em' }}>🔴 LIVE</span>
+      <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.05em' }}>{t('shotMapView.scoreBar.liveIndicator')}</span>
       <TeamLogo abbr={liveGame.opponentAbbr} sport={sport} size={18} color={liveGame.opponentColor} />
       <span className={GAME_CHIP_OPP_CLASSES}>{liveGame.opponentAbbr}</span>
       <span className={GAME_CHIP_SCORE_CLASSES}>{liveGame.myScore}–{liveGame.oppScore}</span>
@@ -94,6 +96,7 @@ export function LiveGameChip({ liveGame, sport, selected, onSelect }) {
 // aria-disabled + a guarded onClick rather than the native `disabled`
 // attribute (which would block the tap-to-reveal-tooltip path on mobile).
 export default function GameChipsRow({ games, sport = 'nhl', selectedGameId, onSelect, onAll, disabled = false, disabledReason, onDisabledTap }) {
+  const { t } = useTranslation();
   const attachWheel = el => {
     if (!el) return;
     el.addEventListener('wheel', e => {
@@ -108,7 +111,7 @@ export default function GameChipsRow({ games, sport = 'nhl', selectedGameId, onS
     <div className={`${GAME_CHIPS_WRAP_CLASSES}${disabled ? ' chip-disabled' : ''}`} ref={attachWheel} title={disabled ? disabledReason : undefined}>
       <button className={gameChipClasses({ active: !selectedGameId, all: true })}
         aria-disabled={disabled} onClick={handleAll}>
-        All {games.length}
+        {t('gameChipsRow.all', { count: games.length })}
       </button>
       {games.map(g => (
         <GameChip key={g.id} game={g} sport={sport}

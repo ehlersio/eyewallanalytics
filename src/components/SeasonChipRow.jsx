@@ -23,6 +23,7 @@
 // adding a competing `hover:text-*` utility to the active variant would
 // just be dead weight, not a behavior match.
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { rinkBtnClasses } from '../utils/rinkBtnClasses';
 
 const SEASON_ARCHIVE_DROPDOWN_CLASSES = 'season-archive-dropdown absolute top-[calc(100%+4px)] right-0 z-20 flex flex-col gap-0.5 p-1.5 min-w-[96px] max-h-[220px] overflow-y-auto bg-[var(--bg2)] border-[0.5px] border-[color:var(--border-2)] rounded-[var(--radius-md,10px)] shadow-[0_8px_24px_rgba(0,0,0,0.35)]';
@@ -38,6 +39,7 @@ const seasonArchiveItemClasses = (active) => {
 // aria-disabled + a guarded onClick rather than the native `disabled`
 // attribute (which would block the tap-to-reveal-tooltip path on mobile).
 export default function SeasonChipRow({ seasons, archiveSeasons = [], selected, onSelect, disabled = false, disabledReason, onDisabledTap }) {
+  const { t } = useTranslation();
   const [showArchive, setShowArchive] = useState(false);
   const wrapRef = useRef(null);
 
@@ -78,7 +80,7 @@ export default function SeasonChipRow({ seasons, archiveSeasons = [], selected, 
             style={chipStyle}
             aria-disabled={disabled}
             onClick={handleMoreClick}
-            aria-label="More seasons">
+            aria-label={t('seasonChipRow.moreSeasonsAriaLabel')}>
             {selectedArchiveSeason ? selectedArchiveSeason.label : '•••'}
           </button>
           {showArchive && !disabled && (
