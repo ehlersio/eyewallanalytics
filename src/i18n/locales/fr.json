@@ -1524,6 +1524,75 @@
       "emptyState": "Aucun rapport de dépistage pour {{player}} pour l'instant.",
       "emptyStateSub": "Les rapports sont générés chaque nuit — revenez après la prochaine exécution du pipeline.",
       "footer": "Généré par IA · Mis à jour chaque nuit"
+    },
+    "sections": {
+      "seasonPlayoffs": "Séries {{season}}",
+      "careerPlayoffs": "Séries en carrière",
+      "seasonRegular": "Saison régulière {{season}}",
+      "careerRegular": "Saison régulière en carrière"
+    },
+    "bio": {
+      "height": "Taille",
+      "weight": "Poids",
+      "catches": "Attrape",
+      "shoots": "Lance",
+      "age": "Âge",
+      "birthdate": "Naissance",
+      "hometown": "Ville natale",
+      "left": "Gauche",
+      "right": "Droite",
+      "weightLbs": "{{weight}} lb",
+      "birthAge": "{{birth}} · {{age}} ans",
+      "closeAriaLabel": "Fermer les détails du joueur",
+      "noStats": "Aucune statistique disponible pour ce joueur pour l'instant."
+    },
+    "rankings": {
+      "rankedBy": "Classé par {{stat}}",
+      "rankedByGaa": "Classé par GAA"
+    },
+    "contract": {
+      "capHit": "Impact salarial",
+      "aavPerYear": "SMPA / année",
+      "expiresAfter": "Expire après",
+      "status": "Statut",
+      "yrsLeft": "Années restantes",
+      "pctOfCap": "% de la masse salariale",
+      "blendedPerM": "combiné/M$",
+      "ptsPerM": "pts/M$",
+      "valueTooltipBlended": "Score combiné : 60 % points par M$ (projeté sur 82 PJ) + 40 % VAR par M$ (mis à l'échelle). Le VAR utilise le RAPM à 5c5 (bêta) + composantes avantage/désavantage numérique et finition — capture la valeur à deux volets que les points seuls ratent. Les spécialistes défensifs et les joueurs défensifs obtiennent un meilleur score ici que sur une base de points purs. Échelle : ≥8,0 Exceptionnel · ≥5,0 Excellent · ≥3,0 Bon · ≥1,8 Correct · ≥1,0 Sous la moyenne · <1,0 Surpayé. Contrats recrue exclus.",
+      "valueTooltipPointsOnly": "Points par M$ d'impact salarial (projeté sur 82 matchs). Données VAR non disponibles pour ce joueur — points seulement. Échelle : ≥8,0 Exceptionnel · ≥5,0 Excellent · ≥3,0 Bon · ≥1,8 Correct · ≥1,0 Sous la moyenne · <1,0 Surpayé. Contrats recrue exclus.",
+      "contractValueScoreLabel": "Score de valeur du contrat",
+      "p60Label": "P/60",
+      "p60Prefix": "P/60 : ",
+      "p60Tip": "Points par 60 minutes de temps de glace. Élimine les différences de temps de jeu — un joueur avec 10 points en 12 min/match produit à un rythme très différent d'un joueur avec 10 points en 22 min/match. Moyenne de la ligue pour les six meilleurs attaquants : environ 2,0 à 3,5.",
+      "elcNA": "Contrat recrue — score de valeur N/D",
+      "elcLabel": "Contrat recrue",
+      "elcTip": "Les contrats recrue ont un impact salarial fixé par la ligue (775 000 $ à 925 000 $) qui ne reflète pas la valeur marchande, donc la comparaison de valeur combinée n'est pas pertinente.",
+      "elcTipShort": "Les impacts salariaux des contrats recrue sont fixés par la ligue et ne reflètent pas la valeur marchande.",
+      "goalieValueScoreLabel": "Score de valeur du gardien",
+      "goalieGsaxPerM": "BEA {{score}}/M$",
+      "goalieValueTip": "Buts épargnés au-dessus des attentes (BEA) par M$ d'impact salarial. Le BEA tient compte de la qualité et du volume des tirs — un nombre positif signifie que le gardien a épargné plus de buts qu'un gardien moyen sur les mêmes tirs. Diviser par l'impact salarial montre combien de cette valeur vous obtenez par dollar. Échelle : ≥4,0 Exceptionnel · ≥2,0 Excellent · ≥0,0 Correct · ≥-2,0 Sous la moyenne · <-2,0 Surpayé. Gardiens à contrat recrue exclus.",
+      "tierExceptional": "Valeur exceptionnelle",
+      "tierGreat": "Excellente valeur",
+      "tierGood": "Bonne valeur",
+      "tierFair": "Valeur correcte",
+      "tierBelowAvg": "Sous la moyenne",
+      "tierOverpaid": "Surpayé"
+    },
+    "tabs": {
+      "stats": "📊 Stats",
+      "analytics": "🧮 Analytique",
+      "heatMap": "🎯 Carte de chaleur",
+      "scout": "🔍 Dépistage",
+      "compare": "🆚 Comparer"
+    },
+    "compareTab": {
+      "selectSeasons": "Sélectionnez deux saisons ou plus ci-dessus pour comparer.",
+      "perGameTrend": "Tendance par match",
+      "trendMetricAriaLabel": "Statistique de tendance",
+      "seasonTotalSuffix": "{{label}} (total de la saison)",
+      "loadingChart": "Chargement du graphique…",
+      "noRegularSeasonData": "Aucune donnée de saison régulière pour {{season}}."
     }
   },
   "percentileBar": {

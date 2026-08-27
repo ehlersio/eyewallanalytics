@@ -898,6 +898,7 @@ function ScoutingBlurb({ data, playerName }) {
 // ─── PlayerPopup ──────────────────────────────────────────────
 
 export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose, isLeagueContext = false }) {
+  const { t } = useTranslation()
   const { data: stats, loading } = useFetch(() => p.id ? getPlayerStats(p.id) : Promise.resolve(null), [p.id])
   const [imgErr, setImgErr]     = useState(false)
 
@@ -976,16 +977,16 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
   const sections = inPlayoffs
     ? [
-        { label: `${SEASON_LABEL} Playoffs`,          stats: seasonPO,  highlight: true },
-        { label: 'Career Playoffs',                    stats: careerPO,  highlight: false },
-        { label: `${SEASON_LABEL} Regular season`,     stats: seasonReg, highlight: false },
-        { label: 'Career Regular season',              stats: careerReg, highlight: false },
+        { label: t('playerPopup.sections.seasonPlayoffs', { season: SEASON_LABEL }), stats: seasonPO,  highlight: true },
+        { label: t('playerPopup.sections.careerPlayoffs'),                            stats: careerPO,  highlight: false },
+        { label: t('playerPopup.sections.seasonRegular', { season: SEASON_LABEL }),  stats: seasonReg, highlight: false },
+        { label: t('playerPopup.sections.careerRegular'),                            stats: careerReg, highlight: false },
       ]
     : [
-        { label: `${regSeasonLabel} Regular season`,   stats: seasonReg, highlight: true },
-        { label: `${SEASON_LABEL} Playoffs`,           stats: seasonPO,  highlight: false },
-        { label: 'Career Regular season',              stats: careerReg, highlight: false },
-        { label: 'Career Playoffs',                    stats: careerPO,  highlight: false },
+        { label: t('playerPopup.sections.seasonRegular', { season: regSeasonLabel }), stats: seasonReg, highlight: true },
+        { label: t('playerPopup.sections.seasonPlayoffs', { season: SEASON_LABEL }), stats: seasonPO,  highlight: false },
+        { label: t('playerPopup.sections.careerRegular'),                            stats: careerReg, highlight: false },
+        { label: t('playerPopup.sections.careerPlayoffs'),                            stats: careerPO,  highlight: false },
       ]
 
   const statDefs = isGoalie ? GOALIE_STATS : SKATER_STATS
@@ -1081,7 +1082,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   function fmtBirth(dateStr) {
     if (!dateStr) return null
     const d = new Date(dateStr + 'T12:00:00')
-    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    return formatDate(d, { month: 'long', day: 'numeric', year: 'numeric' })
   }
   function calcAge(dateStr) {
     if (!dateStr) return null
@@ -1120,13 +1121,13 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   // goalies here, before goalieData.percentiles had anywhere to render).
   const showHeaderReflow = isGoalie ? !!goalieData?.percentiles : !!mpData?.percentiles
   const bioFields = [
-    { label: 'Height',    value: bio.heightInInches ? fmtHeight(bio.heightInInches) : null },
-    { label: 'Weight',    value: bio.weightInPounds ? `${bio.weightInPounds} lbs` : null },
-    { label: isGoalie ? 'Catches' : 'Shoots',
-      value: p.shootsCatches ? (p.shootsCatches === 'L' ? 'Left' : 'Right') : null },
-    { label: 'Age',       value: bio.birthDate ? calcAge(bio.birthDate) : null },
-    { label: 'Birthdate', value: bio.birthDate ? fmtBirth(bio.birthDate) : null },
-    { label: 'Hometown',  value: bio.birthCity?.default
+    { label: t('playerPopup.bio.height'),    value: bio.heightInInches ? fmtHeight(bio.heightInInches) : null },
+    { label: t('playerPopup.bio.weight'),    value: bio.weightInPounds ? t('playerPopup.bio.weightLbs', { weight: bio.weightInPounds }) : null },
+    { label: isGoalie ? t('playerPopup.bio.catches') : t('playerPopup.bio.shoots'),
+      value: p.shootsCatches ? (p.shootsCatches === 'L' ? t('playerPopup.bio.left') : t('playerPopup.bio.right')) : null },
+    { label: t('playerPopup.bio.age'),       value: bio.birthDate ? calcAge(bio.birthDate) : null },
+    { label: t('playerPopup.bio.birthdate'), value: bio.birthDate ? fmtBirth(bio.birthDate) : null },
+    { label: t('playerPopup.bio.hometown'),  value: bio.birthCity?.default
         ? `${bio.birthCity.default}${bio.birthCountry ? `, ${bio.birthCountry}` : ''}`
         : null },
   ]
@@ -1183,14 +1184,14 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                 <span className={PP_CHIP_CLASSES}>{p.teamAbbrev}</span>
               )}
               {!showHeaderReflow && bio.heightInInches && <span className={PP_CHIP_CLASSES}>{fmtHeight(bio.heightInInches)}</span>}
-              {!showHeaderReflow && bio.weightInPounds && <span className={PP_CHIP_CLASSES}>{bio.weightInPounds} lbs</span>}
+              {!showHeaderReflow && bio.weightInPounds && <span className={PP_CHIP_CLASSES}>{t('playerPopup.bio.weightLbs', { weight: bio.weightInPounds })}</span>}
               {!showHeaderReflow && p.shootsCatches && (
-                <span className={PP_CHIP_CLASSES}>{isGoalie ? 'Catches' : 'Shoots'} {p.shootsCatches === 'L' ? 'Left' : 'Right'}</span>
+                <span className={PP_CHIP_CLASSES}>{isGoalie ? t('playerPopup.bio.catches') : t('playerPopup.bio.shoots')} {p.shootsCatches === 'L' ? t('playerPopup.bio.left') : t('playerPopup.bio.right')}</span>
               )}
             </div>
             {!showHeaderReflow && bio.birthDate && (
               <div className={PP_BIRTH_CLASSES}>
-                {fmtBirth(bio.birthDate)} · Age {calcAge(bio.birthDate)}
+                {t('playerPopup.bio.birthAge', { birth: fmtBirth(bio.birthDate), age: calcAge(bio.birthDate) })}
                 {bio.birthCity?.default && ` · ${bio.birthCity.default}`}
                 {bio.birthCountry && `, ${bio.birthCountry}`}
               </div>
@@ -1222,7 +1223,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
             />
           )}
           {!showHeaderReflow && comparisonEntry}
-          <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label="Close player details">✕</button>
+          <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label={t('playerPopup.bio.closeAriaLabel')}>✕</button>
         </div>
 
         {/* ── Bio row — full width, 6 evenly-spaced columns (Session 80) ── */}
@@ -1240,19 +1241,19 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
         {/* ── Rankings banner — CAR context only ── */}
         {!isLeagueContext && rankings && (rankings.division || rankings.conference || rankings.league) && (
           <div className={PP_RANKINGS_CLASSES}>
-            <span className={PP_RANK_LABEL_CLASSES}>Ranked by {rankings.statLabel}</span>
+            <span className={PP_RANK_LABEL_CLASSES}>{t('playerPopup.rankings.rankedBy', { stat: rankings.statLabel })}</span>
             <div className={PP_RANK_ITEMS_CLASSES}>
-              {rankings.division   && <RankBadge label="Division"   rank={rankings.division} />}
-              {rankings.conference && <RankBadge label="Conference" rank={rankings.conference} />}
-              {rankings.league     && <RankBadge label="League"     rank={rankings.league} />}
+              {rankings.division   && <RankBadge label={t('statTileGrid.scopes.div')}   rank={rankings.division} />}
+              {rankings.conference && <RankBadge label={t('statTileGrid.scopes.conf')} rank={rankings.conference} />}
+              {rankings.league     && <RankBadge label={t('statTileGrid.scopes.league')}     rank={rankings.league} />}
             </div>
             {rankings.gaa && (rankings.gaa.league || rankings.gaa.division) && (
               <>
-                <span className={PP_RANK_LABEL_CLASSES} style={{ marginTop: 8 }}>Ranked by GAA</span>
+                <span className={PP_RANK_LABEL_CLASSES} style={{ marginTop: 8 }}>{t('playerPopup.rankings.rankedByGaa')}</span>
                 <div className={PP_RANK_ITEMS_CLASSES}>
-                  {rankings.gaa.division   && <RankBadge label="Division"   rank={rankings.gaa.division} />}
-                  {rankings.gaa.conference && <RankBadge label="Conference" rank={rankings.gaa.conference} />}
-                  {rankings.gaa.league     && <RankBadge label="League"     rank={rankings.gaa.league} />}
+                  {rankings.gaa.division   && <RankBadge label={t('statTileGrid.scopes.div')}   rank={rankings.gaa.division} />}
+                  {rankings.gaa.conference && <RankBadge label={t('statTileGrid.scopes.conf')} rank={rankings.gaa.conference} />}
+                  {rankings.gaa.league     && <RankBadge label={t('statTileGrid.scopes.league')}     rank={rankings.gaa.league} />}
                 </div>
               </>
             )}
@@ -1264,27 +1265,27 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
           <div className={PP_CONTRACT_CLASSES}>
             <div className={PP_CONTRACT_ROW_CLASSES}>
               <div className={PP_CONTRACT_ITEM_CLASSES}>
-                <div className={PP_CONTRACT_LABEL_CLASSES}>Cap Hit</div>
+                <div className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.capHit')}</div>
                 <div className={PP_CONTRACT_VAL_CLASSES}>${(contract.capHit / 1_000_000).toFixed(2)}M</div>
               </div>
               <div className={PP_CONTRACT_ITEM_CLASSES}>
-                <div className={PP_CONTRACT_LABEL_CLASSES}>AAV / Year</div>
+                <div className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.aavPerYear')}</div>
                 <div className={PP_CONTRACT_VAL_CLASSES}>${(contract.capHit / 1_000_000).toFixed(2)}M</div>
               </div>
               <div className={PP_CONTRACT_ITEM_CLASSES}>
-                <div className={PP_CONTRACT_LABEL_CLASSES}>Expires After</div>
+                <div className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.expiresAfter')}</div>
                 <div className={PP_CONTRACT_VAL_CLASSES}>{contract.expiresAfter}</div>
               </div>
               <div className={PP_CONTRACT_ITEM_CLASSES}>
-                <div className={PP_CONTRACT_LABEL_CLASSES}>Status</div>
+                <div className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.status')}</div>
                 <div className={PP_CONTRACT_VAL_CLASSES}>{contract.type}{contract.note ? ` · ${contract.note}` : ''}</div>
               </div>
               <div className={PP_CONTRACT_ITEM_CLASSES}>
-                <div className={PP_CONTRACT_LABEL_CLASSES}>Yrs Left</div>
+                <div className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.yrsLeft')}</div>
                 <div className={PP_CONTRACT_VAL_CLASSES}>{contract.yearsLeft}</div>
               </div>
               <div className={PP_CONTRACT_ITEM_CLASSES}>
-                <div className={PP_CONTRACT_LABEL_CLASSES}>% of Cap</div>
+                <div className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.pctOfCap')}</div>
                 <div className={PP_CONTRACT_VAL_CLASSES}>{((contract.capHit / CAP_CEILING) * 100).toFixed(1)}%</div>
               </div>
             </div>
@@ -1304,26 +1305,26 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                     : Number(regStats.avgToi)) * gp)
                 : null
               const valueTooltip = method === 'blended'
-                ? `Blended score: 60% points per $1M (projected to 82 GP) + 40% WAR per $1M (scaled). WAR uses 5v5 RAPM (beta) + PP/PK/finishing components — captures two-way value points miss. Defensive specialists and shutdown players score higher here than on a pure points basis. Scale: ≥8.0 Exceptional · ≥5.0 Great · ≥3.0 Good · ≥1.8 Fair · ≥1.0 Below avg · <1.0 Overpaid. ELC contracts excluded.`
-                : `Points per $1M of cap hit (projected to 82 games). WAR data unavailable for this player — using points only. Scale: ≥8.0 Exceptional · ≥5.0 Great · ≥3.0 Good · ≥1.8 Fair · ≥1.0 Below avg · <1.0 Overpaid. ELC contracts excluded.`
+                ? t('playerPopup.contract.valueTooltipBlended')
+                : t('playerPopup.contract.valueTooltipPointsOnly')
               return (
                 <div className={PP_VALUE_ROW_CLASSES}>
                   {score != null && vl && (
                     <div className={PP_VALUE_BADGE_CLASSES} style={{ background: vl.color + '22', borderColor: vl.color + '55', color: vl.color }}>
                       <span>{vl.label}</span>
-                      <span className={PP_VALUE_SCORE_CLASSES}>{score} {method === 'blended' ? 'blended/$M' : 'pts/$M'}</span>
-                      <InfoTip label="Contract Value Score" text={valueTooltip} />
+                      <span className={PP_VALUE_SCORE_CLASSES}>{score} {method === 'blended' ? t('playerPopup.contract.blendedPerM') : t('playerPopup.contract.ptsPerM')}</span>
+                      <InfoTip label={t('playerPopup.contract.contractValueScoreLabel')} text={valueTooltip} />
                     </div>
                   )}
                   {p60 != null && (
-                    <div className={PP_ADV_CHIP_CLASSES}>P/60: <strong>{p60}</strong>
-                      <InfoTip label="P/60" text="Points per 60 minutes of ice time. Removes ice time differences — a player with 10 pts in 12 min/game produces at a very different rate than 10 pts in 22 min/game. League avg for top-6 forwards: ~2.0–3.5." />
+                    <div className={PP_ADV_CHIP_CLASSES}>{t('playerPopup.contract.p60Prefix')}<strong>{p60}</strong>
+                      <InfoTip label={t('playerPopup.contract.p60Label')} text={t('playerPopup.contract.p60Tip')} />
                     </div>
                   )}
                   {isELC && !isGoalie && (
                     <div className={PP_ADV_CHIP_CLASSES} style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>
-                      ELC — value score N/A
-                      <InfoTip label="ELC Contract" text="Entry Level Contracts have a league-mandated cap hit ($775K–$925K) that doesn't reflect market value, so the blended value comparison isn't meaningful." />
+                      {t('playerPopup.contract.elcNA')}
+                      <InfoTip label={t('playerPopup.contract.elcLabel')} text={t('playerPopup.contract.elcTip')} />
                     </div>
                   )}
                   {isGoalie && (() => {
@@ -1334,15 +1335,15 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                     const gVl    = goalieValueLabel(gScore)
                     if (!gScore || !gVl) return isELC ? (
                       <div className={PP_ADV_CHIP_CLASSES} style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>
-                        ELC — value score N/A
-                        <InfoTip label="ELC Contract" text="ELC cap hits are league-mandated and don't reflect market value." />
+                        {t('playerPopup.contract.elcNA')}
+                        <InfoTip label={t('playerPopup.contract.elcLabel')} text={t('playerPopup.contract.elcTipShort')} />
                       </div>
                     ) : null
                     return (
                       <div className={PP_VALUE_BADGE_CLASSES} style={{ background: gVl.color + '22', borderColor: gVl.color + '55', color: gVl.color }}>
                         <span>{gVl.label}</span>
-                        <span className={PP_VALUE_SCORE_CLASSES}>GSAX {gScore > 0 ? '+' : ''}{gScore}/$M</span>
-                        <InfoTip label="Goalie Value Score" text="Goals saved above expected (GSAX) per $1M of cap hit. GSAX accounts for shot quality and volume — a positive number means the goalie saved more goals than an average goalie would have on the same shots. Dividing by cap hit shows how much of that value you're getting per dollar. Scale: ≥4.0 Exceptional · ≥2.0 Great · ≥0.0 Fair · ≥-2.0 Below avg · <-2.0 Overpaid. ELC goalies excluded." />
+                        <span className={PP_VALUE_SCORE_CLASSES}>{t('playerPopup.contract.goalieGsaxPerM', { score: `${gScore > 0 ? '+' : ''}${gScore}` })}</span>
+                        <InfoTip label={t('playerPopup.contract.goalieValueScoreLabel')} text={t('playerPopup.contract.goalieValueTip')} />
                       </div>
                     )
                   })()}
@@ -1354,15 +1355,15 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
         {/* ── Tab toggle ── */}
         <div className={PP_TABS_CLASSES}>
-          <button className={ppTabClasses(ppTab === 'stats')} onClick={() => setPpTab('stats')}>📊 Stats</button>
-          <button className={ppTabClasses(ppTab === 'analytics')} onClick={() => setPpTab('analytics')}>🧮 Analytics</button>
+          <button className={ppTabClasses(ppTab === 'stats')} onClick={() => setPpTab('stats')}>{t('playerPopup.tabs.stats')}</button>
+          <button className={ppTabClasses(ppTab === 'analytics')} onClick={() => setPpTab('analytics')}>{t('playerPopup.tabs.analytics')}</button>
           {!isLeagueContext && (
-            <button className={ppTabClasses(ppTab === 'heatmap')} onClick={() => setPpTab('heatmap')}>🎯 Heat Map</button>
+            <button className={ppTabClasses(ppTab === 'heatmap')} onClick={() => setPpTab('heatmap')}>{t('playerPopup.tabs.heatMap')}</button>
           )}
           {!isLeagueContext && (
-            <button className={ppTabClasses(ppTab === 'scout')} onClick={() => setPpTab('scout')}>🔍 Scout</button>
+            <button className={ppTabClasses(ppTab === 'scout')} onClick={() => setPpTab('scout')}>{t('playerPopup.tabs.scout')}</button>
           )}
-          <button className={ppTabClasses(ppTab === 'compare')} onClick={() => setPpTab('compare')}>🆚 Compare</button>
+          <button className={ppTabClasses(ppTab === 'compare')} onClick={() => setPpTab('compare')}>{t('playerPopup.tabs.compare')}</button>
         </div>
 
         {/* ── Stats tab ── */}
@@ -1381,7 +1382,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
               <div className="stat-section-peers">{otherStatSections}</div>
             )}
             {!loading && !sections.some(s => s.stats) && (
-              <div className={PP_NO_STATS_CLASSES}>No stats available for this player yet.</div>
+              <div className={PP_NO_STATS_CLASSES}>{t('playerPopup.bio.noStats')}</div>
             )}
           </div>
         )}
@@ -1418,26 +1419,26 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
               maxSelected={4}
             />
             {compareSeasons.length === 0 && (
-              <div className={PP_NO_STATS_CLASSES}>Select two or more seasons above to compare.</div>
+              <div className={PP_NO_STATS_CLASSES}>{t('playerPopup.compareTab.selectSeasons')}</div>
             )}
             {chartableStatDefs.length > 0 && compareSeasons.length > 0 && (
               <div className="stat-section xg-overlay-section">
                 <div className="stat-section-header">
-                  <span className="stat-section-label">Per-game trend</span>
+                  <span className="stat-section-label">{t('playerPopup.compareTab.perGameTrend')}</span>
                   <select
                     className={PP_METRIC_SELECT_CLASSES}
                     value={activeChartDef?.key || ''}
                     onChange={e => setChartMetricKey(e.target.value)}
-                    aria-label="Trend metric"
+                    aria-label={t('playerPopup.compareTab.trendMetricAriaLabel')}
                   >
                     {chartableStatDefs.map(d => (
-                      <option key={d.key} value={d.key}>{d.label}{d.cumulative ? ' (season total)' : ''}</option>
+                      <option key={d.key} value={d.key}>{d.cumulative ? t('playerPopup.compareTab.seasonTotalSuffix', { label: d.label }) : d.label}</option>
                     ))}
                   </select>
                 </div>
                 <div className="stat-section-body">
                   {gameLogLoading
-                    ? <div className={PP_NO_STATS_CLASSES}>Loading chart…</div>
+                    ? <div className={PP_NO_STATS_CLASSES}>{t('playerPopup.compareTab.loadingChart')}</div>
                     : (
                       <SeasonOverlayChart
                         series={chartSeries}
@@ -1455,7 +1456,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                   if (!seasonStats) {
                     return (
                       <div key={season} className={PP_NO_STATS_CLASSES}>
-                        No regular-season data for {nhlSeasonLabel(season)}.
+                        {t('playerPopup.compareTab.noRegularSeasonData', { season: nhlSeasonLabel(season) })}
                       </div>
                     )
                   }

@@ -1524,6 +1524,75 @@
       "emptyState": "No scouting report yet for {{player}}.",
       "emptyStateSub": "Reports generate nightly — check back after the next pipeline run.",
       "footer": "AI-generated · Updated nightly"
+    },
+    "sections": {
+      "seasonPlayoffs": "{{season}} Playoffs",
+      "careerPlayoffs": "Career Playoffs",
+      "seasonRegular": "{{season}} Regular season",
+      "careerRegular": "Career Regular season"
+    },
+    "bio": {
+      "height": "Height",
+      "weight": "Weight",
+      "catches": "Catches",
+      "shoots": "Shoots",
+      "age": "Age",
+      "birthdate": "Birthdate",
+      "hometown": "Hometown",
+      "left": "Left",
+      "right": "Right",
+      "weightLbs": "{{weight}} lbs",
+      "birthAge": "{{birth}} · Age {{age}}",
+      "closeAriaLabel": "Close player details",
+      "noStats": "No stats available for this player yet."
+    },
+    "rankings": {
+      "rankedBy": "Ranked by {{stat}}",
+      "rankedByGaa": "Ranked by GAA"
+    },
+    "contract": {
+      "capHit": "Cap Hit",
+      "aavPerYear": "AAV / Year",
+      "expiresAfter": "Expires After",
+      "status": "Status",
+      "yrsLeft": "Yrs Left",
+      "pctOfCap": "% of Cap",
+      "blendedPerM": "blended/$M",
+      "ptsPerM": "pts/$M",
+      "valueTooltipBlended": "Blended score: 60% points per $1M (projected to 82 GP) + 40% WAR per $1M (scaled). WAR uses 5v5 RAPM (beta) + PP/PK/finishing components — captures two-way value points miss. Defensive specialists and shutdown players score higher here than on a pure points basis. Scale: ≥8.0 Exceptional · ≥5.0 Great · ≥3.0 Good · ≥1.8 Fair · ≥1.0 Below avg · <1.0 Overpaid. ELC contracts excluded.",
+      "valueTooltipPointsOnly": "Points per $1M of cap hit (projected to 82 games). WAR data unavailable for this player — using points only. Scale: ≥8.0 Exceptional · ≥5.0 Great · ≥3.0 Good · ≥1.8 Fair · ≥1.0 Below avg · <1.0 Overpaid. ELC contracts excluded.",
+      "contractValueScoreLabel": "Contract Value Score",
+      "p60Label": "P/60",
+      "p60Prefix": "P/60: ",
+      "p60Tip": "Points per 60 minutes of ice time. Removes ice time differences — a player with 10 pts in 12 min/game produces at a very different rate than 10 pts in 22 min/game. League avg for top-6 forwards: ~2.0–3.5.",
+      "elcNA": "ELC — value score N/A",
+      "elcLabel": "ELC Contract",
+      "elcTip": "Entry Level Contracts have a league-mandated cap hit ($775K–$925K) that doesn't reflect market value, so the blended value comparison isn't meaningful.",
+      "elcTipShort": "ELC cap hits are league-mandated and don't reflect market value.",
+      "goalieValueScoreLabel": "Goalie Value Score",
+      "goalieGsaxPerM": "GSAX {{score}}/$M",
+      "goalieValueTip": "Goals saved above expected (GSAX) per $1M of cap hit. GSAX accounts for shot quality and volume — a positive number means the goalie saved more goals than an average goalie would have on the same shots. Dividing by cap hit shows how much of that value you're getting per dollar. Scale: ≥4.0 Exceptional · ≥2.0 Great · ≥0.0 Fair · ≥-2.0 Below avg · <-2.0 Overpaid. ELC goalies excluded.",
+      "tierExceptional": "Exceptional value",
+      "tierGreat": "Great value",
+      "tierGood": "Good value",
+      "tierFair": "Fair value",
+      "tierBelowAvg": "Below average",
+      "tierOverpaid": "Overpaid"
+    },
+    "tabs": {
+      "stats": "📊 Stats",
+      "analytics": "🧮 Analytics",
+      "heatMap": "🎯 Heat Map",
+      "scout": "🔍 Scout",
+      "compare": "🆚 Compare"
+    },
+    "compareTab": {
+      "selectSeasons": "Select two or more seasons above to compare.",
+      "perGameTrend": "Per-game trend",
+      "trendMetricAriaLabel": "Trend metric",
+      "seasonTotalSuffix": "{{label}} (season total)",
+      "loadingChart": "Loading chart…",
+      "noRegularSeasonData": "No regular-season data for {{season}}."
     }
   },
   "percentileBar": {
