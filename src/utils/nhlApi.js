@@ -985,6 +985,31 @@ export function isHomeGame(game) {
   return game?.homeTeam?.abbrev === TEAM_CONFIG.abbr;
 }
 
+// game.venue.default is the arena name wherever the game is actually played
+// (i.e. the home team's arena) -- same field regardless of which team you're
+// rooting for, so no home/away branching needed here.
+export function getVenue(game) {
+  return game?.venue?.default || '';
+}
+
+// Dedupes game.tvBroadcasts[] (which can list the same network more than
+// once across market/countryCode combinations, e.g. a national US feed
+// alongside a Canadian regional one) down to a flat, ordered list of
+// network names for display. Returns [] when the schedule hasn't had
+// broadcasts assigned yet (common for games far in the future).
+export function getBroadcasts(game) {
+  if (!Array.isArray(game?.tvBroadcasts)) return [];
+  const seen = new Set();
+  const networks = [];
+  for (const b of game.tvBroadcasts) {
+    if (b?.network && !seen.has(b.network)) {
+      seen.add(b.network);
+      networks.push(b.network);
+    }
+  }
+  return networks;
+}
+
 export function getCarScore(game) {
   if (!game) return null;
   return game.homeTeam?.abbrev === TEAM_CONFIG.abbr

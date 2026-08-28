@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import {
   getCompletedGameStats, getOpponent, isHomeGame, getCarScore, getOppScore,
-  formatGameDate, TEAM_COLORS,
+  formatGameDate, getVenue, TEAM_COLORS,
 } from '../utils/nhlApi';
 import { computeShotAttempts, computePDO, computePuckLuck } from '../utils/advancedStats';
 import TeamLogo from '../components/TeamLogo';
@@ -211,7 +211,7 @@ function GameStatsPopup({ game, onClose }) {
             <div className="gp-center-col flex flex-col items-center gap-1">
               <div className={`${GP_RESULT_BADGE_CLASSES} ${won ? 'win bg-[rgba(61,186,126,0.2)] text-[color:var(--green)]' : 'loss bg-[rgba(204,34,0,0.15)] text-[color:var(--red-bright)]'}`}>{won ? t('gameStatsPopup.header.resultWin') : t('gameStatsPopup.header.resultLoss')}</div>
               <div className="gp-date text-[11px] text-[color:var(--text-muted)]">{formatGameDate(game.gameDate)}</div>
-              <div className="gp-venue text-[10px] text-[color:var(--text-dim)]">{home ? `📍 ${t('scheduleView.resultCard.home')}` : `✈ ${t('scheduleView.resultCard.away')}`}</div>
+              <div className="gp-venue text-[10px] text-[color:var(--text-dim)]">{home ? '📍' : '✈'} {getVenue(game) || (home ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away'))}</div>
             </div>
             <div className={`${GP_TEAM_COL_CLASSES} right`}>
               <TeamLogo abbr={oppAbbr} size={36} color={oppColor} />
