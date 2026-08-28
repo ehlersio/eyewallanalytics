@@ -10,7 +10,7 @@
 
 ## Overview
 
-EyeWall Analytics is a React PWA delivering real-time and historical NHL and PWHL data from the public NHL API, MoneyPuck, HockeyTech, and PWHLPA. It combines live polling, a Cloudflare Worker caching layer, Web Push notifications, Workers AI-generated period/game summaries and matchup analysis, player shot heat maps, MoneyPuck-powered WAR/percentile analytics, true RAPM via ridge regression, AI-powered nightly power rankings, a live draft board with Central Scouting rankings and AI pick analysis, and a full PWHL analytics suite into a mobile-first experience for hockey fans who want to go deeper than the box score.
+EyeWall Analytics is a React PWA delivering real-time and historical NHL and PWHL data from the public NHL API, MoneyPuck, HockeyTech, and PWHLPA. It combines live polling, a Cloudflare Worker caching layer, Web Push notifications, AI-generated period/game summaries and matchup analysis, player shot heat maps, MoneyPuck-powered WAR/percentile analytics, true RAPM via ridge regression, AI-powered nightly power rankings, a live draft board with Central Scouting rankings and AI pick analysis, and a full PWHL analytics suite into a mobile-first experience for hockey fans who want to go deeper than the box score.
 
 Users select their league (NHL or PWHL) and team on first launch. All views, colors, and data scope to the selected team. The sport, team, and theme preference are persisted to `localStorage` and applied on every subsequent load.
 
@@ -33,7 +33,7 @@ Users select their league (NHL or PWHL) and team on first launch. All views, col
 | PWHL Data Pipeline | Python (`eyewall-pipeline`) — HockeyTech + PWHLPA → Supabase |
 | Pipeline CI | GitHub Actions — nightly data cron (3 AM ET) + AI pipeline + draft day ingest + PWHL news |
 | Push Notifications | Web Push API (VAPID), Service Worker |
-| AI | Cloudflare Workers AI — `@cf/meta/llama-3.1-8b-instruct-fp8-fast` (period/game summaries, predictions, matchup analysis, scouting blurbs, power rankings narratives, draft pick analysis) |
+| AI | OpenRouter — `google/gemma-4-26b-a4b-it` (period/game summaries, predictions, matchup analysis, scouting blurbs, power rankings narratives, draft pick analysis). Switched 2026-08 from Cloudflare Workers AI (`@cf/meta/llama-3.1-8b-instruct-fp8-fast`) — see `eyewall-poller`'s README for the full reasoning (real accuracy problems found in the old model, and why OpenRouter rather than Cloudflare's own hosting of the same new Gemma model) |
 | Analytics Data | MoneyPuck.com CSV (fetched nightly by pipeline) |
 | PWHL Data | HockeyTech API (stats, PBP, schedules), PWHLPA PDF (salaries) |
 | Draft Data | NHL Central Scouting API + NHL API (live picks) + Tankathon; PWHL static (2025, 2026) |
@@ -236,7 +236,7 @@ Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `m
 | `GET /draft/rankings?category=` | NHL Central Scouting rankings by category |
 | `GET /draft/picks?team=&round=` | Draft picks, filterable by team and/or round |
 | `GET /draft/order?team=` | Known R1 pick order |
-| `POST /draft/analyze` | Workers AI draft pick analysis (secret-protected, `X-Poll-Secret` header) — called by `draft_ingest.py` on draft day |
+| `POST /draft/analyze` | AI draft pick analysis (secret-protected, `X-Poll-Secret` header) — called by `draft_ingest.py` on draft day |
 | `GET /milestones?team=&sport=&limit=` | Recent milestones, NHL by default (`sport=pwhl` for PWHL), optional team filter (default limit 50, max 100) — scoped to the live-resolved current season |
 | `GET /player/landing?id=` | Proxies NHL API's `/player/{id}/landing` — browser can't call it directly (no CORS headers on the NHL side) |
 | `GET /config/seasons` | Live-resolved current NHL + PWHL season, both leagues in one response (see [Live Season Resolution](#live-season-resolution)) — consumed by `seasonClient.js` at app boot and by the pipeline's `season_lookup.py` |
@@ -281,7 +281,7 @@ Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `m
 | `GET /pwhl/player-shots?playerId=&season=` | Player shot history for heat map |
 | `GET /pwhl/goalie-shots?goalieId=&season=` | Shots faced by a goalie, for the goalie heat map (Session 100) |
 | `GET /pwhl/pbp?gameId=` | Play-by-play events |
-| `GET /pwhl/scout` (POST) | Workers AI scouting report |
+| `GET /pwhl/scout` (POST) | AI scouting report |
 | `GET /pwhl/salaries?teamId=&season=` | Team salary data |
 | `GET /pwhl/league-players?season=` | All 12 teams' players (Leaders tab) |
 | `GET /pwhl/player/landing?id=&season=` | Single player's identity + one season's stat line, merged — powers `PWHLPlayerPopup`'s self-fetch-by-id (same role `/player/landing` plays for NHL's `PlayerPopup`). `season` pins the stat line to that `season_id`; omitted, falls back to the most recent regular-season row |
@@ -324,7 +324,7 @@ All existing NHL features unchanged — see original documentation. Key features
 - **Trends** — Streak, L10, result dots, rolling 10-game win%, rolling 5-game GF/GA, goal differential waterfall
 - **Salaries** — Total payroll vs $1.3M cap ceiling, CBA target ($58,349.50/player ±10%), Avg vs Target, player salary bars
 
-**Players Page** — Photo grid roster (Forwards / Defencemen / Goalies), season picker, sortable stats tables. Player popup with Stats, Heat Map (from `pwhl_shot_events`), and Scout (Workers AI on-demand) tabs.
+**Players Page** — Photo grid roster (Forwards / Defencemen / Goalies), season picker, sortable stats tables. Player popup with Stats, Heat Map (from `pwhl_shot_events`), and Scout (AI on-demand) tabs.
 
 **League Page (5 tabs):**
 - **Standings** — W/OTW/OTL/L columns, PTS, Pt%, GF, GA, DIFF, L10 dots, STRK. 3-2-1-0 points note. Sortable.
@@ -645,7 +645,7 @@ VITE_SUPABASE_ANON=sb_publishable_...
 - [ ] Dependabot: supabase 2.31.x, ESLint 10, Vite 8 (October)
 - [ ] October: bump `OFFSEASON_BRACKET` — the only one of these four left after 2026-07's live season resolution work; `CURRENT_SEASON`/`PWHL_CURRENT_SEASON`/`NHL_SEASON` no longer need a manual bump
 - [x] ~~PWHL milestones (hat tricks, shutouts, etc.) — deferred pending PWHL schema confirmation~~ — actually shipped some time ago (`pwhl_milestones.py`, same shared `milestones` table as NHL) but this roadmap line was never checked off; caught during the 2026-08-13 milestones staleness/`sh_goal` naming-mismatch investigation
-- [ ] `ai_summaries.py`/`ai_predictions.py` appear to run twice nightly — once inside `run.py`'s `run_all()`, again via `ai_pipeline.yml`'s separate cron an hour later. Worth confirming whether that's intentional redundancy or wasted GH Actions minutes / duplicate Workers AI calls.
+- [ ] `ai_summaries.py`/`ai_predictions.py` appear to run twice nightly — once inside `run.py`'s `run_all()`, again via `ai_pipeline.yml`'s separate cron an hour later. Worth confirming whether that's intentional redundancy or wasted GH Actions minutes / duplicate OpenRouter calls.
 - [ ] Migrate remaining pipeline scripts (`ai_summaries.py`, `ai_predictions.py`, `moneypuck.py`, etc.) to `db.py`/`pipeline_common.py` if they don't already use them
 - [ ] Expansion team logos/permanent names — still placeholders, waiting on official branding reveal (likely this fall)
 - [ ] `pwhl_stats.py`'s `SEASON_TYPE_MAP` labels season ID 2 as `"showcase"`, but HockeyTech's own `bootstrap` response calls it `"2024 Preseason"` — unresolved discrepancy, worth checking against real 2024 game data before changing either one
