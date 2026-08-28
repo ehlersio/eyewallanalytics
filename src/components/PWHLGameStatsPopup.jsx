@@ -131,6 +131,19 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
   const periods = summary?.periods || [];
   const mvps    = summary?.mvps || [];
 
+  // Venue/officials/coaches -- all from gameSummary, fetched above via
+  // fetchPWHLGameSummary. Venue is "Arena Name | City"; officials/coaches
+  // are already normalized to My/Opp-agnostic home/away by the Worker, so
+  // orient coaches to My-team-first here, matching this file's abbr/color
+  // vs. oppAbbr/oppColor convention used everywhere else.
+  const venueName = summary?.venue ? summary.venue.split('|')[0].trim() : null;
+  const myCoach   = isHome ? summary?.coaches?.home : summary?.coaches?.away;
+  const oppCoach  = isHome ? summary?.coaches?.away : summary?.coaches?.home;
+  const officials = [
+    ...(summary?.officials?.referees || []),
+    ...(summary?.officials?.linesmen || []),
+  ];
+
   return (
     <div className="pgs-backdrop fixed inset-0 bg-[rgba(0,0,0,0.6)] flex items-end justify-center z-[200] min-[560px]:items-center min-[560px]:p-4" onClick={onClose}>
       <div className="pgs-card bg-[var(--bg1)] border-[0.5px] border-[color:var(--border-2)] rounded-t-[var(--radius-lg)] w-full max-w-[480px] max-h-[90vh] overflow-y-auto shadow-[0_-8px_40px_rgba(0,0,0,0.5)] min-[560px]:rounded-[var(--radius-lg)]" onClick={e => e.stopPropagation()}>
@@ -145,7 +158,7 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
             <div className="pgs-center-col flex flex-col items-center gap-1">
               <div className={`pgs-result-badge font-[family-name:var(--font-display)] text-[12px] font-bold py-[3px] px-2.5 rounded-[20px] ${won ? 'win bg-[rgba(61,186,126,0.2)] text-[color:var(--green)]' : 'loss bg-[rgba(255,68,34,0.15)] text-[color:var(--red-bright)]'}`}>{won ? t('gameStatsPopup.header.resultWin') : t('gameStatsPopup.header.resultLoss')}{suffix}</div>
               <div className="pgs-date text-[11px] text-[color:var(--text-muted)]">{formatDateLong(game.game_date)}</div>
-              <div className="pgs-venue text-[10px] text-[color:var(--text-dim)]">{isHome ? `📍 ${t('scheduleView.resultCard.home')}` : `✈ ${t('scheduleView.resultCard.away')}`}</div>
+              <div className="pgs-venue text-[10px] text-[color:var(--text-dim)]">{isHome ? '📍' : '✈'} {venueName || (isHome ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away'))}</div>
             </div>
             <div className={`${PGS_TEAM_COL_CLASSES} right`}>
               <TeamLogo abbr={oppAbbr} sport="pwhl" size={36} color={oppColor} />
@@ -284,6 +297,28 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
           )}
           {!boxLoading && !skaters.length && !goalies.length && (
             <div className="pgs-no-data text-[12px] text-[color:var(--text-dim)] text-center py-4 italic">{t('pwhlGameStats.emptyState')}</div>
+          )}
+
+          {/* Game info: officials + coaches -- from gameSummary, already
+              fetched above, previously discarded by the Worker route. */}
+          {(officials.length > 0 || myCoach || oppCoach) && (
+            <div className="pgs-section mt-4.5">
+              <div className={PGS_SECTION_LABEL_CLASSES}>{t('gameStatsPopup.sections.gameInfo')}</div>
+              <div className="pgs-game-info flex flex-col gap-1.5 text-[11px] text-[color:var(--text-muted)]">
+                {officials.length > 0 && (
+                  <div className="pgs-officials">
+                    <span className="font-semibold text-[color:var(--text)]">{t('gameStatsPopup.gameInfo.officials')}: </span>
+                    {officials.map(o => `${o.firstName} ${o.lastName}${o.jerseyNumber ? ` #${o.jerseyNumber}` : ''}`).join(', ')}
+                  </div>
+                )}
+                {(myCoach || oppCoach) && (
+                  <div className="pgs-coaches">
+                    <span className="font-semibold text-[color:var(--text)]">{t('gameStatsPopup.gameInfo.coaches')}: </span>
+                    {[myCoach, oppCoach].filter(Boolean).map(c => `${c.firstName} ${c.lastName}`).join(' vs. ')}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
           {/* Shot map CTA */}
