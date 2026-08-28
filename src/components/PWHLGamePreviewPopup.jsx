@@ -157,7 +157,7 @@ export default function PWHLGamePreviewPopup({ game, teamId, abbr, color, onClos
             <div className="pgp-center-col flex flex-col items-center gap-1">
               <div className="pgp-vs font-[family-name:var(--font-display)] text-[11px] font-bold tracking-[0.08em] uppercase text-[color:var(--text-dim)]">{t('pwhlGamePreview.header.previewLabel')}</div>
               <div className="pgp-date text-[11px] text-[color:var(--text-muted)]">{formatDateLong(game.game_date)}</div>
-              <div className="pgp-venue text-[10px] text-[color:var(--text-dim)]">{isHome ? `📍 ${t('scheduleView.resultCard.home')}` : `✈ ${t('scheduleView.resultCard.away')}`}</div>
+              <div className="pgp-venue text-[10px] text-[color:var(--text-dim)]">{isHome ? '📍' : '✈'} {game.venue_name || (isHome ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away'))}</div>
             </div>
             <div className={`${PGP_TEAM_COL_CLASSES} right`}>
               <TeamLogo abbr={oppAbbr} sport="pwhl" size={36} color={oppColor} />

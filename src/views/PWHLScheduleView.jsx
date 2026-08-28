@@ -576,7 +576,7 @@ function PWHLPlayoffsTab({ games, teamId, abbr, color, onGamePopup }) {
                                 {done && <span className="result-num muted text-[22px] font-bold text-[color:var(--text-muted)]">{op}</span>}
                                 <span className="result-abbr muted text-[16px] font-bold text-[color:var(--text-muted)]">{gOppAbbr}</span>
                                 <TeamLogo abbr={gOppAbbr} sport="pwhl" size={20} color={gOppColor} />
-                                <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHome ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away')}</span>
+                                <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHome ? '📍' : '✈'} {g.venue_name || (isHome ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away'))}</span>
                               </div>
                             </div>
                           );
@@ -734,7 +734,7 @@ function CompletedCard({ game: g, teamId, abbr, color, onClick, isPlayoff }) {
         <span className="result-num muted text-[22px] font-bold text-[color:var(--text-muted)]">{op ?? '—'}</span>
         <span className="result-abbr muted text-[16px] font-bold text-[color:var(--text-muted)]">{oppAbbr}</span>
         <TeamLogo abbr={oppAbbr} sport="pwhl" size={20} color={oppColor} />
-        <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHome ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away')}</span>
+        <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHome ? '📍' : '✈'} {g.venue_name || (isHome ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away'))}</span>
       </div>
     </div>
   );
@@ -757,7 +757,7 @@ function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff, onClick }) {
         <span className={contextPillClasses(isPlayoff ? 'playoffs' : 'regular')} style={{ fontSize: 10 }}>
           {isPlayoff ? t('pwhlScheduleView.upcomingCard.playoffBadge') : t('pwhlScheduleView.playoffs.upcomingBadge')}
         </span>
-        <span className="result-venue">{isHome ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away')}</span>
+        <span className="result-venue">{isHome ? '📍' : '✈'} {g.venue_name || (isHome ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away'))}</span>
       </div>
       <div className="result-score">
         <TeamLogo abbr={abbr} sport="pwhl" size={20} color={color} />
