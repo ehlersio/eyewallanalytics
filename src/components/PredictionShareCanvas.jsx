@@ -12,6 +12,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { capture } from '../utils/analytics';
 import { TEAM_CONFIG } from '../utils/teamConfig';
+import { getGamePrediction } from '../utils/supabaseClient';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
 // PredictionCanvas.css import removed (Phase 6) -- migrated to Tailwind.
@@ -233,18 +234,17 @@ export default function PredictionExportSection({
   const [canvasMounted, setCanvasMounted] = useState(false);
   const [aiNarrative, setAiNarrative] = useState(null);
 
-  // DB-first: fetch pre-generated prediction narrative, fall back to Worker cache.
+  // DB-first: fetch pre-generated prediction narrative, fall back to Worker
+  // cache. Goes through supabaseClient.js's getGamePrediction() (Worker's
+  // /game-predictions route) rather than hitting Supabase directly -- this
+  // used to have its own inline fetch with an embedded anon key, the same
+  // pattern MatchupDetail.jsx's AI section already avoided by using
+  // getGamePrediction() for the exact same DB-first tier.
   useEffect(() => {
     if (!gameId) return;
-    const SUPABASE_URL  = import.meta.env.VITE_SUPABASE_URL  || 'https://mqgasjzywoibdgxjjkux.supabase.co';
-    const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON || 'sb_publishable_e_zwr1UA7GnHq4OuQSas5Q_kO8bQ_Ct';
-    fetch(
-      `${SUPABASE_URL}/rest/v1/game_predictions?game_id=eq.${gameId}&select=prediction_text&limit=1`,
-      { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } }
-    )
-      .then(r => r.ok ? r.json() : [])
-      .then(rows => {
-        if (rows?.[0]?.prediction_text) { setAiNarrative(rows[0].prediction_text); return; }
+    getGamePrediction(gameId)
+      .then(data => {
+        if (data?.text) { setAiNarrative(data.text); return; }
         const workerUrl = import.meta.env.VITE_WORKER_URL;
         if (!workerUrl) return;
         fetch(`${workerUrl}/cache/${encodeURIComponent(`prediction:${gameId}`)}`)
