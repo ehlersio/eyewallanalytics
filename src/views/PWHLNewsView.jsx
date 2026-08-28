@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import MilestonesFeed from '../components/MilestonesFeed';
 import TriviaFeed from '../components/TriviaFeed';
+import TransactionsFeed from '../components/TransactionsFeed';
 import { capture } from '../utils/analytics';
 import { useReadState } from '../hooks/useReadState';
 import { formatDate } from '../utils/formatters';
@@ -83,7 +84,7 @@ function ArticleCard({ item }) {
 
 export default function PWHLNewsView() {
   const { t } = useTranslation();
-  const [view,      setView]      = useState('news'); // 'news' | 'milestones' | 'trivia'
+  const [view,      setView]      = useState('news'); // 'news' | 'milestones' | 'trivia' | 'transactions'
   const [articles,  setArticles]  = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
@@ -179,10 +180,17 @@ export default function PWHLNewsView() {
         >
           {t('newsView.tabs.trivia')}{readState.trivia && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
         </button>
+        <button
+          className={newsViewToggleBtnClasses(view === 'transactions')}
+          onClick={() => { setView('transactions'); capture('transactions_tab_viewed', { sport: 'pwhl' }); }}
+        >
+          {t('newsView.tabs.transactions')}
+        </button>
       </div>
 
       {view === 'milestones' && <MilestonesFeed />}
       {view === 'trivia' && <TriviaFeed />}
+      {view === 'transactions' && <TransactionsFeed />}
 
       {view === 'news' && (
         <>

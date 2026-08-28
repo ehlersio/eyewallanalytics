@@ -76,7 +76,7 @@ canes-analytics-starter/
 │   │   ├── PWHLTeamView.jsx            # PWHL 5-tab team analytics
 │   │   ├── PWHLPlayersView.jsx         # PWHL roster + stats + player popup
 │   │   ├── PWHLLeagueView.jsx          # PWHL 5-tab league page
-│   │   ├── PWHLNewsView.jsx            # PWHL news feed
+│   │   ├── PWHLNewsView.jsx            # PWHL news feed + News/Milestones/Trivia/Transactions tab toggle
 │   │   ├── DevReplayView.jsx/.css      # Dev-only live game replay (/dev)
 │   │   └── DevDraftView.jsx            # Dev-only draft simulator (/dev/draft)
 │   ├── components/
@@ -102,6 +102,7 @@ canes-analytics-starter/
 │   │   ├── ShareButtons.jsx/.css       # Shared Save/X/Share buttons across all export cards
 │   │   ├── HatTrickPopup              # (in GameEvents.jsx) — live hat trick celebration overlay
 │   │   ├── MilestonesFeed.jsx          # League-wide milestone feed (hat tricks, shutouts, SH goals, season/career thresholds) — tappable into PlayerPopup
+│   │   ├── TransactionsFeed.jsx        # PWHL-only league-wide signings/moves feed, fourth tab on PWHLNewsView.jsx alongside News/Milestones/Trivia. Live proxy of HockeyTech's view=transactions (GET /pwhl/transactions) — not persisted to Supabase. Same card-reuse pattern as MilestonesFeed.jsx but non-tappable (transaction rows carry no player_id, just a display name) and no team filter
 │   │   ├── PlayerSearch.jsx/.css       # Global NHL+PWHL player search (Topbar) — Fuse.js fuzzy match against the Worker's flat player index
 │   │   ├── TeamLogo.jsx/.css           # NHL + PWHL team logo renderer
 │   │   ├── EyeWallLogo.jsx             # Theme-aware EyeWall wordmark (Session 100) — renders both eyewall-logo.svg (bright) and eyewall-logo-light.svg (contrast-darkened) stacked, toggled purely via CSS on [data-theme] (index.css), not a JS getTheme() check, so it reacts instantly to a live theme toggle. Only for logo placements on the app's own themed background (TeamPicker.jsx, AboutPopup.jsx) — the fixed-dark share-canvas components render /eyewall-logo.svg directly instead, since their canvas bg never changes with app theme
