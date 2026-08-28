@@ -87,36 +87,41 @@ export const NHL_ARCHIVE_SEASONS = [
 //   shortName        — common short name / nickname
 //   fullNameFragment — partial string to match NHL API full-name fields (e.g. city name)
 //   primaryColor     — canonical brand hex (used for light mode, storage, branding reference)
-//   displayColor     — WCAG AA-compliant variant for dark mode (≥4.5:1 on #101827 / bg2)
-//                      equals primaryColor where it already passes; lightened otherwise
+//   displayColor     — WCAG AA-compliant variant for dark mode. equals primaryColor
+//                      where it already passes; lightened otherwise, targeting ~6.5:1
+//                      on #101827 / bg2 rather than the bare 4.5:1 floor — blue hues in
+//                      particular read as less legible than the formula's ratio implies
+//                      at the same luminance, so the 10 blue team colors (BUF, CBJ, FLA,
+//                      NYI, NYR, STL, TBL, TOR, WPG, WSH) were bumped past the floor
+//                      after a live report that FLA/WPG were hard to read to the eye
 export const ALL_TEAMS = [
   // Atlantic
   { abbr: 'BOS', teamId:  6, franchiseId:  6, get season() { return CURRENT_SEASON; }, displayName: 'Boston Bruins',           shortName: 'Bruins',        fullNameFragment: 'Boston',       primaryColor: '#FFB81C', displayColor: '#FFB81C' },
-  { abbr: 'BUF', teamId:  7, franchiseId: 19, get season() { return CURRENT_SEASON; }, displayName: 'Buffalo Sabres',          shortName: 'Sabres',        fullNameFragment: 'Buffalo',      primaryColor: '#003087', displayColor: '#307aff' },
+  { abbr: 'BUF', teamId:  7, franchiseId: 19, get season() { return CURRENT_SEASON; }, displayName: 'Buffalo Sabres',          shortName: 'Sabres',        fullNameFragment: 'Buffalo',      primaryColor: '#003087', displayColor: '#649cff' },
   { abbr: 'DET', teamId: 17, franchiseId: 12, get season() { return CURRENT_SEASON; }, displayName: 'Detroit Red Wings',       shortName: 'Red Wings',     fullNameFragment: 'Detroit',      primaryColor: '#CE1126', displayColor: '#ef384c' },
-  { abbr: 'FLA', teamId: 13, franchiseId: 33, get season() { return CURRENT_SEASON; }, displayName: 'Florida Panthers',        shortName: 'Panthers',      fullNameFragment: 'Florida',      primaryColor: '#041E42', displayColor: '#2a7ef2' },
+  { abbr: 'FLA', teamId: 13, franchiseId: 33, get season() { return CURRENT_SEASON; }, displayName: 'Florida Panthers',        shortName: 'Panthers',      fullNameFragment: 'Florida',      primaryColor: '#041E42', displayColor: '#5b9ef9' },
   { abbr: 'MTL', teamId:  8, franchiseId:  1, get season() { return CURRENT_SEASON; }, displayName: 'Montréal Canadiens',      shortName: 'Canadiens',     fullNameFragment: 'Montréal',     primaryColor: '#AF1E2D', displayColor: '#e04b5b' },
   { abbr: 'OTT', teamId:  9, franchiseId: 30, get season() { return CURRENT_SEASON; }, displayName: 'Ottawa Senators',         shortName: 'Senators',      fullNameFragment: 'Ottawa',       primaryColor: '#C52032', displayColor: '#e24b5b' },
-  { abbr: 'TBL', teamId: 14, franchiseId: 31, get season() { return CURRENT_SEASON; }, displayName: 'Tampa Bay Lightning',     shortName: 'Lightning',     fullNameFragment: 'Tampa Bay',    primaryColor: '#002868', displayColor: '#287bff' },
-  { abbr: 'TOR', teamId: 10, franchiseId:  5, get season() { return CURRENT_SEASON; }, displayName: 'Toronto Maple Leafs',     shortName: 'Maple Leafs',   fullNameFragment: 'Toronto',      primaryColor: '#003E7E', displayColor: '#007dfd' },
+  { abbr: 'TBL', teamId: 14, franchiseId: 31, get season() { return CURRENT_SEASON; }, displayName: 'Tampa Bay Lightning',     shortName: 'Lightning',     fullNameFragment: 'Tampa Bay',    primaryColor: '#002868', displayColor: '#5f9cff' },
+  { abbr: 'TOR', teamId: 10, franchiseId:  5, get season() { return CURRENT_SEASON; }, displayName: 'Toronto Maple Leafs',     shortName: 'Maple Leafs',   fullNameFragment: 'Toronto',      primaryColor: '#003E7E', displayColor: '#42a0ff' },
   // Metropolitan
   { abbr: 'CAR', teamId: 12, franchiseId: 26, get season() { return CURRENT_SEASON; }, displayName: 'Carolina Hurricanes',     shortName: 'Canes',         fullNameFragment: 'Carolina',     primaryColor: '#CC0000', displayColor: '#ff0f0f' },
-  { abbr: 'CBJ', teamId: 29, franchiseId: 36, get season() { return CURRENT_SEASON; }, displayName: 'Columbus Blue Jackets',   shortName: 'Blue Jackets',  fullNameFragment: 'Columbus',     primaryColor: '#002654', displayColor: '#0f7cff' },
+  { abbr: 'CBJ', teamId: 29, franchiseId: 36, get season() { return CURRENT_SEASON; }, displayName: 'Columbus Blue Jackets',   shortName: 'Blue Jackets',  fullNameFragment: 'Columbus',     primaryColor: '#002654', displayColor: '#4e9fff' },
   { abbr: 'NJD', teamId:  1, franchiseId: 23, get season() { return CURRENT_SEASON; }, displayName: 'New Jersey Devils',       shortName: 'Devils',        fullNameFragment: 'New Jersey',   primaryColor: '#CE1126', displayColor: '#ef384c' },
-  { abbr: 'NYI', teamId:  2, franchiseId: 22, get season() { return CURRENT_SEASON; }, displayName: 'New York Islanders',      shortName: 'Islanders',     fullNameFragment: 'NY Islanders', primaryColor: '#003087', displayColor: '#307aff' },
-  { abbr: 'NYR', teamId:  3, franchiseId: 10, get season() { return CURRENT_SEASON; }, displayName: 'New York Rangers',        shortName: 'Rangers',       fullNameFragment: 'NY Rangers',   primaryColor: '#0038A8', displayColor: '#3579ff' },
+  { abbr: 'NYI', teamId:  2, franchiseId: 22, get season() { return CURRENT_SEASON; }, displayName: 'New York Islanders',      shortName: 'Islanders',     fullNameFragment: 'NY Islanders', primaryColor: '#003087', displayColor: '#649cff' },
+  { abbr: 'NYR', teamId:  3, franchiseId: 10, get season() { return CURRENT_SEASON; }, displayName: 'New York Rangers',        shortName: 'Rangers',       fullNameFragment: 'NY Rangers',   primaryColor: '#0038A8', displayColor: '#689bff' },
   { abbr: 'PHI', teamId:  4, franchiseId: 16, get season() { return CURRENT_SEASON; }, displayName: 'Philadelphia Flyers',     shortName: 'Flyers',        fullNameFragment: 'Philadelphia', primaryColor: '#F74902', displayColor: '#F74902' },
   { abbr: 'PIT', teamId:  5, franchiseId: 17, get season() { return CURRENT_SEASON; }, displayName: 'Pittsburgh Penguins',     shortName: 'Penguins',      fullNameFragment: 'Pittsburgh',   primaryColor: '#FCB514', displayColor: '#FCB514' },
-  { abbr: 'WSH', teamId: 15, franchiseId: 24, get season() { return CURRENT_SEASON; }, displayName: 'Washington Capitals',     shortName: 'Capitals',      fullNameFragment: 'Washington',   primaryColor: '#041E42', displayColor: '#2a7ef2' },
+  { abbr: 'WSH', teamId: 15, franchiseId: 24, get season() { return CURRENT_SEASON; }, displayName: 'Washington Capitals',     shortName: 'Capitals',      fullNameFragment: 'Washington',   primaryColor: '#041E42', displayColor: '#5b9ef9' },
   // Central
   { abbr: 'CHI', teamId: 16, franchiseId: 11, get season() { return CURRENT_SEASON; }, displayName: 'Chicago Blackhawks',      shortName: 'Blackhawks',    fullNameFragment: 'Chicago',      primaryColor: '#CF0A2C', displayColor: '#f52c4e' },
   { abbr: 'COL', teamId: 21, franchiseId: 27, get season() { return CURRENT_SEASON; }, displayName: 'Colorado Avalanche',      shortName: 'Avalanche',     fullNameFragment: 'Colorado',     primaryColor: '#6F263D', displayColor: '#c85e80' },
   { abbr: 'DAL', teamId: 25, franchiseId: 15, get season() { return CURRENT_SEASON; }, displayName: 'Dallas Stars',            shortName: 'Stars',         fullNameFragment: 'Dallas',       primaryColor: '#006847', displayColor: '#009365' },
   { abbr: 'MIN', teamId: 30, franchiseId: 37, get season() { return CURRENT_SEASON; }, displayName: 'Minnesota Wild',          shortName: 'Wild',          fullNameFragment: 'Minnesota',    primaryColor: '#154734', displayColor: '#2b926b' },
   { abbr: 'NSH', teamId: 18, franchiseId: 34, get season() { return CURRENT_SEASON; }, displayName: 'Nashville Predators',     shortName: 'Predators',     fullNameFragment: 'Nashville',    primaryColor: '#FFB81C', displayColor: '#FFB81C' },
-  { abbr: 'STL', teamId: 19, franchiseId: 18, get season() { return CURRENT_SEASON; }, displayName: 'St. Louis Blues',         shortName: 'Blues',         fullNameFragment: 'St. Louis',    primaryColor: '#002F87', displayColor: '#337aff' },
+  { abbr: 'STL', teamId: 19, franchiseId: 18, get season() { return CURRENT_SEASON; }, displayName: 'St. Louis Blues',         shortName: 'Blues',         fullNameFragment: 'St. Louis',    primaryColor: '#002F87', displayColor: '#659bff' },
   { abbr: 'UTA', teamId: 59, franchiseId: 28, get season() { return CURRENT_SEASON; }, displayName: 'Utah Mammoth',            shortName: 'Mammoth',       fullNameFragment: 'Utah',         primaryColor: '#6CAEDF', displayColor: '#6CAEDF' },
-  { abbr: 'WPG', teamId: 52, franchiseId: 35, get season() { return CURRENT_SEASON; }, displayName: 'Winnipeg Jets',           shortName: 'Jets',          fullNameFragment: 'Winnipeg',     primaryColor: '#041E42', displayColor: '#2a7ef2' },
+  { abbr: 'WPG', teamId: 52, franchiseId: 35, get season() { return CURRENT_SEASON; }, displayName: 'Winnipeg Jets',           shortName: 'Jets',          fullNameFragment: 'Winnipeg',     primaryColor: '#041E42', displayColor: '#5b9ef9' },
   // Pacific
   { abbr: 'ANA', teamId: 24, franchiseId: 32, get season() { return CURRENT_SEASON; }, displayName: 'Anaheim Ducks',           shortName: 'Ducks',         fullNameFragment: 'Anaheim',      primaryColor: '#F47A38', displayColor: '#F47A38' },
   { abbr: 'CGY', teamId: 20, franchiseId: 21, get season() { return CURRENT_SEASON; }, displayName: 'Calgary Flames',          shortName: 'Flames',        fullNameFragment: 'Calgary',      primaryColor: '#C8102E', displayColor: '#ef3654' },
