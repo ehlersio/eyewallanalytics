@@ -464,7 +464,7 @@ function L10Dots({ wins, losses, otl }) {
 
 // ─── Standings table ──────────────────────────────────────────────────────────
 
-const COL_HEADERS = ['#', 'Team', 'GP', 'W', 'L', 'OTL', 'PTS', 'L10', 'STRK'];
+const COL_HEADERS = ['#', 'Team', 'GP', 'W', 'L', 'OTL', 'PTS', 'L10', 'STRK', 'WVR'];
 
 // Once the NHL's own clinchIndicator is populated for a team (live, via
 // /cache/standings), it's ground truth and wins outright — see
@@ -536,6 +536,7 @@ function StandingsRow({ entry, rank, teamSeasonData }) {
           return <span style={{ color, fontWeight: 600 }}>{code}{entry.streakCount}</span>;
         })()}
       </td>
+      <td className={lvTdClasses()} title={t('leagueView.standings.waiversTitle')}>{entry.waiversSequence ?? '—'}</td>
     </tr>
   );
 }
