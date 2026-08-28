@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import {
   getCompletedGameStats, getOpponent, isHomeGame, getCarScore, getOppScore,
-  formatGameDate, getVenue, TEAM_COLORS,
+  formatGameDate, getVenue, getWinningGoalScorer, getRecapLinks, isNeutralSite, TEAM_COLORS,
 } from '../utils/nhlApi';
 import { computeShotAttempts, computePDO, computePuckLuck } from '../utils/advancedStats';
 import TeamLogo from '../components/TeamLogo';
@@ -100,6 +100,14 @@ function GameStatsPopup({ game, onClose }) {
   const oppScore = getOppScore(game);
   const won      = carScore != null && oppScore != null && carScore > oppScore;
   const home     = isHomeGame(game);
+
+  // Game info -- officials/coaches/scratches from right-rail, already fetched
+  // by getCompletedGameStats but previously discarded; decided-by/recap/
+  // neutral-site come straight off the schedule `game` object, no fetch at all
+  const gameInfo    = data?.rightRail?.gameInfo || null;
+  const winningGoalScorer = getWinningGoalScorer(game);
+  const recapLinks  = getRecapLinks(game);
+  const neutralSite = isNeutralSite(game);
 
   // Pull team stats from right-rail
   const rr         = data?.rightRail;
@@ -211,7 +219,13 @@ function GameStatsPopup({ game, onClose }) {
             <div className="gp-center-col flex flex-col items-center gap-1">
               <div className={`${GP_RESULT_BADGE_CLASSES} ${won ? 'win bg-[rgba(61,186,126,0.2)] text-[color:var(--green)]' : 'loss bg-[rgba(204,34,0,0.15)] text-[color:var(--red-bright)]'}`}>{won ? t('gameStatsPopup.header.resultWin') : t('gameStatsPopup.header.resultLoss')}</div>
               <div className="gp-date text-[11px] text-[color:var(--text-muted)]">{formatGameDate(game.gameDate)}</div>
-              <div className="gp-venue text-[10px] text-[color:var(--text-dim)]">{home ? '📍' : '✈'} {getVenue(game) || (home ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away'))}</div>
+              <div className="gp-venue text-[10px] text-[color:var(--text-dim)]">
+                {home ? '📍' : '✈'} {getVenue(game) || (home ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away'))}
+                {neutralSite && <span className="gp-neutral-site-badge"> · {t('gameStatsPopup.gameInfo.neutralSite')}</span>}
+              </div>
+              {winningGoalScorer && (
+                <div className="gp-decided-by text-[9px] text-[color:var(--text-dim)] italic">{t('gameStatsPopup.gameInfo.decidedBy', { scorer: winningGoalScorer })}</div>
+              )}
             </div>
             <div className={`${GP_TEAM_COL_CLASSES} right`}>
               <TeamLogo abbr={oppAbbr} size={36} color={oppColor} />
@@ -356,6 +370,60 @@ function GameStatsPopup({ game, onClose }) {
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {/* Game info: officials, coaches, scratches, recap links --
+                  officials/coaches/scratches come from right-rail's gameInfo
+                  (already fetched by getCompletedGameStats, previously
+                  discarded); recap links come straight off the `game` prop. */}
+              {(gameInfo || recapLinks.recap || recapLinks.condensed) && (
+                <div className="gp-section mt-4.5">
+                  <div className="gp-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2">{t('gameStatsPopup.sections.gameInfo')}</div>
+                  <div className="gp-game-info flex flex-col gap-1.5 text-[11px] text-[color:var(--text-muted)]">
+                    {gameInfo && (gameInfo.referees?.length > 0 || gameInfo.linesmen?.length > 0) && (
+                      <div className="gp-officials">
+                        <span className="font-semibold text-[color:var(--text)]">{t('gameStatsPopup.gameInfo.officials')}: </span>
+                        {[...(gameInfo.referees || []), ...(gameInfo.linesmen || [])]
+                          .map(o => `${o.fullName?.default}${o.sweaterNumber ? ` #${o.sweaterNumber}` : ''}`)
+                          .join(', ')}
+                      </div>
+                    )}
+                    {gameInfo && (gameInfo.awayTeam?.headCoach?.default || gameInfo.homeTeam?.headCoach?.default) && (
+                      <div className="gp-coaches">
+                        <span className="font-semibold text-[color:var(--text)]">{t('gameStatsPopup.gameInfo.coaches')}: </span>
+                        {[gameInfo.awayTeam?.headCoach?.default, gameInfo.homeTeam?.headCoach?.default].filter(Boolean).join(' vs. ')}
+                      </div>
+                    )}
+                    {gameInfo && (gameInfo.awayTeam?.scratches?.length > 0 || gameInfo.homeTeam?.scratches?.length > 0) && (
+                      <div className="gp-scratches">
+                        <span className="font-semibold text-[color:var(--text)]">{t('gameStatsPopup.gameInfo.scratches')}: </span>
+                        {[...(gameInfo.awayTeam?.scratches || []), ...(gameInfo.homeTeam?.scratches || [])]
+                          .map(p => `${p.firstName?.default} ${p.lastName?.default}`)
+                          .join(', ')}
+                      </div>
+                    )}
+                  </div>
+                  {(recapLinks.recap || recapLinks.condensed) && (
+                    <div className="gp-recap-links flex gap-1.5 mt-2.5">
+                      {recapLinks.recap && (
+                        <button
+                          className="gp-recap-btn text-[10px] font-semibold py-[5px] px-2.5 rounded-[20px] border-[0.5px] border-[color:var(--border-2)] text-[color:var(--text-muted)] bg-transparent cursor-pointer hover:text-[color:var(--text)] hover:border-[color:var(--border)]"
+                          onClick={() => window.open(recapLinks.recap, '_blank', 'noopener,noreferrer')}
+                        >
+                          {t('gameStatsPopup.gameInfo.watchRecap')}
+                        </button>
+                      )}
+                      {recapLinks.condensed && (
+                        <button
+                          className="gp-recap-btn text-[10px] font-semibold py-[5px] px-2.5 rounded-[20px] border-[0.5px] border-[color:var(--border-2)] text-[color:var(--text-muted)] bg-transparent cursor-pointer hover:text-[color:var(--text)] hover:border-[color:var(--border)]"
+                          onClick={() => window.open(recapLinks.condensed, '_blank', 'noopener,noreferrer')}
+                        >
+                          {t('gameStatsPopup.gameInfo.watchCondensed')}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

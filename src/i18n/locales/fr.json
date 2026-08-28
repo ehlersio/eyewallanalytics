@@ -1110,7 +1110,18 @@
       "goals": "Buts",
       "teamStats": "Statistiques d'équipe",
       "shotAttemptsPuckLuck": "Tentatives de tir et chance à la rondelle",
-      "shotAttemptsTip": "Corsi = toutes les tentatives de tir (buts+tirs+ratés+bloqués). Fenwick exclut les tirs bloqués. PDO = %T+%A×100, moy.=100. Chance à la rondelle = buts réels par rapport à l'attendu selon la part des tirs."
+      "shotAttemptsTip": "Corsi = toutes les tentatives de tir (buts+tirs+ratés+bloqués). Fenwick exclut les tirs bloqués. PDO = %T+%A×100, moy.=100. Chance à la rondelle = buts réels par rapport à l'attendu selon la part des tirs.",
+      "gameInfo": "Infos du match"
+    },
+    "gameInfo": {
+      "officials": "Officiels",
+      "coaches": "Entraîneurs",
+      "scratches": "Joueurs à l'écart",
+      "decidedBy": "But vainqueur : {{scorer}}",
+      "watchRecap": "▶ Résumé",
+      "watchCondensed": "▶ Match condensé",
+      "neutralSite": "Site neutre",
+      "starter": "Partant"
     },
     "teamStats": {
       "shotsOnGoal": "Tirs au but",

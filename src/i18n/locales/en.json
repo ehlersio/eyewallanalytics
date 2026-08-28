@@ -1110,7 +1110,18 @@
       "goals": "Goals",
       "teamStats": "Team stats",
       "shotAttemptsPuckLuck": "Shot Attempts & Puck Luck",
-      "shotAttemptsTip": "Corsi = all shot attempts (goals+shots+misses+blocks). Fenwick excludes blocks. PDO = SH%+SV%×100, avg=100. Puck Luck = actual goals vs expected from shot share."
+      "shotAttemptsTip": "Corsi = all shot attempts (goals+shots+misses+blocks). Fenwick excludes blocks. PDO = SH%+SV%×100, avg=100. Puck Luck = actual goals vs expected from shot share.",
+      "gameInfo": "Game info"
+    },
+    "gameInfo": {
+      "officials": "Officials",
+      "coaches": "Coaches",
+      "scratches": "Scratches",
+      "decidedBy": "Winning goal: {{scorer}}",
+      "watchRecap": "▶ Recap",
+      "watchCondensed": "▶ Condensed Game",
+      "neutralSite": "Neutral site",
+      "starter": "Starter"
     },
     "teamStats": {
       "shotsOnGoal": "Shots on Goal",

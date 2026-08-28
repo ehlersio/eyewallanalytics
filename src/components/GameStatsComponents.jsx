@@ -62,6 +62,13 @@ function PeriodTable({ scoring, _home, carAbbr, oppAbbr }) {
 const SKATER_GRID_COLS = '[grid-template-columns:1fr_28px_28px_34px_34px_34px_34px_34px_44px] max-[400px]:[grid-template-columns:1fr_26px_26px_30px_30px_30px_40px] max-[400px]:[&>span:nth-child(7)]:hidden max-[400px]:[&>span:nth-child(8)]:hidden';
 const SKATER_COL_NAME_CLASSES = 'col-name text-left flex items-center gap-1 min-w-0';
 
+// Goalie decision codes from the NHL API boxscore: 'W', 'L', or 'O' (OT/SO loss)
+function decisionColor(decision) {
+  if (decision === 'W') return 'var(--green)';
+  if (decision === 'L') return 'var(--red-bright)';
+  return 'var(--amber)';
+}
+
 function SkaterTable({ players, goalies }) {
   const { t } = useTranslation();
   function fmtSvPct(v) {
@@ -109,9 +116,23 @@ function SkaterTable({ players, goalies }) {
 
       {goalies.length > 0 && goalies.map((g, i) => (
         <div key={i} className="gp-goalie-row flex items-center justify-between py-2 border-b-[0.5px] border-b-[color:var(--border)]" style={{ marginTop: 8 }}>
-          <span className="gp-player-name text-[color:var(--text)] text-[12px]">{g.name?.default || ("#" + g.sweaterNumber)}</span>
+          <span className="gp-player-name text-[color:var(--text)] text-[12px] flex items-center gap-1.5">
+            {g.name?.default || ("#" + g.sweaterNumber)}
+            {g.starter && (
+              <span className="gp-goalie-starter-badge text-[8px] font-bold uppercase tracking-[0.04em] text-[color:var(--text-dim)] border-[0.5px] border-[color:var(--border-2)] rounded-[3px] px-1 py-[1px]">{t('gameStatsPopup.gameInfo.starter')}</span>
+            )}
+            {g.decision && (
+              <span className="gp-goalie-decision-badge text-[9px] font-bold" style={{ color: decisionColor(g.decision) }}>{g.decision}</span>
+            )}
+          </span>
           <div className="gp-goalie-stats flex gap-3">
             <span className="gp-goalie-stat flex flex-col items-center gap-[1px] text-[13px] font-medium"><span className="gp-goalie-label text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]">SA</span>{g.shotsAgainst ?? "—"}</span>
+            {g.powerPlayShotsAgainst && g.powerPlayShotsAgainst !== '0/0' && (
+              <span className="gp-goalie-stat flex flex-col items-center gap-[1px] text-[13px] font-medium"><span className="gp-goalie-label text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]">PP SA</span>{g.powerPlayShotsAgainst}</span>
+            )}
+            {g.shorthandedShotsAgainst && g.shorthandedShotsAgainst !== '0/0' && (
+              <span className="gp-goalie-stat flex flex-col items-center gap-[1px] text-[13px] font-medium"><span className="gp-goalie-label text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]">SH SA</span>{g.shorthandedShotsAgainst}</span>
+            )}
             <span className="gp-goalie-stat flex flex-col items-center gap-[1px] text-[13px] font-medium"><span className="gp-goalie-label text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]">SV</span>{g.saves ?? "—"}</span>
             <span className="gp-goalie-stat flex flex-col items-center gap-[1px] text-[13px] font-medium"><span className="gp-goalie-label text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]">SV%</span>{fmtSvPct(g.savePctg)}</span>
             <span className="gp-goalie-stat flex flex-col items-center gap-[1px] text-[13px] font-medium"><span className="gp-goalie-label text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]">TOI</span>{g.toi ?? "—"}</span>

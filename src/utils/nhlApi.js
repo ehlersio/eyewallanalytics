@@ -900,7 +900,7 @@ async function _getCompletedGameStats(gameId) {
       playerByGameStats: pbg,
       linescore: landing?.boxscore?.linescore || boxscore?.linescore,
     },
-    rightRail:  { teamGameStats },
+    rightRail:  { teamGameStats, gameInfo: rightRail?.gameInfo || null },
     pbp,        // play-by-play — used for Corsi/Fenwick/PDO/PuckLuck
     homeTeamId: landing?.homeTeam?.id || pbp?.homeTeam?.id,
     awayTeamId: landing?.awayTeam?.id || pbp?.awayTeam?.id,
@@ -1008,6 +1008,37 @@ export function getBroadcasts(game) {
     }
   }
   return networks;
+}
+
+// game.winningGoalie / game.winningGoalScorer / game.threeMinRecap /
+// game.condensedGame / game.neutralSite all come from the schedule object
+// (club-schedule-season) -- NOT from the landing/boxscore endpoints -- so
+// they're already present on the `game` prop every completed-game consumer
+// already has. No new fetch needed for any of these.
+export function getWinningGoalie(game) {
+  const g = game?.winningGoalie;
+  if (!g?.lastName?.default) return '';
+  return `${g.firstInitial?.default || ''} ${g.lastName.default}`.trim();
+}
+
+export function getWinningGoalScorer(game) {
+  const g = game?.winningGoalScorer;
+  if (!g?.lastName?.default) return '';
+  return `${g.firstInitial?.default || ''} ${g.lastName.default}`.trim();
+}
+
+// threeMinRecap/condensedGame are relative NHL.com paths (e.g.
+// "/video/njd-at-car-recap-..."), not full URLs.
+export function getRecapLinks(game) {
+  const base = 'https://www.nhl.com';
+  return {
+    recap:     game?.threeMinRecap ? `${base}${game.threeMinRecap}` : null,
+    condensed: game?.condensedGame ? `${base}${game.condensedGame}` : null,
+  };
+}
+
+export function isNeutralSite(game) {
+  return game?.neutralSite === true;
 }
 
 export function getCarScore(game) {
