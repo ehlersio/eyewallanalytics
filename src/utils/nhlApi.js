@@ -670,6 +670,38 @@ async function _getRoster(teamAbbr = TEAM_CONFIG.abbr) {
   return { forwards, defensemen, goalies, all: [...forwards, ...defensemen, ...goalies] };
 }
 
+export async function getProspects(teamAbbr = TEAM_CONFIG.abbr) {
+  return cached(`prospects:${teamAbbr}`, () => _getProspects(teamAbbr), TTL.SCHEDULE);
+}
+async function _getProspects(teamAbbr = TEAM_CONFIG.abbr) {
+  // Not season-scoped -- this is the team's current prospect pool (signed
+  // but not on the active NHL roster), a different concept from both the
+  // active roster (getRoster, above) and draft-eligible rankings.
+  const data = await nhlFetch(`${BASE}/prospects/${teamAbbr}`);
+  if (!data) return { forwards: [], defensemen: [], goalies: [], all: [] };
+
+  const forwards   = data.forwards   || [];
+  const defensemen = data.defensemen || [];
+  const goalies    = data.goalies    || [];
+  return { forwards, defensemen, goalies, all: [...forwards, ...defensemen, ...goalies] };
+}
+
+export async function getHistoricalRoster(teamAbbr, season) {
+  return cached(`roster:${teamAbbr}:${season}`, () => _getHistoricalRoster(teamAbbr, season), TTL.SCHEDULE);
+}
+async function _getHistoricalRoster(teamAbbr, season) {
+  // Unlike getRoster (above), THIS is the right endpoint for a genuinely
+  // historical season -- it's frozen data by definition, so the /current
+  // endpoint's trade/UFA-lag concern doesn't apply here.
+  const data = await nhlFetch(`${BASE}/roster/${teamAbbr}/${season}`);
+  if (!data) return { forwards: [], defensemen: [], goalies: [], all: [] };
+
+  const forwards   = data.forwards   || [];
+  const defensemen = data.defensemen || [];
+  const goalies    = data.goalies    || [];
+  return { forwards, defensemen, goalies, all: [...forwards, ...defensemen, ...goalies] };
+}
+
 export async function getPlayerStats(playerId) {
   return cached(`playerStats:${playerId}`, () => _getPlayerStats(playerId), TTL.PLAYER_STATS);
 }

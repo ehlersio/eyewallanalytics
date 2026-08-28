@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useFetch } from '../hooks/useFetch'
-import { getRoster, getPlayoffGames, getStandings, TEAM_CONFIG } from '../utils/nhlApi'
+import { getRoster, getProspects, getHistoricalRoster, getPlayoffGames, getStandings, TEAM_CONFIG } from '../utils/nhlApi'
+import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS } from '../utils/teamConfig'
 import { getTeamSkaterStatsFromDB } from '../utils/supabaseClient'
 import { useSport } from '../utils/SportContext'
 import { isStandingsStale } from '../utils/standingsUtils'
@@ -9,6 +10,7 @@ import { PAGE_CLASSES } from '../utils/pageClasses'
 import { SKELETON_CLASSES } from '../utils/skeletonClasses'
 import TeamLogo from '../components/TeamLogo'
 import PlayerPopup from '../components/PlayerPopup'
+import SeasonChipRow from '../components/SeasonChipRow'
 
 // ─── Stat definitions with tooltips ──────────────────────────
 // Moved to PlayerPopup.jsx (shared with LeagueView leaders modal)
@@ -115,6 +117,19 @@ export default function PlayersView() {
   const { data: roster,      loading: rosterLoading } = useFetch(() => getRoster(TEAM_CONFIG.abbr))
   const { data: poGames }   = useFetch(getPlayoffGames)
   const { data: standingsRaw } = useFetch(getStandings)
+  // Historical roster season picker (Roster tab only) -- defaults to the
+  // live current season, which uses the existing `roster` fetch above
+  // (the /current endpoint, not /roster/{team}/{season} -- see getRoster's
+  // own comment on why /current is the right one for "now"). Any other
+  // selected season fetches the real historical snapshot instead.
+  const [rosterSeason, setRosterSeason] = useState(TEAM_CONFIG.season)
+  const isCurrentRosterSeason = String(rosterSeason) === String(TEAM_CONFIG.season)
+  const { data: historicalRoster, loading: historicalRosterLoading } = useFetch(
+    () => isCurrentRosterSeason ? Promise.resolve(null) : getHistoricalRoster(TEAM_CONFIG.abbr, rosterSeason),
+    [rosterSeason]
+  )
+  const displayRoster = isCurrentRosterSeason ? roster : historicalRoster
+  const displayRosterLoading = isCurrentRosterSeason ? rosterLoading : historicalRosterLoading
   // NHL's /standings/now stays pinned to last season's finale for months
   // after our season config flips — see nhlApi.js's _getTeamStats() for the
   // full story. Don't feed last season's team rank context into a player's
@@ -133,6 +148,12 @@ export default function PlayersView() {
     [gameType, SEASON]
   )
 
+  // Prospects tab -- lazy-fetched only once that tab is actually opened.
+  const { data: prospects, loading: prospectsLoading } = useFetch(
+    () => view === 'prospects' ? getProspects(TEAM_CONFIG.abbr) : Promise.resolve(null),
+    [view]
+  )
+
   return (
     <div className={PAGE_CLASSES}>
       <div className={HEADER_WRAP_CLASSES}>
@@ -147,6 +168,7 @@ export default function PlayersView() {
       <div className={TABS_WRAP_CLASSES}>
         <button className={tabClasses(view === 'roster')} onClick={() => setView('roster')}>{t('players.roster')}</button>
         <button className={tabClasses(view === 'stats')} onClick={() => setView('stats')}>{t('players.statsToggle')}</button>
+        <button className={tabClasses(view === 'prospects')} onClick={() => setView('prospects')}>{t('players.prospectsToggle')}</button>
       </div>
 
       {view === 'stats' && (
@@ -164,12 +186,32 @@ export default function PlayersView() {
 
       {view === 'roster' && (
         <>
-          {rosterLoading && <RosterSkeleton />}
-          {!rosterLoading && roster && (
+          <div style={{ marginBottom: 12 }}>
+            <SeasonChipRow seasons={NHL_REGULAR_SEASONS} archiveSeasons={NHL_ARCHIVE_SEASONS}
+              selected={rosterSeason} onSelect={setRosterSeason} />
+          </div>
+          {displayRosterLoading && <RosterSkeleton />}
+          {!displayRosterLoading && displayRoster && (
             <>
-              <RosterSection title={t('players.forwards')} players={roster.forwards}   onSelect={setSelected} />
-              <RosterSection title={t('playersView.defensemen')} players={roster.defensemen} onSelect={setSelected} />
-              <RosterSection title={t('players.goalies')} players={roster.goalies}    onSelect={setSelected} />
+              <RosterSection title={t('players.forwards')} players={displayRoster.forwards}   onSelect={setSelected} />
+              <RosterSection title={t('playersView.defensemen')} players={displayRoster.defensemen} onSelect={setSelected} />
+              <RosterSection title={t('players.goalies')} players={displayRoster.goalies}    onSelect={setSelected} />
+            </>
+          )}
+        </>
+      )}
+
+      {view === 'prospects' && (
+        <>
+          {prospectsLoading && <RosterSkeleton />}
+          {!prospectsLoading && prospects && (
+            <>
+              {!prospects.all.length && (
+                <div className={DRILL_EMPTY_CLASSES}>{t('playersView.prospectsEmpty')}</div>
+              )}
+              <RosterSection title={t('players.forwards')} players={prospects.forwards}   onSelect={setSelected} />
+              <RosterSection title={t('playersView.defensemen')} players={prospects.defensemen} onSelect={setSelected} />
+              <RosterSection title={t('players.goalies')} players={prospects.goalies}    onSelect={setSelected} />
             </>
           )}
         </>
@@ -217,7 +259,7 @@ function PlayerCard({ player: p, onClick }) {
             {(p.firstName?.default?.[0] || '') + (p.lastName?.default?.[0] || '')}
           </div>
         )}
-        <span className={PC_NUM_CLASSES}>#{p.sweaterNumber}</span>
+        {p.sweaterNumber != null && <span className={PC_NUM_CLASSES}>#{p.sweaterNumber}</span>}
       </div>
       <div className={PC_INFO_CLASSES}>
         <span className={PC_FIRST_CLASSES}>{p.firstName?.default}</span>

@@ -489,6 +489,7 @@
   "players": {
     "roster": "Roster",
     "statsToggle": "📊 Stats",
+    "prospectsToggle": "🌱 Prospects",
     "forwards": "Forwards",
     "goalies": "Goalies",
     "colPlayer": "Player"
@@ -499,7 +500,8 @@
     "defensemen": "Defensemen",
     "emptyPlayoffStats": "No playoff stats yet — data populates once {{team}} advances.",
     "emptyNoStats": "No stats available.",
-    "tableHint": "Tap a player row to open their profile · Sort by any column"
+    "tableHint": "Tap a player row to open their profile · Sort by any column",
+    "prospectsEmpty": "No prospects on the books for this team right now."
   },
   "pwhlPlayersView": {
     "subtitle": "Tap a player for stats",
