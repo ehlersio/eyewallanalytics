@@ -11,6 +11,11 @@
 //     found there (e.g. a call-up not yet in pwhl_players).
 //   - Goalie decision (W/L/OT) intentionally omitted -- no reliable source
 //     field on pwhl_goalie_game_box (see SESSION_50_B1_IMPLEMENTATION.md).
+//     Reconfirmed live across 7 real games: HockeyTech's goalie `status`
+//     field (the one that would carry a decision) is always an empty
+//     string for this league -- genuinely never populated, not a gap.
+//     `starting` (bool) IS real and already flows through untouched, so
+//     that one gets a badge below; decision still doesn't.
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -97,7 +102,10 @@ export default function PWHLBoxScoreTable({ skaters, goalies, playerNames }) {
 
       {goalies.map(g => (
         <div key={g.player_id} className="pbs-goalie-row flex items-center justify-between py-2 border-b-[0.5px] border-b-[color:var(--border)] flex-wrap gap-2">
-          <span className="pbs-player-name block text-[color:var(--text)] text-[12px]">{nameFor(g.player_id, g.jersey_number)}</span>
+          <span className="pbs-player-name flex items-center gap-1.5 text-[color:var(--text)] text-[12px]">
+            {nameFor(g.player_id, g.jersey_number)}
+            {g.starting && <span className="pbs-goalie-starter-badge text-[8px] font-bold uppercase tracking-[0.04em] text-[color:var(--text-dim)] border-[0.5px] border-[color:var(--border-2)] rounded-[3px] px-1 py-[1px]">{t('gameStatsPopup.gameInfo.starter')}</span>}
+          </span>
           <div className="pbs-goalie-stats flex gap-3">
             <span className={PBS_GOALIE_STAT_CLASSES}><span className={PBS_GOALIE_LABEL_CLASSES}>SA</span>{g.shots_against ?? '—'}</span>
             <span className={PBS_GOALIE_STAT_CLASSES}><span className={PBS_GOALIE_LABEL_CLASSES}>SV</span>{g.saves ?? '—'}</span>
