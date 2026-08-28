@@ -1598,7 +1598,8 @@
       "draftLabel": "Round {{round}}, Pick {{pick}} ({{year}})",
       "undrafted": "Undrafted",
       "awardDetailSkater": "{{season}}: {{goals}}G {{assists}}A {{points}}P",
-      "awardDetailGoalie": "{{season}}: {{wins}}-{{losses}}"
+      "awardDetailGoalie": "{{season}}: {{wins}}-{{losses}}",
+      "draftLabelPwhl": "Drafted by {{team}} — Round {{round}} ({{year}})"
     },
     "recentForm": {
       "label": "Recent form",

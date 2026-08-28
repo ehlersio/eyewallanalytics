@@ -1598,7 +1598,8 @@
       "draftLabel": "Ronde {{round}}, choix {{pick}} ({{year}})",
       "undrafted": "Non repêché",
       "awardDetailSkater": "{{season}} : {{goals}} B {{assists}} A {{points}} P",
-      "awardDetailGoalie": "{{season}} : {{wins}}-{{losses}}"
+      "awardDetailGoalie": "{{season}} : {{wins}}-{{losses}}",
+      "draftLabelPwhl": "Repêché par {{team}} — Ronde {{round}} ({{year}})"
     },
     "recentForm": {
       "label": "Forme récente",

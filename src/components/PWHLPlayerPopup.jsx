@@ -104,6 +104,38 @@ const PP_BIO_FIELD_CLASSES = 'flex flex-col items-center gap-[3px] text-center m
 const PP_BIO_LABEL_CLASSES = 'text-[8px] uppercase tracking-[0.06em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] font-semibold'
 const PP_BIO_VALUE_CLASSES = 'text-[11px] font-semibold text-[color:var(--text)] [overflow-wrap:break-word]'
 
+// ── Player Spotlight panel (hero photo + draft + bio bullets) --
+// always-visible, same slot as the bio row above (not tab content).
+// PWHL-local, mirrors NHL PlayerPopup.jsx's own PP_SPOTLIGHT_* consts --
+// deliberately not shared, this file already keeps its own full set of
+// PP_* constants separate from NHL's.
+const PP_SPOTLIGHT_CLASSES = 'py-3 px-4 bg-[var(--bg2)] border-b-[0.5px] border-[var(--border)]'
+const PP_HERO_IMG_CLASSES = 'w-full h-[140px] object-cover rounded-[var(--radius-sm)] mb-2.5'
+const PP_SPOTLIGHT_ROW_CLASSES = 'flex flex-wrap gap-1.5 items-center justify-center mb-2'
+const PP_DRAFT_CHIP_CLASSES = 'text-[10px] font-medium text-[color:var(--text-muted)] bg-[var(--bg3)] py-[3px] px-2 rounded-[10px]'
+const PP_BIO_LIST_CLASSES = 'flex flex-col gap-1 text-[11px] text-[color:var(--text-muted)] leading-[1.4] list-disc pl-4'
+
+// ── Recent Form strip (Stats tab, first block) ──
+const PP_FORM_LABEL_CLASSES = 'text-[9px] font-bold uppercase tracking-[0.1em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] py-1 border-b-[0.5px] border-[var(--border)] mb-1.5'
+const PP_FORM_STRIP_CLASSES = 'flex gap-1.5 overflow-x-auto pb-1 mb-3'
+const PP_FORM_CARD_CLASSES = 'flex flex-col items-center gap-0.5 shrink-0 bg-[var(--bg2)] border-[0.5px] border-[var(--border)] rounded-[var(--radius-sm)] py-1.5 px-2 min-w-[64px]'
+
+// Goalie decision letter, derived from PWHL's own win/loss/ot_loss/
+// shootout_loss flags -- unlike NHL's goalie last5Games (no decision field
+// at all there), PWHL's gameByGame rows carry these directly.
+function pwhlDecisionColor(decision) {
+  if (decision === 'W') return 'var(--green)'
+  if (decision === 'L') return 'var(--red-bright)'
+  return 'var(--amber)'
+}
+function pwhlGoalieDecision(g) {
+  if (g.win) return 'W'
+  if (g.loss) return 'L'
+  if (g.ot_loss) return 'OTL'
+  if (g.shootout_loss) return 'SOL'
+  return null
+}
+
 const PP_TABS_CLASSES = 'flex border-b-[0.5px] border-[var(--border)] mx-[-16px] px-4'
 const PP_TAB_BASE_CLASSES = 'pp-tab flex-1 py-[10px] text-[13px] font-semibold bg-transparent border-0 border-b-2 cursor-pointer [transition:all_0.15s]'
 const PP_TAB_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] border-b-transparent'
@@ -920,6 +952,33 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
           </div>
         )}
 
+        {/* ── Player Spotlight — hero photo + draft + bio bullets. career.photo/
+            draft/bioPoints come from /pwhl/player/career, already fetched
+            above -- no new fetch, just previously-unread fields. */}
+        {career && (career.photo || career.draft || career.bioPoints?.length > 0) && (
+          <div className={PP_SPOTLIGHT_CLASSES}>
+            {career.photo && (
+              <img src={career.photo.url} alt="" className={PP_HERO_IMG_CLASSES} />
+            )}
+            {career.draft && (
+              <div className={PP_SPOTLIGHT_ROW_CLASSES}>
+                <span className={PP_DRAFT_CHIP_CLASSES}>
+                  {t('playerPopup.spotlight.draftLabelPwhl', {
+                    team:  career.draft.draft_team,
+                    round: career.draft.draft_round,
+                    year:  career.draft.draft_year,
+                  })}
+                </span>
+              </div>
+            )}
+            {career.bioPoints?.length > 0 && (
+              <ul className={PP_BIO_LIST_CLASSES}>
+                {career.bioPoints.map((pt, i) => <li key={i}>{pt}</li>)}
+              </ul>
+            )}
+          </div>
+        )}
+
         {/* ── Tabs ── */}
         <div className={PP_TABS_CLASSES}>
           <button className={ppTabClasses(ppTab === 'stats')} onClick={() => setPpTab('stats')}>{t('playerPopup.tabs.stats')}</button>
@@ -938,6 +997,30 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
               </div>
             ) : (
               <>
+                {career?.recentGames?.length > 0 && (
+                  <div>
+                    <div className={PP_FORM_LABEL_CLASSES}>{t('playerPopup.recentForm.label')}</div>
+                    <div className={PP_FORM_STRIP_CLASSES}>
+                      {career.recentGames.map((g, i) => {
+                        const decision = isGoalie ? pwhlGoalieDecision(g) : null;
+                        const main = isGoalie
+                          ? (decision || '—')
+                          : `${g.goals ?? 0}-${g.assists ?? 0}-${g.points ?? 0}`;
+                        const sub = isGoalie ? (g.svpct != null ? g.svpct.toFixed(3) : null) : null;
+                        const color = isGoalie
+                          ? pwhlDecisionColor(decision)
+                          : ((g.goals ?? 0) + (g.assists ?? 0) > 0 ? 'var(--green)' : 'var(--text-muted)');
+                        return (
+                          <div key={i} className={PP_FORM_CARD_CLASSES}>
+                            <span className="text-[9px] text-[color:var(--text-dim)] whitespace-nowrap">{g.game}</span>
+                            <span className="text-[13px] font-bold font-[family-name:var(--font-mono)]" style={{ color }}>{main}</span>
+                            {sub && <span className="text-[8px] text-[color:var(--text-dim)]">{sub}</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 {currentGroups.length > 0
                   ? <TileStatSection
                       label={t('playerPopup.sections.seasonRegularPwhl', { season: seasonLabel })}
