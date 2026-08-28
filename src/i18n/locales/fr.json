@@ -141,7 +141,8 @@
       "wildcardCaption": "Qualification générale de l'association {{conf}}",
       "l10AriaLabel": "10 derniers matchs : {{wins}}-{{losses}}-{{otl}}",
       "magicNumberTitle": "Chiffre magique : {{n}} — victoires en temps réglementaire et défaites des rivaux combinées nécessaires pour se qualifier",
-      "eliminationNumberTitle": "Chiffre d'élimination : {{n}} — victoires des rivaux et défaites en temps réglementaire combinées avant l'élimination"
+      "eliminationNumberTitle": "Chiffre d'élimination : {{n}} — victoires des rivaux et défaites en temps réglementaire combinées avant l'élimination",
+      "waiversTitle": "Priorité au ballottage — le numéro le plus bas réclame en premier"
     },
     "leaders": {
       "emptyState": "Les meneurs statistiques apparaîtront une fois les matchs commencés."

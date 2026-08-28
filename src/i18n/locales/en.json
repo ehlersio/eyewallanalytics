@@ -141,7 +141,8 @@
       "wildcardCaption": "{{conf}} wild card",
       "l10AriaLabel": "Last 10: {{wins}}-{{losses}}-{{otl}}",
       "magicNumberTitle": "Magic number: {{n}} — combined regulation wins / rival losses needed to clinch a playoff spot",
-      "eliminationNumberTitle": "Elimination number: {{n}} — combined rival wins / regulation losses until eliminated"
+      "eliminationNumberTitle": "Elimination number: {{n}} — combined rival wins / regulation losses until eliminated",
+      "waiversTitle": "Waiver priority — lower number claims first"
     },
     "leaders": {
       "emptyState": "Stat leaders will appear once games begin."
