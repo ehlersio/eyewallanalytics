@@ -33,6 +33,7 @@ import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import { TileStatSection } from './StatTileGrid';
 import SeasonComparisonPicker from './SeasonComparisonPicker';
 import PlayerComparisonEntry from './PlayerComparisonEntry';
+import InfoTip from './InfoTip';
 import {
   SKATER_STATS, GOALIE_STATS, PWHL_STAT_PCT_MAP, posLabel, groupStats as pwhlGroupStats,
   computeRadarAxes, computeGoalieRadarAxes, RADAR_AXIS_ABBR,
@@ -99,25 +100,34 @@ const PP_CHIPS_CLASSES = 'flex gap-[5px] flex-wrap mt-[2px]'
 const PP_POS_CHIP_CLASSES = 'pp-pos-chip font-[family-name:var(--font-display)] text-[10px] font-bold bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[0.5px] border-[var(--red-border)] py-[2px] px-[7px] rounded'
 const PP_CHIP_CLASSES = 'pp-chip text-[10px] text-[color:var(--text-muted)] bg-[var(--bg3)] py-[2px] px-[6px] rounded'
 
-const PP_BIO_ROW_CLASSES = 'grid grid-cols-6 gap-[8px_4px] py-[10px_12px_14px] border-b-[0.5px] border-[var(--border)] max-[340px]:grid-cols-3'
+const PP_BIO_ROW_CLASSES = 'grid grid-cols-6 gap-[8px_4px] pt-2.5 pb-3.5 border-b-[0.5px] border-[var(--border)] max-[340px]:grid-cols-3'
 const PP_BIO_FIELD_CLASSES = 'flex flex-col items-center gap-[3px] text-center min-w-0'
 const PP_BIO_LABEL_CLASSES = 'text-[8px] uppercase tracking-[0.06em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] font-semibold'
 const PP_BIO_VALUE_CLASSES = 'text-[11px] font-semibold text-[color:var(--text)] [overflow-wrap:break-word]'
 
-// ── Player Spotlight panel (hero photo + draft + bio bullets) --
-// always-visible, same slot as the bio row above (not tab content).
-// PWHL-local, mirrors NHL PlayerPopup.jsx's own PP_SPOTLIGHT_* consts --
-// deliberately not shared, this file already keeps its own full set of
-// PP_* constants separate from NHL's.
+// ── Player Spotlight panel (draft + bio bullets) -- always-visible, same
+// slot as the bio row above (not tab content). PWHL-local, mirrors NHL
+// PlayerPopup.jsx's own PP_SPOTLIGHT_* consts -- deliberately not shared,
+// this file already keeps its own full set of PP_* constants separate from
+// NHL's.
+//
+// No hero photo here (unlike NHL's PP_HERO_IMG_CLASSES) -- checked live
+// against HockeyTech's media.images[] for multiple players (career.photo,
+// eyewall-poller's /pwhl/player/career route): it's the exact same team
+// studio headshot already shown in the header, just re-hosted at a higher
+// resolution (400x600 vs the header's 240x240 crop), not a distinct
+// action/hero shot the way NHL's landing.heroImage is. Rendering it here
+// would just duplicate the header photo, so it's left unrendered.
 const PP_SPOTLIGHT_CLASSES = 'py-3 px-4 bg-[var(--bg2)] border-b-[0.5px] border-[var(--border)]'
-const PP_HERO_IMG_CLASSES = 'w-full h-[140px] object-cover rounded-[var(--radius-sm)] mb-2.5'
 const PP_SPOTLIGHT_ROW_CLASSES = 'flex flex-wrap gap-1.5 items-center justify-center mb-2'
 const PP_DRAFT_CHIP_CLASSES = 'text-[10px] font-medium text-[color:var(--text-muted)] bg-[var(--bg3)] py-[3px] px-2 rounded-[10px]'
 const PP_BIO_LIST_CLASSES = 'flex flex-col gap-1 text-[11px] text-[color:var(--text-muted)] leading-[1.4] list-disc pl-4'
+const PP_BIO_TOGGLE_CLASSES = 'text-[10px] font-semibold text-[color:var(--red-bright)] bg-transparent border-0 cursor-pointer mt-1.5 p-0 hover:underline'
+const BIO_COLLAPSED_COUNT = 3
 
 // ── Recent Form strip (Stats tab, first block) ──
-const PP_FORM_LABEL_CLASSES = 'text-[9px] font-bold uppercase tracking-[0.1em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] py-1 border-b-[0.5px] border-[var(--border)] mb-1.5'
-const PP_FORM_STRIP_CLASSES = 'flex gap-1.5 overflow-x-auto pb-1 mb-3'
+const PP_FORM_LABEL_CLASSES = 'flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.1em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] py-1 px-4 border-b-[0.5px] border-[var(--border)] mb-1.5'
+const PP_FORM_STRIP_CLASSES = 'flex gap-1.5 overflow-x-auto pb-1 mb-3 px-4'
 const PP_FORM_CARD_CLASSES = 'flex flex-col items-center gap-0.5 shrink-0 bg-[var(--bg2)] border-[0.5px] border-[var(--border)] rounded-[var(--radius-sm)] py-1.5 px-2 min-w-[64px]'
 
 // Goalie decision letter, derived from PWHL's own win/loss/ot_loss/
@@ -769,6 +779,7 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
   const [imgErr, setImgErr] = useState(false);
   const [ppTab, setPpTab]   = useState('stats');
   const [compareSeasons, setCompareSeasons] = useState([]);
+  const [bioExpanded, setBioExpanded] = useState(false);
 
   // Reuses the same memoized fetch SeasonComparisonPicker itself calls
   // (seasonClient.js's fetchComparisonSeasons) purely for season labels
@@ -952,14 +963,12 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
           </div>
         )}
 
-        {/* ── Player Spotlight — hero photo + draft + bio bullets. career.photo/
-            draft/bioPoints come from /pwhl/player/career, already fetched
-            above -- no new fetch, just previously-unread fields. */}
-        {career && (career.photo || career.draft || career.bioPoints?.length > 0) && (
+        {/* ── Player Spotlight — draft + bio bullets. career.draft/bioPoints
+            come from /pwhl/player/career, already fetched above -- no new
+            fetch, just previously-unread fields. No hero photo -- see
+            PP_SPOTLIGHT_CLASSES's comment above. */}
+        {career && (career.draft || career.bioPoints?.length > 0) && (
           <div className={PP_SPOTLIGHT_CLASSES}>
-            {career.photo && (
-              <img src={career.photo.url} alt="" className={PP_HERO_IMG_CLASSES} />
-            )}
             {career.draft && (
               <div className={PP_SPOTLIGHT_ROW_CLASSES}>
                 <span className={PP_DRAFT_CHIP_CLASSES}>
@@ -972,9 +981,18 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
               </div>
             )}
             {career.bioPoints?.length > 0 && (
-              <ul className={PP_BIO_LIST_CLASSES}>
-                {career.bioPoints.map((pt, i) => <li key={i}>{pt}</li>)}
-              </ul>
+              <>
+                <ul className={PP_BIO_LIST_CLASSES}>
+                  {(bioExpanded ? career.bioPoints : career.bioPoints.slice(0, BIO_COLLAPSED_COUNT)).map((pt, i) => <li key={i}>{pt}</li>)}
+                </ul>
+                {career.bioPoints.length > BIO_COLLAPSED_COUNT && (
+                  <button className={PP_BIO_TOGGLE_CLASSES} onClick={() => setBioExpanded(e => !e)}>
+                    {bioExpanded
+                      ? t('playerPopup.spotlight.bioShowLess')
+                      : t('playerPopup.spotlight.bioShowMore', { count: career.bioPoints.length - BIO_COLLAPSED_COUNT })}
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}
@@ -999,7 +1017,10 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
               <>
                 {career?.recentGames?.length > 0 && (
                   <div>
-                    <div className={PP_FORM_LABEL_CLASSES}>{t('playerPopup.recentForm.label')}</div>
+                    <div className={PP_FORM_LABEL_CLASSES}>
+                      {t('playerPopup.recentForm.label')}
+                      <InfoTip text={isGoalie ? t('playerPopup.recentForm.legendGoaliePwhl') : t('playerPopup.recentForm.legendSkater')} position="above" />
+                    </div>
                     <div className={PP_FORM_STRIP_CLASSES}>
                       {career.recentGames.map((g, i) => {
                         const decision = isGoalie ? pwhlGoalieDecision(g) : null;

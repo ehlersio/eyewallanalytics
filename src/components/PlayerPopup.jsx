@@ -154,7 +154,7 @@ const PP_QUICKSTAT_CLASSES = 'flex flex-col items-center bg-[var(--bg2)] rounded
 const PP_QUICKSTAT_VAL_CLASSES = 'font-[family-name:var(--font-display)] text-[13px] font-bold text-[color:var(--text)] leading-[1.1]'
 const PP_QUICKSTAT_LABEL_CLASSES = 'text-[8px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]'
 
-const PP_BIO_ROW_CLASSES = 'grid grid-cols-6 gap-[8px_4px] py-[10px_12px_14px] border-b-[0.5px] border-[var(--border)] max-[340px]:grid-cols-3'
+const PP_BIO_ROW_CLASSES = 'grid grid-cols-6 gap-[8px_4px] pt-2.5 pb-3.5 border-b-[0.5px] border-[var(--border)] max-[340px]:grid-cols-3'
 const PP_BIO_FIELD_CLASSES = 'flex flex-col items-center gap-[3px] text-center min-w-0'
 const PP_BIO_LABEL_CLASSES = 'text-[8px] uppercase tracking-[0.06em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] font-semibold'
 const PP_BIO_VALUE_CLASSES = 'text-[11px] font-semibold text-[color:var(--text)] [overflow-wrap:break-word]'
@@ -179,8 +179,8 @@ const PP_DRAFT_CHIP_CLASSES = 'text-[10px] font-medium text-[color:var(--text-mu
 const PP_AWARD_CHIP_CLASSES = 'flex items-center gap-[3px] text-[10px] font-semibold text-[color:var(--amber)] bg-[rgba(255,193,7,0.12)] border-[0.5px] border-[rgba(255,193,7,0.3)] py-[3px] px-2 rounded-[10px]'
 
 // ── Recent Form strip (Stats tab, first block) ──
-const PP_FORM_LABEL_CLASSES = 'text-[9px] font-bold uppercase tracking-[0.1em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] py-1 border-b-[0.5px] border-[var(--border)] mb-1.5'
-const PP_FORM_STRIP_CLASSES = 'flex gap-1.5 overflow-x-auto pb-1 mb-3'
+const PP_FORM_LABEL_CLASSES = 'flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.1em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] py-1 px-4 border-b-[0.5px] border-[var(--border)] mb-1.5'
+const PP_FORM_STRIP_CLASSES = 'flex gap-1.5 overflow-x-auto pb-1 mb-3 px-4'
 const PP_FORM_CARD_CLASSES = 'flex flex-col items-center gap-0.5 shrink-0 bg-[var(--bg2)] border-[0.5px] border-[var(--border)] rounded-[var(--radius-sm)] py-1.5 px-2 min-w-[52px]'
 
 // ── Sub-PR 3 additions: the former "shell" classes ──
@@ -1430,7 +1430,10 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
             )}
             {!loading && stats?.last5Games?.length > 0 && (
               <div>
-                <div className={PP_FORM_LABEL_CLASSES}>{t('playerPopup.recentForm.label')}</div>
+                <div className={PP_FORM_LABEL_CLASSES}>
+                  {t('playerPopup.recentForm.label')}
+                  <InfoTip text={isGoalie ? t('playerPopup.recentForm.legendGoalie') : t('playerPopup.recentForm.legendSkater')} position="above" />
+                </div>
                 <div className={PP_FORM_STRIP_CLASSES}>
                   {stats.last5Games.map((g, i) => {
                     const main = isGoalie
