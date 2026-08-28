@@ -308,6 +308,7 @@ All existing NHL features unchanged — see original documentation. Key features
 - 6-tab team page (Overview, Advanced, Splits, Trends, Cap, Picks)
 - League page (Standings, Bracket, Leaders, Power Rankings, Draft)
 - Player analytics (WAR, RAPM, GSAX, heat maps)
+- Players page: Roster / Stats / Prospects tabs, historical-season picker on the Roster tab (`GET /v1/roster/{team}/{season}`) alongside the live current roster
 - Push notifications (goal, game start, penalty, win)
 - Player vs Player Comparison (Session 91, NHL + PWHL) — "vs Player" entry point on the player popup opens a same-league two-player comparison: overlaid radar chart, tabbed detail sections reusing the existing stat-tile grid. Goalie-vs-skater is hard-blocked; forward-vs-defenceman pairing shows a non-blocking mismatch badge. PWHL goalie-vs-goalie was hard-blocked too until 2026-08 (no percentile data existed) — unblocked once `pwhl_goalie_percentiles.py` shipped.
 

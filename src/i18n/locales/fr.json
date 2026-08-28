@@ -489,6 +489,7 @@
   "players": {
     "roster": "Effectif",
     "statsToggle": "📊 Statistiques",
+    "prospectsToggle": "🌱 Espoirs",
     "forwards": "Attaquants",
     "goalies": "Gardiens",
     "colPlayer": "Joueur"
@@ -499,7 +500,8 @@
     "defensemen": "Défenseurs",
     "emptyPlayoffStats": "Aucune statistique de séries pour l'instant — les données s'ajoutent une fois que {{team}} avance.",
     "emptyNoStats": "Aucune statistique disponible.",
-    "tableHint": "Touchez la ligne d'un joueur pour ouvrir son profil · Triez selon n'importe quelle colonne"
+    "tableHint": "Touchez la ligne d'un joueur pour ouvrir son profil · Triez selon n'importe quelle colonne",
+    "prospectsEmpty": "Aucun espoir sous contrat pour cette équipe en ce moment."
   },
   "pwhlPlayersView": {
     "subtitle": "Touchez une joueuse pour ses statistiques",
