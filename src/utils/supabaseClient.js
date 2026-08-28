@@ -485,9 +485,11 @@ export async function getGamePrediction(gameId) {
 
 // ── Game summary ──────────────────────────────────────────────
 // Returns the AI-generated post-game summary for a team, or null if none exists.
-export async function getGameSummary(gameId, team) {
+// French/English localization, Track B Phase B2 -- same i18n.language pattern
+// as getScoutingBlurb()/getResultsVsProcessNarrative() below.
+export async function getGameSummary(gameId, team, locale = i18n.language) {
   if (!gameId || !team) return null;
-  const rows = await workerFetch(`/game-summary?gameId=${gameId}&team=${team}`).catch(() => []);
+  const rows = await workerFetch(`/game-summary?gameId=${gameId}&team=${team}&locale=${locale}`).catch(() => []);
   if (!rows?.length) return null;
   return { text: rows[0].summary_text, cardText: rows[0].card_text || null, generatedAt: rows[0].generated_at };
 }

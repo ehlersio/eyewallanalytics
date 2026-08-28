@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TEAM_CONFIG } from '../utils/teamConfig';
+import { getGameSummary } from '../utils/supabaseClient';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
 
@@ -258,24 +259,6 @@ const PS_CANVAS_FOOTER_TAG_CLASSES = 'text-[14px] text-[rgba(255,255,255,0.2)]';
 const BRIGHTCOVE_URL = (id) =>
   `https://players.brightcove.net/6415718365001/EXtG1xJ7H_default/index.html?videoId=${id}&autoplay=false`;
 
-// Supabase fetch — inline to avoid circular imports with supabaseClient
-const SUPABASE_URL  = import.meta.env.VITE_SUPABASE_URL  || 'https://mqgasjzywoibdgxjjkux.supabase.co';
-const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON || 'sb_publishable_e_zwr1UA7GnHq4OuQSas5Q_kO8bQ_Ct';
-
-async function fetchGameSummaryFromDB(gameId, team, locale = 'en') {
-  if (!gameId || !team) return null;
-  try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/game_summaries?game_id=eq.${gameId}&team=eq.${team}&locale=eq.${locale}&select=summary_text,card_text&limit=1`,
-      { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } }
-    );
-    if (!r.ok) return null;
-    const rows = await r.json();
-    if (!rows?.[0]?.summary_text) return null;
-    return { text: rows[0].summary_text, cardText: rows[0].card_text || null };
-  } catch { return null; }
-}
-
 function strengthLabel(strength) {
   if (!strength) return 'ev';
   const s = String(strength).toLowerCase();
@@ -301,12 +284,14 @@ async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false, l
   const periodKey = summary.isGameSummary ? 'game' : String(summary.period);
 
   // ── Path 0: DB lookup (game summaries only) ───────────────────
-  // French/English localization, Track B Phase B2. Path 1 below
-  // (/summary/narrative, live on-demand generation) is a separate,
-  // older mechanism from the pipeline's nightly-pregenerated
-  // game_summaries -- out of scope for Track B, not locale-aware here.
+  // Goes through the Worker's /game-summary route (supabaseClient.js's
+  // getGameSummary()) rather than hitting Supabase directly -- this file
+  // used to have its own inline fetch with an embedded anon key, the one
+  // documented exception to "every read goes through the Worker" being
+  // supabaseAuth.js, not this. Consolidated onto the same helper other
+  // AI-narrative lookups already use (getScoutingBlurb() etc.).
   if (summary.isGameSummary && summary.gameId) {
-    const dbResult = await fetchGameSummaryFromDB(summary.gameId, carAbbr, locale);
+    const dbResult = await getGameSummary(summary.gameId, carAbbr, locale);
     if (dbResult?.text) return { narrative: dbResult.text, cardNarrative: dbResult.cardText };
   }
 
