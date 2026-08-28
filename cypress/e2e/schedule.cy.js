@@ -93,8 +93,12 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         cy.get('body').contains(/^W$|^L$/).should('exist')
       })
 
-      it('shows Home and Away labels', () => {
-        cy.contains(/Home|Away/).should('exist')
+      it('shows venue with a home/away icon', () => {
+        // Session 102 — game cards now show the real arena (game.venue.default
+        // from the NHL API) instead of a literal "Home"/"Away" label; the
+        // 📍/✈ icon is what now distinguishes home vs. away.
+        cy.get('.gc-venue').should('exist')
+        cy.get('.gc-venue').first().invoke('text').should('match', /📍|✈/)
       })
 
       it('Newest first / Oldest first sort works', () => {
