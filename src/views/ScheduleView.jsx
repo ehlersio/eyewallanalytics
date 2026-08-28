@@ -5,7 +5,7 @@ import { recordOutcome } from '../utils/predictionStore';
 import {
   getRegularSeasonGames, getPlayoffGames, getPlayoffSeries, getStandings,
   buildCarPlayoffSummary, formatGameDate,
-  getOpponent, isHomeGame, getCarScore, getOppScore,
+  getOpponent, isHomeGame, getCarScore, getOppScore, getVenue,
   TEAM_COLORS, getNhlOdds, findGameOdds, extractMoneyline, oddsToImplied,
   TEAM_CONFIG,
 } from '../utils/nhlApi';
@@ -500,7 +500,7 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
                 <span className="result-num muted text-[22px] font-bold text-[color:var(--text-muted)]">{oppScore ?? '—'}</span>
                 <span className="result-abbr muted text-[16px] font-bold text-[color:var(--text-muted)]">{opp?.abbrev}</span>
                 <TeamLogo abbr={opp?.abbrev} size={20} color={TEAM_COLORS[opp?.abbrev]} />
-                <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHomeGame(game) ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away')}</span>
+                <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHomeGame(game) ? '📍' : '✈'} {getVenue(game) || (isHomeGame(game) ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away'))}</span>
               </div>
             </div>
           );

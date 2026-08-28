@@ -972,7 +972,8 @@
       "oddsCarTitle": "{{abbr}} moneyline",
       "oddsOppTitle": "OPP moneyline",
       "vsLabel": "vs",
-      "matchupBreakdownLabel": "Matchup breakdown"
+      "matchupBreakdownLabel": "Matchup breakdown",
+      "broadcastTitle": "Where to watch"
     }
   },
   "calendarView": {

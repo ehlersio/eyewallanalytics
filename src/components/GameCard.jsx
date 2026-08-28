@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   isHomeGame, getOpponent, getCarScore, getOppScore,
-  formatGameDate, formatGameTime, TEAM_COLORS, TEAM_CONFIG,
+  formatGameDate, formatGameTime, getVenue, getBroadcasts, TEAM_COLORS, TEAM_CONFIG,
 } from '../utils/nhlApi';
 import TeamLogo from '../components/TeamLogo';
 import { fmtOdds } from '../utils/nhlApi';
@@ -163,6 +163,8 @@ function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, car
   const lost     = isCompleted && carScore != null && carScore < oppScore;
   const oppCity  = opp?.placeName?.default || '';
   const oppName  = opp?.commonName?.default || opp?.abbrev || '';
+  const venue      = getVenue(game);
+  const broadcasts = getBroadcasts(game);
 
   return (
     <div
@@ -178,7 +180,10 @@ function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, car
         ) : (
           <span className="gc-time text-[11px] text-[color:var(--amber)] font-[family-name:var(--font-mono)]">{formatGameTime(game.startTimeUTC)}</span>
         )}
-        <span className="gc-venue text-[10px] text-[color:var(--text-dim)] ml-auto">{home ? '📍 Lenovo Center' : `✈ ${t('scheduleView.resultCard.away')}`}</span>
+        <span className="gc-venue text-[10px] text-[color:var(--text-dim)] ml-auto">{home ? '📍' : '✈'} {venue || (home ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away'))}</span>
+        {!isCompleted && broadcasts.length > 0 && (
+          <span className="gc-broadcast text-[10px] text-[color:var(--text-dim)]" title={t('gameCard.card.broadcastTitle')}>📺 {broadcasts.join(', ')}</span>
+        )}
         {isCompleted && <span className="gc-tap-hint text-[10px] text-[color:var(--text-dim)]">{t('scheduleView.resultCard.tapForStats')}</span>}
         {!isCompleted && odds && (
           <div className="gc-odds flex items-center gap-1 font-[family-name:var(--font-mono)] text-[11px] ml-auto">

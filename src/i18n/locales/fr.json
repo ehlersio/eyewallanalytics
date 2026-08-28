@@ -972,7 +972,8 @@
       "oddsCarTitle": "Cote {{abbr}}",
       "oddsOppTitle": "Cote de l'adversaire",
       "vsLabel": "c.",
-      "matchupBreakdownLabel": "Détails du match"
+      "matchupBreakdownLabel": "Détails du match",
+      "broadcastTitle": "Où regarder"
     }
   },
   "calendarView": {
