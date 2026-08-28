@@ -40,6 +40,11 @@ export async function fetchPWHLStandings(season = PWHL_CURRENT_SEASON) {
   return workerFetch(`/pwhl/standings?season=${season}`);
 }
 
+/** Fetch the league-wide signings/moves feed for the Transactions tab. */
+export async function fetchPWHLTransactions(season = PWHL_CURRENT_SEASON) {
+  return workerFetch(`/pwhl/transactions?season=${season}`);
+}
+
 /** Fetch all teams' skaters + goalies for the Leaders tab. */
 export async function fetchPWHLLeaguePlayers(season = PWHL_CURRENT_SEASON) {
   return workerFetch(`/pwhl/league-players?season=${season}`);

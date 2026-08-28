@@ -1250,9 +1250,22 @@
     "emptyState": "Aucun jalon trouvé pour le moment.",
     "emptyStateForTeam": "Aucun jalon trouvé pour {{team}} pour le moment."
   },
+  "transactionsFeed": {
+    "header": {
+      "title": "Transactions",
+      "recentCount": "{{count}} récentes"
+    },
+    "defaultAction": "Transaction",
+    "from": "de {{team}}",
+    "error": {
+      "notAvailable": "Transactions non disponibles — revenez bientôt"
+    },
+    "emptyState": "Aucune transaction trouvée pour le moment."
+  },
   "newsView": {
     "tabs": {
-      "trivia": "Trivia"
+      "trivia": "Trivia",
+      "transactions": "Transactions"
     },
     "timeAgo": {
       "justNow": "à l'instant",

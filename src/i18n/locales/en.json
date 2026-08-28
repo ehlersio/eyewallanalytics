@@ -1250,9 +1250,22 @@
     "emptyState": "No milestones found yet.",
     "emptyStateForTeam": "No milestones found for {{team}} yet."
   },
+  "transactionsFeed": {
+    "header": {
+      "title": "Transactions",
+      "recentCount": "{{count}} recent"
+    },
+    "defaultAction": "Transaction",
+    "from": "from {{team}}",
+    "error": {
+      "notAvailable": "Transactions not available — check back soon"
+    },
+    "emptyState": "No transactions found yet."
+  },
   "newsView": {
     "tabs": {
-      "trivia": "Trivia"
+      "trivia": "Trivia",
+      "transactions": "Transactions"
     },
     "timeAgo": {
       "justNow": "just now",
