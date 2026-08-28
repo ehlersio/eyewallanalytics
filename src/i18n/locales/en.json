@@ -1614,13 +1614,18 @@
       "undrafted": "Undrafted",
       "awardDetailSkater": "{{season}}: {{goals}}G {{assists}}A {{points}}P",
       "awardDetailGoalie": "{{season}}: {{wins}}-{{losses}}",
-      "draftLabelPwhl": "Drafted by {{team}} — Round {{round}} ({{year}})"
+      "draftLabelPwhl": "Drafted by {{team}} — Round {{round}} ({{year}})",
+      "bioShowMore": "Show {{count}} more",
+      "bioShowLess": "Show less"
     },
     "recentForm": {
       "label": "Recent form",
       "home": "vs",
       "away": "@",
-      "goalsAgainst": "{{count}} GA"
+      "goalsAgainst": "{{count}} GA",
+      "legendSkater": "Goals-Assists-Points for each of the last 5 games.",
+      "legendGoalie": "Save percentage for each of the last 5 games. GA = goals against.",
+      "legendGoaliePwhl": "Decision (W/L/OTL/SOL) for each of the last 5 games. Second number is save percentage."
     },
     "contract": {
       "capHit": "Cap Hit",

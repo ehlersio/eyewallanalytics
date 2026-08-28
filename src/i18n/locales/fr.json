@@ -1614,13 +1614,18 @@
       "undrafted": "Non repêché",
       "awardDetailSkater": "{{season}} : {{goals}} B {{assists}} A {{points}} P",
       "awardDetailGoalie": "{{season}} : {{wins}}-{{losses}}",
-      "draftLabelPwhl": "Repêché par {{team}} — Ronde {{round}} ({{year}})"
+      "draftLabelPwhl": "Repêché par {{team}} — Ronde {{round}} ({{year}})",
+      "bioShowMore": "Afficher {{count}} de plus",
+      "bioShowLess": "Afficher moins"
     },
     "recentForm": {
       "label": "Forme récente",
       "home": "c.",
       "away": "@",
-      "goalsAgainst": "{{count}} BC"
+      "goalsAgainst": "{{count}} BC",
+      "legendSkater": "Buts-Aides-Points pour chacun des 5 derniers matchs.",
+      "legendGoalie": "Pourcentage d'arrêts pour chacun des 5 derniers matchs. BC = buts contre.",
+      "legendGoaliePwhl": "Décision (V/D/DP/DF) pour chacun des 5 derniers matchs. Le second nombre est le pourcentage d'arrêts."
     },
     "contract": {
       "capHit": "Impact salarial",
