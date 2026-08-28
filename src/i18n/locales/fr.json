@@ -1593,6 +1593,18 @@
       "rankedBy": "Classé par {{stat}}",
       "rankedByGaa": "Classé par GAA"
     },
+    "spotlight": {
+      "draftLabel": "Ronde {{round}}, choix {{pick}} ({{year}})",
+      "undrafted": "Non repêché",
+      "awardDetailSkater": "{{season}} : {{goals}} B {{assists}} A {{points}} P",
+      "awardDetailGoalie": "{{season}} : {{wins}}-{{losses}}"
+    },
+    "recentForm": {
+      "label": "Forme récente",
+      "home": "c.",
+      "away": "@",
+      "goalsAgainst": "{{count}} BC"
+    },
     "contract": {
       "capHit": "Impact salarial",
       "aavPerYear": "SMPA / année",

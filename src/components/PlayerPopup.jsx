@@ -170,6 +170,19 @@ const PP_ADV_CHIP_CLASSES = 'pp-adv-chip flex items-center gap-[3px] text-[11px]
 const PP_VALUE_SCORE_CLASSES = 'text-[10px] opacity-75'
 const PP_METRIC_SELECT_CLASSES = 'text-[11px] text-[color:var(--text)] bg-[var(--bg2)] border-[0.5px] border-[var(--border)] rounded-md py-[3px] px-[6px]'
 
+// ── Player Spotlight panel (hero image + draft + awards) — always-visible,
+// same slot pattern as the Rankings/Contract panels above (not tab content)
+const PP_SPOTLIGHT_CLASSES = 'py-3 px-4 bg-[var(--bg2)] border-b-[0.5px] border-[var(--border)]'
+const PP_HERO_IMG_CLASSES = 'w-full h-[140px] object-cover rounded-[var(--radius-sm)] mb-2.5'
+const PP_SPOTLIGHT_ROW_CLASSES = 'flex flex-wrap gap-1.5 items-center justify-center'
+const PP_DRAFT_CHIP_CLASSES = 'text-[10px] font-medium text-[color:var(--text-muted)] bg-[var(--bg3)] py-[3px] px-2 rounded-[10px]'
+const PP_AWARD_CHIP_CLASSES = 'flex items-center gap-[3px] text-[10px] font-semibold text-[color:var(--amber)] bg-[rgba(255,193,7,0.12)] border-[0.5px] border-[rgba(255,193,7,0.3)] py-[3px] px-2 rounded-[10px]'
+
+// ── Recent Form strip (Stats tab, first block) ──
+const PP_FORM_LABEL_CLASSES = 'text-[9px] font-bold uppercase tracking-[0.1em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] py-1 border-b-[0.5px] border-[var(--border)] mb-1.5'
+const PP_FORM_STRIP_CLASSES = 'flex gap-1.5 overflow-x-auto pb-1 mb-3'
+const PP_FORM_CARD_CLASSES = 'flex flex-col items-center gap-0.5 shrink-0 bg-[var(--bg2)] border-[0.5px] border-[var(--border)] rounded-[var(--radius-sm)] py-1.5 px-2 min-w-[52px]'
+
 // ── Sub-PR 3 additions: the former "shell" classes ──
 const PLAYER_POPUP_CLASSES = 'player-popup bg-[var(--bg1)] border-[0.5px] border-[var(--border-2)] rounded-t-[var(--radius-lg)] w-full max-w-[420px] max-h-[90vh] overflow-y-auto overflow-x-hidden shadow-[0_-8px_40px_rgba(0,0,0,0.5)] animate-[slide-up_0.2s_cubic-bezier(0.34,1.2,0.64,1)] min-[560px]:rounded-[var(--radius-lg)] min-[560px]:animate-[pop-in_0.2s_cubic-bezier(0.34,1.2,0.64,1)]'
 const PP_HEADER_BASE_CLASSES = 'pp-header flex p-4 border-b-[0.5px] border-[var(--border)] [background:linear-gradient(135deg,rgba(204,34,0,0.07)_0%,transparent_55%)] relative'
@@ -1238,6 +1251,45 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
           </div>
         )}
 
+        {/* ── Player Spotlight — hero image + draft + awards, both contexts.
+            stats.heroImage/draftDetails/awards come from player/landing,
+            already fetched by getPlayerStats/useFetch above -- no new
+            fetch, just previously-unread fields. */}
+        {stats && (stats.heroImage || stats.draftDetails || stats.awards?.length > 0) && (
+          <div className={PP_SPOTLIGHT_CLASSES}>
+            {stats.heroImage && (
+              <img src={stats.heroImage} alt="" className={PP_HERO_IMG_CLASSES} />
+            )}
+            <div className={PP_SPOTLIGHT_ROW_CLASSES}>
+              {stats.draftDetails ? (
+                <span className={PP_DRAFT_CHIP_CLASSES}>
+                  {t('playerPopup.spotlight.draftLabel', {
+                    round: stats.draftDetails.round,
+                    pick: stats.draftDetails.overallPick,
+                    year: stats.draftDetails.year,
+                  })}
+                </span>
+              ) : (
+                <span className={PP_DRAFT_CHIP_CLASSES}>{t('playerPopup.spotlight.undrafted')}</span>
+              )}
+              {(stats.awards || []).map((award, i) => {
+                const latest = award.seasons?.[award.seasons.length - 1]
+                const count  = award.seasons?.length || 1
+                const detail = latest == null ? null
+                  : latest.points != null ? t('playerPopup.spotlight.awardDetailSkater', { goals: latest.goals ?? 0, assists: latest.assists ?? 0, points: latest.points ?? 0, season: nhlSeasonLabel(latest.seasonId) })
+                  : latest.wins   != null ? t('playerPopup.spotlight.awardDetailGoalie', { wins: latest.wins ?? 0, losses: latest.losses ?? 0, season: nhlSeasonLabel(latest.seasonId) })
+                  : null
+                return (
+                  <span key={i} className={PP_AWARD_CHIP_CLASSES}>
+                    🏆 {award.trophy?.default}{count > 1 ? ` ×${count}` : ''}
+                    {detail && <InfoTip text={detail} position="above" />}
+                  </span>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* ── Rankings banner — CAR context only ── */}
         {!isLeagueContext && rankings && (rankings.division || rankings.conference || rankings.league) && (
           <div className={PP_RANKINGS_CLASSES}>
@@ -1374,6 +1426,27 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                 {[80,60,70,50].map((w,i) => (
                   <div key={i} className={SKELETON_CLASSES} style={{ height: 11, width: `${w}%`, marginBottom: 10 }} />
                 ))}
+              </div>
+            )}
+            {!loading && stats?.last5Games?.length > 0 && (
+              <div>
+                <div className={PP_FORM_LABEL_CLASSES}>{t('playerPopup.recentForm.label')}</div>
+                <div className={PP_FORM_STRIP_CLASSES}>
+                  {stats.last5Games.map((g, i) => {
+                    const main = isGoalie
+                      ? (g.savePctg != null ? (g.savePctg <= 1 ? g.savePctg : g.savePctg / 100).toFixed(3) : '—')
+                      : `${g.goals ?? 0}-${g.assists ?? 0}-${g.points ?? 0}`
+                    const sub = isGoalie ? t('playerPopup.recentForm.goalsAgainst', { count: g.goalsAgainst ?? 0 }) : null
+                    const good = isGoalie ? (g.savePctg ?? 0) >= 0.9 : (g.goals ?? 0) + (g.assists ?? 0) > 0
+                    return (
+                      <div key={g.gameId ?? i} className={PP_FORM_CARD_CLASSES}>
+                        <span className="text-[9px] text-[color:var(--text-dim)]">{g.homeRoadFlag === 'H' ? t('playerPopup.recentForm.home') : t('playerPopup.recentForm.away')} {g.opponentAbbrev}</span>
+                        <span className={`text-[13px] font-bold font-[family-name:var(--font-mono)] ${good ? 'text-[color:var(--green)]' : 'text-[color:var(--text-muted)]'}`}>{main}</span>
+                        {sub && <span className="text-[8px] text-[color:var(--text-dim)]">{sub}</span>}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )}
             {!loading && !isGoalie && mpData?.percentiles && <PercentileScopeLegend />}

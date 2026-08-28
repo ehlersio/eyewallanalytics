@@ -1593,6 +1593,18 @@
       "rankedBy": "Ranked by {{stat}}",
       "rankedByGaa": "Ranked by GAA"
     },
+    "spotlight": {
+      "draftLabel": "Round {{round}}, Pick {{pick}} ({{year}})",
+      "undrafted": "Undrafted",
+      "awardDetailSkater": "{{season}}: {{goals}}G {{assists}}A {{points}}P",
+      "awardDetailGoalie": "{{season}}: {{wins}}-{{losses}}"
+    },
+    "recentForm": {
+      "label": "Recent form",
+      "home": "vs",
+      "away": "@",
+      "goalsAgainst": "{{count}} GA"
+    },
     "contract": {
       "capHit": "Cap Hit",
       "aavPerYear": "AAV / Year",
