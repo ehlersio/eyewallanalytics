@@ -558,6 +558,15 @@
       "legendFootnoteShort": "— référence 50%"
     }
   },
+  "ahlPlayerPopup": {
+    "heatMap": {
+      "goalieUnavailable": "Carte thermique du gardien non disponible",
+      "goalieUnavailableSub": "Les données de la LAH n'indiquent pas quel gardien était sur la glace pour chaque but, donc une carte thermique ici sous-compterait les buts accordés."
+    },
+    "recentForm": {
+      "legendGoalie": "V = victoire · D = défaite (les données de la LAH ne distinguent pas les défaites en prolongation/tirs de barrage)"
+    }
+  },
   "ahlPlayersView": {
     "noTeamSelected": "Aucune équipe de la LAH sélectionnée.",
     "subtitle": "Statistiques de la saison",

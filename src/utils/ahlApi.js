@@ -76,3 +76,27 @@ export async function fetchAHLRoster(teamId = AHL_TEAM_ID) {
   if (!teamId) return null;
   return workerFetch(`/ahl/roster?teamId=${teamId}`);
 }
+
+/** Player detail lookup for AHLPlayerPopup — identity + one season's stat
+ * line. Mirrors fetchPWHLPlayerLanding. */
+export async function fetchAHLPlayerLanding(playerId, season = AHL_CURRENT_SEASON) {
+  if (!playerId) return null;
+  return workerFetch(`/ahl/player/landing?id=${playerId}&season=${season}`);
+}
+
+/** Career totals (regular season + playoffs), recent-form games, bio
+ * bullets, and draft info — live HockeyTech proxy, season-independent.
+ * Mirrors fetchPWHLPlayerCareer. */
+export async function fetchAHLPlayerCareer(playerId) {
+  if (!playerId) return null;
+  return workerFetch(`/ahl/player/career?id=${playerId}`);
+}
+
+/** Shot-map heat map data for a single skater. No goalie equivalent --
+ * AHL's PBP doesn't carry goalie_id on goal events (see eyewall-poller's
+ * ahl.js docstring for /ahl/player-shots), so a goalie heat map would
+ * silently under-count goals allowed. Mirrors fetchPWHLPlayerShots. */
+export async function fetchAHLPlayerShots(playerId, season = AHL_CURRENT_SEASON) {
+  if (!playerId) return null;
+  return workerFetch(`/ahl/player-shots?playerId=${playerId}&season=${season}`);
+}

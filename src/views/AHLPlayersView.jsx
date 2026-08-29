@@ -1,18 +1,18 @@
 // views/AHLPlayersView.jsx
 // Mirrors PWHLPlayersView -- Roster tab (photo grid) + Stats tab (sortable
-// table). Two real differences from PWHL, both deliberate scope cuts, not
-// oversights (see AHL_BUILD_BRIEF.md):
-//   - No player detail popup (no AHLPlayerPopup component or
-//     /ahl/player/landing-style endpoint built this pass) -- rows are not
-//     clickable.
+// table). One real difference from PWHL, a deliberate scope cut, not an
+// oversight (see AHL_BUILD_BRIEF.md):
 //   - Skater columns drop shot_pct/gw_goals -- confirmed absent from AHL's
 //     HockeyTech feed entirely (see ahl_stats.py's fetch_skater_stats()).
+// Player detail popup added (AHL/PWHL parity plan Phase 2) -- roster cards
+// and stat rows are now clickable, mirroring PWHLPlayersView.
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { fetchAHLPlayers, AHL_TEAM_CONFIG, AHL_TEAM_ID } from '../utils/ahlApi';
 import { AHL_CURRENT_SEASON, AHL_SEASONS } from '../utils/ahlConfig';
 import TeamLogo from '../components/TeamLogo';
+import AHLPlayerPopup from '../components/AHLPlayerPopup';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 
@@ -31,7 +31,7 @@ function tabClasses(isActive) {
 const ROSTER_SECTION_CLASSES = 'mb-5'
 const ROSTER_GRID_CLASSES = 'grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(110px,1fr))]'
 
-const CARD_BASE_CLASSES = 'player-card card flex flex-col overflow-hidden'
+const CARD_BASE_CLASSES = 'player-card card flex flex-col cursor-pointer overflow-hidden'
 const SKELETON_CARD_CLASSES = 'player-card-skeleton card flex flex-col overflow-hidden'
 const PC_PHOTO_WRAP_CLASSES = 'relative mb-[7px]'
 const PC_PHOTO_CLASSES = 'pc-photo w-full aspect-square object-cover object-top rounded-[var(--radius-sm)] bg-[var(--bg3)] block'
@@ -51,7 +51,7 @@ const SST_TH_BASE_CLASSES = 'py-2 px-[6px] text-[11px] font-bold border-b-[0.5px
 const SST_TD_BASE_CLASSES = 'sst-td py-2 px-[6px] border-b-[0.5px] border-[rgba(255,255,255,0.04)] whitespace-nowrap'
 const STICKY_CLASSES = 'sticky left-0 z-[2] bg-[var(--bg2)] border-r-[0.5px] border-[var(--border)]'
 const SST_SORT_ICON_CLASSES = 'text-[10px]'
-const SST_ROW_CLASSES = 'sst-row'
+const SST_ROW_CLASSES = 'sst-row cursor-pointer [transition:background_0.1s] hover:bg-[var(--bg3)]'
 const SST_HINT_CLASSES = 'text-[10px] text-[color:var(--text-dim)] text-center mt-[6px]'
 const DRILL_EMPTY_CLASSES = 'text-[color:var(--text-dim)] text-[13px] py-[24px] px-[16px] text-center'
 
@@ -111,6 +111,7 @@ export default function AHLPlayersView() {
   const [season,   setSeason]   = useState(AHL_CURRENT_SEASON);
   const [view,     setView]     = useState('roster');
   const [statType, setStatType] = useState('skaters');
+  const [selected, setSelected] = useState(null);
 
   // Same live-season-update race/fix as AHLShotMapView.jsx -- see that
   // file's comment (mirrors PWHLPlayersView.jsx's proven pattern).
@@ -183,9 +184,9 @@ export default function AHLPlayersView() {
           )}
           {!loading && data && roster.length > 0 && (
             <>
-              <RosterSection title={t('players.forwards')} players={roster.filter(p => ['C','LW','RW','F'].includes(p.position))} />
-              <RosterSection title={t('ahlPlayersView.defencemen')} players={roster.filter(p => ['D','LD','RD'].includes(p.position))} />
-              <RosterSection title={t('players.goalies')} players={roster.filter(p => p.position === 'G')} />
+              <RosterSection title={t('players.forwards')} players={roster.filter(p => ['C','LW','RW','F'].includes(p.position))} onSelect={setSelected} />
+              <RosterSection title={t('ahlPlayersView.defencemen')} players={roster.filter(p => ['D','LD','RD'].includes(p.position))} onSelect={setSelected} />
+              <RosterSection title={t('players.goalies')} players={roster.filter(p => p.position === 'G')} onSelect={setSelected} />
             </>
           )}
         </>
@@ -205,11 +206,11 @@ export default function AHLPlayersView() {
 
           {statType === 'skaters' && (
             <SortableTable rows={skaters} cols={AHL_SKATER_COLS} defaultSort="points" loading={loading}
-              emptyMsg={t('ahlPlayersView.emptySkaterStats', { season: seasonLabel })} />
+              emptyMsg={t('ahlPlayersView.emptySkaterStats', { season: seasonLabel })} onRowClick={setSelected} />
           )}
           {statType === 'goalies' && (
             <SortableTable rows={goalies} cols={AHL_GOALIE_COLS} defaultSort="wins" loading={loading}
-              emptyMsg={t('ahlPlayersView.emptyGoalieStats', { season: seasonLabel })} />
+              emptyMsg={t('ahlPlayersView.emptyGoalieStats', { season: seasonLabel })} onRowClick={setSelected} />
           )}
         </>
       )}
@@ -217,30 +218,39 @@ export default function AHLPlayersView() {
       <div style={{ fontSize: 10, color: 'var(--text-dim)', textAlign: 'center', padding: '8px 0' }}>
         {t('ahlPlayersView.footerHintSource')}
       </div>
+
+      {selected && (
+        <AHLPlayerPopup
+          player={selected}
+          seasonLabel={seasonLabel}
+          season={season}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   );
 }
 
-function RosterSection({ title, players }) {
+function RosterSection({ title, players, onSelect }) {
   if (!players.length) return null;
   const sorted = [...players].sort((a,b) => (a.jersey_number||99) - (b.jersey_number||99));
   return (
     <div className={ROSTER_SECTION_CLASSES}>
       <div className="sec-label">{title}</div>
       <div className={ROSTER_GRID_CLASSES}>
-        {sorted.map(p => <PlayerCard key={p.player_id} player={p} />)}
+        {sorted.map(p => <PlayerCard key={p.player_id} player={p} onClick={() => onSelect(p)} />)}
       </div>
     </div>
   );
 }
 
-function PlayerCard({ player: p }) {
+function PlayerCard({ player: p, onClick }) {
   const [imgErr, setImgErr] = useState(false);
   const headshot = p.headshot || `https://assets.leaguestat.com/ahl/240x240/${p.player_id}.jpg`;
   const initials = (p.first_name?.[0] || '') + (p.last_name?.[0] || '');
 
   return (
-    <div className={CARD_BASE_CLASSES}>
+    <div className={CARD_BASE_CLASSES} onClick={onClick}>
       <div className={PC_PHOTO_WRAP_CLASSES}>
         {!imgErr ? (
           <img src={headshot} alt={p.last_name} className={PC_PHOTO_CLASSES} onError={() => setImgErr(true)} />
@@ -275,7 +285,7 @@ function RosterSkeleton() {
   );
 }
 
-function SortableTable({ rows, cols, defaultSort, loading, emptyMsg }) {
+function SortableTable({ rows, cols, defaultSort, loading, emptyMsg, onRowClick }) {
   const { t } = useTranslation();
   const [sortKey, setSortKey] = useState(defaultSort);
   const [sortDir, setSortDir] = useState('desc');
@@ -324,7 +334,7 @@ function SortableTable({ rows, cols, defaultSort, loading, emptyMsg }) {
           </thead>
           <tbody>
             {sorted.map((row, i) => (
-              <tr key={row.player_id ?? i} className={SST_ROW_CLASSES}>
+              <tr key={row.player_id ?? i} className={SST_ROW_CLASSES} onClick={() => onRowClick?.(row)}>
                 {cols.map(col => {
                   const val = row[col.key];
                   const pmColor = col.key === 'plus_minus' ? (val > 0 ? '#4ade80' : val < 0 ? '#f87171' : 'inherit') : 'inherit';
