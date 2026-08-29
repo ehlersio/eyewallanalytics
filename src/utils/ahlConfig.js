@@ -1,0 +1,144 @@
+// utils/ahlConfig.js
+// AHL team configuration — parallel structure to pwhlConfig.js/teamConfig.js.
+//
+// Storage key for selected AHL team: 'eyewall:ahl_team' in localStorage.
+//
+// Fields:
+//   abbr          — HockeyTech team code (matches ahl_players.team_id's code
+//                   in eyewall-pipeline's TEAM_ID_MAP)
+//   teamId        — HockeyTech numeric team ID
+//   division      — one of Atlantic/Central/North/Pacific (AHL has real
+//                   conference/division structure, unlike PWHL's flat table)
+//   season        — current season ID for API calls (derived from AHL_CURRENT_SEASON)
+//   displayName   — full official team name
+//   shortName     — common short name / nickname
+//   primaryColor / displayColor
+//
+// primaryColor/displayColor are DELIBERATELY a single neutral placeholder
+// for all 32 teams right now, not real per-team brand colors. PWHL's own
+// config (see that file) required hand-verifying each team's real hex code
+// plus a WCAG-AA-contrast pass against the dark background -- doing that
+// properly for 32 teams (vs. PWHL's 12) is a real, separate research task,
+// not something to rush through inaccurately just to fill in a value. This
+// is a deliberate scope cut for the first AHL display pass, not an
+// oversight -- replace with real per-team colors as a follow-up.
+const AHL_PLACEHOLDER_COLOR = '#6B7280'; // neutral slate, passes WCAG AA on #101827 (7.1:1)
+
+import { fetchSeasonsConfig } from './seasonClient';
+
+// ── Season constant ───────────────────────────────────────────────────────────
+// Same live-resolution pattern as PWHL_CURRENT_SEASON in pwhlConfig.js --
+// see that file's comment for the getter-based live-update mechanism this
+// mirrors. Fallback seed matches eyewall-poller's seasons.js FALLBACK_AHL.
+export let AHL_CURRENT_SEASON = 90;
+
+(async () => {
+  try {
+    const data = await fetchSeasonsConfig();
+    const seasonId = data?.ahl?.seasonId;
+    if (seasonId && seasonId !== AHL_CURRENT_SEASON) {
+      AHL_CURRENT_SEASON = seasonId;
+      window.dispatchEvent(new window.CustomEvent('eyewall:ahl-season-updated', { detail: AHL_CURRENT_SEASON }));
+    }
+  } catch (e) {
+    console.warn('Live AHL season lookup failed, using fallback:', e.message);
+  }
+})();
+
+// ── Season / playoff-type enumeration ────────────────────────────────────────
+// Same NOT-live-resolved convention as PWHL_SEASONS in pwhlConfig.js -- see
+// that file's comment. Only the seasons confirmed live during this pass are
+// listed; add entries here as further AHL seasons are ingested.
+export const AHL_SEASONS = [
+  { id: 94, label: '2026-27', type: 'regular' },
+  { id: 90, label: '2025-26', type: 'regular' },
+  { id: 92, label: '2026 Playoffs', type: 'playoffs' },
+];
+
+export const AHL_REGULAR_SEASONS = AHL_SEASONS.filter((s) => s.type === 'regular');
+export const AHL_PLAYOFF_SEASONS = AHL_SEASONS.filter((s) => s.type === 'playoffs');
+
+export function isAHLPlayoffSeason(seasonId) {
+  return AHL_SEASONS.find((s) => s.id === seasonId)?.type === 'playoffs';
+}
+
+// ── Team configs ─────────────────────────────────────────────────────────────
+// team_id/code/division confirmed live via feed=modulekit&view=teamsbyseason
+// 2026-08-29 (season 94) -- see eyewall-pipeline's ahl_stats.py TEAM_ID_MAP,
+// which this mirrors. team_id 317 (BRI, Bridgeport Islanders) is the
+// pre-2026-27-relocation identity of 457 (HAM, Hamilton Hammers) -- included
+// here too so historical-season views (e.g. season 90) can still resolve it.
+export const AHL_TEAMS = [
+  // ── Atlantic ──────────────────────────────────────────────────────────────
+  { abbr: 'HFD', teamId: 307, division: 'Atlantic', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Hartford Wolf Pack', shortName: 'Wolf Pack', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'PRO', teamId: 309, division: 'Atlantic', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Providence Bruins', shortName: 'Bruins', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'LV', teamId: 313, division: 'Atlantic', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Lehigh Valley Phantoms', shortName: 'Phantoms', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'WBS', teamId: 316, division: 'Atlantic', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Wilkes-Barre/Scranton Penguins', shortName: 'Penguins', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'HER', teamId: 319, division: 'Atlantic', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Hershey Bears', shortName: 'Bears', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'CLT', teamId: 384, division: 'Atlantic', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Charlotte Checkers', shortName: 'Checkers', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'SPR', teamId: 411, division: 'Atlantic', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Springfield Thunderbirds', shortName: 'Thunderbirds', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  // ── North ─────────────────────────────────────────────────────────────────
+  { abbr: 'ROC', teamId: 323, division: 'North', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Rochester Americans', shortName: 'Americans', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'SYR', teamId: 324, division: 'North', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Syracuse Crunch', shortName: 'Crunch', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'TOR', teamId: 335, division: 'North', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Toronto Marlies', shortName: 'Marlies', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'CLE', teamId: 373, division: 'North', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Cleveland Monsters', shortName: 'Monsters', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'UTC', teamId: 390, division: 'North', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Utica Comets', shortName: 'Comets', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'BEL', teamId: 413, division: 'North', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Belleville Senators', shortName: 'Senators', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'LAV', teamId: 415, division: 'North', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Laval Rocket', shortName: 'Rocket', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'HAM', teamId: 457, division: 'North', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Hamilton Hammers', shortName: 'Hammers', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  // ── Central ───────────────────────────────────────────────────────────────
+  { abbr: 'MB', teamId: 321, division: 'Central', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Manitoba Moose', shortName: 'Moose', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'MIL', teamId: 327, division: 'Central', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Milwaukee Admirals', shortName: 'Admirals', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'GR', teamId: 328, division: 'Central', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Grand Rapids Griffins', shortName: 'Griffins', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'CHI', teamId: 330, division: 'Central', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Chicago Wolves', shortName: 'Wolves', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'RFD', teamId: 372, division: 'Central', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Rockford IceHogs', shortName: 'IceHogs', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'TEX', teamId: 380, division: 'Central', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Texas Stars', shortName: 'Stars', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'IA', teamId: 389, division: 'Central', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Iowa Wild', shortName: 'Wild', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  // ── Pacific ───────────────────────────────────────────────────────────────
+  { abbr: 'BAK', teamId: 402, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Bakersfield Condors', shortName: 'Condors', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'ONT', teamId: 403, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Ontario Reign', shortName: 'Reign', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'SD', teamId: 404, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'San Diego Gulls', shortName: 'Gulls', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'SJ', teamId: 405, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'San Jose Barracuda', shortName: 'Barracuda', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'TUC', teamId: 412, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Tucson Roadrunners', shortName: 'Roadrunners', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'COL', teamId: 419, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Colorado Eagles', shortName: 'Eagles', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'HSK', teamId: 437, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Henderson Silver Knights', shortName: 'Silver Knights', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'ABB', teamId: 440, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Abbotsford Canucks', shortName: 'Canucks', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'CGY', teamId: 444, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Calgary Wranglers', shortName: 'Wranglers', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'CV', teamId: 445, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Coachella Valley Firebirds', shortName: 'Firebirds', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+];
+
+// ── Logos ─────────────────────────────────────────────────────────────────────
+// Hosted directly from HockeyTech's own asset CDN rather than bundling 32
+// local files the way PWHL's PWHL_LOGO_FILES does -- theahl.com's own site
+// uses these same URLs directly (confirmed live 2026-08-29), and AHL team
+// logos are stable/official (unlike PWHL's early-days placeholder logos),
+// so there's no "swap once real branding drops" reason to self-host a copy.
+export function ahlLogoUrl(teamId) {
+  return teamId ? `https://assets.leaguestat.com/ahl/logos/${teamId}.png` : null;
+}
+
+// ── Lookups ───────────────────────────────────────────────────────────────────
+
+export const AHL_TEAM_MAP = Object.fromEntries(AHL_TEAMS.map((t) => [t.abbr, t]));
+export const AHL_TEAM_BY_ID = Object.fromEntries(AHL_TEAMS.map((t) => [t.teamId, t]));
+
+export function getAHLTeamConfig(abbr) {
+  return AHL_TEAM_MAP[abbr] ?? null;
+}
+
+export function getAHLTeamById(teamId) {
+  return AHL_TEAM_BY_ID[teamId] ?? null;
+}
+
+export function hasAHLTeamConfig() {
+  return Boolean(localStorage.getItem('eyewall:ahl_team'));
+}
+
+export function getAHLStoredTeam() {
+  try {
+    const raw = localStorage.getItem('eyewall:ahl_team');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}

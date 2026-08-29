@@ -25,6 +25,16 @@ const PWHL_TABS = [
   { to: '/pwhl/news',     icon: '📰', labelKey: 'nav.news'     },
 ];
 
+// No /ahl/team or /ahl/news tabs -- neither view was built this pass (no
+// AHL news source, no team-overview page; see AHL_BUILD_BRIEF.md's scope
+// notes). Add them here once those views exist.
+const AHL_TABS = [
+  { to: '/ahl/shots',    icon: '⬡',  labelKey: 'nav.shotMap'  },
+  { to: '/ahl/schedule', icon: '📅', labelKey: 'nav.schedule' },
+  { to: '/ahl/players',  icon: '👤', labelKey: 'nav.players'  },
+  { to: '/ahl/league',   icon: '🏒', labelKey: 'nav.league'   },
+];
+
 // Tailwind migration (Phase 7c, final file of the migration) -- previously
 // BottomNav.css. .bottom-nav's fixed positioning/z-index/height calc are
 // unchanged byte-for-byte from the original CSS -- see the comment on
@@ -78,8 +88,8 @@ const NAV_LABEL_CLASSES = 'nav-label text-[10px] font-medium tracking-[0.04em]';
 
 export default function BottomNav() {
   const { t } = useTranslation();
-  const { isPWHL } = useSport();
-  const tabs = isPWHL ? PWHL_TABS : NHL_TABS;
+  const { isPWHL, isAHL } = useSport();
+  const tabs = isPWHL ? PWHL_TABS : isAHL ? AHL_TABS : NHL_TABS;
   // Combined dot on the News icon — OR across News/Milestones/Trivia's own
   // per-tab unseen state (already computed by useReadState; no separate
   // tracking mechanism). Safe to mount alongside NewsView's own instance

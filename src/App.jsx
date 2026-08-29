@@ -29,6 +29,14 @@ const PWHLPlayersView  = lazy(() => import('./views/PWHLPlayersView'));
 const PWHLTeamView     = lazy(() => import('./views/PWHLTeamView'));
 const PWHLNewsView     = lazy(() => import('./views/PWHLNewsView'));
 
+// AHL routes -- no AHLTeamView/AHLNewsView yet (no team-overview page or
+// news source built for AHL in this pass; deliberate scope cut, see
+// AHL_BUILD_BRIEF.md).
+const AHLShotMapView  = lazy(() => import('./views/AHLShotMapView'));
+const AHLLeagueView   = lazy(() => import('./views/AHLLeagueView'));
+const AHLScheduleView = lazy(() => import('./views/AHLScheduleView'));
+const AHLPlayersView  = lazy(() => import('./views/AHLPlayersView'));
+
 const DevReplayView = import.meta.env.DEV
   ? lazy(() => import('./views/DevReplayView'))
   : null;
@@ -50,10 +58,11 @@ const ViewFallback = () => {
   );
 };
 
-// Redirects PWHL users from / to /pwhl/shots
+// Redirects PWHL/AHL users from / to their sport's shot map
 function RootRoute() {
-  const { isPWHL } = useSport();
+  const { isPWHL, isAHL } = useSport();
   if (isPWHL) return <Navigate to="/pwhl/shots" replace />;
+  if (isAHL) return <Navigate to="/ahl/shots" replace />;
   return <ShotMapView />;
 }
 
@@ -74,6 +83,10 @@ function PageTracker() {
       '/pwhl/players':  'PWHL Players',
       '/pwhl/schedule': 'PWHL Schedule',
       '/pwhl/news':     'PWHL News',
+      '/ahl/shots':     'AHL Shot Map',
+      '/ahl/league':    'AHL League',
+      '/ahl/players':   'AHL Players',
+      '/ahl/schedule':  'AHL Schedule',
     };
     capture('$pageview', {
       path:      location.pathname,
@@ -107,7 +120,7 @@ export default function App() {
             // Navigate to the correct root for the chosen sport before reloading
             // so module-level constants re-initialize at the right route.
             const sport = localStorage.getItem('eyewall:sport') || 'nhl';
-            const root  = sport === 'pwhl' ? '/pwhl/shots' : '/';
+            const root  = sport === 'pwhl' ? '/pwhl/shots' : sport === 'ahl' ? '/ahl/shots' : '/';
             window.location.href = root;
           }}
         />
@@ -143,6 +156,11 @@ export default function App() {
                       <Route path="/pwhl/players"  element={<PWHLPlayersView />} />
                       <Route path="/pwhl/schedule" element={<PWHLScheduleView />} />
                       <Route path="/pwhl/news"     element={<PWHLNewsView />} />
+                      {/* AHL routes */}
+                      <Route path="/ahl/shots"    element={<AHLShotMapView />} />
+                      <Route path="/ahl/league"   element={<AHLLeagueView />} />
+                      <Route path="/ahl/players"  element={<AHLPlayersView />} />
+                      <Route path="/ahl/schedule" element={<AHLScheduleView />} />
                       {import.meta.env.DEV && DevReplayView && (
                         <Route path="/dev" element={<DevReplayView />} />
                       )}

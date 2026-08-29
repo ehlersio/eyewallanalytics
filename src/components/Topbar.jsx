@@ -47,7 +47,7 @@ const MOM_FILL_OPP_CLASSES = 'absolute left-1/2 top-0 bottom-0 bg-[var(--text-di
 
 export default function Topbar() {
   const { t } = useTranslation();
-  const { isPWHL } = useSport();
+  const { isPWHL, isAHL } = useSport();
   const [liveGame,    setLiveGame]    = useState(null);
   const [liveMeta,    setLiveMeta]    = useState(null);
   const [displayClock, setDisplayClock] = useState(null);
@@ -137,14 +137,14 @@ export default function Topbar() {
   }, []);
 
   useEffect(() => {
-    if (isPWHL) return; // PWHL has no live game feed
+    if (isPWHL || isAHL) return; // PWHL/AHL have no live game feed (yet, for AHL)
     if (Date.now() > SEASON_END.getTime()) return;
     checkLive();
     return () => {
       clearInterval(intervalRef.current);
       clearInterval(clockRef.current);
     };
-  }, [isPWHL]);
+  }, [isPWHL, isAHL]);
 
   const activeLiveGame = mockLiveGame || liveGame;
   const opp      = activeLiveGame ? getOpponent(activeLiveGame) : null;
@@ -185,7 +185,7 @@ export default function Topbar() {
         ) : (
           <div className={STATUS_CLASSES}>
             <span className={STATUS_DOT_CLASSES} />
-            <span className={NO_LIVE_CLASSES}>{isPWHL ? 'PWHL' : t('topbar.offSeason')}</span>
+            <span className={NO_LIVE_CLASSES}>{isPWHL ? 'PWHL' : isAHL ? 'AHL' : t('topbar.offSeason')}</span>
           </div>
         )}
 

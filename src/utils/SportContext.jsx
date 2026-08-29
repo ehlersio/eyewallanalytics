@@ -10,6 +10,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ALL_TEAMS, CURRENT_SEASON } from './teamConfig';
 import { PWHL_TEAMS, PWHL_CURRENT_SEASON } from './pwhlConfig';
+import { AHL_TEAMS, AHL_CURRENT_SEASON } from './ahlConfig';
 
 const STORAGE_KEY = 'eyewall:sport';
 
@@ -32,6 +33,10 @@ export function isPWHL() {
   return getSport() === 'pwhl';
 }
 
+export function isAHL() {
+  return getSport() === 'ahl';
+}
+
 // ── Context ───────────────────────────────────────────────────────────────────
 
 const SportContext = createContext({
@@ -41,6 +46,7 @@ const SportContext = createContext({
   currentSeason: CURRENT_SEASON,
   isPWHL: false,
   isNHL: true,
+  isAHL: false,
 });
 
 export function SportProvider({ children }) {
@@ -64,40 +70,49 @@ export function SportProvider({ children }) {
   // string) -- see README's Known Limitations for how this was found.
   const location = useLocation();
   const pwhl = location.pathname.startsWith('/pwhl');
-  const sport = pwhl ? 'pwhl' : 'nhl';
+  const ahl = location.pathname.startsWith('/ahl');
+  const sport = pwhl ? 'pwhl' : ahl ? 'ahl' : 'nhl';
 
-  // CURRENT_SEASON/PWHL_CURRENT_SEASON are `let` bindings updated in place
-  // by an async fetch at module load (see teamConfig.js/pwhlConfig.js).
-  // Reading them once during render isn't enough -- SportProvider holds no
-  // other state, so nothing re-renders it when that update lands, and
-  // `currentSeason` would otherwise freeze at whatever the fallback seed
-  // was at first render. Subscribe to the same eyewall:*-season-updated
-  // event those modules already dispatch, same pattern PWHLPlayersView.jsx
-  // uses for its own season state.
+  function seasonFor(s) {
+    return s === 'pwhl' ? PWHL_CURRENT_SEASON : s === 'ahl' ? AHL_CURRENT_SEASON : CURRENT_SEASON;
+  }
+  function eventNameFor(s) {
+    return s === 'pwhl' ? 'eyewall:pwhl-season-updated' : s === 'ahl' ? 'eyewall:ahl-season-updated' : 'eyewall:nhl-season-updated';
+  }
+
+  // CURRENT_SEASON/PWHL_CURRENT_SEASON/AHL_CURRENT_SEASON are `let` bindings
+  // updated in place by an async fetch at module load (see
+  // teamConfig.js/pwhlConfig.js/ahlConfig.js). Reading them once during
+  // render isn't enough -- SportProvider holds no other state, so nothing
+  // re-renders it when that update lands, and `currentSeason` would
+  // otherwise freeze at whatever the fallback seed was at first render.
+  // Subscribe to the same eyewall:*-season-updated event those modules
+  // already dispatch, same pattern PWHLPlayersView.jsx uses for its own
+  // season state.
   //
-  // `useState`'s initial value only runs once, at first mount -- now that
-  // `pwhl` is route-derived (can change on client-side navigation between
-  // an NHL and a PWHL route, without a full reload, unlike before this
-  // fix when `pwhl` was static per mount), `season` needs to actively
-  // RE-SEED whenever `pwhl` flips, not just once. The effect below does
-  // that explicitly on every `pwhl` change (including the initial one),
-  // rather than relying on `useState`'s initializer alone.
-  const [season, setSeason] = useState(pwhl ? PWHL_CURRENT_SEASON : CURRENT_SEASON);
+  // `useState`'s initial value only runs once, at first mount -- `sport` is
+  // route-derived (can change on client-side navigation between sports
+  // without a full reload), so `season` needs to actively RE-SEED whenever
+  // `sport` changes, not just once. The effect below does that explicitly
+  // on every `sport` change (including the initial one), rather than
+  // relying on `useState`'s initializer alone.
+  const [season, setSeason] = useState(seasonFor(sport));
   useEffect(() => {
-    setSeason(pwhl ? PWHL_CURRENT_SEASON : CURRENT_SEASON);
-    const eventName = pwhl ? 'eyewall:pwhl-season-updated' : 'eyewall:nhl-season-updated';
+    setSeason(seasonFor(sport));
+    const eventName = eventNameFor(sport);
     function handleSeasonUpdate(e) { setSeason(e.detail); }
     window.addEventListener(eventName, handleSeasonUpdate);
     return () => window.removeEventListener(eventName, handleSeasonUpdate);
-  }, [pwhl]);
+  }, [sport]);
 
   const value = {
     sport,
     setSport: setSportAndReload,
-    allTeams: pwhl ? PWHL_TEAMS : ALL_TEAMS,
+    allTeams: pwhl ? PWHL_TEAMS : ahl ? AHL_TEAMS : ALL_TEAMS,
     currentSeason: season,
     isPWHL: pwhl,
-    isNHL: !pwhl,
+    isNHL: !pwhl && !ahl,
+    isAHL: ahl,
   };
 
   return (

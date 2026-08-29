@@ -22,6 +22,7 @@
 import { supabaseAuth } from './supabaseAuth';
 import { ALL_TEAMS } from './teamConfig';
 import { PWHL_TEAM_MAP } from './pwhlConfig';
+import { AHL_TEAM_MAP } from './ahlConfig';
 
 const UPSERT_TIMEOUT_MS = 5000;
 const FETCH_TIMEOUT_MS = 5000;
@@ -33,6 +34,11 @@ function getLocalSelection() {
       const raw = localStorage.getItem('eyewall:pwhl_team');
       const team = raw ? JSON.parse(raw) : null;
       return team?.abbr ? { sport: 'pwhl', abbr: team.abbr } : null;
+    }
+    if (sport === 'ahl') {
+      const raw = localStorage.getItem('eyewall:ahl_team');
+      const team = raw ? JSON.parse(raw) : null;
+      return team?.abbr ? { sport: 'ahl', abbr: team.abbr } : null;
     }
     const raw = localStorage.getItem('eyewall:team');
     const team = raw ? JSON.parse(raw) : null;
@@ -50,6 +56,13 @@ function applyLocalSelection({ sport, abbr }) {
     if (!team) return false;
     localStorage.setItem('eyewall:sport', 'pwhl');
     localStorage.setItem('eyewall:pwhl_team', JSON.stringify(team));
+    return true;
+  }
+  if (sport === 'ahl') {
+    const team = AHL_TEAM_MAP[abbr];
+    if (!team) return false;
+    localStorage.setItem('eyewall:sport', 'ahl');
+    localStorage.setItem('eyewall:ahl_team', JSON.stringify(team));
     return true;
   }
   const team = ALL_TEAMS.find((t) => t.abbr === abbr);
