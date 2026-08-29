@@ -59,6 +59,56 @@ export async function fetchAHLShots(teamId = AHL_TEAM_ID, season = AHL_CURRENT_S
   return workerFetch(`/ahl/shots?teamId=${teamId}&season=${season}`);
 }
 
+export async function fetchAHLLastGame(teamId = AHL_TEAM_ID, season = AHL_CURRENT_SEASON) {
+  if (!teamId) return null;
+  return workerFetch(`/ahl/lastgame?teamId=${teamId}&season=${season}`);
+}
+
+/** Per-player box score (skaters + goalies) for a completed game.
+ * Shape: { skaters: [...], goalies: [...] } — no hits/faceoff/blocked-
+ * shots/skater-TOI fields, unlike fetchPWHLGameBox (see eyewall-pipeline's
+ * ahl_game_boxscore.py for why). */
+export async function fetchAHLGameBox(gameId) {
+  if (!gameId) return null;
+  const data = await workerFetch(`/ahl/game-box?gameId=${gameId}`);
+  if (!data) return null;
+  return {
+    skaters: Array.isArray(data.skaters) ? data.skaters : [],
+    goalies: Array.isArray(data.goalies) ? data.goalies : [],
+  };
+}
+
+/** HockeyTech gameSummary enrichment (period scoring + MVPs/three stars)
+ * for a completed game. Shape: { periods, mvps, venue, officials, coaches,
+ * homeTeamStats, visitingTeamStats } — team stats already have hits/
+ * faceoff fields stripped server-side (see eyewall-poller's ahl.js). */
+export async function fetchAHLGameSummary(gameId) {
+  if (!gameId) return null;
+  return workerFetch(`/ahl/summary?gameId=${gameId}`);
+}
+
+/** Pre-game preview for an upcoming AHL game — raw HockeyTech
+ * gameCenterPreview passthrough, same as fetchPWHLPreview. Real field-name
+ * differences from PWHL's shape (see AHLGamePreviewPopup.jsx's comments):
+ * teamRecord.overall/past_10_games instead of overallRecord/last10Record,
+ * longestStreaks/leadingScorers nested per-team instead of top-level,
+ * powerPlayStats/penaltyKillStats instead of powerPlay/penaltyKill,
+ * previousMeetings instead of seasonSeries. */
+export async function fetchAHLPreview(gameId) {
+  if (!gameId) return null;
+  return workerFetch(`/ahl/preview?gameId=${gameId}`);
+}
+
+/** Team-level win prediction (heuristic + AI narrative) for an upcoming
+ * AHL game. No corsiForPct field at all -- ahl_team_seasons has no shot-
+ * attempts data source (see eyewall-poller's ahl.js route comment).
+ * Shape: { gameId, homeAbbr, awayAbbr, isPlayoff, homeWinPct, awayWinPct,
+ *          expHome, expAway, narrative, h2hRecord, homeStreak, awayStreak } */
+export async function fetchAHLPrediction(gameId) {
+  if (!gameId) return null;
+  return workerFetch(`/ahl/prediction?gameId=${gameId}`);
+}
+
 /** Season-aggregate SOG (car vs. opp) + PP%/PK% for the Shot Map's "All N"
  * summary card. No hits/blocked/faceoff/penalties sections, unlike PWHL's
  * equivalent — there's no data source for those in AHL's feed. */

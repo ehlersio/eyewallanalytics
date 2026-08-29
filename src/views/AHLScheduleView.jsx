@@ -1,16 +1,27 @@
 // views/AHLScheduleView.jsx
-// A deliberately simpler schedule view than PWHLScheduleView/ScheduleView --
-// a plain chronological game list, no calendar grid, no game popups, no
-// prediction tracking, no odds. Those all depend on infrastructure not
-// built for AHL in this pass (game-stats/preview popups, a prediction
-// store, live tracking) -- see AHL_BUILD_BRIEF.md's scope notes. Can grow
-// into the fuller pattern later if AHL gets that infrastructure.
-import { useState, useMemo, useEffect } from 'react';
+// AHL/PWHL parity Phase 3: schedule popups + calendar + predictions added.
+// Deliberately simpler than PWHLScheduleView.jsx in two ways, both real
+// scope cuts:
+//   - No separate Regular Season/Playoffs tab -- AHL_SEASONS already lists
+//     "2026 Playoffs" as its own selectable season tab (matching
+//     AHLPlayersView.jsx's existing pattern), so there's no second nested
+//     tab layer the way PWHL's Reg/Playoffs split needs.
+//   - No round-based playoff bracket view (PWHLPlayoffsTab's series/round
+//     grouping) -- AHL's Calder Cup format has up to 4 rounds vs PWHL's
+//     fixed 2, and that bracket logic was never verified against AHL's
+//     real format. Playoff games render in the same plain list/calendar
+//     as regular season, same "Bracket deferred" reasoning AHLLeagueView
+//     already documents for its own Bracket tab.
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatDate } from '../utils/formatters';
+import { formatDate as formatDateIntl } from '../utils/formatters';
 import { useFetch } from '../hooks/useFetch';
 import { fetchAHLSchedule, AHL_TEAM_CONFIG, AHL_TEAM_ID } from '../utils/ahlApi';
-import { AHL_CURRENT_SEASON, AHL_TEAM_BY_ID, getAHLTeamById } from '../utils/ahlConfig';
+import { AHL_CURRENT_SEASON, AHL_TEAM_BY_ID, AHL_SEASONS, getAHLTeamById } from '../utils/ahlConfig';
+import { recordAHLOutcome } from '../utils/ahlPredictionStore';
+import { AHLCalendarView } from '../components/AHLCalendarView';
+import AHLGameStatsPopup from '../components/AHLGameStatsPopup';
+import AHLGamePreviewPopup from '../components/AHLGamePreviewPopup';
 import TeamLogo from '../components/TeamLogo';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
@@ -19,11 +30,29 @@ const HEADER_WRAP_CLASSES = 'mb-[14px]';
 const VIEW_TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[20px] font-bold flex items-center gap-2 mb-[2px]';
 const SUB_CLASSES = 'text-[12px] text-[color:var(--text-muted)]';
 const EMPTY_STATE_CLASSES = 'text-center py-8 text-[13px] text-[color:var(--text-dim)]';
+const TABS_WRAP_CLASSES = 'flex border-b-[0.5px] border-[var(--border)] mx-[-14px] mb-[14px] px-[14px]';
+const TAB_BASE_CLASSES = 'flex-1 py-[10px] text-[13px] font-semibold bg-transparent border-0 border-b-2 cursor-pointer [transition:all_0.15s]';
+const TAB_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] border-b-transparent';
+const TAB_ACTIVE_CLASSES = 'text-[color:var(--red-bright)] border-b-[var(--red-bright)]';
+function tabClasses(isActive) {
+  return `${TAB_BASE_CLASSES} ${isActive ? TAB_ACTIVE_CLASSES : TAB_INACTIVE_CLASSES}`;
+}
+const VM_BTN_BASE = 'py-1 px-2.5 rounded-[14px] text-[14px] border-none cursor-pointer [transition:all_0.15s] leading-none';
+function vmBtnClasses(active) {
+  return active
+    ? `${VM_BTN_BASE} bg-[var(--bg4)] text-[color:var(--text)] shadow-[0_1px_4px_rgba(0,0,0,0.3)]`
+    : `${VM_BTN_BASE} bg-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text)]`;
+}
 
 function dayOfWeek(dateStr) {
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return '';
-  return new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(d);
+  return formatDateIntl(d, { weekday: 'short' });
+}
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  if (Number.isNaN(d.getTime())) return dateStr;
+  return formatDateIntl(d, { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
 export default function AHLScheduleView() {
@@ -31,12 +60,19 @@ export default function AHLScheduleView() {
   const team = AHL_TEAM_CONFIG;
   const teamId = AHL_TEAM_ID;
   const abbr = team?.abbr || '—';
+  const color = team?.displayColor || 'var(--text-dim)';
 
-  // Same live-season-update race/fix as the other AHL views -- see
-  // AHLShotMapView.jsx's comment.
   const [season, setSeason] = useState(AHL_CURRENT_SEASON);
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'calendar'
+  const [popup, setPopup] = useState(null);
+  const [calMonth, setCalMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+
+  const userPickedSeason = useRef(false);
   useEffect(() => {
-    function handleSeasonUpdate(e) { setSeason(e.detail); }
+    function handleSeasonUpdate(e) { if (!userPickedSeason.current) setSeason(e.detail); }
     window.addEventListener('eyewall:ahl-season-updated', handleSeasonUpdate);
     return () => window.removeEventListener('eyewall:ahl-season-updated', handleSeasonUpdate);
   }, []);
@@ -50,6 +86,23 @@ export default function AHLScheduleView() {
     if (!data) return [];
     return [...data].sort((a, b) => new Date(a.game_date) - new Date(b.game_date));
   }, [data]);
+
+  // Auto-record prediction outcomes for any completed games --
+  // AHLGamePreviewPopup.jsx saves the prediction when a user opens a
+  // game's preview; this fills in the actual outcome once that game is
+  // Final, keyed by the same game_id. Mirrors PWHLScheduleView.jsx's
+  // identical effect.
+  useEffect(() => {
+    if (!teamId) return;
+    games.filter(g => g.game_state === 'Final').forEach(g => {
+      const isHomeGame = g.home_team_id === teamId;
+      const teamActual = isHomeGame ? g.home_score : g.away_score;
+      const oppActual  = isHomeGame ? g.away_score : g.home_score;
+      if (teamActual != null && oppActual != null && g.game_id) {
+        recordAHLOutcome(g.game_id, teamActual, oppActual);
+      }
+    });
+  }, [games, teamId]);
 
   if (!abbr || !teamId) {
     return (
@@ -71,18 +124,49 @@ export default function AHLScheduleView() {
         <p className={SUB_CLASSES}>{AHL_TEAM_BY_ID[teamId]?.displayName}</p>
       </div>
 
+      <div className={TABS_WRAP_CLASSES}>
+        {AHL_SEASONS.map(s => (
+          <button key={s.id} className={tabClasses(season === s.id)}
+            onClick={() => { userPickedSeason.current = true; setSeason(s.id); }}>{s.label}</button>
+        ))}
+        <div className="view-mode-toggle flex gap-0.5 bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)] rounded-[20px] p-[3px] shrink-0 ml-2 self-center">
+          <button className={vmBtnClasses(viewMode === 'list')}
+            onClick={() => setViewMode('list')} title={t('scheduleView.viewToggle.cardView')}>≡</button>
+          <button className={vmBtnClasses(viewMode === 'calendar')}
+            onClick={() => setViewMode('calendar')} title={t('scheduleView.viewToggle.calendarView')}>📅</button>
+        </div>
+      </div>
+
       {loading && <LoadingCards count={8} />}
       {!loading && games.length === 0 && (
         <div className={EMPTY_STATE_CLASSES}>{t('ahlScheduleView.empty')}</div>
       )}
-      {!loading && games.map((g) => (
-        <GameCard key={g.game_id} game={g} teamId={teamId} abbr={abbr} />
+      {!loading && games.length > 0 && viewMode === 'list' && games.map((g) => (
+        <GameCard key={g.game_id} game={g} teamId={teamId} abbr={abbr} onClick={() => setPopup(g)} />
       ))}
+      {!loading && games.length > 0 && viewMode === 'calendar' && (
+        <AHLCalendarView
+          games={games}
+          calMonth={calMonth}
+          setCalMonth={setCalMonth}
+          onGamePopup={setPopup}
+          teamId={teamId}
+        />
+      )}
+
+      {/* Game detail popup -- Final games get the box-score popup,
+          upcoming games get the pre-game preview popup. */}
+      {popup && popup.game_state === 'Final' && (
+        <AHLGameStatsPopup game={popup} teamId={teamId} abbr={abbr} color={color} onClose={() => setPopup(null)} />
+      )}
+      {popup && popup.game_state !== 'Final' && (
+        <AHLGamePreviewPopup game={popup} teamId={teamId} abbr={abbr} color={color} onClose={() => setPopup(null)} />
+      )}
     </div>
   );
 }
 
-function GameCard({ game: g, teamId, abbr }) {
+function GameCard({ game: g, teamId, abbr, onClick }) {
   const { t } = useTranslation();
   const isHome = g.home_team_id === teamId;
   const oppId = isHome ? g.away_team_id : g.home_team_id;
@@ -93,7 +177,7 @@ function GameCard({ game: g, teamId, abbr }) {
   const won = isFinal && my > op;
 
   return (
-    <div className="card mb-2" style={{ padding: '12px 14px' }}>
+    <div className="card mb-2 cursor-pointer [transition:border-color_0.15s] hover:border-[color:var(--border-2)]" style={{ padding: '12px 14px' }} onClick={onClick}>
       <div className="flex items-center gap-2 mb-1.5">
         <span className="text-[11px] text-[color:var(--text-muted)]">{dayOfWeek(g.game_date)} {formatDate(g.game_date)}</span>
         {isFinal && (
@@ -118,6 +202,9 @@ function GameCard({ game: g, teamId, abbr }) {
         <span className="text-[16px] font-bold text-[color:var(--text-muted)]">{oppAbbr}</span>
         <TeamLogo abbr={oppAbbr} sport="ahl" size={20} />
       </div>
+      {!isFinal && (
+        <span className="text-[10px] text-[color:var(--text-dim)] mt-1.5 inline-block">{t('pwhlScheduleView.upcomingCard.tapForPreview')}</span>
+      )}
     </div>
   );
 }
