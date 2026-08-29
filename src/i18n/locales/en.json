@@ -514,6 +514,36 @@
     "colGoalie": "Goalie",
     "tableHint": "Tap a row to open player profile · Sort by any column"
   },
+  "ahlPlayersView": {
+    "noTeamSelected": "No AHL team selected.",
+    "subtitle": "Season stats",
+    "skatersToggle": "Skaters",
+    "defencemen": "Defencemen",
+    "failedToLoadRoster": "Failed to load roster.",
+    "noRosterData": "No roster data available.",
+    "emptySkaterStats": "No skater stats for {{season}}.",
+    "emptyGoalieStats": "No goalie stats for {{season}}.",
+    "colGoalie": "Goalie",
+    "tableHint": "Sort by any column",
+    "footerHintSource": "Source: HockeyTech / AHL"
+  },
+  "ahlScheduleView": {
+    "empty": "No games found."
+  },
+  "ahlLeagueView": {
+    "standingsEmpty": "No standings data available.",
+    "leadersEmpty": "No leader data available."
+  },
+  "ahlShotMapView": {
+    "subtitle": "Season shot map",
+    "goals": "Goals",
+    "shotsOnGoal": "Shots on Goal",
+    "ppPct": "PP%",
+    "pkPct": "PK%",
+    "sogFor": "SOG For",
+    "sogAgainst": "SOG Against",
+    "noShots": "No shot data available for this season."
+  },
   "common": {
     "loading": "Loading…",
     "close": "Close",
@@ -1743,7 +1773,8 @@
     "settingsHint": "You can change this any time from settings.",
     "nhlDescription": "All 32 teams · Full analytics",
     "pwhlDescription": "All {{count}} teams · Full analytics",
-    "disclaimer": "EyeWall Analytics is not affiliated with, endorsed by, or sponsored by the National Hockey League (NHL), the Professional Women's Hockey League (PWHL), or any of their teams. All NHL and PWHL team names, logos, and trademarks are the property of their respective owners. Statistics and data are sourced from publicly available APIs and are provided for informational purposes only.",
+    "ahlDescription": "All {{count}} teams · Full analytics",
+    "disclaimer": "EyeWall Analytics is not affiliated with, endorsed by, or sponsored by the National Hockey League (NHL), the Professional Women's Hockey League (PWHL), the American Hockey League (AHL), or any of their teams. All NHL, PWHL, and AHL team names, logos, and trademarks are the property of their respective owners. Statistics and data are sourced from publicly available APIs and are provided for informational purposes only.",
     "back": "← Back",
     "chooseTeam": "Choose your team",
     "pwhlExpansionLabel": "2026–27 Expansion",

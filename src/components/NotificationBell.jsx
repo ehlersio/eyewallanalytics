@@ -6,6 +6,7 @@ import { TEAM_CONFIG } from '../utils/teamConfig';
 import { useSport } from '../utils/SportContext';
 import { useAuth } from '../utils/AuthContext';
 import { PWHL_TEAM_CONFIG } from '../utils/pwhlApi';
+import { AHL_TEAM_CONFIG } from '../utils/ahlApi';
 import { getTheme, setTheme } from '../utils/themeConfig';
 import { getLocale, setLocale } from '../utils/localeConfig';
 import { upsertLocale } from '../utils/localeSync';
@@ -119,9 +120,9 @@ export default function NotificationBell() {
   const { t }                   = useTranslation();
   const [open, setOpen]         = useState(false);
   const [showPrefs, setShowPrefs] = useState(false);
-  const { isPWHL }              = useSport();
+  const { isPWHL, isAHL }        = useSport();
   const { user }                 = useAuth();
-  const activeTeam              = isPWHL ? PWHL_TEAM_CONFIG : TEAM_CONFIG;
+  const activeTeam              = isPWHL ? PWHL_TEAM_CONFIG : isAHL ? AHL_TEAM_CONFIG : TEAM_CONFIG;
   const activeTeamAbbr          = activeTeam?.abbr || TEAM_CONFIG.abbr;
   const activeTeamName          = activeTeam?.displayName || TEAM_CONFIG.displayName;
   const [theme, setThemeState]  = useState(getTheme);
@@ -146,6 +147,7 @@ export default function NotificationBell() {
     localStorage.removeItem('eyewall:sport');
     localStorage.removeItem('eyewall:team');
     localStorage.removeItem('eyewall:pwhl_team');
+    localStorage.removeItem('eyewall:ahl_team');
     // Signed-in users get their favorite team reconciled from the server on
     // every load (see favoriteTeamSync.js) -- without this flag, clearing
     // local storage here looks identical to "fresh device, no opinion yet"
@@ -172,7 +174,11 @@ export default function NotificationBell() {
     if (user?.id) upsertLocale(user.id, next);
   };
 
-  const leagueTeamKey = isPWHL ? `PWHL:${activeTeamAbbr}` : `NHL:${activeTeamAbbr}`;
+  // AHL has no live-game-tracking backend yet (see AHL_BUILD_BRIEF.md) --
+  // this key is still computed for correctness (so the UI shows the right
+  // team) but subscribing will have nothing to notify about server-side
+  // until that exists.
+  const leagueTeamKey = isPWHL ? `PWHL:${activeTeamAbbr}` : isAHL ? `AHL:${activeTeamAbbr}` : `NHL:${activeTeamAbbr}`;
 
   const handleToggle = async () => {
     if (subscribed) {
@@ -225,7 +231,7 @@ export default function NotificationBell() {
           <div className={MY_TEAM_CLASSES}>
             <div className={EVENT_LABEL_CLASSES}>🏒 {t('settings.myTeam')}</div>
             <div className={TEAM_ROW_CLASSES}>
-              <TeamLogo abbr={activeTeamAbbr} size={28} sport={isPWHL ? 'pwhl' : 'nhl'} />
+              <TeamLogo abbr={activeTeamAbbr} size={28} sport={isPWHL ? 'pwhl' : isAHL ? 'ahl' : 'nhl'} />
               <span className={TEAM_NAME_CLASSES}>{activeTeamName}</span>
               <button className={CHANGE_TEAM_BTN_CLASSES} onClick={handleChangeTeam}>
                 {t('settings.change')}

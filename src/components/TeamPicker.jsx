@@ -12,6 +12,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ALL_TEAMS, setTeamConfig } from '../utils/teamConfig'
 import { PWHL_TEAMS } from '../utils/pwhlConfig'
+import { AHL_TEAMS, ahlLogoUrl } from '../utils/ahlConfig'
 import { useAuth } from '../utils/AuthContext'
 import { upsertFavoriteTeam } from '../utils/favoriteTeamSync'
 import TeamLogo from './TeamLogo'
@@ -92,9 +93,19 @@ const NHL_DIVISIONS = [
 const PWHL_ACTIVE_ABBRS    = PWHL_TEAMS.filter(t => !t.comingSoon).map(t => t.abbr);
 const PWHL_EXPANSION_ABBRS = PWHL_TEAMS.filter(t => t.comingSoon).map(t => t.abbr);
 
+// ── AHL grouping ──────────────────────────────────────────────────────────────
+// AHL_DIVISIONS derived from ahlConfig.js's own `division` field, same
+// "don't hand-duplicate the grouping" reasoning as PWHL_ACTIVE_ABBRS above.
+const AHL_DIVISION_NAMES = ['Atlantic', 'North', 'Central', 'Pacific'];
+const AHL_DIVISIONS = AHL_DIVISION_NAMES.map(name => ({
+  name,
+  teams: AHL_TEAMS.filter(t => t.division === name).map(t => t.abbr),
+}));
+
 // ── Lookups ───────────────────────────────────────────────────────────────────
 const nhlTeamByAbbr  = Object.fromEntries(ALL_TEAMS.map(t => [t.abbr, t]));
 const pwhlTeamByAbbr = Object.fromEntries(PWHL_TEAMS.map(t => [t.abbr, t]));
+const ahlTeamByAbbr  = Object.fromEntries(AHL_TEAMS.map(t => [t.abbr, t]));
 
 // ── Sport step ────────────────────────────────────────────────────────────────
 function SportStep({ onPickSport }) {
@@ -111,6 +122,14 @@ function SportStep({ onPickSport }) {
       id: 'pwhl',
       logo: '/pwhl-logo.svg',
       description: t('teamPicker.pwhlDescription', { count: PWHL_ACTIVE_ABBRS.length }),
+    },
+    {
+      // No hosted AHL league wordmark exists to link to the way NHL/PWHL's
+      // do (checked assets.leaguestat.com -- only per-team logos exist,
+      // confirmed 2026-08-29) -- text-only tile below instead of an <img>.
+      id: 'ahl',
+      logo: null,
+      description: t('teamPicker.ahlDescription', { count: AHL_TEAMS.length }),
     },
   ];
 
@@ -137,11 +156,15 @@ function SportStep({ onPickSport }) {
               onMouseLeave={() => setHovered(null)}
               aria-label={id.toUpperCase()}
             >
-              <img
-                src={logo}
-                alt={id.toUpperCase()}
-                className={SPORT_LOGO_CLASSES}
-              />
+              {logo ? (
+                <img
+                  src={logo}
+                  alt={id.toUpperCase()}
+                  className={SPORT_LOGO_CLASSES}
+                />
+              ) : (
+                <span className="text-[1.5rem] font-bold tracking-[0.04em] text-[color:var(--text)]">{id.toUpperCase()}</span>
+              )}
               <span className={SPORT_DESC_CLASSES}>{description}</span>
             </button>
           );
@@ -281,6 +304,61 @@ function PWHLTeamStep({ onBack, onSelect }) {
   );
 }
 
+// ── AHL team grid ─────────────────────────────────────────────────────────────
+// Uses AHL's own hosted team-logo CDN (ahlLogoUrl) rather than TeamLogo's
+// abbr-keyed local-asset lookup -- TeamLogo has no AHL branch (see that
+// component's own scope note) and adding 32 local logo files/mappings for
+// a placeholder-color pass isn't warranted yet (see ahlConfig.js's
+// AHL_PLACEHOLDER_COLOR comment) -- a plain <img> against the real logo
+// URL is simpler and already what theahl.com's own site does.
+function AHLTeamStep({ onBack, onSelect }) {
+  const { t } = useTranslation();
+  const [hovered, setHovered] = useState(null);
+
+  return (
+    <>
+      <div className={HEADER_CLASSES}>
+        <button className={BACK_CLASSES} onClick={onBack}>{t('teamPicker.back')}</button>
+        <h1 className={TITLE_CLASSES}>{t('teamPicker.chooseTeam')}</h1>
+        <p className={SUB_CLASSES}>{t('teamPicker.settingsHint')}</p>
+      </div>
+      <div className={DIVISIONS_CLASSES}>
+        {AHL_DIVISIONS.map(division => (
+          <div key={division.name}>
+            <span className={DIVISION_LABEL_CLASSES}>{division.name}</span>
+            <div className={GRID_CLASSES}>
+              {division.teams.map(abbr => {
+                const team  = ahlTeamByAbbr[abbr];
+                const isHov = hovered === abbr;
+                if (!team) return null;
+                return (
+                  <button
+                    key={abbr}
+                    className={TILE_CLASSES}
+                    style={{
+                      background:  isHov ? 'var(--bg2)' : 'transparent',
+                      borderColor: isHov ? 'var(--text-dim)' : 'var(--border)',
+                    }}
+                    onClick={() => onSelect(abbr)}
+                    onMouseEnter={() => setHovered(abbr)}
+                    onMouseLeave={() => setHovered(null)}
+                    aria-label={team.displayName}
+                  >
+                    <img src={ahlLogoUrl(team.teamId)} alt={abbr} width={48} height={48} className="object-contain" />
+                    <span className={ABBR_CLASSES}>{abbr}</span>
+                    <span className={NAME_CLASSES}>{team.shortName}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ height: 48 }} aria-hidden="true" />
+    </>
+  );
+}
+
 // ── Root ──────────────────────────────────────────────────────────────────────
 export default function TeamPicker({ onSelect }) {
   const [step, setStep]   = useState('sport'); // 'sport' | 'team'
@@ -335,6 +413,14 @@ export default function TeamPicker({ onSelect }) {
     onSelect?.(abbr);
   }
 
+  async function handleAHLSelect(abbr) {
+    localStorage.setItem('eyewall:sport', 'ahl');
+    localStorage.setItem('eyewall:ahl_team', JSON.stringify(ahlTeamByAbbr[abbr]));
+    localStorage.removeItem('eyewall:team-change-pending');
+    await syncIfSignedIn('ahl', abbr);
+    onSelect?.(abbr);
+  }
+
   return (
     <div className={OVERLAY_CLASSES}>
       <div className={INNER_CLASSES}>
@@ -346,6 +432,9 @@ export default function TeamPicker({ onSelect }) {
         )}
         {step === 'team' && sport === 'pwhl' && (
           <PWHLTeamStep onBack={handleBack} onSelect={handlePWHLSelect} />
+        )}
+        {step === 'team' && sport === 'ahl' && (
+          <AHLTeamStep onBack={handleBack} onSelect={handleAHLSelect} />
         )}
       </div>
     </div>

@@ -514,6 +514,36 @@
     "colGoalie": "Gardienne",
     "tableHint": "Touchez une ligne pour ouvrir le profil de la joueuse · Triez selon n'importe quelle colonne"
   },
+  "ahlPlayersView": {
+    "noTeamSelected": "Aucune équipe de la LAH sélectionnée.",
+    "subtitle": "Statistiques de la saison",
+    "skatersToggle": "Patineurs",
+    "defencemen": "Défenseurs",
+    "failedToLoadRoster": "Échec du chargement de l'effectif.",
+    "noRosterData": "Aucune donnée d'effectif disponible.",
+    "emptySkaterStats": "Aucune statistique de patineurs pour {{season}}.",
+    "emptyGoalieStats": "Aucune statistique de gardiens pour {{season}}.",
+    "colGoalie": "Gardien",
+    "tableHint": "Triez selon n'importe quelle colonne",
+    "footerHintSource": "Source : HockeyTech / LAH"
+  },
+  "ahlScheduleView": {
+    "empty": "Aucun match trouvé."
+  },
+  "ahlLeagueView": {
+    "standingsEmpty": "Aucune donnée de classement disponible.",
+    "leadersEmpty": "Aucune donnée de meneurs disponible."
+  },
+  "ahlShotMapView": {
+    "subtitle": "Carte des tirs de la saison",
+    "goals": "Buts",
+    "shotsOnGoal": "Tirs au but",
+    "ppPct": "% AN",
+    "pkPct": "% DÉS",
+    "sogFor": "Tirs pour",
+    "sogAgainst": "Tirs contre",
+    "noShots": "Aucune donnée de tirs disponible pour cette saison."
+  },
   "common": {
     "loading": "Chargement…",
     "close": "Fermer",
@@ -1743,7 +1773,8 @@
     "settingsHint": "Vous pouvez le modifier à tout moment depuis les paramètres.",
     "nhlDescription": "Les 32 équipes de la LNH · Analyses complètes",
     "pwhlDescription": "Les {{count}} équipes · Analyses complètes",
-    "disclaimer": "EyeWall Analytics n'est affilié à, approuvé par, ni commandité par la Ligue nationale de hockey (LNH), la Ligue professionnelle de hockey féminin (LPHF), ni aucune de leurs équipes. Tous les noms d'équipes, logos et marques de commerce de la LNH et de la LPHF sont la propriété de leurs détenteurs respectifs. Les statistiques et les données proviennent d'API accessibles au public et sont fournies à titre informatif seulement.",
+    "ahlDescription": "Les {{count}} équipes · Analyses complètes",
+    "disclaimer": "EyeWall Analytics n'est affilié à, approuvé par, ni commandité par la Ligue nationale de hockey (LNH), la Ligue professionnelle de hockey féminin (LPHF), la Ligue américaine de hockey (LAH), ni aucune de leurs équipes. Tous les noms d'équipes, logos et marques de commerce de la LNH, de la LPHF et de la LAH sont la propriété de leurs détenteurs respectifs. Les statistiques et les données proviennent d'API accessibles au public et sont fournies à titre informatif seulement.",
     "back": "← Retour",
     "chooseTeam": "Choisissez votre équipe",
     "pwhlExpansionLabel": "Expansion 2026–2027",
