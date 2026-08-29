@@ -558,6 +558,15 @@
       "legendFootnoteShort": "— 50% ref"
     }
   },
+  "ahlPlayerPopup": {
+    "heatMap": {
+      "goalieUnavailable": "Goalie heat map not available",
+      "goalieUnavailableSub": "AHL's play-by-play doesn't track which goalie was in net for each goal, so a heat map here would under-count goals allowed."
+    },
+    "recentForm": {
+      "legendGoalie": "W = win · L = loss (AHL's data doesn't distinguish OT/shootout losses)"
+    }
+  },
   "ahlPlayersView": {
     "noTeamSelected": "No AHL team selected.",
     "subtitle": "Season stats",
