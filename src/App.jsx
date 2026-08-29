@@ -29,14 +29,15 @@ const PWHLPlayersView  = lazy(() => import('./views/PWHLPlayersView'));
 const PWHLTeamView     = lazy(() => import('./views/PWHLTeamView'));
 const PWHLNewsView     = lazy(() => import('./views/PWHLNewsView'));
 
-// AHL routes -- no AHLNewsView yet (no news source built for AHL in this
-// pass; see AHL parity plan's Phase 5). AHLTeamView added (parity plan
-// Phase 1).
+// AHL routes -- AHLTeamView added (parity plan Phase 1), AHLNewsView
+// added (parity plan Phase 5, News tab only -- no Milestones/Trivia/
+// Transactions, see AHLNewsView.jsx's own header comment for why).
 const AHLShotMapView  = lazy(() => import('./views/AHLShotMapView'));
 const AHLLeagueView   = lazy(() => import('./views/AHLLeagueView'));
 const AHLScheduleView = lazy(() => import('./views/AHLScheduleView'));
 const AHLPlayersView  = lazy(() => import('./views/AHLPlayersView'));
 const AHLTeamView     = lazy(() => import('./views/AHLTeamView'));
+const AHLNewsView     = lazy(() => import('./views/AHLNewsView'));
 
 const DevReplayView = import.meta.env.DEV
   ? lazy(() => import('./views/DevReplayView'))
@@ -89,6 +90,7 @@ function PageTracker() {
       '/ahl/players':   'AHL Players',
       '/ahl/schedule':  'AHL Schedule',
       '/ahl/team':      'AHL Team',
+      '/ahl/news':      'AHL News',
     };
     capture('$pageview', {
       path:      location.pathname,
@@ -164,6 +166,7 @@ export default function App() {
                       <Route path="/ahl/league"   element={<AHLLeagueView />} />
                       <Route path="/ahl/players"  element={<AHLPlayersView />} />
                       <Route path="/ahl/schedule" element={<AHLScheduleView />} />
+                      <Route path="/ahl/news"     element={<AHLNewsView />} />
                       {import.meta.env.DEV && DevReplayView && (
                         <Route path="/dev" element={<DevReplayView />} />
                       )}
