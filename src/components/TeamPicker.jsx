@@ -330,6 +330,7 @@ function AHLTeamStep({ onBack, onSelect }) {
             <div className={GRID_CLASSES}>
               {division.teams.map(abbr => {
                 const team  = ahlTeamByAbbr[abbr];
+                const color = team?.displayColor || '#888';
                 const isHov = hovered === abbr;
                 if (!team) return null;
                 return (
@@ -337,8 +338,9 @@ function AHLTeamStep({ onBack, onSelect }) {
                     key={abbr}
                     className={TILE_CLASSES}
                     style={{
-                      background:  isHov ? 'var(--bg2)' : 'transparent',
-                      borderColor: isHov ? 'var(--text-dim)' : 'var(--border)',
+                      '--team-color': color,
+                      background:  isHov ? `${color}22` : 'transparent',
+                      borderColor: isHov ? color : 'var(--border)',
                     }}
                     onClick={() => onSelect(abbr)}
                     onMouseEnter={() => setHovered(abbr)}
