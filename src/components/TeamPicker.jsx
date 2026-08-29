@@ -124,11 +124,12 @@ function SportStep({ onPickSport }) {
       description: t('teamPicker.pwhlDescription', { count: PWHL_ACTIVE_ABBRS.length }),
     },
     {
-      // No hosted AHL league wordmark exists to link to the way NHL/PWHL's
-      // do (checked assets.leaguestat.com -- only per-team logos exist,
-      // confirmed 2026-08-29) -- text-only tile below instead of an <img>.
+      // AHL's own asset CDN (assets.leaguestat.com) only hosts per-team
+      // logos, no league wordmark -- self-hosted here instead, same
+      // pattern as pwhl-logo.svg (official AHL shield logo, Wikimedia
+      // Commons).
       id: 'ahl',
-      logo: null,
+      logo: '/ahl-logo.svg',
       description: t('teamPicker.ahlDescription', { count: AHL_TEAMS.length }),
     },
   ];
