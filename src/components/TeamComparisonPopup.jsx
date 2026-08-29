@@ -3,11 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { fetchTeamSeasonsCompare, fetchTeamSeasonsCompareTeams, fetchTeamHeadToHead } from '../utils/nhlApi';
 import { fetchPWHLTeamSeasonsCompare, fetchPWHLTeamSeasonsCompareTeams, fetchPWHLTeamHeadToHead } from '../utils/pwhlApi';
+import { fetchAHLTeamSeasonsCompare, fetchAHLTeamSeasonsCompareTeams, fetchAHLTeamHeadToHead } from '../utils/ahlApi';
 import { fetchComparisonSeasons } from '../utils/seasonClient';
 import { normalizeComparisonSeasons } from '../utils/seasonComparison';
 import { getTeamXgTrend } from '../utils/supabaseClient';
 import { ALL_TEAMS } from '../utils/teamConfig';
 import { PWHL_TEAMS } from '../utils/pwhlConfig';
+import { AHL_TEAMS, getAHLTeamById } from '../utils/ahlConfig';
 import SeasonComparisonPicker from './SeasonComparisonPicker';
 import SeasonOverlayChart from './SeasonOverlayChart';
 import TeamOpponentPicker from './TeamOpponentPicker';
@@ -161,7 +163,7 @@ function seasonRampColor(baseHex, index, total) {
 }
 
 // Resolves {abbr, color} for TeamLogo from whatever value a team is
-// keyed by -- an NHL abbr string directly, or a PWHL numeric team_id
+// keyed by -- an NHL abbr string directly, or a PWHL/AHL numeric team_id
 // (which <select> always round-trips as a string, so compared loosely
 // here rather than assuming a type). Used for both the popup's own team
 // and, once picked, its vs-Team opponent (Session 86 header redesign).
@@ -170,7 +172,17 @@ function resolveTeamLogo(league, value) {
     const t = PWHL_TEAMS.find(t => String(t.teamId) === String(value));
     return { abbr: t?.abbr, color: t?.displayColor };
   }
+  if (league === 'ahl') {
+    const t = getAHLTeamById(Number(value));
+    return { abbr: t?.abbr, color: t?.displayColor };
+  }
   return { abbr: value, color: undefined };
+}
+
+// TeamLogo's sport prop -- 'ahl'/'pwhl'/'nhl', not just the binary
+// pwhl-vs-nhl check this file used before AHL support existed.
+function sportFor(league) {
+  return league === 'ahl' ? 'ahl' : league === 'pwhl' ? 'pwhl' : 'nhl';
 }
 
 // Box-score fields only for v1 (Session 64 locked decision) -- Corsi/xG/WAR
@@ -231,7 +243,9 @@ function TeamCompareSeasonCard({ label, row }) {
 function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, opponentLabel, season, onSeasonChange }) {
   const { t } = useTranslation();
   const selectedSeason = season[0] ?? null;
-  const fetchFn = league === 'pwhl' ? fetchPWHLTeamSeasonsCompareTeams : fetchTeamSeasonsCompareTeams;
+  const fetchFn = league === 'ahl' ? fetchAHLTeamSeasonsCompareTeams
+    : league === 'pwhl' ? fetchPWHLTeamSeasonsCompareTeams
+    : fetchTeamSeasonsCompareTeams;
   const { data: rows, loading } = useFetch(
     () => (opponent && selectedSeason) ? fetchFn(teamValue, opponent, selectedSeason) : Promise.resolve([]),
     [teamValue, opponent, selectedSeason]
@@ -296,8 +310,8 @@ function HeadToHeadNarrativeCard({ league, h2h, teamADisplay, teamBDisplay }) {
     const workerUrl = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_WORKER_URL : null;
     if (!workerUrl) { setLoading(false); setFailed(true); return undefined; }
 
-    const path = league === 'pwhl'
-      ? '/pwhl/team-seasons/head-to-head/narrative'
+    const path = league === 'ahl' ? '/ahl/team-seasons/head-to-head/narrative'
+      : league === 'pwhl' ? '/pwhl/team-seasons/head-to-head/narrative'
       : '/team-seasons/head-to-head/narrative';
 
     fetch(`${workerUrl}${path}`, {
@@ -346,13 +360,17 @@ function HeadToHeadNarrativeCard({ league, h2h, teamADisplay, teamBDisplay }) {
 // Scoreboard layout (Session 88 follow-up, Option B of 3 mockups) -- leads
 // with both team logos and a big win-count split rather than a label/value
 // stat-row list, with recent-window and streak as secondary pills below.
-// "Since 2023-24" (not "All-time") because that's genuinely as far back as
-// this app's own game_log/pwhl_game_log goes for either league -- see
-// HEAD_TO_HEAD_BRIEF.md's historical-depth note. Don't relabel this
+// "Since 2023-24" (NHL/PWHL) / "Since 2025-26" (AHL) (not "All-time")
+// because that's genuinely as far back as each league's own game_log
+// goes in this app -- see HEAD_TO_HEAD_BRIEF.md's historical-depth note
+// (NHL/PWHL) and ahl_game_boxscore.py's docstring (AHL's earliest season
+// with real ingested data is season_id 90, 2025-26). Don't relabel this
 // "all-time" even though the underlying route has no season filter.
 function HeadToHeadPanel({ league, teamValue, opponent, teamLabel, opponentLabel }) {
   const { t } = useTranslation();
-  const fetchFn = league === 'pwhl' ? fetchPWHLTeamHeadToHead : fetchTeamHeadToHead;
+  const fetchFn = league === 'ahl' ? fetchAHLTeamHeadToHead
+    : league === 'pwhl' ? fetchPWHLTeamHeadToHead
+    : fetchTeamHeadToHead;
   const { data: h2h, loading } = useFetch(
     () => opponent ? fetchFn(teamValue, opponent) : Promise.resolve(null),
     [teamValue, opponent]
@@ -369,8 +387,7 @@ function HeadToHeadPanel({ league, teamValue, opponent, teamLabel, opponentLabel
   }
 
   const { totalMeetings, allTimeRecord, recentWindow, currentStreak, isThinSample } = h2h;
-  const isNhl = league === 'nhl';
-  const sport = isNhl ? 'nhl' : 'pwhl';
+  const sport = sportFor(league);
   const { abbr: teamAbbr } = resolveTeamLogo(league, teamValue);
   const { abbr: opponentAbbr } = resolveTeamLogo(league, opponent);
   const streakAbbr = currentStreak?.holder === 'A' ? teamAbbr : opponentAbbr;
@@ -378,7 +395,7 @@ function HeadToHeadPanel({ league, teamValue, opponent, teamLabel, opponentLabel
   return (
     <>
       <div className={H2H_SCOREBOARD_CLASSES}>
-        <div className={H2H_SCOREBOARD_LABEL_CLASSES}>{t('teamComparisonPopup.since2023')}</div>
+        <div className={H2H_SCOREBOARD_LABEL_CLASSES}>{t(league === 'ahl' ? 'teamComparisonPopup.since2025' : 'teamComparisonPopup.since2023')}</div>
         <div className={H2H_SCOREBOARD_TEAMS_CLASSES}>
           <div className={H2H_SCOREBOARD_TEAM_CLASSES}>
             <TeamLogo abbr={teamAbbr} sport={sport} size={36} />
@@ -425,7 +442,9 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
   // read "Team A vs Team B" once both are picked.
   const [vsTeamOpponent, setVsTeamOpponent] = useState(null);
   const [vsTeamSeason, setVsTeamSeason] = useState([]); // SeasonComparisonPicker-shaped: 0 or 1 value
-  const opponentOptions = league === 'pwhl'
+  const opponentOptions = league === 'ahl'
+    ? AHL_TEAMS.map(team => ({ value: team.teamId, label: team.displayName }))
+    : league === 'pwhl'
     ? PWHL_TEAMS.map(team => ({ value: team.teamId, label: team.displayName }))
     : ALL_TEAMS.map(team => ({ value: team.abbr, label: team.displayName }));
 
@@ -444,7 +463,9 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
     ? (opponentOptions.find(opt => String(opt.value) === String(vsTeamOpponent))?.label || t('teamComparisonPopup.opponentFallback'))
     : null;
 
-  const fetchFn = league === 'pwhl' ? fetchPWHLTeamSeasonsCompare : fetchTeamSeasonsCompare;
+  const fetchFn = league === 'ahl' ? fetchAHLTeamSeasonsCompare
+    : league === 'pwhl' ? fetchPWHLTeamSeasonsCompare
+    : fetchTeamSeasonsCompare;
   const { data: rows, loading } = useFetch(
     () => compareSeasons.length ? fetchFn(teamValue, compareSeasons) : Promise.resolve([]),
     [teamValue, compareSeasons.join(',')]
@@ -515,7 +536,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
   // spans all seasons, so it has no single season to show here.
   const headerSubtitle = showOpponentInHeader && teamSubMode === 'full' && vsTeamSeason[0]
     ? labelFor(vsTeamSeason[0])
-    : (showOpponentInHeader && teamSubMode === 'h2h' ? t('teamComparisonPopup.since2023') : teamLabel);
+    : (showOpponentInHeader && teamSubMode === 'h2h' ? t(league === 'ahl' ? 'teamComparisonPopup.since2025' : 'teamComparisonPopup.since2023') : teamLabel);
 
   return (
     <div className="popup-backdrop" onClick={onClose}>
@@ -523,13 +544,13 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
         <div className={PP_HEADER_CLASSES}>
           <div className={CVT_TEAM_LOGOS_CLASSES}>
             <div className={PP_PHOTO_WRAP_CLASSES}>
-              <TeamLogo abbr={logoAbbr} sport={league === 'pwhl' ? 'pwhl' : 'nhl'} size={44} color={logoColor} />
+              <TeamLogo abbr={logoAbbr} sport={sportFor(league)} size={44} color={logoColor} />
             </div>
             {showOpponentInHeader && (
               <>
                 <span className={CVT_VS_CLASSES}>{t('playerComparisonPopup.vs')}</span>
                 <div className={PP_PHOTO_WRAP_CLASSES}>
-                  <TeamLogo abbr={opponentLogoAbbr} sport={league === 'pwhl' ? 'pwhl' : 'nhl'} size={44} color={opponentLogoColor} />
+                  <TeamLogo abbr={opponentLogoAbbr} sport={sportFor(league)} size={44} color={opponentLogoColor} />
                 </div>
               </>
             )}

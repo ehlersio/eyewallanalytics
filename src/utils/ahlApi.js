@@ -64,6 +64,62 @@ export async function fetchAHLLastGame(teamId = AHL_TEAM_ID, season = AHL_CURREN
   return workerFetch(`/ahl/lastgame?teamId=${teamId}&season=${season}`);
 }
 
+/**
+ * Season-over-season team comparison, for TeamComparisonPopup's shared
+ * "vs Season" mode -- mirrors fetchPWHLTeamSeasonsCompare's normalized
+ * camelCase shape exactly so the same UI component renders any league's
+ * response with no per-league branch beyond the fetch call itself.
+ * otLosses combines ot_losses + shootout_losses (AHL splits these into
+ * two columns; PWHL/NHL don't) -- kept as one combined number here so the
+ * shared METRICS list's single "OTL" row means the same thing (any
+ * non-regulation loss) regardless of league.
+ */
+export async function fetchAHLTeamSeasonsCompare(teamId, seasons) {
+  if (!teamId || !seasons?.length) return [];
+  const rows = await workerFetch(`/ahl/team-seasons/compare?teamId=${teamId}&seasons=${seasons.join(',')}`);
+  if (!Array.isArray(rows)) return [];
+  return rows.map(r => ({
+    season:        r.season_id,
+    gamesPlayed:   r.gp,
+    wins:          r.wins,
+    losses:        r.losses,
+    otLosses:      (r.ot_losses ?? 0) + (r.shootout_losses ?? 0),
+    points:        r.points,
+    goalsFor:      r.goals_for,
+    goalsAgainst:  r.goals_against,
+    ppPct:         r.pp_pct,
+    pkPct:         r.pk_pct,
+  }));
+}
+
+/** Team vs team comparison -- two teams, one season. Mirrors
+ * fetchPWHLTeamSeasonsCompareTeams. */
+export async function fetchAHLTeamSeasonsCompareTeams(teamIdA, teamIdB, season) {
+  if (!teamIdA || !teamIdB || !season) return [];
+  const rows = await workerFetch(`/ahl/team-seasons/compare-teams?teamIds=${teamIdA},${teamIdB}&season=${season}`);
+  if (!Array.isArray(rows)) return [];
+  return rows.map(r => ({
+    team:          r.team_id,
+    season:        r.season_id,
+    gamesPlayed:   r.gp,
+    wins:          r.wins,
+    losses:        r.losses,
+    otLosses:      (r.ot_losses ?? 0) + (r.shootout_losses ?? 0),
+    points:        r.points,
+    goalsFor:      r.goals_for,
+    goalsAgainst:  r.goals_against,
+    ppPct:         r.pp_pct,
+    pkPct:         r.pk_pct,
+  }));
+}
+
+/** Head-to-head -- mirrors fetchPWHLTeamHeadToHead, already a clean
+ * camelCase shape from /ahl/team-seasons/head-to-head. */
+export async function fetchAHLTeamHeadToHead(teamIdA, teamIdB) {
+  if (!teamIdA || !teamIdB) return null;
+  return workerFetch(`/ahl/team-seasons/head-to-head?teamIds=${teamIdA},${teamIdB}`);
+}
+
 /** Per-player box score (skaters + goalies) for a completed game.
  * Shape: { skaters: [...], goalies: [...] } — no hits/faceoff/blocked-
  * shots/skater-TOI fields, unlike fetchPWHLGameBox (see eyewall-pipeline's

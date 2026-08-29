@@ -1871,6 +1871,7 @@
     "chooseOpponentForH2h": "Choisissez un adversaire ci-dessus pour voir l'historique des confrontations.",
     "noMeetings": "Aucune confrontation enregistrée entre ces équipes pour l'instant.",
     "since2023": "Depuis 2023-24",
+ "since2025": "Depuis 2025-26",
     "wins": "victoires",
     "lastN": "Derniers {{count}} : {{winsA}}-{{winsB}}",
     "streakPill": "{{abbr}} a gagné {{count}} de suite",
