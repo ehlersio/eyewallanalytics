@@ -25,13 +25,13 @@ const PWHL_TABS = [
   { to: '/pwhl/news',     icon: '📰', labelKey: 'nav.news'     },
 ];
 
-// No /ahl/team or /ahl/news tabs -- neither view was built this pass (no
-// AHL news source, no team-overview page; see AHL_BUILD_BRIEF.md's scope
-// notes). Add them here once those views exist.
+// No /ahl/news tab yet -- no AHL news source built (see AHL parity plan's
+// Phase 5). /ahl/team added (parity plan Phase 1).
 const AHL_TABS = [
   { to: '/ahl/shots',    icon: '⬡',  labelKey: 'nav.shotMap'  },
   { to: '/ahl/schedule', icon: '📅', labelKey: 'nav.schedule' },
   { to: '/ahl/players',  icon: '👤', labelKey: 'nav.players'  },
+  { to: '/ahl/team',     icon: '📊', labelKey: 'nav.team'     },
   { to: '/ahl/league',   icon: '🏒', labelKey: 'nav.league'   },
 ];
 

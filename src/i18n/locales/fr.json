@@ -514,6 +514,50 @@
     "colGoalie": "Gardienne",
     "tableHint": "Touchez une ligne pour ouvrir le profil de la joueuse · Triez selon n'importe quelle colonne"
   },
+  "ahlTeamView": {
+    "noTeamSelected": "Aucune équipe de la LAH sélectionnée.",
+    "tabs": {
+      "overview": "Aperçu",
+      "stats": "Statistiques",
+      "splits": "Domicile/Visiteur",
+      "trends": "Tendances"
+    },
+    "overview": {
+      "gfLabel": "BP : {{val}}",
+      "gaLabel": "BC : {{val}}",
+      "diffSuffix": "diff. {{sign}}{{gd}}",
+      "last5Title": "5 derniers matchs",
+      "pointsLeadersTitle": "Meneurs au pointage de {{abbr}}",
+      "playerFallbackName": "Joueur #{{id}}",
+      "ptsSuffix": "pts",
+      "startingGoalieTitle": "Gardien partant de {{abbr}}",
+      "shutoutNote_one": "{{count}} blanchissage",
+      "shutoutNote_other": "{{count}} blanchissages"
+    },
+    "stats": {
+      "metGoals": "Buts",
+      "metAssists": "Aides",
+      "metPoints": "Points",
+      "metPpg": "BAN",
+      "subTeamTotal": "Total de l'équipe",
+      "subPowerPlay": "Avantage numérique",
+      "viewSkaters": "Patineurs",
+      "viewGoalies": "Gardiens",
+      "playerFallbackShort": "#{{id}}"
+    },
+    "splits": {
+      "noDataYet": "Aucune donnée {{label}} pour l'instant."
+    },
+    "trends": {
+      "loadingTitle": "Chargement des tendances…",
+      "noDataTitle": "Aucune donnée de match pour l'instant",
+      "winPctL10": "% de victoires (10 derniers)",
+      "simpleDotTooltip": "{{result}} {{my}}–{{op}}",
+      "rollingWinPctTitle": "% de victoires — fenêtre mobile de 10 matchs",
+      "simpleBarTooltip": "{{pct}}% de victoires",
+      "legendFootnoteShort": "— référence 50%"
+    }
+  },
   "ahlPlayersView": {
     "noTeamSelected": "Aucune équipe de la LAH sélectionnée.",
     "subtitle": "Statistiques de la saison",

@@ -514,6 +514,50 @@
     "colGoalie": "Goalie",
     "tableHint": "Tap a row to open player profile · Sort by any column"
   },
+  "ahlTeamView": {
+    "noTeamSelected": "No AHL team selected.",
+    "tabs": {
+      "overview": "Overview",
+      "stats": "Stats",
+      "splits": "Splits",
+      "trends": "Trends"
+    },
+    "overview": {
+      "gfLabel": "GF: {{val}}",
+      "gaLabel": "GA: {{val}}",
+      "diffSuffix": "{{sign}}{{gd}} diff",
+      "last5Title": "Last 5 games",
+      "pointsLeadersTitle": "{{abbr}} Points Leaders",
+      "playerFallbackName": "Player #{{id}}",
+      "ptsSuffix": "pts",
+      "startingGoalieTitle": "{{abbr}} Starting Goalie",
+      "shutoutNote_one": "{{count}} shutout",
+      "shutoutNote_other": "{{count}} shutouts"
+    },
+    "stats": {
+      "metGoals": "Goals",
+      "metAssists": "Assists",
+      "metPoints": "Points",
+      "metPpg": "PPG",
+      "subTeamTotal": "Team total",
+      "subPowerPlay": "Power play",
+      "viewSkaters": "Skaters",
+      "viewGoalies": "Goalies",
+      "playerFallbackShort": "#{{id}}"
+    },
+    "splits": {
+      "noDataYet": "No {{label}} data yet."
+    },
+    "trends": {
+      "loadingTitle": "Loading trends…",
+      "noDataTitle": "No game data yet",
+      "winPctL10": "Win% L10",
+      "simpleDotTooltip": "{{result}} {{my}}–{{op}}",
+      "rollingWinPctTitle": "Win% — rolling 10-game window",
+      "simpleBarTooltip": "{{pct}}% win rate",
+      "legendFootnoteShort": "— 50% ref"
+    }
+  },
   "ahlPlayersView": {
     "noTeamSelected": "No AHL team selected.",
     "subtitle": "Season stats",

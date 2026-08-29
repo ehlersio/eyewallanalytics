@@ -29,13 +29,14 @@ const PWHLPlayersView  = lazy(() => import('./views/PWHLPlayersView'));
 const PWHLTeamView     = lazy(() => import('./views/PWHLTeamView'));
 const PWHLNewsView     = lazy(() => import('./views/PWHLNewsView'));
 
-// AHL routes -- no AHLTeamView/AHLNewsView yet (no team-overview page or
-// news source built for AHL in this pass; deliberate scope cut, see
-// AHL_BUILD_BRIEF.md).
+// AHL routes -- no AHLNewsView yet (no news source built for AHL in this
+// pass; see AHL parity plan's Phase 5). AHLTeamView added (parity plan
+// Phase 1).
 const AHLShotMapView  = lazy(() => import('./views/AHLShotMapView'));
 const AHLLeagueView   = lazy(() => import('./views/AHLLeagueView'));
 const AHLScheduleView = lazy(() => import('./views/AHLScheduleView'));
 const AHLPlayersView  = lazy(() => import('./views/AHLPlayersView'));
+const AHLTeamView     = lazy(() => import('./views/AHLTeamView'));
 
 const DevReplayView = import.meta.env.DEV
   ? lazy(() => import('./views/DevReplayView'))
@@ -87,6 +88,7 @@ function PageTracker() {
       '/ahl/league':    'AHL League',
       '/ahl/players':   'AHL Players',
       '/ahl/schedule':  'AHL Schedule',
+      '/ahl/team':      'AHL Team',
     };
     capture('$pageview', {
       path:      location.pathname,
@@ -158,6 +160,7 @@ export default function App() {
                       <Route path="/pwhl/news"     element={<PWHLNewsView />} />
                       {/* AHL routes */}
                       <Route path="/ahl/shots"    element={<AHLShotMapView />} />
+                      <Route path="/ahl/team"     element={<AHLTeamView />} />
                       <Route path="/ahl/league"   element={<AHLLeagueView />} />
                       <Route path="/ahl/players"  element={<AHLPlayersView />} />
                       <Route path="/ahl/schedule" element={<AHLScheduleView />} />

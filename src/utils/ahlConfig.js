@@ -98,6 +98,29 @@ export function isAHLPlayoffSeason(seasonId) {
   return AHL_SEASONS.find((s) => s.id === seasonId)?.type === 'playoffs';
 }
 
+// Regular-season season_id -> its corresponding playoff season_id.
+// PWHL_PLAYOFF_SEASON_MAP (pwhlConfig.js) derives this positionally by
+// zipping PWHL_REGULAR_SEASONS[i] with PWHL_PLAYOFF_SEASONS[i] -- that only
+// works because PWHL_SEASONS is declared as adjacent (regular, playoffs)
+// pairs in matching order. AHL_SEASONS is declared newest-regular-first
+// instead (94, 90, 92) specifically so season-tab lists render newest-first
+// -- reordering it to make positional zip work would misorder those tabs.
+// Hand-authored instead; only one pair is known so far.
+export const AHL_PLAYOFF_SEASON_MAP = { 90: 92 }; // 2025-26 -> 2026 Playoffs
+
+// Reverse of the above -- playoffs season_id -> its regular season_id.
+// Needed because AHL's live-resolved "current" season (see
+// AHL_CURRENT_SEASON above) can itself BE a playoffs id for most of the
+// long AHL off-season (June-October) -- there's no season 94 data yet
+// (2026-27 starts 2026-10-02), so the resolver's most-recent-real-data
+// answer right now is season 92 (2026 Playoffs), not 90. Any view that
+// wants "this season's regular-season numbers" specifically (not just
+// whatever's current) needs to map back from 92 -> 90 rather than assume
+// currentSeason is already a regular-season id.
+export const AHL_REGULAR_SEASON_MAP = Object.fromEntries(
+  Object.entries(AHL_PLAYOFF_SEASON_MAP).map(([regId, poId]) => [poId, Number(regId)])
+);
+
 // ── Team configs ─────────────────────────────────────────────────────────────
 // team_id/code/division confirmed live via feed=modulekit&view=teamsbyseason
 // 2026-08-29 (season 94) -- see eyewall-pipeline's ahl_stats.py TEAM_ID_MAP,
