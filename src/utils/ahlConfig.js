@@ -110,11 +110,36 @@ export const AHL_TEAMS = [
 // ── Logos ─────────────────────────────────────────────────────────────────────
 // Hosted directly from HockeyTech's own asset CDN rather than bundling 32
 // local files the way PWHL's PWHL_LOGO_FILES does -- theahl.com's own site
-// uses these same URLs directly (confirmed live 2026-08-29), and AHL team
-// logos are stable/official (unlike PWHL's early-days placeholder logos),
-// so there's no "swap once real branding drops" reason to self-host a copy.
+// uses these same URLs directly, and AHL team logos are stable/official
+// (unlike PWHL's early-days placeholder logos), so there's no "swap once
+// real branding drops" reason to self-host a copy.
+//
+// NOT a bare `{teamId}.png` per team -- confirmed live 2026-08-29 that 9 of
+// 32 teams 404 on that pattern. HockeyTech versions a team's logo file with
+// a season-id suffix (e.g. "335_94.png") whenever the logo changes for a
+// given season (a rebrand), and does NOT reliably keep the old bare
+// filename as an alias -- 3 of those 9 (TEX/ONT/SJ) happen to still have a
+// stale bare-filename file that also resolves, which is exactly why a
+// same-day smoke test of "does a few team logos load" can miss this: it
+// has to be checked against the feed's own `team_logo_url` field for
+// EVERY team, not guessed from a pattern that happens to work for most.
+// This map is that field's real values (feed=modulekit&view=teamsbyseason,
+// season=94) -- re-pull and update on a future season flip if new 404s
+// show up, same maintenance reality PWHL_LOGO_FILES already documents.
+const AHL_LOGO_FILES = {
+  307: '307.png', 309: '309.png', 313: '313.png', 316: '316_94.png',
+  319: '319.png', 321: '321_94.png', 323: '323.png', 324: '324.png',
+  327: '327.png', 328: '328_94.png', 330: '330.png', 335: '335_94.png',
+  372: '372_94.png', 373: '373_94.png', 380: '380_94.png', 384: '384.png',
+  389: '389.png', 390: '390_94.png', 402: '402_94.png', 403: '403_94.png',
+  404: '404.png', 405: '405_94.png', 411: '411_94.png', 412: '412_94.png',
+  413: '413.png', 415: '415.png', 419: '419.png', 437: '437.png',
+  440: '440.png', 444: '444.png', 445: '445.png', 457: '457.png',
+};
+
 export function ahlLogoUrl(teamId) {
-  return teamId ? `https://assets.leaguestat.com/ahl/logos/${teamId}.png` : null;
+  const file = AHL_LOGO_FILES[teamId];
+  return file ? `https://assets.leaguestat.com/ahl/logos/${file}` : null;
 }
 
 // ── Lookups ───────────────────────────────────────────────────────────────────
