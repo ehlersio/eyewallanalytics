@@ -43,7 +43,7 @@ const CHIP_BADGE_CLASSES = 'text-[9px] font-bold uppercase tracking-[0.04em] tex
 // half-filled season with no explanation (per SESSION_64_BUILD's explicit
 // requirement).
 export default function SeasonComparisonPicker({
-  league,               // 'nhl' | 'pwhl'
+  league,               // 'nhl' | 'pwhl' | 'ahl'
   selected,             // array of season values currently selected
   onChange,             // (nextSelectedArray) => void
   maxSelected = null,   // null = unlimited

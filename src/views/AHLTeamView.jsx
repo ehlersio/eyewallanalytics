@@ -7,12 +7,10 @@
 //     blocked_shot event type at all, ever (see ahlConfig.js/ahl.js
 //     docstrings) -- there is no shot-attempts data to compute this from.
 //   - Salaries -- no AHL salary data source exists anywhere in the stack.
-// "Compare Seasons" (PWHLTeamView's TeamComparisonPopup button) is also
-// omitted here, not stubbed -- TeamComparisonPopup.jsx hardcodes a binary
-// nhl/pwhl branch throughout (fetch functions, logo sport, team-option
-// lists); wiring it needs the /ahl/team-seasons/compare* routes and an
-// AHL branch in that popup, neither of which exist yet (AHL parity plan
-// Phase 4). Add the button back once that phase lands.
+// "Compare Seasons" (PWHLTeamView's TeamComparisonPopup button), added
+// AHL parity plan Phase 4 -- TeamComparisonPopup.jsx now has an 'ahl'
+// branch throughout (fetch functions, logo sport, team-option lists,
+// /config/seasons/comparison's AHL entry).
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
@@ -24,6 +22,7 @@ import { AHL_SEASONS, AHL_PLAYOFF_SEASON_MAP, AHL_REGULAR_SEASON_MAP, isAHLPlayo
 import { useSport } from '../utils/SportContext';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
+import TeamComparisonPopup from '../components/TeamComparisonPopup';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 
@@ -38,6 +37,7 @@ function tabClasses(isActive) {
 }
 
 const VIEW_SUB_CLASSES = 'view-sub text-[12px] text-[color:var(--text-muted)] mb-3'
+const TEAM_COMPARE_BTN_CLASSES = 'text-[11px] font-semibold text-[color:var(--text-muted)] bg-[var(--bg2)] border-[0.5px] border-[var(--border-2)] rounded-[var(--radius-sm)] py-[5px] px-[9px] cursor-pointer whitespace-nowrap [transition:background_0.15s,color_0.15s] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]'
 
 const TEAM_TABS_CLASSES = 'flex gap-1 mb-[14px] overflow-x-auto pb-[2px] border-b-[0.5px] border-[var(--border)]'
 const TEAM_TAB_BASE_CLASSES = 'team-tab py-[6px] px-[14px] rounded-[20px] text-[12px] font-medium border-[0.5px] whitespace-nowrap cursor-pointer [transition:all_0.15s]'
@@ -171,6 +171,7 @@ export default function AHLTeamView() {
   const abbr   = team?.abbr || '—';
   const color  = team?.displayColor || 'var(--text-dim)';
   const [tab, setTab] = useState('Overview');
+  const [compareOpen, setCompareOpen] = useState(false);
 
   // currentSeason is reactive (see SportContext.jsx) -- same reasoning as
   // PWHLTeamView.jsx's identical currentSeason usage: this view has no
@@ -228,7 +229,19 @@ export default function AHLTeamView() {
         <TeamLogo abbr={abbr} sport="ahl" size={28} color={color} />
         <h2 className={VIEW_TITLE_CLASSES} style={{ margin: 0 }}>{team.displayName}</h2>
       </div>
-      <p className={VIEW_SUB_CLASSES} style={{ margin: 0 }}>{t('teamView.seasonSubtitle', { years: seasonLabel })}</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <p className={VIEW_SUB_CLASSES} style={{ margin: 0 }}>{t('teamView.seasonSubtitle', { years: seasonLabel })}</p>
+        <button className={TEAM_COMPARE_BTN_CLASSES} onClick={() => setCompareOpen(true)}>{t('team.compareSeasons')}</button>
+      </div>
+
+      {compareOpen && (
+        <TeamComparisonPopup
+          league="ahl"
+          teamValue={teamId}
+          teamLabel={team.displayName}
+          onClose={() => setCompareOpen(false)}
+        />
+      )}
 
       <div className={TEAM_TABS_CLASSES}>
         {TABS.map(tabId => (

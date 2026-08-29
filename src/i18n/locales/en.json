@@ -1871,6 +1871,7 @@
     "chooseOpponentForH2h": "Choose an opponent above to see head-to-head history.",
     "noMeetings": "No meetings on record between these teams yet.",
     "since2023": "Since 2023-24",
+ "since2025": "Since 2025-26",
     "wins": "wins",
     "lastN": "Last {{count}}: {{winsA}}-{{winsB}}",
     "streakPill": "{{abbr}} won {{count}} straight",
