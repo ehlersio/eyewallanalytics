@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useSport } from '../utils/SportContext';
 import { useReadState } from '../hooks/useReadState';
 
-const NEWS_PATHS = ['/news', '/pwhl/news'];
+const NEWS_PATHS = ['/news', '/pwhl/news', '/ahl/news'];
 
 // labelKey looks up nav.* in i18n/locales/*.json -- tab labels are
 // translated, routes/icons are not.
@@ -25,14 +25,15 @@ const PWHL_TABS = [
   { to: '/pwhl/news',     icon: '📰', labelKey: 'nav.news'     },
 ];
 
-// No /ahl/news tab yet -- no AHL news source built (see AHL parity plan's
-// Phase 5). /ahl/team added (parity plan Phase 1).
+// /ahl/team added (parity plan Phase 1), /ahl/news added (parity plan
+// Phase 5).
 const AHL_TABS = [
   { to: '/ahl/shots',    icon: '⬡',  labelKey: 'nav.shotMap'  },
   { to: '/ahl/schedule', icon: '📅', labelKey: 'nav.schedule' },
   { to: '/ahl/players',  icon: '👤', labelKey: 'nav.players'  },
   { to: '/ahl/team',     icon: '📊', labelKey: 'nav.team'     },
   { to: '/ahl/league',   icon: '🏒', labelKey: 'nav.league'   },
+  { to: '/ahl/news',     icon: '📰', labelKey: 'nav.news'     },
 ];
 
 // Tailwind migration (Phase 7c, final file of the migration) -- previously
