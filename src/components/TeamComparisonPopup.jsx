@@ -4,12 +4,14 @@ import { useFetch } from '../hooks/useFetch';
 import { fetchTeamSeasonsCompare, fetchTeamSeasonsCompareTeams, fetchTeamHeadToHead } from '../utils/nhlApi';
 import { fetchPWHLTeamSeasonsCompare, fetchPWHLTeamSeasonsCompareTeams, fetchPWHLTeamHeadToHead } from '../utils/pwhlApi';
 import { fetchAHLTeamSeasonsCompare, fetchAHLTeamSeasonsCompareTeams, fetchAHLTeamHeadToHead } from '../utils/ahlApi';
+import { fetchECHLTeamSeasonsCompare, fetchECHLTeamSeasonsCompareTeams, fetchECHLTeamHeadToHead } from '../utils/echlApi';
 import { fetchComparisonSeasons } from '../utils/seasonClient';
 import { normalizeComparisonSeasons } from '../utils/seasonComparison';
 import { getTeamXgTrend } from '../utils/supabaseClient';
 import { ALL_TEAMS } from '../utils/teamConfig';
 import { PWHL_TEAMS } from '../utils/pwhlConfig';
 import { AHL_TEAMS, getAHLTeamById } from '../utils/ahlConfig';
+import { ECHL_TEAMS, getECHLTeamById } from '../utils/echlConfig';
 import SeasonComparisonPicker from './SeasonComparisonPicker';
 import SeasonOverlayChart from './SeasonOverlayChart';
 import TeamOpponentPicker from './TeamOpponentPicker';
@@ -176,13 +178,17 @@ function resolveTeamLogo(league, value) {
     const t = getAHLTeamById(Number(value));
     return { abbr: t?.abbr, color: t?.displayColor };
   }
+  if (league === 'echl') {
+    const t = getECHLTeamById(Number(value));
+    return { abbr: t?.abbr, color: t?.displayColor };
+  }
   return { abbr: value, color: undefined };
 }
 
-// TeamLogo's sport prop -- 'ahl'/'pwhl'/'nhl', not just the binary
-// pwhl-vs-nhl check this file used before AHL support existed.
+// TeamLogo's sport prop -- 'ahl'/'echl'/'pwhl'/'nhl', not just the binary
+// pwhl-vs-nhl check this file used before AHL/ECHL support existed.
 function sportFor(league) {
-  return league === 'ahl' ? 'ahl' : league === 'pwhl' ? 'pwhl' : 'nhl';
+  return league === 'ahl' ? 'ahl' : league === 'echl' ? 'echl' : league === 'pwhl' ? 'pwhl' : 'nhl';
 }
 
 // Box-score fields only for v1 (Session 64 locked decision) -- Corsi/xG/WAR
@@ -244,6 +250,7 @@ function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, oppon
   const { t } = useTranslation();
   const selectedSeason = season[0] ?? null;
   const fetchFn = league === 'ahl' ? fetchAHLTeamSeasonsCompareTeams
+    : league === 'echl' ? fetchECHLTeamSeasonsCompareTeams
     : league === 'pwhl' ? fetchPWHLTeamSeasonsCompareTeams
     : fetchTeamSeasonsCompareTeams;
   const { data: rows, loading } = useFetch(
@@ -311,6 +318,7 @@ function HeadToHeadNarrativeCard({ league, h2h, teamADisplay, teamBDisplay }) {
     if (!workerUrl) { setLoading(false); setFailed(true); return undefined; }
 
     const path = league === 'ahl' ? '/ahl/team-seasons/head-to-head/narrative'
+      : league === 'echl' ? '/echl/team-seasons/head-to-head/narrative'
       : league === 'pwhl' ? '/pwhl/team-seasons/head-to-head/narrative'
       : '/team-seasons/head-to-head/narrative';
 
@@ -369,6 +377,7 @@ function HeadToHeadNarrativeCard({ league, h2h, teamADisplay, teamBDisplay }) {
 function HeadToHeadPanel({ league, teamValue, opponent, teamLabel, opponentLabel }) {
   const { t } = useTranslation();
   const fetchFn = league === 'ahl' ? fetchAHLTeamHeadToHead
+    : league === 'echl' ? fetchECHLTeamHeadToHead
     : league === 'pwhl' ? fetchPWHLTeamHeadToHead
     : fetchTeamHeadToHead;
   const { data: h2h, loading } = useFetch(
@@ -395,7 +404,7 @@ function HeadToHeadPanel({ league, teamValue, opponent, teamLabel, opponentLabel
   return (
     <>
       <div className={H2H_SCOREBOARD_CLASSES}>
-        <div className={H2H_SCOREBOARD_LABEL_CLASSES}>{t(league === 'ahl' ? 'teamComparisonPopup.since2025' : 'teamComparisonPopup.since2023')}</div>
+        <div className={H2H_SCOREBOARD_LABEL_CLASSES}>{t((league === 'ahl' || league === 'echl') ? 'teamComparisonPopup.since2025' : 'teamComparisonPopup.since2023')}</div>
         <div className={H2H_SCOREBOARD_TEAMS_CLASSES}>
           <div className={H2H_SCOREBOARD_TEAM_CLASSES}>
             <TeamLogo abbr={teamAbbr} sport={sport} size={36} />
@@ -444,6 +453,8 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
   const [vsTeamSeason, setVsTeamSeason] = useState([]); // SeasonComparisonPicker-shaped: 0 or 1 value
   const opponentOptions = league === 'ahl'
     ? AHL_TEAMS.map(team => ({ value: team.teamId, label: team.displayName }))
+    : league === 'echl'
+    ? ECHL_TEAMS.map(team => ({ value: team.teamId, label: team.displayName }))
     : league === 'pwhl'
     ? PWHL_TEAMS.map(team => ({ value: team.teamId, label: team.displayName }))
     : ALL_TEAMS.map(team => ({ value: team.abbr, label: team.displayName }));
@@ -464,6 +475,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
     : null;
 
   const fetchFn = league === 'ahl' ? fetchAHLTeamSeasonsCompare
+    : league === 'echl' ? fetchECHLTeamSeasonsCompare
     : league === 'pwhl' ? fetchPWHLTeamSeasonsCompare
     : fetchTeamSeasonsCompare;
   const { data: rows, loading } = useFetch(
@@ -536,7 +548,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
   // spans all seasons, so it has no single season to show here.
   const headerSubtitle = showOpponentInHeader && teamSubMode === 'full' && vsTeamSeason[0]
     ? labelFor(vsTeamSeason[0])
-    : (showOpponentInHeader && teamSubMode === 'h2h' ? t(league === 'ahl' ? 'teamComparisonPopup.since2025' : 'teamComparisonPopup.since2023') : teamLabel);
+    : (showOpponentInHeader && teamSubMode === 'h2h' ? t((league === 'ahl' || league === 'echl') ? 'teamComparisonPopup.since2025' : 'teamComparisonPopup.since2023') : teamLabel);
 
   return (
     <div className="popup-backdrop" onClick={onClose}>
