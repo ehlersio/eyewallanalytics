@@ -641,6 +641,15 @@
       "legendFootnoteShort": "— 50% ref"
     }
   },
+  "echlPlayerPopup": {
+    "heatMap": {
+      "goalieUnavailable": "Goalie heat map not available",
+      "goalieUnavailableSub": "ECHL's play-by-play doesn't track which goalie was in net for each goal, so a heat map here would under-count goals allowed."
+    },
+    "recentForm": {
+      "legendGoalie": "W = win · L = loss (ECHL's data doesn't distinguish OT/shootout losses)"
+    }
+  },
   "echlPlayersView": {
     "noTeamSelected": "No ECHL team selected.",
     "subtitle": "Season stats",
