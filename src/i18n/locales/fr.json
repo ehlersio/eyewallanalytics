@@ -1955,7 +1955,7 @@
     "pwhlDescription": "Les {{count}} équipes · Analyses complètes",
     "ahlDescription": "Les {{count}} équipes · Analyses complètes",
     "echlDescription": "Les {{count}} équipes · Analyses complètes",
-    "disclaimer": "EyeWall Analytics n'est affilié à, approuvé par, ni commandité par la Ligue nationale de hockey (LNH), la Ligue professionnelle de hockey féminin (LPHF), la Ligue américaine de hockey (LAH), ni aucune de leurs équipes. Tous les noms d'équipes, logos et marques de commerce de la LNH, de la LPHF et de la LAH sont la propriété de leurs détenteurs respectifs. Les statistiques et les données proviennent d'API accessibles au public et sont fournies à titre informatif seulement.",
+    "disclaimer": "EyeWall Analytics n'est affilié à, approuvé par, ni commandité par la Ligue nationale de hockey (LNH), la Ligue professionnelle de hockey féminin (LPHF), la Ligue américaine de hockey (LAH), l'ECHL, ni aucune de leurs équipes. Tous les noms d'équipes, logos et marques de commerce de la LNH, de la LPHF, de la LAH et de l'ECHL sont la propriété de leurs détenteurs respectifs. Les statistiques et les données proviennent d'API accessibles au public et sont fournies à titre informatif seulement.",
     "back": "← Retour",
     "chooseTeam": "Choisissez votre équipe",
     "pwhlExpansionLabel": "Expansion 2026–2027",
