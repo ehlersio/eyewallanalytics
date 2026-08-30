@@ -77,6 +77,18 @@ canes-analytics-starter/
 │   │   ├── PWHLPlayersView.jsx         # PWHL roster + stats + player popup
 │   │   ├── PWHLLeagueView.jsx          # PWHL 5-tab league page
 │   │   ├── PWHLNewsView.jsx            # PWHL news feed + News/Milestones/Trivia/Transactions tab toggle
+│   │   ├── AHLShotMapView.jsx          # AHL shot map — deliberately leaner than PWHLShotMapView.jsx: season-aggregate rink + PP/PK summary only, no per-game history browser, no Corsi/Fenwick/PDO (no `blocked_shot` event type exists in AHL's HockeyTech feed at all). Live-tracking layer (score chip, event popups, dev-only debug panel) added in AHL/PWHL parity Phase 6
+│   │   ├── AHLScheduleView.jsx         # AHL schedule + calendar + game box/preview popups + predictions (parity Phase 3). No separate Regular Season/Playoffs tab — `AHL_SEASONS` lists "2026 Playoffs" as its own selectable season tab instead; no round-based bracket view (Calder Cup's up-to-4-round format was never ported/verified against PWHL's fixed-2-round bracket logic)
+│   │   ├── AHLTeamView.jsx             # AHL 4-tab team analytics (Overview/Stats/Splits/Trends) — Advanced (Corsi/Fenwick/PDO) and Salaries tabs dropped, both real data walls not scope choices. "Compare Seasons" (parity Phase 4) opens `TeamComparisonPopup.jsx`'s `'ahl'` branch
+│   │   ├── AHLPlayersView.jsx          # AHL roster (photo grid) + sortable stats table + player popup (parity Phase 2). Skater columns drop `shot_pct`/`gw_goals` — confirmed absent from AHL's HockeyTech feed entirely
+│   │   ├── AHLLeagueView.jsx           # AHL standings, grouped by AHL's real Atlantic/North/Central/Pacific division structure (unlike PWHL's flat table) + Leaders tab — no Bracket or Power Rankings tabs (infrastructure never built for AHL)
+│   │   ├── AHLNewsView.jsx             # AHL news feed, News tab only — no Milestones/Trivia/Transactions toggle; genuinely no pipeline data source for any of the three (not a missing branch in a generic component)
+│   │   ├── ECHLShotMapView.jsx         # ECHL shot map — mirrors AHLShotMapView.jsx's exact shape (season-aggregate rink + PP/PK summary, same live-tracking layer added in ECHL's own Phase 6 equivalent)
+│   │   ├── ECHLScheduleView.jsx        # ECHL schedule + calendar + game box/preview popups + predictions — port of AHLScheduleView.jsx, same Reg/Playoffs and bracket scope cuts
+│   │   ├── ECHLTeamView.jsx            # ECHL 4-tab team analytics — mirrors AHLTeamView.jsx exactly, same Advanced/Salaries data walls
+│   │   ├── ECHLPlayersView.jsx         # ECHL roster + stats + player popup — mirrors AHLPlayersView.jsx (same `shot_pct`/`gw_goals` column drop)
+│   │   ├── ECHLLeagueView.jsx          # ECHL standings, grouped by ECHL's real North/South/Central/Mountain divisions (different alignment than AHL's) + Leaders — mirrors AHLLeagueView.jsx
+│   │   ├── ECHLNewsView.jsx            # ECHL news feed, News tab only — mirrors AHLNewsView.jsx; only 2 real RSS sources exist for ECHL vs. AHL's 3 (echl.com itself has no RSS feed at all — Laravel/Livewire rebuild, same reason its HockeyTech key isn't network-tab-discoverable either)
 │   │   ├── DevReplayView.jsx/.css      # Dev-only live game replay (/dev)
 │   │   └── DevDraftView.jsx            # Dev-only draft simulator (/dev/draft)
 │   ├── components/
@@ -115,7 +127,19 @@ canes-analytics-starter/
 │   │   ├── GameChipsRow.jsx            # Shot map game-selector chip row (NHL + PWHL, shared) — normalized {id, opponentAbbr, opponentColor, myScore, oppScore, isHome} shape, each sport maps its own schedule-row into it
 │   │   ├── SeasonChipRow.jsx           # Shot map season-selector chip stack (NHL + PWHL, shared) — recent seasons inline + a "More seasons" overflow dropdown for older ones
 │   │   ├── SeasonTypeToggle.jsx        # Regular Season/Playoffs segmented toggle (NHL + PWHL, shared) — same UI, different wiring per sport (PWHL swaps season_id; NHL filters the fetched season's games by gameType)
-│   │   └── DisabledHint.jsx            # Tap-triggered "why is this grayed out" tooltip — used by the shot map selector while a game is live
+│   │   ├── DisabledHint.jsx            # Tap-triggered "why is this grayed out" tooltip — used by the shot map selector while a game is live
+│   │   ├── AHLGameEvents.jsx           # AHL live game event popups (goal/penalty/win/puck drop) — port of PWHLGameEvents.jsx's sessionStorage-deduped popup layer (parity Phase 6). Deliberately does NOT port PWHLLiveInsights — several of its callouts (faceoff dominance in particular) depend on event types AHL's PBP doesn't have at all
+│   │   ├── AHLPlayerPopup.jsx          # AHL player detail popup (Stats + Heat Map tabs only, parity Phase 2) — no percentile radar header, no Scout/Compare tabs (no `ahl_percentiles.py`-equivalent pipeline computation), no goalie heat map (AHL's PBP goal events carry `goalie_id: null`, a real structural gap from PWHL's feed)
+│   │   ├── AHLGameStatsPopup.jsx       # AHL box-score popup (parity Phase 3) — team-stat comparison bars drop hits/blocked-shots/faceoff% entirely (always 0 in AHL's feed, never ingested); no "View Shot Map" CTA (AHLShotMapView.jsx is season-aggregate, not per-game)
+│   │   ├── AHLBoxScoreTable.jsx        # Per-player skater/goalie table for AHLGameStatsPopup — drops HIT/BLK/FO%/skater-TOI columns entirely; AHL's gameSummary reports these as a hardcoded 0 regardless of real ice time, so the pipeline never ingested them
+│   │   ├── AHLGamePreviewPopup.jsx     # AHL pre-game preview popup (parity Phase 3) — real field-NAME differences from PWHL's `gameCenterPreview` shape (`teamRecord.overall`/`.past_10_games` not `overallRecord`/`last10Record`, `powerPlayStats`/`penaltyKillStats` not `powerPlay`/`penaltyKill`, `previousMeetings` not `seasonSeries`); no shot-attempt-share row at all (no `corsiForPct` data source)
+│   │   ├── AHLCalendarView.jsx         # AHL monthly schedule grid — port of PWHLCalendarView.jsx; no distinct OT/shootout-loss cell variant since `ahl_game_log` has no ot/shootout boolean columns, so every non-win renders as a plain loss
+│   │   ├── ECHLGameEvents.jsx          # ECHL live game event popups — port of AHLGameEvents.jsx (ECHL parity pass, Phase 6 equivalent), same faceoff-data-gap reasoning for dropping a live-insights panel
+│   │   ├── ECHLPlayerPopup.jsx         # ECHL player detail popup (Stats + Heat Map tabs only) — direct port of AHLPlayerPopup.jsx, same data walls; confirmed live that ECHL's goal events also carry `goalie_id: null`
+│   │   ├── ECHLGameStatsPopup.jsx      # ECHL box-score popup — port of AHLGameStatsPopup.jsx, same dropped-stat reasoning
+│   │   ├── ECHLBoxScoreTable.jsx       # Per-player skater/goalie table for ECHLGameStatsPopup — same dropped-columns shape as AHLBoxScoreTable.jsx
+│   │   ├── ECHLGamePreviewPopup.jsx    # ECHL pre-game preview popup — confirmed live 2026-08-30 that ECHL's `gameCenterPreview` shape is byte-identical to AHL's (same HockeyTech vendor generation)
+│   │   └── ECHLCalendarView.jsx        # ECHL monthly schedule grid — port of AHLCalendarView.jsx
 │   ├── hooks/
 │   │   ├── useFetch.js                 # Data fetching + polling (cache: no-store)
 │   │   ├── usePushNotifications.js
@@ -139,6 +163,14 @@ canes-analytics-starter/
 │       ├── playerSearch.js             # Fuzzy player search — fetches GET /players-search-index once per session, matches via Fuse.js
 │       ├── nhlPlayerStats.js           # NHL skater/goalie stat defs, formatters, and radar-axis composites — extracted from PlayerPopup.jsx (Session 91) so PlayerComparisonPopup.jsx can reuse them without a circular import
 │       ├── pwhlPlayerStats.js          # PWHL equivalent of nhlPlayerStats.js — extracted from PWHLPlayerPopup.jsx (Session 91)
+│       ├── ahlApi.js                   # AHL Worker API calls — parallel to pwhlApi.js, only covers the routes that actually exist (see eyewall-poller's `ahl.js`); no transactions/salaries/scouting/narrative endpoints for AHL
+│       ├── ahlConfig.js                # AHL team configs — 32 teams, real Atlantic/North/Central/Pacific division structure; `AHL_CURRENT_SEASON` live-resolved via the same getter pattern as NHL/PWHL; real per-team colors for 31/32 teams (Ontario Reign is still the one team on the neutral placeholder — their June 2026 rebrand has no published hex anywhere yet)
+│       ├── ahlPlayerStats.js           # AHL skater/goalie stat defs + formatters — mirrors pwhlPlayerStats.js's `{group, items: [{def, fmt}]}` shape; no percentile map or radar-axis functions (no AHL percentile pipeline exists)
+│       ├── ahlPredictionStore.js       # AHL prediction tracking (localStorage-only) — trivial port of pwhlPredictionStore.js, same neutral team/opponent field-name convention
+│       ├── echlApi.js                  # ECHL Worker API calls — parallel to ahlApi.js; foundation + full 6-phase-parity routes only, no transactions/salaries/scouting endpoints (same limitation as AHL)
+│       ├── echlConfig.js               # ECHL team configs — 30 teams, real North/South/Central/Mountain division structure (different alignment than AHL's); all 30 teams still render on one shared neutral color placeholder — real per-team colors are an explicit deferred follow-up, matching AHL's own two-pass color history
+│       ├── echlPlayerStats.js          # ECHL skater/goalie stat defs + formatters — mirrors ahlPlayerStats.js
+│       ├── echlPredictionStore.js      # ECHL prediction tracking (localStorage-only) — mirrors ahlPredictionStore.js
 │       └── analytics.js
 ├── src/utils/__tests__/
 │   ├── *.test.js                       # Vitest unit tests (13 files, 179 tests)
@@ -186,6 +218,12 @@ On first launch the user selects NHL or PWHL, then their team. The sport is stor
 ### PWHL teams
 12 teams, all live and selectable in `TeamPicker`: BOS (Boston Fleet), MIN (Minnesota Frost), MTL (Montréal Victoire), NY (New York Sirens), OTT (Ottawa Charge), TOR (Toronto Sceptres), SEA (Seattle Torrent), VAN (Vancouver Goldeneyes), plus 4 expansion teams flipped live 2026-07: DET (Detroit), HAM (Hamilton), LV (Las Vegas), SJS (San Jose). Expansion team colors are real (pulled from each team's own `*_colors.css` design tokens), but logos/team names are still temporary placeholders — no permanent branding revealed yet.
 
+### AHL teams (3rd league, added 2026-08)
+32 teams, grouped into 4 real conference/division groupings unlike PWHL's flat table: Atlantic (HFD, PRO, LV, WBS, HER, CLT, SPR), North (ROC, SYR, TOR, CLE, UTC, BEL, LAV, HAM), Central (MB, MIL, GR, CHI, RFD, TEX, IA), Pacific (BAK, ONT, SD, SJ, TUC, COL, HSK, ABB, CGY, CV). Team logos are hosted directly from HockeyTech's own asset CDN (`assets.leaguestat.com/ahl/logos/`) rather than bundled locally — AHL logos are stable/official, unlike PWHL's early-days placeholders, so there's no "swap once branding drops" reason to self-host. 31 of 32 teams have real, WCAG-AA-checked colors (sourced from Wikipedia infoboxes + teamcolorcodes.com for 5 teams whose Wikipedia "primary" was a generic near-black template default); Ontario Reign is the one team still on the shared neutral placeholder (`AHL_PLACEHOLDER_COLOR`, `#6B7280`) since their June 2026 "Inland Blue"/"Empire Gold" rebrand has no published hex anywhere yet. `team_id` 317 (BRI, Bridgeport Islanders) is carried alongside 457 (HAM, Hamilton Hammers) as that franchise's pre-2026-27-relocation identity, so historical-season views can still resolve it.
+
+### ECHL teams (4th league, added 2026-08)
+30 teams across North/South/Central/Mountain divisions (a different division layout than AHL's Atlantic/North/Central/Pacific, confirmed live rather than assumed to match). Same HockeyTech/LeagueStat vendor as AHL/PWHL, but scoped as a foundation + basic-display pass first, then brought to full 6-phase parity with AHL in the same session — see [AHL & ECHL Frontend Build](#ahl--echl-frontend-build) below. All 30 teams currently render on one shared neutral color placeholder (`ECHL_PLACEHOLDER_COLOR`, `#6B7280`) — real per-team colors are an explicit deferred follow-up, matching AHL's own two-pass color history rather than an oversight. Team logos are hosted from HockeyTech's CDN the same way AHL's are; 4 of 30 teams (JAX, NM, TAH, TRE — all recent expansion/relocation franchises) needed a season-suffixed logo filename instead of the bare `{teamId}.png` pattern, the same versioning quirk AHL's own logo map already documents.
+
 ### Color tokens
 Same mechanism as NHL — `applyTeamTheme()` sets `--team-primary`, `--team-primary-rgb`, `--team-canvas`, `--team-canvas-rgb` on `:root` from `displayColor`.
 
@@ -210,6 +248,8 @@ wrangler kv key put --binding=CACHE "config:season:pwhl:override" '{"seasonId":9
 Note the `--remote` flag — without it, `wrangler kv` commands operate on the local/preview namespace, not the one the deployed Worker actually reads.
 
 Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `modulekit` bug, why PWHL resolution prefers regular seasons over more-recent playoffs) lives in `eyewall-poller`'s own README — this section only covers the frontend-facing side.
+
+**AHL and ECHL (added 2026-08) use the identical mechanism**, not a separate one: `ahlConfig.js`/`echlConfig.js` each fire their own fetch to `GET /config/seasons` at module load and update their own `let AHL_CURRENT_SEASON`/`ECHL_CURRENT_SEASON` bindings in place, dispatching `eyewall:ahl-season-updated`/`eyewall:echl-season-updated` the same way `teamConfig.js`/`pwhlConfig.js` do. The same manual-override mechanism applies (`config:season:ahl:override`/`config:season:echl:override` KV keys). Both leagues hit the exact recurring gotcha PWHL's own resolver already has: AHL/ECHL's live-resolved "current" season is itself a **playoffs** season_id for most of the long off-season (AHL resolves to 92 "2026 Playoffs" rather than 90 "2025-26" until the 2026-27 season starts Oct 2; ECHL resolves to 76 "2026 Kelly Cup Playoffs" rather than 73 "2025-26" for the same reason) — `AHL_REGULAR_SEASON_MAP`/`ECHL_REGULAR_SEASON_MAP` (in each config file) exist specifically to map a resolved playoffs id back to its regular-season id for any view that wants "this season's regular-season numbers" specifically rather than just whatever's current.
 
 ---
 
@@ -300,6 +340,72 @@ Full detail (the NHL/PWHL resolution logic itself, the `feed=statviewfeed` vs `m
 
 ---
 
+## Cloudflare Worker (`eyewall-poller`) — AHL
+
+Added 2026-08 as the 3rd league, brought to full feature parity with PWHL across 6 phases (see [AHL & ECHL Frontend Build](#ahl--echl-frontend-build) below). Every route below is consumed via `src/utils/ahlApi.js`.
+
+### AHL Worker Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /ahl/standings?season=` | Standings, grouped by real division |
+| `GET /ahl/players?teamId=&season=` | Team skaters + goalies + roster |
+| `GET /ahl/league-players?season=` | All 32 teams' players (Leaders tab) |
+| `GET /ahl/roster?teamId=` | Roster only (player_id → name resolution for box scores) |
+| `GET /ahl/schedule?teamId=&season=` | Team schedule |
+| `GET /ahl/shots?teamId=&season=` | Season shot/goal events with coordinates — no `blocked_shot` event type exists in this data source, a strict subset of `/pwhl/shots`'s shape |
+| `GET /ahl/team-season-summary?teamId=&season=` | Season-aggregate SOG + PP%/PK% for the Shot Map's summary card — no hits/blocked/faceoff/penalties sections, no data source for those |
+| `GET /ahl/lastgame?teamId=&season=` | Most recent completed game, opponent abbr resolved |
+| `GET /ahl/game-box?gameId=` | Per-player skater/goalie box score — no hits/faceoff/blocked-shots/skater-TOI fields |
+| `GET /ahl/summary?gameId=` | Period scoring + MVPs/three stars for a completed game |
+| `GET /ahl/preview?gameId=` | Pre-game preview — raw HockeyTech `gameCenterPreview` passthrough |
+| `GET /ahl/prediction?gameId=` | Win probability + AI narrative — no `corsiForPct` field (no shot-attempts data source) |
+| `GET /ahl/player/landing?id=&season=` | Player identity + one season's stat line, powers `AHLPlayerPopup`'s self-fetch |
+| `GET /ahl/player/career?id=` | Career Regular Season / Playoffs totals + recent-form games + bio + draft info |
+| `GET /ahl/player-shots?playerId=&season=` | Player shot history for the heat map — no goalie equivalent (goal events carry no `goalie_id`) |
+| `GET /ahl/team-seasons/compare?teamId=&seasons=` | Box-score fields for one team across seasons — AHL analog of `/team-seasons/compare` |
+| `GET /ahl/team-seasons/compare-teams?teamIds=,&season=` | Box-score fields for two teams at one shared season |
+| `GET /ahl/team-seasons/head-to-head?teamIds=,` | All-time head-to-head record/recent-window/streak |
+| `POST /ahl/team-seasons/head-to-head/narrative` | AI narrative layer on the head-to-head stats above |
+| `GET /ahl/news` / `POST /ahl/news/ingest` / `POST /ahl/news/bust` | AHL news feed (fetched by `eyewall-pipeline`'s `ahl_news.py`) |
+| `GET /ahl/today?season=` | Today's games (Eastern time) with a derived pre/live/final status |
+| `GET /ahl/live/:gameId` | Live (or completed) normalized PBP — no `goalieStats`/`faceoffStats` fields, unlike PWHL's equivalent |
+
+---
+
+## Cloudflare Worker (`eyewall-poller`) — ECHL
+
+Added 2026-08 as the 4th league. Brought to full 6-phase parity with AHL in the same pass it was introduced (a foundation pass first, then the remaining 5 phases, per the user's explicit staging choice — see [AHL & ECHL Frontend Build](#ahl--echl-frontend-build) below). Every route below is consumed via `src/utils/echlApi.js` and mirrors AHL's own route set exactly.
+
+### ECHL Worker Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /echl/standings?season=` | Standings, grouped by real division |
+| `GET /echl/players?teamId=&season=` | Team skaters + goalies + roster |
+| `GET /echl/league-players?season=` | All 30 teams' players (Leaders tab) |
+| `GET /echl/roster?teamId=` | Roster only |
+| `GET /echl/schedule?teamId=&season=` | Team schedule |
+| `GET /echl/shots?teamId=&season=` | Season shot/goal events — same no-`blocked_shot` limitation as AHL's |
+| `GET /echl/team-season-summary?teamId=&season=` | Season-aggregate SOG + PP%/PK% |
+| `GET /echl/lastgame?teamId=&season=` | Most recent completed game |
+| `GET /echl/game-box?gameId=` | Per-player skater/goalie box score — same dropped-columns shape as AHL's |
+| `GET /echl/summary?gameId=` | Period scoring + MVPs/three stars |
+| `GET /echl/preview?gameId=` | Pre-game preview — confirmed live that ECHL's payload shape is byte-identical to AHL's |
+| `GET /echl/prediction?gameId=` | Win probability + AI narrative — no `corsiForPct` field |
+| `GET /echl/player/landing?id=&season=` | Player identity + one season's stat line |
+| `GET /echl/player/career?id=` | Career totals + recent-form games + bio + draft info |
+| `GET /echl/player-shots?playerId=&season=` | Player shot history for heat map — no goalie equivalent |
+| `GET /echl/team-seasons/compare?teamId=&seasons=` | One team across seasons |
+| `GET /echl/team-seasons/compare-teams?teamIds=,&season=` | Two teams, one shared season |
+| `GET /echl/team-seasons/head-to-head?teamIds=,` | All-time head-to-head record |
+| `POST /echl/team-seasons/head-to-head/narrative` | AI narrative layer on the head-to-head stats |
+| `GET /echl/news` / `POST /echl/news/ingest` / `POST /echl/news/bust` | ECHL news feed — only 2 real sources exist (`thehockeywriters.com`'s ECHL category feed + OurSportsCentral's ECHL press releases, league id 18), since echl.com itself publishes no RSS feed at all |
+| `GET /echl/today?season=` | Today's games with derived pre/live/final status |
+| `GET /echl/live/:gameId` | Live (or completed) normalized PBP — same no-`goalieStats`/`faceoffStats` gap as AHL's |
+
+---
+
 ## Features
 
 ### NHL Features
@@ -336,6 +442,42 @@ All existing NHL features unchanged — see original documentation. Key features
 - **Draft** — 2026 (72 picks, 12 teams) and 2025 (48 picks, 8 teams) with position and round filters
 
 **News** — Aggregated from Sportsnet, The Score, and others. Fetched by GH Actions `pwhl_news.py` and POSTed to Worker (CF datacenter IPs are blocked by RSS sources). 25hr KV cache (fixed from 30min during the news-ingestion investigation — the short TTL meant it sat empty most of the day between this script's own infrequent runs).
+
+### AHL Features (3rd league, added 2026-08)
+
+Brought to full 6-phase feature parity with PWHL — see [AHL & ECHL Frontend Build](#ahl--echl-frontend-build) for the phase-by-phase history and the real bugs found while shipping it. Every feature below has a real, confirmed data-source reason for anything dropped relative to PWHL — none are unfinished scope.
+
+**Shot Map** — Season-aggregate `react-hockey-rink` view + PP/PK summary card. No Corsi/Fenwick/PDO panel (no `blocked_shot` event type in AHL's HockeyTech feed, ever). No per-game history browser — shot markers don't open a player popup. Live-tracking layer (score chip, goal/penalty/win/puck-drop popups, dev-only 5-tap debug panel) added in Phase 6.
+
+**Schedule** — Game cards + calendar toggle + box-score/preview popups + win predictions (Phase 3). No separate Regular Season/Playoffs tab (playoffs is its own selectable season entry instead); no round-based playoff bracket (Calder Cup's format is up to 4 rounds, never ported).
+
+**Team Page (4 tabs)** — Overview, Stats, Splits, Trends. No Advanced tab (no shot-attempts data for CF%/FF%/PDO) and no Salaries tab (no AHL salary data source anywhere). "Compare Seasons" button (Phase 4) opens the shared `TeamComparisonPopup` in all 3 modes (Compare Seasons, Full Stat Comparison, Head-to-Head), including a live AI narrative on the Head-to-Head tab.
+
+**Players Page** — Photo grid roster + sortable stats table (drops `shot_pct`/`gw_goals`, absent from the feed). Player popup (Phase 2) with Stats + Heat Map tabs only — no percentile radar, Scout, or Compare tab (no percentile pipeline for AHL yet), and no goalie heat map (AHL's PBP goal events carry no `goalie_id`).
+
+**League Page (2 tabs)** — Standings (grouped by real Atlantic/North/Central/Pacific divisions, 3-column OTL split into ot_losses + shootout_losses) + Leaders (clickable into the player popup). No Bracket or Power Rankings tabs.
+
+**News** — Single News tab, no Milestones/Trivia/Transactions toggle (no pipeline source for any of the three). 3 real RSS sources: `theahl.com/feed` (the only one of the four leagues with an official-league-site RSS feed at all), `thehockeywriters.com`'s AHL category feed, and OurSportsCentral's AHL press releases (league id 17 on that site).
+
+**Live Tracking (Phase 6)** — Score chip + goal/penalty/win/puck-drop popups layered onto the season-aggregate Shot Map. No live-insights panel (faceoff-dependent callouts can't be built — AHL's PBP has no faceoff events). Verified via a dev-only debug panel (5 taps on the header) rather than a real game — AHL's 2026-27 season hadn't started as of this writing (preseason 2026-09-26, regular season 2026-10-02).
+
+### ECHL Features (4th league, added 2026-08)
+
+Same HockeyTech/LeagueStat vendor as AHL/PWHL. Started as a foundation + basic-display pass (Shot Map/Players/Schedule/League/Team, no player popups/comparisons/news/live-tracking), then brought to the same full 6-phase parity as AHL within the same session, per the user's explicit choice to stage it exactly the way AHL itself was staged rather than build everything in one pass. Every feature and every scope cut below mirrors AHL's own, confirmed live rather than assumed to transfer.
+
+**Shot Map** — Same season-aggregate rink + PP/PK summary shape as AHL's, including the Phase 6 live-tracking layer (score chip, event popups, debug panel).
+
+**Schedule** — Game cards + calendar + box-score/preview popups + predictions, same Reg/Playoffs and bracket scope cuts as AHL's.
+
+**Team Page (4 tabs)** — Overview/Stats/Splits/Trends, same Advanced/Salaries data walls as AHL. "Compare Seasons" uses ECHL's own real playoffs-label convention (`"{year} Kelly Cup Playoffs"`, from `echlConfig.js`'s hand-verified season list) rather than assuming AHL's bare `"{year} Playoffs"` format transfers.
+
+**Players Page** — Same roster/stats/popup shape as AHL's `AHLPlayersView`/`AHLPlayerPopup`, including the same dropped `shot_pct`/`gw_goals` columns and the same no-goalie-heat-map gap (confirmed live that ECHL's goal events also carry `goalie_id: null`).
+
+**League Page (2 tabs)** — Standings grouped by ECHL's real North/South/Central/Mountain divisions (a different division layout than AHL's) + Leaders.
+
+**News** — Single News tab. Only 2 real sources, not AHL's 3 — `echl.com` has no RSS feed at all (confirmed live: `/feed` and `/rss` both 404, the same Laravel/Livewire site rebuild that also means its HockeyTech API key isn't network-tab-discoverable the way AHL's/PWHL's are). The two real sources: `thehockeywriters.com`'s ECHL category feed, and OurSportsCentral's ECHL press releases — league id **18**, confirmed live rather than assumed to be sequential with AHL's id 17.
+
+**Live Tracking (Phase 6)** — Same score-chip + event-popup layer as AHL's, verified via the identical dev-only 5-tap debug panel (no real 2026-27 ECHL game existed yet either as of this writing).
 
 ---
 
@@ -383,6 +525,79 @@ The PWHL uses a **3-2-1-0 points system**:
 | Regulation loss | 0 |
 
 All standings, record displays (W–OTW–OTL–L), and Splits calculations use this system.
+
+---
+
+## AHL & ECHL Frontend Build
+
+AHL (3rd league) and ECHL (4th league — NHL, PWHL, AHL, ECHL in build order) were both added in 2026-08, each following the **same 6-phase progression** PWHL itself was originally built through: foundation display → player popups → game popups/predictions → team comparison → news → live tracking. Every phase is its own PR (or small PR set) across `eyewall-pipeline`, `eyewall-poller`, and this repo. AHL went through this as two separate passes (foundation first, full parity later); ECHL's user explicitly chose to stage it the same way rather than build the full set in one pass, even though by the time ECHL started, AHL's own full-parity build was already a known, repeatable template.
+
+### Build history
+
+**AHL:**
+1. **Foundation** — `AHLShotMapView`/`AHLScheduleView`/`AHLPlayersView`/`AHLLeagueView` (standings/leaders only, no team page yet), wired as a 3rd selectable sport across `SportContext`/`TeamPicker`/`App.jsx`/`BottomNav`. Real per-team colors and a real AHL shield logo followed as same-day fast-follow PRs. Deliberately smaller than PWHL's equivalents (no live tracking, no player popups, no Corsi/Fenwick/PDO, no calendar/predictions, no bracket/power-rankings) — re-confirmed with Matt mid-session rather than assumed.
+2. **AHLTeamView** (Overview/Stats/Splits/Trends, Advanced+Salaries dropped) + **AHLPlayerPopup** (Stats + Heat Map tabs only — no percentile radar/Scout/Compare tabs, no goalie heat map).
+3. **Game box score + schedule popups + calendar + predictions** — `AHLBoxScoreTable`/`AHLGameStatsPopup`/`AHLGamePreviewPopup`/`AHLCalendarView`/`ahlPredictionStore.js`, wired into `AHLScheduleView`.
+4. **Team comparison / head-to-head** — `TeamComparisonPopup.jsx` gained a full `'ahl'` branch (fetch functions, logo sport, team-option lists), wired into `AHLTeamView`'s new "Compare Seasons" button. All 3 modes (Compare Seasons, Full Stat Comparison, Head-to-Head, the last with a live AI narrative) verified with real data.
+5. **News feed** — `AHLNewsView.jsx`, News tab only (no Milestones/Trivia/Transactions — no pipeline source for any of the three). 3 real RSS sources found and verified live.
+6. **Live game tracking** — `AHLGameEvents.jsx` (goal/penalty/win/puck-drop popups, ports `PWHLGameEvents.jsx`'s layer minus the faceoff-dependent insights panel) + a live-tracking layer on `AHLShotMapView.jsx` (score chip, dev-only 5-tap debug panel). Required a prerequisite pipeline fix first: PWHL's own `game_state` column was only ever updated by the once-nightly pipeline run, meaning the Worker's per-minute cron could never actually observe "live" for a real game — fixed for **both** AHL and PWHL with a new 5-minute `*_live_refresh.py` GH Actions cron, not just scoped narrowly to AHL.
+
+**ECHL** (started after AHL's full parity was already shipped, so its build reused AHL's exact template phase-for-phase):
+1. **Foundation** — pipeline ingestion (stats/box-score/shot-events/penalty-shots), 7 poller routes, 5 frontend views (ShotMap/Players/Schedule/League/Team), wired as the 4th league. Explicitly scoped smaller than full parity per the user's own choice, matching AHL's two-pass history rather than attempting everything at once.
+2. **ECHLPlayerPopup** — direct port of `AHLPlayerPopup.jsx` (Stats + Heat Map only), plus a real self-hosted ECHL shield logo for the league picker tile.
+3. **Game box score + preview + calendar + predictions** — `ECHLBoxScoreTable`/`ECHLGameStatsPopup`/`ECHLGamePreviewPopup`/`ECHLCalendarView`/`echlPredictionStore.js`. Confirmed live that ECHL's `gameSummary`/`gameCenterPreview` payload shapes are byte-identical to AHL's (same HockeyTech vendor generation) — no reshaping surprises this phase.
+4. **Team comparison / head-to-head** — `TeamComparisonPopup.jsx`'s `'echl'` branch. Uses ECHL's own real `"{year} Kelly Cup Playoffs"` label format rather than assuming AHL's bare `"{year} Playoffs"` transfers.
+5. **News feed** — `ECHLNewsView.jsx`. Only 2 real sources exist (not AHL's 3) — `echl.com` has no RSS feed of its own at all.
+6. **Live game tracking** — `ECHLGameEvents.jsx` + a live-tracking layer on `ECHLShotMapView.jsx`, direct port of AHL's Phase 6. No DDL needed this time — the prerequisite `game_status_code` column ECHL needed already existed from its own foundation-pass schema.
+
+Both leagues now sit at full feature parity with each other (and, apart from the real data-source gaps below, with PWHL) — treat AHL and ECHL going forward the same way PWHL/AHL are already treated relative to each other. This same phase-by-phase template applies to any future league addition.
+
+### The debug-panel live-tracking verification pattern
+
+Neither league had a real live game to test against as of this writing — AHL's 2026-27 season starts 2026-10-02 (preseason 2026-09-26); ECHL's 2026-27 season similarly hasn't started (season id 78, not yet begun; the live-resolved "current" ECHL season is 76, the 2026 Kelly Cup Playoffs). Both `AHLShotMapView.jsx` and `ECHLShotMapView.jsx` reuse `PWHLShotMapView.jsx`'s own dev-only verification mechanism instead of waiting for a real game:
+
+- **5 taps on the view's header** (within a 2-second window, tracked via a tap-count ref + timeout) toggles a fixed debug panel above the bottom nav.
+- The panel and the tap handler itself are **both** gated behind `import.meta.env.DEV` independently — the handler no-ops immediately in production (`if (!import.meta.env.DEV) return`), and the panel's render condition repeats the same check, so there's no code path where a production build can expose it.
+- Panel buttons fire the same popup components (`AHLGoalPopup`/`AHLPenaltyPopup`/`AHLWinPopup`/`AHLPuckDropPopup`, and their ECHL equivalents) with hand-built sample event payloads shaped exactly like a real `/ahl/live/:gameId` (or `/echl/live/:gameId`) response, so the popups are exercised with realistic data even without a real game.
+
+**Browser-automation lesson from verifying this pattern live:** a tight synchronous loop of simulated clicks against the same element reads a stale React-state closure between each click (no re-render happens between synchronous calls), which can look like the debug panel "isn't counting taps right" when the real issue is the verification method itself. The fix is to use ref-based clicks (not screenshot-inferred pixel coordinates, which can land on a sticky top nav bar instead of the page's own header underneath it) with explicit waits between each tap, and — more generally — to always split a "click, then read resulting state" check into two separate tool round-trips rather than one script, since React's render doesn't necessarily flush before a synchronous script continues to its next line.
+
+### Cross-cutting wiring
+
+Bringing AHL (and then ECHL) in as real selectable sports meant touching every file that used to hardcode an NHL/PWHL binary choice:
+
+- **`SportContext.jsx`** — sport is derived from the route (`/ahl/*`/`/echl/*` prefixes, same `/pwhl/*` convention already established), with `isAHL`/`isECHL` added alongside `isPWHL`/`isNHL`; `allTeams`/`currentSeason` both branch across all 4 sports.
+- **`TeamLogo.jsx`** — `sport` prop gained `'ahl'`/`'echl'` branches; unlike NHL/PWHL's abbreviation-keyed lookups, AHL/ECHL logos are resolved by HockeyTech's numeric `teamId` (`ahlLogoUrl(getAHLTeamConfig(abbr)?.teamId)`), since that's how HockeyTech's own asset CDN keys them.
+- **`TeamPicker.jsx`** — dedicated `AHLTeamStep`/`ECHLTeamStep` components, each grouped by that league's own real divisions, rendering directly against `ahlLogoUrl`/`echlLogoUrl` rather than routing through `TeamLogo`'s abbr-keyed path.
+- **`App.jsx`/`BottomNav.jsx`** — `/ahl/*`/`/echl/*` route tables and `AHL_TABS`/`ECHL_TABS` nav arrays, plus the root-redirect logic (`isAHL`/`isECHL` sport → that league's shot map).
+- **`useReadState.js`** — the News tab's unseen-badge hook gained `isAHL`/`isECHL` branches; Milestones/Trivia fetches are explicitly skipped for both leagues (`if (isAHL || isECHL) return`) rather than hitting routes with no real backing data.
+- **`favoriteTeamSync.js`** — signed-in users' team-switch sync gained `'ahl'`/`'echl'` read/write branches so a signed-in AHL/ECHL user's team pick actually persists across devices instead of silently no-oping.
+- **`TeamComparisonPopup.jsx`** — the shared team-comparison dialog's `league === 'ahl' ? ... : league === 'echl' ? ...` branches run through fetch functions, `TeamLogo`'s sport prop, opponent-option lists, and the "Since 2023/Since 2025" scoreboard label, all four ways.
+
+### Real bugs found and fixed while shipping this
+
+A recurring bug **class**, not a one-off: any file with a hardcoded `isPWHL ? ... : isAHL ? ...`-shape (or `league === 'ahl' ? ... : league === 'echl' ? ...`) dispatcher is a candidate for silently missing a branch for whichever league was added most recently — nothing catches this except actually clicking through the flow for that specific league. Confirmed repeatedly across both AHL's and ECHL's builds:
+
+- **`hasTeamConfig()` had no `ahl`/`echl` branch** — selecting a team for either league reverted straight back to the league picker instead of navigating through, on first wiring each league in.
+- **`NotificationBell.jsx`'s "Change team" cleanup didn't clear `eyewall:ahl_team`/`eyewall:echl_team`** — fixed for both.
+- **`favoriteTeamSync.js`'s read/write helpers only handled `pwhl`** at first, then only `pwhl`/`ahl` once AHL shipped — each new league needed its own explicit branch added, never inherited automatically.
+- **`useReadState.js`'s `sport`/`team` ternaries had no `isECHL` branch** even after AHL's own branch existed — fell through to `'nhl'`, so an ECHL user's News-tab badge check was silently querying `sport=nhl` against the wrong team. The exact same bug class as the foundation-pass findings above, just resurfacing in a file that hadn't been touched again until ECHL's Phase 5 needed it — confirms the lesson generalizes to "any file with this shape," not just the files caught in the original grep sweep.
+- **A shared `useFetch` out-of-order-response race** (`src/hooks/useFetch.js`) — no guard existed against two fetches resolving out of order (e.g. a deps change firing a second fetch right after mount, before any user interaction): the newer, correct response could arrive first, then get silently overwritten by an older, slower response arriving after. Fixed with a generation-token ref bumped at the start of every `load()` call — a result only commits if no newer call has started since, preserving the existing stale-while-revalidate behavior (old data stays visible mid-fetch) while preventing a stale response from winning. Not AHL/ECHL-specific in the fix itself, but found via a live reproduction against a fresh ECHL team pick — every view using the `useRef(userPickedSeason)` + live-season-update-event pattern (AHL/PWHL schedule/players/league views too) was equally exposed.
+- **A `SportContext`/route-derivation gap, generalized rather than special-cased**: `SportContext.jsx`'s sport-from-route logic already had to be taught `/ahl/*` and `/echl/*` prefixes alongside the existing `/pwhl/*` check (and its `seasonFor()`/`eventNameFor()` helpers extended to 4 branches each) — done deliberately as a 4-way ternary chain rather than nested boolean flags, specifically so the next league addition extends the same pattern instead of requiring a structural rewrite.
+- **Team-logo asset versioning (AHL, then rediscovered independently for ECHL)**: neither league's logos follow a bare `{teamId}.png` pattern — HockeyTech versions a team's logo file with a season-id suffix (e.g. `335_94.png`) whenever a rebrand happens, without reliably keeping the old bare filename as an alias. 9 of 32 AHL teams and 4 of 30 ECHL teams needed the season-suffixed filename; both logo maps are now built from the feed's own `team_logo_url` field for every team rather than a guessed pattern.
+- **Season-label formatting differences, confirmed rather than assumed to transfer**: AHL's playoffs label is a bare single calendar year (`"2026 Playoffs"`); PWHL's is a season-range (`"2025-26 Playoffs"`); ECHL's is its own real named format (`"2026 Kelly Cup Playoffs"`). Each league also needed its own `*_REGULAR_SEASON_MAP` reverse lookup (see [Live Season Resolution](#live-season-resolution) above) since each one's live-resolved "current" season can itself be a playoffs id for most of the off-season.
+- **A JSONP-unwrap bug affecting AHL roster fetches for months, only found while building ECHL**: `_modulekit_get()` (the pipeline's shared HockeyTech fetch helper) treated the *first* `"("` anywhere in a response as a wrapper open-paren and the *last* `")"` as its close — but `modulekit/roster` responses are plain JSON, never actually JSONP-wrapped, and routinely contain literal parentheses in real field values (e.g. a `draft_status` like `"Prince George Cougars (WHL) (College) 2019"`), which silently corrupted otherwise-valid JSON before it was ever parsed. Found while writing ECHL's own roster fetch (a real Florida Everblades player has parens in that field) and reproduced directly against AHL's own data — 32 of 33 AHL teams' rosters failed under the old logic, 0 failed after fixing the check to `if text.startswith("(") and text.endswith(")")`. Three earlier, narrower guesses at this same AHL symptom (a suspected cache-regeneration race against HockeyTech's CDN) were all wrong — the underlying lesson: when a diagnostic keeps returning "no answer" across several iterations, consider that the working theory itself may be wrong, not just under-instrumented.
+- **`/config/seasons/comparison` never actually built an `ahl` key**, despite a code comment in `AHLTeamView.jsx` claiming it did since AHL's own Phase 4 — meaning AHL's "Compare Seasons" mode had been silently showing its empty "no seasons available" state in production since that phase shipped, undetected until ECHL's own Phase 4 work built the missing `ahl`/`echl` config-route entries side by side and caught the gap by comparison. A reminder that a code comment claiming "X already exists" is a claim about the state at the time it was written, not a verified fact.
+
+### Real, permanent data walls (not scope choices)
+
+Both AHL and ECHL's HockeyTech feeds share the same structural ceiling, confirmed against production rather than assumed from PWHL's richer feed:
+
+- **No shift data, ever** — no TOI, no on-ice Corsi, no WAR/RAPM equivalent is buildable for either league from this data source.
+- **No `blocked_shot`, `hit`, or `faceoff` event types** — Corsi/Fenwick/PDO panels, hit totals, and faceoff% are all unbuildable; box-score hits/faceoff fields are hardcoded 0 in the raw feed itself, not merely unparsed.
+- **No goalie attribution on goal events** (`goalie_id: null` on every PBP goal row for both leagues) — blocks a goalie heat map specifically, shipped as an honest "not available" state rather than an approximation.
+- **No salary data source** for either league, anywhere.
+- **No milestones/trivia/transactions pipeline** for either league — `MilestonesFeed.jsx`/`TriviaFeed.jsx`/`TransactionsFeed.jsx` are not generic components missing a branch; they hardcode `isPWHL`/`isNHL` with no third state, and there is no data to back a third state regardless.
 
 ---
 
@@ -478,7 +693,7 @@ npm run cypress:visual            # diff current rendering against the committed
 ```
 48 baseline screenshots (`cypress/snapshots/base/`, committed) covering every NHL + PWHL route × mobile/desktop × dark/light. These routes hit the live Worker API with no fixture seeding, so a small amount of pixel drift between a baseline capture and a diff run is expected (real content changing, not a bug) — `errorThreshold: 1` (%) in `cypress/support/e2e.js` absorbs that noise; a real layout/spacing/color regression runs far higher and still fails. Intended workflow: capture a baseline immediately before a migration phase, diff immediately after.
 
-**28 spec files:**
+**28 spec files** (none of them cover AHL or ECHL yet — see [Known Limitations](#known-limitations) — the two newest leagues' only automated coverage is Vitest-level, `seasonComparison.test.js`'s AHL/ECHL season-label tests):
 
 **Note (2026-08, Session 94):** `visual-regression.cy.js` added as part of Phase 0 of the full Tailwind migration (see `SESSION_94_FINDINGS_tailwind_migration.md`) — the parity-verification tooling that migration's later phases depend on.
 
@@ -585,6 +800,11 @@ VITE_SUPABASE_ANON=sb_publishable_...
 - **HockeyTech `bootstrap` feed type:** it's `feed=statviewfeed`, not `feed=modulekit` — the latter returns a 200 OK with no real payload, which silently masqueraded as a working fallback for a while. If a HockeyTech URL is built from a written description rather than a captured real request, verify against actual DevTools traffic before trusting it.
 - **PWHL season resolution prefers regular seasons over playoffs, deliberately:** almost every `/pwhl/*` Worker endpoint filters `season_type=eq.regular` downstream, so resolving to a playoffs-type season_id breaks every PWHL view even for teams that played in that postseason. Shipped once without this preference and broke Cypress across every PWHL view before being caught.
 - **Milestone card titles never truncate (pre-existing, found during the Tailwind migration):** `MilestoneCard`'s `<h3>` combines two classes whose original CSS both set `display` — `.news-card-title`'s 3-line clamp (`display: -webkit-box`) loses to `.milestone-card-title`'s `display: flex`, which wins since it's defined later in the same stylesheet. The Tailwind migration (Phase 4, sub-PR 4) deliberately preserved this exact behavior rather than silently fixing it as a migration side effect — see `src/utils/newsViewClasses.js`'s `MILESTONE_CARD_TITLE_CLASSES` comment. If milestone titles should actually truncate, that's a real fix to make deliberately, not something to rediscover as a regression.
+- **AHL/ECHL have zero Cypress E2E coverage** — no `*.cy.js` spec file references either league anywhere in `cypress/e2e/`, unlike PWHL's own 12+ dedicated/shared specs. The one piece of automated coverage either league has is Vitest-level: `seasonComparison.test.js`'s `ahlSeasonLabel`/`echlSeasonLabel`/`normalizeComparisonSeasons('ahl'/'echl')` tests (added as a byproduct of the season-label formatting bug found during ECHL's Phase 4). Live-tracking (Phase 6) for both leagues has been verified only via the dev-only debug panel (see [AHL & ECHL Frontend Build](#ahl--echl-frontend-build)), not against a real game — neither league's 2026-27 season had started as of this writing.
+- **AHL's push-notification settings panel (`NotificationBell.jsx`) has no ECHL branch, and neither league has a real push backend**: `activeTeam`/`leagueTeamKey`/the header `TeamLogo`'s `sport` prop are all still a 3-way `isPWHL ? ... : isAHL ? ... : NHL` ternary with no `isECHL` case — an ECHL user opening notification settings currently sees/acts on the NHL team's info, the same bug class documented above for other cross-cutting files, just not yet caught for this one. Separately, AHL's own branch exists structurally ("shows the right team") but there is no live-game-tracking Worker route wired to actually send a push for either league — subscribing has nothing to notify about server-side yet either way.
+- **AHL expansion/relocation team colors — one gap remains**: 31 of 32 AHL teams have real, WCAG-checked colors; Ontario Reign's June 2026 rebrand ("Inland Blue"/"Empire Gold") has no published hex anywhere checked (official press release, Mayor's Manor, teamcolorcodes.com all still show the pre-rebrand scheme) — correctly left on the shared neutral placeholder rather than guessed.
+- **ECHL real team colors are a full deferred follow-up**: all 30 teams currently render on one shared neutral placeholder — unlike AHL, where this was closed out for 31/32 teams in a dedicated follow-up pass. Matches AHL's own two-pass history (colors landed well after AHL's initial display shipped), not an oversight.
+- **HockeyTech logo asset versioning (AHL and ECHL both)**: neither league's team logos follow a bare `{teamId}.png` URL pattern — a rebrand gets a season-id-suffixed filename (e.g. `335_94.png`) with no reliable bare-filename alias kept. Both `AHL_LOGO_FILES`/`ECHL_LOGO_FILES` are hand-built from the feed's own `team_logo_url` field per team; re-pull and update either map on a future season flip if new 404s show up (9/32 AHL teams and 4/30 ECHL teams needed the suffixed form as of the last check).
 
 ---
 
@@ -631,6 +851,8 @@ VITE_SUPABASE_ANON=sb_publishable_...
 - [x] Supabase Auth magic-link sign-in (Session 90) — optional, fully additive passwordless sign-in via `signInWithOtp`. New Account section in Settings (`AccountSection.jsx`), `AuthContext.jsx` mirroring `SportContext.jsx`'s pattern, `user_preferences` table with `auth.uid()`-scoped RLS validated live with two real accounts. Custom SMTP (Resend) configured for email delivery.
 - [x] Favorite-team sync for signed-in users (Session 91) — write-on-switch + reconcile-on-session-load, verified live in both directions (first-sign-in upload, second-device server-wins). Found and fixed a real bug during live testing: reconciliation was silently defeating the "Change team" button for signed-in users.
 - [x] Daily Trivia (Session 92, NHL + PWHL) — three tiers (easy/medium AI-generated with a verified-value guardrail, hard hand-curated), new Trivia tab on the News page, union-merge answer sync for signed-in users, read-state badges on News/Milestones/Trivia + `BottomNav`. Found and fixed two real guardrail bugs during live generation (a misread team abbreviation, then a hallucinated team-name substitution even when given the correct name) — team identity is now conveyed via a logo, never AI-generated text.
+- [x] AHL added as the 3rd league (2026-08) — foundation display pass (Shot Map/Schedule/Players/League standings-leaders), then brought to full 6-phase parity with PWHL (player popups, game popups/predictions, team comparison, news, live tracking) — see [AHL & ECHL Frontend Build](#ahl--echl-frontend-build) for the complete phase-by-phase history. 31/32 teams have real WCAG-checked colors; found and fixed a wrong-season data gap (the actual 2025-26 regular season had zero rows anywhere in Supabase, only the playoffs season had ever been ingested), the shared `useFetch` out-of-order-response race, and a JSONP-unwrap bug that had been silently breaking most AHL roster fetches for months (root-caused while building ECHL, not from AHL's own debugging).
+- [x] ECHL added as the 4th league (2026-08) — same HockeyTech vendor as AHL/PWHL, staged the same two-pass way AHL itself was (foundation first, user's explicit choice), then brought to the same full 6-phase parity as AHL within the same session. Found and fixed the Web Push NUL-byte encryption bug (`shared.js`'s `encryptPushPayload()`, unrelated to ECHL itself but discovered while building it), plus a real pre-existing bug where `/config/seasons/comparison` never actually built an `ahl` key despite a code comment claiming it did — AHL's own "Compare Seasons" mode had been silently empty in production since its own Phase 4 shipped.
 
 ### Pending
 - [x] French/English localization — **Track A (UI chrome) complete.** `i18next`/`react-i18next` infra, `localeConfig.js`/`localeSync.js`, Settings-popup Language toggle, and every view/component/popup in the app's tree — 30 A2 sub-PRs total — are now fully translated: global chrome, `LeagueView.jsx`+`PWHLLeagueView.jsx`, `TeamView.jsx`+`PWHLTeamView.jsx`, `PlayersView.jsx`+`PWHLPlayersView.jsx`, `ShotMapView.jsx`+`PWHLShotMapView.jsx`, `GameEvents.jsx`+`PWHLGameEvents.jsx`, `ScheduleView.jsx`+`PWHLScheduleView.jsx`, `GameCard.jsx`+`CalendarView.jsx`+`PWHLCalendarView.jsx`, `MatchupDetail.jsx`+`PWHLGamePreviewPopup.jsx`, `GameStatsPopup.jsx`+`GameStatsComponents.jsx`+`PWHLGameStatsPopup.jsx`+`PWHLBoxScoreTable.jsx`, `TriviaFeed.jsx`, `StatTileGrid.jsx`, `MilestonesFeed.jsx`, `NewsView.jsx`+`PWHLNewsView.jsx`, `PredictionShareCanvas.jsx`+`PWHLPredictionShareCanvas.jsx`+`ShareButtons.jsx`, `ScoutingTab.jsx`, `PeriodSummary.jsx`, `PWHLPeriodSummary.jsx`, `PlayerPopup.jsx`, `PWHLPlayerPopup.jsx`, `AboutPopup.jsx`, `PlayerSearch.jsx`, `App.jsx`, `InfoTip.jsx`, `SeasonTypeToggle.jsx`, `SeasonChipRow.jsx`, `GameChipsRow.jsx`, `TeamOpponentPicker.jsx`, `SeasonOverlayChart.jsx`, `LiveEventRink.jsx`, `PlayerComparisonEntry.jsx`, `SeasonComparisonPicker.jsx`, `TeamPicker.jsx`, `PlayerComparisonPopup.jsx`, `TeamComparisonPopup.jsx`, and now `DraftTab.jsx`. The final sub-PR covers `DraftTab.jsx`'s draft popup (bio grid, pick context, rank badges, the "Sticks says" AI section — first use of `Trans`/`components={{ strong: <strong /> }}` for a JSX-embedded tag in this migration's own new keys, matching the pattern `PWHLTeamView.jsx` had already established), the Rankings table and category tabs (`getCategoryLabel()` helper shared between `DraftTab` and `DraftPopup`, replacing a plain `label` field so both components can independently call their own `useTranslation()`), the Draft board's per-round tables, and the pre-draft/live/complete banners. Heavy reuse from already-translated files: `playerPopup.bio.height/weight/weightLbs`, `pwhlLeagueView.draft.colTeam/colPos`, `teamView.picks.roundLabel`, `nav.league`, `common.close`, and `leagueView.loading.ariaLabel` (not `common.loading`, since that key's "Loading…" isn't byte-identical to this file's ellipsis-free "Loading" aria-label). All 41 keys (including the dynamic per-category keys and the `Trans` key) audited to resolve in both locale files; ESLint and the full vitest suite (185/185) clean; `league.cy.js` (34/34) and `draft.cy.js` (55/55) both green after ruling out an interleaved dev-server crash as the session's known local-sandbox instability, not a regression. Live-verified extensively in French: the full 7-round, 224-pick draft board, the 4-category Rankings table with live counts, and both popup modes (prospect and pick, the latter showing a live AI scouting blurb under "STICKS DIT"). **This closes Track A of the localization plan — every user-facing view, popup, and shared component in the app now renders in French.** `DevReplayView.jsx`/`PWHLDevReplayView.jsx`/`DevDraftView.jsx` remain deliberately untranslated — dev-only routes gated behind `import.meta.env.DEV`, never shipped to real users.
@@ -651,6 +873,11 @@ VITE_SUPABASE_ANON=sb_publishable_...
 - [ ] Migrate remaining pipeline scripts (`ai_summaries.py`, `ai_predictions.py`, `moneypuck.py`, etc.) to `db.py`/`pipeline_common.py` if they don't already use them
 - [ ] Expansion team logos/permanent names — still placeholders, waiting on official branding reveal (likely this fall)
 - [ ] `pwhl_stats.py`'s `SEASON_TYPE_MAP` labels season ID 2 as `"showcase"`, but HockeyTech's own `bootstrap` response calls it `"2024 Preseason"` — unresolved discrepancy, worth checking against real 2024 game data before changing either one
+- [ ] ECHL real per-team colors — all 30 teams still on the shared neutral placeholder; a genuine research task (colors + a WCAG-AA contrast pass), same as AHL's own colors were before its dedicated follow-up pass
+- [ ] AHL's one remaining color gap — Ontario Reign's June 2026 rebrand has no published hex anywhere yet; revisit once real branding is documented somewhere
+- [ ] Live-game verification for AHL and ECHL against a real game — both leagues' live-tracking (Phase 6) has only been verified via the dev-only debug panel; AHL's 2026-27 season starts 2026-10-02, ECHL's hadn't started as of this writing either. Worth a deliberate live-game check-in once either season opener passes, rather than assuming the debug-panel verification generalizes perfectly.
+- [ ] Cypress E2E coverage for AHL and ECHL — currently zero spec files for either league (only Vitest-level `seasonComparison.test.js` coverage exists), unlike PWHL's dedicated + shared spec coverage
+- [ ] `NotificationBell.jsx`'s missing `isECHL` branch (`activeTeam`/`leagueTeamKey`/header `TeamLogo` sport prop all still 3-way NHL/PWHL/AHL only) — an ECHL user's notification settings panel currently shows/acts on the NHL team's info instead
 
 ---
 
