@@ -965,6 +965,26 @@
       "backToBackGoals": "{{abbr}} scored twice in {{gap}}s — two quick goals"
     }
   },
+  "ahlGameEvents": {
+    "puckDrop": {
+      "line3": "Let's go!"
+    },
+    "goal": {
+      "modifierPowerPlay": "Power Play",
+      "modifierShortHanded": "Short Handed",
+      "modifierEmptyNet": "Empty Net",
+      "modifierPenaltyShot": "Penalty Shot"
+    },
+    "penalty": {
+      "word1": "POWER",
+      "word2": "PLAY!",
+      "severity": {
+        "major": "Major",
+        "misconduct": "Misconduct",
+        "gameMisconduct": "Game Misconduct"
+      }
+    }
+  },
   "scheduleView": {
     "tabs": {
       "playoffs": "Playoffs",

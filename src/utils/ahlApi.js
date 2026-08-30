@@ -206,3 +206,25 @@ export async function fetchAHLPlayerShots(playerId, season = AHL_CURRENT_SEASON)
   if (!playerId) return null;
   return workerFetch(`/ahl/player-shots?playerId=${playerId}&season=${season}`);
 }
+
+/**
+ * Today's AHL games (Eastern time), with a derived pre/live/final status.
+ * Mirrors fetchPWHLToday. Returns [{ gameId, homeTeamId, awayTeamId,
+ * homeTeamCode, awayTeamCode, homeScore, awayScore, status }].
+ */
+export async function fetchAHLToday(season = AHL_CURRENT_SEASON) {
+  return workerFetch(`/ahl/today?season=${season}`);
+}
+
+/**
+ * Live (or completed) normalized PBP for a single AHL game. Mirrors
+ * fetchPWHLLive. No goalieStats/faceoffStats fields, unlike PWHL's --
+ * AHL has no faceoff data at all, and /ahl/summary already covers
+ * goalie box-score stats for a consumer that needs them. Returns
+ * { gameId, homeTeamId, awayTeamId, homeScore, awayScore,
+ *   gameStatus: 'pre'|'live'|'final', events: [...normalized events] }
+ */
+export async function fetchAHLLive(gameId) {
+  if (!gameId) return null;
+  return workerFetch(`/ahl/live/${gameId}`);
+}
