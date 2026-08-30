@@ -1463,6 +1463,7 @@
       "teamNews": "{{team}} News",
       "pwhlNews": "🏒 PWHL News",
       "ahlNews": "🏒 AHL News",
+      "echlNews": "🏒 ECHL News",
       "updated": "Updated {{time}} · {{count}} articles",
       "refreshAriaLabel": "Refresh news",
       "allSources": "All ({{count}})"
@@ -1479,7 +1480,8 @@
     "footer": {
       "nhl": "Articles from team blogs, ESPN, Sportsnet, Bleacher Report, The Athletic, and Reddit. Tap any article to read the full story.",
       "pwhl": "Articles from PWHL Official, ESPN, Sportsnet, and IIHF. Tap any article to read the full story.",
-      "ahl": "Articles from TheAHL.com, The Hockey Writers, and OurSports Central. Tap any article to read the full story."
+      "ahl": "Articles from TheAHL.com, The Hockey Writers, and OurSports Central. Tap any article to read the full story.",
+      "echl": "Articles from The Hockey Writers and OurSports Central. Tap any article to read the full story."
     }
   },
   "shareButtons": {

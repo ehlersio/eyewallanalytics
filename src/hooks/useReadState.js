@@ -20,6 +20,7 @@ import { useSport } from '../utils/SportContext';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { PWHL_TEAM_CONFIG } from '../utils/pwhlApi';
 import { AHL_TEAM_CONFIG } from '../utils/ahlApi';
+import { ECHL_TEAM_CONFIG } from '../utils/echlApi';
 import { getAnsweredMap } from '../utils/triviaAnswers';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
@@ -46,10 +47,10 @@ function setSeen(kind, sport, team, id) {
 }
 
 export function useReadState() {
-  const { isPWHL, isAHL } = useSport();
+  const { isPWHL, isAHL, isECHL } = useSport();
   const { i18n } = useTranslation();
-  const sport = isPWHL ? 'pwhl' : isAHL ? 'ahl' : 'nhl';
-  const team = (isPWHL ? PWHL_TEAM_CONFIG : isAHL ? AHL_TEAM_CONFIG : TEAM_CONFIG)?.abbr;
+  const sport = isPWHL ? 'pwhl' : isAHL ? 'ahl' : isECHL ? 'echl' : 'nhl';
+  const team = (isPWHL ? PWHL_TEAM_CONFIG : isAHL ? AHL_TEAM_CONFIG : isECHL ? ECHL_TEAM_CONFIG : TEAM_CONFIG)?.abbr;
 
   const [news, setNews] = useState({ unseen: false, latestId: null });
   const [milestones, setMilestones] = useState({ unseen: false, latestId: null });
@@ -86,12 +87,13 @@ export function useReadState() {
       // leave previous state — a failed check shouldn't flip the badge off
     }
 
-    // Milestones/trivia have no AHL data source at all (no
-    // ahl_milestones.py/trivia_questions.py-equivalent pipeline exists) --
-    // skip these two fetches entirely for AHL rather than hitting routes
-    // that only ever badRequest for sport=ahl. news/latest above is the
-    // only one of the three with a real AHL backing (eyewall-poller#73).
-    if (isAHL) return;
+    // Milestones/trivia have no AHL/ECHL data source at all (no
+    // ahl_milestones.py/echl_milestones.py/trivia_questions.py-equivalent
+    // pipeline exists for either) -- skip these two fetches entirely
+    // rather than hitting routes that only ever badRequest for
+    // sport=ahl/echl. news/latest above is the only one of the three with
+    // a real AHL/ECHL backing (eyewall-poller#73, #80).
+    if (isAHL || isECHL) return;
 
     try {
       const res = await fetch(`${WORKER_URL}/milestones/latest?sport=${sport}`);
@@ -129,7 +131,7 @@ export function useReadState() {
     } catch {
       // leave previous state
     }
-  }, [sport, team, i18n.language, isAHL]);
+  }, [sport, team, i18n.language, isAHL, isECHL]);
 
   useEffect(() => {
     refresh();
