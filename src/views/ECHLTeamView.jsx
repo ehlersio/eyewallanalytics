@@ -5,10 +5,10 @@
 //   - Advanced (Corsi/Fenwick/PDO) -- no blocked_shot event type exists
 //     in ECHL's feed either.
 //   - Salaries -- no ECHL salary data source exists anywhere.
-// No "Compare Seasons" button this pass -- AHLTeamView's TeamComparisonPopup
-// wiring was added in a later parity pass (Phase 4), not its own
-// foundation build. Deferred to a later follow-up, matching AHL's own
-// two-pass history.
+// "Compare Seasons" (PWHLTeamView's TeamComparisonPopup button), added
+// ECHL parity plan Phase 4 -- TeamComparisonPopup.jsx now has an 'echl'
+// branch throughout (fetch functions, logo sport, team-option lists,
+// /config/seasons/comparison's ECHL entry).
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
@@ -20,6 +20,7 @@ import { ECHL_SEASONS, ECHL_PLAYOFF_SEASON_MAP, ECHL_REGULAR_SEASON_MAP, isECHLP
 import { useSport } from '../utils/SportContext';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
+import TeamComparisonPopup from '../components/TeamComparisonPopup';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 
@@ -34,6 +35,7 @@ function tabClasses(isActive) {
 }
 
 const VIEW_SUB_CLASSES = 'view-sub text-[12px] text-[color:var(--text-muted)] mb-3'
+const TEAM_COMPARE_BTN_CLASSES = 'text-[11px] font-semibold text-[color:var(--text-muted)] bg-[var(--bg2)] border-[0.5px] border-[var(--border-2)] rounded-[var(--radius-sm)] py-[5px] px-[9px] cursor-pointer whitespace-nowrap [transition:background_0.15s,color_0.15s] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]'
 
 const TEAM_TABS_CLASSES = 'flex gap-1 mb-[14px] overflow-x-auto pb-[2px] border-b-[0.5px] border-[var(--border)]'
 const TEAM_TAB_BASE_CLASSES = 'team-tab py-[6px] px-[14px] rounded-[20px] text-[12px] font-medium border-[0.5px] whitespace-nowrap cursor-pointer [transition:all_0.15s]'
@@ -167,6 +169,7 @@ export default function ECHLTeamView() {
   const abbr   = team?.abbr || '—';
   const color  = team?.displayColor || 'var(--text-dim)';
   const [tab, setTab] = useState('Overview');
+  const [compareOpen, setCompareOpen] = useState(false);
 
   // currentSeason is reactive (see SportContext.jsx) -- same reasoning as
   // AHLTeamView.jsx's identical currentSeason usage: this view has no
@@ -220,7 +223,19 @@ export default function ECHLTeamView() {
         <TeamLogo abbr={abbr} sport="echl" size={28} color={color} />
         <h2 className={VIEW_TITLE_CLASSES} style={{ margin: 0 }}>{team.displayName}</h2>
       </div>
-      <p className={VIEW_SUB_CLASSES}>{t('teamView.seasonSubtitle', { years: seasonLabel })}</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <p className={VIEW_SUB_CLASSES} style={{ margin: 0 }}>{t('teamView.seasonSubtitle', { years: seasonLabel })}</p>
+        <button className={TEAM_COMPARE_BTN_CLASSES} onClick={() => setCompareOpen(true)}>{t('team.compareSeasons')}</button>
+      </div>
+
+      {compareOpen && (
+        <TeamComparisonPopup
+          league="echl"
+          teamValue={teamId}
+          teamLabel={team.displayName}
+          onClose={() => setCompareOpen(false)}
+        />
+      )}
 
       <div className={TEAM_TABS_CLASSES}>
         {TABS.map(tabId => (

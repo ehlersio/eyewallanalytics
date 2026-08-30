@@ -151,3 +151,51 @@ export async function fetchECHLPrediction(gameId) {
   if (!gameId) return null;
   return workerFetch(`/echl/prediction?gameId=${gameId}`);
 }
+
+/** One team across multiple seasons, for TeamComparisonPopup's "Compare
+ * Seasons" mode. Mirrors fetchAHLTeamSeasonsCompare. */
+export async function fetchECHLTeamSeasonsCompare(teamId, seasons) {
+  if (!teamId || !seasons?.length) return [];
+  const rows = await workerFetch(`/echl/team-seasons/compare?teamId=${teamId}&seasons=${seasons.join(',')}`);
+  if (!Array.isArray(rows)) return [];
+  return rows.map(r => ({
+    season:        r.season_id,
+    gamesPlayed:   r.gp,
+    wins:          r.wins,
+    losses:        r.losses,
+    otLosses:      (r.ot_losses ?? 0) + (r.shootout_losses ?? 0),
+    points:        r.points,
+    goalsFor:      r.goals_for,
+    goalsAgainst:  r.goals_against,
+    ppPct:         r.pp_pct,
+    pkPct:         r.pk_pct,
+  }));
+}
+
+/** Team vs team comparison -- two teams, one season. Mirrors
+ * fetchAHLTeamSeasonsCompareTeams. */
+export async function fetchECHLTeamSeasonsCompareTeams(teamIdA, teamIdB, season) {
+  if (!teamIdA || !teamIdB || !season) return [];
+  const rows = await workerFetch(`/echl/team-seasons/compare-teams?teamIds=${teamIdA},${teamIdB}&season=${season}`);
+  if (!Array.isArray(rows)) return [];
+  return rows.map(r => ({
+    team:          r.team_id,
+    season:        r.season_id,
+    gamesPlayed:   r.gp,
+    wins:          r.wins,
+    losses:        r.losses,
+    otLosses:      (r.ot_losses ?? 0) + (r.shootout_losses ?? 0),
+    points:        r.points,
+    goalsFor:      r.goals_for,
+    goalsAgainst:  r.goals_against,
+    ppPct:         r.pp_pct,
+    pkPct:         r.pk_pct,
+  }));
+}
+
+/** Head-to-head -- mirrors fetchAHLTeamHeadToHead, already a clean
+ * camelCase shape from /echl/team-seasons/head-to-head. */
+export async function fetchECHLTeamHeadToHead(teamIdA, teamIdB) {
+  if (!teamIdA || !teamIdB) return null;
+  return workerFetch(`/echl/team-seasons/head-to-head?teamIds=${teamIdA},${teamIdB}`);
+}

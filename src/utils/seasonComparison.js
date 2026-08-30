@@ -51,6 +51,20 @@ export function ahlSeasonLabel({ seasonId, seasonType, startYear }) {
   return base;
 }
 
+// Same {startYear, seasonType} shape as ahlSeasonLabel, but a real
+// ECHL-specific format difference for playoffs: ECHL's own convention
+// names its playoffs "{year} Kelly Cup Playoffs" (per echlConfig.js's
+// hand-verified ECHL_SEASONS list, confirmed live 2026-08-30), not AHL's
+// bare "{year} Playoffs" -- don't reuse ahlSeasonLabel's template here
+// even though the surrounding shape is otherwise identical.
+export function echlSeasonLabel({ seasonId, seasonType, startYear }) {
+  if (!startYear) return `Season ${seasonId}`;
+  if (seasonType === 'playoffs') return `${startYear} Kelly Cup Playoffs`;
+  const base = `${startYear}-${String(startYear + 1).slice(2)}`;
+  if (seasonType === 'preseason') return `${base} Preseason`;
+  return base;
+}
+
 // Normalizes one league's /config/seasons/comparison `seasons` array into
 // { value, label, comparable, teamCount, seasonType }. `value` is the
 // identifier a consumer passes back to whatever route it calls for that
@@ -70,6 +84,15 @@ export function normalizeComparisonSeasons(league, seasons = []) {
     return seasons.map(s => ({
       value: s.seasonId,
       label: pwhlSeasonLabel(s),
+      comparable: s.comparable,
+      teamCount: s.teamCount,
+      seasonType: s.seasonType,
+    }));
+  }
+  if (league === 'echl') {
+    return seasons.map(s => ({
+      value: s.seasonId,
+      label: echlSeasonLabel(s),
       comparable: s.comparable,
       teamCount: s.teamCount,
       seasonType: s.seasonType,
