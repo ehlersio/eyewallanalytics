@@ -9,26 +9,36 @@ export function useFetch(fetchFn, deps = []) {
   const [error,   setError]   = useState(null);
   const mountedRef = useRef(true);
   const fetchRef   = useRef(fetchFn);
+  // Bumped on every load() call, so a slower older call can recognize a
+  // newer one has since started and discard its own result on arrival.
+  // Without this, two fetches fired close together (e.g. a deps change
+  // right after mount, before a user has interacted) can resolve out of
+  // order -- the newer, correct response arrives first, then the older,
+  // slower one arrives after and silently overwrites it with stale data,
+  // even though nothing in the UI looks wrong until you compare the
+  // rendered data against whatever deps are actually currently selected.
+  const tokenRef = useRef(0);
 
   // Keep fetchRef current without triggering re-renders
   useEffect(() => { fetchRef.current = fetchFn; });
 
   const load = useCallback(async () => {
+    const myToken = ++tokenRef.current;
     setLoading(true);
     setError(null);
     try {
       const result = await fetchRef.current();
-      if (mountedRef.current) {
+      if (mountedRef.current && myToken === tokenRef.current) {
         setData(result);
         setLoading(false);
       }
     } catch (err) {
-      if (mountedRef.current) {
+      if (mountedRef.current && myToken === tokenRef.current) {
         setError(err.message);
         setLoading(false);
       }
     }
-  }, deps);  
+  }, deps);
 
   useEffect(() => {
     mountedRef.current = true;
