@@ -80,3 +80,25 @@ export async function fetchECHLTeamSeasonSummary(teamId = ECHL_TEAM_ID, season =
   if (!teamId) return null;
   return workerFetch(`/echl/team-season-summary?teamId=${teamId}&season=${season}`);
 }
+
+/** Player identity + one season's stat line, for ECHLPlayerPopup's self-fetch. */
+export async function fetchECHLPlayerLanding(playerId, season = ECHL_CURRENT_SEASON) {
+  if (!playerId) return null;
+  return workerFetch(`/echl/player/landing?id=${playerId}&season=${season}`);
+}
+
+/** Career totals (regular season + playoffs), recent-form games, bio
+ * bullets, and draft info — live HockeyTech proxy, season-independent. */
+export async function fetchECHLPlayerCareer(playerId) {
+  if (!playerId) return null;
+  return workerFetch(`/echl/player/career?id=${playerId}`);
+}
+
+/** Shot-map heat map data for a single skater. No goalie equivalent --
+ * ECHL's PBP doesn't carry goalie_id on goal events either (see
+ * eyewall-poller's echl.js /echl/player-shots docstring), same structural
+ * gap as AHL's feed. */
+export async function fetchECHLPlayerShots(playerId, season = ECHL_CURRENT_SEASON) {
+  if (!playerId) return null;
+  return workerFetch(`/echl/player-shots?playerId=${playerId}&season=${season}`);
+}
