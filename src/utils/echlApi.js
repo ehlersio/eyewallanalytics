@@ -199,3 +199,18 @@ export async function fetchECHLTeamHeadToHead(teamIdA, teamIdB) {
   if (!teamIdA || !teamIdB) return null;
   return workerFetch(`/echl/team-seasons/head-to-head?teamIds=${teamIdA},${teamIdB}`);
 }
+
+/** Today's ECHL games (Eastern time), with a derived pre/live/final status. */
+export async function fetchECHLToday(season = ECHL_CURRENT_SEASON) {
+  return workerFetch(`/echl/today?season=${season}`);
+}
+
+/**
+ * Live (or completed) normalized PBP for a single ECHL game. Mirrors
+ * fetchAHLLive. No goalieStats/faceoffStats fields -- same data wall as
+ * AHL's own feed.
+ */
+export async function fetchECHLLive(gameId) {
+  if (!gameId) return null;
+  return workerFetch(`/echl/live/${gameId}`);
+}

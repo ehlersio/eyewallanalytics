@@ -1068,6 +1068,26 @@
       }
     }
   },
+  "echlGameEvents": {
+    "puckDrop": {
+      "line3": "On y va !"
+    },
+    "goal": {
+      "modifierPowerPlay": "Avantage numérique",
+      "modifierShortHanded": "Désavantage numérique",
+      "modifierEmptyNet": "Filet vide",
+      "modifierPenaltyShot": "Tir de pénalité"
+    },
+    "penalty": {
+      "word1": "AVANTAGE",
+      "word2": "NUMÉRIQUE !",
+      "severity": {
+        "major": "Majeure",
+        "misconduct": "Inconduite",
+        "gameMisconduct": "Inconduite de partie"
+      }
+    }
+  },
   "scheduleView": {
     "tabs": {
       "playoffs": "Séries éliminatoires",
