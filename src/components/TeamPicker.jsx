@@ -146,12 +146,12 @@ function SportStep({ onPickSport }) {
       description: t('teamPicker.ahlDescription', { count: AHL_TEAMS.length }),
     },
     {
-      // No self-hosted ECHL wordmark yet (foundation-pass scope, same
-      // "don't guess an asset URL" reasoning as ECHL team colors/logos
-      // elsewhere this pass) -- falls through to the plain-text tile
-      // below (logo: undefined), same fallback this component already
-      // supports.
+      // Same reasoning as ahl-logo.svg above -- ECHL's own asset CDN
+      // (assets.leaguestat.com) has no league wordmark either. Self-hosted
+      // here instead, sourced directly from echl.com's own site logo
+      // (their public CDN asset, not a third-party rehost).
       id: 'echl',
+      logo: '/echl-logo.png',
       description: t('teamPicker.echlDescription', { count: ECHL_TEAMS.length }),
     },
   ];
