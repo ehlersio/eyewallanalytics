@@ -39,15 +39,13 @@ const AHLPlayersView  = lazy(() => import('./views/AHLPlayersView'));
 const AHLTeamView     = lazy(() => import('./views/AHLTeamView'));
 const AHLNewsView     = lazy(() => import('./views/AHLNewsView'));
 
-// ECHL routes -- foundation + basic display pass only (user's explicit
-// scope choice, matching AHL's own two-pass history): no news view this
-// pass (no echl_news.py pipeline script yet, deferred to a later
-// follow-up alongside player popups/game popups/predictions/comparison).
+// ECHL routes -- ECHLNewsView added (parity plan Phase 5 equivalent).
 const ECHLShotMapView  = lazy(() => import('./views/ECHLShotMapView'));
 const ECHLLeagueView   = lazy(() => import('./views/ECHLLeagueView'));
 const ECHLScheduleView = lazy(() => import('./views/ECHLScheduleView'));
 const ECHLPlayersView  = lazy(() => import('./views/ECHLPlayersView'));
 const ECHLTeamView     = lazy(() => import('./views/ECHLTeamView'));
+const ECHLNewsView     = lazy(() => import('./views/ECHLNewsView'));
 
 const DevReplayView = import.meta.env.DEV
   ? lazy(() => import('./views/DevReplayView'))
@@ -107,6 +105,7 @@ function PageTracker() {
       '/echl/players':  'ECHL Players',
       '/echl/schedule': 'ECHL Schedule',
       '/echl/team':     'ECHL Team',
+      '/echl/news':     'ECHL News',
     };
     capture('$pageview', {
       path:      location.pathname,
@@ -190,6 +189,7 @@ export default function App() {
                       <Route path="/echl/league"   element={<ECHLLeagueView />} />
                       <Route path="/echl/players"  element={<ECHLPlayersView />} />
                       <Route path="/echl/schedule" element={<ECHLScheduleView />} />
+                      <Route path="/echl/news"     element={<ECHLNewsView />} />
                       {import.meta.env.DEV && DevReplayView && (
                         <Route path="/dev" element={<DevReplayView />} />
                       )}
