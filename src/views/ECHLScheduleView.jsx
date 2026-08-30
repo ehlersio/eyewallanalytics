@@ -1,15 +1,23 @@
 // views/ECHLScheduleView.jsx
-// Mirrors AHLScheduleView's foundation-pass shape (before that file later
-// grew calendar view + game popups + prediction tracking in a follow-up
-// parity pass) -- a plain chronological game-card list only. No calendar
-// toggle, no box-score/preview popups, no prediction tracking this pass
-// -- deferred to a later follow-up, matching AHL's own two-pass history.
+// ECHL parity pass, Phase 3 equivalent: schedule popups + calendar +
+// predictions added -- port of AHLScheduleView.jsx. Deliberately simpler
+// than PWHLScheduleView.jsx in two ways, both real scope cuts, same as
+// AHL's own:
+//   - No separate Regular Season/Playoffs tab -- ECHL_SEASONS already
+//     lists "2026 Kelly Cup Playoffs" as its own selectable season tab
+//     (matching ECHLPlayersView.jsx's existing pattern).
+//   - No round-based playoff bracket view -- same "Bracket deferred"
+//     reasoning ECHLLeagueView already documents for its own Bracket tab.
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDate as formatDateIntl } from '../utils/formatters';
 import { useFetch } from '../hooks/useFetch';
 import { fetchECHLSchedule, ECHL_TEAM_CONFIG, ECHL_TEAM_ID } from '../utils/echlApi';
 import { ECHL_CURRENT_SEASON, ECHL_TEAM_BY_ID, ECHL_SEASONS, getECHLTeamById } from '../utils/echlConfig';
+import { recordECHLOutcome } from '../utils/echlPredictionStore';
+import { ECHLCalendarView } from '../components/ECHLCalendarView';
+import ECHLGameStatsPopup from '../components/ECHLGameStatsPopup';
+import ECHLGamePreviewPopup from '../components/ECHLGamePreviewPopup';
 import TeamLogo from '../components/TeamLogo';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
@@ -24,6 +32,12 @@ const TAB_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] border-b-transparen
 const TAB_ACTIVE_CLASSES = 'text-[color:var(--red-bright)] border-b-[var(--red-bright)]';
 function tabClasses(isActive) {
   return `${TAB_BASE_CLASSES} ${isActive ? TAB_ACTIVE_CLASSES : TAB_INACTIVE_CLASSES}`;
+}
+const VM_BTN_BASE = 'py-1 px-2.5 rounded-[14px] text-[14px] border-none cursor-pointer [transition:all_0.15s] leading-none';
+function vmBtnClasses(active) {
+  return active
+    ? `${VM_BTN_BASE} bg-[var(--bg4)] text-[color:var(--text)] shadow-[0_1px_4px_rgba(0,0,0,0.3)]`
+    : `${VM_BTN_BASE} bg-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text)]`;
 }
 
 function dayOfWeek(dateStr) {
@@ -42,8 +56,15 @@ export default function ECHLScheduleView() {
   const team = ECHL_TEAM_CONFIG;
   const teamId = ECHL_TEAM_ID;
   const abbr = team?.abbr || '—';
+  const color = team?.displayColor || 'var(--text-dim)';
 
   const [season, setSeason] = useState(ECHL_CURRENT_SEASON);
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'calendar'
+  const [popup, setPopup] = useState(null);
+  const [calMonth, setCalMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
 
   const userPickedSeason = useRef(false);
   useEffect(() => {
@@ -61,6 +82,23 @@ export default function ECHLScheduleView() {
     if (!data) return [];
     return [...data].sort((a, b) => new Date(a.game_date) - new Date(b.game_date));
   }, [data]);
+
+  // Auto-record prediction outcomes for any completed games --
+  // ECHLGamePreviewPopup.jsx saves the prediction when a user opens a
+  // game's preview; this fills in the actual outcome once that game is
+  // Final, keyed by the same game_id. Mirrors AHLScheduleView.jsx's
+  // identical effect.
+  useEffect(() => {
+    if (!teamId) return;
+    games.filter(g => g.game_state === 'Final').forEach(g => {
+      const isHomeGame = g.home_team_id === teamId;
+      const teamActual = isHomeGame ? g.home_score : g.away_score;
+      const oppActual  = isHomeGame ? g.away_score : g.home_score;
+      if (teamActual != null && oppActual != null && g.game_id) {
+        recordECHLOutcome(g.game_id, teamActual, oppActual);
+      }
+    });
+  }, [games, teamId]);
 
   if (!abbr || !teamId) {
     return (
@@ -87,20 +125,44 @@ export default function ECHLScheduleView() {
           <button key={s.id} className={tabClasses(season === s.id)}
             onClick={() => { userPickedSeason.current = true; setSeason(s.id); }}>{s.label}</button>
         ))}
+        <div className="view-mode-toggle flex gap-0.5 bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)] rounded-[20px] p-[3px] shrink-0 ml-2 self-center">
+          <button className={vmBtnClasses(viewMode === 'list')}
+            onClick={() => setViewMode('list')} title={t('scheduleView.viewToggle.cardView')}>≡</button>
+          <button className={vmBtnClasses(viewMode === 'calendar')}
+            onClick={() => setViewMode('calendar')} title={t('scheduleView.viewToggle.calendarView')}>📅</button>
+        </div>
       </div>
 
       {loading && <LoadingCards count={8} />}
       {!loading && games.length === 0 && (
         <div className={EMPTY_STATE_CLASSES}>{t('echlScheduleView.empty')}</div>
       )}
-      {!loading && games.length > 0 && games.map((g) => (
-        <GameCard key={g.game_id} game={g} teamId={teamId} abbr={abbr} />
+      {!loading && games.length > 0 && viewMode === 'list' && games.map((g) => (
+        <GameCard key={g.game_id} game={g} teamId={teamId} abbr={abbr} onClick={() => setPopup(g)} />
       ))}
+      {!loading && games.length > 0 && viewMode === 'calendar' && (
+        <ECHLCalendarView
+          games={games}
+          calMonth={calMonth}
+          setCalMonth={setCalMonth}
+          onGamePopup={setPopup}
+          teamId={teamId}
+        />
+      )}
+
+      {/* Game detail popup -- Final games get the box-score popup,
+          upcoming games get the pre-game preview popup. */}
+      {popup && popup.game_state === 'Final' && (
+        <ECHLGameStatsPopup game={popup} teamId={teamId} abbr={abbr} color={color} onClose={() => setPopup(null)} />
+      )}
+      {popup && popup.game_state !== 'Final' && (
+        <ECHLGamePreviewPopup game={popup} teamId={teamId} abbr={abbr} color={color} onClose={() => setPopup(null)} />
+      )}
     </div>
   );
 }
 
-function GameCard({ game: g, teamId, abbr }) {
+function GameCard({ game: g, teamId, abbr, onClick }) {
   const { t } = useTranslation();
   const isHome = g.home_team_id === teamId;
   const oppId = isHome ? g.away_team_id : g.home_team_id;
@@ -111,7 +173,7 @@ function GameCard({ game: g, teamId, abbr }) {
   const won = isFinal && my > op;
 
   return (
-    <div className="card mb-2" style={{ padding: '12px 14px' }}>
+    <div className="card mb-2 cursor-pointer [transition:border-color_0.15s] hover:border-[color:var(--border-2)]" style={{ padding: '12px 14px' }} onClick={onClick}>
       <div className="flex items-center gap-2 mb-1.5">
         <span className="text-[11px] text-[color:var(--text-muted)]">{dayOfWeek(g.game_date)} {formatDate(g.game_date)}</span>
         {isFinal && (
@@ -136,6 +198,9 @@ function GameCard({ game: g, teamId, abbr }) {
         <span className="text-[16px] font-bold text-[color:var(--text-muted)]">{oppAbbr}</span>
         <TeamLogo abbr={oppAbbr} sport="echl" size={20} />
       </div>
+      {!isFinal && (
+        <span className="text-[10px] text-[color:var(--text-dim)] mt-1.5 inline-block">{t('pwhlScheduleView.upcomingCard.tapForPreview')}</span>
+      )}
     </div>
   );
 }
