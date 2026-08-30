@@ -173,6 +173,9 @@ export function hasTeamConfig() {
     if (sport === 'ahl') {
       return localStorage.getItem('eyewall:ahl_team') !== null;
     }
+    if (sport === 'echl') {
+      return localStorage.getItem('eyewall:echl_team') !== null;
+    }
     return localStorage.getItem('eyewall:team') !== null;
   } catch {
     return false;

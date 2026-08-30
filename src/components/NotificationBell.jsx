@@ -148,6 +148,7 @@ export default function NotificationBell() {
     localStorage.removeItem('eyewall:team');
     localStorage.removeItem('eyewall:pwhl_team');
     localStorage.removeItem('eyewall:ahl_team');
+    localStorage.removeItem('eyewall:echl_team');
     // Signed-in users get their favorite team reconciled from the server on
     // every load (see favoriteTeamSync.js) -- without this flag, clearing
     // local storage here looks identical to "fresh device, no opinion yet"

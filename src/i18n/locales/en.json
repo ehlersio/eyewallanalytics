@@ -597,6 +597,80 @@
     "sogAgainst": "SOG Against",
     "noShots": "No shot data available for this season."
   },
+  "echlTeamView": {
+    "noTeamSelected": "No ECHL team selected.",
+    "tabs": {
+      "overview": "Overview",
+      "stats": "Stats",
+      "splits": "Splits",
+      "trends": "Trends"
+    },
+    "overview": {
+      "gfLabel": "GF: {{val}}",
+      "gaLabel": "GA: {{val}}",
+      "diffSuffix": "{{sign}}{{gd}} diff",
+      "last5Title": "Last 5 games",
+      "pointsLeadersTitle": "{{abbr}} Points Leaders",
+      "playerFallbackName": "Player #{{id}}",
+      "ptsSuffix": "pts",
+      "startingGoalieTitle": "{{abbr}} Starting Goalie",
+      "shutoutNote_one": "{{count}} shutout",
+      "shutoutNote_other": "{{count}} shutouts"
+    },
+    "stats": {
+      "metGoals": "Goals",
+      "metAssists": "Assists",
+      "metPoints": "Points",
+      "metPpg": "PPG",
+      "subTeamTotal": "Team total",
+      "subPowerPlay": "Power play",
+      "viewSkaters": "Skaters",
+      "viewGoalies": "Goalies",
+      "playerFallbackShort": "#{{id}}"
+    },
+    "splits": {
+      "noDataYet": "No {{label}} data yet."
+    },
+    "trends": {
+      "loadingTitle": "Loading trends…",
+      "noDataTitle": "No game data yet",
+      "winPctL10": "Win% L10",
+      "simpleDotTooltip": "{{result}} {{my}}–{{op}}",
+      "rollingWinPctTitle": "Win% — rolling 10-game window",
+      "simpleBarTooltip": "{{pct}}% win rate",
+      "legendFootnoteShort": "— 50% ref"
+    }
+  },
+  "echlPlayersView": {
+    "noTeamSelected": "No ECHL team selected.",
+    "subtitle": "Season stats",
+    "skatersToggle": "Skaters",
+    "defencemen": "Defencemen",
+    "failedToLoadRoster": "Failed to load roster.",
+    "noRosterData": "No roster data available.",
+    "emptySkaterStats": "No skater stats for {{season}}.",
+    "emptyGoalieStats": "No goalie stats for {{season}}.",
+    "colGoalie": "Goalie",
+    "tableHint": "Sort by any column",
+    "footerHintSource": "Source: HockeyTech / ECHL"
+  },
+  "echlScheduleView": {
+    "empty": "No games found."
+  },
+  "echlLeagueView": {
+    "standingsEmpty": "No standings data available.",
+    "leadersEmpty": "No leader data available."
+  },
+  "echlShotMapView": {
+    "subtitle": "Season shot map",
+    "goals": "Goals",
+    "shotsOnGoal": "Shots on Goal",
+    "ppPct": "PP%",
+    "pkPct": "PK%",
+    "sogFor": "SOG For",
+    "sogAgainst": "SOG Against",
+    "noShots": "No shot data available for this season."
+  },
   "common": {
     "loading": "Loading…",
     "close": "Close",
@@ -1849,6 +1923,7 @@
     "nhlDescription": "All 32 teams · Full analytics",
     "pwhlDescription": "All {{count}} teams · Full analytics",
     "ahlDescription": "All {{count}} teams · Full analytics",
+    "echlDescription": "All {{count}} teams · Full analytics",
     "disclaimer": "EyeWall Analytics is not affiliated with, endorsed by, or sponsored by the National Hockey League (NHL), the Professional Women's Hockey League (PWHL), the American Hockey League (AHL), or any of their teams. All NHL, PWHL, and AHL team names, logos, and trademarks are the property of their respective owners. Statistics and data are sourced from publicly available APIs and are provided for informational purposes only.",
     "back": "← Back",
     "chooseTeam": "Choose your team",

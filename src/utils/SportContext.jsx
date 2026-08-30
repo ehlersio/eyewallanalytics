@@ -11,6 +11,7 @@ import { useLocation } from 'react-router-dom';
 import { ALL_TEAMS, CURRENT_SEASON } from './teamConfig';
 import { PWHL_TEAMS, PWHL_CURRENT_SEASON } from './pwhlConfig';
 import { AHL_TEAMS, AHL_CURRENT_SEASON } from './ahlConfig';
+import { ECHL_TEAMS, ECHL_CURRENT_SEASON } from './echlConfig';
 
 const STORAGE_KEY = 'eyewall:sport';
 
@@ -37,6 +38,10 @@ export function isAHL() {
   return getSport() === 'ahl';
 }
 
+export function isECHL() {
+  return getSport() === 'echl';
+}
+
 // ── Context ───────────────────────────────────────────────────────────────────
 
 const SportContext = createContext({
@@ -47,6 +52,7 @@ const SportContext = createContext({
   isPWHL: false,
   isNHL: true,
   isAHL: false,
+  isECHL: false,
 });
 
 export function SportProvider({ children }) {
@@ -71,13 +77,14 @@ export function SportProvider({ children }) {
   const location = useLocation();
   const pwhl = location.pathname.startsWith('/pwhl');
   const ahl = location.pathname.startsWith('/ahl');
-  const sport = pwhl ? 'pwhl' : ahl ? 'ahl' : 'nhl';
+  const echl = location.pathname.startsWith('/echl');
+  const sport = pwhl ? 'pwhl' : ahl ? 'ahl' : echl ? 'echl' : 'nhl';
 
   function seasonFor(s) {
-    return s === 'pwhl' ? PWHL_CURRENT_SEASON : s === 'ahl' ? AHL_CURRENT_SEASON : CURRENT_SEASON;
+    return s === 'pwhl' ? PWHL_CURRENT_SEASON : s === 'ahl' ? AHL_CURRENT_SEASON : s === 'echl' ? ECHL_CURRENT_SEASON : CURRENT_SEASON;
   }
   function eventNameFor(s) {
-    return s === 'pwhl' ? 'eyewall:pwhl-season-updated' : s === 'ahl' ? 'eyewall:ahl-season-updated' : 'eyewall:nhl-season-updated';
+    return s === 'pwhl' ? 'eyewall:pwhl-season-updated' : s === 'ahl' ? 'eyewall:ahl-season-updated' : s === 'echl' ? 'eyewall:echl-season-updated' : 'eyewall:nhl-season-updated';
   }
 
   // CURRENT_SEASON/PWHL_CURRENT_SEASON/AHL_CURRENT_SEASON are `let` bindings
@@ -108,11 +115,12 @@ export function SportProvider({ children }) {
   const value = {
     sport,
     setSport: setSportAndReload,
-    allTeams: pwhl ? PWHL_TEAMS : ahl ? AHL_TEAMS : ALL_TEAMS,
+    allTeams: pwhl ? PWHL_TEAMS : ahl ? AHL_TEAMS : echl ? ECHL_TEAMS : ALL_TEAMS,
     currentSeason: season,
     isPWHL: pwhl,
-    isNHL: !pwhl && !ahl,
+    isNHL: !pwhl && !ahl && !echl,
     isAHL: ahl,
+    isECHL: echl,
   };
 
   return (

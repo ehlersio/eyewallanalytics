@@ -36,6 +36,17 @@ const AHL_TABS = [
   { to: '/ahl/news',     icon: '📰', labelKey: 'nav.news'     },
 ];
 
+// ECHL foundation pass -- no /echl/news tab yet (no echl_news.py pipeline
+// script built this pass, deferred to a later follow-up matching AHL's
+// own two-pass history).
+const ECHL_TABS = [
+  { to: '/echl/shots',    icon: '⬡',  labelKey: 'nav.shotMap'  },
+  { to: '/echl/schedule', icon: '📅', labelKey: 'nav.schedule' },
+  { to: '/echl/players',  icon: '👤', labelKey: 'nav.players'  },
+  { to: '/echl/team',     icon: '📊', labelKey: 'nav.team'     },
+  { to: '/echl/league',   icon: '🏒', labelKey: 'nav.league'   },
+];
+
 // Tailwind migration (Phase 7c, final file of the migration) -- previously
 // BottomNav.css. .bottom-nav's fixed positioning/z-index/height calc are
 // unchanged byte-for-byte from the original CSS -- see the comment on
@@ -89,8 +100,8 @@ const NAV_LABEL_CLASSES = 'nav-label text-[10px] font-medium tracking-[0.04em]';
 
 export default function BottomNav() {
   const { t } = useTranslation();
-  const { isPWHL, isAHL } = useSport();
-  const tabs = isPWHL ? PWHL_TABS : isAHL ? AHL_TABS : NHL_TABS;
+  const { isPWHL, isAHL, isECHL } = useSport();
+  const tabs = isPWHL ? PWHL_TABS : isAHL ? AHL_TABS : isECHL ? ECHL_TABS : NHL_TABS;
   // Combined dot on the News icon — OR across News/Milestones/Trivia's own
   // per-tab unseen state (already computed by useReadState; no separate
   // tracking mechanism). Safe to mount alongside NewsView's own instance
