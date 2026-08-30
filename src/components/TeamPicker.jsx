@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next'
 import { ALL_TEAMS, setTeamConfig } from '../utils/teamConfig'
 import { PWHL_TEAMS } from '../utils/pwhlConfig'
 import { AHL_TEAMS, ahlLogoUrl } from '../utils/ahlConfig'
+import { ECHL_TEAMS, echlLogoUrl } from '../utils/echlConfig'
 import { useAuth } from '../utils/AuthContext'
 import { upsertFavoriteTeam } from '../utils/favoriteTeamSync'
 import TeamLogo from './TeamLogo'
@@ -102,10 +103,22 @@ const AHL_DIVISIONS = AHL_DIVISION_NAMES.map(name => ({
   teams: AHL_TEAMS.filter(t => t.division === name).map(t => t.abbr),
 }));
 
+// ── ECHL grouping ─────────────────────────────────────────────────────────────
+// ECHL_DIVISIONS derived from echlConfig.js's own `division` field, same
+// "don't hand-duplicate the grouping" reasoning as AHL_DIVISIONS above.
+// Real division names confirmed live 2026-08-30 (North/South/Central/
+// Mountain), NOT AHL's Atlantic/North/Central/Pacific set.
+const ECHL_DIVISION_NAMES = ['North', 'South', 'Central', 'Mountain'];
+const ECHL_DIVISIONS = ECHL_DIVISION_NAMES.map(name => ({
+  name,
+  teams: ECHL_TEAMS.filter(t => t.division === name).map(t => t.abbr),
+}));
+
 // ── Lookups ───────────────────────────────────────────────────────────────────
 const nhlTeamByAbbr  = Object.fromEntries(ALL_TEAMS.map(t => [t.abbr, t]));
 const pwhlTeamByAbbr = Object.fromEntries(PWHL_TEAMS.map(t => [t.abbr, t]));
 const ahlTeamByAbbr  = Object.fromEntries(AHL_TEAMS.map(t => [t.abbr, t]));
+const echlTeamByAbbr = Object.fromEntries(ECHL_TEAMS.map(t => [t.abbr, t]));
 
 // ── Sport step ────────────────────────────────────────────────────────────────
 function SportStep({ onPickSport }) {
@@ -131,6 +144,15 @@ function SportStep({ onPickSport }) {
       id: 'ahl',
       logo: '/ahl-logo.svg',
       description: t('teamPicker.ahlDescription', { count: AHL_TEAMS.length }),
+    },
+    {
+      // No self-hosted ECHL wordmark yet (foundation-pass scope, same
+      // "don't guess an asset URL" reasoning as ECHL team colors/logos
+      // elsewhere this pass) -- falls through to the plain-text tile
+      // below (logo: undefined), same fallback this component already
+      // supports.
+      id: 'echl',
+      description: t('teamPicker.echlDescription', { count: ECHL_TEAMS.length }),
     },
   ];
 
@@ -362,6 +384,59 @@ function AHLTeamStep({ onBack, onSelect }) {
   );
 }
 
+// ── ECHL team grid ────────────────────────────────────────────────────────────
+// Same reasoning as AHLTeamStep -- uses ECHL's own hosted team-logo CDN
+// (echlLogoUrl) directly rather than TeamLogo's abbr-keyed lookup.
+function ECHLTeamStep({ onBack, onSelect }) {
+  const { t } = useTranslation();
+  const [hovered, setHovered] = useState(null);
+
+  return (
+    <>
+      <div className={HEADER_CLASSES}>
+        <button className={BACK_CLASSES} onClick={onBack}>{t('teamPicker.back')}</button>
+        <h1 className={TITLE_CLASSES}>{t('teamPicker.chooseTeam')}</h1>
+        <p className={SUB_CLASSES}>{t('teamPicker.settingsHint')}</p>
+      </div>
+      <div className={DIVISIONS_CLASSES}>
+        {ECHL_DIVISIONS.map(division => (
+          <div key={division.name}>
+            <span className={DIVISION_LABEL_CLASSES}>{division.name}</span>
+            <div className={GRID_CLASSES}>
+              {division.teams.map(abbr => {
+                const team  = echlTeamByAbbr[abbr];
+                const color = team?.displayColor || '#888';
+                const isHov = hovered === abbr;
+                if (!team) return null;
+                return (
+                  <button
+                    key={abbr}
+                    className={TILE_CLASSES}
+                    style={{
+                      '--team-color': color,
+                      background:  isHov ? `${color}22` : 'transparent',
+                      borderColor: isHov ? color : 'var(--border)',
+                    }}
+                    onClick={() => onSelect(abbr)}
+                    onMouseEnter={() => setHovered(abbr)}
+                    onMouseLeave={() => setHovered(null)}
+                    aria-label={team.displayName}
+                  >
+                    <img src={echlLogoUrl(team.teamId)} alt={abbr} width={48} height={48} className="object-contain" />
+                    <span className={ABBR_CLASSES}>{abbr}</span>
+                    <span className={NAME_CLASSES}>{team.shortName}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ height: 48 }} aria-hidden="true" />
+    </>
+  );
+}
+
 // ── Root ──────────────────────────────────────────────────────────────────────
 export default function TeamPicker({ onSelect }) {
   const [step, setStep]   = useState('sport'); // 'sport' | 'team'
@@ -424,6 +499,14 @@ export default function TeamPicker({ onSelect }) {
     onSelect?.(abbr);
   }
 
+  async function handleECHLSelect(abbr) {
+    localStorage.setItem('eyewall:sport', 'echl');
+    localStorage.setItem('eyewall:echl_team', JSON.stringify(echlTeamByAbbr[abbr]));
+    localStorage.removeItem('eyewall:team-change-pending');
+    await syncIfSignedIn('echl', abbr);
+    onSelect?.(abbr);
+  }
+
   return (
     <div className={OVERLAY_CLASSES}>
       <div className={INNER_CLASSES}>
@@ -438,6 +521,9 @@ export default function TeamPicker({ onSelect }) {
         )}
         {step === 'team' && sport === 'ahl' && (
           <AHLTeamStep onBack={handleBack} onSelect={handleAHLSelect} />
+        )}
+        {step === 'team' && sport === 'echl' && (
+          <ECHLTeamStep onBack={handleBack} onSelect={handleECHLSelect} />
         )}
       </div>
     </div>

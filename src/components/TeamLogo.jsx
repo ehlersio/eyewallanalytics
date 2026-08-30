@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { pwhlLogoUrl } from '../utils/pwhlConfig';
 import { ahlLogoUrl, getAHLTeamConfig } from '../utils/ahlConfig';
+import { echlLogoUrl, getECHLTeamConfig } from '../utils/echlConfig';
 
 // Tailwind migration (Session 95, Phase 1) -- previously TeamLogo.css.
 const LOGO_CLASSES = 'inline-block object-contain shrink-0 align-middle drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]';
@@ -44,8 +45,8 @@ function Fallback({ abbr, size, color }) {
  * TeamLogo
  *
  * Props:
- *   abbr    — team abbreviation, e.g. "CAR" (NHL), "BOS" (PWHL), "TOR" (AHL)
- *   sport   — 'nhl' (default) | 'pwhl' | 'ahl'
+ *   abbr    — team abbreviation, e.g. "CAR" (NHL), "BOS" (PWHL), "TOR" (AHL), "FLA" (ECHL)
+ *   sport   — 'nhl' (default) | 'pwhl' | 'ahl' | 'echl'
  *   size    — px size (default 24)
  *   color   — team primary color string for fallback text
  *   className — extra class names
@@ -53,12 +54,14 @@ function Fallback({ abbr, size, color }) {
 export default function TeamLogo({ abbr, sport = 'nhl', size = 24, color, className = '' }) {
   const [errored, setErrored] = useState(false);
 
-  // AHL logos are hosted by HockeyTech's numeric team_id, not abbr (see
-  // ahlConfig.js's ahlLogoUrl docstring) -- resolve abbr -> teamId here
-  // rather than changing this component's abbr-keyed prop shape.
+  // AHL/ECHL logos are hosted by HockeyTech's numeric team_id, not abbr
+  // (see ahlConfig.js/echlConfig.js's ahlLogoUrl/echlLogoUrl docstrings)
+  // -- resolve abbr -> teamId here rather than changing this component's
+  // abbr-keyed prop shape.
   const src =
     sport === 'pwhl' ? pwhlLogoUrl(abbr)
     : sport === 'ahl' ? ahlLogoUrl(getAHLTeamConfig(abbr)?.teamId)
+    : sport === 'echl' ? echlLogoUrl(getECHLTeamConfig(abbr)?.teamId)
     : nhlLogoUrl(abbr);
 
   if (!abbr || !src || errored) {

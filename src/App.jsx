@@ -39,6 +39,16 @@ const AHLPlayersView  = lazy(() => import('./views/AHLPlayersView'));
 const AHLTeamView     = lazy(() => import('./views/AHLTeamView'));
 const AHLNewsView     = lazy(() => import('./views/AHLNewsView'));
 
+// ECHL routes -- foundation + basic display pass only (user's explicit
+// scope choice, matching AHL's own two-pass history): no news view this
+// pass (no echl_news.py pipeline script yet, deferred to a later
+// follow-up alongside player popups/game popups/predictions/comparison).
+const ECHLShotMapView  = lazy(() => import('./views/ECHLShotMapView'));
+const ECHLLeagueView   = lazy(() => import('./views/ECHLLeagueView'));
+const ECHLScheduleView = lazy(() => import('./views/ECHLScheduleView'));
+const ECHLPlayersView  = lazy(() => import('./views/ECHLPlayersView'));
+const ECHLTeamView     = lazy(() => import('./views/ECHLTeamView'));
+
 const DevReplayView = import.meta.env.DEV
   ? lazy(() => import('./views/DevReplayView'))
   : null;
@@ -60,11 +70,12 @@ const ViewFallback = () => {
   );
 };
 
-// Redirects PWHL/AHL users from / to their sport's shot map
+// Redirects PWHL/AHL/ECHL users from / to their sport's shot map
 function RootRoute() {
-  const { isPWHL, isAHL } = useSport();
+  const { isPWHL, isAHL, isECHL } = useSport();
   if (isPWHL) return <Navigate to="/pwhl/shots" replace />;
   if (isAHL) return <Navigate to="/ahl/shots" replace />;
+  if (isECHL) return <Navigate to="/echl/shots" replace />;
   return <ShotMapView />;
 }
 
@@ -91,6 +102,11 @@ function PageTracker() {
       '/ahl/schedule':  'AHL Schedule',
       '/ahl/team':      'AHL Team',
       '/ahl/news':      'AHL News',
+      '/echl/shots':    'ECHL Shot Map',
+      '/echl/league':   'ECHL League',
+      '/echl/players':  'ECHL Players',
+      '/echl/schedule': 'ECHL Schedule',
+      '/echl/team':     'ECHL Team',
     };
     capture('$pageview', {
       path:      location.pathname,
@@ -124,7 +140,7 @@ export default function App() {
             // Navigate to the correct root for the chosen sport before reloading
             // so module-level constants re-initialize at the right route.
             const sport = localStorage.getItem('eyewall:sport') || 'nhl';
-            const root  = sport === 'pwhl' ? '/pwhl/shots' : sport === 'ahl' ? '/ahl/shots' : '/';
+            const root  = sport === 'pwhl' ? '/pwhl/shots' : sport === 'ahl' ? '/ahl/shots' : sport === 'echl' ? '/echl/shots' : '/';
             window.location.href = root;
           }}
         />
@@ -167,6 +183,13 @@ export default function App() {
                       <Route path="/ahl/players"  element={<AHLPlayersView />} />
                       <Route path="/ahl/schedule" element={<AHLScheduleView />} />
                       <Route path="/ahl/news"     element={<AHLNewsView />} />
+
+                      {/* ECHL routes */}
+                      <Route path="/echl/shots"    element={<ECHLShotMapView />} />
+                      <Route path="/echl/team"     element={<ECHLTeamView />} />
+                      <Route path="/echl/league"   element={<ECHLLeagueView />} />
+                      <Route path="/echl/players"  element={<ECHLPlayersView />} />
+                      <Route path="/echl/schedule" element={<ECHLScheduleView />} />
                       {import.meta.env.DEV && DevReplayView && (
                         <Route path="/dev" element={<DevReplayView />} />
                       )}
