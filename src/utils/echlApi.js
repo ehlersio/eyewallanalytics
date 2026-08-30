@@ -102,3 +102,52 @@ export async function fetchECHLPlayerShots(playerId, season = ECHL_CURRENT_SEASO
   if (!playerId) return null;
   return workerFetch(`/echl/player-shots?playerId=${playerId}&season=${season}`);
 }
+
+/** Most recent completed game with opponent abbr resolved. */
+export async function fetchECHLLastGame(teamId = ECHL_TEAM_ID, season = ECHL_CURRENT_SEASON) {
+  if (!teamId) return null;
+  return workerFetch(`/echl/lastgame?teamId=${teamId}&season=${season}`);
+}
+
+/** Per-player box score (skaters + goalies) for a completed game.
+ * Shape: { skaters: [...], goalies: [...] } — no hits/faceoff/blocked-
+ * shots/skater-TOI fields, same as fetchAHLGameBox (see eyewall-pipeline's
+ * echl_game_boxscore.py for why). */
+export async function fetchECHLGameBox(gameId) {
+  if (!gameId) return null;
+  const data = await workerFetch(`/echl/game-box?gameId=${gameId}`);
+  if (!data) return null;
+  return {
+    skaters: Array.isArray(data.skaters) ? data.skaters : [],
+    goalies: Array.isArray(data.goalies) ? data.goalies : [],
+  };
+}
+
+/** HockeyTech gameSummary enrichment (period scoring + MVPs/three stars)
+ * for a completed game. Shape: { periods, mvps, venue, officials, coaches,
+ * homeTeamStats, visitingTeamStats } — team stats already have hits/
+ * faceoff fields stripped server-side (see eyewall-poller's echl.js). */
+export async function fetchECHLGameSummary(gameId) {
+  if (!gameId) return null;
+  return workerFetch(`/echl/summary?gameId=${gameId}`);
+}
+
+/** Pre-game preview for an upcoming ECHL game — raw HockeyTech
+ * gameCenterPreview passthrough, same as fetchAHLPreview. Confirmed live
+ * 2026-08-30 that ECHL's shape is identical to AHL's (teamRecord.overall/
+ * past_10_games, powerPlayStats/penaltyKillStats nested per-team,
+ * previousMeetings) -- see ECHLGamePreviewPopup.jsx's comments. */
+export async function fetchECHLPreview(gameId) {
+  if (!gameId) return null;
+  return workerFetch(`/echl/preview?gameId=${gameId}`);
+}
+
+/** Team-level win prediction (heuristic + AI narrative) for an upcoming
+ * ECHL game. No corsiForPct field -- echl_team_seasons has no shot-
+ * attempts data source, same as AHL.
+ * Shape: { gameId, homeAbbr, awayAbbr, isPlayoff, homeWinPct, awayWinPct,
+ *          expHome, expAway, narrative, h2hRecord, homeStreak, awayStreak } */
+export async function fetchECHLPrediction(gameId) {
+  if (!gameId) return null;
+  return workerFetch(`/echl/prediction?gameId=${gameId}`);
+}
