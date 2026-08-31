@@ -85,7 +85,14 @@ const OPP_PP_CLASSES = 'opp-pp bg-[rgba(240,160,48,0.2)] text-[color:var(--amber
 // -- per the cascade-layers rule, a Tailwind color utility could never
 // safely override it, and it already provides the exact color needed.
 const SCORE_CARD_CLASSES = 'score-card card mb-[10px]';
-const SCORE_INNER_CLASSES = 'flex items-center justify-between gap-[10px]';
+// flex-wrap (not the original single-line row): on narrow phones, CAR side +
+// center info + OPP side + the season-selector column don't all fit on one
+// line -- confirmed on a real device, the selector was getting clipped/
+// unreachable rather than just wrapping. Letting it wrap keeps every
+// control reachable; the season-selector column below gets `marginLeft:
+// auto` so it lands at the right edge of its own line when wrapped, same
+// position it already had via `justify-between` when there's room.
+const SCORE_INNER_CLASSES = 'flex items-center justify-between gap-[10px] flex-wrap';
 const SCORE_TEAM_CLASSES = 'flex items-center gap-2';
 const scoreAbbrClasses = (variant) => {
   const base = 'font-[family-name:var(--font-display)] text-[18px] font-bold tracking-[.04em]';
@@ -1900,7 +1907,7 @@ export default function ShotMapView() {
                 hidden) while one is in progress rather than popping in/out
                 of the layout as a game goes live or finishes. Tap/hover
                 surfaces why. */}
-            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, marginLeft: 'auto' }}>
               <SeasonTypeToggle value={seasonType} onChange={handleSeasonTypeChange}
                 disabled={isLive} disabledReason={LIVE_SELECTOR_DISABLED_REASON} onDisabledTap={handleDisabledTap} />
               <SeasonChipRow seasons={NHL_REGULAR_SEASONS} archiveSeasons={NHL_ARCHIVE_SEASONS}

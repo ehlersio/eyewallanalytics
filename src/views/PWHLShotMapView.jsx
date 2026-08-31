@@ -70,7 +70,9 @@ const OPP_PP_CLASSES = 'opp-pp bg-[rgba(240,160,48,0.2)] text-[color:var(--amber
 // .team-primary-text unlayered-marker reasoning -- same fixes, same
 // reasoning, applied here too.
 const SCORE_CARD_CLASSES = 'score-card card mb-[10px]';
-const SCORE_INNER_CLASSES = 'flex items-center justify-between gap-[10px]';
+// See ShotMapView.jsx's identical constant for why this wraps -- same
+// score-card-doesn't-fit-narrow-phones fix, confirmed on a real device.
+const SCORE_INNER_CLASSES = 'flex items-center justify-between gap-[10px] flex-wrap';
 const SCORE_TEAM_CLASSES = 'flex items-center gap-2';
 const scoreAbbrClasses = (variant) => {
   const base = 'font-[family-name:var(--font-display)] text-[18px] font-bold tracking-[.04em]';
@@ -1886,7 +1888,7 @@ export default function PWHLShotMapView() {
               ) : null}
             </div>
           ) : <div style={{ width:40 }} />}
-          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6 }}>
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6, marginLeft: 'auto' }}>
             <SeasonTypeToggle value={seasonType} onChange={handleSeasonTypeChange} />
             <SeasonChipRow seasons={SEASONS} selected={selectedYear} onSelect={handleYearSelect} />
           </div>
