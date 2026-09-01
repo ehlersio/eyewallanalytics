@@ -319,6 +319,7 @@
       "facts": "Fun Facts",
       "currentInfo": "Current Franchise Info",
       "owner": "Owner",
+      "gm": "GM",
       "headCoach": "Head Coach",
       "lastVerified": "As of {{date}} — subject to change"
     },

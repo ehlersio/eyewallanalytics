@@ -319,6 +319,7 @@
       "facts": "Anecdotes",
       "currentInfo": "Informations actuelles de la franchise",
       "owner": "Propriétaire",
+      "gm": "DG",
       "headCoach": "Entraîneur-chef",
       "lastVerified": "En date du {{date}} — sujet à changement"
     },

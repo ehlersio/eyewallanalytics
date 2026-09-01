@@ -12,6 +12,8 @@ import { useSport } from '../utils/SportContext';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
 import TeamComparisonPopup from '../components/TeamComparisonPopup';
+import TeamHistorySections from '../components/TeamHistorySections';
+import { getTeamHistory } from '../utils/teamHistory';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 // ShotMapView.css import removed (Phase 5, sub-PR 1) -- this file's only
@@ -181,13 +183,21 @@ const EMPTY_SUB_CLASSES = 'empty-sub text-[12px] text-[color:var(--text-muted)]'
 // TABS holds internal English state ids (compared throughout this file via
 // `tab === 'Overview'` etc.) -- NOT display text, mirrors TeamView.jsx's
 // same TAB_LABEL_KEYS pattern.
-const TABS = ['Overview', 'Advanced', 'Splits', 'Trends', 'Salaries'];
+// History tab only shows up for teams with data in teamHistory.js -- same
+// gating pattern as TeamView.jsx's TEAM_HAS_HISTORY (Phase 2 covers all 12
+// PWHL teams, so this should be true for everyone once that data lands).
+const PWHL_TEAM_HAS_HISTORY = !!getTeamHistory('pwhl', PWHL_TEAM_CONFIG?.abbr)
+
+const TABS = ['Overview', 'Advanced', 'Splits', 'Trends', 'Salaries',
+  ...(PWHL_TEAM_HAS_HISTORY ? ['History'] : []),
+];
 const TAB_LABEL_KEYS = {
   Overview: 'pwhlTeamView.tabs.overview',
   Advanced: 'pwhlTeamView.tabs.advanced',
   Splits:   'pwhlTeamView.tabs.splits',
   Trends:   'pwhlTeamView.tabs.trends',
   Salaries: 'pwhlTeamView.tabs.salaries',
+  History:  'teamView.tabs.history',
 }
 
 export default function PWHLTeamView() {
@@ -292,6 +302,7 @@ export default function PWHLTeamView() {
       {tab === 'Salaries'  && (
         <SalariesTab salaries={salaries} loading={salLoad} abbr={abbr} color={color} />
       )}
+      {tab === 'History' && <TeamHistorySections history={getTeamHistory('pwhl', abbr)} league="pwhl" />}
     </div>
   );
 }
