@@ -23,6 +23,8 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         cy.contains('Cap').should('be.visible')
         cy.contains('Picks').should('be.visible')
       }
+      // History tab now covers all 32 NHL teams (Phase 1) -- always expected
+      cy.contains('History').should('exist')
     })
 
     describe('Overview tab', () => {
@@ -127,6 +129,21 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       })
     })
 
+    describe('History tab (Phase 1 — all 32 NHL teams)', () => {
+      beforeEach(() => cy.contains('History').click())
+
+      it('renders the Founded and Home Arena sections', () => {
+        cy.contains('Founded', { timeout: 8000 }).should('exist')
+        cy.contains('Home Arena').should('exist')
+      })
+
+      it('renders a Current Franchise Info section with an owner and head coach', () => {
+        cy.contains('Current Franchise Info', { timeout: 8000 }).should('exist')
+        cy.contains('Owner').should('exist')
+        cy.contains('Head Coach').should('exist')
+      })
+    })
+
     describe('Compare Seasons', () => {
       beforeEach(() => cy.contains('🆚 Compare Seasons').click())
 
@@ -227,6 +244,36 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
 
         it('renders CAR pick slot', () => {
           cy.get('.picks-slot, .picks-made-row', { timeout: 8000 }).should('have.length.gte', 1)
+        })
+      })
+
+      // Phase 0 pilot (teamHistory.js) -- CAR is the only team with data so
+      // far, same gating as Cap/Picks above. Later phases add more teams;
+      // this spec doesn't need to know which ones, since the tab only shows
+      // up when getTeamHistory() finds a match.
+      describe('History tab', () => {
+        beforeEach(() => cy.contains('History').click())
+
+        it('renders franchise founding info', () => {
+          cy.contains('Hartford Whalers', { timeout: 8000 }).should('be.visible')
+        })
+
+        // These sections render well below the fold in the .page scroll
+        // container -- .should('exist') rather than .should('be.visible'),
+        // same convention as the Advanced/Trends tab tests above, since a
+        // bare assertion doesn't auto-scroll the way an action command does.
+        it('renders both Stanley Cup championships', () => {
+          cy.contains('Stanley Cup 2006').should('exist')
+          cy.contains('Stanley Cup 2026').should('exist')
+        })
+
+        it('renders retired numbers', () => {
+          cy.contains("Rod Brind'Amour").should('exist')
+        })
+
+        it('renders minor league affiliates', () => {
+          cy.contains('Chicago Wolves').should('exist')
+          cy.contains('Greensboro Gargoyles').should('exist')
         })
       })
     }
