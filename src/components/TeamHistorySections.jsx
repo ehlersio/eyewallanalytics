@@ -46,7 +46,7 @@ function ArenaPhoto({ photo, alt }) {
   if (!photo || errored) return null
   return (
     <>
-      <img src={photo.url} alt={alt} className={ARENA_PHOTO_CLASSES} loading="lazy" onError={() => setErrored(true)} />
+      <img src={photo.url} alt={alt} className={ARENA_PHOTO_CLASSES} onError={() => setErrored(true)} />
       <div className={ARENA_ATTR_CLASSES}>{photo.attribution}</div>
     </>
   )
@@ -72,8 +72,8 @@ export default function TeamHistorySections({ history, league: _league = 'nhl' }
         <div className="card">
           <div className={SEC_LABEL_CLASSES}>{t('teamView.history.founded')}</div>
           <div className={ROW_CLASSES}>
-            <span className={ROW_LABEL_CLASSES}>{t('teamView.history.foundedAs')}</span>
-            <span className={ROW_VAL_CLASSES}>{founded.asFranchise} · {founded.year}</span>
+            <span className={ROW_LABEL_CLASSES}>{t(founded.asFranchise ? 'teamView.history.foundedAs' : 'teamView.history.founded')}</span>
+            <span className={ROW_VAL_CLASSES}>{founded.asFranchise ? `${founded.asFranchise} · ${founded.year}` : founded.year}</span>
           </div>
           {founded.joinedNHL && (
             <div className={ROW_CLASSES}>

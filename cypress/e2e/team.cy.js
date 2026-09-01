@@ -23,6 +23,8 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         cy.contains('Cap').should('be.visible')
         cy.contains('Picks').should('be.visible')
       }
+      // History tab now covers all 32 NHL teams (Phase 1) -- always expected
+      cy.contains('History').should('exist')
     })
 
     describe('Overview tab', () => {
@@ -124,6 +126,21 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
             cy.contains(/Score.first rate/i).should('exist')
           }
         })
+      })
+    })
+
+    describe('History tab (Phase 1 — all 32 NHL teams)', () => {
+      beforeEach(() => cy.contains('History').click())
+
+      it('renders the Founded and Home Arena sections', () => {
+        cy.contains('Founded', { timeout: 8000 }).should('exist')
+        cy.contains('Home Arena').should('exist')
+      })
+
+      it('renders a Current Franchise Info section with an owner and head coach', () => {
+        cy.contains('Current Franchise Info', { timeout: 8000 }).should('exist')
+        cy.contains('Owner').should('exist')
+        cy.contains('Head Coach').should('exist')
       })
     })
 
