@@ -53,8 +53,11 @@ export const TEAM_HISTORY = {
           // Special:FilePath is Wikimedia's stable direct-link redirect --
           // avoids hardcoding the hashed upload.wikimedia.org path, which
           // isn't guessable and can't be verified without looking it up.
-          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/PNCArena-RaleighNC.jpg',
-          attribution: 'Edward T. Funkhouser, CC BY-SA 3.0, via Wikimedia Commons',
+          // Taken Jan 2025, post-rename (the arena became Lenovo Center in
+          // Sept 2024) -- swapped in for the original PNC-Arena-era photo so
+          // the image matches the current name shown in the Name row below.
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Lenovo_Center_Exterior_View_2025_Distant.jpg',
+          attribution: 'CavsFan45, CC BY-SA 4.0, via Wikimedia Commons',
         },
       },
       championships: [
