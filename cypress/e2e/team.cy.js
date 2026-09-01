@@ -229,6 +229,36 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
           cy.get('.picks-slot, .picks-made-row', { timeout: 8000 }).should('have.length.gte', 1)
         })
       })
+
+      // Phase 0 pilot (teamHistory.js) -- CAR is the only team with data so
+      // far, same gating as Cap/Picks above. Later phases add more teams;
+      // this spec doesn't need to know which ones, since the tab only shows
+      // up when getTeamHistory() finds a match.
+      describe('History tab', () => {
+        beforeEach(() => cy.contains('History').click())
+
+        it('renders franchise founding info', () => {
+          cy.contains('Hartford Whalers', { timeout: 8000 }).should('be.visible')
+        })
+
+        // These sections render well below the fold in the .page scroll
+        // container -- .should('exist') rather than .should('be.visible'),
+        // same convention as the Advanced/Trends tab tests above, since a
+        // bare assertion doesn't auto-scroll the way an action command does.
+        it('renders both Stanley Cup championships', () => {
+          cy.contains('Stanley Cup 2006').should('exist')
+          cy.contains('Stanley Cup 2026').should('exist')
+        })
+
+        it('renders retired numbers', () => {
+          cy.contains("Rod Brind'Amour").should('exist')
+        })
+
+        it('renders minor league affiliates', () => {
+          cy.contains('Chicago Wolves').should('exist')
+          cy.contains('Greensboro Gargoyles').should('exist')
+        })
+      })
     }
   })
 })

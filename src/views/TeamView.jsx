@@ -18,6 +18,8 @@ import InfoTip from '../components/InfoTip'
 import TeamLogo from '../components/TeamLogo'
 import TeamComparisonPopup from '../components/TeamComparisonPopup'
 import Sparkline from '../components/Sparkline'
+import TeamHistorySections from '../components/TeamHistorySections'
+import { getTeamHistory } from '../utils/teamHistory'
 import { TEAM_COLORS } from '../utils/nhlApi'
 import { PAGE_CLASSES } from '../utils/pageClasses'
 import { SKELETON_CLASSES } from '../utils/skeletonClasses'
@@ -238,9 +240,15 @@ const EMPTY_SUB_CLASSES = 'empty-sub text-[12px] text-[color:var(--text-muted)]'
 // `tab === 'Overview'` etc.) -- NOT display text. TAB_LABEL_KEYS is the
 // separate lookup for the translated label rendered in the tab bar; the
 // ids themselves stay untranslated since they're just state, never shown.
+// History tab only shows up for teams with data in teamHistory.js -- Phase 0
+// pilot covers CAR only, so every other team simply won't render the tab
+// (same pattern as Cap being CAR-only) until later phases fill more teams in.
+const TEAM_HAS_HISTORY = !!getTeamHistory('nhl', TEAM_CONFIG.abbr)
+
 const TABS = ['Overview', 'Advanced', 'Splits', 'Trends',
   ...(TEAM_CONFIG.abbr === 'CAR' ? ['Cap'] : []),
   'Picks',
+  ...(TEAM_HAS_HISTORY ? ['History'] : []),
 ]
 const TAB_LABEL_KEYS = {
   Overview: 'teamView.tabs.overview',
@@ -249,6 +257,7 @@ const TAB_LABEL_KEYS = {
   Trends:   'teamView.tabs.trends',
   Cap:      'teamView.tabs.cap',
   Picks:    'teamView.tabs.picks',
+  History:  'teamView.tabs.history',
 }
 
 export default function TeamView() {
@@ -339,6 +348,7 @@ export default function TeamView() {
       {tab === 'Trends'    && <TrendsTab gameLog={gameLog} />}
       {tab === 'Cap'   && <CapTab capSummary={capSummary} capPct={capPct} sortedContracts={sortedContracts} />}
       {tab === 'Picks' && <PicksTab />}
+      {tab === 'History' && <TeamHistorySections history={getTeamHistory('nhl', TEAM_CONFIG.abbr)} league="nhl" />}
     </div>
   )
 }
