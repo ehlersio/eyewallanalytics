@@ -31,6 +31,7 @@ const ALUMNI_CHIP_CLASSES = 'text-[12px] text-[color:var(--text-muted)] bg-[var(
 const RECORD_LIST_CLASSES = 'flex flex-col gap-[8px] mt-1'
 const RECORD_ITEM_CLASSES = 'flex items-baseline justify-between text-[12px]'
 const RECORD_VAL_CLASSES = 'font-[family-name:var(--font-display)] font-bold text-[color:var(--text)] text-[14px]'
+const RECORD_NOTE_CLASSES = 'text-[11px] text-[color:var(--text-dim)] italic mt-[2px]'
 const AFFILIATE_ROW_CLASSES = 'flex items-center gap-[10px] py-[6px]'
 const AFFILIATE_LEAGUE_TAG_CLASSES = 'text-[10px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-dim)] min-w-[36px]'
 const AFFILIATE_NAME_CLASSES = 'text-[12px] text-[color:var(--text)] font-medium'
@@ -170,9 +171,12 @@ export default function TeamHistorySections({ history, league: _league = 'nhl' }
           <div className={SEC_LABEL_CLASSES}>{t('teamView.history.records')}</div>
           <div className={RECORD_LIST_CLASSES}>
             {records.map((r, i) => (
-              <div key={i} className={RECORD_ITEM_CLASSES}>
-                <span className={ROW_LABEL_CLASSES}>{r.label}</span>
-                <span className={RECORD_VAL_CLASSES}>{r.value} <span className={ARENA_ATTR_CLASSES} style={{ display: 'inline' }}>({r.season})</span></span>
+              <div key={i}>
+                <div className={RECORD_ITEM_CLASSES}>
+                  <span className={ROW_LABEL_CLASSES}>{r.label}</span>
+                  <span className={RECORD_VAL_CLASSES}>{r.value} <span className={ARENA_ATTR_CLASSES} style={{ display: 'inline' }}>({r.season})</span></span>
+                </div>
+                {r.note && <div className={RECORD_NOTE_CLASSES}>{r.note}</div>}
               </div>
             ))}
           </div>
@@ -220,6 +224,12 @@ export default function TeamHistorySections({ history, league: _league = 'nhl' }
             <div className={ROW_CLASSES}>
               <span className={ROW_LABEL_CLASSES}>{t('teamView.history.owner')}</span>
               <span className={ROW_VAL_CLASSES}>{currentInfo.owner}</span>
+            </div>
+          )}
+          {currentInfo.gm && (
+            <div className={ROW_CLASSES}>
+              <span className={ROW_LABEL_CLASSES}>{t('teamView.history.gm')}</span>
+              <span className={ROW_VAL_CLASSES}>{currentInfo.gm}</span>
             </div>
           )}
           {currentInfo.headCoach && (

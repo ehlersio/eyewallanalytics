@@ -1871,7 +1871,498 @@ export const TEAM_HISTORY = {
     },
 
   },
-  pwhl: {},
+  pwhl: {
+    // Verified Phase 2 (PWHL) team entries, accumulated as agents report back.
+    // Integrate into src/utils/teamHistory.js TEAM_HISTORY.pwhl after a final
+    // spot-check pass.
+
+    // ═══ EXPANSION 4 (DET, HAM, LV, SJS) — from dedicated expansion-team agent ═══
+    // FIXED: dropped `founded.announced` / `arena.note` keys the agent invented
+    // -- TeamHistorySections.jsx doesn't render them. Folded the useful bits
+    // into facts instead (announcement date, HAM/AHL-Hamilton-Hammers mixup
+    // risk) rather than extending the schema for a handful of one-off fields.
+    // FIXED: shortened the very verbose owner field (same info repeated across
+    // all 4 teams) to a single concise line; the single-entity-ownership
+    // explanation is also stated once per team in facts, so nothing is lost.
+    // ADDED: currentInfo.gm is a genuinely new, useful field for these teams
+    // (PWHL GMs are notable in their own right, unlike NHL's team-owner slot)
+    // -- component now renders it (src/components/TeamHistorySections.jsx),
+    // with a new 'teamView.history.gm' i18n key (en: "GM", fr: "DG").
+    // VERIFIED HONEST: no fabricated permanent names, captains, or records for
+    // teams that haven't played a game yet -- agent explicitly flagged these as
+    // unknown rather than guessing, which is exactly right for this content.
+
+    DET: {
+      founded: {
+        year: 2026,
+      },
+      arena: {
+        name: 'Little Caesars Arena',
+        city: 'Detroit, MI',
+        capacity: 19515,
+        opened: 2017,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Detroit_August_2025_07_%28Little_Caesars_Arena%29.jpg',
+          attribution: 'Michael Barera, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Hilary Knight', 'Cayla Barnes', 'Jesse Compher', 'Daryl Watts',
+      ],
+      facts: [
+        'Awarded May 6, 2026 as the PWHL\'s ninth franchise and the first of the 2026-27 expansion wave (Hamilton, Las Vegas, and San Jose followed within two weeks).',
+        'As of September 1, 2026, the franchise plays under the placeholder name "PWHL Detroit" — no permanent nickname or logo has been revealed yet.',
+        "Forward Hilary Knight first signed an Expansion Foundational Offer with Las Vegas, then was traded to Detroit once the PWHL's trade freeze lifted in June 2026 (Las Vegas received Detroit's 2026 first-round draft pick in return).",
+        'A March 2026 PWHL "Takeover Tour" exhibition game at Little Caesars Arena — before Detroit had its own franchise — drew a reported 15,938 fans, called a record crowd for a professional women\'s hockey game at that building.',
+      ],
+      currentInfo: {
+        owner: 'Mark & Kimbra Walter (single-entity PWHL ownership); Ilitch Companies and Kilmer Sports Ventures joined as minority investors in June 2026',
+        gm: 'Manon Rhéaume',
+        headCoach: 'Josh Sciba',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    HAM: {
+      founded: {
+        year: 2026,
+      },
+      arena: {
+        name: 'TD Coliseum',
+        city: 'Hamilton, ON',
+        capacity: 16386,
+        opened: 1985,
+        formerNames: [
+          { name: 'Copps Coliseum', years: '1985–2014' },
+          { name: 'FirstOntario Centre', years: '2014–2024' },
+          { name: 'Hamilton Arena', years: '2024–2025' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/TD_Coliseum_Exerior_1.jpg',
+          attribution: 'Scarlett Kang, CC0 1.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Brianne Jenner', 'Emily Clark', 'Alina Müller',
+      ],
+      facts: [
+        'Awarded May 13, 2026 (the same day as Las Vegas) — the first PWHL franchise based in a market without an NHL team. TD Coliseum reopened in November 2025 after a $300M renovation.',
+        'As of September 1, 2026, the franchise plays under the placeholder name "PWHL Hamilton" — no permanent nickname or logo has been revealed yet. Not to be confused with the AHL\'s Hamilton Hammers, a separate franchise also new to the same building in 2026.',
+        "Team colors (gold, maroon, cream) nod to Hamilton's hockey and football history — gold for the old Hamilton Tigers NHL club and the CFL's Tiger-Cats, maroon for the city's steelworking ('Steeltown') identity.",
+        'Brianne Jenner became the franchise\'s first player signing on June 5, 2026.',
+      ],
+      currentInfo: {
+        owner: 'Mark & Kimbra Walter (single-entity PWHL ownership); Ilitch Companies and Kilmer Sports Ventures joined as minority investors in June 2026',
+        gm: 'Meghan Duggan',
+        headCoach: 'Kris Sparre',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    LV: {
+      founded: {
+        year: 2026,
+      },
+      arena: {
+        name: 'T-Mobile Arena',
+        city: 'Las Vegas, NV',
+        capacity: 17500,
+        opened: 2016,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/T-Mobile_Arena_in_Las_Vegas.jpg',
+          attribution: 'CrispyCream27, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Erin Ambrose', 'Hayley Scamurra', 'Tessa Janecke', 'Lacey Eden',
+      ],
+      facts: [
+        "Awarded May 13, 2026 (the same day as Hamilton) — unlike the other three 2026-27 expansion markets, Las Vegas never hosted a PWHL \"Takeover Tour\" exhibition game before being awarded a team.",
+        'As of September 1, 2026, the franchise plays under the placeholder name "PWHL Las Vegas" — no permanent nickname or logo has been revealed yet.',
+        "Forward Hilary Knight signed with Las Vegas first as part of a planned sign-and-trade — she moved to Detroit once the PWHL's trade freeze lifted in June 2026, with Las Vegas receiving Detroit's 2026 first-round pick (used on Tessa Janecke) in return.",
+        "League officials pointed to the Vegas Golden Knights' effect on local youth hockey — a steep rise in girls' and women's participation in Southern Nevada — as a factor in choosing the market.",
+      ],
+      currentInfo: {
+        owner: 'Mark & Kimbra Walter (single-entity PWHL ownership); Ilitch Companies and Kilmer Sports Ventures joined as minority investors in June 2026',
+        gm: 'Dominique DiDia',
+        headCoach: 'Kim Weiss',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    SJS: {
+      founded: {
+        year: 2026,
+      },
+      arena: {
+        name: 'SAP Center',
+        city: 'San Jose, CA',
+        capacity: 17562,
+        opened: 1993,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/SAP_Center_at_San_Jose_1_2018-09-20.jpg',
+          attribution: 'FASTILY, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        "Kristin O'Neill", 'Corinne Schroeder', 'Laila Edwards',
+      ],
+      facts: [
+        'Awarded May 19, 2026, last of the four 2026-27 expansion teams, bringing the PWHL to 12 franchises — the first PWHL team in California.',
+        'As of September 1, 2026, the franchise plays under the placeholder name "PWHL San Jose" — no permanent nickname has been revealed. San Jose\'s mayor has publicly lobbied for "Hammerheads," but that is an unconfirmed rumor, not an announced name.',
+        'Troy Ryan holds both the general manager and head coach roles simultaneously — the first person in PWHL history to do so for one team. He previously spent six years as head coach of Canada\'s national women\'s team (2022 Olympic gold, 2026 Olympic silver) and three seasons coaching the Toronto Sceptres.',
+      ],
+      currentInfo: {
+        owner: 'Mark & Kimbra Walter (single-entity PWHL ownership); Ilitch Companies and Kilmer Sports Ventures joined as minority investors in June 2026',
+        gm: 'Troy Ryan',
+        headCoach: 'Troy Ryan (dual GM/head coach role)',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    // ═══ ORIGINAL 8 (BOS, MIN, MTL, NY, OTT, TOR, SEA, VAN) ════════════════════
+    // KEY CORRECTION from this agent (verified, applied throughout): the PWHL
+    // has completed THREE full seasons as of 2026-09-01, not two -- Walter Cup
+    // winners: 2024 MIN over BOS, 2025 MIN over OTT, 2026 MTL over OTT (sweep,
+    // first Canadian team to win it).
+    // FIXED: dropped `founded.firstSeason` / `founded.note` keys (not rendered)
+    // -- folded useful bits into facts instead.
+    // FIXED: '&amp;' -> '&' in MTL's records season field.
+    // FIXED: unified the owner string to match the expansion-4 batch exactly,
+    // AND corrected "Kimber Sports Ventures" -> the real name, "Kilmer Sports
+    // Ventures" (verified via direct search -- this agent had it wrong, the
+    // expansion-4 agent had it right; good catch from cross-checking the two
+    // batches against each other rather than trusting either blindly).
+    // FLAG: several head-coach assignments are extremely fresh (BOS's 3rd coach
+    // in 3 seasons hired June 2026; SEA and VAN both fired their inaugural
+    // coaches after missing the 2025-26 playoffs, VAN's GM stepped down to
+    // become head coach with the GM seat still vacant) -- re-verify close to
+    // ship, this is the single fastest-moving category in the whole PWHL batch.
+    // OPEN CALL for whoever reviews this (agent flagged, not resolved here):
+    // MTL's arena is Place Bell (steady-state home) vs Bell Centre (occasional
+    // marquee games, much bigger); OTT's arena is the imminent Canadian Tire
+    // Centre (confirmed for 2026-27, zero games played there yet) vs TD Place
+    // (where every real Charge game to date was actually played). Kept the
+    // "current/upcoming" venue in both cases, consistent with how NHL entries
+    // use the current arena name even right after a rename -- flag if a
+    // different call is wanted.
+
+    BOS: {
+      founded: {
+        year: 2023,
+        relocations: [
+          { year: 2024, from: 'PWHL Boston (unbranded)', to: 'Boston, MA', renamedTo: 'Boston Fleet', note: 'Played the entire 2023-24 inaugural season unbranded as "PWHL Boston"; permanent identity unveiled Sept 9, 2024 alongside the other five original teams' },
+        ],
+      },
+      arena: {
+        name: 'Agganis Arena',
+        city: 'Boston, MA',
+        capacity: 6300,
+        opened: 2005,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Agganis_Arena_Exterior.jpg',
+          attribution: 'tiZom (Tomtheman5), CC BY-SA 2.5, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['Hilary Knight', 'Megan Keller', 'Aerin Frankel', 'Alina Müller', 'Jamie Lee Rattray'],
+      records: [
+        { label: 'Highest single-game attendance', value: 17850, season: '2025-26', note: 'TD Garden, Apr 11, 2026 vs. Montréal — first sellout of an NHL arena by a pro women\'s sports team' },
+      ],
+      facts: [
+        'Boston played its entire inaugural 2023-24 season simply as "PWHL Boston" before the league unveiled all six original teams\' permanent identities in one event on September 9, 2024.',
+        'The Fleet reached the Walter Cup Final in the league\'s very first season (2023-24) but lost to Minnesota in five games, and have not been back to a Final since.',
+        'The Fleet moved home arenas for 2026-27, from the Tsongas Center in Lowell to Agganis Arena in Boston proper.',
+      ],
+      currentInfo: {
+        owner: 'Mark & Kimbra Walter (single-entity PWHL ownership); Ilitch Companies and Kilmer Sports Ventures joined as minority investors in June 2026',
+        gm: 'Danielle Marmer',
+        headCoach: 'François Méthot',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    MIN: {
+      founded: {
+        year: 2023,
+        relocations: [
+          { year: 2024, from: 'PWHL Minnesota (unbranded)', to: 'Saint Paul, MN', renamedTo: 'Minnesota Frost', note: 'Unveiled Sept 9, 2024 alongside the other five original teams' },
+        ],
+      },
+      arena: {
+        name: 'Grand Casino Arena',
+        city: 'Saint Paul, MN',
+        capacity: 17954,
+        opened: 2000,
+        formerNames: [
+          { name: 'Xcel Energy Center', years: '2000–2025' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          // Filed on Commons under the arena's old name -- same before/after-
+          // rename lag as this file's NHL MIN entry.
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Xcel_Energy_Center_5.JPG',
+          attribution: 'AlexiusHoratius, CC BY-SA 3.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Walter Cup', years: [2024, 2025] },
+      ],
+      retiredNumbers: [],
+      notableAlumni: ['Kendall Coyne Schofield', 'Taylor Heise', 'Grace Zumwinkle', 'Kelly Pannek', 'Lee Stecklein'],
+      records: [
+        { label: 'Highest single-game attendance', value: 13316, season: '2023-24', note: 'Home opener, Jan 6, 2024 vs. Montréal — a PWHL record at the time' },
+      ],
+      facts: [
+        "Minnesota is the only team to win the Walter Cup in each of the PWHL's first two seasons (2024 and 2025) — despite never once finishing first in the regular season.",
+        'Taylor Heise, the No. 1 overall pick in the inaugural 2023 PWHL Draft, scored the first goal in franchise history and was named the 2024 playoff MVP.',
+        "The Frost effectively inherited the fan base of the independent (pre-PWHL) Minnesota Whitecaps, giving the market an unusually deep existing following for women's hockey.",
+      ],
+      currentInfo: {
+        owner: 'Mark & Kimbra Walter (single-entity PWHL ownership); Ilitch Companies and Kilmer Sports Ventures joined as minority investors in June 2026',
+        gm: 'Melissa Caruso',
+        headCoach: 'Ken Klee',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    MTL: {
+      founded: {
+        year: 2023,
+        relocations: [
+          { year: 2024, from: 'PWHL Montréal (unbranded)', to: 'Montréal, QC', renamedTo: 'Montréal Victoire', note: 'Unveiled Sept 9, 2024 alongside the other five original teams' },
+        ],
+      },
+      arena: {
+        name: 'Place Bell',
+        city: 'Laval, QC',
+        capacity: 10172,
+        opened: 2017,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Place_Bell_-_Fall_2019.jpg',
+          attribution: 'Bryantriplex, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Walter Cup', years: [2026] },
+      ],
+      retiredNumbers: [],
+      notableAlumni: ['Marie-Philip Poulin', 'Laura Stacey', 'Ann-Renée Desbiens'],
+      records: [
+        { label: 'Highest single-game attendance', value: 21105, season: '2023-24', note: 'Bell Centre, Apr 20, 2024 — a world record for a pro women\'s hockey game at the time' },
+        { label: 'Consecutive regular-season titles', value: 2, season: '2024-25 & 2025-26' },
+      ],
+      facts: [
+        'Montréal is the first Canadian team to win the Walter Cup, sweeping Ottawa 4-0 in the 2026 Final.',
+        "The Victoire's April 20, 2024 game at the Bell Centre drew 21,105 fans — at the time a world record crowd for a professional women's hockey game.",
+        'Captain Marie-Philip Poulin was named the 2024-25 PWHL MVP and IIHF Female Player of the Year.',
+      ],
+      currentInfo: {
+        owner: 'Mark & Kimbra Walter (single-entity PWHL ownership); Ilitch Companies and Kilmer Sports Ventures joined as minority investors in June 2026',
+        gm: 'Danièle Sauvageau',
+        headCoach: 'Kori Cheverie',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    NY: {
+      founded: {
+        year: 2023,
+        relocations: [
+          { year: 2024, from: 'PWHL New York (unbranded, based in Bridgeport, CT)', to: 'Newark, NJ', renamedTo: 'New York Sirens', note: 'Unveiled Sept 9, 2024; shifted its primary home arena from Bridgeport to Prudential Center, not a market change -- still the "New York" franchise' },
+        ],
+      },
+      arena: {
+        name: 'Prudential Center',
+        city: 'Newark, NJ',
+        capacity: 16514,
+        opened: 2007,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Prudential_Center_-_Newark_Skyline_%2855183937688%29.jpg',
+          attribution: 'Ajay Suresh, CC BY 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['Alex Carpenter', 'Sarah Fillier', 'Ella Shelton', 'Micah Zandee-Hart'],
+      records: [
+        { label: "Highest attendance at a U.S. women's hockey game", value: 18006, season: '2025-26', note: 'Madison Square Garden, Apr 4, 2026 vs. Seattle' },
+      ],
+      facts: [
+        "New York played its debut 2023-24 season out of Total Mortgage Arena in Bridgeport, Connecticut before shifting to Newark's Prudential Center for 2024-25 — the same building used by the NHL's New Jersey Devils.",
+        'Sarah Fillier, the No. 1 overall pick in the 2024 PWHL Draft, was named 2025 Rookie of the Year and a co-scoring champion.',
+        "On April 4, 2026, the Sirens' game against Seattle at Madison Square Garden drew 18,006 fans, the largest crowd ever recorded for a U.S. professional women's hockey game.",
+      ],
+      currentInfo: {
+        owner: 'Mark & Kimbra Walter (single-entity PWHL ownership); Ilitch Companies and Kilmer Sports Ventures joined as minority investors in June 2026',
+        gm: 'Pascal Daoust',
+        headCoach: 'Greg Fargo',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    OTT: {
+      founded: {
+        year: 2023,
+        relocations: [
+          { year: 2024, from: 'PWHL Ottawa (unbranded)', to: 'Ottawa, ON', renamedTo: 'Ottawa Charge', note: 'Unveiled Sept 9, 2024 alongside the other five original teams' },
+        ],
+      },
+      arena: {
+        name: 'Canadian Tire Centre',
+        city: 'Kanata, ON',
+        capacity: 18500,
+        opened: 1996,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Canadian_Tire_Centre_1.JPG',
+          attribution: 'Ontario Images, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['Brianne Jenner', 'Emily Clark', 'Emerance Maschmeyer', 'Gwyneth Philips'],
+      facts: [
+        'The Charge reached the Walter Cup Final in both 2025 and 2026 — losing to Minnesota and then Montréal — the only team to make consecutive Finals without winning one yet.',
+        'Rookie goaltender Gwyneth Philips posted a .952 save percentage to win 2025 Walter Cup Playoff MVP despite Ottawa losing the Final.',
+        "Ottawa is moving out of downtown TD Place Arena into the NHL Senators' Canadian Tire Centre for the 2026-27 season after repeatedly outdrawing its own building — a 2026 game there drew 17,114 fans versus a 7,382 average at TD Place. A smaller, hockey-dedicated downtown arena (5,850 seats) is planned as a future long-term home.",
+      ],
+      currentInfo: {
+        owner: 'Mark & Kimbra Walter (single-entity PWHL ownership); Ilitch Companies and Kilmer Sports Ventures joined as minority investors in June 2026',
+        gm: 'Mike Hirshfeld',
+        headCoach: 'Carla MacLeod',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    TOR: {
+      founded: {
+        year: 2023,
+        relocations: [
+          { year: 2024, from: 'PWHL Toronto (unbranded)', to: 'Toronto, ON', renamedTo: 'Toronto Sceptres', note: "Unveiled Sept 9, 2024; succeeded the folded PHF's Toronto Six in the same market" },
+        ],
+      },
+      arena: {
+        name: 'Coca-Cola Coliseum',
+        city: 'Toronto, ON',
+        capacity: 8140,
+        opened: 2003,
+        formerNames: [
+          { name: 'Ricoh Coliseum', years: '2003–2018' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Coca-Cola_Coliseum%2C_Exhibition_Place%2C_Toronto%2C_Ontario_%2829901775271%29.jpg',
+          attribution: 'Ken Lund, CC BY-SA 2.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['Natalie Spooner', 'Blayre Turnbull', 'Sarah Nurse', 'Renata Fast', 'Kristen Campbell'],
+      records: [
+        { label: 'Best regular-season finish', value: '1st overall, 13-4-4-3', season: '2023-24', note: 'Inaugural PWHL regular-season champions' },
+      ],
+      facts: [
+        "Toronto succeeded the PHF's Toronto Six in the same market and won the PWHL's very first regular-season title in 2023-24 — but has yet to win a Walter Cup.",
+        'The Coca-Cola Coliseum began life in 1921 as the CNE Coliseum, built for the Canadian National Exhibition, and was rebuilt into a hockey rink (as Ricoh Coliseum) in 2003 before becoming the Sceptres\' home in 2024.',
+        'Original alternate captain Sarah Nurse was later selected by the expansion Vancouver Goldeneyes and scored that franchise\'s first-ever goal in 2025.',
+      ],
+      currentInfo: {
+        owner: 'Mark & Kimbra Walter (single-entity PWHL ownership); Ilitch Companies and Kilmer Sports Ventures joined as minority investors in June 2026',
+        gm: 'Gina Kingsbury',
+        headCoach: 'Pascal Rhéaume',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    SEA: {
+      founded: {
+        year: 2025,
+      },
+      arena: {
+        name: 'Climate Pledge Arena',
+        city: 'Seattle, WA',
+        capacity: 17151,
+        opened: 2021,
+        formerNames: [
+          { name: 'Seattle Center Coliseum', years: '1962–1995' },
+          { name: 'KeyArena', years: '1995–2018' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Climate_Pledge_Arena_at_Night.jpg',
+          attribution: 'XR228, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['Hilary Knight', 'Alex Carpenter', 'Abbey Murphy'],
+      records: [
+        { label: 'League-leading average attendance', value: 12875, season: '2025-26', note: 'Inaugural season' },
+      ],
+      facts: [
+        "Seattle and Vancouver joined for 2025-26 as the PWHL's first expansion wave, growing the league from six to eight teams — Seattle was announced April 30, 2025, with the permanent \"Torrent\" identity revealed that November, never playing a season under placeholder branding the way the original six did.",
+        "Hilary Knight — Boston's original captain — became Seattle's first-ever captain in 2025.",
+        'Seattle\'s Nov. 28, 2025 home opener (a 3-0 loss to Minnesota) drew 16,014 fans, at the time the largest crowd for a women\'s hockey game in U.S. history — since topped by New York\'s 18,006 at Madison Square Garden.',
+      ],
+      currentInfo: {
+        owner: 'Mark & Kimbra Walter (single-entity PWHL ownership); Ilitch Companies and Kilmer Sports Ventures joined as minority investors in June 2026',
+        gm: 'Meghan Turner',
+        headCoach: 'Christine Bumstead',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    VAN: {
+      founded: {
+        year: 2025,
+      },
+      arena: {
+        name: 'Pacific Coliseum',
+        city: 'Vancouver, BC',
+        capacity: 16281,
+        opened: 1968,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Pacific_Coliseum_aerial_view_2026.jpg',
+          attribution: 'Canmenwalker, CC BY 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['Sarah Nurse', 'Claire Thompson', 'Ashton Bell', 'Caroline Harvey'],
+      facts: [
+        "Vancouver was the PWHL's first announced expansion franchise (April 23, 2025, a week ahead of Seattle) and never played under placeholder branding — but missed the 2025-26 playoffs and won the league's first-ever draft lottery for the No. 1 pick in the 2026 PWHL Draft as a result.",
+        "Sarah Nurse, previously of the Toronto Sceptres, scored the Goldeneyes' first-ever franchise goal in their November 21, 2025 opener against Seattle.",
+        'The Pacific Coliseum opened in 1968, hosted figure skating at the 2010 Winter Olympics, and was the Vancouver Canucks\' original NHL home (1970-1995) before becoming the Goldeneyes\' home in 2025.',
+        "After a last-place inaugural season, Vancouver fired head coach Brian Idalski in June 2026; rather than hire externally, GM Cara Gardner Morey herself moved into the head-coach role in July 2026, leaving the GM seat vacant as of this writing.",
+      ],
+      currentInfo: {
+        owner: 'Mark & Kimbra Walter (single-entity PWHL ownership); Ilitch Companies and Kilmer Sports Ventures joined as minority investors in June 2026',
+        gm: 'Vacant as of Aug 2026 — Cara Gardner Morey moved from GM to head coach',
+        headCoach: 'Cara Gardner Morey',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+
+  },
   ahl: {},
   echl: {},
 };

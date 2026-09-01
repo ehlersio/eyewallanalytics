@@ -20,7 +20,7 @@ PWHL_TEST_TEAMS.forEach(abbr => {
     })
 
     it('renders all tab buttons', () => {
-      ['Overview', 'Advanced', 'Splits', 'Trends', 'Salaries'].forEach(tab =>
+      ['Overview', 'Advanced', 'Splits', 'Trends', 'Salaries', 'History'].forEach(tab =>
         cy.contains(tab).should('exist')
       )
     })
@@ -147,6 +147,21 @@ PWHL_TEST_TEAMS.forEach(abbr => {
       })
     })
 
+    describe('History tab (Phase 2 — all 12 PWHL teams)', () => {
+      beforeEach(() => cy.contains('History').click())
+
+      it('renders the Founded and Home Arena sections', () => {
+        cy.contains('Founded', { timeout: 8000 }).should('exist')
+        cy.contains('Home Arena').should('exist')
+      })
+
+      it('renders a Current Franchise Info section with the single-entity owner', () => {
+        cy.contains('Current Franchise Info', { timeout: 8000 }).should('exist')
+        cy.contains('Owner').should('exist')
+        cy.contains(/Mark & Kimbra Walter/i).should('exist')
+      })
+    })
+
     describe('Compare Seasons', () => {
       beforeEach(() => cy.contains('🆚 Compare Seasons').click())
 
@@ -221,10 +236,31 @@ describe('PWHL Team view — DET (expansion, no games played yet)', () => {
   })
 
   it('renders all tab buttons', () => {
-    ['Overview', 'Advanced', 'Splits', 'Trends', 'Salaries'].forEach(tab =>
+    ['Overview', 'Advanced', 'Splits', 'Trends', 'Salaries', 'History'].forEach(tab =>
       cy.contains(tab).should('exist')
     )
     cy.assertNoErrors()
+  })
+
+  // Unlike every other data-driven tab in this describe block, History is
+  // NOT gated on games-played -- it's static reference data (founding,
+  // arena, current GM/coach), so an expansion team with zero games shows
+  // real content here instead of an empty state. Confirms teamHistory.js's
+  // DET entry (founded 2026, no championships/records yet) renders cleanly.
+  describe('History tab', () => {
+    beforeEach(() => cy.contains('History').click())
+
+    it('renders real content instead of an empty state', () => {
+      cy.contains('Founded', { timeout: 8000 }).should('exist')
+      cy.contains('2026').should('exist')
+      cy.contains('Little Caesars Arena').should('exist')
+      cy.assertNoErrors()
+    })
+
+    it('does not render Championships or Franchise Records sections (none exist yet)', () => {
+      cy.contains('Championships').should('not.exist')
+      cy.contains('Franchise Records').should('not.exist')
+    })
   })
 
   describe('Overview tab', () => {
