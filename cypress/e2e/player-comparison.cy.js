@@ -283,6 +283,14 @@ describe('PWHL goalie comparison', () => {
     cy.contains('.player-card', 'Frankel', { timeout: 8000 }).click()
     cy.get('.player-popup', { timeout: 10000 }).should('exist')
     cy.contains('GP', { timeout: 10000 }).should('exist')
+    // Same header-reflow race as the other three describe blocks in this
+    // file (see the NHL skater block's comment for the full story) -- this
+    // fourth block was missed entirely when the other three were fixed,
+    // since it's a separate describe block with its own beforeEach rather
+    // than sharing one with "PWHL player comparison" above. Found live
+    // when this exact test failed with the exact same signature
+    // (.pce-input never found) right after the other three were fixed.
+    cy.get('.pp-quickstats-col .pce-toggle', { timeout: 10000 }).should('exist')
   })
 
   // Regression: PWHL goalie-vs-goalie was hard-blocked ("percentile
