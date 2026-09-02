@@ -158,6 +158,29 @@ async function _getPlayoffGames() {
   return games.filter(g => g.gameType === GAME_TYPE.PLAYOFFS);
 }
 
+// Is training camp / preseason currently on for this team? The schedule
+// already carries gameType 1 for preseason games (see GAME_TYPE above) but
+// nothing in this app read it before now -- a tester flagged the roster
+// ballooning during camp with no explanation why. "Preseason" here means
+// "today is on/after this season's first scheduled preseason game and
+// before its first regular-season game" -- covers camp announcement
+// through opening night, not just game days themselves.
+export async function getPreseasonInfo() {
+  return cached('preseasonInfo', _getPreseasonInfo, TTL.SCHEDULE);
+}
+async function _getPreseasonInfo() {
+  const games = await getAllGames();
+  const preseasonGames = games.filter(g => g.gameType === GAME_TYPE.PRESEASON);
+  if (!preseasonGames.length) return { isPreseason: false, gameCount: 0 };
+  const regularGames = games.filter(g => g.gameType === GAME_TYPE.REGULAR);
+  const firstRegularDate = regularGames.length
+    ? regularGames.reduce((min, g) => (g.gameDate < min ? g.gameDate : min), regularGames[0].gameDate)
+    : null;
+  const today = new Date().toISOString().slice(0, 10);
+  const isPreseason = firstRegularDate ? today < firstRegularDate : true;
+  return { isPreseason, gameCount: preseasonGames.length };
+}
+
 // Upcoming games (future date, not yet played) — checks both reg + playoffs
 export async function getUpcomingGames(count = 8) {
   const games = await getAllGames();
