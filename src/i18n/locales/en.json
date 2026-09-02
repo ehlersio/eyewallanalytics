@@ -31,7 +31,7 @@
   "search": {
     "toggleAriaLabel": "Search players",
     "closeAriaLabel": "Close search",
-    "placeholder": "Search NHL + PWHL players…",
+    "placeholder": "Search NHL, PWHL, AHL, ECHL players…",
     "searching": "Searching…",
     "noResults": "No players found.",
     "noTeamAssigned": "No team assigned yet",

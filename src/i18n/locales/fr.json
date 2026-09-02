@@ -31,7 +31,7 @@
   "search": {
     "toggleAriaLabel": "Rechercher des joueurs",
     "closeAriaLabel": "Fermer la recherche",
-    "placeholder": "Rechercher des joueurs LNH et LPHF…",
+    "placeholder": "Rechercher des joueurs LNH, LPHF, LAH, ECHL…",
     "searching": "Recherche…",
     "noResults": "Aucun joueur trouvé.",
     "noTeamAssigned": "Aucune équipe assignée",
