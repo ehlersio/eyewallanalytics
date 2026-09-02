@@ -14,7 +14,7 @@
   "about": {
     "triggerAriaLabel": "About EyeWall Analytics",
     "tagline": "Hockey Intelligence",
-    "description": "Advanced analytics for all 32 NHL teams and 12 PWHL teams — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, and WAR/percentile rankings.",
+    "description": "Advanced analytics for all 32 NHL, 12 PWHL, 32 AHL, and 30 ECHL teams — live shot maps, period summaries, momentum tracking, special teams analysis, push notifications, AI-generated game summaries, player heat maps, goalie analytics, and WAR/percentile rankings.",
     "statLiveValue": "Live",
     "statLiveLabel": "Shot Maps",
     "statPollLabel": "Live Poll",
@@ -23,7 +23,7 @@
     "supportText": "EyeWall Analytics is a passion project. If you find it useful, buying a coffee helps keep the servers running. 🙏",
     "buyMeCoffee": "Buy me a coffee",
     "builtFor": "Built with 🌀 for Canes Nation",
-    "dataVia": "Data via NHL API",
+    "dataVia": "Data via NHL & HockeyTech APIs",
     "contactPrefix": "For all inquiries:",
     "privacyText": "EyeWall uses anonymous analytics to understand which features are most useful. No personal data is sold or shared. Read our",
     "privacyPolicy": "Privacy Policy"

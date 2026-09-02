@@ -14,7 +14,7 @@
   "about": {
     "triggerAriaLabel": "À propos d'EyeWall Analytics",
     "tagline": "Intelligence hockey",
-    "description": "Analyses avancées pour les 32 équipes de la LNH et les 12 équipes de la LPHF — cartes de tirs en direct, résumés de période, suivi de l'élan, analyse des unités spéciales, notifications push, résumés de match générés par IA, cartes de chaleur des joueurs, analyses des gardiens et classements WAR/percentiles.",
+    "description": "Analyses avancées pour les 32 équipes de la LNH, les 12 équipes de la LPHF, les 32 équipes de la LAH et les 30 équipes de l'ECHL — cartes de tirs en direct, résumés de période, suivi de l'élan, analyse des unités spéciales, notifications push, résumés de match générés par IA, cartes de chaleur des joueurs, analyses des gardiens et classements WAR/percentiles.",
     "statLiveValue": "En direct",
     "statLiveLabel": "Cartes de tirs",
     "statPollLabel": "Fréq. en direct",
@@ -23,7 +23,7 @@
     "supportText": "EyeWall Analytics est un projet passion. Si vous le trouvez utile, offrir un café aide à garder les serveurs en marche. 🙏",
     "buyMeCoffee": "Offrez-moi un café",
     "builtFor": "Fait avec 🌀 pour Canes Nation",
-    "dataVia": "Données via l'API NHL",
+    "dataVia": "Données via les API NHL et HockeyTech",
     "contactPrefix": "Pour toute question :",
     "privacyText": "EyeWall utilise des analyses anonymes pour comprendre quelles fonctionnalités sont les plus utiles. Aucune donnée personnelle n'est vendue ou partagée. Lisez notre",
     "privacyPolicy": "Politique de confidentialité"
