@@ -527,7 +527,10 @@
     "emptyPlayoffStats": "No playoff stats yet — data populates once {{team}} advances.",
     "emptyNoStats": "No stats available.",
     "tableHint": "Tap a player row to open their profile · Sort by any column",
-    "prospectsEmpty": "No prospects on the books for this team right now."
+    "prospectsEmpty": "No prospects on the books for this team right now.",
+    "preseasonBanner": "Training camp roster — includes non-roster invites who may not make the final 25-man roster.",
+    "sortByNumber": "# Number",
+    "sortByName": "A-Z Name"
   },
   "pwhlPlayersView": {
     "subtitle": "Tap a player for stats",

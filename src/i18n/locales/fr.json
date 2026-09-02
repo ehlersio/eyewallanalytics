@@ -527,7 +527,10 @@
     "emptyPlayoffStats": "Aucune statistique de séries pour l'instant — les données s'ajoutent une fois que {{team}} avance.",
     "emptyNoStats": "Aucune statistique disponible.",
     "tableHint": "Touchez la ligne d'un joueur pour ouvrir son profil · Triez selon n'importe quelle colonne",
-    "prospectsEmpty": "Aucun espoir sous contrat pour cette équipe en ce moment."
+    "prospectsEmpty": "Aucun espoir sous contrat pour cette équipe en ce moment.",
+    "preseasonBanner": "Effectif du camp d'entraînement — comprend des joueurs invités qui pourraient ne pas faire l'effectif final de 25 joueurs.",
+    "sortByNumber": "# Numéro",
+    "sortByName": "A-Z Nom"
   },
   "pwhlPlayersView": {
     "subtitle": "Touchez une joueuse pour ses statistiques",

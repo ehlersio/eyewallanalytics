@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useFetch } from '../hooks/useFetch'
-import { getRoster, getProspects, getHistoricalRoster, getPlayoffGames, getStandings, TEAM_CONFIG } from '../utils/nhlApi'
+import { getRoster, getProspects, getHistoricalRoster, getPlayoffGames, getPreseasonInfo, getStandings, TEAM_CONFIG } from '../utils/nhlApi'
 import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS } from '../utils/teamConfig'
 import { getTeamSkaterStatsFromDB } from '../utils/supabaseClient'
 import { useSport } from '../utils/SportContext'
@@ -116,6 +116,7 @@ export default function PlayersView() {
   const SEASON = Number(currentSeason)
   const { data: roster,      loading: rosterLoading } = useFetch(() => getRoster(TEAM_CONFIG.abbr))
   const { data: poGames }   = useFetch(getPlayoffGames)
+  const { data: preseasonInfo } = useFetch(getPreseasonInfo)
   const { data: standingsRaw } = useFetch(getStandings)
   // Historical roster season picker (Roster tab only) -- defaults to the
   // live current season, which uses the existing `roster` fetch above
@@ -141,6 +142,7 @@ export default function PlayersView() {
   const [selected, setSelected] = useState(null)
   const [view, setView]         = useState('roster')
   const [gameType, setGameType] = useState(2)
+  const [rosterSort, setRosterSort] = useState('number')
   const inPlayoffs = (poGames?.length || 0) > 0
 
   const { data: skaterStats, loading: statsLoading } = useFetch(
@@ -190,12 +192,16 @@ export default function PlayersView() {
             <SeasonChipRow seasons={NHL_REGULAR_SEASONS} archiveSeasons={NHL_ARCHIVE_SEASONS}
               selected={rosterSeason} onSelect={setRosterSeason} />
           </div>
+          {isCurrentRosterSeason && preseasonInfo?.isPreseason && (
+            <PreseasonBanner text={t('playersView.preseasonBanner')} />
+          )}
+          <RosterSortRow sortBy={rosterSort} onChange={setRosterSort} />
           {displayRosterLoading && <RosterSkeleton />}
           {!displayRosterLoading && displayRoster && (
             <>
-              <RosterSection title={t('players.forwards')} players={displayRoster.forwards}   onSelect={setSelected} />
-              <RosterSection title={t('playersView.defensemen')} players={displayRoster.defensemen} onSelect={setSelected} />
-              <RosterSection title={t('players.goalies')} players={displayRoster.goalies}    onSelect={setSelected} />
+              <RosterSection title={t('players.forwards')} players={displayRoster.forwards}   onSelect={setSelected} sortBy={rosterSort} />
+              <RosterSection title={t('playersView.defensemen')} players={displayRoster.defensemen} onSelect={setSelected} sortBy={rosterSort} />
+              <RosterSection title={t('players.goalies')} players={displayRoster.goalies}    onSelect={setSelected} sortBy={rosterSort} />
             </>
           )}
         </>
@@ -209,9 +215,10 @@ export default function PlayersView() {
               {!prospects.all.length && (
                 <div className={DRILL_EMPTY_CLASSES}>{t('playersView.prospectsEmpty')}</div>
               )}
-              <RosterSection title={t('players.forwards')} players={prospects.forwards}   onSelect={setSelected} />
-              <RosterSection title={t('playersView.defensemen')} players={prospects.defensemen} onSelect={setSelected} />
-              <RosterSection title={t('players.goalies')} players={prospects.goalies}    onSelect={setSelected} />
+              <RosterSortRow sortBy={rosterSort} onChange={setRosterSort} />
+              <RosterSection title={t('players.forwards')} players={prospects.forwards}   onSelect={setSelected} sortBy={rosterSort} />
+              <RosterSection title={t('playersView.defensemen')} players={prospects.defensemen} onSelect={setSelected} sortBy={rosterSort} />
+              <RosterSection title={t('players.goalies')} players={prospects.goalies}    onSelect={setSelected} sortBy={rosterSort} />
             </>
           )}
         </>
@@ -229,11 +236,37 @@ export default function PlayersView() {
   )
 }
 
+// ─── Preseason banner ────────────────────────────────────────
+
+function PreseasonBanner({ text }) {
+  return (
+    <div className="mb-3 rounded-[var(--radius-sm)] border-[0.5px] border-[var(--border)] bg-[var(--bg2)] px-[10px] py-2 text-[12px] text-[color:var(--text-muted)]">
+      🏕️ {text}
+    </div>
+  )
+}
+
+// ─── Roster sort control ───────────────────────────────────────
+
+function RosterSortRow({ sortBy, onChange }) {
+  const { t } = useTranslation()
+  return (
+    <div className={TABS_WRAP_CLASSES} style={{ marginTop: 0, marginBottom: 12 }}>
+      <button className={tabClasses(sortBy === 'number')} onClick={() => onChange('number')}>{t('playersView.sortByNumber')}</button>
+      <button className={tabClasses(sortBy === 'name')} onClick={() => onChange('name')}>{t('playersView.sortByName')}</button>
+    </div>
+  )
+}
+
 // ─── Roster section ───────────────────────────────────────────
 
-function RosterSection({ title, players = [], onSelect }) {
+function RosterSection({ title, players = [], onSelect, sortBy = 'number' }) {
   if (!players.length) return null
-  const sorted = [...players].sort((a, b) => (a.sweaterNumber || 0) - (b.sweaterNumber || 0))
+  const sorted = [...players].sort((a, b) => (
+    sortBy === 'name'
+      ? (a.lastName?.default || '').localeCompare(b.lastName?.default || '')
+      : (a.sweaterNumber || 0) - (b.sweaterNumber || 0)
+  ))
   return (
     <div className={ROSTER_SECTION_CLASSES}>
       <div className="sec-label">{title}</div>
