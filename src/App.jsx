@@ -47,6 +47,12 @@ const ECHLPlayersView  = lazy(() => import('./views/ECHLPlayersView'));
 const ECHLTeamView     = lazy(() => import('./views/ECHLTeamView'));
 const ECHLNewsView     = lazy(() => import('./views/ECHLNewsView'));
 
+// Not linked from BottomNav or anywhere else -- reached only via direct
+// URL. See AdminHealthView.jsx's own header comment for why this is UX
+// hiding, not the real access control (the Worker independently gates
+// GET /admin/health to the app owner).
+const AdminHealthView = lazy(() => import('./views/AdminHealthView'));
+
 const DevReplayView = import.meta.env.DEV
   ? lazy(() => import('./views/DevReplayView'))
   : null;
@@ -168,6 +174,7 @@ export default function App() {
                       <Route path="/team"     element={<TeamView />} />
                       <Route path="/news"     element={<NewsView />} />
                       <Route path="/league"   element={<LeagueView />} />
+                      <Route path="/admin/health" element={<AdminHealthView />} />
                       {/* PWHL routes */}
                       <Route path="/pwhl/shots"    element={<PWHLShotMapView />} />
                       <Route path="/pwhl/team"     element={<PWHLTeamView />} />
