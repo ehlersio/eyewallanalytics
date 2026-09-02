@@ -1489,10 +1489,10 @@ export const TEAM_HISTORY = {
         { label: 'Most wins, single season', value: 52, season: '2009-10' },
         { label: 'Most points, single season', value: 112, season: '2009-10' },
       ],
-      affiliates: { ahl: 'CHI', echl: 'IND' },
+      affiliates: { ahl: 'RFD', echl: 'IND' },
       facts: [
         'The Blackhawks played at the original Chicago Stadium from 1929 until 1994, when they moved next door to the United Center.',
-        "Chicago's own AHL affiliate, the Chicago Wolves, share the Blackhawks' home city and abbreviation despite being a separate franchise.",
+        "The Blackhawks' real AHL affiliate is the Rockford IceHogs, about 90 miles from Chicago — not the Chicago Wolves, a separate, independently-owned AHL franchise that happens to share the Blackhawks' home city and is actually affiliated with the Carolina Hurricanes.",
         'Owner Danny Wirtz is the fourth generation of the Wirtz family — and the sixth principal owner in franchise history — to run the Blackhawks.',
       ],
       currentInfo: {
@@ -2363,7 +2363,1585 @@ export const TEAM_HISTORY = {
 
 
   },
-  ahl: {},
+  ahl: {
+    // Verified Phase 3 (AHL) team entries, accumulated as agents report back.
+    // Integrate into src/utils/teamHistory.js TEAM_HISTORY.ahl after a final
+    // spot-check pass.
+
+    // ═══ ATLANTIC (7 teams) ══════════════════════════════════════════════════
+    // CROSS-VALIDATED: every nhl/echl affiliate abbr in this batch independently
+    // matches what the NHL-phase agents already put in TEAM_HISTORY.nhl (WSH<->
+    // HER<->SC, STL<->SPR<->WOR, FLA<->CLT<->SAV, PIT<->WBS<->FLA-echl) -- strong
+    // signal the whole affiliate graph is internally consistent, not just
+    // individually plausible.
+    // FIXED: '&amp;' -> '&' throughout (HER retiredNumbers x3 + owner, CLT owner).
+    // FIXED: dropped HER's founded.note (redundant with an existing fact) and
+    // its formerNames entry for Hersheypark Arena -- that's a genuinely
+    // different, since-replaced building, not a rename of GIANT Center, so it
+    // doesn't belong in formerNames; the real story is already in facts.
+    // FIXED: dropped SPR's two retiredNumbers entries (Eddie Shore #2, Rob
+    // Murray #23) -- agent's own research found these are honorary banners for
+    // two DIFFERENT, unrelated earlier Springfield AHL franchises (Indians,
+    // Falcons), not real Thunderbirds retirements. Component has no way to
+    // render the distinguishing note, and showing them unqualified in the
+    // Retired Numbers list would misrepresent them as this team's own history.
+    // The honest version of this story is already captured in facts.
+    // FLAG: HFD has no confirmed ECHL affiliate for 2026-27 (Bloomington Bison
+    // left for Winnipeg/Manitoba in July 2026) -- left unset, don't guess.
+
+    HFD: {
+      founded: {
+        year: 1926,
+        asFranchise: 'Providence Reds',
+        relocations: [
+          { year: 1976, from: 'Providence, RI', to: 'Providence, RI', renamedTo: 'Rhode Island Reds', note: 'Name change only, no relocation' },
+          { year: 1977, from: 'Providence, RI', to: 'Binghamton, NY', renamedTo: 'Binghamton Dusters' },
+          { year: 1980, from: 'Binghamton, NY', to: 'Binghamton, NY', renamedTo: 'Binghamton Whalers', note: "Became Hartford Whalers' AHL affiliate" },
+          { year: 1990, from: 'Binghamton, NY', to: 'Binghamton, NY', renamedTo: 'Binghamton Rangers', note: "Became New York Rangers' AHL affiliate" },
+          { year: 1997, from: 'Binghamton, NY', to: 'Hartford, CT', renamedTo: 'Hartford Wolf Pack', note: 'Franchise sold to Madison Square Garden, moved into the just-vacated Hartford Civic Center' },
+          { year: 2010, from: 'Hartford, CT', to: 'Hartford, CT', renamedTo: 'Connecticut Whale', note: 'Renamed in honor of the former NHL Hartford Whalers' },
+          { year: 2013, from: 'Hartford, CT', to: 'Hartford, CT', renamedTo: 'Hartford Wolf Pack', note: 'Reverted to Wolf Pack name after the 2012-13 season' },
+        ],
+      },
+      arena: {
+        name: 'PeoplesBank Arena',
+        city: 'Hartford, CT',
+        capacity: 14750,
+        opened: 1975,
+        formerNames: [
+          { name: 'Hartford Civic Center', years: '1975–2007' },
+          { name: 'XL Center', years: '2007–2025' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/XL_Center_2022.jpg',
+          attribution: 'Enterprise8875, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [2000] },
+      ],
+      retiredNumbers: [
+        { number: 12, player: 'Ken Gernander' },
+      ],
+      notableAlumni: [
+        'Derek Armstrong', 'Wade Redden', 'Dan Girardi', 'Cam Talbot',
+        'J.T. Miller', 'Al Montoya',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 49, season: '1999-00' },
+        { label: 'Most points, single season', value: 107, season: '1999-00' },
+      ],
+      affiliates: { nhl: 'NYR' },
+      facts: [
+        "The Wolf Pack's lineage traces to the 1926 Providence Reds, one of the AHL's five charter franchises — it moved through Providence/Rhode Island, then three different Binghamton, NY identities (Dusters, Whalers, Rangers) before landing in Hartford in 1997. The franchise does not officially claim the Providence Reds' four Calder Cups (1938, 1940, 1949, 1956).",
+        'The team was rebranded the Connecticut Whale for three seasons (2010-13) as a tribute to the old NHL Hartford Whalers before reverting to the Wolf Pack name.',
+        'In July 2026 the Bloomington Bison — the Rangers/Wolf Pack\'s ECHL affiliate for two seasons — left to affiliate with the Winnipeg Jets/Manitoba Moose instead, leaving the Wolf Pack without a confirmed ECHL affiliate for 2026-27.',
+      ],
+      currentInfo: {
+        owner: 'Madison Square Garden Sports Corp. (owned directly by the New York Rangers organization)',
+        headCoach: 'Jay Leach',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    PRO: {
+      founded: {
+        year: 1992,
+        asFranchise: 'Maine Mariners (AHL, 1987-92)',
+        relocations: [
+          { year: 1992, from: 'Portland, ME', to: 'Providence, RI', renamedTo: 'Providence Bruins', note: 'Providence mayor Buddy Cianci brokered the move; the earlier Maine Mariners (1987-92, an expansion team stocked by Boston) had itself replaced a different, unrelated Mariners franchise that left for Utica in 1987' },
+        ],
+      },
+      arena: {
+        name: 'Amica Mutual Pavilion',
+        city: 'Providence, RI',
+        capacity: 11273,
+        opened: 1972,
+        formerNames: [
+          { name: 'Providence Civic Center', years: '1972–2001' },
+          { name: "Dunkin' Donuts Center", years: '2001–2022' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Amica_Mutual_Pavilion_in_Providence_RI.jpg',
+          attribution: 'Kenneth C. Zirkel, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [1999] },
+      ],
+      retiredNumbers: [
+        { number: 25, player: 'Colby Cave' },
+      ],
+      notableAlumni: [
+        'Brad Marchand', 'Tuukka Rask', 'Tim Thomas', 'Trent Frederic',
+        'Andrew Raycroft', 'Randy Robitaille',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 56, season: '1998-99' },
+        { label: 'Most points, single season', value: 120, season: '1998-99' },
+      ],
+      affiliates: { nhl: 'BOS', echl: 'MNE' },
+      facts: [
+        'The Bruins won their only Calder Cup in 1998-99 under rookie head coach Peter Laviolette, going 56-16-8 in the regular season after winning just 19 games the year before.',
+        "Colby Cave's #25 was retired in 2022, two years after his death from a brain hemorrhage in 2020 while playing for the Edmonton Oilers — the only number the franchise has retired.",
+        'New head coach Trent Whitfield spent the prior 10 seasons (2016-26) as a Providence assistant before his 2026 promotion; as a player he suited up for Boston, St. Louis, Washington, and the New York Rangers.',
+      ],
+      currentInfo: {
+        owner: 'H. Larue Renfroe (independently owned, not the Boston Bruins)',
+        headCoach: 'Trent Whitfield',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    LV: {
+      founded: {
+        year: 1996,
+        asFranchise: 'Philadelphia Phantoms (NHL/AHL expansion)',
+        relocations: [
+          { year: 2009, from: 'Philadelphia, PA', to: 'Glens Falls, NY', renamedTo: 'Adirondack Phantoms', note: "Moved ahead of the Spectrum's planned closure/demolition" },
+          { year: 2014, from: 'Glens Falls, NY', to: 'Allentown, PA', renamedTo: 'Lehigh Valley Phantoms', note: 'Delayed a year by litigation over construction of the new PPL Center' },
+        ],
+      },
+      arena: {
+        name: 'PPL Center',
+        city: 'Allentown, PA',
+        capacity: 8500,
+        opened: 2014,
+      },
+      championships: [
+        { title: 'Calder Cup', years: [1998, 2005] },
+      ],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Nolan Baumgartner', 'Dennis Bonvie', 'John Slaney', 'Mike Maneluk',
+        'Andrew Raycroft',
+      ],
+      records: [
+        { label: 'Most wins, single season (Lehigh Valley era)', value: 47, season: '2017-18' },
+        { label: 'Most points, single season (Lehigh Valley era)', value: 104, season: '2017-18' },
+      ],
+      affiliates: { nhl: 'PHI', echl: 'REA' },
+      facts: [
+        'As the Philadelphia Phantoms, the franchise won two Calder Cups (1998, 2005); the 2005 clincher at the Wachovia Center drew 20,103 fans, still the largest crowd for a single AHL playoff game.',
+        'The franchise spent five seasons (2009-14) as the Adirondack Phantoms in Glens Falls, NY before a construction lawsuit delayed its planned move to Allentown by a full year.',
+        'Unlike most long-tenured AHL clubs, the Phantoms have never formally retired a jersey number in any of their three city eras.',
+      ],
+      currentInfo: {
+        owner: 'The Brooks Group (Robert and Jim Brooks) — independently owned, not the Philadelphia Flyers',
+        headCoach: 'John Snowden',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    WBS: {
+      founded: {
+        year: 1981,
+        asFranchise: 'Fredericton Express',
+        relocations: [
+          { year: 1988, from: 'Fredericton, NB', to: 'Halifax, NS', renamedTo: 'Halifax Citadels' },
+          { year: 1993, from: 'Halifax, NS', to: 'Cornwall, ON', renamedTo: 'Cornwall Aces' },
+          { year: 1999, from: 'Cornwall, ON', to: 'Wilkes-Barre, PA', renamedTo: 'Wilkes-Barre/Scranton Penguins', note: 'Pittsburgh purchased the dormant Cornwall franchise (inactive 1996-99) from the Colorado Avalanche' },
+        ],
+      },
+      arena: {
+        name: 'Mohegan Sun Arena at Casey Plaza',
+        city: 'Wilkes-Barre Township, PA',
+        capacity: 8500,
+        opened: 1999,
+        formerNames: [
+          { name: 'Northeastern Pennsylvania Civic Arena', years: '1999' },
+          { name: 'First Union Arena at Casey Plaza', years: '1999–2002' },
+          { name: 'Wachovia Arena at Casey Plaza', years: '2002–2010' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Mohegan_Sun_Arena_at_Casey_Plaza_1_2012-05-05.JPG',
+          attribution: 'Pens Through My Lens, CC BY-SA 3.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Marc-Andre Fleury', 'Matt Murray', 'Tristan Jarry', 'Brooks Orpik',
+        'Kris Letang', 'Jake Guentzel',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 58, season: '2010-11' },
+        { label: 'Most points, single season', value: 117, season: '2010-11' },
+      ],
+      affiliates: { nhl: 'PIT', echl: 'FLA' },
+      facts: [
+        'The franchise has reached the Calder Cup Final three times (2001, 2004, 2008) without ever winning it — the only team in this division still searching for its first title.',
+        "The 2010-11 team went 58-21-1 to win the Macgregor Kilpatrick Trophy for the AHL's best regular-season record, a franchise-best campaign.",
+        'The Hoffmann Family of Companies bought the Pittsburgh Penguins (and with them, WBS) in a $1.7 billion sale approved by the NHL in June 2026; the Hoffmanns also own ECHL\'s Florida Everblades, which became the Penguins/WBS ECHL affiliate for 2026-27, replacing the Wheeling Nailers.',
+      ],
+      currentInfo: {
+        owner: 'Hoffmann Family of Companies (owned as part of the Pittsburgh Penguins organization)',
+        headCoach: 'Kirk MacDonald',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    HER: {
+      founded: {
+        year: 1938,
+        asFranchise: 'Hershey Bears',
+      },
+      arena: {
+        name: 'GIANT Center',
+        city: 'Hershey, PA',
+        capacity: 10500,
+        opened: 2002,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Outside_Giant_Center.jpg',
+          attribution: 'Phillyfan0419, CC BY-SA 3.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [1947, 1958, 1959, 1969, 1974, 1980, 1988, 1997, 2006, 2009, 2010, 2023, 2024] },
+      ],
+      retiredNumbers: [
+        { number: 3, player: 'Frank Mathers & Ralph Keller' },
+        { number: 8, player: 'Mike Nykoluk' },
+        { number: 9, player: 'Arnie Kullman & Tim Tookey' },
+        { number: 16, player: 'Willie Marshall & Mitch Lamoureux' },
+        { number: 17, player: 'Chris Bourque' },
+      ],
+      notableAlumni: [
+        'Chris Bourque', 'Bruce Boudreau', 'Craig Patrick', 'Jim Rutherford',
+        'Emile Francis', 'Willie Marshall',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 53, season: '2023-24' },
+        { label: 'Most points, single season', value: 111, season: '2023-24' },
+      ],
+      affiliates: { nhl: 'WSH', echl: 'SC' },
+      facts: [
+        "Hershey's 13 Calder Cups are more than any other AHL franchise, including a repeat in 2023-24 that came the same season the team set its single-season franchise record for wins.",
+        'The Bears have played continuously in Hershey since 1938, first at Hersheypark Arena (1936-2002, shared with the amateur predecessor club) and now at GIANT Center — no other AHL team has stayed in one city as long without interruption.',
+        'New head coach Derek King enters his second season in 2026-27 after four seasons as a Chicago Blackhawks assistant (including a stint as interim head coach in 2021-22).',
+      ],
+      currentInfo: {
+        owner: 'Hershey Entertainment & Resorts Company',
+        headCoach: 'Derek King',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    CLT: {
+      founded: {
+        year: 1990,
+        asFranchise: 'Capital District Islanders',
+        relocations: [
+          { year: 1993, from: 'Albany, NY (Capital District)', to: 'Albany, NY', renamedTo: 'Albany River Rats', note: 'Name change only, same market' },
+          { year: 2010, from: 'Albany, NY', to: 'Charlotte, NC', renamedTo: 'Charlotte Checkers', note: 'Sold to a Charlotte ownership group; inherited the Hurricanes affiliation' },
+        ],
+      },
+      arena: {
+        name: 'Bojangles Coliseum',
+        city: 'Charlotte, NC',
+        capacity: 8600,
+        opened: 1955,
+        formerNames: [
+          { name: 'Charlotte Coliseum', years: '1955–1988' },
+          { name: 'Independence Arena', years: '1993–2001' },
+          { name: 'Cricket Arena', years: '2001–2008' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: "https://commons.wikimedia.org/wiki/Special:FilePath/Bojangles%27_Coliseum.jpg",
+          attribution: 'James Willamor, CC BY-SA 3.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [2019] },
+      ],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Jake Bean', 'Morgan Geekie', 'Alex Nedeljkovic', 'Brock McGinn',
+        'Nicolas Roy', 'Zach Boychuk',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 51, season: '2018-19' },
+        { label: 'Most points, single season', value: 110, season: '2018-19' },
+      ],
+      affiliates: { nhl: 'FLA', echl: 'SAV' },
+      facts: [
+        'This franchise dates to 1990 in Albany, NY (as the Capital District Islanders, then Albany River Rats from 1993) before relocating to Charlotte in 2010 — a separate, unrelated franchise from the original minor-league Charlotte Checkers that played in the same building from 1956-77.',
+        "The Checkers' only Calder Cup (2019) came in a dominant 2018-19 season that also produced the franchise's best-ever regular season: 51-17-7 for 110 points, first overall in the AHL.",
+        "Zawyer Sports & Entertainment bought a controlling interest in the Checkers in 2024 and separately owns the Savannah Ghost Pirates, the Checkers' current ECHL affiliate.",
+      ],
+      currentInfo: {
+        owner: 'Zawyer Sports & Entertainment (majority; Michael Kahn remains a minority owner)',
+        headCoach: 'Geordie Kinnear',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    SPR: {
+      founded: {
+        year: 1982,
+        asFranchise: 'Erie Blades',
+        relocations: [
+          { year: 1982, from: 'Erie, PA', to: 'Baltimore, MD', renamedTo: 'Baltimore Skipjacks', note: 'Erie Blades (1975-82) folded; the Skipjacks are generally treated as its successor expansion team' },
+          { year: 1993, from: 'Baltimore, MD', to: 'Portland, ME', renamedTo: 'Portland Pirates' },
+          { year: 2016, from: 'Portland, ME', to: 'Springfield, MA', renamedTo: 'Springfield Thunderbirds', note: 'Sold to a Springfield-based ownership group after the Springfield Falcons had just left for Tucson' },
+        ],
+      },
+      arena: {
+        name: 'MassMutual Center',
+        city: 'Springfield, MA',
+        capacity: 6679,
+        opened: 1972,
+        formerNames: [
+          { name: 'Springfield Civic Center', years: '1972–2005' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/MassMutualCenter2022.jpg',
+          attribution: 'Lucas Armstrong/TheAHL, CC BY 2.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Josh Brown', 'Dryden Hunt', 'Juho Lammikko', 'Steven Santini',
+        'Mackenzie MacEachern', 'Adam Gaudette',
+      ],
+      records: [
+        { label: 'Most wins, single season (Thunderbirds era)', value: 43, season: '2021-22' },
+        { label: 'Most points, single season (Thunderbirds era)', value: 95, season: '2021-22' },
+      ],
+      affiliates: { nhl: 'STL', echl: 'WOR' },
+      facts: [
+        "The Thunderbirds' own lineage runs through the Erie Blades, Baltimore Skipjacks, and Portland Pirates back to 1975-82 — it is not the same franchise as the earlier Springfield Indians or Springfield Falcons that also played AHL hockey in the same city and arena.",
+        'Because the city has such deep AHL roots, the Thunderbirds display banners honoring Eddie Shore (Springfield Indians, #2) and Rob Murray (Springfield Falcons, #23) even though neither number belongs to the Thunderbirds\' own franchise history.',
+        'Springfield has never won a Calder Cup in the Thunderbirds era, but reached the Final in just their sixth season (2021-22), the same year they set their current franchise-best regular-season marks.',
+      ],
+      currentInfo: {
+        owner: 'Springfield Hockey, LLC (independently owned local group, not the St. Louis Blues)',
+        headCoach: 'Steve Ott',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    // ═══ NORTH (8 teams) ═════════════════════════════════════════════════════
+    // VERIFIED INDEPENDENTLY (important, counter-narrative finding): the current
+    // (2021-present) Utica Comets are NOT the same legal franchise as the
+    // popular 2013-2021 Comets (Bo Horvat/Vancouver era) -- that franchise
+    // became the Abbotsford Canucks in 2021, and the CURRENT Utica Comets are
+    // actually the relocated Binghamton/Albany/Lowell Devils affiliate. Agent
+    // flagged this itself as needing a check; confirmed via a second, independent
+    // search (Vancouver bought the Peoria Rivermen in 2013 -> Comets -> Abbotsford
+    // 2021; separately, NJ's Binghamton Devils -> Utica Comets 2021). This
+    // entry deliberately excludes the 2013-2021 era's players/records/history.
+    // FIXED: '&amp;' -> '&' throughout (ROC, TOR, UTC).
+    // FIXED: BEL's relocations array had a null-valued entry ({to: null,
+    // renamedTo: null}) that would have rendered the literal word "null" in the
+    // UI -- merged the 1996 suspension into the 2002 revival entry's `from`/note
+    // instead, preserving the real dormancy story without a broken row.
+    // FIXED: dropped CLE's per-retiredNumber `note` fields (not rendered) --
+    // the same context is already stated clearly in CLE's facts array.
+    // FIXED: folded unrendered `records[].player` names into the label/note
+    // text for ROC/TOR/HAM/LAV (component doesn't have a separate field for
+    // this) so the info isn't silently dropped.
+    // CAUGHT A CROSS-BATCH CONFLICT: ROC's claimed echl:'JAX' is stale -- per
+    // the NHL-phase data already in this file, Jacksonville Icemen moved from
+    // Buffalo's chain to Minnesota's in May 2026 (MIN/IA/JAX). Buffalo's whole
+    // chain (BUF NHL + ROC AHL) has no confirmed ECHL affiliate right now --
+    // already reflected on BUF's NHL entry, now matched here. Every other
+    // nhl/echl pair in this batch (TOR/CIN, BEL/ALN, HAM/TRE) independently
+    // matches what the NHL-phase agents already found -- strong signal the
+    // overall affiliate graph is self-consistent.
+
+    ROC: {
+      founded: {
+        year: 1956,
+      },
+      arena: {
+        name: 'Blue Cross Arena',
+        city: 'Rochester, NY',
+        capacity: 10662,
+        opened: 1955,
+        formerNames: [
+          { name: 'Rochester Community War Memorial', years: '1955–1998' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Blue_Cross_Arena_%28War_Memorial%29,_Exchange_Boulevard_and_Broad_Street,_Rochester,_NY_%2854420829289%29.jpg',
+          attribution: 'Warren LeMay, CC BY-SA 2.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [1965, 1966, 1968, 1983, 1987, 1996] },
+      ],
+      retiredNumbers: [
+        { number: 6, player: 'Norm "Red" Armstrong' },
+        { number: 9, player: 'Dick Gamble & Jody Gage' },
+      ],
+      notableAlumni: ['Gerry Cheevers', 'Al Arbour', 'Ryan Miller', 'Jody Gage', 'Rob Ray'],
+      records: [
+        { label: 'Most points, single season', value: 119, season: '1982-83', note: 'Geordie Robertson' },
+        { label: 'Most goals, single season', value: 61, season: '1985-86', note: 'Paul Gardner' },
+      ],
+      affiliates: { nhl: 'BUF' },
+      facts: [
+        'The Amerks are the 4th-oldest continuously operating franchise in the AHL, formed in 1956 after the Pittsburgh Hornets folded.',
+        "Owned directly by Terry Pegula's Pegula Sports & Entertainment — the same ownership group as the parent Buffalo Sabres.",
+        'In 1959-60, Rochester became the first team in AHL history to win a playoff series after trailing 3 games to none.',
+      ],
+      currentInfo: {
+        owner: 'Terry Pegula (Pegula Sports & Entertainment — same group as the Buffalo Sabres)',
+        headCoach: 'Michael Leone',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    SYR: {
+      founded: {
+        year: 1992,
+        asFranchise: 'Hamilton Canucks',
+        relocations: [
+          { year: 1994, from: 'Hamilton, ON', to: 'Syracuse, NY', renamedTo: 'Syracuse Crunch', note: 'Name chosen via public fan vote' },
+        ],
+      },
+      arena: {
+        name: 'Upstate Medical University Arena',
+        city: 'Syracuse, NY',
+        capacity: 5800,
+        opened: 1951,
+        formerNames: [
+          { name: 'Onondaga County War Memorial', years: '1951–1999' },
+          { name: 'Oncenter War Memorial Arena', years: '2000–2019' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Onondaga_County_War_Memorial_side.jpg',
+          attribution: 'Crazyale, public domain, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['Nikita Kucherov', 'Brayden Point', 'Andrei Vasilevskiy', 'Tyler Johnson', 'Jonathan Drouin', 'Alex Killorn'],
+      records: [
+        { label: 'Most points, single season (76-game era)', value: 102, season: '2018-19' },
+        { label: 'Most goals, single season (76-game era)', value: 264, season: '2018-19' },
+      ],
+      affiliates: { nhl: 'TBL', echl: 'ORL' },
+      facts: [
+        'Founder/owner Howard Dolgon coordinated the purchase of the Hamilton Canucks in 1994 to bring the AHL back to Syracuse; he still owns the team independently (not owned by the Lightning).',
+        'The Crunch have never formally retired a number — a #14 banner (John Badduke, 1997) and a #7 Slap Shot tribute (2008-09) were both later reissued to other players.',
+        "The Lightning–Crunch affiliation, running continuously since 2012, is one of the AHL's longest-standing single-team NHL partnerships.",
+      ],
+      currentInfo: {
+        owner: 'Howard Dolgon (independent ownership, no NHL-parent stake)',
+        headCoach: 'Joel Bouchard',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    TOR: {
+      founded: {
+        year: 1978,
+        asFranchise: 'New Brunswick Hawks',
+        relocations: [
+          { year: 1982, from: 'New Brunswick', to: 'St. Catharines, ON', renamedTo: 'St. Catharines Saints' },
+          { year: 1986, from: 'St. Catharines, ON', to: 'Newmarket, ON', renamedTo: 'Newmarket Saints' },
+          { year: 1991, from: 'Newmarket, ON', to: "St. John's, NL", renamedTo: "St. John's Maple Leafs" },
+          { year: 2005, from: "St. John's, NL", to: 'Toronto, ON', renamedTo: 'Toronto Marlies', note: 'Named for the Toronto Marlboros, a former Maple Leafs-sponsored junior team' },
+        ],
+      },
+      arena: {
+        name: 'Coca-Cola Coliseum',
+        city: 'Toronto, ON',
+        capacity: 8140,
+        opened: 1921,
+        formerNames: [
+          { name: 'CNE Coliseum', years: '1921–2003' },
+          { name: 'Ricoh Coliseum', years: '2003–2018' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Coca-Cola_Coliseum,_Exhibition_Place,_Toronto,_Ontario_%2829901775271%29.jpg',
+          attribution: 'Ken Lund, CC BY-SA 2.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [2018, 2026] },
+      ],
+      retiredNumbers: [],
+      notableAlumni: ['Nazem Kadri', 'Connor Brown', 'Andreas Johnsson', 'Timothy Liljegren', 'Rich Clune'],
+      records: [
+        { label: 'Most points, single season (tied)', value: 79, season: '2008-09 & 2018-19', note: 'Tim Stapleton (2008-09) and Jeremy Bracco (2018-19)' },
+        { label: 'Most goals, single season (tied)', value: 36, season: '2005-06 & 2024-25', note: 'John Pohl (2005-06) and Alex Steeves (2024-25)' },
+      ],
+      affiliates: { nhl: 'TOR', echl: 'CIN' },
+      facts: [
+        'The 2018 Calder Cup was the first professional hockey championship for a Toronto-based team since 1967.',
+        'The Marlies won a second Calder Cup in June 2026, beating the Chicago Wolves 4-1, with goaltender Artur Akhtyamov winning playoff MVP honors.',
+        'Owned directly by Maple Leaf Sports & Entertainment (MLSE), the same group that owns the parent Toronto Maple Leafs.',
+      ],
+      currentInfo: {
+        owner: 'Maple Leaf Sports & Entertainment (MLSE — same group as the Toronto Maple Leafs)',
+        headCoach: 'Steve Sullivan',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    CLE: {
+      founded: {
+        year: 1994,
+        asFranchise: 'Denver Grizzlies (IHL)',
+        relocations: [
+          { year: 1995, from: 'Denver, CO', to: 'Salt Lake City / Utah', renamedTo: 'Utah Grizzlies' },
+          { year: 2007, from: 'Utah (dormant 2005–2006)', to: 'Cleveland, OH', renamedTo: 'Cleveland Monsters', note: 'Dormant Utah franchise purchased by a Cleveland ownership group led by Dan Gilbert in 2006' },
+        ],
+      },
+      arena: {
+        name: 'Rocket Arena',
+        city: 'Cleveland, OH',
+        capacity: 19432,
+        opened: 1994,
+        formerNames: [
+          { name: 'Gund Arena', years: '1994–2005' },
+          { name: 'Quicken Loans Arena', years: '2005–2019' },
+          { name: 'Rocket Mortgage FieldHouse', years: '2019–2025' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Rocket_Mortgage_FieldHouse_%282%29.jpg',
+          attribution: 'Cards84664, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [2016] },
+      ],
+      retiredNumbers: [
+        { number: 1, player: 'Johnny Bower' },
+        { number: 9, player: 'Fred Glover' },
+        { number: 15, player: 'Jock Callander' },
+        { number: 27, player: 'Dave Michayluk' },
+      ],
+      notableAlumni: ['Oliver Bjorkstrand', 'Calvin Pickard', 'Nathan Gerbe', 'Zac Dalpe', 'T.J. Hensick'],
+      records: [
+        { label: 'Most points, single season', value: 97, season: '2015-16' },
+        { label: 'Most wins, single season', value: 44, season: '2010-11' },
+      ],
+      affiliates: { nhl: 'CBJ', echl: 'WHL' },
+      facts: [
+        "The Monsters have retired 4 numbers honoring Cleveland's earlier pro hockey franchises — Johnny Bower (#1) and Fred Glover (#9) played for the AHL's Cleveland Barons (1937-1973), Jock Callander (#15) and Dave Michayluk (#27) for the IHL's Cleveland Lumberjacks (1992-2001) — a deliberate nod to the city's hockey history predating the Monsters themselves, not honors earned by the Monsters' own on-ice alumni.",
+        'Oliver Bjorkstrand scored the Calder Cup-winning overtime goal in a 4-0 sweep of the Hershey Bears in 2016.',
+        "Independently owned by Dan Gilbert (also owner of the NBA's Cleveland Cavaliers) — a different ownership group from the parent Columbus Blue Jackets.",
+      ],
+      currentInfo: {
+        owner: 'Dan Gilbert (independent ownership, separate from the Columbus Blue Jackets)',
+        headCoach: 'Nick Bootland',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    UTC: {
+      founded: {
+        year: 1998,
+        asFranchise: 'Lowell Lock Monsters (expansion)',
+        relocations: [
+          { year: 2006, from: 'Lowell, MA', to: 'Lowell, MA', renamedTo: 'Lowell Devils', note: 'Purchased and rebranded by the New Jersey Devils' },
+          { year: 2010, from: 'Lowell, MA', to: 'Albany, NY', renamedTo: 'Albany Devils' },
+          { year: 2017, from: 'Albany, NY', to: 'Binghamton, NY', renamedTo: 'Binghamton Devils' },
+          { year: 2021, from: 'Binghamton, NY', to: 'Utica, NY', renamedTo: 'Utica Comets', note: "This is a DIFFERENT legal franchise from the original 2013-2021 Utica Comets (Vancouver Canucks-owned), which relocated to become the Abbotsford Canucks in the same 2021 swap. The Devils' Binghamton franchise took over the vacated 'Comets' name and city." },
+        ],
+      },
+      arena: {
+        name: 'Adirondack Bank Center',
+        city: 'Utica, NY',
+        capacity: 3999,
+        opened: 1960,
+        formerNames: [
+          { name: 'Utica Memorial Auditorium', years: '1960–2017' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Utica_Memorial_Auditorium_Exterior-_December_15,_2013.jpg',
+          attribution: 'Doug Kerr, CC BY-SA 2.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['Alexander Holtz', 'Simon Nemec', 'Nolan Foote', 'Akira Schmid', 'Kevin Bahl'],
+      records: [
+        { label: 'Best start to a season', value: '12-0-0-0', season: '2021-22', note: "AHL record for best start to a season since the league's 1936 founding, part of a 13-game overall winning streak" },
+      ],
+      affiliates: { nhl: 'NJD', echl: 'ADK' },
+      facts: [
+        "The 'Utica Comets' name has belonged to two entirely different franchises: the original 2013-2021 team (Vancouver Canucks-owned, now the Abbotsford Canucks) and the current one (2021-present), which is actually the relocated New Jersey Devils affiliate previously known as Binghamton/Albany/Lowell Devils, tracing to a 1998 Lowell expansion team.",
+        "Because of that swap, real Utica-based highlights like the original team's AHL-record 121 consecutive sellouts (through 2018) belong to the OTHER (now-Abbotsford) franchise, not this one.",
+        "The current Comets opened their first season in Utica (2021-22) with a 12-0-0-0 start, an AHL record for the best start to a season in the league's history.",
+      ],
+      currentInfo: {
+        owner: 'Harris Blitzer Sports & Entertainment (Josh Harris & David Blitzer — same group as the New Jersey Devils)',
+        headCoach: 'Ryan Parent',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    BEL: {
+      founded: {
+        year: 1972,
+        asFranchise: 'New Haven Nighthawks (expansion)',
+        relocations: [
+          { year: 1992, from: 'New Haven, CT', to: 'New Haven, CT', renamedTo: 'New Haven Senators' },
+          { year: 1993, from: 'New Haven, CT', to: 'Charlottetown, PE', renamedTo: 'Prince Edward Island Senators' },
+          { year: 2002, from: 'Prince Edward Island (dormant since 1996)', to: 'Binghamton, NY', renamedTo: 'Binghamton Senators', note: 'The Prince Edward Island Senators suspended operations after 1995-96 (the market was deemed too small to support an AHL team) before being revived in Binghamton six years later' },
+          { year: 2017, from: 'Binghamton, NY', to: 'Belleville, ON', renamedTo: 'Belleville Senators' },
+        ],
+      },
+      arena: {
+        name: 'CAA Arena',
+        city: 'Belleville, ON',
+        capacity: 4365,
+        opened: 1978,
+        formerNames: [
+          { name: 'Yardmen Arena', years: '1978–2018' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Yardmen_Arena.JPG',
+          attribution: 'Flibirigit, public domain, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [2011] },
+      ],
+      retiredNumbers: [],
+      notableAlumni: ['Drake Batherson', 'Nick Paul', 'Parker Kelly', 'Mark Kastelic', 'Jacob Bernard-Docker'],
+      records: [
+        { label: 'Most goals, single season', value: 234, season: '2019-20', note: "League-leading total before the season was cancelled due to COVID-19" },
+      ],
+      affiliates: { nhl: 'OTT', echl: 'ALN' },
+      facts: [
+        'The franchise sat dormant for 6 years (1996-2002) after the Prince Edward Island Senators folded before being revived in Binghamton, NY.',
+        'Owner Michael Andlauer bought the NHL\'s Ottawa Senators in 2023 and directly owns the Belleville Senators too — after rumors the AHL team might move to Hamilton, he confirmed in 2025 that Belleville "is there to stay."',
+        'The 2010-11 Binghamton Senators won the only Calder Cup in this franchise\'s history.',
+      ],
+      currentInfo: {
+        owner: 'Michael Andlauer (same ownership group as the Ottawa Senators)',
+        headCoach: 'Andrew Campbell',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    LAV: {
+      founded: {
+        year: 1969,
+        asFranchise: 'Montreal Voyageurs',
+        relocations: [
+          { year: 1971, from: 'Montreal, QC', to: 'Halifax, NS', renamedTo: 'Nova Scotia Voyageurs' },
+          { year: 1984, from: 'Halifax, NS', to: 'Sherbrooke, QC', renamedTo: 'Sherbrooke Canadiens' },
+          { year: 1990, from: 'Sherbrooke, QC', to: 'Fredericton, NB', renamedTo: 'Fredericton Canadiens' },
+          { year: 1999, from: 'Fredericton, NB', to: 'Quebec City, QC', renamedTo: 'Quebec Citadelles' },
+          { year: 2002, from: 'Quebec City, QC', to: 'Hamilton, ON', renamedTo: 'Hamilton Bulldogs' },
+          { year: 2015, from: 'Hamilton, ON', to: "St. John's, NL", renamedTo: "St. John's IceCaps", note: "Took over the 'IceCaps' brand left vacant by the unrelated Winnipeg Jets-affiliated St. John's IceCaps (2011-2015), which had itself moved to become the Manitoba Moose" },
+          { year: 2017, from: "St. John's, NL", to: 'Laval, QC', renamedTo: 'Laval Rocket', note: 'Named for Maurice "Rocket" Richard via fan vote' },
+        ],
+      },
+      arena: {
+        name: 'Place Bell',
+        city: 'Laval, QC',
+        capacity: 10062,
+        opened: 2017,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Place_Bell_Laval.20170601_195705.jpg',
+          attribution: 'MaxCote, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [1972, 1976, 1977, 1985, 2007] },
+      ],
+      retiredNumbers: [],
+      notableAlumni: ['Patrick Roy', 'Carey Price', 'Jake Evans', 'Gabriel Bourque', 'Michael Pezzetta'],
+      records: [
+        { label: 'Regular-season champion (Macgregor Kilpatrick Trophy)', value: '2024-25', season: '2024-25', note: "First regular-season title in the franchise's current Laval-era history" },
+      ],
+      affiliates: { nhl: 'MTL', echl: 'TR' },
+      facts: [
+        "One of the AHL's most storied lineages: as the Nova Scotia Voyageurs it won back-to-back Calder Cups in 1976 and 1977 the same years the parent Montreal Canadiens won the Stanley Cup — the only franchise pair in AHL/NHL history to sweep both titles together twice.",
+        'Patrick Roy (1985, Sherbrooke Canadiens) and Carey Price (2007, Hamilton Bulldogs) each won a Calder Cup as a teenage goaltender for this exact same continuous franchise, 22 years apart.',
+        'Owned directly by the Molson family (Geoff Molson, chairman) — the same ownership as the parent Montreal Canadiens.',
+      ],
+      currentInfo: {
+        owner: 'Molson family (Geoff Molson — same ownership as the Montreal Canadiens)',
+        headCoach: 'Daniel Jacob',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    HAM: {
+      founded: {
+        year: 2001,
+        asFranchise: 'Bridgeport Sound Tigers (expansion)',
+        relocations: [
+          { year: 2021, from: 'Bridgeport, CT', to: 'Bridgeport, CT', renamedTo: 'Bridgeport Islanders', note: 'Renamed only, no relocation' },
+          { year: 2026, from: 'Bridgeport, CT', to: 'Hamilton, ON', renamedTo: 'Hamilton Hammers', note: "Relocation announced March 19, 2026; name unveiled May 21, 2026, honoring Hamilton's steelmaking history" },
+        ],
+      },
+      arena: {
+        name: 'TD Coliseum',
+        city: 'Hamilton, ON',
+        capacity: 17383,
+        opened: 1985,
+        formerNames: [
+          { name: 'Copps Coliseum', years: '1985–2014' },
+          { name: 'FirstOntario Centre', years: '2014–2024' },
+          { name: 'Hamilton Arena', years: '2024–2025' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/TD_Coliseum_Exterior_2.jpg',
+          attribution: 'Kyy0602 (Scarlett Kang), CC0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['Kyle Okposo', 'Josh Bailey', 'Anders Lee', 'Frans Nielsen', 'Chris Bourque'],
+      records: [
+        { label: 'Most points, single season', value: 78, season: '2022-23', note: 'Chris Terry' },
+      ],
+      affiliates: { nhl: 'NYI', echl: 'TRE' },
+      facts: [
+        "Brand new for 2026-27: relocated from Bridgeport, CT after 25 seasons, becoming the Hamilton Hammers — a name honoring the city's steel industry, with subtle puck details worked into the hammer-head logo as a nod to the Islanders' own logo.",
+        'A true expansion franchise founded in 2001, not a relocation of any earlier team.',
+        'Hamilton, ON is also home to PWHL Hamilton, a brand-new 2026-27 PWHL expansion team playing in the same building (TD Coliseum) — the two are completely unrelated franchises in different leagues.',
+      ],
+      currentInfo: {
+        owner: 'Jon Ledecky (co-owner of the New York Islanders)',
+        headCoach: 'Jay McKee',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    // ═══ CENTRAL (7 teams) ═══════════════════════════════════════════════════
+    // MAJOR CATCH: this agent found a real bug in the already-merged (Phase 1)
+    // nhl.CHI entry -- it claimed the Blackhawks' AHL affiliate is 'CHI'
+    // (Chicago Wolves), but the Wolves are independently owned and actually
+    // affiliated with CAROLINA (matches nhl.CAR's own ahl:'CHI', already
+    // correct). The Blackhawks' real AHL affiliate is Rockford (RFD). Verified
+    // independently via a direct search before touching already-shipped data --
+    // fixed nhl.CHI's affiliates AND its misleading fact directly, above/before
+    // this AHL section, not just noted here.
+    // VERIFIED: every other nhl/echl pair in this batch matches the existing
+    // NHL-phase data with zero discrepancies once the CHI/RFD swap is corrected
+    // (NSH<->MIL<->ATL, DAL<->TEX<->IDH, MIN<->IA<->JAX, CAR<->CHI<->GSO).
+    // FIXED: '&amp;' -> '&' throughout (MB, MIL, CHI, IA).
+    // FIXED: renamed `joinedAHL` -> `joinedLeague` (schema/component now
+    // supports this generically -- see TeamHistorySections.jsx).
+    // FIXED: TEX's relocations array had a null-valued dormancy entry (same
+    // rendering bug as BEL's North-division entry) -- merged into the revival
+    // entry's `from` field instead.
+    // FLAG: MB and IA both have no verified arena photo -- agent explicitly
+    // checked and found only outdated-branding or non-exterior shots, correctly
+    // omitted rather than ship a wrong one (matches the CAR/PHI precedent of
+    // preferring no photo over a stale one).
+    // FLAG: IA's records deliberately left empty -- agent hit conflicting
+    // numbers from what it suspects was a table-parsing issue and couldn't
+    // re-verify (WebSearch budget exhausted mid-team), correctly chose not to
+    // guess. GR similarly has a possible additional record (best-ever points
+    // percentage, 2025-26) not included here -- see agent's own note, a
+    // reasonable optional addition rather than a required fix.
+
+    MB: {
+      founded: {
+        year: 1994,
+        asFranchise: 'Minnesota Moose (IHL)',
+        joinedLeague: 2001,
+        relocations: [
+          { year: 1996, from: 'Minnesota', to: 'Winnipeg, MB', renamedTo: 'Manitoba Moose', note: 'Purchased by a Mark Chipman-led group after the original Winnipeg Jets left for Phoenix; played IHL 1996-2001, then AHL 2001-2011' },
+          { year: 2011, from: 'Winnipeg, MB', to: "St. John's, NL", renamedTo: "St. John's IceCaps", note: 'Return of the NHL Jets to Winnipeg prompted relocation of the AHL club' },
+          { year: 2015, from: "St. John's, NL", to: 'Winnipeg, MB', renamedTo: 'Manitoba Moose', note: 'Returned to Winnipeg as the same continuous franchise' },
+        ],
+      },
+      arena: {
+        name: 'Canada Life Centre',
+        city: 'Winnipeg, MB',
+        capacity: 15225,
+        opened: 2004,
+        formerNames: [
+          { name: 'MTS Centre', years: '2004–2017' },
+          { name: 'Bell MTS Place', years: '2017–2021' },
+        ],
+      },
+      championships: [],
+      retiredNumbers: [
+        { number: 12, player: 'Mike Keane' },
+        { number: 21, player: 'Jimmy Roy' },
+      ],
+      notableAlumni: [
+        'Kyle Connor', 'Mason Appleton', 'Ryan Kesler', 'Cory Schneider',
+        'Logan Stanley', 'Mike Keane',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 50, season: '2008-09' },
+        { label: 'Most points, single season', value: 107, season: '2008-09' },
+      ],
+      affiliates: { nhl: 'WPG', echl: 'BLM' },
+      facts: [
+        "Despite two Calder Cup Final appearances (2009 as Manitoba, 2014 as the St. John's IceCaps), the franchise has never won the Calder Cup.",
+        "Rick Rypien's #11 is unofficially honored by the club but was never formally retired the way #12 (Mike Keane) and #21 (Jimmy Roy) were.",
+        'The franchise is owned by True North Sports & Entertainment, the same ownership group that owns the parent Winnipeg Jets — one continuous AHL/IHL franchise has now been the "Moose" in three different cities (Minneapolis, Winnipeg, St. John\'s) under two different names.',
+      ],
+      currentInfo: {
+        owner: 'True North Sports & Entertainment (Mark Chipman, Chairman)',
+        headCoach: 'Mark Morrison',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    MIL: {
+      founded: {
+        year: 1970,
+        asFranchise: 'Milwaukee Wings (independent/amateur)',
+        joinedLeague: 2001,
+      },
+      arena: {
+        name: 'UW–Milwaukee Panther Arena',
+        city: 'Milwaukee, WI',
+        capacity: 9652,
+        opened: 1950,
+        formerNames: [
+          { name: 'Milwaukee Arena', years: '1950–1974' },
+          { name: 'MECCA', years: '1974–1995' },
+          { name: 'Wisconsin Center Arena', years: '1995–2000' },
+          { name: 'U.S. Cellular Arena', years: '2000–2014' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Milwaukee_July_2023_103_%28UW%E2%80%93Milwaukee_Panther_Arena%29.jpg',
+          attribution: 'Michael Barera, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [2004] },
+      ],
+      retiredNumbers: [
+        { number: 9, player: 'Phil Wittliff' },
+        { number: 14, player: 'Fred Berry & Mike McNeill' },
+        { number: 20, player: 'Darren Haydar' },
+        { number: 26, player: 'Tony Hrkac' },
+        { number: 27, player: 'Danny Lecours' },
+        { number: 44, player: 'Kevin Willison & Gino Cavallini' },
+      ],
+      notableAlumni: [
+        'Pekka Rinne', 'Kevin Fiala', 'Dan Hamhuis', 'Colton Sissons',
+        'Cody Franson', 'Darren Haydar',
+      ],
+      records: [
+        { label: 'Most points, single season', value: 138, season: '1982-83' },
+        { label: 'Most wins, single season', value: 49, season: '2005-06' },
+      ],
+      affiliates: { nhl: 'NSH', echl: 'ATL' },
+      facts: [
+        'The Admirals have never relocated in over 50 years of existence — the franchise has played continuously in Milwaukee since 1970, moving up through the USHL (1973), IHL (1977) and finally the AHL (2001) without ever changing cities.',
+        "Darren Haydar's #20, retired in 2020, honors the driving force behind the Admirals' only Calder Cup, won in 2004 against Wilkes-Barre/Scranton.",
+        "Karl Taylor became the winningest coach in franchise history in 2025, and the Admirals have been Nashville's AHL affiliate continuously since the Predators' own 1998 founding — one of the longest-running NHL-AHL partnerships in the league.",
+      ],
+      currentInfo: {
+        owner: 'Harris Turer (independently owned, not Predators-owned)',
+        headCoach: 'Karl Taylor',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    GR: {
+      founded: {
+        year: 1996,
+        joinedLeague: 2001,
+      },
+      arena: {
+        name: 'Van Andel Arena',
+        city: 'Grand Rapids, MI',
+        capacity: 10834,
+        opened: 1996,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Van_Andel_Arena_2021.jpg',
+          attribution: 'WMrapids, CC0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [2013, 2017] },
+      ],
+      retiredNumbers: [
+        { number: 24, player: 'Travis Richards' },
+      ],
+      notableAlumni: [
+        'Tyler Bertuzzi', 'Dylan Larkin', 'Jimmy Howard', 'Petr Mrazek',
+        'Travis Richards',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 55, season: '2005-06' },
+        { label: 'Most points, single season', value: 117, season: '2005-06' },
+      ],
+      affiliates: { nhl: 'DET', echl: 'TOL' },
+      facts: [
+        "Travis Richards played in each of the Griffins' first 10 seasons (1996-2006) and holds the franchise record for career games played (655); his #24 was the first number the club ever retired.",
+        'Tyler Bertuzzi was named MVP of the 2017 Calder Cup Final, one of two championships (2013, 2017) the Griffins have won as Detroit\'s primary affiliate.',
+        'The Griffins have been independently owned by the DeVos and Van Andel families since founding in 1996 (as West Michigan Hockey, Inc.) — the franchise itself is not owned by the Red Wings organization, despite being its exclusive AHL affiliate since 2002.',
+      ],
+      currentInfo: {
+        owner: 'Dan DeVos (independently owned, not Red Wings-owned)',
+        headCoach: 'Dan Watson',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    CHI: {
+      founded: {
+        year: 1994,
+        asFranchise: 'Chicago Wolves (IHL expansion)',
+        joinedLeague: 2001,
+      },
+      arena: {
+        name: 'Allstate Arena',
+        city: 'Rosemont, IL',
+        capacity: 16692,
+        opened: 1980,
+        formerNames: [
+          { name: 'Rosemont Horizon', years: '1980–1999' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Allstate_Arena_viewed_from_expressway_%28July_2023%29_1.jpg',
+          attribution: 'SecretName101, CC BY 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [2002, 2008, 2022] },
+      ],
+      retiredNumbers: [
+        { number: 1, player: 'Wendell Young' },
+        { number: 11, player: 'Steve Maltais' },
+      ],
+      notableAlumni: [
+        'Jordan Binnington', 'Kari Lehtonen', 'Chris Butler', 'Derek MacKenzie',
+        'Steve Maltais', 'Wendell Young',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 50, season: '2021-22' },
+        { label: 'Most points, single season', value: 110, season: '2021-22' },
+      ],
+      affiliates: { nhl: 'CAR', echl: 'GSO' },
+      facts: [
+        'The Wolves also won two IHL Turner Cups (1998, 2000) before the IHL folded and the franchise joined the AHL in 2001 — winning the Calder Cup in their very first AHL season, one of only a handful of teams in league history to do so.',
+        'Unlike most AHL clubs, the Wolves have never been owned by their NHL parent — Don Levin and Buddy Meyers have owned the franchise independently through a long string of different NHL affiliations (Atlanta, Vancouver, St. Louis, Vegas, and now Carolina).',
+        "The Wolves share their exact name and home city with the NHL's Chicago Blackhawks despite being a completely separate franchise — the Blackhawks' actual AHL affiliate is the Rockford IceHogs, not the Wolves.",
+      ],
+      currentInfo: {
+        owner: 'Don Levin & Buddy Meyers (independently owned)',
+        headCoach: 'Spiros Anastas',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    RFD: {
+      founded: {
+        year: 1995,
+        asFranchise: 'Baltimore Bandits',
+        relocations: [
+          { year: 1997, from: 'Baltimore, MD', to: 'Cincinnati, OH', renamedTo: 'Cincinnati Mighty Ducks' },
+          { year: 2007, from: 'Cincinnati, OH (dormant 2005–2007)', to: 'Rockford, IL', renamedTo: 'Rockford IceHogs', note: 'Not the same franchise as an earlier, unrelated UHL Rockford IceHogs (1999-2007) — only that separate club\'s name/logo were adopted' },
+        ],
+      },
+      arena: {
+        name: 'BMO Center',
+        city: 'Rockford, IL',
+        capacity: 5900,
+        opened: 1981,
+        formerNames: [
+          { name: 'Rockford MetroCentre', years: '1981–2011' },
+          { name: 'BMO Harris Bank Center', years: '2011–2022' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/BMO_Center_-_Rockford,_Illinois_-_March_2024.jpg',
+          attribution: 'SimLibrarian, CC0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Corey Crawford', 'Niklas Hjalmarsson', 'Brandon Saad', 'Kris Versteeg',
+        'Bryan Bickell',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 46, season: '2014-15' },
+        { label: 'Most points, single season', value: 99, season: '2014-15' },
+      ],
+      affiliates: { nhl: 'CHI', echl: 'IND' },
+      facts: [
+        'The current AHL IceHogs are not the same franchise as an earlier, unrelated Rockford IceHogs that played in the United Hockey League from 1999 to 2007 — when the AHL club (previously the Baltimore Bandits, then Cincinnati Mighty Ducks) relocated to Rockford in 2007, it simply purchased and reused that earlier team\'s name and logo.',
+        'The franchise has never won a Calder Cup, despite reaching the Western Conference Final for the first time in team history in 2017-18.',
+        'The AHL Board of Governors approved the Chicago Blackhawks\' direct acquisition of the IceHogs in 2026 — the team is now owned by the Wirtz Corporation, the same family that owns the Blackhawks, matching a broader trend of NHL teams buying out independently-owned AHL affiliates.',
+      ],
+      currentInfo: {
+        owner: "Wirtz Corporation (directly owned by the Blackhawks' ownership family)",
+        headCoach: 'Jared Nightingale',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    TEX: {
+      founded: {
+        year: 1999,
+        asFranchise: 'Louisville Panthers',
+        relocations: [
+          { year: 2005, from: 'Louisville, KY (dormant 2001–2005)', to: 'Des Moines, IA', renamedTo: 'Iowa Stars', note: 'Resurrected as a Dallas Stars affiliate after four dormant seasons with no NHL affiliate and no games played' },
+          { year: 2008, from: 'Des Moines, IA', to: 'Des Moines, IA', renamedTo: 'Iowa Chops', note: 'Re-affiliated with the Anaheim Ducks; suspended by the AHL for 2009-10 after one season' },
+          { year: 2010, from: 'Des Moines, IA', to: 'Cedar Park, TX', renamedTo: 'Texas Stars', note: "Purchased out of suspension by the Dallas Stars' ownership group" },
+        ],
+      },
+      arena: {
+        name: 'H-E-B Center at Cedar Park',
+        city: 'Cedar Park, TX',
+        capacity: 6778,
+        opened: 2009,
+        formerNames: [
+          { name: 'Cedar Park Center', years: '2009–2016' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Cedar_park_center_2014.jpg',
+          attribution: 'Larry D. Moore, CC BY 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [2014] },
+      ],
+      retiredNumbers: [
+        { number: 23, player: 'Travis Morin' },
+      ],
+      notableAlumni: [
+        'Travis Morin', 'Colton Sceviour', 'Jamie Oleksiak', 'Radek Faksa',
+        'Jack Campbell',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 48, season: '2013-14' },
+        { label: 'Most points, single season', value: 106, season: '2013-14' },
+      ],
+      affiliates: { nhl: 'DAL', echl: 'IDH' },
+      facts: [
+        "The Texas Stars' franchise history predates its Dallas affiliation by a decade: it began as the 1999 Louisville Panthers (Florida Panthers' affiliate), went dormant for four years, and was revived in 2005 as the Iowa Stars — spending one season as the Anaheim Ducks' Iowa Chops before Dallas Stars ownership bought and relocated the suspended franchise to Texas in 2010.",
+        "Travis Morin, whose #23 is the only number the Stars have retired, is the franchise's all-time leader in points, goals, assists, and games played.",
+        'The Stars won the Calder Cup in just their fifth season (2014), the same season they set their still-standing franchise records for wins (48) and points (106).',
+      ],
+      currentInfo: {
+        owner: 'Tom Gaglardi / Northland Properties Corporation (same ownership as the Dallas Stars)',
+        headCoach: 'Toby Petersen',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    IA: {
+      founded: {
+        year: 1994,
+        asFranchise: 'Houston Aeros (IHL)',
+        joinedLeague: 2001,
+        relocations: [
+          { year: 2013, from: 'Houston, TX', to: 'Des Moines, IA', renamedTo: 'Iowa Wild', note: "Relocated after Minnesota Sports & Entertainment couldn't reach a new lease at Houston's Toyota Center" },
+        ],
+      },
+      arena: {
+        name: "Casey's Center",
+        city: 'Des Moines, IA',
+        capacity: 15181,
+        opened: 2005,
+        formerNames: [
+          { name: 'Wells Fargo Arena', years: '2005–2025' },
+        ],
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Kirill Kaprizov', 'Kevin Fiala', 'Marco Rossi', 'Matt Boldy',
+        'Joel Eriksson Ek', 'Gerald Mayhew',
+      ],
+      records: [],
+      affiliates: { nhl: 'MIN', echl: 'JAX' },
+      facts: [
+        "The Iowa Wild's franchise history goes back to the 1994 Houston Aeros, which won the Calder Cup in 2003 and reached the Final again in 2011 as the Minnesota Wild's AHL affiliate — the same continuous franchise that relocated to Des Moines in 2013, but the Iowa Wild itself has not yet won a Calder Cup under that name.",
+        'Iowa has become one of the most productive development pipelines in the AHL, sending Kirill Kaprizov, Kevin Fiala, Marco Rossi, and Matt Boldy through its lineup on their way to becoming core Minnesota Wild players.',
+        "Wells Fargo Arena, Iowa's home since it opened in 2005, was renamed Casey's Center in mid-2025 after Wells Fargo's naming rights expired.",
+      ],
+      currentInfo: {
+        owner: "Minnesota Sports & Entertainment (directly owned by the Wild's ownership group)",
+        headCoach: 'Stu Bickel',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    // ═══ PACIFIC (10 teams) — final AHL batch, all 32 teams now covered ═══════
+    // VERIFIED: Willie O'Ree's retired SD number is #20, not #22 (agent's own
+    // flagged conflict) -- confirmed via a direct search; #22 was likely
+    // confused with an unrelated NHL/Bruins context.
+    // VERIFIED: every single nhl/echl pair in this batch matches the existing
+    // NHL-phase data with ZERO conflicts (EDM/FW, LAK/GVL, ANA/TUL, SJS/WIC,
+    // COL/NM, VGK/TAH, VAN/KAL, CGY/RC, SEA/KC) -- strong closing signal the
+    // whole 32-team affiliate graph is internally self-consistent.
+    // FIXED: '&amp;' -> '&' throughout (SJ, HSK, ABB).
+    // FIXED: several relocations arrays had entries missing from/to/renamedTo
+    // (just a bare {year, note} for a dormancy/suspension/league-change) --
+    // same rendering-bug family as BEL/TEX earlier (would show blank/undefined
+    // text in the UI). Merged each into the adjacent real move's `from` field
+    // instead (BAK, HSK, CGY). COL's two entries were removed entirely --
+    // changing leagues (CHL -> ECHL -> AHL) while staying in the same city,
+    // arena, and ownership isn't a relocation at all; used founded.joinedLeague
+    // (the field added for exactly this Central-division pattern) instead.
+    // FLAG: COL's 5 retired numbers are single-sourced (team's own site only,
+    // not on Wikipedia) -- worth a second look before treating as gospel.
+    // FLAG: CV's ownership is genuinely ambiguous between two sources (Oak View
+    // Group vs. Seattle Hockey Partners) -- kept both rather than picking one.
+    // FLAG: several very recent (2025-2026) head-coach hires across this batch
+    // (COL, ABB, CGY, HSK) -- re-verify close to ship, fast-moving category.
+
+    BAK: {
+      founded: {
+        year: 1984,
+        asFranchise: 'Nova Scotia Oilers',
+        relocations: [
+          { year: 1988, from: 'Nova Scotia', to: 'Cape Breton, NS', renamedTo: 'Cape Breton Oilers' },
+          { year: 1996, from: 'Cape Breton, NS', to: 'Hamilton, ON', renamedTo: 'Hamilton Bulldogs', note: 'A distinct, earlier franchise from the later Canadiens-affiliated Hamilton Bulldogs that used the same name 2002-2015' },
+          { year: 2003, from: 'Hamilton, ON', to: 'Toronto, ON', renamedTo: 'Toronto Roadrunners' },
+          { year: 2004, from: 'Toronto, ON', to: 'Edmonton, AB', renamedTo: 'Edmonton Road Runners' },
+          { year: 2010, from: 'Edmonton, AB (dormant 2005–2010)', to: 'Oklahoma City, OK', renamedTo: 'Oklahoma City Barons', note: 'Revived after a five-season dormancy' },
+          { year: 2015, from: 'Oklahoma City, OK', to: 'Bakersfield, CA', renamedTo: 'Bakersfield Condors' },
+        ],
+      },
+      arena: {
+        name: 'Dignity Health Arena',
+        city: 'Bakersfield, CA',
+        capacity: 8751,
+        opened: 1998,
+        formerNames: [
+          { name: 'Centennial Garden', years: '1998–2005' },
+          { name: 'Rabobank Arena', years: '2005–2019' },
+          { name: 'Mechanics Bank Arena', years: '2019–2025' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: "https://commons.wikimedia.org/wiki/Special:FilePath/2009-0726-CA-Bakersfield-RabobankArena.jpg",
+          attribution: "Bobak Ha'Eri, CC BY 3.0, via Wikimedia Commons",
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [1993] },
+      ],
+      retiredNumbers: [],
+      notableAlumni: ['Stuart Skinner', 'Dylan Holloway', 'Philip Broberg', 'Ryan McLeod', 'Drake Caggiula'],
+      records: [
+        { label: 'Most wins, single season', value: 42, season: '2018-19' },
+        { label: 'Most points, single season', value: 89, season: '2018-19' },
+      ],
+      affiliates: { nhl: 'EDM', echl: 'FW' },
+      facts: [
+        "The Condors' AHL lineage traces back to 1984 as the Nova Scotia Oilers, and won a Calder Cup in 1993 as the Cape Breton Oilers — decades before ever playing a game in Bakersfield.",
+        'The Oilers moved their AHL affiliate to Bakersfield in 2015 specifically to shorten road trips and callups between the NHL club and its farm team, one of several moves that reshaped the AHL into a new California-based Pacific Division that year.',
+        'The franchise sat completely dormant for five seasons (2005-2010) between stints as the Edmonton Road Runners and the Oklahoma City Barons.',
+      ],
+      currentInfo: {
+        owner: 'Oilers Entertainment Group (Daryl Katz, chairman)',
+        headCoach: 'Colin Chaulk',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    ONT: {
+      founded: {
+        year: 2001,
+        asFranchise: 'Manchester Monarchs',
+        relocations: [
+          { year: 2015, from: 'Manchester, NH', to: 'Ontario, CA', renamedTo: 'Ontario Reign', note: "Direct relocation immediately after Manchester won the 2015 Calder Cup in its final AHL game" },
+        ],
+      },
+      arena: {
+        name: 'Toyota Arena',
+        city: 'Ontario, CA',
+        capacity: 9736,
+        opened: 2008,
+        formerNames: [
+          { name: 'Citizens Business Bank Arena', years: '2008–2019' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/CBBArena.JPG',
+          attribution: 'Scottthezombie, CC BY-SA 3.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [2015] },
+      ],
+      retiredNumbers: [],
+      notableAlumni: ['Gabriel Vilardi', 'Alex Turcotte', 'Quinton Byfield', 'Cal Petersen', 'Martin Frk'],
+      records: [
+        { label: 'Most wins, single season', value: 47, season: '2025-26' },
+        { label: 'Most points, single season', value: 99, season: '2025-26' },
+      ],
+      affiliates: { nhl: 'LAK', echl: 'GVL' },
+      facts: [
+        "The Reign's franchise won the Calder Cup as the Manchester Monarchs in June 2015 — the very last AHL game the Monarchs ever played before relocating to Ontario the following season.",
+        "The Kings moved their AHL affiliate to Ontario, California in 2015 to cut player-development travel time to the NHL club, one of several such moves that built out the AHL's new Pacific Division that year.",
+        'Ontario set franchise records for wins (47) and points (99) in 2025-26, its best regular season since joining the AHL.',
+      ],
+      currentInfo: {
+        owner: 'Anschutz Entertainment Group (AEG)',
+        headCoach: 'Andrew Lord',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    SD: {
+      founded: {
+        year: 2000,
+        asFranchise: 'Norfolk Admirals',
+        relocations: [
+          { year: 2015, from: 'Norfolk, VA', to: 'San Diego, CA', renamedTo: 'San Diego Gulls', note: 'Anaheim purchased the Tampa Bay-affiliated Norfolk Admirals and relocated them; an unrelated new ECHL-affiliated Norfolk Admirals began play in Norfolk the same year' },
+        ],
+      },
+      arena: {
+        name: 'Pechanga Arena',
+        city: 'San Diego, CA',
+        capacity: 12920,
+        opened: 1966,
+        formerNames: [
+          { name: 'San Diego International Sports Center', years: '1966–1970' },
+          { name: 'San Diego Sports Arena', years: '1970–2005, 2007–2010' },
+          { name: 'iPayOne Center', years: '2005–2007' },
+          { name: 'Valley View Casino Center', years: '2010–2018' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/San_Diego_Sports_Arena.jpg',
+          attribution: 'Nehrams2020, CC BY-SA 3.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [2012] },
+      ],
+      retiredNumbers: [
+        { number: 20, player: "Willie O'Ree" },
+      ],
+      notableAlumni: ['Trevor Zegras', 'Troy Terry', 'John Gibson', 'Max Comtois'],
+      records: [
+        { label: 'Most wins, single season (Norfolk Admirals era)', value: 55, season: '2011-12' },
+        { label: 'Longest win streak to close a season (Norfolk Admirals era)', value: 28, season: '2011-12', note: 'Still a North American professional hockey record' },
+      ],
+      affiliates: { nhl: 'ANA', echl: 'TUL' },
+      facts: [
+        "The Gulls' franchise won the 2012 Calder Cup as the Norfolk Admirals, closing that regular season with 28 straight wins — still a North American professional hockey record.",
+        "Pechanga Arena first opened in 1966 for an entirely unrelated original 'San Diego Gulls' team in the old Western Hockey League; the current AHL Gulls (relocated from Norfolk in 2015) reused that name and now play in the very same building.",
+        "The arena's rafters honor Willie O'Ree — the first Black player in NHL history, whose #20 was retired for his time with that original 1960s WHL San Diego Gulls team, not the current AHL franchise's own on-ice history.",
+      ],
+      currentInfo: {
+        owner: 'Henry and Susan Samueli',
+        headCoach: 'Dave Manson',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    SJ: {
+      founded: {
+        year: 1996,
+        asFranchise: 'Kentucky Thoroughblades',
+        relocations: [
+          { year: 2001, from: 'Lexington, KY', to: 'Cleveland, OH', renamedTo: 'Cleveland Barons' },
+          { year: 2006, from: 'Cleveland, OH', to: 'Worcester, MA', renamedTo: 'Worcester Sharks' },
+          { year: 2015, from: 'Worcester, MA', to: 'San Jose, CA', renamedTo: 'San Jose Barracuda' },
+        ],
+      },
+      arena: {
+        name: 'Tech CU Arena',
+        city: 'San Jose, CA',
+        capacity: 4200,
+        opened: 2022,
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['William Eklund', 'Mario Ferraro', 'Tomas Hertl', 'Timo Meier', 'Danil Gushchin'],
+      records: [
+        { label: 'Most goals, single season', value: 244, season: '2024-25' },
+        { label: 'Most power-play goals, single season', value: 69, season: '2024-25' },
+      ],
+      affiliates: { nhl: 'SJS', echl: 'WIC' },
+      facts: [
+        "The Barracuda's franchise dates to 1996 as the Kentucky Thoroughblades, and passed through Cleveland (Barons) and Worcester (Sharks) before the Sharks moved it to San Jose in 2015 to sit alongside the NHL club.",
+        "At 4,200 seats, Tech CU Arena is one of the smallest arenas in the AHL — part of the Sharks Ice training complex, it replaced the much larger SAP Center (shared with the parent Sharks) starting in 2022.",
+        "Forward Danil Gushchin is the franchise's all-time AHL leader in points, goals, and assists.",
+      ],
+      currentInfo: {
+        owner: 'Hasso Plattner (Sharks Sports & Entertainment)',
+        headCoach: 'John McCarthy',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    TUC: {
+      founded: {
+        year: 1994,
+        asFranchise: 'Springfield Falcons',
+        relocations: [
+          { year: 2016, from: 'Springfield, MA', to: 'Tucson, AZ', renamedTo: 'Tucson Roadrunners' },
+        ],
+      },
+      arena: {
+        name: 'Tucson Arena (Tucson Convention Center)',
+        city: 'Tucson, AZ',
+        capacity: 6521,
+        opened: 1971,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Tucson_May_2019_22_%28Tucson_Arena_at_the_Tucson_Convention_Center%29.jpg',
+          attribution: 'Michael Barera, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [
+        { number: 14, player: 'Craig Cunningham' },
+      ],
+      notableAlumni: ['Barrett Hayton', 'Dylan Guenther', 'Conor Garland', 'Dylan Strome', 'Lawson Crouse'],
+      records: [],
+      affiliates: { nhl: 'UTA' },
+      facts: [
+        'Despite the Arizona Coyotes relocating to Salt Lake City and becoming the Utah Mammoth in 2024, the Roadrunners stayed put in Tucson as Utah\'s AHL affiliate — an unusually direct case of an AHL team outlasting its NHL parent\'s own relocation.',
+        "Captain Craig Cunningham's #14 was retired after he suffered sudden cardiac arrest on the ice before a November 2016 game; medical staff saved his life, though he later had part of his leg amputated and never played again.",
+        'Roadrunners owner Alex Meruelo kept ownership of the AHL club even as the NHL franchise itself changed both hands and cities — the Roadrunners and Utah Mammoth are no longer under common ownership.',
+      ],
+      currentInfo: {
+        owner: 'Alex Meruelo',
+        headCoach: 'Steve Potvin',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    COL: {
+      founded: {
+        year: 2003,
+        asFranchise: 'Colorado Eagles (Central Hockey League)',
+        joinedLeague: 2018,
+      },
+      arena: {
+        name: 'Blue Arena',
+        city: 'Loveland, CO',
+        capacity: 5089,
+        opened: 2003,
+        formerNames: [
+          { name: 'Budweiser Events Center', years: '2003–2023' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/BudweiserEventsCenter.jpg',
+          attribution: 'Icebourg, public domain, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [
+        { number: 89, player: 'Greg Pankewicz' },
+        { number: 12, player: 'Riley Nelson' },
+        { number: 17, player: 'Ryan Tobler' },
+        { number: 27, player: 'Brad Williamson' },
+        { number: 23, player: 'Aaron Schneekloth' },
+      ],
+      notableAlumni: ['Alex Newhook', "Logan O'Connor", 'Justus Annunen', 'Riley Nelson'],
+      records: [
+        { label: 'Most goals in a season by a defenseman (AHL record)', value: 31, season: '2024-25', note: 'Jacob MacDonald' },
+      ],
+      affiliates: { nhl: 'COL', echl: 'NM' },
+      facts: [
+        'The Eagles played in the Central Hockey League (2003-2011) and ECHL (2011-2018) before joining the AHL in 2018 as an Avalanche-owned expansion team — same ownership, arena, and market throughout.',
+        'The Eagles have never won a Calder Cup, but won two Central Hockey League titles (2005, 2007) and back-to-back ECHL Kelly Cups (2017, 2018) under the same Loveland ownership before moving up to the AHL.',
+        'Colorado reached the 2026 Western Conference Final — one round short of the Calder Cup Finals — after sweeping Coachella Valley in the division final, then fell to the Chicago Wolves.',
+      ],
+      currentInfo: {
+        owner: 'Martin Lind',
+        headCoach: 'Jussi Ahokas',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    HSK: {
+      founded: {
+        year: 1971,
+        asFranchise: 'Tidewater Wings',
+        relocations: [
+          { year: 1972, from: 'Tidewater, VA', to: 'Tidewater, VA', renamedTo: 'Virginia Wings', note: 'Name change only, same Norfolk-area market' },
+          { year: 1979, from: 'Virginia (suspended 1975–1979)', to: 'Glens Falls, NY', renamedTo: 'Adirondack Red Wings', note: 'Revived after a several-season suspension' },
+          { year: 2002, from: 'Adirondack (dormant 1999–2002)', to: 'San Antonio, TX', renamedTo: 'San Antonio Rampage', note: 'Purchased and revived by San Antonio Spurs ownership' },
+          { year: 2020, from: 'San Antonio, TX', to: 'Henderson, NV', renamedTo: 'Henderson Silver Knights', note: 'Purchased by the Vegas Golden Knights' },
+        ],
+      },
+      arena: {
+        name: "Lee's Family Forum",
+        city: 'Henderson, NV',
+        capacity: 5567,
+        opened: 2022,
+        formerNames: [
+          { name: 'Dollar Loan Center', years: '2022–2024' },
+        ],
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['Pavel Dorofeyev', 'Brendan Brisson', 'Jesper Vikman'],
+      records: [
+        { label: 'Most wins, single season', value: 39, season: '2025-26' },
+        { label: 'Most points, single season', value: 90, season: '2025-26' },
+      ],
+      affiliates: { nhl: 'VGK', echl: 'TAH' },
+      facts: [
+        "The Silver Knights' franchise dates to 1971 as the Tidewater/Virginia Wings, a Detroit Red Wings affiliate that later became the Adirondack Red Wings, then sat dormant for three years before being revived in 2002 by San Antonio Spurs ownership as the San Antonio Rampage.",
+        'Vegas purchased the St. Louis-affiliated San Antonio Rampage in February 2020 and relocated it to Henderson to sit minutes from its own arena — one of the most direct "AHL team built to shadow its NHL parent" moves in the division.',
+        'Despite more than 50 years of continuous franchise history under five different names, the organization has never won a Calder Cup.',
+      ],
+      currentInfo: {
+        owner: 'Bill Foley / Vegas Golden Knights (Black Knight Sports & Entertainment)',
+        headCoach: 'Joel Ward',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    ABB: {
+      founded: {
+        year: 1926,
+        asFranchise: 'Springfield Indians (Canadian-American Hockey League)',
+        relocations: [
+          { year: 1932, from: 'Springfield, MA', to: 'Quebec City, QC', renamedTo: 'Quebec Beavers (Castors)' },
+          { year: 1935, from: 'Quebec City, QC', to: 'Springfield, MA', renamedTo: 'Springfield Indians' },
+          { year: 1951, from: 'Springfield, MA', to: 'Syracuse, NY', renamedTo: 'Syracuse Warriors' },
+          { year: 1954, from: 'Syracuse, NY', to: 'Springfield, MA', renamedTo: 'Springfield Indians', note: "Also briefly the Springfield Kings (1967-1974) while leased to the Los Angeles Kings, before reverting" },
+          { year: 1994, from: 'Springfield, MA', to: 'Worcester, MA', renamedTo: 'Worcester IceCats' },
+          { year: 2005, from: 'Worcester, MA', to: 'Peoria, IL', renamedTo: 'Peoria Rivermen' },
+          { year: 2013, from: 'Peoria, IL', to: 'Utica, NY', renamedTo: 'Utica Comets', note: 'Purchased by Canucks Sports & Entertainment' },
+          { year: 2021, from: 'Utica, NY', to: 'Abbotsford, BC', renamedTo: 'Abbotsford Canucks' },
+        ],
+      },
+      arena: {
+        name: 'Rogers Forum',
+        city: 'Abbotsford, BC',
+        capacity: 7000,
+        opened: 2009,
+        formerNames: [
+          { name: 'Abbotsford Centre (Abbotsford Entertainment and Sports Centre)', years: '2009–2025' },
+        ],
+      },
+      championships: [
+        { title: 'Calder Cup', years: [1960, 1961, 1962, 1971, 1975, 1990, 1991, 2025] },
+      ],
+      retiredNumbers: [],
+      notableAlumni: ['Eddie Shore', 'Billy Smith', 'Thatcher Demko', 'Nils Höglander', 'Phil Di Giuseppe'],
+      records: [
+        { label: 'Most goals in a season (Springfield Indians era)', value: 56, season: '1990-91' },
+      ],
+      affiliates: { nhl: 'VAN', echl: 'KAL' },
+      facts: [
+        'The Abbotsford Canucks are the second-oldest continuously operating minor pro hockey franchise in North America, dating to 1926 as the Springfield Indians — nine years before the AHL itself was even formed — and have played under ten different names across four U.S. states and one Canadian province.',
+        'Bruins Hall of Famer Eddie Shore bought the Springfield Indians in 1939 and built a dynasty: the team won three straight Calder Cups from 1960-1962, a three-peat no AHL team has matched before or since.',
+        'In June 2025 the franchise won its first Calder Cup as the Abbotsford Canucks, becoming the first team from the AHL\'s Pacific Division and the first Western Canadian franchise ever to do so.',
+      ],
+      currentInfo: {
+        owner: 'Canucks Sports & Entertainment (Francesco Aquilini, chairman)',
+        headCoach: 'Ryan Papaioannou',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    CGY: {
+      founded: {
+        year: 1977,
+        asFranchise: 'Maine Mariners',
+        relocations: [
+          { year: 1987, from: 'Portland, ME', to: 'Utica, NY', renamedTo: 'Utica Devils' },
+          { year: 1993, from: 'Utica, NY', to: 'Saint John, NB', renamedTo: 'Saint John Flames' },
+          { year: 2005, from: 'Saint John, NB (suspended 2003–2005)', to: 'Omaha, NE', renamedTo: 'Omaha Ak-Sar-Ben Knights', note: 'Revived after a two-season suspension' },
+          { year: 2007, from: 'Omaha, NE', to: 'Moline, IL (Quad Cities)', renamedTo: 'Quad City Flames' },
+          { year: 2009, from: 'Moline, IL', to: 'Abbotsford, BC', renamedTo: 'Abbotsford Heat' },
+          { year: 2014, from: 'Abbotsford, BC', to: 'Glens Falls, NY', renamedTo: 'Adirondack Flames' },
+          { year: 2015, from: 'Glens Falls, NY', to: 'Stockton, CA', renamedTo: 'Stockton Heat' },
+          { year: 2022, from: 'Stockton, CA', to: 'Calgary, AB', renamedTo: 'Calgary Wranglers' },
+        ],
+      },
+      arena: {
+        name: 'Scotiabank Saddledome',
+        city: 'Calgary, AB',
+        capacity: 19289,
+        opened: 1983,
+        formerNames: [
+          { name: 'Olympic Saddledome', years: '1983–1995' },
+          { name: 'Canadian Airlines Saddledome', years: '1995–2000' },
+          { name: 'Pengrowth Saddledome', years: '2000–2010' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Scotiabank_Saddledome,_southeast_view_20240819_1.jpg',
+          attribution: 'DXR, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Calder Cup', years: [1978, 1979, 1984, 2001] },
+      ],
+      retiredNumbers: [],
+      notableAlumni: ['Dustin Wolf', 'Matthew Phillips', 'Martin Frk', 'Dryden Hunt'],
+      records: [
+        { label: 'Most points, single season', value: 76, season: '2022-23' },
+        { label: 'Most wins by a goaltender, single season', value: 42, season: '2022-23', note: 'Dustin Wolf' },
+      ],
+      affiliates: { nhl: 'CGY', echl: 'RC' },
+      facts: [
+        'The Wranglers franchise dates to the 1977 Maine Mariners, who won three Calder Cups in Portland (1978, 1979, 1984) and a fourth as the Saint John Flames (2001), then passed through seven more cities and names — including two different stints in Abbotsford, BC — before landing in Calgary in 2022.',
+        "The Wranglers are one of the few AHL teams to share their NHL parent's own arena rather than play in a separate building — the 19,289-seat Scotiabank Saddledome, home to the Flames since 1983.",
+        'Goaltender Dustin Wolf set the franchise record with 42 wins in a single season (2022-23) on his way to the NHL with Calgary.',
+      ],
+      currentInfo: {
+        owner: 'Calgary Sports and Entertainment (N. Murray Edwards, chairman)',
+        headCoach: 'Brett Sutter',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    CV: {
+      founded: {
+        year: 2022,
+      },
+      arena: {
+        name: 'Acrisure Arena',
+        city: 'Thousand Palms, CA (Coachella Valley / Palm Desert area)',
+        capacity: 11000,
+        opened: 2022,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Ejf_8593_52987729096_o.jpg',
+          attribution: 'Eric Fowler (TheAHL), CC BY 2.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['Tye Kartye', 'Nikke Kokko', 'Tyson Jugnauth'],
+      records: [
+        { label: 'Most points, single season', value: 103, season: '2022-23', note: 'Tied again in 2023-24' },
+      ],
+      affiliates: { nhl: 'SEA', echl: 'KC' },
+      facts: [
+        'Coachella Valley is a pure expansion franchise built specifically to give the Seattle Kraken a nearby Southern California development base — part of a wave of newer-market NHL teams (Vegas, Seattle, Utah) that built or affiliated with AHL teams close to home in the 2020s.',
+        'The Firebirds reached the Calder Cup Finals in each of their first two seasons (2023, 2024), losing both times to the Hershey Bears, and have yet to win a title.',
+        'Acrisure Arena was jointly developed by Oak View Group and the Kraken ownership group to bring the Firebirds to the previously hockey-less Coachella Valley resort region.',
+      ],
+      currentInfo: {
+        owner: 'Seattle Hockey Partners (Seattle Kraken ownership group), with Oak View Group as arena developer/operator',
+        headCoach: 'Derek Laxdal',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+
+  },
   echl: {},
 };
 

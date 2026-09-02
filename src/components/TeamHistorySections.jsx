@@ -3,6 +3,11 @@ import { useTranslation } from 'react-i18next'
 import TeamLogo from './TeamLogo'
 import { getAHLTeamConfig } from '../utils/ahlConfig'
 import { getECHLTeamConfig } from '../utils/echlConfig'
+import { ALL_TEAMS as NHL_ALL_TEAMS } from '../utils/teamConfig'
+
+function getNHLTeamConfig(abbr) {
+  return NHL_ALL_TEAMS.find(t => t.abbr === abbr) || null
+}
 
 // Presentational only — takes a `history` record shaped like teamHistory.js's
 // TEAM_HISTORY[league][abbr] plus `league`/`teamAbbr` for the affiliate logos.
@@ -53,7 +58,9 @@ function ArenaPhoto({ photo, alt }) {
   )
 }
 
-export default function TeamHistorySections({ history, league: _league = 'nhl' }) {
+const LEAGUE_LABELS = { nhl: 'NHL', pwhl: 'PWHL', ahl: 'AHL', echl: 'ECHL' }
+
+export default function TeamHistorySections({ history, league = 'nhl' }) {
   const { t } = useTranslation()
 
   if (!history) {
@@ -80,6 +87,16 @@ export default function TeamHistorySections({ history, league: _league = 'nhl' }
             <div className={ROW_CLASSES}>
               <span className={ROW_LABEL_CLASSES}>{t('teamView.history.joinedNHL')}</span>
               <span className={ROW_VAL_CLASSES}>{founded.joinedNHL}</span>
+            </div>
+          )}
+          {/* joinedLeague: generic sibling to joinedNHL above, for leagues
+              other than NHL (e.g. an AHL team's IHL-to-AHL transition year)
+              -- kept separate rather than renaming joinedNHL, which is
+              already used across every existing NHL entry in teamHistory.js. */}
+          {founded.joinedLeague && (
+            <div className={ROW_CLASSES}>
+              <span className={ROW_LABEL_CLASSES}>{t('teamView.history.joinedLeague', { league: LEAGUE_LABELS[league] || league.toUpperCase() })}</span>
+              <span className={ROW_VAL_CLASSES}>{founded.joinedLeague}</span>
             </div>
           )}
           {founded.relocations?.length > 0 && (
@@ -183,9 +200,16 @@ export default function TeamHistorySections({ history, league: _league = 'nhl' }
         </div>
       )}
 
-      {affiliates && (affiliates.ahl || affiliates.echl) && (
+      {affiliates && (affiliates.nhl || affiliates.ahl || affiliates.echl) && (
         <div className="card">
           <div className={SEC_LABEL_CLASSES}>{t('teamView.history.affiliates')}</div>
+          {affiliates.nhl && (
+            <div className={AFFILIATE_ROW_CLASSES}>
+              <span className={AFFILIATE_LEAGUE_TAG_CLASSES}>NHL</span>
+              <TeamLogo abbr={affiliates.nhl} sport="nhl" size={20} />
+              <span className={AFFILIATE_NAME_CLASSES}>{getNHLTeamConfig(affiliates.nhl)?.displayName || affiliates.nhl}</span>
+            </div>
+          )}
           {affiliates.ahl && (
             <div className={AFFILIATE_ROW_CLASSES}>
               <span className={AFFILIATE_LEAGUE_TAG_CLASSES}>AHL</span>
