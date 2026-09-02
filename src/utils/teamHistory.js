@@ -3942,7 +3942,1349 @@ export const TEAM_HISTORY = {
 
 
   },
-  echl: {},
+  echl: {
+    // Verified Phase 4 (ECHL) team entries, accumulated as agents report back.
+    // Integrate into src/utils/teamHistory.js TEAM_HISTORY.echl after a final
+    // spot-check pass. This is the final league -- once integrated, all 4
+    // leagues (NHL/PWHL/AHL/ECHL) have full Team History coverage.
+
+    // ═══ SOUTH (7 teams) ═════════════════════════════════════════════════════
+    // VERIFIED: all 7 affiliates blocks match the pre-verified chain handed to
+    // the agent exactly, including the JAX Buffalo->Minnesota switch already
+    // established in Phase 1/3.
+    // FIXED: '&amp;' -> '&' (SAV owner).
+    // FIXED: FLA's and SC's career-total records had no `season` value, which
+    // would have rendered a literal "(undefined)" in the UI (the component
+    // always wraps whatever's in `season` in parens) -- gave both a `season:
+    // 'career'` value instead, which reads naturally as plain text.
+    // FLAG: ORL's verified photo is an interior shot, not exterior (same
+    // departure-from-convention judgment call as AHL's Coachella Valley entry
+    // in Phase 3) -- kept it since it's a real, verified, current-branding
+    // photo rather than nothing.
+    // FLAG: ATL and SAV ship with no photo -- agent could not verify a real,
+    // current, non-degraded Commons file for either arena.
+
+    ATL: {
+      founded: {
+        year: 1995,
+        asFranchise: 'Mobile Mysticks',
+        relocations: [
+          { year: 2003, from: 'Mobile, AL (suspended 2002–2003)', to: 'Duluth, GA', renamedTo: 'Gwinnett Gladiators', note: 'Revived after the Mysticks suspended operations following the 2001-02 season' },
+          { year: 2015, from: 'Duluth, GA', to: 'Duluth, GA', renamedTo: 'Atlanta Gladiators', note: 'Rebranded to better reflect the Atlanta metro area — no change in city or arena' },
+        ],
+      },
+      arena: {
+        name: 'Gas South Arena',
+        city: 'Duluth, GA',
+        capacity: 11355,
+        opened: 2003,
+        formerNames: [
+          { name: 'Gwinnett Civic Center Arena', years: '2003–2004' },
+          { name: 'The Arena at Gwinnett Center', years: '2004–2015' },
+          { name: 'Infinite Energy Arena', years: '2015–2021' },
+        ],
+      },
+      championships: [],
+      retiredNumbers: [
+        { number: 44, player: 'Cam Brown' },
+        { number: 41, player: 'Andy Brandt' },
+        { number: 17, player: 'Derek Nesbitt' },
+      ],
+      notableAlumni: ['Louis Domingue', 'Daniel Vladar', 'Ryan Garbutt', 'Patrick Dwyer'],
+      records: [
+        { label: 'Most wins, single season', value: 50, season: '2005-06' },
+        { label: 'Most points, single season', value: 107, season: '2005-06' },
+      ],
+      affiliates: { ahl: 'MIL', nhl: 'NSH' },
+      facts: [
+        "The franchise's only Kelly Cup Finals appearance came in 2006, when the Gwinnett Gladiators fell 4-games-to-1 to the Alaska Aces.",
+        'The team has played in the same Duluth, GA arena since 2003 despite three arena-name changes and one team rebrand (Gwinnett Gladiators to Atlanta Gladiators, 2015).',
+        'Former NHL forward Anson Carter holds a minority ownership stake alongside majority owner Alex Campbell.',
+      ],
+      currentInfo: {
+        owner: 'Alex Campbell (majority); Anson Carter (minority)',
+        headCoach: 'Matt Ginn',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    FLA: {
+      founded: {
+        year: 1998,
+      },
+      arena: {
+        name: 'Hertz Arena',
+        city: 'Estero, FL',
+        capacity: 7084,
+        opened: 1998,
+        formerNames: [
+          { name: 'TECO Arena', years: '1998–2004' },
+          { name: 'Germain Arena', years: '2004–2018' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Germain_Arena,_3-18-09.jpg',
+          attribution: 'Tthaas, CC BY-SA 3.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Kelly Cup', years: [2012, 2022, 2023, 2024, 2026] },
+      ],
+      retiredNumbers: [
+        { number: 10, player: 'Reggie Berg' },
+        { number: 14, player: 'Tom Buckley' },
+        { number: 9, player: 'Ernie Hartlieb' },
+        { number: 25, player: 'John McCarron' },
+      ],
+      notableAlumni: ['Anton Khudobin', 'Tanner Jeannot', 'Alex Nedeljkovic', 'John McCarron', 'Cam Johnson'],
+      records: [
+        { label: 'Most points, single season (team)', value: 108, season: '2025-26' },
+        { label: 'Most career points', value: 364, season: 'career', note: 'John McCarron (152G, 212A)' },
+      ],
+      affiliates: { ahl: 'WBS', nhl: 'PIT' },
+      facts: [
+        "The Everblades are the only franchise in ECHL history to win five Kelly Cups, including the league's first three-peat (2022, 2023, 2024).",
+        'Owner David Hoffmann and the Hoffmann Family of Companies bought both the Everblades and Hertz Arena in 2019, then bought the Pittsburgh Penguins in 2025 — Florida became the Penguins/Wilkes-Barre-Scranton ECHL affiliate for 2026-27, succeeding a prior affiliation with the St. Louis Blues.',
+        'Goaltender Cam Johnson won the Kelly Cup Playoffs MVP award three times (2022, 2023, 2026).',
+      ],
+      currentInfo: {
+        owner: 'David Hoffmann (Hoffmann Family of Companies)',
+        headCoach: 'Brad Ralph',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    GVL: {
+      founded: {
+        year: 1988,
+        asFranchise: 'Johnstown Chiefs',
+        relocations: [
+          { year: 2010, from: 'Johnstown, PA', to: 'Greenville, SC', renamedTo: 'Greenville Road Warriors' },
+          { year: 2015, from: 'Greenville, SC', to: 'Greenville, SC', renamedTo: 'Greenville Swamp Rabbits', note: 'Rebrand only, following a 2012 ownership sale to a local group led by Fred Festa' },
+        ],
+      },
+      arena: {
+        name: 'Bon Secours Wellness Arena',
+        city: 'Greenville, SC',
+        capacity: 13951,
+        opened: 1998,
+        formerNames: [
+          { name: 'BI-LO Center', years: '1998–2013' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Bon_Secours_Wellness_Arena%2C_Greenville%2C_SC_%2827808983101%29.jpg',
+          attribution: 'Nicolas Henderson, CC BY 2.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [
+        { number: 11, player: 'Bretton Cameron' },
+      ],
+      notableAlumni: ['David Broll', 'Mackenzie Skapski', 'Isaiah Saville', 'Vinny Saponari'],
+      records: [
+        { label: 'Most wins, single season', value: 46, season: '2010-11', note: 'Road Warriors inaugural Greenville season' },
+      ],
+      affiliates: { ahl: 'ONT', nhl: 'LAK' },
+      facts: [
+        "This franchise traces back to the Johnstown Chiefs, one of the ECHL's eight founding members in 1988 — it relocated to Greenville in 2010 and rebranded from Road Warriors to Swamp Rabbits in 2015.",
+        'Despite the long lineage, the franchise has never reached a Kelly Cup Final; its deepest run was the 2013-14 Eastern Conference Finals as the Road Warriors.',
+        "Four numbers were retired for Johnstown Jets players (a separate, pre-ECHL Johnstown franchise) before the Chiefs even existed — they were never Chiefs/Road Warriors/Swamp Rabbits honors and did not travel with the franchise to Greenville.",
+      ],
+      currentInfo: {
+        owner: 'Spire Sports + Entertainment (Spire Hockey South)',
+        headCoach: 'Chad Costello',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    JAX: {
+      founded: {
+        year: 1992,
+        asFranchise: 'Muskegon Fury (UHL)',
+        joinedLeague: 2012,
+        relocations: [
+          { year: 2008, from: 'Muskegon, MI', to: 'Muskegon, MI', renamedTo: 'Muskegon Lumberjacks', note: 'Renamed when the UHL rebranded as the IHL; same city' },
+          { year: 2010, from: 'Muskegon, MI', to: 'Evansville, IN', renamedTo: 'Evansville IceMen', note: 'Moved when the IHL merged into the Central Hockey League; joined the ECHL in 2012' },
+          { year: 2017, from: 'Evansville, IN (dormant 2016–2017)', to: 'Jacksonville, FL', renamedTo: 'Jacksonville Icemen', note: 'Revived after going dormant following the 2015-16 season' },
+        ],
+      },
+      arena: {
+        name: 'VyStar Veterans Memorial Arena',
+        city: 'Jacksonville, FL',
+        capacity: 13141,
+        opened: 2003,
+        formerNames: [
+          { name: 'Jacksonville Veterans Memorial Arena', years: '2003–2019' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Vystar_Veterans_2023.jpg',
+          attribution: 'Excel23, CC BY 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['Jack Ahcan', 'Jansen Harkins', "Jerry D'Amigo", 'Mikhail Berdin', 'Kris Newbury'],
+      records: [
+        { label: 'Most wins, single season', value: 42, season: '2023-24' },
+      ],
+      affiliates: { ahl: 'IA', nhl: 'MIN' },
+      facts: [
+        'Jacksonville had been without professional hockey for a decade before the Icemen arrived in 2017, following the earlier Jacksonville Barracudas (2002-2008), a separate, unrelated lower-league franchise.',
+        'The Icemen switched NHL/AHL affiliations from the Buffalo Sabres/Rochester Americans to the Minnesota Wild/Iowa Wild starting with the 2026-27 season.',
+        'Ownership includes several NFL-connected investors added in 2020: Tim Tebow, Myles Jack, and Reggie Hayward.',
+      ],
+      currentInfo: {
+        owner: 'SZH Hockey LLC (Andrew Kaufmann, majority)',
+        headCoach: 'Sean Teakle',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    ORL: {
+      founded: {
+        year: 2012,
+      },
+      arena: {
+        name: 'Kia Center',
+        city: 'Orlando, FL',
+        capacity: 17353,
+        opened: 2010,
+        formerNames: [
+          { name: 'Amway Center', years: '2010–2023' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Kia_Center_12-22-24.jpg',
+          attribution: 'Csab6482, CC0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['Darcy Kuemper', 'Mason Marchment', 'Ryan Reaves'],
+      records: [
+        { label: 'Most wins, single season', value: 43, season: '2013-14' },
+        { label: 'Most points, single season', value: 91, season: '2013-14' },
+        { label: 'Most points by a player, single season', value: 74, season: '2020-21', note: 'Aaron Luchuk (also 46 assists, a franchise record)' },
+      ],
+      affiliates: { ahl: 'SYR', nhl: 'TBL' },
+      facts: [
+        'The current ECHL franchise is an unrelated expansion team that revived the name of an earlier Orlando Solar Bears IHL franchise (1995-2001, which won the 1996 Turner Cup) — it is not a continuation of that team.',
+        'The Solar Bears have reached the South Division Finals five times (2015, 2017, 2018, 2019, 2024) without winning a Kelly Cup, most recently losing to a Florida Everblades team in the middle of its three-peat.',
+        "Owner RDV Sports (the DeVos family) also owns the NBA's Orlando Magic, who share Kia Center with the Solar Bears.",
+      ],
+      currentInfo: {
+        owner: 'RDV Sports, Inc. (DeVos family)',
+        headCoach: 'Matt Macdonald',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    SAV: {
+      founded: {
+        year: 2021,
+      },
+      arena: {
+        name: 'Enmarket Arena',
+        city: 'Savannah, GA',
+        capacity: 7485,
+        opened: 2022,
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['Matt Boudens (inaugural team captain)', "Tyler Drevich (franchise's first leading scorer)"],
+      records: [],
+      affiliates: { ahl: 'CLT', nhl: 'FLA' },
+      facts: [
+        'The ECHL approved Savannah\'s expansion franchise in January 2021; the Ghost Pirates played their first game in November 2022 at the newly opened Enmarket Arena.',
+        'The team made its first-ever Kelly Cup Playoff appearance in 2025-26 (its 4th season), losing 0-4 to the Florida Everblades in the first round.',
+        'Savannah briefly affiliated with the Vegas Golden Knights/Henderson Silver Knights for its inaugural 2022-23 season before switching to the Florida Panthers/Charlotte Checkers chain in June 2024.',
+      ],
+      currentInfo: {
+        owner: 'Andy Kaufmann (Zawyer Sports & Entertainment)',
+        headCoach: 'Jared Staal',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    SC: {
+      founded: {
+        year: 1993,
+      },
+      arena: {
+        name: 'North Charleston Coliseum',
+        city: 'North Charleston, SC',
+        capacity: 10537,
+        opened: 1993,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/North_Charleston_Coliseum_Aug2010.jpg',
+          attribution: 'Chris Pruitt, CC BY-SA 3.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Kelly Cup', years: [1997, 2001, 2009] },
+      ],
+      retiredNumbers: [
+        { number: 12, player: 'Mark Bavis' },
+        { number: 14, player: 'David Seitz' },
+        { number: 24, player: 'Brett Marietti' },
+        { number: 28, player: 'Andrew Cherniwchan' },
+      ],
+      notableAlumni: ['Braden Holtby', 'Philipp Grubauer', 'Logan Thompson', 'James Reimer', 'Nathan Walker'],
+      records: [
+        { label: 'Most wins, single season', value: 52, season: '2024-25' },
+        { label: 'Most points, single season', value: 109, season: '2024-25' },
+        { label: 'Most career points', value: 587, season: 'career', note: 'David Seitz — also franchise leader in career goals (217) and assists (370)' },
+      ],
+      affiliates: { ahl: 'HER', nhl: 'WSH' },
+      facts: [
+        'The Stingrays are tied for the most Kelly Cup titles in ECHL history (3, with Hampton Roads and Alaska), winning in 1997, 2001, and 2009 — the franchise has never left its original arena since 1993.',
+        "Mark Bavis's #12 was retired in 2001 in memory of the former Stingrays player and NHL scout, who was killed aboard United Flight 175 on September 11, 2001.",
+        'Three former Stingrays head coaches — Jared Bednar, Spencer Carbery, and Ryan Warsofsky — went on to become NHL head coaches.',
+      ],
+      currentInfo: {
+        owner: 'Todd Halloran (Halloran Sports Group)',
+        headCoach: 'Jesse Kallechy',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    // ═══ MOUNTAIN (8 teams) ══════════════════════════════════════════════════
+    // VERIFIED: all 8 affiliates blocks matched the pre-verified chain exactly,
+    // AND the agent independently reconfirmed each is still current via live
+    // search rather than just trusting the handed-down list.
+    // FIXED: '&amp;' -> '&' throughout (ALN, TAH, WIC owners).
+    // GOOD DISCIPLINE: TUL deliberately excludes pre-1992 "Tulsa Oilers"
+    // alumni/records (Vanbiesbrouck, Miracle-on-Ice players) since those belong
+    // to an unrelated, defunct 1964-1984 franchise -- exactly the lineage-
+    // conflation trap flagged in the brief, correctly avoided. NM (brand-new
+    // 2026-27 expansion) and TAH (empty records, conflicting press claims) are
+    // both deliberately thin/incomplete rather than padded -- correct call.
+
+    ALN: {
+      founded: {
+        year: 2009,
+        joinedLeague: 2014,
+      },
+      arena: {
+        name: 'Credit Union of Texas Event Center',
+        city: 'Allen, TX',
+        capacity: 6275,
+        opened: 2009,
+        formerNames: [
+          { name: 'Allen Event Center', years: '2009–2021' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Allen_Event_Center_-_23_February_2013.jpg',
+          attribution: 'Dravecky, CC BY-SA 3.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Kelly Cup', years: [2015, 2016] },
+      ],
+      retiredNumbers: [
+        { number: 12, player: 'Gary Steffes' },
+        { number: 30, player: 'Riley Gill' },
+        { number: 13, player: 'Chad Costello' },
+      ],
+      notableAlumni: [
+        'Alec Martinez', 'Jordie Benn', 'Aaron Dell', 'Chad Costello', 'Riley Gill',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 47, season: '2010-11' },
+        { label: 'Most points, single season', value: 97, season: '2010-11' },
+      ],
+      affiliates: { ahl: 'BEL', nhl: 'OTT' },
+      facts: [
+        "Allen won back-to-back CHL President's Cups (2013, 2014) immediately followed by back-to-back Kelly Cups in their first two ECHL seasons (2015, 2016) — four championships in the franchise's first seven years.",
+        'Owner Myles Jack and his wife LaSonjia became the first African-American majority owners in ECHL history when they purchased the team in October 2023.',
+        'Head coach Steve Martinson, who won all four of the franchise\'s championships behind the bench (2013-2016), returned to Allen in May 2025 after stepping away following the 2021-22 season.',
+      ],
+      currentInfo: {
+        owner: 'Myles Jack & LaSonjia Jack',
+        headCoach: 'Steve Martinson',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    IDH: {
+      founded: {
+        year: 1997,
+        joinedLeague: 2003,
+      },
+      arena: {
+        name: 'Idaho Central Arena',
+        city: 'Boise, ID',
+        capacity: 5002,
+        opened: 1997,
+        formerNames: [
+          { name: 'Bank of America Centre', years: '1997–2005' },
+          { name: 'Qwest Arena', years: '2005–2011' },
+          { name: 'CenturyLink Arena', years: '2011–2020' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/CenturyLink_Arena_Boise_from_the_northeast_side_in_2019.jpg',
+          attribution: 'Kyvuh, CC0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Kelly Cup', years: [2004, 2007] },
+      ],
+      retiredNumbers: [
+        { number: 4, player: 'Jeremy Mylymok' },
+        { number: 12, player: 'Scott Burt' },
+        { number: 16, player: 'Marty Flichel' },
+        { number: 22, player: 'Cal Ingraham' },
+        { number: 71, player: 'Lance Galbraith' },
+      ],
+      notableAlumni: [
+        'Zenon Konopka', 'Dan Ellis', 'Jay Beagle', 'Jeremy Yablonski', 'Marty Flichel',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 58, season: '2022-23' },
+        { label: 'Most points, single season', value: 119, season: '2022-23' },
+      ],
+      affiliates: { ahl: 'TEX', nhl: 'DAL' },
+      facts: [
+        'Idaho won the Kelly Cup in its very first ECHL season (2003-04), immediately after moving over from the WCHL.',
+        'The Steelheads own the longest active playoff streak in pro hockey — appearing in the postseason every year since 1997 across the WCHL and ECHL.',
+        'The team has played in the same downtown Boise arena since day one in 1997, even as it was renamed four times (Bank of America Centre, Qwest Arena, CenturyLink Arena, now Idaho Central Arena).',
+      ],
+      currentInfo: {
+        owner: 'Idaho Sports Properties LLC (Eric Trapp, President)',
+        headCoach: 'Everett Sheen',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    KC: {
+      founded: {
+        year: 2009,
+        asFranchise: 'Missouri Mavericks',
+        joinedLeague: 2014,
+        relocations: [
+          { year: 2017, from: 'Independence, MO (as Missouri Mavericks)', to: 'Independence, MO', renamedTo: 'Kansas City Mavericks', note: 'Rebrand to reflect the larger Kansas City metro area — no change of arena or city' },
+        ],
+      },
+      arena: {
+        name: 'Cable Dahmer Arena',
+        city: 'Independence, MO',
+        capacity: 5800,
+        opened: 2009,
+        formerNames: [
+          { name: 'Independence Events Center', years: '2009–2015' },
+          { name: 'Silverstein Eye Centers Arena', years: '2015–2020' },
+        ],
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Carter Verhaeghe', 'Ville Husso', 'Kyle Burroughs', 'Ross Johnston',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 54, season: '2023-24' },
+        { label: 'Most points, single season', value: 112, season: '2023-24' },
+      ],
+      affiliates: { ahl: 'CV', nhl: 'SEA' },
+      facts: [
+        'Despite four regular-season (Brabham Cup) titles since 2014, including three straight from 2023-24 through 2025-26, the Mavericks have never won a Kelly Cup — losing their only two Finals appearances to date (2024 and 2026, both to Florida).',
+        'Owner Lamar Hunt Jr. is the son of NFL Hall of Famer Lamar Hunt, founder of the Kansas City Chiefs and the AFL.',
+        'The franchise began as the Missouri Mavericks in the CHL in 2009 and was renamed the Kansas City Mavericks in 2017, without ever changing arenas.',
+      ],
+      currentInfo: {
+        owner: 'Lamar Hunt Jr.',
+        headCoach: "Tad O'Had",
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    NM: {
+      founded: {
+        year: 2026,
+      },
+      arena: {
+        name: 'Rio Rancho Events Center',
+        city: 'Rio Rancho, NM',
+        capacity: 7000,
+        opened: 2006,
+        formerNames: [
+          { name: 'Santa Ana Star Center', years: '2006–2020' },
+        ],
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [],
+      records: [],
+      affiliates: { ahl: 'COL', nhl: 'COL' },
+      facts: [
+        'The Goatheads are a brand-new 2026-27 expansion franchise — entirely unrelated to the New Mexico Scorpions (CHL, folded 2009) or to the Utah Grizzlies, who separately relocated to Trenton, NJ (as the Trenton Ironhawks) the same offseason.',
+        'The name "Goatheads" beat out finalists "Cutthroats" and "Tarantula Hawks" in a fan vote, honoring a notoriously tough desert thorn-plant native to New Mexico.',
+        'First head coach Zack Stortini is a former NHL enforcer who played all of his NHL games with the Edmonton Oilers before moving into coaching, most recently as a Tucson Roadrunners (AHL) assistant.',
+      ],
+      currentInfo: {
+        owner: 'REV Entertainment',
+        headCoach: 'Zack Stortini',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    RC: {
+      founded: {
+        year: 2008,
+        joinedLeague: 2014,
+      },
+      arena: {
+        name: 'The Monument (Ice Arena)',
+        city: 'Rapid City, SD',
+        capacity: 7500,
+        opened: 1977,
+        formerNames: [
+          { name: 'Rushmore Plaza Civic Center', years: '1977–2021' },
+        ],
+      },
+      championships: [],
+      retiredNumbers: [
+        { number: 17, player: 'Scott Wray' },
+        { number: 30, player: 'Danny Battochio' },
+        { number: 6, player: 'Riley Weselowski' },
+      ],
+      notableAlumni: [
+        'Adin Hill', 'Michael Bunting', 'Dakota Mermis', 'Scott Wray', 'Riley Weselowski',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 43, season: '2009-10' },
+        { label: 'Most points, single season', value: 93, season: '2009-10' },
+      ],
+      affiliates: { ahl: 'CGY', nhl: 'CGY' },
+      facts: [
+        "The Rush won the CHL's Ray Miron President's Cup in just their second season (2009-10) but have not won a Kelly Cup since joining the ECHL in 2014.",
+        'Adin Hill, who backstopped the Vegas Golden Knights to the 2023 Stanley Cup, is a Rush alum.',
+        'The organization survived a 2019 embezzlement scandal in which a former finance manager was convicted of stealing roughly $700,000 from the team between 2010 and 2018.',
+      ],
+      currentInfo: {
+        owner: 'Spire Sports + Entertainment',
+        headCoach: 'Dave Smith',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    TAH: {
+      founded: {
+        year: 2024,
+      },
+      arena: {
+        name: 'Tahoe Blue Event Center',
+        city: 'Stateline, NV',
+        capacity: 4203,
+        opened: 2023,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Tahoe_Blue_Event_Center.jpg',
+          attribution: 'LittleT889, CC BY 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Luke Adam', 'Casey Bailey',
+      ],
+      records: [],
+      affiliates: { ahl: 'HSK', nhl: 'VGK' },
+      facts: [
+        'The team is named for Tahoe Tessie, the folkloric lake monster said to live in Lake Tahoe.',
+        "The ownership group includes NFL Heisman winner Tim Tebow and HGTV's Chip and Joanna Gaines as minority partners, alongside majority owner David Hodges.",
+        'In each of its first two seasons (2025 and 2026), Tahoe reached the Mountain Division Finals — losing to the Kansas City Mavericks both times.',
+      ],
+      currentInfo: {
+        owner: 'David Hodges (majority); Tim & Demi Tebow, Chip & Joanna Gaines (minority)',
+        headCoach: 'Connor Jones',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    TUL: {
+      founded: {
+        year: 1992,
+        joinedLeague: 2014,
+      },
+      arena: {
+        name: 'BOK Center',
+        city: 'Tulsa, OK',
+        capacity: 17096,
+        opened: 2008,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/BOK_Center_faccade.JPG',
+          attribution: 'Okiefromokla, public domain, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Dakota Joshua', 'Austin Poganski', 'Olle Eriksson Ek', 'Bryce Kindopp', 'Hunter Drew',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 40, season: '2018-19' },
+      ],
+      affiliates: { ahl: 'SD', nhl: 'ANA' },
+      facts: [
+        'This is the third hockey team called the "Tulsa Oilers" — an original 1928 American Hockey Association club and a separate 1964-1984 CPHL/CHL club both preceded today\'s franchise, which was founded fresh in 1992 and is not a continuation of either earlier team.',
+        "The 1992-93 Oilers won the league championship in the newly revived CHL's very first season, the only current CHL-lineage franchise to do so.",
+        'The Oilers moved from the Tulsa Convention Center into the newly built BOK Center in 2008, and are one of only two ECHL clubs (with Wichita) to have played every one of the original CHL\'s 22 seasons (1992-2014) before that league folded.',
+      ],
+      currentInfo: {
+        owner: 'Andy Scurto (NL Sports, LLC)',
+        headCoach: 'Rob Murray',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    WIC: {
+      founded: {
+        year: 1992,
+        joinedLeague: 2014,
+      },
+      arena: {
+        name: 'INTRUST Bank Arena',
+        city: 'Wichita, KS',
+        capacity: 13450,
+        opened: 2010,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/InTrust_Bank_Arena.jpg',
+          attribution: 'FUBAR007, CC BY-SA 3.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [
+        { number: 9, player: 'Ron Handy' },
+        { number: 11, player: 'Jason Duda' },
+        { number: 15, player: 'Rob Weingartner' },
+        { number: 35, player: 'Robert Desjardins' },
+        { number: 38, player: 'Travis Clayton' },
+      ],
+      notableAlumni: [
+        'Stuart Skinner', 'Vincent Desharnais', 'Theo Peckham', 'Ryan White', 'Pierre-Cedric Labrie',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 44, season: '2011-12' },
+        { label: 'Most points, single season', value: 92, season: '1994-95' },
+      ],
+      affiliates: { ahl: 'SJ', nhl: 'SJS' },
+      facts: [
+        'New head coach Travis Clayton (hired May 2026) is himself one of the five Thunder legends with a retired number (#38), having racked up 835 points over parts of a decade playing for Wichita.',
+        'Wichita and Tulsa are the only two teams to have played all 22 seasons of the original Central Hockey League (1992-2014) before both moved to the ECHL.',
+        'Despite two CHL championships in the 1990s (1993-94, 1994-95), the Thunder have not won a Kelly Cup since moving to the ECHL in 2014. Current Edmonton Oilers starting goaltender Stuart Skinner is a Thunder alum.',
+      ],
+      currentInfo: {
+        owner: 'Steven Brothers Sports Management (Rodney, Brandon & Johnny Steven)',
+        headCoach: 'Travis Clayton',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    // ═══ CENTRAL (7 teams) ═══════════════════════════════════════════════════
+    // VERIFIED: all 7 affiliates blocks matched the pre-verified chain,
+    // including both flagged mid-2026 switches (BLM to Winnipeg/Manitoba, WHL
+    // to Columbus/Cleveland) and the real CIN 'TOR'/'TOR' cross-league overlap.
+    // FIXED: '&amp;' -> '&' (BLM facts/owner, KAL owner).
+    // FIXED: FW's and TOL's records had full sentences jammed into the
+    // `season` field instead of a real season string (not a rendering bug like
+    // the earlier `null`/`undefined` cases, just reads oddly as "(Len Thornson
+    // 1966-67, tied by...)") -- moved the extra detail into `note` and gave
+    // `season` a clean value instead.
+    // GOOD DISCIPLINE: FW/CIN/KAL/WHL all involved a "current corporate entity
+    // isn't literally the same franchise as the original name-bearer" pattern
+    // -- each handled with the same no-blank-relocations-field rule and pushed
+    // the nuance into facts, consistent with the AHL/UTC precedent.
+
+    BLM: {
+      founded: {
+        year: 2024,
+      },
+      arena: {
+        name: 'Grossinger Motors Arena',
+        city: 'Bloomington, IL',
+        capacity: 6000,
+        opened: 2006,
+        formerNames: [
+          { name: 'U.S. Cellular Coliseum', years: '2006–2016' },
+          { name: 'The Coliseum', years: '2016–2017' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/US_Cellular_Coliseum.jpg',
+          attribution: 'Wahkeenah, Public Domain, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Blake McLaughlin', 'Hugo Ollas', 'Brett Budgell', 'Carter Berger',
+      ],
+      records: [
+        { label: 'Most points, single season', value: 79, season: '2025-26' },
+      ],
+      affiliates: { ahl: 'MB', nhl: 'WPG' },
+      facts: [
+        'The Bison are an ECHL expansion franchise that began play in 2024-25 and made their first-ever Kelly Cup Playoff appearance in just their second season (2025-26), going 37-30-5 for a franchise-best 79 points.',
+        'Ownership group Hallett Sports & Entertainment (Jim Hallett) also owns fellow ECHL Central Division club the Indy Fuel — common ownership between two teams in the same division.',
+        "The Bison spent their first two seasons (2024-26) as the ECHL affiliate of the New York Rangers and AHL's Hartford Wolf Pack before switching to the Winnipeg Jets and Manitoba Moose in July 2026.",
+      ],
+      currentInfo: {
+        owner: 'Jim Hallett (Hallett Sports & Entertainment)',
+        headCoach: 'Phillip Barski',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    CIN: {
+      founded: {
+        year: 1995,
+        asFranchise: 'Louisville RiverFrogs (ECHL)',
+        relocations: [
+          { year: 1998, from: 'Louisville, KY', to: 'Miami, FL', renamedTo: 'Miami Matadors', note: 'Sold and moved after three seasons in Louisville' },
+          { year: 2001, from: 'Miami, FL (dormant 1999–2001)', to: 'Cincinnati, OH', renamedTo: 'Cincinnati Cyclones', note: "The Matadors folded after one season and the franchise sat dormant for two years before revival in Cincinnati. This revival reused the 'Cyclones' name of two earlier, unrelated Cincinnati franchises (a 1990-92 ECHL club and a 1992-2001 IHL club) — this franchise's own lineage runs through Louisville/Miami, not either of those." },
+        ],
+      },
+      arena: {
+        name: 'Heritage Bank Center',
+        city: 'Cincinnati, OH',
+        capacity: 14453,
+        opened: 1975,
+        formerNames: [
+          { name: 'Riverfront Coliseum', years: '1975–1997' },
+          { name: 'The Crown', years: '1997–1999' },
+          { name: 'Firstar Center', years: '1999–2002' },
+          { name: 'U.S. Bank Arena', years: '2002–2019' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Heritage_Bank_Center_%28cropped%29.jpg',
+          attribution: 'Ianbolender, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Kelly Cup', years: [2008, 2010] },
+      ],
+      retiredNumbers: [
+        { number: 13, player: 'Paul Lawless' },
+        { number: 21, player: 'Gilbert Dionne' },
+        { number: 22, player: 'Don Biggs' },
+      ],
+      notableAlumni: [
+        'David Desharnais', 'Cédrick Desjardins', 'Cory Conacher', 'Byron Froese', 'Gilbert Dionne',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 55, season: '2007-08' },
+        { label: 'Most points, single season', value: 115, season: '2007-08' },
+      ],
+      affiliates: { ahl: 'TOR', nhl: 'TOR' },
+      facts: [
+        "'Cincinnati Cyclones' has been the name of three separate franchises across two leagues; the CURRENT ECHL club actually began in 1995 as the Louisville RiverFrogs and only became the Cyclones after a stint as the Miami Matadors (1998-99) and a two-year dormancy, relocating to Cincinnati in 2001.",
+        "The 2007-08 Cyclones posted a 55-win, 115-point season widely cited as the best regular season in ECHL history, en route to the franchise's first Kelly Cup that spring.",
+        "In March 2026, the Cyclones switched from the New York Rangers to the Toronto Maple Leafs and AHL's Toronto Marlies — a same-abbreviation ('TOR'/'TOR') affiliate pair across two different leagues in this app's own team-code data, not a data bug.",
+      ],
+      currentInfo: {
+        owner: 'Nederlander Entertainment',
+        headCoach: 'Riley Weselowski',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    FW: {
+      founded: {
+        year: 1952,
+        asFranchise: 'Fort Wayne Komets (IHL)',
+        joinedLeague: 2012,
+        relocations: [
+          { year: 1990, from: 'Flint, MI (Flint Spirits, IHL, est. 1985)', to: 'Fort Wayne, IN', renamedTo: 'Fort Wayne Komets', note: "The original 1952 Komets left Fort Wayne for Albany, NY and folded in Feb 1991; two days after that departure, Fort Wayne's Franke family bought the Flint Spirits and relocated/renamed them the Komets, continuing the city's team identity. The organization's own official history counts continuously from 1952 despite this legal-franchise change." },
+        ],
+      },
+      arena: {
+        name: 'Allen County War Memorial Coliseum',
+        city: 'Fort Wayne, IN',
+        capacity: 10480,
+        opened: 1952,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Allen_County_War_Memorial_Coliseum.JPG',
+          attribution: 'FTSKfan, Public Domain, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Kelly Cup', years: [2021] },
+      ],
+      retiredNumbers: [
+        { number: 1, player: 'Chuck Adamson' },
+        { number: 2, player: 'Guy Dupuis' },
+        { number: 5, player: 'Terry Pembroke' },
+        { number: 6, player: 'Lionel Repka' },
+        { number: 11, player: 'Len Thornson' },
+        { number: 12, player: 'Reg Primeau' },
+        { number: 16, player: 'Eddie Long' },
+        { number: 18, player: 'Rob Laird' },
+        { number: 19, player: 'Terry McDougall' },
+        { number: 26, player: 'Colin Chin' },
+        { number: 30, player: 'Robbie Irons' },
+        { number: 33, player: 'Nick Boucher' },
+        { number: 40, player: 'Bob Chase (broadcaster)' },
+        { number: 58, player: 'Ken Ullyot (owner)' },
+        { number: 59, player: 'Colin Lister (owner)' },
+        { number: 77, player: 'Steven Fletcher' },
+        { number: 91, player: 'Colin Chaulk' },
+      ],
+      notableAlumni: [
+        'Bruce Boudreau', 'Len Thornson', 'Colin Chaulk', 'Guy Dupuis', 'Vyacheslav Butsayev',
+      ],
+      records: [
+        { label: 'Most points, single season (player)', value: 139, season: 'record', note: 'Len Thornson, 1966-67; tied by Terry McDougall, 1978-79' },
+        { label: 'Consecutive home wins', value: 23, season: '2007-08', note: 'Streak ended March 28, 2008' },
+      ],
+      affiliates: { ahl: 'BAK', nhl: 'EDM' },
+      facts: [
+        "The Komets are one of the oldest continuously-branded minor-league hockey franchises in North America, tracing the name to 1952 — though the current corporate entity actually dates to a 1990 purchase-and-rename of the Flint Spirits (see the founding timeline); the club's own records and rafters banners still treat 1952 as the true start.",
+        'Before joining the ECHL in 2012, the Komets played in the IHL (1952-1999, then a revived IHL brand 2007-2010), the UHL (1999-2007), and the CHL (2010-2012) — winning 7 Turner Cups as IHL champions (1963, 1965, 1973, 1993, and three straight 2008-2010), none of which count as Kelly Cups.',
+        'Bruce Boudreau, later an NHL head coach for five different franchises, finished his playing career with the Komets (1990-92) as a player-assistant coach; three decades later his son Ben Boudreau coached the Komets to their only Kelly Cup, in 2021, and returned for a second stint in 2026.',
+      ],
+      currentInfo: {
+        owner: 'The Franke Family (Steve Franke, CEO)',
+        headCoach: 'Ben Boudreau',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    IND: {
+      founded: {
+        year: 2014,
+      },
+      arena: {
+        name: 'Fishers Event Center',
+        city: 'Fishers, IN',
+        capacity: 7500,
+        opened: 2024,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/250219_-_Fishers_Event_Center.jpg',
+          attribution: 'MitchDoner, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Collin Delia', 'Justin Holl', 'Kevin Lankinen', 'Matt Tomkins',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 43, season: '2022-23' },
+        { label: 'Most points, single season', value: 91, season: '2022-23' },
+      ],
+      affiliates: { ahl: 'RFD', nhl: 'CHI' },
+      facts: [
+        'The Fuel were awarded to Indianapolis as an ECHL expansion franchise in November 2013 and began play in 2014-15, affiliated with the Chicago Blackhawks and AHL Rockford IceHogs from day one.',
+        'After a decade at the Indiana Farmers Coliseum on the state fairgrounds, the Fuel moved into the new $170 million, 7,500-seat Fishers Event Center in the Indianapolis suburb of Fishers in late 2024.',
+        'In April 2026, the Fuel met the Fort Wayne Komets in the Kelly Cup Playoffs for the first time in franchise history — a natural rivalry, since the two Indiana-based Central Division clubs are only about 40 miles apart.',
+      ],
+      currentInfo: {
+        owner: 'Jim Hallett (Chairman) / Sean Hallett (CEO)',
+        headCoach: 'Jesse Messier',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    KAL: {
+      founded: {
+        year: 1999,
+        asFranchise: 'Madison Kodiaks (UHL)',
+        joinedLeague: 2009,
+        relocations: [
+          { year: 2000, from: 'Madison, WI', to: 'Kalamazoo, MI', renamedTo: 'Kalamazoo Wings', note: "Moved after one season in Madison. The original 1974-2000 IHL 'Kalamazoo Wings' had just folded, and its owner gave this incoming UHL club permission to take the vacant 'Wings' name and local identity." },
+        ],
+      },
+      arena: {
+        name: 'Wings Event Center',
+        city: 'Kalamazoo, MI',
+        capacity: 5113,
+        opened: 1974,
+        formerNames: [
+          { name: 'Wings Stadium', years: '1974–2015' },
+        ],
+      },
+      championships: [],
+      retiredNumbers: [
+        { number: 1, player: 'Georges Gagnon' },
+        { number: 11, player: 'Brent Jarrett' },
+        { number: 13, player: 'Tyler Willis' },
+        { number: 22, player: 'Mike Wanchuk' },
+        { number: 26, player: 'Kevin Schamehorn' },
+        { number: 27, player: 'Neil Meadmore' },
+      ],
+      notableAlumni: [
+        'Justin Taylor', 'Joel Martin', 'Kevin Schamehorn', 'Neil Meadmore', 'Tyler Willis',
+      ],
+      records: [
+        { label: 'Most road wins, single season', value: 21, season: '2025-26' },
+      ],
+      affiliates: { ahl: 'ABB', nhl: 'VAN' },
+      facts: [
+        "The current Kalamazoo Wings organization dates only to a 2000 relocation of the UHL's Madison Kodiaks, but it inherited the 'Wings' name and civic identity of a separate, defunct 1974-2000 IHL franchise (winner of two Turner Cups, 1978-79 and 1979-80) — most of the current club's retired numbers actually honor players from that earlier, unrelated IHL team.",
+        "The Wings' only professional championship since 1980 is a UHL Colonial Cup in 2005-06, won a few years before the club joined the ECHL in 2009.",
+        "Head coach Joel Martin is a K-Wings franchise icon in his own right: an ECHL Hall of Famer (inducted 2021) who set the organization's career goaltending wins record before retiring as a player in 2018 to join the coaching staff.",
+      ],
+      currentInfo: {
+        owner: 'William D. Johnston & Ronda Stryker (Greenleaf Hospitality Group)',
+        headCoach: 'Joel Martin',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    TOL: {
+      founded: {
+        year: 1991,
+        asFranchise: 'Toledo Storm (ECHL)',
+      },
+      arena: {
+        name: 'Huntington Center',
+        city: 'Toledo, OH',
+        capacity: 8000,
+        opened: 2009,
+        formerNames: [
+          { name: 'Lucas County Arena', years: '2009–2010' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Huntington_Center_%28Toledo,_Ohio%29,_April_2022.jpg',
+          attribution: 'MrJacon000, CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Alex Hicks', 'Iain Duncan', 'Nick Vitucci', 'Jeff Lerg', 'Shane Berschbach',
+      ],
+      records: [
+        { label: 'Most points, single season', value: 99, season: '2024-25' },
+        { label: 'Single-season home attendance', value: 289348, season: '2024-25', note: "The franchise's first full sellout season" },
+      ],
+      affiliates: { ahl: 'GR', nhl: 'DET' },
+      facts: [
+        "The Walleye are the successor to the Toledo Storm (1991-2007), which won two Riley Cups — the ECHL's championship trophy before it was renamed the Kelly Cup in 1997 — in 1992-93 and 1993-94. The Storm suspended operations after 2006-07; new ownership revived the club in Toledo in 2009-10 as the Walleye, which does not count the Storm's Riley Cups as its own Kelly Cups.",
+        'Despite being one of the ECHL\'s most successful modern franchises, the Walleye have reached the Kelly Cup Finals three times (2019, 2022, 2025) and lost all three.',
+        "The Huntington Center's exterior features a 900-square-foot living 'green wall' of plants designed to shade and cool the glass-enclosed main entrance.",
+      ],
+      currentInfo: {
+        owner: 'Toledo Arena Sports, Inc.',
+        headCoach: 'Pat Mikesch',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    WHL: {
+      founded: {
+        year: 1981,
+        asFranchise: 'Winston-Salem Thunderbirds (ACHL)',
+        joinedLeague: 1988,
+        relocations: [
+          { year: 1982, from: 'Winston-Salem, NC', to: 'Winston-Salem, NC', renamedTo: 'Carolina Thunderbirds', note: 'Same-city rebrand, still in the ACHL' },
+          { year: 1989, from: 'Winston-Salem, NC (as Carolina Thunderbirds)', to: 'Winston-Salem, NC', renamedTo: 'Winston-Salem Thunderbirds', note: 'Reverted to the original name; by this point the club was a charter ECHL franchise — the ACHL folded in 1987, the team spent 1987-88 in the short-lived All-American Hockey League, then joined the ECHL for its inaugural 1988-89 season' },
+          { year: 1992, from: 'Winston-Salem, NC', to: 'Wheeling, WV', renamedTo: 'Wheeling Thunderbirds', note: 'Real relocation' },
+          { year: 1996, from: 'Wheeling, WV (as Wheeling Thunderbirds)', to: 'Wheeling, WV', renamedTo: 'Wheeling Nailers', note: "Same-city rebrand via a fan 'Name the Team' contest; 'Nailers' honors Wheeling's nail-manufacturing history" },
+        ],
+      },
+      arena: {
+        name: 'WesBanco Arena',
+        city: 'Wheeling, WV',
+        capacity: 4890,
+        opened: 1977,
+        formerNames: [
+          { name: 'Wheeling Civic Center', years: '1977–2003' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/WesBancoArena.jpg',
+          attribution: 'Jgera5, CC0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Tomas Vokoun', 'Paul Bissonnette', 'Daniel Carcillo', 'Scott Darling', 'Peter Laviolette',
+      ],
+      records: [
+        { label: 'Most points, single season', value: 106, season: '2003-04' },
+      ],
+      affiliates: { ahl: 'CLE', nhl: 'CBJ' },
+      facts: [
+        "As the Carolina/Winston-Salem Thunderbirds, this franchise won the very first ECHL championship in the league's inaugural 1988-89 season — but the trophy wasn't yet the Kelly Cup; it was the Riley Cup, renamed for commissioner Patrick Kelly only in 1997. The Nailers themselves have never won a Kelly Cup.",
+        'The Nailers are considered the oldest continuously-operating minor-league hockey franchise below the AHL level, an unbroken lineage stretching back to 1981 across five names and two cities.',
+        'After 29 years affiliated with the Pittsburgh Penguins and AHL Wilkes-Barre/Scranton (2001-2026), the Nailers signed a two-year deal with the Columbus Blue Jackets and AHL Cleveland Monsters in August 2026.',
+      ],
+      currentInfo: {
+        owner: 'Hockey Club of the Ohio Valley',
+        headCoach: 'Nate DiCasmirro',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    // ═══ NORTH (8 teams) — final ECHL batch, all 30 teams now covered ═════════
+    // IMPORTANT FINDING: Norfolk genuinely has no NHL/AHL affiliate right now
+    // (confirmed live on both the team's own site and echl.com, which list
+    // "TBD") -- not a research gap, a real live state. Omitted the `affiliates`
+    // key entirely rather than guess; worth a follow-up check closer to the
+    // 2026-27 season opener since this is very likely to resolve.
+    // FIXED: '&amp;' -> '&' (GSO).
+    // FIXED: TRE's career-total record had an odd `season` value ("2005-2025
+    // (career)") -- normalized to `season: 'career'` (matching the FLA/SC
+    // pattern from the South batch) with the date range moved into `note`.
+    // FIXED: added NOR's 1998 Bakersfield Fog -> Bakersfield Condors rename to
+    // `relocations` for consistency -- the agent's own facts mentioned it but
+    // left it out of the timeline array, unlike every other team's full lineage.
+    // GOOD DISCIPLINE: MNE deliberately has no `relocations` entry for the
+    // Alaska Aces question given genuine source disagreement over continuation
+    // vs. new franchise -- explained in facts instead of guessing a structure.
+
+    ADK: {
+      founded: {
+        year: 1990,
+        asFranchise: 'Cincinnati Cyclones (ECHL expansion)',
+        relocations: [
+          { year: 1992, from: 'Cincinnati, OH', to: 'Birmingham, AL', renamedTo: 'Birmingham Bulls' },
+          { year: 2001, from: 'Birmingham, AL', to: 'Atlantic City, NJ', renamedTo: 'Atlantic City Boardwalk Bullies' },
+          { year: 2005, from: 'Atlantic City, NJ', to: 'Stockton, CA', renamedTo: 'Stockton Thunder' },
+          { year: 2015, from: 'Stockton, CA', to: 'Glens Falls, NY', renamedTo: 'Adirondack Thunder', note: "Essentially a market swap — Calgary's AHL affiliate left Glens Falls for Stockton (as the Heat) the same year this ECHL franchise moved the opposite direction" },
+        ],
+      },
+      arena: {
+        name: 'Harding Mazzotti Arena',
+        city: 'Glens Falls, NY',
+        capacity: 4794,
+        opened: 1979,
+        formerNames: [
+          { name: 'Glens Falls Civic Center', years: '1979–2017' },
+          { name: 'Cool Insuring Arena', years: '2017–2025' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Harding_Mazzotti_Arena_-_Glens_Falls,_NY.jpg',
+          attribution: 'Quintin Soloviev, CC BY 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'MacKenzie Blackwood', 'Connor Ingram', 'Ryan Lomberg', 'Josh Jacobs', 'Colton White',
+      ],
+      records: [
+        { label: 'Most points, single season', value: 97, season: '2023-24' },
+        { label: 'Longest win streak', value: 12, season: '2023-24' },
+      ],
+      affiliates: { ahl: 'UTC', nhl: 'NJD' },
+      facts: [
+        "The franchise's roots trace to the 1990 expansion Cincinnati Cyclones — a different, unrelated franchise from today's ECHL Cincinnati Cyclones — and it was renamed four times across five cities before landing in Glens Falls in 2015.",
+        "Long before the Thunder arrived, the same arena hosted the AHL's Adirondack Red Wings (1979-1999), a completely separate franchise that won three Calder Cups (1981, 1986, 1989). The Adirondack Hockey Hall of Fame at the arena honors that earlier, unrelated team — not the current ECHL Thunder, which has no retired numbers of its own.",
+      ],
+      currentInfo: {
+        owner: 'Adirondack Civic Center Coalition (local ownership group, since 2017)',
+        headCoach: 'Sylvain Cloutier',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    GSO: {
+      founded: {
+        year: 2025,
+      },
+      arena: {
+        name: 'First Horizon Coliseum',
+        city: 'Greensboro, NC',
+        capacity: 22000,
+        opened: 1959,
+        formerNames: [
+          { name: 'Greensboro Memorial Coliseum', years: '1959–1980' },
+          { name: 'Greensboro Coliseum', years: '1980–2024' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Greensboro_Coliseum.jpg',
+          attribution: 'Blueboy96, CC BY-SA 3.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: ['David Gagnon', 'Ethan Leyh'],
+      records: [
+        { label: 'Franchise leading scorer, inaugural season', value: 17, season: '2025-26' },
+      ],
+      affiliates: { ahl: 'CHI', nhl: 'CAR' },
+      facts: [
+        "Greensboro's first ECHL team since the Greensboro Generals folded in 2004 — and the Coliseum's first pro hockey tenant since the Hurricanes themselves played their first two NHL seasons there (1997-99) while Raleigh's arena was being built.",
+        "Ownership group Zawyer Sports & Entertainment includes former NHL players Paul Bissonnette, Ryan Whitney, and Keith Yandle (hosts of the Spittin' Chiclets podcast) as part-owners, plus NFL long-snapper J.J. Jansen.",
+        "First head coach Scott Burt was let go in May 2026 after going 19-46-6 in the inaugural season; Mitch Giguère was hired as the team's second head coach that June.",
+      ],
+      currentInfo: {
+        owner: 'Zawyer Sports & Entertainment',
+        headCoach: 'Mitch Giguère',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    MNE: {
+      founded: {
+        year: 2018,
+      },
+      arena: {
+        name: 'Cross Insurance Arena',
+        city: 'Portland, ME',
+        capacity: 6206,
+        opened: 1977,
+        formerNames: [
+          { name: 'Cumberland County Civic Center', years: '1977–2014' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Cross_Insurance_Arena_exterior_view.jpg',
+          attribution: 'Quintin Soloviev, CC BY 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Justin Brazeau', 'Adam Huska', 'Brandon Crawley', 'Austin Violette',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 42, season: '2022-23' },
+      ],
+      affiliates: { ahl: 'PRO', nhl: 'BOS' },
+      facts: [
+        "The ECHL membership was purchased from the dormant Alaska Aces (2003-2017, three-time Kelly Cup champion out of Anchorage) and relaunched in Portland for 2018-19 — though hockeydb.com and most record-keepers treat the Mariners as a new franchise rather than a continuation of the Aces' history.",
+        'Shares its name with an earlier, unrelated AHL team also called the "Maine Mariners" (1977-1992) that played in the same building — no corporate connection between the two.',
+        'Voluntarily suspended operations for the 2020-21 season due to COVID-19, and won its first-ever playoff series in 2025-26.',
+      ],
+      currentInfo: {
+        owner: 'Dexter Paine (since September 2024)',
+        headCoach: 'Rick Kowalsky',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    NOR: {
+      founded: {
+        year: 1995,
+        asFranchise: 'Bakersfield Fog (WCHL)',
+        joinedLeague: 2003,
+        relocations: [
+          { year: 1998, from: 'Bakersfield, CA (as Bakersfield Fog)', to: 'Bakersfield, CA', renamedTo: 'Bakersfield Condors', note: 'Same-city rebrand, still in the WCHL' },
+          { year: 2015, from: 'Bakersfield, CA', to: 'Norfolk, VA', renamedTo: 'Norfolk Admirals', note: "Took the name and logo of the AHL's Norfolk Admirals, which departed the same year for San Diego (as the Gulls) — a completely separate, unrelated franchise with its own history and championships" },
+        ],
+      },
+      arena: {
+        name: 'Norfolk Scope',
+        city: 'Norfolk, VA',
+        capacity: 8701,
+        opened: 1971,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Norfolk_Scope.jpg',
+          attribution: 'Faithlessthewonderboy, CC BY-SA, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Luke Prokop', 'Domenick Fensore', 'Brandon Halverson', 'Matt Carey',
+      ],
+      records: [
+        { label: 'Most points, single season', value: 89, season: '2023-24' },
+      ],
+      facts: [
+        "The 'Norfolk Admirals' name has been used by two entirely separate franchises: an earlier ECHL/AHL team (1989-2015) that won a 1998 Kelly Cup and later became the AHL's San Diego Gulls, and this current ECHL franchise (the relocated Bakersfield Condors), which has no connection to that earlier team's championships, records, or scoring marks.",
+        'As of September 2026, the Admirals have no NHL or AHL affiliate for the first time in franchise history — the Winnipeg Jets/Manitoba Moose partnership ended in July 2026 and no replacement had been announced.',
+      ],
+      currentInfo: {
+        owner: 'Patrick Cavanagh (former Hampton Roads Admirals player, owner since 2019)',
+        headCoach: 'Jeff Carr',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    REA: {
+      founded: {
+        year: 1991,
+        asFranchise: 'Columbus Chill (ECHL)',
+        relocations: [
+          { year: 2001, from: 'Columbus, OH (dormant 1999–2001)', to: 'Reading, PA', renamedTo: 'Reading Royals', note: 'The Chill suspended operations in 1999 to make way for the NHL expansion Columbus Blue Jackets before this relocation revived the franchise' },
+        ],
+      },
+      arena: {
+        name: 'Santander Arena',
+        city: 'Reading, PA',
+        capacity: 7160,
+        opened: 2001,
+        formerNames: [
+          { name: 'Sovereign Center', years: '2001–2013' },
+        ],
+      },
+      championships: [
+        { title: 'Kelly Cup', years: [2013] },
+      ],
+      retiredNumbers: [
+        { number: 10, player: 'Yannick Tifu' },
+        { number: 22, player: 'Larry Courville' },
+      ],
+      notableAlumni: [
+        'Jonathan Quick', 'James Reimer', 'Philipp Grubauer', 'George Parros', 'Ben Scrivens',
+      ],
+      records: [
+        { label: 'Most points, single season', value: 99, season: '2012-13' },
+      ],
+      affiliates: { ahl: 'LV', nhl: 'PHI' },
+      facts: [
+        'Nicknamed "Goaltender U" for the pipeline of future NHL goaltenders who came through Reading, including Jonathan Quick, Philipp Grubauer, James Reimer, Ben Scrivens, and Michael Hutchinson.',
+        "Won its only Kelly Cup in 2013, in the franchise's 12th season in Reading, defeating the Stockton Thunder in five games.",
+        'Uniquely for the ECHL tier, the team is owned by a public authority — the Berks County Convention Center Authority, which purchased the club from Jack Gulati in 2019.',
+      ],
+      currentInfo: {
+        owner: 'Berks County Convention Center Authority',
+        headCoach: 'Anthony Peters',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    TRE: {
+      founded: {
+        year: 1981,
+        asFranchise: 'Nashville South Stars (CHL)',
+        joinedLeague: 1988,
+        relocations: [
+          { year: 1983, from: 'Nashville, TN', to: 'Vinton, VA', renamedTo: 'Virginia Lancers', note: 'Became a founding member of the ECHL in 1988' },
+          { year: 1990, from: 'Vinton, VA', to: 'Roanoke, VA', renamedTo: 'Roanoke Valley Rebels', note: 'Renamed Roanoke Valley Rampage in 1992, same city' },
+          { year: 1993, from: 'Roanoke, VA', to: 'Huntsville, AL', renamedTo: 'Huntsville Blast' },
+          { year: 1994, from: 'Huntsville, AL', to: 'Tallahassee, FL', renamedTo: 'Tallahassee Tiger Sharks' },
+          { year: 2001, from: 'Tallahassee, FL', to: 'Macon, GA', renamedTo: 'Macon Whoopee' },
+          { year: 2002, from: 'Macon, GA', to: 'Lexington, KY', renamedTo: "Lexington Men O' War", note: 'Suspended operations after one season (2002-03); the dormant franchise rights were purchased and moved to Utah in 2005' },
+          { year: 2005, from: 'Lexington, KY', to: 'West Valley City, UT', renamedTo: 'Utah Grizzlies', note: 'Took the name of the just-departed IHL/AHL Utah Grizzlies (1995-2005), an unrelated corporate franchise, after that team ceased operations' },
+          { year: 2026, from: 'West Valley City, UT', to: 'Trenton, NJ', renamedTo: 'Trenton Ironhawks' },
+        ],
+      },
+      arena: {
+        name: 'CURE Insurance Arena',
+        city: 'Trenton, NJ',
+        capacity: 7605,
+        opened: 1999,
+        formerNames: [
+          { name: 'Sovereign Bank Arena', years: '1999–2009' },
+          { name: 'Sun National Bank Center', years: '2009–2017' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Cure_Arena_across_NJ129_2021_jeh.jpg',
+          attribution: 'Jim.henderson, CC BY 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Andrew MacDonald', 'Trevor Smith', 'Ryan Kinasewich',
+      ],
+      records: [
+        { label: 'Most career points', value: 356, season: 'career', note: 'Ryan Kinasewich, 2005-2025 (as the Utah Grizzlies)' },
+      ],
+      affiliates: { ahl: 'HAM', nhl: 'NYI' },
+      facts: [
+        "One of the ECHL's deepest lineages: nine names across five states since 1981, most recently 21 seasons as the Utah Grizzlies (2005-2026) before relocating to Trenton for 2026-27.",
+        'Trenton previously hosted the ECHL\'s Trenton Titans/Trenton Devils (1999-2013) at the same CURE Insurance Arena — an unrelated earlier tenant, not this franchise\'s own history.',
+        "Chuck Weber, a two-time Kelly Cup champion as a coach, was named the Ironhawks' first head coach in June 2026 ahead of the team's October 2026 debut.",
+      ],
+      currentInfo: {
+        owner: 'Pro Hockey Partners, LLC',
+        headCoach: 'Chuck Weber',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    TR: {
+      founded: {
+        year: 2021,
+      },
+      arena: {
+        name: 'Colisée Vidéotron',
+        city: 'Trois-Rivières, QC',
+        capacity: 4390,
+        opened: 2021,
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Colis%C3%A9e_Vid%C3%A9otron_2024_%281%29.jpg',
+          attribution: 'Gabriel Picard (Gacard), CC BY-SA 4.0, via Wikimedia Commons',
+        },
+      },
+      championships: [
+        { title: 'Kelly Cup', years: [2025] },
+      ],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Artūrs Šilovs', 'Pierrick Dubé', 'Cameron Hillis', 'Morgan Adams-Moisan', 'Luke Cavallin',
+      ],
+      records: [
+        { label: 'Most wins, single season', value: 45, season: '2024-25' },
+      ],
+      affiliates: { ahl: 'LAV', nhl: 'MTL' },
+      facts: [
+        'Named for the Trois-Rivières Lions of 1955-1960, the only earlier pro hockey team in the city — but this is an unrelated 2021 ECHL expansion franchise, not a continuation.',
+        "Won the Kelly Cup in just its fourth season (2024-25), beating the Toledo Walleye in the final and ending the Florida Everblades' run of three straight championships along the way.",
+        'Bought by Spire Sports + Entertainment in April 2024, whose ECHL portfolio also includes the Rapid City Rush and Greenville Swamp Rabbits.',
+      ],
+      currentInfo: {
+        owner: 'Spire Sports + Entertainment (Jeff Dickerson)',
+        headCoach: 'Ron Choules',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+    WOR: {
+      founded: {
+        year: 2017,
+      },
+      arena: {
+        name: 'DCU Center',
+        city: 'Worcester, MA',
+        capacity: 12135,
+        opened: 1982,
+        formerNames: [
+          { name: 'Centrum in Worcester', years: '1982–1997' },
+          { name: "Worcester's Centrum Centre", years: '1997–2004' },
+        ],
+        photo: {
+          source: 'wikimedia',
+          url: 'https://commons.wikimedia.org/wiki/Special:FilePath/DCU_Center_-_Worcester,_MA_-_DSC05773.jpg',
+          attribution: 'Daderot, CC0, via Wikimedia Commons',
+        },
+      },
+      championships: [],
+      retiredNumbers: [],
+      notableAlumni: [
+        'Colten Ellis', 'Tristan Lennox', 'Jakub Skarek', 'Arnaud Durandeau', 'Barry Almeida',
+      ],
+      records: [
+        { label: 'Most home wins, single season', value: 37, season: '2017-18' },
+      ],
+      affiliates: { ahl: 'SPR', nhl: 'STL' },
+      facts: [
+        "The ECHL's first franchise in Massachusetts, filling the void left when the AHL's Worcester Sharks relocated to San Jose in 2015.",
+        'Voluntarily suspended operations for the entire 2020-21 season due to the COVID-19 pandemic.',
+        'Switched NHL/AHL affiliations for 2026-27, moving from the New York Islanders/Bridgeport Islanders pairing (2017-2026) to the St. Louis Blues/Springfield Thunderbirds.',
+      ],
+      currentInfo: {
+        owner: 'Cliff Rucker (Worcester Pro Hockey, LLC)',
+        headCoach: 'Nick Tuzzolino',
+        lastVerified: '2026-09-01',
+      },
+    },
+
+
+  },
 };
 
 export function getTeamHistory(league, abbr) {

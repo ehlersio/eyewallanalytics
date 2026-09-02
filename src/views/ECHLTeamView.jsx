@@ -21,6 +21,8 @@ import { useSport } from '../utils/SportContext';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
 import TeamComparisonPopup from '../components/TeamComparisonPopup';
+import TeamHistorySections from '../components/TeamHistorySections';
+import { getTeamHistory } from '../utils/teamHistory';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 
@@ -154,12 +156,19 @@ const EMPTY_TITLE_CLASSES = 'empty-title text-[14px] font-semibold text-[color:v
 
 // TABS holds internal English state ids -- NOT display text, mirrors
 // AHLTeamView.jsx's same TAB_LABEL_KEYS pattern.
-const TABS = ['Overview', 'Stats', 'Splits', 'Trends'];
+// History tab only shows up for teams with data in teamHistory.js -- same
+// gating pattern as TeamView.jsx/PWHLTeamView.jsx/AHLTeamView.jsx.
+const ECHL_TEAM_HAS_HISTORY = !!getTeamHistory('echl', ECHL_TEAM_CONFIG?.abbr)
+
+const TABS = ['Overview', 'Stats', 'Splits', 'Trends',
+  ...(ECHL_TEAM_HAS_HISTORY ? ['History'] : []),
+];
 const TAB_LABEL_KEYS = {
   Overview: 'echlTeamView.tabs.overview',
   Stats:    'echlTeamView.tabs.stats',
   Splits:   'echlTeamView.tabs.splits',
   Trends:   'echlTeamView.tabs.trends',
+  History:  'teamView.tabs.history',
 }
 
 export default function ECHLTeamView() {
@@ -258,6 +267,7 @@ export default function ECHLTeamView() {
       {tab === 'Trends' && (
         <TrendsTab schedule={schedule} teamId={teamId} loading={scLoad} />
       )}
+      {tab === 'History' && <TeamHistorySections history={getTeamHistory('echl', abbr)} league="echl" />}
     </div>
   );
 }
