@@ -50,7 +50,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/coverage-v8": "^4.1.11",
     "cross-env": "^10.1.0",
-    "cypress": "^15.21.0",
+    "cypress": "^15.21.1",
     "cypress-multi-reporters": "^2.0.5",
     "cypress-visual-regression": "^6.0.0",
     "eslint": "^9.39.5",
