@@ -24,15 +24,19 @@ describe('NHL player comparison', () => {
     // settle before touching "vs Player" -- clicking while that's still
     // resolving raced Cypress's click against the resulting re-render.
     cy.contains('Goals', { timeout: 10000 }).should('exist')
-    // The radar (Recharts ResponsiveContainer) measures itself via
-    // ResizeObserver and re-renders once real dimensions land, shortly
-    // after "Goals" is already visible -- confirmed live that clicking
-    // "vs Player" while that resize re-render was still in flight could
-    // race Cypress's click against React swapping the button's DOM node.
-    // PWHL's header has no radar and never showed this flake, which is
-    // what pointed at Recharts specifically rather than a general fetch
-    // race.
-    cy.wait(500)
+    // PlayerPopup.jsx's showHeaderReflow flips true once percentiles
+    // resolve, at which point .pce-toggle (rendered inline pre-reflow)
+    // unmounts and remounts inside SkaterHeaderPanel's .pp-quickstats-col
+    // instead. A fixed cy.wait(500) here used to stand in for "reflow is
+    // probably done by now" -- confirmed live (2026-09) that a fixed delay
+    // is not reliable under CI's slower/more variable timing: it still
+    // let 3 different tests in this block intermittently click/type into
+    // the pre-reflow .pce-toggle right as it was being swapped out from
+    // under them (Cypress's own "page updated while this command was
+    // executing" error, or a plain "element never found"). Waiting on the
+    // actual post-reflow DOM location instead of guessing a duration
+    // eliminates the race rather than just narrowing its window.
+    cy.get('.pp-quickstats-col .pce-toggle', { timeout: 10000 }).should('exist')
   })
 
   it('shows a "vs Player" entry point distinct from the existing season-over-season Compare tab', () => {
@@ -159,6 +163,19 @@ describe('NHL goalie comparison', () => {
     cy.contains('.player-search-result', 'Igor Shesterkin', { timeout: 8000 }).click()
     cy.get('.player-popup', { timeout: 10000 }).should('exist')
     cy.contains(/GP|Record/i, { timeout: 10000 }).should('exist')
+    // Same async header-reflow race as the NHL skater describe block above
+    // and the PWHL describe block below -- PlayerPopup.jsx's
+    // showHeaderReflow flips true once goalieData.percentiles resolves, at
+    // which point .pce-toggle (rendered inline pre-reflow) unmounts and
+    // remounts inside GoalieHeaderPanel's .pp-quickstats-col instead. This
+    // block never had any wait for that reflow at all (missing entirely,
+    // not just using the fixed-delay approach the other two blocks used),
+    // and flaked identically (missing .pce-input/.pce-result) across 3
+    // separate unrelated PRs in one day before this was traced back to the
+    // exact same root cause. A fixed cy.wait(500), tried first, turned out
+    // not to be reliable either -- see the skater block's comment above for
+    // why this waits on the real post-reflow DOM location instead.
+    cy.get('.pp-quickstats-col .pce-toggle', { timeout: 10000 }).should('exist')
   })
 
   it('compares two goalies with their own Record/Performance/Advanced tabs, not the skater tab set', () => {
@@ -200,12 +217,11 @@ describe('PWHL player comparison', () => {
     // reflowing the header shortly after "Goals" is already visible --
     // clicking "vs Player" while that's still in flight can race Cypress's
     // click against React swapping the toggle button's DOM node, same as
-    // the Recharts case. Confirmed live (reproduced locally 1-in-3 runs
-    // before this fix) after this test flaked 3 times in CI across 3
-    // separate unrelated PRs -- the original "PWHL never showed this flake"
-    // note above was right that it isn't Recharts-specific, but wrong that
-    // PWHL has no equivalent async reflow at all.
-    cy.wait(500)
+    // the Recharts case. A fixed cy.wait(500) here, tried first, wasn't
+    // reliable either -- see the NHL skater block's comment above for why
+    // this waits on the real post-reflow DOM location (.pp-quickstats-col)
+    // instead of guessing a duration.
+    cy.get('.pp-quickstats-col .pce-toggle', { timeout: 10000 }).should('exist')
   })
 
   it('opens a same-league (PWHL) scoped search panel', () => {
@@ -267,6 +283,14 @@ describe('PWHL goalie comparison', () => {
     cy.contains('.player-card', 'Frankel', { timeout: 8000 }).click()
     cy.get('.player-popup', { timeout: 10000 }).should('exist')
     cy.contains('GP', { timeout: 10000 }).should('exist')
+    // Same header-reflow race as the other three describe blocks in this
+    // file (see the NHL skater block's comment for the full story) -- this
+    // fourth block was missed entirely when the other three were fixed,
+    // since it's a separate describe block with its own beforeEach rather
+    // than sharing one with "PWHL player comparison" above. Found live
+    // when this exact test failed with the exact same signature
+    // (.pce-input never found) right after the other three were fixed.
+    cy.get('.pp-quickstats-col .pce-toggle', { timeout: 10000 }).should('exist')
   })
 
   // Regression: PWHL goalie-vs-goalie was hard-blocked ("percentile
