@@ -159,6 +159,16 @@ describe('NHL goalie comparison', () => {
     cy.contains('.player-search-result', 'Igor Shesterkin', { timeout: 8000 }).click()
     cy.get('.player-popup', { timeout: 10000 }).should('exist')
     cy.contains(/GP|Record/i, { timeout: 10000 }).should('exist')
+    // Same async header-reflow race as the NHL skater describe block above
+    // and the PWHL describe block below (see its own comment for the full
+    // story) -- PlayerPopup.jsx's showHeaderReflow flips true once
+    // goalieData.percentiles resolves, at which point .pce-toggle
+    // (rendered inline pre-reflow) unmounts and remounts inside
+    // GoalieHeaderPanel instead. This block never got the same cy.wait(500)
+    // fix applied to the other two, and flaked identically (missing
+    // .pce-input/.pce-result) across 3 separate unrelated PRs in one day
+    // before this was traced back to the exact same root cause.
+    cy.wait(500)
   })
 
   it('compares two goalies with their own Record/Performance/Advanced tabs, not the skater tab set', () => {
