@@ -1,17 +1,45 @@
 // components/PlayerSearch.jsx
-// Global player search (NHL + PWHL) — lives in Topbar so it's reachable
-// from any view. Fuzzy-matches via playerSearch.js's Fuse.js index, opens
-// the sport-appropriate popup on selection using each popup's documented
-// minimum shape (see PlayerPopup.jsx / PWHLPlayerPopup.jsx headers) — both
-// self-fetch the rest, so this never needs a second network round trip
-// before opening.
-import { useState, useRef, useEffect } from 'react';
+// Global player search (NHL + PWHL + AHL + ECHL) — lives in Topbar so it's
+// reachable from any view. Fuzzy-matches via playerSearch.js's Fuse.js
+// index, opens the sport-appropriate popup on selection using each popup's
+// documented minimum shape (see PlayerPopup.jsx / PWHLPlayerPopup.jsx /
+// AHLPlayerPopup.jsx / ECHLPlayerPopup.jsx headers) — all four self-fetch
+// the rest, so this never needs a second network round trip before
+// opening.
+//
+// AHL/ECHL added 2026-09 (a user asked whether search covered those
+// leagues -- it didn't, silently returning zero results with no
+// indication it was unsupported rather than "player not found"; fixed on
+// the backend in the same pass, see eyewall-poller's players-search-index
+// route). AHLPlayerPopup/ECHLPlayerPopup are lazy-loaded rather than
+// statically imported like the NHL/PWHL ones above -- this file lives in
+// the always-loaded Topbar, so a static import here would pull both
+// popups into the main bundle for every user, including NHL/PWHL-only
+// ones who will never see them.
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { searchPlayers } from '../utils/playerSearch';
 import { nhlSeasonLabel } from '../utils/seasonComparison';
 import PlayerPopup from './PlayerPopup';
 import PWHLPlayerPopup from './PWHLPlayerPopup';
 import TeamLogo from './TeamLogo';
+import { AHL_SEASONS, AHL_CURRENT_SEASON } from '../utils/ahlConfig';
+import { ECHL_SEASONS, ECHL_CURRENT_SEASON } from '../utils/echlConfig';
+
+const AHLPlayerPopup  = lazy(() => import('./AHLPlayerPopup'));
+const ECHLPlayerPopup = lazy(() => import('./ECHLPlayerPopup'));
+
+// AHLPlayerPopup/ECHLPlayerPopup have no built-in seasonLabel default the
+// way PWHLPlayerPopup does (its own SEASON_LABEL) -- computed the same way
+// AHLPlayersView.jsx/ECHLPlayersView.jsx already do, so a player opened
+// from global search shows the same season label as one opened from the
+// Players tab, not a blank one.
+function ahlSeasonLabel() {
+  return AHL_SEASONS.find(s => s.id === AHL_CURRENT_SEASON)?.label || String(AHL_CURRENT_SEASON);
+}
+function echlSeasonLabel() {
+  return ECHL_SEASONS.find(s => s.id === ECHL_CURRENT_SEASON)?.label || String(ECHL_CURRENT_SEASON);
+}
 
 // Tailwind migration (Session 95, Phase 1) -- previously PlayerSearch.css.
 // A few original class names are kept as literal marker strings alongside
@@ -38,13 +66,15 @@ const PSR_SPORT_CLASSES = 'rounded-[4px] py-[1px] px-[5px] font-bold tracking-[0
 const PSR_SPORT_COLOR = {
   nhl: 'bg-[var(--red-dim)] text-[color:var(--red-bright)]',
   pwhl: 'bg-[var(--blue-dim)] text-[color:var(--blue-bright)]',
+  ahl: 'bg-[var(--bg3)] text-[color:var(--amber)]',
+  echl: 'bg-[var(--bg3)] text-[color:var(--purple)]',
 };
 
 const DEBOUNCE_MS = 250;
 
 function toPopupSelection(p) {
-  if (p.sport === 'pwhl') {
-    return { sport: 'pwhl', player: { player_id: p.id, position: p.position } };
+  if (p.sport === 'pwhl' || p.sport === 'ahl' || p.sport === 'echl') {
+    return { sport: p.sport, player: { player_id: p.id, position: p.position } };
   }
   const [firstName, ...rest] = p.name.split(' ');
   return {
@@ -196,6 +226,24 @@ export default function PlayerSearch() {
           player={selected.player}
           onClose={() => setSelected(null)}
         />
+      )}
+      {selected?.sport === 'ahl' && (
+        <Suspense fallback={null}>
+          <AHLPlayerPopup
+            player={selected.player}
+            seasonLabel={ahlSeasonLabel()}
+            onClose={() => setSelected(null)}
+          />
+        </Suspense>
+      )}
+      {selected?.sport === 'echl' && (
+        <Suspense fallback={null}>
+          <ECHLPlayerPopup
+            player={selected.player}
+            seasonLabel={echlSeasonLabel()}
+            onClose={() => setSelected(null)}
+          />
+        </Suspense>
       )}
     </div>
   );

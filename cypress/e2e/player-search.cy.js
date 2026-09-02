@@ -1,8 +1,12 @@
 // cypress/e2e/player-search.cy.js
-// Global player search (Session 60) — Fuse.js fuzzy match across NHL +
-// PWHL against the Worker's GET /players-search-index, opening the
-// sport-appropriate popup (both self-fetch by id, so no pre-merge is
-// needed here — see PlayerSearch.jsx).
+// Global player search (Session 60; AHL/ECHL added 2026-09) — Fuse.js
+// fuzzy match across NHL + PWHL + AHL + ECHL against the Worker's
+// GET /players-search-index, opening the sport-appropriate popup (all
+// four self-fetch by id, so no pre-merge is needed here — see
+// PlayerSearch.jsx). AHL/ECHL result fixtures (Gendron/Amesbury) are real
+// live players, same "no mocking" convention as the NHL/PWHL tests below
+// — confirmed live via the /players-search-index response while building
+// this coverage, same as McDavid/Poulin were originally.
 
 const WORKER_URL_PLAYER_SEARCH = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
 
@@ -129,6 +133,48 @@ describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () =>
       cy.get('.popup-backdrop', { timeout: 10000 }).should('exist')
       cy.contains('Poulin').should('exist')
       cy.contains('Goals', { timeout: 8000 }).should('exist')
+      cy.get('.pp-close').click()
+      cy.get('.popup-backdrop').should('not.exist')
+    })
+  })
+
+  describe('AHL result correctness', () => {
+    it('finds a real AHL player with correct team/position/sport badge', () => {
+      cy.get('.player-search-toggle').click()
+      cy.get('.player-search-input').type('gendron')
+      cy.contains('.player-search-result', 'Alexis Gendron', { timeout: 8000 }).within(() => {
+        cy.contains('PRO').should('exist')
+        cy.contains('AHL').should('exist')
+      })
+    })
+
+    it('opens the AHL player popup on selection, self-fetched stats included', () => {
+      cy.get('.player-search-toggle').click()
+      cy.get('.player-search-input').type('gendron')
+      cy.contains('.player-search-result', 'Alexis Gendron', { timeout: 8000 }).click()
+      cy.get('.popup-backdrop', { timeout: 10000 }).should('exist')
+      cy.contains('Gendron').should('exist')
+      cy.get('.pp-close').click()
+      cy.get('.popup-backdrop').should('not.exist')
+    })
+  })
+
+  describe('ECHL result correctness', () => {
+    it('finds a real ECHL player with correct team/position/sport badge', () => {
+      cy.get('.player-search-toggle').click()
+      cy.get('.player-search-input').type('amesbury')
+      cy.contains('.player-search-result', 'Daniel Amesbury', { timeout: 8000 }).within(() => {
+        cy.contains('ADK').should('exist')
+        cy.contains('ECHL').should('exist')
+      })
+    })
+
+    it('opens the ECHL player popup on selection, self-fetched stats included', () => {
+      cy.get('.player-search-toggle').click()
+      cy.get('.player-search-input').type('amesbury')
+      cy.contains('.player-search-result', 'Daniel Amesbury', { timeout: 8000 }).click()
+      cy.get('.popup-backdrop', { timeout: 10000 }).should('exist')
+      cy.contains('Amesbury').should('exist')
       cy.get('.pp-close').click()
       cy.get('.popup-backdrop').should('not.exist')
     })
