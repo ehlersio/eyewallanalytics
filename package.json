@@ -34,7 +34,7 @@
     "html-to-image": "^1.11.13",
     "i18next": "^26.4.0",
     "lucide-react": "^1.35.0",
-    "posthog-js": "^1.418.7",
+    "posthog-js": "^1.422.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hockey-rink": "^0.1.1",
