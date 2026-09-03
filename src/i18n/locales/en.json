@@ -94,11 +94,19 @@
   },
   "league": {
     "tabs": {
+      "scoreboard": "Scoreboard",
       "standings": "Standings",
       "bracket": "Playoff bracket",
       "leaders": "Leaders",
       "rankings": "Power rankings",
       "draft": "Draft"
+    },
+    "scoreboard": {
+      "empty": "No games today",
+      "error": "Couldn't load today's games.",
+      "statusLive": "LIVE",
+      "statusFinal": "FINAL",
+      "statusPre": "TODAY"
     },
     "leaders": {
       "titlePoints": "Points",

@@ -69,25 +69,25 @@ canes-analytics-starter/
 │   │   ├── ScheduleView.jsx            # NHL schedule — Tailwind (Phase 6, all 5 sub-PRs) — ScheduleView.css fully deleted
 │   │   ├── TeamView.jsx                # NHL 6-tab team analytics (Advanced tab: xGF% sparkline) — Tailwind (Phase 4, sub-PR 3), no .css file
 │   │   ├── PlayersView.jsx/.css        # NHL players
-│   │   ├── LeagueView.jsx              # NHL 5-tab league page — Tailwind (Phase 4, sub-PRs 1-4), no .css file
+│   │   ├── LeagueView.jsx              # NHL 6-tab league page (Scoreboard added, session102) — Tailwind (Phase 4, sub-PRs 1-4), no .css file
 │   │   ├── NewsView.jsx                # NHL news feed + News/Milestones/Trivia tab toggle (Trivia added Session 92) — Tailwind (Phase 4, sub-PR 4), no .css file
 │   │   ├── PWHLShotMapView.jsx         # PWHL shot map + PBP metrics — season/game history + Regular Season/Playoffs toggle (Session 77, new capability, not just NHL parity)
 │   │   ├── PWHLScheduleView.jsx        # PWHL schedule + calendar + playoffs. Auto-records prediction outcomes for completed games via `recordPWHLOutcome()` (Session 100), mirroring NHL `ScheduleView.jsx`'s own effect
 │   │   ├── PWHLTeamView.jsx            # PWHL 5-tab team analytics
 │   │   ├── PWHLPlayersView.jsx         # PWHL roster + stats + player popup
-│   │   ├── PWHLLeagueView.jsx          # PWHL 5-tab league page
+│   │   ├── PWHLLeagueView.jsx          # PWHL 6-tab league page (Scoreboard added, session102)
 │   │   ├── PWHLNewsView.jsx            # PWHL news feed + News/Milestones/Trivia/Transactions tab toggle
 │   │   ├── AHLShotMapView.jsx          # AHL shot map — deliberately leaner than PWHLShotMapView.jsx: season-aggregate rink + PP/PK summary only, no per-game history browser, no Corsi/Fenwick/PDO (no `blocked_shot` event type exists in AHL's HockeyTech feed at all). Live-tracking layer (score chip, event popups, dev-only debug panel) added in AHL/PWHL parity Phase 6
 │   │   ├── AHLScheduleView.jsx         # AHL schedule + calendar + game box/preview popups + predictions (parity Phase 3). No separate Regular Season/Playoffs tab — `AHL_SEASONS` lists "2026 Playoffs" as its own selectable season tab instead; no round-based bracket view (Calder Cup's up-to-4-round format was never ported/verified against PWHL's fixed-2-round bracket logic)
 │   │   ├── AHLTeamView.jsx             # AHL 4-tab team analytics (Overview/Stats/Splits/Trends) — Advanced (Corsi/Fenwick/PDO) and Salaries tabs dropped, both real data walls not scope choices. "Compare Seasons" (parity Phase 4) opens `TeamComparisonPopup.jsx`'s `'ahl'` branch
 │   │   ├── AHLPlayersView.jsx          # AHL roster (photo grid) + sortable stats table + player popup (parity Phase 2). Skater columns drop `shot_pct`/`gw_goals` — confirmed absent from AHL's HockeyTech feed entirely
-│   │   ├── AHLLeagueView.jsx           # AHL standings, grouped by AHL's real Atlantic/North/Central/Pacific division structure (unlike PWHL's flat table) + Leaders tab — no Bracket or Power Rankings tabs (infrastructure never built for AHL)
+│   │   ├── AHLLeagueView.jsx           # AHL Scoreboard + standings, grouped by AHL's real Atlantic/North/Central/Pacific division structure (unlike PWHL's flat table) + Leaders tab — no Bracket or Power Rankings tabs (infrastructure never built for AHL)
 │   │   ├── AHLNewsView.jsx             # AHL news feed, News tab only — no Milestones/Trivia/Transactions toggle; genuinely no pipeline data source for any of the three (not a missing branch in a generic component)
 │   │   ├── ECHLShotMapView.jsx         # ECHL shot map — mirrors AHLShotMapView.jsx's exact shape (season-aggregate rink + PP/PK summary, same live-tracking layer added in ECHL's own Phase 6 equivalent)
 │   │   ├── ECHLScheduleView.jsx        # ECHL schedule + calendar + game box/preview popups + predictions — port of AHLScheduleView.jsx, same Reg/Playoffs and bracket scope cuts
 │   │   ├── ECHLTeamView.jsx            # ECHL 4-tab team analytics — mirrors AHLTeamView.jsx exactly, same Advanced/Salaries data walls
 │   │   ├── ECHLPlayersView.jsx         # ECHL roster + stats + player popup — mirrors AHLPlayersView.jsx (same `shot_pct`/`gw_goals` column drop)
-│   │   ├── ECHLLeagueView.jsx          # ECHL standings, grouped by ECHL's real North/South/Central/Mountain divisions (different alignment than AHL's) + Leaders — mirrors AHLLeagueView.jsx
+│   │   ├── ECHLLeagueView.jsx          # ECHL Scoreboard + standings, grouped by ECHL's real North/South/Central/Mountain divisions (different alignment than AHL's) + Leaders — mirrors AHLLeagueView.jsx
 │   │   ├── ECHLNewsView.jsx            # ECHL news feed, News tab only — mirrors AHLNewsView.jsx; only 2 real RSS sources exist for ECHL vs. AHL's 3 (echl.com itself has no RSS feed at all — Laravel/Livewire rebuild, same reason its HockeyTech key isn't network-tab-discoverable either)
 │   │   ├── DevReplayView.jsx/.css      # Dev-only live game replay (/dev)
 │   │   └── DevDraftView.jsx            # Dev-only draft simulator (/dev/draft)
@@ -117,6 +117,7 @@ canes-analytics-starter/
 │   │   ├── TransactionsFeed.jsx        # PWHL-only league-wide signings/moves feed, fourth tab on PWHLNewsView.jsx alongside News/Milestones/Trivia. Live proxy of HockeyTech's view=transactions (GET /pwhl/transactions) — not persisted to Supabase. Same card-reuse pattern as MilestonesFeed.jsx but non-tappable (transaction rows carry no player_id, just a display name) and no team filter
 │   │   ├── PlayerSearch.jsx/.css       # Global NHL+PWHL+AHL+ECHL player search (Topbar) — Fuse.js fuzzy match against the Worker's flat player index; AHL/ECHL popups are lazy-loaded (this file lives in the always-loaded Topbar, so a static import would bloat the main bundle for NHL/PWHL-only users)
 │   │   ├── TeamLogo.jsx/.css           # NHL + PWHL team logo renderer
+│   │   ├── Scoreboard.jsx              # League page's Scoreboard tab (session102) — shared across all 4 leagues, same normalized shape from /nhl/today, /pwhl/today, /ahl/today, /echl/today. Mirrors TeamLogo.jsx's cross-sport design (one component, a `sport` prop resolves team lookup + logo per league)
 │   │   ├── EyeWallLogo.jsx             # Theme-aware EyeWall wordmark (Session 100) — renders both eyewall-logo.svg (bright) and eyewall-logo-light.svg (contrast-darkened) stacked, toggled purely via CSS on [data-theme] (index.css), not a JS getTheme() check, so it reacts instantly to a live theme toggle. Only for logo placements on the app's own themed background (TeamPicker.jsx, AboutPopup.jsx) — the fixed-dark share-canvas components render /eyewall-logo.svg directly instead, since their canvas bg never changes with app theme
 │   │   ├── CalendarView.jsx            # NHL calendar month view
 │   │   ├── PWHLCalendarView.jsx        # PWHL calendar month view
@@ -197,8 +198,8 @@ canes-analytics-starter/
 │   │   ├── pwhl-dev.cy.js              # PWHL dev game replay scrubber
 │   │   ├── team.cy.js                  # NHL team (4 teams, all 6 tabs)
 │   │   ├── pwhl-team.cy.js             # PWHL team (4 established teams, all 5 tabs, full features + 1 expansion team empty-state)
-│   │   ├── league.cy.js                # NHL league (all 5 tabs)
-│   │   ├── pwhl-league.cy.js           # PWHL league (all 5 tabs; standings/leaders scoped to established teams — see Known gaps)
+│   │   ├── league.cy.js                # NHL league (all 6 tabs, incl. Scoreboard)
+│   │   ├── pwhl-league.cy.js           # PWHL league (all 6 tabs, incl. Scoreboard; standings/leaders scoped to established teams — see Known gaps)
 │   │   ├── draft.cy.js                 # NHL draft board
 │   │   ├── TeamPicker.cy.js            # Sport + team picker — all 12 PWHL teams selectable with real colors
 │   │   ├── theme.cy.js                 # Light/dark mode
@@ -413,7 +414,7 @@ All existing NHL features unchanged — see original documentation. Key features
 - Live shot map with momentum, insights, PP/PK drill-downs
 - Period summaries with AI narrative, goals carousel, share export
 - 6-tab team page (Overview, Advanced, Splits, Trends, Cap, Picks)
-- League page (Standings, Bracket, Leaders, Power Rankings, Draft)
+- League page (Scoreboard, Standings, Bracket, Leaders, Power Rankings, Draft)
 - Player analytics (WAR, RAPM, GSAX, heat maps)
 - Players page: Roster / Stats / Prospects tabs, historical-season picker on the Roster tab (`GET /v1/roster/{team}/{season}`) alongside the live current roster
 - Push notifications (goal, game start, penalty, win)
@@ -434,7 +435,8 @@ All existing NHL features unchanged — see original documentation. Key features
 
 **Players Page** — Photo grid roster (Forwards / Defencemen / Goalies), season picker, sortable stats tables. Player popup with Stats, Heat Map (from `pwhl_shot_events`), and Scout (AI on-demand) tabs.
 
-**League Page (5 tabs):**
+**League Page (6 tabs):**
+- **Scoreboard** — Every game scheduled today (Eastern time), pre/live/final status, via the shared `Scoreboard.jsx` component (also used by NHL/AHL/ECHL). Ignores the season picker — "today" only ever means the live current season.
 - **Standings** — W/OTW/OTL/L columns, PTS, Pt%, GF, GA, DIFF, L10 dots, STRK. 3-2-1-0 points note. Sortable.
 - **Playoff Bracket** — Semifinals + Walter Cup Final, best-of-5 (3-win pips), series modal with game-by-game results and dates
 - **Leaders** — Points, Goals, GAA, SV% top 10. Click → player popup
@@ -455,7 +457,7 @@ Brought to full 6-phase feature parity with PWHL — see [AHL & ECHL Frontend Bu
 
 **Players Page** — Photo grid roster + sortable stats table (drops `shot_pct`/`gw_goals`, absent from the feed). Player popup (Phase 2) with Stats + Heat Map tabs only — no percentile radar, Scout, or Compare tab (no percentile pipeline for AHL yet), and no goalie heat map (AHL's PBP goal events carry no `goalie_id`).
 
-**League Page (2 tabs)** — Standings (grouped by real Atlantic/North/Central/Pacific divisions, 3-column OTL split into ot_losses + shootout_losses) + Leaders (clickable into the player popup). No Bracket or Power Rankings tabs.
+**League Page (3 tabs)** — Scoreboard (shared `Scoreboard.jsx`, same as NHL/PWHL/ECHL) + Standings (grouped by real Atlantic/North/Central/Pacific divisions, 3-column OTL split into ot_losses + shootout_losses) + Leaders (clickable into the player popup). No Bracket or Power Rankings tabs.
 
 **News** — Single News tab, no Milestones/Trivia/Transactions toggle (no pipeline source for any of the three). 3 real RSS sources: `theahl.com/feed` (the only one of the four leagues with an official-league-site RSS feed at all), `thehockeywriters.com`'s AHL category feed, and OurSportsCentral's AHL press releases (league id 17 on that site).
 
@@ -473,7 +475,7 @@ Same HockeyTech/LeagueStat vendor as AHL/PWHL. Started as a foundation + basic-d
 
 **Players Page** — Same roster/stats/popup shape as AHL's `AHLPlayersView`/`AHLPlayerPopup`, including the same dropped `shot_pct`/`gw_goals` columns and the same no-goalie-heat-map gap (confirmed live that ECHL's goal events also carry `goalie_id: null`).
 
-**League Page (2 tabs)** — Standings grouped by ECHL's real North/South/Central/Mountain divisions (a different division layout than AHL's) + Leaders.
+**League Page (3 tabs)** — Scoreboard (shared `Scoreboard.jsx`) + Standings grouped by ECHL's real North/South/Central/Mountain divisions (a different division layout than AHL's) + Leaders.
 
 **News** — Single News tab. Only 2 real sources, not AHL's 3 — `echl.com` has no RSS feed at all (confirmed live: `/feed` and `/rss` both 404, the same Laravel/Livewire site rebuild that also means its HockeyTech API key isn't network-tab-discoverable the way AHL's/PWHL's are). The two real sources: `thehockeywriters.com`'s ECHL category feed, and OurSportsCentral's ECHL press releases — league id **18**, confirmed live rather than assumed to be sequential with AHL's id 17.
 
