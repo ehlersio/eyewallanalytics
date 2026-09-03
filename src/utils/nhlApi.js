@@ -438,6 +438,19 @@ async function _getStandings() {
   return [];
 }
 
+/**
+ * Today's NHL games, with a derived pre/live/final status. Same normalized
+ * shape as fetchPWHLToday/fetchAHLToday/fetchECHLToday (pwhlApi.js/ahlApi.js/
+ * echlApi.js): [{ gameId, homeTeamCode, awayTeamCode, homeScore, awayScore,
+ * status }]. No client-side cache wrapper -- the Worker's own /nhl/today
+ * route already sits on a 60s KV TTL, and the Scoreboard tab polls this
+ * directly, so an extra cache layer here would just serve stale data
+ * between poll ticks instead of a fresh fetch.
+ */
+export async function getTodaysGames() {
+  return (await workerFetch('/nhl/today')) || [];
+}
+
 // Get team stats, shaped consistently for our components
 // gameType: 2 = regular season stats, 3 = playoff stats
 export async function getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {

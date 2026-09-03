@@ -94,11 +94,19 @@
   },
   "league": {
     "tabs": {
+      "scoreboard": "Pointage",
       "standings": "Classement",
       "bracket": "Tableau éliminatoire",
       "leaders": "Meneurs",
       "rankings": "Classement de puissance",
       "draft": "Repêchage"
+    },
+    "scoreboard": {
+      "empty": "Aucun match aujourd'hui",
+      "error": "Impossible de charger les matchs d'aujourd'hui.",
+      "statusLive": "EN DIRECT",
+      "statusFinal": "FINAL",
+      "statusPre": "AUJOURD'HUI"
     },
     "leaders": {
       "titlePoints": "Points",

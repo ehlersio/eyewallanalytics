@@ -2,9 +2,10 @@
 // Mirrors NHL LeagueView — Standings · Bracket · Leaders · Power Rankings
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFetch } from '../hooks/useFetch';
+import { useFetch, usePoll } from '../hooks/useFetch';
+import Scoreboard from '../components/Scoreboard';
 import {
-  fetchPWHLStandings, fetchPWHLLeaguePlayers,
+  fetchPWHLStandings, fetchPWHLLeaguePlayers, fetchPWHLToday,
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
 import {
@@ -316,6 +317,7 @@ function BktSeriesCard({ series, onClick, myTeamId, myColor }) {
 // picking one casing and breaking the other file's tests -- not worth it
 // for a translate-only pass.
 const TABS = [
+  { id: 'scoreboard', labelKey: 'league.tabs.scoreboard' },
   { id: 'standings', labelKey: 'league.tabs.standings' },
   { id: 'bracket',   labelKey: 'pwhlLeagueView.tabs.bracket'   },
   { id: 'leaders',   labelKey: 'league.tabs.leaders'   },
@@ -348,6 +350,12 @@ export default function PWHLLeagueView() {
     window.addEventListener('eyewall:pwhl-season-updated', handleSeasonUpdate);
     return () => window.removeEventListener('eyewall:pwhl-season-updated', handleSeasonUpdate);
   }, []);
+
+  // Polled (30s) only while the Scoreboard tab is active -- see LeagueView.jsx
+  // (NHL)'s identical guard for why. Deliberately ignores the season picker
+  // above -- "today" only ever means the live current season.
+  const { data: todaysGames, loading: todaysGamesLoading, error: todaysGamesError }
+    = usePoll(() => activeTab === 'scoreboard' ? fetchPWHLToday() : Promise.resolve(null), 30000, [activeTab]);
 
   const { data: standings, loading: standLoading } = useFetch(
     () => fetchPWHLStandings(season), [season]
@@ -385,6 +393,9 @@ export default function PWHLLeagueView() {
       </nav>
 
       <div className={LEAGUE_CONTENT_CLASSES}>
+        {activeTab === 'scoreboard' && (
+          <Scoreboard sport="pwhl" games={todaysGames} loading={todaysGamesLoading} error={todaysGamesError} />
+        )}
         {activeTab === 'standings' && (
           <StandingsPanel
             standings={standings || []}

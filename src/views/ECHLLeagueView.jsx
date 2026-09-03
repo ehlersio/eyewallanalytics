@@ -6,11 +6,12 @@
 // ECHLPlayerPopup (ECHL parity pass, Phase 2 equivalent).
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFetch } from '../hooks/useFetch';
-import { fetchECHLStandings, fetchECHLLeaguePlayers, ECHL_TEAM_ID } from '../utils/echlApi';
+import { useFetch, usePoll } from '../hooks/useFetch';
+import { fetchECHLStandings, fetchECHLLeaguePlayers, fetchECHLToday, ECHL_TEAM_ID } from '../utils/echlApi';
 import { ECHL_CURRENT_SEASON, ECHL_SEASONS, getECHLTeamById } from '../utils/echlConfig';
 import TeamLogo from '../components/TeamLogo';
 import ECHLPlayerPopup from '../components/ECHLPlayerPopup';
+import Scoreboard from '../components/Scoreboard';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 
 const LEAGUE_VIEW_CLASSES = 'league-view flex flex-col pt-[14px] px-[14px]';
@@ -74,14 +75,22 @@ export default function ECHLLeagueView() {
 
   const { data: standings, loading: standLoading } = useFetch(() => fetchECHLStandings(season), [season]);
   const { data: leagueData, loading: leadersLoading } = useFetch(() => fetchECHLLeaguePlayers(season), [season]);
+  // Polled (30s) only while the Scoreboard tab is active -- see NHL
+  // LeagueView.jsx's identical guard for why.
+  const { data: todaysGames, loading: todaysGamesLoading, error: todaysGamesError }
+    = usePoll(() => tab === 'scoreboard' ? fetchECHLToday() : Promise.resolve(null), 30000, [tab]);
 
   return (
     <div className={LEAGUE_VIEW_CLASSES}>
       <div className={LEAGUE_TABS_CLASSES}>
+        <button className={leagueTabClasses(tab === 'scoreboard')} onClick={() => setTab('scoreboard')}>{t('league.tabs.scoreboard')}</button>
         <button className={leagueTabClasses(tab === 'standings')} onClick={() => setTab('standings')}>{t('league.tabs.standings')}</button>
         <button className={leagueTabClasses(tab === 'leaders')} onClick={() => setTab('leaders')}>{t('league.tabs.leaders')}</button>
       </div>
       <div className={LEAGUE_CONTENT_CLASSES}>
+        {tab === 'scoreboard' && (
+          <Scoreboard sport="echl" games={todaysGames} loading={todaysGamesLoading} error={todaysGamesError} />
+        )}
         {tab === 'standings' && (
           <StandingsPanel standings={standings || []} loading={standLoading} myTeamId={ECHL_TEAM_ID} />
         )}

@@ -31,6 +31,10 @@ describe('PWHL League view', () => {
     it('Draft tab exists', () => {
       cy.contains('Draft').should('exist')
     })
+
+    it('Scoreboard tab exists and is first', () => {
+      cy.get('.league-tab').eq(0).should('contain', 'Scoreboard')
+    })
   })
 
   describe('Standings tab', () => {

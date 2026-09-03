@@ -105,16 +105,17 @@ describe('League page — CAR', () => {
 
   // ── Tab bar ──────────────────────────────────────────────────
 
-  it('renders all five tab buttons', () => {
-    cy.get('.league-tab').should('have.length', 5)
-    cy.get('.league-tab').eq(0).should('contain', 'Standings')
-    cy.get('.league-tab').eq(1).should('contain', 'Playoff bracket')
-    cy.get('.league-tab').eq(2).should('contain', 'Leaders')
-    cy.get('.league-tab').eq(3).should('contain', 'Power rankings')
+  it('renders all six tab buttons, Scoreboard first', () => {
+    cy.get('.league-tab').should('have.length', 6)
+    cy.get('.league-tab').eq(0).should('contain', 'Scoreboard')
+    cy.get('.league-tab').eq(1).should('contain', 'Standings')
+    cy.get('.league-tab').eq(2).should('contain', 'Playoff bracket')
+    cy.get('.league-tab').eq(3).should('contain', 'Leaders')
+    cy.get('.league-tab').eq(4).should('contain', 'Power rankings')
   })
 
   it('Standings tab is active by default', () => {
-    cy.get('.league-tab').eq(0).should('have.class', 'league-tab--active')
+    cy.get('.league-tab').eq(1).should('have.class', 'league-tab--active')
   })
 
   it('clicking Leaders makes it the active tab', () => {

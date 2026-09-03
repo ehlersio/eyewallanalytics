@@ -4,8 +4,9 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { capture } from '../utils/analytics';
-import { useFetch } from '../hooks/useFetch';
+import { useFetch, usePoll } from '../hooks/useFetch';
 import Sparkline from '../components/Sparkline';
+import Scoreboard from '../components/Scoreboard';
 import {
   getStandings,
   getScoringLeaders,
@@ -14,6 +15,7 @@ import {
   getPlayoffBracket,
   getPlayoffSeries,
   getPlayoffSeriesGames,
+  getTodaysGames,
   TEAM_CONFIG,
 } from '../utils/nhlApi';
 import { getTeamSeasonData, getPowerRankingsNarrative, getPowerRankingsHistory } from '../utils/supabaseClient';
@@ -1884,11 +1886,12 @@ function ScrollTopButton() {
 // ─── LeagueView ──────────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: 'standings', labelKey: 'league.tabs.standings' },
-  { id: 'bracket',   labelKey: 'league.tabs.bracket' },
-  { id: 'leaders',   labelKey: 'league.tabs.leaders' },
-  { id: 'rankings',  labelKey: 'league.tabs.rankings' },
-  { id: 'draft',     labelKey: 'league.tabs.draft' }
+  { id: 'scoreboard', labelKey: 'league.tabs.scoreboard' },
+  { id: 'standings',  labelKey: 'league.tabs.standings' },
+  { id: 'bracket',    labelKey: 'league.tabs.bracket' },
+  { id: 'leaders',    labelKey: 'league.tabs.leaders' },
+  { id: 'rankings',   labelKey: 'league.tabs.rankings' },
+  { id: 'draft',      labelKey: 'league.tabs.draft' }
 ];
 
 export default function LeagueView() {
@@ -1900,6 +1903,14 @@ export default function LeagueView() {
     setActiveTab(tabId);
     capture('league_tab_viewed', { tab: tabId });
   }, []);
+
+  // Polled (30s) only while the Scoreboard tab is active -- matches the
+  // Worker's own 60s KV TTL on /nhl/today closely enough that a viewer
+  // sitting on the tab during a live game sees scores move without a
+  // manual refresh. Off-tab ticks resolve a trivial Promise.resolve(null),
+  // same guard shape as xgData/prNarrative below.
+  const { data: todaysGames, loading: todaysGamesLoading, error: todaysGamesError }
+    = usePoll(() => activeTab === 'scoreboard' ? getTodaysGames() : Promise.resolve(null), 30000, [activeTab]);
 
   const { data: standings, loading: standingsLoading, error: standingsError }
     = useFetch(getStandings, []);
@@ -1963,6 +1974,10 @@ export default function LeagueView() {
       </nav>
 
       <div className={LEAGUE_CONTENT_CLASSES}>
+        {activeTab === 'scoreboard' && (
+          <Scoreboard sport="nhl" games={todaysGames} loading={todaysGamesLoading} error={todaysGamesError} />
+        )}
+
         {activeTab === 'standings' && (
           <>
             {standingsLoading && <LoadingRows />}

@@ -135,6 +135,15 @@ export const ALL_TEAMS = [
 
 const DEFAULT_TEAM = ALL_TEAMS.find(t => t.abbr === 'CAR');
 
+// Abbr -> team config lookup, independent of the user's own selected team
+// (getTeamConfig() below reads localStorage's single active-team pick).
+// Mirrors getPWHLTeamConfig/getAHLTeamConfig/getECHLTeamConfig's shape --
+// added for the Scoreboard component, which renders every team playing
+// today, not just the user's own.
+export function getTeamByAbbr(abbr) {
+  return ALL_TEAMS.find(t => t.abbr === abbr) ?? null;
+}
+
 export function getTeamConfig() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
