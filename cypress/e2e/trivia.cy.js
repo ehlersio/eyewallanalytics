@@ -4,7 +4,7 @@
 // deterministic, doesn't depend on live season/pipeline state (NHL
 // genuinely has zero real trivia data outside the regular season, same
 // gap /draft/* has pre-draft).
-const WORKER_URL = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev';
+const WORKER_URL = Cypress.expose('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev';
 
 function makeQuestion(overrides = {}) {
   return {

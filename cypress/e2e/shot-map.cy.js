@@ -290,7 +290,7 @@ describe('Shot Map', () => {
 // completed current-season games, which would otherwise starve the
 // game-chip tests independent of the isLive question entirely.
 describe('Shot Map — season/game history selector', () => {
-  const workerUrl = Cypress.env('WORKER_URL')
+  const workerUrl = Cypress.expose('WORKER_URL')
   const stubGames = [
     { id: 2025020100, gameDate: '2025-11-10', gameType: 2, gameState: 'FINAL', homeTeam: { abbrev: 'CAR', score: 4 }, awayTeam: { abbrev: 'BOS', score: 2 } },
     { id: 2025020050, gameDate: '2025-10-20', gameType: 2, gameState: 'FINAL', homeTeam: { abbrev: 'TOR', score: 1 }, awayTeam: { abbrev: 'CAR', score: 3 } },

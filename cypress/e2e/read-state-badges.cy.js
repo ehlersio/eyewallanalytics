@@ -3,7 +3,7 @@
 // combined dot (Session 92). All three Worker calls this feature depends
 // on are stubbed — same reasoning as draft.cy.js/trivia.cy.js: deterministic,
 // doesn't depend on live pipeline state.
-const WORKER_URL = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev';
+const WORKER_URL = Cypress.expose('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev';
 
 const UNSEEN_TRIVIA = {
   easy: {

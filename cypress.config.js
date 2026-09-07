@@ -4,9 +4,6 @@ import { configureVisualRegression } from 'cypress-visual-regression'
 export default defineConfig({
   e2e: {
     baseUrl: 'http://localhost:5173',
-    env: {
-      WORKER_URL: 'https://eyewall-poller.billowing-queen-bf23.workers.dev',
-    },
 
     defaultCommandTimeout: 10000,
     pageLoadTimeout:       30000,
@@ -44,6 +41,7 @@ export default defineConfig({
     screenshotsFolder: './cypress/snapshots/actual',
     expose: {
       visualRegressionType: 'regression',
+      WORKER_URL: 'https://eyewall-poller.billowing-queen-bf23.workers.dev',
     },
     setupNodeEvents(on) {
       configureVisualRegression(on)
