@@ -12,6 +12,13 @@ export default defineConfig({
     pageLoadTimeout:       30000,
     requestTimeout:        10000,
 
+    // Cypress 16 defaults Chromium network requests to HTTP/2. Our specs make
+    // many real (unmocked) cy.visit() calls straight to the live eyewall-poller
+    // Worker, and under HTTP/2 that pattern got 3-6x slower and intermittently
+    // failed outright (confirmed via local A/B: 59s/25-passing on HTTP/1.1-style
+    // vs 5m28s/21-passing on HTTP/2 default, for navigation.cy.js alone).
+    forceHttp1: true,
+
     viewportWidth:  390,
     viewportHeight: 844,
 
