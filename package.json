@@ -48,7 +48,7 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^6.1.1",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^5.0.0",
     "cross-env": "^10.1.0",
     "cypress": "^15.21.1",
     "cypress-multi-reporters": "^2.0.5",
@@ -62,6 +62,6 @@
     "mochawesome-report-generator": "^6.3.2",
     "tailwindcss": "^4.3.3",
     "vite": "^8.2.2",
-    "vitest": "^4.1.10"
+    "vitest": "^5.0.0"
   }
 }
