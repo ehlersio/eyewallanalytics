@@ -5,8 +5,8 @@
 // Override any time via CYPRESS_OFFSEASON=true/false in cypress.env.json,
 // the CLI (--env OFFSEASON=true), or a CI environment variable.
 const month = new Date().getMonth() + 1 // 1 = Jan, 12 = Dec
-const OFFSEASON = Cypress.env('OFFSEASON') !== undefined
-  ? Cypress.env('OFFSEASON') === true || Cypress.env('OFFSEASON') === 'true'
+const OFFSEASON = Cypress.expose('OFFSEASON') !== undefined
+  ? Cypress.expose('OFFSEASON') === true || Cypress.expose('OFFSEASON') === 'true'
   : month < 4 || month >= 6
 
 // ── Smoke tests — run against all 32 teams ────────────────────

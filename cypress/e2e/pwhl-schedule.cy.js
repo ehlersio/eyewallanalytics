@@ -231,7 +231,7 @@ describe('PWHL Schedule', () => {
       // also matched the frontend's own /pwhl/schedule page route and broke
       // cy.visit() (it intercepted the page-navigation request itself,
       // returning JSON instead of HTML).
-      const workerUrl = Cypress.env('WORKER_URL')
+      const workerUrl = Cypress.expose('WORKER_URL')
       cy.intercept('GET', `${workerUrl}/pwhl/schedule*`, { statusCode: 200, body: [upcomingGame] }).as('schedule')
       cy.intercept('GET', `${workerUrl}/pwhl/preview*gameId=${UPCOMING_GAME_ID}*`, { statusCode: 200, body: previewFixture }).as('preview')
       cy.intercept('GET', `${workerUrl}/pwhl/prediction*gameId=${UPCOMING_GAME_ID}*`, { statusCode: 200, body: predictionFixture }).as('prediction')

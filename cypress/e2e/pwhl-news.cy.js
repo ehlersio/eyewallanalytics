@@ -1,5 +1,5 @@
 // cypress/e2e/pwhl-news.cy.js
-const WORKER_URL = Cypress.env('WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
+const WORKER_URL = Cypress.expose('WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
 
 describe('PWHL News view', () => {
   before(() => {

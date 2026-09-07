@@ -5,8 +5,8 @@
 // Playoff bracket is only available April–June; tests that depend on it
 // are skipped automatically outside those months.
 const month = new Date().getMonth() + 1 // 1 = Jan, 12 = Dec
-const OFFSEASON = Cypress.env('OFFSEASON') !== undefined
-  ? Cypress.env('OFFSEASON') === true || Cypress.env('OFFSEASON') === 'true'
+const OFFSEASON = Cypress.expose('OFFSEASON') !== undefined
+  ? Cypress.expose('OFFSEASON') === true || Cypress.expose('OFFSEASON') === 'true'
   : month < 4 || month > 6
 
 function liveSeriesIt(title, fn) {
@@ -16,7 +16,7 @@ function liveSeriesIt(title, fn) {
   })
 }
 
-const WORKER_URL_LEAGUE = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
+const WORKER_URL_LEAGUE = Cypress.expose('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
 
 // ── Standings / Power rankings / Leaders — zero-data empty states ──
 // Regression coverage for the Session 61 NHL season-flip prep: once the

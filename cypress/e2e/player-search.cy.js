@@ -8,7 +8,7 @@
 // — confirmed live via the /players-search-index response while building
 // this coverage, same as McDavid/Poulin were originally.
 
-const WORKER_URL_PLAYER_SEARCH = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
+const WORKER_URL_PLAYER_SEARCH = Cypress.expose('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
 
 // Retries scoped to this spec only (not a suite-wide config change) — these
 // tests hit the real production search index rather than a mock, and were

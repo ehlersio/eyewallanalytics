@@ -41,7 +41,7 @@ const ORDER_R1 = [
   { pick_overall: 31, round: 1, pick_in_round: 31, team_abbrev: 'CAR', original_team: null },
 ];
 
-const WORKER_URL = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev';
+const WORKER_URL = Cypress.expose('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev';
 
 function stubDraftApis({ picks = PICKS_EMPTY, rankings = RANKINGS, order = ORDER_R1 } = {}) {
   cy.intercept('GET', `${WORKER_URL}/draft/rankings*`, { body: rankings }).as('getRankings');

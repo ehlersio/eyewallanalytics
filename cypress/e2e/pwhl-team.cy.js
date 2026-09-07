@@ -1,6 +1,6 @@
 // cypress/e2e/pwhl-team.cy.js
 
-const WORKER_URL = Cypress.env('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
+const WORKER_URL = Cypress.expose('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
 
 const PWHL_TEST_TEAMS = ['BOS', 'MIN', 'MTL', 'TOR']
 
