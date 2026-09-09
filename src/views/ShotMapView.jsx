@@ -7,6 +7,7 @@ import { usePoll, useFetch } from '../hooks/useFetch';
 import {
   getLiveGame, getAllGames, getGameDetail, getGameBoxscore, getGameRightRail,
   getRecentGames, getPlayoffGames, getScheduleForSeason, extractShotEvents,
+  getGameLanding, attachGoalVideos,
   getCarScore, getOppScore, getOpponent, isHomeGame, isCompleted,
   getTeamStats, getTeamPlayoffStats, formatGameDate, getRoster, buildPlayerMap,
   bustLiveGameCache, TEAM_COLORS, GAME_TYPE, TEAM_CONFIG,
@@ -668,6 +669,13 @@ export default function ShotMapView() {
   );
   const pbp = devGame?.pbp ?? pbpReal;
 
+  // Landing data — source of goal video clips (discreteClip), merged into
+  // shotEvents below so the shot map's goal-dot popup can show them.
+  const { data: gameLanding } = useFetch(
+    () => gameId ? getGameLanding(gameId) : Promise.resolve(null),
+    [gameId]
+  );
+
   // Boxscore — poll same rate as PBP during live
   const { data: boxscoreReal } = usePoll(
     () => {
@@ -807,9 +815,17 @@ export default function ShotMapView() {
   // A live game always wins regardless of selectedGameId (see activeGame
   // above), and an explicitly-picked historical game keeps using its own
   // pbp — neither of those cases changes here.
-  const shotEvents = (isLive || selectedGameId)
+  const rawShotEvents = (isLive || selectedGameId)
     ? (pbp ? extractShotEvents(pbp) : [])
     : (seasonShots || []);
+
+  // Goal video (discreteClip from landing) only applies to a single selected
+  // game's own events, not the "All N" season aggregate — attachGoalVideos
+  // is a no-op (returns rawShotEvents unchanged) when gameLanding is null.
+  const shotEvents = useMemo(
+    () => attachGoalVideos(rawShotEvents, gameLanding),
+    [rawShotEvents, gameLanding]
+  );
 
   const isAllN = !isLive && !selectedGameId;
 
