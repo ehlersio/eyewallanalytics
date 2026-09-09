@@ -1027,6 +1027,34 @@ export function extractShotEvents(playByPlay) {
     });
 }
 
+// Brightcove embed — autoplay=false prevents simultaneous playback
+export function buildBrightcoveUrl(clipId) {
+  return `https://players.brightcove.net/6415718365001/EXtG1xJ7H_default/index.html?videoId=${clipId}&autoplay=false`;
+}
+
+// Attaches a Brightcove embed URL to each 'goal' event in shotEvents (from
+// extractShotEvents), matched against landing data's summary.scoring[period]
+// .goals by period + in-period order — landing lists goals in the same
+// order the play-by-play does within a period, same matching usePeriodSummary
+// .js's buildSummary() relies on. Non-goal events and goals with no
+// discreteClip in landing pass through unchanged.
+export function attachGoalVideos(shotEvents, landingData) {
+  const scoring = landingData?.summary?.scoring;
+  if (!scoring?.length) return shotEvents;
+
+  const landingGoalsByPeriod = {};
+  scoring.forEach(s => { landingGoalsByPeriod[s.periodDescriptor?.number] = s.goals || []; });
+
+  const seenPerPeriod = {};
+  return shotEvents.map(e => {
+    if (e.type !== 'goal') return e;
+    const idx = seenPerPeriod[e.period] || 0;
+    seenPerPeriod[e.period] = idx + 1;
+    const lg = landingGoalsByPeriod[e.period]?.[idx];
+    return lg?.discreteClip ? { ...e, videoUrl: buildBrightcoveUrl(lg.discreteClip) } : e;
+  });
+}
+
 // ─── HELPERS ─────────────────────────────────────────────────
 
 export function formatGameDate(dateStr) {

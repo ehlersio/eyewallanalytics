@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TEAM_CONFIG } from '../utils/teamConfig';
+import { buildBrightcoveUrl } from '../utils/nhlApi';
 import { getGameSummary } from '../utils/supabaseClient';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
@@ -255,10 +256,6 @@ const PS_CANVAS_FOOTER_CLASSES = 'absolute bottom-5 left-[52px] right-[52px] fle
 const PS_CANVAS_FOOTER_BRAND_CLASSES = 'text-[14px] font-bold tracking-[0.12em] text-[rgba(255,255,255,0.2)]';
 const PS_CANVAS_FOOTER_TAG_CLASSES = 'text-[14px] text-[rgba(255,255,255,0.2)]';
 
-// Brightcove embed — autoplay=false prevents simultaneous playback
-const BRIGHTCOVE_URL = (id) =>
-  `https://players.brightcove.net/6415718365001/EXtG1xJ7H_default/index.html?videoId=${id}&autoplay=false`;
-
 function strengthLabel(strength) {
   if (!strength) return 'ev';
   const s = String(strength).toLowerCase();
@@ -445,7 +442,7 @@ function GoalCarousel({ goals, carAbbr }) {
         {g.discreteClip && (
           <iframe
             className={PS_GOAL_VIDEO_CLASSES}
-            src={BRIGHTCOVE_URL(g.discreteClip)}
+            src={buildBrightcoveUrl(g.discreteClip)}
             allow="fullscreen"
             allowFullScreen
             title={t('periodSummary.goals.videoTitle', { scorer: g.scorerName || t('periodSummary.goals.playerFallback'), time: g.time })}
