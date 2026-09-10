@@ -1184,6 +1184,10 @@
       "noGamesTitle": "Aucun match trouvé",
       "noGamesSub": "Aucune donnée de saison régulière pour {{seasonLabel}}."
     },
+    "preseason": {
+      "noGamesTitle": "Aucun match de présaison",
+      "noGamesSub": "Le calendrier de présaison {{preLabel}} de {{abbr}} n'a pas encore été annoncé."
+    },
     "playoffs": {
       "noGamesTitle": "Aucun match éliminatoire",
       "noGamesSub": "{{abbr}} n'a pas participé aux {{poLabel}}.",
@@ -1211,10 +1215,12 @@
       "countSummaryUpcoming": " · {{count}} à venir"
     },
     "resultCard": {
-      "playoffBadge": "Éliminatoire"
+      "playoffBadge": "Éliminatoire",
+      "preseasonBadge": "Présaison"
     },
     "upcomingCard": {
       "playoffBadge": "🏆 Éliminatoire",
+      "preseasonBadge": "Présaison",
       "tapForPreview": "Touchez pour l'aperçu →"
     }
   },

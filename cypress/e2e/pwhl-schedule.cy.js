@@ -93,6 +93,24 @@ describe('PWHL Schedule', () => {
     })
   })
 
+  // Preseason (PWHL_PRESEASON_SEASONS in pwhlConfig.js) always has real,
+  // live-verified season_id metadata but currently zero ingested games --
+  // PWHL hasn't published its 2026-27 preseason schedule yet, and the
+  // nightly pipeline doesn't sweep preseason automatically (same
+  // manual-backfill gap as playoffs). So this tab renders its own empty
+  // state today rather than game cards -- these tests only assert it
+  // exists and doesn't crash, not that it has data.
+  describe('Preseason tab', () => {
+    it('preseason tab exists', () => {
+      cy.contains('Preseason', { timeout: 8000 }).should('exist')
+    })
+
+    it('clicking preseason tab does not crash', () => {
+      cy.contains('Preseason').click()
+      cy.assertNoErrors()
+    })
+  })
+
   // ── Game stats popup (Session 50) ──────────────────────────────────────────
   // PWHLGameStatsPopup replaced the old lightweight PWHLGamePopup at this
   // click point -- covers the box-score table/toggle/CTA that popup didn't

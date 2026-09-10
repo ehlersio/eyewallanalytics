@@ -77,7 +77,13 @@ export let PWHL_SEASON_LABEL = '2025-26';
 // season_id pairs with which," so this still needs a manual entry once a
 // season's playoffs actually get a season_id assigned. Same maintenance
 // burden as before, just one place to update it instead of three.
+// Preseason entries follow the same manual-bump convention -- HockeyTech
+// assigns preseason its own season_id too (confirmed live 2026-09: id 10 =
+// "2026-27 Pre-Season", currently zero games since PWHL hasn't published
+// that schedule yet). Only the current year's entry is kept, same as
+// playoffs/regular -- no need to backfill past preseasons nobody asks for.
 export const PWHL_SEASONS = [
+  { id: 10, label: '2026-27 Preseason', type: 'preseason' },
   { id: 8, label: '2025-26', type: 'regular' },
   { id: 9, label: '2025-26 Playoffs', type: 'playoffs' },
   { id: 5, label: '2024-25', type: 'regular' },
@@ -88,6 +94,7 @@ export const PWHL_SEASONS = [
 
 export const PWHL_REGULAR_SEASONS = PWHL_SEASONS.filter(s => s.type === 'regular');
 export const PWHL_PLAYOFF_SEASONS = PWHL_SEASONS.filter(s => s.type === 'playoffs');
+export const PWHL_PRESEASON_SEASONS = PWHL_SEASONS.filter(s => s.type === 'preseason');
 
 // Regular-season season_id -> its corresponding playoff season_id.
 // Derived from PWHL_SEASONS by pairing consecutive regular/playoffs entries
