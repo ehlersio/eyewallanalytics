@@ -11,6 +11,7 @@ import {
   PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById,
   PWHL_REGULAR_SEASONS as REGULAR_SEASONS,
   PWHL_PLAYOFF_SEASONS as PLAYOFF_SEASONS,
+  PWHL_PRESEASON_SEASONS as PRESEASON_SEASONS,
 } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import PWHLGameStatsPopup from '../components/PWHLGameStatsPopup';
@@ -36,6 +37,7 @@ import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 const CONTEXT_PILL_VARIANTS = {
   playoffs: 'bg-[rgba(61,186,126,0.12)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.3)]',
   regular: 'bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[0.5px] border-[color:var(--red-border)]',
+  preseason: 'bg-[var(--bg3)] text-[color:var(--text-dim)] border-[0.5px] border-[color:var(--border-2)]',
 };
 const contextPillClasses = (variant) =>
   `text-[11px] font-semibold py-[3px] px-[10px] rounded-[20px] ${CONTEXT_PILL_VARIANTS[variant]}`;
@@ -126,9 +128,10 @@ export default function PWHLScheduleView() {
   const color    = team?.displayColor || 'var(--text-dim)';
   const navigate = useNavigate();
 
-  const [tab,      setTab]      = useState('Regular Season');
-  const [season,   setSeason]   = useState(PWHL_CURRENT_SEASON);
-  const [poSeason, setPoSeason] = useState(9); // current playoffs season
+  const [tab,       setTab]       = useState('Regular Season');
+  const [season,    setSeason]    = useState(PWHL_CURRENT_SEASON);
+  const [poSeason,  setPoSeason]  = useState(9); // current playoffs season
+  const [preSeason, setPreSeason] = useState(PRESEASON_SEASONS[0]?.id ?? null);
 
   // useState's initial value only runs once, at first mount -- if this
   // component mounts before pwhlConfig.js's async live-season fetch
@@ -147,6 +150,7 @@ export default function PWHLScheduleView() {
   }, []);
   const [popup,    setPopup]    = useState(null);
   const [regSort,  setRegSort]  = useState('desc');
+  const [preSort,  setPreSort]  = useState('desc');
   const [viewMode, setViewMode] = useState('list');   // 'list' | 'calendar'
   const [calMonth, setCalMonth] = useState(() => {
     const now = new Date();
@@ -170,6 +174,8 @@ export default function PWHLScheduleView() {
     () => teamId ? fetchPWHLSchedule(teamId, season)   : Promise.resolve(null), [teamId, season]);
   const { data: poSchedule,  loading: poLoading  } = useFetch(
     () => teamId ? fetchPWHLSchedule(teamId, poSeason) : Promise.resolve(null), [teamId, poSeason]);
+  const { data: preSchedule, loading: preLoading } = useFetch(
+    () => teamId && preSeason ? fetchPWHLSchedule(teamId, preSeason) : Promise.resolve(null), [teamId, preSeason]);
   // Fetch authoritative record from standings (has reg_wins/non_reg_wins/ot_losses breakdown)
   const { data: teamRecord } = useFetch(
     () => teamId ? fetchPWHLTeamRecord(teamId, season) : Promise.resolve(null), [teamId, season]);
@@ -181,6 +187,10 @@ export default function PWHLScheduleView() {
   const { completed: _poCompleted, upcoming: _poUpcoming, record: poRecord } = useMemo(() => {
     return splitGames(poSchedule, teamId);
   }, [poSchedule, teamId]);
+
+  const { completed: preCompleted, upcoming: preUpcoming } = useMemo(() => {
+    return splitGames(preSchedule, teamId);
+  }, [preSchedule, teamId]);
 
   // Auto-record prediction outcomes for any completed games -- mirrors
   // NHL ScheduleView.jsx's own effect. PWHLGamePreviewPopup.jsx saves the
@@ -202,8 +212,13 @@ export default function PWHLScheduleView() {
     [...regCompleted].sort((a,b) => regSort === 'desc' ? b.game_id - a.game_id : a.game_id - b.game_id),
     [regCompleted, regSort]);
 
+  const sortedPreCompleted = useMemo(() =>
+    [...preCompleted].sort((a,b) => preSort === 'desc' ? b.game_id - a.game_id : a.game_id - b.game_id),
+    [preCompleted, preSort]);
+
   const seasonLabel = REGULAR_SEASONS.find(s => s.id === season)?.label || String(season);
   const poLabel     = PLAYOFF_SEASONS.find(s => s.id === poSeason)?.label || String(poSeason);
+  const preLabel    = PRESEASON_SEASONS.find(s => s.id === preSeason)?.label || String(preSeason);
 
   if (!abbr || !teamId) {
     return (
@@ -243,9 +258,9 @@ export default function PWHLScheduleView() {
 
       {/* Tab bar */}
       <div className={SCHED_TABS_CLASSES}>
-        {['Regular Season', 'Playoffs'].map(tabId => (
+        {['Preseason', 'Regular Season', 'Playoffs'].map(tabId => (
           <button key={tabId} className={schedTabClasses(tab === tabId)} onClick={() => setTab(tabId)}>
-            {tabId === 'Playoffs' ? t('scheduleView.tabs.playoffs') : t('scheduleView.tabs.regularSeason')}
+            {tabId === 'Playoffs' ? t('scheduleView.tabs.playoffs') : tabId === 'Preseason' ? t('scheduleView.tabs.preseason') : t('scheduleView.tabs.regularSeason')}
             {tabId === 'Playoffs' && (poRecord.w + poRecord.otw) > 0 && (
               <span className="tab-badge bg-[var(--green)] text-[#000] text-[10px] font-bold py-[1px] px-1.5 rounded-[10px]">{poRecord.w + poRecord.otw}–{poRecord.otl + poRecord.l}</span>
             )}
@@ -260,6 +275,51 @@ export default function PWHLScheduleView() {
             onClick={() => setViewMode('calendar')} title={t('scheduleView.viewToggle.calendarView')}>📅</button>
         </div>
       </div>
+
+      {/* ── Preseason tab ── */}
+      {tab === 'Preseason' && (
+        <>
+          {/* Preseason season picker */}
+          <div className={SCHED_TABS_CLASSES} style={{ marginBottom: 4, marginTop: 0 }}>
+            {PRESEASON_SEASONS.map(s => (
+              <button key={s.id} className={schedTabClasses(preSeason === s.id)}
+                onClick={() => setPreSeason(s.id)}>{s.label}</button>
+            ))}
+          </div>
+
+          {!preLoading && preSchedule?.length > 0 && (
+            <PWHLSortBar
+              sortOrder={preSort}
+              setSortOrder={setPreSort}
+              completedCount={preCompleted.length}
+              upcomingCount={preUpcoming.length}
+            />
+          )}
+
+          {preLoading && <LoadingCards count={4} />}
+
+          {!preLoading && !preSchedule?.length && (
+            <div className={`card ${EMPTY_STATE_CLASSES}`}>
+              <div className={EMPTY_ICON_CLASSES}>🏒</div>
+              <div className={EMPTY_TITLE_CLASSES}>{t('pwhlScheduleView.preseason.noGamesTitle')}</div>
+              <div className={EMPTY_SUB_CLASSES}>{t('pwhlScheduleView.preseason.noGamesSub', { abbr, preLabel })}</div>
+            </div>
+          )}
+
+          {!preLoading && preSchedule?.length > 0 && (
+            <>
+              {preUpcoming.map(g => (
+                <UpcomingCard key={g.game_id} game={g} teamId={teamId} abbr={abbr} color={color}
+                  isPreseason onClick={() => setPopup(g)} />
+              ))}
+              {sortedPreCompleted.map(g => (
+                <CompletedCard key={g.game_id} game={g} teamId={teamId} abbr={abbr} color={color}
+                  isPreseason onClick={() => setPopup(g)} />
+              ))}
+            </>
+          )}
+        </>
+      )}
 
       {/* ── Regular Season tab ── */}
       {tab === 'Regular Season' && (
@@ -701,7 +761,7 @@ function PWHLSortBar({ sortOrder, setSortOrder, completedCount, upcomingCount })
 }
 
 // ── Completed game card ───────────────────────────────────────
-function CompletedCard({ game: g, teamId, abbr, color, onClick, isPlayoff }) {
+function CompletedCard({ game: g, teamId, abbr, color, onClick, isPlayoff, isPreseason }) {
   const { t } = useTranslation();
   const isHome   = g.home_team_id === teamId;
   const my       = isHome ? g.home_score : g.away_score;
@@ -724,6 +784,7 @@ function CompletedCard({ game: g, teamId, abbr, color, onClick, isPlayoff }) {
           {outcomeLabel}{suffix}
         </span>
         {isPlayoff && <span className={contextPillClasses('playoffs')} style={{ fontSize: 9 }}>{t('pwhlScheduleView.resultCard.playoffBadge')}</span>}
+        {isPreseason && <span className={contextPillClasses('preseason')} style={{ fontSize: 9 }}>{t('pwhlScheduleView.resultCard.preseasonBadge')}</span>}
         <span className="result-tap-hint text-[10px] text-[color:var(--text-dim)] ml-auto">{t('scheduleView.resultCard.tapForStats')}</span>
       </div>
       <div className="result-score flex items-center gap-2 font-[family-name:var(--font-display)]">
@@ -741,7 +802,7 @@ function CompletedCard({ game: g, teamId, abbr, color, onClick, isPlayoff }) {
 }
 
 // ── Upcoming game card ────────────────────────────────────────
-function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff, onClick }) {
+function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff, isPreseason, onClick }) {
   const { t } = useTranslation();
   const isHome   = g.home_team_id === teamId;
   const oppId    = isHome ? g.away_team_id : g.home_team_id;
@@ -754,8 +815,8 @@ function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff, onClick }) {
       onClick={onClick}>
       <div className="result-top" style={{ marginBottom: 6 }}>
         <span className="result-date">{dayOfWeek(g)} {formatDate(g)}</span>
-        <span className={contextPillClasses(isPlayoff ? 'playoffs' : 'regular')} style={{ fontSize: 10 }}>
-          {isPlayoff ? t('pwhlScheduleView.upcomingCard.playoffBadge') : t('pwhlScheduleView.playoffs.upcomingBadge')}
+        <span className={contextPillClasses(isPlayoff ? 'playoffs' : isPreseason ? 'preseason' : 'regular')} style={{ fontSize: 10 }}>
+          {isPlayoff ? t('pwhlScheduleView.upcomingCard.playoffBadge') : isPreseason ? t('pwhlScheduleView.upcomingCard.preseasonBadge') : t('pwhlScheduleView.playoffs.upcomingBadge')}
         </span>
         <span className="result-venue">{isHome ? '📍' : '✈'} {g.venue_name || (isHome ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away'))}</span>
       </div>

@@ -1184,6 +1184,10 @@
       "noGamesTitle": "No games found",
       "noGamesSub": "No regular season data for {{seasonLabel}}."
     },
+    "preseason": {
+      "noGamesTitle": "No preseason games",
+      "noGamesSub": "{{abbr}}'s {{preLabel}} schedule hasn't been announced yet."
+    },
     "playoffs": {
       "noGamesTitle": "No playoff games",
       "noGamesSub": "{{abbr}} did not participate in the {{poLabel}}.",
@@ -1211,10 +1215,12 @@
       "countSummaryUpcoming": " · {{count}} upcoming"
     },
     "resultCard": {
-      "playoffBadge": "Playoff"
+      "playoffBadge": "Playoff",
+      "preseasonBadge": "Preseason"
     },
     "upcomingCard": {
       "playoffBadge": "🏆 Playoff",
+      "preseasonBadge": "Preseason",
       "tapForPreview": "Tap for preview →"
     }
   },
