@@ -186,7 +186,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   if (!carStanding || !oppStanding) {
     return (
       <div className="matchup-detail card mb-2 -mt-1">
-        <PredictionAnalysis gameId={game?.id} oppAbbr={oppAbbr} oppColor={oppColor} />
+        <PredictionAnalysis gameId={game?.id} gameDate={game?.gameDate} oppAbbr={oppAbbr} oppColor={oppColor} />
         {odds && (
           <div className={MD_ODDS_ROW_CLASSES} style={{ marginTop: 12 }}>
             <div className={MD_ODDS_ITEM_CLASSES}>
@@ -356,7 +356,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       </div>
 
       {/* EyeWall AI Analysis */}
-      <PredictionAnalysis gameId={game?.id} oppAbbr={oppAbbr} oppColor={oppColor} />
+      <PredictionAnalysis gameId={game?.id} gameDate={game?.gameDate} oppAbbr={oppAbbr} oppColor={oppColor} />
 
       {/* Odds row */}
       {odds && (
@@ -440,7 +440,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
     </div>
   );
 }
-function PredictionAnalysis({ gameId, oppAbbr, oppColor }) {
+function PredictionAnalysis({ gameId, gameDate, oppAbbr, oppColor }) {
   const { t } = useTranslation();
   const [analysis,  setAnalysis]  = useState(null);
   const [loading,   setLoading]   = useState(true);
@@ -462,6 +462,30 @@ function PredictionAnalysis({ gameId, oppAbbr, oppColor }) {
     const applyFallback = (d) => {
       if (d?.isFallback && d.carWinPct != null) {
         setFallback({ carWinPct: d.carWinPct, expCar: d.expCar, expOpp: d.expOpp, dataSeason: d.dataSeason });
+        // MatchupDetail's own top-level "auto-save prediction" useEffect
+        // never fires for a preseason game (it needs carStanding/oppStanding,
+        // which don't exist yet) -- so before this, a preseason prediction
+        // could be shown to the user here but silently never counted toward
+        // their tracked accuracy record once the game was actually played.
+        // Scoped strictly to isFallback so the in-season path is untouched --
+        // that one already gets saved by the other useEffect, with its own
+        // (different, isotonic-calibrated-vs-client-Pythagorean) numbers.
+        savePrediction({
+          gameId,
+          gameDate,
+          opponent: oppAbbr,
+          predictedCarWin: d.carWinPct >= 50,
+          predictedCarPct: d.carWinPct,
+          predictedCarScore: d.expCar,
+          predictedOppScore: d.expOpp,
+        });
+        capture('prediction_viewed', {
+          gameId,
+          opponent: oppAbbr,
+          isPlayoff: !!d.isPlayoff,
+          predictedWin: d.carWinPct >= 50,
+          carPct: d.carWinPct,
+        });
       }
     };
     getGamePrediction(gameId)
