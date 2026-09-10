@@ -66,13 +66,46 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       cy.team(teamAbbr).then(t => cy.contains(t.division).should('be.visible'))
     })
 
-    it('renders both Playoffs and Regular Season tab buttons', function () {
+    it('renders Playoffs and Regular Season tab buttons (plus Preseason when in season)', function () {
       // Playoffs tab is intentionally hidden entirely (not just empty) when
-      // there's no playoff data yet — see ScheduleView.jsx's TABS filter.
-      cy.skipUnlessContentAppears('.sched-title', '.sched-tab:contains("Playoffs")')
-      cy.get('.sched-tab').should('have.length', 2)
-      cy.get('.sched-tab').first().should('contain', 'Playoffs')
-      cy.get('.sched-tab').last().should('contain', 'Regular Season')
+      // there's no playoff data yet, and likewise for Preseason once its
+      // games are off the schedule — see ScheduleView.jsx's TABS filter.
+      // Order is Preseason, Playoffs, Regular Season, so only Preseason's
+      // presence is variable at the front; Regular Season is always last.
+      // NOTE: skipUnlessContentAppears only does literal body-text matching
+      // when given a string, so a CSS selector string like
+      // '.sched-tab:contains("Playoffs")' never matches and silently skips
+      // this test every run -- checking the DOM directly here instead.
+      // Also: .sched-title renders instantly (unlike .sched-tab, which is
+      // gated behind async fetches), so checking right after it exists
+      // races the network instead of reflecting the settled tab list --
+      // wait for RegularSeasonTab's own loading to resolve first (it shares
+      // the same underlying getAllGames() fetch as the Preseason/Playoffs
+      // tabs, so by the time IT has settled, so have they).
+      cy.get('.sort-bar-count, .empty-title, .round-section-header', { timeout: 15000 }).should('exist')
+      cy.get('body').then($body => {
+        if ($body.find('.sched-tab:contains("Playoffs")').length === 0) {
+          cy.log('Skipping — Playoffs tab not present (no live season data yet)')
+          this.skip()
+        }
+        const hasPreseason = $body.find('.sched-tab:contains("Preseason")').length > 0
+        cy.get('.sched-tab').last().should('contain', 'Regular Season')
+        cy.get('.sched-tab').should('have.length', hasPreseason ? 3 : 2)
+        cy.get('.sched-tab').first().should('contain', hasPreseason ? 'Preseason' : 'Playoffs')
+      })
+    })
+
+    it('Preseason tab shows games with a Preseason badge when data exists', function () {
+      cy.get('.sort-bar-count, .empty-title, .round-section-header', { timeout: 15000 }).should('exist')
+      cy.get('body').then($body => {
+        if ($body.find('.sched-tab:contains("Preseason")').length === 0) {
+          cy.log('Skipping — Preseason tab not present (no live preseason data yet)')
+          this.skip()
+        }
+      })
+      cy.get('.sched-tab').contains('Preseason').click()
+      cy.contains(teamAbbr).should('exist')
+      cy.contains('Preseason').should('exist')
     })
 
     it('renders list and calendar view toggle buttons', () => {

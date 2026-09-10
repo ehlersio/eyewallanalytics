@@ -1127,6 +1127,7 @@
   },
   "scheduleView": {
     "tabs": {
+      "preseason": "Preseason",
       "playoffs": "Playoffs",
       "regularSeason": "Regular Season"
     },
@@ -1161,6 +1162,10 @@
       "completeTitle": "Regular season complete",
       "completeSubOffseason": "Final record shown above. See you next season.",
       "completeSubPlayoffsUnderway": "Final record shown above. Playoffs are underway."
+    },
+    "preseason": {
+      "emptyTitle": "No preseason games",
+      "emptySub": "Check back once the preseason schedule is announced."
     },
     "resultCard": {
       "tapForStats": "Tap for stats →",
