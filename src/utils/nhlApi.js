@@ -1067,7 +1067,6 @@ export function formatGameTime(utcStr) {
   if (!utcStr) return '';
   return new Date(utcStr).toLocaleTimeString('en-US', {
     hour: 'numeric', minute: '2-digit',
-    timeZone: 'America/New_York',
     timeZoneName: 'short',
   });
 }
