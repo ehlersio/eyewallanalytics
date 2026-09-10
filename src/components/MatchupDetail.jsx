@@ -497,12 +497,18 @@ function PredictionAnalysis({ gameId, gameDate, oppAbbr, oppColor }) {
         }
         // Nothing in DB — try Worker cache then on-demand
         if (!workerUrl) { setLoading(false); return; }
-        fetch(`${workerUrl}/cache/${encodeURIComponent(`prediction:${gameId}`)}`)
+        // team= matters here, not just for framing (oppAbbr/isHome/carWinPct
+        // are all relative to it) -- without it the Worker falls back to its
+        // own default team and searches *that* team's schedule for this
+        // gameId, which only ever succeeds by coincidence. Confirmed live in
+        // production: every non-default-team matchup returned "Game not
+        // found in schedule" because this call never sent team= at all.
+        fetch(`${workerUrl}/cache/${encodeURIComponent(`prediction:${gameId}:${TEAM_CONFIG.abbr}`)}`)
           .then(r => r.ok ? r.json() : null)
           .then(d => {
             if (d?.narrative) { setAnalysis(d.narrative); applyFallback(d); return; }
             // Not cached — generate on demand
-            return fetch(`${workerUrl}/prediction/analyze?gameId=${gameId}`)
+            return fetch(`${workerUrl}/prediction/analyze?gameId=${gameId}&team=${TEAM_CONFIG.abbr}`)
               .then(r => r.json())
               .then(d => { if (d?.narrative) { setAnalysis(d.narrative); applyFallback(d); } else setError(d?.error || null); });
           })
