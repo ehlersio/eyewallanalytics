@@ -108,6 +108,30 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       cy.contains('Preseason').should('exist')
     })
 
+    it('Preseason matchup breakdown shows both tabs, and Scouting actually renders', function () {
+      // Regression: MatchupDetail's tab bar (Prediction/Scouting) used to
+      // only exist in the "happy path" render, gated behind local
+      // carStanding/oppStanding -- which ScheduleView.jsx withholds
+      // entirely for the whole preseason (no current-season standings
+      // exist yet). That made the Scouting tab completely unreachable for
+      // every preseason game, not just missing content -- there was no
+      // tab bar to click at all. ScoutingTab itself doesn't need those
+      // props (every section fetches its own data independently).
+      cy.get('.sort-bar-count, .empty-title, .round-section-header', { timeout: 15000 }).should('exist')
+      cy.get('body').then($body => {
+        if ($body.find('.sched-tab:contains("Preseason")').length === 0) {
+          cy.log('Skipping — Preseason tab not present (no live preseason data yet)')
+          this.skip()
+        }
+      })
+      cy.get('.sched-tab').contains('Preseason').click()
+      cy.contains('Matchup breakdown').first().click()
+      cy.get('.md-tab').contains('Prediction').should('exist')
+      cy.get('.md-tab').contains('Scouting').should('exist')
+      cy.get('.md-tab').contains('Scouting').click()
+      cy.get('.scouting-teams-header', { timeout: 8000 }).should('exist')
+    })
+
     it('renders list and calendar view toggle buttons', () => {
       cy.get('.vm-btn').should('have.length', 2)
       cy.get('.vm-btn').first().should('contain', '≡')
