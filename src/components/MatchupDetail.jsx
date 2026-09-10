@@ -183,25 +183,46 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   // standings at all. PredictionAnalysis below already knows how to reach
   // it; it just needs to actually be rendered here instead of being skipped
   // by this early return.
+  //
+  // Tab bar duplicated from the happy-path render below rather than
+  // restructured into one shared block -- this keeps the (larger, more
+  // state-dependent) happy path untouched. ScoutingTab doesn't actually
+  // need carStanding/oppStanding to function: every section fetches its
+  // own data independently via TEAM_CONFIG.abbr/oppAbbr/gameId, and the
+  // two props are only used, optionally, for a small W-L-OTL record next
+  // to each team's logo (renders nothing extra when they're null) -- so
+  // there's no reason the Scouting tab should have been unreachable for
+  // every preseason game just because the Prediction tab's stat bars
+  // can't be built yet.
   if (!carStanding || !oppStanding) {
     return (
       <div className="matchup-detail card mb-2 -mt-1">
-        <PredictionAnalysis gameId={game?.id} gameDate={game?.gameDate} oppAbbr={oppAbbr} oppColor={oppColor} />
-        {odds && (
-          <div className={MD_ODDS_ROW_CLASSES} style={{ marginTop: 12 }}>
-            <div className={MD_ODDS_ITEM_CLASSES}>
-              <span className={MD_ODDS_TEAM_CLASSES} style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
-              <span className={mdOddsValClasses(odds.carOdds < 0)}>{fmtOdds(odds.carOdds)}</span>
-              <span className={MD_ODDS_IMPLIED_CLASSES}>{t('matchupDetail.odds.implied', { pct: oddsToImplied(odds.carOdds) })}</span>
+        <div className="md-tabs flex gap-0 border-b-[0.5px] border-b-[color:var(--border)] mb-3">
+          <button className={mdTabClasses(mdTab === 'prediction')}
+            onClick={() => setMdTab('prediction')}>{t('matchupDetail.tabs.prediction')}</button>
+          <button className={mdTabClasses(mdTab === 'scouting')}
+            onClick={() => { setMdTab('scouting'); capture('scouting_tab_viewed', { gameId: game?.id, opponent: oppAbbr, isPlayoff: game?.gameType === 3 }); }}>{t('matchupDetail.tabs.scouting')}</button>
+        </div>
+        {mdTab === 'scouting' ? (
+          <ScoutingTab oppAbbr={oppAbbr} oppStanding={oppStanding} carStanding={carStanding} isPlayoff={game?.gameType === 3} gameId={game?.id} />
+        ) : (<>
+          <PredictionAnalysis gameId={game?.id} gameDate={game?.gameDate} oppAbbr={oppAbbr} oppColor={oppColor} />
+          {odds && (
+            <div className={MD_ODDS_ROW_CLASSES} style={{ marginTop: 12 }}>
+              <div className={MD_ODDS_ITEM_CLASSES}>
+                <span className={MD_ODDS_TEAM_CLASSES} style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
+                <span className={mdOddsValClasses(odds.carOdds < 0)}>{fmtOdds(odds.carOdds)}</span>
+                <span className={MD_ODDS_IMPLIED_CLASSES}>{t('matchupDetail.odds.implied', { pct: oddsToImplied(odds.carOdds) })}</span>
+              </div>
+              <div className="md-odds-book text-[10px] text-[color:var(--text-dim)] text-center">{odds.book}</div>
+              <div className={`${MD_ODDS_ITEM_CLASSES} right items-end`}>
+                <span className={MD_ODDS_TEAM_CLASSES} style={{ color: oppColor }}>{oppAbbr}</span>
+                <span className={mdOddsValClasses(odds.oppOdds < 0)}>{fmtOdds(odds.oppOdds)}</span>
+                <span className={MD_ODDS_IMPLIED_CLASSES}>{t('matchupDetail.odds.implied', { pct: oddsToImplied(odds.oppOdds) })}</span>
+              </div>
             </div>
-            <div className="md-odds-book text-[10px] text-[color:var(--text-dim)] text-center">{odds.book}</div>
-            <div className={`${MD_ODDS_ITEM_CLASSES} right items-end`}>
-              <span className={MD_ODDS_TEAM_CLASSES} style={{ color: oppColor }}>{oppAbbr}</span>
-              <span className={mdOddsValClasses(odds.oppOdds < 0)}>{fmtOdds(odds.oppOdds)}</span>
-              <span className={MD_ODDS_IMPLIED_CLASSES}>{t('matchupDetail.odds.implied', { pct: oddsToImplied(odds.oppOdds) })}</span>
-            </div>
-          </div>
-        )}
+          )}
+        </>)}
       </div>
     );
   }
