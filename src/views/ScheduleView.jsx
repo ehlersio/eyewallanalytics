@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { recordOutcome } from '../utils/predictionStore';
 import {
-  getRegularSeasonGames, getPlayoffGames, getPlayoffSeries, getStandings,
+  getRegularSeasonGames, getPlayoffGames, getPreseasonGames, getPlayoffSeries, getStandings,
   buildCarPlayoffSummary, formatGameDate,
   getOpponent, isHomeGame, getCarScore, getOppScore, getVenue,
   TEAM_COLORS, getNhlOdds, findGameOdds, extractMoneyline, oddsToImplied,
@@ -21,7 +21,7 @@ import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 // final sub-PR) -- the file is now fully deleted, all classes migrated to
 // Tailwind across sub-PRs 1-5.
 
-const TABS = ['Playoffs', 'Regular Season'];
+const TABS = ['Preseason', 'Playoffs', 'Regular Season'];
 
 // .empty-state's own padding is owned by index.css (shared, unlayered --
 // see the .empty-state comment there); the 2px-narrower horizontal padding
@@ -77,6 +77,7 @@ export default function ScheduleView() {
   const [selectedGame, setSelectedGame] = useState(null);
   const [popupGame, setPopupGame]       = useState(null);
   const [regSort, setRegSort]           = useState('desc');
+  const [preSort, setPreSort]           = useState('desc');
   const [viewMode, setViewMode]          = useState('cards'); // 'cards' | 'calendar'
   const [calMonth, setCalMonth]          = useState(() => {
     const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() };
@@ -97,6 +98,7 @@ export default function ScheduleView() {
 
   const { data: playoffGames, loading: poLoading  } = useFetch(getPlayoffGames);
   const { data: regGames,     loading: regLoading } = useFetch(getRegularSeasonGames);
+  const { data: preGames,     loading: preLoading } = useFetch(getPreseasonGames);
   const { data: standings }                          = useFetch(getStandings);
   const { data: oddsData }                           = useFetch(getNhlOdds);
   const { data: playoffRounds, loading: prLoading }  = useFetch(getPlayoffSeries);
@@ -176,11 +178,13 @@ export default function ScheduleView() {
 
       <div className={SCHED_TABS_CLASSES}>
         {TABS
-          // Hide the Playoffs tab entirely during offseason (no rounds scheduled yet)
+          // Hide the Playoffs tab entirely during offseason (no rounds scheduled yet),
+          // and the Preseason tab once there's no preseason data for this season.
           .filter(tabId => tabId !== 'Playoffs' || (playoffRounds?.length > 0 || (playoffGames?.length > 0)))
+          .filter(tabId => tabId !== 'Preseason' || (preGames?.length > 0))
           .map(tabId => (
           <button key={tabId} className={schedTabClasses(tab === tabId)} onClick={() => setTab(tabId)}>
-            {tabId === 'Playoffs' ? t('scheduleView.tabs.playoffs') : t('scheduleView.tabs.regularSeason')}
+            {tabId === 'Playoffs' ? t('scheduleView.tabs.playoffs') : tabId === 'Preseason' ? t('scheduleView.tabs.preseason') : t('scheduleView.tabs.regularSeason')}
             {tabId === 'Playoffs' && poRecord.w > 0 && (
               <span className="tab-badge bg-[var(--green)] text-[#000] text-[10px] font-bold py-[1px] px-1.5 rounded-[10px]">{poRecord.w}–{poRecord.l}</span>
             )}
@@ -194,13 +198,29 @@ export default function ScheduleView() {
         </div>
       </div>
 
-      {/* Calendar view — shows all games for a month across both reg + playoff */}
+      {/* Calendar view — shows all games for a month across preseason + reg + playoff */}
       {viewMode === 'calendar' && (
         <CalendarView
-          games={[...(regGames || []), ...(playoffGames || [])]}
+          games={[...(preGames || []), ...(regGames || []), ...(playoffGames || [])]}
           calMonth={calMonth}
           setCalMonth={setCalMonth}
           onGamePopup={setPopupGame}
+        />
+      )}
+
+      {viewMode === 'cards' && tab === 'Preseason' && (
+        <RegularSeasonTab
+          games={preGames || []}
+          loading={preLoading}
+          standingMap={standingMap}
+          carStanding={carStanding}
+          selectedGame={selectedGame}
+          setSelectedGame={setSelectedGame}
+          onGamePopup={setPopupGame}
+          sortOrder={preSort}
+          setSortOrder={setPreSort}
+          oddsData={oddsData}
+          isPreseason
         />
       )}
 
@@ -417,11 +437,20 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
 
 
 
-function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup, sortOrder, setSortOrder, oddsData }) {
+function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup, sortOrder, setSortOrder, oddsData, isPreseason = false }) {
   const { t } = useTranslation();
   if (loading) return <LoadingCards count={4} />;
 
   if (!games.length) {
+    if (isPreseason) {
+      return (
+        <div className={`card ${EMPTY_STATE_CLASSES}`}>
+          <div className={EMPTY_ICON_CLASSES}>📅</div>
+          <div className={EMPTY_TITLE_CLASSES}>{t('scheduleView.preseason.emptyTitle')}</div>
+          <div className={EMPTY_SUB_CLASSES}>{t('scheduleView.preseason.emptySub')}</div>
+        </div>
+      );
+    }
     const isOffseason = new Date() > new Date('2026-07-01');
     return (
       <div className={`card ${EMPTY_STATE_CLASSES}`}>
@@ -485,6 +514,9 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
             >
               <div className="result-top flex items-center gap-2 mb-1.5">
                 <span className="result-date text-[11px] text-[color:var(--text-muted)]">{formatGameDate(game.gameDate)}</span>
+                {isPreseason && (
+                  <span className="result-preseason-badge text-[9px] font-bold uppercase tracking-[0.04em] py-[1px] px-[6px] rounded-[10px] bg-[var(--bg3)] text-[color:var(--text-dim)] border-[0.5px] border-[color:var(--border-2)]">{t('scheduleView.tabs.preseason')}</span>
+                )}
                 {carScore != null && (
                   <span className={`result-outcome font-[family-name:var(--font-display)] text-[12px] font-bold py-[2px] px-2 rounded ${won ? 'win bg-[rgba(61,186,126,0.15)] text-[color:var(--green)]' : 'loss bg-[rgba(255,68,34,0.1)] text-[color:var(--red-bright)]'}`}>
                     {won ? 'W' : lost ? 'L' : 'OT'}
@@ -510,7 +542,7 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
         const isSelected  = selectedGame?.id === game.id;
         const oppStanding = standingMap[opp?.abbrev] || standingMap[opp?.abbrev?.toLowerCase()];
 
-        const gameOdds    = !completed ? findGameOdds(oddsData, game) : null;
+        const gameOdds    = findGameOdds(oddsData, game);
         const winResult   = computeWinPct(carStanding, oppStanding, game, null);
         let blendedPct    = winResult?.pct ?? 50;
         if (gameOdds) {
@@ -526,6 +558,7 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
               isCompleted={false}
               isSelected={isSelected}
               cardFavoured={cardFavoured}
+              isPreseason={isPreseason}
               onClick={() => setSelectedGame(isSelected ? null : game)}
             />
             {isSelected && (

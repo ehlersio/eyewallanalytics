@@ -156,6 +156,7 @@ function CalCell({ day, _dateStr, game, isToday, onGamePopup }) {
   const carScore    = getCarScore(game);
   const oppScore    = getOppScore(game);
   const isPlayoff   = game.gameType === 3;
+  const isPreseason = game.gameType === 1;
 
   // Result classification
   let result = null;
@@ -197,6 +198,7 @@ function CalCell({ day, _dateStr, game, isToday, onGamePopup }) {
       )}
 
       {isPlayoff && <span className="cal-playoff-badge absolute top-[3px] right-[3px] text-[7px] font-bold bg-[var(--amber)] text-[#000] py-[1px] px-[3px] rounded-[2px] leading-[1.3] tracking-[0.04em]">PO</span>}
+      {isPreseason && <span className="cal-preseason-badge absolute top-[3px] right-[3px] text-[7px] font-bold bg-[var(--bg4)] text-[color:var(--text-dim)] py-[1px] px-[3px] rounded-[2px] leading-[1.3] tracking-[0.04em]">PRE</span>}
     </div>
   );
 }

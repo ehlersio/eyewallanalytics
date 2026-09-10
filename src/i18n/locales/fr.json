@@ -1127,6 +1127,7 @@
   },
   "scheduleView": {
     "tabs": {
+      "preseason": "Présaison",
       "playoffs": "Séries éliminatoires",
       "regularSeason": "Saison régulière"
     },
@@ -1161,6 +1162,10 @@
       "completeTitle": "Saison régulière terminée",
       "completeSubOffseason": "Fiche finale indiquée ci-dessus. À la saison prochaine.",
       "completeSubPlayoffsUnderway": "Fiche finale indiquée ci-dessus. Les séries éliminatoires sont en cours."
+    },
+    "preseason": {
+      "emptyTitle": "Aucun match de présaison",
+      "emptySub": "Revenez une fois le calendrier de présaison annoncé."
     },
     "resultCard": {
       "tapForStats": "Touchez pour les stats →",

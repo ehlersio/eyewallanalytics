@@ -152,7 +152,7 @@ const gameCardClasses = ({ isSelected, isPlayoff, isCompleted }) => {
   return `${GAME_CARD_BASE}${selected}${playoff}${clickable}`;
 };
 
-function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, cardFavoured }) {
+function GameCard({ game, isCompleted, isSelected, isPlayoff, isPreseason, onClick, odds, cardFavoured }) {
   const { t } = useTranslation();
   const home     = isHomeGame(game);
   const opp      = getOpponent(game);
@@ -173,6 +173,9 @@ function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, car
     >
       <div className="gc-top flex items-center gap-2.5 mb-2.5 flex-wrap">
         <span className="gc-date text-[12px] text-[color:var(--text-muted)]">{formatGameDate(game.gameDate)}</span>
+        {isPreseason && (
+          <span className="gc-preseason-badge text-[9px] font-bold uppercase tracking-[0.04em] py-[1px] px-[6px] rounded-[10px] bg-[var(--bg3)] text-[color:var(--text-dim)] border-[0.5px] border-[color:var(--border-2)]">{t('scheduleView.tabs.preseason')}</span>
+        )}
         {isCompleted && carScore != null ? (
           <span className={`gc-result font-semibold text-[12px] ${won ? 'won text-[color:var(--green)]' : 'lost text-[color:var(--red-bright)]'}`}>
             {won ? 'W' : lost ? 'L' : 'OT'} {carScore}–{oppScore}

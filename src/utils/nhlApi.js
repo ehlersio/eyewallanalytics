@@ -149,6 +149,14 @@ export async function getRegularSeasonGames() {
   }, TTL.SCHEDULE);
 }
 
+// Preseason games only (gameType === 1)
+export async function getPreseasonGames() {
+  return cached('preseasonGames', async () => {
+    const games = await getAllGames();
+    return games.filter(g => g.gameType === GAME_TYPE.PRESEASON);
+  }, TTL.SCHEDULE);
+}
+
 // Playoff games only (gameType === 3)
 export async function getPlayoffGames() {
   return cached('playoffGames', _getPlayoffGames, TTL.PLAYOFF_GAMES);
