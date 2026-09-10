@@ -1247,10 +1247,11 @@
       "toi": "{{mins}} min ensemble · déduit des données de présences"
     },
     "prediction": {
-      "needsStandings": "📊 La prédiction nécessite le classement de cette saison — non disponible avant le début des matchs.",
       "probabilityLabel": "Probabilité de victoire prédite",
       "sourceWithOdds": "Statistiques + cotes {{book}}",
-      "sourceStatsOnly": "Basé sur les statistiques de la saison"
+      "sourceStatsOnly": "Basé sur les statistiques de la saison",
+      "preseasonLabel": "Estimation de présaison — basée sur le classement final {{season}}",
+      "preseasonExpectedScore": "Score prévu : {{car}} {{carScore}} – {{opp}} {{oppScore}}"
     },
     "odds": {
       "implied": "{{pct}}% implicite"
