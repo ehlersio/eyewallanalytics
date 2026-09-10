@@ -80,6 +80,14 @@ describe('Read-state badges — per-tab dots', () => {
   });
 
   it('a cleared Milestones badge stays cleared — the seen id is persisted', () => {
+    // Same race useReadState.js's own comment documents (markSeen reads a
+    // ref populated by refresh()'s async .then(), and cy.wait() on the
+    // intercept only guarantees the network round-trip, not that .then()
+    // has run yet) -- the retrying assertion below waits for the badge to
+    // actually render (proof the ref is populated) before clicking, same
+    // as the preceding test's incidental protection via its own
+    // .should('exist') check before it clicks.
+    toggleDot('Milestones').should('exist');
     cy.get('.news-view-toggle-btn').contains('Milestones').click();
     cy.window().then((win) => {
       expect(win.localStorage.getItem('eyewall:seen:milestones:nhl')).to.eq('501');
