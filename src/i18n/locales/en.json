@@ -1247,10 +1247,11 @@
       "toi": "{{mins}}m together · inferred from shift data"
     },
     "prediction": {
-      "needsStandings": "📊 Prediction needs this season's standings — not available until games begin.",
       "probabilityLabel": "Predicted win probability",
       "sourceWithOdds": "Stats + {{book}} odds",
-      "sourceStatsOnly": "Based on season stats"
+      "sourceStatsOnly": "Based on season stats",
+      "preseasonLabel": "Preseason estimate — based on {{season}} final standings",
+      "preseasonExpectedScore": "Expected score: {{car}} {{carScore}} – {{opp}} {{oppScore}}"
     },
     "odds": {
       "implied": "{{pct}}% implied"

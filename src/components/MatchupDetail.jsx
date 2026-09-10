@@ -172,17 +172,21 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
     });
   }, [game?.id]);
 
-  // Guard: no current-season standings to build a prediction from. Not just
-  // a loading flash — ScheduleView.jsx withholds carStanding/oppStanding
-  // entirely once the season flips and the NHL's own live standings feed
-  // hasn't caught up to it yet, which is the steady state for most of the
-  // preseason, not a rare edge case.
+  // Guard: no current-season standings to build the client-side win%/stat-bar
+  // display from (ScheduleView.jsx withholds carStanding/oppStanding entirely
+  // once the season flips and the NHL's own live standings feed hasn't caught
+  // up yet — the steady state for most of preseason, not a rare edge case).
+  // This used to render a static "needs standings" note and stop there, even
+  // though the Worker's /prediction/analyze already has a real, backtested
+  // preseason fallback (prior-season scorecard + roster-continuity dampening
+  // — see nhl.js's buildPreseasonFallback) that doesn't need these local
+  // standings at all. PredictionAnalysis below already knows how to reach
+  // it; it just needs to actually be rendered here instead of being skipped
+  // by this early return.
   if (!carStanding || !oppStanding) {
     return (
       <div className="matchup-detail card mb-2 -mt-1">
-        <div className="md-note text-[11px] text-[color:var(--text-dim)] bg-[var(--bg3)] rounded-[var(--radius-sm)] py-2 px-2.5 mt-2">
-          {t('matchupDetail.prediction.needsStandings')}
-        </div>
+        <PredictionAnalysis gameId={game?.id} oppAbbr={oppAbbr} oppColor={oppColor} />
         {odds && (
           <div className={MD_ODDS_ROW_CLASSES} style={{ marginTop: 12 }}>
             <div className={MD_ODDS_ITEM_CLASSES}>
@@ -436,11 +440,16 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
     </div>
   );
 }
-function PredictionAnalysis({ gameId, _oppAbbr, _oppColor }) {
+function PredictionAnalysis({ gameId, oppAbbr, oppColor }) {
   const { t } = useTranslation();
   const [analysis,  setAnalysis]  = useState(null);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
+  // Only ever populated when the Worker route responds with isFallback:true
+  // (nhl.js's buildPreseasonFallback, "regime":"preseason") — the in-season
+  // branch never sets isFallback, so this stays null on the normal happy
+  // path and never fights with MatchupDetail's own win%/score display there.
+  const [fallback,  setFallback]  = useState(null);
 
   const workerUrl = import.meta.env.VITE_WORKER_URL;
 
@@ -449,6 +458,12 @@ function PredictionAnalysis({ gameId, _oppAbbr, _oppColor }) {
   useEffect(() => {
     if (!gameId) return;
     setLoading(true);
+    setFallback(null);
+    const applyFallback = (d) => {
+      if (d?.isFallback && d.carWinPct != null) {
+        setFallback({ carWinPct: d.carWinPct, expCar: d.expCar, expOpp: d.expOpp, dataSeason: d.dataSeason });
+      }
+    };
     getGamePrediction(gameId)
       .then(data => {
         if (data?.text) {
@@ -461,11 +476,11 @@ function PredictionAnalysis({ gameId, _oppAbbr, _oppColor }) {
         fetch(`${workerUrl}/cache/${encodeURIComponent(`prediction:${gameId}`)}`)
           .then(r => r.ok ? r.json() : null)
           .then(d => {
-            if (d?.narrative) { setAnalysis(d.narrative); return; }
+            if (d?.narrative) { setAnalysis(d.narrative); applyFallback(d); return; }
             // Not cached — generate on demand
             return fetch(`${workerUrl}/prediction/analyze?gameId=${gameId}`)
               .then(r => r.json())
-              .then(d => { if (d?.narrative) setAnalysis(d.narrative); else setError(d?.error || null); });
+              .then(d => { if (d?.narrative) { setAnalysis(d.narrative); applyFallback(d); } else setError(d?.error || null); });
           })
           .catch(() => {})
           .finally(() => setLoading(false));
@@ -484,7 +499,12 @@ function PredictionAnalysis({ gameId, _oppAbbr, _oppColor }) {
     );
   }
 
-  if (!analysis && !workerUrl) return null;
+  if (!analysis && !error && !workerUrl) return null;
+
+  // e.g. 20252026 -> "2025-26"
+  const seasonLabel = fallback?.dataSeason
+    ? `${String(fallback.dataSeason).slice(0, 4)}-${String(fallback.dataSeason).slice(6, 8)}`
+    : null;
 
   return (
     <div className={MD_AI_SECTION_CLASSES}>
@@ -495,6 +515,32 @@ function PredictionAnalysis({ gameId, _oppAbbr, _oppColor }) {
           position="above"
         />
       </div>
+      {fallback && (
+        <div className="md-ai-fallback mb-2.5">
+          <div className="md-ai-fallback-label text-[10px] font-semibold uppercase tracking-[0.06em] text-[color:var(--text-dim)] mb-1.5">
+            {t('matchupDetail.prediction.preseasonLabel', { season: seasonLabel })}
+          </div>
+          <div className="md-pred-bar h-6 rounded-[var(--radius-sm)] flex overflow-hidden mb-1">
+            <div className="h-full flex items-center justify-center font-[family-name:var(--font-display)] text-[12px] font-bold text-[#fff] bg-[var(--red)]" style={{ width: `${fallback.carWinPct}%` }}>
+              {fallback.carWinPct >= 20 && <span>{fallback.carWinPct}%</span>}
+            </div>
+            <div className="h-full flex items-center justify-center font-[family-name:var(--font-display)] text-[12px] font-bold text-[#fff] bg-[var(--blue)]" style={{ width: `${100 - fallback.carWinPct}%` }}>
+              {(100 - fallback.carWinPct) >= 20 && <span>{100 - fallback.carWinPct}%</span>}
+            </div>
+          </div>
+          <div className="flex justify-between text-[11px] font-semibold mb-1.5">
+            <span style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
+            <span style={{ color: oppColor }}>{oppAbbr}</span>
+          </div>
+          {fallback.expCar != null && fallback.expOpp != null && (
+            <div className="text-[11px] text-[color:var(--text-dim)] text-center">
+              {t('matchupDetail.prediction.preseasonExpectedScore', {
+                car: TEAM_CONFIG.abbr, carScore: fallback.expCar, opp: oppAbbr, oppScore: fallback.expOpp,
+              })}
+            </div>
+          )}
+        </div>
+      )}
       {analysis ? (
         <div className="md-ai-narrative text-[13px] leading-[1.6] text-[color:var(--text)]">{analysis}</div>
       ) : error ? (
