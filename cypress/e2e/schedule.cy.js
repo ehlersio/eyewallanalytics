@@ -95,7 +95,11 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       })
     })
 
-    it('Preseason tab shows games with a Preseason badge when data exists', function () {
+    it('Preseason tab shows games when data exists', function () {
+      // Per-card "Preseason" badges were dropped from GameCard/result-card
+      // (2026-09) -- redundant once a card only ever renders inside this
+      // already-selected tab. This just checks the tab itself surfaces
+      // real game content, not a per-card marker.
       cy.get('.sort-bar-count, .empty-title, .round-section-header', { timeout: 15000 }).should('exist')
       cy.get('body').then($body => {
         if ($body.find('.sched-tab:contains("Preseason")').length === 0) {
@@ -105,7 +109,6 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       })
       cy.get('.sched-tab').contains('Preseason').click()
       cy.contains(teamAbbr).should('exist')
-      cy.contains('Preseason').should('exist')
     })
 
     it('Preseason matchup breakdown shows both tabs, and Scouting actually renders', function () {
