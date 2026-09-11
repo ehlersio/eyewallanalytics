@@ -125,11 +125,20 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         }
       })
       cy.get('.sched-tab').contains('Preseason').click()
-      cy.contains('Matchup breakdown').first().click()
+      // Switching tabs triggers a real, live (unmocked) NHL API fetch for
+      // preseason games specifically -- wait for that to actually land
+      // before probing for 'Matchup breakdown', which only exists once a
+      // game card has rendered. Without this, the assertion below raced
+      // the fetch under its own default 10s timeout and flaked whenever
+      // that particular live call ran slow (getAllGames()'s cache key is
+      // team+season-scoped as of the playoff-series-500 fix, so a team
+      // switch between specs -- CAR/VGK/TOR/CHI here -- is a guaranteed
+      // cache miss, not just an occasional one).
+      cy.contains('Matchup breakdown', { timeout: 15000 }).first().click()
       cy.get('.md-tab').contains('Prediction').should('exist')
       cy.get('.md-tab').contains('Scouting').should('exist')
       cy.get('.md-tab').contains('Scouting').click()
-      cy.get('.scouting-teams-header', { timeout: 8000 }).should('exist')
+      cy.get('.scouting-teams-header', { timeout: 15000 }).should('exist')
     })
 
     it('renders list and calendar view toggle buttons', () => {
@@ -154,7 +163,16 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         // Session 102 — game cards now show the real arena (game.venue.default
         // from the NHL API) instead of a literal "Home"/"Away" label; the
         // 📍/✈ icon is what now distinguishes home vs. away.
-        cy.get('.gc-venue').should('exist')
+        //
+        // Explicit 15s timeout, not the 10s default: this describe block's
+        // beforeEach only clicks the Regular Season tab, it doesn't wait for
+        // the resulting live (unmocked) NHL API fetch to land before each
+        // test starts -- getRegularSeasonGames()'s cache key is team+season-
+        // scoped as of the playoff-series-500 fix, so switching teams
+        // between specs (CAR/VGK/TOR/CHI here) is a guaranteed cache miss,
+        // not just an occasional one, making this assertion more exposed to
+        // real network timing than it used to be.
+        cy.get('.gc-venue', { timeout: 15000 }).should('exist')
         cy.get('.gc-venue').first().invoke('text').should('match', /📍|✈/)
       })
 

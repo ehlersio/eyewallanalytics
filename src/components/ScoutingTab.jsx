@@ -642,6 +642,20 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
           <div className={SCOUTING_SECTION_LABEL_CLASSES}>
             {isPlayoff ? t('scoutingTab.playoffComparison') : t('scoutingTab.seasonComparison')}
           </div>
+          {/* getTeamStats() falls back to real prior-season numbers (tagged
+              isPriorSeason) rather than null once TEAM_CONFIG.season is
+              resolved ahead of live standings data -- e.g. the first few
+              weeks of a new season, once eyewall-poller's schedule
+              look-ahead flips it before real games/stats exist yet. Same
+              "carry forward real data, label it" pattern as the lines
+              section's own liveNote/isStatic handling just below. */}
+          {(compCarStats?.isPriorSeason || compOppStats?.isPriorSeason) && (
+            <div className="text-[11px] text-[color:var(--text-dim)] italic mb-1.5">
+              {t('scoutingTab.compare.priorSeasonNote', {
+                season: seasonIdToLabel(compCarStats?.statsSeasonId ?? compOppStats?.statsSeasonId),
+              })}
+            </div>
+          )}
           <div className="scouting-compare-header grid [grid-template-columns:48px_1fr_48px] text-center text-[9px] font-bold uppercase tracking-[0.05em] mb-1.5 text-[color:var(--text-dim)]">
             <span style={{color: carColor}}>{TEAM_CONFIG.abbr}</span>
             <span />
@@ -766,3 +780,12 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
 }
 
 const SEASON_LABEL = `${TEAM_CONFIG.season.slice(0, 4)}–${TEAM_CONFIG.season.slice(6)}`;
+
+// Same YYYY–YYYY formatting as SEASON_LABEL, parameterized for an
+// arbitrary season id (e.g. getTeamStats()'s statsSeasonId, which can be
+// a real PRIOR season once TEAM_CONFIG.season is resolved ahead of live
+// standings data -- see the priorSeasonNote usage above).
+function seasonIdToLabel(seasonId) {
+  const s = String(seasonId ?? '');
+  return s.length === 8 ? `${s.slice(0, 4)}–${s.slice(6)}` : s;
+}

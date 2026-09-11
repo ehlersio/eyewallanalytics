@@ -28,7 +28,12 @@ function assertRouteContent(path, checks) {
       expect(isOffSeason || hasAllChecks, 'expected the "Off season" topbar badge or matching route content').to.be.true
     })
   } else {
-    checks.forEach(check => cy.contains(check, { timeout: 8000 }).should('exist'))
+    // 15s, not 8s: /players' 'Forwards' check hits getRoster(), a live
+    // (unmocked) NHL API call this Cypress run doesn't have the Worker's
+    // KV-cached /roster route in front of yet (see eyewall-poller#98 /
+    // eyewallanalytics#285) -- same root cause as players.cy.js's own
+    // beforeEach hardening, just reached through this shared helper here.
+    checks.forEach(check => cy.contains(check, { timeout: 15000 }).should('exist'))
   }
 }
 
@@ -69,7 +74,10 @@ VIEWPORTS.forEach(({ label, width, height }) => {
 
     it('no horizontal overflow on Players', () => {
       cy.visit('/players')
-      cy.contains('Forwards', { timeout: 8000 }).should('exist')
+      // 15s, not 8s -- same live-uncached getRoster() reasoning as
+      // assertRouteContent's else-branch above (eyewall-poller#98 /
+      // eyewallanalytics#285).
+      cy.contains('Forwards', { timeout: 15000 }).should('exist')
       cy.window().then(win => {
         expect(win.document.documentElement.scrollWidth)
           .to.be.lte(win.innerWidth + 2)
@@ -102,7 +110,10 @@ VIEWPORTS.forEach(({ label, width, height }) => {
     it('player card opens and shows content', () => {
       cy.team().then(t => {
         cy.visit('/players')
-        cy.contains('Forwards', { timeout: 8000 }).should('exist')
+        // 15s, not 8s -- same live-uncached getRoster() reasoning as
+      // assertRouteContent's else-branch above (eyewall-poller#98 /
+      // eyewallanalytics#285).
+      cy.contains('Forwards', { timeout: 15000 }).should('exist')
         cy.contains(t.skater).first().click()
         cy.contains(/Cap Hit|AAV/i, { timeout: 8000 }).should('exist')
         cy.contains('Analytics').should('exist')
@@ -154,7 +165,10 @@ VIEWPORTS.forEach(({ label, width, height }) => {
           win.localStorage.setItem('eyewall:theme', 'light')
         },
       })
-      cy.contains('Forwards', { timeout: 8000 }).should('exist')
+      // 15s, not 8s -- same live-uncached getRoster() reasoning as
+      // assertRouteContent's else-branch above (eyewall-poller#98 /
+      // eyewallanalytics#285).
+      cy.contains('Forwards', { timeout: 15000 }).should('exist')
       cy.window().then(win => {
         expect(win.document.documentElement.scrollWidth)
           .to.be.lte(win.innerWidth + 2)

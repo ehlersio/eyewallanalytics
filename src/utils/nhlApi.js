@@ -1,6 +1,7 @@
 import { cached, TTL, invalidate } from './cache.js'
 import { NATIVE_ORIGIN } from './nativeOrigin';
 import { formatDate } from './formatters.js'
+import { isStandingsStale } from './standingsUtils.js'
 
 // NHL API utility
 // Proxy routes (configured in vite.config.js):
@@ -549,11 +550,33 @@ async function _getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
   // stays pinned to last season's finale for months until real games exist
   // for the new one. Each row carries its own seasonId; a mismatch here
   // means `team` is a genuine, real, but STALE full prior season, not
-  // "this season's data" — return null (distinct from "not found") rather
-  // than silently feeding a full 82-game record into this season's stats.
-  if (team.seasonId != null && String(team.seasonId) !== TEAM_CONFIG.season) {
-    return null;
-  }
+  // "this season's data".
+  //
+  // Previously returned null here (distinct from "not found"), reasoning
+  // that silently feeding a full 82-game record into "this season's"
+  // stats would be worse than showing nothing. That reasoning was right
+  // about not mislabeling it -- but wrong about the alternative: once
+  // TEAM_CONFIG.season itself is resolved ahead of live standings data
+  // (see eyewall-poller's nextSeasonHasImminentSchedule, added so
+  // schedule/roster UI can show the new season once camp is imminent,
+  // not just once real games exist), this mismatch became the EXPECTED
+  // state for the first few weeks of every new season, not a rare edge
+  // case -- and returning null broke the whole stat-comparison section
+  // AND silently starved ScoutingShareCanvas of the props it needs to
+  // attach its ref (see ScoutingTab.jsx), breaking the Share button too.
+  // Real last-season numbers, clearly tagged, is strictly more useful
+  // than nothing -- same "carry forward the last known-good real data,
+  // labeled" pattern already used for line combinations
+  // (eyewall-pipeline's line_combinations.py prior-season blend) and for
+  // this app's own isStatic/isInferred line-data flags. Callers that
+  // need to react to it (a "last season" badge, primarily) check
+  // isPriorSeason; callers that don't can use these numbers exactly as
+  // before -- the field shape is unchanged.
+  // Reuses the same explicit-mismatch-only rule ScheduleView/TeamView/
+  // LeagueView/PlayersView already apply via isStandingsStale() against
+  // the full standings array -- same check, just against the one row
+  // already found here rather than re-deriving it inline.
+  const isPriorSeason = isStandingsStale([team], TEAM_CONFIG.season);
 
   const gp = team.gamesPlayed || 1;
   const faceoffWinPct = await fetchTeamFaceoffWinPct(teamAbbr).catch(() => null);
@@ -579,6 +602,8 @@ async function _getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
     conferenceName:      team.conferenceName,
     streakCode:          team.streakCode,
     streakCount:         team.streakCount,
+    isPriorSeason,
+    statsSeasonId:       team.seasonId != null ? String(team.seasonId) : TEAM_CONFIG.season,
     _raw: team,
   };
 }
