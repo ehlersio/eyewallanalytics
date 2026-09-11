@@ -184,11 +184,10 @@ describe('Period Summary popup', () => {
     })
   })
 
-  it('shows Save Image and share buttons', () => {
+  it('shows the share button', () => {
     cy.get('.ps-share-section').should('exist')
     cy.get('.share-buttons-row').should('exist')
-    cy.contains('Save Image').should('exist')
-    cy.contains('Post to X').should('exist')
+    cy.contains('Share').should('exist')
   })
 
   it('closes when X button is clicked', () => {

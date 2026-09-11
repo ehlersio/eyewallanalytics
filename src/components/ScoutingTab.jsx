@@ -546,7 +546,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
     '#EyeWallAnalytics',
   ].join('\n');
 
-  const { saving, sharing, handleSave, handleShareX, handleNativeShare, canNativeShare } =
+  const { saving, sharing, handleNativeShare } =
     useShareCard({
       canvasRef,
       filename: `EyeWall-Scouting-${TEAM_CONFIG.abbr}-vs-${oppAbbr}.png`,
@@ -559,8 +559,8 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
       },
     });
 
-  const handleSaveWithCapture = async () => {
-    await handleSave();
+  const handleShareWithCapture = async () => {
+    await handleNativeShare();
     capture('scouting_card_exported', { opponent: oppAbbr, isPlayoff: !!isPlayoff });
   };
 
@@ -737,17 +737,14 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
           omits the border-b utilities entirely rather than needing !important. */}
       <div className="scouting-section scouting-export-row py-[10px]">
         <ShareButtons
-          onSave={handleSaveWithCapture}
-          onShareX={handleShareX}
-          onNativeShare={handleNativeShare}
-          canNativeShare={canNativeShare}
+          onNativeShare={handleShareWithCapture}
           saving={saving}
           sharing={sharing}
         />
       </div>
     </div>
 
-    {/* Off-screen canvas for export — only mounted when user clicks Save */}
+    {/* Off-screen canvas for export — only mounted when user clicks Share */}
     {canvasMounted && (
     <ScoutingShareCanvas
         canvasRef={canvasRef}

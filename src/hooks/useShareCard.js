@@ -1,16 +1,16 @@
 // hooks/useShareCard.js
 //
-// Shared hook for Save / Share to X / Native Share across all EyeWall export cards.
+// Shared hook behind the single Share button on every EyeWall export card.
 //
 // Usage:
-//   const { saving, sharing, handleSave, handleShareX, handleNativeShare } =
+//   const { saving, sharing, handleNativeShare } =
 //     useShareCard({ canvasRef, filename, xCaption, mountCanvas });
 //
-// handleSave        — downloads PNG via html-to-image
-// handleShareX      — opens Twitter/X Web Intent with caption
-// handleNativeShare — calls navigator.share() with image blob (mobile OS share sheet)
-//                     falls back to handleSave if Web Share API unavailable
-// canNativeShare    — true if navigator.share + files are supported (use to show/hide button)
+// handleNativeShare — calls navigator.share() with image blob (mobile OS share
+//                     sheet); falls back to a PNG download when the Web Share
+//                     API isn't available (setting `saving`, not `sharing`,
+//                     while it does) — pass both booleans to ShareButtons so
+//                     it stays disabled/spinning through either path.
 
 import { useState, useCallback } from 'react';
 
@@ -68,17 +68,6 @@ export function useShareCard({ canvasRef, filename, xCaption, mountCanvas, getNo
     }
   }, [getNode, filename]);
 
-  // ── Share to X ───────────────────────────────────────────────
-  const handleShareX = useCallback(() => {
-    const url  = 'https://eyewallanalytics.com';
-    const text = encodeURIComponent(`${xCaption}\n\n`);
-    window.open(
-      `https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(url)}`,
-      '_blank',
-      'noopener,noreferrer,width=600,height=500'
-    );
-  }, [xCaption]);
-
   // ── Native share (OS share sheet — Instagram, WhatsApp, etc.) ─
   const handleNativeShare = useCallback(async (onSuccess) => {
     // Fall back to save if Web Share API not available
@@ -120,9 +109,6 @@ export function useShareCard({ canvasRef, filename, xCaption, mountCanvas, getNo
   return {
     saving,
     sharing,
-    handleSave,
-    handleShareX,
     handleNativeShare,
-    canNativeShare,
   };
 }

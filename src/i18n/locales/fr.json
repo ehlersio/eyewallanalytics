@@ -1555,15 +1555,6 @@
     }
   },
   "shareButtons": {
-    "saveImage": {
-      "ariaLabel": "Enregistrer l'image",
-      "saving": "Enregistrement…",
-      "save": "Enregistrer l'image"
-    },
-    "shareX": {
-      "ariaLabel": "Partager sur X (Twitter)",
-      "label": "𝕏 Publier sur X"
-    },
     "nativeShare": {
       "ariaLabel": "Partager via le menu de partage de l'appareil",
       "sharing": "Partage…",

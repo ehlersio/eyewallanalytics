@@ -1515,7 +1515,7 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
     `#${PRIMARY} #EyeWallAnalytics`,
   ].filter(Boolean).join('\n');
 
-  const { saving, sharing, handleSave, handleShareX, handleNativeShare, canNativeShare } =
+  const { saving, sharing, handleNativeShare } =
     useShareCard({
       canvasRef:  { current: null }, // power rankings uses getElementById
       filename: `EyeWall-PowerRankings-${PRIMARY}.png`,
@@ -1530,8 +1530,8 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
       getNode: () => document.getElementById('pr-export-canvas'),
     });
 
-  const handleSaveWithCapture = async () => {
-    await handleSave();
+  const handleShareWithCapture = async () => {
+    await handleNativeShare();
     capture('power_rankings_card_exported', { team: PRIMARY, rank: myData?.rank });
   };
 
@@ -1627,10 +1627,7 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
 
       {/* Export / share */}
       <ShareButtons
-        onSave={handleSaveWithCapture}
-        onShareX={handleShareX}
-        onNativeShare={handleNativeShare}
-        canNativeShare={canNativeShare}
+        onNativeShare={handleShareWithCapture}
         saving={saving}
         sharing={sharing || !myData}
       />

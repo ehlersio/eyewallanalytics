@@ -764,7 +764,7 @@ export default function PeriodSummary({
     `#${carAbbr} #EyeWallAnalytics`,
   ].filter(Boolean).join('\n') : '';
 
-  const { saving, sharing, handleSave, handleShareX, handleNativeShare, canNativeShare } =
+  const { saving, sharing, handleNativeShare } =
     useShareCard({
       canvasRef,
       filename: `EyeWall-${carAbbr}-${summary?.periodShort ?? 'Summary'}.png`,
@@ -908,10 +908,7 @@ export default function PeriodSummary({
           {/* Share */}
           <div className={PS_SHARE_SECTION_CLASSES}>
             <ShareButtons
-              onSave={handleSave}
-              onShareX={handleShareX}
               onNativeShare={handleNativeShare}
-              canNativeShare={canNativeShare}
               saving={saving}
               sharing={sharing}
             />

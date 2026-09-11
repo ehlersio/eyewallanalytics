@@ -1555,15 +1555,6 @@
     }
   },
   "shareButtons": {
-    "saveImage": {
-      "ariaLabel": "Save image",
-      "saving": "Saving…",
-      "save": "Save Image"
-    },
-    "shareX": {
-      "ariaLabel": "Share to X (Twitter)",
-      "label": "𝕏 Post to X"
-    },
     "nativeShare": {
       "ariaLabel": "Share via device share sheet",
       "sharing": "Sharing…",
