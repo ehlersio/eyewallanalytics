@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 const WORKER_URL       = import.meta.env.VITE_WORKER_URL       || '';
@@ -59,7 +60,14 @@ export function usePushNotifications() {
   const [swReg,      setSwReg]      = useState(null);
 
   useEffect(() => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    // Web Push (VAPID + this app's own sw.js) is a browser-PWA mechanism --
+    // it doesn't apply inside the native iOS shell, which needs real APNs
+    // push via a Capacitor plugin instead (NotificationBell.jsx already
+    // shows a "not supported here" message on native rather than this
+    // hook's browser UI). Registering sw.js under Capacitor's WKWebView
+    // would just add an unused caching layer with no functional benefit --
+    // skip it entirely rather than register-then-never-use.
+    if (Capacitor.isNativePlatform() || !('serviceWorker' in navigator) || !('PushManager' in window)) {
       setSupported(false);
       return;
     }
