@@ -6,6 +6,7 @@ import { buildBrightcoveUrl } from '../utils/nhlApi';
 import { getGameSummary } from '../utils/supabaseClient';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
+import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
 
 // ── Tailwind class constants -- POPUP HALF (Phase 4, sub-PR 5a) ──
 // PeriodSummary.css's ps-canvas-* export-image classes are a separate,
@@ -649,7 +650,7 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarra
               const name = s.name?.default || '—';
               // Proxy headshot through /nhl-assets/ to avoid CORS during html-to-image export
               const headshot = s.headshot
-                ? s.headshot.replace('https://assets.nhle.com', '/nhl-assets')
+                ? s.headshot.replace('https://assets.nhle.com', `${NATIVE_ORIGIN}/nhl-assets`)
                 : null;
               return (
                 <div key={i} className={PS_CANVAS_STAR_CLASSES}>

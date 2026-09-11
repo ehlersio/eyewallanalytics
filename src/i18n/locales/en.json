@@ -48,6 +48,7 @@
     "lightMode": "Light mode",
     "pushNotifications": "Push Notifications",
     "iosInstructions": "On iPhone/iPad, push notifications require adding EyeWall Analytics to your Home Screen first: tap Share, then \"Add to Home Screen\" — then open it from there.",
+    "nativeUnsupported": "Notifications aren't available in the app yet — we're working on it for a future update.",
     "unsupported": "Push notifications aren't supported in this browser.",
     "subscribedText": "Subscribed for {{team}} alerts.",
     "getAlertsText": "Get instant alerts on your phone for {{team}} — even when the app is closed.",

@@ -15,6 +15,7 @@ import { TEAM_CONFIG } from '../utils/teamConfig';
 import { getGamePrediction } from '../utils/supabaseClient';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
+import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
 // PredictionCanvas.css import removed (Phase 6) -- migrated to Tailwind.
 // Shell classes (.pred-canvas/-header/-logo/-badge/-ai*/-footer) live in
 // utils/predCanvasClasses.js since LeagueView.jsx's PowerRankingsCanvas also
@@ -55,7 +56,7 @@ function PredictionCanvas({
     return <div className={PRED_CANVAS_CLASSES} ref={canvasRef} />;
   }
 
-  const logoUrl = (abbr) => `/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
+  const logoUrl = (abbr) => `${NATIVE_ORIGIN}/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
   const projTotal = +(predCarScore + predOppScore).toFixed(1);
 
   return (

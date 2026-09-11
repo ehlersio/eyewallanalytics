@@ -48,6 +48,7 @@
     "lightMode": "Mode clair",
     "pushNotifications": "Notifications",
     "iosInstructions": "Sur iPhone/iPad, les notifications push nécessitent d'abord d'ajouter EyeWall Analytics à l'écran d'accueil : appuyez sur Partager, puis « Sur l'écran d'accueil » — puis ouvrez l'application depuis là.",
+    "nativeUnsupported": "Les notifications ne sont pas encore disponibles dans l'application — nous y travaillons pour une prochaine mise à jour.",
     "unsupported": "Les notifications push ne sont pas prises en charge par ce navigateur.",
     "subscribedText": "Abonné aux alertes de {{team}}.",
     "getAlertsText": "Recevez des alertes instantanées sur votre téléphone pour {{team}} — même lorsque l'application est fermée.",

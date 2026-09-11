@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
 import { pwhlLogoUrl } from '../utils/pwhlConfig';
 import { ahlLogoUrl, getAHLTeamConfig } from '../utils/ahlConfig';
 import { echlLogoUrl, getECHLTeamConfig } from '../utils/echlConfig';
@@ -20,7 +21,7 @@ const FALLBACK_CLASSES = 'inline-flex items-center justify-center shrink-0 align
 
 function nhlLogoUrl(abbr) {
   if (!abbr) return null;
-  return `/nhl-assets/logos/nhl/svg/${abbr.toUpperCase()}_dark.svg`;
+  return `${NATIVE_ORIGIN}/nhl-assets/logos/nhl/svg/${abbr.toUpperCase()}_dark.svg`;
 }
 
 // Fallback: two-letter initials in team color when logo fails to load
