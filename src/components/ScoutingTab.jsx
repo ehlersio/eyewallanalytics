@@ -11,6 +11,7 @@ import TeamLogo from './TeamLogo';
 import InfoTip from './InfoTip';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
+import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
 // ScoutingTab.css import removed (Phase 6) -- migrated to Tailwind. NHL-only,
 // no PWHL equivalent by design.
 import { capture } from '../utils/analytics';
@@ -247,7 +248,7 @@ function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPla
   const { t } = useTranslation();
   if (!carStats || !oppStats) return null;
 
-  const logoUrl    = abbr => `/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
+  const logoUrl    = abbr => `${NATIVE_ORIGIN}/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
   const gpgFmt     = v => v?.toFixed(2) ?? '—';
   const pctFmt     = v => v != null ? `${(v * 100).toFixed(1)}%` : '—';
 

@@ -37,6 +37,7 @@ import {
 } from '../utils/predCanvasClasses';
 import DraftTab from '../components/DraftTab';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
+import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
 
 // .pp-close (Session 97, Phase 3, sub-PR 3) -- was PlayersView.css's,
 // used here only via importing PlayerPopup (which imported that file as a
@@ -1714,7 +1715,7 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
 
 function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, primaryColor }) {
   const { t } = useTranslation();
-  const logoUrl = abbr => `/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
+  const logoUrl = abbr => `${NATIVE_ORIGIN}/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
   const diff = priorRank != null ? priorRank - myTeam.rank : null;
   const mvmtLabel = diff == null ? null : diff === 0 ? '—' : diff > 0 ? `▲${diff}` : `▼${Math.abs(diff)}`;
   const mvmtColor = diff == null || diff === 0 ? 'rgba(255,255,255,0.5)' : diff > 0 ? '#4ade80' : '#f87171';

@@ -1,4 +1,5 @@
 import { cached, TTL, invalidate } from './cache.js'
+import { NATIVE_ORIGIN } from './nativeOrigin';
 import { formatDate } from './formatters.js'
 
 // NHL API utility
@@ -28,9 +29,15 @@ export const GAME_TYPE = { PRESEASON: 1, REGULAR: 2, PLAYOFFS: 3 };
 
 // ─── FETCH HELPER ────────────────────────────────────────────
 
+// /nhl-api and /nhl-stats are Cloudflare Pages Functions that only exist on the
+// deployed site — see utils/nativeOrigin.js for why this needs prefixing natively.
+function resolveProxyUrl(url) {
+  return (url.startsWith('/nhl-api') || url.startsWith('/nhl-stats')) ? `${NATIVE_ORIGIN}${url}` : url;
+}
+
 async function nhlFetch(url) {
   try {
-    const res = await fetch(url);
+    const res = await fetch(resolveProxyUrl(url));
     if (!res.ok) {
       console.warn(`NHL API ${res.status}: ${url}`);
       return null;
@@ -265,7 +272,7 @@ export function isCompleted(game) {
 export async function getPlayoffBracket() {
   return cached('playoffBracket', async () => {
     try {
-      const res = await fetch(`${BASE}/playoff-bracket/${TEAM_CONFIG.season}`);
+      const res = await fetch(resolveProxyUrl(`${BASE}/playoff-bracket/${TEAM_CONFIG.season}`));
       if (!res.ok) return null; // 404 expected during offseason — no log
       return await res.json();
     } catch {

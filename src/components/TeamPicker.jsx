@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next'
 import { ALL_TEAMS, setTeamConfig } from '../utils/teamConfig'
 import { PWHL_TEAMS } from '../utils/pwhlConfig'
 import { AHL_TEAMS, ahlLogoUrl } from '../utils/ahlConfig'
+import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
 import { ECHL_TEAMS, echlLogoUrl } from '../utils/echlConfig'
 import { useAuth } from '../utils/AuthContext'
 import { upsertFavoriteTeam } from '../utils/favoriteTeamSync'
@@ -128,7 +129,7 @@ function SportStep({ onPickSport }) {
   const sports = [
     {
       id: 'nhl',
-      logo: '/nhl-assets/logos/nhl/svg/NHL_dark.svg',
+      logo: `${NATIVE_ORIGIN}/nhl-assets/logos/nhl/svg/NHL_dark.svg`,
       description: t('teamPicker.nhlDescription'),
     },
     {
