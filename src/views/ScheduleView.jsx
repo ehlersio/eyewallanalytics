@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
+import { useSport } from '../utils/SportContext';
 import { recordOutcome } from '../utils/predictionStore';
 import {
   getRegularSeasonGames, getPlayoffGames, getPreseasonGames, getPlayoffSeries, getStandings,
@@ -73,6 +74,7 @@ const SCROLL_TOP_BTN_CLASSES = 'scroll-top-btn fixed [bottom:calc(var(--nav-heig
 
 export default function ScheduleView() {
   const { t } = useTranslation();
+  const { currentSeason } = useSport();
   const [tab, setTab]                   = useState('Playoffs');
   const [selectedGame, setSelectedGame] = useState(null);
   const [popupGame, setPopupGame]       = useState(null);
@@ -101,7 +103,20 @@ export default function ScheduleView() {
   const { data: preGames,     loading: preLoading } = useFetch(getPreseasonGames);
   const { data: standings }                          = useFetch(getStandings);
   const { data: oddsData }                           = useFetch(getNhlOdds);
-  const { data: playoffRounds, loading: prLoading }  = useFetch(getPlayoffSeries);
+  // Reactive on currentSeason, not a bare useFetch(getPlayoffSeries) -- that
+  // form only ever fetches once on mount (useFetch's deps default to []),
+  // snapshotting TEAM_CONFIG.season's value at that instant. CURRENT_SEASON
+  // starts at a hardcoded fallback seed and updates in place once the live
+  // /config/seasons fetch resolves (see teamConfig.js) -- on a cold load,
+  // that update almost always lands AFTER this fetch already fired, so the
+  // one-shot form was permanently requesting the wrong (often nonexistent)
+  // season's playoff carousel and silently eating a 500 on every page load.
+  // LeagueView.jsx's own getPlayoffSeries(SEASON) call already gets this
+  // right via useSport()'s reactive currentSeason -- matching that pattern
+  // here instead of introducing a second fix for the same class of bug.
+  const { data: playoffRounds, loading: prLoading }  = useFetch(
+    () => getPlayoffSeries(currentSeason), [currentSeason]
+  );
 
   // 'Playoffs' is the default `tab` above so a genuinely-live playoff run
   // opens straight to it, but that default is a guess made before either
