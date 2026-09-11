@@ -120,9 +120,20 @@ export async function getDraftOrder(team = null) {
 
 // Fetch ALL CAR games for the season (regular + playoffs together)
 // Short cache (20s) prevents hammering during rapid successive calls,
-// but stays fresh enough to detect live game state changes
+// but stays fresh enough to detect live game state changes.
+//
+// Cache key is team+season-scoped, not a bare 'allGames' -- CURRENT_SEASON
+// starts at a hardcoded fallback seed and updates in place once the live
+// /config/seasons fetch resolves (see teamConfig.js). A flat key meant a
+// call that raced ahead of that update (common on a cold page load) cached
+// the WRONG season's games under a key every later call -- even ones
+// firing after CURRENT_SEASON had already self-corrected -- would keep
+// hitting for the rest of this TTL window. Scoping the key by team+season
+// makes a corrected season value a genuine cache miss instead of a stale
+// hit, so a reactive re-fetch (see ScheduleView.jsx's useFetch calls)
+// actually gets fresh data instead of the first call's mistake.
 export async function getAllGames() {
-  return cached('allGames', async () => {
+  return cached(`allGames:${TEAM_CONFIG.abbr}:${TEAM_CONFIG.season}`, async () => {
     // Try Worker KV first (pre-polled, zero per-user NHL calls). Key is
     // season-namespaced (Session 77 — schedule:{abbr}:{season}, not the
     // old bare schedule:{abbr}) to match the Worker's /schedule route.
@@ -149,24 +160,27 @@ export async function getScheduleForSeason(teamAbbr, season) {
 }
 
 // Regular season games only (gameType === 2)
+// Cache key team+season-scoped -- see getAllGames()'s comment above.
 export async function getRegularSeasonGames() {
-  return cached('regularSeasonGames', async () => {
+  return cached(`regularSeasonGames:${TEAM_CONFIG.abbr}:${TEAM_CONFIG.season}`, async () => {
     const games = await getAllGames();
     return games.filter(g => g.gameType === GAME_TYPE.REGULAR);
   }, TTL.SCHEDULE);
 }
 
 // Preseason games only (gameType === 1)
+// Cache key team+season-scoped -- see getAllGames()'s comment above.
 export async function getPreseasonGames() {
-  return cached('preseasonGames', async () => {
+  return cached(`preseasonGames:${TEAM_CONFIG.abbr}:${TEAM_CONFIG.season}`, async () => {
     const games = await getAllGames();
     return games.filter(g => g.gameType === GAME_TYPE.PRESEASON);
   }, TTL.SCHEDULE);
 }
 
 // Playoff games only (gameType === 3)
+// Cache key team+season-scoped -- see getAllGames()'s comment above.
 export async function getPlayoffGames() {
-  return cached('playoffGames', _getPlayoffGames, TTL.PLAYOFF_GAMES);
+  return cached(`playoffGames:${TEAM_CONFIG.abbr}:${TEAM_CONFIG.season}`, _getPlayoffGames, TTL.PLAYOFF_GAMES);
 }
 async function _getPlayoffGames() {
   const games = await getAllGames();

@@ -98,22 +98,32 @@ export default function ScheduleView() {
 
   const scrollToTop = () => pageRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
 
-  const { data: playoffGames, loading: poLoading  } = useFetch(getPlayoffGames);
-  const { data: regGames,     loading: regLoading } = useFetch(getRegularSeasonGames);
-  const { data: preGames,     loading: preLoading } = useFetch(getPreseasonGames);
+  // All four below are reactive on currentSeason, not bare useFetch(fn) --
+  // that form only ever fetches once on mount (useFetch's deps default to
+  // []), snapshotting TEAM_CONFIG.season's value at that instant.
+  // CURRENT_SEASON starts at a hardcoded fallback seed and updates in place
+  // once the live /config/seasons fetch resolves (see teamConfig.js) -- on
+  // a cold load, that update almost always lands AFTER these fetches
+  // already fired, so the one-shot form permanently locked in whichever
+  // (often wrong) season was live at mount: getPlayoffSeries silently ate a
+  // 500 requesting a nonexistent season's playoff carousel, and
+  // getPlayoffGames/getRegularSeasonGames/getPreseasonGames (all backed by
+  // getAllGames()) silently fetched the WRONG season's schedule -- e.g.
+  // CAR showing "did not qualify for the playoffs" despite a real playoff
+  // run, because playoffGames came back empty for a next-season schedule
+  // that has no playoff games yet. LeagueView.jsx's own getPlayoffSeries
+  // call already gets this right via useSport()'s reactive currentSeason;
+  // matching that pattern here for all four instead of just one.
+  //
+  // The [currentSeason] dep alone wouldn't be enough on its own -- see
+  // getAllGames()'s own comment in nhlApi.js for the cache-key half of
+  // this fix, without which a corrected re-fetch could still be served
+  // the first call's stale cached result.
+  const { data: playoffGames, loading: poLoading  } = useFetch(getPlayoffGames, [currentSeason]);
+  const { data: regGames,     loading: regLoading } = useFetch(getRegularSeasonGames, [currentSeason]);
+  const { data: preGames,     loading: preLoading } = useFetch(getPreseasonGames, [currentSeason]);
   const { data: standings }                          = useFetch(getStandings);
   const { data: oddsData }                           = useFetch(getNhlOdds);
-  // Reactive on currentSeason, not a bare useFetch(getPlayoffSeries) -- that
-  // form only ever fetches once on mount (useFetch's deps default to []),
-  // snapshotting TEAM_CONFIG.season's value at that instant. CURRENT_SEASON
-  // starts at a hardcoded fallback seed and updates in place once the live
-  // /config/seasons fetch resolves (see teamConfig.js) -- on a cold load,
-  // that update almost always lands AFTER this fetch already fired, so the
-  // one-shot form was permanently requesting the wrong (often nonexistent)
-  // season's playoff carousel and silently eating a 500 on every page load.
-  // LeagueView.jsx's own getPlayoffSeries(SEASON) call already gets this
-  // right via useSport()'s reactive currentSeason -- matching that pattern
-  // here instead of introducing a second fix for the same class of bug.
   const { data: playoffRounds, loading: prLoading }  = useFetch(
     () => getPlayoffSeries(currentSeason), [currentSeason]
   );
