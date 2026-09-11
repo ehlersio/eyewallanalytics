@@ -773,6 +773,57 @@ async function _getRoster(teamAbbr = TEAM_CONFIG.abbr) {
   return { forwards, defensemen, goalies, all: [...forwards, ...defensemen, ...goalies] };
 }
 
+export async function getTeamInjuries(teamAbbr = TEAM_CONFIG.abbr) {
+  return cached(`injuries:${teamAbbr}`, () => _getTeamInjuries(teamAbbr), TTL.SCHEDULE);
+}
+async function _getTeamInjuries(teamAbbr = TEAM_CONFIG.abbr) {
+  // NHL has no official injuries endpoint -- eyewall-pipeline's injuries.py
+  // ingests nightly from ESPN's undocumented API into Supabase's
+  // player_injuries table, and the Worker's /injuries route (KV-cached 1hr
+  // server-side) serves it. Same shape as getRoster above: the Worker
+  // fetches-and-caches on its own, so a single call here is enough. No
+  // direct-fetch fallback exists (unlike getRoster/getAllGames) -- there is
+  // no third-party endpoint to fall back to, so degrade to [] on any
+  // Worker failure rather than throwing.
+  const data = await workerFetch(`/injuries?team=${encodeURIComponent(teamAbbr)}`);
+  return data || [];
+}
+
+// Normalize a player name for injury-status matching against
+// line-combination data (which only carries names, no playerId) --
+// mirrors eyewall-pipeline's injuries.py normalize_name(): lowercase,
+// strip diacritics, drop punctuation, collapse whitespace.
+function normalizePlayerName(name) {
+  return (name || '')
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-zA-Z\s]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+// Build a lookup from getTeamInjuries() rows, keyed both by playerId (set
+// server-side when injuries.py matched the ESPN row to a real roster
+// player) and by normalized name (fallback for consumers like
+// getTeamLines() that only carry names, no playerId).
+export function buildInjuryIndex(rows) {
+  const byId = new Map();
+  const byName = new Map();
+  for (const row of rows || []) {
+    if (row.player_id != null) byId.set(String(row.player_id), row);
+    const key = normalizePlayerName(row.player_name);
+    if (key) byName.set(key, row);
+  }
+  return {
+    forPlayer(playerId, name) {
+      return (playerId != null && byId.get(String(playerId)))
+        || (name && byName.get(normalizePlayerName(name)))
+        || null;
+    },
+  };
+}
+
 export async function getProspects(teamAbbr = TEAM_CONFIG.abbr) {
   return cached(`prospects:${teamAbbr}`, () => _getProspects(teamAbbr), TTL.SCHEDULE);
 }

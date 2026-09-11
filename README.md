@@ -419,6 +419,7 @@ All existing NHL features unchanged — see original documentation. Key features
 - League page (Scoreboard, Standings, Bracket, Leaders, Power Rankings, Draft)
 - Player analytics (WAR, RAPM, GSAX, heat maps)
 - Players page: Roster / Stats / Prospects tabs, historical-season picker on the Roster tab (`GET /v1/roster/{team}/{season}`) alongside the live current roster
+- Scouting tab injury status (2026-09): `getTeamInjuries()` reads the Worker's `/injuries` route (backed by `eyewall-pipeline`'s nightly ESPN ingestion — NHL has no official injuries endpoint). Top-skaters table badges match by `playerId`; line combinations only carry player names, so `buildInjuryIndex()` falls back to normalized-name matching there. `Out`/`IR` players render dimmed with a strikethrough rather than being removed from their line, matching this codebase's "carry forward real data, label it" convention elsewhere (prior-season stats fallback, stale roster flags).
 - Push notifications (goal, game start, penalty, win)
 - Player vs Player Comparison (Session 91, NHL + PWHL) — "vs Player" entry point on the player popup opens a same-league two-player comparison: overlaid radar chart, tabbed detail sections reusing the existing stat-tile grid. Goalie-vs-skater is hard-blocked; forward-vs-defenceman pairing shows a non-blocking mismatch badge. PWHL goalie-vs-goalie was hard-blocked too until 2026-08 (no percentile data existed) — unblocked once `pwhl_goalie_percentiles.py` shipped.
 
@@ -677,7 +678,7 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (179 tests, 13 files)
+### Vitest (204 tests, 15 files)
 ```bash
 npm test
 npm run test:watch
