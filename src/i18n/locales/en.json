@@ -1604,7 +1604,8 @@
       "tipPpPct": "Power play percentage",
       "tipPkPct": "Penalty kill percentage",
       "tipSfGp": "Shots for per game — possession proxy",
-      "tipFoWinPct": "Faceoff win percentage in playoffs"
+      "tipFoWinPct": "Faceoff win percentage in playoffs",
+      "priorSeasonNote": "Showing {{season}} stats — this season hasn't started yet"
     },
     "playerTable": {
       "noData": "No data",

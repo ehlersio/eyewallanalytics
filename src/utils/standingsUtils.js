@@ -1,6 +1,8 @@
 // src/utils/standingsUtils.js
 // Shared staleness check for the live standings feed, used by ScheduleView,
-// TeamView, LeagueView, and PlayersView.
+// TeamView, LeagueView, PlayersView, and nhlApi.js's _getTeamStats() (which
+// reuses it to tag a real prior-season row as isPriorSeason rather than
+// hiding it outright, unlike the other four consumers).
 //
 // The NHL's /standings/now stays pinned to last season's final standings for
 // months after our season config flips (confirmed live). Every row carries

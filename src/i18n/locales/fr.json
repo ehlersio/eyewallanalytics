@@ -1604,7 +1604,8 @@
       "tipPpPct": "Pourcentage d'avantage numérique",
       "tipPkPct": "Pourcentage de désavantage numérique",
       "tipSfGp": "Tirs au but par match — indicateur de possession",
-      "tipFoWinPct": "Pourcentage de mises en jeu gagnées en séries"
+      "tipFoWinPct": "Pourcentage de mises en jeu gagnées en séries",
+      "priorSeasonNote": "Statistiques {{season}} affichées — la saison n'a pas encore commencé"
     },
     "playerTable": {
       "noData": "Aucune donnée",
