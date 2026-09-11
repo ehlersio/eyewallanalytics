@@ -7,7 +7,15 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
     beforeEach(() => {
       cy.setTeam(teamAbbr)
       cy.visit('/players')
-      cy.contains('Forwards', { timeout: 8000 }).should('exist')
+      // 15s, not the 10s default: getRoster() (nhlApi.js) hits NHL's
+      // /roster/{team}/current directly with no Worker-side KV caching
+      // layer at all, unlike getAllGames()/getStandings() -- every one of
+      // these 4 teams' page loads is a genuinely fresh live fetch, every
+      // CI run, with nothing to fall back on but the NHL API's own real
+      // response time. A hook failure here skips every test in the whole
+      // describe block, not just one, so this is the highest-leverage
+      // place in this file to give real network timing more room.
+      cy.contains('Forwards', { timeout: 15000 }).should('exist')
     })
 
     describe('Roster tab', () => {
