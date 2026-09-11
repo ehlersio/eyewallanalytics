@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import {
   getTeamStats, getTeamStatsPlayoff, getTeamRecentGames, getTeamTopPlayers,
+  getTeamInjuries, buildInjuryIndex,
   TEAM_COLORS, TEAM_CONFIG,
 } from '../utils/nhlApi';
 import { computeGSAx } from '../utils/advancedStats';
@@ -31,6 +32,29 @@ const SCOUTING_PLAYER_NAME_CLASSES = 'scouting-player-name text-[color:var(--tex
 const SCOUTING_GOALIE_STAT_CLASSES = 'scouting-goalie-stat flex flex-col gap-px';
 const SCOUTING_GOALIE_LABEL_CLASSES = 'scouting-goalie-label text-[8px] font-bold uppercase tracking-[0.05em] text-[color:var(--text-dim)] flex items-center gap-[2px]';
 const SCOUTING_GOALIE_VAL_CLASSES = 'scouting-goalie-val font-[family-name:var(--font-mono)] text-[11px] font-semibold text-[color:var(--text-muted)]';
+
+// Statuses that gray out a player rather than just tagging them --
+// "day-to-day"/"suspension" still show a badge but stay full-opacity,
+// since a DTD player is often still playing that night.
+const INJURY_OUT_STATUSES = new Set(['out', 'injured-reserve']);
+const INJURY_BADGE_CLASSES = {
+  'day-to-day':      'text-[color:var(--amber)] bg-[rgba(240,160,48,0.15)]',
+  'out':             'text-[color:var(--red-bright)] bg-[rgba(204,34,0,0.15)]',
+  'injured-reserve': 'text-[color:var(--red-bright)] bg-[rgba(204,34,0,0.15)]',
+  'suspension':      'text-[color:var(--text-dim)] bg-[rgba(255,255,255,0.08)]',
+};
+const INJURY_LABEL = { 'day-to-day': 'DTD', out: 'OUT', 'injured-reserve': 'IR', suspension: 'SUSP' };
+
+function InjuryBadge({ status }) {
+  if (!status) return null;
+  const cls = INJURY_BADGE_CLASSES[status] || 'text-[color:var(--text-dim)] bg-[rgba(255,255,255,0.08)]';
+  const label = INJURY_LABEL[status] || status.slice(0, 4).toUpperCase();
+  return (
+    <span className={`sc-injury-badge text-[7px] font-bold uppercase tracking-[0.04em] rounded-[3px] py-px px-1 ml-1 align-middle ${cls}`}>
+      {label}
+    </span>
+  );
+}
 
 // Recent form dots
 function FormDots({ games }) {
@@ -91,7 +115,7 @@ function CompareRow({ label, carVal, oppVal, higherBetter = true, fmt = v => v?.
 
 
 // Player table for one team
-function PlayerTable({ players, loading, color, goalieAnalytics }) {
+function PlayerTable({ players, loading, color, goalieAnalytics, injuries }) {
   const { t } = useTranslation();
   if (loading) return <div className="scouting-loading text-[11px] text-[color:var(--text-dim)] py-2">{t('common.loading')}</div>;
   if (!players?.skaters?.length) return <div className={SCOUTING_EMPTY_CLASSES}>{t('scoutingTab.playerTable.noData')}</div>;
@@ -100,20 +124,27 @@ function PlayerTable({ players, loading, color, goalieAnalytics }) {
       <div className="scouting-player-header grid [grid-template-columns:1fr_18px_18px_24px] gap-[2px] py-[2px] text-[8px] text-[color:var(--text-dim)] uppercase border-b-[0.5px] border-b-[color:var(--border)] mb-px">
         <span>{t('gameStatsPopup.table.player')}</span><span>G</span><span>A</span><span>PTS</span>
       </div>
-      {players.skaters.map((p, i) => (
-        <div key={i} className="scouting-player-row grid [grid-template-columns:1fr_18px_18px_24px] gap-[2px] py-1 items-center border-b-[0.5px] border-b-[color:var(--border)] text-[11px] text-[color:var(--text-muted)] last:border-b-0">
-          <span className="scouting-player-name text-[color:var(--text)] font-medium text-[10px] whitespace-nowrap overflow-hidden text-ellipsis">
-            {p.name}<span className="scouting-player-pos text-[8px] text-[color:var(--text-dim)] ml-[3px]">{p.pos}</span>
-          </span>
-          <span>{p.goals}</span>
-          <span>{p.assists}</span>
-          <span className="scouting-pts font-bold" style={{color}}>{p.points}</span>
-        </div>
-      ))}
+      {players.skaters.map((p, i) => {
+        const injury = injuries?.forPlayer(p.playerId, p.name);
+        const isOut = injury && INJURY_OUT_STATUSES.has(injury.status);
+        return (
+          <div key={i} className="scouting-player-row grid [grid-template-columns:1fr_18px_18px_24px] gap-[2px] py-1 items-center border-b-[0.5px] border-b-[color:var(--border)] text-[11px] text-[color:var(--text-muted)] last:border-b-0">
+            <span className={`scouting-player-name text-[color:var(--text)] font-medium text-[10px] whitespace-nowrap overflow-hidden text-ellipsis${isOut ? ' opacity-50' : ''}`}>
+              {p.name}<span className="scouting-player-pos text-[8px] text-[color:var(--text-dim)] ml-[3px]">{p.pos}</span>
+              <InjuryBadge status={injury?.status} />
+            </span>
+            <span>{p.goals}</span>
+            <span>{p.assists}</span>
+            <span className="scouting-pts font-bold" style={{color}}>{p.points}</span>
+          </div>
+        );
+      })}
       {players.goalies?.length > 0 && (
         <>
           <div className="scouting-goalie-divider text-[8px] font-bold uppercase tracking-[0.07em] text-[color:var(--text-dim)] pt-[5px] pb-[3px] border-t-[0.5px] border-t-[color:var(--border)] mt-[3px]">{t('scoutingTab.playerTable.goalies')}</div>
           {players.goalies.map((g, i) => {
+            const goalieInjury = injuries?.forPlayer(g.playerId, g.name);
+            const goalieIsOut  = goalieInjury && INJURY_OUT_STATUSES.has(goalieInjury.status);
             // Use real GSAX from Supabase if available, fall back to estimate
             const seasonData  = goalieAnalytics?.[String(g.playerId)] || null;
             const realGsax    = seasonData?.gsax ?? null;
@@ -139,7 +170,9 @@ function PlayerTable({ players, loading, color, goalieAnalytics }) {
               : 'var(--text-muted)';
             return (
               <div key={`g${i}`} className={SCOUTING_GOALIE_ROW_CLASSES}>
-                <span className={`${SCOUTING_PLAYER_NAME_CLASSES} scouting-goalie-name block mb-1`}>{g.name}</span>
+                <span className={`${SCOUTING_PLAYER_NAME_CLASSES} scouting-goalie-name block mb-1${goalieIsOut ? ' opacity-50' : ''}`}>
+                  {g.name}<InjuryBadge status={goalieInjury?.status} />
+                </span>
                 <div className="scouting-goalie-stats flex gap-[10px]">
                   <div className={SCOUTING_GOALIE_STAT_CLASSES}>
                     <span className={SCOUTING_GOALIE_LABEL_CLASSES}>W</span>
@@ -453,7 +486,7 @@ function XgfBadge({ pct }) {
   );
 }
 
-function LineUnit({ unit, label, color, _isDefence }) {
+function LineUnit({ unit, label, color, _isDefence, injuries }) {
   const { t } = useTranslation();
   const toiLabel = unit.toiMins != null ? t('scoutingTab.lines.toiTogether', { mins: unit.toiMins }) : null;
   return (
@@ -475,18 +508,25 @@ function LineUnit({ unit, label, color, _isDefence }) {
         </div>
       </div>
       <div className="sc-line-players flex gap-y-1.5 gap-x-3.5 flex-wrap">
-        {unit.players.map((p, i) => (
-          <span key={i} className="sc-line-player text-[12px] text-[color:var(--text)] flex items-baseline gap-1">
-            <span className="sc-line-pos text-[9px] font-bold text-[color:var(--text-dim)] uppercase tracking-[0.04em] min-w-[18px]">{POS_LABEL[p.pos] || p.pos}</span>
-            {p.name}
-          </span>
-        ))}
+        {unit.players.map((p, i) => {
+          // Line-combination rows only carry a name, no playerId -- fall
+          // back to normalized-name matching (buildInjuryIndex's byName map).
+          const injury = injuries?.forPlayer(null, p.name);
+          const isOut = injury && INJURY_OUT_STATUSES.has(injury.status);
+          return (
+            <span key={i} className={`sc-line-player text-[12px] text-[color:var(--text)] flex items-baseline gap-1${isOut ? ' opacity-50 line-through' : ''}`}>
+              <span className="sc-line-pos text-[9px] font-bold text-[color:var(--text-dim)] uppercase tracking-[0.04em] min-w-[18px]">{POS_LABEL[p.pos] || p.pos}</span>
+              {p.name}
+              <InjuryBadge status={injury?.status} />
+            </span>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function LinesSection({ lines, color, isPlayoff, abbr }) {
+function LinesSection({ lines, color, isPlayoff, abbr, injuries }) {
   const { t } = useTranslation();
   if (!lines) return null;
   const { lines: fLines, pairs: dPairs, _isInferred } = lines;
@@ -515,7 +555,7 @@ function LinesSection({ lines, color, isPlayoff, abbr }) {
       {fLines.length > 0 && (
         <div className="sc-lines-group flex flex-col gap-[6px] mb-2.5">
           {fLines.map((u, i) => (
-            <LineUnit key={i} unit={u} label={lineLabels[i] || t('scoutingTab.lines.line', { n: u.rank })} color={color} />
+            <LineUnit key={i} unit={u} label={lineLabels[i] || t('scoutingTab.lines.line', { n: u.rank })} color={color} injuries={injuries} />
           ))}
         </div>
       )}
@@ -523,7 +563,7 @@ function LinesSection({ lines, color, isPlayoff, abbr }) {
         <div className="sc-lines-group sc-lines-group-d flex flex-col gap-[6px] mb-2.5 border-t border-[color:var(--border)] pt-2.5 mt-[2px]">
           <div className="sc-lines-subheader text-[9px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] mb-1">{t('scoutingTab.lines.defencePairs')}</div>
           {dPairs.map((u, i) => (
-            <LineUnit key={i} unit={u} label={pairLabels[i] || t('scoutingTab.lines.pair', { n: u.rank })} color={color} isDefence />
+            <LineUnit key={i} unit={u} label={pairLabels[i] || t('scoutingTab.lines.pair', { n: u.rank })} color={color} isDefence injuries={injuries} />
           ))}
         </div>
       )}
@@ -589,6 +629,10 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
   const { data: goalieAnalytics } = useFetch(() => getGoalieAnalytics());
   const { data: carLines } = useFetch(() => getTeamLines(TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType), [TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType]);
   const { data: matchupData } = useFetch(() => getGameMatchup(gameId), [gameId]);
+  const { data: carInjuriesRaw } = useFetch(() => getTeamInjuries(TEAM_CONFIG.abbr), [TEAM_CONFIG.abbr]);
+  const { data: oppInjuriesRaw } = useFetch(() => getTeamInjuries(oppAbbr), [oppAbbr]);
+  const carInjuries = useMemo(() => buildInjuryIndex(carInjuriesRaw), [carInjuriesRaw]);
+  const oppInjuries = useMemo(() => buildInjuryIndex(oppInjuriesRaw), [oppInjuriesRaw]);
 
   // Use playoff stats when available, fall back to regular season
   const compCarStats = isPlayoff ? (carPoStats || carStats) : carStats;
@@ -731,18 +775,18 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
         <div className="scouting-players-row grid [grid-template-columns:1fr_1fr] gap-3">
           <div className="scouting-players-col flex flex-col gap-1">
             <div className="scouting-players-team text-[10px] font-bold mb-[2px]" style={{color: carColor}}>{TEAM_CONFIG.abbr}</div>
-            <PlayerTable players={carTopPlayers} loading={carPlayersLoading} color={carColor} goalieAnalytics={goalieAnalytics} />
+            <PlayerTable players={carTopPlayers} loading={carPlayersLoading} color={carColor} goalieAnalytics={goalieAnalytics} injuries={carInjuries} />
           </div>
           <div className="scouting-players-col flex flex-col gap-1">
             <div className="scouting-players-team text-[10px] font-bold mb-[2px]" style={{color: oppColor}}>{oppAbbr}</div>
-            <PlayerTable players={oppTopPlayers} loading={oppPlayersLoading} color={oppColor} goalieAnalytics={goalieAnalytics} />
+            <PlayerTable players={oppTopPlayers} loading={oppPlayersLoading} color={oppColor} goalieAnalytics={goalieAnalytics} injuries={oppInjuries} />
           </div>
         </div>
       </div>
 
       {/* Line combinations */}
       {carLines && (
-        <LinesSection lines={carLines} color={carColor} isPlayoff={isPlayoff} abbr={TEAM_CONFIG.abbr} />
+        <LinesSection lines={carLines} color={carColor} isPlayoff={isPlayoff} abbr={TEAM_CONFIG.abbr} injuries={carInjuries} />
       )}
 
       {/* Export / share -- .scouting-export-row's `border-bottom: none !important`
