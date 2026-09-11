@@ -539,9 +539,6 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
             >
               <div className="result-top flex items-center gap-2 mb-1.5">
                 <span className="result-date text-[11px] text-[color:var(--text-muted)]">{formatGameDate(game.gameDate)}</span>
-                {isPreseason && (
-                  <span className="result-preseason-badge text-[9px] font-bold uppercase tracking-[0.04em] py-[1px] px-[6px] rounded-[10px] bg-[var(--bg3)] text-[color:var(--text-dim)] border-[0.5px] border-[color:var(--border-2)]">{t('scheduleView.tabs.preseason')}</span>
-                )}
                 {carScore != null && (
                   <span className={`result-outcome font-[family-name:var(--font-display)] text-[12px] font-bold py-[2px] px-2 rounded ${won ? 'win bg-[rgba(61,186,126,0.15)] text-[color:var(--green)]' : 'loss bg-[rgba(255,68,34,0.1)] text-[color:var(--red-bright)]'}`}>
                     {won ? 'W' : lost ? 'L' : 'OT'}
@@ -583,7 +580,6 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
               isCompleted={false}
               isSelected={isSelected}
               cardFavoured={cardFavoured}
-              isPreseason={isPreseason}
               onClick={() => setSelectedGame(isSelected ? null : game)}
             />
             {isSelected && (
