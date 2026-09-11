@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePushNotifications, loadPrefs, savePrefs } from '../hooks/usePushNotifications';
-import { Capacitor } from '@capacitor/core';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { useSport } from '../utils/SportContext';
@@ -269,11 +268,7 @@ export default function NotificationBell() {
             <div className={MY_TEAM_CLASSES}>
               <div className={EVENT_LABEL_CLASSES}>🔔 {t('settings.pushNotifications')}</div>
               <p className={DESC_CLASSES}>
-                {Capacitor.isNativePlatform()
-                  ? t('settings.nativeUnsupported')
-                  : isIOSBrowserTab()
-                  ? t('settings.iosInstructions')
-                  : t('settings.unsupported')}
+                {isIOSBrowserTab() ? t('settings.iosInstructions') : t('settings.unsupported')}
               </p>
             </div>
           )}

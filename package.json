@@ -30,6 +30,7 @@
     "@capacitor/app": "^8.0.4",
     "@capacitor/core": "^8.5.1",
     "@capacitor/ios": "^8.5.1",
+    "@capacitor/push-notifications": "^8.1.2",
     "@supabase/supabase-js": "^2.112.4",
     "d3": "^7.9.0",
     "date-fns": "^4.4.0",

@@ -32,7 +32,7 @@ Users select their league (NHL or PWHL) and team on first launch. All views, col
 | NHL Data Pipeline | Python (`eyewall-pipeline`) — NHL API + MoneyPuck + Tankathon → Supabase |
 | PWHL Data Pipeline | Python (`eyewall-pipeline`) — HockeyTech + PWHLPA → Supabase |
 | Pipeline CI | GitHub Actions — nightly data cron (3 AM ET) + AI pipeline + draft day ingest + PWHL news |
-| Push Notifications | Web Push API (VAPID), Service Worker |
+| Push Notifications | Web Push API (VAPID) + Service Worker on browser/PWA; native APNs via `@capacitor/push-notifications` on the iOS app (added 2026-09 — see `usePushNotifications.js`) |
 | AI | OpenRouter — `google/gemma-4-26b-a4b-it` (period/game summaries, predictions, matchup analysis, scouting blurbs, power rankings narratives, draft pick analysis). Switched 2026-08 from Cloudflare Workers AI (`@cf/meta/llama-3.1-8b-instruct-fp8-fast`) — see `eyewall-poller`'s README for the full reasoning (real accuracy problems found in the old model, and why OpenRouter rather than Cloudflare's own hosting of the same new Gemma model) |
 | Analytics Data | MoneyPuck.com CSV (fetched nightly by pipeline) |
 | PWHL Data | HockeyTech API (stats, PBP, schedules), PWHLPA PDF (salaries) |
@@ -420,7 +420,7 @@ All existing NHL features unchanged — see original documentation. Key features
 - Player analytics (WAR, RAPM, GSAX, heat maps)
 - Players page: Roster / Stats / Prospects tabs, historical-season picker on the Roster tab (`GET /v1/roster/{team}/{season}`) alongside the live current roster
 - Scouting tab injury status (2026-09): `getTeamInjuries()` reads the Worker's `/injuries` route (backed by `eyewall-pipeline`'s nightly ESPN ingestion — NHL has no official injuries endpoint). Top-skaters table badges match by `playerId`; line combinations only carry player names, so `buildInjuryIndex()` falls back to normalized-name matching there. `Out`/`IR` players render dimmed with a strikethrough rather than being removed from their line, matching this codebase's "carry forward real data, label it" convention elsewhere (prior-season stats fallback, stale roster flags).
-- Push notifications (goal, game start, penalty, win)
+- Push notifications (goal, game start, penalty, win) — Web Push (VAPID) in browser/installed-PWA contexts, real native APNs push on the iOS app (2026-09, `usePushNotifications.js`/`NotificationBell.jsx`). Both mechanisms share one `subscribe()`/`unsubscribe()`/`updatePrefs()` API and post to the same `eyewall-poller` `/push/subscribe`/`/push/unsubscribe` routes — see that repo's README for the `platform: 'ios'` request shape and APNs sending details. Native sends won't actually deliver until `APNS_KEY_ID`/`APNS_TEAM_ID`/`APNS_AUTH_KEY` are set as Worker secrets (not yet, as of this writing) and a real device/TestFlight build exists to verify against (simulators can't receive real APNs pushes).
 - Player vs Player Comparison (Session 91, NHL + PWHL) — "vs Player" entry point on the player popup opens a same-league two-player comparison: overlaid radar chart, tabbed detail sections reusing the existing stat-tile grid. Goalie-vs-skater is hard-blocked; forward-vs-defenceman pairing shows a non-blocking mismatch badge. PWHL goalie-vs-goalie was hard-blocked too until 2026-08 (no percentile data existed) — unblocked once `pwhl_goalie_percentiles.py` shipped.
 
 ### PWHL Features
@@ -762,6 +762,14 @@ VITE_SUPABASE_ANON=sb_publishable_...
 - `http://localhost:5173/dev` — live game replay scrubber
 - `http://localhost:5173/dev/draft` — draft simulator
 
+**iOS (Capacitor):**
+```bash
+npm run build
+npx cap sync ios
+open ios/App/App.xcodeproj     # no CocoaPods/xcworkspace -- plugins link via Swift Package Manager
+```
+After adding a new Capacitor plugin (like `@capacitor/push-notifications`, 2026-09) or changing `ios/App/App/App.entitlements`, open Xcode once and check Signing & Capabilities — a hand-edited entitlements file doesn't itself register the capability with Apple under automatic signing; Xcode needs to see it and re-provision the App ID.
+
 ---
 
 ## Deployment
@@ -870,7 +878,7 @@ VITE_SUPABASE_ANON=sb_publishable_...
 - [ ] ~~`app_config` Supabase table to eliminate hardcoded season constants~~ — **solved differently, 2026-07:** ended up as Worker-resolved + KV-cached (`seasons.js` + `GET /config/seasons`) rather than a Supabase table. Same goal, different mechanism — closing this out rather than leaving it looking unstarted.
 - [ ] Season-over-season player comparison
 - [ ] Standings clinching indicators
-- [ ] Capacitor PWA wrapper for App Store / Play Store
+- [x] Capacitor PWA wrapper for App Store / Play Store — iOS project exists (`ios/App`), real Apple Developer Team ID on file for code signing. This checkbox was stale; caught while wiring up native push notifications (2026-09). Native push itself is a separate, still-in-progress item — see the Push Notifications bullet under NHL Features above.
 - [ ] Dependabot: supabase 2.31.x, ESLint 10, Vite 8 (October)
 - [ ] October: bump `OFFSEASON_BRACKET` — the only one of these four left after 2026-07's live season resolution work; `CURRENT_SEASON`/`PWHL_CURRENT_SEASON`/`NHL_SEASON` no longer need a manual bump
 - [x] ~~PWHL milestones (hat tricks, shutouts, etc.) — deferred pending PWHL schema confirmation~~ — actually shipped some time ago (`pwhl_milestones.py`, same shared `milestones` table as NHL) but this roadmap line was never checked off; caught during the 2026-08-13 milestones staleness/`sh_goal` naming-mismatch investigation
