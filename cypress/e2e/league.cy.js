@@ -613,10 +613,10 @@ describe('League page — CAR', () => {
       })
     })
 
-    it('shows export button', function () {
+    it('shows share button', function () {
       cy.skipIfEither('.lv-season-empty', '.pr-row')
       cy.get('.share-buttons-row').scrollIntoView().should('exist')
-      cy.get('.share-buttons-row').should('contain', 'Save Image')
+      cy.get('.share-buttons-row').should('contain', 'Share')
     })
   })
 })

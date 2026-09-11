@@ -545,7 +545,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
     '#EyeWallAnalytics',
   ].join('\n');
 
-  const { sharing, handleNativeShare } =
+  const { saving, sharing, handleNativeShare } =
     useShareCard({
       canvasRef,
       filename: `EyeWall-Scouting-${TEAM_CONFIG.abbr}-vs-${oppAbbr}.png`,
@@ -737,8 +737,8 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
       <div className="scouting-section scouting-export-row py-[10px]">
         <ShareButtons
           onNativeShare={handleShareWithCapture}
+          saving={saving}
           sharing={sharing}
-          onlyShare
         />
       </div>
     </div>

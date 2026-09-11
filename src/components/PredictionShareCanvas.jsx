@@ -262,7 +262,7 @@ export default function PredictionExportSection({
     `#${TEAM_CONFIG.abbr} #EyeWallAnalytics`,
   ].filter(Boolean).join('\n') : '';
 
-  const { saving, sharing, handleSave, handleShareX, handleNativeShare, canNativeShare } =
+  const { saving, sharing, handleNativeShare } =
     useShareCard({
       canvasRef,
       filename: `EyeWall-Prediction-${TEAM_CONFIG.abbr}-vs-${oppAbbr}.png`,
@@ -276,8 +276,8 @@ export default function PredictionExportSection({
     });
 
   if (carGpg == null || oppGpg == null || predCarScore == null) return null;
-  const handleSaveWithCapture = async () => {
-    await handleSave();
+  const handleShareWithCapture = async () => {
+    await handleNativeShare();
     capture('prediction_card_exported', {
       opponent: oppAbbr,
       carPct:   carModelPct,
@@ -289,10 +289,7 @@ export default function PredictionExportSection({
   return (
     <>
       <ShareButtons
-        onSave={handleSaveWithCapture}
-        onShareX={handleShareX}
-        onNativeShare={handleNativeShare}
-        canNativeShare={canNativeShare}
+        onNativeShare={handleShareWithCapture}
         saving={saving}
         sharing={sharing}
         className="md-export-row"

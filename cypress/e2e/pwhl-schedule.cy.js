@@ -334,12 +334,11 @@ describe('PWHL Schedule', () => {
       cy.assertNoErrors()
     })
 
-    it('shows Save Image / Post to X share buttons for the prediction card', () => {
+    it('shows the share button for the prediction card', () => {
       cy.contains('Tap for preview', { timeout: 8000 }).click()
       cy.wait(['@preview', '@prediction'])
       cy.get('.share-buttons-row', { timeout: 8000 }).should('exist')
-      cy.contains(/Save Image/i).should('exist')
-      cy.contains(/Post to X/i).should('exist')
+      cy.contains(/Share/i).should('exist')
       cy.assertNoErrors()
     })
   })

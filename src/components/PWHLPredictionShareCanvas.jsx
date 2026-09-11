@@ -152,7 +152,7 @@ export default function PWHLPredictionExportSection({
     `#${abbr} #PWHL #EyeWallAnalytics`,
   ].filter(Boolean).join('\n') : '';
 
-  const { saving, sharing, handleSave, handleShareX, handleNativeShare, canNativeShare } =
+  const { saving, sharing, handleNativeShare } =
     useShareCard({
       canvasRef,
       filename: `EyeWall-PWHL-Prediction-${abbr}-vs-${oppAbbr}.png`,
@@ -167,18 +167,15 @@ export default function PWHLPredictionExportSection({
 
   if (myWinPct == null || myExp == null) return null;
 
-  const handleSaveWithCapture = async () => {
-    await handleSave();
+  const handleShareWithCapture = async () => {
+    await handleNativeShare();
     capture('pwhl_prediction_card_exported', { opponent: oppAbbr, myWinPct, hasAI: !!narrative });
   };
 
   return (
     <>
       <ShareButtons
-        onSave={handleSaveWithCapture}
-        onShareX={handleShareX}
-        onNativeShare={handleNativeShare}
-        canNativeShare={canNativeShare}
+        onNativeShare={handleShareWithCapture}
         saving={saving}
         sharing={sharing}
         className="pgp-export-row mt-3"

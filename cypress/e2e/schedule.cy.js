@@ -390,10 +390,10 @@ describe('Schedule view — CAR (deep)', () => {
       })
     })
 
-    liveSeriesIt('Scouting tab shows Save Scouting Card export button', () => {
+    liveSeriesIt('Scouting tab shows share button', () => {
       cy.contains('Matchup breakdown').first().click()
       cy.get('.md-tab').contains('Scouting').click()
-      cy.get('.scouting-export-btn').should('exist').should('contain', 'Save Scouting Card')
+      cy.get('.share-buttons-row').should('exist').should('contain', 'Share')
     })
 
     liveSeriesIt('Scouting tab shows team lines section', () => {
