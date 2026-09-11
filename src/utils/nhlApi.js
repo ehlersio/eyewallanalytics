@@ -726,7 +726,20 @@ async function _getRoster(teamAbbr = TEAM_CONFIG.abbr) {
   // new team until that season's roster actually gets populated (which can
   // lag well into the following season). /current is season-agnostic and
   // reflects the real active roster as of today.
-  const data = await nhlFetch(`${BASE}/roster/${teamAbbr}/current`);
+  //
+  // Worker's /roster route first (added 2026-09, KV-cached 1hr server-side)
+  // -- this call used to hit NHL directly with zero caching anywhere in the
+  // chain, unlike getAllGames()/getStandings() below, which both check the
+  // Worker first. Every Players-view page load was a genuinely fresh live
+  // fetch, the root cause of repeated Cypress flakiness against a real,
+  // uncached third-party API. Falls back to the direct NHL call if the
+  // Worker itself is unreachable, matching this file's general resilience
+  // pattern elsewhere (see kvFetch/workerFetch's own null-on-failure
+  // contract) -- this is a route the Worker fetches-and-caches on a miss
+  // itself (unlike kvFetch's plain KV-passthrough shape), so a single call
+  // here is enough; no separate "check cache, else fetch direct" split.
+  const data = await workerFetch(`/roster?team=${encodeURIComponent(teamAbbr)}`)
+    || await nhlFetch(`${BASE}/roster/${teamAbbr}/current`);
   if (!data) return { forwards: [], defensemen: [], goalies: [], all: [] };
 
   const forwards   = data.forwards   || [];
