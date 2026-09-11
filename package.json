@@ -27,6 +27,7 @@
     "lint:fix": "eslint src --fix"
   },
   "dependencies": {
+    "@capacitor/app": "^8.0.4",
     "@capacitor/core": "^8.5.1",
     "@capacitor/ios": "^8.5.1",
     "@supabase/supabase-js": "^2.112.4",
