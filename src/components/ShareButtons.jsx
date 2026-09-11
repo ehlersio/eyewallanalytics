@@ -11,6 +11,11 @@ import { useTranslation } from 'react-i18next';
 //   canNativeShare  — bool, if false the Share button is hidden on desktop
 //   saving          — bool, disables Save button + shows spinner
 //   sharing         — bool, disables Share button + shows spinner
+//   onlyShare       — bool, renders just the single Share button, unstretched
+//                     and content-sized rather than filling the row. Safe to
+//                     always show (not gated by canNativeShare) because
+//                     useShareCard's handleNativeShare already falls back to
+//                     handleSave when the Web Share API is unavailable.
 //   className       — optional wrapper class
 //
 // Tailwind migration (Session 96, Phase 2) -- previously ShareButtons.css,
@@ -33,10 +38,12 @@ import { useTranslation } from 'react-i18next';
 // found along the way, removed too; not a rename of anything this
 // component ever used.
 const ROW_CLASSES = 'share-buttons-row flex gap-2 flex-wrap items-center justify-center';
-const BTN_BASE = 'inline-flex items-center justify-center gap-1.5 py-[11px] px-4 rounded-[12px] border-0 text-[13px] font-bold cursor-pointer [transition:opacity_0.15s,transform_0.1s] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97]';
-const BTN_SAVE = 'flex-[1.5] bg-[var(--red-bright)] text-[#fff] enabled:hover:opacity-[0.88]';
-const BTN_X = 'flex-1 bg-[#000] text-[#fff] border-[0.5px] border-[rgba(255,255,255,0.15)] font-[family-name:Georgia,_serif] enabled:hover:bg-[#111]';
-const BTN_NATIVE = 'flex-1 bg-[var(--bg3)] text-[color:var(--text)] border-[0.5px] border-[var(--border)] enabled:hover:bg-[var(--bg2)]';
+// No padding here — each variant below sets its own, so onlyShare can use a
+// tighter value without fighting Tailwind's same-specificity class ordering.
+const BTN_BASE = 'inline-flex items-center justify-center gap-1.5 rounded-[12px] border-0 text-[13px] font-bold cursor-pointer [transition:opacity_0.15s,transform_0.1s] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97]';
+const BTN_SAVE = 'flex-[1.5] py-[11px] px-4 bg-[var(--red-bright)] text-[#fff] enabled:hover:opacity-[0.88]';
+const BTN_X = 'flex-1 py-[11px] px-4 bg-[#000] text-[#fff] border-[0.5px] border-[rgba(255,255,255,0.15)] font-[family-name:Georgia,_serif] enabled:hover:bg-[#111]';
+const BTN_NATIVE = 'flex-1 py-[11px] px-4 bg-[var(--bg3)] text-[color:var(--text)] border-[0.5px] border-[var(--border)] enabled:hover:bg-[var(--bg2)]';
 // Hides on hover-capable, fine-pointer devices (desktop) when the Web
 // Share API isn't supported -- deliberately NOT a viewport-width
 // breakpoint, so it stays correct on a touch-only device even at a wide
@@ -44,6 +51,10 @@ const BTN_NATIVE = 'flex-1 bg-[var(--bg3)] text-[color:var(--text)] border-[0.5p
 // Tailwind shorthand) to guarantee it matches the original CSS's
 // `@media (hover: hover) and (pointer: fine)` exactly.
 const BTN_HIDDEN_DESKTOP = '[@media(hover:hover)_and_(pointer:fine)]:hidden';
+// Content-sized (no flex-1, tighter padding than the 3-up row) — a single
+// button stretched to the full row width with the 3-up row's padding reads
+// as one oversized button full of empty space.
+const BTN_SHARE_SOLO = 'py-2 px-4 bg-[var(--red-bright)] text-[#fff] enabled:hover:opacity-[0.88]';
 
 export default function ShareButtons({
   onSave,
@@ -52,9 +63,26 @@ export default function ShareButtons({
   canNativeShare,
   saving   = false,
   sharing  = false,
+  onlyShare = false,
   className = '',
 }) {
   const { t } = useTranslation();
+
+  if (onlyShare) {
+    return (
+      <div className={`${ROW_CLASSES} ${className}`}>
+        <button
+          className={`${BTN_BASE} ${BTN_SHARE_SOLO}`}
+          onClick={onNativeShare}
+          disabled={sharing}
+          aria-label={t('shareButtons.nativeShare.ariaLabel')}
+        >
+          {sharing ? '⏳' : '📤'} {sharing ? t('shareButtons.nativeShare.sharing') : t('shareButtons.nativeShare.share')}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className={`${ROW_CLASSES} ${className}`}>
       {/* Save image */}
