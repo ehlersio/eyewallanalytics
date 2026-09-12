@@ -38,7 +38,7 @@ Users select their league (NHL or PWHL) and team on first launch. All views, col
 | PWHL Data | HockeyTech API (stats, PBP, schedules), PWHLPA PDF (salaries) |
 | Draft Data | NHL Central Scouting API + NHL API (live picks) + Tankathon; PWHL static (2025, 2026) |
 | User Analytics | PostHog (anonymous event tracking, cookieless) |
-| Cap Data | Static `carContracts.js` (source: PuckPedia); PWHL salaries from PWHLPA PDF |
+| Cap Data | Static `carContracts.js` (source: CapWages player contract pages, cross-checked against ESPN transactions; refreshed Sep 2026 for 2026-27); PWHL salaries from PWHLPA PDF |
 | Accessibility | WCAG 2.1 AA compliant (Section 508) |
 | Testing | Vitest (unit tests), Cypress (E2E), GitHub Actions CI |
 
