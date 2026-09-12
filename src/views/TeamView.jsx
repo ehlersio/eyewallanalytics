@@ -7,8 +7,10 @@ import {
   getTeamCorsi, getTeamRealtime, getTeamScoreState, getTeamPowerplay, getTeamPenaltyKill,
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
   getTeamSeasonRankings, TEAM_CONFIG,
-  getDraftOrder, getDraftPicks,
+  getDraftOrder, getDraftPicks, getTeamInjuries,
 } from '../utils/nhlApi'
+import { InjuryBadge, InjuryDetailLine } from '../components/InjuryBadge'
+import { sortInjuries } from '../utils/injuryDetails'
 import { getTeamGameLog as getDbTeamGameLog, getTeamXgTrend } from '../utils/supabaseClient'
 import { CONTRACTS, getCapSummary, CAP_CEILING, CURRENT_SEASON, CONTRACT_DATA_DATE } from '../utils/carContracts'
 import { DraftPopup } from '../components/DraftTab'
@@ -454,7 +456,44 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
           </div>
         </div>
       )}
+
+      <InjuryReportCard />
     </>
+  )
+}
+
+// ── Injury report (Overview) ──────────────────────────────────
+// Current-state report from the Worker's /injuries route (ESPN, refreshed
+// nightly by eyewall-pipeline's injuries.py). Worst-first: IR, out,
+// day-to-day, suspension. Renders an explicit empty state rather than
+// hiding, so "no injuries" and "didn't load" read differently.
+function InjuryReportCard() {
+  const { t } = useTranslation()
+  const { data: rows, loading } = useFetch(() => getTeamInjuries(TEAM_CONFIG.abbr), [TEAM_CONFIG.abbr])
+  const sorted = useMemo(() => sortInjuries(rows), [rows])
+
+  return (
+    <div className="card injury-report" style={{ marginTop: 10 }}>
+      <div className="sec-label" style={{ marginBottom: 8 }}>{t('injury.reportTitle')}</div>
+      {loading ? (
+        <div className={SKELETON_CLASSES} style={{ height: 36, width: '100%' }} />
+      ) : sorted.length === 0 ? (
+        <div className="text-[12px] text-[color:var(--text-dim)] py-1">{t('injury.none')}</div>
+      ) : (
+        <div className="flex flex-col">
+          {sorted.map((r, i) => (
+            <div key={`${r.player_name}-${i}`} className="injury-report-row flex flex-col gap-[2px] py-[7px] border-b-[0.5px] border-b-[color:var(--border)] last:border-b-0">
+              <div className="flex items-center gap-1 text-[13px] font-semibold text-[color:var(--text)]">
+                {r.player_name}
+                <InjuryBadge status={r.status} size="md" />
+              </div>
+              <InjuryDetailLine injury={r} />
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="text-[10px] text-[color:var(--text-dim)] mt-2 italic">{t('injury.source')}</div>
+    </div>
   )
 }
 

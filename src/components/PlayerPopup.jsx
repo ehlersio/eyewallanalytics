@@ -20,7 +20,8 @@ import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts'
 import { useFetch } from '../hooks/useFetch'
-import { getPlayerStats, getPlayerGameLog, fetchPlayerRankings, TEAM_CONFIG, GAME_TYPE } from '../utils/nhlApi'
+import { getPlayerStats, getPlayerGameLog, fetchPlayerRankings, TEAM_CONFIG, GAME_TYPE, getTeamInjuries, buildInjuryIndex } from '../utils/nhlApi'
+import { InjuryBadge, InjuryDetailLine } from './InjuryBadge'
 import { ALL_TEAMS } from '../utils/teamConfig'
 import {
   getPlayerAnalytics,
@@ -159,6 +160,8 @@ const PP_BIO_FIELD_CLASSES = 'flex flex-col items-center gap-[3px] text-center m
 const PP_BIO_LABEL_CLASSES = 'text-[8px] uppercase tracking-[0.06em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] font-semibold'
 const PP_BIO_VALUE_CLASSES = 'text-[11px] font-semibold text-[color:var(--text)] [overflow-wrap:break-word]'
 
+const PP_INJURY_CLASSES = 'flex flex-wrap items-center gap-x-1 gap-y-1 py-2.5 px-4 bg-[var(--bg2)] border-b-[0.5px] border-[var(--border)]'
+const PP_INJURY_LABEL_CLASSES = 'text-[9px] uppercase tracking-[0.08em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] font-semibold'
 const PP_CONTRACT_CLASSES = 'py-3 px-4 bg-[var(--bg2)] border-b-[0.5px] border-[var(--border)] text-center'
 const PP_CONTRACT_ROW_CLASSES = 'grid grid-cols-3 gap-[10px_6px] mb-[10px]'
 const PP_CONTRACT_ITEM_CLASSES = 'flex flex-col items-center gap-[3px]'
@@ -952,6 +955,18 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
     [p.id, isGoalie, isLeagueContext]
   )
 
+  // Injury status -- the player's own team's /injuries report (same data
+  // as the Scouting tab badges). In league context p.teamAbbrev can be
+  // null (the search index has team gaps -- see comparisonEntry below), so
+  // skip rather than fall back to the selected team and risk a same-name
+  // false match on the wrong roster.
+  const injuryTeam = p.teamAbbrev || (!isLeagueContext ? TEAM_CONFIG.abbr : null)
+  const { data: injuryRows } = useFetch(
+    () => injuryTeam ? getTeamInjuries(injuryTeam) : Promise.resolve(null),
+    [injuryTeam]
+  )
+  const injury = buildInjuryIndex(injuryRows).forPlayer(p.id, name)
+
   const seasonPO  = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 3)
   let   seasonReg = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 2)
   const careerPO  = stats?.careerTotals?.playoffs
@@ -1248,6 +1263,16 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                 <div className={PP_BIO_VALUE_CLASSES}>{f.value ?? '—'}</div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ── Injury banner — both contexts, whenever the player's team
+            report lists them. ── */}
+        {injury && (
+          <div className={`pp-injury ${PP_INJURY_CLASSES}`} role="status">
+            <span className={PP_INJURY_LABEL_CLASSES}>{t('injury.popupLabel')}</span>
+            <InjuryBadge status={injury.status} size="md" />
+            <InjuryDetailLine injury={injury} className="basis-full" />
           </div>
         )}
 

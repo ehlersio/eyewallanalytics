@@ -2096,5 +2096,26 @@
     "rankingsToggle": "Rankings",
     "draftBoardToggle": "Draft board",
     "prospectCategoriesAriaLabel": "Prospect categories"
+  },
+  "injury": {
+    "status": {
+      "dtd": "DTD",
+      "out": "OUT",
+      "ir": "IR",
+      "susp": "SUSP"
+    },
+    "statusLong": {
+      "dtd": "Day-to-day",
+      "out": "Out",
+      "ir": "Injured reserve",
+      "susp": "Suspended"
+    },
+    "estReturn": "Est. return {{date}}",
+    "updated": "Updated {{date}}",
+    "mayBeOutdated": "Estimated return date has passed. This entry may be out of date.",
+    "reportTitle": "Injury report",
+    "none": "No reported injuries",
+    "source": "Source: ESPN · refreshed nightly",
+    "popupLabel": "Injury"
   }
 }

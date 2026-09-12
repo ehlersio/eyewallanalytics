@@ -12,6 +12,7 @@ import TeamLogo from './TeamLogo';
 import InfoTip from './InfoTip';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
+import { InjuryBadge, InjuryDetailTip, INJURY_OUT_STATUSES } from './InjuryBadge';
 import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
 // ScoutingTab.css import removed (Phase 6) -- migrated to Tailwind. NHL-only,
 // no PWHL equivalent by design.
@@ -33,28 +34,8 @@ const SCOUTING_GOALIE_STAT_CLASSES = 'scouting-goalie-stat flex flex-col gap-px'
 const SCOUTING_GOALIE_LABEL_CLASSES = 'scouting-goalie-label text-[8px] font-bold uppercase tracking-[0.05em] text-[color:var(--text-dim)] flex items-center gap-[2px]';
 const SCOUTING_GOALIE_VAL_CLASSES = 'scouting-goalie-val font-[family-name:var(--font-mono)] text-[11px] font-semibold text-[color:var(--text-muted)]';
 
-// Statuses that gray out a player rather than just tagging them --
-// "day-to-day"/"suspension" still show a badge but stay full-opacity,
-// since a DTD player is often still playing that night.
-const INJURY_OUT_STATUSES = new Set(['out', 'injured-reserve']);
-const INJURY_BADGE_CLASSES = {
-  'day-to-day':      'text-[color:var(--amber)] bg-[rgba(240,160,48,0.15)]',
-  'out':             'text-[color:var(--red-bright)] bg-[rgba(204,34,0,0.15)]',
-  'injured-reserve': 'text-[color:var(--red-bright)] bg-[rgba(204,34,0,0.15)]',
-  'suspension':      'text-[color:var(--text-dim)] bg-[rgba(255,255,255,0.08)]',
-};
-const INJURY_LABEL = { 'day-to-day': 'DTD', out: 'OUT', 'injured-reserve': 'IR', suspension: 'SUSP' };
-
-function InjuryBadge({ status }) {
-  if (!status) return null;
-  const cls = INJURY_BADGE_CLASSES[status] || 'text-[color:var(--text-dim)] bg-[rgba(255,255,255,0.08)]';
-  const label = INJURY_LABEL[status] || status.slice(0, 4).toUpperCase();
-  return (
-    <span className={`sc-injury-badge text-[7px] font-bold uppercase tracking-[0.04em] rounded-[3px] py-px px-1 ml-1 align-middle ${cls}`}>
-      {label}
-    </span>
-  );
-}
+// InjuryBadge/INJURY_OUT_STATUSES moved to components/InjuryBadge.jsx so
+// PlayerPopup and TeamView's injury report render the same badge.
 
 // Recent form dots
 function FormDots({ games }) {
@@ -132,6 +113,7 @@ function PlayerTable({ players, loading, color, goalieAnalytics, injuries }) {
             <span className={`scouting-player-name text-[color:var(--text)] font-medium text-[10px] whitespace-nowrap overflow-hidden text-ellipsis${isOut ? ' opacity-50' : ''}`}>
               {p.name}<span className="scouting-player-pos text-[8px] text-[color:var(--text-dim)] ml-[3px]">{p.pos}</span>
               <InjuryBadge status={injury?.status} />
+              <InjuryDetailTip injury={injury} name={p.name} />
             </span>
             <span>{p.goals}</span>
             <span>{p.assists}</span>
@@ -172,6 +154,7 @@ function PlayerTable({ players, loading, color, goalieAnalytics, injuries }) {
               <div key={`g${i}`} className={SCOUTING_GOALIE_ROW_CLASSES}>
                 <span className={`${SCOUTING_PLAYER_NAME_CLASSES} scouting-goalie-name block mb-1${goalieIsOut ? ' opacity-50' : ''}`}>
                   {g.name}<InjuryBadge status={goalieInjury?.status} />
+                  <InjuryDetailTip injury={goalieInjury} name={g.name} />
                 </span>
                 <div className="scouting-goalie-stats flex gap-[10px]">
                   <div className={SCOUTING_GOALIE_STAT_CLASSES}>
@@ -518,6 +501,7 @@ function LineUnit({ unit, label, color, _isDefence, injuries }) {
               <span className="sc-line-pos text-[9px] font-bold text-[color:var(--text-dim)] uppercase tracking-[0.04em] min-w-[18px]">{POS_LABEL[p.pos] || p.pos}</span>
               {p.name}
               <InjuryBadge status={injury?.status} />
+              <InjuryDetailTip injury={injury} name={p.name} />
             </span>
           );
         })}

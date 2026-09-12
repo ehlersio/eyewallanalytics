@@ -2096,5 +2096,26 @@
     "rankingsToggle": "Classement",
     "draftBoardToggle": "Tableau du repêchage",
     "prospectCategoriesAriaLabel": "Catégories d'espoirs"
+  },
+  "injury": {
+    "status": {
+      "dtd": "JÀJ",
+      "out": "ABS",
+      "ir": "LB",
+      "susp": "SUSP"
+    },
+    "statusLong": {
+      "dtd": "Au jour le jour",
+      "out": "Absent",
+      "ir": "Liste des blessés",
+      "susp": "Suspendu"
+    },
+    "estReturn": "Retour prévu le {{date}}",
+    "updated": "Mis à jour le {{date}}",
+    "mayBeOutdated": "La date de retour prévue est dépassée. Cette entrée n'est peut-être plus à jour.",
+    "reportTitle": "Rapport des blessures",
+    "none": "Aucune blessure signalée",
+    "source": "Source : ESPN · mis à jour chaque nuit",
+    "popupLabel": "Blessure"
   }
 }
