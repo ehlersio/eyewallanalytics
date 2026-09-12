@@ -1,50 +1,67 @@
-// ─── CAR Roster Contracts 2025-26 ────────────────────────────
-// Source: PuckPedia / NCSportsNetwork (accurate as of May 2026)
-// Cap figures are cap hit (AAV). Salary cap = $95,500,000.
-// yearsLeft = years remaining AFTER 2025-26 (0 = expires this summer)
+// ─── CAR Roster Contracts 2026-27 ────────────────────────────
+// Source: CapWages player contract pages, cross-checked against ESPN's
+// transactions feed (accurate as of 12 Sep 2026). Cap figures are the
+// 2026-27 cap hit, which for several deals (Martinook, Staal, Chatfield,
+// Carrier, Walker) steps up from their earlier-season cap hit, and for
+// Slavin/Jarvis/Blake sits below AAV (deferred compensation).
+// Salary cap = $104,000,000.
+// yearsLeft = years remaining AFTER 2026-27 (0 = expires summer 2027)
+//
+// Scope: the 23-man NHL roster as CapWages carries it (22 signed + the one
+// unsigned RFA), so getCapSummary()'s committed total matches CapWages'
+// roster cap hit ($94,119,711). Depth one-way deals currently off the
+// roster (Mike Reilly $850K, Pierre-Olivier Joseph $850K, Cayden Primeau
+// $912,500) aren't included -- add them if they make the opening roster.
+// Gone since the last refresh: Frederik Andersen (UFA -> EDM), and John
+// Carlson (rights acquired 2026-06-27, signed with TBL 2026-07-02).
+//
+// playerIds were re-verified against api-web.nhle.com/v1/roster/CAR/current
+// -- the previous file's ids were mostly wrong (Nadeau's old id was actually
+// Bussi's, so Bussi's popup showed Nadeau's ELC).
 
 import i18n from '../i18n';
 
 // Update this date whenever contracts.js is manually refreshed
-export const CONTRACT_DATA_DATE = 'May 2026';
+export const CONTRACT_DATA_DATE = 'Sep 2026';
 
-export const CAP_CEILING    = 95_500_000;
-export const CAP_FLOOR      = 65_000_000;
-export const MIN_SALARY     =    775_000;
-export const CURRENT_SEASON = '2025-26';
+export const CAP_CEILING    = 104_000_000;
+export const CAP_FLOOR      =  77_000_000;
+export const MIN_SALARY     =    850_000;
+export const CURRENT_SEASON = '2026-27';
 
-// keyed by last name (lowercase) for fuzzy matching with roster API
-// playerId matches NHL API player ID
+// playerId matches NHL API player ID; findContract() falls back to a
+// last-name match if an id ever drifts.
 export const CONTRACTS = [
   // ── Forwards ──────────────────────────────────────────
-  { playerId: 8481600, name: 'Sebastian Aho',         pos: 'C',  capHit: 9_750_000, yearsLeft: 6,  expiresAfter: '2031-32', type: 'UFA' },
-  { playerId: 8481533, name: 'Nikolaj Ehlers',        pos: 'LW', capHit: 8_500_000, yearsLeft: 5,  expiresAfter: '2030-31', type: 'UFA' },
-  { playerId: 8481543, name: 'Andrei Svechnikov',     pos: 'LW', capHit: 7_750_000, yearsLeft: 3,  expiresAfter: '2028-29', type: 'UFA' },
-  { playerId: 8483413, name: 'Seth Jarvis',           pos: 'RW', capHit: 7_420_087, yearsLeft: 6,  expiresAfter: '2031-32', type: 'UFA' },
-  { playerId: 8484144, name: 'Logan Stankoven',       pos: 'C',  capHit:   814_167, yearsLeft: 0,  expiresAfter: '2025-26', type: 'RFA', note: 'ELC' }, // new 8yr/$6M starts 2026-27
-  { playerId: 8484158, name: 'Jackson Blake',         pos: 'RW', capHit:   905_833, yearsLeft: 0,  expiresAfter: '2025-26', type: 'RFA', note: 'ELC' }, // new 8yr/$5.1M starts 2026-27
-  { playerId: 8481590, name: 'Jesperi Kotkaniemi',    pos: 'C',  capHit: 4_820_000, yearsLeft: 4,  expiresAfter: '2029-30', type: 'UFA' },
-  { playerId: 8476918, name: 'Taylor Hall',           pos: 'LW', capHit: 3_166_667, yearsLeft: 2,  expiresAfter: '2027-28', type: 'UFA' },
-  { playerId: 8476392, name: 'Jordan Martinook',      pos: 'LW', capHit: 3_050_000, yearsLeft: 1,  expiresAfter: '2026-27', type: 'UFA' },
-  { playerId: 8474612, name: 'Jordan Staal',          pos: 'C',  capHit: 2_900_000, yearsLeft: 1,  expiresAfter: '2026-27', type: 'UFA' },
-  { playerId: 8481528, name: 'William Carrier',       pos: 'LW', capHit: 2_000_000, yearsLeft: 4,  expiresAfter: '2029-30', type: 'UFA' },
-  { playerId: 8479999, name: 'Eric Robinson',         pos: 'LW', capHit: 1_700_000, yearsLeft: 3,  expiresAfter: '2028-29', type: 'UFA' },
-  { playerId: 8483548, name: 'Bradly Nadeau',         pos: 'C',  capHit:   886_167, yearsLeft: 7,  expiresAfter: '2032-33', type: 'RFA', note: 'ELC' },
-  // Mark Jankowski — expired summer 2025, not on 2025-26 roster
+  { playerId: 8478427, name: 'Sebastian Aho',         pos: 'C',  capHit: 9_750_000, yearsLeft: 5,  expiresAfter: '2031-32', type: 'UFA' },
+  { playerId: 8477940, name: 'Nikolaj Ehlers',        pos: 'LW', capHit: 8_500_000, yearsLeft: 4,  expiresAfter: '2030-31', type: 'UFA' },
+  { playerId: 8480830, name: 'Andrei Svechnikov',     pos: 'LW', capHit: 7_750_000, yearsLeft: 2,  expiresAfter: '2028-29', type: 'UFA' },
+  { playerId: 8482093, name: 'Seth Jarvis',           pos: 'RW', capHit: 7_420_087, yearsLeft: 5,  expiresAfter: '2031-32', type: 'UFA' },
+  { playerId: 8482702, name: 'Logan Stankoven',       pos: 'C',  capHit: 6_000_000, yearsLeft: 7,  expiresAfter: '2033-34', type: 'UFA' },
+  { playerId: 8482809, name: 'Jackson Blake',         pos: 'RW', capHit: 5_117_002, yearsLeft: 7,  expiresAfter: '2033-34', type: 'UFA' },
+  { playerId: 8480829, name: 'Jesperi Kotkaniemi',    pos: 'C',  capHit: 4_820_000, yearsLeft: 3,  expiresAfter: '2029-30', type: 'UFA' },
+  { playerId: 8475791, name: 'Taylor Hall',           pos: 'LW', capHit: 3_166_667, yearsLeft: 1,  expiresAfter: '2027-28', type: 'UFA' },
+  { playerId: 8476921, name: 'Jordan Martinook',      pos: 'LW', capHit: 3_125_000, yearsLeft: 0,  expiresAfter: '2026-27', type: 'UFA' },
+  { playerId: 8473533, name: 'Jordan Staal',          pos: 'C',  capHit: 2_975_000, yearsLeft: 0,  expiresAfter: '2026-27', type: 'UFA' },
+  { playerId: 8477478, name: 'William Carrier',       pos: 'LW', capHit: 2_150_000, yearsLeft: 3,  expiresAfter: '2029-30', type: 'UFA' },
+  { playerId: 8476873, name: 'Mark Jankowski',        pos: 'C',  capHit: 1_850_000, yearsLeft: 1,  expiresAfter: '2027-28', type: 'UFA' },
+  { playerId: 8480762, name: 'Eric Robinson',         pos: 'LW', capHit: 1_700_000, yearsLeft: 2,  expiresAfter: '2028-29', type: 'UFA' },
+  { playerId: 8475235, name: 'Nicolas Deslauriers',   pos: 'LW', capHit:   875_000, yearsLeft: 1,  expiresAfter: '2027-28', type: 'UFA' },
 
   // ── Defence ───────────────────────────────────────────
-  { playerId: 8475753, name: 'Jaccob Slavin',         pos: 'D',  capHit: 6_461_000, yearsLeft: 7,  expiresAfter: '2032-33', type: 'UFA' },
-  { playerId: 8480797, name: "K'Andre Miller",        pos: 'D',  capHit: 7_500_000, yearsLeft: 7,  expiresAfter: '2032-33', type: 'UFA' },
-  { playerId: 8481553, name: 'Sean Walker',           pos: 'D',  capHit: 3_600_000, yearsLeft: 4,  expiresAfter: '2030-31', type: 'UFA' },
-  { playerId: 8476419, name: 'Shayne Gostisbehere',   pos: 'D',  capHit: 3_200_000, yearsLeft: 2,  expiresAfter: '2027-28', type: 'UFA' },
-  { playerId: 8479380, name: 'Jalen Chatfield',       pos: 'D',  capHit: 3_000_000, yearsLeft: 1,  expiresAfter: '2026-27', type: 'UFA' },
-  { playerId: 8484932, name: 'Alexander Nikishin',    pos: 'D',  capHit:   925_000, yearsLeft: 2,  expiresAfter: '2027-28', type: 'RFA', note: 'ELC' },
-  { playerId: 8476369, name: 'Mike Reilly',           pos: 'D',  capHit:   775_000, yearsLeft: 0,  expiresAfter: '2025-26', type: 'UFA' },
+  { playerId: 8480817, name: "K'Andre Miller",        pos: 'D',  capHit: 7_500_000, yearsLeft: 6,  expiresAfter: '2032-33', type: 'UFA' },
+  { playerId: 8476958, name: 'Jaccob Slavin',         pos: 'D',  capHit: 6_395_955, yearsLeft: 6,  expiresAfter: '2032-33', type: 'UFA' },
+  { playerId: 8480336, name: 'Sean Walker',           pos: 'D',  capHit: 3_625_000, yearsLeft: 2,  expiresAfter: '2028-29', type: 'UFA' },
+  { playerId: 8476906, name: 'Shayne Gostisbehere',   pos: 'D',  capHit: 3_200_000, yearsLeft: 0,  expiresAfter: '2026-27', type: 'UFA' },
+  { playerId: 8478970, name: 'Jalen Chatfield',       pos: 'D',  capHit: 3_075_000, yearsLeft: 0,  expiresAfter: '2026-27', type: 'UFA' },
+  { playerId: 8482911, name: 'Joel Nystrom',          pos: 'D',  capHit: 1_225_000, yearsLeft: 3,  expiresAfter: '2029-30', type: 'UFA' },
+  // Unsigned RFA (ELC expired after 2025-26) -- $0 until he signs; not an
+  // "expiring" contract, so yearsLeft is null rather than 0.
+  { playerId: 8482100, name: 'Alexander Nikishin',    pos: 'D',  capHit:         0, yearsLeft: null, expiresAfter: '—',    type: 'RFA', note: 'Unsigned' },
 
   // ── Goalies ───────────────────────────────────────────
-  { playerId: 8475883, name: 'Frederik Andersen',     pos: 'G',  capHit: 2_750_000, yearsLeft: 1,  expiresAfter: '2026-27', type: 'UFA' },
-  { playerId: 8483671, name: 'Pyotr Kochetkov',       pos: 'G',  capHit: 2_000_000, yearsLeft: 2,  expiresAfter: '2027-28', type: 'RFA' },
-  { playerId: 8483596, name: 'Brandon Bussi',         pos: 'G',  capHit:   775_000, yearsLeft: 0,  expiresAfter: '2025-26', type: 'RFA' },
+  { playerId: 8481611, name: 'Pyotr Kochetkov',       pos: 'G',  capHit: 2_000_000, yearsLeft: 0,  expiresAfter: '2026-27', type: 'UFA' },
+  { playerId: 8483548, name: 'Brandon Bussi',         pos: 'G',  capHit: 1_900_000, yearsLeft: 2,  expiresAfter: '2028-29', type: 'UFA' },
 ];
 
 // ─── Future draft picks owned by CAR ─────────────────────────

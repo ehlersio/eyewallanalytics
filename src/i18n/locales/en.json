@@ -399,7 +399,7 @@
       "committed": "${{amount}}M committed",
       "capSpace": "${{amount}}M cap space",
       "ceilingLabel": "Cap ceiling: ${{amount}}M",
-      "dataAsOf": "Data as of {{date}} · Source: PuckPedia",
+      "dataAsOf": "Data as of {{date}} · Source: CapWages",
       "colPlayer": "Player",
       "colPos": "Pos",
       "colCapHit": "Cap Hit",

@@ -399,7 +399,7 @@
       "committed": "{{amount}} M$ engagés",
       "capSpace": "{{amount}} M$ d'espace sous le plafond",
       "ceilingLabel": "Plafond salarial : {{amount}} M$",
-      "dataAsOf": "Données au {{date}} · Source : PuckPedia",
+      "dataAsOf": "Données au {{date}} · Source : CapWages",
       "colPlayer": "Joueur",
       "colPos": "Pos",
       "colCapHit": "Impact salarial",
