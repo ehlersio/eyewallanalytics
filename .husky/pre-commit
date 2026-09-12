@@ -1,6 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 # Run Vitest unit tests before every commit.
 # Fast (~2s) — catches logic regressions before they hit the repo.
 echo "Running unit tests..."
