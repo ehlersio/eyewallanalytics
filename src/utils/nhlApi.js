@@ -806,6 +806,18 @@ export async function getPlayoffOdds(teamAbbr = TEAM_CONFIG.abbr) {
   return workerFetch(`/playoff-odds?team=${encodeURIComponent(teamAbbr)}`);
 }
 
+// Season-to-date man-games and WAR lost to injury for one team -- the
+// Worker's /injury-impact route, backed by eyewall-pipeline's nightly
+// injury_impact.py (a player on the day's injury report who didn't dress,
+// valued at his WAR per game). Returns { team, season, impact, league }:
+// impact is null before the 2026-27 regular season's first game (injury
+// history starts 2026-09-12), `unavailable` means the Worker's own read
+// failed. Not memoized client-side -- the Worker's 1hr KV cache is the
+// cache. Returns null on any Worker failure.
+export async function getInjuryImpact(teamAbbr = TEAM_CONFIG.abbr) {
+  return workerFetch(`/injury-impact?team=${encodeURIComponent(teamAbbr)}`);
+}
+
 // NHL transactions feed -- the Worker's /transactions route, backed by
 // eyewall-pipeline's nightly ESPN ingestion (transactions.py). The Worker
 // already pairs each trade's two per-team halves into one { kind: 'trade' }
