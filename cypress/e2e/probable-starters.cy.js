@@ -36,8 +36,16 @@ const STARTERS = {
 }
 
 function openOpener(startersReply) {
+  // getAllGames() reads the Worker's KV copy of the schedule first
+  // (/cache/schedule%3ACAR%3A{season} -> a bare games array) and only falls
+  // back to club-schedule-season when that misses -- stub both, or the live
+  // schedule leaks in. (It did: this spec's first version passed only
+  // because the real first upcoming game happened to be the FLA opener,
+  // which would have stopped being true after 2026-09-29.)
   cy.fixture('schedule-car-2026-27.json').then(schedule => {
-    cy.intercept('GET', '**/club-schedule-season/CAR/**', { ...schedule, games: schedule.games.slice(0, 1) }).as('schedule')
+    const games = schedule.games.slice(0, 1)
+    cy.intercept('GET', /\/cache\/schedule%3ACAR%3A\d{8}/, games).as('scheduleKv')
+    cy.intercept('GET', '**/club-schedule-season/CAR/**', { ...schedule, games }).as('schedule')
   })
   cy.intercept('GET', '**/probable-starters?game=*', req => {
     const game = Number((req.url.match(/[?&]game=(\d+)/) || [])[1])
@@ -46,7 +54,11 @@ function openOpener(startersReply) {
   }).as('starters')
   cy.setTeam('CAR')
   cy.visit('/schedule')
-  cy.contains('Matchup breakdown', { timeout: 15000 }).first().click()
+  // Guard: the stubbed one-game schedule is what rendered -- the real
+  // schedule's second game (WSH, 2026-10-02) must not be there.
+  cy.contains('.gc-abbr', 'FLA', { timeout: 15000 }).should('exist')
+  cy.contains('.gc-abbr', 'WSH').should('not.exist')
+  cy.contains('Matchup breakdown').first().click()
   cy.wait('@starters')
 }
 
