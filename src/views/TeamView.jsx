@@ -7,10 +7,12 @@ import {
   getTeamCorsi, getTeamRealtime, getTeamScoreState, getTeamPowerplay, getTeamPenaltyKill,
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
   getTeamSeasonRankings, TEAM_CONFIG,
-  getDraftOrder, getDraftPicks, getTeamInjuries,
+  getDraftOrder, getDraftPicks, getTeamInjuries, getTeamScratches,
 } from '../utils/nhlApi'
 import { InjuryBadge, InjuryDetailLine } from '../components/InjuryBadge'
-import { sortInjuries } from '../utils/injuryDetails'
+import { sortInjuries, parseLocalDate } from '../utils/injuryDetails'
+import { nhlSeasonLabel } from '../utils/seasonComparison'
+import { formatDate } from '../utils/formatters'
 import { getTeamGameLog as getDbTeamGameLog, getTeamXgTrend } from '../utils/supabaseClient'
 import { CONTRACTS, getCapSummary, CAP_CEILING, CURRENT_SEASON, CONTRACT_DATA_DATE } from '../utils/carContracts'
 import { DraftPopup } from '../components/DraftTab'
@@ -458,6 +460,7 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
       )}
 
       <InjuryReportCard />
+      <ScratchesCard />
     </>
   )
 }
@@ -493,6 +496,84 @@ function InjuryReportCard() {
         </div>
       )}
       <div className="text-[10px] text-[color:var(--text-dim)] mt-2 italic">{t('injury.source')}</div>
+    </div>
+  )
+}
+
+// ── Scratches (Overview) ──────────────────────────────────────
+// Per-player scratch counts for the selected team's regular season, from
+// the Worker's /scratches route (eyewall-pipeline's scratches.py -- the
+// NHL's own game-roster scratch lists). Before the team's first regular-
+// season game the Worker falls back to last season (`stale`), which is
+// labeled here rather than hidden. The healthy/injured/suspended split is
+// only shown once scratches have actually been classified against the
+// injury report (`classified`) -- every game before 2026-09-12 is
+// 'unknown', so for last season only totals are meaningful.
+const SCRATCHES_SHOWN = 8
+const SCRATCH_CHIP_CLASSES = {
+  healthy:   'text-[color:var(--amber)] bg-[rgba(240,160,48,0.15)]',
+  injured:   'text-[color:var(--red-bright)] bg-[rgba(204,34,0,0.15)]',
+  suspended: 'text-[color:var(--text-dim)] bg-[rgba(255,255,255,0.08)]',
+}
+
+function ScratchesCard() {
+  const { t } = useTranslation()
+  const { data, loading } = useFetch(() => getTeamScratches(TEAM_CONFIG.abbr), [TEAM_CONFIG.abbr])
+  const [expanded, setExpanded] = useState(false)
+  const players = data?.players || []
+  const shown = expanded ? players : players.slice(0, SCRATCHES_SHOWN)
+
+  return (
+    <div className="card scratches-card" style={{ marginTop: 10 }}>
+      <div className="sec-label" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+        {t('scratches.title')}
+        <InfoTip label={t('scratches.title')} text={t('scratches.infoTip')} position="above" />
+      </div>
+      {data?.stale && (
+        <div className="scratches-stale text-[11px] text-[color:var(--amber)] mb-1.5">
+          {t('scratches.staleNote', { season: nhlSeasonLabel(String(data.season)) })}
+        </div>
+      )}
+      {loading ? (
+        <div className={SKELETON_CLASSES} style={{ height: 36, width: '100%' }} />
+      ) : !data ? (
+        <div className="text-[12px] text-[color:var(--text-dim)] py-1">{t('scratches.unavailable')}</div>
+      ) : players.length === 0 ? (
+        <div className="text-[12px] text-[color:var(--text-dim)] py-1">{t('scratches.none')}</div>
+      ) : (
+        <>
+          <div className="grid [grid-template-columns:1fr_auto_64px] gap-x-3 text-[9px] uppercase tracking-[0.06em] text-[color:var(--text-dim)] pb-1 border-b-[0.5px] border-b-[color:var(--border)]">
+            <span>{t('scratches.colPlayer')}</span>
+            <span className="text-right">{t('scratches.colTotal')}</span>
+            <span className="text-right">{t('scratches.colLast')}</span>
+          </div>
+          {shown.map(p => {
+            const last = parseLocalDate(p.last_date)
+            return (
+              <div key={p.player_id} className="scratches-row grid [grid-template-columns:1fr_auto_64px] gap-x-3 items-center py-[6px] border-b-[0.5px] border-b-[color:var(--border)] last:border-b-0">
+                <span className="text-[13px] text-[color:var(--text)] font-medium truncate">{p.player_name}</span>
+                <span className="flex items-center justify-end gap-1">
+                  {data.classified && ['healthy', 'injured', 'suspended'].filter(k => p[k] > 0).map(k => (
+                    <span key={k} className={`text-[9px] font-bold rounded-[3px] py-px px-1 ${SCRATCH_CHIP_CLASSES[k]}`} title={t(`scratches.${k}Title`)}>
+                      {t(`scratches.${k}Short`, { count: p[k] })}
+                    </span>
+                  ))}
+                  <span className="font-[family-name:var(--font-mono)] text-[13px] font-bold text-[color:var(--text)] min-w-[22px] text-right">{p.total}</span>
+                </span>
+                <span className="text-[11px] text-[color:var(--text-dim)] text-right">{last ? formatDate(last) : '—'}</span>
+              </div>
+            )
+          })}
+          {players.length > SCRATCHES_SHOWN && (
+            <button className="scratches-toggle text-[11px] text-[color:var(--text-muted)] mt-1.5 bg-transparent border-0 cursor-pointer p-0 underline" onClick={() => setExpanded(e => !e)}>
+              {expanded ? t('scratches.showFewer') : t('scratches.showAll', { count: players.length })}
+            </button>
+          )}
+          {!data.classified && (
+            <div className="text-[10px] text-[color:var(--text-dim)] mt-2 italic">{t('scratches.unclassifiedNote')}</div>
+          )}
+        </>
+      )}
     </div>
   )
 }

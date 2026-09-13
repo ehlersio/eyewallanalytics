@@ -2136,5 +2136,28 @@
     "none": "Aucune blessure signalée",
     "source": "Source : ESPN · mis à jour chaque nuit",
     "popupLabel": "Blessure"
+  },
+  "scratches": {
+    "title": "Joueurs retirés",
+    "infoTip": "Joueurs laissés de côté, selon les formations officielles de la LNH. Chaque retrait est comparé au rapport des blessures du jour : absent du rapport, c'est une décision de l'entraîneur (joueur en santé); présent, le joueur est blessé ou suspendu. Les retraits antérieurs au 12 septembre 2026 précèdent l'historique des blessures : seuls leurs totaux sont connus.",
+    "staleNote": "Aucun match de saison régulière pour l'instant — saison {{season}} affichée.",
+    "none": "Aucun retrait enregistré pour l'instant.",
+    "unavailable": "Les données de retraits ne sont pas disponibles pour le moment.",
+    "colPlayer": "Joueur",
+    "colTotal": "Retraits",
+    "colLast": "Dernier",
+    "healthyShort": "S {{count}}",
+    "injuredShort": "Bl {{count}}",
+    "suspendedShort": "Susp {{count}}",
+    "healthyTitle": "Retraits en santé",
+    "injuredTitle": "Retraits pour blessure",
+    "suspendedTitle": "Retraits pour suspension",
+    "unclassifiedNote": "Santé ou blessure : inconnu pour ces matchs — la distinction commence avec les matchs joués à partir du 12 septembre 2026.",
+    "showAll": "Voir les {{count}}",
+    "showFewer": "Voir moins",
+    "popupLabel": "Retiré",
+    "popupLine_one": "{{count}} match en {{season}}",
+    "popupLine_other": "{{count}} matchs en {{season}}",
+    "popupHealthy": "{{count}} en santé"
   }
 }

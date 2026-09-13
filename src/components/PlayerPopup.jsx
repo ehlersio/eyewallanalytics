@@ -20,7 +20,7 @@ import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts'
 import { useFetch } from '../hooks/useFetch'
-import { getPlayerStats, getPlayerGameLog, fetchPlayerRankings, TEAM_CONFIG, GAME_TYPE, getTeamInjuries, buildInjuryIndex } from '../utils/nhlApi'
+import { getPlayerStats, getPlayerGameLog, fetchPlayerRankings, TEAM_CONFIG, GAME_TYPE, getTeamInjuries, buildInjuryIndex, getTeamScratches } from '../utils/nhlApi'
 import { InjuryBadge, InjuryDetailLine } from './InjuryBadge'
 import { ALL_TEAMS } from '../utils/teamConfig'
 import {
@@ -967,6 +967,16 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   )
   const injury = buildInjuryIndex(injuryRows).forPlayer(p.id, name)
 
+  // Scratch count -- the player's own team's /scratches summary (the same
+  // data as the Team page's Scratches card), matched by NHL player id.
+  // Same unknown-team skip as injuries above. Counts are per team, so a
+  // player traded mid-season only shows his scratches for his current team.
+  const { data: scratchSummary } = useFetch(
+    () => injuryTeam ? getTeamScratches(injuryTeam) : Promise.resolve(null),
+    [injuryTeam]
+  )
+  const scratchRow = scratchSummary?.players?.find(s => s.player_id === Number(p.id)) || null
+
   const seasonPO  = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 3)
   let   seasonReg = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 2)
   const careerPO  = stats?.careerTotals?.playoffs
@@ -1273,6 +1283,18 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
             <span className={PP_INJURY_LABEL_CLASSES}>{t('injury.popupLabel')}</span>
             <InjuryBadge status={injury.status} size="md" />
             <InjuryDetailLine injury={injury} className="basis-full" />
+          </div>
+        )}
+
+        {/* ── Scratch count — both contexts, whenever the player's team has
+            scratched him this season (or last season, before opening night). ── */}
+        {scratchRow && (
+          <div className={`pp-scratches ${PP_INJURY_CLASSES}`}>
+            <span className={PP_INJURY_LABEL_CLASSES}>{t('scratches.popupLabel')}</span>
+            <span className="text-[11px] text-[color:var(--text-muted)]">
+              {t('scratches.popupLine', { count: scratchRow.total, season: nhlSeasonLabel(String(scratchSummary.season)) })}
+              {scratchSummary.classified && scratchRow.healthy > 0 && ` · ${t('scratches.popupHealthy', { count: scratchRow.healthy })}`}
+            </span>
           </div>
         )}
 

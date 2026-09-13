@@ -773,6 +773,17 @@ async function _getRoster(teamAbbr = TEAM_CONFIG.abbr) {
   return { forwards, defensemen, goalies, all: [...forwards, ...defensemen, ...goalies] };
 }
 
+// Per-player scratch summary for one team-season -- the Worker's /scratches
+// route, backed by eyewall-pipeline's nightly scratches.py (the NHL's own
+// right-rail scratch lists, each classified healthy/injured/suspended/
+// unknown against that day's injury report). gameType 2 = regular season
+// (default), 3 = playoffs. With no games yet this season the Worker falls
+// back to last season and sets `stale`. Not memoized client-side -- the
+// Worker's 1hr KV cache is the cache. Returns null on any Worker failure.
+export async function getTeamScratches(teamAbbr = TEAM_CONFIG.abbr, gameType = 2) {
+  return workerFetch(`/scratches?team=${encodeURIComponent(teamAbbr)}&gameType=${gameType}`);
+}
+
 // NHL transactions feed -- the Worker's /transactions route, backed by
 // eyewall-pipeline's nightly ESPN ingestion (transactions.py). The Worker
 // already pairs each trade's two per-team halves into one { kind: 'trade' }

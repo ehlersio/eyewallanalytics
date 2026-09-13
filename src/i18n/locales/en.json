@@ -2136,5 +2136,28 @@
     "none": "No reported injuries",
     "source": "Source: ESPN · refreshed nightly",
     "popupLabel": "Injury"
+  },
+  "scratches": {
+    "title": "Scratches",
+    "infoTip": "Players left out of the lineup, from the NHL's official game rosters. Each scratch is checked against that day's injury report: not on it means a healthy scratch (a coaching decision); on it means injured or suspended. Scratches before Sept 12, 2026 predate the injury history, so only their totals are known.",
+    "staleNote": "No regular-season games yet — showing {{season}}.",
+    "none": "No scratches recorded yet.",
+    "unavailable": "Scratch data isn't available right now.",
+    "colPlayer": "Player",
+    "colTotal": "Scratched",
+    "colLast": "Last",
+    "healthyShort": "H {{count}}",
+    "injuredShort": "Inj {{count}}",
+    "suspendedShort": "Susp {{count}}",
+    "healthyTitle": "Healthy scratches",
+    "injuredTitle": "Scratched while injured",
+    "suspendedTitle": "Scratched while suspended",
+    "unclassifiedNote": "Healthy vs. injured isn't known for these games — that split starts with games played from Sept 12, 2026 on.",
+    "showAll": "Show all {{count}}",
+    "showFewer": "Show fewer",
+    "popupLabel": "Scratched",
+    "popupLine_one": "{{count}} game in {{season}}",
+    "popupLine_other": "{{count}} games in {{season}}",
+    "popupHealthy": "{{count}} healthy"
   }
 }
