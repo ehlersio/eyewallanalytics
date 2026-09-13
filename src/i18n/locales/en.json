@@ -2170,5 +2170,25 @@
     "popupLine_one": "{{count}} game in {{season}}",
     "popupLine_other": "{{count}} games in {{season}}",
     "popupHealthy": "{{count}} healthy"
+  },
+  "playoffOdds": {
+    "title": "Playoff odds",
+    "infoTip": "How often this team makes the playoffs when the rest of the regular season is simulated 10,000 times. Each game's odds come from the two teams' Elo ratings (the same ones behind game predictions), with extra spread for how unsure those ratings are — more early in the season, less later. Updated nightly.",
+    "makePlayoffs": "Make playoffs",
+    "winDivision": "Win division",
+    "projPoints": "Projected points",
+    "projRange": "{{low}}–{{high}}",
+    "earlyNote": "Early season: these odds lean heavily on last season's ratings and will move a lot.",
+    "staleNote": "Not updated since {{date}}.",
+    "changeSince": "{{delta}} pts since {{date}}",
+    "noChange": "No change since {{date}}",
+    "beat": "{{winner}} beat {{loser}}",
+    "residual": "Rating changes & games further out",
+    "nextTitle": "Next game day · {{date}}",
+    "ifWin": "{{team}} win: {{pct}}",
+    "trendLabel": "Playoff odds this season",
+    "source": "{{sims}} simulations · updated {{date}}",
+    "none": "Playoff odds appear after the first nightly model run of the season.",
+    "unavailable": "Playoff odds aren't available right now."
   }
 }

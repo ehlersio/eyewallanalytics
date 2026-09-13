@@ -2170,5 +2170,25 @@
     "popupLine_one": "{{count}} match en {{season}}",
     "popupLine_other": "{{count}} matchs en {{season}}",
     "popupHealthy": "{{count}} en santé"
+  },
+  "playoffOdds": {
+    "title": "Chances de participer aux séries",
+    "infoTip": "Fréquence à laquelle cette équipe participe aux séries lorsque le reste de la saison régulière est simulé 10 000 fois. Les chances de chaque match proviennent du classement Elo des deux équipes (le même que pour les prédictions de matchs), avec une marge supplémentaire selon l'incertitude de ce classement — plus grande en début de saison, plus faible ensuite. Mis à jour chaque nuit.",
+    "makePlayoffs": "Participation aux séries",
+    "winDivision": "Champion de division",
+    "projPoints": "Points projetés",
+    "projRange": "{{low}}–{{high}}",
+    "earlyNote": "Début de saison : ces chances reposent surtout sur le classement de la saison dernière et varieront beaucoup.",
+    "staleNote": "Aucune mise à jour depuis le {{date}}.",
+    "changeSince": "{{delta}} pts depuis le {{date}}",
+    "noChange": "Aucun changement depuis le {{date}}",
+    "beat": "{{winner}} a battu {{loser}}",
+    "residual": "Classement Elo et matchs plus lointains",
+    "nextTitle": "Prochaine journée · {{date}}",
+    "ifWin": "Victoire {{team}} : {{pct}}",
+    "trendLabel": "Chances de participer aux séries cette saison",
+    "source": "{{sims}} simulations · mis à jour le {{date}}",
+    "none": "Les chances de participer aux séries s'afficheront après la première exécution nocturne du modèle cette saison.",
+    "unavailable": "Les chances de participer aux séries ne sont pas disponibles pour le moment."
   }
 }
