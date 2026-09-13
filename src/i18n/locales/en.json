@@ -2190,5 +2190,24 @@
     "source": "{{sims}} simulations · updated {{date}}",
     "none": "Playoff odds appear after the first nightly model run of the season.",
     "unavailable": "Playoff odds aren't available right now."
+  },
+  "injuryImpact": {
+    "title": "Games lost to injury",
+    "infoTip": "Games missed this season by players on the injury report (day-to-day, out, or injured reserve) who didn't dress, checked against the NHL's official shift data. WAR lost adds up each player's wins-above-replacement per game (this season and last) for every game he missed. Goalies count in games lost but have no WAR here. Tracking starts with the 2026-27 season.",
+    "manGames": "Man-games lost",
+    "warLost": "WAR lost",
+    "playersInjured": "Players injured",
+    "rank": "#{{rank}} of {{teams}}",
+    "rankTitle": "League rank — #1 has lost the most",
+    "leagueAvg": "League average: {{games}} man-games · {{war}} WAR",
+    "gamesMissed_one": "{{count}} game",
+    "gamesMissed_other": "{{count}} games",
+    "warShort": "{{war}} WAR",
+    "lastMissed": "last missed {{date}}",
+    "showAll": "Show all {{count}}",
+    "showFewer": "Show fewer",
+    "method": "A man-game lost is a game a player on the injury report didn't dress for. WAR lost = his WAR per game × games missed.",
+    "none": "Injury tracking starts with the first regular-season game.",
+    "unavailable": "Injury impact isn't available right now."
   }
 }

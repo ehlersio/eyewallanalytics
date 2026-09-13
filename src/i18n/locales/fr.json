@@ -2190,5 +2190,24 @@
     "source": "{{sims}} simulations · mis à jour le {{date}}",
     "none": "Les chances de participer aux séries s'afficheront après la première exécution nocturne du modèle cette saison.",
     "unavailable": "Les chances de participer aux séries ne sont pas disponibles pour le moment."
+  },
+  "injuryImpact": {
+    "title": "Matchs perdus sur blessure",
+    "infoTip": "Matchs manqués cette saison par des joueurs inscrits au rapport des blessures (au jour le jour, absents ou sur la liste des blessés) qui n'ont pas joué, vérifiés avec les données officielles de présences de la LNH. La WAR perdue additionne, pour chaque match manqué, les victoires au-dessus du remplaçant par match du joueur (cette saison et la précédente). Les gardiens comptent dans les matchs perdus, sans WAR. Le suivi commence avec la saison 2026-2027.",
+    "manGames": "Matchs-joueurs perdus",
+    "warLost": "WAR perdue",
+    "playersInjured": "Joueurs blessés",
+    "rank": "{{rank}}e sur {{teams}}",
+    "rankTitle": "Rang dans la ligue — 1er = le plus de pertes",
+    "leagueAvg": "Moyenne de la ligue : {{games}} matchs-joueurs · {{war}} WAR",
+    "gamesMissed_one": "{{count}} match",
+    "gamesMissed_other": "{{count}} matchs",
+    "warShort": "{{war}} WAR",
+    "lastMissed": "dernier match manqué le {{date}}",
+    "showAll": "Voir les {{count}}",
+    "showFewer": "Voir moins",
+    "method": "Un match-joueur perdu est un match auquel un joueur inscrit au rapport des blessures n'a pas participé. WAR perdue = sa WAR par match × matchs manqués.",
+    "none": "Le suivi des blessures commence avec le premier match de la saison régulière.",
+    "unavailable": "L'impact des blessures n'est pas disponible pour le moment."
   }
 }

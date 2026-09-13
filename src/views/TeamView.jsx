@@ -8,7 +8,7 @@ import {
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
   getTeamSeasonRankings, TEAM_CONFIG,
   getDraftOrder, getDraftPicks, getTeamInjuries, getTeamScratches, getDraftPickHistory,
-  getPlayoffOdds,
+  getPlayoffOdds, getInjuryImpact,
 } from '../utils/nhlApi'
 import { InjuryBadge, InjuryDetailLine } from '../components/InjuryBadge'
 import { sortInjuries, parseLocalDate } from '../utils/injuryDetails'
@@ -463,6 +463,7 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
       )}
 
       <InjuryReportCard />
+      <InjuryImpactCard />
       <ScratchesCard />
     </>
   )
@@ -638,6 +639,96 @@ function InjuryReportCard() {
         </div>
       )}
       <div className="text-[10px] text-[color:var(--text-dim)] mt-2 italic">{t('injury.source')}</div>
+    </div>
+  )
+}
+
+// ── Injury impact (Overview) ──────────────────────────────────
+// Season-to-date games and WAR the selected team has lost to injury, from
+// the Worker's /injury-impact route (eyewall-pipeline's nightly
+// injury_impact.py: a player on the day's injury report who didn't dress
+// is a man-game lost, valued at his WAR per game). Sits under the Injury
+// report card: that one is who's hurt now, this one is what injuries have
+// cost so far. Injury history starts 2026-09-12, so before the 2026-27
+// regular season there's nothing to count -- the empty state says so.
+const INJURY_IMPACT_SHOWN = 6
+
+function InjuryImpactStat({ className, label, value, rank, teams }) {
+  const { t } = useTranslation()
+  return (
+    <div className={className}>
+      <div className={ODDS_LABEL_CLASSES}>{label}</div>
+      <div className="font-[family-name:var(--font-mono)] text-[22px] font-bold leading-none text-[color:var(--text)]">{value}</div>
+      {rank != null && teams > 0 && (
+        <div className="injury-impact-rank text-[10px] text-[color:var(--text-dim)] mt-1" title={t('injuryImpact.rankTitle')}>
+          {t('injuryImpact.rank', { rank, teams })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function InjuryImpactCard() {
+  const { t } = useTranslation()
+  const { data, loading } = useFetch(() => getInjuryImpact(TEAM_CONFIG.abbr), [TEAM_CONFIG.abbr])
+  const [expanded, setExpanded] = useState(false)
+  const impact = data?.impact
+  const league = data?.league
+  const players = impact?.players || []
+  const shown = expanded ? players : players.slice(0, INJURY_IMPACT_SHOWN)
+
+  return (
+    <div className="card injury-impact" style={{ marginTop: 10 }}>
+      <div className="sec-label" style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+        {t('injuryImpact.title')}
+        <InfoTip label={t('injuryImpact.title')} text={t('injuryImpact.infoTip')} position="above" />
+      </div>
+      {loading ? (
+        <div className={SKELETON_CLASSES} style={{ height: 48, width: '100%' }} />
+      ) : !data || data.unavailable ? (
+        <div className="text-[12px] text-[color:var(--text-dim)] py-1">{t('injuryImpact.unavailable')}</div>
+      ) : !impact ? (
+        <div className="text-[12px] text-[color:var(--text-dim)] py-1">{t('injuryImpact.none')}</div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-3">
+            <InjuryImpactStat className="injury-impact-man-games" label={t('injuryImpact.manGames')} value={impact.man_games_lost} rank={impact.rank_man_games} teams={league?.teams} />
+            <InjuryImpactStat className="injury-impact-war" label={t('injuryImpact.warLost')} value={Number(impact.war_lost || 0).toFixed(1)} rank={impact.rank_war_lost} teams={league?.teams} />
+            <InjuryImpactStat className="injury-impact-players" label={t('injuryImpact.playersInjured')} value={impact.players_injured} />
+          </div>
+          {league?.teams > 0 && league.avgManGames != null && (
+            <div className="injury-impact-league text-[11px] text-[color:var(--text-dim)] mt-2">
+              {t('injuryImpact.leagueAvg', { games: league.avgManGames.toFixed(1), war: Number(league.avgWarLost || 0).toFixed(1) })}
+            </div>
+          )}
+          {players.length > 0 && (
+            <div className={ODDS_SECTION_CLASSES}>
+              {shown.map(p => (
+                <div key={p.player_id ?? p.player_name} className="injury-impact-player flex items-center justify-between gap-3 py-[6px] border-b-[0.5px] border-b-[color:var(--border)] last:border-b-0">
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-medium text-[color:var(--text)] truncate">{p.player_name}</div>
+                    <div className="text-[11px] text-[color:var(--text-dim)]">
+                      {[p.injury_type, t('injuryImpact.lastMissed', { date: formatOddsDate(p.last_date) })].filter(Boolean).join(' · ')}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="font-[family-name:var(--font-mono)] text-[13px] font-bold text-[color:var(--text)]">{t('injuryImpact.gamesMissed', { count: p.games })}</div>
+                    {p.war_lost > 0 && (
+                      <div className="injury-impact-player-war font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--text-muted)]">{t('injuryImpact.warShort', { war: Number(p.war_lost).toFixed(2) })}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {players.length > INJURY_IMPACT_SHOWN && (
+                <button className="injury-impact-toggle text-[11px] text-[color:var(--text-muted)] mt-1.5 bg-transparent border-0 cursor-pointer p-0 underline" onClick={() => setExpanded(e => !e)}>
+                  {expanded ? t('injuryImpact.showFewer') : t('injuryImpact.showAll', { count: players.length })}
+                </button>
+              )}
+            </div>
+          )}
+          <div className="text-[10px] text-[color:var(--text-dim)] mt-2 italic">{t('injuryImpact.method')}</div>
+        </>
+      )}
     </div>
   )
 }
