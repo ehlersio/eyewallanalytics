@@ -419,7 +419,18 @@
       "viaTeam": "via {{team}}",
       "draftBeginsNote": "Draft begins June 26 · Buffalo · 7 pm ET",
       "madePickLabel": "R{{round}} · #{{overall}}",
-      "csRankLabel": "CS #{{rank}}"
+      "csRankLabel": "CS #{{rank}}",
+      "historyTitle": "Recent drafts",
+      "historyInfo": "Every pick from the last five NHL drafts, from the NHL's official draft records. \"via\" lists every team that owned a pick before it was used, in order.",
+      "historySummary": "{{acquired}} of {{made}} picks made came from trades · {{away}} own picks traded away ({{first}}–{{last}})",
+      "madeHeading": "Picks made ({{count}})",
+      "awayHeading": "Own picks used by other teams ({{count}})",
+      "viaChain": "via {{chain}}",
+      "awayTo": "→ {{team}}",
+      "noHistory": "No draft history available yet.",
+      "historyUnavailable": "Draft history isn't available right now.",
+      "yearAriaLabel": "Draft year",
+      "historySource": "Source: NHL draft records"
     }
   },
   "pwhlTeamView": {

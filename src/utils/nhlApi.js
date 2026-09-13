@@ -112,6 +112,16 @@ export async function getDraftPicks(team = null, round = null) {
 // Fetch confirmed R1 pick order (pre-draft placeholder slots).
 // team: team abbrev filter e.g. 'CAR' — omit for all 32 teams
 // Returns rows from draft_pick_order_2026 including original_team for traded picks.
+// Where a team's recent draft picks came from and went -- the Worker's
+// /draft/pick-history route (eyewall-pipeline's draft_history.py, from the
+// NHL's own draft records). Returns { team, sinceYear, made, tradedAway }
+// over the last 5 drafts, each pick carrying its pick_chain (original owner
+// first, drafting team last). Not memoized client-side -- the Worker's 6hr
+// KV cache is the cache. Returns null on any Worker failure.
+export async function getDraftPickHistory(team = TEAM_CONFIG.abbr) {
+  return workerFetch(`/draft/pick-history?team=${encodeURIComponent(team)}`);
+}
+
 export async function getDraftOrder(team = null) {
   const path = team ? `/draft/order?team=${team}` : '/draft/order';
   return workerFetch(path);
