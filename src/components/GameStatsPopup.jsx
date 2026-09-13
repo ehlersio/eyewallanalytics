@@ -3,13 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import {
   getCompletedGameStats, getOpponent, isHomeGame, getCarScore, getOppScore,
-  formatGameDate, getVenue, getWinningGoalScorer, getRecapLinks, isNeutralSite, TEAM_COLORS,
-} from '../utils/nhlApi';
+  formatGameDate, getVenue, getWinningGoalScorer, getRecapLinks, isNeutralSite, } from '../utils/nhlApi';
 import { computeShotAttempts, computePDO, computePuckLuck } from '../utils/advancedStats';
 import TeamLogo from '../components/TeamLogo';
 import InfoTip from '../components/InfoTip';
 import { capture } from '../utils/analytics';
-import { TEAM_CONFIG } from '../utils/teamConfig';
+import { TEAM_CONFIG, teamTextColor } from '../utils/teamConfig';
 
 
 // ── Game stats popup ─────────────────────────────────────────
@@ -95,7 +94,7 @@ function GameStatsPopup({ game, onClose }) {
 
   const opp      = getOpponent(game);
   const oppAbbr  = opp?.abbrev || 'OPP';
-  const oppColor = TEAM_COLORS[oppAbbr] || '#7a8899';
+  const oppColor = teamTextColor(oppAbbr) || '#7a8899';
   const carScore = getCarScore(game);
   const oppScore = getOppScore(game);
   const won      = carScore != null && oppScore != null && carScore > oppScore;
@@ -317,7 +316,7 @@ function GameStatsPopup({ game, onClose }) {
                           </span>
                           <div className="gp-star-info flex flex-col gap-[1px] min-w-0">
                             <span className="gp-star-name flex-1 text-[color:var(--text)] font-medium text-[12px] whitespace-nowrap overflow-hidden text-ellipsis">{s.name?.default || s.player}</span>
-                            <span className="gp-star-team text-[10px] font-[family-name:var(--font-display)] font-bold" style={{ color: TEAM_COLORS[s.teamAbbrev?.default || s.teamAbbrev] || 'var(--text-muted)' }}>
+                            <span className="gp-star-team text-[10px] font-[family-name:var(--font-display)] font-bold" style={{ color: teamTextColor(s.teamAbbrev?.default || s.teamAbbrev) || 'var(--text-muted)' }}>
                               {s.teamAbbrev?.default || s.teamAbbrev}
                             </span>
                           </div>

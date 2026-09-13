@@ -4,8 +4,9 @@ import { useFetch } from '../hooks/useFetch';
 import {
   getTeamStats, getTeamStatsPlayoff, getTeamRecentGames, getTeamTopPlayers,
   getTeamInjuries, buildInjuryIndex,
-  TEAM_COLORS, TEAM_CONFIG,
+  TEAM_CONFIG,
 } from '../utils/nhlApi';
+import { teamTextColor } from '../utils/teamConfig';
 import { computeGSAx } from '../utils/advancedStats';
 import { getGoalieAnalytics, getTeamLines, getGameMatchup } from '../utils/supabaseClient';
 import TeamLogo from './TeamLogo';
@@ -560,7 +561,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
   const { t } = useTranslation();
   const gameType = isPlayoff ? 3 : 2;
   const carColor = 'var(--team-primary)';
-  const oppColor = TEAM_COLORS[oppAbbr] || 'var(--text-muted)';
+  const oppColor = teamTextColor(oppAbbr) || 'var(--text-muted)';
 
   const canvasRef = useRef(null);
   const [canvasMounted, setCanvasMounted] = useState(false);

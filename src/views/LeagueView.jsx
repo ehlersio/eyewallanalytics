@@ -19,7 +19,7 @@ import {
   TEAM_CONFIG,
 } from '../utils/nhlApi';
 import { getTeamSeasonData, getPowerRankingsNarrative, getPowerRankingsHistory } from '../utils/supabaseClient';
-import { ALL_TEAMS } from '../utils/teamConfig';
+import { teamTextColor } from '../utils/teamConfig';
 import { useSport } from '../utils/SportContext';
 import TeamLogo from '../components/TeamLogo';
 import PlayerPopup from '../components/PlayerPopup';
@@ -279,7 +279,7 @@ function bktAbbrClasses(isEliminated) {
 const BKT_DOTS_CLASSES = 'bkt-dots flex gap-[3px]'
 const BKT_DOT_CLASSES = 'bkt-dot w-[7px] h-[7px] rounded-full border border-[var(--border-2)] bg-transparent shrink-0'
 // .bkt-dot--won is confirmed dead -- the win-dot fill is applied via
-// inline style={{background,borderColor}} using TEAM_COLORS, not this
+// inline style={{background,borderColor}} using teamTextColor(), not this
 // class -- not migrated.
 
 const BKT_SERIES_LABEL_CLASSES = 'bkt-series-label text-[9px] text-[color:var(--text-dim)] mt-[3px] whitespace-nowrap overflow-hidden text-ellipsis'
@@ -512,7 +512,7 @@ function StandingsRow({ entry, rank, teamSeasonData }) {
         style={clinchColor ? { borderLeft: `2.5px solid ${clinchColor}` } : undefined}
       >
         <span className={LV_TEAM_CELL_CLASSES}>
-          <span className={LV_TEAM_ABBREV_CLASSES} style={{ color: TEAM_COLORS[abbrev] ?? 'var(--text)' }}>{abbrev}</span>
+          <span className={LV_TEAM_ABBREV_CLASSES} style={{ color: teamTextColor(abbrev) ?? 'var(--text)' }}>{abbrev}</span>
           {entry.clinchIndicator && (
             <span className={LV_CLINCH_BADGE_CLASSES}>{entry.clinchIndicator.toUpperCase()}</span>
           )}
@@ -681,7 +681,7 @@ function LeadersCard({ title, statLabel, rows, formatStat, onPlayerClick }) {
         const name      = `${firstName} ${lastName}`.trim();
         const isPrimary = abbrev === PRIMARY;
         const stat      = p.value ?? 0;
-        const teamColor = TEAM_COLORS[abbrev] ?? 'var(--text-dim)';
+        const teamColor = teamTextColor(abbrev) ?? 'var(--text-dim)';
         const pid       = p.playerId ?? p.id ?? null;
 
         const playerObj = pid ? {
@@ -757,9 +757,6 @@ function LeadersPanel({ scoring, goals, gaa, svp }) {
 
 // ─── Bracket Panel (Phase 2) ──────────────────────────────────────────────────
 
-// WCAG AA-compliant team display colors, sourced from teamConfig.js (displayColor).
-// These are pre-verified to meet ≥4.5:1 contrast on --bg2 (#101827).
-const TEAM_COLORS = Object.fromEntries(ALL_TEAMS.map(t => [t.abbr, t.displayColor]));
 
 // Primary team display color for YOU-row highlights and bracket card accent.
 const PRIMARY_COLOR = TEAM_CONFIG.displayColor;
@@ -893,7 +890,7 @@ function WinDots({ wins, color }) {
 // ── Series card ──
 
 function TeamAbbr({ abbrev, _isWinner, isEliminated }) {
-  const color = TEAM_COLORS[abbrev];
+  const color = teamTextColor(abbrev);
   return (
     <span
       className={bktAbbrClasses(isEliminated)}
@@ -934,11 +931,11 @@ function SeriesCard({ series, onSeriesClick }) {
     >
       <div className={BKT_TEAM_ROW_CLASSES}>
         <TeamAbbr abbrev={top} isEliminated={isComplete && topWins !== 4} />
-        <WinDots wins={topWins} color={TEAM_COLORS[top]} />
+        <WinDots wins={topWins} color={teamTextColor(top)} />
       </div>
       <div className={BKT_TEAM_ROW_CLASSES}>
         <TeamAbbr abbrev={bottom} isEliminated={isComplete && bottomWins !== 4} />
-        <WinDots wins={bottomWins} color={TEAM_COLORS[bottom]} />
+        <WinDots wins={bottomWins} color={teamTextColor(bottom)} />
       </div>
       {label && <div className={BKT_SERIES_LABEL_CLASSES}>{label}</div>}
     </div>
@@ -1044,14 +1041,14 @@ function CupFinalCol({ series, onSeriesClick }) {
         >
           <div className={BKT_TEAM_ROW_CLASSES}>
             <TeamAbbr abbrev={top} isEliminated={isComplete && topWins !== 4} />
-            <WinDots wins={topWins} color={TEAM_COLORS[top]} />
+            <WinDots wins={topWins} color={teamTextColor(top)} />
           </div>
           <div className={BKT_TEAM_ROW_CLASSES}>
             <TeamAbbr abbrev={bottom} isEliminated={isComplete && bottomWins !== 4} />
-            <WinDots wins={bottomWins} color={TEAM_COLORS[bottom]} />
+            <WinDots wins={bottomWins} color={teamTextColor(bottom)} />
           </div>
           {winner && (
-            <div className={BKT_WINNER_LINE_CLASSES} style={{ color: TEAM_COLORS[winner] ?? 'var(--text)' }}>
+            <div className={BKT_WINNER_LINE_CLASSES} style={{ color: teamTextColor(winner) ?? 'var(--text)' }}>
               {winner} {t('leagueView.bracket.championSuffix')}
             </div>
           )}
@@ -1094,8 +1091,8 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
     [seriesLetter, roundNumber, season]
   );
 
-  const topColor    = TEAM_COLORS[top]    ?? 'var(--text)';
-  const bottomColor = TEAM_COLORS[bottom] ?? 'var(--text)';
+  const topColor    = teamTextColor(top)    ?? 'var(--text)';
+  const bottomColor = teamTextColor(bottom) ?? 'var(--text)';
   const winner      = topWins === 4 ? top : bottomWins === 4 ? bottom : null;
 
   function fmtDate(iso) {
@@ -1126,7 +1123,7 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
             <span className={SERIES_MODAL_ABBREV_CLASSES} style={{ color: bottomColor }}>{bottom}</span>
           </div>
           {winner && (
-            <div className={SERIES_MODAL_RESULT_CLASSES} style={{ color: TEAM_COLORS[winner] }}>
+            <div className={SERIES_MODAL_RESULT_CLASSES} style={{ color: teamTextColor(winner) }}>
               {t('league.bracket.wins', { team: winner, score: `4${dash}${winner === top ? bottomWins : topWins}` })} 🏆
             </div>
           )}
@@ -1168,8 +1165,8 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
             const awayWon = g.awayScore > g.homeScore;
             const homeWon = g.homeScore > g.awayScore;
             const extra   = periodLabel(g.periodType);
-            const awayColor = TEAM_COLORS[g.awayAbbrev] ?? 'var(--text)';
-            const homeColor = TEAM_COLORS[g.homeAbbrev] ?? 'var(--text)';
+            const awayColor = teamTextColor(g.awayAbbrev) ?? 'var(--text)';
+            const homeColor = teamTextColor(g.homeAbbrev) ?? 'var(--text)';
             return (
               <div key={g.gameId} className={SERIES_MODAL_GAME_ROW_CLASSES}>
                 <span className={SERIES_MODAL_GAME_NUM_CLASSES}>G{i + 1}</span>
@@ -1608,7 +1605,7 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
               </span>
               <span className={PR_COL_TEAM_CLASSES}>
                 <TeamLogo abbr={team.abbr} size={16} />
-                <span className={PR_ABBR_CLASSES} style={{ color: TEAM_COLORS[team.abbr] ?? 'var(--text)' }}>
+                <span className={PR_ABBR_CLASSES} style={{ color: teamTextColor(team.abbr) ?? 'var(--text)' }}>
                   {team.abbr}
                 </span>
               </span>
@@ -1811,7 +1808,7 @@ function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, primaryColo
         <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {displayRows.map(t => {
             const isMe     = t.abbr === myTeam.abbr;
-            const teamColor = TEAM_COLORS[t.abbr] ?? 'rgba(255,255,255,0.5)';
+            const teamColor = teamTextColor(t.abbr) ?? 'rgba(255,255,255,0.5)';
             return (
               <div key={t.abbr} style={{
                 display: 'grid',

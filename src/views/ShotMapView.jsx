@@ -10,9 +10,9 @@ import {
   getGameLanding, attachGoalVideos,
   getCarScore, getOppScore, getOpponent, isHomeGame, isCompleted,
   getTeamStats, getTeamPlayoffStats, formatGameDate, getRoster, buildPlayerMap,
-  bustLiveGameCache, TEAM_COLORS, GAME_TYPE, TEAM_CONFIG,
+  bustLiveGameCache, GAME_TYPE, TEAM_CONFIG,
 } from '../utils/nhlApi';
-import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON } from '../utils/teamConfig';
+import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON, teamTextColor } from '../utils/teamConfig';
 import { HockeyRink } from 'react-hockey-rink';
 import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import LiveEventRink from '../components/LiveEventRink';
@@ -628,7 +628,7 @@ export default function ShotMapView() {
   const gameChipGames = useMemo(() => games.map(g => ({
     id: g.id,
     opponentAbbr: getOpponent(g)?.abbrev,
-    opponentColor: TEAM_COLORS[getOpponent(g)?.abbrev],
+    opponentColor: teamTextColor(getOpponent(g)?.abbrev),
     myScore: getCarScore(g),
     oppScore: getOppScore(g),
     isHome: isHomeGame(g),
@@ -857,7 +857,7 @@ export default function ShotMapView() {
     () => oppAbbr ? getGameLogInsights(oppAbbr) : Promise.resolve(null),
     [oppAbbr]
   );
-  const oppColor   = TEAM_COLORS[oppAbbr] || 'var(--text-muted)';
+  const oppColor   = teamTextColor(oppAbbr) || 'var(--text-muted)';
   const gameHome   = activeGame ? isHomeGame(activeGame) : true;
 
   // ── Live situation: strength + on-ice players ─────────────

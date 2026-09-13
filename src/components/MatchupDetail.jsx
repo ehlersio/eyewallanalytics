@@ -7,9 +7,10 @@ import ScoutingTab from '../components/ScoutingTab';
 import InfoTip from '../components/InfoTip';
 import { getTeamLines, getGamePrediction } from '../utils/supabaseClient';
 import {
-  getOpponent, TEAM_COLORS, TEAM_CONFIG,
+  getOpponent, TEAM_CONFIG,
   oddsToImplied, fmtOdds,
 } from '../utils/nhlApi';
+import { teamTextColor } from '../utils/teamConfig';
 import { StatBar } from '../components/StatBar';
 import PredictionExportSection from '../components/PredictionShareCanvas';
 import ProbableStarters from '../components/ProbableStarters';
@@ -135,7 +136,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   const [mdTab, setMdTab] = React.useState('prediction');
   const opp     = getOpponent(game);
   const oppAbbr = opp?.abbrev || 'OPP';
-  const oppColor = TEAM_COLORS[oppAbbr] || '#7a8899';
+  const oppColor = teamTextColor(oppAbbr) || '#7a8899';
   const gameType = playoffSeries ? 3 : 2;
   const { data: carLines } = useFetch(() => getTeamLines(TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType), [TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType]);
 

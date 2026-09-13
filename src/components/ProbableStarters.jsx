@@ -34,9 +34,8 @@ function StarterColumn({ abbr, goalies }) {
 
   return (
     <div className="md-starters-team min-w-0" data-team={abbr}>
-      {/* teamTextColor(): the WCAG AA displayColor on dark (brand color on
-          light) -- not nhlApi.js's raw TEAM_COLORS, where FLA/WPG's navy is
-          unreadable on the dark card. */}
+      {/* teamTextColor(): the WCAG AA displayColor on dark, brand color on
+          light -- a raw brand navy (FLA/WPG) is unreadable on the dark card. */}
       <div
         className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.06em] mb-1"
         style={{ color: teamTextColor(abbr) ?? 'var(--text-muted)' }}

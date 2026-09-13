@@ -7,9 +7,10 @@ import {
   getRegularSeasonGames, getPlayoffGames, getPreseasonGames, getPlayoffSeries, getStandings,
   buildCarPlayoffSummary, formatGameDate,
   getOpponent, isHomeGame, getCarScore, getOppScore, getVenue,
-  TEAM_COLORS, getNhlOdds, findGameOdds, extractMoneyline, oddsToImplied,
+  getNhlOdds, findGameOdds, extractMoneyline, oddsToImplied,
   TEAM_CONFIG,
 } from '../utils/nhlApi';
+import { teamTextColor } from '../utils/teamConfig';
 import TeamLogo from '../components/TeamLogo';
 import { CalendarView } from '../components/CalendarView';
 import { GameStatsPopup } from '../components/GameStatsPopup';
@@ -380,7 +381,7 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
                     {ROUND_LABELS[round] || t('scheduleView.playoffs.roundFallback', { round })}
                   </span>
                   {series && (
-                    <span className="round-series-opp text-[11px] font-semibold" style={{ color: TEAM_COLORS[series.opponent?.abbrev] || 'var(--text-dim)' }}>
+                    <span className="round-series-opp text-[11px] font-semibold" style={{ color: teamTextColor(series.opponent?.abbrev) || 'var(--text-dim)' }}>
                       {t('scheduleView.playoffs.vsPrefix')}{series.opponent?.abbrev}
                     </span>
                   )}
@@ -553,7 +554,7 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
                 <span className="result-sep text-[color:var(--text-dim)]">–</span>
                 <span className="result-num muted text-[22px] font-bold text-[color:var(--text-muted)]">{oppScore ?? '—'}</span>
                 <span className="result-abbr muted text-[16px] font-bold text-[color:var(--text-muted)]">{opp?.abbrev}</span>
-                <TeamLogo abbr={opp?.abbrev} size={20} color={TEAM_COLORS[opp?.abbrev]} />
+                <TeamLogo abbr={opp?.abbrev} size={20} color={teamTextColor(opp?.abbrev)} />
                 <span className="result-venue text-[10px] text-[color:var(--text-dim)] ml-auto font-[family-name:var(--font-body)]">{isHomeGame(game) ? '📍' : '✈'} {getVenue(game) || (isHomeGame(game) ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away'))}</span>
               </div>
             </div>

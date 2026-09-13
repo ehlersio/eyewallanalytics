@@ -10,7 +10,7 @@
 // then onSelect(). The caller decides whether to reload the page.
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ALL_TEAMS, setTeamConfig } from '../utils/teamConfig'
+import { ALL_TEAMS, setTeamConfig, teamTextColor } from '../utils/teamConfig'
 import { PWHL_TEAMS } from '../utils/pwhlConfig'
 import { AHL_TEAMS, ahlLogoUrl } from '../utils/ahlConfig'
 import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
@@ -19,7 +19,6 @@ import { useAuth } from '../utils/AuthContext'
 import { upsertFavoriteTeam } from '../utils/favoriteTeamSync'
 import TeamLogo from './TeamLogo'
 import EyeWallLogo from './EyeWallLogo'
-import { TEAM_COLORS } from '../utils/nhlApi'
 
 // Tailwind migration (Session 95, Phase 1) -- previously TeamPicker.css.
 //
@@ -220,7 +219,7 @@ function NHLTeamStep({ onBack, onSelect }) {
             <div className={GRID_CLASSES}>
               {division.teams.map(abbr => {
                 const team  = nhlTeamByAbbr[abbr];
-                const color = TEAM_COLORS[abbr] || '#888';
+                const color = teamTextColor(abbr) || '#888';
                 const isHov = hovered === abbr;
                 if (!team) return null;
                 return (

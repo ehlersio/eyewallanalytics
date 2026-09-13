@@ -147,10 +147,12 @@ export function getTeamByAbbr(abbr) {
 // Any team's color for text, lines and dots on the app's current
 // background: displayColor (the WCAG AA variant -- see ALL_TEAMS above) in
 // dark mode, primaryColor in light. Same rule applyTeamTheme() uses for the
-// selected team's --team-primary, for every OTHER team. Use this, not
-// nhlApi.js's TEAM_COLORS, which holds raw brand colors (FLA/WPG's #041e42
-// is unreadable on the dark card). null for an abbr not in ALL_TEAMS, so
-// callers keep their own fallback.
+// selected team's --team-primary, for every OTHER team (opponents, league
+// tables, brackets). Replaced nhlApi.js's raw brand-color TEAM_COLORS
+// (2026-09), where FLA/WPG's #041e42 was unreadable on the dark card. null
+// for an abbr not in ALL_TEAMS (e.g. ARI in older seasons), so callers keep
+// their own fallback. Reads the theme at call time, so a component picks up
+// a theme switch on its next render.
 export function teamTextColor(abbr) {
   const team = getTeamByAbbr(abbr);
   if (!team) return null;

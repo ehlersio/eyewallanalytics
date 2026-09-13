@@ -1,8 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  TEAM_COLORS, getOpponent, isHomeGame, getCarScore, getOppScore, formatGameTime,
+  getOpponent, isHomeGame, getCarScore, getOppScore, formatGameTime,
 } from '../utils/nhlApi';
+import { teamTextColor } from '../utils/teamConfig';
 import { formatDate as formatDateIntl } from '../utils/formatters';
 import TeamLogo from '../components/TeamLogo';
 
@@ -151,7 +152,7 @@ function CalCell({ day, _dateStr, game, isToday, onGamePopup }) {
   const isCompleted = ['OFF','FINAL','F'].includes(game.gameState);
   const opp         = getOpponent(game);
   const oppAbbr     = opp?.abbrev || '???';
-  const oppColor    = TEAM_COLORS[oppAbbr] || 'var(--text-muted)';
+  const oppColor    = teamTextColor(oppAbbr) || 'var(--text-muted)';
   const home        = isHomeGame(game);
   const carScore    = getCarScore(game);
   const oppScore    = getOppScore(game);
