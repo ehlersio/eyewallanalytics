@@ -144,6 +144,21 @@ export function getTeamByAbbr(abbr) {
   return ALL_TEAMS.find(t => t.abbr === abbr) ?? null;
 }
 
+// Any team's color for text, lines and dots on the app's current
+// background: displayColor (the WCAG AA variant -- see ALL_TEAMS above) in
+// dark mode, primaryColor in light. Same rule applyTeamTheme() uses for the
+// selected team's --team-primary, for every OTHER team. Use this, not
+// nhlApi.js's TEAM_COLORS, which holds raw brand colors (FLA/WPG's #041e42
+// is unreadable on the dark card). null for an abbr not in ALL_TEAMS, so
+// callers keep their own fallback.
+export function teamTextColor(abbr) {
+  const team = getTeamByAbbr(abbr);
+  if (!team) return null;
+  const light = typeof document !== 'undefined'
+    && document.documentElement.getAttribute('data-theme') === 'light';
+  return light ? team.primaryColor : team.displayColor;
+}
+
 export function getTeamConfig() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);

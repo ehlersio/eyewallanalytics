@@ -12,6 +12,7 @@ import {
 } from '../utils/nhlApi';
 import { StatBar } from '../components/StatBar';
 import PredictionExportSection from '../components/PredictionShareCanvas';
+import ProbableStarters from '../components/ProbableStarters';
 
 // Styling used to come from ScheduleView.css -- migrated to Tailwind here
 // (Phase 6, ScheduleView.css sub-PR 5, the final sub-PR -- ScheduleView.css
@@ -206,6 +207,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
         {mdTab === 'scouting' ? (
           <ScoutingTab oppAbbr={oppAbbr} oppStanding={oppStanding} carStanding={carStanding} isPlayoff={game?.gameType === 3} gameId={game?.id} />
         ) : (<>
+          <ProbableStarters game={game} />
           <PredictionAnalysis gameId={game?.id} gameDate={game?.gameDate} oppAbbr={oppAbbr} oppColor={oppColor} />
           {odds && (
             <div className={MD_ODDS_ROW_CLASSES} style={{ marginTop: 12 }}>
@@ -363,6 +365,8 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
           <span style={{ color: oppColor }}>{oppAbbr}</span>
         </div>
       </div>
+
+      <ProbableStarters game={game} />
 
       {/* Predicted score — auto-saved when card opens (useEffect at top of component) */}
       <div className="md-score-pred text-center mt-2.5 mb-1">

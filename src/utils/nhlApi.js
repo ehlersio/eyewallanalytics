@@ -818,6 +818,18 @@ export async function getInjuryImpact(teamAbbr = TEAM_CONFIG.abbr) {
   return workerFetch(`/injury-impact?team=${encodeURIComponent(teamAbbr)}`);
 }
 
+// Probable starting goalies for one game -- the Worker's /probable-starters
+// route, backed by eyewall-pipeline's nightly starting_goalie.py (each
+// team's next regular-season game once it's within 2 days). Returns
+// { gameId, gameDate, runDate, teams: { ABBR: [{ goalie_id, goalie_name,
+// start_prob, factors }] } } -- teams is {} until the game is inside that
+// window; `unavailable` means the Worker's own read failed. Not memoized
+// client-side -- the Worker's 1hr KV cache is the cache. Returns null on any
+// Worker failure.
+export async function getProbableStarters(gameId) {
+  return workerFetch(`/probable-starters?game=${encodeURIComponent(gameId)}`);
+}
+
 // NHL transactions feed -- the Worker's /transactions route, backed by
 // eyewall-pipeline's nightly ESPN ingestion (transactions.py). The Worker
 // already pairs each trade's two per-team halves into one { kind: 'trade' }

@@ -2209,5 +2209,16 @@
     "method": "A man-game lost is a game a player on the injury report didn't dress for. WAR lost = his WAR per game × games missed.",
     "none": "Injury tracking starts with the first regular-season game.",
     "unavailable": "Injury impact isn't available right now."
+  },
+  "probableStarters": {
+    "title": "Probable starters",
+    "infoTip": "Who's likely to start in goal, from each team's own pattern over the last three seasons: share of recent starts, who started last game, back-to-backs and rest. The NHL doesn't announce starters ahead of time, so these are estimates. Goalies listed out or on injured reserve are left out. Posted two days before the game and updated each morning.",
+    "notYet": "Probable starters are posted two days before the game.",
+    "unavailable": "Probable starters aren't available right now.",
+    "backToBack": "Back-to-back",
+    "startedLast": "Started last game",
+    "dayToDay": "Day-to-day",
+    "share": "{{pct}} of last 10 starts",
+    "updated": "Updated {{date}}"
   }
 }
