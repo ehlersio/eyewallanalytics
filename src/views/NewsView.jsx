@@ -4,6 +4,7 @@ import { capture } from '../utils/analytics';
 import { TEAM_CONFIG } from '../utils/nhlApi';
 import MilestonesFeed from '../components/MilestonesFeed';
 import TriviaFeed from '../components/TriviaFeed';
+import TransactionsFeed from '../components/TransactionsFeed';
 import { useReadState } from '../hooks/useReadState';
 import { formatDate, formatNumber } from '../utils/formatters';
 import {
@@ -87,7 +88,7 @@ function ArticleCard({ item }) {
 
 export default function NewsView() {
   const { t } = useTranslation();
-  const [view,      setView]      = useState('news'); // 'news' | 'milestones' | 'trivia'
+  const [view,      setView]      = useState('news'); // 'news' | 'milestones' | 'trivia' | 'transactions'
   const [articles,  setArticles]  = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
@@ -189,10 +190,17 @@ export default function NewsView() {
         >
           {t('newsView.tabs.trivia')}{readState.trivia && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
         </button>
+        <button
+          className={newsViewToggleBtnClasses(view === 'transactions')}
+          onClick={() => { setView('transactions'); capture('transactions_tab_viewed', { sport: 'nhl' }); }}
+        >
+          {t('newsView.tabs.transactions')}
+        </button>
       </div>
 
       {view === 'milestones' && <MilestonesFeed />}
       {view === 'trivia' && <TriviaFeed />}
+      {view === 'transactions' && <TransactionsFeed sport="nhl" />}
 
       {view === 'news' && (
         <>

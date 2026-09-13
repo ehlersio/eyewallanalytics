@@ -1515,7 +1515,26 @@
     "error": {
       "notAvailable": "Transactions non disponibles — revenez bientôt"
     },
-    "emptyState": "Aucune transaction trouvée pour le moment."
+    "emptyState": "Aucune transaction trouvée pour le moment.",
+    "nhl": {
+      "scopeAriaLabel": "Afficher les transactions de",
+      "scopeTeam": "{{team}}",
+      "scopeLeague": "Ligue",
+      "tradeAriaLabel": "Échange entre {{a}} et {{b}}",
+      "source": "Source : ESPN · mis à jour chaque nuit",
+      "category": {
+        "trade": "Échange",
+        "signing": "Signature",
+        "waivers": "Ballottage",
+        "injury": "Blessure",
+        "recall": "Rappel",
+        "assignment": "Assignation",
+        "release": "Libération",
+        "suspension": "Suspension",
+        "staff": "Personnel",
+        "other": "Mouvement"
+      }
+    }
   },
   "newsView": {
     "tabs": {
