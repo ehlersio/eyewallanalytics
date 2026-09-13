@@ -1,14 +1,27 @@
 // src/components/TransactionsFeed.jsx
-// PWHL-only league-wide signings/moves feed (Session: "remaining flagged
-// items" round). Rendered as a tab inside PWHLNewsView.jsx alongside
-// News/Milestones/Trivia, mirroring MilestonesFeed.jsx's self-fetching +
-// card-reuse pattern -- but simpler: no player_id on transaction rows (just
-// a display name), so no tap-to-open-popup affordance, and no team filter
-// (the feed is short enough as-is, HockeyTech's default 50-row page).
+// League signings/moves feed, rendered as a tab on the News view.
+//
+// sport="pwhl" (default, PWHLNewsView.jsx): HockeyTech's league-wide feed,
+// unchanged from the original PWHL-only version -- no player_id on rows
+// (just a display name), so no tap-to-open-popup affordance, and no team
+// filter (HockeyTech's default 50-row page is short enough as-is).
+//
+// sport="nhl" (NewsView.jsx, 2026-09): the Worker's /transactions route
+// (ESPN's NHL feed via eyewall-pipeline's transactions.py). Rows are ESPN's
+// free-text descriptions with a category badge; the Worker has already
+// merged each trade's two per-team halves into one trade item, rendered as
+// one card with both sides. Toggles between the selected team and the
+// whole league.
+//
+// Both share FeedShell (header + loading/error/empty states), which keeps
+// the PWHL markup exactly as it was.
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchPWHLTransactions } from '../utils/pwhlApi';
+import { getTransactions, TEAM_CONFIG } from '../utils/nhlApi';
 import { formatDate } from '../utils/formatters';
+import { capture } from '../utils/analytics';
+import TeamLogo from './TeamLogo';
 import {
   NEWS_HEADER_CLASSES, NEWS_HEADER_ROW_CLASSES, NEWS_TITLE_CLASSES, NEWS_UPDATED_CLASSES,
   NEWS_FEED_CLASSES, NEWS_CARD_CLASSES, NEWS_CARD_BODY_CLASSES, NEWS_CARD_META_CLASSES,
@@ -25,6 +38,90 @@ function formatTxDate(dateStr) {
   if (isNaN(d)) return dateStr;
   return formatDate(d, { month: 'short', day: 'numeric' });
 }
+
+// Self-fetching list state shared by both sports. `load` returns the list
+// (or throws); the latest-request ref drops a stale response if the user
+// flips scope while a fetch is still in flight.
+function useFeed(load) {
+  const [items, setItems]     = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
+  const requestRef = useRef(0);
+
+  const refresh = useCallback(async () => {
+    const request = ++requestRef.current;
+    setLoading(true);
+    setError(null);
+    try {
+      const list = await load();
+      if (request === requestRef.current) setItems(list);
+    } catch (err) {
+      if (request === requestRef.current) setError(err.message);
+    } finally {
+      if (request === requestRef.current) setLoading(false);
+    }
+  }, [load]);
+
+  useEffect(() => { refresh(); }, [refresh]);
+  return { items, loading, error, refresh };
+}
+
+function FeedShell({ loading, error, count, onRefresh, controls, footer, children }) {
+  const { t } = useTranslation();
+  return (
+    <div className={MILESTONES_FEED_CLASSES}>
+      <div className={`${NEWS_HEADER_CLASSES} card`}>
+        <div className={NEWS_HEADER_ROW_CLASSES}>
+          <div>
+            <div className={NEWS_TITLE_CLASSES}>{t('transactionsFeed.header.title')}</div>
+            {!loading && (
+              <div className={NEWS_UPDATED_CLASSES}>{t('transactionsFeed.header.recentCount', { count })}</div>
+            )}
+          </div>
+          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={onRefresh} disabled={loading}
+            aria-label={t('newsView.header.refreshAriaLabel')}>
+            {loading ? '…' : '↻'}
+          </button>
+        </div>
+        {controls}
+      </div>
+
+      {loading && (
+        <div className={NEWS_LOADING_CLASSES}>
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className={`${NEWS_SKELETON_CLASSES} card`}>
+              <div className={SKEL_BADGE_CLASSES} />
+              <div className={SKEL_TITLE_CLASSES} />
+              <div className={SKEL_TEXT_CLASSES} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className={`${NEWS_ERROR_CLASSES} card`}>
+          <div className={NEWS_ERROR_ICON_CLASSES}>🤝</div>
+          <div className={NEWS_ERROR_MSG_CLASSES}>{error}</div>
+          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={onRefresh}>{t('triviaFeed.error.tryAgain')}</button>
+        </div>
+      )}
+
+      {!loading && !error && count === 0 && (
+        <div className={`${NEWS_EMPTY_CLASSES} card`}>
+          <div className={NEWS_ERROR_ICON_CLASSES}>🤝</div>
+          <div>{t('transactionsFeed.emptyState')}</div>
+        </div>
+      )}
+
+      {!loading && !error && count > 0 && (
+        <div className={NEWS_FEED_CLASSES}>{children}</div>
+      )}
+      {!loading && !error && count > 0 && footer}
+    </div>
+  );
+}
+
+// ── PWHL ───────────────────────────────────────────────────────
 
 // HockeyTech has only ever returned "ADD"/"Signed" in every real pull seen
 // so far -- other type/action values are unconfirmed, so this maps known
@@ -53,81 +150,134 @@ function TransactionRow({ tx }) {
   );
 }
 
-export default function TransactionsFeed() {
+function PWHLTransactionsFeed() {
   const { t } = useTranslation();
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(null);
-  const fetchingRef = useRef(false);
-
-  const fetchTransactions = useCallback(async () => {
-    if (fetchingRef.current) return;
-    fetchingRef.current = true;
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchPWHLTransactions();
-      if (!data) throw new Error(t('transactionsFeed.error.notAvailable'));
-      setTransactions(Array.isArray(data.transactions) ? data.transactions : []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-      fetchingRef.current = false;
-    }
+  const load = useCallback(async () => {
+    const data = await fetchPWHLTransactions();
+    if (!data) throw new Error(t('transactionsFeed.error.notAvailable'));
+    return Array.isArray(data.transactions) ? data.transactions : [];
   }, [t]);
-
-  useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
+  const { items, loading, error, refresh } = useFeed(load);
 
   return (
-    <div className={MILESTONES_FEED_CLASSES}>
-      <div className={`${NEWS_HEADER_CLASSES} card`}>
-        <div className={NEWS_HEADER_ROW_CLASSES}>
-          <div>
-            <div className={NEWS_TITLE_CLASSES}>{t('transactionsFeed.header.title')}</div>
-            {!loading && (
-              <div className={NEWS_UPDATED_CLASSES}>{t('transactionsFeed.header.recentCount', { count: transactions.length })}</div>
-            )}
-          </div>
-          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={fetchTransactions} disabled={loading}
-            aria-label={t('newsView.header.refreshAriaLabel')}>
-            {loading ? '…' : '↻'}
-          </button>
+    <FeedShell loading={loading} error={error} count={items.length} onRefresh={refresh}>
+      {items.map((tx, i) => <TransactionRow key={i} tx={tx} />)}
+    </FeedShell>
+  );
+}
+
+// ── NHL ────────────────────────────────────────────────────────
+
+// One badge per category -- matches eyewall-pipeline transactions.py's
+// CATEGORIES / primary_category values, plus 'other'.
+const NHL_CATEGORY_ICONS = {
+  trade: '🔁', signing: '✍️', waivers: '📋', injury: '🩹', recall: '⬆️',
+  assignment: '⬇️', release: '✂️', suspension: '⛔', staff: '🧑‍💼', other: '•',
+};
+
+const TX_DESC_CLASSES = 'tx-desc text-[13px] leading-[1.45] text-[color:var(--text-muted)] m-0';
+const TX_TEAM_ROW_CLASSES = 'flex items-center gap-1.5 text-[13px] font-semibold text-[color:var(--text)]';
+
+function scopeBtnClasses(active) {
+  const base = 'tx-scope-btn text-[11px] font-semibold py-[3px] px-2.5 rounded-full border-[0.5px] cursor-pointer';
+  return active
+    ? `${base} bg-[var(--team-primary)] text-white border-transparent`
+    : `${base} bg-transparent text-[color:var(--text-muted)] border-[var(--border-2)]`;
+}
+
+function CategoryBadge({ category }) {
+  const { t } = useTranslation();
+  const key = NHL_CATEGORY_ICONS[category] ? category : 'other';
+  return (
+    <span className={MILESTONE_ICON_BADGE_CLASSES}>
+      {NHL_CATEGORY_ICONS[key]} {t(`transactionsFeed.nhl.category.${key}`)}
+    </span>
+  );
+}
+
+function NHLMoveRow({ item }) {
+  return (
+    <article className={`tx-item tx-move ${NEWS_CARD_CLASSES} card`}>
+      <div className={NEWS_CARD_BODY_CLASSES}>
+        <div className={NEWS_CARD_META_CLASSES}>
+          <CategoryBadge category={item.category} />
+          <span className={NEWS_CARD_TIME_CLASSES}>{formatTxDate(item.date)}</span>
         </div>
+        <div className={TX_TEAM_ROW_CLASSES}>
+          <TeamLogo abbr={item.team} size={16} /> {item.team}
+        </div>
+        <p className={TX_DESC_CLASSES}>{item.description}</p>
       </div>
+    </article>
+  );
+}
 
-      {loading && (
-        <div className={NEWS_LOADING_CLASSES}>
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className={`${NEWS_SKELETON_CLASSES} card`}>
-              <div className={SKEL_BADGE_CLASSES} />
-              <div className={SKEL_TITLE_CLASSES} />
-              <div className={SKEL_TEXT_CLASSES} />
-            </div>
-          ))}
+function NHLTradeRow({ item }) {
+  const { t } = useTranslation();
+  const [a, b] = item.teams;
+  return (
+    <article className={`tx-item tx-trade ${NEWS_CARD_CLASSES} card`}>
+      <div className={NEWS_CARD_BODY_CLASSES}>
+        <div className={NEWS_CARD_META_CLASSES}>
+          <CategoryBadge category="trade" />
+          <span className={NEWS_CARD_TIME_CLASSES}>{formatTxDate(item.date)}</span>
         </div>
-      )}
+        <div className={TX_TEAM_ROW_CLASSES} aria-label={t('transactionsFeed.nhl.tradeAriaLabel', { a, b })}>
+          <TeamLogo abbr={a} size={16} /> {a}
+          <span className="text-[color:var(--text-dim)] font-normal" aria-hidden="true">⇄</span>
+          <TeamLogo abbr={b} size={16} /> {b}
+        </div>
+        {item.sides.map(s => (
+          <p key={s.team} className={TX_DESC_CLASSES}>
+            <span className="font-semibold text-[color:var(--text)]">{s.team}:</span> {s.description}
+          </p>
+        ))}
+      </div>
+    </article>
+  );
+}
 
-      {!loading && error && (
-        <div className={`${NEWS_ERROR_CLASSES} card`}>
-          <div className={NEWS_ERROR_ICON_CLASSES}>🤝</div>
-          <div className={NEWS_ERROR_MSG_CLASSES}>{error}</div>
-          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={fetchTransactions}>{t('triviaFeed.error.tryAgain')}</button>
-        </div>
-      )}
+function NHLTransactionsFeed() {
+  const { t } = useTranslation();
+  const teamAbbr = TEAM_CONFIG.abbr;
+  const [scope, setScope] = useState('team');
 
-      {!loading && !error && transactions.length === 0 && (
-        <div className={`${NEWS_EMPTY_CLASSES} card`}>
-          <div className={NEWS_ERROR_ICON_CLASSES}>🤝</div>
-          <div>{t('transactionsFeed.emptyState')}</div>
-        </div>
-      )}
+  const load = useCallback(async () => {
+    const data = await getTransactions(scope, teamAbbr);
+    if (!data) throw new Error(t('transactionsFeed.error.notAvailable'));
+    return Array.isArray(data.items) ? data.items : [];
+  }, [scope, teamAbbr, t]);
+  const { items, loading, error, refresh } = useFeed(load);
 
-      {!loading && !error && transactions.length > 0 && (
-        <div className={NEWS_FEED_CLASSES}>
-          {transactions.map((tx, i) => <TransactionRow key={i} tx={tx} />)}
-        </div>
-      )}
+  const pickScope = (next) => {
+    if (next === scope) return;
+    setScope(next);
+    capture('transactions_scope_changed', { sport: 'nhl', scope: next });
+  };
+
+  const controls = (
+    <div className="flex gap-1.5 mt-2" role="group" aria-label={t('transactionsFeed.nhl.scopeAriaLabel')}>
+      <button className={scopeBtnClasses(scope === 'team')} aria-pressed={scope === 'team'} onClick={() => pickScope('team')}>
+        {t('transactionsFeed.nhl.scopeTeam', { team: teamAbbr })}
+      </button>
+      <button className={scopeBtnClasses(scope === 'league')} aria-pressed={scope === 'league'} onClick={() => pickScope('league')}>
+        {t('transactionsFeed.nhl.scopeLeague')}
+      </button>
     </div>
   );
+  const footer = (
+    <div className="text-[10px] text-[color:var(--text-dim)] italic px-1 pt-1">{t('transactionsFeed.nhl.source')}</div>
+  );
+
+  return (
+    <FeedShell loading={loading} error={error} count={items.length} onRefresh={refresh} controls={controls} footer={footer}>
+      {items.map((item, i) => item.kind === 'trade'
+        ? <NHLTradeRow key={`t${i}`} item={item} />
+        : <NHLMoveRow key={`m${i}`} item={item} />)}
+    </FeedShell>
+  );
+}
+
+export default function TransactionsFeed({ sport = 'pwhl' }) {
+  return sport === 'nhl' ? <NHLTransactionsFeed /> : <PWHLTransactionsFeed />;
 }

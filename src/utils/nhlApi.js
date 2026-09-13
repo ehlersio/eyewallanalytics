@@ -773,6 +773,18 @@ async function _getRoster(teamAbbr = TEAM_CONFIG.abbr) {
   return { forwards, defensemen, goalies, all: [...forwards, ...defensemen, ...goalies] };
 }
 
+// NHL transactions feed -- the Worker's /transactions route, backed by
+// eyewall-pipeline's nightly ESPN ingestion (transactions.py). The Worker
+// already pairs each trade's two per-team halves into one { kind: 'trade' }
+// item. Not memoized client-side, same as PWHL's fetchPWHLTransactions: the
+// Worker's own 1hr KV cache is the cache, and the feed's refresh button
+// should genuinely refetch. Returns null on any Worker failure.
+export async function getTransactions(scope = 'team', teamAbbr = TEAM_CONFIG.abbr) {
+  return workerFetch(scope === 'league'
+    ? '/transactions?scope=league'
+    : `/transactions?team=${encodeURIComponent(teamAbbr)}`);
+}
+
 export async function getTeamInjuries(teamAbbr = TEAM_CONFIG.abbr) {
   return cached(`injuries:${teamAbbr}`, () => _getTeamInjuries(teamAbbr), TTL.SCHEDULE);
 }

@@ -21,12 +21,13 @@ describe('Milestones feed', () => {
     cy.contains('Milestones', { timeout: 8000 }).should('be.visible');
   });
 
-  it('News/Milestones/Trivia toggle does not collide with source filter chips', () => {
+  it('News/Milestones/Trivia/Transactions toggle does not collide with source filter chips', () => {
     // Regression guard: toggle buttons and source filter chips must stay
     // on separate classes. If this ever fails, .news-chip.active assertions
     // in news.cy.js will start matching multiple elements again.
-    // 3 toggles as of the Trivia tab (Session 92) — was 2 (News/Milestones).
-    cy.get('.news-view-toggle-btn').should('have.length', 3);
+    // 4 toggles as of the NHL Transactions tab (2026-09) — was 3 as of the
+    // Trivia tab (Session 92), and 2 (News/Milestones) before that.
+    cy.get('.news-view-toggle-btn').should('have.length', 4);
     cy.get('.news-view-toggle-btn.active').should('have.length', 1);
     cy.get('.news-view-toggle-btn.active').should('contain', 'Milestones');
   });
