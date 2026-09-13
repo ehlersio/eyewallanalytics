@@ -7,7 +7,7 @@ import {
   getTeamCorsi, getTeamRealtime, getTeamScoreState, getTeamPowerplay, getTeamPenaltyKill,
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
   getTeamSeasonRankings, TEAM_CONFIG,
-  getDraftOrder, getDraftPicks, getTeamInjuries, getTeamScratches,
+  getDraftOrder, getDraftPicks, getTeamInjuries, getTeamScratches, getDraftPickHistory,
 } from '../utils/nhlApi'
 import { InjuryBadge, InjuryDetailLine } from '../components/InjuryBadge'
 import { sortInjuries, parseLocalDate } from '../utils/injuryDetails'
@@ -1435,11 +1435,111 @@ function PicksTab({ overridePicks = null, overrideOrder = null, _devTeamAbbr = n
         )}
       </div>
 
+      <PickHistoryCard teamAbbr={teamAbbr} />
+
       {selected && (
         <DraftPopup item={selected} mode={selectedMode} onClose={closePopup} />
       )}
     </>
   );
+}
+
+// ── Recent drafts: where picks came from / went ───────────────
+// The Worker's /draft/pick-history (eyewall-pipeline's draft_history.py, from
+// the NHL's own draft records) over the last 5 drafts. Each pick's pick_chain
+// lists every team that owned it, original owner first, drafting team last:
+//   picks made    -> "via UTA → CGY" (everyone before this team)
+//   traded away   -> "→ PIT (via NSH)" (the team that used it, and anyone
+//                    in between this team and them)
+// Rows aren't clickable -- DraftPopup is built around the live-draft tables'
+// shape, not draft_pick_history's.
+function pickChainVia(chain, from, to) {
+  const middle = (chain || []).slice(from, to)
+  return middle.length ? middle.join(' → ') : null
+}
+
+function PickHistoryCard({ teamAbbr }) {
+  const { t } = useTranslation()
+  const { data, loading } = useFetch(() => getDraftPickHistory(teamAbbr), [teamAbbr])
+  const [year, setYear] = useState(null)
+
+  const made = data?.made || []
+  const away = data?.tradedAway || []
+  const years = [...new Set([...made, ...away].map(p => p.draft_year))].sort((a, b) => b - a)
+  const activeYear = years.includes(year) ? year : years[0]
+  const acquired = made.filter(p => p.times_traded > 0).length
+  const madeInYear = made.filter(p => p.draft_year === activeYear)
+  const awayInYear = away.filter(p => p.draft_year === activeYear)
+
+  return (
+    <div className="card pick-history" style={{ marginTop: 10 }}>
+      <div className="sec-label" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+        {t('teamView.picks.historyTitle')}
+        <InfoTip label={t('teamView.picks.historyTitle')} text={t('teamView.picks.historyInfo')} position="above" />
+      </div>
+      {loading ? (
+        <div className={SKELETON_CLASSES} style={{ height: 36, width: '100%' }} />
+      ) : !data ? (
+        <div className={PICKS_EMPTY_CLASSES}>{t('teamView.picks.historyUnavailable')}</div>
+      ) : years.length === 0 ? (
+        <div className={PICKS_EMPTY_CLASSES}>{t('teamView.picks.noHistory')}</div>
+      ) : (
+        <>
+          <div className="pick-history-summary text-[11px] text-[color:var(--text-muted)] mb-2">
+            {t('teamView.picks.historySummary', {
+              acquired, made: made.length, away: away.length, first: years[years.length - 1], last: years[0],
+            })}
+          </div>
+          <div className="flex gap-1.5 flex-wrap mb-2" role="group" aria-label={t('teamView.picks.yearAriaLabel')}>
+            {years.map(y => (
+              <button
+                key={y}
+                className={`pick-history-year text-[11px] font-semibold py-[3px] px-2.5 rounded-full border-[0.5px] cursor-pointer ${y === activeYear ? 'bg-[var(--team-primary)] text-white border-transparent' : 'bg-transparent text-[color:var(--text-muted)] border-[var(--border-2)]'}`}
+                aria-pressed={y === activeYear}
+                onClick={() => setYear(y)}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
+
+          <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] mt-1 mb-0.5">
+            {t('teamView.picks.madeHeading', { count: madeInYear.length })}
+          </div>
+          {madeInYear.length === 0 && <div className={PICKS_EMPTY_CLASSES}>—</div>}
+          {madeInYear.map(p => {
+            const via = pickChainVia(p.pick_chain, 0, -1)
+            return (
+              <div key={`m${p.overall_pick}`} className={`pick-history-made ${PICKS_SLOT_CLASSES}`}>
+                <span className={PICKS_SLOT_ROUND_CLASSES}>{t('teamView.picks.madePickLabel', { round: p.round, overall: p.overall_pick })}</span>
+                <span className="font-semibold text-[color:var(--text)]">{p.player_name}</span>
+                <span className="text-[12px] text-[color:var(--text-muted)]">{p.position}</span>
+                {via && <span className={PICKS_SLOT_FROM_CLASSES}>{t('teamView.picks.viaChain', { chain: via })}</span>}
+              </div>
+            )
+          })}
+
+          <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] mt-3 mb-0.5">
+            {t('teamView.picks.awayHeading', { count: awayInYear.length })}
+          </div>
+          {awayInYear.length === 0 && <div className={PICKS_EMPTY_CLASSES}>—</div>}
+          {awayInYear.map(p => {
+            const via = pickChainVia(p.pick_chain, 1, -1)
+            return (
+              <div key={`a${p.overall_pick}`} className={`pick-history-away ${PICKS_SLOT_CLASSES}`}>
+                <span className={PICKS_SLOT_ROUND_CLASSES}>{t('teamView.picks.madePickLabel', { round: p.round, overall: p.overall_pick })}</span>
+                <span className="font-semibold text-[color:var(--text)]">{t('teamView.picks.awayTo', { team: p.team })}</span>
+                <span className="text-[12px] text-[color:var(--text-muted)]">{p.player_name}</span>
+                {via && <span className={PICKS_SLOT_FROM_CLASSES}>{t('teamView.picks.viaChain', { chain: via })}</span>}
+              </div>
+            )
+          })}
+
+          <div className={PICKS_NOTE_CLASSES}>{t('teamView.picks.historySource')}</div>
+        </>
+      )}
+    </div>
+  )
 }
 
 // ── Shared sub-components ────────────────────────────────────

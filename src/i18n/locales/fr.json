@@ -419,7 +419,18 @@
       "viaTeam": "via {{team}}",
       "draftBeginsNote": "Le repêchage débute le 26 juin · Buffalo · 19 h HE",
       "madePickLabel": "R{{round}} · #{{overall}}",
-      "csRankLabel": "CS #{{rank}}"
+      "csRankLabel": "CS #{{rank}}",
+      "historyTitle": "Repêchages récents",
+      "historyInfo": "Chaque choix des cinq derniers repêchages de la LNH, selon les registres officiels de la LNH. « via » énumère, dans l'ordre, chaque équipe qui a possédé un choix avant qu'il soit utilisé.",
+      "historySummary": "{{acquired}} des {{made}} choix effectués proviennent d'échanges · {{away}} choix propres cédés ({{first}}–{{last}})",
+      "madeHeading": "Choix effectués ({{count}})",
+      "awayHeading": "Choix propres utilisés par d'autres équipes ({{count}})",
+      "viaChain": "via {{chain}}",
+      "awayTo": "→ {{team}}",
+      "noHistory": "Aucun historique de repêchage pour l'instant.",
+      "historyUnavailable": "L'historique de repêchage n'est pas disponible pour le moment.",
+      "yearAriaLabel": "Année de repêchage",
+      "historySource": "Source : registres de repêchage de la LNH"
     }
   },
   "pwhlTeamView": {
