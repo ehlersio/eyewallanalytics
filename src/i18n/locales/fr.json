@@ -2209,5 +2209,16 @@
     "method": "Un match-joueur perdu est un match auquel un joueur inscrit au rapport des blessures n'a pas participé. WAR perdue = sa WAR par match × matchs manqués.",
     "none": "Le suivi des blessures commence avec le premier match de la saison régulière.",
     "unavailable": "L'impact des blessures n'est pas disponible pour le moment."
+  },
+  "probableStarters": {
+    "title": "Gardiens partants probables",
+    "infoTip": "Qui devrait commencer devant le filet, selon les habitudes de chaque équipe sur les trois dernières saisons : part des départs récents, gardien du dernier match, matchs consécutifs et repos. La LNH n'annonce pas les partants à l'avance : ce sont des estimations. Les gardiens absents ou sur la liste des blessés sont exclus. Publié deux jours avant le match, mis à jour chaque matin.",
+    "notYet": "Les gardiens partants probables sont publiés deux jours avant le match.",
+    "unavailable": "Les gardiens partants probables ne sont pas disponibles pour le moment.",
+    "backToBack": "Matchs consécutifs",
+    "startedLast": "A joué le dernier match",
+    "dayToDay": "Au jour le jour",
+    "share": "{{pct}} des 10 derniers départs",
+    "updated": "Mis à jour le {{date}}"
   }
 }

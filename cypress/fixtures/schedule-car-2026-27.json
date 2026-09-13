@@ -1,0 +1,241 @@
+{
+ "previousSeason": 20252026,
+ "currentSeason": 20262027,
+ "clubTimezone": "US/Eastern",
+ "clubUTCOffset": "-04:00",
+ "games": [
+  {
+   "id": 2026020001,
+   "season": 20262027,
+   "gameType": 2,
+   "gameDate": "2026-09-29",
+   "venue": {
+    "default": "Lenovo Center"
+   },
+   "neutralSite": false,
+   "startTimeUTC": "2026-09-29T21:00:00Z",
+   "easternUTCOffset": "-04:00",
+   "venueUTCOffset": "-04:00",
+   "venueTimezone": "US/Eastern",
+   "gameState": "FUT",
+   "gameScheduleState": "OK",
+   "tvBroadcasts": [
+    {
+     "id": 309,
+     "market": "N",
+     "countryCode": "US",
+     "network": "ESPN",
+     "sequenceNumber": 10
+    }
+   ],
+   "awayTeam": {
+    "id": 13,
+    "commonName": {
+     "default": "Panthers"
+    },
+    "placeName": {
+     "default": "Florida",
+     "fr": "Floride"
+    },
+    "placeNameWithPreposition": {
+     "default": "Florida",
+     "fr": "de la Floride"
+    },
+    "abbrev": "FLA",
+    "logo": "https://assets.nhle.com/logos/nhl/svg/FLA_light.svg",
+    "darkLogo": "https://assets.nhle.com/logos/nhl/svg/FLA_dark.svg",
+    "awaySplitSquad": false,
+    "promoLink": "",
+    "promoDesc": "",
+    "radioLink": "https://d2igy0yla8zi0u.cloudfront.net/FLA/20262027/FLA-radio.m3u8",
+    "airlineLink": "",
+    "airlineDesc": "",
+    "hotelLink": "",
+    "hotelDesc": ""
+   },
+   "homeTeam": {
+    "id": 12,
+    "commonName": {
+     "default": "Hurricanes"
+    },
+    "placeName": {
+     "default": "Carolina",
+     "fr": "Caroline"
+    },
+    "placeNameWithPreposition": {
+     "default": "Carolina",
+     "fr": "de la Caroline"
+    },
+    "abbrev": "CAR",
+    "logo": "https://assets.nhle.com/logos/nhl/svg/CAR_light.svg",
+    "darkLogo": "https://assets.nhle.com/logos/nhl/svg/CAR_dark.svg",
+    "homeSplitSquad": false,
+    "promoLink": "",
+    "promoDesc": "",
+    "radioLink": "https://d2igy0yla8zi0u.cloudfront.net/CAR/20262027/CAR-radio.m3u8",
+    "airlineLink": "",
+    "airlineDesc": "",
+    "hotelLink": "",
+    "hotelDesc": ""
+   },
+   "periodDescriptor": {
+    "number": 1,
+    "periodType": "REG",
+    "maxRegulationPeriods": 3
+   },
+   "ticketsLink": "https://www.ticketmaster.com/event/2D0064F4BD48D131?brand=carolinahurricanes&artistid=805908&wt.mc_id=NHL_TEAM_CAR_SCHEDULE_GM1&utm_source=NHL.com&utm_medium=client&utm_campaign=NHL_TEAM_CAR&utm_content=SCHEDULE_GM1",
+   "ticketsLinkFr": "https://www.ticketmaster.com/event/2D0064F4BD48D131?brand=carolinahurricanes&artistid=805908&wt.mc_id=NHL_TEAM_CAR_SCHEDULE_GM1&utm_source=NHL.com&utm_medium=client&utm_campaign=NHL_TEAM_CAR&utm_content=SCHEDULE_GM1",
+   "gameCenterLink": "/gamecenter/fla-vs-car/2026/09/29/2026020001"
+  },
+  {
+   "id": 2026020018,
+   "season": 20262027,
+   "gameType": 2,
+   "gameDate": "2026-10-02",
+   "venue": {
+    "default": "Lenovo Center"
+   },
+   "neutralSite": false,
+   "startTimeUTC": "2026-10-02T23:00:00Z",
+   "easternUTCOffset": "-04:00",
+   "venueUTCOffset": "-04:00",
+   "venueTimezone": "US/Eastern",
+   "gameState": "FUT",
+   "gameScheduleState": "OK",
+   "tvBroadcasts": [
+    {
+     "id": 281,
+     "market": "N",
+     "countryCode": "CA",
+     "network": "TVAS",
+     "sequenceNumber": 120
+    },
+    {
+     "id": 646,
+     "market": "H",
+     "countryCode": "US",
+     "network": "CARNHL",
+     "sequenceNumber": 1
+    }
+   ],
+   "awayTeam": {
+    "id": 15,
+    "commonName": {
+     "default": "Capitals"
+    },
+    "placeName": {
+     "default": "Washington"
+    },
+    "placeNameWithPreposition": {
+     "default": "Washington",
+     "fr": "de Washington"
+    },
+    "abbrev": "WSH",
+    "logo": "https://assets.nhle.com/logos/nhl/svg/WSH_secondary_light.svg",
+    "darkLogo": "https://assets.nhle.com/logos/nhl/svg/WSH_secondary_dark.svg",
+    "awaySplitSquad": false,
+    "radioLink": "https://d2igy0yla8zi0u.cloudfront.net/WSH/20262027/WSH-radio.m3u8",
+    "airlineLink": "https://www.united.com/en/us?utm_source=washcaps_schedulepage&utm_medium=web_organic&utm_campaign=2627_washcaps&utm_content=united",
+    "airlineDesc": "Fly with United Airlines"
+   },
+   "homeTeam": {
+    "id": 12,
+    "commonName": {
+     "default": "Hurricanes"
+    },
+    "placeName": {
+     "default": "Carolina",
+     "fr": "Caroline"
+    },
+    "placeNameWithPreposition": {
+     "default": "Carolina",
+     "fr": "de la Caroline"
+    },
+    "abbrev": "CAR",
+    "logo": "https://assets.nhle.com/logos/nhl/svg/CAR_light.svg",
+    "darkLogo": "https://assets.nhle.com/logos/nhl/svg/CAR_dark.svg",
+    "homeSplitSquad": false,
+    "radioLink": "https://d2igy0yla8zi0u.cloudfront.net/CAR/20262027/CAR-radio.m3u8"
+   },
+   "periodDescriptor": {
+    "number": 1,
+    "periodType": "REG",
+    "maxRegulationPeriods": 3
+   },
+   "ticketsLink": "https://www.ticketmaster.com/event/2D0064F4BD4CD14D?brand=carolinahurricanes&artistid=805908&wt.mc_id=NHL_TEAM_CAR_SCHEDULE_GM2&utm_source=NHL.com&utm_medium=client&utm_campaign=NHL_TEAM_CAR&utm_content=SCHEDULE_GM2",
+   "ticketsLinkFr": "https://www.ticketmaster.com/event/2D0064F4BD4CD14D?brand=carolinahurricanes&artistid=805908&wt.mc_id=NHL_TEAM_CAR_SCHEDULE_GM2&utm_source=NHL.com&utm_medium=client&utm_campaign=NHL_TEAM_CAR&utm_content=SCHEDULE_GM2",
+   "gameCenterLink": "/gamecenter/wsh-vs-car/2026/10/02/2026020018"
+  },
+  {
+   "id": 2026020025,
+   "season": 20262027,
+   "gameType": 2,
+   "gameDate": "2026-10-03",
+   "venue": {
+    "default": "Xfinity Mobile Arena"
+   },
+   "neutralSite": false,
+   "startTimeUTC": "2026-10-03T23:00:00Z",
+   "easternUTCOffset": "-04:00",
+   "venueUTCOffset": "-04:00",
+   "venueTimezone": "US/Eastern",
+   "gameState": "FUT",
+   "gameScheduleState": "OK",
+   "tvBroadcasts": [
+    {
+     "id": 646,
+     "market": "A",
+     "countryCode": "US",
+     "network": "CARNHL",
+     "sequenceNumber": 1
+    }
+   ],
+   "awayTeam": {
+    "id": 12,
+    "commonName": {
+     "default": "Hurricanes"
+    },
+    "placeName": {
+     "default": "Carolina",
+     "fr": "Caroline"
+    },
+    "placeNameWithPreposition": {
+     "default": "Carolina",
+     "fr": "de la Caroline"
+    },
+    "abbrev": "CAR",
+    "logo": "https://assets.nhle.com/logos/nhl/svg/CAR_light.svg",
+    "darkLogo": "https://assets.nhle.com/logos/nhl/svg/CAR_dark.svg",
+    "awaySplitSquad": false,
+    "radioLink": "https://d2igy0yla8zi0u.cloudfront.net/CAR/20262027/CAR-radio.m3u8"
+   },
+   "homeTeam": {
+    "id": 4,
+    "commonName": {
+     "default": "Flyers"
+    },
+    "placeName": {
+     "default": "Philadelphia",
+     "fr": "Philadelphie"
+    },
+    "placeNameWithPreposition": {
+     "default": "Philadelphia",
+     "fr": "de Philadelphie"
+    },
+    "abbrev": "PHI",
+    "logo": "https://assets.nhle.com/logos/nhl/svg/PHI_light.svg",
+    "darkLogo": "https://assets.nhle.com/logos/nhl/svg/PHI_dark.svg",
+    "homeSplitSquad": false,
+    "radioLink": "https://d2igy0yla8zi0u.cloudfront.net/PHI/20262027/PHI-radio.m3u8"
+   },
+   "periodDescriptor": {
+    "number": 1,
+    "periodType": "REG",
+    "maxRegulationPeriods": 3
+   },
+   "ticketsLink": "https://www.ticketmaster.com/event/300064EEEE90E144?brand=flyers&artistid=806000&wt.mc_id=NHL_TEAM_PHI_SCHEDULE_GM2&utm_source=NHL.com&utm_medium=client&utm_campaign=NHL_TEAM_PHI&utm_content=SCHEDULE_GM2",
+   "ticketsLinkFr": "https://www.ticketmaster.com/event/300064EEEE90E144?brand=flyers&artistid=806000&wt.mc_id=NHL_TEAM_PHI_SCHEDULE_GM2&utm_source=NHL.com&utm_medium=client&utm_campaign=NHL_TEAM_PHI&utm_content=SCHEDULE_GM2",
+   "gameCenterLink": "/gamecenter/car-vs-phi/2026/10/03/2026020025"
+  }
+ ]
+}
