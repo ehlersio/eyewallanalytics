@@ -8,6 +8,7 @@ import {
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
   getTeamSeasonRankings, TEAM_CONFIG,
   getDraftOrder, getDraftPicks, getTeamInjuries, getTeamScratches, getDraftPickHistory,
+  getPlayoffOdds,
 } from '../utils/nhlApi'
 import { InjuryBadge, InjuryDetailLine } from '../components/InjuryBadge'
 import { sortInjuries, parseLocalDate } from '../utils/injuryDetails'
@@ -435,6 +436,8 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
         )}
       </div>
 
+      <PlayoffOddsCard />
+
       {/* Season stat quick-hits */}
       {stats && (
         <div className="card" style={{ marginTop: 10 }}>
@@ -462,6 +465,145 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
       <InjuryReportCard />
       <ScratchesCard />
     </>
+  )
+}
+
+// ── Playoff odds (Overview) ───────────────────────────────────
+// The Worker's /playoff-odds route, backed by eyewall-pipeline's nightly
+// playoff_odds.py: the rest of the regular season simulated 10,000 times
+// from team Elo ratings. Chance to make the playoffs / win the division,
+// projected points, why the number moved since the last run (each finished
+// game's effect, plus what those games don't explain), a season trend, and
+// what the next game-day's results would do to it. Before ~20 games the
+// odds lean mostly on last season's ratings (eyewall-pipeline's backtest
+// shows preseason odds barely beat a coin flip), so they're labeled early
+// season. A run that's stopped updating (season over) is labeled, not
+// hidden.
+const PLAYOFF_ODDS_EARLY_GP = 20
+
+function formatOddsPct(p) {
+  if (p == null) return '—'
+  if (p > 0 && p < 0.005) return '<1%'
+  if (p < 1 && p >= 0.995) return '>99%'
+  return `${Math.round(p * 100)}%`
+}
+
+// Signed percentage points, one decimal: 0.04 -> "+4.0"
+function formatOddsDelta(d) {
+  const pts = Math.round(d * 1000) / 10
+  return `${pts > 0 ? '+' : pts < 0 ? '−' : '±'}${Math.abs(pts).toFixed(1)}`
+}
+
+function formatOddsDate(d) {
+  const x = parseLocalDate(d)
+  return x ? formatDate(x) : d
+}
+
+const ODDS_LABEL_CLASSES = 'text-[9px] uppercase tracking-[0.06em] text-[color:var(--text-dim)] mb-[2px]'
+const ODDS_ROW_CLASSES = 'flex items-center justify-between gap-2 text-[12px] py-[3px]'
+const ODDS_SECTION_CLASSES = 'mt-3 pt-2 border-t-[0.5px] border-t-[color:var(--border)]'
+
+function PlayoffOddsCard() {
+  const { t } = useTranslation()
+  const { data, loading } = useFetch(() => getPlayoffOdds(TEAM_CONFIG.abbr), [TEAM_CONFIG.abbr])
+  const latest = data?.latest
+  const change = latest?.change
+  const history = data?.history || []
+  const nextGames = data?.nextGames || []
+  const moved = change && Math.abs(change.delta) >= 0.0005
+
+  return (
+    <div className="card playoff-odds" style={{ marginTop: 10 }}>
+      <div className="sec-label" style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+        {t('playoffOdds.title')}
+        <InfoTip label={t('playoffOdds.title')} text={t('playoffOdds.infoTip')} position="above" />
+      </div>
+      {loading ? (
+        <div className={SKELETON_CLASSES} style={{ height: 48, width: '100%' }} />
+      ) : !data || data.unavailable ? (
+        <div className="text-[12px] text-[color:var(--text-dim)] py-1">{t('playoffOdds.unavailable')}</div>
+      ) : !latest ? (
+        <div className="text-[12px] text-[color:var(--text-dim)] py-1">{t('playoffOdds.none')}</div>
+      ) : (
+        <>
+          {data.stale ? (
+            <div className="playoff-odds-stale text-[11px] text-[color:var(--amber)] mb-2">{t('playoffOdds.staleNote', { date: formatOddsDate(latest.run_date) })}</div>
+          ) : latest.games_played < PLAYOFF_ODDS_EARLY_GP && (
+            <div className="playoff-odds-early text-[11px] text-[color:var(--amber)] mb-2">{t('playoffOdds.earlyNote')}</div>
+          )}
+          <div className="grid grid-cols-3 gap-3 items-end">
+            <div className="playoff-odds-main">
+              <div className={ODDS_LABEL_CLASSES}>{t('playoffOdds.makePlayoffs')}</div>
+              <div className="font-[family-name:var(--font-mono)] text-[26px] font-bold leading-none text-[color:var(--text)]">{formatOddsPct(latest.playoff_pct)}</div>
+            </div>
+            <div className="playoff-odds-division">
+              <div className={ODDS_LABEL_CLASSES}>{t('playoffOdds.winDivision')}</div>
+              <div className="font-[family-name:var(--font-mono)] text-[17px] font-bold leading-none text-[color:var(--text)]">{formatOddsPct(latest.division_pct)}</div>
+            </div>
+            <div className="playoff-odds-points">
+              <div className={ODDS_LABEL_CLASSES}>{t('playoffOdds.projPoints')}</div>
+              <div className="font-[family-name:var(--font-mono)] text-[17px] font-bold leading-none text-[color:var(--text)]">
+                {Math.round(latest.proj_points)}
+                <span className="text-[10px] font-normal text-[color:var(--text-dim)] ml-1">{t('playoffOdds.projRange', { low: latest.points_p10, high: latest.points_p90 })}</span>
+              </div>
+            </div>
+          </div>
+
+          {history.length >= 2 && (
+            <div className="playoff-odds-trend mt-3">
+              <Sparkline
+                points={history.map(h => ({ value: h.playoff_pct * 100 }))}
+                width={360} height={56} padding={{ left: 2, right: 2, top: 4, bottom: 4 }}
+                yDomain={{ min: 0, max: 100, pad: 0 }} referenceValue={50}
+                haloColor="var(--bg2)" ariaLabel={t('playoffOdds.trendLabel')}
+                className="w-full max-w-[360px]"
+              />
+            </div>
+          )}
+
+          {change && (
+            <div className={`playoff-odds-change ${ODDS_SECTION_CLASSES}`}>
+              <div className="playoff-odds-delta text-[12px] font-semibold mb-1" style={{ color: !moved ? 'var(--text-muted)' : change.delta > 0 ? 'var(--green)' : 'var(--red-bright)' }}>
+                {moved
+                  ? t('playoffOdds.changeSince', { delta: `${change.delta > 0 ? '▲' : '▼'} ${Math.abs(change.delta * 100).toFixed(1)}`, date: formatOddsDate(change.prev_run_date) })
+                  : t('playoffOdds.noChange', { date: formatOddsDate(change.prev_run_date) })}
+              </div>
+              {(change.contributions || []).map(c => (
+                <div key={c.game_id} className={`playoff-odds-contribution ${ODDS_ROW_CLASSES}`}>
+                  <span className="text-[color:var(--text-muted)]">{t('playoffOdds.beat', { winner: c.winner, loser: c.winner === c.home ? c.away : c.home })}</span>
+                  <span className="font-[family-name:var(--font-mono)] text-[color:var(--text)]">{formatOddsDelta(c.delta)}</span>
+                </div>
+              ))}
+              {Math.abs(change.residual || 0) >= 0.0005 && (
+                <div className={`playoff-odds-residual ${ODDS_ROW_CLASSES}`}>
+                  <span className="text-[color:var(--text-dim)] italic">{t('playoffOdds.residual')}</span>
+                  <span className="font-[family-name:var(--font-mono)] text-[color:var(--text-muted)]">{formatOddsDelta(change.residual)}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!data.stale && nextGames.length > 0 && (
+            <div className={`playoff-odds-next ${ODDS_SECTION_CLASSES}`}>
+              <div className={ODDS_LABEL_CLASSES}>{t('playoffOdds.nextTitle', { date: formatOddsDate(nextGames[0].game_date) })}</div>
+              {nextGames.map(g => (
+                <div key={g.game_id} className={`playoff-odds-next-game ${ODDS_ROW_CLASSES}`}>
+                  <span className={g.own ? 'font-semibold text-[color:var(--text)]' : 'text-[color:var(--text-muted)]'}>{g.away} @ {g.home}</span>
+                  <span className="flex gap-3 font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--text-muted)]">
+                    <span>{t('playoffOdds.ifWin', { team: g.away, pct: formatOddsPct(g.ifAwayWins) })}</span>
+                    <span>{t('playoffOdds.ifWin', { team: g.home, pct: formatOddsPct(g.ifHomeWins) })}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="text-[10px] text-[color:var(--text-dim)] mt-2 italic">
+            {t('playoffOdds.source', { sims: (latest.sims || 0).toLocaleString(), date: formatOddsDate(latest.run_date) })}
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 

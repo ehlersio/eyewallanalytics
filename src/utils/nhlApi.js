@@ -794,6 +794,18 @@ export async function getTeamScratches(teamAbbr = TEAM_CONFIG.abbr, gameType = 2
   return workerFetch(`/scratches?team=${encodeURIComponent(teamAbbr)}&gameType=${gameType}`);
 }
 
+// Simulated playoff odds for one team -- the Worker's /playoff-odds route,
+// backed by eyewall-pipeline's nightly playoff_odds.py (the rest of the
+// regular season simulated from team Elo ratings). Returns { team, season,
+// runDate, stale, latest, history, nextGames }: latest is null before the
+// season's first run, `stale` means no run for a few days (season over),
+// `unavailable` means the Worker's own read failed. Not memoized
+// client-side -- the Worker's 1hr KV cache is the cache. Returns null on
+// any Worker failure.
+export async function getPlayoffOdds(teamAbbr = TEAM_CONFIG.abbr) {
+  return workerFetch(`/playoff-odds?team=${encodeURIComponent(teamAbbr)}`);
+}
+
 // NHL transactions feed -- the Worker's /transactions route, backed by
 // eyewall-pipeline's nightly ESPN ingestion (transactions.py). The Worker
 // already pairs each trade's two per-team halves into one { kind: 'trade' }
