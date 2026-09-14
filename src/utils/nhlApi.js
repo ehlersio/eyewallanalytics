@@ -1622,60 +1622,7 @@ async function _getTeamGameLog(count = 20) {
   });
 }
 
-
-// ─── ODDS (Odds Persistence Writer) ──────────────────────────
-// Was: this file called The Odds API directly from every visitor's
-// browser (cached only per-session, 5-min TTL) against a shared
-// 500-requests/month free-tier key — every concurrent visitor
-// independently burned from the same budget. Now: a Worker-side scheduled
-// writer (fetchOdds()/persistOddsToSupabase() in eyewall-poller's nhl.js)
-// fetches on its own throttled cadence and persists to Supabase; this just
-// reads the result. See ODDS_PERSISTENCE_WRITER_SCOPE.md for the full design.
-
-// Fetch NHL moneyline odds for upcoming games from the Worker's persisted
-// table — already flattened/matched by team abbr server-side (home_abbr,
-// away_abbr, commence_time, moneyline_home, moneyline_away, book), no
-// team-name fuzzy matching needed here anymore. Still cached client-side
-// (same TTL tier as standings) on top of the Worker's own edge cache —
-// cheap either way now, since this is a table read, not a live API call.
-export async function getNhlOdds() {
-  return cached('nhlOdds', _getNhlOdds, TTL.STANDINGS);
-}
-async function _getNhlOdds() {
-  return (await workerFetch('/nhl/odds')) || [];
-}
-
-// Find odds for a specific game — exact match by team abbr, resolved
-// server-side already (no more fuzzy team-name/fragment matching).
-// oddsData: array from getNhlOdds()
-// game: NHL API game object
-export function findGameOdds(oddsData, game) {
-  if (!oddsData?.length || !game) return null;
-  const homeAbbr = game.homeTeam?.abbrev;
-  const awayAbbr = game.awayTeam?.abbrev;
-  return oddsData.find(od => od.home_abbr === homeAbbr && od.away_abbr === awayAbbr) || null;
-}
-
-// Extract moneyline odds for CAR (or whichever team is TEAM_CONFIG) and
-// its opponent from an already-flattened odds row.
-// Returns { carOdds, oppOdds, book } or null
-export function extractMoneyline(oddsEntry, isHome) {
-  if (!oddsEntry) return null;
-  const carOdds = isHome ? oddsEntry.moneyline_home : oddsEntry.moneyline_away;
-  const oppOdds = isHome ? oddsEntry.moneyline_away : oddsEntry.moneyline_home;
-  if (carOdds == null || oppOdds == null) return null;
-  return { carOdds, oppOdds, book: oddsEntry.book };
-}
-
-// Convert American odds to implied probability %
-export function oddsToImplied(american) {
-  if (!american) return null;
-  if (american > 0) return Math.round((100 / (american + 100)) * 100);
-  return Math.round((Math.abs(american) / (Math.abs(american) + 100)) * 100);
-}
-
-// Format American odds for display: +150, -220 etc.
-export function fmtOdds(american) {
-  if (american == null) return '—';
-  return american > 0 ? `+${american}` : `${american}`;
-}
+// Sportsbook odds (getNhlOdds/findGameOdds/extractMoneyline/oddsToImplied/
+// fmtOdds, reading the Worker's /nhl/odds) were removed 2026-09 -- the app
+// shows no betting content (App Store review + product direction). The
+// Worker-side odds writer in eyewall-poller's nhl.js has no app consumer now.

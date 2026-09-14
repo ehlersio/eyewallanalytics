@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import EyeWallLogo from './EyeWallLogo';
+
+// Tips inside a digital app have to go through In-App Purchase on iOS (App
+// Store Guideline 3.1.1), so the Buy Me a Coffee link is web/Android only.
+const SHOW_TIP_LINK = Capacitor.getPlatform() !== 'ios';
 
 // Tailwind migration (Session 95, Phase 1) -- previously AboutPopup.css.
 //
@@ -35,7 +40,7 @@ const TRIGGER_CLASSES = 'about-trigger flex items-center gap-2.5 bg-transparent 
 const TOPBAR_LOGOIMG_CLASSES = 'w-[36px] h-[36px] rounded-[6px] object-contain shrink-0';
 const TOPBAR_NAME_CLASSES = 'font-[family-name:var(--font-display)] text-[15px] max-[480px]:text-[13px] font-bold tracking-[0.04em] leading-[1.2]';
 const TOPBAR_SUB_CLASSES = 'text-[10px] text-[color:var(--text-muted)] tracking-[0.04em] max-[480px]:hidden';
-const POPUP_CLASSES = 'about-popup absolute top-[calc(100%+10px)] left-0 z-[500] w-[300px] max-w-[calc(100vw-24px)] bg-[var(--bg1)] border-[0.5px] border-[var(--border-2)] rounded-[16px] p-5 shadow-[0_16px_48px_rgba(0,0,0,0.6)] animate-[popupIn_0.18s_cubic-bezier(0.34,1.56,0.64,1)]';
+const POPUP_CLASSES = 'about-popup absolute top-[calc(100%+10px)] left-0 z-[500] w-[300px] max-w-[calc(100vw-24px)] max-h-[calc(100dvh-var(--nav-height)-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-96px)] overflow-y-auto bg-[var(--bg1)] border-[0.5px] border-[var(--border-2)] rounded-[16px] p-5 shadow-[0_16px_48px_rgba(0,0,0,0.6)] animate-[popupIn_0.18s_cubic-bezier(0.34,1.56,0.64,1)]';
 const CLOSE_CLASSES = 'about-close absolute top-3 right-3.5 bg-transparent border-0 text-[14px] text-[color:var(--text-dim)] cursor-pointer py-0.5 px-[5px] rounded-[4px] hover:text-[color:var(--text)] hover:bg-[var(--bg3)]';
 const LOGO_ROW_CLASSES = 'flex items-center gap-3 mb-3.5';
 const TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[16px] font-bold text-[color:var(--text)]';
@@ -171,22 +176,24 @@ export default function AboutPopup({ isLive = false }) {
 
           <div className={DIVIDER_CLASSES} />
 
-          <div className={SUPPORT_CLASSES}>
-            <p className={SUPPORT_TEXT_CLASSES}>
-              {t('about.supportText')}
-            </p>
-            <a
-              href="https://buymeacoffee.com/mattehlers"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={BMC_BTN_CLASSES}
-            >
-              <span className={BMC_ICON_CLASSES}>☕</span>
-              {t('about.buyMeCoffee')}
-            </a>
-          </div>
+          {SHOW_TIP_LINK && (<>
+            <div className={SUPPORT_CLASSES}>
+              <p className={SUPPORT_TEXT_CLASSES}>
+                {t('about.supportText')}
+              </p>
+              <a
+                href="https://buymeacoffee.com/mattehlers"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={BMC_BTN_CLASSES}
+              >
+                <span className={BMC_ICON_CLASSES}>☕</span>
+                {t('about.buyMeCoffee')}
+              </a>
+            </div>
 
-          <div className={DIVIDER_CLASSES} />
+            <div className={DIVIDER_CLASSES} />
+          </>)}
 
           <div className={FOOTER_CLASSES}>
             <span>{t('about.builtFor')}</span>
@@ -206,6 +213,10 @@ export default function AboutPopup({ isLive = false }) {
               {t('about.privacyPolicy')}
             </a>
             .
+          </div>
+
+          <div className={`about-disclaimer ${PRIVACY_CLASSES}`}>
+            {t('about.disclaimer')}
           </div>
         </div>
       )}

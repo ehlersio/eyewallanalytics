@@ -54,6 +54,7 @@ const AuthContext = createContext({
   isAuthenticated: false,
   signInWithOtp: async () => ({ error: new Error('AuthProvider not mounted') }),
   signOut: async () => {},
+  deleteAccount: async () => ({ error: new Error('AuthProvider not mounted') }),
 });
 
 export function AuthProvider({ children }) {
@@ -116,6 +117,21 @@ export function AuthProvider({ children }) {
     await supabaseAuth.auth.signOut();
   };
 
+  // Permanent, immediate account deletion (App Store Guideline 5.1.1(v)).
+  // delete_own_account() is a security-definer Postgres function scoped to
+  // auth.uid() (eyewall-pipeline's docs/delete_own_account_rpc.sql);
+  // user_preferences/trivia_answers cascade from auth.users. The session is
+  // then cleared locally only -- the user it belonged to no longer exists,
+  // so there's nothing server-side left to revoke. Local-only settings
+  // (team, theme, locale, local trivia answers) stay on the device, same
+  // as for anyone who never signed in.
+  const deleteAccount = async () => {
+    const { error } = await supabaseAuth.rpc('delete_own_account');
+    if (error) return { error };
+    await supabaseAuth.auth.signOut({ scope: 'local' });
+    return { error: null };
+  };
+
   const value = {
     user: session?.user ?? null,
     session,
@@ -123,6 +139,7 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!session,
     signInWithOtp,
     signOut,
+    deleteAccount,
   };
 
   return (

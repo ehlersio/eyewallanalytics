@@ -46,7 +46,7 @@ function predCanvasStatValClasses({ isCar, good }) {
 function PredictionCanvas({
   canvasRef, carModelPct, predCarScore, predOppScore,
   carGpg, oppGpg, carGag, oppGag, carWin, oppWin, carPP, oppPK,
-  factors, odds, oppAbbr, oppColor, isPlayoff, seriesEntry, aiNarrative, carLines,
+  factors, oppAbbr, oppColor, isPlayoff, seriesEntry, aiNarrative, carLines,
 }) {
   const { t } = useTranslation();
   // Don't render until all required numeric props are available
@@ -121,11 +121,6 @@ function PredictionCanvas({
         <div className="pred-canvas-total flex-1 flex flex-col items-center text-center">
           <div className="pred-canvas-score-label text-[12px] font-bold tracking-[0.1em] uppercase text-[rgba(255,255,255,0.25)] mb-1.5">{t('predictionShareCanvas.scoreLabel.projectedTotal')}</div>
           <div className="pred-canvas-total-val text-[43px] font-black text-[rgba(255,255,255,0.8)]">{projTotal}</div>
-          {odds?.total && (
-            <div className="pred-canvas-ou-line text-[14px] text-[rgba(255,255,255,0.35)] mt-0.5">
-              {t('predictionShareCanvas.ouLine', { line: odds.total })}
-            </div>
-          )}
         </div>
       </div>
 
@@ -200,21 +195,6 @@ function PredictionCanvas({
         );
       })()}
 
-      {/* Odds */}
-      {odds && (
-        <div className="pred-canvas-odds flex items-center justify-between py-2.5 px-[52px] border-t-[0.5px] border-t-[rgba(255,255,255,0.06)]">
-          <div className="pred-canvas-odds-item flex flex-col items-center gap-[3px]">
-            <span className="pred-canvas-odds-team car text-[14px] font-bold text-[color:var(--team-canvas)]">{TEAM_CONFIG.abbr}</span>
-            <span className="pred-canvas-odds-val text-[26px] font-extrabold text-[rgba(255,255,255,0.7)]">{odds.carOdds > 0 ? `+${odds.carOdds}` : odds.carOdds}</span>
-          </div>
-          <div className="pred-canvas-odds-book text-[13px] text-[rgba(255,255,255,0.2)]">{odds.book}</div>
-          <div className="pred-canvas-odds-item flex flex-col items-center gap-[3px]">
-            <span className="pred-canvas-odds-team text-[14px] font-bold text-[rgba(255,255,255,0.4)]" style={{color: oppColor}}>{oppAbbr}</span>
-            <span className="pred-canvas-odds-val text-[26px] font-extrabold text-[rgba(255,255,255,0.7)]">{odds.oppOdds > 0 ? `+${odds.oppOdds}` : odds.oppOdds}</span>
-          </div>
-        </div>
-      )}
-
       {/* Footer */}
       <div className={PRED_CANVAS_FOOTER_CLASSES}>
         <span>eyewallanalytics.com</span>
@@ -228,7 +208,7 @@ function PredictionCanvas({
 export default function PredictionExportSection({
   carModelPct, predCarScore, predOppScore,
   carGpg, oppGpg, carGag, oppGag, carWin, oppWin, carPP, oppPK,
-  factors, odds, oppAbbr, oppColor, isPlayoff, seriesEntry, gameId, carLines,
+  factors, oppAbbr, oppColor, isPlayoff, seriesEntry, gameId, carLines,
 }) {
   const { t } = useTranslation();
   const canvasRef = useRef(null);
@@ -282,7 +262,6 @@ export default function PredictionExportSection({
     capture('prediction_card_exported', {
       opponent: oppAbbr,
       carPct:   carModelPct,
-      hasOdds:  !!odds,
       hasAI:    !!aiNarrative,
     });
   };
@@ -301,7 +280,7 @@ export default function PredictionExportSection({
           carModelPct={carModelPct} predCarScore={predCarScore} predOppScore={predOppScore}
           carGpg={carGpg} oppGpg={oppGpg} carGag={carGag} oppGag={oppGag}
           carWin={carWin} oppWin={oppWin} carPP={carPP} oppPK={oppPK}
-          factors={factors} odds={odds} oppAbbr={oppAbbr} oppColor={oppColor}
+          factors={factors} oppAbbr={oppAbbr} oppColor={oppColor}
           isPlayoff={isPlayoff} seriesEntry={seriesEntry} aiNarrative={aiNarrative}
           carLines={carLines}
         />

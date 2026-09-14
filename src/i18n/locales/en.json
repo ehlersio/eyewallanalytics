@@ -26,7 +26,8 @@
     "dataVia": "Data via NHL & HockeyTech APIs",
     "contactPrefix": "For all inquiries:",
     "privacyText": "EyeWall uses anonymous analytics to understand which features are most useful. No personal data is sold or shared. Read our",
-    "privacyPolicy": "Privacy Policy"
+    "privacyPolicy": "Privacy Policy",
+    "disclaimer": "EyeWall Analytics is an independent fan project. It is not affiliated with, endorsed by, or sponsored by the NHL, PWHL, AHL, ECHL, or any team. Team names and logos belong to their respective owners."
   },
   "search": {
     "toggleAriaLabel": "Search players",
@@ -90,7 +91,13 @@
     "useDifferentEmail": "Use a different email",
     "signOut": "Sign out",
     "synced": "Synced",
-    "errorGeneric": "Could not send sign-in link. Try again."
+    "errorGeneric": "Could not send sign-in link. Try again.",
+    "deleteAccount": "Delete account",
+    "deleteConfirmTitle": "Delete your account?",
+    "deleteConfirmDesc": "This permanently deletes your account, email address, synced favorite team and trivia history. Settings saved on this device stay. This can't be undone.",
+    "deleteConfirmButton": "Delete permanently",
+    "deleting": "Deleting…",
+    "deleteError": "Could not delete your account. Try again, or email matt@eyewallanalytics.com."
   },
   "league": {
     "tabs": {
@@ -1237,8 +1244,6 @@
   },
   "gameCard": {
     "card": {
-      "oddsCarTitle": "{{abbr}} moneyline",
-      "oddsOppTitle": "OPP moneyline",
       "vsLabel": "vs",
       "matchupBreakdownLabel": "Matchup breakdown",
       "broadcastTitle": "Where to watch"
@@ -1261,9 +1266,6 @@
       "probabilityLabel": "Predicted win probability",
       "preseasonLabel": "Preseason estimate — based on {{season}} final standings",
       "preseasonExpectedScore": "Expected score: {{car}} {{carScore}} – {{opp}} {{oppScore}}"
-    },
-    "odds": {
-      "implied": "{{pct}}% implied"
     },
     "factors": {
       "offence": "Offence (GF/GP)",
@@ -1615,7 +1617,6 @@
       "expected": "Expected Score",
       "projectedTotal": "Projected Total"
     },
-    "ouLine": "O/U line: {{line}}",
     "stats": {
       "goalsForPerGp": "Goals For/GP",
       "goalsAgainstPerGp": "Goals Against/GP",

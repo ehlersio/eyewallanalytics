@@ -119,4 +119,43 @@ describe('Account section — signed in', () => {
     // Regression check — the rest of Settings (unrelated to auth) still renders.
     cy.contains('My Team').should('be.visible');
   });
+
+  // In-app account deletion (App Store Guideline 5.1.1(v)). The RPC is
+  // intercepted for the same reason the OTP request is above -- a real call
+  // would need a real user to delete.
+  it('Delete account asks for confirmation, and Cancel keeps the account', () => {
+    cy.contains('.account-delete-row', 'Delete account').click();
+    cy.contains('Delete your account?').scrollIntoView().should('be.visible');
+    cy.get('.account-signin-cancel').contains('Cancel').click();
+
+    cy.get('.account-badge').should('contain', 'Synced');
+    cy.get('.account-delete-row').should('be.visible');
+  });
+
+  it('deletes the account via the RPC and reverts to the signed-out row', () => {
+    cy.intercept('POST', `${SUPABASE_URL}/rest/v1/rpc/delete_own_account*`, { statusCode: 204, body: '' }).as('deleteRpc');
+
+    cy.contains('.account-delete-row', 'Delete account').click();
+    cy.get('.account-delete-confirm').click();
+    cy.wait('@deleteRpc').its('request.headers.authorization').should('eq', 'Bearer cypress-fake-access-token');
+
+    cy.get('.account-row-button').contains('Sign in to sync across devices').should('be.visible');
+    cy.window().then((win) => {
+      expect(win.localStorage.getItem(AUTH_STORAGE_KEY)).to.be.null;
+    });
+  });
+
+  it('shows an inline error and stays signed in if deletion fails', () => {
+    cy.intercept('POST', `${SUPABASE_URL}/rest/v1/rpc/delete_own_account*`, {
+      statusCode: 500,
+      body: { code: 'XX000', message: 'boom' },
+    }).as('deleteRpcFailure');
+
+    cy.contains('.account-delete-row', 'Delete account').click();
+    cy.get('.account-delete-confirm').click();
+    cy.wait('@deleteRpcFailure');
+
+    cy.get('.account-signin-error').scrollIntoView().should('contain', 'Could not delete your account');
+    cy.get('.account-badge').should('contain', 'Synced');
+  });
 });

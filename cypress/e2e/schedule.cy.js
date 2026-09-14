@@ -335,14 +335,10 @@ describe('Schedule view — CAR (deep)', () => {
       })
     })
 
-    liveSeriesIt('shows odds row when odds are available', () => {
+    liveSeriesIt('shows no sportsbook odds', () => {
       cy.contains('Matchup breakdown').first().click()
-      cy.get('.matchup-detail').then($el => {
-        if ($el.find('.md-odds-row').length > 0) {
-          cy.get('.md-odds-row').should('be.visible')
-          cy.get('.md-odds-val').should('have.length.gte', 2)
-        }
-      })
+      cy.get('.matchup-detail').should('exist')
+      cy.get('.md-odds-row, .gc-odds').should('not.exist')
     })
 
     liveSeriesIt('Prediction tab shows win probability bar', () => {
