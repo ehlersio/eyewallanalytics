@@ -7,15 +7,16 @@ import {
   getRegularSeasonGames, getPlayoffGames, getPreseasonGames, getPlayoffSeries, getStandings,
   buildCarPlayoffSummary, formatGameDate,
   getOpponent, isHomeGame, getCarScore, getOppScore, getVenue,
-  getNhlOdds, findGameOdds, extractMoneyline, oddsToImplied,
+  getNhlOdds, getEloRatings, findGameOdds, extractMoneyline,
   TEAM_CONFIG,
 } from '../utils/nhlApi';
 import { teamTextColor } from '../utils/teamConfig';
+import { teamWinPct } from '../utils/eloWinProb';
 import TeamLogo from '../components/TeamLogo';
 import { CalendarView } from '../components/CalendarView';
 import { GameStatsPopup } from '../components/GameStatsPopup';
 import { SeriesCard, SortBar, GameCard } from '../components/GameCard';
-import { MatchupDetail, computeWinPct } from '../components/MatchupDetail';
+import { MatchupDetail } from '../components/MatchupDetail';
 import { isStandingsStale } from '../utils/standingsUtils';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
@@ -151,8 +152,10 @@ export default function ScheduleView() {
   // 2026-04-17, last season's finale, mid-July 2026). Every row carries its
   // own `seasonId`, so compare that against our resolved season rather than
   // trusting "now" to mean "this season" — otherwise a full prior season's
-  // 82-game record (real GF/GA, PP%/PK%, streak) silently feeds computeWinPct
-  // and the auto-saved prediction as if it were this season's partial form.
+  // 82-game record (real GF/GA, PP%/PK%, streak) silently feeds the preview's
+  // stat bars and edge checklist as if it were this season's partial form.
+  // (The win % itself is Elo -- see utils/eloWinProb.js -- and doesn't read
+  // standings at all.)
   // Only reject on an EXPLICIT mismatch — an absent seasonId (e.g. a test
   // stub) isn't evidence of staleness, the real NHL API always includes it.
   const standingsAreStale = isStandingsStale(standings, TEAM_CONFIG.season);
@@ -296,6 +299,9 @@ export default function ScheduleView() {
 // ── Calendar view ────────────────────────────────────────────
 
 function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup, oddsData }) {
+  // Elo win % for the favoured chips (utils/eloWinProb.js) -- the same number
+  // the game preview shows and the public scorecard grades.
+  const { data: eloRatings } = useFetch(getEloRatings);
   // Hooks must be called before any early returns
   const { t } = useTranslation();
   const isCompletedGame = g => ['OFF','FINAL','F'].includes(g.gameState);
@@ -429,11 +435,8 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
                         isPlayoff
                         odds={ml}
                         cardFavoured={!completed ? (() => {
-                          const wr = computeWinPct(carStanding, oppStanding, game, playoffSeries);
-                          if (!wr) return null;
-                          let pct = wr.pct;
-                          if (ml) pct = Math.round(pct * 0.6 + oddsToImplied(ml.carOdds) * 0.4);
-                          return { pct, favoured: pct >= 50 };
+                          const pct = teamWinPct(eloRatings, game, TEAM_CONFIG.abbr);
+                          return pct == null ? null : { pct, favoured: pct >= 50 };
                         })() : null}
                         onClick={() => {
                           if (completed) { onGamePopup(game); }
@@ -464,6 +467,9 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
 
 
 function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup, sortOrder, setSortOrder, oddsData, isPreseason = false }) {
+  // Elo win % for the favoured chips (utils/eloWinProb.js) -- the same number
+  // the game preview shows and the public scorecard grades.
+  const { data: eloRatings } = useFetch(getEloRatings);
   const { t } = useTranslation();
   if (loading) return <LoadingCards count={4} />;
 
@@ -566,13 +572,8 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
         const oppStanding = standingMap[opp?.abbrev] || standingMap[opp?.abbrev?.toLowerCase()];
 
         const gameOdds    = findGameOdds(oddsData, game);
-        const winResult   = computeWinPct(carStanding, oppStanding, game, null);
-        let blendedPct    = winResult?.pct ?? 50;
-        if (gameOdds) {
-          const carImplied = oddsToImplied(gameOdds.carOdds);
-          blendedPct = Math.round(blendedPct * 0.6 + carImplied * 0.4);
-        }
-        const cardFavoured = winResult ? { pct: blendedPct, favoured: blendedPct >= 50 } : null;
+        const eloPct       = teamWinPct(eloRatings, game, TEAM_CONFIG.abbr);
+        const cardFavoured = eloPct == null ? null : { pct: eloPct, favoured: eloPct >= 50 };
 
         return (
           <div key={game.id}>

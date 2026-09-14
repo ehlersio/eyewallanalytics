@@ -1259,8 +1259,6 @@
     },
     "prediction": {
       "probabilityLabel": "Probabilité de victoire prédite",
-      "sourceWithOdds": "Statistiques + cotes {{book}}",
-      "sourceStatsOnly": "Basé sur les statistiques de la saison",
       "preseasonLabel": "Estimation de présaison — basée sur le classement final {{season}}",
       "preseasonExpectedScore": "Score prévu : {{car}} {{carScore}} – {{opp}} {{oppScore}}"
     },
@@ -1277,19 +1275,6 @@
       "homeIce": "Avantage de la glace",
       "seriesLead": "Avance dans la série",
       "topLine": "Première ligne (xGF% 5v5)"
-    },
-    "tooltip": {
-      "title": "Comment nous prédisons :",
-      "gfGa": "• BP/PJ et BC/PJ — efficacité offensive et défensive",
-      "possession": "• TAB/PJ — indicateur de possession (part des tentatives de tir)",
-      "ppPk": "• Avantage numérique contre désavantage numérique — avantage des unités spéciales",
-      "seriesRecord": "• Fiche de la série — avance ou déficit actuel",
-      "standingsPoints": "• Points au classement — performance de la saison",
-      "recentForm": "• Forme récente — séquence actuelle",
-      "homeIce": "• Avantage de la glace — environ 0,25 but d'avance",
-      "topLineXgf": "• xGF% 5v5 de la première ligne — {{pct}}% cette saison",
-      "marketOdds": "• Cotes du marché — pondération de 40% lorsque disponibles",
-      "playoffMode": "Mode séries éliminatoires : points au classement exclus."
     },
     "tabs": {
       "prediction": "Prédiction",
@@ -2220,5 +2205,59 @@
     "dayToDay": "Au jour le jour",
     "share": "{{pct}} des 10 derniers départs",
     "updated": "Mis à jour le {{date}}"
+  },
+  "scorecard": {
+    "tabLabel": "Bilan",
+    "title": "Bilan des prédictions",
+    "intro": "Comment les prédictions de l'application se sont réellement comportées, comparées aux résultats. Le bilan en direct ne compte que les prédictions publiées avant le match; les rétro-analyses rejouent les saisons passées sans connaître les résultats et sont identifiées comme telles.",
+    "howToRead": "Bon choix : le camp à 50 % ou plus l'a emporté. Le score de Brier mesure la justesse des pourcentages : 0 est parfait, 0,25 correspond à toujours dire 50 %. Plus c'est bas, mieux c'est.",
+    "live": "Bilan en direct · {{period}}",
+    "backtest": "Rétro-analyse · {{period}}",
+    "accuracy": "Bons choix",
+    "brier": "Score de Brier",
+    "graded_one": "{{n}} évaluée",
+    "graded_other": "{{n}} évaluées",
+    "baselineLine": "Référence, {{name}} : {{accuracy}} · Brier {{brier}}",
+    "edgeInBrier": "Trouve le bon résultat à peu près aussi souvent que la référence; l'avantage tient à la justesse des pourcentages (Brier plus bas).",
+    "calibrationTitle": "Calibration : prévu → réalisé",
+    "calibrationTitleN": "{{n}} prédictions",
+    "calibrationRow": "{{predicted}} → {{actual}}",
+    "recentTitle": "Dernières évaluées",
+    "hit": "Juste",
+    "miss": "Raté",
+    "unavailable": "Le bilan n'est pas disponible pour le moment.",
+    "empty": "Aucun bilan pour l'instant.",
+    "updated": "Mis à jour le {{date}}",
+    "baselines": {
+      "home_team_wins": "l'équipe locale gagne",
+      "last_games_starter": "le gardien du dernier match commence",
+      "holds_a_playoff_spot": "les équipes qualifiées en ce moment"
+    },
+    "recent": {
+      "game": "{{away}} @ {{home}} · {{pick}} {{pct}} → victoire {{winner}}",
+      "goalie": "{{team}} · {{pick}} {{pct}} → {{actual}} a commencé"
+    },
+    "models": {
+      "game_winner": {
+        "title": "Gagnants des matchs",
+        "desc": "Probabilité de victoire Elo pour chaque match, enregistrée le matin du match.",
+        "pending": "Le bilan en direct commence au match d'ouverture."
+      },
+      "starting_goalie": {
+        "title": "Gardiens partants",
+        "desc": "Le partant probable de chaque équipe, enregistré le matin du match.",
+        "pending": "Le bilan en direct commence au match d'ouverture."
+      },
+      "playoff_odds": {
+        "title": "Chances de participer aux séries",
+        "desc": "Chances simulées, vérifiées avant la saison et les 15 nov., 1er janv. et 1er mars.",
+        "pending": "Évaluées à la fin de la saison régulière, une fois les qualifiés connus."
+      }
+    }
+  },
+  "eloModel": {
+    "source": "Modèle Elo",
+    "tooltip": "Probabilité de victoire tirée du classement Elo de chaque équipe (tous les matchs depuis 2023-2024, mis à jour chaque nuit) plus l'avantage local, sauf sur terrain neutre. C'est le même chiffre que le bilan des prédictions évalue.",
+    "unavailable": "La probabilité de victoire n'est pas disponible pour le moment."
   }
 }

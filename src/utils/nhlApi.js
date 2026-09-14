@@ -830,6 +830,26 @@ export async function getProbableStarters(gameId) {
   return workerFetch(`/probable-starters?game=${encodeURIComponent(gameId)}`);
 }
 
+// The public prediction scorecard -- the Worker's /scorecard route, backed by
+// eyewall-pipeline's nightly prediction_scorecard.py. Returns { models:
+// { game_winner | starting_goalie | playoff_odds: { live, backtest } },
+// updatedAt }: live rows are 'pending' until something's been graded;
+// `unavailable` means the Worker's own read failed. Not memoized client-side
+// -- the Worker's 1hr KV cache is the cache. Returns null on any Worker failure.
+export async function getScorecard() {
+  return workerFetch('/scorecard');
+}
+
+// Every team's Elo rating + the home advantage -- the Worker's /elo/ratings
+// route. Feed it to utils/eloWinProb.js's teamWinPct() for the game
+// preview's win bar and the schedule's chips: the same formula the Worker's
+// /prediction/analyze and eyewall-pipeline's win_probs.py use, so what the
+// app shows is what the public scorecard grades. Memoized for a few minutes
+// so the schedule and every preview share one fetch. Null on Worker failure.
+export async function getEloRatings() {
+  return cached('eloRatings', () => workerFetch('/elo/ratings'), TTL.STANDINGS);
+}
+
 // NHL transactions feed -- the Worker's /transactions route, backed by
 // eyewall-pipeline's nightly ESPN ingestion (transactions.py). The Worker
 // already pairs each trade's two per-team halves into one { kind: 'trade' }

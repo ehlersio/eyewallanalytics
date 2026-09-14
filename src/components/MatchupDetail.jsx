@@ -7,10 +7,11 @@ import ScoutingTab from '../components/ScoutingTab';
 import InfoTip from '../components/InfoTip';
 import { getTeamLines, getGamePrediction } from '../utils/supabaseClient';
 import {
-  getOpponent, TEAM_CONFIG,
+  getOpponent, TEAM_CONFIG, getEloRatings,
   oddsToImplied, fmtOdds,
 } from '../utils/nhlApi';
 import { teamTextColor } from '../utils/teamConfig';
+import { teamWinPct } from '../utils/eloWinProb';
 import { StatBar } from '../components/StatBar';
 import PredictionExportSection from '../components/PredictionShareCanvas';
 import ProbableStarters from '../components/ProbableStarters';
@@ -45,56 +46,6 @@ const mdTabClasses = (active) => {
 const MD_AI_SECTION_CLASSES = 'md-ai-section mt-3 mb-3.5 py-3 px-3.5 rounded-[10px] border-[0.5px] border-[rgba(204,34,0,0.2)] bg-[linear-gradient(135deg,var(--bg2)_0%,rgba(204,34,0,0.05)_100%)]';
 const MD_AI_LABEL_CLASSES = 'md-ai-label text-[10px] font-bold uppercase tracking-[0.07em] text-[color:var(--red-bright)]';
 
-function computeWinPct(carStanding, oppStanding, game, playoffSeries) {
-  if (!carStanding || !oppStanding) return null;
-  const isPlayoff = game?.gameType === 3;
-  const isHome    = game?.homeTeam?.abbrev === TEAM_CONFIG.abbr;
-  const cgp = carStanding.gamesPlayed || 1;
-  const ogp = oppStanding.gamesPlayed || 1;
-  const carGpg = (carStanding.goalFor     ?? 0) / cgp;
-  const oppGpg = (oppStanding.goalFor     ?? 0) / ogp;
-  const carGag = (carStanding.goalAgainst ?? 0) / cgp;
-  const oppGag = (oppStanding.goalAgainst ?? 0) / ogp;
-  const carSF  = carStanding.shotsForPerGame || 0;
-  const oppSF  = oppStanding.shotsForPerGame || 0;
-  const carPP  = typeof carStanding.powerPlayPct === 'number'
-    ? (carStanding.powerPlayPct <= 1 ? carStanding.powerPlayPct * 100 : carStanding.powerPlayPct) : 22;
-  const oppPK  = typeof oppStanding.penaltyKillPct === 'number'
-    ? (oppStanding.penaltyKillPct <= 1 ? oppStanding.penaltyKillPct * 100 : oppStanding.penaltyKillPct) : 80;
-
-  let cs = 0, os = 0;
-  if (carGpg > oppGpg) cs += 0.7; else os += 0.7;
-  if (carGag < oppGag) cs += 0.7; else os += 0.7;
-  if (carSF  > oppSF)  cs += 0.5; else os += 0.5;
-  if ((carPP - (100 - oppPK)) > 0) cs += 0.4; else os += 0.4;
-  if (!isPlayoff) {
-    const ptsDiff = (carStanding.points ?? 0) - (oppStanding.points ?? 0);
-    if (ptsDiff > 0) cs += Math.min(ptsDiff / 20, 0.5);
-    else             os += Math.min(-ptsDiff / 20, 0.5);
-  }
-  if (carStanding.streakCode === 'W') cs += 0.3;
-  if (oppStanding.streakCode === 'W') os += 0.3;
-  if (isHome) cs += 0.25; else os += 0.25;
-
-  // Playoff series record
-  if (isPlayoff && playoffSeries) {
-    const oppAbbr = isHome ? game.awayTeam?.abbrev : game.homeTeam?.abbrev;
-    const round   = (() => {
-      const id = String(game.id);
-      return (id.length === 10 && id.slice(4,6) === '03') ? parseInt(id[7], 10) : null;
-    })();
-    const s = playoffSeries.find(s => s.round === round && s.opponent?.abbrev === oppAbbr);
-    if (s) {
-      const lead = s.carWins - s.oppWins;
-      if (lead > 0) cs += Math.min(lead * 0.5, 1.0);
-      else if (lead < 0) os += Math.min(-lead * 0.5, 1.0);
-    }
-  }
-
-  const t = cs + os || 1;
-  const pct = Math.round(cs / t * 100);
-  return { pct, favoured: pct >= 50 };
-}
 
 // ── Matchup detail (upcoming games) ─────────────────────────
 
@@ -139,10 +90,14 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   const oppColor = teamTextColor(oppAbbr) || '#7a8899';
   const gameType = playoffSeries ? 3 : 2;
   const { data: carLines } = useFetch(() => getTeamLines(TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType), [TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType]);
+  // Win % = Elo (utils/eloWinProb.js, from the Worker's /elo/ratings) -- the
+  // number the pipeline logs each morning and the public scorecard grades.
+  const { data: eloRatings } = useFetch(getEloRatings, []);
+  const eloPct = teamWinPct(eloRatings, game, TEAM_CONFIG.abbr);
 
   // Auto-save prediction — must be before any early returns (Rules of Hooks)
   React.useEffect(() => {
-    if (!game?.id || !carStanding || !oppStanding) return;
+    if (!game?.id || !carStanding || !oppStanding || eloPct == null) return;
     const cgp   = carStanding.gamesPlayed || 1;
     const ogp   = oppStanding.gamesPlayed || 1;
     const cGpg  = (carStanding.goalFor     ?? 0) / cgp;
@@ -154,14 +109,12 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
     const adj     = isHome_ ? 0.12 : -0.12;
     const pCar    = +(clamp(Math.sqrt(Math.max(cGpg,0.5)*Math.max(oGag,0.5))+adj,1.5,5.0)).toFixed(1);
     const pOpp    = +(clamp(Math.sqrt(Math.max(oGpg,0.5)*Math.max(cGag,0.5))-adj,1.5,5.0)).toFixed(1);
-    const cPts    = carStanding.points ?? 0;
-    const oPts    = oppStanding.points ?? 0;
     savePrediction({
       gameId:            game.id,
       gameDate:          game.gameDate,
       opponent:          oppAbbr,
-      predictedCarWin:   cPts >= oPts,
-      predictedCarPct:   Math.round(cPts / (cPts + oPts + 1) * 100),
+      predictedCarWin:   eloPct >= 50,
+      predictedCarPct:   eloPct,
       predictedCarScore: pCar,
       predictedOppScore: pOpp,
     });
@@ -169,10 +122,10 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       gameId:      game.id,
       opponent:    oppAbbr,
       isPlayoff:   game.gameType === 3,
-      predictedWin: cPts >= oPts,
-      carPct:      Math.round(cPts / (cPts + oPts + 1) * 100),
+      predictedWin: eloPct >= 50,
+      carPct:      eloPct,
     });
-  }, [game?.id]);
+  }, [game?.id, eloPct]);
 
   // Guard: no current-season standings to build the client-side win%/stat-bar
   // display from (ScheduleView.jsx withholds carStanding/oppStanding entirely
@@ -257,7 +210,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   const topLine    = carLines?.lines?.[0] ?? null;
   const topLineXgf = topLine?.xgfPct ?? null;
 
-  // Re-derive factors for display (mirrors computeWinPct logic)
+  // Edge checklist -- descriptive context only; the win % itself is Elo (eloPct)
   const carSF    = carStanding.shotsForPerGame || 0;
   const oppSF    = oppStanding.shotsForPerGame || 0;
   const ppEdge   = carPP - (100 - oppPK);
@@ -275,26 +228,15 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
     ...(topLineXgf != null ? [{ label: t('matchupDetail.factors.topLine'), carEdge: topLineXgf >= 50 }] : []),
   ];
 
-  // Get model win % from shared function
-  const winResult  = computeWinPct(carStanding, oppStanding, game, playoffSeries);
+  // Win % = the Elo model (eloPct above) -- the same number the pipeline
+  // logs each morning and the public prediction scorecard grades. No
+  // sportsbook blend: the DraftKings row below is shown as-is, separately.
+  // (2026-09, "Elo everywhere": this used to be computeWinPct(), a hand-tuned
+  // standings formula, blended 60/40 with the sportsbook's implied odds.)
   const carImplied = odds ? oddsToImplied(odds.carOdds) : null;
   const oppImplied = odds ? oddsToImplied(odds.oppOdds) : null;
-
-  // Blend with market odds if available (60/40)
-  let carModelPct = winResult?.pct ?? 50;
-  if (carImplied) carModelPct = Math.round(carModelPct * 0.6 + carImplied * 0.4);
-  const modelTooltip = [
-    t('matchupDetail.tooltip.title'),
-    t('matchupDetail.tooltip.gfGa'),
-    t('matchupDetail.tooltip.possession'),
-    t('matchupDetail.tooltip.ppPk'),
-    isPlayoff_ ? t('matchupDetail.tooltip.seriesRecord') : t('matchupDetail.tooltip.standingsPoints'),
-    t('matchupDetail.tooltip.recentForm'),
-    t('matchupDetail.tooltip.homeIce'),
-    topLineXgf != null ? t('matchupDetail.tooltip.topLineXgf', { pct: topLineXgf.toFixed(1) }) : null,
-    carImplied ? t('matchupDetail.tooltip.marketOdds') : null,
-    isPlayoff_ ? t('matchupDetail.tooltip.playoffMode') : null,
-  ].filter(Boolean).join('\n');
+  const carModelPct = eloPct;
+  const modelTooltip = t('eloModel.tooltip');
 
 
   // ── Score prediction (Pythagorean expectation) ───────────
@@ -350,9 +292,11 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
         <div className="md-pred-label flex justify-between text-[11px] text-[color:var(--text-muted)] mb-1.5">
           <span>{t('matchupDetail.prediction.probabilityLabel')}</span>
           <InfoTip text={modelTooltip} position="above" />
-          {odds && <span className="md-pred-source text-[10px] text-[color:var(--text-dim)]">{t('matchupDetail.prediction.sourceWithOdds', { book: odds.book })}</span>}
-          {!odds && <span className="md-pred-source text-[10px] text-[color:var(--text-dim)]">{t('matchupDetail.prediction.sourceStatsOnly')}</span>}
+          <span className="md-pred-source text-[10px] text-[color:var(--text-dim)]">{t('eloModel.source')}</span>
         </div>
+        {carModelPct == null ? (
+          <div className="md-pred-unavailable text-[11px] text-[color:var(--text-dim)] py-1">{t('eloModel.unavailable')}</div>
+        ) : (<>
         <div className="md-pred-bar h-7 rounded-[var(--radius-sm)] flex overflow-hidden mb-1">
           <div className="md-pred-fill car h-full flex items-center justify-center font-[family-name:var(--font-display)] text-[13px] font-bold text-[#fff] [transition:width_0.4s_ease] bg-[var(--red)]" style={{ width: `${carModelPct}%` }}>
             {carModelPct >= 20 && <span>{carModelPct}%</span>}
@@ -365,6 +309,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
           <span style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
           <span style={{ color: oppColor }}>{oppAbbr}</span>
         </div>
+        </>)}
       </div>
 
       <ProbableStarters game={game} />
@@ -440,8 +385,8 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       {/* Top line card */}
       <TopLineCard carLines={carLines} />
 
-      {/* Prediction export card */}
-      <PredictionExportSection
+      {/* Prediction export card -- only with a real win % to share */}
+      {carModelPct != null && <PredictionExportSection
         carModelPct={carModelPct}
         predCarScore={predCarScore}
         predOppScore={predOppScore}
@@ -461,7 +406,7 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
         seriesEntry={seriesEntry}
         gameId={game?.id}
         carLines={carLines}
-      />
+      />}
       </>)}
     </div>
   );
@@ -607,4 +552,4 @@ function PredictionAnalysis({ gameId, gameDate, oppAbbr, oppColor }) {
 }
 
 
-export { MatchupDetail, computeWinPct };
+export { MatchupDetail };

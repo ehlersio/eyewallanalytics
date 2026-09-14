@@ -22,6 +22,7 @@ import { getTeamSeasonData, getPowerRankingsNarrative, getPowerRankingsHistory }
 import { teamTextColor } from '../utils/teamConfig';
 import { useSport } from '../utils/SportContext';
 import TeamLogo from '../components/TeamLogo';
+import PredictionScorecard from '../components/PredictionScorecard';
 import PlayerPopup from '../components/PlayerPopup';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from '../components/ShareButtons';
@@ -1886,6 +1887,7 @@ const TABS = [
   { id: 'bracket',    labelKey: 'league.tabs.bracket' },
   { id: 'leaders',    labelKey: 'league.tabs.leaders' },
   { id: 'rankings',   labelKey: 'league.tabs.rankings' },
+  { id: 'scorecard',  labelKey: 'scorecard.tabLabel' },
   { id: 'draft',      labelKey: 'league.tabs.draft' }
 ];
 
@@ -2011,6 +2013,8 @@ export default function LeagueView() {
           />
           </>
         )}
+
+        {activeTab === 'scorecard' && <PredictionScorecard />}
 
         {activeTab === 'draft' && <>
           <ScrollTopButton />
