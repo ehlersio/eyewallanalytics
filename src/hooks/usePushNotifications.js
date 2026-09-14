@@ -68,21 +68,42 @@ function urlBase64ToUint8Array(base64String) {
 // calls (e.g. re-subscribing after a permission change) don't accumulate.
 // Module-level, not a hook closure -- touches only the PushNotifications
 // singleton, no component state.
+//
+// Times out rather than waiting forever: if iOS never answers (e.g. the
+// AppDelegate isn't forwarding didRegisterForRemoteNotifications to
+// Capacitor -- the real cause of a stuck "Working…" button in the first
+// TestFlight build), neither listener ever fires and subscribe()'s loading
+// state would otherwise never clear.
+const NATIVE_REGISTER_TIMEOUT_MS = 20_000;
+
 function registerNativeDevice() {
   return new Promise((resolve, reject) => {
+    let regHandle;
+    let errHandle;
+    let timer;
+    const cleanup = () => {
+      clearTimeout(timer);
+      regHandle?.remove();
+      errHandle?.remove();
+    };
     (async () => {
-      const regHandle = await PushNotifications.addListener('registration', token => {
-        regHandle.remove();
-        errHandle.remove();
+      regHandle = await PushNotifications.addListener('registration', token => {
+        cleanup();
         resolve(token.value);
       });
-      const errHandle = await PushNotifications.addListener('registrationError', err => {
-        regHandle.remove();
-        errHandle.remove();
+      errHandle = await PushNotifications.addListener('registrationError', err => {
+        cleanup();
         reject(new Error(err.error || 'APNs registration failed'));
       });
+      timer = setTimeout(() => {
+        cleanup();
+        reject(new Error('Timed out waiting for iOS to register for notifications'));
+      }, NATIVE_REGISTER_TIMEOUT_MS);
       await PushNotifications.register();
-    })();
+    })().catch(err => {
+      cleanup();
+      reject(err);
+    });
   });
 }
 

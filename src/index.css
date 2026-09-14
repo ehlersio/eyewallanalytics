@@ -607,3 +607,19 @@
 :focus:not(:focus-visible) {
   outline: none;
 }
+
+/* ── iOS: no page zoom when a text field is focused ── */
+/* iOS WebKit zooms the whole page whenever a focused input/select/textarea
+ * has a computed font-size under 16px, and inside the Capacitor app that
+ * zoom sticks -- seen in the first TestFlight build after the magic-link
+ * round trip through Mail (layout too wide, bottom nav pushed off-screen).
+ * @supports (-webkit-touch-callout: none) matches only iOS/iPadOS WebKit,
+ * so every other platform keeps the designed 13-14px sizes. Unlayered so
+ * it wins over the text-[13px]-style Tailwind utilities on those fields.
+ * (Not maximum-scale=1 in the viewport meta: that would also block
+ * pinch-zoom for web users on Android -- a WCAG 1.4.4 regression.) */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea {
+    font-size: 16px;
+  }
+}
