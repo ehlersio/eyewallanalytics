@@ -45,7 +45,9 @@ describe('Methodology page', () => {
       .and('contain', 'Baseline, the home team wins: 54.2%')
     cy.get('#starting-goalies .method-backtest').should('contain', '73.9%')
     cy.get('#playoff-odds .method-limits li').should('have.length.at.least', 2)
-    cy.get('.method-changelog li').should('have.length.at.least', 6)
+    cy.get('#game-winners').should('contain', 'Tested and not adopted')
+    cy.get('.method-changelog li').should('have.length.at.least', 7)
+      .first().should('contain', 'not adopted')
   })
 
   it('says so when the scorecard data is unavailable', () => {

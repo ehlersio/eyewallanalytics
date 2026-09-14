@@ -2263,7 +2263,8 @@
           "Every team has an Elo rating built only from game results since the 2023-24 season. Teams start at 1,500, and after each game the winner takes rating points from the loser: more for an upset, fewer for an expected result.",
           "A bigger regulation win moves ratings a little more (up to 1.75 times a one-goal win). A game decided in overtime or a shootout moves them half as much, since needing extra time says the teams were close. Each game moves ratings only slightly (K = 6), because one hockey game is noisy. Between seasons, every rating moves a third of the way back to 1,500.",
           "The home team gets 35 Elo points before the win chance is worked out, except at neutral-site games: P(home wins) = 1 / (1 + 10^((away − (home + 35)) / 400)). These are FiveThirtyEight's published NHL Elo settings, not tuned on our own data.",
-          "Every regular-season and playoff game is logged by the 3 AM run on game day (and the day before, in case a run is missed). The last number before puck drop is the one graded, against the final result, overtime and shootouts included. The baseline is \"the home team wins\"."
+          "Every regular-season and playoff game is logged by the 3 AM run on game day (and the day before, in case a run is missed). The last number before puck drop is the one graded, against the final result, overtime and shootouts included. The baseline is \"the home team wins\".",
+          "Tested and not adopted (September 2026): we replayed 2024-25 and 2025-26 with each night's actual lineups — more than any injury report could tell us ahead of time — adjusting each team for regulars who didn't dress (valued by last season's WAR) and for its starting goalie (by last season's goals saved above average). On games the adjustment wasn't fit on, missing skaters made the predictions no better, and the starting goalie improved them only slightly (Brier about 0.0004 lower), a gain that would shrink when the starter isn't known in advance. Neither is used; the goalie adjustment will be tested again during 2026-27, and any change will be dated in the changelog."
         ],
         "limits": [
           "Elo only knows results. It doesn't know about injuries, who's in goal, trades or lineup changes until they show up in results.",
@@ -2356,6 +2357,7 @@
       }
     },
     "changelogEntries": {
+      "lineupTest": "Tested adjusting game winners for missing players and the starting goalie on past seasons; not adopted (see Game winners).",
       "tradeTrees": "Trade trees added, from ESPN transactions since 2015.",
       "scorecard": "Public scorecard added: game-winner probabilities are logged each morning, and neutral-site games get no home-ice edge.",
       "startingGoalies": "Starting-goalie probabilities added, fit on 2023-24 to 2025-26 starts.",

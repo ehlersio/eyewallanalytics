@@ -2263,7 +2263,8 @@
           "Chaque équipe a une cote Elo construite uniquement à partir des résultats des matchs depuis la saison 2023-2024. Les équipes partent à 1 500, et après chaque match le gagnant prend des points au perdant : davantage pour une surprise, moins pour un résultat attendu.",
           "Une victoire plus large en temps réglementaire fait bouger les cotes un peu plus (jusqu'à 1,75 fois une victoire par un but). Un match décidé en prolongation ou en tirs de barrage les fait bouger deux fois moins, puisque le besoin de temps supplémentaire indique des équipes proches. Chaque match ne fait bouger les cotes que légèrement (K = 6), parce qu'un seul match de hockey est très aléatoire. Entre les saisons, chaque cote revient d'un tiers vers 1 500.",
           "L'équipe locale reçoit 35 points Elo avant le calcul de sa chance de gagner, sauf lors des matchs en terrain neutre : P(victoire locale) = 1 / (1 + 10^((visiteur − (local + 35)) / 400)). Ce sont les paramètres Elo LNH publiés par FiveThirtyEight, non ajustés sur nos propres données.",
-          "Chaque match de saison régulière et des séries est consigné par le traitement de 3 h le jour du match (et la veille, au cas où un traitement serait manqué). Le dernier chiffre avant la mise au jeu est celui qui est évalué, selon le résultat final, prolongation et tirs de barrage compris. La référence : « l'équipe locale gagne »."
+          "Chaque match de saison régulière et des séries est consigné par le traitement de 3 h le jour du match (et la veille, au cas où un traitement serait manqué). Le dernier chiffre avant la mise au jeu est celui qui est évalué, selon le résultat final, prolongation et tirs de barrage compris. La référence : « l'équipe locale gagne ».",
+          "Testé et non retenu (septembre 2026) : nous avons rejoué 2024-2025 et 2025-2026 avec les alignements réels de chaque soir — plus que ce qu'un rapport des blessures pourrait nous dire à l'avance — en ajustant chaque équipe pour ses réguliers qui n'étaient pas en uniforme (évalués selon leur WAR de la saison précédente) et pour son gardien partant (selon ses buts sauvés au-dessus de la moyenne la saison précédente). Sur les matchs qui n'avaient pas servi à l'ajustement, les patineurs absents n'ont pas amélioré les prédictions, et le gardien partant ne les a améliorées que légèrement (Brier inférieur d'environ 0,0004), un gain qui diminuerait quand le partant n'est pas connu à l'avance. Ni l'un ni l'autre n'est utilisé; l'ajustement pour le gardien sera testé de nouveau pendant 2026-2027, et tout changement sera daté dans le journal des modifications."
         ],
         "limits": [
           "Elo ne connaît que les résultats. Il ignore les blessures, le gardien partant, les échanges et les changements d'alignement tant qu'ils ne se reflètent pas dans les résultats.",
@@ -2356,6 +2357,7 @@
       }
     },
     "changelogEntries": {
+      "lineupTest": "Test d'un ajustement des gagnants des matchs pour les joueurs absents et le gardien partant sur les saisons passées; non retenu (voir Gagnants des matchs).",
       "tradeTrees": "Ajout des arbres des échanges, à partir des transactions d'ESPN depuis 2015.",
       "scorecard": "Ajout du bilan public : les probabilités des gagnants sont consignées chaque matin, et les matchs en terrain neutre n'ont pas d'avantage local.",
       "startingGoalies": "Ajout des probabilités de gardiens partants, ajustées sur les départs de 2023-2024 à 2025-2026.",
