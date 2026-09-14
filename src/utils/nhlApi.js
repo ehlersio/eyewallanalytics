@@ -1390,17 +1390,11 @@ export async function getTeamTopPlayers(teamAbbr, gameType = 2) {
   }, TTL.PLAYER_STATS);
 }
 
-export const TEAM_COLORS = {
-  CAR: '#cc2200', BOS: '#fcb514', NYR: '#0038a8', TBL: '#002868',
-  FLA: '#041e42', WSH: '#c8102e', NYI: '#003087', NJD: '#ce1126',
-  PHI: '#f74902', PIT: '#cfc493', CBJ: '#002654', BUF: '#003087',
-  MTL: '#af1e2d', OTT: '#c52032', TOR: '#003e7e', DET: '#ce1126',
-  CHI: '#ce1126', STL: '#002f87', NSH: '#ffb81c', WPG: '#041e42',
-  MIN: '#154734', COL: '#6f263d', DAL: '#006847', ARI: '#8c2633',
-  VGK: '#b4975a', SEA: '#99d9d9', EDM: '#ff4c00', CGY: '#c8102e',
-  VAN: '#00843d', SJS: '#006d75', ANA: '#f47a38', LAK: '#a2aaad',
-  UTA: '#69b3e7',
-};
+// Team colors: use teamConfig.js's teamTextColor(abbr) -- each team's
+// WCAG AA displayColor on dark, primaryColor on light. The raw brand-color
+// TEAM_COLORS map that used to live here was removed (2026-09): FLA/WPG's
+// #041e42 and the other blue primaries were unreadable as text on the dark
+// card, and it had drifted from teamConfig.js's colors since Light Mode.
 
 // ─── Team advanced stats ──────────────────────────────────────
 // Convenience aliases — advanced stats endpoints use teamId and franchiseId directly

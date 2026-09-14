@@ -2,8 +2,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   isHomeGame, getOpponent, getCarScore, getOppScore,
-  formatGameDate, formatGameTime, getVenue, getBroadcasts, TEAM_COLORS, TEAM_CONFIG,
+  formatGameDate, formatGameTime, getVenue, getBroadcasts, TEAM_CONFIG,
 } from '../utils/nhlApi';
+import { teamTextColor } from '../utils/teamConfig';
 import TeamLogo from '../components/TeamLogo';
 import { fmtOdds } from '../utils/nhlApi';
 
@@ -27,7 +28,7 @@ function seriesPipClasses(filled, side) {
 function SeriesCard({ series }) {
   const { t } = useTranslation();
   const oppAbbr  = series.opponent?.abbrev || '???';
-  const oppColor = TEAM_COLORS[oppAbbr] || '#7a8899';
+  const oppColor = teamTextColor(oppAbbr) || '#7a8899';
   const total    = series.carWins + series.oppWins;
   return (
     <div className={`series-card card mb-2.5${series.isActive ? ' series-active' : ''}`}>
@@ -156,7 +157,7 @@ function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, car
   const { t } = useTranslation();
   const home     = isHomeGame(game);
   const opp      = getOpponent(game);
-  const oppColor = TEAM_COLORS[opp?.abbrev] || '#7a8899';
+  const oppColor = teamTextColor(opp?.abbrev) || '#7a8899';
   const carScore = getCarScore(game);
   const oppScore = getOppScore(game);
   const won      = isCompleted && carScore != null && carScore > oppScore;

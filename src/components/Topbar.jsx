@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLiveGame, getCarScore, getOppScore, getOpponent, getGameDetail, bustLiveGameCache } from '../utils/nhlApi';
+import { teamTextColor } from '../utils/teamConfig';
 import TeamLogo from './TeamLogo';
-import { TEAM_COLORS, TEAM_CONFIG } from '../utils/nhlApi';
+import { TEAM_CONFIG } from '../utils/nhlApi';
 import { useSport } from '../utils/SportContext';
 import AboutPopup from './AboutPopup';
 import { subscribeClock, getClockDisplay, publishClock, subscribeMomentum, subscribeMockLiveGame } from '../utils/liveClockStore';
@@ -173,7 +174,7 @@ export default function Topbar() {
               <span className={LIVE_SEP_CLASSES}>–</span>
               <span className={LIVE_NUM_CLASSES}>{oppScore}</span>
               <span className={LIVE_TEAM_MUTED_CLASSES}>{opp?.abbrev}</span>
-              <TeamLogo abbr={opp?.abbrev} size={18} color={TEAM_COLORS[opp?.abbrev]} />
+              <TeamLogo abbr={opp?.abbrev} size={18} color={teamTextColor(opp?.abbrev)} />
             </div>
             {(period || displayClock) && activeLiveGame?.gameState !== 'FINAL' && (
               <div className={LIVE_CLOCK_CLASSES}>

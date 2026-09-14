@@ -10,6 +10,7 @@ import {
   getDraftOrder, getDraftPicks, getTeamInjuries, getTeamScratches, getDraftPickHistory,
   getPlayoffOdds, getInjuryImpact,
 } from '../utils/nhlApi'
+import { teamTextColor } from '../utils/teamConfig'
 import { InjuryBadge, InjuryDetailLine } from '../components/InjuryBadge'
 import { sortInjuries, parseLocalDate } from '../utils/injuryDetails'
 import { nhlSeasonLabel } from '../utils/seasonComparison'
@@ -25,7 +26,6 @@ import TeamComparisonPopup from '../components/TeamComparisonPopup'
 import Sparkline from '../components/Sparkline'
 import TeamHistorySections from '../components/TeamHistorySections'
 import { getTeamHistory } from '../utils/teamHistory'
-import { TEAM_COLORS } from '../utils/nhlApi'
 import { PAGE_CLASSES } from '../utils/pageClasses'
 import { SKELETON_CLASSES } from '../utils/skeletonClasses'
 
@@ -419,7 +419,7 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
             )}
             <div className={PO_SERIES_LIST_CLASSES}>
               {playoffSummary.sort((a,b) => b.round-a.round).map((s, i) => {
-                const oppColor = TEAM_COLORS[s.opponent?.abbrev] || 'var(--text-muted)'
+                const oppColor = teamTextColor(s.opponent?.abbrev) || 'var(--text-muted)'
                 return (
                   <div key={i} className={PO_SERIES_LINE_CLASSES}>
                     <span className={seriesStateClasses(s.carAdvance, s.isActive)}>
