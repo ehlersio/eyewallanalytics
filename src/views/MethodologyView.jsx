@@ -42,6 +42,9 @@ const SECTIONS = [
 // Dated method changes, newest first (dates from eyewall-pipeline's merge
 // history). Add one whenever a model's method or settings change.
 const CHANGELOG = [
+  // Not a model change: a tested adjustment that wasn't adopted
+  // (eyewall-pipeline docs/lineup_adjustment_backtest_results.md).
+  { date: '2026-09-14', key: 'lineupTest' },
   { date: '2026-09-14', key: 'tradeTrees' },
   { date: '2026-09-13', key: 'scorecard' },
   { date: '2026-09-13', key: 'startingGoalies' },
