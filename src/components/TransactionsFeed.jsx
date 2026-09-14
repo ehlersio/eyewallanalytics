@@ -15,6 +15,10 @@
 //
 // Both share FeedShell (header + loading/error/empty states), which keeps
 // the PWHL markup exactly as it was.
+//
+// NHL trades (paired, or a single trade entry whose other half ESPN never
+// posted) have a "Trade tree" toggle that opens TradeTree.jsx inline: what
+// each side got and where every asset went next.
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchPWHLTransactions } from '../utils/pwhlApi';
@@ -22,6 +26,7 @@ import { getTransactions, TEAM_CONFIG } from '../utils/nhlApi';
 import { formatDate } from '../utils/formatters';
 import { capture } from '../utils/analytics';
 import TeamLogo from './TeamLogo';
+import TradeTree from './TradeTree';
 import {
   NEWS_HEADER_CLASSES, NEWS_HEADER_ROW_CLASSES, NEWS_TITLE_CLASSES, NEWS_UPDATED_CLASSES,
   NEWS_FEED_CLASSES, NEWS_CARD_CLASSES, NEWS_CARD_BODY_CLASSES, NEWS_CARD_META_CLASSES,
@@ -195,6 +200,29 @@ function CategoryBadge({ category }) {
   );
 }
 
+const TREE_BTN_CLASSES = 'tx-tree-btn self-start text-[12px] font-semibold text-[color:var(--text)] underline underline-offset-2 bg-transparent border-0 p-0 mt-1 cursor-pointer';
+
+// `txId`: any nhl_transactions row id in the trade (the Worker's
+// /trades/tree?tx=). Hidden when the item has none (a feed cached before the
+// Worker started sending ids).
+function TradeTreeToggle({ txId }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  if (txId == null) return null;
+  const toggle = () => {
+    if (!open) capture('trade_tree_opened', { sport: 'nhl' });
+    setOpen(!open);
+  };
+  return (
+    <>
+      <button type="button" className={TREE_BTN_CLASSES} aria-expanded={open} onClick={toggle}>
+        {open ? t('transactionsFeed.nhl.tree.close') : `${t('transactionsFeed.nhl.tree.open')} ▸`}
+      </button>
+      {open && <TradeTree txId={txId} />}
+    </>
+  );
+}
+
 function NHLMoveRow({ item }) {
   return (
     <article className={`tx-item tx-move ${NEWS_CARD_CLASSES} card`}>
@@ -207,6 +235,7 @@ function NHLMoveRow({ item }) {
           <TeamLogo abbr={item.team} size={16} /> {item.team}
         </div>
         <p className={TX_DESC_CLASSES}>{item.description}</p>
+        {item.categories?.includes('trade') && <TradeTreeToggle txId={item.id} />}
       </div>
     </article>
   );
@@ -232,6 +261,7 @@ function NHLTradeRow({ item }) {
             <span className="font-semibold text-[color:var(--text)]">{s.team}:</span> {s.description}
           </p>
         ))}
+        <TradeTreeToggle txId={item.ids?.[0]} />
       </div>
     </article>
   );

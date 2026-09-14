@@ -862,6 +862,16 @@ export async function getTransactions(scope = 'team', teamAbbr = TEAM_CONFIG.abb
     : `/transactions?team=${encodeURIComponent(teamAbbr)}`);
 }
 
+// One trade and where every asset went next -- the Worker's /trades/tree
+// route, backed by eyewall-pipeline's nightly trade_trees.py. `txId` is any
+// row id from getTransactions()' items (a trade's ids[0], or a move's id).
+// Returns { found, root, trades: { id: { date, teams, sides: [{ team,
+// received: [asset] }] } }, origins, truncated }; `unavailable` means the
+// Worker's own read failed.
+export async function getTradeTree(txId) {
+  return workerFetch(`/trades/tree?tx=${encodeURIComponent(txId)}`);
+}
+
 export async function getTeamInjuries(teamAbbr = TEAM_CONFIG.abbr) {
   return cached(`injuries:${teamAbbr}`, () => _getTeamInjuries(teamAbbr), TTL.SCHEDULE);
 }
