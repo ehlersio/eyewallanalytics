@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getTradeTree } from '../utils/nhlApi';
 import { formatDate } from '../utils/formatters';
+import { capture } from '../utils/analytics';
 import TeamLogo from './TeamLogo';
 
 const K = 'transactionsFeed.nhl.tree';
@@ -105,6 +106,20 @@ export default function TradeTree({ txId }) {
     getTradeTree(txId).then(data => { if (live) setState({ loading: false, data }); });
     return () => { live = false; };
   }, [txId]);
+
+  // What the viewer actually got: a tree (and how big), not-found, or down.
+  useEffect(() => {
+    const tree = state.data;
+    if (state.loading) return;
+    capture('feature_viewed', {
+      feature: 'trade_tree',
+      found: !!tree?.found,
+      unavailable: !tree || !!tree.unavailable,
+      trades: Object.keys(tree?.trades || {}).length,
+      origins: (tree?.origins || []).length,
+      truncated: !!tree?.truncated,
+    });
+  }, [state]);
 
   if (state.loading) return <div className={STATUS_CLASSES}>{t(`${K}.loading`)}</div>;
   const tree = state.data;

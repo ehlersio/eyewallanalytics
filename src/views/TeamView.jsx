@@ -28,6 +28,7 @@ import TeamHistorySections from '../components/TeamHistorySections'
 import { getTeamHistory } from '../utils/teamHistory'
 import { PAGE_CLASSES } from '../utils/pageClasses'
 import { SKELETON_CLASSES } from '../utils/skeletonClasses'
+import { useFeatureViewed, trackFeature } from '../utils/analytics'
 
 // .view-title (Session 97, Phase 3) -- was PlayersView.css's, genuinely
 // shared with PlayersView.jsx/PWHLPlayersView.jsx/PWHLTeamView.jsx. Migrated
@@ -512,9 +513,10 @@ function PlayoffOddsCard() {
   const history = data?.history || []
   const nextGames = data?.nextGames || []
   const moved = change && Math.abs(change.delta) >= 0.0005
+  const viewRef = useFeatureViewed('playoff_odds')
 
   return (
-    <div className="card playoff-odds" style={{ marginTop: 10 }}>
+    <div className="card playoff-odds" style={{ marginTop: 10 }} ref={viewRef}>
       <div className="sec-label" style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
         {t('playoffOdds.title')}
         <InfoTip label={t('playoffOdds.title')} text={t('playoffOdds.infoTip')} position="above" />
@@ -676,9 +678,10 @@ function InjuryImpactCard() {
   const league = data?.league
   const players = impact?.players || []
   const shown = expanded ? players : players.slice(0, INJURY_IMPACT_SHOWN)
+  const viewRef = useFeatureViewed('injury_impact')
 
   return (
-    <div className="card injury-impact" style={{ marginTop: 10 }}>
+    <div className="card injury-impact" style={{ marginTop: 10 }} ref={viewRef}>
       <div className="sec-label" style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
         {t('injuryImpact.title')}
         <InfoTip label={t('injuryImpact.title')} text={t('injuryImpact.infoTip')} position="above" />
@@ -720,7 +723,7 @@ function InjuryImpactCard() {
                 </div>
               ))}
               {players.length > INJURY_IMPACT_SHOWN && (
-                <button className="injury-impact-toggle text-[11px] text-[color:var(--text-muted)] mt-1.5 bg-transparent border-0 cursor-pointer p-0 underline" onClick={() => setExpanded(e => !e)}>
+                <button className="injury-impact-toggle text-[11px] text-[color:var(--text-muted)] mt-1.5 bg-transparent border-0 cursor-pointer p-0 underline" onClick={() => { if (!expanded) trackFeature('injury_impact', 'show_all'); setExpanded(e => !e) }}>
                   {expanded ? t('injuryImpact.showFewer') : t('injuryImpact.showAll', { count: players.length })}
                 </button>
               )}

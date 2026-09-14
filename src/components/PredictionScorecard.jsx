@@ -4,6 +4,7 @@ import { useFetch } from '../hooks/useFetch'
 import { getScorecard } from '../utils/nhlApi'
 import { formatDate } from '../utils/formatters'
 import { SKELETON_CLASSES } from '../utils/skeletonClasses'
+import { useFeatureViewed } from '../utils/analytics'
 
 // The public prediction scorecard (League page -> Scorecard tab), from the
 // Worker's /scorecard route (eyewall-pipeline's nightly
@@ -162,9 +163,10 @@ export default function PredictionScorecard() {
   const { data, loading } = useFetch(getScorecard, [])
   const models = data?.models || {}
   const updated = data?.updatedAt ? new Date(data.updatedAt) : null
+  const viewRef = useFeatureViewed('scorecard')
 
   return (
-    <div className="prediction-scorecard">
+    <div className="prediction-scorecard" ref={viewRef}>
       <div className="card">
         <div className="sec-label" style={{ marginBottom: 4 }}>{t('scorecard.title')}</div>
         <div className="text-[12px] text-[color:var(--text-muted)] leading-[1.45]">{t('scorecard.intro')}</div>

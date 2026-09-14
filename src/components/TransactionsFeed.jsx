@@ -24,7 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { fetchPWHLTransactions } from '../utils/pwhlApi';
 import { getTransactions, TEAM_CONFIG } from '../utils/nhlApi';
 import { formatDate } from '../utils/formatters';
-import { capture } from '../utils/analytics';
+import { capture, trackFeature } from '../utils/analytics';
 import TeamLogo from './TeamLogo';
 import TradeTree from './TradeTree';
 import {
@@ -210,7 +210,7 @@ function TradeTreeToggle({ txId }) {
   const [open, setOpen] = useState(false);
   if (txId == null) return null;
   const toggle = () => {
-    if (!open) capture('trade_tree_opened', { sport: 'nhl' });
+    if (!open) trackFeature('trade_tree', 'open');
     setOpen(!open);
   };
   return (

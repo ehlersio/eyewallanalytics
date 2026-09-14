@@ -6,6 +6,7 @@ import { teamTextColor } from '../utils/teamConfig'
 import { formatDate } from '../utils/formatters'
 import { parseLocalDate } from '../utils/injuryDetails'
 import { SKELETON_CLASSES } from '../utils/skeletonClasses'
+import { useFeatureViewed } from '../utils/analytics'
 import InfoTip from './InfoTip'
 import TeamLogo from './TeamLogo'
 
@@ -79,6 +80,7 @@ export default function ProbableStarters({ game }) {
     () => (modeled ? getProbableStarters(gameId) : Promise.resolve(null)),
     [gameId, modeled],
   )
+  const viewRef = useFeatureViewed('probable_starters', { gameId })
   if (!modeled) return null
 
   // The selected team's column first, then the opponent's.
@@ -90,7 +92,7 @@ export default function ProbableStarters({ game }) {
   const runDate = parseLocalDate(data?.runDate)
 
   return (
-    <div className="md-starters mb-3.5">
+    <div className="md-starters mb-3.5" ref={viewRef}>
       <div className="md-starters-label flex items-center gap-1 text-[11px] text-[color:var(--text-muted)] mb-1.5">
         <span>{t('probableStarters.title')}</span>
         <InfoTip label={t('probableStarters.title')} text={t('probableStarters.infoTip')} position="above" />

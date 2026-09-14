@@ -7,6 +7,7 @@ import './index.css'
 import './light-mode-overrides.css'
 import './tailwind.css'
 import App from './App.jsx'
+import { TEAM_CONFIG } from './utils/teamConfig'
 
 // Initialise PostHog — only in production builds (not local dev)
 if (import.meta.env.PROD) {
@@ -18,11 +19,14 @@ if (import.meta.env.PROD) {
   });
 
   // Tag every event with the environment so staging and prod can be filtered
-  // separately in the PostHog dashboard
+  // separately in the PostHog dashboard, and with the selected NHL team so
+  // any insight breaks down by team (a team switch reloads the page, so
+  // this is always the current pick).
   posthog.register({
     environment: window.location.hostname === 'eyewallanalytics.com'
       ? 'production'
       : 'staging',
+    team: TEAM_CONFIG.abbr,
   });
 }
 
