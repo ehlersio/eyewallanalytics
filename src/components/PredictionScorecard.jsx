@@ -1,5 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { useFetch } from '../hooks/useFetch'
 import { getScorecard } from '../utils/nhlApi'
 import { formatDate } from '../utils/formatters'
@@ -171,6 +172,9 @@ export default function PredictionScorecard() {
         <div className="sec-label" style={{ marginBottom: 4 }}>{t('scorecard.title')}</div>
         <div className="text-[12px] text-[color:var(--text-muted)] leading-[1.45]">{t('scorecard.intro')}</div>
         <div className="text-[11px] text-[color:var(--text-dim)] leading-[1.45] mt-1.5">{t('scorecard.howToRead')}</div>
+        <Link to="/methodology" className="scorecard-method-link inline-block text-[12px] text-[color:var(--text)] underline underline-offset-2 mt-2">
+          {t('scorecard.methodologyLink')}
+        </Link>
       </div>
       {loading ? (
         <div className={SKELETON_CLASSES} style={{ height: 120, width: '100%', marginTop: 10 }} />

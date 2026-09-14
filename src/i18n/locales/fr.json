@@ -2236,7 +2236,136 @@
     "share": "{{pct}} des 10 derniers départs",
     "updated": "Mis à jour le {{date}}"
   },
+  "methodology": {
+    "title": "Comment ça fonctionne",
+    "intro": "Comment les prédictions de l'application sont produites et évaluées, et comment ses données sur les blessures et les échanges sont construites. Chaque prédiction du bilan vient d'un des modèles ci-dessous; tout changement de modèle est daté dans le journal des modifications au bas de la page.",
+    "backToScorecard": "Bilan des prédictions",
+    "contents": "Sections",
+    "checkedNote": "Les paramètres décrits ici ont été vérifiés dans le code le {{date}}. Les résultats des rétro-analyses viennent directement du bilan.",
+    "limitsTitle": "Ce qu'il ne voit pas",
+    "backtestLine": "Rétro-analyse, {{period}} : bons choix {{accuracy}} · Brier {{brier}} ({{n}} évaluées).",
+    "baselineLine": "Référence, {{name}} : {{accuracy}} · Brier {{brier}}.",
+    "backtestPending": "Les résultats de la rétro-analyse ne sont pas disponibles pour le moment — voir le bilan.",
+    "sections": {
+      "principles": {
+        "title": "Règles de base",
+        "items": [
+          "Les prédictions sont consignées avant le match, par le traitement de nuit à 3 h (heure de l'Est), puis évaluées selon ce qui s'est réellement passé. Le bilan en direct ne compte que celles-là.",
+          "Chaque modèle est comparé à une référence simple que tout le monde pourrait utiliser, pour voir s'il apporte quelque chose.",
+          "Les rétro-analyses rejouent les saisons passées avec seulement ce qui était connu à ce moment-là. Elles sont toujours identifiées comme telles, jamais présentées comme un historique.",
+          "Ce sont des probabilités, pas des choix. Rien ici n'est un conseil de paris.",
+          "Quand un modèle change, le changement est daté plus bas, pour qu'on puisse relier chaque prédiction à la version qui l'a produite."
+        ]
+      },
+      "gameWinners": {
+        "title": "Gagnants des matchs",
+        "body": [
+          "Chaque équipe a une cote Elo construite uniquement à partir des résultats des matchs depuis la saison 2023-2024. Les équipes partent à 1 500, et après chaque match le gagnant prend des points au perdant : davantage pour une surprise, moins pour un résultat attendu.",
+          "Une victoire plus large en temps réglementaire fait bouger les cotes un peu plus (jusqu'à 1,75 fois une victoire par un but). Un match décidé en prolongation ou en tirs de barrage les fait bouger deux fois moins, puisque le besoin de temps supplémentaire indique des équipes proches. Chaque match ne fait bouger les cotes que légèrement (K = 6), parce qu'un seul match de hockey est très aléatoire. Entre les saisons, chaque cote revient d'un tiers vers 1 500.",
+          "L'équipe locale reçoit 35 points Elo avant le calcul de sa chance de gagner, sauf lors des matchs en terrain neutre : P(victoire locale) = 1 / (1 + 10^((visiteur − (local + 35)) / 400)). Ce sont les paramètres Elo LNH publiés par FiveThirtyEight, non ajustés sur nos propres données.",
+          "Chaque match de saison régulière et des séries est consigné par le traitement de 3 h le jour du match (et la veille, au cas où un traitement serait manqué). Le dernier chiffre avant la mise au jeu est celui qui est évalué, selon le résultat final, prolongation et tirs de barrage compris. La référence : « l'équipe locale gagne »."
+        ],
+        "limits": [
+          "Elo ne connaît que les résultats. Il ignore les blessures, le gardien partant, les échanges et les changements d'alignement tant qu'ils ne se reflètent pas dans les résultats.",
+          "Une équipe très transformée pendant l'été garde quand même les deux tiers de sa cote de la saison précédente en octobre."
+        ]
+      },
+      "startingGoalies": {
+        "title": "Gardiens partants",
+        "body": [
+          "Pour le prochain match de saison régulière de chaque équipe, dès qu'il est à deux jours ou moins, les candidats sont les gardiens de l'effectif actuel, moins ceux inscrits comme absents ou sur la liste des blessés au dernier rapport des blessures.",
+          "Chaque candidat est évalué sur six éléments tirés des récents matchs de son équipe : sa part des 10 derniers départs; s'il a commencé le match précédent; s'il s'agit du deuxième soir de matchs consécutifs et qu'il a commencé le premier, ou non; le nombre de jours depuis son dernier départ; et s'il est resté 20 matchs sans départ. Un modèle logit conditionnel, ajusté sur tous les départs de 2023-2024 à 2025-2026, en tire des probabilités dont le total fait 100 % pour chaque équipe.",
+          "La part des départs récents et les matchs consécutifs comptent le plus; les jours de repos n'ajoutent presque rien une fois ces éléments connus. À part égale, un gardien qui vient de commencer a un peu moins de chances de revenir, à cause des duos et des rotations.",
+          "Le chiffre est mis à jour chaque nuit jusqu'au match; celui du matin du match est évalué selon qui a réellement commencé, d'après l'indicateur de gardien partant de la LNH. La référence : « le gardien du dernier match commence ». Dans la rétro-analyse, chaque saison est évaluée par un modèle ajusté uniquement sur les saisons précédentes."
+        ],
+        "limits": [
+          "La LNH n'annonce pas les gardiens partants à l'avance, et le modèle ne voit ni l'annonce d'un entraîneur ni les comptes rendus de l'entraînement matinal.",
+          "Un gardien inscrit au jour le jour reste candidat à plein poids : l'historique des blessures ne commence qu'en septembre 2026, donc le modèle n'a jamais appris ce que « au jour le jour » signifie.",
+          "Les matchs préparatoires et des séries ne sont pas prédits."
+        ]
+      },
+      "playoffOdds": {
+        "title": "Chances de participer aux séries",
+        "body": [
+          "Chaque match restant de la saison régulière est simulé 10 000 fois. La chance de gagner de chaque match vient des mêmes cotes Elo et du même avantage local que les prédictions des matchs.",
+          "22,1 % des matchs simulés dépassent le temps réglementaire, ce qui donne un point au perdant — la proportion mesurée de 2023-2024 à 2025-2026.",
+          "Les cotes actuelles ne sont que des estimations, donc chaque saison simulée décale la force de chaque équipe d'un montant aléatoire qui lui est propre. Cet écart est le plus grand avant la saison et se resserre à mesure que les matchs sont joués; sans lui, les chances étaient trop assurées (une équipe affichait 95 % avant le premier match). Sa largeur de départ et la vitesse à laquelle il se resserre ont été ajustées sur la rétro-analyse de 2023-2024 à 2025-2026.",
+          "Dans chaque saison simulée, les trois premières équipes de chaque division et les deux meilleures suivantes de chaque association se qualifient. Les égalités se départagent aux points, puis aux victoires en temps réglementaire, puis aux victoires, puis au hasard.",
+          "Le changement de chaque jour est expliqué match par match : les chances sont conservées pour chaque résultat possible des matchs du lendemain, afin que le traitement suivant montre l'effet de chaque résultat.",
+          "Évaluation : les chances au premier traitement de la saison, au 15 novembre, au 1er janvier et au 1er mars, comparées aux équipes réellement qualifiées. La référence : « les équipes qualifiées à ce moment-là »."
+        ],
+        "limits": [
+          "Les confrontations directes et les critères de départage suivants de la LNH ne sont pas modélisés.",
+          "Au sein d'une saison simulée, les cotes ne changent pas au-delà de ce décalage aléatoire, donc une séquence chaude ou froide n'est pas projetée.",
+          "Comme pour les gagnants des matchs, les cotes ne tiennent pas compte des blessures ni des échanges."
+        ]
+      },
+      "grading": {
+        "title": "Comment le bilan évalue",
+        "body": [
+          "Bon choix : le camp à 50 % ou plus l'a emporté.",
+          "Score de Brier : l'écart moyen, au carré, entre la probabilité annoncée et ce qui s'est passé (1 si c'est arrivé, 0 sinon). 0 est parfait, et toujours dire 50 % donne 0,25; plus c'est bas, mieux c'est. Il récompense des pourcentages honnêtes, pas seulement les bons choix : annoncer 90 % et se tromper coûte beaucoup plus qu'annoncer 55 % et se tromper.",
+          "Calibration : les prédictions sont regroupées en dix tranches selon la probabilité annoncée et comparées à leur fréquence réelle — les 70 % d'un modèle bien calibré se réalisent environ 70 % du temps. Les tranches de moins de 25 prédictions ne sont pas affichées, puisqu'une poignée de matchs n'est que du bruit.",
+          "Le bilan en direct et la rétro-analyse sont séparés. Le bilan en direct commence avec la saison 2026-2027 et ne compte que les prédictions publiées avant l'événement. Les rétro-analyses rejouent 2023-2024 à 2025-2026 et sont identifiées comme telles : elles montrent comment un modèle se serait comporté, pas des prédictions faites à l'époque."
+        ]
+      },
+      "injuryImpact": {
+        "title": "Impact des blessures",
+        "body": [
+          "Pas une prédiction : un décompte de ce que les blessures ont coûté à chaque équipe cette saison.",
+          "Un match-joueur perdu est un match de saison régulière terminé où un joueur figurait au rapport des blessures de son équipe ce jour-là (le rapport d'ESPN, le dernier instantané le jour du match ou avant, à quelques jours près) comme au jour le jour, absent ou sur la liste des blessés, et n'était pas en uniforme — vérifié dans les données de présences de la LNH. Les joueurs au jour le jour qui ont joué ne comptent pas, et les suspensions ne comptent jamais.",
+          "WAR perdus : chaque match manqué vaut les victoires au-dessus du remplacement (WAR) par match du joueur, cette saison et la précédente combinées, dès qu'il a au moins 20 matchs. Un joueur sous le niveau de remplacement compte pour zéro perte. Les gardiens ne comptent qu'en matchs-joueurs. Le WAR est calculé par l'application à partir des données de joueurs de MoneyPuck.",
+          "Le décompte commence avec la saison régulière 2026-2027, parce que l'historique des blessures ne débute qu'en septembre 2026."
+        ],
+        "limits": [
+          "Les blessures qu'une équipe n'inscrit jamais au rapport ne peuvent pas être vues.",
+          "Un joueur blessé dont le nom n'a pas pu être associé à un joueur de la LNH ne compte que s'il est inscrit comme absent ou sur la liste des blessés."
+        ]
+      },
+      "tradeTrees": {
+        "title": "Arbres des échanges",
+        "body": [
+          "Pas une prédiction : un historique de chaque échange et de l'endroit où chaque élément est allé ensuite.",
+          "Le fil des transactions d'ESPN n'a pas de données structurées sur les échanges — chaque équipe publie sa version en une phrase. Ce texte est analysé en joueurs, choix au repêchage, droits et considérations futures; ce qui ne peut pas être reconnu est affiché tel quel plutôt que deviné. Les publications des deux équipes sont jumelées quand elles se nomment l'une l'autre à deux jours ou moins d'intervalle.",
+          "Les choix sont associés aux registres du repêchage de la LNH : le choix dont la chaîne de propriété passe directement entre les deux équipes, dans l'année et la ronde indiquées, ou le numéro de choix d'ESPN quand il est donné. Les choix qui ne peuvent pas être associés sont indiqués : pas encore repêché, non retracé (souvent un choix conditionnel reporté ou jamais transféré), ou impossible de savoir lequel.",
+          "Chaque élément est relié au prochain échange où sa nouvelle équipe l'a cédé; suivre ces liens forme l'arbre. Les joueurs sont associés à la liste des joueurs de la LNH depuis 2014-2015, pour que leur nom ouvre leur fiche; un nom partagé par deux joueurs reste sans association.",
+          "Couvre les échanges depuis janvier 2015, reconstruits chaque nuit."
+        ],
+        "limits": [
+          "Environ 3 % des éléments des publications plus anciennes sont formulés de façon non reconnue.",
+          "Un échange qu'ESPN n'a jamais publié ne peut pas apparaître, et quand une seule équipe l'a publié, sa formulation est tout ce qu'on a."
+        ]
+      },
+      "data": {
+        "title": "Données et horaire",
+        "body": [
+          "Le traitement roule chaque nuit à 3 h (heure de l'Est). Les prédictions des matchs du jour et du lendemain sont consignées pendant ce traitement, et les chances de participer aux séries et l'impact des blessures y sont recalculés."
+        ],
+        "items": [
+          "API de la LNH — calendriers, résultats, classements, effectifs, sommaires et feuilles de présences.",
+          "Registres de la LNH — chaque choix au repêchage et ses propriétaires avant son utilisation.",
+          "ESPN — rapports des blessures et transactions.",
+          "MoneyPuck — données saisonnières des joueurs utilisées pour le WAR."
+        ]
+      },
+      "changelog": {
+        "title": "Journal des modifications",
+        "body": [
+          "Changements datés au fonctionnement des modèles, du plus récent au plus ancien. Chaque prédiction est produite par la version en place à ce moment-là."
+        ]
+      }
+    },
+    "changelogEntries": {
+      "tradeTrees": "Ajout des arbres des échanges, à partir des transactions d'ESPN depuis 2015.",
+      "scorecard": "Ajout du bilan public : les probabilités des gagnants sont consignées chaque matin, et les matchs en terrain neutre n'ont pas d'avantage local.",
+      "startingGoalies": "Ajout des probabilités de gardiens partants, ajustées sur les départs de 2023-2024 à 2025-2026.",
+      "playoffOdds": "Ajout des chances de participer aux séries : 10 000 saisons simulées, incertitude des cotes ajustée sur 2023-2024 à 2025-2026, et un taux de prolongation de 22,1 % combiné sur ces saisons.",
+      "injuryImpact": "Ajout de l'impact des blessures : matchs-joueurs et WAR perdus par équipe, comptés à partir de la saison 2026-2027.",
+      "elo": "Les gagnants des matchs passent à Elo (paramètres LNH de FiveThirtyEight), en remplacement d'une formule pondérée à la main qui faisait moins bien en rétro-analyse."
+    }
+  },
   "scorecard": {
+    "methodologyLink": "Comment ces modèles fonctionnent →",
     "tabLabel": "Bilan",
     "title": "Bilan des prédictions",
     "intro": "Comment les prédictions de l'application se sont réellement comportées, comparées aux résultats. Le bilan en direct ne compte que les prédictions publiées avant le match; les rétro-analyses rejouent les saisons passées sans connaître les résultats et sont identifiées comme telles.",

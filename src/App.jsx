@@ -52,6 +52,7 @@ const ECHLNewsView     = lazy(() => import('./views/ECHLNewsView'));
 // hiding, not the real access control (the Worker independently gates
 // GET /admin/health to the app owner).
 const AdminHealthView = lazy(() => import('./views/AdminHealthView'));
+const MethodologyView = lazy(() => import('./views/MethodologyView'));
 
 const DevReplayView = import.meta.env.DEV
   ? lazy(() => import('./views/DevReplayView'))
@@ -94,6 +95,7 @@ function PageTracker() {
       '/team':          'Team',
       '/news':          'News',
       '/league':        'League',
+      '/methodology':   'Methodology',
       '/pwhl/shots':    'PWHL Shot Map',
       '/pwhl/team':     'PWHL Team',
       '/pwhl/league':   'PWHL League',
@@ -174,6 +176,7 @@ export default function App() {
                       <Route path="/team"     element={<TeamView />} />
                       <Route path="/news"     element={<NewsView />} />
                       <Route path="/league"   element={<LeagueView />} />
+                      <Route path="/methodology" element={<MethodologyView />} />
                       <Route path="/admin/health" element={<AdminHealthView />} />
                       {/* PWHL routes */}
                       <Route path="/pwhl/shots"    element={<PWHLShotMapView />} />

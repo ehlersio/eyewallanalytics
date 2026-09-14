@@ -2236,7 +2236,136 @@
     "share": "{{pct}} of last 10 starts",
     "updated": "Updated {{date}}"
   },
+  "methodology": {
+    "title": "How it works",
+    "intro": "How the app's predictions are made and graded, and how its injury and trade data are built. Every prediction on the scorecard comes from one of the models below; when a model changes, the change is dated in the changelog at the bottom.",
+    "backToScorecard": "Prediction scorecard",
+    "contents": "Sections",
+    "checkedNote": "Settings described here were checked against the code on {{date}}. Backtest numbers come live from the scorecard.",
+    "limitsTitle": "What it can't see",
+    "backtestLine": "Backtest, {{period}}: picked right {{accuracy}} · Brier {{brier}} ({{n}} graded).",
+    "baselineLine": "Baseline, {{name}}: {{accuracy}} · Brier {{brier}}.",
+    "backtestPending": "Backtest numbers aren't available right now — see the scorecard.",
+    "sections": {
+      "principles": {
+        "title": "Ground rules",
+        "items": [
+          "Predictions are written down before the game, by the nightly run at 3 AM Eastern, and graded afterward against what happened. The live record counts only those.",
+          "Each model is compared with a simple baseline anyone could use, so you can see whether it adds anything.",
+          "Backtests replay past seasons using only what was known at the time. They're always labeled as backtests, never as a track record.",
+          "These are probabilities, not picks. Nothing here is betting advice.",
+          "When a model changes, the change is dated below, so any prediction can be matched to the version that made it."
+        ]
+      },
+      "gameWinners": {
+        "title": "Game winners",
+        "body": [
+          "Every team has an Elo rating built only from game results since the 2023-24 season. Teams start at 1,500, and after each game the winner takes rating points from the loser: more for an upset, fewer for an expected result.",
+          "A bigger regulation win moves ratings a little more (up to 1.75 times a one-goal win). A game decided in overtime or a shootout moves them half as much, since needing extra time says the teams were close. Each game moves ratings only slightly (K = 6), because one hockey game is noisy. Between seasons, every rating moves a third of the way back to 1,500.",
+          "The home team gets 35 Elo points before the win chance is worked out, except at neutral-site games: P(home wins) = 1 / (1 + 10^((away − (home + 35)) / 400)). These are FiveThirtyEight's published NHL Elo settings, not tuned on our own data.",
+          "Every regular-season and playoff game is logged by the 3 AM run on game day (and the day before, in case a run is missed). The last number before puck drop is the one graded, against the final result, overtime and shootouts included. The baseline is \"the home team wins\"."
+        ],
+        "limits": [
+          "Elo only knows results. It doesn't know about injuries, who's in goal, trades or lineup changes until they show up in results.",
+          "A team that changes a lot over the summer still carries two-thirds of last season's rating into October."
+        ]
+      },
+      "startingGoalies": {
+        "title": "Starting goalies",
+        "body": [
+          "For each team's next regular-season game, once it's within two days, the candidates are the goalies on the current roster, minus anyone listed out or on injured reserve on the latest injury report.",
+          "Each candidate is scored on six things from his team's recent games: his share of the last 10 starts; whether he started the previous game; whether it's the second night of a back-to-back and he started the first night, or didn't; days since his last start; and whether he's gone 20 games without a start. A conditional logit model, fit on every start from 2023-24 through 2025-26, turns these into probabilities that add up to 100% for each team.",
+          "Share of recent starts and back-to-backs matter most; days of rest adds almost nothing once those are known. With his recent share known, a goalie who just started is slightly less likely to go again, because of tandems and rotations.",
+          "The number is updated each night until the game; the morning-of number is graded against who actually started, using the NHL's own starter flag. The baseline is \"last game's starter starts again\". In the backtest, each season is scored by a model fit only on earlier seasons."
+        ],
+        "limits": [
+          "The NHL doesn't announce starters ahead of time, and the model can't see a coach's announcement or morning-skate reports.",
+          "A goalie listed day-to-day stays a candidate at full weight: the injury history only starts in September 2026, so the model has never learned what day-to-day means.",
+          "Preseason and playoff games aren't predicted."
+        ]
+      },
+      "playoffOdds": {
+        "title": "Playoff odds",
+        "body": [
+          "Every remaining regular-season game is simulated 10,000 times. Each game's win chance comes from the same Elo ratings and home-ice edge as the game predictions.",
+          "22.1% of simulated games go past regulation, giving the loser a point — the share measured across 2023-24 to 2025-26.",
+          "Current ratings are only estimates, so each simulated season shifts every team's strength by its own random amount. That spread is widest before the season and narrows as games are played; without it the odds were overconfident (one team showed 95% before a game was played). How wide it starts and how fast it narrows were tuned on the 2023-24 to 2025-26 backtest.",
+          "In each simulated season the top three teams in each division and the next two best in each conference make the playoffs. Ties go to points, then regulation wins, then wins, then a coin flip.",
+          "Each day's change is explained game by game: the odds are stored for every possible result of the next day's games, so the next run can show how much each result moved them.",
+          "Graded: the odds as of the season's first run, Nov 15, Jan 1 and Mar 1, against who actually made the playoffs. The baseline is \"whoever holds a playoff spot at that moment\"."
+        ],
+        "limits": [
+          "Head-to-head and the later NHL tiebreakers aren't modeled.",
+          "Within a simulated season, ratings don't change beyond that one random shift, so a hot or cold streak isn't projected forward.",
+          "Like game winners, the ratings don't know about injuries or trades."
+        ]
+      },
+      "grading": {
+        "title": "How the scorecard grades",
+        "body": [
+          "Picked right: the side given 50% or more is what happened.",
+          "Brier score: the average squared gap between the stated probability and what happened (1 if it happened, 0 if it didn't). 0 is perfect, and always saying 50% scores 0.25; lower is better. It rewards honest percentages, not just right picks: saying 90% and being wrong costs far more than saying 55% and being wrong.",
+          "Calibration: predictions are grouped into ten bands by stated probability and compared with how often they came true — a well-calibrated model's 70% calls happen about 70% of the time. Bands with fewer than 25 predictions aren't shown, since a handful of games is noise.",
+          "Live and backtest are kept apart. The live record starts with the 2026-27 season and counts only predictions published before the event. Backtests replay 2023-24 through 2025-26 and are labeled as such: they show how a model would have done, not calls made at the time."
+        ]
+      },
+      "injuryImpact": {
+        "title": "Injury impact",
+        "body": [
+          "Not a prediction: a count of what injuries have cost each team this season.",
+          "A man-game lost is a completed regular-season game in which a player was on his team's injury report that day (ESPN's report, the latest snapshot on or before the game, within a few days) as day-to-day, out or on injured reserve, and didn't dress — checked against the NHL's own shift data. Day-to-day players who played don't count, and suspensions never count.",
+          "WAR lost: each missed game is worth the player's wins above replacement per game, from this season and last pooled, once he has at least 20 games. A below-replacement player counts as nothing lost. Goalies count in man-games only. WAR is the app's own calculation from MoneyPuck's player data.",
+          "Counting starts with the 2026-27 regular season, because the injury history only begins in September 2026."
+        ],
+        "limits": [
+          "Injuries a team never puts on the report can't be seen.",
+          "An injured player whose name couldn't be matched to an NHL player only counts when listed out or on injured reserve."
+        ]
+      },
+      "tradeTrees": {
+        "title": "Trade trees",
+        "body": [
+          "Not a prediction: a record of each trade and where every asset went next.",
+          "ESPN's transactions feed has no structured trade data — each team posts its side as a sentence. That text is parsed into players, draft picks, rights and future considerations; anything that can't be recognized is shown as written rather than guessed. The two teams' entries are paired when they name each other within two days.",
+          "Picks are matched to the NHL's own draft records: the pick whose ownership chain passes directly between the two teams in the stated year and round, or ESPN's own pick number when it's given. Picks that can't be matched are labeled: not drafted yet, not traced (often a conditional pick that was deferred or never conveyed), or can't tell which.",
+          "Each asset links to the next trade its new team sent it on in; following those links is what makes the tree. Players are matched to the NHL's player list since 2014-15, so their names open their player card; a name shared by two players is left unmatched.",
+          "Covers trades since January 2015, rebuilt every night."
+        ],
+        "limits": [
+          "About 3% of assets in older entries are worded in ways that aren't recognized.",
+          "A trade ESPN never posted can't appear, and when only one team posted, that team's wording is all there is."
+        ]
+      },
+      "data": {
+        "title": "Data and schedule",
+        "body": [
+          "The pipeline runs every night at 3 AM Eastern. Predictions for today's and tomorrow's games are written in that run, and the playoff odds and injury impact are recomputed then too."
+        ],
+        "items": [
+          "NHL API — schedules, results, standings, rosters, box scores and shift charts.",
+          "NHL records — every draft pick and who owned it before it was used.",
+          "ESPN — injury reports and transactions.",
+          "MoneyPuck — player season data used for WAR."
+        ]
+      },
+      "changelog": {
+        "title": "Changelog",
+        "body": [
+          "Dated changes to how the models work, newest first. Each prediction is made by the version in place at the time."
+        ]
+      }
+    },
+    "changelogEntries": {
+      "tradeTrees": "Trade trees added, from ESPN transactions since 2015.",
+      "scorecard": "Public scorecard added: game-winner probabilities are logged each morning, and neutral-site games get no home-ice edge.",
+      "startingGoalies": "Starting-goalie probabilities added, fit on 2023-24 to 2025-26 starts.",
+      "playoffOdds": "Playoff odds added: 10,000 simulated seasons, rating uncertainty tuned on 2023-24 to 2025-26, and a 22.1% overtime rate pooled across those seasons.",
+      "injuryImpact": "Injury impact added: man-games and WAR lost per team, counted from the 2026-27 season.",
+      "elo": "Game winners switch to Elo (FiveThirtyEight's NHL settings), replacing a hand-weighted formula that backtested worse."
+    }
+  },
   "scorecard": {
+    "methodologyLink": "How these models work →",
     "tabLabel": "Scorecard",
     "title": "Prediction scorecard",
     "intro": "How the app's predictions have actually done, graded against what happened. The live record only counts predictions published before the game; backtests replay past seasons without seeing the results and are labeled as such.",
