@@ -1625,4 +1625,5 @@ async function _getTeamGameLog(count = 20) {
 // Sportsbook odds (getNhlOdds/findGameOdds/extractMoneyline/oddsToImplied/
 // fmtOdds, reading the Worker's /nhl/odds) were removed 2026-09 -- the app
 // shows no betting content (App Store review + product direction). The
-// Worker-side odds writer in eyewall-poller's nhl.js has no app consumer now.
+// Worker-side odds writer and /nhl/odds route were removed from
+// eyewall-poller in the same change.

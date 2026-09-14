@@ -69,7 +69,7 @@ If you delete the app first to get a true first launch, step 2 appears naturally
 ## Pre-resubmission fixes (found in code review 2026-09-14, built the same day)
 
 1. **In-app account deletion (Guideline 5.1.1(v)).** Done. Settings has a "Delete account" row under Sign out, with a confirm panel. It calls the `delete_own_account()` Postgres function (security definer, scoped to `auth.uid()`), and `user_preferences`/`trivia_answers` cascade from `auth.users`. No Worker route or service-role key was needed. `delete-account.html` now points to the in-app flow, with email as the fallback.
-2. **Sportsbook odds.** Done: removed everywhere in the app (game cards, the game preview, the share image's odds and O/U line, and the `nhlApi.js` helpers). The win % was already pure Elo. Follow-up: `eyewall-poller` still fetches The Odds API on its cron (`fetchOdds()`) and serves `/nhl/odds`, which nothing reads now. Turn it off to save the API quota.
+2. **Sportsbook odds.** Done: removed everywhere in the app (game cards, the game preview, the share image's odds and O/U line, and the `nhlApi.js` helpers). The win % was already pure Elo. The Odds API integration is also gone from `eyewall-poller` (`fetchOdds()`, `/nhl/odds`; branch `remove-odds-api`), and `docs/drop_nhl_odds.sql` there drops the unused table.
 3. **Buy Me a Coffee link.** Done: hidden when `Capacitor.getPlatform() === 'ios'`, still shown on the web and Android.
 4. **Privacy policy.** Done: mentions iOS, lists Resend and Cloudflare as processors, and describes in-app deletion.
 5. **In-app disclaimer.** Done: added to the About popup in English and French. The About popup also scrolls now, because on a 390×844 screen its bottom used to be cut off behind the nav bar.
