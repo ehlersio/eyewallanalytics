@@ -1259,8 +1259,6 @@
     },
     "prediction": {
       "probabilityLabel": "Predicted win probability",
-      "sourceWithOdds": "Stats + {{book}} odds",
-      "sourceStatsOnly": "Based on season stats",
       "preseasonLabel": "Preseason estimate — based on {{season}} final standings",
       "preseasonExpectedScore": "Expected score: {{car}} {{carScore}} – {{opp}} {{oppScore}}"
     },
@@ -1277,19 +1275,6 @@
       "homeIce": "Home ice",
       "seriesLead": "Series lead",
       "topLine": "Top line (5v5 xGF%)"
-    },
-    "tooltip": {
-      "title": "How we predict:",
-      "gfGa": "• GF/GP & GA/GP — offensive and defensive efficiency",
-      "possession": "• SOG/GP — possession proxy (shot attempt share)",
-      "ppPk": "• PP vs PK matchup — special teams edge",
-      "seriesRecord": "• Series record — current series lead/deficit",
-      "standingsPoints": "• Standings points — season performance",
-      "recentForm": "• Recent form — current streak",
-      "homeIce": "• Home ice — ~0.25 goal advantage",
-      "topLineXgf": "• Top line 5v5 xGF% — {{pct}}% this season",
-      "marketOdds": "• Market odds — 40% weight when available",
-      "playoffMode": "Playoff mode: standings points excluded."
     },
     "tabs": {
       "prediction": "Prediction",
@@ -2220,5 +2205,59 @@
     "dayToDay": "Day-to-day",
     "share": "{{pct}} of last 10 starts",
     "updated": "Updated {{date}}"
+  },
+  "scorecard": {
+    "tabLabel": "Scorecard",
+    "title": "Prediction scorecard",
+    "intro": "How the app's predictions have actually done, graded against what happened. The live record only counts predictions published before the game; backtests replay past seasons without seeing the results and are labeled as such.",
+    "howToRead": "Picked right: the side given 50% or more is what happened. Brier score measures how close the percentages were: 0 is perfect, 0.25 is what always saying 50% would score. Lower is better.",
+    "live": "Live record · {{period}}",
+    "backtest": "Backtest · {{period}}",
+    "accuracy": "Picked right",
+    "brier": "Brier score",
+    "graded_one": "{{n}} graded",
+    "graded_other": "{{n}} graded",
+    "baselineLine": "Baseline, {{name}}: {{accuracy}} · Brier {{brier}}",
+    "edgeInBrier": "Picks the outcome about as often as the baseline; the edge is in how closely the percentages match reality (lower Brier).",
+    "calibrationTitle": "Calibration: said → happened",
+    "calibrationTitleN": "{{n}} predictions",
+    "calibrationRow": "{{predicted}} → {{actual}}",
+    "recentTitle": "Latest graded",
+    "hit": "Right",
+    "miss": "Wrong",
+    "unavailable": "The scorecard isn't available right now.",
+    "empty": "No scorecard yet.",
+    "updated": "Updated {{date}}",
+    "baselines": {
+      "home_team_wins": "the home team wins",
+      "last_games_starter": "last game's starter starts",
+      "holds_a_playoff_spot": "whoever holds a playoff spot now"
+    },
+    "recent": {
+      "game": "{{away}} @ {{home}} · {{pick}} {{pct}} → {{winner}} won",
+      "goalie": "{{team}} · {{pick}} {{pct}} → {{actual}} started"
+    },
+    "models": {
+      "game_winner": {
+        "title": "Game winners",
+        "desc": "Elo win probability for every game, logged the morning of the game.",
+        "pending": "The live record starts with opening night."
+      },
+      "starting_goalie": {
+        "title": "Starting goalies",
+        "desc": "Each team's probable starter, logged the morning of the game.",
+        "pending": "The live record starts with opening night."
+      },
+      "playoff_odds": {
+        "title": "Playoff odds",
+        "desc": "Simulated playoff chances, checked preseason and on Nov 15, Jan 1 and Mar 1.",
+        "pending": "Graded once the regular season ends and the playoff field is set."
+      }
+    }
+  },
+  "eloModel": {
+    "source": "Elo model",
+    "tooltip": "Win probability from each team's Elo rating (every game since 2023-24, updated nightly) plus home ice, none at a neutral site. It's the same number the prediction scorecard grades.",
+    "unavailable": "Win probability isn't available right now."
   }
 }

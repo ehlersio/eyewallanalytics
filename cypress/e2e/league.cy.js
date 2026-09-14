@@ -105,13 +105,14 @@ describe('League page — CAR', () => {
 
   // ── Tab bar ──────────────────────────────────────────────────
 
-  it('renders all six tab buttons, Scoreboard first', () => {
-    cy.get('.league-tab').should('have.length', 6)
+  it('renders all seven tab buttons, Scoreboard first', () => {
+    cy.get('.league-tab').should('have.length', 7)
     cy.get('.league-tab').eq(0).should('contain', 'Scoreboard')
     cy.get('.league-tab').eq(1).should('contain', 'Standings')
     cy.get('.league-tab').eq(2).should('contain', 'Playoff bracket')
     cy.get('.league-tab').eq(3).should('contain', 'Leaders')
     cy.get('.league-tab').eq(4).should('contain', 'Power rankings')
+    cy.get('.league-tab').eq(5).should('contain', 'Scorecard')
   })
 
   it('Standings tab is active by default', () => {

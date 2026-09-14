@@ -419,8 +419,8 @@ describe('League page tab bar with Draft tab', () => {
     cy.get('.league-view', { timeout: 15000 }).should('be.visible');
   });
 
-  it('now renders six tab buttons including Draft', () => {
-    cy.get('.league-tab').should('have.length', 6);
+  it('now renders seven tab buttons including Draft', () => {
+    cy.get('.league-tab').should('have.length', 7);
     cy.get('.league-tab').filter(':contains("Draft")').should('exist');
   });
 
