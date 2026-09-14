@@ -38,16 +38,25 @@ const SIGNIN_CANCEL_CLASSES = 'account-signin-cancel py-2 px-2.5 rounded-[8px] b
 const SIGNIN_SUBMIT_CLASSES = 'account-signin-submit flex-1 py-2 px-2.5 rounded-[8px] border-0 bg-[var(--team-primary)] text-white text-[12px] font-bold cursor-pointer disabled:opacity-60 disabled:cursor-wait';
 const SIGNIN_SENT_TITLE_CLASSES = 'text-[14px] font-bold text-[color:var(--text)] mb-1.5';
 const SIGNIN_SENT_DESC_CLASSES = 'text-[12px] text-[color:var(--text-muted)] leading-[1.5] mb-2.5';
+// account-delete-row/account-delete-confirm are test hooks too (auth.cy.js).
+// Full class list rather than ROW_LABEL_CLASSES + an override: stacking a
+// second text-[color:...] utility on top of ROW_LABEL_CLASSES' own loses to
+// it (verified live -- the label rendered white), so it's spelled out whole.
+const DELETE_ROW_LABEL_CLASSES = 'account-row-label flex-1 text-[14px] font-medium text-[color:var(--red-bright)] overflow-hidden text-ellipsis whitespace-nowrap';
+const DELETE_PANEL_CLASSES = 'account-delete-panel mt-1.5';
+const DELETE_CONFIRM_CLASSES = 'account-delete-confirm flex-1 py-2 px-2.5 rounded-[8px] border-0 bg-[var(--red)] text-white text-[12px] font-bold cursor-pointer disabled:opacity-60 disabled:cursor-wait';
 
 // Account section for the Settings popup — Phase 0 of Supabase Auth.
-// Three states: signed-out row, two-step sign-in (email → check-your-email),
-// and signed-in (avatar + email + Synced badge, sign-out row below).
+// States: signed-out row, two-step sign-in (email → check-your-email), and
+// signed-in (avatar + email + Synced badge, then Sign out and Delete account
+// rows; Delete account swaps those two rows for a confirm panel first).
 export default function AccountSection() {
   const { t } = useTranslation();
-  const { user, loading, isAuthenticated, signInWithOtp, signOut } = useAuth();
-  const [step, setStep] = useState('idle'); // 'idle' | 'email' | 'sent'
+  const { user, loading, isAuthenticated, signInWithOtp, signOut, deleteAccount } = useAuth();
+  const [step, setStep] = useState('idle'); // 'idle' | 'email' | 'sent' | 'confirmDelete'
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(null);
   const compactRowRef = useRef(null);
 
@@ -91,6 +100,18 @@ export default function AccountSection() {
     resetFlow();
   };
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    setError(null);
+    const { error: deleteError } = await deleteAccount();
+    setDeleting(false);
+    if (deleteError) {
+      setError(t('account.deleteError'));
+      return;
+    }
+    resetFlow();
+  };
+
   if (loading) {
     return (
       <div className={SECTION_CLASSES}>
@@ -111,10 +132,30 @@ export default function AccountSection() {
           <span className={ROW_LABEL_CLASSES}>{user.email}</span>
           <span className={BADGE_CLASSES}>{t('account.synced')}</span>
         </div>
-        <button className={`${ROW_CLASSES} ${ROW_BUTTON_CLASSES}`} onClick={handleSignOut}>
-          <span className={ROW_ICON_CLASSES}>↩️</span>
-          <span className={`${ROW_LABEL_CLASSES} ${ROW_LABEL_MUTED_CLASSES}`}>{t('account.signOut')}</span>
-        </button>
+        {step === 'confirmDelete' ? (
+          <div className={DELETE_PANEL_CLASSES}>
+            <div className={SIGNIN_SENT_TITLE_CLASSES}>{t('account.deleteConfirmTitle')}</div>
+            <p className={SIGNIN_SENT_DESC_CLASSES}>{t('account.deleteConfirmDesc')}</p>
+            {error && <p className={SIGNIN_ERROR_CLASSES}>{error}</p>}
+            <div className={SIGNIN_ACTIONS_CLASSES}>
+              <button type="button" className={SIGNIN_CANCEL_CLASSES} onClick={resetFlow} disabled={deleting}>
+                {t('account.cancel')}
+              </button>
+              <button type="button" className={DELETE_CONFIRM_CLASSES} onClick={handleDelete} disabled={deleting}>
+                {deleting ? t('account.deleting') : t('account.deleteConfirmButton')}
+              </button>
+            </div>
+          </div>
+        ) : (<>
+          <button className={`${ROW_CLASSES} ${ROW_BUTTON_CLASSES}`} onClick={handleSignOut}>
+            <span className={ROW_ICON_CLASSES}>↩️</span>
+            <span className={`${ROW_LABEL_CLASSES} ${ROW_LABEL_MUTED_CLASSES}`}>{t('account.signOut')}</span>
+          </button>
+          <button className={`account-delete-row ${ROW_CLASSES} ${ROW_BUTTON_CLASSES}`} onClick={() => setStep('confirmDelete')}>
+            <span className={ROW_ICON_CLASSES}>🗑️</span>
+            <span className={DELETE_ROW_LABEL_CLASSES}>{t('account.deleteAccount')}</span>
+          </button>
+        </>)}
       </div>
     );
   }

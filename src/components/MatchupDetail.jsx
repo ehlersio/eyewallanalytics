@@ -6,10 +6,7 @@ import { capture } from '../utils/analytics';
 import ScoutingTab from '../components/ScoutingTab';
 import InfoTip from '../components/InfoTip';
 import { getTeamLines, getGamePrediction } from '../utils/supabaseClient';
-import {
-  getOpponent, TEAM_CONFIG, getEloRatings,
-  oddsToImplied, fmtOdds,
-} from '../utils/nhlApi';
+import { getOpponent, TEAM_CONFIG, getEloRatings } from '../utils/nhlApi';
 import { teamTextColor } from '../utils/teamConfig';
 import { teamWinPct } from '../utils/eloWinProb';
 import { StatBar } from '../components/StatBar';
@@ -29,12 +26,8 @@ import ProbableStarters from '../components/ProbableStarters';
 // ShareButtons.jsx) and its own stale Cypress test was fixed separately.
 // .md-track-record's CSS rule was left behind when its own JSX was already
 // migrated in sub-PR 1 -- dropped here as a loose end, no JSX change needed.
-const MD_ODDS_ITEM_CLASSES = 'md-odds-item flex flex-col gap-0.5';
-const MD_ODDS_TEAM_CLASSES = 'md-odds-team text-[10px] text-[color:var(--text-dim)]';
-const MD_ODDS_IMPLIED_CLASSES = 'md-odds-implied text-[10px] text-[color:var(--text-dim)]';
-const mdOddsValClasses = (fav) =>
-  `md-odds-val font-[family-name:var(--font-mono)] text-[18px] font-bold ${fav ? 'fav text-[color:var(--green)]' : 'dog text-[color:var(--amber)]'}`;
-const MD_ODDS_ROW_CLASSES = 'md-odds-row flex items-center justify-between bg-[var(--bg3)] rounded-[var(--radius-sm)] py-2.5 px-3 mb-3';
+// The sportsbook moneyline row (.md-odds-*) was removed 2026-09 -- no
+// betting content in the app (App Store review + product direction).
 
 const mdTabClasses = (active) => {
   const base = 'md-tab flex-1 bg-none border-none py-[9px] px-3 text-[12px] font-semibold cursor-pointer border-b-2 -mb-px [transition:color_0.15s] min-h-0';
@@ -82,7 +75,7 @@ function TopLineCard({ carLines }) {
   );
 }
 
-function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) {
+function MatchupDetail({ game, oppStanding, carStanding, playoffSeries }) {
   const { t } = useTranslation();
   const [mdTab, setMdTab] = React.useState('prediction');
   const opp     = getOpponent(game);
@@ -163,21 +156,6 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
         ) : (<>
           <ProbableStarters game={game} />
           <PredictionAnalysis gameId={game?.id} gameDate={game?.gameDate} oppAbbr={oppAbbr} oppColor={oppColor} />
-          {odds && (
-            <div className={MD_ODDS_ROW_CLASSES} style={{ marginTop: 12 }}>
-              <div className={MD_ODDS_ITEM_CLASSES}>
-                <span className={MD_ODDS_TEAM_CLASSES} style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
-                <span className={mdOddsValClasses(odds.carOdds < 0)}>{fmtOdds(odds.carOdds)}</span>
-                <span className={MD_ODDS_IMPLIED_CLASSES}>{t('matchupDetail.odds.implied', { pct: oddsToImplied(odds.carOdds) })}</span>
-              </div>
-              <div className="md-odds-book text-[10px] text-[color:var(--text-dim)] text-center">{odds.book}</div>
-              <div className={`${MD_ODDS_ITEM_CLASSES} right items-end`}>
-                <span className={MD_ODDS_TEAM_CLASSES} style={{ color: oppColor }}>{oppAbbr}</span>
-                <span className={mdOddsValClasses(odds.oppOdds < 0)}>{fmtOdds(odds.oppOdds)}</span>
-                <span className={MD_ODDS_IMPLIED_CLASSES}>{t('matchupDetail.odds.implied', { pct: oddsToImplied(odds.oppOdds) })}</span>
-              </div>
-            </div>
-          )}
         </>)}
       </div>
     );
@@ -229,12 +207,9 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
   ];
 
   // Win % = the Elo model (eloPct above) -- the same number the pipeline
-  // logs each morning and the public prediction scorecard grades. No
-  // sportsbook blend: the DraftKings row below is shown as-is, separately.
+  // logs each morning and the public prediction scorecard grades.
   // (2026-09, "Elo everywhere": this used to be computeWinPct(), a hand-tuned
   // standings formula, blended 60/40 with the sportsbook's implied odds.)
-  const carImplied = odds ? oddsToImplied(odds.carOdds) : null;
-  const oppImplied = odds ? oddsToImplied(odds.oppOdds) : null;
   const carModelPct = eloPct;
   const modelTooltip = t('eloModel.tooltip');
 
@@ -329,24 +304,6 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
       {/* EyeWall AI Analysis */}
       <PredictionAnalysis gameId={game?.id} gameDate={game?.gameDate} oppAbbr={oppAbbr} oppColor={oppColor} />
 
-      {/* Odds row */}
-      {odds && (
-        <div className={MD_ODDS_ROW_CLASSES}>
-          <div className={MD_ODDS_ITEM_CLASSES}>
-            <span className={MD_ODDS_TEAM_CLASSES} style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr}</span>
-            <span className={mdOddsValClasses(odds.carOdds < 0)}>{fmtOdds(odds.carOdds)}</span>
-            <span className={MD_ODDS_IMPLIED_CLASSES}>{t('matchupDetail.odds.implied', { pct: carImplied })}</span>
-          </div>
-          <div className="md-odds-book text-[10px] text-[color:var(--text-dim)] text-center">{odds.book}</div>
-          <div className={`${MD_ODDS_ITEM_CLASSES} right items-end`}>
-            <span className={MD_ODDS_TEAM_CLASSES} style={{ color: oppColor }}>{oppAbbr}</span>
-            <span className={mdOddsValClasses(odds.oppOdds < 0)}>{fmtOdds(odds.oppOdds)}</span>
-            <span className={MD_ODDS_IMPLIED_CLASSES}>{t('matchupDetail.odds.implied', { pct: oppImplied })}</span>
-          </div>
-        </div>
-      )}
-      {/* Odds unavailable — show nothing, no prompt needed */}
-
       {/* Stat comparison */}
       <div className="md-stats mb-2.5" style={{ marginTop: 12 }}>
         {!isPlayoff_ && (
@@ -399,7 +356,6 @@ function MatchupDetail({ game, oppStanding, carStanding, odds, playoffSeries }) 
         carPP={carPP}
         oppPK={oppPK}
         factors={factors}
-        odds={odds}
         oppAbbr={oppAbbr}
         oppColor={oppColor}
         isPlayoff={isPlayoff_}

@@ -6,7 +6,6 @@ import {
 } from '../utils/nhlApi';
 import { teamTextColor } from '../utils/teamConfig';
 import TeamLogo from '../components/TeamLogo';
-import { fmtOdds } from '../utils/nhlApi';
 
 // Styling used to come from ScheduleView.css -- migrated to Tailwind here
 // (Phase 6, ScheduleView.css sub-PR 2). .series-card.series-active collides
@@ -153,7 +152,7 @@ const gameCardClasses = ({ isSelected, isPlayoff, isCompleted }) => {
   return `${GAME_CARD_BASE}${selected}${playoff}${clickable}`;
 };
 
-function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, cardFavoured }) {
+function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, cardFavoured }) {
   const { t } = useTranslation();
   const home     = isHomeGame(game);
   const opp      = getOpponent(game);
@@ -186,14 +185,6 @@ function GameCard({ game, isCompleted, isSelected, isPlayoff, onClick, odds, car
           <span className="gc-broadcast text-[10px] text-[color:var(--text-dim)]" title={t('gameCard.card.broadcastTitle')}>{broadcasts.join(', ')}</span>
         )}
         {isCompleted && <span className="gc-tap-hint text-[10px] text-[color:var(--text-dim)]">{t('scheduleView.resultCard.tapForStats')}</span>}
-        {!isCompleted && odds && (
-          <div className="gc-odds flex items-center gap-1 font-[family-name:var(--font-mono)] text-[11px] ml-auto">
-            <span className="gc-odds-car text-[color:var(--red-bright)] font-semibold" title={t('gameCard.card.oddsCarTitle', { abbr: TEAM_CONFIG.abbr })}>{fmtOdds(odds.carOdds)}</span>
-            <span className="gc-odds-sep text-[color:var(--text-dim)]">/</span>
-            <span className="gc-odds-opp text-[color:var(--text-muted)] font-semibold" title={t('gameCard.card.oddsOppTitle')}>{fmtOdds(odds.oppOdds)}</span>
-            <span className="gc-odds-book text-[9px] text-[color:var(--text-dim)] ml-0.5">{odds.book}</span>
-          </div>
-        )}
       </div>
       <div className="gc-matchup flex items-center gap-3.5 mb-2">
         <div className="gc-team-block flex-1 flex flex-row items-center gap-2.5 min-w-0">

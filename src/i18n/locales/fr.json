@@ -26,7 +26,8 @@
     "dataVia": "Données via les API NHL et HockeyTech",
     "contactPrefix": "Pour toute question :",
     "privacyText": "EyeWall utilise des analyses anonymes pour comprendre quelles fonctionnalités sont les plus utiles. Aucune donnée personnelle n'est vendue ou partagée. Lisez notre",
-    "privacyPolicy": "Politique de confidentialité"
+    "privacyPolicy": "Politique de confidentialité",
+    "disclaimer": "EyeWall Analytics est un projet indépendant de partisans. Il n'est ni affilié à la LNH, à la LPHF, à la LAH, à l'ECHL ou à une équipe, ni approuvé ou commandité par elles. Les noms et logos des équipes appartiennent à leurs propriétaires respectifs."
   },
   "search": {
     "toggleAriaLabel": "Rechercher des joueurs",
@@ -90,7 +91,13 @@
     "useDifferentEmail": "Utiliser un autre courriel",
     "signOut": "Se déconnecter",
     "synced": "Synchronisé",
-    "errorGeneric": "Impossible d'envoyer le lien de connexion. Réessayez."
+    "errorGeneric": "Impossible d'envoyer le lien de connexion. Réessayez.",
+    "deleteAccount": "Supprimer le compte",
+    "deleteConfirmTitle": "Supprimer votre compte ?",
+    "deleteConfirmDesc": "Cette action supprime définitivement votre compte, votre adresse courriel, votre équipe favorite synchronisée et votre historique de trivia. Les réglages enregistrés sur cet appareil sont conservés. Cette action est irréversible.",
+    "deleteConfirmButton": "Supprimer définitivement",
+    "deleting": "Suppression…",
+    "deleteError": "Impossible de supprimer votre compte. Réessayez ou écrivez à matt@eyewallanalytics.com."
   },
   "league": {
     "tabs": {
@@ -1237,8 +1244,6 @@
   },
   "gameCard": {
     "card": {
-      "oddsCarTitle": "Cote {{abbr}}",
-      "oddsOppTitle": "Cote de l'adversaire",
       "vsLabel": "c.",
       "matchupBreakdownLabel": "Détails du match",
       "broadcastTitle": "Où regarder"
@@ -1261,9 +1266,6 @@
       "probabilityLabel": "Probabilité de victoire prédite",
       "preseasonLabel": "Estimation de présaison — basée sur le classement final {{season}}",
       "preseasonExpectedScore": "Score prévu : {{car}} {{carScore}} – {{opp}} {{oppScore}}"
-    },
-    "odds": {
-      "implied": "{{pct}}% implicite"
     },
     "factors": {
       "offence": "Attaque (BP/PJ)",
@@ -1615,7 +1617,6 @@
       "expected": "Score attendu",
       "projectedTotal": "Total projeté"
     },
-    "ouLine": "Ligne O/U : {{line}}",
     "stats": {
       "goalsForPerGp": "Buts pour/PJ",
       "goalsAgainstPerGp": "Buts contre/PJ",
@@ -2118,7 +2119,7 @@
     "midtermLabel": "Mi-saison : n° {{rank}}",
     "unranked": "Non classé",
     "club": "Club",
-    "sticksSays": "Sticks dit",
+    "eyewallAi": "EyeWall AI",
     "analysisGenerating": "Analyse en cours de génération…",
     "noProspects": "Aucun espoir trouvé.",
     "rankingsTableAriaLabel": "Classement du Bureau central de recrutement",

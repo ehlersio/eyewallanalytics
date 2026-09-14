@@ -233,7 +233,7 @@ export function DraftPopup({ item, mode, onClose }) {
         {/* AI Analysis (pick mode only) */}
         {isPick && (
           <div className="dt-popup-ai flex flex-col gap-1.5 pt-3.5 border-t-[0.5px] border-t-[color:var(--border)]">
-            <span className="dt-popup-ai-label text-[10px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-dim)]">{t('draftTab.sticksSays')}</span>
+            <span className="dt-popup-ai-label text-[10px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-dim)]">{t('draftTab.eyewallAi')}</span>
             {aiPending ? (
               <div className="dt-popup-ai-pending flex items-center gap-2 text-[12px] text-[color:var(--text-dim)] py-2">
                 <span className="dt-spinner w-[14px] h-[14px] border-2 border-[color:var(--border)] border-t-[color:var(--text-muted)] rounded-full animate-[spin_0.7s_linear_infinite] shrink-0" />

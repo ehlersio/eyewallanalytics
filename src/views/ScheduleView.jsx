@@ -7,7 +7,7 @@ import {
   getRegularSeasonGames, getPlayoffGames, getPreseasonGames, getPlayoffSeries, getStandings,
   buildCarPlayoffSummary, formatGameDate,
   getOpponent, isHomeGame, getCarScore, getOppScore, getVenue,
-  getNhlOdds, getEloRatings, findGameOdds, extractMoneyline,
+  getEloRatings,
   TEAM_CONFIG,
 } from '../utils/nhlApi';
 import { teamTextColor } from '../utils/teamConfig';
@@ -125,7 +125,6 @@ export default function ScheduleView() {
   const { data: regGames,     loading: regLoading } = useFetch(getRegularSeasonGames, [currentSeason]);
   const { data: preGames,     loading: preLoading } = useFetch(getPreseasonGames, [currentSeason]);
   const { data: standings }                          = useFetch(getStandings);
-  const { data: oddsData }                           = useFetch(getNhlOdds);
   const { data: playoffRounds, loading: prLoading }  = useFetch(
     () => getPlayoffSeries(currentSeason), [currentSeason]
   );
@@ -248,7 +247,6 @@ export default function ScheduleView() {
           onGamePopup={setPopupGame}
           sortOrder={preSort}
           setSortOrder={setPreSort}
-          oddsData={oddsData}
           isPreseason
         />
       )}
@@ -264,7 +262,6 @@ export default function ScheduleView() {
           selectedGame={selectedGame}
           setSelectedGame={setSelectedGame}
           onGamePopup={setPopupGame}
-          oddsData={oddsData}
         />
       )}
 
@@ -279,7 +276,6 @@ export default function ScheduleView() {
           onGamePopup={setPopupGame}
           sortOrder={regSort}
           setSortOrder={setRegSort}
-          oddsData={oddsData}
         />
       )}
 
@@ -298,7 +294,7 @@ export default function ScheduleView() {
 
 // ── Calendar view ────────────────────────────────────────────
 
-function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup, oddsData }) {
+function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup }) {
   // Elo win % for the favoured chips (utils/eloWinProb.js) -- the same number
   // the game preview shows and the public scorecard grades.
   const { data: eloRatings } = useFetch(getEloRatings);
@@ -423,8 +419,6 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
                   const isSelected = selectedGame?.id === game.id;
                   const opp        = getOpponent(game);
                   const oppStanding = standingMap[opp?.abbrev] || standingMap[opp?.abbrev?.toLowerCase()];
-                  const gameOdds   = !completed ? findGameOdds(oddsData, game) : null;
-                  const ml         = gameOdds ? extractMoneyline(gameOdds, isHomeGame(game)) : null;
 
                   return (
                     <div key={game.id}>
@@ -433,7 +427,6 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
                         isCompleted={completed}
                         isSelected={isSelected}
                         isPlayoff
-                        odds={ml}
                         cardFavoured={!completed ? (() => {
                           const pct = teamWinPct(eloRatings, game, TEAM_CONFIG.abbr);
                           return pct == null ? null : { pct, favoured: pct >= 50 };
@@ -448,7 +441,6 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
                           game={game}
                           oppStanding={oppStanding}
                           carStanding={carStanding}
-                          odds={ml}
                           playoffSeries={playoffSeries}
                         />
                       )}
@@ -466,7 +458,7 @@ function PlayoffsTab({ loading, playoffGames, playoffSeries, playoffRounds, stan
 
 
 
-function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup, sortOrder, setSortOrder, oddsData, isPreseason = false }) {
+function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGame, setSelectedGame, onGamePopup, sortOrder, setSortOrder, isPreseason = false }) {
   // Elo win % for the favoured chips (utils/eloWinProb.js) -- the same number
   // the game preview shows and the public scorecard grades.
   const { data: eloRatings } = useFetch(getEloRatings);
@@ -571,8 +563,7 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
         const isSelected  = selectedGame?.id === game.id;
         const oppStanding = standingMap[opp?.abbrev] || standingMap[opp?.abbrev?.toLowerCase()];
 
-        const gameOdds    = findGameOdds(oddsData, game);
-        const eloPct       = teamWinPct(eloRatings, game, TEAM_CONFIG.abbr);
+        const eloPct      = teamWinPct(eloRatings, game, TEAM_CONFIG.abbr);
         const cardFavoured = eloPct == null ? null : { pct: eloPct, favoured: eloPct >= 50 };
 
         return (
@@ -585,7 +576,7 @@ function RegularSeasonTab({ games, loading, standingMap, carStanding, selectedGa
               onClick={() => setSelectedGame(isSelected ? null : game)}
             />
             {isSelected && (
-              <MatchupDetail game={game} oppStanding={oppStanding} carStanding={carStanding} odds={gameOdds} />
+              <MatchupDetail game={game} oppStanding={oppStanding} carStanding={carStanding} />
             )}
           </div>
         );

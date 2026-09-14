@@ -514,6 +514,10 @@ Optional, passwordless sign-in via Supabase Auth (`signInWithOtp`) — Session 9
 
 Neither sync mechanism is a live subscription — server changes on another device are picked up on this device's *next load*, not instantly. A stated v1 scope decision, not an oversight.
 
+**Account deletion** (2026-09, App Store Guideline 5.1.1(v)) — signed-in users get a **Delete account** row under Sign out, with a confirm step. `AuthContext.deleteAccount()` calls `supabase.rpc('delete_own_account')`, a security-definer Postgres function scoped to `auth.uid()` (`docs/delete_own_account_rpc.sql` in `eyewall-pipeline`, run by hand in the Supabase SQL editor). `user_preferences` and `trivia_answers` cascade from `auth.users`, so deleting the auth user removes everything account-linked; the session is then cleared locally. Push subscriptions were never account-linked. `public/delete-account.html` points to the in-app flow, with email as the fallback.
+
+**iOS-only differences:** the About popup hides the Buy Me a Coffee link when `Capacitor.getPlatform() === 'ios'` (tips in a digital iOS app must use In-App Purchase, Guideline 3.1.1). Sportsbook odds were removed from the app entirely in the same change.
+
 ---
 
 ## Daily Trivia

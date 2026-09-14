@@ -265,10 +265,10 @@ describe('Draft tab — in-progress state (partial picks)', () => {
     cy.get('.dt-popup-pick-context').should('contain', 'Round 1');
   });
 
-  it('pick popup shows AI analysis from Sticks', () => {
+  it('pick popup shows AI analysis labeled EyeWall AI', () => {
     cy.get('.dt-row').first().click();
     cy.get('.dt-popup-ai').should('be.visible');
-    cy.get('.dt-popup-ai-label').should('contain', 'Sticks says');
+    cy.get('.dt-popup-ai-label').should('contain', 'EyeWall AI');
     cy.get('.dt-popup-ai-text').invoke('text').should('have.length.gte', 10);
   });
 
