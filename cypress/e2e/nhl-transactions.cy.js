@@ -153,6 +153,26 @@ describe('NHL Transactions tab', () => {
     cy.get('.trade-tree').should('not.exist')
   })
 
+  it('opens the player card from a name in the tree', () => {
+    cy.intercept('GET', '**/trades/tree?tx=1', TREE).as('tree')
+    cy.intercept('GET', '**/player/landing?id=8474590', {
+      playerId: 8474590, firstName: { default: 'John' }, lastName: { default: 'Carlson' },
+      position: 'D', currentTeamAbbrev: 'CAR', headshot: '', sweaterNumber: 74, shootsCatches: 'R',
+    }).as('landing')
+    openTransactionsTab()
+    cy.wait('@teamFeed')
+    cy.get('.tx-trade .tx-tree-btn').click()
+    cy.wait('@tree')
+    // Only Carlson has an NHL id in the fixture; Kyle Masters stays plain text
+    cy.get('.trade-tree .tree-player-btn').should('have.length', 1)
+    cy.get('.trade-tree').contains('D Kyle Masters').should('not.match', 'button')
+    cy.get('.trade-tree .tree-player-btn').contains('D John Carlson').click()
+    cy.wait('@landing')
+    cy.get('.popup-backdrop', { timeout: 10000 }).should('exist')
+    cy.get('.pp-close').click()
+    cy.get('.popup-backdrop').should('not.exist')
+  })
+
   it('shows the not-found state when a trade has no tree yet', () => {
     cy.intercept('GET', '**/trades/tree?tx=1', { found: false, root: null, trades: {}, origins: [], truncated: false }).as('noTree')
     openTransactionsTab()

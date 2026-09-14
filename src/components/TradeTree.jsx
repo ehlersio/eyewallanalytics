@@ -7,18 +7,25 @@
 // NHL's own draft records: picks show the player they became once drafted,
 // and a pick that can't be traced is labeled, never guessed. "How they got
 // here" lists the earlier trades that brought in what this trade sent out.
-import { useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getTradeTree } from '../utils/nhlApi';
 import { formatDate } from '../utils/formatters';
-import { capture } from '../utils/analytics';
+import { capture, trackFeature } from '../utils/analytics';
 import TeamLogo from './TeamLogo';
+import PlayerPopup from './PlayerPopup';
 
 const K = 'transactionsFeed.nhl.tree';
 const MUTED = 'text-[color:var(--text-muted)]';
 const DIM = 'text-[color:var(--text-dim)]';
 const HEADER_CLASSES = 'flex items-center gap-1.5 text-[12px] font-semibold text-[color:var(--text)] mb-1';
 const STATUS_CLASSES = `tree-status text-[12px] italic ${DIM} mt-2`;
+const PLAYER_BTN_CLASSES = 'tree-player-btn bg-transparent border-0 p-0 m-0 cursor-pointer text-left [font:inherit] text-inherit underline decoration-dotted underline-offset-2';
+const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
+
+// A name with an NHL player id (a traded player, or the player a pick
+// became) opens that player's card; names without one stay plain text.
+const OpenPlayerContext = createContext(null);
 
 function treeDate(dateStr) {
   if (!dateStr) return '';
@@ -71,10 +78,28 @@ function AssetItem({ asset, tree, path }) {
   const { t } = useTranslation();
   const outcome = pickOutcome(asset, t);
   const next = asset.next ? tree.trades[asset.next] : null;
+  const openPlayer = useContext(OpenPlayerContext);
+  const playerId = asset.type === 'player' ? asset.playerId : null;
+  const draftedId = asset.pick?.draftedId;
   return (
     <li className="tree-asset text-[13px] leading-[1.4] text-[color:var(--text)]">
-      <span>{assetLabel(asset, t)}</span>
-      {outcome && <span className={`${MUTED} text-[12px]`}> · {outcome}</span>}
+      {playerId && openPlayer ? (
+        <button type="button" className={PLAYER_BTN_CLASSES} onClick={() => openPlayer(playerId, 'traded')}>
+          {assetLabel(asset, t)}
+        </button>
+      ) : (
+        <span>{assetLabel(asset, t)}</span>
+      )}
+      {outcome && (
+        <span className={`${MUTED} text-[12px]`}>
+          {' · '}
+          {draftedId && openPlayer ? (
+            <button type="button" className={PLAYER_BTN_CLASSES} onClick={() => openPlayer(draftedId, 'drafted')}>
+              {outcome}
+            </button>
+          ) : outcome}
+        </span>
+      )}
       {asset.next && !next && <div className={`text-[12px] ${DIM} pl-3`}>↳ {t(`${K}.notShown`)}</div>}
       {next && <Continuation trade={next} team={asset.to} tree={tree} path={path} />}
     </li>
@@ -99,6 +124,31 @@ function Continuation({ trade, team, tree, path }) {
 export default function TradeTree({ txId }) {
   const { t } = useTranslation();
   const [state, setState] = useState({ loading: true, data: null });
+  const [popupPlayer, setPopupPlayer] = useState(null);
+
+  // The same lookup MilestonesFeed uses: the Worker's /player/landing, mapped
+  // to PlayerPopup's player shape. A failed lookup just leaves the tree as is.
+  const openPlayer = useCallback(async (playerId, source) => {
+    trackFeature('trade_tree', 'player_open', { source });
+    if (!WORKER_URL) return;
+    try {
+      const res = await fetch(`${WORKER_URL}/player/landing?id=${encodeURIComponent(playerId)}`);
+      if (!res.ok) return;
+      const p = await res.json();
+      setPopupPlayer({
+        id: p.playerId ?? playerId,
+        firstName: p.firstName,
+        lastName: p.lastName,
+        positionCode: p.position,
+        teamAbbrev: p.currentTeamAbbrev ?? p.teamAbbrev,
+        headshot: p.headshot,
+        sweaterNumber: p.sweaterNumber,
+        shootsCatches: p.shootsCatches,
+      });
+    } catch {
+      // network error: nothing to show
+    }
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -129,6 +179,7 @@ export default function TradeTree({ txId }) {
 
   const originLines = (tree.origins || []).flatMap(o => o.assets.map(a => ({ o, a })));
   return (
+    <OpenPlayerContext.Provider value={openPlayer}>
     <div className="trade-tree mt-2 pt-2 border-t border-[var(--border-2)] flex flex-col gap-2.5">
       {root.sides.map(side => (
         <section key={side.team} className="tree-side">
@@ -152,6 +203,16 @@ export default function TradeTree({ txId }) {
       )}
       {tree.truncated && <div className={`text-[11px] italic ${DIM}`}>{t(`${K}.truncated`)}</div>}
       <div className={`text-[10px] italic ${DIM}`}>{t(`${K}.source`)}</div>
+      {popupPlayer && (
+        <PlayerPopup
+          player={popupPlayer}
+          isLeagueContext
+          inPlayoffs={false}
+          standings={[]}
+          onClose={() => setPopupPlayer(null)}
+        />
+      )}
     </div>
+    </OpenPlayerContext.Provider>
   );
 }
