@@ -71,33 +71,15 @@ export default defineConfig(({ mode }) => {
           if (['react', 'react-dom', 'react-router-dom', 'react-router'].some((pkg) => id.includes(`/node_modules/${pkg}/`))) {
             return 'vendor'
           }
-          // SeasonOverlayChart/PlayerComparisonEntry are only ever statically
-          // imported from PlayerPopup.jsx/PWHLPlayerPopup.jsx, both of which
-          // are themselves only reachable via lazy-loaded route chunks --
-          // they'd previously landed in their own chunks purely via
-          // Rollup/Rolldown's automatic "shared by 2+ async chunks"
-          // heuristic, never an explicit lazy()/manualChunks boundary. That
-          // heuristic's decision flipped -- both got silently absorbed into
-          // the main entry chunk -- as a side effect of the unrelated
-          // react-router-dom v6->v7 dependency-graph shape change, growing
-          // the initial-load bundle by ~500 KiB. Pinning them explicitly so
-          // this doesn't happen again on some other unrelated future bump.
-          //
-          // The season shot map's rink component (formerly the in-tree
-          // IceRink.jsx, now the react-hockey-rink npm package) is
-          // deliberately excluded from this group: unlike the other two,
-          // it's ALSO statically imported by ShotMapView.jsx (the eager,
-          // non-lazy default route), so it's genuinely needed on initial
-          // load, not popup-only. Grouping it with these two was tried
-          // first and wrongly dragged the other two into eager
-          // modulepreload right alongside it -- verified via dist/index.html
-          // listing player-popup-extras as a modulepreload target when it
-          // was included. Leaving it out lets it fall back to
-          // Rollup/Rolldown's default chunking for its own (correctly eager)
-          // dependency.
-          if (['SeasonOverlayChart', 'PlayerComparisonEntry'].some((name) => id.includes(`/src/components/${name}.jsx`))) {
-            return 'player-popup-extras'
-          }
+          // No manual group for popup-only components. A 'player-popup-extras'
+          // group (SeasonOverlayChart/PlayerComparisonEntry) used to live
+          // here, but Rolldown pulls a manual group's dependencies into it --
+          // Recharts, posthog-js, i18next -- and eager code needs those, so
+          // the whole 1.1 MB chunk got modulepreloaded on every first load
+          // (2026-09). The real fix was real lazy() boundaries: PlayerSearch
+          // lazy-loads all four player popups, and ShotMapView lazy-loads its
+          // one Recharts chart (MomentumWaveChart). Check dist/index.html's
+          // modulepreload list after any chunking change.
         },
       },
     },

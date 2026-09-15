@@ -1,8 +1,5 @@
-import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { lazy, Suspense, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, ReferenceLine,
-} from 'recharts';
 import { usePoll, useFetch } from '../hooks/useFetch';
 import {
   getLiveGame, getAllGames, getGameDetail, getGameBoxscore, getGameRightRail,
@@ -38,6 +35,10 @@ import PeriodSummary from '../components/PeriodSummary';
 import { usePeriodSummary, useGameSummary } from '../hooks/usePeriodSummary';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import { PAGE_CLASSES } from '../utils/pageClasses';
+
+// Lazy so Recharts stays off the default route's initial load -- the wave
+// only renders inside the live momentum card.
+const MomentumWaveChart = lazy(() => import('../components/MomentumWaveChart'));
 
 const WINDOW_MINS = 3; // rolling window for momentum calculation
 
@@ -3793,13 +3794,6 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
   const totalGame = useMemo(() => computeWindow(0), [plays.length]);
   const totalMinutes = Math.max(1, Math.ceil(nowSecs / 60));
 
-  // Recharts custom dot: only draw a marker on the most recent sample.
-  function currentPositionDot(props) {
-    const { cx, cy, index } = props;
-    if (index !== waveData.length - 1) return null;
-    return <circle key="momentum-current" cx={cx} cy={cy} r={3} style={{ fill: 'var(--team-primary, #cc2200)' }} />;
-  }
-
   const tooltipText = t('shotMapView.momentum.tooltipExplainer', { abbr: TEAM_CONFIG.abbr });
 
   return (
@@ -3841,23 +3835,9 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={80}>
-        <ComposedChart data={waveData} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
-          <XAxis dataKey="minute" type="number" domain={['dataMin', 'dataMax']} hide />
-          <YAxis domain={[0, 100]} hide />
-          <ReferenceLine y={50} stroke="rgba(136,135,128,0.2)" strokeWidth={0.5} />
-          {totalMinutes > 20 && (
-            <ReferenceLine x={20} stroke="rgba(136,135,128,0.25)" strokeWidth={0.5} strokeDasharray="3 3" />
-          )}
-          {totalMinutes > 40 && (
-            <ReferenceLine x={40} stroke="rgba(136,135,128,0.25)" strokeWidth={0.5} strokeDasharray="3 3" />
-          )}
-          <Area dataKey="carArea" baseValue={50} stroke="none" fill="rgba(204,34,0,0.18)" isAnimationActive={false} />
-          <Area dataKey="oppArea" baseValue={50} stroke="none" fill="rgba(136,135,128,0.12)" isAnimationActive={false} />
-          <Line dataKey="v" type="linear" stroke="var(--team-primary, #cc2200)" strokeWidth={1.5}
-            dot={currentPositionDot} activeDot={false} isAnimationActive={false} />
-        </ComposedChart>
-      </ResponsiveContainer>
+      <Suspense fallback={<div style={{ height: 80 }} />}>
+        <MomentumWaveChart waveData={waveData} totalMinutes={totalMinutes} />
+      </Suspense>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--text-dim)', marginTop: 3 }}>
         <span>P1</span><span>P2</span><span>P3{nowSecs > 3600 ? '+' : ''}</span><span>{t('shotMapView.momentum.nowLabel')}</span>
       </div>

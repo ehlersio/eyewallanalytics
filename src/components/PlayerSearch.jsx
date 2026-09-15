@@ -11,21 +11,23 @@
 // leagues -- it didn't, silently returning zero results with no
 // indication it was unsupported rather than "player not found"; fixed on
 // the backend in the same pass, see eyewall-poller's players-search-index
-// route). AHLPlayerPopup/ECHLPlayerPopup are lazy-loaded rather than
-// statically imported like the NHL/PWHL ones above -- this file lives in
-// the always-loaded Topbar, so a static import here would pull both
-// popups into the main bundle for every user, including NHL/PWHL-only
-// ones who will never see them.
+// route).
+//
+// All four popups are lazy-loaded -- this file lives in the always-loaded
+// Topbar, so a static import here pulls a popup into the main bundle for
+// every user, whether or not they ever open a player. The NHL/PWHL ones
+// were static until 2026-09, which also dragged Recharts (their radar
+// charts) and the comparison/season-overlay components onto first load.
 import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { searchPlayers } from '../utils/playerSearch';
 import { nhlSeasonLabel } from '../utils/seasonComparison';
-import PlayerPopup from './PlayerPopup';
-import PWHLPlayerPopup from './PWHLPlayerPopup';
 import TeamLogo from './TeamLogo';
 import { AHL_SEASONS, AHL_CURRENT_SEASON } from '../utils/ahlConfig';
 import { ECHL_SEASONS, ECHL_CURRENT_SEASON } from '../utils/echlConfig';
 
+const PlayerPopup     = lazy(() => import('./PlayerPopup'));
+const PWHLPlayerPopup = lazy(() => import('./PWHLPlayerPopup'));
 const AHLPlayerPopup  = lazy(() => import('./AHLPlayerPopup'));
 const ECHLPlayerPopup = lazy(() => import('./ECHLPlayerPopup'));
 
@@ -213,19 +215,23 @@ export default function PlayerSearch() {
       )}
 
       {selected?.sport === 'nhl' && (
-        <PlayerPopup
-          player={selected.player}
-          inPlayoffs={false}
-          standings={[]}
-          isLeagueContext={true}
-          onClose={() => setSelected(null)}
-        />
+        <Suspense fallback={null}>
+          <PlayerPopup
+            player={selected.player}
+            inPlayoffs={false}
+            standings={[]}
+            isLeagueContext={true}
+            onClose={() => setSelected(null)}
+          />
+        </Suspense>
       )}
       {selected?.sport === 'pwhl' && (
-        <PWHLPlayerPopup
-          player={selected.player}
-          onClose={() => setSelected(null)}
-        />
+        <Suspense fallback={null}>
+          <PWHLPlayerPopup
+            player={selected.player}
+            onClose={() => setSelected(null)}
+          />
+        </Suspense>
       )}
       {selected?.sport === 'ahl' && (
         <Suspense fallback={null}>
