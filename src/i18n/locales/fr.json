@@ -1967,7 +1967,8 @@
       "seasonTotalSuffix": "{{label}} (total de la saison)",
       "loadingChart": "Chargement du graphique…",
       "noRegularSeasonData": "Aucune donnée de saison régulière pour {{season}}.",
-      "noDataPwhl": "Aucune donnée pour cette joueuse en {{label}}."
+      "noDataPwhl": "Aucune donnée pour cette joueuse en {{label}}.",
+      "noData": "Aucune donnée pour ce joueur en {{label}}."
     }
   },
   "percentileBar": {

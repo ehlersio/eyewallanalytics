@@ -22,6 +22,7 @@ import { normalizeComparisonSeasons } from '../utils/seasonComparison';
 import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById } from '../utils/pwhlConfig';
 import { formatDate } from '../utils/formatters';
 import SeasonOverlayChart from './SeasonOverlayChart';
+import { perGameValue, seasonRampColor, CHART_DASH_PATTERNS } from '../utils/seasonChart';
 
 // Local TEAM_CODES (team_id -> abbr) map removed Session 85 — stale
 // duplicate missing expansion teams, same bug as PWHLShotMapView.jsx.
@@ -214,9 +215,7 @@ function PWHLQuickStatPill({ label, value }) {
 
 // Own copy of NHL PlayerPopup's RadarAxisTick/PlayerRadarChart -- this
 // codebase's established convention for popup-owned UI helpers is
-// duplicate-per-file rather than cross-import (see hexToRgba/
-// seasonRampColor above for the same reasoning already applied in this
-// file). Abbreviates axis labels for the same reason NHL's does: this
+// duplicate-per-file rather than cross-import. Abbreviates axis labels for the same reason NHL's does: this
 // radar renders inside a ~130px-wide flex slot, nowhere near enough room
 // for two-word labels like "5v5 SV%" at any legible size -- full names
 // are still available via the native SVG <title> on hover/tap.
@@ -334,38 +333,10 @@ function PWHLGoalieHeaderPanel({ percentiles, boxStats, teamColor, comparisonEnt
   );
 }
 
-// ── Per-game trend chart helpers (Session 70) ───────────────────
-// Every `perGame` PWHL stat is a direct box-score field read (no derived
-// stats like NHL's saves/GAA -- pwhl_skater_game_box/pwhl_goalie_game_box
-// don't carry the fields those derivations would need), so this is just a
-// key lookup, unlike NHL PlayerPopup's perGameRawValue.
-function pwhlPerGameValue(def, game) {
-  if (!game) return null;
-  const raw = game[def.perGameKey || def.key];
-  return raw == null ? null : Number(raw);
-}
-
-// pwhlGroupStats moved to utils/pwhlPlayerStats.js (Session 91, imported
-// above as `groupStats as pwhlGroupStats`).
-
-// Same season-color-ramp math as TeamComparisonPopup/PlayerPopup, small
-// enough to duplicate per-file rather than cross-import (this codebase's
-// established convention for popup-owned UI helpers).
-function hexToRgba(hex, alpha) {
-  const clean = String(hex).replace('#', '');
-  if (clean.length !== 6) return hex;
-  const r = parseInt(clean.slice(0, 2), 16);
-  const g = parseInt(clean.slice(2, 4), 16);
-  const b = parseInt(clean.slice(4, 6), 16);
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-function seasonRampColor(baseHex, index, total) {
-  if (total <= 1) return baseHex;
-  const MIN_ALPHA = 0.35;
-  const alpha = 1 - (index / (total - 1)) * (1 - MIN_ALPHA);
-  return hexToRgba(baseHex, Number(alpha.toFixed(2)));
-}
-const CHART_DASH_PATTERNS = [undefined, '6 4', '2 3'];
+// Per-game trend chart helpers (perGameValue -- every `perGame` PWHL stat
+// is a direct box-score field read -- plus the season color ramp) live in
+// utils/seasonChart.js. pwhlGroupStats lives in utils/pwhlPlayerStats.js
+// (imported above as `groupStats as pwhlGroupStats`).
 
 // ── Heat Map ──────────────────────────────────────────────────
 
@@ -857,7 +828,7 @@ export default function PWHLPlayerPopup({ player: initial, seasonLabel = SEASON_
       // Route already orders by game_id.asc (chronological), unlike NHL's
       // endpoint -- no reverse needed here.
       const games = (isGoalie ? log?.goalies : log?.skaters) || [];
-      const dataPoints = games.map((g, i) => ({ gameNumber: i + 1, value: pwhlPerGameValue(activeChartDef, g) }));
+      const dataPoints = games.map((g, i) => ({ gameNumber: i + 1, value: perGameValue(activeChartDef, g) }));
       return {
         seasonLabel: compareLabel(season),
         color: seasonRampColor(baseColor, idx, compareSeasonsSortedDesc.length),
