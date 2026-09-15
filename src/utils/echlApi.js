@@ -87,6 +87,19 @@ export async function fetchECHLPlayerLanding(playerId, season = ECHL_CURRENT_SEA
   return workerFetch(`/echl/player/landing?id=${playerId}&season=${season}`);
 }
 
+/** One player's box-score row for every game of a season, oldest first --
+ * the player popup's Compare-tab trend chart. Same shape and `season`
+ * param as fetchAHLPlayerGameLog. */
+export async function fetchECHLPlayerGameLog(playerId, season) {
+  if (!playerId || !season) return null;
+  const data = await workerFetch(`/echl/player-game-log?playerId=${playerId}&season=${season}`);
+  if (!data) return null;
+  return {
+    skaters: Array.isArray(data.skaters) ? data.skaters : [],
+    goalies: Array.isArray(data.goalies) ? data.goalies : [],
+  };
+}
+
 /** Career totals (regular season + playoffs), recent-form games, bio
  * bullets, and draft info — live HockeyTech proxy, season-independent. */
 export async function fetchECHLPlayerCareer(playerId) {

@@ -131,13 +131,14 @@ canes-analytics-starter/
 │   │   ├── SeasonTypeToggle.jsx        # Regular Season/Playoffs segmented toggle (NHL + PWHL, shared) — same UI, different wiring per sport (PWHL swaps season_id; NHL filters the fetched season's games by gameType)
 │   │   ├── DisabledHint.jsx            # Tap-triggered "why is this grayed out" tooltip — used by the shot map selector while a game is live
 │   │   ├── AHLGameEvents.jsx           # AHL live game event popups (goal/penalty/win/puck drop) — port of PWHLGameEvents.jsx's sessionStorage-deduped popup layer (parity Phase 6). Deliberately does NOT port PWHLLiveInsights — several of its callouts (faceoff dominance in particular) depend on event types AHL's PBP doesn't have at all
-│   │   ├── AHLPlayerPopup.jsx          # AHL player detail popup (Stats + Heat Map tabs only, parity Phase 2) — no percentile radar header, no Scout/Compare tabs (no `ahl_percentiles.py`-equivalent pipeline computation), no goalie heat map (AHL's PBP goal events carry `goalie_id: null`, a real structural gap from PWHL's feed)
+│   │   ├── HockeyTechPlayerPopup.jsx   # Player detail popup shared by AHL and ECHL (2026-09) — Stats, Heat Map, and Compare (season-over-season stat cards + per-game trend chart from `/{league}/player-game-log`, same as PWHL's). No percentile radar header or Scout tab (no percentile pipeline for either league), no goalie heat map (both leagues' PBP goal events carry `goalie_id: null`)
+│   │   ├── AHLPlayerPopup.jsx          # AHL player popup — `HockeyTechPlayerPopup` with AHL's league config (API functions, team lookup, stat defs, headshot size)
 │   │   ├── AHLGameStatsPopup.jsx       # AHL box-score popup (parity Phase 3) — team-stat comparison bars drop hits/blocked-shots/faceoff% entirely (always 0 in AHL's feed, never ingested); no "View Shot Map" CTA (AHLShotMapView.jsx is season-aggregate, not per-game)
 │   │   ├── AHLBoxScoreTable.jsx        # Per-player skater/goalie table for AHLGameStatsPopup — drops HIT/BLK/FO%/skater-TOI columns entirely; AHL's gameSummary reports these as a hardcoded 0 regardless of real ice time, so the pipeline never ingested them
 │   │   ├── AHLGamePreviewPopup.jsx     # AHL pre-game preview popup (parity Phase 3) — real field-NAME differences from PWHL's `gameCenterPreview` shape (`teamRecord.overall`/`.past_10_games` not `overallRecord`/`last10Record`, `powerPlayStats`/`penaltyKillStats` not `powerPlay`/`penaltyKill`, `previousMeetings` not `seasonSeries`); no shot-attempt-share row at all (no `corsiForPct` data source)
 │   │   ├── AHLCalendarView.jsx         # AHL monthly schedule grid — port of PWHLCalendarView.jsx; no distinct OT/shootout-loss cell variant since `ahl_game_log` has no ot/shootout boolean columns, so every non-win renders as a plain loss
 │   │   ├── ECHLGameEvents.jsx          # ECHL live game event popups — port of AHLGameEvents.jsx (ECHL parity pass, Phase 6 equivalent), same faceoff-data-gap reasoning for dropping a live-insights panel
-│   │   ├── ECHLPlayerPopup.jsx         # ECHL player detail popup (Stats + Heat Map tabs only) — direct port of AHLPlayerPopup.jsx, same data walls; confirmed live that ECHL's goal events also carry `goalie_id: null`
+│   │   ├── ECHLPlayerPopup.jsx         # ECHL player popup — `HockeyTechPlayerPopup` with ECHL's league config
 │   │   ├── ECHLGameStatsPopup.jsx      # ECHL box-score popup — port of AHLGameStatsPopup.jsx, same dropped-stat reasoning
 │   │   ├── ECHLBoxScoreTable.jsx       # Per-player skater/goalie table for ECHLGameStatsPopup — same dropped-columns shape as AHLBoxScoreTable.jsx
 │   │   ├── ECHLGamePreviewPopup.jsx    # ECHL pre-game preview popup — confirmed live 2026-08-30 that ECHL's `gameCenterPreview` shape is byte-identical to AHL's (same HockeyTech vendor generation)
@@ -151,6 +152,7 @@ canes-analytics-starter/
 │   └── utils/
 │       ├── nhlApi.js                   # NHL API calls + KV caching
 │       ├── pwhlApi.js                  # PWHL Worker API calls
+│       ├── seasonChart.js              # Shared season-over-season chart helpers (per-game box-score value, season color ramp, dash patterns) for the player popups' Compare tabs and TeamComparisonPopup
 │       ├── seasonComparison.js         # Pure label/normalization helpers for season-over-season comparison
 │       ├── pwhlConfig.js               # PWHL team configs (12 teams: 8 established + 4 expansion, all live/selectable)
 │       ├── teamConfig.js               # NHL 32-team configs; CURRENT_SEASON live-resolved (fallback seed only)
@@ -471,7 +473,7 @@ Brought to full 6-phase feature parity with PWHL — see [AHL & ECHL Frontend Bu
 
 **Team Page (4 tabs)** — Overview, Stats, Splits, Trends. No Advanced tab (no shot-attempts data for CF%/FF%/PDO) and no Salaries tab (no AHL salary data source anywhere). "Compare Seasons" button (Phase 4) opens the shared `TeamComparisonPopup` in all 3 modes (Compare Seasons, Full Stat Comparison, Head-to-Head), including a live AI narrative on the Head-to-Head tab.
 
-**Players Page** — Photo grid roster + sortable stats table (drops `shot_pct`/`gw_goals`, absent from the feed). Player popup (Phase 2) with Stats + Heat Map tabs only — no percentile radar, Scout, or Compare tab (no percentile pipeline for AHL yet), and no goalie heat map (AHL's PBP goal events carry no `goalie_id`).
+**Players Page** — Photo grid roster + sortable stats table (drops `shot_pct`/`gw_goals`, absent from the feed). Player popup with Stats, Heat Map and Compare tabs (Compare added 2026-09: pick up to 4 seasons for per-season stat cards and a per-game trend chart, same as PWHL's) — no percentile radar or Scout tab (no percentile pipeline for AHL yet), and no goalie heat map (AHL's PBP goal events carry no `goalie_id`).
 
 **League Page (3 tabs)** — Scoreboard (shared `Scoreboard.jsx`, same as NHL/PWHL/ECHL) + Standings (grouped by real Atlantic/North/Central/Pacific divisions, 3-column OTL split into ot_losses + shootout_losses) + Leaders (clickable into the player popup). No Bracket or Power Rankings tabs.
 
@@ -489,7 +491,7 @@ Same HockeyTech/LeagueStat vendor as AHL/PWHL. Started as a foundation + basic-d
 
 **Team Page (4 tabs)** — Overview/Stats/Splits/Trends, same Advanced/Salaries data walls as AHL. "Compare Seasons" uses ECHL's own real playoffs-label convention (`"{year} Kelly Cup Playoffs"`, from `echlConfig.js`'s hand-verified season list) rather than assuming AHL's bare `"{year} Playoffs"` format transfers.
 
-**Players Page** — Same roster/stats/popup shape as AHL's `AHLPlayersView`/`AHLPlayerPopup`, including the same dropped `shot_pct`/`gw_goals` columns and the same no-goalie-heat-map gap (confirmed live that ECHL's goal events also carry `goalie_id: null`).
+**Players Page** — Same roster/stats/popup shape as AHL's `AHLPlayersView`/`AHLPlayerPopup` (the two popups are one shared component, including the Compare tab), with the same dropped `shot_pct`/`gw_goals` columns and the same no-goalie-heat-map gap (confirmed live that ECHL's goal events also carry `goalie_id: null`).
 
 **League Page (3 tabs)** — Scoreboard (shared `Scoreboard.jsx`) + Standings grouped by ECHL's real North/South/Central/Mountain divisions (a different division layout than AHL's) + Leaders.
 
@@ -558,7 +560,7 @@ AHL (3rd league) and ECHL (4th league — NHL, PWHL, AHL, ECHL in build order) w
 
 **AHL:**
 1. **Foundation** — `AHLShotMapView`/`AHLScheduleView`/`AHLPlayersView`/`AHLLeagueView` (standings/leaders only, no team page yet), wired as a 3rd selectable sport across `SportContext`/`TeamPicker`/`App.jsx`/`BottomNav`. Real per-team colors and a real AHL shield logo followed as same-day fast-follow PRs. Deliberately smaller than PWHL's equivalents (no live tracking, no player popups, no Corsi/Fenwick/PDO, no calendar/predictions, no bracket/power-rankings) — re-confirmed with Matt mid-session rather than assumed.
-2. **AHLTeamView** (Overview/Stats/Splits/Trends, Advanced+Salaries dropped) + **AHLPlayerPopup** (Stats + Heat Map tabs only — no percentile radar/Scout/Compare tabs, no goalie heat map).
+2. **AHLTeamView** (Overview/Stats/Splits/Trends, Advanced+Salaries dropped) + **AHLPlayerPopup** (Stats + Heat Map tabs only — no percentile radar/Scout/Compare tabs, no goalie heat map; the Compare tab came later, 2026-09).
 3. **Game box score + schedule popups + calendar + predictions** — `AHLBoxScoreTable`/`AHLGameStatsPopup`/`AHLGamePreviewPopup`/`AHLCalendarView`/`ahlPredictionStore.js`, wired into `AHLScheduleView`.
 4. **Team comparison / head-to-head** — `TeamComparisonPopup.jsx` gained a full `'ahl'` branch (fetch functions, logo sport, team-option lists), wired into `AHLTeamView`'s new "Compare Seasons" button. All 3 modes (Compare Seasons, Full Stat Comparison, Head-to-Head, the last with a live AI narrative) verified with real data.
 5. **News feed** — `AHLNewsView.jsx`, News tab only (no Milestones/Trivia/Transactions — no pipeline source for any of the three). 3 real RSS sources found and verified live.
@@ -566,7 +568,7 @@ AHL (3rd league) and ECHL (4th league — NHL, PWHL, AHL, ECHL in build order) w
 
 **ECHL** (started after AHL's full parity was already shipped, so its build reused AHL's exact template phase-for-phase):
 1. **Foundation** — pipeline ingestion (stats/box-score/shot-events/penalty-shots), 7 poller routes, 5 frontend views (ShotMap/Players/Schedule/League/Team), wired as the 4th league. Explicitly scoped smaller than full parity per the user's own choice, matching AHL's two-pass history rather than attempting everything at once.
-2. **ECHLPlayerPopup** — direct port of `AHLPlayerPopup.jsx` (Stats + Heat Map only), plus a real self-hosted ECHL shield logo for the league picker tile.
+2. **ECHLPlayerPopup** — direct port of `AHLPlayerPopup.jsx` (Stats + Heat Map only), plus a real self-hosted ECHL shield logo for the league picker tile. (2026-09: the two popups merged into `HockeyTechPlayerPopup.jsx` and gained the Compare tab.)
 3. **Game box score + preview + calendar + predictions** — `ECHLBoxScoreTable`/`ECHLGameStatsPopup`/`ECHLGamePreviewPopup`/`ECHLCalendarView`/`echlPredictionStore.js`. Confirmed live that ECHL's `gameSummary`/`gameCenterPreview` payload shapes are byte-identical to AHL's (same HockeyTech vendor generation) — no reshaping surprises this phase.
 4. **Team comparison / head-to-head** — `TeamComparisonPopup.jsx`'s `'echl'` branch. Uses ECHL's own real `"{year} Kelly Cup Playoffs"` label format rather than assuming AHL's bare `"{year} Playoffs"` transfers.
 5. **News feed** — `ECHLNewsView.jsx`. Only 2 real sources exist (not AHL's 3) — `echl.com` has no RSS feed of its own at all.
@@ -732,6 +734,7 @@ npm run cypress:visual            # diff current rendering against the committed
 | `news.cy.js` | NHL news, source filters |
 | `milestones.cy.js` | Milestones feed, team filter dropdown, card structure, tap-to-open player popup |
 | `player-search.cy.js` | Global player search — open/close, debounce, typo tolerance, NHL+PWHL result correctness, popup opens for both |
+| `hockeytech-player-compare.cy.js` | AHL/ECHL player popup Compare tab — season picker, per-game trend chart, one stat card per selected season, and the `season=` game-log param. Stubs every Worker call it makes, so it doesn't depend on live data |
 | `player-comparison.cy.js` | Player vs Player Comparison — "vs Player" entry point vs. the existing season-over-season Compare tab, same-league search scoping/self-exclusion, NHL skater comparison (radar + all 4 tabs), NHL + PWHL goalie comparison (own 3-tab set each, PWHL unblocked 2026-08), PWHL skater comparison, goalie-vs-skater hard block, F-vs-D position-mismatch badge, tab-click and radar-squeeze regressions |
 | `pwhl-news.cy.js` | PWHL news, source chips, article list |
 | `period-summary.cy.js` | Game Center, period/game summary popups |

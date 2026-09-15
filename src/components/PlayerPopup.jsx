@@ -37,6 +37,7 @@ import { HockeyRink } from 'react-hockey-rink'
 import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents'
 import InfoTip from '../components/InfoTip'
 import SeasonComparisonPicker from '../components/SeasonComparisonPicker'
+import { seasonRampColor, CHART_DASH_PATTERNS } from '../utils/seasonChart'
 import SeasonOverlayChart from './SeasonOverlayChart'
 import { TileStatSection, PercentileScopeLegend } from './StatTileGrid'
 import PercentileBar from './PercentileBar'
@@ -239,26 +240,6 @@ function perGameRawValue(def, game) {
   return raw == null ? null : Number(raw)
 }
 
-// Small season-color ramp -- same math as TeamComparisonPopup's
-// seasonRampColor/hexToRgba, duplicated rather than cross-imported (this
-// codebase's convention for small UI-adjacent helpers owned by a single
-// popup component; see rapm.py's 3-bucket proxy for the same pattern on
-// the pipeline side).
-function hexToRgba(hex, alpha) {
-  const clean = String(hex).replace('#', '')
-  if (clean.length !== 6) return hex
-  const r = parseInt(clean.slice(0, 2), 16)
-  const g = parseInt(clean.slice(2, 4), 16)
-  const b = parseInt(clean.slice(4, 6), 16)
-  return `rgba(${r},${g},${b},${alpha})`
-}
-function seasonRampColor(baseHex, index, total) {
-  if (total <= 1) return baseHex
-  const MIN_ALPHA = 0.35
-  const alpha = 1 - (index / (total - 1)) * (1 - MIN_ALPHA)
-  return hexToRgba(baseHex, Number(alpha.toFixed(2)))
-}
-const CHART_DASH_PATTERNS = [undefined, '6 4', '2 3']
 
 // ─── Player-card header + Stats tab redesign (Session 66, NHL skaters only) ──
 // Radar chart + percentile tile grid below are additive UI on top of the

@@ -13,6 +13,7 @@ import { PWHL_TEAMS } from '../utils/pwhlConfig';
 import { AHL_TEAMS, getAHLTeamById } from '../utils/ahlConfig';
 import { ECHL_TEAMS, getECHLTeamById } from '../utils/echlConfig';
 import SeasonComparisonPicker from './SeasonComparisonPicker';
+import { seasonRampColor, CHART_DASH_PATTERNS } from '../utils/seasonChart';
 import SeasonOverlayChart from './SeasonOverlayChart';
 import TeamOpponentPicker from './TeamOpponentPicker';
 import TeamLogo from './TeamLogo';
@@ -138,31 +139,6 @@ function cvtModeBtnClasses(isActive) {
 // fall back to unlimited (null) until the real count is known.
 const FALLBACK_MAX_SELECTED = null;
 
-// Up to ~3 visually distinct dash patterns before they blur together --
-// used as a secondary cue alongside the color ramp below, cycling if more
-// seasons than patterns are selected (per Session 66's spec: dash pattern
-// alone doesn't scale, so it's never the only distinguishing signal).
-const DASH_PATTERNS = [undefined, '6 4', '2 3'];
-
-// Newest selected season gets full team-color saturation; older seasons
-// fade toward a floor alpha so the chart still reads past ~3-4 overlaid
-// seasons instead of becoming an indistinguishable knot of full-opacity
-// lines. `index` is position within seasons sorted newest-first.
-function hexToRgba(hex, alpha) {
-  const clean = String(hex).replace('#', '');
-  if (clean.length !== 6) return hex; // not a hex color (unexpected) -- pass through
-  const r = parseInt(clean.slice(0, 2), 16);
-  const g = parseInt(clean.slice(2, 4), 16);
-  const b = parseInt(clean.slice(4, 6), 16);
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
-function seasonRampColor(baseHex, index, total) {
-  if (total <= 1) return baseHex;
-  const MIN_ALPHA = 0.35;
-  const alpha = 1 - (index / (total - 1)) * (1 - MIN_ALPHA);
-  return hexToRgba(baseHex, Number(alpha.toFixed(2)));
-}
 
 // Resolves {abbr, color} for TeamLogo from whatever value a team is
 // keyed by -- an NHL abbr string directly, or a PWHL/AHL numeric team_id
@@ -529,7 +505,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
       return {
         seasonLabel: labelFor(season),
         color: seasonRampColor(teamColor, idx, sortedDesc.length),
-        dashPattern: DASH_PATTERNS[idx % DASH_PATTERNS.length],
+        dashPattern: CHART_DASH_PATTERNS[idx % CHART_DASH_PATTERNS.length],
         dataPoints: games.map((g, i) => ({ gameNumber: i + 1, value: g.xgfPct })),
       };
     });

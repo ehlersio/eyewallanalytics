@@ -190,6 +190,21 @@ export async function fetchAHLPlayerLanding(playerId, season = AHL_CURRENT_SEASO
   return workerFetch(`/ahl/player/landing?id=${playerId}&season=${season}`);
 }
 
+/** One player's box-score row for every game of a season, oldest first --
+ * the player popup's Compare-tab trend chart. Returns { skaters, goalies }
+ * (whichever the player has rows in) or null. Mirrors
+ * fetchPWHLPlayerGameLog, except this route's param is `season`, not
+ * `seasonId`. */
+export async function fetchAHLPlayerGameLog(playerId, season) {
+  if (!playerId || !season) return null;
+  const data = await workerFetch(`/ahl/player-game-log?playerId=${playerId}&season=${season}`);
+  if (!data) return null;
+  return {
+    skaters: Array.isArray(data.skaters) ? data.skaters : [],
+    goalies: Array.isArray(data.goalies) ? data.goalies : [],
+  };
+}
+
 /** Career totals (regular season + playoffs), recent-form games, bio
  * bullets, and draft info — live HockeyTech proxy, season-independent.
  * Mirrors fetchPWHLPlayerCareer. */
