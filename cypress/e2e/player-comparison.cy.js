@@ -64,6 +64,56 @@ describe('NHL player comparison', () => {
     cy.get('.pce-input').should('be.visible').and('have.attr', 'placeholder', 'Search NHL players…')
   })
 
+  // Focusing a text field under 16px makes iOS WebKit zoom the whole page,
+  // and in the Capacitor app that zoom sticks -- page too wide, bottom nav
+  // off-screen, no reliable way to pinch back out. index.css carries a
+  // blanket 16px rule for iOS, but this field defeated the first version of
+  // it: .pce-input is a plain CSS class (specificity 0-1-0) and outranked
+  // the rule's bare `input` selector (0-0-1), so the field stayed 13px and
+  // kept zooming. Hence !important, which is what this guards.
+  //
+  // Chrome never matches @supports(-webkit-touch-callout: none), so the rule
+  // is invisible to getComputedStyle here. Instead: pull the real
+  // declaration out of the stylesheet and replay it unlayered against the
+  // real field, which is the same cascade iOS resolves.
+  it('keeps the vs-Player search field at 16px on iOS, so focusing it cannot zoom the page', () => {
+    cy.get('.pce-toggle').click()
+    cy.get('.pce-input').should('be.visible')
+
+    cy.document().then(doc => {
+      let decl = null
+      for (const sheet of doc.styleSheets) {
+        let rules
+        try { rules = sheet.cssRules } catch { continue }   // cross-origin
+        for (const rule of rules) {
+          if (!rule.conditionText || !rule.conditionText.includes('-webkit-touch-callout')) continue
+          for (const inner of rule.cssRules || []) {
+            if (inner.selectorText && /(^|,\s*)input(\s*,|\s*$)/.test(inner.selectorText)) {
+              decl = {
+                size: inner.style.fontSize,
+                priority: inner.style.getPropertyPriority('font-size'),
+              }
+            }
+          }
+        }
+      }
+
+      expect(decl, 'iOS text-field rule from index.css').to.not.equal(null)
+      expect(decl.size, 'iOS text fields must be >= 16px').to.equal('16px')
+
+      // Replay it exactly as iOS would apply it and confirm it actually wins.
+      const style = doc.createElement('style')
+      style.textContent =
+        `input, select, textarea { font-size: ${decl.size}${decl.priority ? ' !important' : ''}; }`
+      doc.head.appendChild(style)
+
+      const px = parseFloat(doc.defaultView.getComputedStyle(doc.querySelector('.pce-input')).fontSize)
+      style.remove()
+
+      expect(px, 'the iOS rule must beat .pce-input\'s own font-size').to.be.at.least(16)
+    })
+  })
+
   it('excludes the currently-open player from their own comparison search results', () => {
     cy.get('.pce-toggle').click()
     cy.get('.pce-input').type('mcdavid')
