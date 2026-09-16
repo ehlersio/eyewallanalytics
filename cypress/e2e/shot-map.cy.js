@@ -430,3 +430,61 @@ describe('Shot Map — special teams units', () => {
     cy.assertNoErrors()
   })
 })
+
+// ── Special teams unit names ──────────────────────────────────────────────
+// The unit rosters are SEASON-level, but the drill-down resolves ids from
+// this one game's rosterSpots. A unit member who sat out that game was in
+// neither, so the chip rendered a bare "#8479318" -- which is exactly what
+// production showed the day the chips first appeared (Auston Matthews, out
+// for the game being viewed). The team roster is the second source; anyone
+// neither source can name is dropped rather than shown as a raw id.
+describe('Shot Map — special teams unit names', () => {
+  const workerUrl = Cypress.expose('WORKER_URL')
+
+  const IN_GAME     = 8473533   // Jordan Staal — dressed in MOCK_GAME_ID
+  const ROSTER_ONLY = 9000001   // not in this game's rosterSpots, on the roster
+  const NOWHERE     = 9000002   // in neither source
+
+  beforeEach(() => {
+    cy.intercept('GET', `${workerUrl}/special-teams*`, {
+      statusCode: 200,
+      body: { CAR: { PP: { 1: [IN_GAME, ROSTER_ONLY, NOWHERE] }, PK: {} } },
+    }).as('specialTeams')
+
+    cy.intercept('GET', `${workerUrl}/roster*`, {
+      statusCode: 200,
+      body: {
+        forwards: [
+          { id: ROSTER_ONLY, firstName: { default: 'Rosteronly' }, lastName: { default: 'Skater' } },
+        ],
+        defensemen: [],
+        goalies: [],
+      },
+    }).as('roster')
+
+    cy.visit(`/?mockGame=${MOCK_GAME_ID}`, {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('eyewall:team', JSON.stringify({ abbr: 'CAR' }))
+      },
+    })
+    cy.get('.topbar', { timeout: 10000 }).should('exist')
+    cy.wait('@specialTeams')
+  })
+
+  it('falls back to the team roster for a unit member who did not dress in this game', () => {
+    cy.contains('PP %').closest('[role="button"]').click()
+    // Chips render last names only (name.split(' ').pop()).
+    cy.contains('span', 'PP1').parent()
+      .should('contain.text', 'Staal')     // from this game's rosterSpots
+      .and('contain.text', 'Skater')       // from the team roster
+  })
+
+  it('drops a unit member neither source can name, rather than showing a raw id', () => {
+    cy.contains('PP %').closest('[role="button"]').click()
+    cy.contains('span', 'PP1').parent().within(() => {
+      cy.contains(String(NOWHERE)).should('not.exist')
+      cy.contains(`#${NOWHERE}`).should('not.exist')
+    })
+    cy.assertNoErrors()
+  })
+})
