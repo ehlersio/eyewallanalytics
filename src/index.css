@@ -611,15 +611,28 @@
 /* ── iOS: no page zoom when a text field is focused ── */
 /* iOS WebKit zooms the whole page whenever a focused input/select/textarea
  * has a computed font-size under 16px, and inside the Capacitor app that
- * zoom sticks -- seen in the first TestFlight build after the magic-link
- * round trip through Mail (layout too wide, bottom nav pushed off-screen).
+ * zoom sticks -- the page stays too wide and the bottom nav is pushed
+ * off-screen, with no reliable way to pinch back out. First seen after the
+ * magic-link round trip through Mail; then again on the player popup's
+ * "vs Player" search field, which is what made the rule below !important.
+ *
  * @supports (-webkit-touch-callout: none) matches only iOS/iPadOS WebKit,
- * so every other platform keeps the designed 13-14px sizes. Unlayered so
- * it wins over the text-[13px]-style Tailwind utilities on those fields.
+ * so every other platform keeps the designed 13-14px sizes.
+ *
+ * !important, and it has to be. Unlayered already beats Tailwind's layered
+ * utilities, so `text-[13px]` on an input was covered -- but NOT a plain
+ * CSS class: `.pce-input { font-size: 13px }` in PlayerComparisonPopup.css
+ * is specificity 0-1-0 against this rule's 0-0-1 and won outright, which
+ * is exactly how the "vs Player" field kept zooming after the first fix
+ * shipped. Verified in-browser: with the rule un-!important the field
+ * computes 13px, with it 16px. Don't "clean this up" -- on iOS there is no
+ * such thing as a legitimate sub-16px focusable text field, so overriding
+ * every one of them unconditionally is the intent, not collateral damage.
+ *
  * (Not maximum-scale=1 in the viewport meta: that would also block
  * pinch-zoom for web users on Android -- a WCAG 1.4.4 regression.) */
 @supports (-webkit-touch-callout: none) {
   input, select, textarea {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 }
