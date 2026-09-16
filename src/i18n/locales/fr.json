@@ -647,6 +647,7 @@
     "leadersEmpty": "Aucune donnée de meneurs disponible."
   },
   "ahlShotMapView": {
+    "fallbackNote": "Aucune donnée {{empty}} pour cette équipe — voici {{fallback}}.",
     "subtitle": "Carte des tirs de la saison",
     "goals": "Buts",
     "shotsOnGoal": "Tirs au but",
@@ -730,6 +731,7 @@
     "leadersEmpty": "Aucune donnée de meneurs disponible."
   },
   "echlShotMapView": {
+    "fallbackNote": "Aucune donnée {{empty}} pour cette équipe — voici {{fallback}}.",
     "subtitle": "Carte des tirs de la saison",
     "goals": "Buts",
     "shotsOnGoal": "Tirs au but",
@@ -746,6 +748,10 @@
     "gsaxEstimatedNote": "Estimation — le vrai GSAx nécessite des données de suivi (danger du tir selon l'emplacement)"
   },
   "shotMapView": {
+    "offseason": {
+      "showingPrevious": "La saison {{current}} n'a pas commencé — voici {{fallback}}.",
+      "firstGame": "Premier match le {{date}}."
+    },
     "scoreBar": {
       "powerPlay": "{{prefix}}Avantage numérique",
       "emptyNet": "{{abbr}} filet vide",
@@ -757,6 +763,9 @@
       "playoffTag": "🏒 Séries · ",
       "loadingTitle": "Carte des tirs",
       "loadingState": "Chargement des données du match…",
+      "noGamesTitle": "Aucun match",
+      "seasonStarts": "Début de la saison le {{date}}",
+      "noGamesState": "La saison n'a pas commencé",
       "coincidental": "{{skaters}} — Coïncidentes",
       "recentEvents": "Événements récents",
       "disabledReason": "Disponible une fois le match terminé.",
