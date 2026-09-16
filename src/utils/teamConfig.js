@@ -69,12 +69,25 @@ export const NHL_REGULAR_SEASONS = [
 ].map(id => ({ id, label: nhlSeasonLabel(id) }));
 
 // Older seasons, for the shot map's "More seasons" overflow dropdown —
-// not shown in the main chip row. Starts at 2013-14 (a defensible modern-
-// era cutoff for this app's shot-location-dependent views; push it back
-// further if a use case needs it).
+// not shown in the main chip row.
+//
+// This list ran back to 2013-14 until it was checked against the data.
+// Everything before 2022-23 was a dead option: the pipeline has never
+// ingested shot_events, shift_events, player_seasons or team_seasons for
+// those seasons, so picking one gave you a schedule and game chips —
+// those come from the NHL API, which does go back that far — next to a
+// completely empty shot map, an empty Players table and no PP/PK units,
+// with nothing on screen saying why.
+//
+// The rule now: a season belongs in one of these two lists only once the
+// pipeline has actually ingested it. Add one here when its backfill lands
+// (nhl_stats.py, shot_events.py and shift_data.py each take a season
+// argument), not before. The current season is the one deliberate
+// exception — it sits in NHL_REGULAR_SEASONS with no data of its own
+// between the schedule being published and opening night, which
+// ShotMapView's off-season fallback covers explicitly.
 export const NHL_ARCHIVE_SEASONS = [
-  '20232024', '20222023', '20212022', '20202021', '20192020',
-  '20182019', '20172018', '20162017', '20152016', '20142015', '20132014',
+  '20232024', '20222023',
 ].map(id => ({ id, label: nhlSeasonLabel(id) }));
 
 // All 32 NHL teams.
