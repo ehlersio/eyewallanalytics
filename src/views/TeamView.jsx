@@ -380,6 +380,15 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
         <div className={`card ${RECORD_BLOCK_CLASSES}`}>
           <div className={RECORD_BLOCK_LABEL_CLASSES} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <TeamLogo abbr={TEAM_CONFIG.abbr} size={14} /> {t('team.regularSeason')}
+            {/* Out of season the standings feed is still last season's. The
+                numbers below are real, they just aren't this year's -- say
+                which season they are rather than letting them read as
+                current. getTeamStats() already resolves both flags. */}
+            {stats?.isPriorSeason && (
+              <span className="record-season-badge text-[10px] font-normal text-[color:var(--text-dim)]">
+                {t('teamView.overview.priorSeasonBadge', { season: nhlSeasonLabel(stats.statsSeasonId) })}
+              </span>
+            )}
           </div>
           {standLoading ? <div className={SKELETON_CLASSES} style={{ height: 28, width: '70%' }} /> : (
             <div className={RECORD_MAIN_ROW_CLASSES}>
@@ -512,6 +521,9 @@ function PlayoffOddsCard() {
   const change = latest?.change
   const history = data?.history || []
   const nextGames = data?.nextGames || []
+  // A team's own "win division" number says nothing about who is ahead of
+  // it; the Worker returns the whole division from the same nightly run.
+  const division = data?.division
   const moved = change && Math.abs(change.delta) >= 0.0005
   const viewRef = useFeatureViewed('playoff_odds')
 
@@ -551,6 +563,38 @@ function PlayoffOddsCard() {
               </div>
             </div>
           </div>
+
+          {division?.teams?.length > 1 && (
+            <div className={`playoff-odds-division-table ${ODDS_SECTION_CLASSES}`}>
+              <div className={ODDS_LABEL_CLASSES}>
+                {t('playoffOdds.divisionRank', { rank: division.rank, of: division.of, division: division.name })}
+              </div>
+              <div className="flex items-center justify-between gap-2 text-[9px] uppercase tracking-[0.06em] text-[color:var(--text-dim)] pt-1">
+                <span className="flex-1" />
+                <span className="w-[54px] text-right">{t('playoffOdds.divisionCol')}</span>
+                <span className="w-[54px] text-right">{t('playoffOdds.playoffCol')}</span>
+                <span className="w-[54px] text-right">{t('playoffOdds.pointsCol')}</span>
+              </div>
+              {division.teams.map((row, i) => {
+                const own = row.team === TEAM_CONFIG.abbr
+                return (
+                  <div
+                    key={row.team}
+                    className={`playoff-odds-division-row ${ODDS_ROW_CLASSES} ${own ? 'font-semibold text-[color:var(--text)]' : 'text-[color:var(--text-muted)]'}`}
+                  >
+                    <span className="flex flex-1 items-center gap-[6px]">
+                      <span className="w-[14px] text-right text-[10px] text-[color:var(--text-dim)]">{i + 1}</span>
+                      <TeamLogo abbr={row.team} size={14} />
+                      {row.team}
+                    </span>
+                    <span className="w-[54px] text-right font-[family-name:var(--font-mono)]">{formatOddsPct(row.divisionPct)}</span>
+                    <span className="w-[54px] text-right font-[family-name:var(--font-mono)]">{formatOddsPct(row.playoffPct)}</span>
+                    <span className="w-[54px] text-right font-[family-name:var(--font-mono)]">{row.projPoints != null ? Math.round(row.projPoints) : '—'}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
 
           {history.length >= 2 && (
             <div className="playoff-odds-trend mt-3">

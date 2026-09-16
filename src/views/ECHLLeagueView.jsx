@@ -62,7 +62,7 @@ function teamAbbr(teamId) {
 
 export default function ECHLLeagueView() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState('standings');
+  const [tab, setTab] = useState('scoreboard');
   const [selected, setSelected] = useState(null);
 
   // Same live-season-update race/fix as ECHLShotMapView.jsx.

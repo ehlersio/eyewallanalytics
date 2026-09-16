@@ -109,11 +109,14 @@
       "draft": "Draft"
     },
     "scoreboard": {
-      "empty": "No games today",
+      "empty": "No games scheduled",
       "error": "Couldn't load today's games.",
       "statusLive": "LIVE",
       "statusFinal": "FINAL",
-      "statusPre": "TODAY"
+      "statusPre": "UPCOMING",
+      "dayToday": "Today",
+      "dayTomorrow": "Tomorrow",
+      "intermission": "INT"
     },
     "leaders": {
       "titlePoints": "Points",
@@ -342,7 +345,8 @@
     "overview": {
       "divLabel": "Div: {{division}}",
       "confLabel": "Conf: {{conference}}",
-      "streakSuffix": "{{code}}{{count}} streak"
+      "streakSuffix": "{{code}}{{count}} streak",
+      "priorSeasonBadge": "{{season}} season"
     },
     "advanced": {
       "xgfSparklineTitle": "xGF% per game · 5v5",
@@ -2087,7 +2091,7 @@
     "chooseOpponentForH2h": "Choose an opponent above to see head-to-head history.",
     "noMeetings": "No meetings on record between these teams yet.",
     "since2023": "Since 2023-24",
- "since2025": "Since 2025-26",
+    "since2025": "Since 2025-26",
     "wins": "wins",
     "lastN": "Last {{count}}: {{winsA}}-{{winsB}}",
     "streakPill": "{{abbr}} won {{count}} straight",
@@ -2206,7 +2210,11 @@
     "trendLabel": "Playoff odds this season",
     "source": "{{sims}} simulations · updated {{date}}",
     "none": "Playoff odds appear after the first nightly model run of the season.",
-    "unavailable": "Playoff odds aren't available right now."
+    "unavailable": "Playoff odds aren't available right now.",
+    "divisionRank": "{{rank}} of {{of}} in the {{division}}",
+    "divisionCol": "Win div.",
+    "playoffCol": "Playoffs",
+    "pointsCol": "Proj. pts"
   },
   "injuryImpact": {
     "title": "Games lost to injury",

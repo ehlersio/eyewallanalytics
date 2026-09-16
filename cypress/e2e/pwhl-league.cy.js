@@ -38,6 +38,12 @@ describe('PWHL League view', () => {
   })
 
   describe('Standings tab', () => {
+    // Scoreboard is the default tab now, so select Standings rather than
+    // relying on which tab opens first.
+    beforeEach(() => {
+      cy.get('.league-tab').contains('Standings').click()
+    })
+
     // Only the 8 established teams have a standings row today — DET/HAM/LV/SJS
     // (2026-27 expansion) haven't played a game yet, so the Worker's
     // /pwhl/standings response genuinely has no rows for them (confirmed

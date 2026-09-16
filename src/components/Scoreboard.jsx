@@ -12,6 +12,9 @@ import { getPWHLTeamConfig } from '../utils/pwhlConfig';
 import { getAHLTeamConfig } from '../utils/ahlConfig';
 import { getECHLTeamConfig } from '../utils/echlConfig';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
+import { dayLabelKind, liveDetail, startTimeLabel } from '../utils/scoreboard';
+import { formatDate } from '../utils/formatters';
+import { parseLocalDate } from '../utils/injuryDetails';
 
 const TEAM_LOOKUP = {
   nhl: getTeamByAbbr,
@@ -34,12 +37,18 @@ const BADGE_FINAL_CLASSES = `${BADGE_BASE_CLASSES} bg-[var(--bg2)] text-[color:v
 const BADGE_PRE_CLASSES = `${BADGE_BASE_CLASSES} bg-[var(--bg2)] text-[color:var(--text-muted)]`;
 const LIVE_DOT_CLASSES = 'w-[6px] h-[6px] rounded-full bg-[color:var(--red-bright)] animate-pulse';
 
+const LIVE_DETAIL_CLASSES = 'text-[11px] font-[family-name:var(--font-mono)] text-[color:var(--text-muted)]';
+const DAY_HEADER_CLASSES = 'mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-[color:var(--text-dim)]';
+const CARD_HEADER_ROW_CLASSES = 'flex items-center justify-between gap-2';
 const EMPTY_CLASSES = 'py-8 text-center text-[13px] text-[color:var(--text-dim)]';
 const ERROR_CLASSES = 'py-8 text-center text-[13px] text-[color:var(--red-bright)]';
 
-function StatusBadge({ status }) {
+// The badge says what state the game is in; the detail line under it says
+// where in the game it is. Before this, a live game showed only "LIVE" and
+// an unstarted one claimed "TODAY" whatever day it was actually on.
+function StatusBadge({ game }) {
   const { t } = useTranslation();
-  if (status === 'live') {
+  if (game.status === 'live') {
     return (
       <span className={BADGE_LIVE_CLASSES}>
         <span className={LIVE_DOT_CLASSES} />
@@ -47,10 +56,40 @@ function StatusBadge({ status }) {
       </span>
     );
   }
-  if (status === 'final') {
-    return <span className={BADGE_FINAL_CLASSES}>{t('league.scoreboard.statusFinal')}</span>;
+  if (game.status === 'final') {
+    return (
+      <span className={BADGE_FINAL_CLASSES}>
+        {t('league.scoreboard.statusFinal')}{game.endedIn ? `/${game.endedIn}` : ''}
+      </span>
+    );
   }
-  return <span className={BADGE_PRE_CLASSES}>{t('league.scoreboard.statusPre')}</span>;
+  // Start time when the feed gives one, else a plain "upcoming".
+  const starts = startTimeLabel(game);
+  return <span className={BADGE_PRE_CLASSES}>{starts || t('league.scoreboard.statusPre')}</span>;
+}
+
+// "2nd · 12:34" / "2nd INT" -- a snapshot, not a ticking clock: this data
+// is cached 60s by the Worker and polled every 30s by the page.
+function LiveDetail({ game }) {
+  const { t } = useTranslation();
+  if (game.status !== 'live') return null;
+  const detail = liveDetail(game, t('league.scoreboard.intermission'));
+  if (!detail) return null;
+  return <span className={LIVE_DETAIL_CLASSES}>{detail}</span>;
+}
+
+// Which day the cards below are for. The Worker returns today's games when
+// there are any and otherwise the next day that has some, so this says
+// "Today" only when it's true.
+function DayHeader({ games }) {
+  const { t } = useTranslation();
+  const gameDate = games.find(g => g.gameDate)?.gameDate;
+  const kind = dayLabelKind(gameDate);
+  if (!kind) return null;
+  const label = kind === 'today' ? t('league.scoreboard.dayToday')
+    : kind === 'tomorrow' ? t('league.scoreboard.dayTomorrow')
+      : formatDate(parseLocalDate(gameDate), { weekday: 'short', month: 'short', day: 'numeric' });
+  return <div className={DAY_HEADER_CLASSES}>{label}</div>;
 }
 
 function TeamRow({ code, score, status, sport, isLoser }) {
@@ -92,20 +131,24 @@ export default function Scoreboard({ sport, games, loading, error }) {
   if (!games?.length) return <div className={EMPTY_CLASSES}>{t('league.scoreboard.empty')}</div>;
 
   return (
-    <div className={GRID_CLASSES}>
+    <>
+      <DayHeader games={games} />
+      <div className={GRID_CLASSES}>
       {games.map(g => {
         const homeLower = g.status === 'final' && (g.homeScore ?? 0) < (g.awayScore ?? 0);
         const awayLower = g.status === 'final' && (g.awayScore ?? 0) < (g.homeScore ?? 0);
         return (
           <div key={g.gameId} className={CARD_CLASSES}>
-            <div className={CARD_HEADER_CLASSES}>
-              <StatusBadge status={g.status} />
+            <div className={`${CARD_HEADER_CLASSES} ${CARD_HEADER_ROW_CLASSES}`}>
+              <LiveDetail game={g} />
+              <StatusBadge game={g} />
             </div>
             <TeamRow code={g.awayTeamCode} score={g.awayScore} status={g.status} sport={sport} isLoser={awayLower} />
             <TeamRow code={g.homeTeamCode} score={g.homeScore} status={g.status} sport={sport} isLoser={homeLower} />
           </div>
         );
       })}
-    </div>
+      </div>
+    </>
   );
 }

@@ -63,7 +63,7 @@ function teamAbbr(teamId) {
 
 export default function AHLLeagueView() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState('standings');
+  const [tab, setTab] = useState('scoreboard');
   const [selected, setSelected] = useState(null);
 
   // AHL_CURRENT_SEASON is a `let` binding updated in place by an async
