@@ -15,8 +15,8 @@ import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import LiveEventRink from '../components/LiveEventRink';
 import { GoalPopup, HatTrickPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
-import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getTeamSeasonData } from '../utils/supabaseClient';
-import { inferPPUnit, inferPKUnit, PP_UNITS_BY_TEAM, PK_UNITS_BY_TEAM } from '../utils/ppUnits';
+import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getTeamSeasonData, getSpecialTeamsUnits } from '../utils/supabaseClient';
+import { inferPPUnit, inferPKUnit } from '../utils/ppUnits';
 import InfoTip from '../components/InfoTip';
 import { MetCard } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
@@ -672,6 +672,12 @@ export default function ShotMapView() {
   // game) applies — see shotEvents below.
   const { data: seasonShots } = useFetch(() => getSeasonShots(TEAM_CONFIG.abbr, effectiveSeason), [effectiveSeason]);
 
+  // PP/PK unit compositions for the season on screen, for the unit chips
+  // and the per-opportunity PP1/PP2 badges in the special-teams drill-downs.
+  // Keyed to effectiveSeason, not CURRENT_SEASON: labelling last season's
+  // power plays with this season's units would be quietly wrong.
+  const { data: specialTeamsMap } = useFetch(() => getSpecialTeamsUnits(effectiveSeason), [effectiveSeason]);
+
   // Completed games for the selected season+type, newest first.
   const games = useMemo(() => {
     if (!seasonSchedule?.length) return [];
@@ -1110,7 +1116,6 @@ export default function ShotMapView() {
     const plays = pbp.plays;
     const carId = TEAM_CONFIG.teamId; // CAR team ID
     const oppId = opp?.id || null;
-    const season = Number(TEAM_CONFIG.season.slice(0, 4)); // e.g. 2025 from '20252026'
 
     // Build a string-keyed map from rosterSpots so lookups always work
     // regardless of whether event IDs come back as numbers or strings
@@ -1394,15 +1399,17 @@ export default function ShotMapView() {
           });
         });
         opp.carSkaterIds = [...skaterIds];
-        opp.unit = inferPPUnit(TEAM_CONFIG.abbr, season, opp.carSkaterIds);
+        opp.unit = inferPPUnit(TEAM_CONFIG.abbr, opp.carSkaterIds, specialTeamsMap);
       });
 
-      // Build display unit arrays from config for the chips at the top
-      const unitConfig = (PP_UNITS_BY_TEAM[TEAM_CONFIG.abbr] || {})[season];
-      const ppUnit1 = unitConfig?.pp1
-        .map(id => pName(id)).filter(n => n !== '—') ?? [];
-      const ppUnit2 = unitConfig?.pp2
-        .map(id => pName(id)).filter(n => n !== '—') ?? [];
+      // Display unit arrays for the chips at the top. `?? []` on each unit
+      // rather than one optional chain off the team: a team can have PP1
+      // recorded and no PP2 (most do -- the pipeline only writes a unit it
+      // could actually infer), and the old `unitConfig?.pp1.map(...)` shape
+      // would have thrown on exactly that.
+      const ppUnits = specialTeamsMap?.[TEAM_CONFIG.abbr]?.PP;
+      const ppUnit1 = (ppUnits?.[1] ?? []).map(id => pName(id)).filter(n => n !== '—');
+      const ppUnit2 = (ppUnits?.[2] ?? []).map(id => pName(id)).filter(n => n !== '—');
 
       // Summary totals
       const totalGoals = ppOpps.filter(o => o.scored).length;
@@ -1576,12 +1583,12 @@ export default function ShotMapView() {
           });
         });
         opp.carSkaterIds = [...skaterIds];
-        opp.unit = inferPKUnit(TEAM_CONFIG.abbr, season, opp.carSkaterIds);
+        opp.unit = inferPKUnit(TEAM_CONFIG.abbr, opp.carSkaterIds, specialTeamsMap);
       });
 
-      const unitConfig = (PK_UNITS_BY_TEAM[TEAM_CONFIG.abbr] || {})[season];
-      const pkUnit1 = unitConfig?.pk1.map(id => pName(id)).filter(n => n !== '—') ?? [];
-      const pkUnit2 = unitConfig?.pk2.map(id => pName(id)).filter(n => n !== '—') ?? [];
+      const pkUnits = specialTeamsMap?.[TEAM_CONFIG.abbr]?.PK;
+      const pkUnit1 = (pkUnits?.[1] ?? []).map(id => pName(id)).filter(n => n !== '—');
+      const pkUnit2 = (pkUnits?.[2] ?? []).map(id => pName(id)).filter(n => n !== '—');
 
       const totalGoalsAgainst = pkOpps.filter(o => o.allowed).length;
       const totalSOGAgainst   = pkOpps.reduce((s, o) => s + o.sog, 0);
@@ -1597,7 +1604,7 @@ export default function ShotMapView() {
         rosterSpots: pbp.rosterSpots || [],
       });
     }
-  }, [pbp, roster, opp, t]);
+  }, [pbp, roster, opp, t, specialTeamsMap]);
 
   // ── Live MetCard stats from PBP (updates every poll) ─────────
   // These replace rightRail.teamGameStats which only fetches once
