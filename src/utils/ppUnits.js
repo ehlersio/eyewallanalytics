@@ -6,25 +6,29 @@
  * supabaseClient.js (Worker KV → Supabase fallback).
  *
  * This file now only exports the inference functions that consume that data.
- * Pass the fetched `specialTeamsMap` from ShotMapView into inferPPUnit /
- * inferPKUnit instead of reading from the static constants.
+ * ShotMapView fetches the map with getSpecialTeamsUnits(season) and passes
+ * it in.
  *
- * Legacy static exports are kept below for any imports that haven't been
- * updated yet — they return empty objects and will gracefully return null
- * from the inference functions.
+ * The static exports this file used to carry (CAR_PP_UNITS, PP_UNITS_BY_TEAM
+ * and friends) are gone. They were emptied when the data moved to Supabase
+ * but kept as a compatibility shim, and ShotMapView went on reading them for
+ * the whole life of that shim — so the PP/PK unit chips and the per-
+ * opportunity PP1/PP2 badges silently rendered nothing that entire time.
+ * Deleting them rather than re-emptying them is what makes that
+ * unrecoverable rather than merely unlikely.
  */
 
 /**
- * Given a team, season, set of player IDs seen in a PP opportunity, and
- * the fetched special teams map, returns 1 (PP1), 2 (PP2), or null.
+ * Given a team, the set of player IDs seen in a PP opportunity, and the
+ * fetched special teams map, returns 1 (PP1), 2 (PP2), or null. The map is
+ * already scoped to one season by the Worker, so no season is passed here.
  * Requires at least 2 overlapping players to assign a unit.
  *
  * @param {string}   teamAbbr        - e.g. 'CAR'
- * @param {number}   season          - e.g. 20252026 (unused — map is pre-filtered)
  * @param {number[]} playerIds       - player IDs currently on ice
  * @param {object}   specialTeamsMap - fetched from getSpecialTeamsUnits()
  */
-export function inferPPUnit(teamAbbr, season, playerIds, specialTeamsMap) {
+export function inferPPUnit(teamAbbr, playerIds, specialTeamsMap) {
   const units = specialTeamsMap?.[teamAbbr]?.PP;
   if (!units || !playerIds?.length) return null;
 
@@ -40,16 +44,16 @@ export function inferPPUnit(teamAbbr, season, playerIds, specialTeamsMap) {
 }
 
 /**
- * Given a team, season, set of player IDs seen in a PK opportunity, and
- * the fetched special teams map, returns 1 (PK1), 2 (PK2), or null.
+ * Given a team, the set of player IDs seen in a PK opportunity, and the
+ * fetched special teams map, returns 1 (PK1), 2 (PK2), or null. The map is
+ * already scoped to one season by the Worker, so no season is passed here.
  * Requires at least 2 overlapping players to assign a unit.
  *
  * @param {string}   teamAbbr        - e.g. 'CAR'
- * @param {number}   season          - e.g. 20252026 (unused — map is pre-filtered)
  * @param {number[]} playerIds       - player IDs currently on ice
  * @param {object}   specialTeamsMap - fetched from getSpecialTeamsUnits()
  */
-export function inferPKUnit(teamAbbr, season, playerIds, specialTeamsMap) {
+export function inferPKUnit(teamAbbr, playerIds, specialTeamsMap) {
   const units = specialTeamsMap?.[teamAbbr]?.PK;
   if (!units || !playerIds?.length) return null;
 
@@ -64,11 +68,3 @@ export function inferPKUnit(teamAbbr, season, playerIds, specialTeamsMap) {
   return null;
 }
 
-// ── Legacy exports ────────────────────────────────────────────────────────────
-// Kept for backward compatibility. These are empty — unit data now comes from
-// getSpecialTeamsUnits() in supabaseClient.js.
-// Remove once all imports have been updated to use the new signature.
-export const CAR_PP_UNITS      = {};
-export const CAR_PK_UNITS      = {};
-export const PP_UNITS_BY_TEAM  = {};
-export const PK_UNITS_BY_TEAM  = {};

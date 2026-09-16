@@ -349,3 +349,84 @@ describe('Shot Map — season/game history selector', () => {
     cy.get('.game-chip-all').should('have.class', 'game-chip-active')
   })
 })
+
+// ── Special teams units ───────────────────────────────────────────────────
+// The PP/PK unit chips and the per-opportunity PP1/PP2 badges render from
+// the `special_teams_units` Supabase table, via the Worker's /special-teams
+// route. They rendered NOTHING for the entire life of a compatibility shim:
+// the data moved out of ppUnits.js's static constants into Supabase, the
+// constants were left behind as empty objects "until all imports have been
+// updated", and ShotMapView -- the only importer -- was never updated. No
+// test failed, no error was logged, the chips just quietly stopped
+// existing. This block is here so that can't happen silently again.
+describe('Shot Map — special teams units', () => {
+  const workerUrl = Cypress.expose('WORKER_URL')
+
+  // Real CAR skaters from MOCK_GAME_ID's own rosterSpots -- the drill-down
+  // resolves ids to names out of that game's play-by-play, so stubbed ids
+  // have to be players who actually dressed. The game is permanent and
+  // historical (see MOCK_GAME_ID at the top of this file), so these are stable.
+  const STAAL = 8473533   // Jordan Staal
+  const HALL = 8475791    // Taylor Hall
+  const GHOST = 8476906   // Shayne Gostisbehere
+  const SLAVIN = 8476958  // Jaccob Slavin
+
+  beforeEach(() => {
+    cy.intercept('GET', `${workerUrl}/special-teams*`, {
+      statusCode: 200,
+      body: {
+        CAR: {
+          PP: { 1: [STAAL, HALL], 2: [GHOST] },
+          PK: { 1: [SLAVIN, STAAL] },
+        },
+      },
+    }).as('specialTeams')
+    cy.visit(`/?mockGame=${MOCK_GAME_ID}`, {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('eyewall:team', JSON.stringify({ abbr: 'CAR' }))
+      },
+    })
+    cy.get('.topbar', { timeout: 10000 }).should('exist')
+  })
+
+  // Asserts a season is sent, not WHICH one: the shot map's season follows
+  // the off-season fallback and the season chips, so pinning a value here
+  // would make this test start failing on opening night.
+  it('requests units for the season it is displaying', () => {
+    cy.wait('@specialTeams').its('request.url').should('match', /[?&]season=\d{8}(&|$)/)
+  })
+
+  // Scoped to the unit row rather than asserted against the whole page:
+  // LiveEventRink renders an <svg><title> per shot dot carrying the
+  // shooter's name, so a bare cy.contains('Staal') matches an invisible
+  // tooltip on the rink instead of the chip.
+  it('renders the PP unit chips from the fetched map', () => {
+    cy.wait('@specialTeams')
+    cy.contains('PP %').closest('[role="button"]').click()
+    cy.contains('span', 'PP1').parent()
+      .should('contain.text', 'Staal')
+      .and('contain.text', 'Hall')
+    cy.contains('span', 'PP2').parent().should('contain.text', 'Gostisbehere')
+    cy.assertNoErrors()
+  })
+
+  it('renders the PK unit chips from the fetched map', () => {
+    cy.wait('@specialTeams')
+    cy.contains('PK %').closest('[role="button"]').click()
+    cy.contains('span', 'PK1').parent()
+      .should('contain.text', 'Slavin')
+      .and('contain.text', 'Staal')
+    cy.assertNoErrors()
+  })
+
+  // The failure mode that actually shipped: an empty map is exactly what
+  // the old static constants returned, so this is the shape of the bug.
+  it('shows no unit chips when the map is empty, without crashing', () => {
+    cy.intercept('GET', `${workerUrl}/special-teams*`, { statusCode: 200, body: {} }).as('emptyUnits')
+    cy.visit(`/?mockGame=${MOCK_GAME_ID}`)
+    cy.wait('@emptyUnits')
+    cy.contains('PP %').closest('[role="button"]').click()
+    cy.contains('span', 'PP1').should('not.exist')
+    cy.assertNoErrors()
+  })
+})

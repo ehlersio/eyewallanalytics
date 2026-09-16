@@ -73,3 +73,78 @@ If you delete the app first to get a true first launch, step 2 appears naturally
 3. **Buy Me a Coffee link.** Done: hidden when `Capacitor.getPlatform() === 'ios'`, still shown on the web and Android.
 4. **Privacy policy.** Done: mentions iOS, lists Resend and Cloudflare as processors, and describes in-app deletion.
 5. **In-app disclaimer.** Done: added to the About popup in English and French. The About popup also scrolls now, because on a 390×844 screen its bottom used to be cut off behind the nav bar.
+
+---
+
+# Beta App Review — Guideline 2.1(a), September 2026
+
+TestFlight build rejected with the "provide a demo account" boilerplate. There is
+no sign-in in this app, so the demo-account request was Apple's generic wording
+for "we opened it and couldn't see it do anything."
+
+## What the reviewer saw
+
+First launch → league picker → NHL → a team lands on the Shot Map, the default
+tab. Reproduced on a 375×844 viewport on 2026-09-15:
+
+- header stuck on **"Loading game data…"**, indefinitely
+- Shots on Goal 0, Hits —, Blocks 0, Penalties —
+- an empty rink
+
+Nothing was broken server-side. The 2026-27 season simply had not started —
+first game 2026-09-29 — and the Shot Map defaulted to a season with zero
+completed games. `activeGame` was null, and the score bar's null branch rendered
+the *loading* copy, so "no games exist yet" was indistinguishable from "still
+fetching". Every other tab (Schedule, Team, Players, League, News) was fully
+populated the whole time.
+
+AHL and ECHL had a second version of the same problem: their season resolver
+points at the most recent season with league-wide data, which for most of the
+off-season is the playoffs — so any team that missed the playoffs got an all-zero
+shot map on the app's first screen. PWHL was already correct and is unchanged.
+
+## Fix (branch `offseason-shot-map-fallback`)
+
+1. **NHL** (`ShotMapView.jsx`) — until the current season has a completed game,
+   the view shows the newest season that does, and says so in a notice above the
+   game chips ("The 2026-27 season hasn't started yet — showing 2025-26. First
+   game Tue, Sep 29."). Derived from the schedule, so it stops applying by itself
+   on opening night. `activeGame` also falls back to the newest completed game of
+   whatever season is on screen.
+2. **NHL empty state** — when a season genuinely has nothing to show (the user
+   picks the not-yet-started season themselves), the score bar now reads "No
+   games yet / Season starts Tue, Sep 29" instead of a permanent fake spinner.
+3. **AHL / ECHL** (`AHLShotMapView.jsx`, `ECHLShotMapView.jsx`) — if the resolved
+   current season has no shots for this team, hop once to that playoff season's
+   regular season (or the newest regular season otherwise), with the same kind of
+   notice. Teams that *do* have playoff data are untouched.
+
+Verified against live data: NHL/TOR now opens on the 2025-26 finale with 2,316
+shots; AHL/HFD on 2025-26 (190 G, 2,025 SOG); ECHL/NOR on 2025-26 (211 G, 2,055
+SOG); ECHL/ADK correctly stays on the 2026 Kelly Cup Playoffs. 234 unit tests,
+48 shot-map e2e, 144 related e2e all pass.
+
+## Reply (paste this)
+
+Thank you for the review. EyeWall Analytics has no accounts and no login — every
+feature is available to any user on first launch, so there are no demo
+credentials to provide. Sign-in is optional and only syncs a favorite team and
+trivia history across devices.
+
+What you most likely saw: the app opens on the Shot Map tab, which displays the
+current or most recent game. The 2026-27 NHL season had not started yet — the
+first game is September 29, 2026 — so that tab had no game to draw and showed a
+placeholder. This build fixes that: the Shot Map now falls back to the most
+recent completed season whenever the current one has no games played, and states
+on screen which season it is showing.
+
+Everything is reachable without an account:
+- Shot Map — opens on the most recent completed season, with a full season of
+  shot data, per-game chips and shot-quality breakdowns. The season selector at
+  the top right switches between seasons.
+- Schedule — upcoming games; tap "Matchup breakdown" for win probabilities and
+  probable starters.
+- Team — record, playoff odds, simulations, and the Advanced / Splits / Trends tabs.
+- Players, League and News are fully populated.
+
+Contact: matt@eyewallanalytics.com

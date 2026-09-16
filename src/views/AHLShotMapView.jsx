@@ -20,7 +20,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch, usePoll } from '../hooks/useFetch';
 import { fetchAHLShots, fetchAHLRoster, fetchAHLTeamSeasonSummary, fetchAHLToday, fetchAHLLive, AHL_TEAM_CONFIG, AHL_TEAM_ID } from '../utils/ahlApi';
-import { AHL_CURRENT_SEASON, AHL_SEASONS, getAHLTeamConfig } from '../utils/ahlConfig';
+import { AHL_CURRENT_SEASON, AHL_SEASONS, AHL_REGULAR_SEASONS, AHL_REGULAR_SEASON_MAP, getAHLTeamConfig } from '../utils/ahlConfig';
 import { HockeyRink } from 'react-hockey-rink';
 import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import TeamLogo from '../components/TeamLogo';
@@ -38,6 +38,7 @@ const SUB_CLASSES = 'text-[12px] text-[color:var(--text-muted)]';
 const RINK_CARD_CLASSES = 'card mb-3 p-2';
 const METRICS_GRID_CLASSES = 'grid grid-cols-3 gap-2 mb-3';
 const TABS_WRAP_CLASSES = 'flex border-b-[0.5px] border-[var(--border)] mx-[-14px] mb-[14px] px-[14px]';
+const FALLBACK_NOTE_CLASSES = 'mb-2.5 py-2 px-3 rounded-[10px] bg-[var(--bg2)] border border-[var(--border)] text-[11px] leading-[1.45] text-[color:var(--text-dim)]';
 const TAB_BASE_CLASSES = 'flex-1 py-[10px] text-[13px] font-semibold bg-transparent border-0 border-b-2 cursor-pointer [transition:all_0.15s]';
 const TAB_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] border-b-transparent';
 const TAB_ACTIVE_CLASSES = 'text-[color:var(--red-bright)] border-b-[var(--red-bright)]';
@@ -110,16 +111,22 @@ export default function AHLShotMapView() {
   // fallback seed was current at that instant. Same fix PWHLPlayersView.jsx
   // already applies for the identical race, see that file's comment.
   const userPickedSeason = useRef(false);
+  // Set to the season we fell back FROM once the empty-season fallback
+  // below fires -- both the "did we already fall back" guard and the
+  // label the notice needs. State, not a ref, because the notice has to
+  // render when it changes.
+  const [fellBackFrom, setFellBackFrom] = useState(null);
   useEffect(() => {
     function handleSeasonUpdate(e) {
-      if (!userPickedSeason.current) setSeason(e.detail);
+      if (!userPickedSeason.current && !fellBackFrom) setSeason(e.detail);
     }
     window.addEventListener('eyewall:ahl-season-updated', handleSeasonUpdate);
     return () => window.removeEventListener('eyewall:ahl-season-updated', handleSeasonUpdate);
-  }, []);
+  }, [fellBackFrom]);
 
   function handleSeasonPick(id) {
     userPickedSeason.current = true;
+    setFellBackFrom(null);
     setSeason(id);
   }
 
@@ -209,6 +216,30 @@ export default function AHLShotMapView() {
     () => teamId ? fetchAHLShots(teamId, season) : Promise.resolve(null),
     [teamId, season]
   );
+
+  // ── Empty-season fallback ──────────────────────────────────────
+  // AHL_CURRENT_SEASON is whatever the resolver found data for league-
+  // wide, which for most of the off-season is the playoffs -- and a team
+  // that missed them has no shots in it at all. Landing on a season this
+  // team never played gives a brand-new user an all-zero shot map on the
+  // app's first screen, which is what got the TestFlight build rejected
+  // under 2.1(a) in September 2026.
+  //
+  // One hop, not a search: the playoffs' own regular season if that's
+  // where we are, otherwise the newest regular season that isn't the one
+  // we just found empty. If that's empty too, the existing "no shot data"
+  // message is the honest answer and we stop.
+  useEffect(() => {
+    if (userPickedSeason.current || fellBackFrom) return;
+    if (shotsLoading || !shots || shots.length > 0) return;
+    const next = AHL_REGULAR_SEASON_MAP[season]
+      ?? AHL_REGULAR_SEASONS.find(s => s.id !== season)?.id;
+    if (!next || next === season) return;
+    setFellBackFrom(season);
+    setSeason(next);
+  }, [shots, shotsLoading, season, fellBackFrom]);
+
+  const seasonLabel = id => AHL_SEASONS.find(s => s.id === id)?.label ?? id;
   const { data: roster } = useFetch(
     () => teamId ? fetchAHLRoster(teamId) : Promise.resolve(null),
     [teamId]
@@ -262,6 +293,15 @@ export default function AHLShotMapView() {
             selected={selectedGameId === liveGame.gameId}
             onSelect={() => setSelectedGameId(liveGame.gameId)}
           />
+        </div>
+      )}
+
+      {fellBackFrom && (
+        <div className={FALLBACK_NOTE_CLASSES}>
+          {t('ahlShotMapView.fallbackNote', {
+            empty:    seasonLabel(fellBackFrom),
+            fallback: seasonLabel(season),
+          })}
         </div>
       )}
 

@@ -555,8 +555,15 @@ export async function getTeamSkaterStatsFromDB(team = 'CAR', season = currentSea
 // direct Supabase call on *every* invocation — the KV-first path was
 // dead code the whole time. /special-teams (added Session 44) does the
 // same KV read correctly server-side and needs no client-side unwrapping.
-export async function getSpecialTeamsUnits() {
-  const map = await workerFetch('/special-teams').catch(() => null);
+//
+// `season` is optional -- omitting it lets the Worker resolve the current
+// one, which is what a caller that just wants "now" wants. The shot map
+// passes the season it is actually displaying, since it can be showing a
+// past one (its off-season fallback, or a season picked from the chips)
+// and PP1/PP2 labels drawn from the wrong season would be worse than none.
+export async function getSpecialTeamsUnits(season) {
+  const qs  = season ? `?season=${encodeURIComponent(season)}` : '';
+  const map = await workerFetch(`/special-teams${qs}`).catch(() => null);
   return map || {};
 }
 

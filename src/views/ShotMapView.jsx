@@ -15,8 +15,8 @@ import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import LiveEventRink from '../components/LiveEventRink';
 import { GoalPopup, HatTrickPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
-import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getTeamSeasonData } from '../utils/supabaseClient';
-import { inferPPUnit, inferPKUnit, PP_UNITS_BY_TEAM, PK_UNITS_BY_TEAM } from '../utils/ppUnits';
+import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getTeamSeasonData, getSpecialTeamsUnits } from '../utils/supabaseClient';
+import { inferPPUnit, inferPKUnit } from '../utils/ppUnits';
 import InfoTip from '../components/InfoTip';
 import { MetCard } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
@@ -114,6 +114,7 @@ const SCORE_CENTER_CLASSES = 'text-center';
 const SCORE_PERIOD_CLASSES = 'text-[11px] text-[color:var(--amber)] font-semibold uppercase tracking-[.06em]';
 const SCORE_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[22px] text-[color:var(--text)] leading-[1.2]';
 const SCORE_STATE_CLASSES = 'text-[10px] text-[color:var(--text-dim)]';
+const OFFSEASON_NOTE_CLASSES = 'mb-2.5 py-2 px-3 rounded-[10px] bg-[var(--bg2)] border border-[var(--border)] text-[11px] leading-[1.45] text-[color:var(--text-dim)]';
 // .pill/.pill-red (index.css, Phase 7b) -- shape + live-state color, this
 // file's only real consumer of either class (.pill-green/.pill-amber were
 // confirmed 100% dead app-wide during Phase 5 sub-PR 3's investigation).
@@ -580,18 +581,76 @@ export default function ShotMapView() {
   const [season, setSeason] = useState(CURRENT_SEASON);
   const [seasonType, setSeasonType] = useState('regular'); // 'regular' | 'playoffs'
   const [selectedGameId, setSelectedGameId] = useState(null);
-  const userPickedSeason = useRef(false);
+  // State rather than the ref this used to be: the off-season fallback
+  // below derives from it, and a ref mutation doesn't re-render. The case
+  // that makes that load-bearing -- tapping the chip for the current
+  // season while the fallback is showing the previous one. `season` is
+  // ALREADY that id, so setSeason() bails out of the re-render, and a ref
+  // flag would never reach the screen.
+  const [userPickedSeason, setUserPickedSeason] = useState(false);
   useEffect(() => {
     function handleSeasonUpdate(e) {
-      if (!userPickedSeason.current) setSeason(e.detail);
+      if (!userPickedSeason) setSeason(e.detail);
     }
     window.addEventListener('eyewall:nhl-season-updated', handleSeasonUpdate);
     return () => window.removeEventListener('eyewall:nhl-season-updated', handleSeasonUpdate);
-  }, []);
-  const handleSeasonChange = id => { userPickedSeason.current = true; setSeason(id); setSelectedGameId(null); };
+  }, [userPickedSeason]);
+  const handleSeasonChange = id => { setUserPickedSeason(true); setSeason(id); setSelectedGameId(null); };
   const handleSeasonTypeChange = type => { setSeasonType(type); setSelectedGameId(null); };
   const handleSelect = id => setSelectedGameId(p => p === id ? null : id);
   const handleAll     = ()  => setSelectedGameId(null);
+
+  // ── Off-season fallback ────────────────────────────────────────
+  // CURRENT_SEASON rolls to the new season id as soon as the NHL
+  // publishes that season's schedule -- weeks before opening night. In
+  // that window getAllGames() returns a full schedule whose games are
+  // every one of them still FUT, so every shot-derived number here is 0,
+  // the rink is empty, and activeGame is null -- which fell through to
+  // the score bar's "Loading game data…" branch and sat there forever.
+  // App Review hit exactly that in September 2026 and rejected the
+  // TestFlight build under 2.1(a), "unable to access all or part of the
+  // app," which is fair: it reads as broken, not as idle.
+  //
+  // So until the current season has a completed game, show the newest
+  // one that does. PWHL gets this for free -- its live season resolver
+  // keeps pointing at the last finished season until the new one has
+  // real data -- but NHL's season id is calendar-driven, so it needs
+  // saying explicitly.
+  //
+  // Derived, not a setSeason() in an effect: the season-resolved
+  // listener above would race a stored fallback back to the empty
+  // season, and deriving means the fallback stops applying by itself
+  // the moment a real game is in the books.
+  const previousSeason = useMemo(
+    () => NHL_REGULAR_SEASONS.find(s => s.id !== season)?.id || null,
+    [season]
+  );
+  // `allGames?.length > 0` and not `allGames != null` on purpose: an
+  // empty array is a failed or empty fetch, and falling back on that
+  // would hide a real outage behind last season's data. Only a schedule
+  // that exists and has nothing completed in it counts as "not started".
+  const seasonNotStarted = !userPickedSeason
+    && allGames?.length > 0
+    && !allGames.some(isCompleted)
+    && !!previousSeason;
+  const effectiveSeason = seasonNotStarted ? previousSeason : season;
+
+  const seasonLabel = id =>
+    NHL_REGULAR_SEASONS.find(s => s.id === id)?.label
+    || NHL_ARCHIVE_SEASONS.find(s => s.id === id)?.label
+    || id;
+
+  // First game still to be played, for the "season starts <date>" copy.
+  // Regular season only -- preseason games are in `allGames` too (gameType
+  // 1) and "the season starts" pointing at an exhibition game would be
+  // wrong.
+  const firstScheduledGame = useMemo(() => {
+    if (!allGames?.length) return null;
+    const today = new Date().toISOString().slice(0, 10);
+    return allGames
+      .filter(g => g.gameType === GAME_TYPE.REGULAR && g.gameDate >= today && !isCompleted(g))
+      .sort((a, b) => a.gameDate.localeCompare(b.gameDate))[0] || null;
+  }, [allGames]);
 
   // Tap-triggered "why is this grayed out" hint (Session 77 follow-up) —
   // desktop hover is covered by the `title` attribute each disabled
@@ -605,13 +664,19 @@ export default function ShotMapView() {
   const handleDisabledTap  = useCallback(() => setShowDisabledHint(true), []);
   const dismissDisabledHint = useCallback(() => setShowDisabledHint(false), []);
 
-  const { data: seasonSchedule } = useFetch(() => getScheduleForSeason(TEAM_CONFIG.abbr, season), [season]);
+  const { data: seasonSchedule } = useFetch(() => getScheduleForSeason(TEAM_CONFIG.abbr, effectiveSeason), [effectiveSeason]);
 
   // Season-wide shots for the "All N" chip — both teams' shots from every
   // completed game this season, not just the most recent one. Only actually
   // rendered when nothing more specific (live game, a picked historical
   // game) applies — see shotEvents below.
-  const { data: seasonShots } = useFetch(() => getSeasonShots(TEAM_CONFIG.abbr, season), [season]);
+  const { data: seasonShots } = useFetch(() => getSeasonShots(TEAM_CONFIG.abbr, effectiveSeason), [effectiveSeason]);
+
+  // PP/PK unit compositions for the season on screen, for the unit chips
+  // and the per-opportunity PP1/PP2 badges in the special-teams drill-downs.
+  // Keyed to effectiveSeason, not CURRENT_SEASON: labelling last season's
+  // power plays with this season's units would be quietly wrong.
+  const { data: specialTeamsMap } = useFetch(() => getSpecialTeamsUnits(effectiveSeason), [effectiveSeason]);
 
   // Completed games for the selected season+type, newest first.
   const games = useMemo(() => {
@@ -635,7 +700,15 @@ export default function ShotMapView() {
     isHome: isHomeGame(g),
   })), [games]);
 
-  const activeGame = liveGame || selectedGame || lastGame;
+  // games[0] -- the newest completed game of whatever season is actually
+  // on screen -- backs up lastGame, which only ever covers the CURRENT
+  // season and so is null for the whole off-season. That null is what
+  // used to strand the score bar on "Loading game data…".
+  const activeGame = liveGame || selectedGame || lastGame || games[0] || null;
+  // Tells "there is nothing to show" apart from "still fetching" -- the
+  // score bar used to render both as "Loading game data…", which is what
+  // made an unstarted season look like a hung app.
+  const noGamesToShow = !activeGame && !!seasonSchedule && games.length === 0;
   useWakeLock(isLive); // keep screen on during live games
 
   // ── App resume: refetch live data and clear stale popups ─────
@@ -1043,7 +1116,6 @@ export default function ShotMapView() {
     const plays = pbp.plays;
     const carId = TEAM_CONFIG.teamId; // CAR team ID
     const oppId = opp?.id || null;
-    const season = Number(TEAM_CONFIG.season.slice(0, 4)); // e.g. 2025 from '20252026'
 
     // Build a string-keyed map from rosterSpots so lookups always work
     // regardless of whether event IDs come back as numbers or strings
@@ -1327,15 +1399,17 @@ export default function ShotMapView() {
           });
         });
         opp.carSkaterIds = [...skaterIds];
-        opp.unit = inferPPUnit(TEAM_CONFIG.abbr, season, opp.carSkaterIds);
+        opp.unit = inferPPUnit(TEAM_CONFIG.abbr, opp.carSkaterIds, specialTeamsMap);
       });
 
-      // Build display unit arrays from config for the chips at the top
-      const unitConfig = (PP_UNITS_BY_TEAM[TEAM_CONFIG.abbr] || {})[season];
-      const ppUnit1 = unitConfig?.pp1
-        .map(id => pName(id)).filter(n => n !== '—') ?? [];
-      const ppUnit2 = unitConfig?.pp2
-        .map(id => pName(id)).filter(n => n !== '—') ?? [];
+      // Display unit arrays for the chips at the top. `?? []` on each unit
+      // rather than one optional chain off the team: a team can have PP1
+      // recorded and no PP2 (most do -- the pipeline only writes a unit it
+      // could actually infer), and the old `unitConfig?.pp1.map(...)` shape
+      // would have thrown on exactly that.
+      const ppUnits = specialTeamsMap?.[TEAM_CONFIG.abbr]?.PP;
+      const ppUnit1 = (ppUnits?.[1] ?? []).map(id => pName(id)).filter(n => n !== '—');
+      const ppUnit2 = (ppUnits?.[2] ?? []).map(id => pName(id)).filter(n => n !== '—');
 
       // Summary totals
       const totalGoals = ppOpps.filter(o => o.scored).length;
@@ -1509,12 +1583,12 @@ export default function ShotMapView() {
           });
         });
         opp.carSkaterIds = [...skaterIds];
-        opp.unit = inferPKUnit(TEAM_CONFIG.abbr, season, opp.carSkaterIds);
+        opp.unit = inferPKUnit(TEAM_CONFIG.abbr, opp.carSkaterIds, specialTeamsMap);
       });
 
-      const unitConfig = (PK_UNITS_BY_TEAM[TEAM_CONFIG.abbr] || {})[season];
-      const pkUnit1 = unitConfig?.pk1.map(id => pName(id)).filter(n => n !== '—') ?? [];
-      const pkUnit2 = unitConfig?.pk2.map(id => pName(id)).filter(n => n !== '—') ?? [];
+      const pkUnits = specialTeamsMap?.[TEAM_CONFIG.abbr]?.PK;
+      const pkUnit1 = (pkUnits?.[1] ?? []).map(id => pName(id)).filter(n => n !== '—');
+      const pkUnit2 = (pkUnits?.[2] ?? []).map(id => pName(id)).filter(n => n !== '—');
 
       const totalGoalsAgainst = pkOpps.filter(o => o.allowed).length;
       const totalSOGAgainst   = pkOpps.reduce((s, o) => s + o.sog, 0);
@@ -1530,7 +1604,7 @@ export default function ShotMapView() {
         rosterSpots: pbp.rosterSpots || [],
       });
     }
-  }, [pbp, roster, opp, t]);
+  }, [pbp, roster, opp, t, specialTeamsMap]);
 
   // ── Live MetCard stats from PBP (updates every poll) ─────────
   // These replace rightRail.teamGameStats which only fetches once
@@ -1880,6 +1954,15 @@ export default function ShotMapView() {
                     {activeIsPlayoff ? t('shotMapView.scoreBar.playoffTag') : ''}{formatGameDate(activeGame.gameDate)}
                   </div>
                 </>
+              ) : noGamesToShow ? (
+                <>
+                  <div className={SCORE_PERIOD_CLASSES}>{t('shotMapView.scoreBar.noGamesTitle')}</div>
+                  <div className={SCORE_STATE_CLASSES}>
+                    {firstScheduledGame
+                      ? t('shotMapView.scoreBar.seasonStarts', { date: formatGameDate(firstScheduledGame.gameDate) })
+                      : t('shotMapView.scoreBar.noGamesState')}
+                  </div>
+                </>
               ) : (
                 <>
                   <div className={SCORE_PERIOD_CLASSES}>{t('shotMapView.scoreBar.loadingTitle')}</div>
@@ -1928,12 +2011,27 @@ export default function ShotMapView() {
               <SeasonTypeToggle value={seasonType} onChange={handleSeasonTypeChange}
                 disabled={isLive} disabledReason={LIVE_SELECTOR_DISABLED_REASON} onDisabledTap={handleDisabledTap} />
               <SeasonChipRow seasons={NHL_REGULAR_SEASONS} archiveSeasons={NHL_ARCHIVE_SEASONS}
-                selected={season} onSelect={handleSeasonChange}
+                selected={effectiveSeason} onSelect={handleSeasonChange}
                 disabled={isLive} disabledReason={LIVE_SELECTOR_DISABLED_REASON} onDisabledTap={handleDisabledTap} />
               <DisabledHint text={LIVE_SELECTOR_DISABLED_REASON} active={showDisabledHint} onDismiss={dismissDisabledHint} />
             </div>
           </div>
       </div>
+
+      {/* ── Off-season notice ── */}
+      {/* Says out loud which season these numbers are, so the fallback
+          reads as a deliberate choice rather than stale data. */}
+      {seasonNotStarted && (
+        <div className={OFFSEASON_NOTE_CLASSES}>
+          {t('shotMapView.offseason.showingPrevious', {
+            current:  seasonLabel(season),
+            fallback: seasonLabel(effectiveSeason),
+          })}
+          {firstScheduledGame
+            ? ` ${t('shotMapView.offseason.firstGame', { date: formatGameDate(firstScheduledGame.gameDate) })}`
+            : ''}
+        </div>
+      )}
 
       {/* ── Game selector ── */}
       {games.length > 0 && (

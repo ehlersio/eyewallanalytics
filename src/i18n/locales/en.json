@@ -647,6 +647,7 @@
     "leadersEmpty": "No leader data available."
   },
   "ahlShotMapView": {
+    "fallbackNote": "No {{empty}} data for this team — showing {{fallback}}.",
     "subtitle": "Season shot map",
     "goals": "Goals",
     "shotsOnGoal": "Shots on Goal",
@@ -730,6 +731,7 @@
     "leadersEmpty": "No leader data available."
   },
   "echlShotMapView": {
+    "fallbackNote": "No {{empty}} data for this team — showing {{fallback}}.",
     "subtitle": "Season shot map",
     "goals": "Goals",
     "shotsOnGoal": "Shots on Goal",
@@ -746,6 +748,10 @@
     "gsaxEstimatedNote": "Estimated — true GSAx requires tracking data (shot danger per location)"
   },
   "shotMapView": {
+    "offseason": {
+      "showingPrevious": "The {{current}} season hasn't started yet — showing {{fallback}}.",
+      "firstGame": "First game {{date}}."
+    },
     "scoreBar": {
       "powerPlay": "{{prefix}}Power Play",
       "emptyNet": "{{abbr}} Empty Net",
@@ -757,6 +763,9 @@
       "playoffTag": "🏒 Playoff · ",
       "loadingTitle": "Shot Map",
       "loadingState": "Loading game data…",
+      "noGamesTitle": "No games yet",
+      "seasonStarts": "Season starts {{date}}",
+      "noGamesState": "Season hasn't started",
       "coincidental": "{{skaters}} — Coincidental",
       "recentEvents": "Recent events",
       "disabledReason": "Available after the game ends.",
