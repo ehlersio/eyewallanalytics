@@ -46,6 +46,9 @@ describe('Standings / Power rankings / Leaders — season-not-started empty stat
     cy.setTeam('CAR')
     cy.visit('/league')
     cy.get('.league-view', { timeout: 15000 }).should('be.visible')
+    // Scoreboard is the default tab -- select Standings explicitly rather
+    // than relying on which tab opens first.
+    cy.get('.league-tab').contains('Standings').click()
   })
 
   it('Standings tab shows the season-not-started message instead of blank headers/table', () => {
@@ -115,8 +118,9 @@ describe('League page — CAR', () => {
     cy.get('.league-tab').eq(5).should('contain', 'Scorecard')
   })
 
-  it('Standings tab is active by default', () => {
-    cy.get('.league-tab').eq(1).should('have.class', 'league-tab--active')
+  it('Scoreboard tab is active by default', () => {
+    cy.get('.league-tab').eq(0).should('have.class', 'league-tab--active')
+    cy.get('.league-tab').eq(1).should('not.have.class', 'league-tab--active')
   })
 
   it('clicking Leaders makes it the active tab', () => {
@@ -134,6 +138,7 @@ describe('League page — CAR', () => {
 
   describe('Standings tab', () => {
     beforeEach(function () {
+      cy.get('.league-tab').contains('Standings').click()
       cy.skipIfEither('.lv-season-empty', '.lv-table')
     })
 
@@ -664,6 +669,7 @@ describe('Standings tab — magic/tragic number display', () => {
     cy.setTeam('CAR')
     cy.visit('/league')
     cy.get('.league-view', { timeout: 15000 }).should('be.visible')
+    cy.get('.league-tab').contains('Standings').click()
   })
 
   function rowFor(abbr) {

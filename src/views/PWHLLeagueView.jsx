@@ -327,7 +327,7 @@ const TABS = [
 
 export default function PWHLLeagueView() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState('standings');
+  const [activeTab, setActiveTab] = useState('scoreboard');
   const [season,    setSeason]    = useState(PWHL_CURRENT_SEASON);
   const myTeamId = PWHL_TEAM_ID;
   const myAbbr   = PWHL_TEAM_CONFIG?.abbr;

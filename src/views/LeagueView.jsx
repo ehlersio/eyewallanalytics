@@ -1897,7 +1897,7 @@ export default function LeagueView() {
   // `?tab=scorecard` opens that tab (the methodology page links back to it).
   const [activeTab, setActiveTab] = useState(() => {
     const tab = new URLSearchParams(window.location.search).get('tab');
-    return TABS.some(x => x.id === tab) ? tab : 'standings';
+    return TABS.some(x => x.id === tab) ? tab : 'scoreboard';
   });
 
   const handleTabChange = useCallback((tabId) => {

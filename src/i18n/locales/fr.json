@@ -109,11 +109,14 @@
       "draft": "Repêchage"
     },
     "scoreboard": {
-      "empty": "Aucun match aujourd'hui",
+      "empty": "Aucun match prévu",
       "error": "Impossible de charger les matchs d'aujourd'hui.",
       "statusLive": "EN DIRECT",
       "statusFinal": "FINAL",
-      "statusPre": "AUJOURD'HUI"
+      "statusPre": "À VENIR",
+      "dayToday": "Aujourd'hui",
+      "dayTomorrow": "Demain",
+      "intermission": "ENTR"
     },
     "leaders": {
       "titlePoints": "Points",
@@ -342,7 +345,8 @@
     "overview": {
       "divLabel": "Div. : {{division}}",
       "confLabel": "Assoc. : {{conference}}",
-      "streakSuffix": "séquence de {{code}}{{count}}"
+      "streakSuffix": "séquence de {{code}}{{count}}",
+      "priorSeasonBadge": "saison {{season}}"
     },
     "advanced": {
       "xgfSparklineTitle": "xGF% par match · 5 contre 5",
@@ -2087,7 +2091,7 @@
     "chooseOpponentForH2h": "Choisissez un adversaire ci-dessus pour voir l'historique des confrontations.",
     "noMeetings": "Aucune confrontation enregistrée entre ces équipes pour l'instant.",
     "since2023": "Depuis 2023-24",
- "since2025": "Depuis 2025-26",
+    "since2025": "Depuis 2025-26",
     "wins": "victoires",
     "lastN": "Derniers {{count}} : {{winsA}}-{{winsB}}",
     "streakPill": "{{abbr}} a gagné {{count}} de suite",
@@ -2206,7 +2210,11 @@
     "trendLabel": "Chances de participer aux séries cette saison",
     "source": "{{sims}} simulations · mis à jour le {{date}}",
     "none": "Les chances de participer aux séries s'afficheront après la première exécution nocturne du modèle cette saison.",
-    "unavailable": "Les chances de participer aux séries ne sont pas disponibles pour le moment."
+    "unavailable": "Les chances de participer aux séries ne sont pas disponibles pour le moment.",
+    "divisionRank": "{{rank}} sur {{of}} dans la {{division}}",
+    "divisionCol": "Gagner div.",
+    "playoffCol": "Séries",
+    "pointsCol": "Pts proj."
   },
   "injuryImpact": {
     "title": "Matchs perdus sur blessure",
