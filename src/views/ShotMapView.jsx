@@ -1128,6 +1128,34 @@ export default function ShotMapView() {
       return name && name.trim() ? name : `#${id}`;
     };
 
+    // Second name source, for ids this game's rosterSpots don't carry.
+    // playerMap only knows who dressed in THIS game; the special-teams unit
+    // rosters below are season-level, so a unit member who sat out resolved
+    // to a bare "#8479318" chip -- seen in production the day the unit chips
+    // first rendered (Auston Matthews, out for the game being viewed).
+    // /roster/current rather than the season roster on purpose: see
+    // getRoster()'s own comment in nhlApi.js.
+    const rosterNameById = {};
+    for (const rp of roster?.all || []) {
+      if (!rp?.id) continue;
+      const rFirst = rp.firstName?.default || rp.firstName || '';
+      const rLast  = rp.lastName?.default  || rp.lastName  || '';
+      const rFull  = `${rFirst} ${rLast}`.trim();
+      if (rFull) rosterNameById[String(rp.id)] = rFull;
+    }
+
+    // Names for the PP/PK unit chips specifically. Returns null rather than
+    // "#id" when neither source knows the player -- a chip reading a raw id
+    // is worse than one fewer chip, and it's reachable: a unit member who
+    // both missed this game and has since left the team is in neither map.
+    // pName keeps its own #id fallback, which is the right answer for the
+    // drill-down rows, where a missing name would silently drop a real event.
+    const unitName = (id) => {
+      const fromGame = playerMap[String(id)];
+      if (fromGame && fromGame.trim()) return fromGame.trim();
+      return rosterNameById[String(id)] || null;
+    };
+
     const periodLabel = n => n <= 3 ? `P${n}` : inPlayoffs ? (n === 4 ? "OT" : `${n - 3}OT`) : n === 4 ? "OT" : "SO";
 
     // Helper: build per-player period breakdown for a filtered set of plays
@@ -1408,8 +1436,8 @@ export default function ShotMapView() {
       // could actually infer), and the old `unitConfig?.pp1.map(...)` shape
       // would have thrown on exactly that.
       const ppUnits = specialTeamsMap?.[TEAM_CONFIG.abbr]?.PP;
-      const ppUnit1 = (ppUnits?.[1] ?? []).map(id => pName(id)).filter(n => n !== '—');
-      const ppUnit2 = (ppUnits?.[2] ?? []).map(id => pName(id)).filter(n => n !== '—');
+      const ppUnit1 = (ppUnits?.[1] ?? []).map(unitName).filter(Boolean);
+      const ppUnit2 = (ppUnits?.[2] ?? []).map(unitName).filter(Boolean);
 
       // Summary totals
       const totalGoals = ppOpps.filter(o => o.scored).length;
@@ -1587,8 +1615,8 @@ export default function ShotMapView() {
       });
 
       const pkUnits = specialTeamsMap?.[TEAM_CONFIG.abbr]?.PK;
-      const pkUnit1 = (pkUnits?.[1] ?? []).map(id => pName(id)).filter(n => n !== '—');
-      const pkUnit2 = (pkUnits?.[2] ?? []).map(id => pName(id)).filter(n => n !== '—');
+      const pkUnit1 = (pkUnits?.[1] ?? []).map(unitName).filter(Boolean);
+      const pkUnit2 = (pkUnits?.[2] ?? []).map(unitName).filter(Boolean);
 
       const totalGoalsAgainst = pkOpps.filter(o => o.allowed).length;
       const totalSOGAgainst   = pkOpps.reduce((s, o) => s + o.sog, 0);
