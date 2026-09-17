@@ -18,32 +18,36 @@ import { ECHL_TEAMS, echlLogoUrl } from '../utils/echlConfig'
 import { useAuth } from '../utils/AuthContext'
 import { upsertFavoriteTeam } from '../utils/favoriteTeamSync'
 import TeamLogo from './TeamLogo'
-import EyeWallLogo from './EyeWallLogo'
 
 // Tailwind migration (Session 95, Phase 1) -- previously TeamPicker.css.
 //
 // .team-picker-disclaimer/.team-picker-tile/.team-picker-tile--disabled/
 // .team-picker-abbr are kept as literal marker strings alongside the
 // Tailwind utilities -- TeamPicker.cy.js selects and asserts on these
-// exact class names. They carry no CSS of their own anymore; Tailwind
-// owns the visuals, these are pure test hooks now.
+// exact class names. Apart from .team-picker-overlay (see below), they
+// carry no CSS of their own anymore; Tailwind owns the visuals, these are
+// pure test hooks now.
 //
 // .team-picker-overlay's background was `var(--bg, #0d0d0f)` in the
 // original CSS -- `--bg` (bare, no number) is never defined anywhere in
 // this codebase (unlike --bg0/--bg1/etc, which are real), so this always
 // rendered the literal fallback #0d0d0f regardless of light/dark theme.
-// Reproduced as the literal color for exact parity, but flagging: since
-// --text/--text-dim *are* real theme-reactive tokens, a user who set light
-// mode in a previous session and then reopens TeamPicker via "Change team"
-// would see light-mode near-black text (#0d1117) on this permanently-dark
-// background -- a real, currently-live legibility issue, not something
-// this migration should silently "fix" by guessing which token was meant.
+// That left light-mode text (#0d1117) on a permanently-dark background --
+// flagged as a live legibility issue by the Tailwind migration, and fixed
+// in 2026-09 once the app started following the device's theme, which made
+// it reachable on first launch rather than only via "Change team".
+//
+// The screen stays dark in both themes on purpose: the league marks it
+// renders are white-on-dark artwork (the PWHL wordmark is pure white).
+// So .team-picker-overlay is no longer a pure test hook -- it now carries
+// real CSS in light-mode-overrides.css, which re-pins the theme tokens
+// this screen draws text and borders from back to their dark values.
 //
 // Hover lift (translateY) uses real CSS :hover; hover background/border-
 // color are deliberately left as JS-driven inline styles (unchanged below)
 // since they're genuinely dynamic (per-team brand color), matching the
 // pattern already established for other components' dynamic values.
-const OVERLAY_CLASSES = 'fixed inset-0 z-[1000] bg-[#0d0d0f] overflow-y-auto flex justify-center pt-12 px-4 pb-24';
+const OVERLAY_CLASSES = 'team-picker-overlay fixed inset-0 z-[1000] bg-[#0d0d0f] overflow-y-auto flex justify-center pt-12 px-4 pb-24';
 const INNER_CLASSES = 'w-full max-w-[720px] pb-12';
 const HEADER_CLASSES = 'text-center mb-10 relative';
 const HEADER_LOGO_CLASSES = 'w-40 h-40 mx-auto mb-5 object-contain';
@@ -159,7 +163,11 @@ function SportStep({ onPickSport }) {
   return (
     <>
       <div className={HEADER_CLASSES}>
-        <EyeWallLogo alt="EyeWall Analytics" className={HEADER_LOGO_CLASSES} />
+        {/* Not EyeWallLogo: this overlay's background is hardcoded dark
+            (OVERLAY_CLASSES) regardless of theme, so the light-theme mark's
+            navy E disappeared here. Same reason the share canvases render
+            /eyewall-logo.svg directly. */}
+        <img src="/eyewall-logo.svg" alt="EyeWall Analytics" className={HEADER_LOGO_CLASSES} />
         <h1 className={TITLE_CLASSES}>{t('teamPicker.chooseLeague')}</h1>
         <p className={SUB_CLASSES}>{t('teamPicker.settingsHint')}</p>
       </div>
