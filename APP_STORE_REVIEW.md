@@ -148,3 +148,59 @@ Everything is reachable without an account:
 - Players, League and News are fully populated.
 
 Contact: matt@eyewallanalytics.com
+
+---
+
+# App Review — Guideline 4.1(a) Copycats, September 17, 2026
+
+Build 1.0 (3), reviewed on iPad Air 11-inch (M3). "The metadata includes content
+that resembles one or multiple third-party sports teams and/or leagues without
+the necessary authorization."
+
+## What triggered it
+
+- **App icon.** The red/white/silver hurricane swirl with a puck in the eye
+  closely resembled the Carolina Hurricanes' primary logo. Only a new icon fixes this.
+- **Screenshots.** The 13" set opened on a grid of all 32 NHL team logos, and
+  every other shot was Hurricanes-branded (logos, colors, a player in a Canes
+  jersey, a "Carolina Hurricanes News" feed).
+- **Text fields.** Check the subtitle, keywords and promotional text for league or
+  team names (NHL, PWHL, AHL, ECHL, Stanley Cup, team names). Keep league names out
+  of the subtitle and keywords.
+
+In-app team logos were not cited: 4.1(a) here is about metadata. They can stay.
+
+## Fix (branch `rink-icon-rebrand`)
+
+1. New mark: a faceoff circle with hash marks, a block E, and the faceoff dot at
+   center. Ice Rink (ice white, red, navy) is the primary icon; Night Rink (navy,
+   red, white) is the iOS dark-mode icon and the in-app logo in dark theme. The App
+   Store listing only shows the primary icon. Source: `src/brand/rinkMark.js`;
+   `node scripts/brand/build-brand-assets.mjs` regenerates every asset.
+2. Launch splash, header logo, favicons, PWA icons and share-canvas logo all
+   switched to the new mark.
+3. Faceoff intro animation on iOS cold start, and a faceoff loading indicator.
+
+## Before resubmitting
+
+1. Merge, then `npm run build && npx cap sync ios`, archive and upload a new build.
+2. Retake all screenshot sets with no team logos visible: skip the team picker, and
+   prefer the shot-map rink, momentum chart, percentile bars, text standings and the
+   playoff bracket. Avoid player photos in team jerseys.
+3. Revise the subtitle, keywords, promotional text and description as above.
+
+## Reply (paste this)
+
+Thank you for the review. We've revised the app and its metadata to remove
+third-party team and league branding:
+
+- The app icon has been replaced with an original design (a faceoff circle and the
+  letter E) that doesn't resemble any team's or league's logo.
+- All screenshots have been retaken without team logos.
+- The subtitle, keywords and promotional text no longer reference team or league
+  names.
+
+EyeWall Analytics is an independent project and is not affiliated with, endorsed
+by, or sponsored by any league or team; the app says so in its About screen.
+
+Contact: matt@eyewallanalytics.com

@@ -30,9 +30,53 @@ const closeSettings = () => {
 // ── Theme toggle ──────────────────────────────────────────────────────────
 
 describe('Theme toggle', () => {
-  it('defaults to dark mode for a new user', () => {
-    // e2e.js beforeEach seeds eyewall:team but not eyewall:theme
+  it("follows the device's dark setting for a new user", () => {
+    // e2e.js beforeEach seeds eyewall:team but not eyewall:theme, and pins
+    // the device setting to dark
     cy.visit('/')
+    assertDataTheme('dark')
+    cy.window().then(win => {
+      expect(win.localStorage.getItem('eyewall:theme')).to.equal(null)
+    })
+  })
+
+  it("follows the device's light setting for a new user", () => {
+    cy.visit('/', {
+      onBeforeLoad(win) {
+        win.__eyewallSystemScheme = 'light'
+      },
+    })
+    assertDataTheme('light')
+    openSettings()
+    cy.contains('Dark mode').should('exist')
+    closeSettings()
+    cy.window().then(win => {
+      expect(win.localStorage.getItem('eyewall:theme')).to.equal(null)
+    })
+  })
+
+  it("keeps a saved choice even when the device's setting differs", () => {
+    cy.visit('/', {
+      onBeforeLoad(win) {
+        win.__eyewallSystemScheme = 'light'
+        win.localStorage.setItem('eyewall:theme', 'dark')
+      },
+    })
+    assertDataTheme('dark')
+  })
+
+  it('saves the choice once the user picks a theme, overriding the device', () => {
+    cy.visit('/', {
+      onBeforeLoad(win) {
+        win.__eyewallSystemScheme = 'light'
+      },
+    })
+    openSettings()
+    cy.contains('Dark mode').click()
+    assertDataTheme('dark')
+    assertStoredTheme('dark')
+    closeSettings()
+    cy.reload()
     assertDataTheme('dark')
   })
 

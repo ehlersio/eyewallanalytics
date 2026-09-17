@@ -35,6 +35,7 @@ import PeriodSummary from '../components/PeriodSummary';
 import { usePeriodSummary, useGameSummary } from '../hooks/usePeriodSummary';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import { PAGE_CLASSES } from '../utils/pageClasses';
+import FaceoffLoader from '../components/FaceoffLoader';
 
 // Lazy so Recharts stays off the default route's initial load -- the wave
 // only renders inside the live momentum card.
@@ -1993,7 +1994,7 @@ export default function ShotMapView() {
                 </>
               ) : (
                 <>
-                  <div className={SCORE_PERIOD_CLASSES}>{t('shotMapView.scoreBar.loadingTitle')}</div>
+                  <FaceoffLoader size={30} />
                   <div className={SCORE_STATE_CLASSES}>{t('shotMapView.scoreBar.loadingState')}</div>
                 </>
               )}
