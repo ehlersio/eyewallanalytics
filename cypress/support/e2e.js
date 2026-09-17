@@ -23,6 +23,27 @@ const IGNORED_ERRORS = [
 ]
 
 Cypress.on('window:before:load', (win) => {
+  // Pin the device's light/dark setting to dark so the app's follow-the-
+  // device theme default is the same on every runner (headless browsers
+  // report light, a dev machine reports whatever macOS is set to). A spec
+  // can set win.__eyewallSystemScheme = 'light' in onBeforeLoad to test the
+  // light path -- it's read at query time, after onBeforeLoad has run.
+  const realMatchMedia = win.matchMedia.bind(win)
+  win.matchMedia = (query) => {
+    if (!/prefers-color-scheme/.test(query)) return realMatchMedia(query)
+    const scheme = win.__eyewallSystemScheme || 'dark'
+    return {
+      matches: query.includes(scheme),
+      media: query,
+      onchange: null,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      dispatchEvent: () => false,
+    }
+  }
+
   cy.stub(win.console, 'error').callsFake((...args) => {
     const msg = args.join(' ')
     if (IGNORED_ERRORS.some(re => re.test(msg))) return

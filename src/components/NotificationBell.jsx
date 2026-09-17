@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePushNotifications, loadPrefs, savePrefs } from '../hooks/usePushNotifications';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
@@ -8,7 +8,7 @@ import { useAuth } from '../utils/AuthContext';
 import { PWHL_TEAM_CONFIG } from '../utils/pwhlApi';
 import { AHL_TEAM_CONFIG } from '../utils/ahlApi';
 import { ECHL_TEAM_CONFIG } from '../utils/echlApi';
-import { getTheme, setTheme } from '../utils/themeConfig';
+import { getTheme, setTheme, subscribeSystemTheme } from '../utils/themeConfig';
 import { getLocale, setLocale } from '../utils/localeConfig';
 import { upsertLocale } from '../utils/localeSync';
 import { applyTeamTheme } from '../utils/applyTeamTheme';
@@ -161,6 +161,10 @@ export default function NotificationBell() {
     // After team selection, App.jsx redirects to the correct sport root.
     window.location.href = '/';
   };
+
+  // Keeps the Appearance button's label right if the device flips light/dark
+  // while the app is still following it (App.jsx applies the theme itself).
+  useEffect(() => subscribeSystemTheme(setThemeState), []);
 
   const handleThemeToggle = () => {
     const next = theme === 'dark' ? 'light' : 'dark';

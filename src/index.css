@@ -156,6 +156,25 @@
 [data-theme="light"] .eyewall-logo-dark  { display: none; }
 [data-theme="light"] .eyewall-logo-light { display: inline-block; }
 
+/* Faceoff mark colors for FaceoffRink.jsx (intro + loader): Night Rink in
+   dark mode, Ice Rink in light. sheet/red/ink must match RINK_PALETTES in
+   src/brand/rinkMark.js -- brandTokens.test.js checks they do. puck and
+   away are animation-only (the puck has to show up on either sheet). */
+:root {
+  --brand-sheet: #0B1426;
+  --brand-red: #E0364C;
+  --brand-ink: #FFFFFF;
+  --brand-puck: #E8F1F8;
+  --brand-away: #7FA3C7;
+}
+[data-theme="light"] {
+  --brand-sheet: #F3F7FA;
+  --brand-red: #D6203A;
+  --brand-ink: #0B1426;
+  --brand-puck: #0B1426;
+  --brand-away: #7A8699;
+}
+
 @layer base {
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 

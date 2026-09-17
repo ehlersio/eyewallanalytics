@@ -761,7 +761,6 @@
       "intermissionOT": "OT{{n}} Intermission",
       "final": "Final",
       "playoffTag": "🏒 Playoff · ",
-      "loadingTitle": "Shot Map",
       "loadingState": "Loading game data…",
       "noGamesTitle": "No games yet",
       "seasonStarts": "Season starts {{date}}",
@@ -2013,7 +2012,8 @@
   },
   "app": {
     "skipToMainContent": "Skip to main content",
-    "mainContentAriaLabel": "Main content"
+    "mainContentAriaLabel": "Main content",
+    "introAriaLabel": "Faceoff animation"
   },
   "seasonOverlayChart": {
     "defaultMetricLabel": "Value",

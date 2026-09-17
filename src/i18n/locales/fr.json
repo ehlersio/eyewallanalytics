@@ -761,7 +761,6 @@
       "intermissionOT": "Entracte — Prolongation {{n}}",
       "final": "Final",
       "playoffTag": "🏒 Séries · ",
-      "loadingTitle": "Carte des tirs",
       "loadingState": "Chargement des données du match…",
       "noGamesTitle": "Aucun match",
       "seasonStarts": "Début de la saison le {{date}}",
@@ -2013,7 +2012,8 @@
   },
   "app": {
     "skipToMainContent": "Passer au contenu principal",
-    "mainContentAriaLabel": "Contenu principal"
+    "mainContentAriaLabel": "Contenu principal",
+    "introAriaLabel": "Animation de mise au jeu"
   },
   "seasonOverlayChart": {
     "defaultMetricLabel": "Valeur",

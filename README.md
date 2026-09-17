@@ -12,7 +12,7 @@
 
 EyeWall Analytics is a React PWA delivering real-time and historical NHL and PWHL data from the public NHL API, MoneyPuck, HockeyTech, and PWHLPA. It combines live polling, a Cloudflare Worker caching layer, Web Push notifications, AI-generated period/game summaries and matchup analysis, player shot heat maps, MoneyPuck-powered WAR/percentile analytics, true RAPM via ridge regression, AI-powered nightly power rankings, a live draft board with Central Scouting rankings and AI pick analysis, and a full PWHL analytics suite into a mobile-first experience for hockey fans who want to go deeper than the box score.
 
-Users select their league (NHL or PWHL) and team on first launch. All views, colors, and data scope to the selected team. The sport, team, and theme preference are persisted to `localStorage` and applied on every subsequent load.
+Users select their league (NHL or PWHL) and team on first launch. All views, colors, and data scope to the selected team. The sport, team, and theme preference are persisted to `localStorage` and applied on every subsequent load. Until the user picks a theme in Settings, the app follows the device's light/dark setting live (`themeConfig.js`), so it matches the iOS launch splash; once they pick one, it's saved and wins. Cypress pins the device setting to dark in `cypress/support/e2e.js` so specs are deterministic across runners.
 
 ---
 
@@ -54,9 +54,11 @@ canes-analytics-starter/
 │   ├── manifest.json             # PWA manifest
 │   ├── goal-horn.mp3
 │   ├── _headers                  # Cloudflare cache control headers
-│   ├── eyewall-logo.svg/.png     # Bright-colors mark, thin black outline baked into the pixels (Session 100) so it holds up against non-dark-theme backgrounds too. Rendered directly (not via EyeWallLogo.jsx) by the fixed-dark share-canvas components (PeriodSummary.jsx, PredictionShareCanvas.jsx, PWHLPeriodSummary.jsx, PWHLPredictionShareCanvas.jsx, LeagueView.jsx's PowerRankingsCanvas, ScoutingTab.jsx) since their canvas bg is always dark regardless of app theme. .svg is a base64-PNG wrapper (not real vector paths) — this was an image-processing fix (Pillow: alpha-dilate + composite), not a code change
-│   ├── eyewall-logo-light.svg/.png # Same mark + outline, with the low-saturation (white/gray) fills darkened (red accent untouched) for genuinely light backgrounds — og:image uses this (social link-preview cards are almost always white), and it's the [data-theme="light"] half of EyeWallLogo.jsx's toggle. Regenerate both -light and non--light files together from the same source if the art ever changes
-│   └── favicon-*.png / .ico
+│   ├── eyewall-logo.svg/.png     # Faceoff-E mark, Night Rink colors (white E, red circle), transparent background — the dark-theme half of EyeWallLogo.jsx, and rendered directly by the fixed-dark share-canvas components (PeriodSummary.jsx, PredictionShareCanvas.jsx, PWHLPeriodSummary.jsx, PWHLPredictionShareCanvas.jsx, LeagueView.jsx's PowerRankingsCanvas, ScoutingTab.jsx). Generated — see scripts/brand/
+│   ├── eyewall-logo-light.svg/.png # Same mark in Ice Rink colors (navy E) — the [data-theme="light"] half of EyeWallLogo.jsx's toggle. Generated
+│   ├── favicon.svg               # Follows prefers-color-scheme: Ice Rink in light, Night Rink in dark. Generated
+│   └── favicon-*.png / .ico / apple-touch-icon.png # Ice Rink tiles; favicon-512 doubles as og:image, favicon-512-solid is the padded maskable PWA icon. Generated
+├── scripts/brand/                # `node scripts/brand/build-brand-assets.mjs` regenerates every rendering of the mark from src/brand/rinkMark.js: iOS app icon (light/dark/tinted), iOS launch splash (light/dark), favicons, PWA icons and the logo files above. macOS only — render-svg.swift rasterizes via AppKit, no extra dependency
 ├── functions/                    # Cloudflare Pages Functions (API proxy)
 │   ├── nhl-api/[[path]].js
 │   ├── nhl-stats/[[path]].js
@@ -120,6 +122,9 @@ canes-analytics-starter/
 │   │   ├── TeamLogo.jsx/.css           # NHL + PWHL team logo renderer
 │   │   ├── Scoreboard.jsx              # League page's Scoreboard tab (session102) — shared across all 4 leagues, same normalized shape from /nhl/today, /pwhl/today, /ahl/today, /echl/today. Mirrors TeamLogo.jsx's cross-sport design (one component, a `sport` prop resolves team lookup + logo per league). Day header says "Today" only when the games really are today (the routes return the next day with games otherwise); start time before puck drop, period + clock while live, OT/SO on finals — pure bits in utils/scoreboard.js
 │   │   ├── EyeWallLogo.jsx             # Theme-aware EyeWall wordmark (Session 100) — renders both eyewall-logo.svg (bright) and eyewall-logo-light.svg (contrast-darkened) stacked, toggled purely via CSS on [data-theme] (index.css), not a JS getTheme() check, so it reacts instantly to a live theme toggle. Only for logo placements on the app's own themed background (TeamPicker.jsx, AboutPopup.jsx) — the fixed-dark share-canvas components render /eyewall-logo.svg directly instead, since their canvas bg never changes with app theme
+│   │   ├── FaceoffRink.jsx             # Animated faceoff mark — geometry from src/brand/rinkMark.js, motion from src/brand/faceoffTimeline.js (pure frame functions), colors from index.css's --brand-* tokens so it follows the theme. Writes SVG attributes through refs each animation frame; one still frame under prefers-reduced-motion
+│   │   ├── FaceoffIntro.jsx            # ~2.5s cold-start intro over the app on iOS: ref drops the puck, centers take the draw, settles into the mark, fades out. The app loads underneath meanwhile. Once per session, tap to skip, never under reduced motion or Cypress; web only with ?intro=1
+│   │   ├── FaceoffLoader.jsx           # Looping stick-battle loading indicator — the Suspense fallback in App.jsx and the Shot Map score bar's loading state
 │   │   ├── CalendarView.jsx            # NHL calendar month view
 │   │   ├── PWHLCalendarView.jsx        # PWHL calendar month view
 │   │   ├── InfoTip.jsx/.css            # Tap-to-open tooltip
@@ -176,8 +181,12 @@ canes-analytics-starter/
 │       ├── echlPlayerStats.js          # ECHL skater/goalie stat defs + formatters — mirrors ahlPlayerStats.js
 │       ├── echlPredictionStore.js      # ECHL prediction tracking (localStorage-only) — mirrors ahlPredictionStore.js
 │       └── analytics.js
+├── src/brand/
+│   ├── rinkMark.js                     # Source of truth for the faceoff-E mark's geometry and the Ice Rink (light) / Night Rink (dark) palettes; plain JS so the asset script can import it under Node
+│   ├── faceoffTimeline.js              # Frame math for the intro and loader animations
+│   └── __tests__/                      # Timeline start/end frames match the static mark; --brand-* CSS tokens match RINK_PALETTES
 ├── src/utils/__tests__/
-│   ├── *.test.js                       # Vitest unit tests (13 files, 179 tests)
+│   ├── *.test.js                       # Vitest unit tests
 │   └── testHelpers/mockSupabaseAuth.js # Shared vi.mock() query-builder + localStorage/window stubs for favoriteTeamSync.test.js / triviaAnswers.test.js (Session 93)
 ├── cypress/
 │   ├── e2e/
@@ -697,7 +706,7 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (204 tests, 15 files)
+### Vitest (249 tests, 22 files)
 ```bash
 npm test
 npm run test:watch
@@ -752,7 +761,7 @@ npm run cypress:visual            # diff current rendering against the committed
 | `pwhl-league.cy.js` | PWHL 5 tabs incl. Draft (72 picks); standings/leaders scoped to established teams, expansion absence asserted |
 | `draft.cy.js` | NHL draft board |
 | `TeamPicker.cy.js` | Sport + team picker — all 12 PWHL teams selectable, real colors |
-| `theme.cy.js` | Light/dark mode |
+| `theme.cy.js` | Light/dark mode — following the device until a choice is saved, then the saved choice |
 | `topnav-safe-area.cy.js` | Topbar safe-area regression (mobile viewports) |
 | `viewports.cy.js` | 4 viewports × all views |
 | `visual-regression.cy.js` | Pixel-level baseline screenshots — every NHL + PWHL route × mobile/desktop × dark/light (48 total); parity evidence for the Tailwind migration |

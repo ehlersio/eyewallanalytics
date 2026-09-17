@@ -12,8 +12,10 @@ import { capture } from './utils/analytics'
 // App.css import removed (Phase 7b) -- migrated to Tailwind.
 import { hasTeamConfig, TEAM_CONFIG } from './utils/teamConfig'
 import TeamPicker from './components/TeamPicker'
+import FaceoffIntro from './components/FaceoffIntro'
+import FaceoffLoader from './components/FaceoffLoader'
 import { applyTeamTheme } from './utils/applyTeamTheme';
-import { getTheme } from './utils/themeConfig';
+import { getTheme, subscribeSystemTheme } from './utils/themeConfig';
 
 // Lazy-load all non-initial routes — reduces initial bundle by ~64 KiB
 const ScheduleView  = lazy(() => import('./views/ScheduleView'));
@@ -68,11 +70,7 @@ const PWHLDevReplayView = import.meta.env.DEV
 
 const ViewFallback = () => {
   const { t } = useTranslation();
-  return (
-    <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-dim)' }}>
-      {t('common.loading')}
-    </div>
-  );
+  return <FaceoffLoader label={t('common.loading')} className="p-8" />;
 };
 
 // Redirects PWHL/AHL/ECHL users from / to their sport's shot map
@@ -128,6 +126,8 @@ export default function App() {
   // In App component body, before the return:
   useEffect(() => {
     applyTeamTheme(TEAM_CONFIG, getTheme());
+    // Until the user picks a theme, follow the device's light/dark setting live.
+    return subscribeSystemTheme(mode => applyTeamTheme(TEAM_CONFIG, mode));
   }, []); // runs once on mount; full reload on team change means this always reflects current team  
 
   // Show team picker on first launch (no team saved yet).
@@ -140,6 +140,8 @@ export default function App() {
   // to user_preferences (see favoriteTeamSync.js). It used to only wrap the
   // post-needsTeam branch, which left TeamPicker with no auth context at all.
   return (
+    <>
+    <FaceoffIntro />
     <AuthProvider>
       {needsTeam ? (
         <TeamPicker
@@ -219,5 +221,6 @@ export default function App() {
         </BrowserRouter>
       )}
     </AuthProvider>
+    </>
   )
 }
