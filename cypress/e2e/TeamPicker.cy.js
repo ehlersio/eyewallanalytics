@@ -103,3 +103,35 @@ describe('TeamPicker', () => {
     })
   })
 })
+
+// ── Stays legible in light mode ───────────────────────────────────────────
+// The overlay keeps a hardcoded dark background in both themes (the league
+// marks are white-on-dark artwork), so its text tokens are re-pinned to
+// their dark values in light-mode-overrides.css. Before that, a light-mode
+// user got near-black text and a navy-E logo on a near-black panel.
+describe('Team picker in light mode', () => {
+  beforeEach(() => {
+    cy.visit('/', {
+      onBeforeLoad(win) {
+        win.localStorage.removeItem('eyewall:team')
+        win.localStorage.setItem('eyewall:theme', 'light')
+      },
+    })
+  })
+
+  it('keeps the dark-theme text color on the dark overlay', () => {
+    cy.get('html').should('have.attr', 'data-theme', 'light')
+    cy.get('.team-picker-overlay').then($el => {
+      const text = getComputedStyle($el[0]).getPropertyValue('--text').trim().toLowerCase()
+      expect(text).to.eq('#e4e8f0')
+    })
+    cy.contains('Choose your league').should('be.visible')
+  })
+
+  it('renders the dark-background logo, not the light-theme one', () => {
+    cy.get('.team-picker-overlay img[alt="EyeWall Analytics"]')
+      .should('have.attr', 'src', '/eyewall-logo.svg')
+      .and('be.visible')
+    cy.get('.team-picker-overlay img.eyewall-logo-light').should('not.exist')
+  })
+})

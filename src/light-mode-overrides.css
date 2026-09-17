@@ -273,3 +273,27 @@
 [data-theme="light"] .scouting-goalie-row {
   background: rgba(0,0,0,0.02);
 }
+
+/* ════════════════════════════════════════════════════════════════
+   TeamPicker.jsx -- the first-launch league/team picker keeps its own
+   hardcoded dark background (#0d0d0f) in both themes, because the league
+   marks it renders are white-on-dark artwork (the PWHL wordmark is pure
+   white, and the NHL shield is near-white). Everything else on it draws
+   from the theme tokens, so in light mode its title went dark-on-dark and
+   the logo's navy E vanished. Custom properties inherit, so re-pinning
+   them on the overlay fixes every child at once. Their values are the
+   dark-theme ones from index.css's :root.
+
+   The header logo is a separate fix in the component itself: it renders
+   /eyewall-logo.svg directly rather than through EyeWallLogo.jsx, for the
+   same reason the fixed-dark share canvases do.
+   ════════════════════════════════════════════════════════════════ */
+[data-theme="light"] .team-picker-overlay {
+  --text: #e4e8f0;
+  --text-muted: #8a99aa;
+  --text-dim: #808a94;
+  --border: rgba(255, 255, 255, 0.06);
+  --border-2: rgba(255, 255, 255, 0.12);
+  --bg2: #101827;
+  --bg3: #172035;
+}
