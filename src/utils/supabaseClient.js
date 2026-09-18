@@ -466,9 +466,11 @@ export async function getPowerRankingsHistory(teamAbbr, season = currentSeason()
 
 // ── Game matchup analysis ────────────────────────────────────
 // Returns the AI-generated line/player matchup analysis, or null if none exists.
-export async function getGameMatchup(gameId) {
+// game_predictions holds one row per (game, locale) -- same i18n.language
+// pattern as getGameSummary() below.
+export async function getGameMatchup(gameId, locale = i18n.language) {
   if (!gameId) return null;
-  const rows = await workerFetch(`/game-predictions?gameId=${gameId}`)
+  const rows = await workerFetch(`/game-predictions?gameId=${gameId}&locale=${locale}`)
     .catch(e => { console.warn('[getGameMatchup] fetch error:', e.message); return null; });
   if (!rows?.length || !rows[0]?.matchup_text) return null;
   return { text: rows[0].matchup_text, generatedAt: rows[0].generated_at };
@@ -476,11 +478,17 @@ export async function getGameMatchup(gameId) {
 
 // ── Game prediction ───────────────────────────────────────────
 // Returns the AI-generated pre-game prediction narrative, or null if none exists.
-export async function getGamePrediction(gameId) {
+export async function getGamePrediction(gameId, locale = i18n.language) {
   if (!gameId) return null;
-  const rows = await workerFetch(`/game-predictions?gameId=${gameId}`).catch(() => []);
+  const rows = await workerFetch(`/game-predictions?gameId=${gameId}&locale=${locale}`).catch(() => []);
   if (!rows?.length || !rows[0]?.prediction_text) return null;
   return { text: rows[0].prediction_text, generatedAt: rows[0].generated_at };
+}
+
+// KV key the Worker's /prediction/analyze caches a prediction under, for
+// the /cache/ fast path. French gets a ':fr' suffix; English has none.
+export function predictionCacheKey(gameId, teamAbbr, locale = i18n.language) {
+  return `prediction:${gameId}:${teamAbbr}${locale === 'fr' ? ':fr' : ''}`;
 }
 
 // ── Game summary ──────────────────────────────────────────────

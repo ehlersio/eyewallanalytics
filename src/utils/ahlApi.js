@@ -4,6 +4,7 @@
 // (see eyewall-poller's src/ahl.js) — no transactions/salaries/scouting/
 // narrative/live-tracking endpoints exist for AHL yet, unlike PWHL.
 
+import i18n from '../i18n';
 import { getAHLStoredTeam, AHL_CURRENT_SEASON } from './ahlConfig';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
@@ -162,7 +163,8 @@ export async function fetchAHLPreview(gameId) {
  *          expHome, expAway, narrative, h2hRecord, homeStreak, awayStreak } */
 export async function fetchAHLPrediction(gameId) {
   if (!gameId) return null;
-  return workerFetch(`/ahl/prediction?gameId=${gameId}`);
+  // ?locale= picks the narrative's language (the Worker caches each separately).
+  return workerFetch(`/ahl/prediction?gameId=${gameId}&locale=${i18n.language}`);
 }
 
 /** Season-aggregate SOG (car vs. opp) + PP%/PK% for the Shot Map's "All N"
