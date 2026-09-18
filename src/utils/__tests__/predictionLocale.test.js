@@ -3,12 +3,21 @@
 // ?locale=, and the Worker cache key for French gets a ':fr' suffix while
 // English keeps its original key.
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest'
 import i18n from '../../i18n'
-import { getGamePrediction, getGameMatchup, predictionCacheKey } from '../supabaseClient.js'
-import { fetchPWHLPrediction } from '../pwhlApi.js'
-import { fetchAHLPrediction } from '../ahlApi.js'
-import { fetchECHLPrediction } from '../echlApi.js'
+
+// The API modules read VITE_WORKER_URL once, at import, and skip the fetch
+// entirely without it -- CI's unit-test step doesn't set it (local runs get
+// it from .env). Stub it, then import them.
+let getGamePrediction, getGameMatchup, predictionCacheKey
+let fetchPWHLPrediction, fetchAHLPrediction, fetchECHLPrediction
+beforeAll(async () => {
+  vi.stubEnv('VITE_WORKER_URL', 'https://worker.test')
+  ;({ getGamePrediction, getGameMatchup, predictionCacheKey } = await import('../supabaseClient.js'))
+  ;({ fetchPWHLPrediction } = await import('../pwhlApi.js'))
+  ;({ fetchAHLPrediction } = await import('../ahlApi.js'))
+  ;({ fetchECHLPrediction } = await import('../echlApi.js'))
+})
 
 const requested = () => globalThis.fetch.mock.calls.map(([url]) => String(url))
 
@@ -22,7 +31,6 @@ beforeEach(() => {
 
 afterEach(async () => {
   await i18n.changeLanguage('en')
-  vi.restoreAllMocks()
 })
 
 describe('predictionCacheKey', () => {
@@ -49,12 +57,12 @@ describe('prediction fetches send the current language', () => {
   })
 
   it.each([
-    ['pwhl', fetchPWHLPrediction],
-    ['ahl', fetchAHLPrediction],
-    ['echl', fetchECHLPrediction],
-  ])('%s prediction', async (league, fetchPrediction) => {
+    ['pwhl', () => fetchPWHLPrediction],
+    ['ahl', () => fetchAHLPrediction],
+    ['echl', () => fetchECHLPrediction],
+  ])('%s prediction', async (league, getFetcher) => {
     await i18n.changeLanguage('fr')
-    await fetchPrediction(210)
+    await getFetcher()(210)
     expect(requested().some(u => u.includes(`/${league}/prediction?gameId=210&locale=fr`))).toBe(true)
   })
 })
