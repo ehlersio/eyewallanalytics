@@ -488,3 +488,38 @@ describe('Shot Map — special teams unit names', () => {
     cy.assertNoErrors()
   })
 })
+
+// ── Season selector layout ────────────────────────────────────────────────
+// On phone widths the selector wraps below the score line, since the two
+// don't fit side by side. It used to stay a tall right-aligned column there,
+// which left a large empty gap to its left and roughly doubled the score
+// card's height (reported from a real iPhone, Sept 2026). It lays out as a
+// horizontal row at those widths now.
+describe('Season selector layout', () => {
+  it('is a full-width row below the score on a phone, not a tall column', () => {
+    cy.viewport(390, 844)
+    cy.visit('/')
+    cy.get('.score-card').should('be.visible')
+    cy.get('.season-selector').then($sel => {
+      const selector = $sel[0].getBoundingClientRect()
+      const inner = $sel[0].parentElement.getBoundingClientRect()
+      expect(selector.height, 'selector height').to.be.lessThan(56)
+      expect(selector.width, 'selector fills the row').to.be.closeTo(inner.width, 2)
+    })
+    cy.get('.score-card').then($card => {
+      expect($card[0].getBoundingClientRect().height, 'score card height').to.be.lessThan(130)
+    })
+  })
+
+  it('sits inline to the right of the score on a wide viewport', () => {
+    cy.viewport(1024, 800)
+    cy.visit('/')
+    cy.get('.score-card').should('be.visible')
+    cy.get('.season-selector').then($sel => {
+      const selector = $sel[0].getBoundingClientRect()
+      const inner = $sel[0].parentElement.getBoundingClientRect()
+      expect(selector.width, 'stays a narrow column').to.be.lessThan(inner.width / 2)
+      expect(selector.right, 'hugs the right edge').to.be.closeTo(inner.right, 2)
+    })
+  })
+})
