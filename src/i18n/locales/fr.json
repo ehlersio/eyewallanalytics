@@ -1699,7 +1699,7 @@
       "xgfTip": "Pourcentage de buts attendus pour (xGF%) — part des buts attendus générés pendant que cette unité était sur la glace à 5 contre 5. Au-dessus de 50 % signifie que votre équipe a généré plus d'occasions que l'adversaire pendant que ces joueurs étaient ensemble. Basé sur l'emplacement et le type de tir, pas seulement le nombre de tirs.",
       "toiTip": "Minutes que cette unité a jouées ensemble à 5 contre 5 cette saison. Plus de minutes = chiffre de xGF% plus fiable. Les unités avec moins de minutes peuvent refléter des changements de trio récents.",
       "sectionTip": "Trios d'attaquants et paires de défenseurs déduits des données de présence simultanée sur la glace à 5 contre 5. Lorsque les données d'inférence sont complètes, le xGF% et le TDG sont en direct pour cette saison. Les formations statiques (affichées lorsque l'inférence n'est pas disponible) reflètent les derniers trios connus.",
-      "sectionLabel": "Trios de {{abbr}}",
+      "sectionLabel": "Trios les plus utilisés de {{abbr}} cette saison",
       "playoffsBadge": "Séries",
       "liveNote": "⚡ xGF% en direct lorsque disponible · formation basée sur les combinaisons de trios connues",
       "opponentNote": "Trios de l'adversaire disponibles lorsque les données des 32 équipes seront activées",
@@ -1724,7 +1724,18 @@
       "thisSeason": "cette saison",
       "playoffsScope": "(séries)"
     },
-    "xCaption": "{{abbr}} c. {{oppAbbr}} — Rapport de dépistage"
+    "xCaption": "{{abbr}} c. {{oppAbbr}} — Rapport de dépistage",
+    "projectedLines": {
+      "sectionLabel": "Trios projetés de {{abbr}}",
+      "sectionTip": "Les joueurs que nous prévoyons voir ensemble au prochain match, d'après les présences sur la glace à 5 contre 5. En saison, la projection part des trios du dernier match et remplace les joueurs blessés ou qui ne font plus partie de l'équipe. Avant la saison, elle regroupe les joueurs comme ils ont joué ensemble en présaison et classe les trios selon le temps de glace de la saison dernière. Une projection, pas la formation confirmée.",
+      "basisLastGame": "D'après le dernier match",
+      "basisPreseason_one": "D'après {{count}} match préparatoire",
+      "basisPreseason_other": "D'après {{count}} matchs préparatoires",
+      "accuracyInSeason": "Testé sur les deux dernières saisons : environ 7 paires de coéquipiers à l'attaque sur 10 et 3 paires de défenseurs sur 4 justes avant le match.",
+      "accuracyPreseason": "Testé sur les deux derniers matchs d'ouverture : environ la moitié des paires de coéquipiers à l'attaque et 6 paires de défenseurs sur 10 justes.",
+      "filled": "remplaçant",
+      "filledTip": "Absent de la formation sur laquelle repose la projection : remplace un joueur blessé ou qui ne fait plus partie de l'équipe. La partie la moins certaine de la projection."
+    }
   },
   "periodSummary": {
     "header": "Sommaire — {{period}}",

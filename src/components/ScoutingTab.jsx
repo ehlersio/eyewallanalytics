@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import {
   getTeamStats, getTeamStatsPlayoff, getTeamRecentGames, getTeamTopPlayers,
-  getTeamInjuries, buildInjuryIndex,
+  getTeamInjuries, buildInjuryIndex, getProjectedLines,
   TEAM_CONFIG,
 } from '../utils/nhlApi';
+import { hasProjection, projectionCopyKeys } from '../utils/projectedLines';
 import { teamTextColor } from '../utils/teamConfig';
 import { computeGSAx } from '../utils/advancedStats';
 import { getGoalieAnalytics, getTeamLines, getGameMatchup } from '../utils/supabaseClient';
@@ -557,6 +558,78 @@ function LinesSection({ lines, color, isPlayoff, abbr, injuries }) {
 }
 
 
+// ── Projected lines section ────────────────────────────────────────────────
+// Next-game projection from the Worker's /projected-lines (eyewall-pipeline's
+// projected_lines.py). Sits above LinesSection, which stays as the season's
+// most-used units with xGF%. Hidden entirely when there's no projection.
+
+function ProjectedUnit({ unit, label, color, injuries }) {
+  const { t } = useTranslation();
+  return (
+    <div className="sc-line-unit sc-projected-unit bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)] rounded-[8px] py-[9px] px-[11px]">
+      <div className="sc-line-header flex items-center justify-between mb-1.5">
+        <span className="sc-line-label text-[11px] font-bold tracking-[0.03em] min-w-[44px]" style={{ color }}>{label}</span>
+      </div>
+      <div className="sc-line-players flex gap-y-1.5 gap-x-3.5 flex-wrap">
+        {unit.players.map(p => {
+          const injury = injuries?.forPlayer(p.id, p.name);
+          const isOut = injury && INJURY_OUT_STATUSES.has(injury.status);
+          return (
+            <span key={p.id} className={`sc-line-player text-[12px] text-[color:var(--text)] flex items-baseline gap-1${isOut ? ' opacity-50 line-through' : ''}`}>
+              <span className="sc-line-pos text-[9px] font-bold text-[color:var(--text-dim)] uppercase tracking-[0.04em] min-w-[18px]">{POS_LABEL[p.pos] || p.pos}</span>
+              {p.name}
+              {p.filled && (
+                <span className="sc-projected-filled inline-flex items-center gap-[2px] text-[9px] font-semibold uppercase tracking-[0.04em] text-[color:var(--amber)]">
+                  {t('scoutingTab.projectedLines.filled')}
+                  <InfoTip text={t('scoutingTab.projectedLines.filledTip')} position="above" />
+                </span>
+              )}
+              <InjuryBadge status={injury?.status} />
+              <InjuryDetailTip injury={injury} name={p.name} />
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ProjectedLinesSection({ data, color, abbr, injuries }) {
+  const { t } = useTranslation();
+  if (!hasProjection(data)) return null;
+  const { basisKey, accuracyKey } = projectionCopyKeys(data.basis);
+  return (
+    <div className={`${SCOUTING_SECTION_CLASSES} sc-projected-lines`}>
+      <div className={SCOUTING_SECTION_LABEL_CLASSES}>
+        {t('scoutingTab.projectedLines.sectionLabel', { abbr })}
+        <InfoTip text={t('scoutingTab.projectedLines.sectionTip')} position="above" />
+      </div>
+      <div className="sc-lines-note sc-projected-basis text-[11px] text-[color:var(--text-dim)] italic mb-1">
+        {t(`scoutingTab.projectedLines.${basisKey}`, { count: data.basisGames ?? 0 })}
+      </div>
+      <div className="sc-lines-note sc-projected-accuracy text-[11px] text-[color:var(--text-dim)] mb-2">
+        {t(`scoutingTab.projectedLines.${accuracyKey}`)}
+      </div>
+      {data.lines.length > 0 && (
+        <div className="sc-lines-group flex flex-col gap-[6px] mb-2.5">
+          {data.lines.map(u => (
+            <ProjectedUnit key={`F${u.rank}`} unit={u} label={t('scoutingTab.lines.line', { n: u.rank })} color={color} injuries={injuries} />
+          ))}
+        </div>
+      )}
+      {data.pairs.length > 0 && (
+        <div className="sc-lines-group sc-lines-group-d flex flex-col gap-[6px] mb-2.5 border-t border-[color:var(--border)] pt-2.5 mt-[2px]">
+          <div className="sc-lines-subheader text-[9px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] mb-1">{t('scoutingTab.lines.defencePairs')}</div>
+          {data.pairs.map(u => (
+            <ProjectedUnit key={`D${u.rank}`} unit={u} label={t('scoutingTab.lines.pair', { n: u.rank })} color={color} injuries={injuries} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayoff, gameId }) {
   const { t } = useTranslation();
   const gameType = isPlayoff ? 3 : 2;
@@ -613,6 +686,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
   );
   const { data: goalieAnalytics } = useFetch(() => getGoalieAnalytics());
   const { data: carLines } = useFetch(() => getTeamLines(TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType), [TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType]);
+  const { data: carProjected } = useFetch(() => getProjectedLines(TEAM_CONFIG.abbr), [TEAM_CONFIG.abbr]);
   const { data: matchupData } = useFetch(() => getGameMatchup(gameId), [gameId]);
   const { data: carInjuriesRaw } = useFetch(() => getTeamInjuries(TEAM_CONFIG.abbr), [TEAM_CONFIG.abbr]);
   const { data: oppInjuriesRaw } = useFetch(() => getTeamInjuries(oppAbbr), [oppAbbr]);
@@ -769,7 +843,10 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
         </div>
       </div>
 
-      {/* Line combinations */}
+      {/* Projected lines for the next game (hidden when there's no projection) */}
+      <ProjectedLinesSection data={carProjected} color={carColor} abbr={TEAM_CONFIG.abbr} injuries={carInjuries} />
+
+      {/* Line combinations -- the season's most-used units */}
       {carLines && (
         <LinesSection lines={carLines} color={carColor} isPlayoff={isPlayoff} abbr={TEAM_CONFIG.abbr} injuries={carInjuries} />
       )}
