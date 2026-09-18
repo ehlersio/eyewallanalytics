@@ -8,6 +8,7 @@
 // those are a deferred follow-up pass, matching AHL's own two-pass
 // history.
 
+import i18n from '../i18n';
 import { getECHLStoredTeam, ECHL_CURRENT_SEASON } from './echlConfig';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
@@ -162,7 +163,8 @@ export async function fetchECHLPreview(gameId) {
  *          expHome, expAway, narrative, h2hRecord, homeStreak, awayStreak } */
 export async function fetchECHLPrediction(gameId) {
   if (!gameId) return null;
-  return workerFetch(`/echl/prediction?gameId=${gameId}`);
+  // ?locale= picks the narrative's language (the Worker caches each separately).
+  return workerFetch(`/echl/prediction?gameId=${gameId}&locale=${i18n.language}`);
 }
 
 /** One team across multiple seasons, for TeamComparisonPopup's "Compare

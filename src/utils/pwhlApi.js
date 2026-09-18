@@ -3,6 +3,7 @@
 // All requests go through the Cloudflare Worker (/pwhl/* endpoints).
 // Tables use team_id (integer), so we pass ?teamId= alongside ?season=.
 
+import i18n from '../i18n';
 import { getPWHLStoredTeam, PWHL_CURRENT_SEASON, PWHL_SEASON_LABEL } from './pwhlConfig';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
@@ -316,7 +317,8 @@ export async function fetchPWHLPreview(gameId) {
  */
 export async function fetchPWHLPrediction(gameId) {
   if (!gameId) return null;
-  return workerFetch(`/pwhl/prediction?gameId=${gameId}`);
+  // ?locale= picks the narrative's language (the Worker caches each separately).
+  return workerFetch(`/pwhl/prediction?gameId=${gameId}&locale=${i18n.language}`);
 }
 
 // ── PBP helpers ───────────────────────────────────────────────────────────────

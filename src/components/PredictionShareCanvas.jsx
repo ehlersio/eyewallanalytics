@@ -12,7 +12,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { capture } from '../utils/analytics';
 import { TEAM_CONFIG } from '../utils/teamConfig';
-import { getGamePrediction } from '../utils/supabaseClient';
+import { getGamePrediction, predictionCacheKey } from '../utils/supabaseClient';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
 import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
@@ -210,7 +210,7 @@ export default function PredictionExportSection({
   carGpg, oppGpg, carGag, oppGag, carWin, oppWin, carPP, oppPK,
   factors, oppAbbr, oppColor, isPlayoff, seriesEntry, gameId, carLines,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const canvasRef = useRef(null);
   const [canvasMounted, setCanvasMounted] = useState(false);
   const [aiNarrative, setAiNarrative] = useState(null);
@@ -221,20 +221,27 @@ export default function PredictionExportSection({
   // used to have its own inline fetch with an embedded anon key, the same
   // pattern MatchupDetail.jsx's AI section already avoided by using
   // getGamePrediction() for the exact same DB-first tier.
+  // Per-language, like MatchupDetail's AI section. The cache key includes
+  // the team -- the Worker hasn't written a bare `prediction:{gameId}` key
+  // since it went multi-team, so this fallback never used to hit.
+  const lang = i18n.language;
   useEffect(() => {
     if (!gameId) return;
-    getGamePrediction(gameId)
+    let stale = false;
+    setAiNarrative(null);
+    getGamePrediction(gameId, lang)
       .then(data => {
-        if (data?.text) { setAiNarrative(data.text); return; }
+        if (data?.text) { if (!stale) setAiNarrative(data.text); return; }
         const workerUrl = import.meta.env.VITE_WORKER_URL;
         if (!workerUrl) return;
-        fetch(`${workerUrl}/cache/${encodeURIComponent(`prediction:${gameId}`)}`)
+        fetch(`${workerUrl}/cache/${encodeURIComponent(predictionCacheKey(gameId, TEAM_CONFIG.abbr, lang))}`)
           .then(r => r.ok ? r.json() : null)
-          .then(d => { if (d?.narrative) setAiNarrative(d.narrative); })
+          .then(d => { if (d?.narrative && !stale) setAiNarrative(d.narrative); })
           .catch(() => {});
       })
       .catch(() => {});
-  }, [gameId]);
+    return () => { stale = true; };
+  }, [gameId, lang]);
 
   const xCaption = (carGpg != null && predCarScore != null) ? [
     t('predictionShareCanvas.xCaption.headline', { abbr: TEAM_CONFIG.abbr, car: predCarScore, opp: predOppScore, oppAbbr }),

@@ -5,7 +5,7 @@ import { savePrediction, getPredictionStats } from '../utils/predictionStore';
 import { capture } from '../utils/analytics';
 import ScoutingTab from '../components/ScoutingTab';
 import InfoTip from '../components/InfoTip';
-import { getTeamLines, getGamePrediction } from '../utils/supabaseClient';
+import { getTeamLines, getGamePrediction, predictionCacheKey } from '../utils/supabaseClient';
 import { getOpponent, TEAM_CONFIG, getEloRatings } from '../utils/nhlApi';
 import { teamTextColor } from '../utils/teamConfig';
 import { teamWinPct } from '../utils/eloWinProb';
@@ -368,7 +368,8 @@ function MatchupDetail({ game, oppStanding, carStanding, playoffSeries }) {
   );
 }
 function PredictionAnalysis({ gameId, gameDate, oppAbbr, oppColor }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const [analysis,  setAnalysis]  = useState(null);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
@@ -382,10 +383,20 @@ function PredictionAnalysis({ gameId, gameDate, oppAbbr, oppColor }) {
 
   // DB-first: fetch pre-generated prediction from pipeline.
   // Falls back to Worker on-demand generation if DB has nothing.
+  // Every tier is per-language, and this re-runs when the language changes;
+  // `stale` drops a response that lands after the user has switched again.
   useEffect(() => {
     if (!gameId) return;
+    let stale = false;
     setLoading(true);
+    setAnalysis(null);
+    setError(null);
     setFallback(null);
+    const show = (text, d) => {
+      if (stale) return;
+      setAnalysis(text);
+      if (d) applyFallback(d);
+    };
     const applyFallback = (d) => {
       if (d?.isFallback && d.carWinPct != null) {
         setFallback({ carWinPct: d.carWinPct, expCar: d.expCar, expOpp: d.expOpp, dataSeason: d.dataSeason });
@@ -415,35 +426,40 @@ function PredictionAnalysis({ gameId, gameDate, oppAbbr, oppColor }) {
         });
       }
     };
-    getGamePrediction(gameId)
+    const done = () => { if (!stale) setLoading(false); };
+    getGamePrediction(gameId, lang)
       .then(data => {
         if (data?.text) {
-          setAnalysis(data.text);
-          setLoading(false);
+          show(data.text);
+          done();
           return;
         }
         // Nothing in DB — try Worker cache then on-demand
-        if (!workerUrl) { setLoading(false); return; }
+        if (!workerUrl) { done(); return; }
         // team= matters here, not just for framing (oppAbbr/isHome/carWinPct
         // are all relative to it) -- without it the Worker falls back to its
         // own default team and searches *that* team's schedule for this
         // gameId, which only ever succeeds by coincidence. Confirmed live in
         // production: every non-default-team matchup returned "Game not
         // found in schedule" because this call never sent team= at all.
-        fetch(`${workerUrl}/cache/${encodeURIComponent(`prediction:${gameId}:${TEAM_CONFIG.abbr}`)}`)
+        fetch(`${workerUrl}/cache/${encodeURIComponent(predictionCacheKey(gameId, TEAM_CONFIG.abbr, lang))}`)
           .then(r => r.ok ? r.json() : null)
           .then(d => {
-            if (d?.narrative) { setAnalysis(d.narrative); applyFallback(d); return; }
+            if (d?.narrative) { show(d.narrative, d); return; }
             // Not cached — generate on demand
-            return fetch(`${workerUrl}/prediction/analyze?gameId=${gameId}&team=${TEAM_CONFIG.abbr}`)
+            return fetch(`${workerUrl}/prediction/analyze?gameId=${gameId}&team=${TEAM_CONFIG.abbr}&locale=${lang}`)
               .then(r => r.json())
-              .then(d => { if (d?.narrative) { setAnalysis(d.narrative); applyFallback(d); } else setError(d?.error || null); });
+              .then(d => {
+                if (d?.narrative) show(d.narrative, d);
+                else if (!stale) setError(d?.error || null);
+              });
           })
           .catch(() => {})
-          .finally(() => setLoading(false));
+          .finally(done);
       })
-      .catch(() => setLoading(false));
-  }, [gameId]);
+      .catch(done);
+    return () => { stale = true; };
+  }, [gameId, lang]);
 
   if (loading) {
     return (

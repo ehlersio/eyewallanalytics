@@ -631,7 +631,7 @@ function ProjectedLinesSection({ data, color, abbr, injuries }) {
 
 
 export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayoff, gameId }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const gameType = isPlayoff ? 3 : 2;
   const carColor = 'var(--team-primary)';
   const oppColor = teamTextColor(oppAbbr) || 'var(--text-muted)';
@@ -687,7 +687,7 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
   const { data: goalieAnalytics } = useFetch(() => getGoalieAnalytics());
   const { data: carLines } = useFetch(() => getTeamLines(TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType), [TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType]);
   const { data: carProjected } = useFetch(() => getProjectedLines(TEAM_CONFIG.abbr), [TEAM_CONFIG.abbr]);
-  const { data: matchupData } = useFetch(() => getGameMatchup(gameId), [gameId]);
+  const { data: matchupData } = useFetch(() => getGameMatchup(gameId, i18n.language), [gameId, i18n.language]);
   const { data: carInjuriesRaw } = useFetch(() => getTeamInjuries(TEAM_CONFIG.abbr), [TEAM_CONFIG.abbr]);
   const { data: oppInjuriesRaw } = useFetch(() => getTeamInjuries(oppAbbr), [oppAbbr]);
   const carInjuries = useMemo(() => buildInjuryIndex(carInjuriesRaw), [carInjuriesRaw]);

@@ -73,7 +73,7 @@ function streakPlayerName(player) {
 }
 
 export default function ECHLGamePreviewPopup({ game, teamId, abbr, color, onClose }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isHome   = game.home_team_id === teamId;
   const oppId    = isHome ? game.away_team_id : game.home_team_id;
   const oppTeam  = getECHLTeamById(oppId);
@@ -85,7 +85,7 @@ export default function ECHLGamePreviewPopup({ game, teamId, abbr, color, onClos
   }, []);
 
   const { data: preview,    loading: previewLoading }    = useFetch(() => fetchECHLPreview(game.game_id), [game.game_id]);
-  const { data: prediction, loading: predictionLoading } = useFetch(() => fetchECHLPrediction(game.game_id), [game.game_id]);
+  const { data: prediction, loading: predictionLoading } = useFetch(() => fetchECHLPrediction(game.game_id), [game.game_id, i18n.language]);
 
   // Auto-save this prediction for track-record tallying once the game
   // completes -- recordECHLOutcome() is called from ECHLScheduleView.jsx's
