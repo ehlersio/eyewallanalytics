@@ -124,9 +124,8 @@ export const AHL_REGULAR_SEASON_MAP = Object.fromEntries(
 // ── Team configs ─────────────────────────────────────────────────────────────
 // team_id/code/division confirmed live via feed=modulekit&view=teamsbyseason
 // 2026-08-29 (season 94) -- see eyewall-pipeline's ahl_stats.py TEAM_ID_MAP,
-// which this mirrors. team_id 317 (BRI, Bridgeport Islanders) is the
-// pre-2026-27-relocation identity of 457 (HAM, Hamilton Hammers) -- included
-// here too so historical-season views (e.g. season 90) can still resolve it.
+// which this mirrors. Current teams only -- relocated/defunct identities
+// live in AHL_HISTORICAL_TEAMS below.
 export const AHL_TEAMS = [
   // ── Atlantic ──────────────────────────────────────────────────────────────
   { abbr: 'HFD', teamId: 307, division: 'Atlantic', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Hartford Wolf Pack', shortName: 'Wolf Pack', primaryColor: '#00548E', displayColor: '#0084E0' },
@@ -166,6 +165,16 @@ export const AHL_TEAMS = [
   { abbr: 'CV', teamId: 445, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Coachella Valley Firebirds', shortName: 'Firebirds', primaryColor: '#001425', displayColor: '#0082F1' },
 ];
 
+// Past identities that still appear in historical seasons' games (e.g. a
+// 2025-26 schedule, season 90). Resolvable by id only -- deliberately left
+// out of AHL_TEAMS so they never show up as a pickable team or a standings
+// row. team_id 317 (BRI, Bridgeport Islanders) is the pre-2026-27-relocation
+// identity of 457 (HAM, Hamilton Hammers); without this, every HER/SPR/etc.
+// 2025-26 game against them rendered the opponent as "317".
+export const AHL_HISTORICAL_TEAMS = [
+  { abbr: 'BRI', teamId: 317, division: 'Atlantic', season: 90, displayName: 'Bridgeport Islanders', shortName: 'Islanders', primaryColor: '#00539B', displayColor: '#0081F2', historical: true },
+];
+
 // ── Logos ─────────────────────────────────────────────────────────────────────
 // Hosted directly from HockeyTech's own asset CDN rather than bundling 32
 // local files the way PWHL's PWHL_LOGO_FILES does -- theahl.com's own site
@@ -194,6 +203,7 @@ const AHL_LOGO_FILES = {
   404: '404.png', 405: '405_94.png', 411: '411_94.png', 412: '412_94.png',
   413: '413.png', 415: '415.png', 419: '419.png', 437: '437.png',
   440: '440.png', 444: '444.png', 445: '445.png', 457: '457.png',
+  317: '317_90.png', // BRI, historical -- no un-suffixed file on the CDN
 };
 
 export function ahlLogoUrl(teamId) {
@@ -204,10 +214,19 @@ export function ahlLogoUrl(teamId) {
 // ── Lookups ───────────────────────────────────────────────────────────────────
 
 export const AHL_TEAM_MAP = Object.fromEntries(AHL_TEAMS.map((t) => [t.abbr, t]));
-export const AHL_TEAM_BY_ID = Object.fromEntries(AHL_TEAMS.map((t) => [t.teamId, t]));
+export const AHL_TEAM_BY_ID = Object.fromEntries(
+  [...AHL_HISTORICAL_TEAMS, ...AHL_TEAMS].map((t) => [t.teamId, t])
+);
 
 export function getAHLTeamConfig(abbr) {
   return AHL_TEAM_MAP[abbr] ?? null;
+}
+
+// Display-only lookup (logos, labels) that also resolves AHL_HISTORICAL_TEAMS
+// -- never use this to pick or validate a user's team.
+const AHL_HISTORICAL_TEAM_MAP = Object.fromEntries(AHL_HISTORICAL_TEAMS.map((t) => [t.abbr, t]));
+export function getAHLTeamForDisplay(abbr) {
+  return AHL_TEAM_MAP[abbr] ?? AHL_HISTORICAL_TEAM_MAP[abbr] ?? null;
 }
 
 export function getAHLTeamById(teamId) {

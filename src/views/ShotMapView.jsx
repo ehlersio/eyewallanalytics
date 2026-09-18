@@ -2159,7 +2159,7 @@ export default function ShotMapView() {
       <div className={metricsGridClasses(3)}>
         {(() => {
           // "All N": teamStats.faceoffWinPct comes from the NHL team/summary
-          // endpoint (nhlApi.js fetchTeamFaceoffWinPct) -- season-wide, so it
+          // endpoint (nhlApi.js fetchTeamSummaryRow) -- season-wide, so it
           // replaces the last-game-only gameFaceoff value here same as the
           // PP%/PK% cards below already do.
           const seasonFO   = isAllN ? teamStats?.faceoffWinPct : null;

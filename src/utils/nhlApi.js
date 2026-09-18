@@ -528,22 +528,24 @@ export async function getTeamStatsPlayoff(teamAbbr = TEAM_CONFIG.abbr) {
     };
   }, TTL.TEAM_STATS);
 }
-// Faceoff win % isn't on the /standings/now response _getTeamStats() reads
-// below at all — pull it from the same team/summary REST endpoint
-// getTeamStatsPlayoff() already uses (gameTypeId=2 here instead of 3).
-// Best-effort: a failed fetch or unmatched team just leaves this null
-// rather than failing the whole getTeamStats() call over one extra field.
-async function fetchTeamFaceoffWinPct(teamAbbr) {
-  const exp = encodeURIComponent(`gameTypeId=2 and seasonId<=${TEAM_CONFIG.season} and seasonId>=${TEAM_CONFIG.season}`);
-  const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false&sort=shotsForPerGame&sortDirection=DESC&limit=32&cayenneExp=${exp}`;
+// /standings/now carries record/goals only -- no PP%, PK%, shots or
+// faceoffs. Those come from team/summary (the same REST endpoint
+// getTeamStatsPlayoff() uses, gameTypeId=2 here), for the season the
+// standings row actually belongs to. Before this, PP/PK/shots silently fell
+// through to hardcoded league-average defaults for every team.
+// Best-effort: a failed fetch or unmatched team returns null rather than
+// failing the whole getTeamStats() call.
+async function fetchTeamSummaryRow(standingsRow, teamAbbr, season) {
+  const exp = encodeURIComponent(`gameTypeId=2 and seasonId<=${season} and seasonId>=${season}`);
+  const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false&sort=shotsForPerGame&sortDirection=DESC&limit=40&cayenneExp=${exp}`;
   const data = await nhlFetch(url);
-  const team = (data?.data || []).find(t => t.teamFullName && (
+  const rows = data?.data || [];
+  const fullName = standingsRow.teamName?.default;
+  return rows.find(t => fullName && t.teamFullName === fullName) ?? rows.find(t => t.teamFullName && (
     (teamAbbr === TEAM_CONFIG.abbr && t.teamFullName.includes(TEAM_CONFIG.fullNameFragment)) ||
     (teamAbbr === 'VGK' && t.teamFullName.includes('Vegas')) ||
-    t.teamAbbrevs === teamAbbr ||
     t.teamFullName.toLowerCase().includes(teamAbbr.toLowerCase())
-  ));
-  return team?.faceoffWinPct ?? null;
+  )) ?? null;
 }
 
 async function _getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
@@ -589,7 +591,8 @@ async function _getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
   const isPriorSeason = isStandingsStale([team], TEAM_CONFIG.season);
 
   const gp = team.gamesPlayed || 1;
-  const faceoffWinPct = await fetchTeamFaceoffWinPct(teamAbbr).catch(() => null);
+  const statsSeasonId = team.seasonId != null ? String(team.seasonId) : TEAM_CONFIG.season;
+  const summary = await fetchTeamSummaryRow(team, teamAbbr, statsSeasonId).catch(() => null);
 
   // Field name notes for NHL API standings:
   //   goalFor / goalAgainst = season totals (not per-game averages)
@@ -600,20 +603,24 @@ async function _getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
     losses:              team.losses       ?? 0,
     otLosses:            team.otLosses     ?? 0,
     points:              team.points       ?? 0,
-    goalsForPerGame:     (team.goalFor     ?? 0) / gp,
-    goalsAgainstPerGame: (team.goalAgainst ?? 0) / gp,
-    powerPlayPct:        (team.powerPlayPct  ?? 22) / 100,
-    penaltyKillPct:      (team.penaltyKillPct ?? 80) / 100,
-    shotsForPerGame:     team.shotsForPerGame     ?? 31.2,
-    shotsAgainstPerGame: team.shotsAgainstPerGame ?? 28.4,
+    // team/summary's rates match the league's official GF/GP (standings'
+    // goalFor counts a shootout win as a goal) and what the rank badges use.
+    goalsForPerGame:     summary?.goalsForPerGame     ?? (team.goalFor     ?? 0) / gp,
+    goalsAgainstPerGame: summary?.goalsAgainstPerGame ?? (team.goalAgainst ?? 0) / gp,
+    // team/summary first (0-1 scale); the standings fields/defaults below
+    // are only reached if that fetch fails.
+    powerPlayPct:        summary?.powerPlayPct   ?? (team.powerPlayPct  ?? 22) / 100,
+    penaltyKillPct:      summary?.penaltyKillPct ?? (team.penaltyKillPct ?? 80) / 100,
+    shotsForPerGame:     summary?.shotsForPerGame     ?? team.shotsForPerGame     ?? 31.2,
+    shotsAgainstPerGame: summary?.shotsAgainstPerGame ?? team.shotsAgainstPerGame ?? 28.4,
     blockedShotsPerGame: team.blockedShots != null ? team.blockedShots / gp : null,
-    faceoffWinPct,
+    faceoffWinPct:       summary?.faceoffWinPct ?? null,
     divisionName:        team.divisionName,
     conferenceName:      team.conferenceName,
     streakCode:          team.streakCode,
     streakCount:         team.streakCount,
     isPriorSeason,
-    statsSeasonId:       team.seasonId != null ? String(team.seasonId) : TEAM_CONFIG.season,
+    statsSeasonId,
     _raw: team,
   };
 }
@@ -629,13 +636,18 @@ const FALLBACK_STATS = {
 // ─── TEAM SEASON RANKINGS ────────────────────────────────────
 // Returns CAR's league rank (1 = best) for key stats.
 // gameTypeId: 2 = regular season, 3 = playoffs
-export async function getTeamSeasonRankings(gameTypeId = 2) {
-  return cached(`teamSeasonRankings:${gameTypeId}`, () => _getTeamSeasonRankings(gameTypeId), TTL.TEAM_STATS);
+// season: rank within this season -- pass getTeamStats()'s statsSeasonId so
+// the ranks describe the same season as the numbers beside them. Early in a
+// new season getTeamStats() carries last season forward (isPriorSeason)
+// while team/summary for TEAM_CONFIG.season is still empty, which left every
+// stat card with no rank at all.
+export async function getTeamSeasonRankings(gameTypeId = 2, season = TEAM_CONFIG.season) {
+  return cached(`teamSeasonRankings:${gameTypeId}:${season}`, () => _getTeamSeasonRankings(gameTypeId, season), TTL.TEAM_STATS);
 }
-async function _getTeamSeasonRankings(gameTypeId = 2) {
+async function _getTeamSeasonRankings(gameTypeId, season) {
   try {
     const exp = encodeURIComponent(
-      `gameTypeId=${gameTypeId} and seasonId<=${TEAM_CONFIG.season} and seasonId>=${TEAM_CONFIG.season}`
+      `gameTypeId=${gameTypeId} and seasonId<=${season} and seasonId>=${season}`
     );
     const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false` +
       `&sort=shotsForPerGame&sortDirection=DESC&limit=40&cayenneExp=${exp}`;
@@ -1538,9 +1550,12 @@ export async function getTeamCorsi(gameTypeId = 2) {
 }
 
 // Realtime stats: blocked shots, hits, giveaways, takeaways
-export async function getTeamRealtime(gameTypeId = 2) {
-  return cached(`teamRealtime:${gameTypeId}:${TEAM_CONFIG.season}`, async () => {
-    const s   = TEAM_CONFIG.season;
+// season: defaults to the current season; the Overview stat card passes
+// getTeamStats()'s statsSeasonId so Blks/GP describes the same season as the
+// cards around it (empty for the current season until games are played).
+export async function getTeamRealtime(gameTypeId = 2, season = TEAM_CONFIG.season) {
+  return cached(`teamRealtime:${gameTypeId}:${season}`, async () => {
+    const s   = season;
     // Try multiple known report names that include blocked shots
     // The NHL stats API 'realtime' report includes blockedShots, hits, giveaways, takeaways
     // Use same franchiseId filter as working team/summary endpoint

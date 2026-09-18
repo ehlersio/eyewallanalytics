@@ -285,7 +285,16 @@ export default function TeamView() {
   const { data: homeSplit  } = useFetch(() => getTeamHomeSplit(2))
   const { data: poAdv      } = useFetch(getTeamPlayoffStats)
   const { data: gameLog    } = useFetch(() => getTeamGameLog(20))
-  const { data: rankings   } = useFetch(() => getTeamSeasonRankings(2))
+  // Overview's Blks/GP follows the stats' season like the rank badges do;
+  // the Advanced tab keeps using realtimeReg (current season) above.
+  const { data: realtimeOverview } = useFetch(
+    () => stats?.statsSeasonId ? getTeamRealtime(2, stats.statsSeasonId) : Promise.resolve(null),
+    [stats?.statsSeasonId]
+  )
+  const { data: rankings   } = useFetch(
+    () => stats?.statsSeasonId ? getTeamSeasonRankings(2, stats.statsSeasonId) : Promise.resolve(null),
+    [stats?.statsSeasonId]
+  )
   const { data: xgTrend    } = useFetch(() => getTeamXgTrend(TEAM_CONFIG.abbr))
 
   // Same staleness risk getTeamStats() already guards against (see nhlApi.js):
@@ -348,7 +357,7 @@ export default function TeamView() {
         ))}
       </div>
 
-      {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} realtimeReg={realtimeReg} rankings={rankings} />}
+      {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} realtimeReg={realtimeOverview} rankings={rankings} />}
       {tab === 'Advanced'  && <AdvancedTab corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} homeSplit={homeSplit} xgTrend={xgTrend} />}
       {tab === 'Splits'    && <SplitsTab homeSplit={homeSplit} homeSplitPO={homeSplitPO} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} ppReg={ppReg} pkReg={pkReg} corsiReg={corsiReg} />}
       {tab === 'Trends'    && <TrendsTab gameLog={gameLog} />}
