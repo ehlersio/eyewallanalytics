@@ -830,6 +830,18 @@ export async function getProbableStarters(gameId) {
   return workerFetch(`/probable-starters?game=${encodeURIComponent(gameId)}`);
 }
 
+// Projected lines for a team's next game -- the Worker's /projected-lines
+// route, backed by eyewall-pipeline's nightly projected_lines.py (last game's
+// pairings in-season, pooled preseason pairings before the team's first
+// game). Returns { team, basis: 'last_game' | 'preseason' | null, basisGameId,
+// basisGames, generatedAt, lines, pairs } -- units of { rank, players: [{ id,
+// name, pos, filled }] }; basis null = no projection yet. Not memoized
+// client-side -- the Worker's 1hr KV cache is the cache. Returns null on any
+// Worker failure.
+export async function getProjectedLines(teamAbbr = TEAM_CONFIG.abbr) {
+  return workerFetch(`/projected-lines?team=${encodeURIComponent(teamAbbr)}`);
+}
+
 // The public prediction scorecard -- the Worker's /scorecard route, backed by
 // eyewall-pipeline's nightly prediction_scorecard.py. Returns { models:
 // { game_winner | starting_goalie | playoff_odds: { live, backtest } },

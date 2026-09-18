@@ -1699,7 +1699,7 @@
       "xgfTip": "Expected Goals For % (xGF%) — share of total expected goals generated while this unit was on the ice at 5-on-5. Above 50% means your team outchanced the opponent when these players were together. Based on shot location and type, not just shot count.",
       "toiTip": "Minutes this unit has played together at 5-on-5 this season. More minutes = more reliable xGF% number. Units with fewer minutes may reflect recent line shuffles.",
       "sectionTip": "Forward lines and defence pairs inferred from 5-on-5 shift co-occurrence data. When inference data is complete, xGF% and TOI are live from this season. Static lineups (shown when inference is unavailable) reflect the most recent known lines.",
-      "sectionLabel": "{{abbr}} lines",
+      "sectionLabel": "{{abbr}} most-used lines this season",
       "playoffsBadge": "Playoffs",
       "liveNote": "⚡ Live xGF% where available · lineup from known line combinations",
       "opponentNote": "Opponent lines available when 32-team data is enabled",
@@ -1724,7 +1724,18 @@
       "thisSeason": "This Season",
       "playoffsScope": "(Playoffs)"
     },
-    "xCaption": "{{abbr}} vs {{oppAbbr}} Scouting Report"
+    "xCaption": "{{abbr}} vs {{oppAbbr}} Scouting Report",
+    "projectedLines": {
+      "sectionLabel": "{{abbr}} projected lines",
+      "sectionTip": "Who we expect to play together in the next game, built from 5-on-5 shift data. In-season, it starts from the last game's lines and swaps out players on the injury report or no longer on the roster. Before the season, it groups players the way they played together in preseason and orders lines by last season's ice time. A projection, not the confirmed lineup.",
+      "basisLastGame": "Based on the last game",
+      "basisPreseason_one": "Based on {{count}} preseason game",
+      "basisPreseason_other": "Based on {{count}} preseason games",
+      "accuracyInSeason": "Tested on the last two seasons: about 7 in 10 forward linemate pairs and 3 in 4 defence pairs right before the game.",
+      "accuracyPreseason": "Tested on the last two opening nights: about half of forward linemate pairs and 6 in 10 defence pairs right.",
+      "filled": "fill-in",
+      "filledTip": "Not in the lineup this projection is based on: steps in for a player who's injured or no longer on the roster. The least certain part of the projection."
+    }
   },
   "periodSummary": {
     "header": "{{period}} Summary",
