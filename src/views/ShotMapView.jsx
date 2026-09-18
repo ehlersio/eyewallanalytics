@@ -2036,11 +2036,15 @@ export default function ShotMapView() {
                 hidden) while one is in progress rather than popping in/out
                 of the layout as a game goes live or finishes. Tap/hover
                 surfaces why. */}
-            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, marginLeft: 'auto' }}>
+            {/* On phone widths this wraps onto its own line below the score
+                (the score line plus this column doesn't fit), so it lays out
+                as a horizontal row there instead of a tall column that would
+                leave a dead gap to its left. */}
+            <div className="season-selector relative flex flex-col items-end gap-1.5 ml-auto max-[640px]:w-full max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:items-center max-[640px]:justify-end">
               <SeasonTypeToggle value={seasonType} onChange={handleSeasonTypeChange}
                 disabled={isLive} disabledReason={LIVE_SELECTOR_DISABLED_REASON} onDisabledTap={handleDisabledTap} />
               <SeasonChipRow seasons={NHL_REGULAR_SEASONS} archiveSeasons={NHL_ARCHIVE_SEASONS}
-                selected={effectiveSeason} onSelect={handleSeasonChange}
+                selected={effectiveSeason} onSelect={handleSeasonChange} className="max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:justify-end max-[640px]:items-center"
                 disabled={isLive} disabledReason={LIVE_SELECTOR_DISABLED_REASON} onDisabledTap={handleDisabledTap} />
               <DisabledHint text={LIVE_SELECTOR_DISABLED_REASON} active={showDisabledHint} onDismiss={dismissDisabledHint} />
             </div>

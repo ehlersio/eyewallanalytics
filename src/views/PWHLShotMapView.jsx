@@ -1888,9 +1888,11 @@ export default function PWHLShotMapView() {
               ) : null}
             </div>
           ) : <div style={{ width:40 }} />}
-          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6, marginLeft: 'auto' }}>
+          {/* Same responsive layout as ShotMapView's selector -- see the
+              comment there. */}
+          <div className="relative flex flex-col items-end gap-1.5 ml-auto max-[640px]:w-full max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:items-center max-[640px]:justify-end">
             <SeasonTypeToggle value={seasonType} onChange={handleSeasonTypeChange} />
-            <SeasonChipRow seasons={SEASONS} selected={selectedYear} onSelect={handleYearSelect} />
+            <SeasonChipRow seasons={SEASONS} selected={selectedYear} onSelect={handleYearSelect} className="max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:justify-end max-[640px]:items-center" />
           </div>
         </div>
       </div>

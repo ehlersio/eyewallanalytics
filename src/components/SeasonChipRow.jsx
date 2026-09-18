@@ -38,7 +38,12 @@ const seasonArchiveItemClasses = (active) => {
 // game handling): see SeasonTypeToggle.jsx's comment for why this is
 // aria-disabled + a guarded onClick rather than the native `disabled`
 // attribute (which would block the tap-to-reveal-tooltip path on mobile).
-export default function SeasonChipRow({ seasons, archiveSeasons = [], selected, onSelect, disabled = false, disabledReason, onDisabledTap }) {
+//
+// `className` is for layout only -- the shot maps pass responsive classes so
+// the stack turns into a horizontal row on phone widths, where it wraps below
+// the score line and a tall right-aligned column would leave a dead gap
+// beside it. Default stays the vertical stack (PlayersView's roster picker).
+export default function SeasonChipRow({ seasons, archiveSeasons = [], selected, onSelect, disabled = false, disabledReason, onDisabledTap, className = '' }) {
   const { t } = useTranslation();
   const [showArchive, setShowArchive] = useState(false);
   const wrapRef = useRef(null);
@@ -60,8 +65,7 @@ export default function SeasonChipRow({ seasons, archiveSeasons = [], selected, 
 
   return (
     <div
-      className={disabled ? 'chip-disabled' : ''}
-      style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}
+      className={`flex flex-col items-end gap-1 ${disabled ? 'chip-disabled' : ''} ${className}`}
       ref={wrapRef}
       title={disabled ? disabledReason : undefined}>
       {seasons.map(s => (
