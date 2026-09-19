@@ -202,7 +202,7 @@ function GameStatsPopup({ game, onClose }) {
       <div className="game-popup relative bg-[var(--bg1)] border-[0.5px] border-[color:var(--border-2)] rounded-t-[var(--radius-lg)] w-full max-w-[480px] max-h-[90vh] overflow-y-auto shadow-[0_-8px_40px_rgba(0,0,0,0.5)] animate-[slide-up_0.2s_cubic-bezier(0.34,1.2,0.64,1)] min-[560px]:rounded-[var(--radius-lg)] min-[560px]:animate-[pop-in_0.2s_cubic-bezier(0.34,1.2,0.64,1)]" ref={modalRef} onClick={e => e.stopPropagation()}
         onScroll={e => setShowTop(e.target.scrollTop > 200)}>
         {showTop && (
-          <button className="gsp-top-btn sticky top-2 float-right mt-2 mr-3 py-[5px] px-3 bg-[var(--bg3)] border-[0.5px] border-[color:var(--border)] rounded-[20px] text-[11px] font-semibold text-[color:var(--text-muted)] cursor-pointer z-10 hover:text-[color:var(--text)] hover:bg-[var(--bg2)]" onClick={() => modalRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <button className="gsp-top-btn sticky top-2 float-right mt-2 mr-3 py-[5px] px-3 bg-[var(--bg3)] border-[0.5px] border-transparent rounded-[20px] text-[11px] font-semibold text-[color:var(--text-muted)] cursor-pointer z-10 hover:text-[color:var(--text)] hover:bg-[var(--bg2)]" onClick={() => modalRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}>
             {t('gameStatsPopup.header.scrollTopButton')}
           </button>
         )}
@@ -266,7 +266,7 @@ function GameStatsPopup({ game, onClose }) {
                 </span>
               </div>
               <button
-                className="gp-summary-share block mx-auto bg-none border-[0.5px] border-[color:var(--border-2)] text-[color:var(--text-muted)] text-[11px] font-semibold py-[5px] px-[18px] rounded-[6px] cursor-pointer min-h-0 min-w-0 [transition:all_0.15s] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]"
+                className="gp-summary-share block mx-auto bg-[var(--btn-fill)] border-[0.5px] border-transparent text-[color:var(--text-muted)] text-[11px] font-semibold py-[5px] px-[18px] rounded-[6px] cursor-pointer min-h-0 min-w-0 [transition:all_0.15s] hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text)]"
                 onClick={() => {
                   const text = t('gameStatsPopup.summary.shareText', {
                     abbr: TEAM_CONFIG.abbr,
@@ -407,7 +407,7 @@ function GameStatsPopup({ game, onClose }) {
                     <div className="gp-recap-links flex gap-1.5 mt-2.5">
                       {recapLinks.recap && (
                         <button
-                          className="gp-recap-btn text-[10px] font-semibold py-[5px] px-2.5 rounded-[20px] border-[0.5px] border-[color:var(--border-2)] text-[color:var(--text-muted)] bg-transparent cursor-pointer hover:text-[color:var(--text)] hover:border-[color:var(--border)]"
+                          className="gp-recap-btn text-[10px] font-semibold py-[5px] px-2.5 rounded-[20px] border-[0.5px] border-transparent text-[color:var(--text-muted)] bg-[var(--btn-fill)] cursor-pointer hover:text-[color:var(--text)] hover:border-transparent hover:bg-[var(--btn-fill-hover)]"
                           onClick={() => window.open(recapLinks.recap, '_blank', 'noopener,noreferrer')}
                         >
                           {t('gameStatsPopup.gameInfo.watchRecap')}
@@ -415,7 +415,7 @@ function GameStatsPopup({ game, onClose }) {
                       )}
                       {recapLinks.condensed && (
                         <button
-                          className="gp-recap-btn text-[10px] font-semibold py-[5px] px-2.5 rounded-[20px] border-[0.5px] border-[color:var(--border-2)] text-[color:var(--text-muted)] bg-transparent cursor-pointer hover:text-[color:var(--text)] hover:border-[color:var(--border)]"
+                          className="gp-recap-btn text-[10px] font-semibold py-[5px] px-2.5 rounded-[20px] border-[0.5px] border-transparent text-[color:var(--text-muted)] bg-[var(--btn-fill)] cursor-pointer hover:text-[color:var(--text)] hover:border-transparent hover:bg-[var(--btn-fill-hover)]"
                           onClick={() => window.open(recapLinks.condensed, '_blank', 'noopener,noreferrer')}
                         >
                           {t('gameStatsPopup.gameInfo.watchCondensed')}
@@ -490,14 +490,14 @@ function GameStatsPopup({ game, onClose }) {
                 <div className="gp-section mt-4.5">
                   <div className="gp-skater-toggle flex gap-1.5 mb-2.5">
                     <button
-                      className={SKATER_TOGGLE_BTN_BASE + (skaterTeam === "car" ? " active-car bg-transparent border-[color:var(--team-primary)] text-[color:var(--team-primary)]" : " bg-transparent border-[color:var(--border-2)] text-[color:var(--text-muted)] hover:text-[color:var(--text)]")}
+                      className={SKATER_TOGGLE_BTN_BASE + (skaterTeam === "car" ? " active-car bg-[color-mix(in_srgb,var(--team-primary)_15%,transparent)] border-transparent text-[color:var(--team-primary)]" : " bg-[var(--btn-fill)] border-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text)] hover:bg-[var(--btn-fill-hover)]")}
                       onClick={() => setSkaterTeam("car")}
                     >
                       <TeamLogo abbr={TEAM_CONFIG.abbr} size={14} />
                       {t('gameStatsPopup.skaters.toggleButton', { abbr: TEAM_CONFIG.abbr })}
                     </button>
                     <button
-                      className={SKATER_TOGGLE_BTN_BASE + (skaterTeam === "opp" ? " active-opp bg-[var(--blue-dim)] border-[rgba(68,119,238,0.35)] text-[color:var(--blue-bright)]" : " bg-transparent border-[color:var(--border-2)] text-[color:var(--text-muted)] hover:text-[color:var(--text)]")}
+                      className={SKATER_TOGGLE_BTN_BASE + (skaterTeam === "opp" ? " active-opp bg-[var(--blue-dim)] border-transparent text-[color:var(--blue-bright)]" : " bg-[var(--btn-fill)] border-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text)] hover:bg-[var(--btn-fill-hover)]")}
                       onClick={() => setSkaterTeam("opp")}
                     >
                       <TeamLogo abbr={oppAbbr} size={14} color={oppColor} />

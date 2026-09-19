@@ -62,7 +62,7 @@ const WIN_SCORE_CLASSES = 'text-[24px] font-bold text-[color:var(--text)] mb-2';
 
 const CONFETTI_PIECE_CLASSES = 'absolute top-[-20px] rounded-[2px] animate-[confettiFall_linear_forwards] z-[500]';
 
-const GAME_EVENT_DISMISS_CLASSES = 'game-event-dismiss mt-4 bg-transparent border-[0.5px] border-[var(--border)] text-[color:var(--text-dim)] text-[11px] py-1 px-3 rounded-[6px] cursor-pointer hover:bg-[var(--bg3)] hover:text-[color:var(--text)]';
+const GAME_EVENT_DISMISS_CLASSES = 'game-event-dismiss mt-4 bg-[var(--btn-fill)] border-[0.5px] border-transparent text-[color:var(--text-dim)] text-[11px] py-1 px-3 rounded-[6px] cursor-pointer hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text)]';
 
 // ── Puck Drop ─────────────────────────────────────────────────
 

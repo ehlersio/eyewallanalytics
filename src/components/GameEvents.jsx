@@ -44,7 +44,7 @@ const WIN_SCORE_CLASSES = 'text-[24px] font-bold text-[color:var(--text)] mb-2';
 
 const CONFETTI_PIECE_CLASSES = 'absolute top-[-20px] rounded-[2px] animate-[confettiFall_linear_forwards] z-[500]';
 
-const GAME_EVENT_DISMISS_CLASSES = 'game-event-dismiss mt-4 bg-transparent border-[0.5px] border-[var(--border)] text-[color:var(--text-dim)] text-[11px] py-1 px-3 rounded-[6px] cursor-pointer hover:bg-[var(--bg3)] hover:text-[color:var(--text)]';
+const GAME_EVENT_DISMISS_CLASSES = 'game-event-dismiss mt-4 bg-[var(--btn-fill)] border-[0.5px] border-transparent text-[color:var(--text-dim)] text-[11px] py-1 px-3 rounded-[6px] cursor-pointer hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text)]';
 
 const HAT_PIECE_CLASSES = 'hat-piece absolute top-[-40px] animate-[hatFall_linear_forwards] z-[500] select-none';
 const HAT_TRICK_POPUP_CLASSES = 'hat-trick-popup bg-[var(--bg1)] border-[2px] border-[#c8a951] rounded-[20px] py-8 px-10 text-center max-w-[320px] w-[90%] animate-[goalBurst_0.4s_cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_0_60px_rgba(200,169,81,0.5)] z-[501] relative';

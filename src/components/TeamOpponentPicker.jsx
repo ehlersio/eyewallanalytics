@@ -12,7 +12,7 @@
 // that global rule stays in effect after migration).
 import { useTranslation } from 'react-i18next';
 
-const PICKER_CLASSES = 'bg-[var(--bg2)] border-[0.5px] border-[var(--border-2)] rounded-[var(--radius-sm)] py-1.5 px-2.5 font-[family-name:var(--font-body)] text-[13px] font-semibold text-[color:var(--text)] cursor-pointer ml-4 hover:bg-[var(--bg3)]';
+const PICKER_CLASSES = 'bg-[var(--btn-fill)] border-[0.5px] border-transparent rounded-[var(--radius-sm)] py-1.5 px-2.5 font-[family-name:var(--font-body)] text-[13px] font-semibold text-[color:var(--text)] cursor-pointer ml-4 hover:bg-[var(--btn-fill-hover)]';
 
 export default function TeamOpponentPicker({ teams, value, onChange, excludeValue }) {
   const { t } = useTranslation();

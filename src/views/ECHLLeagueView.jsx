@@ -19,7 +19,7 @@ const LEAGUE_CONTENT_CLASSES = 'league-content pb-6';
 const LEAGUE_TABS_CLASSES = 'league-tabs flex flex-wrap mb-[14px] pb-[10px] border-b-[0.5px] border-[var(--border)]';
 const LEAGUE_TAB_BASE_CLASSES = 'league-tab py-[6px] px-4 rounded-[20px] text-[13px] font-medium border-[0.5px] flex items-center cursor-pointer [transition:all_0.15s]';
 const LEAGUE_TAB_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] bg-transparent border-transparent';
-const LEAGUE_TAB_ACTIVE_CLASSES = 'text-[color:var(--red-bright)] bg-[var(--red-dim)] border-[var(--red-border)]';
+const LEAGUE_TAB_ACTIVE_CLASSES = 'text-[color:var(--red-bright)] bg-[var(--red-dim)] border-transparent';
 function leagueTabClasses(isActive) {
   return `${LEAGUE_TAB_BASE_CLASSES} ${isActive ? LEAGUE_TAB_ACTIVE_CLASSES : LEAGUE_TAB_INACTIVE_CLASSES}`;
 }

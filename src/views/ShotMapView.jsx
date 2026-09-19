@@ -407,7 +407,7 @@ const ADV_CHIP_CLASSES = 'flex flex-col items-center bg-[var(--bg3)] rounded-[8p
 const ADV_CHIP_LABEL_CLASSES = 'text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]';
 const ADV_CHIP_VAL_CLASSES = 'font-[family-name:var(--font-mono)] text-[14px] font-bold mt-0.5';
 
-const SHOTMAP_TOP_BTN_CLASSES = 'fixed bottom-20 right-4 bg-[var(--bg1)] border-[0.5px] border-[color:var(--border-2)] text-[color:var(--text-muted)] text-[12px] font-semibold py-2 px-[14px] rounded-[20px] cursor-pointer z-[100] shadow-[0_4px_16px_rgba(0,0,0,0.4)] [transition:all_0.15s] min-h-0 min-w-0 hover:text-[color:var(--text)] hover:bg-[var(--bg2)]';
+const SHOTMAP_TOP_BTN_CLASSES = 'fixed bottom-20 right-4 bg-[var(--bg1)] border-[0.5px] border-transparent text-[color:var(--text-muted)] text-[12px] font-semibold py-2 px-[14px] rounded-[20px] cursor-pointer z-[100] shadow-[0_4px_16px_rgba(0,0,0,0.4)] [transition:all_0.15s] min-h-0 min-w-0 hover:text-[color:var(--text)] hover:bg-[var(--bg2)]';
 
 const DANGER_QUALITY_CARD_CLASSES = 'mb-[10px]';
 const liveInsightsClasses = (collapsed) => `card mb-[10px] ${collapsed ? 'cursor-pointer' : ''}`;

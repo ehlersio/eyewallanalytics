@@ -55,7 +55,7 @@ const SECTION_LABEL_CLASSES = 'text-[10px] font-bold uppercase tracking-[0.08em]
 const MY_TEAM_CLASSES = 'mb-3';
 const TEAM_ROW_CLASSES = 'flex items-center gap-2 pt-2 px-0 pb-1';
 const TEAM_NAME_CLASSES = 'flex-1 text-[14px] font-semibold text-[color:var(--text)]';
-const CHANGE_TEAM_BTN_CLASSES = 'notif-change-team-btn py-1 px-2.5 text-[12px] rounded-[6px] border border-[var(--team-primary)] text-[color:var(--team-primary)] bg-transparent cursor-pointer font-medium [transition:background_0.15s] hover:bg-[rgba(var(--team-primary-rgb,204,0,0),0.1)]';
+const CHANGE_TEAM_BTN_CLASSES = 'notif-change-team-btn py-1 px-2.5 text-[12px] rounded-[6px] border border-transparent text-[color:var(--team-primary)] bg-[color-mix(in_srgb,var(--team-primary)_12%,transparent)] cursor-pointer font-medium [transition:background_0.15s] hover:bg-[color-mix(in_srgb,var(--team-primary)_20%,transparent)]';
 
 const SUMMARIES_SECTION_CLASSES = 'mt-3.5 pt-3.5 border-t-[0.5px] border-t-[var(--border)]';
 const SUMMARIES_LABEL_CLASSES = 'text-[9px] font-bold tracking-[0.1em] uppercase text-[color:var(--text-dim)] mb-2';

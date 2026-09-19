@@ -92,9 +92,9 @@ function CalendarView({ games, calMonth, setCalMonth, onGamePopup }) {
     <div className="calendar-wrap pb-4">
       {/* Month navigation */}
       <div className="cal-nav flex items-center justify-between mb-3">
-        <button className="cal-nav-btn w-8 h-8 rounded-full border-[0.5px] border-[color:var(--border-2)] bg-[var(--bg2)] text-[color:var(--text-muted)] text-[18px] cursor-pointer flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]" onClick={prevMonth}>‹</button>
+        <button className="cal-nav-btn w-8 h-8 rounded-full border-[0.5px] border-transparent bg-[var(--btn-fill)] text-[color:var(--text-muted)] text-[18px] cursor-pointer flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text)]" onClick={prevMonth}>‹</button>
         <span className="cal-month-label font-[family-name:var(--font-display)] text-[16px] font-bold text-[color:var(--text)] tracking-[0.04em]">{monthLabel(year, month)} {year}</span>
-        <button className="cal-nav-btn w-8 h-8 rounded-full border-[0.5px] border-[color:var(--border-2)] bg-[var(--bg2)] text-[color:var(--text-muted)] text-[18px] cursor-pointer flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]" onClick={nextMonth}>›</button>
+        <button className="cal-nav-btn w-8 h-8 rounded-full border-[0.5px] border-transparent bg-[var(--btn-fill)] text-[color:var(--text-muted)] text-[18px] cursor-pointer flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text)]" onClick={nextMonth}>›</button>
       </div>
 
       {/* Day-of-week headers */}

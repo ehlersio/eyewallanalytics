@@ -99,8 +99,8 @@ function SeriesCard({ series }) {
 const sortBtnClasses = (active) => {
   const base = 'sort-btn py-1 px-2.5 rounded-[20px] text-[11px] font-medium border-[0.5px] cursor-pointer [transition:all_0.15s]';
   return active
-    ? `${base} active bg-[var(--red-dim)] border-[color:var(--red-border)] text-[color:var(--red-bright)]`
-    : `${base} bg-transparent border-[color:var(--border-2)] text-[color:var(--text-muted)] hover:text-[color:var(--text)]`;
+    ? `${base} active bg-[var(--red-dim)] border-transparent text-[color:var(--red-bright)]`
+    : `${base} bg-[var(--btn-fill)] border-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text)] hover:bg-[var(--btn-fill-hover)]`;
 };
 
 function SortBar({ sortOrder, setSortOrder, completedCount, upcomingCount }) {

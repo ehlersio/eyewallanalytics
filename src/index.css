@@ -53,6 +53,13 @@
      sweep). */
   --surface-hover: rgba(255, 255, 255, 0.04);
 
+  /* Borderless buttons/chips (2026-09 button style pass): unselected
+     chips and secondary buttons carry a soft fill instead of an outline,
+     darkening on hover -- touch screens have no hover, so the fill is what
+     marks them as tappable. Selected states keep their own tint. */
+  --btn-fill: rgba(255, 255, 255, 0.05);
+  --btn-fill-hover: rgba(255, 255, 255, 0.10);
+
   --radius: 10px;
   --radius-sm: 6px;
   --radius-lg: 14px;
@@ -145,6 +152,9 @@
      clickable:hover and .pr-row:hover in one place, since both already
      share this token. */
   --surface-hover: rgba(0, 0, 0, 0.04);
+
+  --btn-fill: rgba(0, 0, 0, 0.05);
+  --btn-fill-hover: rgba(0, 0, 0, 0.09);
 
   --popup-shadow: 0 16px 48px rgba(0,0,0,0.15);
 }
@@ -291,6 +301,21 @@
   opacity: 0.35;
   cursor: default;
 }
+
+/* react-hockey-rink's own buttons (.rhr-btn filter/period chips, .rhr-zoom-btn
+   +/-) -- styled by the package's styles.css, which main.jsx imports before
+   this file, so these equal-specificity rules win. Same borderless treatment
+   as the app's own chips (2026-09 button style pass): unselected get the
+   soft --btn-fill, selected keep the package's tint without its outline. */
+.rhr-btn,
+.rhr-zoom-btn { border-color: transparent; }
+.rhr-btn:not(.rhr-btn-on):not(.rhr-btn-ot),
+.rhr-zoom-btn { background: var(--btn-fill); }
+.rhr-btn:not(.rhr-btn-on):not(.rhr-btn-ot):enabled:hover,
+.rhr-zoom-btn:enabled:hover { border-color: transparent; background: var(--btn-fill-hover); }
+.rhr-btn-ot:not(.rhr-btn-on) { background: rgba(240, 160, 48, 0.08); }
+.rhr-btn-ot:not(.rhr-btn-on):enabled:hover { border-color: transparent; background: rgba(240, 160, 48, 0.16); }
+.rhr-btn.rhr-btn-on { border-color: transparent; }
 
 /* .en-indicator/.car-en/.opp-en (ShotMapView.jsx/PWHLShotMapView.jsx --
    Phase 5, sub-PR 6) -- hoisted from ShotMapView.css (now fully deleted)

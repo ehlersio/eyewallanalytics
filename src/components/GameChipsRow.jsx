@@ -42,12 +42,14 @@ import TeamLogo from './TeamLogo';
 
 const GAME_CHIP_BASE = 'game-chip flex items-center gap-[5px] py-[5px] px-[10px] border rounded-[20px] whitespace-nowrap cursor-pointer [transition:border-color_0.12s,background_0.12s] shrink-0 text-[11px]';
 function gameChipClasses({ active = false, live = false, all = false } = {}) {
-  const bg = active ? 'bg-[var(--bg2)]' : 'bg-transparent';
-  const borderColor = active
-    ? 'border-[color:var(--text-dim)]'
+  // Borderless (2026-09 button style pass): selected reads as a stronger
+  // fill, live as a red tint, the rest as the shared soft button fill.
+  const bg = active
+    ? 'bg-[var(--bg3)]'
     : live
-      ? 'border-[color:var(--red-bright)]'
-      : 'border-[color:var(--border)] hover:border-[color:var(--text-dim)]';
+      ? 'bg-[rgba(255,68,34,0.12)] hover:bg-[rgba(255,68,34,0.2)]'
+      : 'bg-[var(--btn-fill)] hover:bg-[var(--btn-fill-hover)]';
+  const borderColor = 'border-transparent';
   let textColor;
   if (all) textColor = 'text-[color:var(--text-muted)] font-semibold';
   else if (active) textColor = 'text-[color:var(--text)]';

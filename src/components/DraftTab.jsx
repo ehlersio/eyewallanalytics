@@ -37,7 +37,7 @@ function dtBannerClasses(variant) {
 function dtToggleClasses(active) {
   const base = 'dt-toggle py-[5px] px-[14px] rounded-[20px] text-[12px] font-medium border-[0.5px] cursor-pointer [transition:all_0.15s]';
   return active
-    ? `${base} dt-toggle--active bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[color:var(--red-border)]`
+    ? `${base} dt-toggle--active bg-[var(--red-dim)] text-[color:var(--red-bright)] border-transparent`
     : `${base} text-[color:var(--text-muted)] border-transparent bg-transparent`;
 }
 
@@ -45,8 +45,8 @@ function dtToggleClasses(active) {
 function dtCatTabClasses(active) {
   const base = 'dt-cat-tab flex items-center gap-[5px] py-1 px-3 rounded-[16px] text-[12px] font-medium border-[0.5px] cursor-pointer [transition:all_0.15s]';
   return active
-    ? `${base} dt-cat-tab--active text-[color:var(--text)] bg-[var(--bg3)] border-[color:var(--text-muted)]`
-    : `${base} text-[color:var(--text-dim)] bg-[var(--bg2)] border-[color:var(--border)]`;
+    ? `${base} dt-cat-tab--active text-[color:var(--text)] bg-[var(--bg4)] border-transparent`
+    : `${base} text-[color:var(--text-dim)] bg-[var(--btn-fill)] border-transparent hover:bg-[var(--btn-fill-hover)]`;
 }
 
 // ── Rank badge (dt-popup-rank-badge / --unranked) -- same shape. ──
