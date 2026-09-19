@@ -114,6 +114,15 @@ export const ECHL_TEAMS = [
   { abbr: 'WIC', teamId: 72, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Wichita Thunder', shortName: 'Thunder', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
 ];
 
+// 2025-26 teams not in 2026-27 -- they still appear in season 73/76 games,
+// standings and player rows. Resolvable by id (and abbr, for logos) only;
+// deliberately left out of ECHL_TEAMS so they never show up as a pickable
+// team. Same pattern as ahlConfig.js's AHL_HISTORICAL_TEAMS.
+export const ECHL_HISTORICAL_TEAMS = [
+  { abbr: 'IA', teamId: 98, division: 'Central', season: 73, displayName: 'Iowa Heartlanders', shortName: 'Heartlanders', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR, historical: true },
+  { abbr: 'UTA', teamId: 23, division: 'Mountain', season: 73, displayName: 'Utah Grizzlies', shortName: 'Grizzlies', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR, historical: true },
+];
+
 // ── Logos ─────────────────────────────────────────────────────────────────────
 // Hosted directly from HockeyTech's own asset CDN, same convention as
 // AHL's ahlLogoUrl(). NOT a bare `{teamId}.png` per team -- confirmed
@@ -134,6 +143,7 @@ const ECHL_LOGO_FILES = {
   102: '102.png', 18: '18.png', 106: '106_77.png', 21: '21.png',
   113: '113_77.png', 99: '99.png', 71: '71.png', 25: '25.png', 72: '72.png',
   77: '77.png',
+  98: '98.png', 23: '23.png', // historical (IA, UTA), confirmed live 2026-09-19
 };
 
 export function echlLogoUrl(teamId) {
@@ -144,10 +154,19 @@ export function echlLogoUrl(teamId) {
 // ── Lookups ───────────────────────────────────────────────────────────────────
 
 export const ECHL_TEAM_MAP = Object.fromEntries(ECHL_TEAMS.map((t) => [t.abbr, t]));
-export const ECHL_TEAM_BY_ID = Object.fromEntries(ECHL_TEAMS.map((t) => [t.teamId, t]));
+export const ECHL_TEAM_BY_ID = Object.fromEntries(
+  [...ECHL_HISTORICAL_TEAMS, ...ECHL_TEAMS].map((t) => [t.teamId, t])
+);
 
 export function getECHLTeamConfig(abbr) {
   return ECHL_TEAM_MAP[abbr] ?? null;
+}
+
+// Display-only lookup (logos, labels) that also resolves ECHL_HISTORICAL_TEAMS
+// -- never use this to pick or validate a user's team.
+const ECHL_HISTORICAL_TEAM_MAP = Object.fromEntries(ECHL_HISTORICAL_TEAMS.map((t) => [t.abbr, t]));
+export function getECHLTeamForDisplay(abbr) {
+  return ECHL_TEAM_MAP[abbr] ?? ECHL_HISTORICAL_TEAM_MAP[abbr] ?? null;
 }
 
 export function getECHLTeamById(teamId) {

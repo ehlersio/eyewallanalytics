@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
 import { pwhlLogoUrl } from '../utils/pwhlConfig';
 import { ahlLogoUrl, getAHLTeamForDisplay } from '../utils/ahlConfig';
-import { echlLogoUrl, getECHLTeamConfig } from '../utils/echlConfig';
+import { echlLogoUrl, getECHLTeamForDisplay } from '../utils/echlConfig';
 
 // Tailwind migration (Session 95, Phase 1) -- previously TeamLogo.css.
 const LOGO_CLASSES = 'inline-block object-contain shrink-0 align-middle drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]';
@@ -62,7 +62,7 @@ export default function TeamLogo({ abbr, sport = 'nhl', size = 24, color, classN
   const src =
     sport === 'pwhl' ? pwhlLogoUrl(abbr)
     : sport === 'ahl' ? ahlLogoUrl(getAHLTeamForDisplay(abbr)?.teamId)
-    : sport === 'echl' ? echlLogoUrl(getECHLTeamConfig(abbr)?.teamId)
+    : sport === 'echl' ? echlLogoUrl(getECHLTeamForDisplay(abbr)?.teamId)
     : nhlLogoUrl(abbr);
 
   if (!abbr || !src || errored) {
