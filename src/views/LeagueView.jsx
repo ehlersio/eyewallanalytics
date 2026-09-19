@@ -26,16 +26,9 @@ import PredictionScorecard from '../components/PredictionScorecard';
 import PlayerPopup from '../components/PlayerPopup';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from '../components/ShareButtons';
-// PredictionCanvas.css import removed (Phase 6) -- migrated to Tailwind.
-// PowerRankingsCanvas below never imported this CSS itself, relying on
-// PredictionShareCanvas.jsx having already loaded it elsewhere in the app
-// (same hidden-consumer shape as IceRink.css's .rink-btn) -- now imports
-// the shared shell classes from utils/predCanvasClasses.js instead.
-import {
-  PRED_CANVAS_CLASSES, PRED_CANVAS_HEADER_CLASSES, PRED_CANVAS_LOGO_CLASSES,
-  PRED_CANVAS_BADGE_CLASSES, PRED_CANVAS_AI_CLASSES, PRED_CANVAS_AI_LABEL_CLASSES,
-  PRED_CANVAS_AI_TEXT_CLASSES, PRED_CANVAS_FOOTER_CLASSES,
-} from '../utils/predCanvasClasses';
+// PowerRankingsCanvas's shell -- shared by every share card.
+import ShareCardFrame, { ShareAiBlock, ShareSection } from '../components/ShareCardFrame';
+import { SHARE, FONT_DISPLAY, FONT_LABEL } from '../utils/shareCardTheme';
 import DraftTab from '../components/DraftTab';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
@@ -1708,143 +1701,97 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
 
 // ─── Power Rankings Export Canvas (1080×1080, off-screen) ────────────────────
 
-function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, primaryColor }) {
+// 1080×1350 rankings card, drawn in ShareCardFrame like every share card
+// (same look as the pipeline's Monday Instagram/Facebook rankings slides).
+export function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, primaryColor }) {
   const { t } = useTranslation();
   const logoUrl = abbr => `${NATIVE_ORIGIN}/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
   const diff = priorRank != null ? priorRank - myTeam.rank : null;
   const mvmtLabel = diff == null ? null : diff === 0 ? '—' : diff > 0 ? `▲${diff}` : `▼${Math.abs(diff)}`;
-  const mvmtColor = diff == null || diff === 0 ? 'rgba(255,255,255,0.5)' : diff > 0 ? '#4ade80' : '#f87171';
+  const mvmtColor = diff == null || diff === 0 ? SHARE.muted : diff > 0 ? '#4ade80' : '#f87171';
 
-  // Top 15 + team's neighbourhood if outside top 15
-  const inTop15 = myTeam.rank <= 15;
-  const displayRows = ranked.filter(t =>
-    t.rank <= 15 || (!inTop15 && Math.abs(t.rank - myTeam.rank) <= 2)
-  );
+  // Eight rows fit: the top 8, or the top 3 plus the team and its two
+  // neighbours either side when it's outside the top 8.
+  const inTop8 = myTeam.rank <= 8;
+  const displayRows = ranked.filter(r => (inTop8 ? r.rank <= 8 : r.rank <= 3 || Math.abs(r.rank - myTeam.rank) <= 2));
+  const record = `${myTeam.wins}–${myTeam.losses}–${myTeam.otLosses}`;
+  const COLS = '64px 110px 1fr 120px 120px 120px';
+  const cell = { fontFamily: FONT_LABEL, fontSize: 24, textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
 
   return (
-    <div
+    <ShareCardFrame
       id="pr-export-canvas"
-      className={PRED_CANVAS_CLASSES}
-      style={{ '--team-canvas': primaryColor, background: '#1a1a2e' }}
+      accent={primaryColor}
+      kicker={t('leagueView.rankings.snapshotBadge')}
+      title={t('shareCard.rankingsTitle')}
+      subtitle={t('shareCard.rankingsSubtitle', { rank: myTeam.rank, record })}
+      note={t('shareCard.rankingsNote')}
     >
-      {/* Header */}
-      <div className={PRED_CANVAS_HEADER_CLASSES}>
-        <img src="/eyewall-logo.svg" alt="EyeWall" className={PRED_CANVAS_LOGO_CLASSES}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+        <img src={logoUrl(myTeam.abbr)} alt={myTeam.abbr} style={{ width: 110, height: 110, objectFit: 'contain' }}
           onError={e => { e.target.style.display = 'none'; }} />
-        <span className={PRED_CANVAS_BADGE_CLASSES}>{t('leagueView.rankings.snapshotBadge')}</span>
-      </div>
-
-      {/* Hero — team logo, rank, movement, component bars */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '0 52px 20px', borderBottom: '0.5px solid rgba(255,255,255,0.07)' }}>
-        <img src={logoUrl(myTeam.abbr)} alt={myTeam.abbr}
-          style={{ width: 80, height: 80, objectFit: 'contain' }}
-          onError={e => { e.target.style.display = 'none'; }} />
-
-        <div style={{ minWidth: 160 }}>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
-            {myTeam.abbr} · {myTeam.wins}–{myTeam.losses}–{myTeam.otLosses}
+        <div style={{ minWidth: 200 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
+            <span style={{ fontFamily: FONT_DISPLAY, fontSize: 120, lineHeight: 0.9, color: 'var(--team-canvas)' }}>#{myTeam.rank}</span>
+            {mvmtLabel && <span style={{ fontFamily: FONT_DISPLAY, fontSize: 40, color: mvmtColor }}>{mvmtLabel}</span>}
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-            <span style={{ fontSize: 72, fontWeight: 900, color: 'var(--team-canvas)', lineHeight: 1 }}>
-              #{myTeam.rank}
-            </span>
-            {mvmtLabel && (
-              <span style={{ fontSize: 26, fontWeight: 700, color: mvmtColor }}>{mvmtLabel}</span>
-            )}
-          </div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{t('leagueView.rankings.ofTeams')}</div>
         </div>
-
-        {/* Component bars */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 9 }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[
-            { label: 'Pts%',  val: myTeam.ptsPct * 100,                              fmt: v => `${v.toFixed(1)}%`, rank: myTeam.leagueRanks?.pts },
-            { label: 'L10',   val: myTeam.l10PtsPct * 100,                           fmt: () => myTeam.l10,        rank: myTeam.leagueRanks?.l10 },
+            { label: 'Pts%',  val: myTeam.ptsPct * 100,                                fmt: v => `${v.toFixed(1)}%`, rank: myTeam.leagueRanks?.pts },
+            { label: 'L10',   val: myTeam.l10PtsPct * 100,                             fmt: () => myTeam.l10,        rank: myTeam.leagueRanks?.l10 },
             { label: 'xGF%',  val: myTeam.xgfPct != null ? myTeam.xgfPct * 100 : null, fmt: v => `${v.toFixed(1)}%`, rank: myTeam.leagueRanks?.xgf },
-            { label: 'GD/GP', val: myTeam.gdPG,                                      fmt: v => (v > 0 ? '+' : '') + v.toFixed(2), rank: myTeam.leagueRanks?.gd },
-            { label: 'SP%',   val: myTeam.spPct * 100,                               fmt: v => `${v.toFixed(1)}%`, rank: myTeam.leagueRanks?.sp },
+            { label: 'GD/GP', val: myTeam.gdPG,                                        fmt: v => (v > 0 ? '+' : '') + v.toFixed(2), rank: myTeam.leagueRanks?.gd },
+            { label: 'SP%',   val: myTeam.spPct * 100,                                 fmt: v => `${v.toFixed(1)}%`, rank: myTeam.leagueRanks?.sp },
           ].map(({ label, val, fmt, rank }) => {
-            const barPct   = rank != null ? ((32 - rank) / 31) * 100 : 50;
+            const barPct = rank != null ? ((32 - rank) / 31) * 100 : 50;
             const barColor = rank != null && rank <= 10 ? '#4ade80' : rank != null && rank >= 23 ? '#f87171' : '#5b8fd4';
             return (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 40, fontSize: 11, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>{label}</span>
-                <div style={{ flex: 1, height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
-                  <div style={{ width: `${barPct}%`, height: '100%', background: barColor, borderRadius: 3 }} />
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ width: 72, fontFamily: FONT_LABEL, fontSize: 22, color: SHARE.muted }}>{label}</span>
+                <div style={{ flex: 1, height: 10, background: SHARE.bg3, borderRadius: 5, overflow: 'hidden' }}>
+                  <div style={{ width: `${barPct}%`, height: '100%', background: barColor }} />
                 </div>
-                <span style={{ width: 46, fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                  {val != null ? fmt(val) : '—'}
-                </span>
-                <span style={{ width: 26, fontSize: 10, color: 'rgba(255,255,255,0.45)', textAlign: 'right' }}>
-                  {rank != null ? `#${rank}` : ''}
-                </span>
+                <span style={{ ...cell, width: 96 }}>{val != null ? fmt(val) : '—'}</span>
+                <span style={{ ...cell, width: 52, color: SHARE.muted, fontSize: 20 }}>{rank != null ? `#${rank}` : ''}</span>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* AI narrative */}
-      {narrative && (
-        <div className={PRED_CANVAS_AI_CLASSES}>
-          <div className={PRED_CANVAS_AI_LABEL_CLASSES}>⚡ EyeWall AI</div>
-          <div className={PRED_CANVAS_AI_TEXT_CLASSES}>{narrative}</div>
-        </div>
-      )}
+      <ShareAiBlock text={narrative} lines={3} />
 
-      {/* League snapshot */}
-      <div style={{ flex: 1, padding: '10px 52px 0', overflow: 'hidden' }}>
-        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginBottom: 6 }}>
-          {t('leagueView.rankings.snapshotHeading')}
-        </div>
-        {/* Column headers -- h stays the literal English key for alignment
-            logic below; only the rendered text is translated. */}
-        <div style={{ display: 'grid', gridTemplateColumns: '28px 8px 52px 1fr 54px 60px 54px 54px', gap: 6, padding: '0 8px 4px', borderBottom: '0.5px solid rgba(255,255,255,0.07)', marginBottom: 3 }}>
-          {['#', '', 'Team', 'Record', 'Pts%', 'L10', 'xGF%', 'GD/GP'].map(h => (
-            <span key={h} style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', textAlign: h === 'Record' ? 'left' : h === '#' || h === '' ? 'center' : 'right' }}>
-              {h === 'Team' ? t('league.rankings.colTeam') : h === 'Record' ? t('league.rankings.colRecord') : h}
-            </span>
+      <ShareSection label={t('leagueView.rankings.snapshotHeading')}>
+        <div style={{ display: 'grid', gridTemplateColumns: COLS, gap: 8, padding: '0 16px 6px' }}>
+          {['#', t('league.rankings.colTeam'), t('league.rankings.colRecord'), 'Pts%', 'xGF%', 'GD/GP'].map((h, i) => (
+            <span key={i} style={{ fontFamily: FONT_LABEL, fontSize: 20, color: SHARE.muted, textTransform: 'uppercase', textAlign: i <= 2 ? 'left' : 'right' }}>{h}</span>
           ))}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {displayRows.map(t => {
-            const isMe     = t.abbr === myTeam.abbr;
-            const teamColor = teamTextColor(t.abbr) ?? 'rgba(255,255,255,0.5)';
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {displayRows.map((r, i) => {
+            const isMe = r.abbr === myTeam.abbr;
+            const gap = i > 0 && r.rank - displayRows[i - 1].rank > 1;
             return (
-              <div key={t.abbr} style={{
-                display: 'grid',
-                gridTemplateColumns: '28px 8px 52px 1fr 54px 60px 54px 54px',
-                alignItems: 'center',
-                gap: 6,
-                padding: '3px 8px',
-                borderRadius: 5,
-                background: isMe ? `${primaryColor}18` : 'transparent',
-                borderLeft: isMe ? `3px solid ${primaryColor}` : '3px solid transparent',
+              <React.Fragment key={r.abbr}>
+              {gap && <div style={{ textAlign: 'center', color: SHARE.muted, fontSize: 20, lineHeight: '10px' }}>…</div>}
+              <div style={{
+                display: 'grid', gridTemplateColumns: COLS, gap: 8, alignItems: 'center', padding: '2px 16px', borderRadius: 8,
+                background: isMe ? `${primaryColor}26` : SHARE.bg2, borderLeft: `6px solid ${isMe ? primaryColor : 'transparent'}`,
               }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: isMe ? 'var(--team-canvas)' : 'rgba(255,255,255,0.45)', textAlign: 'center' }}>{t.rank}</span>
-                <span />
-                <span style={{ fontSize: 12, fontWeight: 700, color: teamColor }}>{t.abbr}</span>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>{t.wins}–{t.losses}–{t.otLosses}</span>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.70)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{(t.ptsPct * 100).toFixed(1)}%</span>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', textAlign: 'right' }}>{t.l10}</span>
-                <span style={{ fontSize: 11, color: t.xgfPct != null ? 'rgba(255,255,255,0.70)' : 'rgba(255,255,255,0.35)', textAlign: 'right' }}>
-                  {t.xgfPct != null ? `${(t.xgfPct * 100).toFixed(1)}%` : '—'}
-                </span>
-                <span style={{ fontSize: 11, color: t.gdPG > 0 ? '#4ade80' : t.gdPG < 0 ? '#f87171' : 'rgba(255,255,255,0.4)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                  {t.gdPG > 0 ? '+' : ''}{t.gdPG.toFixed(2)}
-                </span>
+                <span style={{ ...cell, textAlign: 'left', color: isMe ? 'var(--team-canvas)' : SHARE.muted }}>{r.rank}</span>
+                <span style={{ ...cell, textAlign: 'left', color: teamTextColor(r.abbr) ?? SHARE.text }}>{r.abbr}</span>
+                <span style={{ ...cell, textAlign: 'left', color: SHARE.muted }}>{r.wins}–{r.losses}–{r.otLosses}</span>
+                <span style={cell}>{(r.ptsPct * 100).toFixed(1)}%</span>
+                <span style={{ ...cell, color: r.xgfPct != null ? SHARE.text : SHARE.muted }}>{r.xgfPct != null ? `${(r.xgfPct * 100).toFixed(1)}%` : '—'}</span>
+                <span style={{ ...cell, color: r.gdPG > 0 ? '#4ade80' : r.gdPG < 0 ? '#f87171' : SHARE.muted }}>{r.gdPG > 0 ? '+' : ''}{r.gdPG.toFixed(2)}</span>
               </div>
+              </React.Fragment>
             );
           })}
         </div>
-      </div>
-
-      {/* Footer */}
-      <div className={PRED_CANVAS_FOOTER_CLASSES}>
-        <span>eyewallanalytics.com</span>
-        <span>{TEAM_CONFIG.hashtags?.[0] || `#${myTeam.abbr}`}</span>
-      </div>
-    </div>
+      </ShareSection>
+    </ShareCardFrame>
   );
 }
 

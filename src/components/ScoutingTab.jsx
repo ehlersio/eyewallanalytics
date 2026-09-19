@@ -14,6 +14,8 @@ import TeamLogo from './TeamLogo';
 import InfoTip from './InfoTip';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
+import ShareCardFrame, { ShareAiBlock, ShareCompareRow, ShareSection, ShareRow } from './ShareCardFrame';
+import { SHARE, FONT_DISPLAY, FONT_LABEL } from '../utils/shareCardTheme';
 import { InjuryBadge, InjuryDetailTip, INJURY_OUT_STATUSES } from './InjuryBadge';
 import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
 // ScoutingTab.css import removed (Phase 6) -- migrated to Tailwind. NHL-only,
@@ -261,196 +263,101 @@ function TeamTotalCard({ carStats, oppStats, oppAbbr, isPlayoff }) {
 }
 
 // ── Share canvas (off-screen 1080×1080) ──────────────────────
-function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPlayers,
-  _carRecentGames, _oppRecentGames, oppAbbr, oppColor, isPlayoff, carLines, matchupText }) {
+// 1080×1350 scouting card, drawn in ShareCardFrame like every share card.
+// Keeps the top forward line and three leaders a side -- the D pairs and
+// the rest of the lines no longer fit at a readable size.
+export function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPlayers,
+  oppAbbr, oppColor, isPlayoff, carLines, matchupText }) {
   const { t } = useTranslation();
   if (!carStats || !oppStats) return null;
 
-  const logoUrl    = abbr => `${NATIVE_ORIGIN}/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
-  const gpgFmt     = v => v?.toFixed(2) ?? '—';
-  const pctFmt     = v => v != null ? `${(v * 100).toFixed(1)}%` : '—';
+  const car = TEAM_CONFIG.abbr;
+  const carColor = TEAM_CONFIG.displayColor;
+  const oppCol = oppColor || SHARE.text;
+  const gpgFmt = v => v?.toFixed(2) ?? '—';
+  const pctFmt = v => v != null ? `${(v * 100).toFixed(1)}%` : '—';
+  const side = carBetter => (carBetter ? 'left' : 'right');
+  const logo = abbr => (
+    <img src={`${NATIVE_ORIGIN}/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`} alt={abbr}
+      style={{ width: 40, height: 40, objectFit: 'contain' }} onError={e => { e.target.style.display = 'none'; }} />
+  );
+  const POS_LABEL = { L: 'LW', LW: 'LW', C: 'C', R: 'RW', RW: 'RW', D: 'D' };
 
-  // Team total projection
-  // eslint-disable-next-line no-unused-vars
-  const carExp = ((carStats.goalsForPerGame ?? 0) + (oppStats.goalsAgainstPerGame ?? 0)) / 2; // used in TeamTotalCard variant
-  // eslint-disable-next-line no-unused-vars
-  const oppExp = ((oppStats.goalsForPerGame ?? 0) + (carStats.goalsAgainstPerGame ?? 0)) / 2;
   return (
-    <div className="sc-canvas fixed left-[-9999px] top-0 w-[1080px] h-[1080px] bg-[#1a1a2e] text-white flex flex-col [font-family:-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif] overflow-hidden" ref={canvasRef}>
-      {/* Header */}
-      <div className="sc-header flex items-center justify-between py-5 px-[52px] pb-2">
-        <img src="/eyewall-logo.svg" alt="EyeWall" className="sc-logo w-20 h-20 object-contain" onError={e=>{e.target.style.display='none';}} />
-        <span className="sc-badge text-[13px] font-extrabold tracking-[0.14em] uppercase text-[color:var(--team-canvas)] bg-[rgba(var(--team-canvas-rgb),0.12)] py-1.5 px-4 rounded-[20px]">{isPlayoff ? t('scoutingTab.shareCanvas.playoffBadge') : t('scoutingTab.shareCanvas.badge')}</span>
-      </div>
-
-      {/* Teams */}
-      <div className="sc-teams flex items-center justify-center gap-5 pt-1 px-[52px] pb-2.5 border-b-[0.5px] border-b-[rgba(255,255,255,0.07)]">
-        <div className="sc-team flex flex-row items-center gap-2.5">
-          <img src={logoUrl(TEAM_CONFIG.abbr)} alt={TEAM_CONFIG.abbr} className="sc-team-logo w-9 h-9 object-contain" onError={e=>{e.target.style.display='none';}} />
-          <span className="sc-team-abbr car text-[20px] font-extrabold text-[color:var(--team-canvas)]">CAR</span>
+    <ShareCardFrame
+      canvasRef={canvasRef}
+      accent={carColor}
+      kicker={isPlayoff ? t('scoutingTab.shareCanvas.playoffBadge') : t('scoutingTab.shareCanvas.badge')}
+      title={t('shareCard.matchupTitle', { team: car, opp: oppAbbr })}
+      subtitle={isPlayoff ? t('shareCard.scoutingPlayoffSubtitle') : t('shareCard.scoutingSubtitle')}
+      note={t('shareCard.statsNote')}
+    >
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: FONT_DISPLAY, fontSize: 36, color: carColor }}>{logo(car)}{car}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: FONT_DISPLAY, fontSize: 36, color: oppCol }}>{oppAbbr}{logo(oppAbbr)}</span>
         </div>
-        <span className="sc-vs text-[18px] text-[rgba(255,255,255,0.2)]">{t('scoutingTab.vs')}</span>
-        <div className="sc-team flex flex-row items-center gap-2.5">
-          <img src={logoUrl(oppAbbr)} alt={oppAbbr} className="sc-team-logo w-9 h-9 object-contain" onError={e=>{e.target.style.display='none';}} />
-          <span className="sc-team-abbr text-[20px] font-extrabold text-[rgba(255,255,255,0.7)]" style={{color: oppColor}}>{oppAbbr}</span>
-        </div>
-      </div>
-
-      {/* Stats comparison */}
-      <div className="sc-stats py-3.5 px-[52px] pb-2.5 flex flex-col gap-2.5">
         {[
-          { label: t('scoutingTab.shareCanvas.stats.goalsForGp'),    car: gpgFmt(carStats.goalsForPerGame),    opp: gpgFmt(oppStats.goalsForPerGame),    carBetter: (carStats.goalsForPerGame??0) > (oppStats.goalsForPerGame??0) },
-          { label: t('scoutingTab.shareCanvas.stats.goalsAgainstGp'),car: gpgFmt(carStats.goalsAgainstPerGame),opp: gpgFmt(oppStats.goalsAgainstPerGame),carBetter: (carStats.goalsAgainstPerGame??99) < (oppStats.goalsAgainstPerGame??99) },
-          { label: t('scoutingTab.shareCanvas.stats.powerPlayPct'),      car: pctFmt(carStats.powerPlayPct),       opp: pctFmt(oppStats.powerPlayPct),       carBetter: (carStats.powerPlayPct??0) > (oppStats.powerPlayPct??0) },
-          { label: t('scoutingTab.shareCanvas.stats.penaltyKillPct'),    car: pctFmt(carStats.penaltyKillPct),     opp: pctFmt(oppStats.penaltyKillPct),     carBetter: (carStats.penaltyKillPct??0) > (oppStats.penaltyKillPct??0) },
-          { label: t('scoutingTab.shareCanvas.stats.shotsForGp'),    car: (carStats.shotsForPerGame??0).toFixed(1), opp: (oppStats.shotsForPerGame??0).toFixed(1), carBetter: (carStats.shotsForPerGame??0) > (oppStats.shotsForPerGame??0) },
-        ].map((r, i) => (
-          <div key={i} className="sc-stat-row flex items-center gap-3">
-            <span className={`sc-stat-val w-20 text-[23px] font-bold text-right ${r.carBetter ? 'good text-[#4ade80]' : 'muted text-[rgba(255,255,255,0.4)]'}`} style={{fontSize:17}}>{r.car}</span>
-            <span className="sc-stat-label flex-1 text-center text-[14px] text-[rgba(255,255,255,0.35)] uppercase tracking-[0.08em]" style={{fontSize:11}}>{r.label}</span>
-            <span className={`sc-stat-val w-20 text-[23px] font-bold text-left ${!r.carBetter ? 'good-opp text-[#fb923c]' : 'muted text-[rgba(255,255,255,0.4)]'}`} style={{fontSize:17}}>{r.opp}</span>
-          </div>
+          { label: t('scoutingTab.shareCanvas.stats.goalsForGp'),     l: gpgFmt(carStats.goalsForPerGame),     r: gpgFmt(oppStats.goalsForPerGame),     better: side((carStats.goalsForPerGame ?? 0) > (oppStats.goalsForPerGame ?? 0)) },
+          { label: t('scoutingTab.shareCanvas.stats.goalsAgainstGp'), l: gpgFmt(carStats.goalsAgainstPerGame), r: gpgFmt(oppStats.goalsAgainstPerGame), better: side((carStats.goalsAgainstPerGame ?? 99) < (oppStats.goalsAgainstPerGame ?? 99)) },
+          { label: t('scoutingTab.shareCanvas.stats.powerPlayPct'),   l: pctFmt(carStats.powerPlayPct),        r: pctFmt(oppStats.powerPlayPct),        better: side((carStats.powerPlayPct ?? 0) > (oppStats.powerPlayPct ?? 0)) },
+          { label: t('scoutingTab.shareCanvas.stats.penaltyKillPct'), l: pctFmt(carStats.penaltyKillPct),      r: pctFmt(oppStats.penaltyKillPct),      better: side((carStats.penaltyKillPct ?? 0) > (oppStats.penaltyKillPct ?? 0)) },
+          { label: t('scoutingTab.shareCanvas.stats.shotsForGp'),     l: (carStats.shotsForPerGame ?? 0).toFixed(1), r: (oppStats.shotsForPerGame ?? 0).toFixed(1), better: side((carStats.shotsForPerGame ?? 0) > (oppStats.shotsForPerGame ?? 0)) },
+        ].map(row => (
+          <ShareCompareRow key={row.label} label={row.label} left={row.l} right={row.r}
+            better={row.better} leftColor={carColor} rightColor={oppCol} compact />
         ))}
       </div>
 
-      {/* AI Matchup Analysis — replaces team total + recent form */}
-      {matchupText && (
-        <div style={{margin:'0 52px 14px', padding:'12px 16px',
-          background:'rgba(255,255,255,0.04)', borderRadius:10,
-          borderLeft:`3px solid ${TEAM_CONFIG.displayColor}`}}>
-          <div style={{fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
-            color: TEAM_CONFIG.displayColor, marginBottom:8}}>{t('scoutingTab.aiMatchup.sectionLabel')}</div>
-          <div style={{fontSize:12, lineHeight:1.55, color:'rgba(255,255,255,0.65)',
-            display:'-webkit-box', WebkitLineClamp:7, WebkitBoxOrient:'vertical', overflow:'hidden'}}>
-            {matchupText}
-          </div>
-        </div>
-      )}
+      <ShareAiBlock text={matchupText} lines={3} />
 
-      {/* Top players + goalies */}
-      <div style={{display:'flex', gap:16, padding:'0 52px 14px'}}>
+      <div style={{ display: 'flex', gap: 16 }}>
         {[
-          { label: TEAM_CONFIG.abbr, color: TEAM_CONFIG.displayColor, players: carPlayers },
-          { label: oppAbbr, color: oppColor, players: oppPlayers },
+          { label: car, color: carColor, players: carPlayers },
+          { label: oppAbbr, color: oppCol, players: oppPlayers },
         ].map(({ label, color, players }) => (
-          <div key={label} style={{flex:1, background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'12px 14px'}}>
-            <div style={{fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
-              color: color, marginBottom:8}}>{isPlayoff ? t('scoutingTab.shareCanvas.playoffLeaders', { team: label }) : t('scoutingTab.shareCanvas.leaders', { team: label })}</div>
-            {players?.skaters?.slice(0,5).map((p, i) => (
-              <div key={i} style={{display:'flex', justifyContent:'space-between', alignItems:'center',
-                fontSize:13, padding:'4px 0', borderBottom:'0.5px solid rgba(255,255,255,0.05)'}}>
-                <span style={{color:'rgba(255,255,255,0.8)', fontWeight:500}}>{p.name}</span>
-                <span style={{color: color, fontWeight:700}}>{p.points}pts</span>
+          <div key={label} style={{ flex: 1, minWidth: 0, background: SHARE.bg2, borderRadius: 12, padding: '14px 20px' }}>
+            <div style={{ fontFamily: FONT_LABEL, fontSize: 24, color, textTransform: 'uppercase', marginBottom: 6 }}>
+              {isPlayoff ? t('scoutingTab.shareCanvas.playoffLeaders', { team: label }) : t('scoutingTab.shareCanvas.leaders', { team: label })}
+            </div>
+            {players?.skaters?.slice(0, 3).map((p, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 24, padding: '3px 0' }}>
+                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
+                <span style={{ fontFamily: FONT_LABEL, color }}>{p.points} PTS</span>
               </div>
             ))}
             {players?.goalies?.[0] && (
-              <div style={{marginTop:6, padding:'4px 0', borderTop:'0.5px solid rgba(255,255,255,0.08)'}}>
-                <div style={{fontSize:12, color:'rgba(255,255,255,0.55)', marginBottom:3}}>
-                  {players.goalies[0].name}
-                </div>
-                <div style={{display:'flex', gap:10, fontSize:12}}>
-                  <span>W {players.goalies[0].wins}</span>
-                  <span style={{color: players.goalies[0].gaa < 2.5 ? '#4ade80' : players.goalies[0].gaa > 3.2 ? '#ef384c' : 'rgba(255,255,255,0.5)'}}>
-                    GAA {players.goalies[0].gaa?.toFixed(2) ?? '—'}
-                  </span>
-                  <span>SV% {players.goalies[0].savePct?.toFixed(4) ?? '—'}</span>
-                </div>
+              <div style={{ marginTop: 6, paddingTop: 6, borderTop: `1px solid ${SHARE.bg3}`, fontSize: 21, color: SHARE.muted }}>
+                <div style={{ color: SHARE.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{players.goalies[0].name}</div>
+                W {players.goalies[0].wins} · GAA {players.goalies[0].gaa?.toFixed(2) ?? '—'} · SV% {players.goalies[0].savePct?.toFixed(3) ?? '—'}
               </div>
             )}
           </div>
         ))}
       </div>
 
-      {/* Line projections — CAR only, two-column: forward lines left, D pairs right */}
       {carLines?.lines?.length > 0 && (
-        <div style={{padding:'0 52px 12px'}}>
-          <div style={{fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
-            color:'rgba(255,255,255,0.25)', marginBottom:8}}>
-            {t('scoutingTab.shareCanvas.carLinesHeader', { abbr: TEAM_CONFIG.abbr, scope: isPlayoff ? t('scoutingTab.shareCanvas.playoffsScope') : t('scoutingTab.shareCanvas.thisSeason') })}
+        <ShareSection label={t('scoutingTab.shareCanvas.carLinesHeader', { abbr: car, scope: isPlayoff ? t('scoutingTab.shareCanvas.playoffsScope') : t('scoutingTab.shareCanvas.thisSeason') })}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {carLines.lines.slice(0, 1).map((line, i) => {
+              const xgf = line.xgfPct;
+              return (
+                <ShareRow key={i} accent={carColor} style={{ padding: '10px 20px 10px 28px' }}>
+                  <span style={{ fontFamily: FONT_LABEL, fontSize: 22, color: carColor, flexShrink: 0 }}>{t('scoutingTab.lines.line', { n: i + 1 })}</span>
+                  <span style={{ flex: 1, fontSize: 22, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {line.players.map(p => `${POS_LABEL[p.pos] || p.pos} ${p.name.split(' ').pop()}`).join(' · ')}
+                  </span>
+                  <span style={{ fontFamily: FONT_DISPLAY, fontSize: 30, color: xgf == null ? SHARE.muted : xgf >= 50 ? '#4ade80' : '#f87171' }}>
+                    {xgf != null ? `${xgf.toFixed(1)}%` : '—'}
+                  </span>
+                  <span style={{ fontFamily: FONT_LABEL, fontSize: 18, color: SHARE.muted }}>xGF</span>
+                </ShareRow>
+              );
+            })}
           </div>
-          <div style={{display:'flex', gap:12}}>
-
-            {/* Left column — forward lines */}
-            <div style={{flex:3, display:'flex', flexDirection:'column', gap:5}}>
-              {carLines.lines.slice(0, 4).map((line, i) => {
-                const xgf  = line.xgfPct;
-                const good = xgf != null && xgf >= 50;
-                const POS_LABEL = { L: 'LW', LW: 'LW', C: 'C', R: 'RW', RW: 'RW', D: 'D' };
-                return (
-                  <div key={i} style={{display:'flex', alignItems:'center', gap:8,
-                    padding:'6px 10px', background:'rgba(255,255,255,0.03)',
-                    borderRadius:7, border:'0.5px solid rgba(255,255,255,0.06)'}}>
-                    <span style={{fontSize:11, fontWeight:700, color: TEAM_CONFIG.displayColor, minWidth:42, flexShrink:0}}>
-                      {t('scoutingTab.lines.line', { n: i + 1 })}
-                    </span>
-                    <div style={{flex:1, display:'flex', gap:10, flexWrap:'wrap'}}>
-                      {line.players.map((p, j) => (
-                        <span key={j} style={{fontSize:12, color:'rgba(255,255,255,0.8)',
-                          display:'flex', gap:3, alignItems:'baseline'}}>
-                          <span style={{fontSize:10, color:'rgba(255,255,255,0.3)', fontWeight:700,
-                            textTransform:'uppercase'}}>
-                            {POS_LABEL[p.pos] || p.pos}
-                          </span>
-                          {p.name}
-                        </span>
-                      ))}
-                    </div>
-                    <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end', flexShrink:0}}>
-                      <span style={{fontSize:13, fontWeight:800,
-                        color: xgf != null ? (good ? '#4ade80' : '#ef384c') : 'rgba(255,255,255,0.25)'}}>
-                        {xgf != null ? `${xgf.toFixed(1)}%` : '—'}
-                      </span>
-                      <span style={{fontSize:9, color:'rgba(255,255,255,0.25)', letterSpacing:'0.05em'}}>xGF%</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Right column — D pairs */}
-            {carLines.pairs?.length > 0 && (
-              <div style={{flex:2, display:'flex', flexDirection:'column', gap:5}}>
-                {carLines.pairs.slice(0, 3).map((pair, i) => {
-                  const xgf  = pair.xgfPct;
-                  const good = xgf != null && xgf >= 50;
-                  return (
-                    <div key={i} style={{display:'flex', alignItems:'center', gap:8,
-                      padding:'6px 10px', background:'rgba(255,255,255,0.03)',
-                      borderRadius:7, border:'0.5px solid rgba(255,255,255,0.06)'}}>
-                      <span style={{fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.4)',
-                        minWidth:38, flexShrink:0}}>
-                        {t('scoutingTab.lines.pair', { n: i + 1 })}
-                      </span>
-                      <div style={{flex:1, display:'flex', flexDirection:'column', gap:2}}>
-                        {pair.players.map((p, j) => (
-                          <span key={j} style={{fontSize:12, color:'rgba(255,255,255,0.75)'}}>
-                            {p.name}
-                          </span>
-                        ))}
-                      </div>
-                      <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end', flexShrink:0}}>
-                        <span style={{fontSize:13, fontWeight:800,
-                          color: xgf != null ? (good ? '#4ade80' : '#ef384c') : 'rgba(255,255,255,0.25)'}}>
-                          {xgf != null ? `${xgf.toFixed(1)}%` : '—'}
-                        </span>
-                        <span style={{fontSize:9, color:'rgba(255,255,255,0.25)', letterSpacing:'0.05em'}}>xGF%</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-          </div>
-        </div>
+        </ShareSection>
       )}
-
-      {/* Footer */}
-      <div className="sc-footer flex justify-between py-2 px-[52px] pb-5 text-[13px] text-[rgba(255,255,255,0.2)] mt-auto">
-        <span>eyewallanalytics.com</span>
-        <span>{TEAM_CONFIG.hashtags?.[0] || `#${TEAM_CONFIG.abbr}`}</span>
-      </div>
-    </div>
+    </ShareCardFrame>
   );
 }
 
