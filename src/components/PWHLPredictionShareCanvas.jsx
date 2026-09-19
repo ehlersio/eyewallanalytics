@@ -1,5 +1,6 @@
 // ── PWHLPredictionShareCanvas.jsx ─────────────────────────────
-// 1080×1080 export card for PWHLGamePreviewPopup's Prediction section.
+// 1080×1350 export card for PWHLGamePreviewPopup's Prediction section,
+// drawn in ShareCardFrame like every other share card.
 // PWHL analogue of PredictionShareCanvas.jsx, right-sized to what
 // /pwhl/prediction actually returns (win%, expected score, narrative,
 // streak, shot-attempt share) -- no odds/PP-PK-edge-factors/line-combos
@@ -7,10 +8,9 @@
 // Prediction section (Season Series / Team Form / Special Teams live in
 // separate sections of that popup, out of scope for this card).
 //
-// Colors are passed in directly (color/oppColor props) rather than reading
-// --team-canvas/--team-canvas-rgb CSS vars the way NHL's canvas does --
-// this repo has no PWHL equivalent of those vars, and the popup already
-// resolves per-team colors itself.
+// Colors are passed in directly (color/oppColor props) -- the popup already
+// resolves per-team colors itself; ShareCardFrame exposes `color` to the
+// content as --team-canvas.
 
 import { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,116 +18,67 @@ import { capture } from '../utils/analytics';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
 import TeamLogo from './TeamLogo';
-import {
-  PRED_CANVAS_CLASSES, PRED_CANVAS_HEADER_CLASSES, PRED_CANVAS_LOGO_CLASSES,
-  PRED_CANVAS_BADGE_CLASSES, PRED_CANVAS_AI_CLASSES, PRED_CANVAS_AI_LABEL_CLASSES,
-  PRED_CANVAS_AI_TEXT_CLASSES, PRED_CANVAS_FOOTER_CLASSES,
-} from '../utils/predCanvasClasses';
+import ShareCardFrame, { ShareMatchupHero, ShareTiles, ShareAiBlock, ShareCompareRow } from './ShareCardFrame';
+import { SHARE, FONT_BODY } from '../utils/shareCardTheme';
 
-const PRED_CANVAS_TEAM_CLASSES = 'pred-canvas-team flex flex-col items-center gap-1.5 shrink-0';
-const PRED_CANVAS_STAT_VAL_BASE = 'pred-canvas-stat-val w-[72px] text-[20px] font-bold';
-const predCanvasStatValClasses = (isTeam) => `${PRED_CANVAS_STAT_VAL_BASE} ${isTeam ? 'text-right' : 'text-left'}`;
-
-// ── Share canvas (off-screen, 1080×1080) ─────────────────────
-function PWHLPredictionCanvas({
+// ── Share canvas (off-screen, 1080×1350, ShareCardFrame) ─────
+export function PWHLPredictionCanvas({
   canvasRef, abbr, oppAbbr, color, oppColor,
   myWinPct, oppWinPct, myExp, oppExp, myStreak, oppStreak,
   myCorsi, oppCorsi, corsiCaveat, narrative,
 }) {
   const { t } = useTranslation();
   if (myWinPct == null || oppWinPct == null || myExp == null || oppExp == null) {
-    return <div className={PRED_CANVAS_CLASSES} ref={canvasRef} />;
+    return <div ref={canvasRef} style={{ position: 'fixed', left: -9999 }} />;
   }
 
-  const projTotal = +(myExp + oppExp).toFixed(1);
+  const projTotal = (myExp + oppExp).toFixed(1);
+  const rows = [
+    { label: t('pwhlGamePreview.prediction.streakLabel'), l: myStreak ?? '—', r: oppStreak ?? '—' },
+    ...(myCorsi != null || oppCorsi != null
+      ? [{ label: t('pwhlGamePreview.prediction.shotAttemptShareLabel'), l: myCorsi != null ? `${myCorsi.toFixed(1)}%` : '—', r: oppCorsi != null ? `${oppCorsi.toFixed(1)}%` : '—' }]
+      : []),
+  ];
 
   return (
-    <div className={PRED_CANVAS_CLASSES} ref={canvasRef}>
-      {/* Header */}
-      <div className={PRED_CANVAS_HEADER_CLASSES}>
-        <img src="/eyewall-logo.svg" alt="EyeWall" className={PRED_CANVAS_LOGO_CLASSES}
-          onError={e => { e.target.style.display = 'none'; }} />
-        <span className={PRED_CANVAS_BADGE_CLASSES} style={{ color, background: 'rgba(255,255,255,0.08)' }}>{t('pwhlGamePreview.prediction.sectionLabel')}</span>
-      </div>
+    <ShareCardFrame
+      canvasRef={canvasRef}
+      accent={color}
+      kicker={`PWHL · ${t('pwhlGamePreview.prediction.sectionLabel')}`}
+      title={t('shareCard.matchupTitle', { team: abbr, opp: oppAbbr })}
+      subtitle={t('shareCard.predictionSubtitle')}
+      note={t('shareCard.probabilityNote')}
+    >
+      <ShareMatchupHero
+        left={{ abbr, color, pct: myWinPct, logo: <TeamLogo abbr={abbr} sport="pwhl" size={76} color={color} /> }}
+        right={{ abbr: oppAbbr, color: oppColor, logo: <TeamLogo abbr={oppAbbr} sport="pwhl" size={76} color={oppColor} /> }}
+      />
 
-      {/* Teams + win probability */}
-      <div className="pred-canvas-matchup flex items-center gap-5 px-[52px] pb-4 border-b-[0.5px] border-b-[rgba(255,255,255,0.07)]">
-        <div className={PRED_CANVAS_TEAM_CLASSES}>
-          <TeamLogo abbr={abbr} sport="pwhl" size={52} color={color} />
-          <div className="pred-canvas-team-abbr text-[19px] font-extrabold" style={{ color }}>{abbr}</div>
-        </div>
-
-        <div className="pred-canvas-center flex-1 flex flex-col gap-1.5">
-          <div className="pred-canvas-bar flex h-7 rounded-[6px] overflow-hidden">
-            <div className="pred-canvas-bar-team flex items-center justify-center text-[16px] font-bold [transition:width_0.4s]" style={{ width: `${myWinPct}%`, background: color }}>
-              {myWinPct >= 20 && <span>{myWinPct}%</span>}
-            </div>
-            <div className="pred-canvas-bar-opp flex items-center justify-center text-[16px] font-bold [transition:width_0.4s]" style={{ width: `${oppWinPct}%`, background: oppColor }}>
-              {oppWinPct >= 20 && <span>{oppWinPct}%</span>}
-            </div>
-          </div>
-          <div className="pred-canvas-bar-labels flex justify-between text-[13px] text-[rgba(255,255,255,0.3)] px-0.5">
-            <span style={{ color }}>{abbr}</span>
-            <span style={{ color: oppColor }}>{oppAbbr}</span>
-          </div>
-        </div>
-
-        <div className={PRED_CANVAS_TEAM_CLASSES}>
-          <TeamLogo abbr={oppAbbr} sport="pwhl" size={52} color={oppColor} />
-          <div className="pred-canvas-team-abbr text-[19px] font-extrabold" style={{ color: oppColor }}>{oppAbbr}</div>
-        </div>
-      </div>
-
-      {/* Predicted score + total */}
-      <div className="pred-canvas-score-row flex gap-5 py-3.5 px-[52px] border-b-[0.5px] border-b-[rgba(255,255,255,0.06)]">
-        <div className="pred-canvas-score flex-1 flex flex-col items-center text-center">
-          <div className="pred-canvas-score-label text-[12px] font-bold tracking-[0.1em] uppercase text-[rgba(255,255,255,0.25)] mb-1.5">{t('predictionShareCanvas.scoreLabel.expected')}</div>
-          <div className="pred-canvas-score-val text-[26px] font-extrabold">
+      <ShareTiles tiles={[
+        { label: t('predictionShareCanvas.scoreLabel.expected'), flex: 2, value: (
+          <>
             <span style={{ color }}>{abbr} {myExp}</span>
-            <span style={{ color: 'rgba(255,255,255,0.2)' }}> – </span>
+            <span style={{ color: SHARE.muted }}> – </span>
             <span style={{ color: oppColor }}>{oppExp} {oppAbbr}</span>
-          </div>
-        </div>
-        <div className="pred-canvas-total flex-1 flex flex-col items-center text-center">
-          <div className="pred-canvas-score-label text-[12px] font-bold tracking-[0.1em] uppercase text-[rgba(255,255,255,0.25)] mb-1.5">{t('predictionShareCanvas.scoreLabel.projectedTotal')}</div>
-          <div className="pred-canvas-total-val text-[43px] font-black text-[rgba(255,255,255,0.8)]">{projTotal}</div>
-        </div>
-      </div>
+          </>
+        ) },
+        { label: t('predictionShareCanvas.scoreLabel.projectedTotal'), value: projTotal },
+      ]} />
 
-      {/* AI narrative */}
-      {narrative && (
-        <div className={PRED_CANVAS_AI_CLASSES}>
-          <div className={PRED_CANVAS_AI_LABEL_CLASSES} style={{ color }}>{t('gameStatsPopup.summary.badge')}</div>
-          <div className={PRED_CANVAS_AI_TEXT_CLASSES}>{narrative}</div>
-        </div>
-      )}
+      <ShareAiBlock text={narrative} lines={6} />
 
-      <div className="pred-canvas-stats py-3 px-[52px] flex flex-col gap-2.5">
-        {[
-          { label: t('pwhlGamePreview.prediction.streakLabel'), teamVal: myStreak ?? '—', oppVal: oppStreak ?? '—' },
-          ...(myCorsi != null || oppCorsi != null
-            ? [{ label: t('pwhlGamePreview.prediction.shotAttemptShareLabel'), teamVal: myCorsi != null ? `${myCorsi.toFixed(1)}%` : '—', oppVal: oppCorsi != null ? `${oppCorsi.toFixed(1)}%` : '—' }]
-            : []),
-        ].map((row, i) => (
-          <div key={i} className="pred-canvas-stat-row flex items-center gap-3">
-            <span className={predCanvasStatValClasses(true)} style={{ color }}>
-              {row.teamVal}
-            </span>
-            <span className="pred-canvas-stat-label flex-1 text-center text-[13px] text-[rgba(255,255,255,0.3)] uppercase tracking-[0.07em]">{row.label}</span>
-            <span className={predCanvasStatValClasses(false)} style={{ color: oppColor }}>
-              {row.oppVal}
-            </span>
-          </div>
+      <div>
+        {rows.map(row => (
+          <ShareCompareRow key={row.label} label={row.label} left={row.l} right={row.r}
+            leftColor={color} rightColor={oppColor} />
         ))}
-        {corsiCaveat && <div className="text-[11px] text-[rgba(255,255,255,0.25)] italic text-center mt-1">{t('pwhlGamePreview.prediction.shotAttemptCaveatPrefix', { caveat: corsiCaveat.toLowerCase() })}</div>}
+        {corsiCaveat && (
+          <div style={{ fontFamily: FONT_BODY, fontSize: 22, color: SHARE.muted, fontStyle: 'italic', textAlign: 'center', marginTop: 8 }}>
+            {t('pwhlGamePreview.prediction.shotAttemptCaveatPrefix', { caveat: corsiCaveat.toLowerCase() })}
+          </div>
+        )}
       </div>
-
-      {/* Footer */}
-      <div className={PRED_CANVAS_FOOTER_CLASSES}>
-        <span>eyewallanalytics.com</span>
-        <span>#{abbr} #PWHL</span>
-      </div>
-    </div>
+    </ShareCardFrame>
   );
 }
 

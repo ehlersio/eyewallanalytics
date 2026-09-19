@@ -2450,5 +2450,19 @@
     "source": "Modèle Elo",
     "tooltip": "Probabilité de victoire tirée du classement Elo de chaque équipe (tous les matchs depuis 2023-2024, mis à jour chaque nuit) plus l'avantage local, sauf sur terrain neutre. C'est le même chiffre que le bilan des prédictions évalue.",
     "unavailable": "La probabilité de victoire n'est pas disponible pour le moment."
+  },
+  "shareCard": {
+    "matchupTitle": "{{team}} c. {{opp}}",
+    "probabilityNote": "Des probabilités, pas des certitudes",
+    "predictionSubtitle": "Probabilité de victoire et pointage projeté",
+    "seriesSubtitle": "Série : {{team}} {{teamWins}}–{{oppWins}} {{opp}}",
+    "scoutingSubtitle": "Face-à-face, cette saison",
+    "scoutingPlayoffSubtitle": "Face-à-face, ces séries",
+    "rankingsTitle": "Classement de puissance",
+    "rankingsSubtitle": "{{rank}}e sur 32 · {{record}}",
+    "rankingsNote": "Points, forme, différentiel, xG à 5 c. 5, unités spéciales",
+    "scoreTitle": "{{team}} {{teamScore}}–{{oppScore}} {{opp}}",
+    "statsNote": "Stats : LNH · EyeWall",
+    "pwhlStatsNote": "Stats : LPHF · EyeWall"
   }
 }

@@ -635,6 +635,17 @@
   50%       { opacity: 1;   transform: scale(1.2); }
 }
 
+/* ── Share card fonts ── */
+/* Barlow files bundled for exported share cards (components/
+ * ShareCardFrame.jsx), the same ones eyewall-pipeline's social_posts.py
+ * draws the Instagram/Facebook cards with. Own family names so they never
+ * shadow the Google-hosted Barlow the rest of the app uses; font-display:
+ * block since they're only ever used by an off-screen card that must not
+ * be captured mid-swap. useShareCard embeds the same files into the image. */
+@font-face { font-family: 'EW Share Display'; src: url('/fonts/share/BarlowCondensed-ExtraBold.ttf') format('truetype'); font-weight: 800; font-display: block; }
+@font-face { font-family: 'EW Share Label'; src: url('/fonts/share/BarlowCondensed-Bold.ttf') format('truetype'); font-weight: 700; font-display: block; }
+@font-face { font-family: 'EW Share Body'; src: url('/fonts/share/Barlow-SemiBold.ttf') format('truetype'); font-weight: 600; font-display: block; }
+
 /* ── Focus styles for keyboard navigation (WCAG 2.4.7) ── */
 /* Deliberately left unlayered (unlike the resets in @layer base above) --
  * this is meant to be the single, always-wins source of truth for

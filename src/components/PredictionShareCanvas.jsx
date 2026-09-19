@@ -1,5 +1,6 @@
 // ── PredictionShareCanvas.jsx ─────────────────────────────────
-// 1080×1080 export card for the Prediction tab.
+// 1080×1350 export card for the Prediction tab, drawn in ShareCardFrame
+// (same look as the pipeline's Instagram/Facebook cards).
 // Import this in ScheduleView.jsx and render at the bottom of MatchupDetail.
 //
 // Usage in MatchupDetail:
@@ -16,191 +17,91 @@ import { getGamePrediction, predictionCacheKey } from '../utils/supabaseClient';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
 import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
-// PredictionCanvas.css import removed (Phase 6) -- migrated to Tailwind.
-// Shell classes (.pred-canvas/-header/-logo/-badge/-ai*/-footer) live in
-// utils/predCanvasClasses.js since LeagueView.jsx's PowerRankingsCanvas also
-// renders them without importing this component's CSS itself.
-import {
-  PRED_CANVAS_CLASSES, PRED_CANVAS_HEADER_CLASSES, PRED_CANVAS_LOGO_CLASSES,
-  PRED_CANVAS_BADGE_CLASSES, PRED_CANVAS_AI_CLASSES, PRED_CANVAS_AI_LABEL_CLASSES,
-  PRED_CANVAS_AI_TEXT_CLASSES, PRED_CANVAS_FOOTER_CLASSES,
-} from '../utils/predCanvasClasses';
+import ShareCardFrame, {
+  ShareMatchupHero, ShareTiles, ShareAiBlock, ShareCompareRow, ShareSection, ShareRow,
+} from './ShareCardFrame';
+import { SHARE, FONT_LABEL } from '../utils/shareCardTheme';
 
-const PRED_CANVAS_TEAM_CLASSES = 'pred-canvas-team flex flex-col items-center gap-1.5 shrink-0';
-const PRED_CANVAS_TEAM_LOGO_CLASSES = 'pred-canvas-team-logo w-[52px] h-[52px] object-contain';
-const PRED_CANVAS_STAT_VAL_BASE = 'pred-canvas-stat-val w-[72px] text-[20px] font-bold';
+const OPP_BAR_FALLBACK = '#3a4559';
 
-// .pred-canvas-stat-val:first-child/:last-child set text-align only, in the
-// structural position sense -- since the JSX always renders exactly car
-// first then opp last per row, applied directly rather than via a pseudo-
-// class utility.
-function predCanvasStatValClasses({ isCar, good }) {
-  const align = isCar ? 'text-right' : 'text-left';
-  if (!good) return `${PRED_CANVAS_STAT_VAL_BASE} muted ${align} text-[rgba(255,255,255,0.35)]`;
-  return isCar
-    ? `${PRED_CANVAS_STAT_VAL_BASE} good ${align} text-[#4ade80]`
-    : `${PRED_CANVAS_STAT_VAL_BASE} good-opp ${align} text-[#fb923c]`;
-}
-
-// ── Share canvas (off-screen, 1080×1080) ─────────────────────
-function PredictionCanvas({
+// ── Share canvas (off-screen, 1080×1350, ShareCardFrame) ─────
+export function PredictionCanvas({
   canvasRef, carModelPct, predCarScore, predOppScore,
   carGpg, oppGpg, carGag, oppGag, carWin, oppWin, carPP, oppPK,
-  factors, oppAbbr, oppColor, isPlayoff, seriesEntry, aiNarrative, carLines,
+  factors, oppAbbr, oppColor, isPlayoff, seriesEntry, aiNarrative,
 }) {
   const { t } = useTranslation();
+  const car = TEAM_CONFIG.abbr;
+  const carColor = TEAM_CONFIG.displayColor;
+  const oppCol = oppColor || OPP_BAR_FALLBACK;
   // Don't render until all required numeric props are available
   if (carGpg == null || oppGpg == null || carGag == null || oppGag == null ||
       carWin == null || oppWin == null || carPP == null || oppPK == null ||
       predCarScore == null || predOppScore == null) {
-    return <div className={PRED_CANVAS_CLASSES} ref={canvasRef} />;
+    return <div ref={canvasRef} style={{ position: 'fixed', left: -9999 }} />;
   }
 
-  const logoUrl = (abbr) => `${NATIVE_ORIGIN}/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
-  const projTotal = +(predCarScore + predOppScore).toFixed(1);
+  const logo = (abbr) => (
+    <img src={`${NATIVE_ORIGIN}/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`} alt={abbr}
+      style={{ width: 76, height: 76, objectFit: 'contain' }} onError={e => { e.target.style.display = 'none'; }} />
+  );
+  const projTotal = (predCarScore + predOppScore).toFixed(1);
+  const side = (carBetter) => (carBetter ? 'left' : 'right');
 
   return (
-    <div className={PRED_CANVAS_CLASSES} ref={canvasRef}>
+    <ShareCardFrame
+      canvasRef={canvasRef}
+      accent={carColor}
+      kicker={isPlayoff ? t('predictionShareCanvas.badge.playoffPrediction') : t('pwhlGamePreview.prediction.sectionLabel')}
+      title={t('shareCard.matchupTitle', { team: car, opp: oppAbbr })}
+      subtitle={seriesEntry
+        ? t('shareCard.seriesSubtitle', { team: car, teamWins: seriesEntry.carWins, oppWins: seriesEntry.oppWins, opp: oppAbbr })
+        : t('shareCard.predictionSubtitle')}
+      note={t('shareCard.probabilityNote')}
+    >
+      <ShareMatchupHero
+        left={{ abbr: car, color: carColor, logo: logo(car), pct: carModelPct }}
+        right={{ abbr: oppAbbr, color: oppCol, logo: logo(oppAbbr) }}
+      />
 
-      {/* Header */}
-      <div className={PRED_CANVAS_HEADER_CLASSES}>
-        <img src="/eyewall-logo.svg" alt="EyeWall" className={PRED_CANVAS_LOGO_CLASSES}
-          onError={e => { e.target.style.display='none'; }} />
-        <span className={PRED_CANVAS_BADGE_CLASSES}>
-          {isPlayoff ? t('predictionShareCanvas.badge.playoffPrediction') : t('pwhlGamePreview.prediction.sectionLabel')}
-        </span>
-      </div>
+      <ShareTiles tiles={[
+        { label: t('predictionShareCanvas.scoreLabel.projected'), flex: 2, value: (
+          <>
+            <span style={{ color: carColor }}>{car} {predCarScore}</span>
+            <span style={{ color: SHARE.muted }}> – </span>
+            <span style={{ color: oppCol }}>{predOppScore} {oppAbbr}</span>
+          </>
+        ) },
+        { label: t('predictionShareCanvas.scoreLabel.projectedTotal'), value: projTotal },
+      ]} />
 
-      {/* Teams + win probability */}
-      <div className="pred-canvas-matchup flex items-center gap-5 px-[52px] pb-4 border-b-[0.5px] border-b-[rgba(255,255,255,0.07)]">
-        <div className={PRED_CANVAS_TEAM_CLASSES}>
-          <img src={logoUrl(TEAM_CONFIG.abbr)} alt={TEAM_CONFIG.abbr} className={PRED_CANVAS_TEAM_LOGO_CLASSES}
-            onError={e=>{e.target.style.display='none';}} />
-          <div className="pred-canvas-team-abbr car text-[19px] font-extrabold text-[color:var(--team-canvas)]">{TEAM_CONFIG.abbr}</div>
-        </div>
+      <ShareAiBlock text={aiNarrative} lines={3} />
 
-        <div className="pred-canvas-center flex-1 flex flex-col gap-1.5">
-          {seriesEntry && (
-            <div className="pred-canvas-series text-[13px] text-[rgba(255,255,255,0.35)] text-center mb-0.5">
-              {t('predictionShareCanvas.seriesLabel')}<span style={{color:'var(--team-canvas)'}}>{seriesEntry.carWins}</span>
-              {' – '}
-              <span style={{color: oppColor}}>{seriesEntry.oppWins}</span>
-            </div>
-          )}
-          <div className="pred-canvas-bar flex h-7 rounded-[6px] overflow-hidden">
-            <div className="pred-canvas-bar-car bg-[var(--team-canvas)] flex items-center justify-center text-[16px] font-bold [transition:width_0.4s]" style={{width:`${carModelPct}%`}}>
-              {carModelPct >= 20 && <span>{carModelPct}%</span>}
-            </div>
-            <div className="pred-canvas-bar-opp bg-[#3a4559] flex items-center justify-center text-[16px] font-bold [transition:width_0.4s]" style={{width:`${100-carModelPct}%`}}>
-              {(100-carModelPct) >= 20 && <span>{100-carModelPct}%</span>}
-            </div>
-          </div>
-          <div className="pred-canvas-bar-labels flex justify-between text-[13px] text-[rgba(255,255,255,0.3)] px-0.5">
-            <span style={{color:'var(--team-canvas)'}}>{TEAM_CONFIG.abbr}</span>
-            <span style={{color: oppColor}}>{oppAbbr}</span>
-          </div>
-        </div>
-
-        <div className={PRED_CANVAS_TEAM_CLASSES}>
-          <img src={logoUrl(oppAbbr)} alt={oppAbbr} className={PRED_CANVAS_TEAM_LOGO_CLASSES}
-            onError={e=>{e.target.style.display='none';}} />
-          <div className="pred-canvas-team-abbr text-[19px] font-extrabold text-[rgba(255,255,255,0.6)]" style={{color: oppColor}}>{oppAbbr}</div>
-        </div>
-      </div>
-
-      {/* Predicted score + total */}
-      <div className="pred-canvas-score-row flex gap-5 py-3.5 px-[52px] border-b-[0.5px] border-b-[rgba(255,255,255,0.06)]">
-        <div className="pred-canvas-score flex-1 flex flex-col items-center text-center">
-          <div className="pred-canvas-score-label text-[12px] font-bold tracking-[0.1em] uppercase text-[rgba(255,255,255,0.25)] mb-1.5">{t('predictionShareCanvas.scoreLabel.projected')}</div>
-          <div className="pred-canvas-score-val text-[26px] font-extrabold">
-            <span style={{color:'var(--team-canvas)'}}>{TEAM_CONFIG.abbr} {predCarScore}</span>
-            <span style={{color:'rgba(255,255,255,0.2)'}}> – </span>
-            <span style={{color: oppColor}}>{predOppScore} {oppAbbr}</span>
-          </div>
-        </div>
-        <div className="pred-canvas-total flex-1 flex flex-col items-center text-center">
-          <div className="pred-canvas-score-label text-[12px] font-bold tracking-[0.1em] uppercase text-[rgba(255,255,255,0.25)] mb-1.5">{t('predictionShareCanvas.scoreLabel.projectedTotal')}</div>
-          <div className="pred-canvas-total-val text-[43px] font-black text-[rgba(255,255,255,0.8)]">{projTotal}</div>
-        </div>
-      </div>
-
-      {/* AI Analysis — between score and stats */}
-      {aiNarrative && (
-        <div className={PRED_CANVAS_AI_CLASSES}>
-          <div className={PRED_CANVAS_AI_LABEL_CLASSES}>{t('gameStatsPopup.summary.badge')}</div>
-          <div className={PRED_CANVAS_AI_TEXT_CLASSES}>{aiNarrative}</div>
-        </div>
-      )}
-      <div className="pred-canvas-stats py-3 px-[52px] flex flex-col gap-2.5">
+      <div>
         {[
-          { label: t('predictionShareCanvas.stats.goalsForPerGp'),     carVal: carGpg.toFixed(2),  oppVal: oppGpg.toFixed(2),  carBetter: carGpg >= oppGpg },
-          { label: t('predictionShareCanvas.stats.goalsAgainstPerGp'), carVal: carGag.toFixed(2),  oppVal: oppGag.toFixed(2),  carBetter: carGag <= oppGag },
-          { label: t('predictionShareCanvas.stats.winRate'),         carVal: `${(carWin*100).toFixed(0)}%`, oppVal: `${(oppWin*100).toFixed(0)}%`, carBetter: carWin >= oppWin },
-          { label: t('predictionShareCanvas.stats.ppVsPk'),       carVal: `${carPP.toFixed(1)}%`, oppVal: `${oppPK.toFixed(1)}%`, carBetter: carPP >= (100-oppPK) },
-        ].map((row, i) => (
-          <div key={i} className="pred-canvas-stat-row flex items-center gap-3">
-            <span className={predCanvasStatValClasses({ isCar: true, good: row.carBetter })}>
-              {row.carVal}
-            </span>
-            <span className="pred-canvas-stat-label flex-1 text-center text-[13px] text-[rgba(255,255,255,0.3)] uppercase tracking-[0.07em]">{row.label}</span>
-            <span className={predCanvasStatValClasses({ isCar: false, good: !row.carBetter })}>
-              {row.oppVal}
-            </span>
-          </div>
+          { label: t('predictionShareCanvas.stats.goalsForPerGp'),     l: carGpg.toFixed(2), r: oppGpg.toFixed(2), better: side(carGpg >= oppGpg) },
+          { label: t('predictionShareCanvas.stats.goalsAgainstPerGp'), l: carGag.toFixed(2), r: oppGag.toFixed(2), better: side(carGag <= oppGag) },
+          { label: t('predictionShareCanvas.stats.winRate'),           l: `${(carWin * 100).toFixed(0)}%`, r: `${(oppWin * 100).toFixed(0)}%`, better: side(carWin >= oppWin) },
+          { label: t('predictionShareCanvas.stats.ppVsPk'),            l: `${carPP.toFixed(1)}%`, r: `${oppPK.toFixed(1)}%`, better: side(carPP >= (100 - oppPK)) },
+        ].map(row => (
+          <ShareCompareRow key={row.label} label={row.label} left={row.l} right={row.r}
+            better={row.better} leftColor={carColor} rightColor={oppCol} />
         ))}
       </div>
 
-      {/* Edge factors — compact two-column */}
-      <div className="pred-canvas-factors px-[52px] pb-3">
-        <div className="pred-canvas-factors-label text-[12px] font-bold tracking-[0.12em] uppercase text-[rgba(255,255,255,0.2)] mb-2">{t('predictionShareCanvas.edgeAnalysis')}</div>
-        <div className="pred-canvas-factors-grid grid [grid-template-columns:1fr_1fr] gap-1.5">
-          {factors.slice(0, 6).map((f, i) => (
-            <div key={i} className={`pred-canvas-factor ${f.carEdge ? 'car' : 'opp'} flex gap-2 items-center text-[14px] py-[7px] px-2.5 rounded-[7px] bg-[rgba(255,255,255,0.03)] border-[0.5px] border-[rgba(255,255,255,0.06)]`}>
-              <span className={`shrink-0 ${f.carEdge ? 'text-[#4ade80]' : 'text-[rgba(255,255,255,0.3)]'}`}>{f.carEdge ? '✓' : '✗'}</span>
-              <span className="flex-1 text-[rgba(255,255,255,0.45)]">{f.label}</span>
-              <span className={`font-bold text-[13px] ${f.carEdge ? 'text-[color:var(--team-canvas)]' : 'text-[rgba(255,255,255,0.4)]'}`}>{f.carEdge ? TEAM_CONFIG.abbr : oppAbbr}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Line 1 */}
-      {carLines?.lines?.[0] && (() => {
-        const line = carLines.lines[0];
-        const xgf  = line.xgfPct;
-        const good = xgf != null && xgf >= 50;
-        const POS_LABEL = { L: 'LW', LW: 'LW', C: 'C', R: 'RW', RW: 'RW' };
-        return (
-          <div className="pred-canvas-line1 mx-[52px] mb-2.5 py-2.5 px-3.5 bg-[rgba(255,255,255,0.04)] border-[0.5px] border-[rgba(255,255,255,0.08)] rounded-[10px]">
-            <div className="pred-canvas-line1-header flex items-center gap-3 mb-[7px]">
-              <span className="pred-canvas-line1-label text-[11px] font-bold uppercase tracking-[0.08em] text-[rgba(255,255,255,0.25)] flex-1">{t('predictionShareCanvas.line1Header', { abbr: TEAM_CONFIG.abbr })}</span>
-              {xgf != null && (
-                <span className={`pred-canvas-line1-xgf ${good ? 'good text-[#4ade80]' : 'bad text-[#ce1126]'} text-[15px] font-extrabold [font-variant-numeric:tabular-nums]`}>
-                  {xgf.toFixed(1)}% xGF
-                </span>
-              )}
-              {line.toiMins != null && (
-                <span className="pred-canvas-line1-toi text-[11px] text-[rgba(255,255,255,0.3)]">{t('predictionShareCanvas.toiTogether', { mins: line.toiMins })}</span>
-              )}
-            </div>
-            <div className="pred-canvas-line1-players flex gap-[18px] flex-wrap">
-              {line.players.map((p, i) => (
-                <span key={i} className="pred-canvas-line1-player text-[14px] font-semibold text-[rgba(255,255,255,0.8)] flex items-baseline gap-[5px]">
-                  <span className="pred-canvas-line1-pos text-[10px] font-bold text-[rgba(255,255,255,0.3)] uppercase tracking-[0.04em]">{POS_LABEL[p.pos] || p.pos}</span>
-                  {p.name}
-                </span>
-              ))}
-            </div>
+      {factors?.length > 0 && (
+        <ShareSection label={t('predictionShareCanvas.edgeAnalysis')}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {factors.slice(0, 4).map((f, i) => (
+              <ShareRow key={i} accent={f.carEdge ? carColor : oppCol} style={{ padding: '12px 18px 12px 26px' }}>
+                <span style={{ flex: 1, fontSize: 24, color: 'rgba(228,232,240,0.85)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.label}</span>
+                <span style={{ fontFamily: FONT_LABEL, fontSize: 26, color: f.carEdge ? carColor : oppCol }}>{f.carEdge ? car : oppAbbr}</span>
+              </ShareRow>
+            ))}
           </div>
-        );
-      })()}
-
-      {/* Footer */}
-      <div className={PRED_CANVAS_FOOTER_CLASSES}>
-        <span>eyewallanalytics.com</span>
-        <span>{TEAM_CONFIG.hashtags?.[0] || `#${TEAM_CONFIG.abbr}`}</span>
-      </div>
-    </div>
+        </ShareSection>
+      )}
+    </ShareCardFrame>
   );
 }
 
@@ -208,7 +109,7 @@ function PredictionCanvas({
 export default function PredictionExportSection({
   carModelPct, predCarScore, predOppScore,
   carGpg, oppGpg, carGag, oppGag, carWin, oppWin, carPP, oppPK,
-  factors, oppAbbr, oppColor, isPlayoff, seriesEntry, gameId, carLines,
+  factors, oppAbbr, oppColor, isPlayoff, seriesEntry, gameId,
 }) {
   const { t, i18n } = useTranslation();
   const canvasRef = useRef(null);
@@ -289,7 +190,6 @@ export default function PredictionExportSection({
           carWin={carWin} oppWin={oppWin} carPP={carPP} oppPK={oppPK}
           factors={factors} oppAbbr={oppAbbr} oppColor={oppColor}
           isPlayoff={isPlayoff} seriesEntry={seriesEntry} aiNarrative={aiNarrative}
-          carLines={carLines}
         />
       )}
     </>

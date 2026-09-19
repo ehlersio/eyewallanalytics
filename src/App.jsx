@@ -64,6 +64,9 @@ const DevDraftView = import.meta.env.DEV
   ? lazy(() => import('./views/DevDraftView'))
   : null;
 
+const DevShareCardsView = import.meta.env.DEV
+  ? lazy(() => import('./views/DevShareCardsView'))
+  : null;
 const PWHLDevReplayView = import.meta.env.DEV
   ? lazy(() => import('./views/PWHLDevReplayView'))
   : null;
@@ -204,6 +207,9 @@ export default function App() {
                       <Route path="/echl/news"     element={<ECHLNewsView />} />
                       {import.meta.env.DEV && DevReplayView && (
                         <Route path="/dev" element={<DevReplayView />} />
+                      )}
+                      {import.meta.env.DEV && DevShareCardsView && (
+                        <Route path="/dev/share-cards" element={<DevShareCardsView />} />
                       )}
                       {import.meta.env.DEV && DevDraftView && (
                         <Route path="/dev/draft" element={<DevDraftView />} />

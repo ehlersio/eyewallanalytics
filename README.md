@@ -52,9 +52,10 @@ canes-analytics-starter/
 ├── public/
 │   ├── sw.js                     # Service worker (Web Push handler)
 │   ├── manifest.json             # PWA manifest
+│   ├── fonts/share/              # Barlow TTFs (OFL) for exported share cards — the same files eyewall-pipeline's social_posts.py draws the Instagram/Facebook cards with; registered in index.css and embedded into the image by useShareCard.js
 │   ├── goal-horn.mp3
 │   ├── _headers                  # Cloudflare cache control headers
-│   ├── eyewall-logo.svg/.png     # Faceoff-E mark, Night Rink colors (white E, red circle), transparent background — the dark-theme half of EyeWallLogo.jsx, and rendered directly by the fixed-dark share-canvas components (PeriodSummary.jsx, PredictionShareCanvas.jsx, PWHLPeriodSummary.jsx, PWHLPredictionShareCanvas.jsx, LeagueView.jsx's PowerRankingsCanvas, ScoutingTab.jsx). Generated — see scripts/brand/
+│   ├── eyewall-logo.svg/.png     # Faceoff-E mark, Night Rink colors (white E, red circle), transparent background — the dark-theme half of EyeWallLogo.jsx, and rendered directly by ShareCardFrame.jsx, the fixed-dark shell every share card is drawn in. Generated — see scripts/brand/
 │   ├── eyewall-logo-light.svg/.png # Same mark in Ice Rink colors (navy E) — the [data-theme="light"] half of EyeWallLogo.jsx's toggle. Generated
 │   ├── favicon.svg               # Follows prefers-color-scheme: Ice Rink in light, Night Rink in dark. Generated
 │   └── favicon-*.png / .ico / apple-touch-icon.png # Ice Rink tiles; favicon-512 doubles as og:image, favicon-512-solid is the padded maskable PWA icon. Generated
@@ -92,7 +93,8 @@ canes-analytics-starter/
 │   │   ├── ECHLLeagueView.jsx          # ECHL Scoreboard + standings, grouped by ECHL's real North/South/Central/Mountain divisions (different alignment than AHL's) + Leaders — mirrors AHLLeagueView.jsx
 │   │   ├── ECHLNewsView.jsx            # ECHL news feed, News tab only — mirrors AHLNewsView.jsx; only 2 real RSS sources exist for ECHL vs. AHL's 3 (echl.com itself has no RSS feed at all — Laravel/Livewire rebuild, same reason its HockeyTech key isn't network-tab-discoverable either)
 │   │   ├── DevReplayView.jsx/.css      # Dev-only live game replay (/dev)
-│   │   └── DevDraftView.jsx            # Dev-only draft simulator (/dev/draft)
+│   │   ├── DevDraftView.jsx            # Dev-only draft simulator (/dev/draft)
+│   │   └── DevShareCardsView.jsx       # Dev-only gallery of every share card with sample data (/dev/share-cards) — flags any card whose content overflows the frame; Export PNG runs the real share render path
 │   ├── components/
 │   │   ├── Topbar.jsx/.css             # Live score, countdown clock, sport switcher
 │   │   ├── BottomNav.jsx               # Sport-aware bottom navigation
@@ -114,6 +116,8 @@ canes-analytics-starter/
 │   │   ├── PWHLPeriodSummary.jsx       # PWHL period/game summary popup + share canvas — fully Tailwind, same as above
 │   │   ├── PWHLPredictionShareCanvas.jsx # PWHL prediction track-record + share canvas (Session 100) — right-sized PWHL analogue of PredictionShareCanvas.jsx, scoped to what /pwhl/prediction actually returns (win%, expected score, narrative, streak, shot-attempt share); no odds/PP-PK-factors/line-combos section, since PWHLGamePreviewPopup.jsx doesn't fetch that for its Prediction section. Auto-save/track-record logic lives in utils/pwhlPredictionStore.js, an independent store (own localStorage key) rather than reusing predictionStore.js's Carolina-era `carActual`/`predictedCarWin` field names
 │   │   ├── ShareButtons.jsx            # Shared single Share button across all export cards — opens the OS share sheet, falls back to a PNG download where Web Share isn't supported (useShareCard.js)
+│   │   ├── ShareCardFrame.jsx          # Shell for every exported share card (1080×1350, 4:5): red top bar, logo + wordmark + kicker, title/subtitle, footer — same layout as eyewall-pipeline's social_posts.py so app shares and the auto-posted Instagram/Facebook cards match. Also the shared building blocks (matchup win bar, tiles, EyeWall AI block, head-to-head rows). Palette/fonts in utils/shareCardTheme.js
+│   │   ├── PeriodSummaryShareCanvas.jsx # Period/final game summary share card, shared by PeriodSummary.jsx (NHL) and PWHLPeriodSummary.jsx — each supplies its league's stats, strength labels, insights and headshots
 │   │   ├── HatTrickPopup              # (in GameEvents.jsx) — live hat trick celebration overlay
 │   │   ├── MilestonesFeed.jsx          # League-wide milestone feed (hat tricks, shutouts, SH goals, season/career thresholds) — tappable into PlayerPopup
 │   │   ├── TradeTree.jsx               # NHL trade tree opened inline from a trade in TransactionsFeed.jsx — each side's haul, where every asset went next (recursively), picks → drafted player; GET /trades/tree

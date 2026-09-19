@@ -1,11 +1,12 @@
 // components/PeriodSummary.jsx
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TEAM_CONFIG } from '../utils/teamConfig';
+import { TEAM_CONFIG, ALL_TEAMS } from '../utils/teamConfig';
 import { buildBrightcoveUrl } from '../utils/nhlApi';
 import { getGameSummary } from '../utils/supabaseClient';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
+import PeriodSummaryShareCanvas from './PeriodSummaryShareCanvas';
 import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
 
 // ── Tailwind class constants -- POPUP HALF (Phase 4, sub-PR 5a) ──
@@ -163,99 +164,8 @@ const PS_PERIOD_ROW_SOG_CLASSES = 'text-[11px] text-[color:var(--text-dim)] w-[6
 const PS_HAT_TRICKS_CLASSES = 'flex flex-col items-center gap-[6px] my-[6px]';
 const PS_HAT_TRICK_CHIP_CLASSES = 'inline-flex items-center gap-[6px] [background:linear-gradient(90deg,var(--team-primary)_0%,color-mix(in_srgb,var(--team-primary)_60%,transparent)_100%)] text-white text-[13px] font-semibold py-[6px] px-[14px] rounded-[20px] tracking-[0.02em] whitespace-nowrap';
 
-// ── Tailwind class constants -- CANVAS HALF (Phase 4, sub-PR 5b) ──
-// PeriodSummary.css deleted after this sub-PR (both halves now migrated).
-// No Cypress markers and no light-mode-overrides.css dependency for any
-// class here -- confirmed via full-tree grep against every spec file, and
-// the canvas is explicitly "intentionally kept dark" per the original
-// light-mode-overrides.css comment (now removed, see index.css/that file's
-// history). 20 of PeriodSummary.css's original 58 ps-canvas-* classes were
-// confirmed dead (an older single-column canvas layout superseded by the
-// "redesigned" two-column one below) and are not migrated: ps-canvas-ai-band
-// (+label/+text), ps-canvas-brand(-row), ps-canvas-divider, ps-canvas-goal-dot,
-// ps-canvas-goal-row, ps-canvas-goal-text, ps-canvas-goal-time,
-// ps-canvas-goals-label, ps-canvas-logo, ps-canvas-narrative(-label/-text),
-// ps-canvas-score, ps-canvas-score-num, ps-canvas-team(-abbr), ps-canvas-team-logo.
-// Several classes were defined twice in the original CSS (a base value, then
-// a later "lighter theme"/"additions" section overriding it) -- only the
-// FINAL resolved value is used here, not the superseded one.
-
-const PS_SHARE_CANVAS_CLASSES = 'fixed left-[-9999px] top-0 w-[1080px] h-[1080px] bg-[#1a1a2e] font-[family-name:var(--font-main,system-ui)] pointer-events-none z-[-1]';
-const PS_CANVAS_HEADER_CLASSES = 'flex items-center justify-between pt-6 px-[52px] pb-3';
-const PS_CANVAS_LOGO_LARGE_CLASSES = 'w-32 h-32 object-contain';
-const PS_CANVAS_PERIOD_CLASSES = 'text-[13px] font-extrabold tracking-[0.15em] uppercase text-[color:var(--team-canvas)] bg-[rgba(var(--team-canvas-rgb),0.15)] py-[6px] px-4 rounded-[20px]';
-
-const PS_CANVAS_SCORE_AI_ROW_CLASSES = 'flex items-stretch px-[52px] border-b-[0.5px] border-[rgba(255,255,255,0.08)] min-h-[280px]';
-const PS_CANVAS_SCORE_COMPACT_V2_CLASSES = 'flex flex-col items-center justify-center gap-[2px] flex-shrink-0 w-[160px] py-[14px]';
-const PS_CANVAS_SCORE_COMPACT_TEAM_BASE_CLASSES = 'text-[16px] font-extrabold tracking-[0.1em]';
-const PS_CANVAS_SCORE_COMPACT_TEAM_DEFAULT_CLASSES = 'text-[rgba(255,255,255,0.4)]';
-const PS_CANVAS_SCORE_COMPACT_TEAM_CAR_CLASSES = 'text-[color:var(--team-canvas)]';
-function psCanvasScoreCompactTeamClasses(isCar) {
-  return `${PS_CANVAS_SCORE_COMPACT_TEAM_BASE_CLASSES} ${isCar ? PS_CANVAS_SCORE_COMPACT_TEAM_CAR_CLASSES : PS_CANVAS_SCORE_COMPACT_TEAM_DEFAULT_CLASSES}`;
-}
-const PS_CANVAS_SCORE_COMPACT_NUM_CLASSES = 'text-[58px] font-black text-white leading-none [font-variant-numeric:tabular-nums]';
-const PS_CANVAS_SCORE_COMPACT_DIV_CLASSES = 'text-[22px] text-[rgba(255,255,255,0.2)] leading-none my-[2px]';
-const PS_CANVAS_SCORE_AI_DIVIDER_CLASSES = 'w-[0.5px] bg-[rgba(255,255,255,0.08)] my-[14px] mx-6 flex-shrink-0';
-const PS_CANVAS_NARRATIVE_FULL_CLASSES = 'flex-1 flex flex-col justify-center py-[14px]';
-const PS_CANVAS_NARRATIVE_FULL_LABEL_CLASSES = 'text-[11px] font-extrabold tracking-[0.12em] uppercase text-[color:var(--team-canvas)] mb-2';
-const PS_CANVAS_NARRATIVE_FULL_TEXT_CLASSES = 'text-[16px] leading-[1.65] text-[rgba(255,255,255,0.7)]';
-
-const PS_CANVAS_STATS_CLASSES = 'grid grid-cols-3 gap-[10px] py-[10px] px-[52px]';
-const PS_CANVAS_STAT_CLASSES = 'bg-[rgba(255,255,255,0.07)] border-[0.5px] border-[rgba(255,255,255,0.1)] rounded-[10px] p-2 flex flex-col items-center gap-[3px]';
-const PS_CANVAS_STAT_VAL_BASE_CLASSES = 'text-[22px] font-extrabold';
-const PS_CANVAS_STAT_VAL_DEFAULT_CLASSES = 'text-[#f0f0f0]';
-const PS_CANVAS_STAT_VAL_GOOD_CLASSES = 'text-[#4ade80]';
-const PS_CANVAS_STAT_VAL_BAD_CLASSES = 'text-[color:var(--team-canvas)]';
-function psCanvasStatValClasses(color) {
-  const variant = color === 'good' ? PS_CANVAS_STAT_VAL_GOOD_CLASSES : color === 'bad' ? PS_CANVAS_STAT_VAL_BAD_CLASSES : PS_CANVAS_STAT_VAL_DEFAULT_CLASSES;
-  return `${PS_CANVAS_STAT_VAL_BASE_CLASSES} ${variant}`;
-}
-const PS_CANVAS_STAT_LABEL_CLASSES = 'text-[12px] font-bold tracking-[0.12em] uppercase text-[rgba(255,255,255,0.3)]';
-
-const PS_CANVAS_GOALS_CLASSES = 'px-[52px] pb-[10px] flex flex-col gap-[6px]';
-const PS_CANVAS_SECTION_LABEL_CLASSES = 'text-[12px] font-bold tracking-[0.12em] uppercase text-[rgba(255,255,255,0.3)] mb-2';
-const PS_CANVAS_GOALS_TWO_COL_CLASSES = 'flex gap-4';
-const PS_CANVAS_GOALS_COL_CLASSES = 'flex-1 flex flex-col gap-[5px]';
-const PS_CANVAS_GOALS_COL_HEADER_BASE_CLASSES = 'text-[12px] font-extrabold tracking-[0.12em] uppercase mb-1 pb-1 border-b-[0.5px] border-[rgba(255,255,255,0.08)]';
-const PS_CANVAS_GOALS_COL_HEADER_DEFAULT_CLASSES = 'text-[rgba(255,255,255,0.3)]';
-const PS_CANVAS_GOALS_COL_HEADER_CAR_CLASSES = 'text-[color:var(--team-canvas)]';
-function psCanvasGoalsColHeaderClasses(isCar) {
-  return `${PS_CANVAS_GOALS_COL_HEADER_BASE_CLASSES} ${isCar ? PS_CANVAS_GOALS_COL_HEADER_CAR_CLASSES : PS_CANVAS_GOALS_COL_HEADER_DEFAULT_CLASSES}`;
-}
-const PS_CANVAS_GOAL_COMPACT_CLASSES = 'flex justify-between items-center gap-[6px]';
-const PS_CANVAS_GOAL_COMPACT_NAME_CLASSES = 'text-[16px] font-bold text-[rgba(255,255,255,0.85)] whitespace-nowrap overflow-hidden text-ellipsis flex-1';
-const PS_CANVAS_GOAL_COMPACT_META_CLASSES = 'text-[13px] text-[rgba(255,255,255,0.35)] whitespace-nowrap flex-shrink-0';
-
-const PS_CANVAS_INSIGHTS_CLASSES = 'px-[52px] pb-5 flex flex-col gap-[6px]';
-const PS_CANVAS_INSIGHT_CHIP_CLASSES = 'text-[16px] text-[rgba(255,255,255,0.55)] bg-[rgba(255,255,255,0.04)] rounded-[8px] py-2 px-[14px] flex items-center gap-[6px]';
-
-const PS_CANVAS_STRENGTH_BASE_CLASSES = 'text-[11px] font-bold tracking-[0.06em] py-[2px] px-[5px] rounded-[3px] uppercase';
-const PS_CANVAS_STRENGTH_PP_CLASSES = 'bg-[rgba(240,160,48,0.2)] text-[#f0a030]';
-const PS_CANVAS_STRENGTH_SH_CLASSES = 'bg-[rgba(74,144,226,0.2)] text-[#4a90e2]';
-const PS_CANVAS_STRENGTH_EV_CLASSES = 'bg-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.3)]';
-// 'en' (empty net) fix -- same gap and same fix as psStrengthBadgeClasses
-// above (the popup-side equivalent): PeriodSummary.css never defined
-// .ps-canvas-strength.en, so empty-net goal badges on the export canvas
-// rendered unstyled too. Given the same treatment as 'sh'.
-function psCanvasStrengthClasses(sl) {
-  const variant = sl === 'pp' ? PS_CANVAS_STRENGTH_PP_CLASSES
-    : (sl === 'sh' || sl === 'en') ? PS_CANVAS_STRENGTH_SH_CLASSES
-    : PS_CANVAS_STRENGTH_EV_CLASSES;
-  return `${PS_CANVAS_STRENGTH_BASE_CLASSES} ${variant}`;
-}
-
-const PS_CANVAS_THREE_STARS_CLASSES = 'px-[52px] pb-[6px]';
-const PS_CANVAS_STARS_ROW_CLASSES = 'flex gap-4';
-const PS_CANVAS_STAR_CLASSES = 'flex-1 bg-[rgba(255,255,255,0.04)] border-[0.5px] border-[rgba(255,255,255,0.07)] rounded-[12px] p-[10px] flex flex-col items-center gap-1 text-center';
-const PS_CANVAS_STAR_RANK_CLASSES = 'text-[17px]';
-const PS_CANVAS_STAR_IMG_CLASSES = 'w-[52px] h-[52px] rounded-full object-cover border-[1.5px] border-[rgba(255,255,255,0.1)]';
-const PS_CANVAS_STAR_NAME_CLASSES = 'text-[14px] font-bold text-[rgba(255,255,255,0.8)]';
-const PS_CANVAS_STAR_TEAM_CLASSES = 'text-[12px] text-[rgba(255,255,255,0.35)]';
-const PS_CANVAS_STAR_INITIALS_CLASSES = 'w-12 h-12 rounded-full bg-[rgba(var(--team-canvas-rgb),0.2)] border-[1.5px] border-[rgba(var(--team-canvas-rgb),0.4)] flex items-center justify-center text-[19px] font-extrabold text-white';
-
-const PS_CANVAS_FOOTER_CLASSES = 'absolute bottom-5 left-[52px] right-[52px] flex items-center justify-between';
-const PS_CANVAS_FOOTER_BRAND_CLASSES = 'text-[14px] font-bold tracking-[0.12em] text-[rgba(255,255,255,0.2)]';
-const PS_CANVAS_FOOTER_TAG_CLASSES = 'text-[14px] text-[rgba(255,255,255,0.2)]';
+// The share card itself lives in PeriodSummaryShareCanvas.jsx (shared with
+// PWHLPeriodSummary.jsx); ShareCanvas below only supplies NHL specifics.
 
 function strengthLabel(strength) {
   if (!strength) return 'ev';
@@ -457,7 +367,7 @@ function GoalCarousel({ goals, carAbbr }) {
   );
 }
 
-// ── Share canvas (1080×1080, off-screen) ─────────────────────
+// ── Share canvas (1080×1350, off-screen -- PeriodSummaryShareCanvas) ──
 // Shared stat definitions — used by both the popup grid and the share canvas
 // so they're always in sync
 function getPeriodStats(summary, carAbbr, t) {
@@ -475,209 +385,34 @@ function getPeriodStats(summary, carAbbr, t) {
 function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarrative }) {
   const { t } = useTranslation();
   const carIsHome = homeAbbr === carAbbr;
-  const carScore = carIsHome ? summary.homeScore : summary.awayScore;
-  const oppScore = carIsHome ? summary.awayScore : summary.homeScore;
-  const stats = getPeriodStats(summary, carAbbr, t);
   const dominatedBy = summary.corsiForPct >= 55 ? carAbbr : summary.corsiForPct <= 45 ? oppAbbr : null;
   const carPenalties = summary.penalties.filter(p => p.isCar).length;
   const oppPenalties = summary.penalties.filter(p => !p.isCar).length;
-  const carGoals = summary.goals.filter(g => g.isCar);
-  const oppGoals = summary.goals.filter(g => !g.isCar);
-  const isGame = summary.isGameSummary;
+  const insights = [
+    dominatedBy && { good: dominatedBy === carAbbr, text: `${dominatedBy === carAbbr ? '↑' : '↓'} ${t('periodSummary.possession.dominated', { team: dominatedBy })}` },
+    (carPenalties > 0 || oppPenalties > 0) && { text: t('periodSummary.penalties.insight', { abbr: carAbbr, carCount: carPenalties, oppCount: oppPenalties, oppAbbr }) },
+    summary.carTK != null && { good: summary.carTK > summary.carGV, text: `${summary.carTK > summary.carGV ? '✓' : '✗'} ${t('periodSummary.takeawaysGiveaways', { tk: summary.carTK, gv: summary.carGV })}` },
+  ].filter(Boolean);
 
   return (
-    <div className={PS_SHARE_CANVAS_CLASSES} ref={canvasRef}>
-
-      {/* Header */}
-      <div className={PS_CANVAS_HEADER_CLASSES}>
-        <img src="/eyewall-logo.svg" alt="EyeWall" className={PS_CANVAS_LOGO_LARGE_CLASSES}
-          onError={e => { e.target.style.display='none'; }} />
-        <span className={PS_CANVAS_PERIOD_CLASSES}>{t('periodSummary.header', { period: summary.periodLabel })}</span>
-      </div>
-
-      {/* Score + AI narrative — score compact left, narrative fills right */}
-      <div className={PS_CANVAS_SCORE_AI_ROW_CLASSES}>
-        <div className={PS_CANVAS_SCORE_COMPACT_V2_CLASSES}>
-          <div className={psCanvasScoreCompactTeamClasses(true)}>{carAbbr}</div>
-          <div className={PS_CANVAS_SCORE_COMPACT_NUM_CLASSES}>{carScore ?? '–'}</div>
-          <div className={PS_CANVAS_SCORE_COMPACT_DIV_CLASSES}>–</div>
-          <div className={PS_CANVAS_SCORE_COMPACT_NUM_CLASSES}>{oppScore ?? '–'}</div>
-          <div className={psCanvasScoreCompactTeamClasses(false)}>{oppAbbr}</div>
-        </div>
-        <div className={PS_CANVAS_SCORE_AI_DIVIDER_CLASSES} />
-        <div className={PS_CANVAS_NARRATIVE_FULL_CLASSES}>
-          <div className={PS_CANVAS_NARRATIVE_FULL_LABEL_CLASSES}>{t('gameStatsPopup.summary.badge')}</div>
-          <div className={PS_CANVAS_NARRATIVE_FULL_TEXT_CLASSES}>
-            {cardNarrative || summary.cardNarrative || summary.aiNarrative || t('periodSummary.ai.generatingCanvas')}
-          </div>
-        </div>
-      </div>
-
-      {/* Stats grid */}
-      <div className={PS_CANVAS_STATS_CLASSES}>
-        {stats.map((s, i) => (
-          <div key={i} className={PS_CANVAS_STAT_CLASSES}>
-            <div className={psCanvasStatValClasses(s.color)}>{s.val}</div>
-            <div className={PS_CANVAS_STAT_LABEL_CLASSES}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Goals — two column for game, single column for period */}
-      {detectHatTricks(summary.goals).length > 0 && (
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '4px 0', justifyContent: 'center' }}>
-          {detectHatTricks(summary.goals).map((ht, i) => (
-            <div key={i} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              background: 'var(--team-canvas)', color: '#fff',
-              fontSize: 13, fontWeight: 600, padding: '6px 12px',
-              borderRadius: 20, whiteSpace: 'nowrap',
-            }}>
-              🎩 {ht.isNatural ? t('milestonesFeed.type.naturalHatTrick') : t('milestonesFeed.type.hatTrick')}{ht.scorerName ? ` — ${ht.scorerName}` : ''}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {summary.goals.length > 0 && (
-        <div className={PS_CANVAS_GOALS_CLASSES}>
-          <div className={PS_CANVAS_SECTION_LABEL_CLASSES}>
-            {isGame ? t('periodSummary.goals.thisGame') : t('periodSummary.goals.thisPeriod')}
-          </div>
-          {isGame ? (
-            <div className={PS_CANVAS_GOALS_TWO_COL_CLASSES}>
-              {/* CAR column */}
-              <div className={PS_CANVAS_GOALS_COL_CLASSES}>
-                <div className={psCanvasGoalsColHeaderClasses(true)}>{carAbbr}</div>
-                {carGoals.map((g, i) => (
-                  <div key={i} className={PS_CANVAS_GOAL_COMPACT_CLASSES}>
-                    <span className={PS_CANVAS_GOAL_COMPACT_NAME_CLASSES}>
-                      {g.scorerName?.split(' ').pop() || carAbbr}
-                    </span>
-                    <span className={PS_CANVAS_GOAL_COMPACT_META_CLASSES}>
-                      P{g.period} {g.time}
-                      {strengthLabel(g.strength) !== 'ev' && (
-                        <span className={psCanvasStrengthClasses(strengthLabel(g.strength))}>
-                          {' '}{strengthLabel(g.strength).toUpperCase()}
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              {/* OPP column */}
-              <div className={PS_CANVAS_GOALS_COL_CLASSES}>
-                <div className={psCanvasGoalsColHeaderClasses(false)}>{oppAbbr}</div>
-                {oppGoals.map((g, i) => (
-                  <div key={i} className={PS_CANVAS_GOAL_COMPACT_CLASSES}>
-                    <span className={PS_CANVAS_GOAL_COMPACT_NAME_CLASSES}>
-                      {g.scorerName?.split(' ').pop() || oppAbbr}
-                    </span>
-                    <span className={PS_CANVAS_GOAL_COMPACT_META_CLASSES}>
-                      P{g.period} {g.time}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            /* Period cards: two-column compact layout — matches game card style */
-            <div className={PS_CANVAS_GOALS_TWO_COL_CLASSES}>
-              <div className={PS_CANVAS_GOALS_COL_CLASSES}>
-                <div className={psCanvasGoalsColHeaderClasses(true)}>{carAbbr}</div>
-                {summary.goals.filter(g => g.isCar).slice(0, 5).map((g, i) => (
-                  <div key={i} className={PS_CANVAS_GOAL_COMPACT_CLASSES}>
-                    <span className={PS_CANVAS_GOAL_COMPACT_NAME_CLASSES}>
-                      {g.scorerName?.split(' ').pop() || carAbbr}
-                    </span>
-                    <span className={PS_CANVAS_GOAL_COMPACT_META_CLASSES}>
-                      {g.time}
-                      {strengthLabel(g.strength) !== 'ev' && (
-                        <span className={psCanvasStrengthClasses(strengthLabel(g.strength))}>
-                          {' '}{strengthLabel(g.strength).toUpperCase()}
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className={PS_CANVAS_GOALS_COL_CLASSES}>
-                <div className={psCanvasGoalsColHeaderClasses(false)}>{oppAbbr}</div>
-                {summary.goals.filter(g => !g.isCar).slice(0, 5).map((g, i) => (
-                  <div key={i} className={PS_CANVAS_GOAL_COMPACT_CLASSES}>
-                    <span className={PS_CANVAS_GOAL_COMPACT_NAME_CLASSES}>
-                      {g.scorerName?.split(' ').pop() || oppAbbr}
-                    </span>
-                    <span className={PS_CANVAS_GOAL_COMPACT_META_CLASSES}>{g.time}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Insights — period only (game has AI narrative above instead) */}
-      {!isGame && (
-        <div className={PS_CANVAS_INSIGHTS_CLASSES}>
-          {dominatedBy && (
-            <div className={PS_CANVAS_INSIGHT_CHIP_CLASSES}>
-              <span className={dominatedBy === carAbbr ? 'good' : 'bad'}>
-                {dominatedBy === carAbbr ? '↑' : '↓'}
-              </span>
-              {' '}{t('periodSummary.possession.dominated', { team: dominatedBy })}
-            </div>
-          )}
-          {(carPenalties > 0 || oppPenalties > 0) && (
-            <div className={PS_CANVAS_INSIGHT_CHIP_CLASSES}>
-              {t('periodSummary.penalties.insight', { abbr: carAbbr, carCount: carPenalties, oppCount: oppPenalties, oppAbbr })}
-            </div>
-          )}
-          {summary.carTK != null && (
-            <div className={PS_CANVAS_INSIGHT_CHIP_CLASSES}>
-              {summary.carTK > summary.carGV ? '✓' : '✗'} {t('periodSummary.takeawaysGiveaways', { tk: summary.carTK, gv: summary.carGV })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Three stars — game summary only */}
-      {isGame && summary.threeStars?.length > 0 && (
-        <div className={PS_CANVAS_THREE_STARS_CLASSES}>
-          <div className={PS_CANVAS_SECTION_LABEL_CLASSES}>{t('periodSummary.threeStars')}</div>
-          <div className={PS_CANVAS_STARS_ROW_CLASSES}>
-            {summary.threeStars.slice(0, 3).map((s, i) => {
-              const name = s.name?.default || '—';
-              // Proxy headshot through /nhl-assets/ to avoid CORS during html-to-image export
-              const headshot = s.headshot
-                ? s.headshot.replace('https://assets.nhle.com', `${NATIVE_ORIGIN}/nhl-assets`)
-                : null;
-              return (
-                <div key={i} className={PS_CANVAS_STAR_CLASSES}>
-                  <div className={PS_CANVAS_STAR_RANK_CLASSES}>{'⭐'.repeat(3 - i)}</div>
-                  {headshot ? (
-                    <img src={headshot} alt={name} className={PS_CANVAS_STAR_IMG_CLASSES}
-                      onError={e => { e.target.style.display='none'; }} />
-                  ) : (
-                    <div className={PS_CANVAS_STAR_INITIALS_CLASSES}>
-                      {name.split(' ').map(n=>n[0]).join('').slice(0,2)}
-                    </div>
-                  )}
-                  <div className={PS_CANVAS_STAR_NAME_CLASSES}>{name}</div>
-                  <div className={PS_CANVAS_STAR_TEAM_CLASSES}>{s.teamAbbrev?.default || ''}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className={PS_CANVAS_FOOTER_CLASSES}>
-        <span className={PS_CANVAS_FOOTER_BRAND_CLASSES}>eyewallanalytics.com</span>
-        <span className={PS_CANVAS_FOOTER_TAG_CLASSES}>{TEAM_CONFIG.hashtags?.[0] || `#${TEAM_CONFIG.abbr}`}</span>
-      </div>
-    </div>
+    <PeriodSummaryShareCanvas
+      canvasRef={canvasRef}
+      summary={summary}
+      carAbbr={carAbbr}
+      oppAbbr={oppAbbr}
+      carScore={carIsHome ? summary.homeScore : summary.awayScore}
+      oppScore={carIsHome ? summary.awayScore : summary.homeScore}
+      carColor={TEAM_CONFIG.displayColor}
+      oppColor={ALL_TEAMS.find(tm => tm.abbr === oppAbbr)?.displayColor}
+      stats={getPeriodStats(summary, carAbbr, t)}
+      hatTricks={detectHatTricks(summary.goals)}
+      strengthOf={g => strengthLabel(g.strength)}
+      insights={insights}
+      // Proxy headshots through /nhl-assets/ to avoid CORS during html-to-image export
+      headshotUrl={s => s.headshot ? s.headshot.replace('https://assets.nhle.com', `${NATIVE_ORIGIN}/nhl-assets`) : null}
+      narrative={cardNarrative || summary.cardNarrative || summary.aiNarrative}
+      note={t('shareCard.statsNote')}
+    />
   );
 }
 

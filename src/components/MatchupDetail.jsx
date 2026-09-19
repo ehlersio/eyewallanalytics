@@ -361,7 +361,6 @@ function MatchupDetail({ game, oppStanding, carStanding, playoffSeries }) {
         isPlayoff={isPlayoff_}
         seriesEntry={seriesEntry}
         gameId={game?.id}
-        carLines={carLines}
       />}
       </>)}
     </div>

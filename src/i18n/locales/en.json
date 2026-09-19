@@ -2450,5 +2450,19 @@
     "source": "Elo model",
     "tooltip": "Win probability from each team's Elo rating (every game since 2023-24, updated nightly) plus home ice, none at a neutral site. It's the same number the prediction scorecard grades.",
     "unavailable": "Win probability isn't available right now."
+  },
+  "shareCard": {
+    "matchupTitle": "{{team}} vs {{opp}}",
+    "probabilityNote": "Probabilities, not certainties",
+    "predictionSubtitle": "Win probability and projected score",
+    "seriesSubtitle": "Series: {{team}} {{teamWins}}–{{oppWins}} {{opp}}",
+    "scoutingSubtitle": "Head to head, this season",
+    "scoutingPlayoffSubtitle": "Head to head, these playoffs",
+    "rankingsTitle": "Power Rankings",
+    "rankingsSubtitle": "#{{rank}} of 32 · {{record}}",
+    "rankingsNote": "Points, form, goal diff, 5v5 xG, special teams",
+    "scoreTitle": "{{team}} {{teamScore}}–{{oppScore}} {{opp}}",
+    "statsNote": "Stats: NHL · EyeWall",
+    "pwhlStatsNote": "Stats: PWHL · EyeWall"
   }
 }
