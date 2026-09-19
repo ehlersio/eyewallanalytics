@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
 import { pwhlLogoUrl } from '../utils/pwhlConfig';
-import { ahlLogoUrl, getAHLTeamConfig } from '../utils/ahlConfig';
+import { ahlLogoUrl, getAHLTeamForDisplay } from '../utils/ahlConfig';
 import { echlLogoUrl, getECHLTeamConfig } from '../utils/echlConfig';
 
 // Tailwind migration (Session 95, Phase 1) -- previously TeamLogo.css.
@@ -61,7 +61,7 @@ export default function TeamLogo({ abbr, sport = 'nhl', size = 24, color, classN
   // abbr-keyed prop shape.
   const src =
     sport === 'pwhl' ? pwhlLogoUrl(abbr)
-    : sport === 'ahl' ? ahlLogoUrl(getAHLTeamConfig(abbr)?.teamId)
+    : sport === 'ahl' ? ahlLogoUrl(getAHLTeamForDisplay(abbr)?.teamId)
     : sport === 'echl' ? echlLogoUrl(getECHLTeamConfig(abbr)?.teamId)
     : nhlLogoUrl(abbr);
 
