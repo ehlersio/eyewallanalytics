@@ -187,7 +187,7 @@ function scopeBtnClasses(active) {
   const base = 'tx-scope-btn text-[11px] font-semibold py-[3px] px-2.5 rounded-full border-[0.5px] cursor-pointer';
   return active
     ? `${base} bg-[var(--team-primary)] text-white border-transparent`
-    : `${base} bg-transparent text-[color:var(--text-muted)] border-[var(--border-2)]`;
+    : `${base} bg-[var(--btn-fill)] text-[color:var(--text-muted)] border-transparent hover:bg-[var(--btn-fill-hover)]`;
 }
 
 function CategoryBadge({ category }) {

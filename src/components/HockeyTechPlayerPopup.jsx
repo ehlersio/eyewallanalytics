@@ -49,9 +49,12 @@ const PP_HEATMAP_NUM_GOAL_CLASSES = 'text-[#f87171]'
 const PP_HEATMAP_NUM_SOG_CLASSES = 'text-[#4ade80]'
 const PP_HEATMAP_FILTERS_CLASSES = 'flex gap-[6px] flex-wrap mb-[10px]'
 const PP_HEATMAP_RINK_CLASSES = 'rounded-lg overflow-hidden w-full'
-const HEATMAP_CHIP_BASE_CLASSES = 'py-1 px-[10px] rounded-xl text-[11px] font-semibold leading-none border-[0.5px] border-[var(--border)] bg-[var(--bg2)] text-[color:var(--text-muted)] cursor-pointer'
-const HEATMAP_CHIP_ACTIVE_CLASSES = 'bg-[var(--red-bright)] text-[#fff] border-[var(--red-bright)]'
-function heatmapChipClasses(active) { return `${HEATMAP_CHIP_BASE_CLASSES} ${active ? HEATMAP_CHIP_ACTIVE_CLASSES : ''}` }
+// Selected/unselected are separate, non-overlapping branches (lesson #9):
+// both set a background, so neither may sit on the shared base.
+const HEATMAP_CHIP_BASE_CLASSES = 'py-1 px-[10px] rounded-xl text-[11px] font-semibold leading-none border-[0.5px] border-transparent cursor-pointer'
+const HEATMAP_CHIP_INACTIVE_CLASSES = 'bg-[var(--btn-fill)] text-[color:var(--text-muted)] hover:bg-[var(--btn-fill-hover)]'
+const HEATMAP_CHIP_ACTIVE_CLASSES = 'bg-[var(--red-bright)] text-[#fff]'
+function heatmapChipClasses(active) { return `${HEATMAP_CHIP_BASE_CLASSES} ${active ? HEATMAP_CHIP_ACTIVE_CLASSES : HEATMAP_CHIP_INACTIVE_CLASSES}` }
 
 const PP_PHOTO_CLASSES = 'w-[80px] h-[80px] object-cover object-top rounded-[var(--radius)] bg-[var(--bg3)] border-[0.5px] border-[var(--border-2)]'
 const PP_PHOTO_FALLBACK_CLASSES = 'w-[80px] h-[80px] rounded-[var(--radius)] bg-[var(--bg3)] border-[0.5px] border-[var(--border-2)] flex items-center justify-center font-[family-name:var(--font-display)] text-[24px] font-bold text-[color:var(--text-dim)]'

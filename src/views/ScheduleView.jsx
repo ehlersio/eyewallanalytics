@@ -47,7 +47,7 @@ const SCHED_TABS_CLASSES = 'sched-tabs flex items-center gap-1.5 mb-3.5 border-b
 const schedTabClasses = (active) => {
   const base = 'sched-tab py-1.5 px-4 rounded-[20px] text-[13px] font-medium flex items-center gap-1.5 [transition:all_0.15s] border-[0.5px]';
   return active
-    ? `${base} active bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[color:var(--red-border)]`
+    ? `${base} active bg-[var(--red-dim)] text-[color:var(--red-bright)] border-transparent`
     : `${base} text-[color:var(--text-muted)] border-transparent`;
 };
 
@@ -72,7 +72,7 @@ const vmBtnClasses = (active) => {
 // .scroll-top-btn's bottom position uses BottomNav's real height incl.
 // safe-area inset (Session 43) -- kept as the same calc() via an arbitrary
 // Tailwind value rather than an inline style.
-const SCROLL_TOP_BTN_CLASSES = 'scroll-top-btn fixed [bottom:calc(var(--nav-height)+env(safe-area-inset-bottom,0px)+16px)] right-4 z-[150] bg-[var(--bg2)] border-[0.5px] border-[color:var(--border-2)] rounded-[20px] py-[7px] px-3.5 text-[12px] font-medium text-[color:var(--text-muted)] cursor-pointer shadow-[0_4px_16px_rgba(0,0,0,0.4)] [transition:all_0.15s] [animation:fade-in_0.2s_ease] hover:bg-[var(--bg3)] hover:text-[color:var(--text)] hover:border-[color:var(--red-border)]';
+const SCROLL_TOP_BTN_CLASSES = 'scroll-top-btn fixed [bottom:calc(var(--nav-height)+env(safe-area-inset-bottom,0px)+16px)] right-4 z-[150] bg-[var(--bg2)] border-[0.5px] border-transparent rounded-[20px] py-[7px] px-3.5 text-[12px] font-medium text-[color:var(--text-muted)] cursor-pointer shadow-[0_4px_16px_rgba(0,0,0,0.4)] [transition:all_0.15s] [animation:fade-in_0.2s_ease] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]';
 
 export default function ScheduleView() {
   const { t } = useTranslation();

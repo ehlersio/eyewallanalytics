@@ -66,9 +66,12 @@ const PP_RADAR_NOTE_CLASSES = 'text-[9px] text-[color:var(--text-dim)] text-cent
 const PP_QUICKSTATS_COL_CLASSES = 'pp-quickstats-col flex flex-col gap-1 flex-none'
 const PP_QUICKSTATS_CLASSES = 'grid [grid-template-columns:38px_38px] gap-1 max-[340px]:w-full'
 
-const HEATMAP_CHIP_BASE_CLASSES = 'py-1 px-[10px] rounded-xl text-[11px] font-semibold leading-none border-[0.5px] border-[var(--border)] bg-[var(--bg2)] text-[color:var(--text-muted)] cursor-pointer'
-const HEATMAP_CHIP_ACTIVE_CLASSES = 'bg-[var(--red-bright)] text-[#fff] border-[var(--red-bright)]'
-function heatmapChipClasses(active) { return `${HEATMAP_CHIP_BASE_CLASSES} ${active ? HEATMAP_CHIP_ACTIVE_CLASSES : ''}` }
+// Selected/unselected are separate, non-overlapping branches (lesson #9):
+// both set a background, so neither may sit on the shared base.
+const HEATMAP_CHIP_BASE_CLASSES = 'py-1 px-[10px] rounded-xl text-[11px] font-semibold leading-none border-[0.5px] border-transparent cursor-pointer'
+const HEATMAP_CHIP_INACTIVE_CLASSES = 'bg-[var(--btn-fill)] text-[color:var(--text-muted)] hover:bg-[var(--btn-fill-hover)]'
+const HEATMAP_CHIP_ACTIVE_CLASSES = 'bg-[var(--red-bright)] text-[#fff]'
+function heatmapChipClasses(active) { return `${HEATMAP_CHIP_BASE_CLASSES} ${active ? HEATMAP_CHIP_ACTIVE_CLASSES : HEATMAP_CHIP_INACTIVE_CLASSES}` }
 const PP_HEATMAP_CLASSES = 'py-3 px-4'
 const PP_HEATMAP_EMPTY_CLASSES = 'pp-heatmap-empty py-8 px-4 text-center text-[color:var(--text-muted)] text-[13px] flex flex-col items-center gap-2'
 const PP_HEATMAP_ICON_CLASSES = 'text-[28px]'

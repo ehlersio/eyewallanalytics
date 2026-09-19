@@ -45,7 +45,7 @@ const RESULT_BADGE_COLOR = {
 };
 const QUESTION_TEXT_CLASSES = 'trivia-question-text text-[14px] font-semibold text-[color:var(--text)] leading-[1.4] m-0';
 const OPTIONS_CLASSES = 'flex flex-col gap-1.5';
-const OPTION_BASE = 'trivia-option text-left py-2.5 px-3 rounded-[8px] border-[0.5px] border-[var(--border-2)] bg-[var(--bg3)] text-[color:var(--text)] text-[13px] font-medium cursor-pointer [transition:background_0.15s,opacity_0.15s] enabled:hover:bg-[var(--bg4)] disabled:cursor-default';
+const OPTION_BASE = 'trivia-option text-left py-2.5 px-3 rounded-[8px] border-[0.5px] border-transparent bg-[var(--bg3)] text-[color:var(--text)] text-[13px] font-medium cursor-pointer [transition:background_0.15s,opacity_0.15s] enabled:hover:bg-[var(--bg4)] disabled:cursor-default';
 const OPTION_CORRECT = 'correct border-[var(--green)] bg-[rgba(61,186,126,0.14)] text-[color:var(--green)] font-bold';
 const OPTION_INCORRECT = 'incorrect border-[var(--red-bright)] bg-[rgba(255,68,34,0.1)] text-[color:var(--red-bright)] font-bold';
 const OPTION_DIMMED = 'dimmed opacity-50';

@@ -28,12 +28,12 @@ export const NEWS_HEADER_ROW_CLASSES = 'flex justify-between items-start mb-[10p
 export const NEWS_TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[18px] font-extrabold text-[color:var(--text)]';
 export const NEWS_UPDATED_CLASSES = 'news-updated text-[10px] text-[color:var(--text-dim)] mt-[2px]';
 
-export const NEWS_REFRESH_BTN_CLASSES = 'news-refresh-btn bg-[var(--bg3)] border-[0.5px] border-[var(--border)] text-[color:var(--text-muted)] text-[16px] w-8 h-8 rounded-[8px] cursor-pointer flex items-center justify-center p-0 [transition:background_0.15s] enabled:hover:bg-[var(--bg4)] disabled:opacity-40';
+export const NEWS_REFRESH_BTN_CLASSES = 'news-refresh-btn bg-[var(--btn-fill)] border-[0.5px] border-transparent text-[color:var(--text-muted)] text-[16px] w-8 h-8 rounded-[8px] cursor-pointer flex items-center justify-center p-0 [transition:background_0.15s] enabled:hover:bg-[var(--btn-fill-hover)] disabled:opacity-40';
 
 export const NEWS_FILTER_CHIPS_CLASSES = 'news-filter-chips flex gap-[6px] flex-wrap';
 const CHIP_BASE = 'news-chip text-[11px] font-medium py-1 px-[10px] rounded-[20px] cursor-pointer [transition:all_0.12s]';
-const CHIP_INACTIVE = 'bg-[var(--bg3)] border-[0.5px] border-[var(--border)] text-[color:var(--text-muted)] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]';
-const CHIP_ACTIVE = 'active bg-[rgba(204,34,0,0.2)] border-[0.5px] border-[rgba(204,34,0,0.4)] text-[color:var(--red-bright)] font-bold';
+const CHIP_INACTIVE = 'bg-[var(--btn-fill)] border-[0.5px] border-transparent text-[color:var(--text-muted)] hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text)]';
+const CHIP_ACTIVE = 'active bg-[rgba(204,34,0,0.2)] border-[0.5px] border-transparent text-[color:var(--red-bright)] font-bold';
 export function newsChipClasses(active) {
   return `${CHIP_BASE} ${active ? CHIP_ACTIVE : CHIP_INACTIVE}`;
 }
@@ -79,13 +79,13 @@ export const NEWS_ERROR_MSG_CLASSES = 'news-error-msg text-[12px]';
 export const NEWS_FOOTER_CLASSES = 'text-center text-[10px] text-[color:var(--text-dim)] pt-4 px-2 leading-[1.5]';
 
 export const NEWS_PAGINATION_CLASSES = 'flex items-center justify-center gap-4 py-4 pb-2';
-export const NEWS_PAGE_BTN_CLASSES = 'news-page-btn bg-[var(--bg2)] border-[0.5px] border-[var(--border)] text-[color:var(--text-muted)] text-[13px] font-semibold py-2 px-[18px] rounded-[8px] cursor-pointer [transition:background_0.12s] enabled:hover:bg-[var(--bg3)] enabled:hover:text-[color:var(--text)] disabled:opacity-30 disabled:cursor-default';
+export const NEWS_PAGE_BTN_CLASSES = 'news-page-btn bg-[var(--btn-fill)] border-[0.5px] border-transparent text-[color:var(--text-muted)] text-[13px] font-semibold py-2 px-[18px] rounded-[8px] cursor-pointer [transition:background_0.12s] enabled:hover:bg-[var(--btn-fill-hover)] enabled:hover:text-[color:var(--text)] disabled:opacity-30 disabled:cursor-default';
 export const NEWS_PAGE_INFO_CLASSES = 'text-[12px] text-[color:var(--text-dim)]';
 
 export const NEWS_VIEW_TOGGLE_CLASSES = 'flex gap-[6px] mb-[10px]';
 const TOGGLE_BTN_BASE = 'news-view-toggle-btn text-[12px] py-[6px] px-[14px] rounded-[20px] font-medium cursor-pointer [transition:all_0.12s]';
-const TOGGLE_BTN_INACTIVE = 'bg-[var(--bg3)] border-[0.5px] border-[var(--border)] text-[color:var(--text-muted)] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]';
-const TOGGLE_BTN_ACTIVE = 'active bg-[rgba(204,34,0,0.2)] border-[0.5px] border-[rgba(204,34,0,0.4)] text-[color:var(--red-bright)] font-bold';
+const TOGGLE_BTN_INACTIVE = 'bg-[var(--btn-fill)] border-[0.5px] border-transparent text-[color:var(--text-muted)] hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text)]';
+const TOGGLE_BTN_ACTIVE = 'active bg-[rgba(204,34,0,0.2)] border-[0.5px] border-transparent text-[color:var(--red-bright)] font-bold';
 export function newsViewToggleBtnClasses(active) {
   return `${TOGGLE_BTN_BASE} ${active ? TOGGLE_BTN_ACTIVE : TOGGLE_BTN_INACTIVE}`;
 }
@@ -111,8 +111,8 @@ export const MILESTONE_DETAIL_ITEM_CLASSES = "before:content-['·'] before:mr-[1
 
 export const MS_TEAM_SELECT_WRAP_CLASSES = 'relative';
 const MS_BTN_BASE = 'ms-team-select-btn flex items-center gap-[6px] text-[11px] font-medium py-1 px-[10px] rounded-[20px] cursor-pointer [transition:all_0.12s]';
-const MS_BTN_INACTIVE = 'bg-[var(--bg3)] border-[0.5px] border-[var(--border)] text-[color:var(--text-muted)] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]';
-const MS_BTN_ACTIVE = 'active bg-[rgba(204,34,0,0.2)] border-[0.5px] border-[rgba(204,34,0,0.4)] text-[color:var(--red-bright)] font-bold';
+const MS_BTN_INACTIVE = 'bg-[var(--btn-fill)] border-[0.5px] border-transparent text-[color:var(--text-muted)] hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text)]';
+const MS_BTN_ACTIVE = 'active bg-[rgba(204,34,0,0.2)] border-[0.5px] border-transparent text-[color:var(--red-bright)] font-bold';
 export function msTeamSelectBtnClasses(active) {
   return `${MS_BTN_BASE} ${active ? MS_BTN_ACTIVE : MS_BTN_INACTIVE}`;
 }

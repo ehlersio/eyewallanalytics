@@ -80,15 +80,15 @@ const LEAGUE_TABS_CLASSES = 'league-tabs flex flex-wrap mb-[14px] pb-[10px] bord
 
 const LEAGUE_TAB_BASE_CLASSES = 'league-tab py-[6px] px-4 rounded-[20px] text-[13px] font-medium border-[0.5px] flex items-center cursor-pointer [transition:all_0.15s] max-[600px]:shrink-0 max-[600px]:py-[5px] max-[600px]:px-3 max-[600px]:text-[12px]'
 const LEAGUE_TAB_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] bg-transparent border-transparent'
-const LEAGUE_TAB_ACTIVE_CLASSES = 'league-tab--active text-[color:var(--red-bright)] bg-[var(--red-dim)] border-[var(--red-border)]'
+const LEAGUE_TAB_ACTIVE_CLASSES = 'league-tab--active text-[color:var(--red-bright)] bg-[var(--red-dim)] border-transparent'
 function leagueTabClasses(isActive) {
   return `${LEAGUE_TAB_BASE_CLASSES} ${isActive ? LEAGUE_TAB_ACTIVE_CLASSES : LEAGUE_TAB_INACTIVE_CLASSES}`
 }
 
 const LV_FILTER_ROW_CLASSES = 'flex gap-[6px] mb-4 flex-wrap'
 const LV_FILTER_BTN_BASE_CLASSES = 'lv-filter-btn text-[12px] py-1 px-[10px] rounded-[var(--radius-sm)] border-[0.5px] cursor-pointer [transition:background_0.1s,color_0.1s]'
-const LV_FILTER_BTN_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] bg-transparent border-[var(--border)]'
-const LV_FILTER_BTN_ACTIVE_CLASSES = 'lv-filter-btn--active text-[color:var(--text)] bg-[var(--bg2)] border-[var(--border-2)] font-medium'
+const LV_FILTER_BTN_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] bg-[var(--btn-fill)] border-transparent hover:bg-[var(--btn-fill-hover)]'
+const LV_FILTER_BTN_ACTIVE_CLASSES = 'lv-filter-btn--active text-[color:var(--text)] bg-[var(--bg4)] border-transparent font-medium'
 function lvFilterBtnClasses(isActive) {
   return `${LV_FILTER_BTN_BASE_CLASSES} ${isActive ? LV_FILTER_BTN_ACTIVE_CLASSES : LV_FILTER_BTN_INACTIVE_CLASSES}`
 }
@@ -161,7 +161,7 @@ const LV_SEASON_EMPTY_CLASSES = 'lv-season-empty text-[color:var(--text-dim)] te
 // literal strings below) -- PWHL reuses them across 4 tabs including
 // Standings, migrated there instead.
 
-const LV_SCROLL_TOP_CLASSES = 'fixed bottom-[72px] right-4 z-[200] py-[7px] px-[14px] rounded-[20px] text-[12px] font-semibold text-[color:var(--text-muted)] bg-[var(--bg2,#1e1e1e)] border-[0.5px] border-[var(--border)] cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.4)] [transition:opacity_0.15s,color_0.15s] hover:text-[color:var(--text)] hover:border-[var(--text-dim)]'
+const LV_SCROLL_TOP_CLASSES = 'fixed bottom-[72px] right-4 z-[200] py-[7px] px-[14px] rounded-[20px] text-[12px] font-semibold text-[color:var(--text-muted)] bg-[var(--bg2,#1e1e1e)] border-[0.5px] border-transparent cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.4)] [transition:opacity_0.15s,color_0.15s,background_0.15s] hover:text-[color:var(--text)] hover:bg-[var(--bg3)]'
 
 // ── Tailwind class constants -- LEADERS (Phase 4, LeagueView.css sub-PR 2) --
 // Checked against the same 3 things sub-PR 1 found real issues in: light

@@ -36,7 +36,7 @@
 // ShotMapView.css is fully retired -- see that file for the reasoning.
 import { useTranslation } from 'react-i18next';
 
-const SEASON_TYPE_TOGGLE_CLASSES = 'season-type-toggle flex border-[0.5px] border-[color:var(--border-2)] rounded-[20px] overflow-hidden w-fit';
+const SEASON_TYPE_TOGGLE_CLASSES = 'season-type-toggle flex bg-[var(--btn-fill)] rounded-[20px] overflow-hidden w-fit';
 const seasonTypeToggleBtnClasses = (on) => {
   const base = 'season-type-toggle-btn py-0.5 px-2 text-[10px] font-medium whitespace-nowrap min-h-0 min-w-0';
   return on

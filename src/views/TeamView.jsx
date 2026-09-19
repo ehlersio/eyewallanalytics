@@ -48,7 +48,7 @@ const VIEW_TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[20px] f
 // "TeamView.css additions" block keeps applying untouched.
 
 const VIEW_SUB_CLASSES = 'view-sub text-[12px] text-[color:var(--text-muted)] mb-3'
-const TEAM_COMPARE_BTN_CLASSES = 'text-[11px] font-semibold text-[color:var(--text-muted)] bg-[var(--bg2)] border-[0.5px] border-[var(--border-2)] rounded-[var(--radius-sm)] py-[5px] px-[9px] cursor-pointer whitespace-nowrap [transition:background_0.15s,color_0.15s] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]'
+const TEAM_COMPARE_BTN_CLASSES = 'text-[11px] font-semibold text-[color:var(--text-muted)] bg-[var(--btn-fill)] border-[0.5px] border-transparent rounded-[var(--radius-sm)] py-[5px] px-[9px] cursor-pointer whitespace-nowrap [transition:background_0.15s,color_0.15s] hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text)]'
 
 const TEAM_TABS_CLASSES = 'flex gap-1 mb-[14px] overflow-x-auto pb-[2px] border-b-[0.5px] border-[var(--border)]'
 // bg-transparent deliberately NOT in base -- it and ACTIVE's bg-[var(--red-dim)]
@@ -57,7 +57,7 @@ const TEAM_TABS_CLASSES = 'flex gap-1 mb-[14px] overflow-x-auto pb-[2px] border-
 // inactive variant instead of racing with the active variant's background.
 const TEAM_TAB_BASE_CLASSES = 'team-tab py-[6px] px-[14px] rounded-[20px] text-[12px] font-medium border-[0.5px] whitespace-nowrap cursor-pointer [transition:all_0.15s]'
 const TEAM_TAB_INACTIVE_CLASSES = 'bg-transparent text-[color:var(--text-muted)] border-transparent hover:text-[color:var(--text)]'
-const TEAM_TAB_ACTIVE_CLASSES = 'bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[var(--red-border)]'
+const TEAM_TAB_ACTIVE_CLASSES = 'bg-[var(--red-dim)] text-[color:var(--red-bright)] border-transparent'
 function teamTabClasses(active) {
   return `${TEAM_TAB_BASE_CLASSES} ${active ? TEAM_TAB_ACTIVE_CLASSES : TEAM_TAB_INACTIVE_CLASSES}`
 }
@@ -1783,7 +1783,7 @@ function PickHistoryCard({ teamAbbr }) {
             {years.map(y => (
               <button
                 key={y}
-                className={`pick-history-year text-[11px] font-semibold py-[3px] px-2.5 rounded-full border-[0.5px] cursor-pointer ${y === activeYear ? 'bg-[var(--team-primary)] text-white border-transparent' : 'bg-transparent text-[color:var(--text-muted)] border-[var(--border-2)]'}`}
+                className={`pick-history-year text-[11px] font-semibold py-[3px] px-2.5 rounded-full border-[0.5px] cursor-pointer ${y === activeYear ? 'bg-[var(--team-primary)] text-white border-transparent' : 'bg-[var(--btn-fill)] text-[color:var(--text-muted)] border-transparent hover:bg-[var(--btn-fill-hover)]'}`}
                 aria-pressed={y === activeYear}
                 onClick={() => setYear(y)}
               >

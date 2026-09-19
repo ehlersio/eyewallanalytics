@@ -27,7 +27,7 @@ const PICKER_CLASSES = 'flex flex-wrap gap-2 ml-4';
 const PICKER_LOADING_CLASSES = `${PICKER_CLASSES} items-center`;
 const PICKER_MESSAGE_CLASSES = 'flex items-center gap-2.5 ml-4 text-[12px] text-[color:var(--text-dim)]';
 const SKELETON_CLASSES = 'w-[72px] h-[30px] rounded-[var(--radius-sm)] bg-[var(--bg2)] animate-[seasonPickerPulse_1.2s_ease-in-out_infinite]';
-const RETRY_CLASSES = 'bg-transparent border-[0.5px] border-[var(--border-2)] rounded-[var(--radius-sm)] text-[color:var(--text-muted)] text-[11px] py-1 px-2.5 cursor-pointer hover:text-[color:var(--text)] hover:bg-[var(--bg3)]';
+const RETRY_CLASSES = 'bg-[var(--btn-fill)] border-[0.5px] border-transparent rounded-[var(--radius-sm)] text-[color:var(--text-muted)] text-[11px] py-1 px-2.5 cursor-pointer hover:text-[color:var(--text)] hover:bg-[var(--btn-fill-hover)]';
 const CHIP_BASE = 'season-chip relative inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] py-[5px] px-[9px] font-[family-name:var(--font-body)] text-[12px] font-semibold cursor-pointer [transition:background_0.15s,border-color_0.15s,color_0.15s] disabled:opacity-40 disabled:cursor-not-allowed';
 const CHIP_BADGE_CLASSES = 'text-[9px] font-bold uppercase tracking-[0.04em] text-[color:var(--amber)] bg-[rgba(240,160,48,0.14)] rounded-[4px] py-0.5 px-[5px]';
 
@@ -103,11 +103,11 @@ export default function SeasonComparisonPicker({
           ? 'text-[color:var(--text)]'
           : 'text-[color:var(--text-muted)]';
         const bgBorderClass = isSelected
-          ? 'bg-[var(--red-dim)] border-[0.5px] border-[var(--red-border)]'
-          : 'bg-[var(--bg2)] border-[0.5px] border-[var(--border-2)]';
+          ? 'bg-[var(--red-dim)] border-[0.5px] border-transparent'
+          : 'bg-[var(--btn-fill)] border-[0.5px] border-transparent';
         // Selected's resting background already equals its old hover
         // background, so hover only needs its own classes when unselected.
-        const hoverClass = isSelected ? '' : 'enabled:hover:bg-[var(--bg3)] enabled:hover:text-[color:var(--text)]';
+        const hoverClass = isSelected ? '' : 'enabled:hover:bg-[var(--btn-fill-hover)] enabled:hover:text-[color:var(--text)]';
         return (
           <button
             key={s.value}

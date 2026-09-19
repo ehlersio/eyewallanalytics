@@ -104,8 +104,8 @@ const COMPARE_SUBMODE_TOGGLE_CLASSES = 'compare-mode-toggle compare-submode-togg
 const COMPARE_MODE_BTN_BASE = 'rounded-[var(--radius-sm)] py-1.5 px-3 font-[family-name:var(--font-body)] text-[12px] font-semibold cursor-pointer min-h-0'
 function compareModeBtnClasses(isActive) {
   return isActive
-    ? `compare-mode-btn compare-mode-btn-active ${COMPARE_MODE_BTN_BASE} bg-[var(--red-dim)] border-[0.5px] border-[color:var(--red-border)] text-[color:var(--text)]`
-    : `compare-mode-btn ${COMPARE_MODE_BTN_BASE} bg-[var(--bg2)] border-[0.5px] border-[color:var(--border-2)] text-[color:var(--text-muted)] hover:bg-[var(--bg3)] hover:text-[color:var(--text)]`
+    ? `compare-mode-btn compare-mode-btn-active ${COMPARE_MODE_BTN_BASE} bg-[var(--red-dim)] border-[0.5px] border-transparent text-[color:var(--text)]`
+    : `compare-mode-btn ${COMPARE_MODE_BTN_BASE} bg-[var(--btn-fill)] border-[0.5px] border-transparent text-[color:var(--text-muted)] hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text)]`
 }
 
 const CVT_TEAM_LOGOS_CLASSES = 'cvt-team-logos flex items-center gap-2'

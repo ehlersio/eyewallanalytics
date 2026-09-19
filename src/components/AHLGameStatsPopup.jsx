@@ -29,7 +29,7 @@ import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 const PGS_TEAM_COL_CLASSES = 'pgs-team-col flex flex-col items-center gap-1 flex-1';
 const PGS_SECTION_LABEL_CLASSES = 'pgs-section-label font-[family-name:var(--font-display)] text-[9px] font-bold tracking-[0.12em] uppercase text-[color:var(--text-dim)] pb-1.5 border-b-[0.5px] border-b-[color:var(--border)] mb-2';
 const PGS_STAT_VAL_CLASSES = 'pgs-stat-val font-[family-name:var(--font-mono)] text-[13px] font-medium text-center';
-const PGS_TOGGLE_BTN_CLASSES = 'pgs-toggle-btn flex items-center gap-[5px] py-[5px] px-3 rounded-[20px] text-[12px] font-medium border-[0.5px] border-[color:var(--border-2)] bg-transparent text-[color:var(--text-muted)] cursor-pointer [transition:all_0.15s] hover:text-[color:var(--text)]';
+const PGS_TOGGLE_BTN_CLASSES = 'pgs-toggle-btn flex items-center gap-[5px] py-[5px] px-3 rounded-[20px] text-[12px] font-medium border-[0.5px] border-transparent bg-[var(--btn-fill)] text-[color:var(--text-muted)] cursor-pointer [transition:all_0.15s] hover:text-[color:var(--text)] hover:bg-[var(--btn-fill-hover)]';
 
 function formatDateLong(dateStr) {
   if (!dateStr) return '—';
@@ -243,7 +243,7 @@ export default function AHLGameStatsPopup({ game, teamId, abbr, color, onClose }
               <div className="pgs-skater-toggle flex gap-2 mb-2.5">
                 <button
                   className={`${PGS_TOGGLE_BTN_CLASSES}${skaterTeam === 'car' ? ' active' : ''}`}
-                  style={skaterTeam === 'car' ? { borderColor: color, color } : undefined}
+                  style={skaterTeam === 'car' ? { backgroundColor: `color-mix(in srgb, ${color} 15%, transparent)`, color: color } : undefined}
                   onClick={() => setSkaterTeam('car')}
                 >
                   <TeamLogo abbr={abbr} sport="ahl" size={14} color={color} />
@@ -251,7 +251,7 @@ export default function AHLGameStatsPopup({ game, teamId, abbr, color, onClose }
                 </button>
                 <button
                   className={`${PGS_TOGGLE_BTN_CLASSES}${skaterTeam === 'opp' ? ' active' : ''}`}
-                  style={skaterTeam === 'opp' ? { borderColor: oppColor, color: oppColor } : undefined}
+                  style={skaterTeam === 'opp' ? { backgroundColor: `color-mix(in srgb, ${oppColor} 15%, transparent)`, color: oppColor } : undefined}
                   onClick={() => setSkaterTeam('opp')}
                 >
                   <TeamLogo abbr={oppAbbr} sport="ahl" size={14} color={oppColor} />

@@ -91,7 +91,7 @@ function psPenaltyTeamClasses(isCar) {
 const PS_PENALTY_INFO_CLASSES = 'flex flex-col gap-px flex-1 min-w-0';
 const PS_PENALTY_PLAYER_CLASSES = 'ps-penalty-player text-[12px] font-bold text-[color:var(--text)] whitespace-nowrap overflow-hidden text-ellipsis';
 const PS_PENALTY_TYPE_CLASSES = 'text-[11px] text-[color:var(--text-dim)] capitalize';
-const PS_PENALTIES_TOGGLE_CLASSES = 'ps-penalties-toggle w-full py-2 bg-transparent border-[0.5px] border-[var(--border)] rounded-[8px] text-[color:var(--text-dim)] text-[12px] font-semibold cursor-pointer [transition:background_0.15s,color_0.15s] mt-[2px] hover:bg-[var(--bg2)] hover:text-[color:var(--text-muted)]';
+const PS_PENALTIES_TOGGLE_CLASSES = 'ps-penalties-toggle w-full py-2 bg-[var(--btn-fill)] border-[0.5px] border-transparent rounded-[8px] text-[color:var(--text-dim)] text-[12px] font-semibold cursor-pointer [transition:background_0.15s,color_0.15s] mt-[2px] hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text-muted)]';
 
 const PS_NARRATIVE_CLASSES = 'ps-narrative mx-[14px] [background:linear-gradient(135deg,rgba(var(--team-primary-rgb),0.06),rgba(74,144,226,0.04))] border-[0.5px] border-[rgba(var(--team-primary-rgb),0.2)] rounded-[12px] p-[14px]';
 const PS_NARRATIVE_LABEL_CLASSES = 'text-[9px] font-bold tracking-[0.1em] uppercase text-[color:var(--red-bright)] mb-2 flex items-center gap-[6px]';

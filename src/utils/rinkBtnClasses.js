@@ -32,8 +32,8 @@ export function rinkBtnClasses({ active = false, variant = null } = {}) {
   if (variant === 'ot') {
     // .rink-btn.ot-btn / .ot-btn.on -- amber tint, OT period buttons only
     return active
-      ? `${BASE} on ot-btn bg-[rgba(240,160,48,0.15)] border-[rgba(240,160,48,0.5)] text-[color:var(--amber)]`
-      : `${BASE} ot-btn border-[rgba(240,160,48,0.3)] text-[color:var(--amber)] enabled:hover:border-[rgba(240,160,48,0.6)]`;
+      ? `${BASE} on ot-btn bg-[rgba(240,160,48,0.15)] border-transparent text-[color:var(--amber)]`
+      : `${BASE} ot-btn bg-[rgba(240,160,48,0.08)] border-transparent text-[color:var(--amber)] enabled:hover:bg-[rgba(240,160,48,0.16)]`;
   }
   if (variant === 'heat') {
     // .rink-btn.heat-on -- declared after .rink-btn.on in the original file,
@@ -42,17 +42,17 @@ export function rinkBtnClasses({ active = false, variant = null } = {}) {
     // same specificity, later source. Reproduced directly rather than
     // stacked, since there's never a heat-on-without-on state in this app.
     return active
-      ? `${BASE} on heat-on bg-[rgba(255,100,0,0.18)] border-[rgba(255,100,0,0.5)] text-[#ff6600]`
-      : `${BASE} bg-transparent border-[color:var(--border-2)] text-[color:var(--text-muted)] enabled:hover:text-[color:var(--text)] enabled:hover:border-[color:var(--border-2)]`;
+      ? `${BASE} on heat-on bg-[rgba(255,100,0,0.18)] border-transparent text-[#ff6600]`
+      : `${BASE} bg-[var(--btn-fill)] border-transparent text-[color:var(--text-muted)] enabled:hover:text-[color:var(--text)] enabled:hover:bg-[var(--btn-fill-hover)]`;
   }
   if (variant === 'filter') {
     // .rink-filter-btn.on -- declared after the generic .rink-btn.on, wins
     // on background/border-color (color happens to already match).
     return active
-      ? `${BASE} on rink-filter-btn flex items-center gap-[5px] bg-[rgba(204,34,0,0.2)] border-[rgba(204,34,0,0.4)] text-[color:var(--red-bright)]`
-      : `${BASE} rink-filter-btn flex items-center gap-[5px] bg-transparent border-[color:var(--border-2)] text-[color:var(--text-muted)] enabled:hover:text-[color:var(--text)] enabled:hover:border-[color:var(--border-2)]`;
+      ? `${BASE} on rink-filter-btn flex items-center gap-[5px] bg-[rgba(204,34,0,0.2)] border-transparent text-[color:var(--red-bright)]`
+      : `${BASE} rink-filter-btn flex items-center gap-[5px] bg-[var(--btn-fill)] border-transparent text-[color:var(--text-muted)] enabled:hover:text-[color:var(--text)] enabled:hover:bg-[var(--btn-fill-hover)]`;
   }
   return active
-    ? `${BASE} on bg-[var(--red-dim)] border-[color:var(--red-border)] text-[color:var(--red-bright)]`
-    : `${BASE} bg-transparent border-[color:var(--border-2)] text-[color:var(--text-muted)] enabled:hover:text-[color:var(--text)] enabled:hover:border-[color:var(--border-2)]`;
+    ? `${BASE} on bg-[var(--red-dim)] border-transparent text-[color:var(--red-bright)]`
+    : `${BASE} bg-[var(--btn-fill)] border-transparent text-[color:var(--text-muted)] enabled:hover:text-[color:var(--text)] enabled:hover:bg-[var(--btn-fill-hover)]`;
 }
