@@ -116,7 +116,8 @@
       "statusPre": "UPCOMING",
       "dayToday": "Today",
       "dayTomorrow": "Tomorrow",
-      "intermission": "INT"
+      "intermission": "INT",
+      "tv": "TV"
     },
     "leaders": {
       "titlePoints": "Points",
@@ -761,6 +762,7 @@
       "intermissionOT": "OT{{n}} Intermission",
       "final": "Final",
       "playoffTag": "🏒 Playoff · ",
+      "preseasonTag": "Preseason · ",
       "loadingState": "Loading game data…",
       "noGamesTitle": "No games yet",
       "seasonStarts": "Season starts {{date}}",
@@ -2008,6 +2010,7 @@
     "placeholder": "Choose opponent…"
   },
   "seasonTypeToggle": {
+    "preseason": "Preseason",
     "regular": "Regular",
     "playoffs": "Playoffs"
   },

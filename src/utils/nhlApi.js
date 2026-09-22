@@ -2,6 +2,7 @@ import { cached, TTL, invalidate } from './cache.js'
 import { NATIVE_ORIGIN } from './nativeOrigin';
 import { formatDate } from './formatters.js'
 import { isStandingsStale } from './standingsUtils.js'
+import { createLiveGameHold } from './liveGameHold.js'
 
 // NHL API utility
 // Proxy routes (configured in vite.config.js):
@@ -281,8 +282,13 @@ export async function getLiveGame() {
   }
   // ── Normal live detection ─────────────────────────────────────
   const games = await getAllGames();
-  return games.find(g => g.gameState === 'LIVE' || g.gameState === 'CRIT') || null;
+  const live = games.find(g => g.gameState === 'LIVE' || g.gameState === 'CRIT') || null;
+  return holdLiveGame(live, games);
 }
+
+// See liveGameHold.js -- one live read that comes back empty or behind no
+// longer drops the shot map out of live mode.
+const holdLiveGame = createLiveGameHold(isCompleted);
 
 // Is a game finished?
 export function isCompleted(game) {
@@ -1147,7 +1153,10 @@ export async function getGameDetail(gameId) {
 export function bustLiveGameCache(gameId) {
   invalidate(`pbp:${gameId}`);
   invalidate(`boxscore:${gameId}`);
-  invalidate('allGames');
+  // getAllGames()'s real key -- this used to invalidate a bare 'allGames',
+  // which nothing has been stored under since that key became team+season
+  // scoped, so it was a silent no-op.
+  invalidate(`allGames:${TEAM_CONFIG.abbr}:${TEAM_CONFIG.season}`);
 }
 
 export async function getGameLanding(gameId) {

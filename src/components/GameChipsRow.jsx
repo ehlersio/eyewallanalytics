@@ -97,7 +97,9 @@ export function LiveGameChip({ liveGame, sport, selected, onSelect }) {
 // game handling): see SeasonTypeToggle.jsx's comment for why this is
 // aria-disabled + a guarded onClick rather than the native `disabled`
 // attribute (which would block the tap-to-reveal-tooltip path on mobile).
-export default function GameChipsRow({ games, sport = 'nhl', selectedGameId, onSelect, onAll, disabled = false, disabledReason, onDisabledTap }) {
+// `showAll={false}` drops the "All N" chip, for a game list with no
+// aggregate view behind it (the NHL shot map's preseason games).
+export default function GameChipsRow({ games, sport = 'nhl', selectedGameId, onSelect, onAll, showAll = true, disabled = false, disabledReason, onDisabledTap }) {
   const { t } = useTranslation();
   const attachWheel = el => {
     if (!el) return;
@@ -111,10 +113,12 @@ export default function GameChipsRow({ games, sport = 'nhl', selectedGameId, onS
   const handleAll    = ()   => disabled ? onDisabledTap?.() : onAll();
   return (
     <div className={`${GAME_CHIPS_WRAP_CLASSES}${disabled ? ' chip-disabled' : ''}`} ref={attachWheel} title={disabled ? disabledReason : undefined}>
-      <button className={gameChipClasses({ active: !selectedGameId, all: true })}
-        aria-disabled={disabled} onClick={handleAll}>
-        {t('gameChipsRow.all', { count: games.length })}
-      </button>
+      {showAll && (
+        <button className={gameChipClasses({ active: !selectedGameId, all: true })}
+          aria-disabled={disabled} onClick={handleAll}>
+          {t('gameChipsRow.all', { count: games.length })}
+        </button>
+      )}
       {games.map(g => (
         <GameChip key={g.id} game={g} sport={sport}
           selected={selectedGameId === g.id}

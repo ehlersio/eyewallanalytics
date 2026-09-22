@@ -196,6 +196,10 @@
     font-size: 14px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    /* The page containers do all the scrolling (see pageClasses.js); the
+       document itself never should, including the rubber-band past either
+       end that dragged the Topbar along with it. */
+    overscroll-behavior: none;
   }
 
   button { font-family: var(--font-body); cursor: pointer; border: none; background: none; color: inherit; }

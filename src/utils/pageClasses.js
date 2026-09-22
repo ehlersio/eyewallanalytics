@@ -21,4 +21,13 @@
 // No light-mode override (checked light-mode-overrides.css) and no Cypress
 // selector dependency (checked cypress/e2e/*.js) -- clean conversion, no
 // marker class needed.
-export const PAGE_CLASSES = 'h-[calc(100vh-var(--topbar-height)-var(--nav-height))] overflow-y-auto p-3.5 max-[700px]:p-2.5';
+//
+// h-full, not that calc (2026-09): the calc ignored the safe-area insets
+// the Topbar (top) and .app-main's padding (bottom) add on a notched
+// iPhone, so a page came out ~80px taller than the space it sits in and
+// .app-main scrolled it too. Two nested scrollers at their ends passed the
+// gesture back and forth -- the "won't scroll all the way, it bounces" on
+// long pages like the shot map. h-full is .app-main's content box, which
+// already excludes both, so the page is the only thing that scrolls.
+// overscroll-contain stops a scroll at either end chaining out to it.
+export const PAGE_CLASSES = 'h-full overflow-y-auto overscroll-contain p-3.5 max-[700px]:p-2.5';

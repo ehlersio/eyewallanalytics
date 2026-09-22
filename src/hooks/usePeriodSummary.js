@@ -192,11 +192,17 @@ function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlay
   };
 }
 
+// For a render or two after gameId changes, the pbp on hand is still the
+// previous game's (usePoll keeps its last result until the new fetch lands).
+// Building from it would file one game's periods under the other's id.
+function isOtherGame(pbp, gameId) {
+  return pbp.id != null && String(pbp.id) !== String(gameId);
+}
+
 export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = false }) {
   const [summaries, setSummaries] = useState([]);
   const [newSummary, setNewSummary] = useState(null);
   const lastProcessedPeriod = useRef(0);
-  const lastInIntermission = useRef(false);
   const buildingRef = useRef(new Set());
   const landingRef = useRef(null);
 
@@ -248,23 +254,27 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
     }
   }, [gameId, carTeamId, pbp, fetchLanding]);
 
-  // Live: detect period transitions
+  // Live: show each period's summary once its intermission is on. Keyed on
+  // "in an intermission for a period not yet summarized", not on catching
+  // the poll where inIntermission flipped false -> true: that edge was easy
+  // to miss (the page briefly dropping out of live mode, or the pbp on
+  // screen still being another game's for a render), and a missed edge
+  // meant no summary for that intermission at all -- the 1st Intermission
+  // one went missing in the 2026 preseason while the 2nd showed.
+  // lastProcessedPeriod already stops a repeat.
   useEffect(() => {
-    if (!isLive || !pbp || !gameId) return;
+    if (!isLive || !pbp || !gameId || isOtherGame(pbp, gameId)) return;
     const inIntermission = pbp?.clock?.inIntermission || false;
     const currentPeriod = pbp?.periodDescriptor?.number || 0;
-    if (inIntermission && !lastInIntermission.current && currentPeriod > 0) {
-      if (currentPeriod > lastProcessedPeriod.current) {
-        lastProcessedPeriod.current = currentPeriod;
-        buildAndStoreSummary(currentPeriod, pbp?.plays || [], true);
-      }
+    if (inIntermission && currentPeriod > lastProcessedPeriod.current) {
+      lastProcessedPeriod.current = currentPeriod;
+      buildAndStoreSummary(currentPeriod, pbp?.plays || [], true);
     }
-    lastInIntermission.current = inIntermission;
-  }, [pbp?.clock?.inIntermission, pbp?.periodDescriptor?.number, isLive, gameId, buildAndStoreSummary]);
+  }, [pbp?.clock?.inIntermission, pbp?.periodDescriptor?.number, pbp?.id, isLive, gameId, buildAndStoreSummary]);
 
   // Completed game: build all periods on first load
   useEffect(() => {
-    if (isLive || !pbp || !gameId) return;
+    if (isLive || !pbp || !gameId || isOtherGame(pbp, gameId)) return;
     const plays = pbp?.plays || [];
     const periods = [...new Set(plays.map(p => p.periodDescriptor?.number).filter(Boolean))].sort();
     if (!periods.length) return;
@@ -277,7 +287,7 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
       }
     });
    
-  }, [gameId, isLive, pbp?.plays?.length]);
+  }, [gameId, isLive, pbp?.id, pbp?.plays?.length]);
 
   const dismissNewSummary = useCallback(() => setNewSummary(null), []);
 

@@ -114,6 +114,12 @@ const HOLD_MS = 45_000;        // full opacity for this long after first observe
 const FADE_MS = 6 * 60_000;    // then eased fade to 0 over this long
 const TICK_MS = 2_500;         // repaint interval for the decay (opacity doesn't need per-second precision)
 
+// "MM:SS" elapsed in the period -> seconds.
+function periodSeconds(timeInPeriod) {
+  const [m, sec] = (timeInPeriod || '0:00').split(':').map(Number);
+  return (m || 0) * 60 + (sec || 0);
+}
+
 function eventPlayerId(type, d) {
   if (type === 'goal') return d.scoringPlayerId;
   if (type === 'shot-on-goal' || type === 'missed-shot') return d.shootingPlayerId;
@@ -324,19 +330,41 @@ export default function LiveEventRink({
   // shape as ShotMapView.jsx's own clock ticker (liveClockStore.js).
   const [, setTick] = useState(0);
 
+  // Current period only. The rink is cleared at every intermission, but
+  // that only ever happened for a client that sat through one -- opening
+  // the app mid-game (or reopening it) plotted every period's events at
+  // once, goals pinned, since nothing had been "seen" yet. periodNumber is
+  // the feed's current period; the latest play's is the fallback.
+  const currentPeriod = periodNumber
+    || plays.reduce((max, p) => Math.max(max, p.periodDescriptor?.number || 0), 0);
   const relevant = useMemo(
-    () => plays.filter(p => DOT_TYPES.has(p.typeDescKey) && p.details?.xCoord != null),
-    [plays]
+    () => plays.filter(p =>
+      DOT_TYPES.has(p.typeDescKey) && p.details?.xCoord != null
+      && p.periodDescriptor?.number === currentPeriod),
+    [plays, currentPeriod]
   );
 
   // Track first-observed time per event. Cleared on intermission -- nothing
   // to show under an actively-cleaning sheet of ice, and the next period
   // starts from a blank rink (real broadcasts don't carry play data across
   // intermission either).
+  //
+  // An event arriving well behind the latest play (the first load after
+  // opening the app, or the first poll after returning to it) is backdated
+  // by its game-clock distance from that latest play, so it starts
+  // part-way through its fade instead of fresh. Game-clock time is a floor
+  // on real time (the clock stops, the wall doesn't), so this errs toward
+  // showing an event slightly longer than it would have been, never
+  // shorter. Events from a regular 10s poll sit within seconds of the
+  // latest play, so this changes nothing for someone watching live.
   useEffect(() => {
     if (inIntermission) { seenRef.current.clear(); return; }
+    const latest = relevant.reduce((max, p) => Math.max(max, periodSeconds(p.timeInPeriod)), 0);
+    const now = Date.now();
     relevant.forEach(p => {
-      if (!seenRef.current.has(p.eventId)) seenRef.current.set(p.eventId, Date.now());
+      if (seenRef.current.has(p.eventId)) return;
+      const behindMs = Math.max(0, latest - periodSeconds(p.timeInPeriod)) * 1000;
+      seenRef.current.set(p.eventId, now - behindMs);
     });
   }, [relevant, inIntermission]);
 

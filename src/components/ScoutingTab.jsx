@@ -114,8 +114,9 @@ function PlayerTable({ players, loading, color, goalieAnalytics, injuries }) {
         const isOut = injury && INJURY_OUT_STATUSES.has(injury.status);
         return (
           <div key={i} className="scouting-player-row grid [grid-template-columns:1fr_18px_18px_24px] gap-[2px] py-1 items-center border-b-[0.5px] border-b-[color:var(--border)] text-[11px] text-[color:var(--text-muted)] last:border-b-0">
-            <span className={`scouting-player-name text-[color:var(--text)] font-medium text-[10px] whitespace-nowrap overflow-hidden text-ellipsis${isOut ? ' opacity-50' : ''}`}>
-              {p.name}<span className="scouting-player-pos text-[8px] text-[color:var(--text-dim)] ml-[3px]">{p.pos}</span>
+            <span className="scouting-player-name text-[color:var(--text)] font-medium text-[10px] whitespace-nowrap overflow-hidden text-ellipsis">
+              {/* Fade only the name + position -- not the badge and tooltip after them */}
+              <span className={isOut ? 'opacity-50' : undefined}>{p.name}<span className="scouting-player-pos text-[8px] text-[color:var(--text-dim)] ml-[3px]">{p.pos}</span></span>
               <InjuryBadge status={injury?.status} />
               <InjuryDetailTip injury={injury} name={p.name} />
             </span>
@@ -156,8 +157,8 @@ function PlayerTable({ players, loading, color, goalieAnalytics, injuries }) {
               : 'var(--text-muted)';
             return (
               <div key={`g${i}`} className={SCOUTING_GOALIE_ROW_CLASSES}>
-                <span className={`${SCOUTING_PLAYER_NAME_CLASSES} scouting-goalie-name block mb-1${goalieIsOut ? ' opacity-50' : ''}`}>
-                  {g.name}<InjuryBadge status={goalieInjury?.status} />
+                <span className={`${SCOUTING_PLAYER_NAME_CLASSES} scouting-goalie-name block mb-1`}>
+                  <span className={goalieIsOut ? 'opacity-50' : undefined}>{g.name}</span><InjuryBadge status={goalieInjury?.status} />
                   <InjuryDetailTip injury={goalieInjury} name={g.name} />
                 </span>
                 <div className="scouting-goalie-stats flex gap-[10px]">
@@ -366,6 +367,11 @@ export function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers,
 
 // Position display: NHL API codes → readable labels
 const POS_LABEL = { L: 'LW', LW: 'LW', C: 'C', R: 'RW', RW: 'RW', D: 'D' };
+// An out/IR player's position + name are faded and struck through -- only
+// those two. It used to be the whole row, and opacity and line-through
+// both reach every descendant, so the status badge and the injury-details
+// tooltip opened from it came out faded and struck through too.
+const OUT_CLASSES = ' opacity-50 line-through';
 
 function XgfBadge({ pct }) {
   const base = 'sc-line-xgf text-[12px] font-bold';
@@ -406,9 +412,9 @@ function LineUnit({ unit, label, color, _isDefence, injuries }) {
           const injury = injuries?.forPlayer(null, p.name);
           const isOut = injury && INJURY_OUT_STATUSES.has(injury.status);
           return (
-            <span key={i} className={`sc-line-player text-[12px] text-[color:var(--text)] flex items-baseline gap-1${isOut ? ' opacity-50 line-through' : ''}`}>
-              <span className="sc-line-pos text-[9px] font-bold text-[color:var(--text-dim)] uppercase tracking-[0.04em] min-w-[18px]">{POS_LABEL[p.pos] || p.pos}</span>
-              {p.name}
+            <span key={i} className="sc-line-player text-[12px] text-[color:var(--text)] flex items-baseline gap-1">
+              <span className={`sc-line-pos text-[9px] font-bold text-[color:var(--text-dim)] uppercase tracking-[0.04em] min-w-[18px]${isOut ? OUT_CLASSES : ''}`}>{POS_LABEL[p.pos] || p.pos}</span>
+              <span className={isOut ? OUT_CLASSES : undefined}>{p.name}</span>
               <InjuryBadge status={injury?.status} />
               <InjuryDetailTip injury={injury} name={p.name} />
             </span>
@@ -482,9 +488,9 @@ function ProjectedUnit({ unit, label, color, injuries }) {
           const injury = injuries?.forPlayer(p.id, p.name);
           const isOut = injury && INJURY_OUT_STATUSES.has(injury.status);
           return (
-            <span key={p.id} className={`sc-line-player text-[12px] text-[color:var(--text)] flex items-baseline gap-1${isOut ? ' opacity-50 line-through' : ''}`}>
-              <span className="sc-line-pos text-[9px] font-bold text-[color:var(--text-dim)] uppercase tracking-[0.04em] min-w-[18px]">{POS_LABEL[p.pos] || p.pos}</span>
-              {p.name}
+            <span key={p.id} className="sc-line-player text-[12px] text-[color:var(--text)] flex items-baseline gap-1">
+              <span className={`sc-line-pos text-[9px] font-bold text-[color:var(--text-dim)] uppercase tracking-[0.04em] min-w-[18px]${isOut ? OUT_CLASSES : ''}`}>{POS_LABEL[p.pos] || p.pos}</span>
+              <span className={isOut ? OUT_CLASSES : undefined}>{p.name}</span>
               {p.filled && (
                 <span className="sc-projected-filled inline-flex items-center gap-[2px] text-[9px] font-semibold uppercase tracking-[0.04em] text-[color:var(--amber)]">
                   {t('scoutingTab.projectedLines.filled')}
