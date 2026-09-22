@@ -68,13 +68,18 @@ describe('Shot Map', () => {
 
     it('shows the selector but visually disabled, and hover/tap reveals why', () => {
       cy.get('.season-type-toggle').should('have.attr', 'title', 'Available after the game ends.')
-      cy.get('.season-type-toggle-btn[aria-disabled="true"]').should('have.length', 2)
+      // Every option disabled -- 2 of them, or 3 when the season has a
+      // completed preseason game (that option only exists then).
+      cy.get('.season-type-toggle-btn').should('have.length.at.least', 2)
+      cy.get('.season-type-toggle-btn').not('[aria-disabled="true"]').should('have.length', 0)
     })
 
     it('clicking a disabled chip does not change the selection', () => {
-      cy.get('.season-type-toggle-btn.on').should('contain.text', 'Regular')
+      // Selected is Regular, or Preseason before the regular season has a
+      // completed game (which one settles once the schedule loads), but
+      // never Playoffs in a live regular/preseason game.
       cy.contains('Playoffs').click()
-      cy.get('.season-type-toggle-btn.on').should('contain.text', 'Regular') // unchanged
+      cy.get('.season-type-toggle-btn.on').should('have.length', 1).and('not.contain.text', 'Playoffs')
     })
 
     it('tapping a disabled chip surfaces the tooltip', () => {
@@ -338,6 +343,29 @@ describe('Shot Map — season/game history selector', () => {
     cy.assertNoErrors()
     cy.contains('Regular').click()
     cy.get('.season-type-toggle-btn.on').should('contain.text', 'Regular')
+  })
+
+  it('offers Preseason, opens on the newest preseason game, and has no All chip there', () => {
+    const preseasonGames = [
+      { id: 2026010010, gameDate: '2026-09-20', gameType: 1, gameState: 'FINAL', homeTeam: { abbrev: 'FLA', score: 6 }, awayTeam: { abbrev: 'CAR', score: 3 } },
+      { id: 2026010002, gameDate: '2026-09-18', gameType: 1, gameState: 'OFF', homeTeam: { abbrev: 'CAR', score: 2 }, awayTeam: { abbrev: 'NSH', score: 1 } },
+      { id: 2026020001, gameDate: '2026-10-08', gameType: 2, gameState: 'FUT', homeTeam: { abbrev: 'CAR' }, awayTeam: { abbrev: 'BOS' } },
+    ]
+    cy.intercept('GET', `${workerUrl}/schedule*`, { statusCode: 200, body: preseasonGames }).as('preseasonSchedule')
+    cy.visit('/')
+    cy.wait('@preseasonSchedule')
+    cy.get('.season-type-toggle-btn.on', { timeout: 10000 }).should('contain.text', 'Preseason')
+    cy.get('.game-chip-all').should('not.exist')
+    cy.get('.game-chip').should('have.length', 2)
+    cy.get('.game-chip-active').should('contain.text', 'FLA')
+    cy.contains('Regular').click()
+    cy.get('.game-chip').should('not.exist') // no completed regular-season games yet
+    cy.assertNoErrors()
+  })
+
+  it('has no Preseason option when the season has no completed preseason game', () => {
+    cy.wait('@schedule')
+    cy.contains('Preseason').should('not.exist')
   })
 
   it('shows game chips from the stubbed schedule and selecting one highlights it', () => {

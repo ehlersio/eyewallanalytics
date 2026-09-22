@@ -116,7 +116,8 @@
       "statusPre": "À VENIR",
       "dayToday": "Aujourd'hui",
       "dayTomorrow": "Demain",
-      "intermission": "ENTR"
+      "intermission": "ENTR",
+      "tv": "Télé"
     },
     "leaders": {
       "titlePoints": "Points",
@@ -761,6 +762,7 @@
       "intermissionOT": "Entracte — Prolongation {{n}}",
       "final": "Final",
       "playoffTag": "🏒 Séries · ",
+      "preseasonTag": "Préparatoire · ",
       "loadingState": "Chargement des données du match…",
       "noGamesTitle": "Aucun match",
       "seasonStarts": "Début de la saison le {{date}}",
@@ -2008,6 +2010,7 @@
     "placeholder": "Choisir un adversaire…"
   },
   "seasonTypeToggle": {
+    "preseason": "Préparatoire",
     "regular": "Régulière",
     "playoffs": "Séries"
   },

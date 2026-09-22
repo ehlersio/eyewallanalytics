@@ -38,6 +38,9 @@ const BADGE_PRE_CLASSES = `${BADGE_BASE_CLASSES} bg-[var(--bg2)] text-[color:var
 const LIVE_DOT_CLASSES = 'w-[6px] h-[6px] rounded-full bg-[color:var(--red-bright)] animate-pulse';
 
 const LIVE_DETAIL_CLASSES = 'text-[11px] font-[family-name:var(--font-mono)] text-[color:var(--text-muted)]';
+const BROADCAST_CLASSES = 'flex items-baseline gap-1.5 min-w-0 text-[10px] text-[color:var(--text-dim)]';
+const BROADCAST_LABEL_CLASSES = 'shrink-0 font-bold uppercase tracking-[0.05em]';
+const BROADCAST_NETWORKS_CLASSES = 'truncate';
 const DAY_HEADER_CLASSES = 'mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-[color:var(--text-dim)]';
 const CARD_HEADER_ROW_CLASSES = 'flex items-center justify-between gap-2';
 const EMPTY_CLASSES = 'py-8 text-center text-[13px] text-[color:var(--text-dim)]';
@@ -76,6 +79,21 @@ function LiveDetail({ game }) {
   const detail = liveDetail(game, t('league.scoreboard.intermission'));
   if (!detail) return null;
   return <span className={LIVE_DETAIL_CLASSES}>{detail}</span>;
+}
+
+// Where to watch -- NHL only (its feed lists each game's networks, national
+// first; see scoreboardBroadcasts() in eyewall-poller's nhl.js). Not shown
+// once the game is over.
+function Broadcasts({ game }) {
+  const { t } = useTranslation();
+  if (game.status === 'final' || !game.broadcasts?.length) return null;
+  const networks = game.broadcasts.map(b => b.network).join(' · ');
+  return (
+    <div className={BROADCAST_CLASSES}>
+      <span className={BROADCAST_LABEL_CLASSES}>{t('league.scoreboard.tv')}</span>
+      <span className={BROADCAST_NETWORKS_CLASSES}>{networks}</span>
+    </div>
+  );
 }
 
 // Which day the cards below are for. The Worker returns today's games when
@@ -120,7 +138,8 @@ function LoadingRows() {
  * Scoreboard — every game scheduled today for one league.
  * Props:
  *   sport   — 'nhl' | 'pwhl' | 'ahl' | 'echl'
- *   games   — [{ gameId, homeTeamCode, awayTeamCode, homeScore, awayScore, status }]
+ *   games   — [{ gameId, homeTeamCode, awayTeamCode, homeScore, awayScore, status,
+ *                broadcasts? (NHL only: [{ network, market, countryCode }]) }]
  *   loading, error
  */
 export default function Scoreboard({ sport, games, loading, error }) {
@@ -145,6 +164,7 @@ export default function Scoreboard({ sport, games, loading, error }) {
             </div>
             <TeamRow code={g.awayTeamCode} score={g.awayScore} status={g.status} sport={sport} isLoser={awayLower} />
             <TeamRow code={g.homeTeamCode} score={g.homeScore} status={g.status} sport={sport} isLoser={homeLower} />
+            <Broadcasts game={g} />
           </div>
         );
       })}

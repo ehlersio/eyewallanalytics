@@ -3,8 +3,9 @@
 // history selector). New capability for BOTH sports, not NHL-only parity
 // — PWHL's shot map couldn't select playoffs before this either.
 //
-// Purely a dumb, controlled two-state toggle: `value` is 'regular' |
-// 'playoffs', `onChange` fires with the new value. What toggling *does*
+// Purely a dumb, controlled toggle: `value` is 'regular' | 'playoffs'
+// (| 'preseason', see showPreseason below), `onChange` fires with the new
+// value. What toggling *does*
 // is wired differently per sport by the caller:
 //   PWHL — switches which season_id gets fetched (PWHL_REGULAR_SEASONS
 //          vs PWHL_PLAYOFF_SEASONS both exist as real season_ids already).
@@ -44,11 +45,22 @@ const seasonTypeToggleBtnClasses = (on) => {
     : `${base} bg-transparent text-[color:var(--text-muted)]`;
 };
 
-export default function SeasonTypeToggle({ value, onChange, disabled = false, disabledReason, onDisabledTap }) {
+// `showPreseason` (NHL, 2026-09) adds a third, leading 'preseason' option.
+// The caller only sets it when the season on screen has a completed
+// preseason game to show -- the option is never offered empty.
+export default function SeasonTypeToggle({ value, onChange, showPreseason = false, disabled = false, disabledReason, onDisabledTap }) {
   const { t } = useTranslation();
   const handleClick = (type) => disabled ? onDisabledTap?.() : onChange(type);
   return (
     <div className={`${SEASON_TYPE_TOGGLE_CLASSES}${disabled ? ' chip-disabled' : ''}`} title={disabled ? disabledReason : undefined}>
+      {showPreseason && (
+        <button
+          className={seasonTypeToggleBtnClasses(value === 'preseason')}
+          aria-disabled={disabled}
+          onClick={() => handleClick('preseason')}>
+          {t('seasonTypeToggle.preseason')}
+        </button>
+      )}
       <button
         className={seasonTypeToggleBtnClasses(value === 'regular')}
         aria-disabled={disabled}

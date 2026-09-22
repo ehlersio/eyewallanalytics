@@ -580,7 +580,9 @@ export default function ShotMapView() {
   // product cost to keeping the live path exactly as it was rather than
   // adding PWHL's full manual-override-even-during-a-live-game behavior.
   const [season, setSeason] = useState(CURRENT_SEASON);
-  const [seasonType, setSeasonType] = useState('regular'); // 'regular' | 'playoffs'
+  // 'regular' | 'playoffs' | 'preseason', or null for "not picked" -- see
+  // seasonType below for what that resolves to.
+  const [pickedSeasonType, setPickedSeasonType] = useState(null);
   const [selectedGameId, setSelectedGameId] = useState(null);
   // State rather than the ref this used to be: the off-season fallback
   // below derives from it, and a ref mutation doesn't re-render. The case
@@ -597,7 +599,7 @@ export default function ShotMapView() {
     return () => window.removeEventListener('eyewall:nhl-season-updated', handleSeasonUpdate);
   }, [userPickedSeason]);
   const handleSeasonChange = id => { setUserPickedSeason(true); setSeason(id); setSelectedGameId(null); };
-  const handleSeasonTypeChange = type => { setSeasonType(type); setSelectedGameId(null); };
+  const handleSeasonTypeChange = type => { setPickedSeasonType(type); setSelectedGameId(null); };
   const handleSelect = id => setSelectedGameId(p => p === id ? null : id);
   const handleAll     = ()  => setSelectedGameId(null);
 
@@ -679,16 +681,35 @@ export default function ShotMapView() {
   // power plays with this season's units would be quietly wrong.
   const { data: specialTeamsMap } = useFetch(() => getSpecialTeamsUnits(effectiveSeason), [effectiveSeason]);
 
+  // Preseason (2026-09). Completed preseason games used to be unreachable
+  // here -- only regular/playoff games made the chip row -- while the score
+  // bar still showed the latest one (lastGame doesn't filter by type), over
+  // an empty rink and empty cards: the "All N" aggregate it sat on top of
+  // has no preseason games in it. The option only exists when the season
+  // on screen has a completed preseason game, and it's where the page opens
+  // until the regular season has one of its own.
+  const hasCompletedOfType = type => !!seasonSchedule?.some(g => g.gameType === type && isCompleted(g));
+  const hasPreseasonGames = hasCompletedOfType(GAME_TYPE.PRESEASON);
+  const seasonType = pickedSeasonType === 'preseason' && !hasPreseasonGames ? 'regular'
+    : pickedSeasonType
+      || (hasPreseasonGames && !hasCompletedOfType(GAME_TYPE.REGULAR) ? 'preseason' : 'regular');
+
   // Completed games for the selected season+type, newest first.
   const games = useMemo(() => {
     if (!seasonSchedule?.length) return [];
-    const wantType = seasonType === 'playoffs' ? GAME_TYPE.PLAYOFFS : GAME_TYPE.REGULAR;
+    const wantType = seasonType === 'playoffs' ? GAME_TYPE.PLAYOFFS
+      : seasonType === 'preseason' ? GAME_TYPE.PRESEASON
+        : GAME_TYPE.REGULAR;
     return seasonSchedule
       .filter(g => g.gameType === wantType && isCompleted(g))
       .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate));
   }, [seasonSchedule, seasonType]);
 
-  const selectedGame = useMemo(() => games.find(g => g.id === selectedGameId) || null, [games, selectedGameId]);
+  // Preseason has no "All N" -- nothing aggregates preseason shots -- so
+  // with nothing picked it shows the newest game.
+  const effectiveSelectedGameId = selectedGameId
+    ?? (seasonType === 'preseason' ? games[0]?.id ?? null : null);
+  const selectedGame = useMemo(() => games.find(g => g.id === effectiveSelectedGameId) || null, [games, effectiveSelectedGameId]);
 
   // Normalized shape for the shared GameChipsRow — getOpponent/getCarScore/
   // getOppScore/isHomeGame already work on any raw NHL schedule-row shape.
@@ -890,7 +911,7 @@ export default function ShotMapView() {
   // A live game always wins regardless of selectedGameId (see activeGame
   // above), and an explicitly-picked historical game keeps using its own
   // pbp — neither of those cases changes here.
-  const rawShotEvents = (isLive || selectedGameId)
+  const rawShotEvents = (isLive || effectiveSelectedGameId)
     ? (pbp ? extractShotEvents(pbp) : [])
     : (seasonShots || []);
 
@@ -902,7 +923,7 @@ export default function ShotMapView() {
     [rawShotEvents, gameLanding]
   );
 
-  const isAllN = !isLive && !selectedGameId;
+  const isAllN = !isLive && !effectiveSelectedGameId;
 
   // SOG/Blocks season aggregates for the "All N" summary cards — derived
   // from the same seasonShots data already fetched for the rink dots above
@@ -1369,8 +1390,9 @@ export default function ShotMapView() {
           shotType: p.details?.shotType || null,
         }));
 
-        // Shot locations for mini-rink — all CAR PP shots, marked as isCanes
-        const shotEvents = shots.map(p => ({
+        // Shot locations for mini-rink — CAR's own PP shots (the window
+        // also holds any shorthanded attempts against, which aren't)
+        const shotEvents = shots.filter(p => p.details?.eventOwnerTeamId === carId).map(p => ({
           x:        p.details?.xCoord,
           y:        p.details?.yCoord,
           type:     p.typeDescKey,
@@ -1566,14 +1588,25 @@ export default function ShotMapView() {
           });
         });
 
-        // Shot events for mini rink (OPP shots — show where CAR was defending from)
+        // Shot events for mini rink (OPP shots — show where CAR was defending from).
+        // isCanes: true on purpose, though these are the opponent's: every
+        // dot here is the power-play team's, so they're drawn as the rink's
+        // own team (in the opponent's colors, see PKAnalysisPanel). The rink
+        // puts its own team's shots in the zone it shows on phone widths and
+        // hides the other team's there -- as "opponent" dots, this whole
+        // rink came up empty on a phone, a power-play goal against included.
+        // `type` is what the rink styles a goal by; without it every dot,
+        // goals too, was drawn as a plain shot.
         const shotEvents = oppShots.map(p => ({
           x:       p.details?.xCoord,
           y:       p.details?.yCoord,
+          type:    p.typeDescKey,
           t:       p.typeDescKey === 'goal' ? 'g' : p.typeDescKey === 'shot-on-goal' ? 's'
                  : p.typeDescKey === 'missed-shot' ? 'm' : 'b',
-          isCanes: false, // OPP shots — blue
+          isCanes: true,
           id:      p.sortOrder || Math.random(),
+          period:  opp.period,
+          timeInPeriod: p.timeInPeriod || '0:00',
         })).filter(e => e.x != null && e.y != null);
 
         return {
@@ -1631,6 +1664,7 @@ export default function ShotMapView() {
         summary: { goalsAgainst: totalGoalsAgainst, opps: pkOpps.length, sogAgainst: totalSOGAgainst, xgAgainst: totalXGAgainst, blocks: totalBlocks },
         pkUnit1, pkUnit2,
         rosterSpots: pbp.rosterSpots || [],
+        oppAbbr: opp?.abbrev || null,
       });
     }
   }, [pbp, roster, opp, t, specialTeamsMap]);
@@ -1980,7 +2014,8 @@ export default function ShotMapView() {
                 <>
                   <div className={SCORE_PERIOD_CLASSES}>{t('shotMapView.scoreBar.final')}</div>
                   <div className={SCORE_STATE_CLASSES}>
-                    {activeIsPlayoff ? t('shotMapView.scoreBar.playoffTag') : ''}{formatGameDate(activeGame.gameDate)}
+                    {activeIsPlayoff ? t('shotMapView.scoreBar.playoffTag')
+                      : activeGame.gameType === GAME_TYPE.PRESEASON ? t('shotMapView.scoreBar.preseasonTag') : ''}{formatGameDate(activeGame.gameDate)}
                   </div>
                 </>
               ) : noGamesToShow ? (
@@ -2042,6 +2077,7 @@ export default function ShotMapView() {
                 leave a dead gap to its left. */}
             <div className="season-selector relative flex flex-col items-end gap-1.5 ml-auto max-[640px]:w-full max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:items-center max-[640px]:justify-end">
               <SeasonTypeToggle value={seasonType} onChange={handleSeasonTypeChange}
+                showPreseason={hasPreseasonGames}
                 disabled={isLive} disabledReason={LIVE_SELECTOR_DISABLED_REASON} onDisabledTap={handleDisabledTap} />
               <SeasonChipRow seasons={NHL_REGULAR_SEASONS} archiveSeasons={NHL_ARCHIVE_SEASONS}
                 selected={effectiveSeason} onSelect={handleSeasonChange} className="max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:justify-end max-[640px]:items-center"
@@ -2069,7 +2105,8 @@ export default function ShotMapView() {
       {/* ── Game selector ── */}
       {games.length > 0 && (
         <GameChipsRow games={gameChipGames} sport="nhl"
-          selectedGameId={selectedGameId} onSelect={handleSelect} onAll={handleAll}
+          selectedGameId={effectiveSelectedGameId} onSelect={handleSelect} onAll={handleAll}
+          showAll={seasonType !== 'preseason'}
           disabled={isLive} disabledReason={LIVE_SELECTOR_DISABLED_REASON} onDisabledTap={handleDisabledTap} />
       )}
 
@@ -3291,10 +3328,9 @@ function PKAnalysisPanel({ drillStat }) {
                     <div className={PP_MINI_RINK_LABEL_CLASSES}>{t('shotMapView.pkAnalysis.oppShotLocations')}</div>
                     <HockeyRink
                       events={toHockeyRinkEvents(opp.shotEvents)}
-                      teamAbbr={TEAM_CONFIG.abbr}
-                      teamColor="var(--team-primary)"
+                      teamAbbr={drillStat.oppAbbr || 'OPP'}
+                      teamColor={teamTextColor(drillStat.oppAbbr) || 'var(--text-muted)'}
                       readOnly
-                      flipPerspective
                     />
                   </div>
                 )}
