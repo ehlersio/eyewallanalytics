@@ -749,6 +749,10 @@
     "gsaxEstimatedNote": "Estimated — true GSAx requires tracking data (shot danger per location)"
   },
   "shotMapView": {
+    "lockScreen": {
+      "follow": "Follow on Lock Screen",
+      "following": "On Lock Screen ✓ · Stop"
+    },
     "offseason": {
       "showingPrevious": "The {{current}} season hasn't started yet — showing {{fallback}}.",
       "firstGame": "First game {{date}}."
