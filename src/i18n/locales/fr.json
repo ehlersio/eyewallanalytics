@@ -999,7 +999,8 @@
       "penaltyMin": "Min. de pénalité",
       "giveaways": "Revirements",
       "takeaways": "Récupérations"
-    }
+    },
+    "goalVideoTitle": "Vidéo du but de {{scorer}}"
   },
   "pwhlShotMapView": {
     "scoreBar": {

@@ -999,7 +999,8 @@
       "penaltyMin": "Penalty Min",
       "giveaways": "Giveaways",
       "takeaways": "Takeaways"
-    }
+    },
+    "goalVideoTitle": "{{scorer}} goal video"
   },
   "pwhlShotMapView": {
     "scoreBar": {

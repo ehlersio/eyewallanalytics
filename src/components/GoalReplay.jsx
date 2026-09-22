@@ -10,7 +10,7 @@
 // Video is the default, as it was before Tracking existed. Switching to
 // Tracking plays it once.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { getGoalReplay } from '../utils/nhlApi';
@@ -26,8 +26,14 @@ const switchBtnClasses = (on) => {
 
 export default function GoalReplay({ gameId, eventId, videoUrl, videoTitle, videoClassName, scorerName }) {
   const { t } = useTranslation();
-  const { data: replay } = useFetch(() => getGoalReplay(gameId, eventId), [gameId, eventId]);
+  const { data } = useFetch(() => getGoalReplay(gameId, eventId), [gameId, eventId]);
   const [mode, setMode] = useState('video');
+  // Hold the replay once it has loaded. useFetch's data is null again
+  // while it refetches, and dropping it mid-view would throw a viewer
+  // watching Tracking back to Video. A different goal gets a different
+  // key at both call sites, so this never holds the wrong goal's replay.
+  const [replay, setReplay] = useState(null);
+  useEffect(() => { if (data) setReplay(data); }, [data]);
 
   const hasVideo = Boolean(videoUrl);
   const hasTracking = Boolean(replay);

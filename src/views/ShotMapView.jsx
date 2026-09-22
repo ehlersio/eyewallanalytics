@@ -13,6 +13,7 @@ import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON, teamTextColor
 import { HockeyRink } from 'react-hockey-rink';
 import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import LiveEventRink from '../components/LiveEventRink';
+import GoalReplay from '../components/GoalReplay';
 import { GoalPopup, HatTrickPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getTeamSeasonData, getSpecialTeamsUnits } from '../utils/supabaseClient';
@@ -928,6 +929,28 @@ export default function ShotMapView() {
   );
 
   const isAllN = !isLive && !effectiveSelectedGameId;
+
+  // A goal's popup gets the NHL's video and/or EyeWall's tracking replay
+  // (GoalReplay, which shows a Video | Tracking switch only when both
+  // exist and nothing at all when neither does). Only for one game's own
+  // events: the season aggregate's rows come from Supabase and carry no
+  // NHL event id, so there's nothing to look a replay up by -- and those
+  // goals have never had video either.
+  const renderGoalMedia = useCallback((e) => (
+    e.type === 'goal' && !isAllN && gameId && e.id != null
+      ? (
+        <GoalReplay
+          key={`${gameId}-${e.id}`}
+          gameId={gameId}
+          eventId={e.id}
+          videoUrl={e.videoUrl}
+          videoClassName="rhr-popup-video"
+          videoTitle={t('shotMapView.goalVideoTitle', { scorer: e.shooterName || TEAM_CONFIG.abbr })}
+          scorerName={e.shooterName}
+        />
+      )
+      : null
+  ), [isAllN, gameId, t]);
 
   // SOG/Blocks season aggregates for the "All N" summary cards — derived
   // from the same seasonShots data already fetched for the rink dots above
@@ -2321,7 +2344,7 @@ export default function ShotMapView() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div className="card">
             <div className="sec-label">{t('shotMapView.boxscore.shotMap')}</div>
-            <HockeyRink events={toHockeyRinkEvents(shotEvents)} teamAbbr={TEAM_CONFIG.abbr} teamColor="var(--team-primary)" />
+            <HockeyRink events={toHockeyRinkEvents(shotEvents)} teamAbbr={TEAM_CONFIG.abbr} teamColor="var(--team-primary)" renderMedia={renderGoalMedia} />
           </div>
 
 
