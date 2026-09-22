@@ -84,20 +84,18 @@ describe('Goal replay: Video | Tracking', () => {
     })
 
     // The rink's dots carry no marker for their event type, so open them
-    // until one is a goal -- the pinned game has 8.
-    function openAGoal() {
-      cy.get('.rhr-svg circle[style*="cursor: pointer"]').then($dots => {
-        const tryDot = (i) => {
-          if (i >= $dots.length) throw new Error('no goal dot found')
-          cy.wrap($dots[i]).click({ force: true })
-          cy.get('.rhr-popup-type-label').then($label => {
-            if ($label.text() !== 'Goal') {
-              cy.get('.rhr-popup-close').click()
-              tryDot(i + 1)
-            }
-          })
+    // until one is a goal -- the pinned game has 8. The rink re-renders
+    // between clicks (live-ish data), so each attempt re-queries by index
+    // rather than holding an element that may since have detached.
+    const DOTS = '.rhr-svg circle[style*="cursor: pointer"]'
+    function openAGoal(i = 0) {
+      cy.get(DOTS).its('length').should('be.gt', i)
+      cy.get(DOTS).eq(i).click({ force: true })
+      cy.get('.rhr-popup-type-label').then($label => {
+        if ($label.text() !== 'Goal') {
+          cy.get('.rhr-popup-close').click()
+          openAGoal(i + 1)
         }
-        tryDot(0)
       })
     }
 
