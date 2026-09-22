@@ -669,6 +669,7 @@ async function _getTeamSeasonRankings(gameTypeId, season) {
     };
 
     return {
+      teamCount:       teams.length,  // the field each rank is out of (RankBadge's colour tiers)
       goalsForPG:      rank('goalsForPerGame',     true),
       goalsAgainstPG:  rank('goalsAgainstPerGame', false),  // lower = better
       ppPct:           rank('powerPlayPct',         true),

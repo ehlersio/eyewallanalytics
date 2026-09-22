@@ -22,6 +22,7 @@ import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
 import TeamComparisonPopup from '../components/TeamComparisonPopup';
 import TeamHistorySections from '../components/TeamHistorySections';
+import RankBadge from '../components/RankBadge'
 import { getTeamHistory } from '../utils/teamHistory';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
@@ -67,7 +68,6 @@ const OVERVIEW_STAT_GRID_CLASSES = 'grid grid-cols-3 gap-2'
 const OVERVIEW_STAT_CELL_CLASSES = 'text-center bg-[var(--bg3)] rounded-[var(--radius-sm)] py-2 px-1'
 const OVERVIEW_STAT_LABEL_CLASSES = 'text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.08em] mb-[3px]'
 const OVERVIEW_STAT_VAL_CLASSES = 'font-[family-name:var(--font-display)] text-[18px] font-bold text-[color:var(--text)]'
-const OVERVIEW_STAT_RANK_CLASSES = 'overview-stat-rank text-[10px] font-bold font-[family-name:var(--font-mono)] mt-[2px] block'
 
 const ADV_STAT_ROW_CLASSES = 'adv-stat-row flex items-center justify-between py-[7px] border-b-[0.5px] border-[rgba(255,255,255,0.04)]'
 const ADV_STAT_LABEL_CLASSES = 'text-[12px] text-[color:var(--text-muted)] flex-1'
@@ -324,12 +324,6 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
     return (goalies.reduce((s,g) => s+(g.saves??0)+(g.goals_against??0), 0) / teamRow.gp).toFixed(1);
   }, [goalies, teamRow]);
 
-  function RankBadge({ r }) {
-    if (!r) return null;
-    const clr    = r <= 2 ? 'var(--green)' : r <= 6 ? 'var(--text-muted)' : 'var(--red-bright)';
-    const suffix = r === 1 ? 'st' : r === 2 ? 'nd' : r === 3 ? 'rd' : 'th';
-    return <span className={OVERVIEW_STAT_RANK_CLASSES} style={{ color: clr }}>{r}<sup className="text-[7px]">{suffix}</sup></span>;
-  }
 
   // ECHL's game_log has no ot/shootout boolean columns (see echl.js's
   // docstring, same as AHL) -- every non-win here counts as a plain loss.
@@ -411,7 +405,7 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
               <div key={label} className={OVERVIEW_STAT_CELL_CLASSES}>
                 <div className={OVERVIEW_STAT_LABEL_CLASSES}>{label}</div>
                 <div className={OVERVIEW_STAT_VAL_CLASSES}>{val}</div>
-                <RankBadge r={rank} />
+                <RankBadge r={rank} of={standings?.length} />
               </div>
             ))}
           </div>
