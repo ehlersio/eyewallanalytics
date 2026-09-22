@@ -1283,6 +1283,16 @@ export function buildBrightcoveUrl(clipId) {
   return `https://players.brightcove.net/6415718365001/EXtG1xJ7H_default/index.html?videoId=${clipId}&autoplay=false`;
 }
 
+// One goal's player and puck tracking (NHL EDGE) for the Tracking replay,
+// via the Worker's /nhl/goal-replay -- or null when the goal has none
+// (every goal before 2023-24, or a live one the NHL hasn't published yet).
+// Callers offer Tracking only when this returns data.
+export async function getGoalReplay(gameId, eventId) {
+  if (!gameId || eventId == null) return null;
+  const data = await workerFetch(`/nhl/goal-replay/${gameId}/${eventId}`);
+  return data?.available ? data : null;
+}
+
 // Attaches a Brightcove embed URL to each 'goal' event in shotEvents (from
 // extractShotEvents), matched against landing data's summary.scoring[period]
 // .goals by period + in-period order — landing lists goals in the same
