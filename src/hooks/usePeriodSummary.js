@@ -97,6 +97,7 @@ function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlay
   const goals = periodPlays
     .filter(p => p.typeDescKey === 'goal')
     .map(p => ({
+      eventId:   p.eventId,
       time:      p.timeInPeriod,
       teamId:    p.details?.eventOwnerTeamId,
       isCar:     p.details?.eventOwnerTeamId === carTeamId,
@@ -328,6 +329,7 @@ function buildGameSummary(plays, carTeamId, landingData, pbp, gameId) {
 
   // All goals
   const allGoals = plays.filter(p => p.typeDescKey === 'goal').map(p => ({
+    eventId: p.eventId,
     period: p.periodDescriptor?.number,
     time: p.timeInPeriod,
     isCar: p.details?.eventOwnerTeamId === carTeamId,

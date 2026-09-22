@@ -2472,5 +2472,17 @@
     "scoreTitle": "{{team}} {{teamScore}}–{{oppScore}} {{opp}}",
     "statsNote": "Stats: NHL · EyeWall",
     "pwhlStatsNote": "Stats: PWHL · EyeWall"
+  },
+  "goalReplay": {
+    "video": "Video",
+    "tracking": "Tracking",
+    "play": "Play",
+    "pause": "Pause",
+    "restart": "Replay from the start",
+    "speed": "Half speed",
+    "scrubber": "Replay position",
+    "goal": "GOAL",
+    "credit": "Player & puck tracking: NHL EDGE",
+    "trackingAria": "Tracking replay of the goal by {{scorer}}: every skater and the puck"
   }
 }

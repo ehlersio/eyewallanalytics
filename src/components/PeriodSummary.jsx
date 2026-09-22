@@ -8,6 +8,7 @@ import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
 import PeriodSummaryShareCanvas from './PeriodSummaryShareCanvas';
 import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
+import GoalReplay from './GoalReplay';
 
 // ── Tailwind class constants -- POPUP HALF (Phase 4, sub-PR 5a) ──
 // PeriodSummary.css's ps-canvas-* export-image classes are a separate,
@@ -290,7 +291,7 @@ function detectHatTricks(goals) {
     });
 }
 
-function GoalCarousel({ goals, carAbbr }) {
+function GoalCarousel({ goals, carAbbr, gameId }) {
   const { t } = useTranslation();
   const [idx, setIdx] = useState(0);
   const touchStartX = useRef(null);
@@ -349,16 +350,18 @@ function GoalCarousel({ goals, carAbbr }) {
           <div className={psStrengthBadgeClasses(sl)}>{sl.toUpperCase()}</div>
         </div>
 
-        {/* Video — rendered directly since carousel shows one at a time */}
-        {g.discreteClip && (
-          <iframe
-            className={PS_GOAL_VIDEO_CLASSES}
-            src={buildBrightcoveUrl(g.discreteClip)}
-            allow="fullscreen"
-            allowFullScreen
-            title={t('periodSummary.goals.videoTitle', { scorer: g.scorerName || t('periodSummary.goals.playerFallback'), time: g.time })}
-          />
-        )}
+        {/* Video and/or our tracking replay -- rendered directly since the
+            carousel shows one goal at a time; keyed per goal so switching
+            goals resets the Video | Tracking choice and the playback. */}
+        <GoalReplay
+          key={`${gameId}-${g.eventId ?? idx}`}
+          gameId={gameId}
+          eventId={g.eventId}
+          videoUrl={g.discreteClip ? buildBrightcoveUrl(g.discreteClip) : null}
+          videoClassName={PS_GOAL_VIDEO_CLASSES}
+          videoTitle={t('periodSummary.goals.videoTitle', { scorer: g.scorerName || t('periodSummary.goals.playerFallback'), time: g.time })}
+          scorerName={g.scorerName}
+        />
       </div>
 
       {/* Goal counter */}
@@ -590,7 +593,7 @@ export default function PeriodSummary({
           {summary.goals.length > 0 && (
             <>
               <div className={PS_SECTION_LABEL_CLASSES}>{t('periodSummary.goals.sectionLabel', { count: summary.goals.length })}</div>
-              <GoalCarousel goals={summary.goals} carAbbr={carAbbr} />
+              <GoalCarousel goals={summary.goals} carAbbr={carAbbr} gameId={summary.gameId} />
             </>
           )}
 

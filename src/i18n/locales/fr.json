@@ -2472,5 +2472,17 @@
     "scoreTitle": "{{team}} {{teamScore}}–{{oppScore}} {{opp}}",
     "statsNote": "Stats : LNH · EyeWall",
     "pwhlStatsNote": "Stats : LPHF · EyeWall"
+  },
+  "goalReplay": {
+    "video": "Vidéo",
+    "tracking": "Suivi",
+    "play": "Lecture",
+    "pause": "Pause",
+    "restart": "Revoir depuis le début",
+    "speed": "Demi-vitesse",
+    "scrubber": "Position dans la reprise",
+    "goal": "BUT",
+    "credit": "Suivi des joueurs et de la rondelle : NHL EDGE",
+    "trackingAria": "Reprise du but de {{scorer}} d'après le suivi : chaque patineur et la rondelle"
   }
 }
