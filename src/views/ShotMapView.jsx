@@ -31,6 +31,7 @@ import DisabledHint from '../components/DisabledHint';
 import { publishClock, getClockDisplay, publishMomentum } from '../utils/liveClockStore';
 import { useDevGame } from '../utils/DevGameContext';
 import { useWakeLock } from '../hooks/useWakeLock';
+import { useLiveActivity } from '../hooks/useLiveActivity';
 import PeriodSummary from '../components/PeriodSummary';
 import { usePeriodSummary, useGameSummary } from '../hooks/usePeriodSummary';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
@@ -764,6 +765,9 @@ export default function ShotMapView() {
     [gameId, isLive, !!devGame]
   );
   const pbp = devGame?.pbp ?? pbpReal;
+
+  // iOS app only: follow this live game on the lock screen (Live Activity)
+  const lockScreen = useLiveActivity(isLive ? liveGame : null, pbp, TEAM_CONFIG.abbr);
 
   // Landing data — source of goal video clips (discreteClip), merged into
   // shotEvents below so the shot map's goal-dot popup can show them.
@@ -2128,6 +2132,18 @@ export default function ShotMapView() {
       )}
 
       {/* ── Live rink + event ticker (Session 100) — live games only ── */}
+      {isLive && lockScreen.supported && (
+        <div className="flex justify-end mb-2">
+          <button
+            className={`lock-screen-follow text-[11px] font-semibold py-1 px-3 rounded-[20px] ${lockScreen.following
+              ? 'bg-[var(--red-dim)] text-[color:var(--red-bright)]'
+              : 'bg-[var(--btn-fill)] text-[color:var(--text-muted)] hover:bg-[var(--btn-fill-hover)]'}`}
+            onClick={() => (lockScreen.following ? lockScreen.unfollow() : lockScreen.follow()).catch(() => {})}>
+            {lockScreen.following ? t('shotMapView.lockScreen.following') : t('shotMapView.lockScreen.follow')}
+          </button>
+        </div>
+      )}
+
       {isLive && pbp?.plays?.length > 0 && (
         <div className={LIVE_RINK_ROW_CLASSES}>
           <LiveEventRink

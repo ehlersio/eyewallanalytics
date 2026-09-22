@@ -750,6 +750,10 @@
     "gsaxEstimatedNote": "Estimation — le vrai GSAx nécessite des données de suivi (danger du tir selon l'emplacement)"
   },
   "shotMapView": {
+    "lockScreen": {
+      "follow": "Suivre sur l'écran verrouillé",
+      "following": "Sur l'écran verrouillé ✓ · Arrêter"
+    },
     "offseason": {
       "showingPrevious": "La saison {{current}} n'a pas commencé — voici {{fallback}}.",
       "firstGame": "Premier match le {{date}}."
