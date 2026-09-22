@@ -46,8 +46,8 @@ describe('Goal replay: Video | Tracking', () => {
 
     it('Tracking draws every skater and the puck, the scorer ringed', () => {
       cy.contains('.goal-replay-switch-btn', 'Tracking').click()
-      cy.get('.goal-replay iframe').should('not.exist')
       cy.get('.goal-tracking-replay svg').should('exist')
+      cy.get('.goal-replay iframe').should('not.exist')
       cy.get('.goal-tracking-player').should('have.length', 4)
       cy.get('.goal-tracking-puck').should('exist')
       cy.get('.goal-tracking-player').filter((_, g) => g.querySelectorAll('circle').length === 2)
@@ -65,12 +65,48 @@ describe('Goal replay: Video | Tracking', () => {
 
     it('dragging the scrubber does not swipe the carousel to another goal', () => {
       cy.contains('.goal-replay-switch-btn', 'Tracking').click()
+      cy.get('.goal-tracking-scrubber').should('exist')
       cy.get('.ps-carousel-counter').invoke('text').then(before => {
         cy.get('.goal-tracking-scrubber')
           .trigger('touchstart', { touches: [{ clientX: 300, clientY: 10 }] })
           .trigger('touchend', { changedTouches: [{ clientX: 100, clientY: 10 }] })
         cy.get('.ps-carousel-counter').should('have.text', before)
       })
+    })
+  })
+
+  describe('in the shot map goal popup', () => {
+    beforeEach(() => {
+      cy.intercept('GET', '**/nhl/goal-replay/**', { fixture: 'goal-replay.json' }).as('replay')
+      cy.visit(`/?mockGame=${MOCK_GAME_ID}`)
+      cy.team().then(t => cy.contains(t.abbr, { timeout: 10000 }).should('exist'))
+      cy.get('.rhr-svg circle[style*="cursor: pointer"]', { timeout: 15000 }).should('exist')
+    })
+
+    // The rink's dots carry no marker for their event type, so open them
+    // until one is a goal -- the pinned game has 8.
+    function openAGoal() {
+      cy.get('.rhr-svg circle[style*="cursor: pointer"]').then($dots => {
+        const tryDot = (i) => {
+          if (i >= $dots.length) throw new Error('no goal dot found')
+          cy.wrap($dots[i]).click({ force: true })
+          cy.get('.rhr-popup-type-label').then($label => {
+            if ($label.text() !== 'Goal') {
+              cy.get('.rhr-popup-close').click()
+              tryDot(i + 1)
+            }
+          })
+        }
+        tryDot(0)
+      })
+    }
+
+    it('offers Video | Tracking on a goal, and plays the tracking replay', () => {
+      openAGoal()
+      cy.get('.rhr-popup-media-section .goal-replay-switch-btn').should('have.length', 2)
+      cy.contains('.goal-replay-switch-btn', 'Tracking').click()
+      cy.get('.goal-tracking-player').should('have.length', 4)
+      cy.get('.goal-tracking-puck').should('exist')
     })
   })
 
