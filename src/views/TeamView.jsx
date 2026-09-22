@@ -275,26 +275,24 @@ export default function TeamView() {
   const { data: standings,    loading: standLoading  } = useFetch(getStandings)
   const { data: playoffGames, loading: poLoading     } = useFetch(getPlayoffGames)
 
-  // Advanced stats
-  const { data: corsiReg   } = useFetch(() => getTeamCorsi(2))
-  const { data: realtimeReg } = useFetch(() => getTeamRealtime(2))
-  const { data: ppReg      } = useFetch(() => getTeamPowerplay(2))
-  const { data: pkReg      } = useFetch(() => getTeamPenaltyKill(2))
+  // Regular-season stats all follow getTeamStats()'s statsSeasonId: the
+  // current season once it has games, last season before then. Out of season
+  // the Advanced and Splits tabs used to read an empty current season (and
+  // sat on "Loading advanced stats" until October); now they show last
+  // season with the same season label as Overview. Nothing fetches until
+  // stats resolves which season that is.
+  const statsSeason = stats?.statsSeasonId
+  const forStatsSeason = (fetch) => () => statsSeason ? fetch(statsSeason) : Promise.resolve(null)
+  const { data: corsiReg    } = useFetch(forStatsSeason(s => getTeamCorsi(2, s)), [statsSeason])
+  const { data: realtimeReg } = useFetch(forStatsSeason(s => getTeamRealtime(2, s)), [statsSeason])
+  const { data: ppReg       } = useFetch(forStatsSeason(s => getTeamPowerplay(2, s)), [statsSeason])
+  const { data: pkReg       } = useFetch(forStatsSeason(s => getTeamPenaltyKill(2, s)), [statsSeason])
+  const { data: homeSplit   } = useFetch(forStatsSeason(s => getTeamHomeSplit(2, s)), [statsSeason])
+  const { data: rankings    } = useFetch(forStatsSeason(s => getTeamSeasonRankings(2, s)), [statsSeason])
+  const { data: xgTrend     } = useFetch(forStatsSeason(s => getTeamXgTrend(TEAM_CONFIG.abbr, s)), [statsSeason])
   const { data: scoreState } = useFetch(() => getTeamScoreState(2))
-  const { data: homeSplit  } = useFetch(() => getTeamHomeSplit(2))
   const { data: poAdv      } = useFetch(getTeamPlayoffStats)
   const { data: gameLog    } = useFetch(() => getTeamGameLog(20))
-  // Overview's Blks/GP follows the stats' season like the rank badges do;
-  // the Advanced tab keeps using realtimeReg (current season) above.
-  const { data: realtimeOverview } = useFetch(
-    () => stats?.statsSeasonId ? getTeamRealtime(2, stats.statsSeasonId) : Promise.resolve(null),
-    [stats?.statsSeasonId]
-  )
-  const { data: rankings   } = useFetch(
-    () => stats?.statsSeasonId ? getTeamSeasonRankings(2, stats.statsSeasonId) : Promise.resolve(null),
-    [stats?.statsSeasonId]
-  )
-  const { data: xgTrend    } = useFetch(() => getTeamXgTrend(TEAM_CONFIG.abbr))
 
   // Same staleness risk getTeamStats() already guards against (see nhlApi.js):
   // NHL's /standings/now stays pinned to last season's finale for months
@@ -308,6 +306,9 @@ export default function TeamView() {
     : standings?.find(row => row.teamAbbrev?.default === TEAM_CONFIG.abbr)
   const playoffSummary = buildCarPlayoffSummary(playoffGames || [])
   const inPlayoffs     = (playoffGames?.length || 0) > 0
+  // "2025-26" while the stats above are last season's; null once the
+  // current season has games. Advanced and Splits label themselves with it.
+  const priorSeason    = stats?.isPriorSeason ? nhlSeasonLabel(stats.statsSeasonId) : null
 
   // Playoff home/away splits — only fetch when in playoffs (inPlayoffs must be defined first)
   const { data: homeSplitPO } = useFetch(() => inPlayoffs ? getTeamHomeSplit(3) : Promise.resolve(null), [inPlayoffs])
@@ -356,9 +357,9 @@ export default function TeamView() {
         ))}
       </div>
 
-      {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} realtimeReg={realtimeOverview} rankings={rankings} />}
-      {tab === 'Advanced'  && <AdvancedTab corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} homeSplit={homeSplit} xgTrend={xgTrend} />}
-      {tab === 'Splits'    && <SplitsTab homeSplit={homeSplit} homeSplitPO={homeSplitPO} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} ppReg={ppReg} pkReg={pkReg} corsiReg={corsiReg} />}
+      {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} realtimeReg={realtimeReg} rankings={rankings} />}
+      {tab === 'Advanced'  && <AdvancedTab priorSeason={priorSeason} corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} homeSplit={homeSplit} xgTrend={xgTrend} />}
+      {tab === 'Splits'    && <SplitsTab priorSeason={priorSeason} homeSplit={homeSplit} homeSplitPO={homeSplitPO} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} ppReg={ppReg} pkReg={pkReg} corsiReg={corsiReg} />}
       {tab === 'Trends'    && <TrendsTab gameLog={gameLog} />}
       {tab === 'Cap'   && <CapTab capSummary={capSummary} capPct={capPct} sortedContracts={sortedContracts} />}
       {tab === 'Picks' && <PicksTab />}
@@ -929,7 +930,7 @@ function XgfSparkline({ data }) {
   );
 }
 
-function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, inPlayoffs, _homeSplit, xgTrend }) {
+function AdvancedTab({ priorSeason, corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, inPlayoffs, _homeSplit, xgTrend }) {
   const { t } = useTranslation();
   const pdoData = seasonPDO(corsiReg);
   const [showPO, setShowPO] = useState(inPlayoffs);
@@ -981,7 +982,11 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, 
           <button className={advToggleBtnClasses(showPO)} onClick={() => setShowPO(true)} aria-pressed={showPO}>{t('team.playoffsToggle')}</button>
         </div>
       )}
-      {!inPlayoffs && <div className={ADV_CONTEXT_NOTE_CLASSES}>{t('team.showingRegularSeason')}</div>}
+      {!inPlayoffs && (
+        <div className={ADV_CONTEXT_NOTE_CLASSES}>
+          {priorSeason ? t('team.showingPriorRegularSeason', { season: priorSeason }) : t('team.showingRegularSeason')}
+        </div>
+      )}
 
       {/* Shot differential */}
       <div className="card">
@@ -1092,7 +1097,7 @@ function AdvancedTab({ corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, 
 }
 
 // ── Splits tab ───────────────────────────────────────────────
-function SplitsTab({ homeSplit, homeSplitPO, _stats, _playoffSummary, inPlayoffs, _ppReg, _pkReg, _corsiReg }) {
+function SplitsTab({ priorSeason, homeSplit, homeSplitPO, _stats, _playoffSummary, inPlayoffs, _ppReg, _pkReg, _corsiReg }) {
   const { t } = useTranslation();
   const [showPO, setShowPO] = React.useState(false);
 
@@ -1150,6 +1155,9 @@ function SplitsTab({ homeSplit, homeSplitPO, _stats, _playoffSummary, inPlayoffs
           <button className={advToggleBtnClasses(!showPO)} onClick={() => setShowPO(false)}>{t('team.regularSeasonToggle')}</button>
           <button className={advToggleBtnClasses(showPO)}  onClick={() => setShowPO(true)}>{t('team.playoffsToggle')}</button>
         </div>
+      )}
+      {priorSeason && (
+        <div className={ADV_CONTEXT_NOTE_CLASSES}>{t('team.showingPriorRegularSeason', { season: priorSeason })}</div>
       )}
 
       {/* Combined record + advanced stats card */}
