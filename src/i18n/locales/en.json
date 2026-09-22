@@ -284,6 +284,7 @@
     "regularSeasonToggle": "📅 Regular Season",
     "playoffsToggle": "🏒 Playoffs",
     "showingRegularSeason": "Showing Regular Season stats",
+    "showingPriorRegularSeason": "Showing {{season}} Regular Season stats",
     "shotVolumePossessionTitle": "Shot Volume & Possession",
     "pdoPuckLuckTitle": "PDO & Puck Luck",
     "sectionSpecialTeams": "Special Teams",

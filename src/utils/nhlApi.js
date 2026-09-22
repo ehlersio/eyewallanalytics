@@ -1482,8 +1482,8 @@ const FRANCHISE_ID  = TEAM_CONFIG.franchiseId;
 // Build URL for team stat endpoints.
 // Key: cayenneExp must use seasonId<=X and seasonId>=X (double-bound) not seasonId=X
 // Also needs isAggregate and isGame params for report endpoints like puckPossessions
-function teamStatsUrl(report, gameTypeId = 2) {
-  const s = TEAM_CONFIG.season;
+function teamStatsUrl(report, gameTypeId = 2, season = TEAM_CONFIG.season) {
+  const s = season;
   const exp = encodeURIComponent(
     `franchiseId=${FRANCHISE_ID} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
   );
@@ -1501,16 +1501,20 @@ function findTeam(data) {
 }
 
 // Team summary cached — shared by corsi, pp, pk
-async function _getTeamSummary(gameTypeId) {
-  const url = teamStatsUrl('summary', gameTypeId);
+async function _getTeamSummary(gameTypeId, season = TEAM_CONFIG.season) {
+  const url = teamStatsUrl('summary', gameTypeId, season);
   const d   = await nhlFetch(url);
   return d?.data?.[0] || null;
 }
 
 // True Corsi/Fenwick using realtime + summary data we already fetch
 // shotattempts and puckPossessions endpoints return 500 on NHL API
-export async function getTeamCorsi(gameTypeId = 2) {
-  const t = await cached(`teamSummary:${gameTypeId}:${TEAM_CONFIG.season}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
+// season: defaults to the current season. The Team page's Advanced and Splits
+// tabs pass getTeamStats()'s statsSeasonId instead, so out of season they
+// show last season (labelled) rather than an empty current one -- same as
+// Overview. Applies to getTeamPowerplay/PenaltyKill/HomeSplit below too.
+export async function getTeamCorsi(gameTypeId = 2, season = TEAM_CONFIG.season) {
+  const t = await cached(`teamSummary:${gameTypeId}:${season}`, () => _getTeamSummary(gameTypeId, season), TTL.ADVANCED);
   if (!t) return null;
 
   const sf = t.shotsForPerGame    || 0;
@@ -1518,8 +1522,8 @@ export async function getTeamCorsi(gameTypeId = 2) {
   const gp = t.gamesPlayed || 1;
 
   // Get realtime data which has blockedShots + shotAttemptsBlocked
-  const rt = await cached(`teamRealtime:${gameTypeId}:${TEAM_CONFIG.season}`, async () => {
-    const s   = TEAM_CONFIG.season;
+  const rt = await cached(`teamRealtime:${gameTypeId}:${season}`, async () => {
+    const s   = season;
     const exp = encodeURIComponent(
       `franchiseId=${FRANCHISE_ID} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
     );
@@ -1587,21 +1591,21 @@ export async function getTeamScoreState(_gameTypeId = 2) {
 // Power play / Penalty kill — from team/summary
 // Available fields: powerPlayPct, powerPlayNetPct, penaltyKillPct, penaltyKillNetPct
 // Goals and opportunity counts are NOT in team/summary; derive where possible from standings
-export async function getTeamPowerplay(gameTypeId = 2) {
-  return cached(`teamSummary:${gameTypeId}:${TEAM_CONFIG.season}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
+export async function getTeamPowerplay(gameTypeId = 2, season = TEAM_CONFIG.season) {
+  return cached(`teamSummary:${gameTypeId}:${season}`, () => _getTeamSummary(gameTypeId, season), TTL.ADVANCED);
 }
 
-export async function getTeamPenaltyKill(gameTypeId = 2) {
-  return cached(`teamSummary:${gameTypeId}:${TEAM_CONFIG.season}`, () => _getTeamSummary(gameTypeId), TTL.ADVANCED);
+export async function getTeamPenaltyKill(gameTypeId = 2, season = TEAM_CONFIG.season) {
+  return cached(`teamSummary:${gameTypeId}:${season}`, () => _getTeamSummary(gameTypeId, season), TTL.ADVANCED);
 }
 
 // Home/Away splits from team summary (homeRoadQuery)
-export async function getTeamHomeSplit(gameTypeId = 2) {
-  return cached(`homeSplit:${gameTypeId}:${TEAM_CONFIG.season}`, () => _getTeamHomeSplit(gameTypeId), TTL.ADVANCED);
+export async function getTeamHomeSplit(gameTypeId = 2, season = TEAM_CONFIG.season) {
+  return cached(`homeSplit:${gameTypeId}:${season}`, () => _getTeamHomeSplit(gameTypeId, season), TTL.ADVANCED);
 }
-async function _getTeamHomeSplit(gameTypeId = 2) {
-  const homeExp = encodeURIComponent(`seasonId=${TEAM_CONFIG.season} and gameTypeId=${gameTypeId} and homeRoad="H"`);
-  const awayExp = encodeURIComponent(`seasonId=${TEAM_CONFIG.season} and gameTypeId=${gameTypeId} and homeRoad="R"`);
+async function _getTeamHomeSplit(gameTypeId = 2, season = TEAM_CONFIG.season) {
+  const homeExp = encodeURIComponent(`seasonId=${season} and gameTypeId=${gameTypeId} and homeRoad="H"`);
+  const awayExp = encodeURIComponent(`seasonId=${season} and gameTypeId=${gameTypeId} and homeRoad="R"`);
   const [home, away] = await Promise.all([
     nhlFetch(`/nhl-stats/stats/rest/en/team/summary?limit=50&sort=wins&cayenneExp=${homeExp}`),
     nhlFetch(`/nhl-stats/stats/rest/en/team/summary?limit=50&sort=wins&cayenneExp=${awayExp}`),

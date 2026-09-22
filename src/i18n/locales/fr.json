@@ -284,6 +284,7 @@
     "regularSeasonToggle": "📅 Saison régulière",
     "playoffsToggle": "🏒 Séries éliminatoires",
     "showingRegularSeason": "Affichage des statistiques de saison régulière",
+    "showingPriorRegularSeason": "Affichage des statistiques de saison régulière {{season}}",
     "shotVolumePossessionTitle": "Volume de tirs et possession",
     "pdoPuckLuckTitle": "PDO et chance",
     "sectionSpecialTeams": "Unités spéciales",
