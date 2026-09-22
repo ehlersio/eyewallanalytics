@@ -48,10 +48,20 @@ const ORDINAL_SUFFIXES = {
   fr: { one: 'er', other: 'e' },
 };
 
+// Just the suffix ("st", "nd", "er", "e"), for callers that style it apart
+// from the number (the Team pages' rank badges superscript it). `locale`
+// defaults to the saved app locale; a component should pass i18n.language
+// so it re-renders when the language changes.
+export function ordinalSuffix(value, locale = getLocale()) {
+  const v = Math.round(value);
+  const base = String(locale || '').split('-')[0];
+  const lang = ORDINAL_SUFFIXES[base] ? base : 'en';
+  const category = new Intl.PluralRules(INTL_LOCALE[lang], { type: 'ordinal' }).select(v);
+  const suffixes = ORDINAL_SUFFIXES[lang];
+  return suffixes[category] ?? suffixes.other;
+}
+
 export function formatOrdinal(value) {
   const v = Math.round(value);
-  const locale = getLocale();
-  const category = new Intl.PluralRules(intlLocale(), { type: 'ordinal' }).select(v);
-  const suffixes = ORDINAL_SUFFIXES[locale] || ORDINAL_SUFFIXES.en;
-  return `${v}${suffixes[category] ?? suffixes.other}`;
+  return `${v}${ordinalSuffix(v)}`;
 }

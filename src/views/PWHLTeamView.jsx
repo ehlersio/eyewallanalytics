@@ -13,6 +13,7 @@ import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
 import TeamComparisonPopup from '../components/TeamComparisonPopup';
 import TeamHistorySections from '../components/TeamHistorySections';
+import RankBadge from '../components/RankBadge'
 import { getTeamHistory } from '../utils/teamHistory';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
@@ -81,7 +82,6 @@ const OVERVIEW_STAT_GRID_CLASSES = 'grid grid-cols-3 gap-2'
 const OVERVIEW_STAT_CELL_CLASSES = 'text-center bg-[var(--bg3)] rounded-[var(--radius-sm)] py-2 px-1'
 const OVERVIEW_STAT_LABEL_CLASSES = 'text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.08em] mb-[3px]'
 const OVERVIEW_STAT_VAL_CLASSES = 'font-[family-name:var(--font-display)] text-[18px] font-bold text-[color:var(--text)]'
-const OVERVIEW_STAT_RANK_CLASSES = 'overview-stat-rank text-[10px] font-bold font-[family-name:var(--font-mono)] mt-[2px] block'
 
 const ADV_EXPLAIN_CLASSES = 'text-[11px] text-[color:var(--text-dim)] mb-[10px] italic border-l-2 border-[var(--border-2)] pl-2'
 const ADV_STAT_ROW_CLASSES = 'adv-stat-row flex items-center justify-between py-[7px] border-b-[0.5px] border-[rgba(255,255,255,0.04)]'
@@ -360,12 +360,6 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
     return (goalies.reduce((s,g) => s+(g.saves??0)+(g.goals_against??0), 0) / teamRow.gp).toFixed(1);
   }, [goalies, teamRow]);
 
-  function RankBadge({ r }) {
-    if (!r) return null;
-    const clr    = r <= 2 ? 'var(--green)' : r <= 6 ? 'var(--text-muted)' : 'var(--red-bright)';
-    const suffix = r === 1 ? 'st' : r === 2 ? 'nd' : r === 3 ? 'rd' : 'th';
-    return <span className={OVERVIEW_STAT_RANK_CLASSES} style={{ color: clr }}>{r}<sup className="text-[7px]">{suffix}</sup></span>;
-  }
 
   // Last 5 results
   const last5 = useMemo(() => {
@@ -450,7 +444,7 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
               <div key={label} className={OVERVIEW_STAT_CELL_CLASSES}>
                 <div className={OVERVIEW_STAT_LABEL_CLASSES}>{label}</div>
                 <div className={OVERVIEW_STAT_VAL_CLASSES}>{val}</div>
-                <RankBadge r={rank} />
+                <RankBadge r={rank} of={standings?.length} />
               </div>
             ))}
           </div>
@@ -802,12 +796,6 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
     return (diff > 0) === higherBetter ? 'good' : 'bad';
   }
 
-  function RankBadge({ r }) {
-    if (!r) return null;
-    const clr    = r <= 2 ? 'var(--green)' : r <= 6 ? 'var(--text-muted)' : 'var(--red-bright)';
-    const suffix = r === 1 ? 'st' : r === 2 ? 'nd' : r === 3 ? 'rd' : 'th';
-    return <span className={OVERVIEW_STAT_RANK_CLASSES} style={{ color: clr }}>{r}<sup className="text-[7px]">{suffix}</sup></span>;
-  }
 
 
   const ppPct = teamRow.pp_pct;
@@ -932,7 +920,7 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
             <div key={label} className={ADV_STAT_ROW_CLASSES}>
               <span className={ADV_STAT_LABEL_CLASSES}>{label}: <strong>{val ?? '—'}</strong></span>
               <span className={ADV_STAT_RIGHT_CLASSES}>
-                <RankBadge r={r} />
+                <RankBadge r={r} of={standings?.length} />
                 <span className={ADV_STAT_AVG_CLASSES} style={{ marginLeft:4 }}>{t('pwhlTeamView.advanced.ofTeamsSuffix')}</span>
               </span>
             </div>

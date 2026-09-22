@@ -25,6 +25,7 @@ import TeamLogo from '../components/TeamLogo'
 import TeamComparisonPopup from '../components/TeamComparisonPopup'
 import Sparkline from '../components/Sparkline'
 import TeamHistorySections from '../components/TeamHistorySections'
+import RankBadge from '../components/RankBadge'
 import { getTeamHistory } from '../utils/teamHistory'
 import { PAGE_CLASSES } from '../utils/pageClasses'
 import { SKELETON_CLASSES } from '../utils/skeletonClasses'
@@ -96,8 +97,6 @@ const OVERVIEW_STAT_GRID_CLASSES = 'grid grid-cols-3 gap-2'
 const OVERVIEW_STAT_CELL_CLASSES = 'text-center bg-[var(--bg3)] rounded-[var(--radius-sm)] py-2 px-1'
 const OVERVIEW_STAT_LABEL_CLASSES = 'text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.08em] mb-[3px]'
 const OVERVIEW_STAT_VAL_CLASSES = 'font-[family-name:var(--font-display)] text-[18px] font-bold text-[color:var(--text)]'
-const OVERVIEW_STAT_RANK_CLASSES = 'overview-stat-rank text-[10px] font-bold font-[family-name:var(--font-mono)] mt-[2px] block'
-const OVERVIEW_STAT_RANK_SUP_CLASSES = 'text-[7px]'
 
 const ADV_EXPLAIN_CLASSES = 'text-[11px] text-[color:var(--text-dim)] mb-[10px] italic border-l-2 border-[var(--border-2)] pl-2'
 const ADV_STAT_ROW_CLASSES = 'adv-stat-row flex items-center justify-between py-[7px] border-b-[0.5px] border-[rgba(255,255,255,0.04)]'
@@ -372,16 +371,6 @@ export default function TeamView() {
 function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStanding, playoffSummary, wins, losses, otl, pts, inPlayoffs, liveGame, _corsiReg, realtimeReg, rankings }) {
   const { t } = useTranslation()
 
-  function RankBadge({ r }) {
-    if (!r) return null;
-    const color = r <= 5 ? 'var(--green)' : r <= 15 ? 'var(--text-muted)' : 'var(--red-bright)';
-    const suffix = r === 1 ? 'st' : r === 2 ? 'nd' : r === 3 ? 'rd' : 'th';
-    return (
-      <span className={OVERVIEW_STAT_RANK_CLASSES} style={{ color }}>
-        {r}<sup className={OVERVIEW_STAT_RANK_SUP_CLASSES}>{suffix}</sup>
-      </span>
-    );
-  }
 
   return (
     <>
@@ -474,7 +463,7 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
               <div key={label} className={OVERVIEW_STAT_CELL_CLASSES}>
                 <div className={OVERVIEW_STAT_LABEL_CLASSES}>{label}</div>
                 <div className={OVERVIEW_STAT_VAL_CLASSES}>{val}</div>
-                <RankBadge r={rank} />
+                <RankBadge r={rank} of={rankings?.teamCount} />
               </div>
             ))}
           </div>
