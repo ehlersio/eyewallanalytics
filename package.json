@@ -43,7 +43,7 @@
     "react-dom": "^18.3.1",
     "react-hockey-rink": "^0.2.0",
     "react-i18next": "^17.0.13",
-    "react-router-dom": "^7.18.3",
+    "react-router-dom": "^7.18.4",
     "recharts": "^3.10.1"
   },
   "devDependencies": {
