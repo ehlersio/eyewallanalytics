@@ -17,6 +17,13 @@ const WORKER_URL_PLAYER_SEARCH = Cypress.expose('VITE_WORKER_URL') || 'https://e
 // local runs, so this isn't masking a deterministic bug). runMode retries
 // where the contention actually happens; openMode stays at 0 so a real
 // failure isn't hidden while watching it run interactively.
+//
+// Worth revisiting: the flake that prompted this was very likely the same
+// dead heat since found in pwhl-players.cy.js — an assertion that expired at
+// the same 8000ms the app's own fetch budget did (see DATA_TIMEOUT in
+// cypress/support/e2e.js, which these waits now use). If so these retries
+// are no longer earning their keep, but that needs a run of CI evidence to
+// claim, not one green local run, so they stay for now.
 describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () => {
   beforeEach(() => {
     cy.visit('/')
@@ -50,14 +57,14 @@ describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () =>
   it('shows a no-results message for a nonsense query', () => {
     cy.get('.player-search-toggle').click()
     cy.get('.player-search-input').type('zzqxnonexistentplayer')
-    cy.contains(/No players found/i, { timeout: 8000 }).should('exist')
+    cy.contains(/No players found/i, { timeout: DATA_TIMEOUT }).should('exist')
   })
 
   describe('NHL result correctness', () => {
     it('finds a well-known NHL player with correct team/position/sport badge', () => {
       cy.get('.player-search-toggle').click()
       cy.get('.player-search-input').type('mcdavid')
-      cy.contains('.player-search-result', 'Connor McDavid', { timeout: 8000 }).within(() => {
+      cy.contains('.player-search-result', 'Connor McDavid', { timeout: DATA_TIMEOUT }).within(() => {
         cy.contains('EDM').should('exist')
         cy.contains('NHL').should('exist')
       })
@@ -66,10 +73,10 @@ describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () =>
     it('opens the NHL player popup on selection, self-fetched stats included', () => {
       cy.get('.player-search-toggle').click()
       cy.get('.player-search-input').type('mcdavid')
-      cy.contains('.player-search-result', 'Connor McDavid', { timeout: 8000 }).click()
+      cy.contains('.player-search-result', 'Connor McDavid', { timeout: DATA_TIMEOUT }).click()
       cy.get('.player-popup', { timeout: 10000 }).should('exist')
       cy.contains('McDavid').should('exist')
-      cy.contains('Goals', { timeout: 8000 }).should('exist')
+      cy.contains('Goals', { timeout: DATA_TIMEOUT }).should('exist')
       cy.get('.pp-close').click()
       cy.get('.player-popup').should('not.exist')
     })
@@ -91,7 +98,7 @@ describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () =>
       cy.get('.player-search-toggle').click()
       cy.get('.player-search-input').type('mcdavid')
       cy.wait('@getSearchIndex')
-      cy.contains('.player-search-result', 'Connor McDavid', { timeout: 8000 }).within(() => {
+      cy.contains('.player-search-result', 'Connor McDavid', { timeout: DATA_TIMEOUT }).within(() => {
         cy.get('.psr-team')
           .should('have.class', 'psr-team--stale')
           .and('contain', 'EDM')
@@ -108,7 +115,7 @@ describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () =>
       cy.get('.player-search-toggle').click()
       cy.get('.player-search-input').type('brand new rookie')
       cy.wait('@getSearchIndex')
-      cy.contains('.player-search-result', 'Brand New Rookie', { timeout: 8000 }).within(() => {
+      cy.contains('.player-search-result', 'Brand New Rookie', { timeout: DATA_TIMEOUT }).within(() => {
         cy.get('.psr-team')
           .should('not.have.class', 'psr-team--stale')
           .and('contain', '—')
@@ -121,7 +128,7 @@ describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () =>
     it('finds a well-known PWHL player with correct sport badge', () => {
       cy.get('.player-search-toggle').click()
       cy.get('.player-search-input').type('poulin')
-      cy.contains('.player-search-result', 'Marie-Philip Poulin', { timeout: 8000 }).within(() => {
+      cy.contains('.player-search-result', 'Marie-Philip Poulin', { timeout: DATA_TIMEOUT }).within(() => {
         cy.contains('PWHL').should('exist')
       })
     })
@@ -129,10 +136,10 @@ describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () =>
     it('opens the PWHL player popup on selection, self-fetched stats included', () => {
       cy.get('.player-search-toggle').click()
       cy.get('.player-search-input').type('poulin')
-      cy.contains('.player-search-result', 'Marie-Philip Poulin', { timeout: 8000 }).click()
+      cy.contains('.player-search-result', 'Marie-Philip Poulin', { timeout: DATA_TIMEOUT }).click()
       cy.get('.popup-backdrop', { timeout: 10000 }).should('exist')
       cy.contains('Poulin').should('exist')
-      cy.contains('Goals', { timeout: 8000 }).should('exist')
+      cy.contains('Goals', { timeout: DATA_TIMEOUT }).should('exist')
       cy.get('.pp-close').click()
       cy.get('.popup-backdrop').should('not.exist')
     })
@@ -142,7 +149,7 @@ describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () =>
     it('finds a real AHL player with correct team/position/sport badge', () => {
       cy.get('.player-search-toggle').click()
       cy.get('.player-search-input').type('gendron')
-      cy.contains('.player-search-result', 'Alexis Gendron', { timeout: 8000 }).within(() => {
+      cy.contains('.player-search-result', 'Alexis Gendron', { timeout: DATA_TIMEOUT }).within(() => {
         cy.contains('PRO').should('exist')
         cy.contains('AHL').should('exist')
       })
@@ -151,7 +158,7 @@ describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () =>
     it('opens the AHL player popup on selection, self-fetched stats included', () => {
       cy.get('.player-search-toggle').click()
       cy.get('.player-search-input').type('gendron')
-      cy.contains('.player-search-result', 'Alexis Gendron', { timeout: 8000 }).click()
+      cy.contains('.player-search-result', 'Alexis Gendron', { timeout: DATA_TIMEOUT }).click()
       cy.get('.popup-backdrop', { timeout: 10000 }).should('exist')
       cy.contains('Gendron').should('exist')
       cy.get('.pp-close').click()
@@ -163,7 +170,7 @@ describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () =>
     it('finds a real ECHL player with correct team/position/sport badge', () => {
       cy.get('.player-search-toggle').click()
       cy.get('.player-search-input').type('amesbury')
-      cy.contains('.player-search-result', 'Daniel Amesbury', { timeout: 8000 }).within(() => {
+      cy.contains('.player-search-result', 'Daniel Amesbury', { timeout: DATA_TIMEOUT }).within(() => {
         cy.contains('ADK').should('exist')
         cy.contains('ECHL').should('exist')
       })
@@ -172,7 +179,7 @@ describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () =>
     it('opens the ECHL player popup on selection, self-fetched stats included', () => {
       cy.get('.player-search-toggle').click()
       cy.get('.player-search-input').type('amesbury')
-      cy.contains('.player-search-result', 'Daniel Amesbury', { timeout: 8000 }).click()
+      cy.contains('.player-search-result', 'Daniel Amesbury', { timeout: DATA_TIMEOUT }).click()
       cy.get('.popup-backdrop', { timeout: 10000 }).should('exist')
       cy.contains('Amesbury').should('exist')
       cy.get('.pp-close').click()
@@ -184,19 +191,19 @@ describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () =>
     it('tolerates a dropped-letter misspelling of a well-known surname', () => {
       cy.get('.player-search-toggle').click()
       cy.get('.player-search-input').type('crosbey')
-      cy.contains('.player-search-result', 'Sidney Crosby', { timeout: 8000 }).should('exist')
+      cy.contains('.player-search-result', 'Sidney Crosby', { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('tolerates first+last name typed in full', () => {
       cy.get('.player-search-toggle').click()
       cy.get('.player-search-input').type('sid crosby')
-      cy.contains('.player-search-result', 'Sidney Crosby', { timeout: 8000 }).should('exist')
+      cy.contains('.player-search-result', 'Sidney Crosby', { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('tolerates a dropped-letter misspelling of a PWHL surname', () => {
       cy.get('.player-search-toggle').click()
       cy.get('.player-search-input').type('woszniewicz')
-      cy.contains('.player-search-result', 'Sarah Wozniewicz', { timeout: 8000 }).should('exist')
+      cy.contains('.player-search-result', 'Sarah Wozniewicz', { timeout: DATA_TIMEOUT }).should('exist')
     })
   })
 })

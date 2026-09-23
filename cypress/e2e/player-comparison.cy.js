@@ -18,7 +18,7 @@ describe('NHL player comparison', () => {
     cy.visit('/')
     cy.get('.player-search-toggle').click()
     cy.get('.player-search-input').type('mcdavid')
-    cy.contains('.player-search-result', 'Connor McDavid', { timeout: 8000 }).click()
+    cy.contains('.player-search-result', 'Connor McDavid', { timeout: DATA_TIMEOUT }).click()
     cy.get('.player-popup', { timeout: 10000 }).should('exist')
     // Wait for the header's own async data (percentiles/box stats) to
     // settle before touching "vs Player" -- clicking while that's still
@@ -121,7 +121,7 @@ describe('NHL player comparison', () => {
     // "David Savard", "Mason McTavish") -- the real assertion is that
     // McDavid himself, excluded by id, never appears among them, not that
     // the result list is empty.
-    cy.get('.pce-result', { timeout: 8000 }).should('have.length.greaterThan', 0)
+    cy.get('.pce-result', { timeout: DATA_TIMEOUT }).should('have.length.greaterThan', 0)
     cy.get('.pce-result').should('not.contain.text', 'Connor McDavid')
   })
 
@@ -130,13 +130,13 @@ describe('NHL player comparison', () => {
     // Sarah Wozniewicz — real PWHL player (see player-search.cy.js's typo-
     // tolerance test), no NHL namesake.
     cy.get('.pce-input').type('wozniewicz')
-    cy.get('.pce-status', { timeout: 8000 }).should('contain.text', 'No players found')
+    cy.get('.pce-status', { timeout: DATA_TIMEOUT }).should('contain.text', 'No players found')
   })
 
   it('compares two NHL skaters: header, radar, and all four tabs render with real tiles', () => {
     cy.get('.pce-toggle').click()
     cy.get('.pce-input').type('matthews')
-    cy.contains('.pce-result', 'Auston Matthews', { timeout: 8000 }).click()
+    cy.contains('.pce-result', 'Auston Matthews', { timeout: DATA_TIMEOUT }).click()
 
     cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
     cy.contains('Connor McDavid').should('exist')
@@ -154,7 +154,7 @@ describe('NHL player comparison', () => {
   it('tab clicks land on the comparison popup, not the bottom nav underneath (regression)', () => {
     cy.get('.pce-toggle').click()
     cy.get('.pce-input').type('matthews')
-    cy.contains('.pce-result', 'Auston Matthews', { timeout: 8000 }).click()
+    cy.contains('.pce-result', 'Auston Matthews', { timeout: DATA_TIMEOUT }).click()
     cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
 
     cy.url().then((urlBefore) => {
@@ -171,7 +171,7 @@ describe('NHL player comparison', () => {
   it('closes back to the original player popup, not all the way out', () => {
     cy.get('.pce-toggle').click()
     cy.get('.pce-input').type('matthews')
-    cy.contains('.pce-result', 'Auston Matthews', { timeout: 8000 }).click()
+    cy.contains('.pce-result', 'Auston Matthews', { timeout: DATA_TIMEOUT }).click()
     cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
 
     cy.get('.pcp-backdrop .pp-close').click()
@@ -183,7 +183,7 @@ describe('NHL player comparison', () => {
   it('goalie vs skater is hard-blocked with an explanatory message', () => {
     cy.get('.pce-toggle').click()
     cy.get('.pce-input').type('shesterkin')
-    cy.contains('.pce-result', 'Igor Shesterkin', { timeout: 8000 }).click()
+    cy.contains('.pce-result', 'Igor Shesterkin', { timeout: DATA_TIMEOUT }).click()
 
     cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
     cy.contains(/different stat sets and can.t be compared/i).should('exist')
@@ -194,7 +194,7 @@ describe('NHL player comparison', () => {
   it('flags a soft position mismatch (forward vs defenceman) without blocking the comparison', () => {
     cy.get('.pce-toggle').click()
     cy.get('.pce-input').type('makar')
-    cy.contains('.pce-result', 'Cale Makar', { timeout: 8000 }).click()
+    cy.contains('.pce-result', 'Cale Makar', { timeout: DATA_TIMEOUT }).click()
 
     cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
     cy.contains(/Position mismatch/i).should('exist')
@@ -210,7 +210,7 @@ describe('NHL goalie comparison', () => {
     cy.visit('/')
     cy.get('.player-search-toggle').click()
     cy.get('.player-search-input').type('shesterkin')
-    cy.contains('.player-search-result', 'Igor Shesterkin', { timeout: 8000 }).click()
+    cy.contains('.player-search-result', 'Igor Shesterkin', { timeout: DATA_TIMEOUT }).click()
     cy.get('.player-popup', { timeout: 10000 }).should('exist')
     cy.contains(/GP|Record/i, { timeout: 10000 }).should('exist')
     // Same async header-reflow race as the NHL skater describe block above
@@ -231,7 +231,7 @@ describe('NHL goalie comparison', () => {
   it('compares two goalies with their own Record/Performance/Advanced tabs, not the skater tab set', () => {
     cy.get('.pce-toggle').click()
     cy.get('.pce-input').type('hellebuyck')
-    cy.contains('.pce-result', 'Connor Hellebuyck', { timeout: 8000 }).click()
+    cy.contains('.pce-result', 'Connor Hellebuyck', { timeout: DATA_TIMEOUT }).click()
 
     cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
     cy.contains('Igor Shesterkin').should('exist')
@@ -255,7 +255,7 @@ describe('PWHL player comparison', () => {
         win.localStorage.setItem('eyewall:pwhl_team', JSON.stringify({ abbr: 'BOS', teamId: 1 }))
       },
     })
-    cy.get('.pc-last', { timeout: 8000 }).first().invoke('text').then((lastName) => {
+    cy.get('.pc-last', { timeout: DATA_TIMEOUT }).first().invoke('text').then((lastName) => {
       cy.contains('.player-card', lastName).click()
     })
     cy.get('.player-popup', { timeout: 10000 }).should('exist')
@@ -282,13 +282,13 @@ describe('PWHL player comparison', () => {
   it('scopes search results to PWHL only, even for a well-known NHL name', () => {
     cy.get('.pce-toggle').click()
     cy.get('.pce-input').type('mcdavid')
-    cy.get('.pce-status', { timeout: 8000 }).should('contain.text', 'No players found')
+    cy.get('.pce-status', { timeout: DATA_TIMEOUT }).should('contain.text', 'No players found')
   })
 
   it('compares two PWHL skaters: radar and all four tabs render', () => {
     cy.get('.pce-toggle').click()
     cy.get('.pce-input').type('newhook')
-    cy.get('.pce-result', { timeout: 8000 }).then(($results) => {
+    cy.get('.pce-result', { timeout: DATA_TIMEOUT }).then(($results) => {
       if ($results.length === 0) {
         cy.log('Abby Newhook not on this roster in live data — skipping')
         return
@@ -305,7 +305,7 @@ describe('PWHL player comparison', () => {
   it('Possession tab explains PWHL has no WAR/RAPM data yet, rather than rendering blank', () => {
     cy.get('.pce-toggle').click()
     cy.get('.pce-input').type('newhook')
-    cy.get('.pce-result', { timeout: 8000 }).then(($results) => {
+    cy.get('.pce-result', { timeout: DATA_TIMEOUT }).then(($results) => {
       if ($results.length === 0) {
         cy.log('Abby Newhook not on this roster in live data — skipping')
         return
@@ -330,7 +330,7 @@ describe('PWHL goalie comparison', () => {
     // fixture command for named players the way cy.team() does for NHL,
     // so these are hardcoded real names, same convention player-search.cy.js
     // already uses for McDavid/Poulin/Crosby.
-    cy.contains('.player-card', 'Frankel', { timeout: 8000 }).click()
+    cy.contains('.player-card', 'Frankel', { timeout: DATA_TIMEOUT }).click()
     cy.get('.player-popup', { timeout: 10000 }).should('exist')
     cy.contains('GP', { timeout: 10000 }).should('exist')
     // Same header-reflow race as the other three describe blocks in this
@@ -352,7 +352,7 @@ describe('PWHL goalie comparison', () => {
   it('compares two goalies with their own Record/Performance/Advanced tabs and a real radar, not a broken-empty one', () => {
     cy.get('.pce-toggle').click()
     cy.get('.pce-input').type('thiele')
-    cy.contains('.pce-result', 'Thiele', { timeout: 8000 }).click()
+    cy.contains('.pce-result', 'Thiele', { timeout: DATA_TIMEOUT }).click()
 
     cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
     cy.contains('Frankel').should('exist')

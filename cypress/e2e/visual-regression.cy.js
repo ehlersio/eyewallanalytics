@@ -61,7 +61,7 @@ function visitAndSnapshot(path, snapshotName, theme) {
   cy.get('.topbar', { timeout: 10000 }).should('exist')
   // Let route data settle (fonts, images, async fetches) before capturing —
   // matches the timeout budget the rest of the suite already uses.
-  cy.get('body', { timeout: 8000 }).should('not.contain', 'Something went wrong')
+  cy.get('body', { timeout: DATA_TIMEOUT }).should('not.contain', 'Something went wrong')
   cy.wait(300)
   cy.compareSnapshot(snapshotName, { capture: 'viewport' })
 }

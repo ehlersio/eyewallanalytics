@@ -20,7 +20,7 @@ const VIEWPORTS = [
 const SEASON_DEPENDENT_ROUTES = new Set(['/', '/schedule'])
 function assertRouteContent(path, checks) {
   if (SEASON_DEPENDENT_ROUTES.has(path)) {
-    cy.get('body', { timeout: 8000 }).should($body => {
+    cy.get('body', { timeout: DATA_TIMEOUT }).should($body => {
       const isOffSeason = $body.find('.topbar-no-live').length > 0
       const hasAllChecks = checks.every(check =>
         check instanceof RegExp ? check.test($body.text()) : $body.text().includes(check)
@@ -87,7 +87,7 @@ VIEWPORTS.forEach(({ label, width, height }) => {
     it('no horizontal overflow on Team', () => {
       cy.team().then(t => {
         cy.visit('/team')
-        cy.contains(t.displayName, { timeout: 8000 }).should('exist')
+        cy.contains(t.displayName, { timeout: DATA_TIMEOUT }).should('exist')
         cy.window().then(win => {
           expect(win.document.documentElement.scrollWidth)
             .to.be.lte(win.innerWidth + 2)
@@ -98,7 +98,7 @@ VIEWPORTS.forEach(({ label, width, height }) => {
     it('Team tabs are clickable', () => {
       cy.team().then(t => {
         cy.visit('/team')
-        cy.contains(t.displayName, { timeout: 8000 }).should('exist')
+        cy.contains(t.displayName, { timeout: DATA_TIMEOUT }).should('exist')
         const tabs = ['Overview', 'Advanced', 'Splits', 'Trends']
         tabs.forEach(tab => {
           cy.contains(tab).should('exist').click()
@@ -115,7 +115,7 @@ VIEWPORTS.forEach(({ label, width, height }) => {
       // eyewallanalytics#285).
       cy.contains('Forwards', { timeout: 15000 }).should('exist')
         cy.contains(t.skater).first().click()
-        cy.contains(/Cap Hit|AAV/i, { timeout: 8000 }).should('exist')
+        cy.contains(/Cap Hit|AAV/i, { timeout: DATA_TIMEOUT }).should('exist')
         cy.contains('Analytics').should('exist')
         cy.contains('Heat Map').should('exist')
       })
@@ -182,7 +182,7 @@ VIEWPORTS.forEach(({ label, width, height }) => {
             win.localStorage.setItem('eyewall:theme', 'light')
           },
         })
-        cy.contains(t.displayName, { timeout: 8000 }).should('exist')
+        cy.contains(t.displayName, { timeout: DATA_TIMEOUT }).should('exist')
         cy.window().then(win => {
           expect(win.document.documentElement.scrollWidth)
             .to.be.lte(win.innerWidth + 2)

@@ -23,7 +23,7 @@ describe('News view', () => {
   beforeEach(() => {
     cy.team().then(t => {
       cy.visit('/news')
-      cy.contains(t.newsPageTitle, { timeout: 8000 }).should('be.visible')
+      cy.contains(t.newsPageTitle, { timeout: DATA_TIMEOUT }).should('be.visible')
       // Wait for articles to load before running any assertions
       cy.get('.news-chip', { timeout: 15000 }).should('have.length.gte', 2)
     })
@@ -111,7 +111,7 @@ describe('News view', () => {
   describe('Article list', () => {
     it('renders at least one article', () => {
       cy.team().then(t => {
-        cy.contains(new RegExp(`${t.displayName}|${t.abbr}|NHL|Stanley`, 'i'), { timeout: 8000 }).should('exist')
+        cy.contains(new RegExp(`${t.displayName}|${t.abbr}|NHL|Stanley`, 'i'), { timeout: DATA_TIMEOUT }).should('exist')
       })
     })
 

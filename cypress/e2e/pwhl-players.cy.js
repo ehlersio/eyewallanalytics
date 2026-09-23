@@ -2,21 +2,9 @@
 
 const PWHL_TEST_TEAMS = ['BOS', 'MIN', 'MTL', 'TOR']
 
-// These specs wait on live Worker data, so the assertion has to outlast the
-// app's own fetch budget -- otherwise a slow-but-successful load is scored
-// as a failure. pwhlApi gives each request 8s and now retries once (see
-// retryFetch.js), so the app can legitimately spend ~16.4s before it gives
-// up -- and more again under StrictMode's double mount in dev.
-//
-// The old 8s here was a dead heat with the *first* attempt's abort. The run
-// that caught it is on record: "renders Defencemen section" failed for MTL
-// with one /pwhl/players request timed out and a second still in flight --
-// a page that was going to load, failed at the instant the first attempt
-// gave up. Its sibling assertions on the same page passed.
-//
-// Nothing pays this cost on the happy path -- the endpoints answer in well
-// under a second, warm or cold.
-const DATA_TIMEOUT = 20000
+// DATA_TIMEOUT (cypress/support/e2e.js) is the ceiling for every live-data
+// wait below. This spec is where the old literal 8000 was caught failing:
+// see that file for what happened and why the number is what it is.
 
 PWHL_TEST_TEAMS.forEach(abbr => {
   const teamId = { BOS: 1, MIN: 2, MTL: 3, TOR: 6 }[abbr]

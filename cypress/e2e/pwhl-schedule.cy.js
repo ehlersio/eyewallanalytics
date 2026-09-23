@@ -55,11 +55,11 @@ describe('PWHL Schedule', () => {
 
   describe('Regular Season tab', () => {
     it('renders played/upcoming count', () => {
-      cy.contains(/\d+ played/i, { timeout: 8000 }).should('exist')
+      cy.contains(/\d+ played/i, { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('renders sort bar', () => {
-      cy.contains(/Newest|Oldest/i, { timeout: 8000 }).should('exist')
+      cy.contains(/Newest|Oldest/i, { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('can toggle sort order', () => {
@@ -68,23 +68,23 @@ describe('PWHL Schedule', () => {
     })
 
     it('renders game cards', () => {
-      cy.get('.card', { timeout: 8000 }).should('have.length.greaterThan', 2)
+      cy.get('.card', { timeout: DATA_TIMEOUT }).should('have.length.greaterThan', 2)
     })
 
     it('shows final scores', () => {
-      cy.contains(/FINAL|Final|W\d+|\d+–\d+/i, { timeout: 8000 }).should('exist')
+      cy.contains(/FINAL|Final|W\d+|\d+–\d+/i, { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('calendar toggle button exists', () => {
       // Calendar toggle may use icon or class — check it renders without crashing
-      cy.get('button', { timeout: 8000 }).should('have.length.greaterThan', 0)
+      cy.get('button', { timeout: DATA_TIMEOUT }).should('have.length.greaterThan', 0)
       cy.assertNoErrors()
     })
   })
 
   describe('Playoffs tab', () => {
     it('playoffs tab exists', () => {
-      cy.contains('Playoffs', { timeout: 8000 }).should('exist')
+      cy.contains('Playoffs', { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('clicking playoffs tab does not crash', () => {
@@ -102,7 +102,7 @@ describe('PWHL Schedule', () => {
   // exists and doesn't crash, not that it has data.
   describe('Preseason tab', () => {
     it('preseason tab exists', () => {
-      cy.contains('Preseason', { timeout: 8000 }).should('exist')
+      cy.contains('Preseason', { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('clicking preseason tab does not crash', () => {
@@ -118,24 +118,24 @@ describe('PWHL Schedule', () => {
   // season) tab; BOS's 2025-26 regular season has plenty.
   describe('Game stats popup', () => {
     it('opens on a completed game click and shows the score header', () => {
-      cy.get('.result-card.clickable', { timeout: 8000 }).first().click()
-      cy.get('.pgs-card', { timeout: 8000 }).should('be.visible')
+      cy.get('.result-card.clickable', { timeout: DATA_TIMEOUT }).first().click()
+      cy.get('.pgs-card', { timeout: DATA_TIMEOUT }).should('be.visible')
       cy.get('.pgs-header').should('exist')
       cy.get('.pgs-score-big').should('have.length', 2)
       cy.assertNoErrors()
     })
 
     it('renders period scoring and three stars when available', () => {
-      cy.get('.result-card.clickable', { timeout: 8000 }).first().click()
-      cy.get('.pgs-card', { timeout: 8000 }).should('be.visible')
+      cy.get('.result-card.clickable', { timeout: DATA_TIMEOUT }).first().click()
+      cy.get('.pgs-card', { timeout: DATA_TIMEOUT }).should('be.visible')
       // Both sections are data-dependent (HockeyTech gameSummary) -- assert
       // the popup doesn't crash either way rather than requiring both.
       cy.assertNoErrors()
     })
 
     it('toggles between team skater tables when box-score data is present', () => {
-      cy.get('.result-card.clickable', { timeout: 8000 }).first().click()
-      cy.get('.pgs-card', { timeout: 8000 }).should('be.visible')
+      cy.get('.result-card.clickable', { timeout: DATA_TIMEOUT }).first().click()
+      cy.get('.pgs-card', { timeout: DATA_TIMEOUT }).should('be.visible')
       cy.get('body').then($body => {
         if ($body.find('.pgs-toggle-btn').length === 2) {
           cy.get('.pgs-toggle-btn').eq(1).click()
@@ -146,15 +146,15 @@ describe('PWHL Schedule', () => {
     })
 
     it('CTA navigates to the shot map for the selected game', () => {
-      cy.get('.result-card.clickable', { timeout: 8000 }).first().click()
-      cy.get('.pgs-cta-btn', { timeout: 8000 }).should('contain.text', 'Shot Map').click()
-      cy.location('pathname', { timeout: 8000 }).should('eq', '/pwhl/shots')
+      cy.get('.result-card.clickable', { timeout: DATA_TIMEOUT }).first().click()
+      cy.get('.pgs-cta-btn', { timeout: DATA_TIMEOUT }).should('contain.text', 'Shot Map').click()
+      cy.location('pathname', { timeout: DATA_TIMEOUT }).should('eq', '/pwhl/shots')
       cy.assertNoErrors()
     })
 
     it('closes via the close button', () => {
-      cy.get('.result-card.clickable', { timeout: 8000 }).first().click()
-      cy.get('.pgs-card', { timeout: 8000 }).should('be.visible')
+      cy.get('.result-card.clickable', { timeout: DATA_TIMEOUT }).first().click()
+      cy.get('.pgs-card', { timeout: DATA_TIMEOUT }).should('be.visible')
       cy.get('.pgs-close').click()
       cy.get('.pgs-card').should('not.exist')
     })
@@ -266,14 +266,14 @@ describe('PWHL Schedule', () => {
     })
 
     it('shows the upcoming card as clickable with a preview hint', () => {
-      cy.contains('Tap for preview', { timeout: 8000 }).should('exist')
+      cy.contains('Tap for preview', { timeout: DATA_TIMEOUT }).should('exist')
       cy.assertNoErrors()
     })
 
     it('opens on an upcoming game click and shows the prediction section', () => {
-      cy.contains('Tap for preview', { timeout: 8000 }).click()
+      cy.contains('Tap for preview', { timeout: DATA_TIMEOUT }).click()
       cy.wait(['@preview', '@prediction'])
-      cy.get('.pgp-card', { timeout: 8000 }).should('be.visible')
+      cy.get('.pgp-card', { timeout: DATA_TIMEOUT }).should('be.visible')
       cy.contains('.pgp-section-label', 'Prediction').should('exist')
       cy.contains('65%').should('exist')
       cy.contains('Boston is favored in this test matchup').should('exist')
@@ -281,9 +281,9 @@ describe('PWHL Schedule', () => {
     })
 
     it('renders season series, head-to-head, team form, hot streaks, leaders, and special teams', () => {
-      cy.contains('Tap for preview', { timeout: 8000 }).click()
+      cy.contains('Tap for preview', { timeout: DATA_TIMEOUT }).click()
       cy.wait(['@preview', '@prediction'])
-      cy.get('.pgp-card', { timeout: 8000 }).should('be.visible')
+      cy.get('.pgp-card', { timeout: DATA_TIMEOUT }).should('be.visible')
       cy.contains('.pgp-section-label', 'Season Series').should('exist')
       cy.contains('Last 5 seasons vs OTT').should('exist')
       cy.contains('.pgp-section-label', 'Team Form').should('exist')
@@ -296,8 +296,8 @@ describe('PWHL Schedule', () => {
     })
 
     it('closes via the close button', () => {
-      cy.contains('Tap for preview', { timeout: 8000 }).click()
-      cy.get('.pgp-card', { timeout: 8000 }).should('be.visible')
+      cy.contains('Tap for preview', { timeout: DATA_TIMEOUT }).click()
+      cy.get('.pgp-card', { timeout: DATA_TIMEOUT }).should('be.visible')
       cy.get('.pgp-close').click()
       cy.get('.pgp-card').should('not.exist')
     })
@@ -308,7 +308,7 @@ describe('PWHL Schedule', () => {
     // /pwhl/prediction route already had everything needed (win%, expected
     // score, narrative), just the tracking/export plumbing was unwired.
     it('auto-saves the prediction to localStorage for track-record tallying', () => {
-      cy.contains('Tap for preview', { timeout: 8000 }).click()
+      cy.contains('Tap for preview', { timeout: DATA_TIMEOUT }).click()
       cy.wait(['@preview', '@prediction'])
       cy.window().then(win => {
         const preds = JSON.parse(win.localStorage.getItem('eyewall_pwhl_predictions_v1') || '[]')
@@ -328,16 +328,16 @@ describe('PWHL Schedule', () => {
           { gameId: 222, predictedTeamWin: true, teamActual: 1, oppActual: 3, teamWon: false, correct: false },
         ]))
       })
-      cy.contains('Tap for preview', { timeout: 8000 }).click()
+      cy.contains('Tap for preview', { timeout: DATA_TIMEOUT }).click()
       cy.wait(['@preview', '@prediction'])
       cy.contains(/📊 1\/2 correct \(50%\)/).should('exist')
       cy.assertNoErrors()
     })
 
     it('shows the share button for the prediction card', () => {
-      cy.contains('Tap for preview', { timeout: 8000 }).click()
+      cy.contains('Tap for preview', { timeout: DATA_TIMEOUT }).click()
       cy.wait(['@preview', '@prediction'])
-      cy.get('.share-buttons-row', { timeout: 8000 }).should('exist')
+      cy.get('.share-buttons-row', { timeout: DATA_TIMEOUT }).should('exist')
       cy.contains(/Share/i).should('exist')
       cy.assertNoErrors()
     })

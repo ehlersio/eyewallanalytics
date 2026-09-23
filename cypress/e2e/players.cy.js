@@ -46,7 +46,7 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       // Waiting for real player text (.pc-last only renders on the real
       // card) before clicking guards against that class ever colliding again.
       it('opens the player popup when a real roster card is clicked', () => {
-        cy.get('.pc-last', { timeout: 8000 }).first().invoke('text').then(lastName => {
+        cy.get('.pc-last', { timeout: DATA_TIMEOUT }).first().invoke('text').then(lastName => {
           cy.contains('.player-card', lastName).click()
         })
         cy.get('.pp-tab', { timeout: 6000 }).should('exist')
@@ -57,7 +57,7 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       beforeEach(() => {
         cy.team(teamAbbr).then(t => {
           cy.contains(t.skater).first().click()
-          cy.get('.pp-tab', { timeout: 8000 }).should('exist')
+          cy.get('.pp-tab', { timeout: DATA_TIMEOUT }).should('exist')
         })
       })
 
@@ -113,7 +113,7 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
 
       it('Stats tab shows defensive stats', function () {
         cy.skipUnlessContentAppears('.pp-body', '.highlight-section')
-        cy.contains('Defensive', { timeout: 8000 }).should('exist')
+        cy.contains('Defensive', { timeout: DATA_TIMEOUT }).should('exist')
         cy.contains(/Hits|Blocks|TK|GV/).should('exist')
       })
 
@@ -138,14 +138,14 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       it('Analytics tab shows percentile bars', function () {
         cy.get('.pp-tab').contains('Analytics').click()
         cy.skipIfEither('.pp-heatmap-empty', '.pa-wrap', { timeout: 10000 })
-        cy.contains(/Power Play/i, { timeout: 8000 }).should('exist')
+        cy.contains(/Power Play/i, { timeout: DATA_TIMEOUT }).should('exist')
         cy.contains(/Competition/i).should('exist')
       })
 
       it('Heat Map tab renders rink', function () {
         cy.get('.pp-tab').contains('Heat Map').click()
-        cy.skipIfEither('.pp-heatmap-empty', 'svg, canvas', { timeout: 8000 })
-        cy.get('svg, canvas', { timeout: 8000 }).should('exist')
+        cy.skipIfEither('.pp-heatmap-empty', 'svg, canvas', { timeout: DATA_TIMEOUT })
+        cy.get('svg, canvas', { timeout: DATA_TIMEOUT }).should('exist')
       })
 
       it('closes when X is clicked', () => {
@@ -158,7 +158,7 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       beforeEach(() => {
         cy.team(teamAbbr).then(t => {
           cy.contains(t.goalie).first().click()
-          cy.get('.pp-tab', { timeout: 8000 }).should('exist')
+          cy.get('.pp-tab', { timeout: DATA_TIMEOUT }).should('exist')
         })
       })
 
@@ -208,8 +208,8 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
 
       it('Heat Map tab renders', function () {
         cy.get('.pp-tab').contains('Heat Map').click()
-        cy.skipIfEither('.pp-heatmap-empty', 'svg, canvas', { timeout: 8000 })
-        cy.get('svg, canvas', { timeout: 8000 }).should('exist')
+        cy.skipIfEither('.pp-heatmap-empty', 'svg, canvas', { timeout: DATA_TIMEOUT })
+        cy.get('svg, canvas', { timeout: DATA_TIMEOUT }).should('exist')
       })
 
       it('shows value badge', () => {
@@ -224,14 +224,14 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
     describe('Stats table', () => {
       it('renders the Stats table tab', function () {
         cy.contains('Stats').click()
-        cy.skipIfEither('.drill-empty', '.sst-table', { timeout: 8000 })
+        cy.skipIfEither('.drill-empty', '.sst-table', { timeout: DATA_TIMEOUT })
         cy.team(teamAbbr).then(t => cy.contains(t.skater).should('exist'))
         cy.contains('GP').should('exist')
       })
 
       it('stats table has sortable columns', function () {
         cy.contains('Stats').click()
-        cy.skipIfEither('.drill-empty', '.sst-table', { timeout: 8000 })
+        cy.skipIfEither('.drill-empty', '.sst-table', { timeout: DATA_TIMEOUT })
         cy.contains('G').click()
         cy.team(teamAbbr).then(t => cy.contains(t.skater).should('exist'))
       })

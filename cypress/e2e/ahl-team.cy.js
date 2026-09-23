@@ -20,7 +20,7 @@ Object.entries(AHL_TEST_TEAMS).forEach(([abbr, teamId]) => {
         },
       })
       cy.get('.topbar', { timeout: 10000 }).should('exist')
-      cy.contains('History', { timeout: 8000 }).should('exist').click()
+      cy.contains('History', { timeout: DATA_TIMEOUT }).should('exist').click()
     })
 
     it('renders the Founded and Home Arena sections', () => {
@@ -30,7 +30,7 @@ Object.entries(AHL_TEST_TEAMS).forEach(([abbr, teamId]) => {
     })
 
     it('renders an Affiliations section with the NHL parent club', () => {
-      cy.contains('Affiliations', { timeout: 8000 }).should('exist')
+      cy.contains('Affiliations', { timeout: DATA_TIMEOUT }).should('exist')
       cy.contains('NHL').should('exist')
     })
 
@@ -50,16 +50,16 @@ describe('AHL Team view — HER — History tab content (deep, well-documented f
       },
     })
     cy.get('.topbar', { timeout: 10000 }).should('exist')
-    cy.contains('History', { timeout: 8000 }).should('exist').click()
+    cy.contains('History', { timeout: DATA_TIMEOUT }).should('exist').click()
   })
 
   it('renders Calder Cup championships', () => {
-    cy.contains('Championships', { timeout: 8000 }).should('exist')
+    cy.contains('Championships', { timeout: DATA_TIMEOUT }).should('exist')
     cy.contains(/Calder Cup 19\d\d|Calder Cup 20\d\d/).should('exist')
   })
 
   it('renders retired numbers', () => {
-    cy.contains('Retired Numbers', { timeout: 8000 }).should('exist')
+    cy.contains('Retired Numbers', { timeout: DATA_TIMEOUT }).should('exist')
   })
 })
 

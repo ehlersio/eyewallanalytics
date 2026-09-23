@@ -12,13 +12,13 @@ describe('Milestones feed', () => {
   beforeEach(() => {
     cy.team().then(t => {
       cy.visit('/news');
-      cy.contains(t.newsPageTitle, { timeout: 8000 }).should('be.visible');
+      cy.contains(t.newsPageTitle, { timeout: DATA_TIMEOUT }).should('be.visible');
       cy.get('.news-view-toggle-btn').contains('Milestones').click();
     });
   });
 
   it('switches to the Milestones tab and shows the header', () => {
-    cy.contains('Milestones', { timeout: 8000 }).should('be.visible');
+    cy.contains('Milestones', { timeout: DATA_TIMEOUT }).should('be.visible');
   });
 
   it('News/Milestones/Trivia/Transactions toggle does not collide with source filter chips', () => {
@@ -34,7 +34,7 @@ describe('Milestones feed', () => {
 
   it('clicking News returns to the news feed', () => {
     cy.get('.news-view-toggle-btn').contains('News').click();
-    cy.get('.news-filter-chips', { timeout: 8000 }).should('exist');
+    cy.get('.news-filter-chips', { timeout: DATA_TIMEOUT }).should('exist');
   });
 
   describe('Team filter dropdown', () => {
@@ -160,7 +160,7 @@ describe('PWHL milestones', () => {
       if ($cards.length === 0) return; // no PWHL milestones today — nothing to check
       cy.wrap($cards.first()).click();
       cy.get('.popup-backdrop', { timeout: 10000 }).should('exist');
-      cy.contains('Goals', { timeout: 8000 }).should('exist');
+      cy.contains('Goals', { timeout: DATA_TIMEOUT }).should('exist');
       cy.get('.pp-close').click();
       cy.get('.popup-backdrop').should('not.exist');
     });

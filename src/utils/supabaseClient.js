@@ -12,6 +12,7 @@
 
 import { CURRENT_SEASON } from './teamConfig';
 import i18n from '../i18n';
+import { fetchWithRetry } from './retryFetch';
 
 // Season as a number for filter defaults — actual value normally comes
 // from the caller (view components track season state themselves); this
@@ -33,7 +34,8 @@ async function workerFetch(path) {
     return null;
   }
   try {
-    const res = await fetch(`${WORKER_URL}${path}`, { signal: AbortSignal.timeout(8000) });
+    // One retry on a stalled connection -- see retryFetch.js.
+    const res = await fetchWithRetry(`${WORKER_URL}${path}`);
     if (!res.ok) throw new Error(`Worker ${res.status}: ${path}`);
     return await res.json();
   } catch (err) {

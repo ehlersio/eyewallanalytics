@@ -15,6 +15,24 @@ addCompareSnapshotCommand({
   errorThreshold: 1,
 })
 
+// How long an assertion may wait on live Worker data.
+//
+// It has to outlast the app's OWN fetch budget, not match it. The *Api.js
+// modules give each request 8s and retry once (src/utils/retryFetch.js), so
+// the app can legitimately spend ~16.4s before it gives up -- and more again
+// under React StrictMode, which double-mounts on the dev server these specs
+// run against.
+//
+// Specs used to assert with a literal { timeout: 8000 }, a dead heat with a
+// single attempt: a request that stalled failed the test at the same instant
+// the app aborted it. That is exactly how pwhl-players.cy.js's "renders
+// Defencemen section" flaked in CI while its sibling assertions on the same
+// page passed -- one /pwhl/players timed out with a second still in flight.
+//
+// Nothing pays this on the happy path: these endpoints answer in well under
+// a second, warm or cold. It is only the ceiling before we call it a failure.
+globalThis.DATA_TIMEOUT = 20000
+
 const IGNORED_ERRORS = [
   /ResizeObserver loop/,
   /Non-passive event listener/,

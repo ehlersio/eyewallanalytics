@@ -49,7 +49,7 @@ function openTriviaTab() {
   cy.setTeam('CAR');
   cy.visit('/news');
   cy.get('.news-view-toggle-btn').contains('Trivia').click();
-  cy.get('.trivia-feed', { timeout: 8000 }).should('be.visible');
+  cy.get('.trivia-feed', { timeout: DATA_TIMEOUT }).should('be.visible');
 }
 
 describe('Trivia tab', () => {

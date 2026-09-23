@@ -7,6 +7,7 @@
 
 import Fuse from 'fuse.js';
 import { cached, TTL } from './cache.js';
+import { fetchWithRetry } from './retryFetch';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
 
@@ -23,9 +24,11 @@ let indexedPlayers = null;
 async function fetchSearchIndex() {
   if (!WORKER_URL) return [];
   try {
-    const res = await fetch(`${WORKER_URL}/players-search-index`, {
-      signal: AbortSignal.timeout(8000),
-    });
+    // One retry on a stalled connection -- see retryFetch.js. This one is
+    // worth more than most: cached() stores whatever this resolves to, so a
+    // single stall cached the empty array and left global search silently
+    // finding nobody for the next 30 minutes (TTL.PLAYER_SEARCH_INDEX).
+    const res = await fetchWithRetry(`${WORKER_URL}/players-search-index`);
     if (!res.ok) {
       console.warn(`playerSearch ${res.status}: /players-search-index`);
       return [];
