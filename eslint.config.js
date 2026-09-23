@@ -24,6 +24,8 @@ export default [
         navigator: "readonly",
         console: "readonly",
         fetch: "readonly",
+        Response: "readonly",
+        DOMException: "readonly",
         setTimeout: "readonly",
         clearTimeout: "readonly",
         setInterval: "readonly",

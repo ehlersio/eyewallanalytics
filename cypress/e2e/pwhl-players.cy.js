@@ -2,6 +2,22 @@
 
 const PWHL_TEST_TEAMS = ['BOS', 'MIN', 'MTL', 'TOR']
 
+// These specs wait on live Worker data, so the assertion has to outlast the
+// app's own fetch budget -- otherwise a slow-but-successful load is scored
+// as a failure. pwhlApi gives each request 8s and now retries once (see
+// retryFetch.js), so the app can legitimately spend ~16.4s before it gives
+// up -- and more again under StrictMode's double mount in dev.
+//
+// The old 8s here was a dead heat with the *first* attempt's abort. The run
+// that caught it is on record: "renders Defencemen section" failed for MTL
+// with one /pwhl/players request timed out and a second still in flight --
+// a page that was going to load, failed at the instant the first attempt
+// gave up. Its sibling assertions on the same page passed.
+//
+// Nothing pays this cost on the happy path -- the endpoints answer in well
+// under a second, warm or cold.
+const DATA_TIMEOUT = 20000
+
 PWHL_TEST_TEAMS.forEach(abbr => {
   const teamId = { BOS: 1, MIN: 2, MTL: 3, TOR: 6 }[abbr]
 
@@ -18,19 +34,19 @@ PWHL_TEST_TEAMS.forEach(abbr => {
 
     describe('Roster tab', () => {
       it('renders Forwards section', () => {
-        cy.contains(/Forwards/i, { timeout: 8000 }).should('exist')
+        cy.contains(/Forwards/i, { timeout: DATA_TIMEOUT }).should('exist')
       })
 
       it('renders Defencemen section', () => {
-        cy.contains(/Defencemen|Defence/i, { timeout: 8000 }).should('exist')
+        cy.contains(/Defencemen|Defence/i, { timeout: DATA_TIMEOUT }).should('exist')
       })
 
       it('renders Goalies section', () => {
-        cy.contains('Goalies', { timeout: 8000 }).should('exist')
+        cy.contains('Goalies', { timeout: DATA_TIMEOUT }).should('exist')
       })
 
       it('renders player photos or fallback initials', () => {
-        cy.get('[class*="player-card"], [class*="roster"]', { timeout: 8000 })
+        cy.get('[class*="player-card"], [class*="roster"]', { timeout: DATA_TIMEOUT })
           .should('have.length.greaterThan', 0)
       })
 
@@ -41,7 +57,7 @@ PWHL_TEST_TEAMS.forEach(abbr => {
       // real player text (.pc-last only renders on the real card) before
       // clicking guards against that class ever colliding again.
       it('opens the player popup when a real roster card is clicked', () => {
-        cy.get('.pc-last', { timeout: 8000 }).first().invoke('text').then(lastName => {
+        cy.get('.pc-last', { timeout: DATA_TIMEOUT }).first().invoke('text').then(lastName => {
           cy.contains('.player-card', lastName).click()
         })
         cy.get('.player-popup', { timeout: 6000 }).should('exist')
@@ -50,8 +66,8 @@ PWHL_TEST_TEAMS.forEach(abbr => {
 
     describe('Stats tab', () => {
       beforeEach(() => {
-        cy.contains('Stats', { timeout: 8000 }).click()
-        cy.contains('GP', { timeout: 8000 }).should('exist')
+        cy.contains('Stats', { timeout: DATA_TIMEOUT }).click()
+        cy.contains('GP', { timeout: DATA_TIMEOUT }).should('exist')
       })
 
       it('renders skater stats table', () => {
@@ -62,7 +78,7 @@ PWHL_TEST_TEAMS.forEach(abbr => {
 
       it('can switch to Goalies sub-tab', () => {
         cy.contains('Goalies').click()
-        cy.contains(/SV%|GAA/i, { timeout: 8000 }).should('exist')
+        cy.contains(/SV%|GAA/i, { timeout: DATA_TIMEOUT }).should('exist')
         cy.assertNoErrors()
       })
 
@@ -83,9 +99,9 @@ PWHL_TEST_TEAMS.forEach(abbr => {
     // the live Worker (not a fixture) since these are real, changing stats.
     describe('Historical-season stat pinning', () => {
       beforeEach(() => {
-        cy.contains('Stats', { timeout: 8000 }).click()
-        cy.contains('2023-24', { timeout: 8000 }).click()
-        cy.contains('GP', { timeout: 8000 }).should('exist')
+        cy.contains('Stats', { timeout: DATA_TIMEOUT }).click()
+        cy.contains('2023-24', { timeout: DATA_TIMEOUT }).click()
+        cy.contains('GP', { timeout: DATA_TIMEOUT }).should('exist')
       })
 
       it("popup's Points value matches the clicked 2023-24 row, not the current season", () => {
@@ -94,7 +110,7 @@ PWHL_TEST_TEAMS.forEach(abbr => {
           const rowPts = $row.find('td').eq(5).text().trim()
           cy.wrap($row).click()
           cy.get('.pp-tab', { timeout: 10000 }).should('exist')
-          cy.contains('2023-24 Regular Season', { timeout: 8000 }).should('exist')
+          cy.contains('2023-24 Regular Season', { timeout: DATA_TIMEOUT }).should('exist')
           cy.contains('.stat-tile-label', 'Points')
             .closest('.stat-tile')
             .find('.stat-tile-value')
@@ -107,7 +123,7 @@ PWHL_TEST_TEAMS.forEach(abbr => {
     describe('Player popup (skater)', () => {
       beforeEach(() => {
         // Open from Stats tab table row
-        cy.contains('Stats', { timeout: 8000 }).click()
+        cy.contains('Stats', { timeout: DATA_TIMEOUT }).click()
         cy.get('tbody tr', { timeout: 10000 }).first().click()
         cy.get('.pp-tab', { timeout: 10000 }).should('exist')
       })
@@ -128,7 +144,7 @@ PWHL_TEST_TEAMS.forEach(abbr => {
 
       it('Heat Map tab renders rink', () => {
         cy.get('.pp-tab').contains('Heat Map').click()
-        cy.get('svg', { timeout: 8000 }).should('exist')
+        cy.get('svg', { timeout: DATA_TIMEOUT }).should('exist')
         cy.assertNoErrors()
       })
 
@@ -150,9 +166,9 @@ PWHL_TEST_TEAMS.forEach(abbr => {
     // gaps fixed earlier this session. Mirrors the skater popup block above.
     describe('Player popup (goalie)', () => {
       beforeEach(() => {
-        cy.contains('Stats', { timeout: 8000 }).click()
+        cy.contains('Stats', { timeout: DATA_TIMEOUT }).click()
         cy.contains('Goalies').click()
-        cy.contains(/SV%|GAA/i, { timeout: 8000 }).should('exist')
+        cy.contains(/SV%|GAA/i, { timeout: DATA_TIMEOUT }).should('exist')
         cy.get('tbody tr', { timeout: 10000 }).first().click()
         cy.get('.pp-tab', { timeout: 10000 }).should('exist')
       })
@@ -163,8 +179,8 @@ PWHL_TEST_TEAMS.forEach(abbr => {
 
       it('Heat Map tab renders a goalie zone/dot map, not the skater rink', () => {
         cy.get('.pp-tab').contains('Heat Map').click()
-        cy.get('svg', { timeout: 8000 }).should('exist')
-        cy.contains(/Shots faced/i, { timeout: 8000 }).should('exist')
+        cy.get('svg', { timeout: DATA_TIMEOUT }).should('exist')
+        cy.contains(/Shots faced/i, { timeout: DATA_TIMEOUT }).should('exist')
         cy.contains(/Dot map/i).should('exist')
         cy.contains(/Zone SV%/i).should('exist')
         cy.assertNoErrors()
@@ -172,7 +188,7 @@ PWHL_TEST_TEAMS.forEach(abbr => {
 
       it('can switch to Zone SV% mode without erroring', () => {
         cy.get('.pp-tab').contains('Heat Map').click()
-        cy.contains(/Zone SV%/i, { timeout: 8000 }).click()
+        cy.contains(/Zone SV%/i, { timeout: DATA_TIMEOUT }).click()
         cy.assertNoErrors()
       })
 
@@ -183,15 +199,15 @@ PWHL_TEST_TEAMS.forEach(abbr => {
     })
 
     describe('Season picker', () => {
-      beforeEach(() => cy.contains('Stats', { timeout: 8000 }).click())
+      beforeEach(() => cy.contains('Stats', { timeout: DATA_TIMEOUT }).click())
 
       it('shows season options', () => {
-        cy.contains('2025-26', { timeout: 8000 }).should('exist')
+        cy.contains('2025-26', { timeout: DATA_TIMEOUT }).should('exist')
         cy.contains('2024-25').should('exist')
       })
 
       it('switching seasons does not crash', () => {
-        cy.contains('2024-25', { timeout: 8000 }).click()
+        cy.contains('2024-25', { timeout: DATA_TIMEOUT }).click()
         cy.assertNoErrors()
         cy.contains('2025-26').click()
       })
@@ -217,13 +233,13 @@ describe('PWHL Players view — DET (expansion, no games played yet)', () => {
 
   describe('Roster tab (real roster data)', () => {
     it('renders Forwards, Defencemen, and Goalies sections', () => {
-      cy.contains(/Forwards/i, { timeout: 8000 }).should('exist')
-      cy.contains(/Defencemen|Defence/i, { timeout: 8000 }).should('exist')
-      cy.contains('Goalies', { timeout: 8000 }).should('exist')
+      cy.contains(/Forwards/i, { timeout: DATA_TIMEOUT }).should('exist')
+      cy.contains(/Defencemen|Defence/i, { timeout: DATA_TIMEOUT }).should('exist')
+      cy.contains('Goalies', { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('renders real player cards, not a no-roster message', () => {
-      cy.get('[class*="player-card"], [class*="roster"]', { timeout: 8000 })
+      cy.get('[class*="player-card"], [class*="roster"]', { timeout: DATA_TIMEOUT })
         .should('have.length.greaterThan', 0)
       cy.contains(/No roster data/i).should('not.exist')
     })
@@ -234,7 +250,7 @@ describe('PWHL Players view — DET (expansion, no games played yet)', () => {
     // this file), not anything expansion-team-specific. Fixed by giving the
     // skeleton its own ".player-card-skeleton" class.
     it('opens the player popup when a real roster card is clicked', () => {
-      cy.get('.pc-last', { timeout: 8000 }).first().invoke('text').then(lastName => {
+      cy.get('.pc-last', { timeout: DATA_TIMEOUT }).first().invoke('text').then(lastName => {
         cy.contains('.player-card', lastName).click()
       })
       cy.get('.player-popup', { timeout: 6000 }).should('exist')
@@ -242,17 +258,58 @@ describe('PWHL Players view — DET (expansion, no games played yet)', () => {
   })
 
   describe('Stats tab (no games played yet)', () => {
-    beforeEach(() => cy.contains('Stats', { timeout: 8000 }).click())
+    beforeEach(() => cy.contains('Stats', { timeout: DATA_TIMEOUT }).click())
 
     it('shows the no-skater-stats empty message instead of a table', () => {
-      cy.contains(/No skater stats/i, { timeout: 8000 }).should('exist')
+      cy.contains(/No skater stats/i, { timeout: DATA_TIMEOUT }).should('exist')
       cy.get('table').should('not.exist')
     })
 
     it('shows the no-goalie-stats empty message on the Goalies sub-tab', () => {
       cy.contains('Goalies').click()
-      cy.contains(/No goalie stats/i, { timeout: 8000 }).should('exist')
+      cy.contains(/No goalie stats/i, { timeout: DATA_TIMEOUT }).should('exist')
       cy.assertNoErrors()
     })
+  })
+})
+
+// What actually made this spec flake: a /pwhl/players request stalled, the
+// app aborted it at its own 8s budget and rendered a terminal "Failed to
+// load roster." card, and the assertion's 8s ran out at the same instant --
+// so a page that was still going to load was scored as a failure. The fix
+// is DATA_TIMEOUT above, which outlasts the app's budget.
+//
+// pwhlApi also retries a stalled request now (retryFetch.js), but that is a
+// production fix, not what makes this spec green, and it deliberately has
+// no E2E test: main.jsx renders under React StrictMode, so the dev server
+// this suite runs against already double-mounts and fires a second request
+// on its own. A test here cannot tell the retry apart from StrictMode --
+// verified by setting retries: 0, which left the suite fully green. The
+// retry's real guard is src/utils/__tests__/retryFetch.test.js. Production
+// builds have no StrictMode, so there a stall really is a single attempt.
+//
+// The intercept below is pinned to the Worker's own origin on purpose: the
+// app route is *also* /pwhl/players, so a bare '**/pwhl/players*' matches
+// the page navigation too and destroys the document instead of the API call.
+const WORKER_URL_PWHL_PLAYERS =
+  Cypress.expose('WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
+const ROSTER_API = `${WORKER_URL_PWHL_PLAYERS}/pwhl/players*`
+
+describe('PWHL Players view — when the roster request fails', () => {
+  const MTL = { abbr: 'MTL', teamId: 3 }
+
+  it('says so, instead of leaving an empty page under the tabs', () => {
+    cy.intercept('GET', ROSTER_API, req => req.destroy()).as('rosterDown')
+
+    cy.visit('/pwhl/players', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('eyewall:sport', 'pwhl')
+        win.localStorage.setItem('eyewall:pwhl_team', JSON.stringify(MTL))
+      },
+    })
+    cy.get('.topbar', { timeout: 10000 }).should('exist')
+
+    cy.contains(/Failed to load roster/i, { timeout: DATA_TIMEOUT }).should('exist')
+    cy.get('.player-card').should('not.exist')
   })
 })
