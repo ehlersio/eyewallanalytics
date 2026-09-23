@@ -1170,6 +1170,10 @@ export default function ShotMapView() {
 
   // Stat drill-down state
   const [drillStat,     setDrillStat]     = useState(null);
+  // Which stat's drill-down is open, as opposed to drillStat, which is the
+  // panel BUILT from it. Keeping the key lets the panel be rebuilt when the
+  // underlying game data changes -- see the effect below buildDrillDown.
+  const [drillKey,      setDrillKey]      = useState(null);
   const [showTopBtn,    setShowTopBtn]    = useState(false);
   const [displayClock,  setDisplayClock]  = useState(null);
   const [clockRunning,  setClockRunning]  = useState(true);
@@ -1881,7 +1885,28 @@ export default function ShotMapView() {
     });
     const rows = Object.values(byPlayer).sort((a, b) => b.total - a.total);
     setDrillStat({ label, rows, type: 'shots' });
-  }, [dangerCounts, t]);
+    // pbp and opp are read throughout this callback but were missing from
+    // these deps, so it could close over an earlier game's play-by-play.
+  }, [dangerCounts, t, pbp, opp]);
+
+  // Rebuild the open drill-down whenever the game data behind it changes.
+  //
+  // This used to be built once, on click, and frozen in state. activeGame is
+  // `liveGame || selectedGame || lastGame || games[0]`, so the app can be
+  // showing one game's play-by-play and then switch to another's (most
+  // visibly under ?mockGame=, but also when a live game starts, or when the
+  // first load falls back before the real choice resolves). A panel opened
+  // in that window was built from the wrong game and never repaired itself:
+  // a unit chip whose id wasn't in the game it was built from rendered
+  // without that player, permanently.
+  //
+  // Cypress caught this as an intermittent 'PP1Skater' with Jordan Staal
+  // simply absent, and no assertion timeout could have fixed it -- the panel
+  // was never going to update.
+  useEffect(() => {
+    if (!drillKey) { setDrillStat(null); return; }
+    buildDrillDown(drillKey);
+  }, [drillKey, buildDrillDown]);
 
   // ── Top CAR scorers — built from PBP goals (always current, no boxscore lag) ──
   const topScorers = useMemo(() => {
@@ -2211,7 +2236,7 @@ export default function ShotMapView() {
           value={gameSog.car ?? '—'}
           sub={gameSog.opp != null ? `${t('shotMapView.metrics.opp', { value: gameSog.opp })}${isAllN ? ` · ${t('shotMapView.metrics.season')}` : ''}` : t('shotMapView.metrics.thisGame')}
           color={gameSog.car > gameSog.opp ? 'green' : null}
-          onClick={!isAllN && pbp ? () => buildDrillDown('sog') : null}
+          onClick={!isAllN && pbp ? () => setDrillKey('sog') : null}
         />
         <MetCard
           label={t('shotMapView.metrics.hits')}
@@ -2220,7 +2245,7 @@ export default function ShotMapView() {
             ? (teamSeasonRow?.gp ? t('shotMapView.metrics.gp', { gp: teamSeasonRow.gp }) : t('shotMapView.metrics.season'))
             : gameHits.opp != null ? t('shotMapView.metrics.opp', { value: gameHits.opp }) : t('shotMapView.metrics.thisGame')}
           color={!isAllN && gameHits.car > gameHits.opp ? 'green' : null}
-          onClick={!isAllN && pbp ? () => buildDrillDown('hits') : null}
+          onClick={!isAllN && pbp ? () => setDrillKey('hits') : null}
         />
         <MetCard
           label={t('shotMapView.metrics.blocks')}
@@ -2228,7 +2253,7 @@ export default function ShotMapView() {
           sub={gameBlocked.opp != null ? `${t('shotMapView.metrics.opp', { value: gameBlocked.opp })}${isAllN ? ` · ${t('shotMapView.metrics.season')}` : ''}` : t('shotMapView.metrics.thisGame')}
           color={gameBlocked.car > gameBlocked.opp ? 'green' : null}
           help={t('shotMapView.metrics.blocksHelp', { abbr: TEAM_CONFIG.abbr })}
-          onClick={!isAllN && pbp ? () => buildDrillDown('blocked') : null}
+          onClick={!isAllN && pbp ? () => setDrillKey('blocked') : null}
         />
         {(() => {
           const pens = liveStats?.penalties;
@@ -2243,7 +2268,7 @@ export default function ShotMapView() {
                 ? (teamSeasonRow?.gp ? t('shotMapView.metrics.gp', { gp: teamSeasonRow.gp }) : t('shotMapView.metrics.season'))
                 : t('shotMapView.metrics.opp', { value: oppP ?? '—' })}
               color={color}
-              onClick={!isAllN && pbp ? () => buildDrillDown('penalties') : null}
+              onClick={!isAllN && pbp ? () => setDrillKey('penalties') : null}
             />
           );
         })()}
@@ -2273,7 +2298,7 @@ export default function ShotMapView() {
               color={hasGameFO
                 ? (parsePct(gameFaceoff.car) > 50 ? 'green' : null)
                 : hasSeasonFO ? (parsePct(seasonFO) > 50 ? 'green' : null) : null}
-              onClick={!isAllN && pbp ? () => buildDrillDown('faceoff') : null}
+              onClick={!isAllN && pbp ? () => setDrillKey('faceoff') : null}
             />
           );
         })()}
@@ -2296,7 +2321,7 @@ export default function ShotMapView() {
                   ? (teamStats?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: teamStats.gamesPlayed }) : avgLabel)
                   : `${avgLabel}${avgPct ? ` ${avgPct}%` : ''}`}
               color={hasGamePP && avgPct && gamePPPct >= parseFloat(avgPct) ? 'green' : null}
-              onClick={!isAllN && pbp ? () => buildDrillDown('pp') : null}
+              onClick={!isAllN && pbp ? () => setDrillKey('pp') : null}
             />
           );
         })()}
@@ -2317,7 +2342,7 @@ export default function ShotMapView() {
                   ? (teamStats?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: teamStats.gamesPlayed }) : avgLabel)
                   : `${avgLabel}${avgPct ? ` ${avgPct}%` : ''}`}
               color={hasGamePK && avgPct && gamePKPct >= parseFloat(avgPct) ? 'green' : null}
-              onClick={!isAllN && pbp ? () => buildDrillDown('pk') : null}
+              onClick={!isAllN && pbp ? () => setDrillKey('pk') : null}
             />
           );
         })()}
@@ -2552,7 +2577,7 @@ export default function ShotMapView() {
         </div>
       </div>
     </div>
-    {drillStat     && <StatDrillPopup drillStat={drillStat} onClose={() => setDrillStat(null)} oppAbbr={oppAbbr} isPlayoff={inPlayoffs} />}
+    {drillStat     && <StatDrillPopup drillStat={drillStat} onClose={() => setDrillKey(null)} oppAbbr={oppAbbr} isPlayoff={inPlayoffs} />}
     {puckDropPopup && <PuckDropPopup data={puckDropPopup}  onClose={clearPuckDropPopup} />}
     {goalPopup     && <GoalPopup    data={goalPopup}       onClose={clearGoalPopup}    />}
     {penaltyPopup  && <PenaltyPopup data={penaltyPopup}    onClose={clearPenaltyPopup} />}
