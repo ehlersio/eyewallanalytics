@@ -772,9 +772,18 @@ export default function ShotMapView() {
 
   // Landing data — source of goal video clips (discreteClip), merged into
   // shotEvents below so the shot map's goal-dot popup can show them.
+  //
+  // Keyed to whichever game the play-by-play above is actually for, not to
+  // gameId. They're the same game in production, but ?mockGame= (DEV only)
+  // hands us another game's play-by-play while gameId stays on the real
+  // one, and pairing a game's goals with a different game's landing put
+  // the wrong video on a goal. attachGoalVideos matches on eventId, so a
+  // mismatch now attaches nothing rather than the wrong clip -- this keeps
+  // the two feeds describing one game in the first place.
+  const landingGameId = pbp?.id ?? gameId;
   const { data: gameLanding } = useFetch(
-    () => gameId ? getGameLanding(gameId) : Promise.resolve(null),
-    [gameId]
+    () => landingGameId ? getGameLanding(landingGameId) : Promise.resolve(null),
+    [landingGameId]
   );
 
   // Boxscore — poll same rate as PBP during live
@@ -936,12 +945,18 @@ export default function ShotMapView() {
   // events: the season aggregate's rows come from Supabase and carry no
   // NHL event id, so there's nothing to look a replay up by -- and those
   // goals have never had video either.
+  //
+  // Keyed to the game the events on screen actually came from
+  // (landingGameId), not the selected one -- the same game the videos are
+  // matched against. They differ only under ?mockGame= (DEV), where the
+  // play-by-play is another game's; looking a replay up by the wrong game
+  // would ask for an event id that game doesn't have.
   const renderGoalMedia = useCallback((e) => (
-    e.type === 'goal' && !isAllN && gameId && e.id != null
+    e.type === 'goal' && !isAllN && landingGameId && e.id != null
       ? (
         <GoalReplay
-          key={`${gameId}-${e.id}`}
-          gameId={gameId}
+          key={`${landingGameId}-${e.id}`}
+          gameId={landingGameId}
           eventId={e.id}
           videoUrl={e.videoUrl}
           videoClassName="rhr-popup-video"
@@ -950,7 +965,7 @@ export default function ShotMapView() {
         />
       )
       : null
-  ), [isAllN, gameId, t]);
+  ), [isAllN, landingGameId, t]);
 
   // SOG/Blocks season aggregates for the "All N" summary cards — derived
   // from the same seasonShots data already fetched for the rink dots above

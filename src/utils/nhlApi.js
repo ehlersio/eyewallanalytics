@@ -1294,25 +1294,28 @@ export async function getGoalReplay(gameId, eventId) {
 }
 
 // Attaches a Brightcove embed URL to each 'goal' event in shotEvents (from
-// extractShotEvents), matched against landing data's summary.scoring[period]
-// .goals by period + in-period order — landing lists goals in the same
-// order the play-by-play does within a period, same matching usePeriodSummary
-// .js's buildSummary() relies on. Non-goal events and goals with no
-// discreteClip in landing pass through unchanged.
+// extractShotEvents), matched against landing data's summary.scoring[]
+// .goals by eventId — both feeds give a goal the same id (checked against
+// real games, 2026-09). It used to pair them by period + in-period order,
+// which is right only as long as landing lists a period's goals in exactly
+// the play-by-play's order and neither feed omits one; matching on the id
+// both already carry has nothing to get out of step. Non-goal events and
+// goals with no discreteClip in landing pass through unchanged.
 export function attachGoalVideos(shotEvents, landingData) {
   const scoring = landingData?.summary?.scoring;
   if (!scoring?.length) return shotEvents;
 
-  const landingGoalsByPeriod = {};
-  scoring.forEach(s => { landingGoalsByPeriod[s.periodDescriptor?.number] = s.goals || []; });
+  const clipByEventId = new Map();
+  for (const period of scoring) {
+    for (const g of period.goals || []) {
+      if (g.eventId != null && g.discreteClip) clipByEventId.set(g.eventId, g.discreteClip);
+    }
+  }
+  if (!clipByEventId.size) return shotEvents;
 
-  const seenPerPeriod = {};
   return shotEvents.map(e => {
-    if (e.type !== 'goal') return e;
-    const idx = seenPerPeriod[e.period] || 0;
-    seenPerPeriod[e.period] = idx + 1;
-    const lg = landingGoalsByPeriod[e.period]?.[idx];
-    return lg?.discreteClip ? { ...e, videoUrl: buildBrightcoveUrl(lg.discreteClip) } : e;
+    const clip = e.type === 'goal' ? clipByEventId.get(e.id) : null;
+    return clip ? { ...e, videoUrl: buildBrightcoveUrl(clip) } : e;
   });
 }
 
