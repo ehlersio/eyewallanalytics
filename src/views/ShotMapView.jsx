@@ -13,6 +13,7 @@ import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON, teamTextColor
 import { HockeyRink } from 'react-hockey-rink';
 import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import LiveEventRink from '../components/LiveEventRink';
+import useLiveGoalReplay from '../hooks/useLiveGoalReplay';
 import GoalReplay from '../components/GoalReplay';
 import { goalReplayTarget } from '../utils/goalReplayTarget';
 import { GoalPopup, HatTrickPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
@@ -786,6 +787,13 @@ export default function ShotMapView() {
     () => landingGameId ? getGameLanding(landingGameId) : Promise.resolve(null),
     [landingGameId]
   );
+
+  // The live rink's goal replay. Rides the play-by-play poll already running
+  // above rather than adding a poller: it reacts to each new plays array and
+  // asks the Worker at most once a minute per goal. Only while the game is
+  // live -- a finished game's goals are already replayable from the shot map
+  // and the period summaries.
+  const liveGoalReplay = useLiveGoalReplay(landingGameId, pbp?.plays, isLive);
 
   // Boxscore — poll same rate as PBP during live
   const { data: boxscoreReal } = usePoll(
@@ -2187,6 +2195,7 @@ export default function ShotMapView() {
             inIntermission={!!pbp?.clock?.inIntermission}
             displayClock={displayClock || pbp?.clock?.timeRemaining}
             periodNumber={pbp?.periodDescriptor?.number}
+            goalReplay={liveGoalReplay}
           />
           <div className="card">
             <div className="sec-label">{t('shotMapView.scoreBar.recentEvents')}</div>

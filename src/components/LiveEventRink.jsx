@@ -67,6 +67,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { RinkMarkings, W, H, CX, CY } from 'react-hockey-rink';
+import GoalTrackingReplay from './GoalTrackingReplay';
 
 function toSvg(x, y) {
   return { px: CX + (x / 100) * (W / 2), py: CY - (y / 42.5) * (H / 2) };
@@ -138,6 +139,10 @@ const CARD_LABEL_CLASSES = 'sec-label flex items-center justify-between';
 // flat background outside the ice's curve at each corner. The SVG's own
 // rect IS the entire visible surface; the wrapper just needs to clip it.
 const RINK_WRAP_CLASSES = 'relative w-full overflow-hidden rounded-[var(--radius-sm)] leading-none select-none';
+// Bottom-centre so it never sits over the goal mouths or the centre-ice
+// action, and high-contrast because it sits on pale ice in both themes.
+const REPLAY_CTA_CLASSES = 'live-rink-replay-cta absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-[20px] bg-[color:var(--red-bright)] px-3 py-1.5 text-[11px] font-semibold text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)] animate-[pop-in_0.3s_ease]';
+const BACK_TO_LIVE_CLASSES = 'live-rink-back-to-live min-h-0 min-w-0 rounded-[20px] bg-[var(--btn-fill)] px-2.5 py-1 text-[11px] font-semibold text-[color:var(--text)]';
 const INTERMISSION_LABEL_CLASSES = 'text-[13px] font-bold text-[#0f1b2e] [text-shadow:0_1px_2px_rgba(255,255,255,0.5)]';
 const INTERMISSION_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[20px] font-extrabold text-[#0f1b2e] [text-shadow:0_1px_2px_rgba(255,255,255,0.5)]';
 
@@ -306,8 +311,21 @@ function Zamboni() {
 export default function LiveEventRink({
   plays = [], playerMap = {}, oppAbbr, oppColor,
   isLive, inIntermission, displayClock, periodNumber,
+  goalReplay = null,
 }) {
   const { t } = useTranslation();
+  // The rink has two modes: live dots, and the most recent goal redrawn
+  // from the NHL's player-and-puck tracking. goalReplay only ever arrives
+  // once the Worker has actually returned frames (useLiveGoalReplay), so
+  // the control below is never offered for a replay that does not exist.
+  const [replaying, setReplaying] = useState(false);
+  const replayEventId = goalReplay?.goal?.eventId ?? null;
+  // A newer goal replaces the one on offer; drop back to live so nobody is
+  // left watching the older goal under the newer one's heading.
+  useEffect(() => { setReplaying(false); }, [replayEventId]);
+  const replayScorer = goalReplay?.goal?.scorerId != null
+    ? playerMap[String(goalReplay.goal.scorerId)] || null
+    : null;
   const EVENT_TYPE_LABEL = {
     'goal':         t('liveEventRink.eventTypes.goal'),
     'shot-on-goal': t('liveEventRink.eventTypes.shotOnGoal'),
@@ -419,6 +437,24 @@ export default function LiveEventRink({
     })
     .filter(Boolean);
 
+  if (replaying && goalReplay) {
+    return (
+      <div className="card">
+        <div className={CARD_LABEL_CLASSES}>
+          <span>
+            {replayScorer
+              ? t('liveEventRink.replayTitle', { scorer: replayScorer })
+              : t('liveEventRink.replayTitleNoName')}
+          </span>
+          <button className={BACK_TO_LIVE_CLASSES} onClick={() => setReplaying(false)}>
+            {t('liveEventRink.backToLive')}
+          </button>
+        </div>
+        <GoalTrackingReplay replay={goalReplay.replay} scorerName={replayScorer} />
+      </div>
+    );
+  }
+
   return (
     <div className="card">
       <div className={CARD_LABEL_CLASSES}>
@@ -451,6 +487,18 @@ export default function LiveEventRink({
             <span className={INTERMISSION_LABEL_CLASSES}>{t('liveEventRink.intermissionCleaning', { intermission: intermissionLabel })}</span>
             <span className={INTERMISSION_CLOCK_CLASSES}>{displayClock || '—'}</span>
           </div>
+        )}
+
+        {/* Last child so it sits above the dots and the intermission
+            overlay alike -- an intermission is when a replay is most
+            watchable, not a reason to hide it. */}
+        {goalReplay && (
+          <button className={REPLAY_CTA_CLASSES} onClick={() => setReplaying(true)}>
+            <span aria-hidden="true">&#9654;</span>
+            {replayScorer
+              ? t('liveEventRink.replayGoal', { scorer: replayScorer })
+              : t('liveEventRink.replayGoalNoName')}
+          </button>
         )}
       </div>
     </div>

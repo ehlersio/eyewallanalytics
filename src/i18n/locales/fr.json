@@ -2044,6 +2044,11 @@
   "liveEventRink": {
     "title": "Patinoire en direct",
     "intermissionCleaning": "{{intermission}} — nettoyage de la glace",
+    "replayGoal": "Revoir le but de {{scorer}}",
+    "replayGoalNoName": "Revoir ce but",
+    "replayTitle": "Reprise du but — {{scorer}}",
+    "replayTitleNoName": "Reprise du but",
+    "backToLive": "Retour au direct",
     "eventTypes": {
       "goal": "but",
       "shotOnGoal": "tir cadré",

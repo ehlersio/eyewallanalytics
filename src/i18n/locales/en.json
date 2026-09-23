@@ -2044,6 +2044,11 @@
   "liveEventRink": {
     "title": "Live rink",
     "intermissionCleaning": "{{intermission}} — cleaning the ice",
+    "replayGoal": "Replay {{scorer}}'s goal",
+    "replayGoalNoName": "Replay that goal",
+    "replayTitle": "Goal replay — {{scorer}}",
+    "replayTitleNoName": "Goal replay",
+    "backToLive": "Back to live",
     "eventTypes": {
       "goal": "goal",
       "shotOnGoal": "shot on goal",
