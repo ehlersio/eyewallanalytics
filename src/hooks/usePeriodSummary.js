@@ -21,6 +21,18 @@ async function fetchCachedNarrative(gameId, period) {
   } catch { return null; }
 }
 
+// Pair a play-by-play goal with its `landing` entry (video clip, assists,
+// headshot). Both feeds give a goal the same eventId -- checked against real
+// games back to 2021. Position was used before, which is right only while
+// landing lists a period's goals in exactly the play-by-play's order and
+// neither feed omits one; when that slipped, a goal took another goal's
+// scorer, assists and video. Position stays as a fallback for a feed with
+// no ids at all, where it's the old behaviour rather than nothing.
+export function landingGoalPicker(landingGoals) {
+  const byId = new Map((landingGoals || []).filter(g => g?.eventId != null).map(g => [g.eventId, g]));
+  return (goal, index) => byId.get(goal?.eventId) ?? (landingGoals || [])[index];
+}
+
 function loadStored(gameId) {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
@@ -124,11 +136,12 @@ function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlay
       drawnByName:   rosterMap[p.details?.drawnByPlayerId] || null,
     }));
 
-  // Enrich goals from landing
+  // Enrich goals from landing -- see landingGoalPicker().
   const landingGoals = landingData?.summary?.scoring
     ?.find(s => s.periodDescriptor?.number === period)?.goals || [];
+  const pickLanding = landingGoalPicker(landingGoals);
   const enrichedGoals = goals.map((g, i) => {
-    const lg = landingGoals[i];
+    const lg = pickLanding(g, i);
     return {
       ...g,
       highlightClip:           lg?.highlightClip || null,
@@ -337,9 +350,11 @@ function buildGameSummary(plays, carTeamId, landingData, pbp, gameId) {
     awayScore: p.details?.awayScore,
     homeScore: p.details?.homeScore,
   }));
+  // Same eventId matching as buildSummary() above.
   const landingGoals = landingData?.summary?.scoring?.flatMap(s => s.goals || []) || [];
+  const pickLanding = landingGoalPicker(landingGoals);
   const enrichedGoals = allGoals.map((g, i) => {
-    const lg = landingGoals[i];
+    const lg = pickLanding(g, i);
     return { ...g, scorerName: lg?.name?.default || rosterMap[g.scorerId] || null,
       assists: lg?.assists || [], strength: lg?.strength || 'ev',
       discreteClip: lg?.discreteClip || null, scorerHeadshot: lg?.headshot || null };
