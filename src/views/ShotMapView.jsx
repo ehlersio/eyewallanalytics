@@ -14,6 +14,7 @@ import { HockeyRink } from 'react-hockey-rink';
 import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import LiveEventRink from '../components/LiveEventRink';
 import GoalReplay from '../components/GoalReplay';
+import { goalReplayTarget } from '../utils/goalReplayTarget';
 import { GoalPopup, HatTrickPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getTeamSeasonData, getSpecialTeamsUnits } from '../utils/supabaseClient';
@@ -941,31 +942,24 @@ export default function ShotMapView() {
 
   // A goal's popup gets the NHL's video and/or EyeWall's tracking replay
   // (GoalReplay, which shows a Video | Tracking switch only when both
-  // exist and nothing at all when neither does). Only for one game's own
-  // events: the season aggregate's rows come from Supabase and carry no
-  // NHL event id, so there's nothing to look a replay up by -- and those
-  // goals have never had video either.
-  //
-  // Keyed to the game the events on screen actually came from
-  // (landingGameId), not the selected one -- the same game the videos are
-  // matched against. They differ only under ?mockGame= (DEV), where the
-  // play-by-play is another game's; looking a replay up by the wrong game
-  // would ask for an event id that game doesn't have.
-  const renderGoalMedia = useCallback((e) => (
-    e.type === 'goal' && !isAllN && landingGameId && e.id != null
-      ? (
-        <GoalReplay
-          key={`${landingGameId}-${e.id}`}
-          gameId={landingGameId}
-          eventId={e.id}
-          videoUrl={e.videoUrl}
-          videoClassName="rhr-popup-video"
-          videoTitle={t('shotMapView.goalVideoTitle', { scorer: e.shooterName || TEAM_CONFIG.abbr })}
-          scorerName={e.shooterName}
-        />
-      )
-      : null
-  ), [isAllN, landingGameId, t]);
+  // exist and nothing at all when neither does). goalReplayTarget() works
+  // out which goal to ask for -- a season-aggregate dot carries its own
+  // game and event id, a single game's dot belongs to the game on screen.
+  const renderGoalMedia = useCallback((e) => {
+    const target = goalReplayTarget(e, { isAllN, gameId: landingGameId });
+    if (!target) return null;
+    return (
+      <GoalReplay
+        key={`${target.gameId}-${target.eventId}`}
+        gameId={target.gameId}
+        eventId={target.eventId}
+        videoUrl={e.videoUrl}
+        videoClassName="rhr-popup-video"
+        videoTitle={t('shotMapView.goalVideoTitle', { scorer: e.shooterName || TEAM_CONFIG.abbr })}
+        scorerName={e.shooterName}
+      />
+    );
+  }, [isAllN, landingGameId, t]);
 
   // SOG/Blocks season aggregates for the "All N" summary cards — derived
   // from the same seasonShots data already fetched for the rink dots above

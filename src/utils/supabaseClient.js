@@ -205,6 +205,10 @@ export async function getSeasonShots(team, season = currentSeason()) {
   return rows.map(r => ({
     id:           `${r.game_id}-${r.x}-${r.y}-${r.period}-${r.time_in_period}`,
     gameId:       r.game_id,
+    // The NHL's own id for the play (eyewall-poller#141). With gameId it
+    // addresses this goal's tracking replay; null for a row whose game
+    // predates the column, which the shot map reads as "no replay here".
+    eventId:      r.event_id ?? null,
     x:            r.x,
     y:            r.y,
     type:         r.event_type,
