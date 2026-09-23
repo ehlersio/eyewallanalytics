@@ -14,7 +14,7 @@ const TEST_EMAIL = 'trivia-fan@example.com';
 
 function openSettings() {
   cy.get('.notif-bell').click();
-  cy.get('.notif-popup', { timeout: 8000 }).should('be.visible');
+  cy.get('.notif-popup', { timeout: DATA_TIMEOUT }).should('be.visible');
 }
 
 function fakeSession(email = TEST_EMAIL) {

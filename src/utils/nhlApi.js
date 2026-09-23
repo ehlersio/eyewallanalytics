@@ -23,6 +23,7 @@ const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
 // Re-exported here so existing imports of TEAM_CONFIG from nhlApi.js keep working.
 export { TEAM_CONFIG, ALL_TEAMS, getTeamConfig, setTeamConfig, hasTeamConfig } from './teamConfig'
 import { TEAM_CONFIG } from './teamConfig'
+import { fetchWithRetry } from './retryFetch';
 
 
 // gameType values from NHL API:
@@ -74,9 +75,10 @@ async function kvFetch(key) {
 async function workerFetch(path) {
   if (!WORKER_URL) return null;
   try {
-    const res = await fetch(`${WORKER_URL}${path}`, {
-      signal: AbortSignal.timeout(8000),
-    });
+    // One retry on a stalled connection -- see retryFetch.js. kvFetch above
+    // deliberately does NOT get this: its short budget exists so it can fail
+    // fast and fall through to the NHL API, which a retry would undo.
+    const res = await fetchWithRetry(`${WORKER_URL}${path}`);
     if (!res.ok) {
       console.warn(`Worker ${res.status}: ${path}`);
       return null;

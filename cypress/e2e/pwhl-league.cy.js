@@ -51,32 +51,32 @@ describe('PWHL League view', () => {
     // that boundary so this spec fails loudly the moment either changes.
     it('shows all established-season teams', () => {
       ['BOS', 'MIN', 'MTL', 'NY', 'OTT', 'TOR', 'SEA', 'VAN'].forEach(abbr =>
-        cy.contains(abbr, { timeout: 8000 }).should('exist')
+        cy.contains(abbr, { timeout: DATA_TIMEOUT }).should('exist')
       )
     })
 
     it('does not yet show expansion teams (no games played)', () => {
-      cy.contains('BOS', { timeout: 8000 }).should('exist') // wait for table to load first
+      cy.contains('BOS', { timeout: DATA_TIMEOUT }).should('exist') // wait for table to load first
       ;['DET', 'HAM', 'LV', 'SJS'].forEach(abbr => {
         cy.contains(abbr).should('not.exist')
       })
     })
 
     it('shows W–OTW–OTL–L column headers', () => {
-      cy.contains('OTW', { timeout: 8000 }).should('exist')
+      cy.contains('OTW', { timeout: DATA_TIMEOUT }).should('exist')
       cy.contains('OTL').should('exist')
     })
 
     it('shows PTS column', () => {
-      cy.contains('PTS', { timeout: 8000 }).should('exist')
+      cy.contains('PTS', { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('shows L10 column', () => {
-      cy.contains('L10', { timeout: 8000 }).should('exist')
+      cy.contains('L10', { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('shows STRK column', () => {
-      cy.contains('STRK', { timeout: 8000 }).should('exist')
+      cy.contains('STRK', { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('columns are sortable', () => {
@@ -87,7 +87,7 @@ describe('PWHL League view', () => {
     })
 
     it('shows 3-2-1-0 points system note', () => {
-      cy.contains(/3-2-1-0/i, { timeout: 8000 }).should('exist')
+      cy.contains(/3-2-1-0/i, { timeout: DATA_TIMEOUT }).should('exist')
     })
   })
 
@@ -99,15 +99,15 @@ describe('PWHL League view', () => {
     })
 
     it('shows Semifinals label', () => {
-      cy.contains('Semifinals', { timeout: 8000 }).should('exist')
+      cy.contains('Semifinals', { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('shows Walter Cup Final label', () => {
-      cy.contains('Walter Cup Final', { timeout: 8000 }).should('exist')
+      cy.contains('Walter Cup Final', { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('series cards are clickable and show modal', () => {
-      cy.get('.bkt-card--clickable', { timeout: 8000 }).first().then($card => {
+      cy.get('.bkt-card--clickable', { timeout: DATA_TIMEOUT }).first().then($card => {
         if ($card.length) {
           cy.wrap($card).click()
           cy.get('.series-modal', { timeout: 6000 }).should('exist')
@@ -126,19 +126,19 @@ describe('PWHL League view', () => {
     })
 
     it('shows Points leaders card', () => {
-      cy.contains('Points', { timeout: 8000 }).should('exist')
+      cy.contains('Points', { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('shows Goals leaders card', () => {
-      cy.contains('Goals', { timeout: 8000 }).should('exist')
+      cy.contains('Goals', { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('shows GAA leaders card', () => {
-      cy.contains(/Goals Against Avg|GAA/i, { timeout: 8000 }).should('exist')
+      cy.contains(/Goals Against Avg|GAA/i, { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('shows SV% leaders card', () => {
-      cy.contains(/Save Percentage|SV%/i, { timeout: 8000 }).should('exist')
+      cy.contains(/Save Percentage|SV%/i, { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('clicking a leader opens player popup', () => {
@@ -171,12 +171,12 @@ describe('PWHL League view', () => {
 
     it('does not yet rank expansion teams (no games played)', () => {
       ['DET', 'HAM', 'LV', 'SJS'].forEach(abbr => {
-        cy.get('body', { timeout: 8000 }).should('not.contain', abbr)
+        cy.get('body', { timeout: DATA_TIMEOUT }).should('not.contain', abbr)
       })
     })
 
     it('shows How is this calculated? toggle', () => {
-      cy.contains(/How is this calculated/i, { timeout: 8000 }).should('exist')
+      cy.contains(/How is this calculated/i, { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('expanding How calculated shows formula', () => {
@@ -186,7 +186,7 @@ describe('PWHL League view', () => {
     })
 
     it('shows CF% column', () => {
-      cy.contains('CF%', { timeout: 8000 }).should('exist')
+      cy.contains('CF%', { timeout: DATA_TIMEOUT }).should('exist')
     })
   })
 
@@ -198,7 +198,7 @@ describe('PWHL League view', () => {
     })
 
     it('shows 2026 Draft by default', () => {
-      cy.contains('2026 Draft', { timeout: 8000 }).should('exist')
+      cy.contains('2026 Draft', { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('shows 2025 Draft option', () => {
@@ -206,11 +206,11 @@ describe('PWHL League view', () => {
     })
 
     it('shows pick number column', () => {
-      cy.contains(/^#$|^Pick$/, { timeout: 8000 }).should('exist')
+      cy.contains(/^#$|^Pick$/, { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('shows 72 picks for 2026', () => {
-      cy.contains(/72 picks/i, { timeout: 8000 }).should('exist')
+      cy.contains(/72 picks/i, { timeout: DATA_TIMEOUT }).should('exist')
     })
 
     it('position filter works', () => {

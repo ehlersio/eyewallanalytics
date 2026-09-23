@@ -54,7 +54,7 @@ describe('TeamPicker', () => {
   describe('PWHL team step', () => {
     beforeEach(() => {
       cy.get('[aria-label="PWHL"]').click()
-      cy.contains('Choose your team', { timeout: 8000 }).should('be.visible')
+      cy.contains('Choose your team', { timeout: DATA_TIMEOUT }).should('be.visible')
     })
 
     it('renders all 12 PWHL teams', () => {

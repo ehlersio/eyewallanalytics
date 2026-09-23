@@ -18,7 +18,7 @@ Object.entries(ECHL_TEST_TEAMS).forEach(([abbr, teamId]) => {
         },
       })
       cy.get('.topbar', { timeout: 10000 }).should('exist')
-      cy.contains('History', { timeout: 8000 }).should('exist').click()
+      cy.contains('History', { timeout: DATA_TIMEOUT }).should('exist').click()
     })
 
     it('renders the Founded and Home Arena sections', () => {
@@ -43,16 +43,16 @@ describe('ECHL Team view — FW — History tab content (deep, well-documented f
       },
     })
     cy.get('.topbar', { timeout: 10000 }).should('exist')
-    cy.contains('History', { timeout: 8000 }).should('exist').click()
+    cy.contains('History', { timeout: DATA_TIMEOUT }).should('exist').click()
   })
 
   it('renders Kelly Cup championships', () => {
-    cy.contains('Championships', { timeout: 8000 }).should('exist')
+    cy.contains('Championships', { timeout: DATA_TIMEOUT }).should('exist')
     cy.contains(/Kelly Cup 20\d\d/).should('exist')
   })
 
   it('renders an Affiliations section with both NHL and AHL parents', () => {
-    cy.contains('Affiliations', { timeout: 8000 }).should('exist')
+    cy.contains('Affiliations', { timeout: DATA_TIMEOUT }).should('exist')
     cy.contains('NHL').should('exist')
     cy.contains('AHL').should('exist')
   })
@@ -67,11 +67,11 @@ describe('ECHL Team view — NOR — a team with genuinely no current affiliate'
       },
     })
     cy.get('.topbar', { timeout: 10000 }).should('exist')
-    cy.contains('History', { timeout: 8000 }).should('exist').click()
+    cy.contains('History', { timeout: DATA_TIMEOUT }).should('exist').click()
   })
 
   it('renders History content without an Affiliations section', () => {
-    cy.contains('Founded', { timeout: 8000 }).should('exist')
+    cy.contains('Founded', { timeout: DATA_TIMEOUT }).should('exist')
     cy.contains('Affiliations').should('not.exist')
     cy.assertNoErrors()
   })

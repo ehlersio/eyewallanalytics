@@ -56,20 +56,20 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       beforeEach(() => cy.contains('Advanced').click())
 
       it('renders possession stats', () => {
-        cy.contains(/Corsi|CF%|Shot/i, { timeout: 8000 }).should('exist')
+        cy.contains(/Corsi|CF%|Shot/i, { timeout: DATA_TIMEOUT }).should('exist')
       })
 
       it('renders PDO section', function () {
-        cy.skipUnlessContentAppears('.adv-context-note, .adv-toggle', 'PDO', { timeout: 8000 })
-        cy.contains('PDO', { timeout: 8000 }).should('exist')
+        cy.skipUnlessContentAppears('.adv-context-note, .adv-toggle', 'PDO', { timeout: DATA_TIMEOUT })
+        cy.contains('PDO', { timeout: DATA_TIMEOUT }).should('exist')
       })
 
       it('renders power play stats', () => {
-        cy.contains('Power Play', { timeout: 8000 }).should('exist')
+        cy.contains('Power Play', { timeout: DATA_TIMEOUT }).should('exist')
       })
 
       it('renders penalty kill stats', () => {
-        cy.contains('Penalty Kill', { timeout: 8000 }).should('exist')
+        cy.contains('Penalty Kill', { timeout: DATA_TIMEOUT }).should('exist')
       })
 
       it('reg/playoff toggle works when in playoffs', () => {
@@ -86,11 +86,11 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       beforeEach(() => cy.contains('Splits').click())
 
       it('renders home vs away split', () => {
-        cy.contains(/Home|Away/i, { timeout: 8000 }).should('exist')
+        cy.contains(/Home|Away/i, { timeout: DATA_TIMEOUT }).should('exist')
       })
 
       it('shows record for both home and away', () => {
-        cy.contains(/\d+–\d+/, { timeout: 8000 }).should('exist')
+        cy.contains(/\d+–\d+/, { timeout: DATA_TIMEOUT }).should('exist')
       })
     })
 
@@ -98,26 +98,26 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       beforeEach(() => cy.contains('Trends').click())
 
       it('renders quick stats cards', function () {
-        cy.skipIfEither('.empty-title', '[class*="result-dot"]', { timeout: 8000 })
-        cy.contains(/Current streak|W\d|L\d/i, { timeout: 8000 }).should('exist')
-        cy.contains('Last 10 games', { timeout: 8000 }).should('exist')
+        cy.skipIfEither('.empty-title', '[class*="result-dot"]', { timeout: DATA_TIMEOUT })
+        cy.contains(/Current streak|W\d|L\d/i, { timeout: DATA_TIMEOUT }).should('exist')
+        cy.contains('Last 10 games', { timeout: DATA_TIMEOUT }).should('exist')
       })
 
       it('renders result dots for last 20 games', function () {
-        cy.skipIfEither('.empty-title', '[class*="result-dot"]', { timeout: 8000 })
-        cy.contains(/Last \d+ games/i, { timeout: 8000 }).should('exist')
+        cy.skipIfEither('.empty-title', '[class*="result-dot"]', { timeout: DATA_TIMEOUT })
+        cy.contains(/Last \d+ games/i, { timeout: DATA_TIMEOUT }).should('exist')
         cy.get('[class*="result-dot"]').should('have.length.greaterThan', 0)
       })
 
       it('renders rolling win% chart', function () {
-        cy.skipIfEither('.empty-title', '[class*="rolling-bar"]', { timeout: 8000 })
-        cy.contains(/Win %|Rolling.*win/i, { timeout: 8000 }).should('exist')
+        cy.skipIfEither('.empty-title', '[class*="rolling-bar"]', { timeout: DATA_TIMEOUT })
+        cy.contains(/Win %|Rolling.*win/i, { timeout: DATA_TIMEOUT }).should('exist')
         cy.get('[class*="rolling-bar"]').should('have.length.greaterThan', 0)
       })
 
       it('renders goal differential chart', function () {
-        cy.skipIfEither('.empty-title', '[class*="result-dot"]', { timeout: 8000 })
-        cy.contains(/Goal differential/i, { timeout: 8000 }).should('exist')
+        cy.skipIfEither('.empty-title', '[class*="result-dot"]', { timeout: DATA_TIMEOUT })
+        cy.contains(/Goal differential/i, { timeout: DATA_TIMEOUT }).should('exist')
       })
 
       it('renders score-first rate chart', () => {
@@ -133,12 +133,12 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       beforeEach(() => cy.contains('History').click())
 
       it('renders the Founded and Home Arena sections', () => {
-        cy.contains('Founded', { timeout: 8000 }).should('exist')
+        cy.contains('Founded', { timeout: DATA_TIMEOUT }).should('exist')
         cy.contains('Home Arena').should('exist')
       })
 
       it('renders a Current Franchise Info section with an owner and head coach', () => {
-        cy.contains('Current Franchise Info', { timeout: 8000 }).should('exist')
+        cy.contains('Current Franchise Info', { timeout: DATA_TIMEOUT }).should('exist')
         cy.contains('Owner').should('exist')
         cy.contains('Head Coach').should('exist')
       })
@@ -149,11 +149,11 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
 
       it('opens the picker with multiple season options', () => {
         cy.contains('Compare Seasons').should('be.visible')
-        cy.get('.season-chip', { timeout: 8000 }).should('have.length.greaterThan', 1)
+        cy.get('.season-chip', { timeout: DATA_TIMEOUT }).should('have.length.greaterThan', 1)
       })
 
       it('renders one comparison card per selected season', () => {
-        cy.get('.season-chip', { timeout: 8000 }).eq(0).click()
+        cy.get('.season-chip', { timeout: DATA_TIMEOUT }).eq(0).click()
         cy.get('.season-chip').eq(1).click()
         // :not(.xg-overlay-section) excludes the season-overlay chart card
         // (added Session 67) from this "one card per season" count -- it's a
@@ -189,7 +189,7 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
           const opponent = [...$sel[0].options].map(o => o.value).find(v => v && v !== teamAbbr)
           cy.wrap($sel).select(opponent)
         })
-        cy.get('.season-chip', { timeout: 8000 }).first().click()
+        cy.get('.season-chip', { timeout: DATA_TIMEOUT }).first().click()
         cy.get('.stat-section', { timeout: 15000 }).should('have.length', 2)
         cy.contains('GP').scrollIntoView().should('be.visible')
       })
@@ -221,13 +221,13 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         beforeEach(() => cy.contains('Cap').click())
 
         it('renders salary cap bar', () => {
-          cy.contains(/cap/i, { timeout: 8000 }).should('exist')
+          cy.contains(/cap/i, { timeout: DATA_TIMEOUT }).should('exist')
           cy.contains(/\$\d+M|\d+M/).should('exist')
         })
 
         it('renders contract table with player names', () => {
           cy.team('CAR').then(t => {
-            cy.contains(t.skater, { timeout: 8000 }).should('exist')
+            cy.contains(t.skater, { timeout: DATA_TIMEOUT }).should('exist')
             cy.contains(/UFA|RFA/).should('exist')
             cy.contains(/\$\d+\.\d+M/).should('exist')
           })
@@ -239,11 +239,11 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         beforeEach(() => cy.contains('Picks').click())
 
         it('renders 2026 NHL Draft section', () => {
-          cy.contains('2026 NHL Draft', { timeout: 8000 }).should('exist')
+          cy.contains('2026 NHL Draft', { timeout: DATA_TIMEOUT }).should('exist')
         })
 
         it('renders CAR pick slot', () => {
-          cy.get('.picks-slot, .picks-made-row', { timeout: 8000 }).should('have.length.gte', 1)
+          cy.get('.picks-slot, .picks-made-row', { timeout: DATA_TIMEOUT }).should('have.length.gte', 1)
         })
       })
 
@@ -255,7 +255,7 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         beforeEach(() => cy.contains('History').click())
 
         it('renders franchise founding info', () => {
-          cy.contains('Hartford Whalers', { timeout: 8000 }).should('be.visible')
+          cy.contains('Hartford Whalers', { timeout: DATA_TIMEOUT }).should('be.visible')
         })
 
         // These sections render well below the fold in the .page scroll

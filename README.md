@@ -162,8 +162,8 @@ canes-analytics-starter/
 │   │   └── useReadState.js             # Unseen-content badges for News/Milestones/Trivia tabs + BottomNav's combined dot (Session 92) — local-only, boolean-only; reuses SportContext.jsx's window.CustomEvent cross-component convention rather than a new Context
 │   └── utils/
 │       ├── nhlApi.js                   # NHL API calls + KV caching
-│       ├── pwhlApi.js                  # PWHL Worker API calls — fetches via retryFetch.js
-│       ├── retryFetch.js               # fetch() with a per-attempt time budget and one retry on a *thrown* fetch (timeout/network), not on an HTTP status. Used by pwhlApi.js; the other *Api.js modules still make a single 8s attempt
+│       ├── pwhlApi.js                  # PWHL Worker API calls
+│       ├── retryFetch.js               # fetch() with a per-attempt time budget and one retry on a *thrown* fetch (timeout/network), not on an HTTP status. Used by every Worker read helper: nhlApi/pwhlApi/ahlApi/echlApi/supabaseClient/playerSearch. Deliberately NOT nhlApi's kvFetch (its short budget exists to fail fast and fall through to the NHL API) and not the supabase-js writes in triviaAnswers/favoriteTeamSync/localeSync
 │       ├── seasonChart.js              # Shared season-over-season chart helpers (per-game box-score value, season color ramp, dash patterns) for the player popups' Compare tabs and TeamComparisonPopup
 │       ├── seasonComparison.js         # Pure label/normalization helpers for season-over-season comparison
 │       ├── pwhlConfig.js               # PWHL team configs (12 teams: 8 established + 4 expansion, all live/selectable)

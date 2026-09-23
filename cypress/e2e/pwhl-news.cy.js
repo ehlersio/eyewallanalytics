@@ -101,7 +101,7 @@ describe('PWHL News view', () => {
     it('articles show a source badge', () => {
       cy.get('body').then($body => {
         if (!$body.find('.news-card').length) return
-        cy.get('.news-source-badge', { timeout: 8000 }).should('exist')
+        cy.get('.news-source-badge', { timeout: DATA_TIMEOUT }).should('exist')
       })
     })
 

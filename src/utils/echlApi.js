@@ -10,6 +10,7 @@
 
 import i18n from '../i18n';
 import { getECHLStoredTeam, ECHL_CURRENT_SEASON } from './echlConfig';
+import { fetchWithRetry } from './retryFetch';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
 
@@ -25,9 +26,9 @@ async function workerFetch(path) {
     return null;
   }
   try {
-    const res = await fetch(`${WORKER_URL}${path}`, {
-      signal: AbortSignal.timeout(8000),
-      cache: 'no-store',
+    // One retry on a stalled connection -- see retryFetch.js.
+    const res = await fetchWithRetry(`${WORKER_URL}${path}`, {
+      init: { cache: 'no-store' },
     });
     if (!res.ok) {
       console.warn(`echlApi ${res.status}: ${path}`);

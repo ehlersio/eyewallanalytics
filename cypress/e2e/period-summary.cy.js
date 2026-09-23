@@ -212,7 +212,7 @@ describe('Final Game Summary popup', () => {
   })
 
   it('shows period breakdown section', () => {
-    cy.get('.ps-period-breakdown', { timeout: 8000 }).should('exist')
+    cy.get('.ps-period-breakdown', { timeout: DATA_TIMEOUT }).should('exist')
     cy.get('.ps-period-row').should('have.length.greaterThan', 0)
   })
 
@@ -222,7 +222,7 @@ describe('Final Game Summary popup', () => {
   })
 
   it('shows three stars section', () => {
-    cy.contains('Three Stars', { timeout: 8000 }).should('exist')
+    cy.contains('Three Stars', { timeout: DATA_TIMEOUT }).should('exist')
     cy.get('.ps-star-card').should('have.length', 3)
     cy.get('.ps-star-name').should('have.length', 3)
   })
