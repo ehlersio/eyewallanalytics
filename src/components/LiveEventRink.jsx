@@ -68,6 +68,7 @@ import { useTranslation } from 'react-i18next';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { RinkMarkings, W, H, CX, CY } from 'react-hockey-rink';
 import GoalTrackingReplay from './GoalTrackingReplay';
+import { nextWatching } from '../utils/liveGoalReplay';
 
 function toSvg(x, y) {
   return { px: CX + (x / 100) * (W / 2), py: CY - (y / 42.5) * (H / 2) };
@@ -318,14 +319,26 @@ export default function LiveEventRink({
   // from the NHL's player-and-puck tracking. goalReplay only ever arrives
   // once the Worker has actually returned frames (useLiveGoalReplay), so
   // the control below is never offered for a replay that does not exist.
-  const [replaying, setReplaying] = useState(false);
+  //
+  // Starting a replay HOLDS it, rather than rendering straight from the
+  // goalReplay prop. The prop comes from a hook that keeps polling and
+  // resets itself when the game id changes, so reading it live meant a
+  // transient null yanked a viewer out of a replay mid-watch -- which is
+  // exactly how this failed in CI, with the Back to live button
+  // disappearing while it was being clicked. GoalReplay.jsx holds its
+  // loaded replay for the same reason.
+  const [watching, setWatching] = useState(null);
   const replayEventId = goalReplay?.goal?.eventId ?? null;
-  // A newer goal replaces the one on offer; drop back to live so nobody is
-  // left watching the older goal under the newer one's heading.
-  useEffect(() => { setReplaying(false); }, [replayEventId]);
-  const replayScorer = goalReplay?.goal?.scorerId != null
-    ? playerMap[String(goalReplay.goal.scorerId)] || null
-    : null;
+  // A genuinely different goal ends the current watch, so nobody is left
+  // looking at an older goal under a newer one's heading. A null, or the
+  // same goal arriving again, changes nothing.
+  useEffect(() => {
+    setWatching(current => nextWatching(current, replayEventId));
+  }, [replayEventId]);
+  const scorerName = goal => (
+    goal?.scorerId != null ? playerMap[String(goal.scorerId)] || null : null
+  );
+  const offerScorer = scorerName(goalReplay?.goal);
   const EVENT_TYPE_LABEL = {
     'goal':         t('liveEventRink.eventTypes.goal'),
     'shot-on-goal': t('liveEventRink.eventTypes.shotOnGoal'),
@@ -437,20 +450,21 @@ export default function LiveEventRink({
     })
     .filter(Boolean);
 
-  if (replaying && goalReplay) {
+  if (watching) {
+    const watchedScorer = scorerName(watching.goal);
     return (
       <div className="card">
         <div className={CARD_LABEL_CLASSES}>
           <span>
-            {replayScorer
-              ? t('liveEventRink.replayTitle', { scorer: replayScorer })
+            {watchedScorer
+              ? t('liveEventRink.replayTitle', { scorer: watchedScorer })
               : t('liveEventRink.replayTitleNoName')}
           </span>
-          <button className={BACK_TO_LIVE_CLASSES} onClick={() => setReplaying(false)}>
+          <button className={BACK_TO_LIVE_CLASSES} onClick={() => setWatching(null)}>
             {t('liveEventRink.backToLive')}
           </button>
         </div>
-        <GoalTrackingReplay replay={goalReplay.replay} scorerName={replayScorer} />
+        <GoalTrackingReplay replay={watching.replay} scorerName={watchedScorer} />
       </div>
     );
   }
@@ -493,10 +507,10 @@ export default function LiveEventRink({
             overlay alike -- an intermission is when a replay is most
             watchable, not a reason to hide it. */}
         {goalReplay && (
-          <button className={REPLAY_CTA_CLASSES} onClick={() => setReplaying(true)}>
+          <button className={REPLAY_CTA_CLASSES} onClick={() => setWatching(goalReplay)}>
             <span aria-hidden="true">&#9654;</span>
-            {replayScorer
-              ? t('liveEventRink.replayGoal', { scorer: replayScorer })
+            {offerScorer
+              ? t('liveEventRink.replayGoal', { scorer: offerScorer })
               : t('liveEventRink.replayGoalNoName')}
           </button>
         )}
