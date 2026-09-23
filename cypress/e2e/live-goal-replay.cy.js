@@ -15,6 +15,23 @@
 const MOCK_GAME = 2025020500
 const CAR = { abbr: 'CAR', teamId: 12 }
 
+// The scorer of MOCK_GAME's last goal. Used to prove the control on screen
+// belongs to THIS game before clicking it.
+//
+// activeGame is `liveGame || selectedGame || lastGame || games[0]`, and
+// ?mockGame= only becomes liveGame once getLiveGame() resolves. Until then
+// the app shows a real game, so the offer can appear for that game, vanish
+// when the id flips to the mock (useLiveGoalReplay clears its result on a
+// game change, correctly -- game A's goal must not be offered while game B
+// is on screen), and reappear for the mock a moment later. Clicking in that
+// gap fails with the control "disappearing from the page", which is exactly
+// how this failed in CI on an unrelated 8-line iOS version bump (#348).
+//
+// Naming the scorer is the cheapest proof the flip has already happened.
+// MOCK_GAME is a finished game, so this never changes -- the same reasoning
+// shot-map.cy.js uses for its own hard-coded player ids.
+const MOCK_GAME_LAST_SCORER = 'Miller'
+
 function visitLiveGame() {
   cy.visit(`/?mockGame=${MOCK_GAME}`, {
     onBeforeLoad(win) {
@@ -32,7 +49,10 @@ describe('Live rink — goal replay', () => {
     visitLiveGame()
 
     // The live rink itself is the control's home -- it is not a separate card.
-    cy.get('.live-rink-replay-cta', { timeout: DATA_TIMEOUT }).should('be.visible').click()
+    // Matching on the scorer waits out the fallback-game flip above.
+    cy.contains('.live-rink-replay-cta', MOCK_GAME_LAST_SCORER, { timeout: DATA_TIMEOUT })
+      .should('be.visible')
+      .click()
 
     cy.get('.goal-tracking-replay', { timeout: DATA_TIMEOUT }).should('exist')
     cy.get('.live-rink-back-to-live').should('be.visible').click()
