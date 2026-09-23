@@ -10,6 +10,7 @@ import {
   RETRY_MS,
   latestReplayableGoal,
   markFetching,
+  nextWatching,
   shouldFetch,
   trackFetch,
 } from '../liveGoalReplay';
@@ -126,5 +127,28 @@ describe('trackFetch', () => {
     // A shorter window would just re-ask inside the Worker's own miss cache
     // (TTL_MISSING = 60s) and get the same answer back.
     expect(RETRY_MS).toBe(60_000)
+  })
+})
+
+describe('nextWatching', () => {
+  const watched = { goal: { eventId: 261 }, replay: { frames: [] } }
+
+  it('keeps watching when the offer momentarily goes away', () => {
+    // The regression this exists for: the hook nulls its result when the
+    // game id changes, and reading it live ejected a viewer mid-replay --
+    // in CI, while the Back to live button was being clicked.
+    expect(nextWatching(watched, null)).toBe(watched)
+  })
+
+  it('keeps watching when the same goal is offered again', () => {
+    expect(nextWatching(watched, 261)).toBe(watched)
+  })
+
+  it('stops when a genuinely newer goal arrives', () => {
+    expect(nextWatching(watched, 367)).toBeNull()
+  })
+
+  it('does nothing when nothing is being watched', () => {
+    expect(nextWatching(null, 261)).toBeNull()
   })
 })

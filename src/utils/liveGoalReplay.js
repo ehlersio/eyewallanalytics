@@ -86,3 +86,23 @@ export function trackFetch(entry, outcome, now = Date.now()) {
 export function markFetching(entry, now = Date.now()) {
   return { ...entry, status: 'fetching', firstAskedAt: entry?.firstAskedAt ?? now };
 }
+
+/**
+ * What the live rink should still be watching, given the replay currently
+ * on offer. Once a replay is open it is HELD: the offer comes from a hook
+ * that keeps polling and resets on a game-id change, and reading it live
+ * meant a transient null pulled a viewer out of a replay mid-watch.
+ *
+ * @param current the replay being watched, or null
+ * @param replayEventId the eventId now on offer, or null
+ */
+export function nextWatching(current, replayEventId) {
+  if (!current) return current;
+  // No offer right now -- a gap in the polling, not a reason to stop.
+  if (replayEventId == null) return current;
+  // The same goal arriving again is not a change.
+  if (replayEventId === current.goal?.eventId) return current;
+  // A genuinely different, newer goal: stop, so nobody is left looking at
+  // an older goal under a newer one's heading.
+  return null;
+}
