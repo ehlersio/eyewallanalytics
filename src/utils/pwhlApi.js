@@ -5,6 +5,7 @@
 
 import i18n from '../i18n';
 import { getPWHLStoredTeam, PWHL_CURRENT_SEASON, PWHL_SEASON_LABEL } from './pwhlConfig';
+import { fetchWithRetry } from './retryFetch';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
 
@@ -20,9 +21,12 @@ async function workerFetch(path) {
     return null;
   }
   try {
-    const res = await fetch(`${WORKER_URL}${path}`, {
-      signal: AbortSignal.timeout(8000),
-      cache: 'no-store',
+    // One retry on a stalled connection -- see retryFetch.js. Without it a
+    // single transient timeout leaves the Roster tab on a dead "Failed to
+    // load roster." card with no way back, which is what a user on the
+    // production build gets: no StrictMode there, so no second attempt.
+    const res = await fetchWithRetry(`${WORKER_URL}${path}`, {
+      init: { cache: 'no-store' },
     });
     if (!res.ok) {
       console.warn(`pwhlApi ${res.status}: ${path}`);
