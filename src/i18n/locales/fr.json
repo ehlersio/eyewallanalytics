@@ -117,7 +117,8 @@
       "dayToday": "Aujourd'hui",
       "dayTomorrow": "Demain",
       "intermission": "ENTR",
-      "tv": "Télé"
+      "tv": "Télé",
+      "openAs": "Suivre ce match du côté de {{team}}"
     },
     "leaders": {
       "titlePoints": "Points",
@@ -1001,6 +1002,10 @@
       "takeaways": "Récupérations"
     },
     "goalVideoTitle": "Vidéo du but de {{scorer}}"
+  },
+  "guestGame": {
+    "viewingAs": "Du côté de {{team}}",
+    "backTo": "Retour à {{team}}"
   },
   "pwhlShotMapView": {
     "scoreBar": {

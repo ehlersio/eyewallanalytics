@@ -7,6 +7,22 @@
 //   applyTeamTheme(team, 'light');  // light mode
 //
 // Called once on app mount and again whenever the user switches teams or theme.
+//
+// A guest game view (GameTeamContext.jsx) wears the guest team's colors
+// while it's open -- setGuestThemeTeam() records that, so a light/dark
+// switch mid-view repaints in the guest's colors rather than snapping back
+// to the favorite's. Callers re-theming for a mode change pass
+// themeTeam(TEAM_CONFIG) rather than TEAM_CONFIG for that reason.
+
+let guestThemeTeam = null;
+
+export function setGuestThemeTeam(team) {
+  guestThemeTeam = team;
+}
+
+export function themeTeam(favorite) {
+  return guestThemeTeam ?? favorite;
+}
 
 /**
  * @param {object} team  — a team object from ALL_TEAMS (must have primaryColor + displayColor)

@@ -51,3 +51,14 @@ export function liveDetail(game, intermissionWord = 'INT') {
   if (game.inIntermission) return `${period} ${intermissionWord}`;
   return game.clock ? `${period} · ${game.clock}` : period;
 }
+
+// Where a team's row goes: a live NHL game opens in the game view from
+// that team's side (GuestGameView.jsx) without touching the favorite, and
+// the favorite's own row opens the favorite's own view. null -- a plain,
+// untappable row -- for other leagues (their game views don't take a guest
+// team) and for any game that isn't live, where there'd be nothing to
+// follow. `isNhlTeam` guards against a code ALL_TEAMS doesn't know.
+export function teamRowHref(sport, game, code, favoriteAbbr, isNhlTeam) {
+  if (sport !== 'nhl' || game?.status !== 'live' || !game.gameId || !isNhlTeam(code)) return null;
+  return code === favoriteAbbr ? '/' : `/game/${game.gameId}?as=${encodeURIComponent(code)}`;
+}

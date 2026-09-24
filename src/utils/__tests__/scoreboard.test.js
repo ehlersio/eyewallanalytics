@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { dayLabelKind, liveDetail, localDateString, periodLabel, startTimeLabel } from '../scoreboard';
+import { dayLabelKind, liveDetail, localDateString, periodLabel, startTimeLabel, teamRowHref } from '../scoreboard';
 
 const NOW = new Date('2026-09-15T18:00:00');
 
@@ -61,5 +61,27 @@ describe('liveDetail', () => {
     expect(liveDetail({ period: 3 })).toBe('3rd');  // HockeyTech: no clock
     expect(liveDetail({ statusDetail: 'In Progress' })).toBe('In Progress');
     expect(liveDetail({})).toBeNull();
+  });
+});
+
+describe('teamRowHref', () => {
+  const nhl = abbr => ['BOS', 'TOR', 'CAR'].includes(abbr);
+  const live = { gameId: 2026010040, status: 'live' };
+
+  it('opens a live game from the tapped team’s side', () => {
+    expect(teamRowHref('nhl', live, 'BOS', 'CAR', nhl)).toBe('/game/2026010040?as=BOS');
+    expect(teamRowHref('nhl', live, 'TOR', 'CAR', nhl)).toBe('/game/2026010040?as=TOR');
+  });
+
+  it('sends the favorite’s own row to the favorite’s view', () => {
+    expect(teamRowHref('nhl', live, 'CAR', 'CAR', nhl)).toBe('/');
+  });
+
+  it('offers nothing where there is nothing to follow', () => {
+    expect(teamRowHref('nhl', { ...live, status: 'pre' }, 'BOS', 'CAR', nhl)).toBeNull();
+    expect(teamRowHref('nhl', { ...live, status: 'final' }, 'BOS', 'CAR', nhl)).toBeNull();
+    expect(teamRowHref('pwhl', live, 'BOS', 'CAR', nhl)).toBeNull();
+    expect(teamRowHref('nhl', live, 'ARI', 'CAR', nhl)).toBeNull();
+    expect(teamRowHref('nhl', { status: 'live' }, 'BOS', 'CAR', nhl)).toBeNull();
   });
 });
