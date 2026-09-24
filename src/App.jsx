@@ -14,7 +14,7 @@ import { hasTeamConfig, TEAM_CONFIG } from './utils/teamConfig'
 import TeamPicker from './components/TeamPicker'
 import FaceoffIntro from './components/FaceoffIntro'
 import FaceoffLoader from './components/FaceoffLoader'
-import { applyTeamTheme } from './utils/applyTeamTheme';
+import { applyTeamTheme, themeTeam } from './utils/applyTeamTheme';
 import { getTheme, subscribeSystemTheme } from './utils/themeConfig';
 
 // Lazy-load all non-initial routes — reduces initial bundle by ~64 KiB
@@ -119,7 +119,9 @@ function PageTracker() {
     };
     capture('$pageview', {
       path:      location.pathname,
-      page_name: names[location.pathname] || location.pathname,
+      // /game/:gameId?as= is one route however many games it's opened on.
+      page_name: names[location.pathname]
+        || (location.pathname.startsWith('/game/') ? 'Guest Game' : location.pathname),
     });
   }, [location.pathname]);
   return null;
@@ -129,9 +131,11 @@ export default function App() {
   const { t } = useTranslation();
   // In App component body, before the return:
   useEffect(() => {
-    applyTeamTheme(TEAM_CONFIG, getTheme());
+    // themeTeam(): a guest game view opened straight from a link may have
+    // put on its team's colors already (child effects run first).
+    applyTeamTheme(themeTeam(TEAM_CONFIG), getTheme());
     // Until the user picks a theme, follow the device's light/dark setting live.
-    return subscribeSystemTheme(mode => applyTeamTheme(TEAM_CONFIG, mode));
+    return subscribeSystemTheme(mode => applyTeamTheme(themeTeam(TEAM_CONFIG), mode));
   }, []); // runs once on mount; full reload on team change means this always reflects current team  
 
   // Show team picker on first launch (no team saved yet).

@@ -6,13 +6,14 @@
 // cross-sport design (one component, a `sport` prop resolves team lookup +
 // logo per league) rather than 4 near-identical per-sport copies.
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import TeamLogo from './TeamLogo';
-import { getTeamByAbbr } from '../utils/teamConfig';
+import { getTeamByAbbr, TEAM_CONFIG } from '../utils/teamConfig';
 import { getPWHLTeamConfig } from '../utils/pwhlConfig';
 import { getAHLTeamConfig } from '../utils/ahlConfig';
 import { getECHLTeamConfig } from '../utils/echlConfig';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
-import { dayLabelKind, liveDetail, startTimeLabel } from '../utils/scoreboard';
+import { dayLabelKind, liveDetail, startTimeLabel, teamRowHref } from '../utils/scoreboard';
 import { formatDate } from '../utils/formatters';
 import { parseLocalDate } from '../utils/injuryDetails';
 
@@ -27,6 +28,10 @@ const GRID_CLASSES = 'grid grid-cols-2 gap-2 max-[600px]:grid-cols-1';
 const CARD_CLASSES = 'flex flex-col gap-2 py-3 px-3 rounded-[var(--radius)] border-[0.5px] border-[var(--border)] bg-[var(--bg1)]';
 const CARD_HEADER_CLASSES = 'flex justify-end';
 const TEAM_ROW_CLASSES = 'flex items-center gap-2';
+// A tappable row reaches past the card's padding so its hover fill and its
+// 44px tap target don't sit cramped against the text.
+const TEAM_ROW_LINK_CLASSES = 'scoreboard-team-link flex items-center gap-2 min-h-[44px] -mx-2 px-2 rounded-[8px] hover:bg-[var(--bg2)] [transition:background_0.15s]';
+const CHEVRON_CLASSES = 'text-[14px] text-[color:var(--text-dim)] leading-none';
 const TEAM_NAME_CLASSES = 'flex-1 text-[13px] font-medium text-[color:var(--text)] whitespace-nowrap overflow-hidden text-ellipsis';
 const SCORE_CLASSES = 'text-[15px] font-bold font-[family-name:var(--font-mono)] text-[color:var(--text)] min-w-[20px] text-right';
 const SCORE_MUTED_CLASSES = 'text-[15px] font-bold font-[family-name:var(--font-mono)] text-[color:var(--text-dim)] min-w-[20px] text-right';
@@ -110,17 +115,30 @@ function DayHeader({ games }) {
   return <div className={DAY_HEADER_CLASSES}>{label}</div>;
 }
 
-function TeamRow({ code, score, status, sport, isLoser }) {
+const teamHref = (sport, game, code) =>
+  teamRowHref(sport, game, code, TEAM_CONFIG.abbr, abbr => !!getTeamByAbbr(abbr));
+
+function TeamRow({ code, score, status, sport, isLoser, href }) {
+  const { t } = useTranslation();
   const team = TEAM_LOOKUP[sport]?.(code);
+  const name = team?.shortName || code || '—';
   const showScore = status !== 'pre';
-  return (
-    <div className={TEAM_ROW_CLASSES}>
+  const content = (
+    <>
       <TeamLogo abbr={code} sport={sport} size={22} />
-      <span className={TEAM_NAME_CLASSES}>{team?.shortName || code || '—'}</span>
+      <span className={TEAM_NAME_CLASSES}>{name}</span>
       {showScore && (
         <span className={isLoser ? SCORE_MUTED_CLASSES : SCORE_CLASSES}>{score ?? 0}</span>
       )}
-    </div>
+    </>
+  );
+  if (!href) return <div className={TEAM_ROW_CLASSES}>{content}</div>;
+  return (
+    <Link to={href} className={TEAM_ROW_LINK_CLASSES}>
+      {content}
+      <span className={CHEVRON_CLASSES} aria-hidden="true">›</span>
+      <span className="sr-only">{t('league.scoreboard.openAs', { team: name })}</span>
+    </Link>
   );
 }
 
@@ -162,8 +180,10 @@ export default function Scoreboard({ sport, games, loading, error }) {
               <LiveDetail game={g} />
               <StatusBadge game={g} />
             </div>
-            <TeamRow code={g.awayTeamCode} score={g.awayScore} status={g.status} sport={sport} isLoser={awayLower} />
-            <TeamRow code={g.homeTeamCode} score={g.homeScore} status={g.status} sport={sport} isLoser={homeLower} />
+            <TeamRow code={g.awayTeamCode} score={g.awayScore} status={g.status} sport={sport} isLoser={awayLower}
+              href={teamHref(sport, g, g.awayTeamCode)} />
+            <TeamRow code={g.homeTeamCode} score={g.homeScore} status={g.status} sport={sport} isLoser={homeLower}
+              href={teamHref(sport, g, g.homeTeamCode)} />
             <Broadcasts game={g} />
           </div>
         );

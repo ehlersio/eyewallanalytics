@@ -8,6 +8,7 @@ const WORKER_URL = typeof import.meta !== 'undefined'
   : null;
 
 const SESSION_KEY = 'eyewall_period_summaries';
+const GAME_SUMMARY_KEY = 'eyewall_game_summary';
 
 // Fetch a cached narrative from Worker KV — returns string or null
 async function fetchCachedNarrative(gameId, period) {
@@ -33,18 +34,35 @@ export function landingGoalPicker(landingGoals) {
   return (goal, index) => byId.get(goal?.eventId) ?? (landingGoals || [])[index];
 }
 
-function loadStored(gameId) {
+// Stored per team as well as per game: a summary is written from one
+// team's side (carTeamId), and the same game can be watched from either
+// side -- the favorite's, or a guest team's off the Scoreboard (see
+// GameTeamContext.jsx). One shared slot let each overwrite the other, and
+// a guest view of the favorite's opponent read the favorite's summaries.
+const storedKey = (base, teamId) => `${base}:${teamId}`;
+
+// Every team's stored period and game summaries -- DevReplayView starts a
+// replay from nothing with this.
+export function clearStoredSummaries() {
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
+    Object.keys(sessionStorage)
+      .filter(k => k.startsWith(`${SESSION_KEY}:`) || k.startsWith(`${GAME_SUMMARY_KEY}:`))
+      .forEach(k => sessionStorage.removeItem(k));
+  } catch {}
+}
+
+function loadStored(gameId, teamId) {
+  try {
+    const raw = sessionStorage.getItem(storedKey(SESSION_KEY, teamId));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return parsed.gameId === gameId ? parsed : null;
   } catch { return null; }
 }
 
-function saveStored(gameId, summaries) {
+function saveStored(gameId, teamId, summaries) {
   try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ gameId, summaries }));
+    sessionStorage.setItem(storedKey(SESSION_KEY, teamId), JSON.stringify({ gameId, summaries }));
   } catch {}
 }
 
@@ -223,7 +241,7 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
   // Restore from sessionStorage on mount / gameId change
   useEffect(() => {
     if (!gameId) return;
-    const stored = loadStored(gameId);
+    const stored = loadStored(gameId, carTeamId);
     if (stored?.summaries?.length) {
       setSummaries(stored.summaries);
       lastProcessedPeriod.current = Math.max(...stored.summaries.map(s => s.period));
@@ -259,7 +277,7 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
       setSummaries(prev => {
         const next = [...prev.filter(s => s.period !== period), summary]
           .sort((a, b) => a.period - b.period);
-        saveStored(gameId, next);
+        saveStored(gameId, carTeamId, next);
         return next;
       });
       if (showAsNew) setNewSummary(summary);
@@ -293,7 +311,7 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
     const periods = [...new Set(plays.map(p => p.periodDescriptor?.number).filter(Boolean))].sort();
     if (!periods.length) return;
     // Check which periods are already stored — don't overwrite them
-    const stored = loadStored(gameId);
+    const stored = loadStored(gameId, carTeamId);
     const builtPeriods = new Set(stored?.summaries?.map(s => s.period) || []);
     periods.forEach(p => {
       if (!builtPeriods.has(p) && !buildingRef.current.has(p)) {
@@ -310,7 +328,7 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
       const next = prev.map(s =>
         s.period === period ? { ...s, aiNarrative: narrative, aiLoading: false } : s
       );
-      saveStored(gameId, next);
+      saveStored(gameId, carTeamId, next);
       return next;
     });
     setNewSummary(prev =>
@@ -421,20 +439,18 @@ function buildGameSummary(plays, carTeamId, landingData, pbp, gameId) {
   };
 }
 
-const GAME_SUMMARY_KEY = 'eyewall_game_summary';
-
-function loadStoredGame(gameId) {
+function loadStoredGame(gameId, teamId) {
   try {
-    const raw = sessionStorage.getItem(GAME_SUMMARY_KEY);
+    const raw = sessionStorage.getItem(storedKey(GAME_SUMMARY_KEY, teamId));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return parsed.gameId === gameId ? parsed.summary : null;
   } catch { return null; }
 }
 
-function saveStoredGame(gameId, summary) {
+function saveStoredGame(gameId, teamId, summary) {
   try {
-    sessionStorage.setItem(GAME_SUMMARY_KEY, JSON.stringify({ gameId, summary }));
+    sessionStorage.setItem(storedKey(GAME_SUMMARY_KEY, teamId), JSON.stringify({ gameId, summary }));
   } catch {}
 }
 
@@ -445,7 +461,7 @@ export function useGameSummary({ pbp, _isLive, gameId, carTeamId }) {
   // Restore from sessionStorage on gameId change
   useEffect(() => {
     if (!gameId) { builtRef.current = false; setGameSummary(null); return; }
-    const stored = loadStoredGame(gameId);
+    const stored = loadStoredGame(gameId, carTeamId);
     if (stored) {
       setGameSummary(stored);
       builtRef.current = true;
@@ -477,7 +493,7 @@ export function useGameSummary({ pbp, _isLive, gameId, carTeamId }) {
       }
 
       setGameSummary(summary);
-      saveStoredGame(gameId, summary);
+      saveStoredGame(gameId, carTeamId, summary);
     })();
   }, [gameId, pbp?.plays?.length, carTeamId]);
 
@@ -485,7 +501,7 @@ export function useGameSummary({ pbp, _isLive, gameId, carTeamId }) {
     setGameSummary(prev => {
       if (!prev) return prev;
       const next = { ...prev, aiNarrative: narrative, aiLoading: false };
-      saveStoredGame(gameId, next);
+      saveStoredGame(gameId, carTeamId, next);
       return next;
     });
   }, [gameId]);

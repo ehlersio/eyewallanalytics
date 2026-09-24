@@ -31,7 +31,7 @@ import DisabledHint from '../components/DisabledHint';
 // ShotMapView.css import removed (Phase 5, sub-PR 6) -- the file is now
 // fully deleted, every rule migrated to Tailwind across all 6 sub-PRs.
 
-import { publishClock, getClockDisplay, publishMomentum } from '../utils/liveClockStore';
+import { sharedClockStore, createClockStore } from '../utils/liveClockStore';
 import { useDevGame } from '../utils/DevGameContext';
 import { useGameTeam } from '../utils/GameTeamContext';
 import { useWakeLock } from '../hooks/useWakeLock';
@@ -533,6 +533,10 @@ export default function ShotMapView() {
   // A guest view is pinned to that one game: no season/game history, and
   // nothing else of the guest team's is shown. See GameTeamContext.jsx.
   const { team, guestGameId, isGuest } = useGameTeam();
+  // Clock and momentum for this game. The favorite's feed the Topbar's
+  // score chip; a guest game's stay here, or the Topbar would show them
+  // under the favorite's score.
+  const clockStore = useMemo(() => isGuest ? createClockStore() : sharedClockStore, [isGuest]);
   const LIVE_SELECTOR_DISABLED_REASON = t('shotMapView.scoreBar.disabledReason');
 
   // ── Dev replay injection ──────────────────────────────────────
@@ -794,8 +798,9 @@ export default function ShotMapView() {
   );
   const pbp = devGame?.pbp ?? pbpReal;
 
-  // iOS app only: follow this live game on the lock screen (Live Activity)
-  const lockScreen = useLiveActivity(isLive ? liveGame : null, pbp, team.abbr);
+  // iOS app only: follow this live game on the lock screen (Live Activity).
+  // The favorite's games only -- the lock screen follows the user's team.
+  const lockScreen = useLiveActivity(isLive && !isGuest ? liveGame : null, pbp, team.abbr);
 
   // Landing data — source of goal video clips (discreteClip), merged into
   // shotEvents below so the shot map's goal-dot popup can show them.
@@ -875,8 +880,8 @@ export default function ShotMapView() {
   // ── Publish clock to shared store when PBP updates ──────────
   useEffect(() => {
     if (!isLive || !pbp?.clock?.timeRemaining) return;
-    publishClock(pbp.clock.timeRemaining, pbp.clock.inIntermission, pbp.clock.running !== false);
-  }, [pbp?.clock?.timeRemaining, pbp?.clock?.inIntermission, isLive]);
+    clockStore.publishClock(pbp.clock.timeRemaining, pbp.clock.inIntermission, pbp.clock.running !== false);
+  }, [pbp?.clock?.timeRemaining, pbp?.clock?.inIntermission, isLive, clockStore]);
 
   // ── Publish momentum to shared store when PBP updates ───────
   useEffect(() => {
@@ -927,22 +932,22 @@ export default function ShotMapView() {
     const total = carScore + oppScore || 1;
     const carPct = Math.round((carScore / total) * 100);
 
-    publishMomentum({ carPct, oppPct: 100 - carPct, carShots, oppShots, window: WINDOW_MINS, nowSecs });
-  }, [pbp?.plays?.length, isLive, team]);
+    clockStore.publishMomentum({ carPct, oppPct: 100 - carPct, carShots, oppShots, window: WINDOW_MINS, nowSecs });
+  }, [pbp?.plays?.length, isLive, team, clockStore]);
 
   // ── Tick display from shared store (same math as Topbar → no drift) ──
   useEffect(() => {
     if (!isLive) return;
     if (clockRef.current) clearInterval(clockRef.current);
     clockRef.current = setInterval(() => {
-      const r = getClockDisplay();
+      const r = clockStore.getClockDisplay();
       if (r) {
         setDisplayClock(r.display);
         setClockRunning(r.running !== false);
       }
     }, 250);
     return () => { if (clockRef.current) clearInterval(clockRef.current); };
-  }, [isLive]);
+  }, [isLive, clockStore]);
 
   // ── Scroll → show/hide top button ──
   useEffect(() => {
@@ -1135,16 +1140,21 @@ export default function ShotMapView() {
     : viewingSummaryPeriod === 'game' ? gameSummary
     : periodSummaries.find(s => s.period === viewingSummaryPeriod) || null;
 
-  // Sync summaries + game summary to context so bell can access them
+  // Sync summaries + game summary to context so bell can access them.
+  // Not a guest game's: the bell lists the favorite's game and labels each
+  // chip with the favorite's abbr, so a guest game's summaries would read
+  // as the favorite's score. They still pop up here as each period ends.
   const { setSummaries: setCtxSummaries, registerOpenHandler } = usePeriodSummaryContext();
   useEffect(() => {
+    if (isGuest) return;
     const all = gameSummary ? [gameSummary, ...periodSummaries] : periodSummaries;
     setCtxSummaries(all);
-  }, [periodSummaries, gameSummary, setCtxSummaries]);
+  }, [periodSummaries, gameSummary, setCtxSummaries, isGuest]);
   useEffect(() => {
+    if (isGuest) return;
     registerOpenHandler((s) => setViewingSummaryPeriod(s.isGameSummary ? 'game' : s.period));
     return () => registerOpenHandler(null);
-  }, [registerOpenHandler]);
+  }, [registerOpenHandler, isGuest]);
 
   // Auto-open game summary when a live game goes FINAL.
   // wasLiveRef tracks whether we were watching a live game — prevents

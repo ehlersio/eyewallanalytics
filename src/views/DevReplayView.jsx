@@ -12,6 +12,7 @@ import { DevGameContext } from '../utils/DevGameContext';
 import { publishClock, publishMockLiveGame, clearMockLiveGame } from '../utils/liveClockStore';
 import { CURRENT_SEASON } from '../utils/teamConfig';
 import ShotMapView from './ShotMapView';
+import { clearStoredSummaries } from '../hooks/usePeriodSummary';
 
 // Tailwind migration (Session 97, Phase 4, sub-PR 1). DevReplayView.css had
 // a clean 2-consumer graph (this file + PWHLDevReplayView.jsx, confirmed by
@@ -268,8 +269,7 @@ function DevReplayViewInner() {
       sessionStorage.removeItem(`win_shown_${id}`);
       sessionStorage.removeItem(`lastPlay_${id}`);
       sessionStorage.removeItem(`goals_${id}`);
-      sessionStorage.removeItem('eyewall_period_summaries');
-      sessionStorage.removeItem('eyewall_game_summary');
+      clearStoredSummaries();
       sessionStorage.removeItem(`puckdrop_shown_${id}`);
       sessionStorage.removeItem(`penalties_${id}`);
       const plays = pbp.plays;
@@ -498,8 +498,7 @@ function DevReplayViewInner() {
               <span className={DEV_SECTION_LABEL_CLASSES}>Dev</span>
               <div className={DEV_SPEED_BTNS_CLASSES}>
                 <button className={devBtnClasses()} onClick={() => {
-                  sessionStorage.removeItem('eyewall_period_summaries');
-                  sessionStorage.removeItem('eyewall_game_summary');
+                  clearStoredSummaries();
                   if (loadedGameId) {
                     sessionStorage.removeItem(`win_shown_${loadedGameId}`);
                     sessionStorage.removeItem(`lastPlay_${loadedGameId}`);

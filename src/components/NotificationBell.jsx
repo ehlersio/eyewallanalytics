@@ -11,7 +11,7 @@ import { ECHL_TEAM_CONFIG } from '../utils/echlApi';
 import { getTheme, setTheme, subscribeSystemTheme } from '../utils/themeConfig';
 import { getLocale, setLocale } from '../utils/localeConfig';
 import { upsertLocale } from '../utils/localeSync';
-import { applyTeamTheme } from '../utils/applyTeamTheme';
+import { applyTeamTheme, themeTeam } from '../utils/applyTeamTheme';
 import TeamLogo from '../components/TeamLogo';
 import AccountSection from './AccountSection';
 
@@ -169,7 +169,7 @@ export default function NotificationBell() {
   const handleThemeToggle = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
-    applyTeamTheme(TEAM_CONFIG, next);
+    applyTeamTheme(themeTeam(TEAM_CONFIG), next);
     setThemeState(next);
   };
 
