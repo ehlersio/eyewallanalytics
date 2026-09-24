@@ -27,7 +27,8 @@
     "contactPrefix": "For all inquiries:",
     "privacyText": "EyeWall uses anonymous analytics to understand which features are most useful. No personal data is sold or shared. Read our",
     "privacyPolicy": "Privacy Policy",
-    "disclaimer": "EyeWall Analytics is an independent fan project. It is not affiliated with, endorsed by, or sponsored by the NHL, PWHL, AHL, ECHL, or any team. Team names and logos belong to their respective owners."
+    "disclaimer": "EyeWall Analytics is an independent fan project. It is not affiliated with, endorsed by, or sponsored by the NHL, PWHL, AHL, ECHL, or any team. Team names and logos belong to their respective owners.",
+    "version": "Version {{version}}"
   },
   "search": {
     "toggleAriaLabel": "Search players",

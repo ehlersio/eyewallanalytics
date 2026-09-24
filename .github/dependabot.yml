@@ -10,6 +10,13 @@ updates:
       time: "06:00"
       timezone: "America/New_York"
     open-pull-requests-limit: 5
+    # semver:patch -- a dependency update ships to users as a patch (see
+    # .github/workflows/version.yml). Setting labels replaces Dependabot's
+    # defaults, so those are listed too.
+    labels:
+      - "dependencies"
+      - "javascript"
+      - "semver:patch"
     groups:
       # Batch minor/patch React + Vite ecosystem updates together
       vite-ecosystem:
@@ -48,3 +55,8 @@ updates:
       time: "06:00"
       timezone: "America/New_York"
     open-pull-requests-limit: 5
+    # semver:none -- CI-only, nothing that ships to users.
+    labels:
+      - "dependencies"
+      - "github_actions"
+      - "semver:none"

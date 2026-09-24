@@ -218,6 +218,11 @@ export default function AboutPopup({ isLive = false }) {
           <div className={`about-disclaimer ${PRIVACY_CLASSES}`}>
             {t('about.disclaimer')}
           </div>
+
+          {/* Which build this is, for bug reports. */}
+          <div className={`about-version ${PRIVACY_CLASSES}`}>
+            {t('about.version', { version: __APP_VERSION__ })}
+          </div>
         </div>
       )}
     </div>

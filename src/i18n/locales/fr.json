@@ -27,7 +27,8 @@
     "contactPrefix": "Pour toute question :",
     "privacyText": "EyeWall utilise des analyses anonymes pour comprendre quelles fonctionnalités sont les plus utiles. Aucune donnée personnelle n'est vendue ou partagée. Lisez notre",
     "privacyPolicy": "Politique de confidentialité",
-    "disclaimer": "EyeWall Analytics est un projet indépendant de partisans. Il n'est ni affilié à la LNH, à la LPHF, à la LAH, à l'ECHL ou à une équipe, ni approuvé ou commandité par elles. Les noms et logos des équipes appartiennent à leurs propriétaires respectifs."
+    "disclaimer": "EyeWall Analytics est un projet indépendant de partisans. Il n'est ni affilié à la LNH, à la LPHF, à la LAH, à l'ECHL ou à une équipe, ni approuvé ou commandité par elles. Les noms et logos des équipes appartiennent à leurs propriétaires respectifs.",
+    "version": "Version {{version}}"
   },
   "search": {
     "toggleAriaLabel": "Rechercher des joueurs",
