@@ -127,6 +127,20 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
           this.skip()
         }
       })
+      // The breakdown only exists on a game still to be played, so once a
+      // team's last preseason game is in the books there is nothing here to
+      // open -- TOR finished its preseason on 2026-09-23, days before the
+      // other three teams, and this failed on every run from then on. Ask
+      // the live schedule rather than the page: a card list that hasn't
+      // loaded yet looks the same as one with no upcoming games.
+      cy.request(`/nhl-api/v1/club-schedule-season/${teamAbbr}/now`).then(({ body }) => {
+        const upcoming = (body?.games || []).some(g =>
+          g.gameType === 1 && !['OFF', 'FINAL'].includes(g.gameState))
+        if (!upcoming) {
+          cy.log(`Skipping — ${teamAbbr} has no preseason games left to preview`)
+          this.skip()
+        }
+      })
       cy.get('.sched-tab').contains('Preseason').click()
       // Switching tabs triggers a real, live (unmocked) NHL API fetch for
       // preseason games specifically -- wait for that to actually land
