@@ -24,6 +24,9 @@ function openSummary() {
   cy.window().then(win => win.sessionStorage.clear())
   cy.visit(`/?mockGame=${MOCK_GAME_ID}`)
   cy.team().then(t => cy.contains(t.abbr, { timeout: 10000 }).should('exist'))
+  // Settled on the mock game before opening a summary -- see
+  // period-summary.cy.js's waitForMockGameLive() for the race this avoids.
+  cy.get('.score-card', { timeout: DATA_TIMEOUT }).should('contain', 'LIVE')
   cy.get('button.notif-bell').click()
   cy.get('.notif-summary-chip', { timeout: 15000 }).first().click()
   cy.get('.ps-card', { timeout: 5000 }).should('exist')

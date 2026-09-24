@@ -310,15 +310,20 @@ describe('PWHL Schedule', () => {
     it('auto-saves the prediction to localStorage for track-record tallying', () => {
       cy.contains('Tap for preview', { timeout: DATA_TIMEOUT }).click()
       cy.wait(['@preview', '@prediction'])
-      cy.window().then(win => {
-        const preds = JSON.parse(win.localStorage.getItem('eyewall_pwhl_predictions_v1') || '[]')
-        const pred  = preds.find(p => p.gameId === UPCOMING_GAME_ID)
-        expect(pred).to.exist
-        expect(pred.opponent).to.eq('OTT')
-        expect(pred.predictedTeamWin).to.eq(true) // 65% > 35% in the fixture
-        expect(pred.predictedTeamScore).to.eq(3.1)
-        expect(pred.predictedOppScore).to.eq(2.2)
-      })
+      // Retried, not read once: the popup saves in an effect that runs
+      // after the prediction response has been parsed and rendered, so it
+      // can land a beat after cy.wait() returns -- read straight away, this
+      // failed intermittently in CI with the prediction not saved yet.
+      cy.window().its('localStorage')
+        .invoke('getItem', 'eyewall_pwhl_predictions_v1')
+        .should(raw => {
+          const pred = JSON.parse(raw || '[]').find(p => p.gameId === UPCOMING_GAME_ID)
+          expect(pred).to.exist
+          expect(pred.opponent).to.eq('OTT')
+          expect(pred.predictedTeamWin).to.eq(true) // 65% > 35% in the fixture
+          expect(pred.predictedTeamScore).to.eq(3.1)
+          expect(pred.predictedOppScore).to.eq(2.2)
+        })
     })
 
     it('shows a track record line once a prior prediction has a recorded outcome', () => {

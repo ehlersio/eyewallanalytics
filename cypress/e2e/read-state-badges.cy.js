@@ -20,12 +20,16 @@ const UNSEEN_TRIVIA = {
   hard: null,
 };
 
-function stubReadState({ newsLatestId = 'article-1', milestonesLatestId = 501, trivia = UNSEEN_TRIVIA } = {}) {
+// latestDelay holds back the two "latest id" answers, to click a tab before
+// the badge knows what's latest -- see the "viewed before ..." test below.
+function stubReadState({ newsLatestId = 'article-1', milestonesLatestId = 501, trivia = UNSEEN_TRIVIA, latestDelay = 0 } = {}) {
   cy.intercept('GET', `${WORKER_URL}/news/latest*`, {
     body: { latestId: newsLatestId, publishedAt: '2026-08-05T00:00:00Z' },
+    delay: latestDelay,
   }).as('newsLatest');
   cy.intercept('GET', `${WORKER_URL}/milestones/latest*`, {
     body: { latestId: milestonesLatestId, gameDate: '2026-08-04' },
+    delay: latestDelay,
   }).as('milestonesLatest');
   cy.intercept('GET', `${WORKER_URL}/trivia/today*`, { body: trivia }).as('triviaToday');
   // Main feeds — only exercised if a test actually visits that tab. One
@@ -41,8 +45,8 @@ function toggleDot(label) {
   return cy.get('.news-view-toggle-btn').contains(label).find('.news-view-toggle-dot');
 }
 
-function bottomNavNewsDot() {
-  return cy.get('a[href="/news"] .nav-badge-dot');
+function bottomNavNewsDot(options) {
+  return cy.get('a[href="/news"] .nav-badge-dot', options);
 }
 
 describe('Read-state badges — per-tab dots', () => {
@@ -113,6 +117,27 @@ describe('Read-state badges — BottomNav combined dot', () => {
     cy.get('.news-view-toggle-btn').contains('Trivia').click();
     cy.contains('.trivia-option', 'Player A').click();
     bottomNavNewsDot().should('not.exist');
+  });
+
+  // The CI flake behind this (2026-09): markSeen no-opped when a tab was
+  // clicked before that useReadState instance's own "latest" fetch came
+  // back -- the BottomNav's fetch finishing first (all cy.wait() waits
+  // for) said nothing about NewsView's. The click was lost and the dot
+  // never cleared. Delaying the answers makes that gap certain.
+  it('clears tabs viewed before their latest id arrived, once it does', () => {
+    stubReadState({ latestDelay: 800 });
+    cy.setTeam('CAR');
+    cy.visit('/news');
+
+    cy.get('.news-view-toggle-btn').contains('News').click();
+    cy.get('.news-view-toggle-btn').contains('Milestones').click();
+    cy.get('.news-view-toggle-btn').contains('Trivia').click();
+    cy.contains('.trivia-option', 'Player A').click();
+
+    cy.wait(['@newsLatest', '@milestonesLatest']);
+    // Each delayed refresh fetches news then milestones in turn, and every
+    // applied early view sets off another -- several rounds of the delay.
+    bottomNavNewsDot({ timeout: DATA_TIMEOUT }).should('not.exist');
   });
 
   it('shows no dot at all when nothing is unseen', () => {
