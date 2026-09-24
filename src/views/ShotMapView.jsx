@@ -7,7 +7,7 @@ import {
   getGameLanding, attachGoalVideos,
   getCarScore, getOppScore, getOpponent, isHomeGame, isCompleted,
   getTeamStats, getTeamPlayoffStats, formatGameDate, getRoster, buildPlayerMap,
-  bustLiveGameCache, GAME_TYPE, TEAM_CONFIG,
+  bustLiveGameCache, GAME_TYPE,
 } from '../utils/nhlApi';
 import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON, teamTextColor } from '../utils/teamConfig';
 import { HockeyRink } from 'react-hockey-rink';
@@ -33,6 +33,7 @@ import DisabledHint from '../components/DisabledHint';
 
 import { publishClock, getClockDisplay, publishMomentum } from '../utils/liveClockStore';
 import { useDevGame } from '../utils/DevGameContext';
+import { useGameTeam } from '../utils/GameTeamContext';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { useLiveActivity } from '../hooks/useLiveActivity';
 import PeriodSummary from '../components/PeriodSummary';
@@ -527,6 +528,11 @@ const PP_MINI_RINK_LABEL_CLASSES = 'text-[10px] text-[color:var(--text-dim)] mb-
 
 export default function ShotMapView() {
   const { t } = useTranslation();
+  // The team this view watches from: the favorite, or -- on the
+  // /game/:gameId?as= route -- the team a Scoreboard game was opened as.
+  // A guest view is pinned to that one game: no season/game history, and
+  // nothing else of the guest team's is shown. See GameTeamContext.jsx.
+  const { team, guestGameId, isGuest } = useGameTeam();
   const LIVE_SELECTOR_DISABLED_REASON = t('shotMapView.scoreBar.disabledReason');
 
   // ── Dev replay injection ──────────────────────────────────────
@@ -550,13 +556,15 @@ export default function ShotMapView() {
   }, [liveStateRef.current.isLive, liveStateRef.current.nextGameTime]);
 
   // Live game polling — interval adapts to game state
-  const { data: liveGameReal, refetch: refetchLive } = usePoll(getLiveGame, scheduleInterval);
-  const liveGame = devGame?.liveGame ?? liveGameReal;
+  const { data: liveGameReal, refetch: refetchLive } = usePoll(() => getLiveGame(team), scheduleInterval);
+  const anyLiveGame = devGame?.liveGame ?? liveGameReal;
+  // A guest view follows the game it was opened on and nothing else.
+  const liveGame = isGuest && anyLiveGame?.id !== guestGameId ? null : anyLiveGame;
   const isLive   = !!liveGame;
 
   // All games (completed + scheduled) — used to find next upcoming game time
   // for the adaptive interval. useFetch fires once; nhlApi.js caches the result.
-  const { data: allGames } = useFetch(getAllGames);
+  const { data: allGames } = useFetch(() => getAllGames(team), [team]);
 
   // Update liveStateRef whenever live status or schedule changes
   useEffect(() => {
@@ -572,7 +580,10 @@ export default function ShotMapView() {
   }, [isLive, allGames]);
 
   // Most recent completed game as fallback
-  const { data: recentGames } = useFetch(getRecentGames);
+  const { data: recentGames } = useFetch(
+    () => isGuest ? Promise.resolve(null) : getRecentGames(6, team),
+    [team, isGuest]
+  );
   const lastGame   = recentGames?.[0] || null;
 
   // ── Season/game history selector (Session 77) ──────────────────
@@ -636,7 +647,7 @@ export default function ShotMapView() {
   // empty array is a failed or empty fetch, and falling back on that
   // would hide a real outage behind last season's data. Only a schedule
   // that exists and has nothing completed in it counts as "not started".
-  const seasonNotStarted = !userPickedSeason
+  const seasonNotStarted = !isGuest && !userPickedSeason
     && allGames?.length > 0
     && !allGames.some(isCompleted)
     && !!previousSeason;
@@ -671,13 +682,20 @@ export default function ShotMapView() {
   const handleDisabledTap  = useCallback(() => setShowDisabledHint(true), []);
   const dismissDisabledHint = useCallback(() => setShowDisabledHint(false), []);
 
-  const { data: seasonSchedule } = useFetch(() => getScheduleForSeason(TEAM_CONFIG.abbr, effectiveSeason), [effectiveSeason]);
+  // Season history is the favorite's alone -- a guest view is one game.
+  const { data: seasonSchedule } = useFetch(
+    () => isGuest ? Promise.resolve(null) : getScheduleForSeason(team.abbr, effectiveSeason),
+    [effectiveSeason, team, isGuest]
+  );
 
   // Season-wide shots for the "All N" chip — both teams' shots from every
   // completed game this season, not just the most recent one. Only actually
   // rendered when nothing more specific (live game, a picked historical
   // game) applies — see shotEvents below.
-  const { data: seasonShots } = useFetch(() => getSeasonShots(TEAM_CONFIG.abbr, effectiveSeason), [effectiveSeason]);
+  const { data: seasonShots } = useFetch(
+    () => isGuest ? Promise.resolve(null) : getSeasonShots(team.abbr, effectiveSeason),
+    [effectiveSeason, team, isGuest]
+  );
 
   // PP/PK unit compositions for the season on screen, for the unit chips
   // and the per-opportunity PP1/PP2 badges in the special-teams drill-downs.
@@ -719,22 +737,29 @@ export default function ShotMapView() {
   // getOppScore/isHomeGame already work on any raw NHL schedule-row shape.
   const gameChipGames = useMemo(() => games.map(g => ({
     id: g.id,
-    opponentAbbr: getOpponent(g)?.abbrev,
-    opponentColor: teamTextColor(getOpponent(g)?.abbrev),
-    myScore: getCarScore(g),
-    oppScore: getOppScore(g),
-    isHome: isHomeGame(g),
-  })), [games]);
+    opponentAbbr: getOpponent(g, team)?.abbrev,
+    opponentColor: teamTextColor(getOpponent(g, team)?.abbrev),
+    myScore: getCarScore(g, team),
+    oppScore: getOppScore(g, team),
+    isHome: isHomeGame(g, team),
+  })), [games, team]);
 
   // games[0] -- the newest completed game of whatever season is actually
   // on screen -- backs up lastGame, which only ever covers the CURRENT
   // season and so is null for the whole off-season. That null is what
   // used to strand the score bar on "Loading game data…".
-  const activeGame = liveGame || selectedGame || lastGame || games[0] || null;
+  // A guest view's game once it's no longer live comes from the guest
+  // team's schedule, so it lands on that game's final rather than falling
+  // back to some other game of theirs.
+  const activeGame = isGuest
+    ? liveGame || allGames?.find(g => g.id === guestGameId) || null
+    : liveGame || selectedGame || lastGame || games[0] || null;
   // Tells "there is nothing to show" apart from "still fetching" -- the
   // score bar used to render both as "Loading game data…", which is what
   // made an unstarted season look like a hung app.
-  const noGamesToShow = !activeGame && !!seasonSchedule && games.length === 0;
+  const noGamesToShow = isGuest
+    ? !activeGame && !!allGames
+    : !activeGame && !!seasonSchedule && games.length === 0;
   useWakeLock(isLive); // keep screen on during live games
 
   // ── App resume: refetch live data and clear stale popups ─────
@@ -747,7 +772,7 @@ export default function ShotMapView() {
   const refetchLiveRef       = useRef(null);
 
   // Are we currently in playoffs? Check if any playoff games exist this season
-  const { data: playoffGames } = useFetch(getPlayoffGames);
+  const { data: playoffGames } = useFetch(() => getPlayoffGames(team), [team]);
   const inPlayoffs = (playoffGames?.length || 0) > 0;
 
   // Determine context of the active game
@@ -761,7 +786,7 @@ export default function ShotMapView() {
     () => {
       if (devGame) return Promise.resolve(null); // dev provides pbp directly
       if (!gameId) return Promise.resolve(null);
-      if (isLive) bustLiveGameCache(gameId);
+      if (isLive) bustLiveGameCache(gameId, team);
       return getGameDetail(gameId);
     },
     isLive ? LIVE_POLL_MS : 300_000,
@@ -770,7 +795,7 @@ export default function ShotMapView() {
   const pbp = devGame?.pbp ?? pbpReal;
 
   // iOS app only: follow this live game on the lock screen (Live Activity)
-  const lockScreen = useLiveActivity(isLive ? liveGame : null, pbp, TEAM_CONFIG.abbr);
+  const lockScreen = useLiveActivity(isLive ? liveGame : null, pbp, team.abbr);
 
   // Landing data — source of goal video clips (discreteClip), merged into
   // shotEvents below so the shot map's goal-dot popup can show them.
@@ -813,19 +838,19 @@ export default function ShotMapView() {
   );
 
   // Team stats — we fetch once; we pick the right context (reg vs playoff) below
-  const { data: teamStats } = useFetch(() => getTeamStats(TEAM_CONFIG.abbr));
+  const { data: teamStats } = useFetch(() => getTeamStats(team.abbr), [team]);
 
   // team_seasons row for this team/season -- All-N Hits/Penalties cards
   // (Session 82). Same 32-team response the Standings/Power Rankings tabs
   // already fetch via getTeamSeasonData; we just pick our own team out of it
   // rather than adding a second Worker route.
   const { data: teamSeasonMap } = useFetch(() => getTeamSeasonData(season), [season]);
-  const teamSeasonRow = teamSeasonMap?.[TEAM_CONFIG.abbr];
+  const teamSeasonRow = teamSeasonMap?.[team.abbr];
 
   // Playoff-specific PP% when in playoffs
   const { data: poAdv } = useFetch(
-    () => inPlayoffs ? getTeamPlayoffStats() : Promise.resolve(null),
-    [inPlayoffs]
+    () => inPlayoffs ? getTeamPlayoffStats(team) : Promise.resolve(null),
+    [inPlayoffs, team]
   );
   const ppPct = inPlayoffs && poAdv?.pp?.powerPlayPct
     ? poAdv.pp.powerPlayPct
@@ -836,7 +861,7 @@ export default function ShotMapView() {
     : teamStats?.penaltyKillPct;
 
   // Roster for player name resolution in shot tooltips
-  const { data: roster } = useFetch(() => getRoster(TEAM_CONFIG.abbr));
+  const { data: roster } = useFetch(() => getRoster(team.abbr), [team]);
 
   // Season GSAX from Supabase for goalie cards
   const { data: goalieAnalytics } = useFetch(() => getGoalieAnalytics());
@@ -870,7 +895,7 @@ export default function ShotMapView() {
       const d    = play.details || {};
       const zone = d.zoneCode;
       const type = play.typeDescKey;
-      const owned = isCAR ? d.eventOwnerTeamId === TEAM_CONFIG.teamId : (d.eventOwnerTeamId && d.eventOwnerTeamId !== TEAM_CONFIG.teamId);
+      const owned = isCAR ? d.eventOwnerTeamId === team.teamId : (d.eventOwnerTeamId && d.eventOwnerTeamId !== team.teamId);
       if (type === 'faceoff') {
         return zone === 'O' && owned ? 0.6 : 0;
       }
@@ -894,7 +919,7 @@ export default function ShotMapView() {
       oppScore += weightedScore(p, false);
       const SHOT_TYPES = new Set(['goal', 'shot-on-goal', 'missed-shot', 'blocked-shot']);
       if (SHOT_TYPES.has(p.typeDescKey)) {
-        if (p.details?.eventOwnerTeamId === TEAM_CONFIG.teamId) carShots++;
+        if (p.details?.eventOwnerTeamId === team.teamId) carShots++;
         else oppShots++;
       }
     });
@@ -903,7 +928,7 @@ export default function ShotMapView() {
     const carPct = Math.round((carScore / total) * 100);
 
     publishMomentum({ carPct, oppPct: 100 - carPct, carShots, oppShots, window: WINDOW_MINS, nowSecs });
-  }, [pbp?.plays?.length, isLive]);
+  }, [pbp?.plays?.length, isLive, team]);
 
   // ── Tick display from shared store (same math as Topbar → no drift) ──
   useEffect(() => {
@@ -934,8 +959,8 @@ export default function ShotMapView() {
   // A live game always wins regardless of selectedGameId (see activeGame
   // above), and an explicitly-picked historical game keeps using its own
   // pbp — neither of those cases changes here.
-  const rawShotEvents = (isLive || effectiveSelectedGameId)
-    ? (pbp ? extractShotEvents(pbp) : [])
+  const rawShotEvents = (isLive || effectiveSelectedGameId || isGuest)
+    ? (pbp ? extractShotEvents(pbp, team) : [])
     : (seasonShots || []);
 
   // Goal video (discreteClip from landing) only applies to a single selected
@@ -946,7 +971,7 @@ export default function ShotMapView() {
     [rawShotEvents, gameLanding]
   );
 
-  const isAllN = !isLive && !effectiveSelectedGameId;
+  const isAllN = !isLive && !effectiveSelectedGameId && !isGuest;
 
   // A goal's popup gets the NHL's video and/or EyeWall's tracking replay
   // (GoalReplay, which shows a Video | Tracking switch only when both
@@ -963,11 +988,11 @@ export default function ShotMapView() {
         eventId={target.eventId}
         videoUrl={e.videoUrl}
         videoClassName="rhr-popup-video"
-        videoTitle={t('shotMapView.goalVideoTitle', { scorer: e.shooterName || TEAM_CONFIG.abbr })}
+        videoTitle={t('shotMapView.goalVideoTitle', { scorer: e.shooterName || team.abbr })}
         scorerName={e.shooterName}
       />
     );
-  }, [isAllN, landingGameId, t]);
+  }, [isAllN, landingGameId, t, team]);
 
   // SOG/Blocks season aggregates for the "All N" summary cards — derived
   // from the same seasonShots data already fetched for the rink dots above
@@ -987,18 +1012,18 @@ export default function ShotMapView() {
     return { sog: { car: carSog, opp: oppSog }, blocked: { car: carBlocks, opp: oppBlocks } };
   }, [isAllN, seasonShots]);
 
-  const opp        = activeGame ? getOpponent(activeGame) : null;
-  const carScore   = activeGame ? getCarScore(activeGame) : null;
-  const oppScore   = activeGame ? getOppScore(activeGame) : null;
+  const opp        = activeGame ? getOpponent(activeGame, team) : null;
+  const carScore   = activeGame ? getCarScore(activeGame, team) : null;
+  const oppScore   = activeGame ? getOppScore(activeGame, team) : null;
   const oppAbbr    = opp?.abbrev;
 
   // Game log insights — team-specific situational stats (scored first win%, H2H record)
   const { data: gameLogInsights } = useFetch(
-    () => oppAbbr ? getGameLogInsights(oppAbbr) : Promise.resolve(null),
-    [oppAbbr]
+    () => oppAbbr ? getGameLogInsights(oppAbbr, undefined, team.abbr) : Promise.resolve(null),
+    [oppAbbr, team]
   );
   const oppColor   = teamTextColor(oppAbbr) || 'var(--text-muted)';
-  const gameHome   = activeGame ? isHomeGame(activeGame) : true;
+  const gameHome   = activeGame ? isHomeGame(activeGame, team) : true;
 
   // ── Live situation: strength + on-ice players ─────────────
   // situationCode digits: [awayGoalie][awaySkaters][homeSkaters][homeGoalie]
@@ -1068,7 +1093,7 @@ export default function ShotMapView() {
     penaltyPopup, clearPenaltyPopup, winPopup, clearWinPopup,
     puckDropPopup, clearPuckDropPopup } =
     useGameEvents(pbp, isLive, strMapForEvents, gameHome,
-      TEAM_CONFIG.teamId, TEAM_CONFIG.abbr, TEAM_CONFIG.displayColor);
+      team.teamId, team.abbr, team.displayColor);
 
   // Keep refs current so the visibility handler always calls the latest versions
   useEffect(() => { clearGoalPopupRef.current    = clearGoalPopup;    }, [clearGoalPopup]);
@@ -1097,11 +1122,11 @@ export default function ShotMapView() {
 
   // ── Period summaries ──────────────────────────────────────────
   const { summaries: periodSummaries, newSummary, dismissNewSummary, updateSummaryNarrative } =
-    usePeriodSummary({ pbp, isLive, gameId, carTeamId: TEAM_CONFIG.teamId, isPlayoff: inPlayoffs });
+    usePeriodSummary({ pbp, isLive, gameId, carTeamId: team.teamId, isPlayoff: inPlayoffs });
   const { gameSummary, updateGameNarrative } = useGameSummary({
-    pbp, isLive, gameId, carTeamId: TEAM_CONFIG.teamId, summaries: periodSummaries,
+    pbp, isLive, gameId, carTeamId: team.teamId, summaries: periodSummaries,
   });
-  const homeAbbr = activeGame?.homeTeam?.abbrev || TEAM_CONFIG.abbr;
+  const homeAbbr = activeGame?.homeTeam?.abbrev || team.abbr;
   const awayAbbr = activeGame?.awayTeam?.abbrev || 'OPP';
   const [viewingSummaryPeriod, setViewingSummaryPeriod] = useState(null);
 
@@ -1184,7 +1209,7 @@ export default function ShotMapView() {
   const buildDrillDown = useCallback((statKey) => {
     if (!pbp?.plays) return;
     const plays = pbp.plays;
-    const carId = TEAM_CONFIG.teamId; // CAR team ID
+    const carId = team.teamId; // CAR team ID
     const oppId = opp?.id || null;
 
     // Build a string-keyed map from rosterSpots so lookups always work
@@ -1316,12 +1341,12 @@ export default function ShotMapView() {
       const rows = Object.values(byPlayer)
         .map(r => ({ ...r, total: r.totalWon + r.totalLost }))
         .sort((a, b) => b.total - a.total);
-      setDrillStat({ label: t('shotMapView.drillTitles.teamFaceoffs', { abbr: TEAM_CONFIG.abbr }), rows, type: 'faceoff' });
+      setDrillStat({ label: t('shotMapView.drillTitles.teamFaceoffs', { abbr: team.abbr }), rows, type: 'faceoff' });
 
     } else if (statKey === 'pp') {
       // ── Rich PP Analysis ────────────────────────────────────
       // Parse all plays into discrete PP opportunities
-      const carId   = TEAM_CONFIG.teamId;
+      const carId   = team.teamId;
       const isCarPP = (sc) => {
         if (!sc || sc.length < 4) return false;
         const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
@@ -1498,7 +1523,7 @@ export default function ShotMapView() {
           });
         });
         opp.carSkaterIds = [...skaterIds];
-        opp.unit = inferPPUnit(TEAM_CONFIG.abbr, opp.carSkaterIds, specialTeamsMap);
+        opp.unit = inferPPUnit(team.abbr, opp.carSkaterIds, specialTeamsMap);
       });
 
       // Display unit arrays for the chips at the top. `?? []` on each unit
@@ -1506,7 +1531,7 @@ export default function ShotMapView() {
       // recorded and no PP2 (most do -- the pipeline only writes a unit it
       // could actually infer), and the old `unitConfig?.pp1.map(...)` shape
       // would have thrown on exactly that.
-      const ppUnits = specialTeamsMap?.[TEAM_CONFIG.abbr]?.PP;
+      const ppUnits = specialTeamsMap?.[team.abbr]?.PP;
       const ppUnit1 = (ppUnits?.[1] ?? []).map(unitName).filter(Boolean);
       const ppUnit2 = (ppUnits?.[2] ?? []).map(unitName).filter(Boolean);
 
@@ -1516,7 +1541,7 @@ export default function ShotMapView() {
       const totalXG    = parseFloat(ppOpps.reduce((s, o) => s + o.xg, 0).toFixed(2));
 
       setDrillStat({
-        label: t('shotMapView.drillTitles.ppAnalysis', { abbr: TEAM_CONFIG.abbr }),
+        label: t('shotMapView.drillTitles.ppAnalysis', { abbr: team.abbr }),
         type: 'ppanalysis',
         ppOpps,
         summary: {
@@ -1693,10 +1718,10 @@ export default function ShotMapView() {
           });
         });
         opp.carSkaterIds = [...skaterIds];
-        opp.unit = inferPKUnit(TEAM_CONFIG.abbr, opp.carSkaterIds, specialTeamsMap);
+        opp.unit = inferPKUnit(team.abbr, opp.carSkaterIds, specialTeamsMap);
       });
 
-      const pkUnits = specialTeamsMap?.[TEAM_CONFIG.abbr]?.PK;
+      const pkUnits = specialTeamsMap?.[team.abbr]?.PK;
       const pkUnit1 = (pkUnits?.[1] ?? []).map(unitName).filter(Boolean);
       const pkUnit2 = (pkUnits?.[2] ?? []).map(unitName).filter(Boolean);
 
@@ -1706,7 +1731,7 @@ export default function ShotMapView() {
       const totalBlocks       = pkOpps.reduce((s, o) => s + o.blockerList.reduce((b, bl) => b + bl.count, 0), 0);
 
       setDrillStat({
-        label: t('shotMapView.drillTitles.pkAnalysis', { abbr: TEAM_CONFIG.abbr }),
+        label: t('shotMapView.drillTitles.pkAnalysis', { abbr: team.abbr }),
         type: 'pkanalysis',
         pkOpps,
         summary: { goalsAgainst: totalGoalsAgainst, opps: pkOpps.length, sogAgainst: totalSOGAgainst, xgAgainst: totalXGAgainst, blocks: totalBlocks },
@@ -1715,7 +1740,7 @@ export default function ShotMapView() {
         oppAbbr: opp?.abbrev || null,
       });
     }
-  }, [pbp, roster, opp, t, specialTeamsMap]);
+  }, [pbp, roster, opp, t, specialTeamsMap, team]);
 
   // ── Live MetCard stats from PBP (updates every poll) ─────────
   // These replace rightRail.teamGameStats which only fetches once
@@ -1915,7 +1940,7 @@ export default function ShotMapView() {
     const pName = id => { const n = playerMap[String(id)]; return n?.trim() || null; };
     const byPlayer = {};
     pbp.plays
-      .filter(p => p.typeDescKey === 'goal' && p.details?.eventOwnerTeamId === TEAM_CONFIG.teamId)
+      .filter(p => p.typeDescKey === 'goal' && p.details?.eventOwnerTeamId === team.teamId)
       .forEach(p => {
         const d = p.details || {};
         // Count goals
@@ -1942,7 +1967,7 @@ export default function ShotMapView() {
         assists: p.assists,
         points: p.points,
       }));
-  }, [pbp?.plays?.length]);
+  }, [pbp?.plays?.length, team]);
 
   // ── Goalies ──────────────────────────────────────────────────
   // Return ALL goalies who played (toi > 0 or shotsAgainst > 0), sorted by TOI desc.
@@ -1976,7 +2001,7 @@ export default function ShotMapView() {
     const label = num <= 3 ? `P${num}` : num === 4 ? 'OT' : `OT${num - 3}`;
     let carG = 0, oppG = 0;
     (p.goals || []).forEach(g => {
-      if (g.teamAbbrev?.default === TEAM_CONFIG.abbr) carG++;
+      if (g.teamAbbrev?.default === team.abbr) carG++;
       else oppG++;
     });
     return { label, carG, oppG };
@@ -1992,7 +2017,7 @@ export default function ShotMapView() {
           summary={newSummary}
           onDismiss={dismissNewSummary}
           onNarrativeReady={updateSummaryNarrative}
-          carAbbr={TEAM_CONFIG.abbr}
+          carAbbr={team.abbr}
           oppAbbr={oppAbbr}
           homeAbbr={homeAbbr}
           awayAbbr={awayAbbr}
@@ -2008,7 +2033,7 @@ export default function ShotMapView() {
           onNarrativeReady={viewingSummary.isGameSummary
             ? (_, text) => updateGameNarrative(text)
             : updateSummaryNarrative}
-          carAbbr={TEAM_CONFIG.abbr}
+          carAbbr={team.abbr}
           oppAbbr={oppAbbr}
           homeAbbr={homeAbbr}
           awayAbbr={awayAbbr}
@@ -2023,19 +2048,19 @@ export default function ShotMapView() {
             {/* CAR side */}
             <div className={SCORE_TEAM_WRAP_CLASSES}>
               <div className={SCORE_TEAM_CLASSES}>
-                <TeamLogo abbr={TEAM_CONFIG.abbr} size={30} />
-                <span className={scoreAbbrClasses('team-primary')}>{TEAM_CONFIG.abbr}</span>
+                <TeamLogo abbr={team.abbr} size={30} />
+                <span className={scoreAbbrClasses('team-primary')}>{team.abbr}</span>
                 <span className={scoreNumClasses('team-primary')}>{carScore ?? '—'}</span>
               </div>
               {/* CAR PP indicator */}
-              {(isLive || debugSituation) && (debugSituation?.team === TEAM_CONFIG.abbr ||
+              {(isLive || debugSituation) && (debugSituation?.team === team.abbr ||
                 (currentSituation?.strength === 'PP' && !currentSituation?.carEN)) && (
                 <div className={`${PP_INDICATOR_BASE_CLASSES} ${CAR_PP_CLASSES}`}>
                   ⚡ {t('shotMapView.scoreBar.powerPlay', { prefix: (debugSituation?.carSkaters === 5 && debugSituation?.oppSkaters === 3) ? '5v3 ' : currentSituation && currentSituation.carSkaters !== 5 ? `${currentSituation.carSkaters}v${currentSituation.oppSkaters} ` : '' })}
                 </div>
               )}
               {(isLive || debugSituation?.carEN) && (currentSituation?.carEN || debugSituation?.carEN) && (
-                <div className={`${PP_INDICATOR_BASE_CLASSES} en-indicator car-en`}>🥅 {t('shotMapView.scoreBar.emptyNet', { abbr: TEAM_CONFIG.abbr })}</div>
+                <div className={`${PP_INDICATOR_BASE_CLASSES} en-indicator car-en`}>🥅 {t('shotMapView.scoreBar.emptyNet', { abbr: team.abbr })}</div>
               )}
             </div>
 
@@ -2144,7 +2169,7 @@ export default function ShotMapView() {
                 (the score line plus this column doesn't fit), so it lays out
                 as a horizontal row there instead of a tall column that would
                 leave a dead gap to its left. */}
-            <div className="season-selector relative flex flex-col items-end gap-1.5 ml-auto max-[640px]:w-full max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:items-center max-[640px]:justify-end">
+            {!isGuest && <div className="season-selector relative flex flex-col items-end gap-1.5 ml-auto max-[640px]:w-full max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:items-center max-[640px]:justify-end">
               <SeasonTypeToggle value={seasonType} onChange={handleSeasonTypeChange}
                 showPreseason={hasPreseasonGames}
                 disabled={isLive} disabledReason={LIVE_SELECTOR_DISABLED_REASON} onDisabledTap={handleDisabledTap} />
@@ -2152,7 +2177,7 @@ export default function ShotMapView() {
                 selected={effectiveSeason} onSelect={handleSeasonChange} className="max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:justify-end max-[640px]:items-center"
                 disabled={isLive} disabledReason={LIVE_SELECTOR_DISABLED_REASON} onDisabledTap={handleDisabledTap} />
               <DisabledHint text={LIVE_SELECTOR_DISABLED_REASON} active={showDisabledHint} onDismiss={dismissDisabledHint} />
-            </div>
+            </div>}
           </div>
       </div>
 
@@ -2172,7 +2197,7 @@ export default function ShotMapView() {
       )}
 
       {/* ── Game selector ── */}
-      {games.length > 0 && (
+      {!isGuest && games.length > 0 && (
         <GameChipsRow games={gameChipGames} sport="nhl"
           selectedGameId={effectiveSelectedGameId} onSelect={handleSelect} onAll={handleAll}
           showAll={seasonType !== 'preseason'}
@@ -2252,7 +2277,7 @@ export default function ShotMapView() {
           value={gameBlocked.car ?? '—'}
           sub={gameBlocked.opp != null ? `${t('shotMapView.metrics.opp', { value: gameBlocked.opp })}${isAllN ? ` · ${t('shotMapView.metrics.season')}` : ''}` : t('shotMapView.metrics.thisGame')}
           color={gameBlocked.car > gameBlocked.opp ? 'green' : null}
-          help={t('shotMapView.metrics.blocksHelp', { abbr: TEAM_CONFIG.abbr })}
+          help={t('shotMapView.metrics.blocksHelp', { abbr: team.abbr })}
           onClick={!isAllN && pbp ? () => setDrillKey('blocked') : null}
         />
         {(() => {
@@ -2361,7 +2386,7 @@ export default function ShotMapView() {
       {/* ── Shot Quality — below Shot Attempts ── */}
       {dangerCounts.total > 0 && (
         <div className={`card ${DANGER_QUALITY_CARD_CLASSES}`}>
-          <div className="sec-label">{t('shotMapView.shotQuality.heading', { abbr: TEAM_CONFIG.abbr })}</div>
+          <div className="sec-label">{t('shotMapView.shotQuality.heading', { abbr: team.abbr })}</div>
           <div className={DANGER_GRID_CLASSES}>
             <div className={DANGER_CELL_CLASSES} onClick={() => buildDangerDrill('hi')}>
               <div className={dangerNumClasses('high')}>{dangerCounts.hi}</div>
@@ -2387,7 +2412,7 @@ export default function ShotMapView() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div className="card">
             <div className="sec-label">{t('shotMapView.boxscore.shotMap')}</div>
-            <HockeyRink events={toHockeyRinkEvents(shotEvents)} teamAbbr={TEAM_CONFIG.abbr} teamColor="var(--team-primary)" renderMedia={renderGoalMedia} />
+            <HockeyRink events={toHockeyRinkEvents(shotEvents)} teamAbbr={team.abbr} teamColor="var(--team-primary)" renderMedia={renderGoalMedia} />
           </div>
 
 
@@ -2417,7 +2442,7 @@ export default function ShotMapView() {
                   <span>{t('shotMapView.boxscore.total')}</span>
                 </div>
                 <div className={PERIOD_GRID_ROW_CLASSES}>
-                  <span className={`${PERIOD_GRID_ROW_LABEL_CLASSES} text-[color:var(--red-bright)]`}>{TEAM_CONFIG.abbr}</span>
+                  <span className={`${PERIOD_GRID_ROW_LABEL_CLASSES} text-[color:var(--red-bright)]`}>{team.abbr}</span>
                   {periods.map(p => <span key={p.label}>{p.carG}</span>)}
                   <span className={PERIOD_TOTAL_CLASSES}>{carScore ?? '—'}</span>
                 </div>
@@ -2433,7 +2458,7 @@ export default function ShotMapView() {
           {/* Top point-getters in this game */}
           {topScorers.length > 0 && (
             <div className="card">
-              <div className="sec-label">{t('shotMapView.boxscore.scoringThisGame', { abbr: TEAM_CONFIG.abbr })}</div>
+              <div className="sec-label">{t('shotMapView.boxscore.scoringThisGame', { abbr: team.abbr })}</div>
               {topScorers.map((p, i) => (
                 <div key={i} className={SCORER_ROW_CLASSES}>
                   <span className={SCORER_NAME_CLASSES}>{p.name || `#${p.sweaterNumber}`}</span>
@@ -2460,7 +2485,7 @@ export default function ShotMapView() {
                   )}
                   <GoalieRow
                     name={g.name?.default || `#${g.sweaterNumber}`}
-                    abbr={TEAM_CONFIG.abbr}
+                    abbr={team.abbr}
                     saves={g.saves}
                     shotsAgainst={g.shotsAgainst}
                     savePctg={g.savePctg}
@@ -2495,17 +2520,17 @@ export default function ShotMapView() {
             <div className="card">
               <div className="sec-label">{t('shotMapView.boxscore.teamStatsThisGame')}</div>
               <div className={GM_STAT_HEADER_CLASSES}>
-                <span style={{color:'var(--team-primary)'}}>{TEAM_CONFIG.abbr}</span>
+                <span style={{color:'var(--team-primary)'}}>{team.abbr}</span>
                 <span />
                 <span style={{color:oppColor}}>{oppAbbr}</span>
               </div>
 
               {/* Shot attempts (Corsi) + xG — from PBP, prepended to right-rail stats */}
               {pbp?.plays?.length > 0 && (() => {
-                const sa = computeShotAttempts(pbp.plays);
+                const sa = computeShotAttempts(pbp.plays, team.teamId);
 
                 // xG source: MoneyPuck (post-game, 5v5) → coordinate estimate (live fallback)
-                const xgCar    = gameXGData?.find(r => r.team === TEAM_CONFIG.abbr);
+                const xgCar    = gameXGData?.find(r => r.team === team.abbr);
                 const xgOpp    = gameXGData?.find(r => r.team === oppAbbr);
                 const mpXG     = xgCar != null && xgOpp != null;
                 const carXG    = mpXG ? xgCar.xgf : (liveStats?.xg?.car ?? 0);
@@ -2610,8 +2635,8 @@ export default function ShotMapView() {
               <button className={debugBtnClasses('goal')} onClick={() => setDebugGoalPopup({ scorer: 'Sebastian Aho', assists: ['Andrei Svechnikov', 'Jaccob Slavin'], shotType: 'Wrist', period: 'P2', time: '14:32' })}>🚨 CAR Goal</button>
               <button className={debugBtnClasses()} style={{ background: 'rgba(204,34,0,0.15)', color: 'var(--red-bright)' }} onClick={() => setDebugPuckDropPopup({ gameId: 'debug' })}>🏒 Puck Drop</button>
               <button className={debugBtnClasses('penalty')} onClick={() => setDebugPenaltyPopup({ id: 'debug-1', player: 'Brad Marchand', description: 'Hooking', duration: 2, period: 'P2', time: '08:17' })}>⚡ PP Alert</button>
-              <button className={debugBtnClasses('win')} onClick={() => setDebugWinPopup({ score: `${TEAM_CONFIG.abbr} 4 – BOS 2`, teamAbbr: TEAM_CONFIG.abbr })}>🏆 Win Popup</button>
-              <button className={debugBtnClasses()} style={{ background: 'rgba(200,169,81,0.15)', color: '#c8a951' }} onClick={() => setDebugHatTrickPopup({ scorer: 'Sebastian Aho', assists: ['Andrei Svechnikov'], shotType: 'Wrist', period: 'P3', time: '11:22', teamColor: TEAM_CONFIG.displayColor })}>🧢 Hat Trick</button>
+              <button className={debugBtnClasses('win')} onClick={() => setDebugWinPopup({ score: `${team.abbr} 4 – BOS 2`, teamAbbr: team.abbr })}>🏆 Win Popup</button>
+              <button className={debugBtnClasses()} style={{ background: 'rgba(200,169,81,0.15)', color: '#c8a951' }} onClick={() => setDebugHatTrickPopup({ scorer: 'Sebastian Aho', assists: ['Andrei Svechnikov'], shotType: 'Wrist', period: 'P3', time: '11:22', teamColor: team.displayColor })}>🧢 Hat Trick</button>
             </div>
             <div className={DEBUG_SECTION_LABEL_CLASSES}>Insights</div>
             <div className={DEBUG_PANEL_BTNS_CLASSES}>
@@ -2626,8 +2651,8 @@ export default function ShotMapView() {
           <div className={DEBUG_COL_CLASSES}>
             <div className={DEBUG_SECTION_LABEL_CLASSES}>Situation</div>
             <div className={DEBUG_PANEL_BTNS_CLASSES}>
-              <button className={debugBtnClasses('pp-car')} onClick={() => { setDebugSituation({ strength: 'PP', team: TEAM_CONFIG.abbr }); setTimeout(() => setDebugSituation(null), 15000); }}>🟢 5v4 PP</button>
-              <button className={debugBtnClasses('pp-car')} onClick={() => { setDebugSituation({ strength: 'PP', team: TEAM_CONFIG.abbr, carSkaters: 5, oppSkaters: 3 }); setTimeout(() => setDebugSituation(null), 15000); }}>🟢🟢 5v3 PP</button>
+              <button className={debugBtnClasses('pp-car')} onClick={() => { setDebugSituation({ strength: 'PP', team: team.abbr }); setTimeout(() => setDebugSituation(null), 15000); }}>🟢 5v4 PP</button>
+              <button className={debugBtnClasses('pp-car')} onClick={() => { setDebugSituation({ strength: 'PP', team: team.abbr, carSkaters: 5, oppSkaters: 3 }); setTimeout(() => setDebugSituation(null), 15000); }}>🟢🟢 5v3 PP</button>
               <button className={debugBtnClasses('pp-opp')} onClick={() => { setDebugSituation({ strength: 'PP', team: 'OPP' }); setTimeout(() => setDebugSituation(null), 15000); }}>🟡 Opp PP</button>
               <button className={debugBtnClasses('close')} style={{ background: 'rgba(148,163,184,0.15)', color: 'var(--text-muted)' }} onClick={() => { setDebugSituation({ strength: '4v4', carSkaters: 4, oppSkaters: 4 }); setTimeout(() => setDebugSituation(null), 15000); }}>⚪ 4v4</button>
               <button className={debugBtnClasses('close')} style={{ background: 'rgba(148,163,184,0.15)', color: 'var(--text-muted)' }} onClick={() => { setDebugSituation({ strength: '4v4', carSkaters: 3, oppSkaters: 3 }); setTimeout(() => setDebugSituation(null), 15000); }}>⚪ 3v3 OT</button>
@@ -2716,6 +2741,7 @@ function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color, seasonDat
 // ── On-Ice Players Panel ─────────────────────────────────────
 function OnIcePanel({ car, opp, oppAbbr, situation }) {
   const { t } = useTranslation();
+  const { team } = useGameTeam();
   const fwd  = p => ['C','L','R','F'].includes(p.position);
   const def  = p => p.position === 'D';
   const goal = p => p.position === 'G';
@@ -2751,7 +2777,7 @@ function OnIcePanel({ car, opp, oppAbbr, situation }) {
       </div>
 
       <div className={ONICE_TEAM_CLASSES}>
-        <span className={onicTeamLabelClasses(true)}>{TEAM_CONFIG.abbr}</span>
+        <span className={onicTeamLabelClasses(true)}>{team.abbr}</span>
         <div className={ONICE_LINES_CLASSES}>
           <Row players={car.filter(fwd)}  label="F" />
           <Row players={car.filter(def)}  label="D" />
@@ -2882,6 +2908,7 @@ function EventLog({ plays, playerMap = {} }) {
 // ── Stat Drill-Down Popup ───────────────────────────────────
 function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
   const { t } = useTranslation();
+  const { team } = useGameTeam();
   const [tab, setTab] = useState('car');
   if (!drillStat) return null;
 
@@ -2890,7 +2917,7 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
   const oppRows = drillStat.oppRows ?? [];
   const hasOpp  = oppRows.length > 0 || drillStat.oppRows !== undefined;
   const rows    = tab === 'car' ? carRows : oppRows;
-  const teamLabel = tab === 'car' ? TEAM_CONFIG.abbr : (oppAbbr || 'OPP');
+  const teamLabel = tab === 'car' ? team.abbr : (oppAbbr || 'OPP');
 
   // Derive periods dynamically from actual data so OT2, OT3, SO etc. all appear.
   // Collect every period key that appears in any row, sort numerically by period number.
@@ -2941,7 +2968,7 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
         {hasOpp && (
           <div className={DRILL_TABS_CLASSES}>
             <button className={drillTabClasses(tab === 'car')} onClick={() => setTab('car')}>
-              <TeamLogo abbr={TEAM_CONFIG.abbr} size={18} /> {TEAM_CONFIG.abbr}
+              <TeamLogo abbr={team.abbr} size={18} /> {team.abbr}
             </button>
             <button className={drillTabClasses(tab === 'opp')} onClick={() => setTab('opp')}>
               <TeamLogo abbr={oppAbbr} size={18} /> {oppAbbr || 'OPP'}
@@ -3089,11 +3116,12 @@ function StatDrillPopup({ drillStat, onClose, oppAbbr, isPlayoff = false }) {
 // ── PP Analysis Panel ─────────────────────────────────────────
 function PPAnalysisPanel({ drillStat }) {
   const { t } = useTranslation();
+  const { team } = useGameTeam();
   const [openIdx, setOpenIdx] = useState(null);
   const { ppOpps, summary, ppUnit1, ppUnit2 } = drillStat;
 
   if (!ppOpps?.length) {
-    return <div className={DRILL_EMPTY_CLASSES}>{t('shotMapView.ppAnalysis.emptyState', { abbr: TEAM_CONFIG.abbr })}</div>;
+    return <div className={DRILL_EMPTY_CLASSES}>{t('shotMapView.ppAnalysis.emptyState', { abbr: team.abbr })}</div>;
   }
 
   const toggle = idx => setOpenIdx(o => o === idx ? null : idx);
@@ -3241,7 +3269,7 @@ function PPAnalysisPanel({ drillStat }) {
                     <div className={PP_MINI_RINK_LABEL_CLASSES}>{t('shotMapView.ppAnalysis.shotLocations')}</div>
                     <HockeyRink
                       events={toHockeyRinkEvents(opp.shotEvents)}
-                      teamAbbr={TEAM_CONFIG.abbr}
+                      teamAbbr={team.abbr}
                       teamColor="var(--team-primary)"
                       readOnly
                     />
@@ -3261,11 +3289,12 @@ function PPAnalysisPanel({ drillStat }) {
 // ── PK Analysis Panel ─────────────────────────────────────────
 function PKAnalysisPanel({ drillStat }) {
   const { t } = useTranslation();
+  const { team } = useGameTeam();
   const [openIdx, setOpenIdx] = useState(null);
   const { pkOpps, summary, pkUnit1, pkUnit2 } = drillStat;
 
   if (!pkOpps?.length) {
-    return <div className={DRILL_EMPTY_CLASSES}>{t('shotMapView.pkAnalysis.emptyState', { abbr: TEAM_CONFIG.abbr })}</div>;
+    return <div className={DRILL_EMPTY_CLASSES}>{t('shotMapView.pkAnalysis.emptyState', { abbr: team.abbr })}</div>;
   }
 
   const toggle = idx => setOpenIdx(o => o === idx ? null : idx);
@@ -3431,6 +3460,7 @@ function PKAnalysisPanel({ drillStat }) {
 // ── Live Insights ────────────────────────────────────────────
 function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers, isLive, debugInsight, gameLogInsights, isPlayoff = false }) {
   const { t } = useTranslation();
+  const { team } = useGameTeam();
   const insights = useMemo(() => {
     const plays   = pbp?.plays || [];
     const carTeam = gameHome ? pbp?.homeTeam?.id : pbp?.awayTeam?.id;
@@ -3462,7 +3492,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         results.push({
           icon: diff > 0 ? '🎯' : '😬',
           text: diff > 0
-            ? t('shotMapView.liveInsights.periodDominanceFor', { abbr: TEAM_CONFIG.abbr, period: periodLabel, car: ps.car, opp: ps.opp })
+            ? t('shotMapView.liveInsights.periodDominanceFor', { abbr: team.abbr, period: periodLabel, car: ps.car, opp: ps.opp })
             : t('shotMapView.liveInsights.periodDominanceAgainst', { oppAbbr, period: periodLabel, car: ps.car, opp: ps.opp }),
           type: diff > 0 ? 'good' : 'warn',
         });
@@ -3477,7 +3507,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       if (recentAttempts.length >= 6) {
         const carRecent = recentAttempts.filter(p => p.details?.eventOwnerTeamId === carTeam).length;
         const oppRecent = recentAttempts.length - carRecent;
-        if (carRecent >= 7) results.push({ icon: '🌀', text: t('shotMapView.liveInsights.onARoll', { abbr: TEAM_CONFIG.abbr, n: carRecent, total: recentAttempts.length }), type: 'good' });
+        if (carRecent >= 7) results.push({ icon: '🌀', text: t('shotMapView.liveInsights.onARoll', { abbr: team.abbr, n: carRecent, total: recentAttempts.length }), type: 'good' });
         else if (oppRecent >= 7) results.push({ icon: '🧱', text: t('shotMapView.liveInsights.oppPressing', { oppAbbr, n: oppRecent, total: recentAttempts.length }), type: 'warn' });
       }
     }
@@ -3490,7 +3520,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
           leader.goals > 0 ? `${leader.goals}G` : null,
           leader.assists > 0 ? `${leader.assists}A` : null,
         ].filter(Boolean).join(', ');
-        results.push({ icon: '⭐', text: t('shotMapView.liveInsights.topScorer', { name: leader.name, abbr: TEAM_CONFIG.abbr, pts, points: leader.points }), type: 'good' });
+        results.push({ icon: '⭐', text: t('shotMapView.liveInsights.topScorer', { name: leader.name, abbr: team.abbr, pts, points: leader.points }), type: 'good' });
       }
     }
 
@@ -3524,7 +3554,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     })();
 
     if (carPens >= 2 && ppGoalsAgainst === 0 && !oppCurrentlyOnPP) {
-      results.push({ icon: '🛡️', text: t('shotMapView.liveInsights.perfectPk', { abbr: TEAM_CONFIG.abbr, n: carPens }), type: 'good' });
+      results.push({ icon: '🛡️', text: t('shotMapView.liveInsights.perfectPk', { abbr: team.abbr, n: carPens }), type: 'good' });
     } else if (ppGoalsAgainst >= 2) {
       results.push({ icon: '😤', text: t('shotMapView.liveInsights.pkStruggled', { n: ppGoalsAgainst }), type: 'warn' });
     }
@@ -3559,8 +3589,8 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         results.push({
           icon: succeeded ? '✅' : '❌',
           text: succeeded
-            ? t('shotMapView.liveInsights.challengeSucceededFor', { abbr: TEAM_CONFIG.abbr, type })
-            : t('shotMapView.liveInsights.challengeFailedFor', { abbr: TEAM_CONFIG.abbr, type }),
+            ? t('shotMapView.liveInsights.challengeSucceededFor', { abbr: team.abbr, type })
+            : t('shotMapView.liveInsights.challengeFailedFor', { abbr: team.abbr, type }),
           type: succeeded ? 'good' : 'warn',
         });
       } else {
@@ -3630,19 +3660,19 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         // instead of two near-duplicate rows eating two of the six slots.
         results.push({
           icon: '🔒',
-          text: t('shotMapView.liveInsights.limitedAttemptsAndSog', { abbr: TEAM_CONFIG.abbr, oppAbbr, attempts: pa.opp, sog: ps.opp, period: periodLabel }),
+          text: t('shotMapView.liveInsights.limitedAttemptsAndSog', { abbr: team.abbr, oppAbbr, attempts: pa.opp, sog: ps.opp, period: periodLabel }),
           type: 'good',
         });
       } else if (attemptsHit) {
         results.push({
           icon: '🔒',
-          text: t('shotMapView.liveInsights.limitedAttempts', { abbr: TEAM_CONFIG.abbr, oppAbbr, attempts: pa.opp, period: periodLabel }),
+          text: t('shotMapView.liveInsights.limitedAttempts', { abbr: team.abbr, oppAbbr, attempts: pa.opp, period: periodLabel }),
           type: 'good',
         });
       } else if (sogHit) {
         results.push({
           icon: '🧱',
-          text: t('shotMapView.liveInsights.limitedSog', { abbr: TEAM_CONFIG.abbr, oppAbbr, sog: ps.opp, period: periodLabel }),
+          text: t('shotMapView.liveInsights.limitedSog', { abbr: team.abbr, oppAbbr, sog: ps.opp, period: periodLabel }),
           type: 'good',
         });
       }
@@ -3661,13 +3691,13 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       if (foPct >= 58) {
         results.push({
           icon: '🏒',
-          text: t('shotMapView.liveInsights.faceoffControlFor', { abbr: TEAM_CONFIG.abbr, pct: foPct, won: carFOW, total: totalFO }),
+          text: t('shotMapView.liveInsights.faceoffControlFor', { abbr: team.abbr, pct: foPct, won: carFOW, total: totalFO }),
           type: 'good',
         });
       } else if (foPct <= 42) {
         results.push({
           icon: '😬',
-          text: t('shotMapView.liveInsights.faceoffControlAgainst', { oppAbbr, abbr: TEAM_CONFIG.abbr, pct: foPct, won: carFOW, total: totalFO }),
+          text: t('shotMapView.liveInsights.faceoffControlAgainst', { oppAbbr, abbr: team.abbr, pct: foPct, won: carFOW, total: totalFO }),
           type: 'warn',
         });
       }
@@ -3681,7 +3711,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       if (carGoals.length === 0) {
         results.push({
           icon: '🥶',
-          text: t('shotMapView.liveInsights.scorelessSoFar', { abbr: TEAM_CONFIG.abbr }),
+          text: t('shotMapView.liveInsights.scorelessSoFar', { abbr: team.abbr }),
           type: 'warn',
         });
       } else {
@@ -3691,7 +3721,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         if (droughtPeriods >= 2) {
           results.push({
             icon: '🥶',
-            text: t('shotMapView.liveInsights.scoringDrought', { abbr: TEAM_CONFIG.abbr, n: droughtPeriods, period: `P${lastGoalPeriod}` }),
+            text: t('shotMapView.liveInsights.scoringDrought', { abbr: team.abbr, n: droughtPeriods, period: `P${lastGoalPeriod}` }),
             type: 'warn',
           });
         }
@@ -3706,11 +3736,11 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       const winPct = carScoredFirst ? gl?.scoredFirstWinPct : gl?.didntScoreFirstWinPct;
       const gamesN = carScoredFirst ? gl?.scoredFirstGames : null;
       const teamStat = winPct != null && gamesN != null
-        ? t('shotMapView.liveInsights.scoredFirstWinPctFor', { abbr: TEAM_CONFIG.abbr, pct: winPct, n: gamesN })
+        ? t('shotMapView.liveInsights.scoredFirstWinPctFor', { abbr: team.abbr, pct: winPct, n: gamesN })
         : winPct != null
         ? t('shotMapView.liveInsights.scoredFirstWinPctAgainst', { oppAbbr, pct: winPct })
         : carScoredFirst
-        ? t('shotMapView.liveInsights.struckFirst', { abbr: TEAM_CONFIG.abbr })
+        ? t('shotMapView.liveInsights.struckFirst', { abbr: team.abbr })
         : t('shotMapView.liveInsights.oppStruckFirst', { oppAbbr });
       results.push({
         icon: carScoredFirst ? '🚀' : '😤',
@@ -3738,7 +3768,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         const scorer2 = curr.details?.scoringPlayerId;
         results.push({
           icon: '🔥',
-          text: t('shotMapView.liveInsights.backToBackGoals', { abbr: TEAM_CONFIG.abbr, gap, samePlayerNote: scorer1 && scorer2 && scorer1 === scorer2 ? t('shotMapView.liveInsights.backToBackGoalsSamePlayerNote') : '' }),
+          text: t('shotMapView.liveInsights.backToBackGoals', { abbr: team.abbr, gap, samePlayerNote: scorer1 && scorer2 && scorer1 === scorer2 ? t('shotMapView.liveInsights.backToBackGoalsSamePlayerNote') : '' }),
           type: 'good',
         });
         break; // only report the first back-to-back
@@ -3759,7 +3789,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     if (consecutiveSaves >= 15) {
       results.push({
         icon: '🧤',
-        text: t('shotMapView.liveInsights.consecutiveSaves', { abbr: TEAM_CONFIG.abbr, n: consecutiveSaves }),
+        text: t('shotMapView.liveInsights.consecutiveSaves', { abbr: team.abbr, n: consecutiveSaves }),
         type: 'good',
       });
     }
@@ -3785,7 +3815,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         const pLabel = lastCompletedPer <= 3 ? `P${lastCompletedPer}` : 'OT';
         results.push({
           icon: '🔒',
-          text: t('shotMapView.liveInsights.highDangerSuppression', { abbr: TEAM_CONFIG.abbr, oppAbbr, period: pLabel }),
+          text: t('shotMapView.liveInsights.highDangerSuppression', { abbr: team.abbr, oppAbbr, period: pLabel }),
           type: 'good',
         });
       }
@@ -3822,7 +3852,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       const { w, l, gp } = gameLogInsights.vsOppRecord;
       results.push({
         icon: w > l ? '📈' : w < l ? '📉' : '⚖️',
-        text: t('shotMapView.liveInsights.headToHeadRecord', { abbr: TEAM_CONFIG.abbr, w, l, gp }),
+        text: t('shotMapView.liveInsights.headToHeadRecord', { abbr: team.abbr, w, l, gp }),
         type: w > l ? 'good' : w < l ? 'warn' : 'neutral',
       });
     }
@@ -3833,9 +3863,9 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       if (diff === 0 && (carScore ?? 0) > 0) {
         results.push({ icon: '⚡', text: t('shotMapView.liveInsights.tiedGame', { car: carScore, opp: oppScore }), type: 'neutral' });
       } else if (diff >= 3) {
-        results.push({ icon: '🏒', text: t('shotMapView.liveInsights.leadingBig', { abbr: TEAM_CONFIG.abbr, diff }), type: 'good' });
+        results.push({ icon: '🏒', text: t('shotMapView.liveInsights.leadingBig', { abbr: team.abbr, diff }), type: 'good' });
       } else if (diff <= -2 && currentPeriod >= 3) {
-        results.push({ icon: '🚨', text: t('shotMapView.liveInsights.trailingLate', { abbr: TEAM_CONFIG.abbr, diff: Math.abs(diff), period: `P${currentPeriod}` }), type: 'warn' });
+        results.push({ icon: '🚨', text: t('shotMapView.liveInsights.trailingLate', { abbr: team.abbr, diff: Math.abs(diff), period: `P${currentPeriod}` }), type: 'warn' });
       }
     }
 
@@ -3850,8 +3880,8 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         results.push({
           icon: won ? '✅' : '📉',
           text: won
-            ? t('shotMapView.liveInsights.finalWinOutshot', { abbr: TEAM_CONFIG.abbr, car: carScore, opp: oppScore, oppAbbr, carTot, oppTot })
-            : t('shotMapView.liveInsights.finalLoss', { abbr: TEAM_CONFIG.abbr, car: carScore, opp: oppScore, clause: carTot > oppTot
+            ? t('shotMapView.liveInsights.finalWinOutshot', { abbr: team.abbr, car: carScore, opp: oppScore, oppAbbr, carTot, oppTot })
+            : t('shotMapView.liveInsights.finalLoss', { abbr: team.abbr, car: carScore, opp: oppScore, clause: carTot > oppTot
                 ? t('shotMapView.liveInsights.outshootingClause', { oppAbbr, carTot, oppTot })
                 : t('shotMapView.liveInsights.outshotClause', { carTot, oppTot }) }),
           type: won ? 'good' : 'warn',
@@ -3867,7 +3897,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         const carEN = gameHome
           ? situation?.awayTeam?.situationDescriptions?.includes('EN')
           : situation?.homeTeam?.situationDescriptions?.includes('EN');
-        results.push({ icon: carEN ? '🥅' : '😤', text: carEN ? t('shotMapView.liveInsights.oppPulledGoalie', { oppAbbr }) : t('shotMapView.liveInsights.carPulledGoalie', { abbr: TEAM_CONFIG.abbr }), type: carEN ? 'good' : 'warn' });
+        results.push({ icon: carEN ? '🥅' : '😤', text: carEN ? t('shotMapView.liveInsights.oppPulledGoalie', { oppAbbr }) : t('shotMapView.liveInsights.carPulledGoalie', { abbr: team.abbr }), type: carEN ? 'good' : 'warn' });
       }
     }
 
@@ -3939,6 +3969,7 @@ function LiveInsightsCard({ insights, isLive }) {
 // ── Momentum Card ─────────────────────────────────────────────
 function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
   const { t } = useTranslation();
+  const { team } = useGameTeam();
   const [window, setWindow] = useState(5);
   const plays = pbp?.plays || [];
   // zoneCode: O = offensive, N = neutral, D = defensive (from the event owner's perspective)
@@ -3978,15 +4009,15 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
     plays.forEach(p => {
       const evtTime = playTimeSecs(p);
       if (evtTime < cutoff) return;
-      const cs = eventScore(p, TEAM_CONFIG.teamId);
+      const cs = eventScore(p, team.teamId);
       // Recalculate for opp by checking if owner is not CAR
-      const oppOwned = p.details?.eventOwnerTeamId && p.details.eventOwnerTeamId !== TEAM_CONFIG.teamId;
+      const oppOwned = p.details?.eventOwnerTeamId && p.details.eventOwnerTeamId !== team.teamId;
       const d = p.details || {};
       const zone = d.zoneCode;
       const type = p.typeDescKey;
       let oppScore = 0;
       if (type === 'faceoff') {
-        const oppWon = d.winningPlayerId && d.eventOwnerTeamId !== TEAM_CONFIG.teamId;
+        const oppWon = d.winningPlayerId && d.eventOwnerTeamId !== team.teamId;
         if (zone === 'O' && oppWon)  oppScore =  0.6;
         if (zone === 'D' && !oppWon) oppScore = -0.3;
       } else if (oppOwned) {
@@ -4015,15 +4046,15 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
         const d = p.details || {};
         const zone = d.zoneCode;
         const type = p.typeDescKey;
-        const isCAR = d.eventOwnerTeamId === TEAM_CONFIG.teamId;
-        const isOpp = d.eventOwnerTeamId && d.eventOwnerTeamId !== TEAM_CONFIG.teamId;
+        const isCAR = d.eventOwnerTeamId === team.teamId;
+        const isOpp = d.eventOwnerTeamId && d.eventOwnerTeamId !== team.teamId;
         const score =
           (type === 'shot-on-goal' || type === 'goal')         ? (zone === 'O' ? 1.0 : 0.5) :
           (type === 'missed-shot'  || type === 'blocked-shot') ? (zone === 'O' ? 0.7 : 0.3) :
           type === 'hit'      && zone === 'O' ? 0.4 :
           type === 'takeaway' && zone === 'O' ? 0.5 : 0;
         if (type === 'faceoff') {
-          if (zone === 'O' && d.eventOwnerTeamId === TEAM_CONFIG.teamId) wc += 0.6;
+          if (zone === 'O' && d.eventOwnerTeamId === team.teamId) wc += 0.6;
           if (zone === 'O' && isOpp) wo += 0.6;
         } else {
           if (isCAR) wc += score;
@@ -4043,7 +4074,7 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
   const totalGame = useMemo(() => computeWindow(0), [plays.length]);
   const totalMinutes = Math.max(1, Math.ceil(nowSecs / 60));
 
-  const tooltipText = t('shotMapView.momentum.tooltipExplainer', { abbr: TEAM_CONFIG.abbr });
+  const tooltipText = t('shotMapView.momentum.tooltipExplainer', { abbr: team.abbr });
 
   return (
     <div className="card momentum-card" style={{ marginBottom: 12 }}>
@@ -4066,7 +4097,7 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
 
       <div style={{ marginBottom: 10 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 500, marginBottom: 5 }}>
-          <span style={{ color: 'var(--team-primary)' }}>{TEAM_CONFIG.abbr} {carPct}%</span>
+          <span style={{ color: 'var(--team-primary)' }}>{team.abbr} {carPct}%</span>
           <span style={{ color: 'var(--text-muted)' }}>{100 - carPct}% {oppAbbr}</span>
         </div>
         <div style={{ height: 8, background: 'var(--bg3)', borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
@@ -4094,7 +4125,7 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
       <div style={{ display: 'flex', gap: 14, marginTop: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--team-primary)', opacity: 0.7 }} />
-          {t('shotMapView.momentum.aboveNeutral', { abbr: TEAM_CONFIG.abbr })}
+          {t('shotMapView.momentum.aboveNeutral', { abbr: team.abbr })}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--text-dim)', opacity: 0.5 }} />
@@ -4111,10 +4142,11 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
 // ── Advanced Game Panel ───────────────────────────────────────
 function AdvancedGamePanel({ pbp, _gameHome, _isLive, _boxscore }) {
   const { t } = useTranslation();
+  const { team } = useGameTeam();
   const plays = pbp?.plays || [];
-  const sa    = computeShotAttempts(plays);
-  const pdo   = computePDO(plays);
-  const luck  = computePuckLuck(plays);
+  const sa    = computeShotAttempts(plays, team.teamId);
+  const pdo   = computePDO(plays, team.teamId);
+  const luck  = computePuckLuck(plays, team.teamId);
 
   const Row = ({ label, car, opp, help }) => {
     const tot = (Number(car)||0) + (Number(opp)||0) || 1;
@@ -4149,7 +4181,7 @@ function AdvancedGamePanel({ pbp, _gameHome, _isLive, _boxscore }) {
       </div>
 
       <div className={SV_HEADER_CLASSES}>
-        <span className={svTeamClasses('team-primary')}>{TEAM_CONFIG.abbr}</span>
+        <span className={svTeamClasses('team-primary')}>{team.abbr}</span>
         <span className={SV_DIFF_CLASSES} style={{color: sa.corsiDiff >= 0 ? 'var(--green)' : 'var(--red-bright)'}}>
           {sa.corsiDiff >= 0 ? '+' : ''}{sa.corsiDiff} CF
         </span>
@@ -4180,13 +4212,13 @@ function AdvancedGamePanel({ pbp, _gameHome, _isLive, _boxscore }) {
           label="CF%"
           value={`${sa.corsiForPct}%`}
           color={sa.corsiForPct >= 50 ? 'var(--green)' : 'var(--team-primary)'}
-          help={t('shotMapView.advanced.helpCfPct', { abbr: TEAM_CONFIG.abbr })}
+          help={t('shotMapView.advanced.helpCfPct', { abbr: team.abbr })}
         />
         <StatChip
           label="FF%"
           value={`${sa.fenwickForPct}%`}
           color={sa.fenwickForPct >= 50 ? 'var(--green)' : 'var(--team-primary)'}
-          help={t('shotMapView.advanced.helpFfPct', { abbr: TEAM_CONFIG.abbr })}
+          help={t('shotMapView.advanced.helpFfPct', { abbr: team.abbr })}
         />
         <StatChip
           label="PDO"

@@ -65,7 +65,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TEAM_CONFIG } from '../utils/teamConfig';
+import { useGameTeam } from '../utils/GameTeamContext';
 import { RinkMarkings, W, H, CX, CY } from 'react-hockey-rink';
 import GoalTrackingReplay from './GoalTrackingReplay';
 import { nextWatching } from '../utils/liveGoalReplay';
@@ -315,6 +315,7 @@ export default function LiveEventRink({
   goalReplay = null,
 }) {
   const { t } = useTranslation();
+  const { team } = useGameTeam();
   // The rink has two modes: live dots, and the most recent goal redrawn
   // from the NHL's player-and-puck tracking. goalReplay only ever arrives
   // once the Worker has actually returned frames (useLiveGoalReplay), so
@@ -436,7 +437,7 @@ export default function LiveEventRink({
       if (p.homeTeamDefendingSide === 'right') { x = -x; y = -y; }
       const { px, py } = toSvg(x, y);
 
-      const isMine = d.eventOwnerTeamId === TEAM_CONFIG.teamId;
+      const isMine = d.eventOwnerTeamId === team.teamId;
       const style = DOT_STYLE[type] || { r: 4 };
       const playerId = eventPlayerId(type, d);
       const playerName = playerId != null ? playerMap[String(playerId)] : null;
@@ -445,7 +446,7 @@ export default function LiveEventRink({
         key: p.eventId, px, py, r: style.r, opacity,
         fill: isMine ? 'var(--team-primary)' : (oppColor || 'var(--text-dim)'),
         ring: TYPE_RING_COLOR[type] || 'var(--text-dim)',
-        title: `${playerName || (isMine ? TEAM_CONFIG.abbr : oppAbbr) || ''} — ${EVENT_TYPE_LABEL[type] || type.replace(/-/g, ' ')}`.trim(),
+        title: `${playerName || (isMine ? team.abbr : oppAbbr) || ''} — ${EVENT_TYPE_LABEL[type] || type.replace(/-/g, ' ')}`.trim(),
       };
     })
     .filter(Boolean);
@@ -476,7 +477,7 @@ export default function LiveEventRink({
       </div>
       <div className={RINK_WRAP_CLASSES}>
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}>
-          <RinkMarkings showHalf={false} teamAbbr={TEAM_CONFIG.abbr} />
+          <RinkMarkings showHalf={false} teamAbbr={team.abbr} />
 
           {!inIntermission && dots.map(dot => (
             <circle

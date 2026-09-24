@@ -69,6 +69,7 @@ canes-analytics-starter/
 │   ├── App.jsx                   # Router, layout, sport context, theme init
 │   ├── views/
 │   │   ├── ShotMapView.jsx             # NHL live shot map — season/game history selector (Session 77) lets you browse past seasons/games; disabled+tooltip (not hidden) while a game is live, since a live game always wins the display. Tailwind (Phase 5, all 6 sub-PRs) — ShotMapView.css fully deleted. Live games only (Session 100): a `LiveEventRink` + relocated/widened `EventLog` ticker row renders between Live Insights and the metric cards — see `components/LiveEventRink.jsx`
+│   │   ├── GuestGameView.jsx           # /game/:gameId?as=BOS — one NHL game watched from a team that isn't the favorite: ShotMapView inside a GameTeamProvider, pinned to that game (no season/game history). Invalid links and the favorite's own team redirect to /
 │   │   ├── ScheduleView.jsx            # NHL schedule — Tailwind (Phase 6, all 5 sub-PRs) — ScheduleView.css fully deleted
 │   │   ├── TeamView.jsx                # NHL 6-tab team analytics (Advanced tab: xGF% sparkline) — Tailwind (Phase 4, sub-PR 3), no .css file
 │   │   ├── PlayersView.jsx/.css        # NHL players
@@ -174,6 +175,7 @@ canes-analytics-starter/
 │       ├── advancedStats.js
 │       ├── supabaseClient.js           # DB queries; getTeamXgTrend, getGoalieShots (no car_game filter) — Worker-proxied, NOT direct Supabase (see supabaseAuth.js for the one exception)
 │       ├── supabaseAuth.js             # Supabase Auth client (Session 90) — the only place this app imports @supabase/supabase-js directly; signInWithOtp/session handling only, never used for data reads
+│       ├── GameTeamContext.jsx         # Which team the game view watches from — the favorite (TEAM_CONFIG) outside a provider, a guest team inside GuestGameView's. ShotMapView and its children read `useGameTeam()` rather than TEAM_CONFIG, and nhlApi's game helpers take that team as an optional last argument. Nothing about a guest team is saved
 │       ├── AuthContext.jsx             # Auth state (Session 90) — mirrors SportContext.jsx's context+provider+hook pattern. Also runs favoriteTeamSync.js/triviaAnswers.js's sign-in reconciliation
 │       ├── favoriteTeamSync.js         # Favorite-team sync for signed-in users (Session 91) — write-on-switch (awaited before the team-change reload) + reconcile-on-session-load (first sign-in uploads local; existing server value wins on a new device)
 │       ├── triviaAnswers.js            # Trivia answer tracking (Session 92) — local-first for everyone; signed-in users get a union merge on sign-in (not favoriteTeamSync's overwrite rule — answer history is append-only, so a second device's local answers must never be discarded)

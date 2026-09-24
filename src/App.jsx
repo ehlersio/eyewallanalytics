@@ -23,6 +23,7 @@ const PlayersView   = lazy(() => import('./views/PlayersView'));
 const TeamView      = lazy(() => import('./views/TeamView'));
 const NewsView      = lazy(() => import('./views/NewsView'));
 const LeagueView    = lazy(() => import('./views/LeagueView'));
+const GuestGameView = lazy(() => import('./views/GuestGameView'));
 
 const PWHLShotMapView  = lazy(() => import('./views/PWHLShotMapView'));
 const PWHLLeagueView   = lazy(() => import('./views/PWHLLeagueView'));
@@ -181,6 +182,7 @@ export default function App() {
                       <Route path="/team"     element={<TeamView />} />
                       <Route path="/news"     element={<NewsView />} />
                       <Route path="/league"   element={<LeagueView />} />
+                      <Route path="/game/:gameId" element={<GuestGameView />} />
                       <Route path="/methodology" element={<MethodologyView />} />
                       <Route path="/admin/health" element={<AdminHealthView />} />
                       {/* PWHL routes */}

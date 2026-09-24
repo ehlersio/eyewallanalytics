@@ -405,7 +405,7 @@ function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarra
       oppAbbr={oppAbbr}
       carScore={carIsHome ? summary.homeScore : summary.awayScore}
       oppScore={carIsHome ? summary.awayScore : summary.homeScore}
-      carColor={TEAM_CONFIG.displayColor}
+      carColor={ALL_TEAMS.find(tm => tm.abbr === carAbbr)?.displayColor ?? TEAM_CONFIG.displayColor}
       oppColor={ALL_TEAMS.find(tm => tm.abbr === oppAbbr)?.displayColor}
       stats={getPeriodStats(summary, carAbbr, t)}
       hatTricks={detectHatTricks(summary.goals)}

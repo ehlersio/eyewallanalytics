@@ -54,10 +54,10 @@ async function nhlFetch(url) {
 
 // Read from Worker KV cache — appends ?team= so the Worker resolves the right config.
 // Returns null if Worker unavailable or key missing.
-async function kvFetch(key) {
+async function kvFetch(key, team = TEAM_CONFIG) {
   if (!WORKER_URL) return null;
   try {
-    const teamParam = encodeURIComponent(TEAM_CONFIG.abbr);
+    const teamParam = encodeURIComponent(team.abbr);
     const res = await fetch(
       `${WORKER_URL}/cache/${encodeURIComponent(key)}?team=${teamParam}`,
       { signal: AbortSignal.timeout(3000) }
@@ -146,15 +146,20 @@ export async function getDraftOrder(team = null) {
 // makes a corrected season value a genuine cache miss instead of a stale
 // hit, so a reactive re-fetch (see ScheduleView.jsx's useFetch calls)
 // actually gets fresh data instead of the first call's mistake.
-export async function getAllGames() {
-  return cached(`allGames:${TEAM_CONFIG.abbr}:${TEAM_CONFIG.season}`, async () => {
+//
+// `team` defaults to the user's favorite; the game view passes the team
+// it's watching from (see GameTeamContext.jsx), which is someone else's
+// when following another game off the Scoreboard. Same for every
+// `team = TEAM_CONFIG` parameter below.
+export async function getAllGames(team = TEAM_CONFIG) {
+  return cached(`allGames:${team.abbr}:${team.season}`, async () => {
     // Try Worker KV first (pre-polled, zero per-user NHL calls). Key is
     // season-namespaced (Session 77 — schedule:{abbr}:{season}, not the
     // old bare schedule:{abbr}) to match the Worker's /schedule route.
-    const cached_kv = await kvFetch(`schedule:${TEAM_CONFIG.abbr}:${TEAM_CONFIG.season}`);
+    const cached_kv = await kvFetch(`schedule:${team.abbr}:${team.season}`, team);
     if (cached_kv) return cached_kv;
     // Fall back to direct NHL call
-    const data = await nhlFetch(`${BASE}/club-schedule-season/${TEAM_CONFIG.abbr}/${TEAM_CONFIG.season}`);
+    const data = await nhlFetch(`${BASE}/club-schedule-season/${team.abbr}/${team.season}`);
     return data?.games || [];
   }, TTL.SHORT / 3); // 20 seconds client-side cache
 }
@@ -193,11 +198,11 @@ export async function getPreseasonGames() {
 
 // Playoff games only (gameType === 3)
 // Cache key team+season-scoped -- see getAllGames()'s comment above.
-export async function getPlayoffGames() {
-  return cached(`playoffGames:${TEAM_CONFIG.abbr}:${TEAM_CONFIG.season}`, _getPlayoffGames, TTL.PLAYOFF_GAMES);
+export async function getPlayoffGames(team = TEAM_CONFIG) {
+  return cached(`playoffGames:${team.abbr}:${team.season}`, () => _getPlayoffGames(team), TTL.PLAYOFF_GAMES);
 }
-async function _getPlayoffGames() {
-  const games = await getAllGames();
+async function _getPlayoffGames(team) {
+  const games = await getAllGames(team);
   return games.filter(g => g.gameType === GAME_TYPE.PLAYOFFS);
 }
 
@@ -239,8 +244,8 @@ export async function getUpcomingGames(count = 8) {
 }
 
 // Recently completed games, newest first
-export async function getRecentGames(count = 6) {
-  const games = await getAllGames();
+export async function getRecentGames(count = 6, team = TEAM_CONFIG) {
+  const games = await getAllGames(team);
   const today = new Date();
 
   return games
@@ -254,13 +259,13 @@ export async function getRecentGames(count = 6) {
 
 // Live game if one is in progress
 // DEV: add ?mockGame=GAME_ID to URL to simulate a live game with a completed game's data
-export async function getLiveGame() {
+export async function getLiveGame(team = TEAM_CONFIG) {
   // ── Dev mock ─────────────────────────────────────────────────
   if (import.meta.env.DEV) {
     const params = new URLSearchParams(window.location.search);
     const mockId = params.get('mockGame');
     if (mockId) {
-      const games = await getAllGames();
+      const games = await getAllGames(team);
       // Try to find it in the schedule first
       let mockGame = games.find(g => String(g.id) === String(mockId));
       // If not in schedule, fetch it directly from the NHL API
@@ -283,14 +288,21 @@ export async function getLiveGame() {
     }
   }
   // ── Normal live detection ─────────────────────────────────────
-  const games = await getAllGames();
+  const games = await getAllGames(team);
   const live = games.find(g => g.gameState === 'LIVE' || g.gameState === 'CRIT') || null;
-  return holdLiveGame(live, games);
+  return holdFor(team)(live, games);
 }
 
 // See liveGameHold.js -- one live read that comes back empty or behind no
-// longer drops the shot map out of live mode.
-const holdLiveGame = createLiveGameHold(isCompleted);
+// longer drops the shot map out of live mode. One hold per team: a hold
+// remembers the last live game it saw, and a single shared one would let
+// a guest team's game stand in for the favorite's (or the reverse) on
+// the first empty read after switching between them.
+const liveGameHolds = new Map();
+function holdFor(team) {
+  if (!liveGameHolds.has(team.abbr)) liveGameHolds.set(team.abbr, createLiveGameHold(isCompleted));
+  return liveGameHolds.get(team.abbr);
+}
 
 // Is a game finished?
 export function isCompleted(game) {
@@ -1152,13 +1164,13 @@ export async function getGameDetail(gameId) {
 }
 
 // Call this to force-refresh live game data (bypasses cache)
-export function bustLiveGameCache(gameId) {
+export function bustLiveGameCache(gameId, team = TEAM_CONFIG) {
   invalidate(`pbp:${gameId}`);
   invalidate(`boxscore:${gameId}`);
   // getAllGames()'s real key -- this used to invalidate a bare 'allGames',
   // which nothing has been stored under since that key became team+season
   // scoped, so it was a silent no-op.
-  invalidate(`allGames:${TEAM_CONFIG.abbr}:${TEAM_CONFIG.season}`);
+  invalidate(`allGames:${team.abbr}:${team.season}`);
 }
 
 export async function getGameLanding(gameId) {
@@ -1243,7 +1255,7 @@ export function buildPlayerMap(playByPlay) {
   return map;
 }
 
-export function extractShotEvents(playByPlay) {
+export function extractShotEvents(playByPlay, team = TEAM_CONFIG) {
   if (!playByPlay?.plays) return [];
   const shotTypes = new Set(['shot-on-goal', 'missed-shot', 'blocked-shot', 'goal']);
 
@@ -1266,7 +1278,7 @@ export function extractShotEvents(playByPlay) {
         teamId:       d.eventOwnerTeamId,
         shotType:     d.shotType,
         zoneCode:     d.zoneCode,
-        isCanes:      d.eventOwnerTeamId === TEAM_CONFIG.teamId,
+        isCanes:      d.eventOwnerTeamId === team.teamId,
         shooterId:    shooterId || null,
         // Player names resolved inline from rosterSpots
         shooterName:  shooterId            ? (playerMap[shooterId]            || null) : null,
@@ -1337,13 +1349,13 @@ export function formatGameTime(utcStr) {
   });
 }
 
-export function getOpponent(game) {
+export function getOpponent(game, team = TEAM_CONFIG) {
   if (!game) return null;
-  return game.homeTeam?.abbrev === TEAM_CONFIG.abbr ? game.awayTeam : game.homeTeam;
+  return game.homeTeam?.abbrev === team.abbr ? game.awayTeam : game.homeTeam;
 }
 
-export function isHomeGame(game) {
-  return game?.homeTeam?.abbrev === TEAM_CONFIG.abbr;
+export function isHomeGame(game, team = TEAM_CONFIG) {
+  return game?.homeTeam?.abbrev === team.abbr;
 }
 
 // game.venue.default is the arena name wherever the game is actually played
@@ -1402,16 +1414,16 @@ export function isNeutralSite(game) {
   return game?.neutralSite === true;
 }
 
-export function getCarScore(game) {
+export function getCarScore(game, team = TEAM_CONFIG) {
   if (!game) return null;
-  return game.homeTeam?.abbrev === TEAM_CONFIG.abbr
+  return game.homeTeam?.abbrev === team.abbr
     ? game.homeTeam?.score
     : game.awayTeam?.score;
 }
 
-export function getOppScore(game) {
+export function getOppScore(game, team = TEAM_CONFIG) {
   if (!game) return null;
-  return game.homeTeam?.abbrev === TEAM_CONFIG.abbr
+  return game.homeTeam?.abbrev === team.abbr
     ? game.awayTeam?.score
     : game.homeTeam?.score;
 }
@@ -1476,9 +1488,10 @@ export async function getTeamTopPlayers(teamAbbr, gameType = 2) {
 // card, and it had drifted from teamConfig.js's colors since Light Mode.
 
 // ─── Team advanced stats ──────────────────────────────────────
-// Convenience aliases — advanced stats endpoints use teamId and franchiseId directly
-const TEAM_ID_ADV   = TEAM_CONFIG.teamId;
-const FRANCHISE_ID  = TEAM_CONFIG.franchiseId;
+// Advanced stats endpoints use teamId and franchiseId directly -- read off
+// `team` (the favorite unless a caller passes another) at each point of
+// use. These were module-level TEAM_ID_ADV/FRANCHISE_ID consts, which
+// pinned every function below to the favorite no matter who asked.
 // TEAM_CONFIG.season is a live getter (see teamConfig.js) -- read it
 // directly at each point of use below rather than caching it into its own
 // const the way this file used to (a `STATS_SEASON` const here froze at
@@ -1497,27 +1510,27 @@ const FRANCHISE_ID  = TEAM_CONFIG.franchiseId;
 // Build URL for team stat endpoints.
 // Key: cayenneExp must use seasonId<=X and seasonId>=X (double-bound) not seasonId=X
 // Also needs isAggregate and isGame params for report endpoints like puckPossessions
-function teamStatsUrl(report, gameTypeId = 2, season = TEAM_CONFIG.season) {
+function teamStatsUrl(report, gameTypeId = 2, season = TEAM_CONFIG.season, team = TEAM_CONFIG) {
   const s = season;
   const exp = encodeURIComponent(
-    `franchiseId=${FRANCHISE_ID} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
+    `franchiseId=${team.franchiseId} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
   );
   return `/nhl-stats/stats/rest/en/team/${report}?isAggregate=false&isGame=false&sort=wins&limit=1&cayenneExp=${exp}`;
 }
 
 // Find the configured team from an array of team records
-function findTeam(data) {
+function findTeam(data, team = TEAM_CONFIG) {
   return data?.find(t =>
-    t.teamAbbrevs === TEAM_CONFIG.abbr ||
-    t.teamAbbrev  === TEAM_CONFIG.abbr ||
-    t.teamId      === TEAM_ID_ADV ||
-    t.franchiseId === FRANCHISE_ID
+    t.teamAbbrevs === team.abbr ||
+    t.teamAbbrev  === team.abbr ||
+    t.teamId      === team.teamId ||
+    t.franchiseId === team.franchiseId
   ) || null;
 }
 
 // Team summary cached — shared by corsi, pp, pk
-async function _getTeamSummary(gameTypeId, season = TEAM_CONFIG.season) {
-  const url = teamStatsUrl('summary', gameTypeId, season);
+async function _getTeamSummary(gameTypeId, season = TEAM_CONFIG.season, team = TEAM_CONFIG) {
+  const url = teamStatsUrl('summary', gameTypeId, season, team);
   const d   = await nhlFetch(url);
   return d?.data?.[0] || null;
 }
@@ -1528,8 +1541,8 @@ async function _getTeamSummary(gameTypeId, season = TEAM_CONFIG.season) {
 // tabs pass getTeamStats()'s statsSeasonId instead, so out of season they
 // show last season (labelled) rather than an empty current one -- same as
 // Overview. Applies to getTeamPowerplay/PenaltyKill/HomeSplit below too.
-export async function getTeamCorsi(gameTypeId = 2, season = TEAM_CONFIG.season) {
-  const t = await cached(`teamSummary:${gameTypeId}:${season}`, () => _getTeamSummary(gameTypeId, season), TTL.ADVANCED);
+export async function getTeamCorsi(gameTypeId = 2, season = TEAM_CONFIG.season, team = TEAM_CONFIG) {
+  const t = await cached(`teamSummary:${team.abbr}:${gameTypeId}:${season}`, () => _getTeamSummary(gameTypeId, season, team), TTL.ADVANCED);
   if (!t) return null;
 
   const sf = t.shotsForPerGame    || 0;
@@ -1537,10 +1550,10 @@ export async function getTeamCorsi(gameTypeId = 2, season = TEAM_CONFIG.season) 
   const gp = t.gamesPlayed || 1;
 
   // Get realtime data which has blockedShots + shotAttemptsBlocked
-  const rt = await cached(`teamRealtime:${gameTypeId}:${season}`, async () => {
+  const rt = await cached(`teamRealtime:${team.abbr}:${gameTypeId}:${season}`, async () => {
     const s   = season;
     const exp = encodeURIComponent(
-      `franchiseId=${FRANCHISE_ID} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
+      `franchiseId=${team.franchiseId} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
     );
     const url = `/nhl-stats/stats/rest/en/team/realtime?isAggregate=false&isGame=false&sort=blockedShots&sortDirection=DESC&limit=1&cayenneExp=${exp}`;
     const d   = await nhlFetch(url).catch(() => null);
@@ -1582,14 +1595,14 @@ export async function getTeamCorsi(gameTypeId = 2, season = TEAM_CONFIG.season) 
 // season: defaults to the current season; the Overview stat card passes
 // getTeamStats()'s statsSeasonId so Blks/GP describes the same season as the
 // cards around it (empty for the current season until games are played).
-export async function getTeamRealtime(gameTypeId = 2, season = TEAM_CONFIG.season) {
-  return cached(`teamRealtime:${gameTypeId}:${season}`, async () => {
+export async function getTeamRealtime(gameTypeId = 2, season = TEAM_CONFIG.season, team = TEAM_CONFIG) {
+  return cached(`teamRealtime:${team.abbr}:${gameTypeId}:${season}`, async () => {
     const s   = season;
     // Try multiple known report names that include blocked shots
     // The NHL stats API 'realtime' report includes blockedShots, hits, giveaways, takeaways
     // Use same franchiseId filter as working team/summary endpoint
     const exp = encodeURIComponent(
-      `franchiseId=${FRANCHISE_ID} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
+      `franchiseId=${team.franchiseId} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
     );
     const url = `/nhl-stats/stats/rest/en/team/realtime?isAggregate=false&isGame=false&sort=blockedShots&sortDirection=DESC&limit=1&cayenneExp=${exp}`;
     const d   = await nhlFetch(url);
@@ -1606,12 +1619,12 @@ export async function getTeamScoreState(_gameTypeId = 2) {
 // Power play / Penalty kill — from team/summary
 // Available fields: powerPlayPct, powerPlayNetPct, penaltyKillPct, penaltyKillNetPct
 // Goals and opportunity counts are NOT in team/summary; derive where possible from standings
-export async function getTeamPowerplay(gameTypeId = 2, season = TEAM_CONFIG.season) {
-  return cached(`teamSummary:${gameTypeId}:${season}`, () => _getTeamSummary(gameTypeId, season), TTL.ADVANCED);
+export async function getTeamPowerplay(gameTypeId = 2, season = TEAM_CONFIG.season, team = TEAM_CONFIG) {
+  return cached(`teamSummary:${team.abbr}:${gameTypeId}:${season}`, () => _getTeamSummary(gameTypeId, season, team), TTL.ADVANCED);
 }
 
-export async function getTeamPenaltyKill(gameTypeId = 2, season = TEAM_CONFIG.season) {
-  return cached(`teamSummary:${gameTypeId}:${season}`, () => _getTeamSummary(gameTypeId, season), TTL.ADVANCED);
+export async function getTeamPenaltyKill(gameTypeId = 2, season = TEAM_CONFIG.season, team = TEAM_CONFIG) {
+  return cached(`teamSummary:${team.abbr}:${gameTypeId}:${season}`, () => _getTeamSummary(gameTypeId, season, team), TTL.ADVANCED);
 }
 
 // Home/Away splits from team summary (homeRoadQuery)
@@ -1632,12 +1645,12 @@ async function _getTeamHomeSplit(gameTypeId = 2, season = TEAM_CONFIG.season) {
 }
 
 // Playoff team stats (same endpoints with gameTypeId=3)
-export async function getTeamPlayoffStats() {
+export async function getTeamPlayoffStats(team = TEAM_CONFIG) {
   const [corsi, scoreState, pp, pk] = await Promise.all([
-    getTeamCorsi(3),
+    getTeamCorsi(3, TEAM_CONFIG.season, team),
     getTeamScoreState(3),
-    getTeamPowerplay(3),
-    getTeamPenaltyKill(3),
+    getTeamPowerplay(3, TEAM_CONFIG.season, team),
+    getTeamPenaltyKill(3, TEAM_CONFIG.season, team),
   ]);
   return { corsi, scoreState, pp, pk };
 }
