@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
+    "ios:version": "node scripts/ios-version.mjs",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run --headless",
     "cypress:clean": "npx rimraf cypress/reports cypress/screenshots",

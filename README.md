@@ -228,7 +228,10 @@ canes-analytics-starter/
 │   │   ├── topnav-safe-area.cy.js      # Topbar safe-area regression (mobile viewports)
 │   │   └── viewports.cy.js             # 4 viewports × all views
 │   └── support/e2e.js                  # Custom commands incl. cy.setPWHLTeam()
-└── .github/workflows/test.yml
+├── scripts/ios-version.mjs          # `npm run ios:version` — copies package.json's version into the iOS project's MARKETING_VERSION and bumps its build number, for cutting an iOS build (see Versioning)
+└── .github/workflows/
+    ├── ci.yml                        # Every PR: lint, Vitest, build, then Cypress E2E
+    └── version.yml                   # Every PR needs one semver:* label; on merge, bumps package.json, commits "Release vX.Y.Z (#PR)" and tags it
 ```
 
 ---
@@ -819,6 +822,16 @@ open ios/App/App.xcodeproj     # no CocoaPods/xcworkspace -- plugins link via Sw
 After adding a new Capacitor plugin (like `@capacitor/push-notifications`, 2026-09) or changing `ios/App/App/App.entitlements`, open Xcode once and check Signing & Capabilities — a hand-edited entitlements file doesn't itself register the capability with Apple under automatic signing; Xcode needs to see it and re-provision the App ID.
 
 ---
+
+## Versioning
+
+Semantic versioning (MAJOR.MINOR.PATCH), one version per merged PR, with `package.json` as the single source of truth. The About popup shows it.
+
+- Every PR into `main` carries exactly one label: `semver:major` (breaks or resets things for users), `semver:minor` (something new users can see or use), `semver:patch` (a fix, an internal change, a dependency update) or `semver:none` (tests, CI, docs). The `Version / label` check fails until it has one. Dependabot labels its own PRs.
+- On merge, `.github/workflows/version.yml` bumps `package.json`/`package-lock.json` by that level, commits `Release vX.Y.Z (#PR)` to `main` and pushes a `vX.Y.Z` tag. PRs never edit the version themselves.
+- iOS: `npm run ios:version` when cutting a build copies the version into the Xcode project and increments the build number.
+
+See `CLAUDE.md`'s versioning rule for the level definitions with examples.
 
 ## Deployment
 

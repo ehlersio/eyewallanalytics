@@ -18,6 +18,8 @@ export default [
         ecmaFeatures: { jsx: true },
       },
       globals: {
+        // Injected by vite.config.js's `define` from package.json
+        __APP_VERSION__: "readonly",
         // Browser globals
         window: "readonly",
         document: "readonly",

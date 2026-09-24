@@ -1,0 +1,87 @@
+name: Version
+
+# Semantic versioning (MAJOR.MINOR.PATCH) for the app, one bump per merged
+# PR. Every PR into main carries exactly one of these labels:
+#
+#   semver:major  a change that breaks or resets things for users (a
+#                 redesign, dropping a league, saved settings invalidated)
+#   semver:minor  something new a user can see or use
+#   semver:patch  a fix, a behind-the-scenes change, a dependency update
+#   semver:none   nothing that ships to users: tests, CI, docs
+#
+# `label` fails a PR until it has exactly one. `bump` runs when the PR
+# merges: it bumps package.json (and package-lock.json) by that level,
+# commits "Release vX.Y.Z (#PR)" to main and tags it. PRs never edit the
+# version themselves -- with several open at once they'd all fight over
+# the same line. See CLAUDE.md's versioning rule; the iOS app's
+# MARKETING_VERSION is copied from package.json when an iOS build is cut.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, labeled, unlabeled, closed]
+
+jobs:
+  label:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require exactly one semver label
+        env:
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          found=$(jq -r '[.[] | select(startswith("semver:"))] | join(", ")' <<< "$LABELS")
+          count=$(jq '[.[] | select(startswith("semver:"))] | length' <<< "$LABELS")
+          if [ "$count" != "1" ]; then
+            echo "::error::Label this PR with exactly one of semver:major, semver:minor, semver:patch, semver:none (has: ${found:-none})"
+            exit 1
+          fi
+          echo "Version bump on merge: $found"
+
+  bump:
+    if: github.event.action == 'closed' && github.event.pull_request.merged
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # One bump at a time, in merge order: two PRs merged moments apart must
+    # not both read the same version and claim the same next one.
+    concurrency:
+      group: version-bump
+      cancel-in-progress: false
+    steps:
+      - name: Pick the level
+        id: level
+        env:
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          level=$(jq -r '[.[] | select(startswith("semver:")) | sub("^semver:"; "")] | if length == 1 then .[0] else "none" end' <<< "$LABELS")
+          echo "level=$level" >> "$GITHUB_OUTPUT"
+          echo "Level: $level"
+
+      - name: Checkout main
+        if: contains(fromJSON('["major","minor","patch"]'), steps.level.outputs.level)
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Bump, commit, tag, push
+        if: contains(fromJSON('["major","minor","patch"]'), steps.level.outputs.level)
+        env:
+          LEVEL: ${{ steps.level.outputs.level }}
+          PR: ${{ github.event.pull_request.number }}
+          HUSKY: '0'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          version=$(npm version "$LEVEL" --no-git-tag-version)
+          git commit -am "Release $version (#$PR)"
+          # A PR merged while this ran moves main on; replay the bump on top.
+          pushed=
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then pushed=1; break; fi
+            git pull --rebase origin main
+          done
+          [ -n "$pushed" ] || { echo "::error::Couldn't push the $version bump to main"; exit 1; }
+          git tag "$version"
+          git push origin "$version"
+          echo "Released $version" >> "$GITHUB_STEP_SUMMARY"

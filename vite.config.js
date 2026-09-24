@@ -1,12 +1,20 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { readFileSync } from 'node:fs'
+
+// The app's version, from package.json -- bumped on every merge to main by
+// .github/workflows/version.yml -- shown in the About popup.
+const APP_VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version
 
 export default defineConfig(({ mode }) => {
   // Load .env, .env.local etc — exposes VITE_ prefixed vars to Node at config time
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
+  define: {
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
+  },
   // tailwindcss() only processes files that @import "tailwindcss" (see
   // src/components/PlayerComparisonPopup.css) -- it doesn't touch the
   // rest of the app's plain global CSS files.

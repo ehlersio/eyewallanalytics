@@ -43,6 +43,20 @@ Name the new branch for what the session is actually doing (e.g. `session43-line
 
 Before opening a PR, check whether the change affects anything `README.md` documents — setup/install steps, environment variables, available scripts/commands, API routes or endpoints, known limitations, test counts, or architecture description. If yes, update the README in the same PR. Purely internal changes (refactors, bug fixes with no behavior/interface change) don't need a README touch — don't pad PRs with unnecessary doc churn.
 
+## Versioning (standing rule — read before opening any PR)
+
+The app follows semantic versioning (MAJOR.MINOR.PATCH), one version per merged PR. `package.json`'s `version` is the only source of truth; it's shown in the About popup (injected as `__APP_VERSION__` by `vite.config.js`).
+
+- **Never edit the version in a PR.** `.github/workflows/version.yml` bumps it when the PR merges, commits `Release vX.Y.Z (#PR)` to main and tags it. Several PRs are often open at once; if each bumped the version itself they'd all conflict on the same line, or carry a stale number.
+- **Label every PR with exactly one of these** (e.g. `gh pr create --label semver:minor`). The `Version / label` check fails until it has one:
+  - `semver:major` — breaks or resets things for users: a redesign, dropping a league, saved settings invalidated. Rare.
+  - `semver:minor` — something new a user can see or use (e.g. #354, tappable Scoreboard teams).
+  - `semver:patch` — a fix, a behind-the-scenes change users only notice as "works better", a dependency update (e.g. #352).
+  - `semver:none` — doesn't ship to users: tests only, CI, docs (e.g. #355).
+- Unsure between two levels? Pick the higher one and say why in the PR description.
+- Dependabot labels its own PRs (`.github/dependabot.yml`): npm updates `semver:patch`, GitHub Actions updates `semver:none`.
+- **iOS:** when cutting an iOS build, run `npm run ios:version`. It copies `package.json`'s version into the Xcode project's `MARKETING_VERSION` and adds one to `CURRENT_PROJECT_VERSION` (App Store Connect needs a new build number for every upload). Don't hand-edit those in `project.pbxproj`. The iOS version skipping numbers between App Store releases is expected.
+
 ## Live season resolution (built Session 35–36)
 
 `seasonClient.js` is a shared, memoized fetch wrapper for `GET /config/seasons` on the Worker. `teamConfig.js` (NHL) and `pwhlConfig.js` (PWHL) both consume it — loading both on the same page triggers only one real fetch, not two.
