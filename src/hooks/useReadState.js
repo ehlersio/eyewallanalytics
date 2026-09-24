@@ -70,6 +70,14 @@ export function useReadState() {
   // setters below, independent of React's render/commit cycle entirely.
   const newsRef = useRef(news);
   const milestonesRef = useRef(milestones);
+  // A tab viewed before this instance's refresh() has learned its latest
+  // id. markSeen used to no-op then, so a tap on News or Milestones right
+  // after the page opened never cleared its dot -- each mounted instance
+  // (BottomNav's, NewsView's) fetches separately, so one instance knowing
+  // the id says nothing about another. Held here, applied the moment the
+  // id arrives. Found as the read-state-badges.cy.js CI flake where the
+  // BottomNav dot outlived every tab being addressed.
+  const pendingSeenRef = useRef({ news: false, milestones: false });
 
   const refresh = useCallback(async () => {
     if (!WORKER_URL || !team) return;
@@ -79,9 +87,15 @@ export function useReadState() {
       const res = await fetch(`${WORKER_URL}/news/latest?${params}`);
       if (res.ok) {
         const { latestId } = await res.json();
+        const viewedEarly = pendingSeenRef.current.news && !!latestId;
+        if (viewedEarly) {
+          pendingSeenRef.current.news = false;
+          setSeen('news', sport, team, latestId);
+        }
         const nextNews = { unseen: !!latestId && latestId !== getSeen('news', sport, team), latestId };
         newsRef.current = nextNews;
         setNews(nextNews);
+        if (viewedEarly) window.dispatchEvent(new window.CustomEvent(EVENT_NAME));
       }
     } catch {
       // leave previous state — a failed check shouldn't flip the badge off
@@ -100,9 +114,15 @@ export function useReadState() {
       if (res.ok) {
         const { latestId } = await res.json();
         const idStr = latestId != null ? String(latestId) : null;
+        const viewedEarly = pendingSeenRef.current.milestones && idStr != null;
+        if (viewedEarly) {
+          pendingSeenRef.current.milestones = false;
+          setSeen('milestones', sport, null, idStr);
+        }
         const nextMilestones = { unseen: idStr != null && idStr !== getSeen('milestones', sport, null), latestId: idStr };
         milestonesRef.current = nextMilestones;
         setMilestones(nextMilestones);
+        if (viewedEarly) window.dispatchEvent(new window.CustomEvent(EVENT_NAME));
       }
     } catch {
       // leave previous state
@@ -141,20 +161,25 @@ export function useReadState() {
 
   const markSeen = useCallback(
     (tab) => {
-      if (tab === 'news' && newsRef.current.latestId) {
-        setSeen('news', sport, team, newsRef.current.latestId);
-        newsRef.current = { ...newsRef.current, unseen: false };
-        setNews((s) => ({ ...s, unseen: false }));
-        window.dispatchEvent(new window.CustomEvent(EVENT_NAME));
-      } else if (tab === 'milestones' && milestonesRef.current.latestId) {
-        setSeen('milestones', sport, null, milestonesRef.current.latestId);
-        milestonesRef.current = { ...milestonesRef.current, unseen: false };
-        setMilestones((s) => ({ ...s, unseen: false }));
-        window.dispatchEvent(new window.CustomEvent(EVENT_NAME));
-      }
       // 'trivia' has no markSeen — viewing the tab doesn't clear it, only
       // answering does (triviaAnswers.recordAnswer dispatches the same
       // event itself once an answer is recorded).
+      const ref = tab === 'news' ? newsRef : tab === 'milestones' ? milestonesRef : null;
+      if (!ref) return;
+      if (!ref.current.latestId) {
+        pendingSeenRef.current[tab] = true; // refresh() applies it -- see pendingSeenRef
+        return;
+      }
+      if (tab === 'news') {
+        setSeen('news', sport, team, newsRef.current.latestId);
+        newsRef.current = { ...newsRef.current, unseen: false };
+        setNews((s) => ({ ...s, unseen: false }));
+      } else {
+        setSeen('milestones', sport, null, milestonesRef.current.latestId);
+        milestonesRef.current = { ...milestonesRef.current, unseen: false };
+        setMilestones((s) => ({ ...s, unseen: false }));
+      }
+      window.dispatchEvent(new window.CustomEvent(EVENT_NAME));
     },
     [sport, team]
   );

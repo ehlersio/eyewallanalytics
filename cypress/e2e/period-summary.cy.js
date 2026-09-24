@@ -10,6 +10,18 @@
 // Map' block, which has the identical dependency.
 const MOCK_GAME_ID = '2025030311'
 
+// Opening a summary from the bell only works once the view has settled
+// on the mock game. Until ?mockGame='s own lookup comes back, the view
+// shows the favorite's most recent real game and lists THAT game's
+// summaries in the bell; when the mock goes live it drops them and
+// rebuilds for the mock. A chip clicked just before that switch points at
+// a summary that no longer exists until the rebuild finishes -- on a slow
+// CI runner, longer than the 5s the popup gets, which is how both popup
+// blocks below failed intermittently. Wait for the live score bar first.
+function waitForMockGameLive() {
+  cy.get('.score-card', { timeout: DATA_TIMEOUT }).should('contain', 'LIVE')
+}
+
 describe('Settings (⚙️ button)', () => {
   beforeEach(() => {
     cy.visit('/')
@@ -96,6 +108,7 @@ describe('Period Summary popup', () => {
     cy.window().then(win => win.sessionStorage.clear())
     cy.visit(`/?mockGame=${MOCK_GAME_ID}`)
     cy.team().then(t => cy.contains(t.abbr, { timeout: 10000 }).should('exist'))
+    waitForMockGameLive()
     cy.get('button.notif-bell').click()
     cy.get('.notif-summary-chip', { timeout: 15000 }).first().click()
     cy.get('.ps-card', { timeout: 5000 }).should('exist')
@@ -202,6 +215,7 @@ describe('Final Game Summary popup', () => {
     cy.window().then(win => win.sessionStorage.clear())
     cy.visit(`/?mockGame=${MOCK_GAME_ID}`)
     cy.team().then(t => cy.contains(t.abbr, { timeout: 10000 }).should('exist'))
+    waitForMockGameLive()
     cy.get('button.notif-bell').click()
     cy.get('.notif-summary-chip-game', { timeout: 15000 }).click()
     cy.get('.ps-card', { timeout: 5000 }).should('exist')
