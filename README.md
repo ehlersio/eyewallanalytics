@@ -759,6 +759,7 @@ npm run cypress:visual            # diff current rendering against the committed
 | `read-state-badges.cy.js` | Unseen-content dots — News/Milestones/Trivia tab dots, BottomNav's combined dot, Trivia clearing only on answer vs. News/Milestones clearing on visit |
 | `navigation.cy.js` | NHL routes + PWHL 12-team smoke (all 7 PWHL routes) |
 | `guest-game.cy.js` | Following a Scoreboard game as either team (stubs `/nhl/today`, `/pwhl/today`) — only live NHL rows tappable, the favorite's row goes to /, the guest view's bar/colors/one-game layout, the saved favorite untouched, Back restores it, bad links redirect |
+| `guest-game-invariants.cy.js` | Signed in (fake session, stubbed `user_preferences`), a guest visit reached from the Scoreboard makes no Supabase write and no `/push`/`/live-activity` POST, leaves `localStorage` byte-for-byte as it was, stores its summaries under the guest team's own `sessionStorage` key (the favorite's untouched), and Back lands on the favorite's usual view |
 | `news.cy.js` | NHL news, source filters |
 | `milestones.cy.js` | Milestones feed, team filter dropdown, card structure, tap-to-open player popup |
 | `player-search.cy.js` | Global player search — open/close, debounce, typo tolerance, NHL+PWHL result correctness, popup opens for both |
