@@ -16,6 +16,7 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "ios:version": "node scripts/ios-version.mjs",
+    "ios:release": "npm run build && npx cap sync ios && npm run ios:version && npx cap open ios",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run --headless",
     "cypress:clean": "npx rimraf cypress/reports cypress/screenshots",
