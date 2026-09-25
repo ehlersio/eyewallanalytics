@@ -410,9 +410,11 @@ describe('Shot Map — "All" follows the selected season and game type', () => {
     }
     card('PP %').should('contain.text', '17.3%')
     card('PK %').should('contain.text', '91.5%')
-    // Playoff shots only -- the full season's were 3,455.
-    card('Shots on Goal').invoke('text').then(text => {
-      const sog = Number(text.match(/(\d[\d,]*)/)[1].replace(/,/g, ''))
+    // Playoff shots only -- the full season's were 3,455. Retried, not
+    // read once: the card shows 0 until the season's shots have loaded,
+    // and a one-shot read caught that on a slow CI runner.
+    card('Shots on Goal').should($card => {
+      const sog = Number($card.text().match(/(\d[\d,]*)/)[1].replace(/,/g, ''))
       expect(sog).to.be.within(400, 900)
     })
   })
