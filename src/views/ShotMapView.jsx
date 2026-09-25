@@ -20,6 +20,7 @@ import { GoalPopup, HatTrickPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGam
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getTeamSeasonData, getSpecialTeamsUnits } from '../utils/supabaseClient';
 import { inferPPUnit, inferPKUnit } from '../utils/ppUnits';
+import { isValidSituationCode } from '../utils/situationCode';
 import InfoTip from '../components/InfoTip';
 import { MetCard } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
@@ -978,6 +979,18 @@ export default function ShotMapView() {
 
   const isAllN = !isLive && !effectiveSelectedGameId && !isGuest;
 
+  // Some games' feeds carry only goals and penalties -- no shots, hits,
+  // faceoffs or rink coordinates. The NHL doesn't staff full event
+  // tracking at every game (common in the preseason: CAR-NSH on
+  // 2026-09-24 had 5 plays by the 2nd period). Without saying so, the
+  // zeros and the empty rink read as the app failing to load. A fully
+  // tracked game logs a faceoff from the opening puck drop, so "a goal or
+  // penalty but no faceoff or shot at all" never fires at the start of
+  // one that's simply young.
+  const limitedFeed = !isAllN && !!pbp?.plays?.length
+    && pbp.plays.some(p => p.typeDescKey === 'goal' || p.typeDescKey === 'penalty')
+    && !pbp.plays.some(p => ['faceoff', 'shot-on-goal', 'missed-shot', 'blocked-shot'].includes(p.typeDescKey));
+
   // A goal's popup gets the NHL's video and/or EyeWall's tracking replay
   // (GoalReplay, which shows a Video | Tracking switch only when both
   // exist and nothing at all when neither does). goalReplayTarget() works
@@ -1038,7 +1051,8 @@ export default function ShotMapView() {
     const plays = [...pbp.plays];
     for (let i = plays.length - 1; i >= 0; i--) {
       const sc = plays[i].situationCode;
-      if (sc && sc.length === 4) {
+      // Skips a code the feed got wrong -- see utils/situationCode.js.
+      if (isValidSituationCode(sc)) {
         const awaySkaters = parseInt(sc[1]);
         const homeSkaters = parseInt(sc[2]);
         const awayGoalie  = sc[0] === '1';
@@ -1358,7 +1372,7 @@ export default function ShotMapView() {
       // Parse all plays into discrete PP opportunities
       const carId   = team.teamId;
       const isCarPP = (sc) => {
-        if (!sc || sc.length < 4) return false;
+        if (!isValidSituationCode(sc)) return false;
         const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
         const awayG = sc[0] === '1',   homeG = sc[3] === '1';
         const carS  = gameHome ? homeS : awayS;
@@ -1585,7 +1599,7 @@ export default function ShotMapView() {
     } else if (statKey === 'pk') {
       // ── Rich PK Analysis ────────────────────────────────────
       const isOppPP = (sc) => {
-        if (!sc || sc.length < 4) return false;
+        if (!isValidSituationCode(sc)) return false;
         const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
         const awayG = sc[0] === '1',   homeG = sc[3] === '1';
         const carS  = gameHome ? homeS : awayS;
@@ -1795,7 +1809,7 @@ export default function ShotMapView() {
       const isCar = p.details?.eventOwnerTeamId === carId;
       if (!isCar) return;
       const sc = p.situationCode;
-      if (!sc || sc.length < 4) return;
+      if (!isValidSituationCode(sc)) return;
       const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
       const awayG = sc[0] === '1',   homeG = sc[3] === '1';
       const carS  = gameHome ? homeS : awayS;
@@ -1808,7 +1822,7 @@ export default function ShotMapView() {
     plays.forEach(p => {
       if (p.typeDescKey !== 'goal') return;
       const sc = p.situationCode;
-      if (!sc || sc.length < 4) return;
+      if (!isValidSituationCode(sc)) return;
       const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
       const awayG = sc[0] === '1',   homeG = sc[3] === '1';
       const carS  = gameHome ? homeS : awayS;
@@ -1821,7 +1835,7 @@ export default function ShotMapView() {
     let onOppPP = false;
     plays.forEach(p => {
       const sc = p.situationCode;
-      if (!sc || sc.length < 4) return;
+      if (!isValidSituationCode(sc)) return;
       const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
       const awayG = sc[0] === '1',   homeG = sc[3] === '1';
       const carS  = gameHome ? homeS : awayS;
@@ -2190,6 +2204,11 @@ export default function ShotMapView() {
             </div>}
           </div>
       </div>
+
+      {/* ── Limited NHL feed notice ── */}
+      {limitedFeed && (
+        <div className={`limited-feed-note ${OFFSEASON_NOTE_CLASSES}`}>{t('shotMapView.limitedFeed')}</div>
+      )}
 
       {/* ── Off-season notice ── */}
       {/* Says out loud which season these numbers are, so the fallback
@@ -3542,7 +3561,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       if (p.typeDescKey !== 'goal') return false;
       if (p.details?.eventOwnerTeamId === carTeam) return false;
       const sc = p.situationCode;
-      if (!sc || sc.length < 4) return false;
+      if (!isValidSituationCode(sc)) return false;
       // OPP PP = OPP has more skaters than CAR
       // situationCode: [awayGoalie][awaySkaters][homeSkaters][homeGoalie]
       const awayS = parseInt(sc[1]);
@@ -3557,7 +3576,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     // Only show "perfect PK" after OPP PP has expired — don't fire while penalty is still active
     const lastPlay = plays[plays.length - 1];
     const lastSc   = lastPlay?.situationCode;
-    const oppCurrentlyOnPP = lastSc && lastSc.length === 4 && (() => {
+    const oppCurrentlyOnPP = isValidSituationCode(lastSc) && (() => {
       const awayS = parseInt(lastSc[1]);
       const homeS = parseInt(lastSc[2]);
       return gameHome ? awayS > homeS : homeS > awayS;
@@ -3838,7 +3857,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       if (!['shot-on-goal','goal','missed-shot','blocked-shot'].includes(p.typeDescKey)) return false;
       if (p.details?.eventOwnerTeamId === carTeam) return false;
       const sc = p.situationCode;
-      if (!sc || sc.length < 4) return false;
+      if (!isValidSituationCode(sc)) return false;
       const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
       const awayG = sc[0] === '1',   homeG = sc[3] === '1';
       const carS  = gameHome ? homeS : awayS;
