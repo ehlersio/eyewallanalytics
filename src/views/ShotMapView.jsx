@@ -6,7 +6,7 @@ import {
   getRecentGames, getPlayoffGames, getScheduleForSeason, extractShotEvents,
   getGameLanding, attachGoalVideos,
   getCarScore, getOppScore, getOpponent, isHomeGame, isCompleted,
-  getTeamStats, getTeamPlayoffStats, formatGameDate, getRoster, buildPlayerMap,
+  getTeamStats, getTeamPlayoffStats, getTeamSelectionTotals, formatGameDate, getRoster, buildPlayerMap,
   bustLiveGameCache, GAME_TYPE,
 } from '../utils/nhlApi';
 import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON, teamTextColor } from '../utils/teamConfig';
@@ -18,7 +18,7 @@ import GoalReplay from '../components/GoalReplay';
 import { goalReplayTarget } from '../utils/goalReplayTarget';
 import { GoalPopup, HatTrickPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
-import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getTeamSeasonData, getSpecialTeamsUnits } from '../utils/supabaseClient';
+import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getSpecialTeamsUnits } from '../utils/supabaseClient';
 import { inferPPUnit, inferPKUnit } from '../utils/ppUnits';
 import { isValidSituationCode } from '../utils/situationCode';
 import { withoutShootout, formatElapsed } from '../utils/gamePlays';
@@ -733,6 +733,23 @@ export default function ShotMapView() {
       .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate));
   }, [seasonSchedule, seasonType]);
 
+  // The season's shots cover every game type (/nhl/shots has no type
+  // filter), so "All N" for Playoffs counted the regular season's shots
+  // too -- 3,455 SOG for 19 playoff games. Kept to the games on screen.
+  const selectionShots = useMemo(() => {
+    if (!seasonShots) return seasonShots;
+    const ids = new Set(games.map(g => Number(g.id)));
+    return seasonShots.filter(s => ids.has(Number(s.gameId)));
+  }, [seasonShots, games]);
+
+  // The "All N" cards' hits, penalties, faceoff/PP/PK and GP, for exactly
+  // the season and Regular/Playoffs on screen (see getTeamSelectionTotals).
+  const selectionGameType = seasonType === 'playoffs' ? GAME_TYPE.PLAYOFFS : GAME_TYPE.REGULAR;
+  const { data: selectionTotals } = useFetch(
+    () => isGuest ? Promise.resolve(null) : getTeamSelectionTotals(team, effectiveSeason, selectionGameType),
+    [team, effectiveSeason, selectionGameType, isGuest]
+  );
+
   // Preseason has no "All N" -- nothing aggregates preseason shots -- so
   // with nothing picked it shows the newest game.
   const effectiveSelectedGameId = selectedGameId
@@ -759,7 +776,12 @@ export default function ShotMapView() {
   // back to some other game of theirs.
   const activeGame = isGuest
     ? liveGame || allGames?.find(g => g.id === guestGameId) || null
-    : liveGame || selectedGame || lastGame || games[0] || null;
+    // games[0] (the newest completed game of the season and Regular/
+    // Playoffs on screen) before lastGame (the CURRENT season's newest):
+    // with 2025-26 Playoffs picked, the score bar and Game Insights showed
+    // the 2026 preseason game instead of a playoff one. lastGame only fills
+    // in until that season's schedule has loaded.
+    : liveGame || selectedGame || games[0] || lastGame || null;
   // Tells "there is nothing to show" apart from "still fetching" -- the
   // score bar used to render both as "Loading game data…", which is what
   // made an unstarted season look like a hung app.
@@ -848,12 +870,6 @@ export default function ShotMapView() {
   // Team stats — we fetch once; we pick the right context (reg vs playoff) below
   const { data: teamStats } = useFetch(() => getTeamStats(team.abbr), [team]);
 
-  // team_seasons row for this team/season -- All-N Hits/Penalties cards
-  // (Session 82). Same 32-team response the Standings/Power Rankings tabs
-  // already fetch via getTeamSeasonData; we just pick our own team out of it
-  // rather than adding a second Worker route.
-  const { data: teamSeasonMap } = useFetch(() => getTeamSeasonData(season), [season]);
-  const teamSeasonRow = teamSeasonMap?.[team.abbr];
 
   // Playoff-specific PP% when in playoffs
   const { data: poAdv } = useFetch(
@@ -970,7 +986,7 @@ export default function ShotMapView() {
   // pbp — neither of those cases changes here.
   const rawShotEvents = (isLive || effectiveSelectedGameId || isGuest)
     ? (pbp ? extractShotEvents(pbp, team) : [])
-    : (seasonShots || []);
+    : (selectionShots || []);
 
   // Goal video (discreteClip from landing) only applies to a single selected
   // game's own events, not the "All N" season aggregate — attachGoalVideos
@@ -1023,7 +1039,7 @@ export default function ShotMapView() {
   // per-game blocked-shot counting below (`isCar ? oppBlocks++ : carBlocks++`).
   const seasonStats = useMemo(() => {
     if (!isAllN) return null;
-    const rows = seasonShots || [];
+    const rows = selectionShots || [];
     const sogTypes = new Set(['shot-on-goal', 'goal']);
     let carSog = 0, oppSog = 0, carBlocks = 0, oppBlocks = 0;
     rows.forEach(e => {
@@ -1031,7 +1047,7 @@ export default function ShotMapView() {
       else if (e.type === 'blocked-shot') { e.isCanes ? oppBlocks++ : carBlocks++; }
     });
     return { sog: { car: carSog, opp: oppSog }, blocked: { car: carBlocks, opp: oppBlocks } };
-  }, [isAllN, seasonShots]);
+  }, [isAllN, selectionShots]);
 
   const opp        = activeGame ? getOpponent(activeGame, team) : null;
   const carScore   = activeGame ? getCarScore(activeGame, team) : null;
@@ -1892,12 +1908,13 @@ export default function ShotMapView() {
     };
   }, [pbp, boxscore, gameHome]);
 
-  // "All N": season aggregate from seasonStats (SOG/Blocks) or
-  // teamSeasonRow (Hits -- Session 82, selected-team total only, no
-  // opponent side; see the Penalties card below for the same treatment).
+  // "All N": aggregate for the season and Regular/Playoffs on screen, from
+  // seasonStats (SOG/Blocks) or selectionTotals (Hits -- selected-team
+  // total only, no opponent side; see the Penalties card below for the
+  // same treatment).
   // Otherwise fall back to rightRail when no PBP available (pre-game).
   const gameSog      = isAllN ? seasonStats.sog     : pbp?.plays?.length ? liveStats.sog     : getGameStat('sog');
-  const gameHits     = isAllN ? { car: teamSeasonRow?.hits ?? null, opp: null } : pbp?.plays?.length ? liveStats.hits    : getGameStat('hits');
+  const gameHits     = isAllN ? { car: selectionTotals?.hits ?? null, opp: null } : pbp?.plays?.length ? liveStats.hits    : getGameStat('hits');
   const gameBlocked  = isAllN ? seasonStats.blocked : pbp?.plays?.length ? liveStats.blocked : getGameStat('blocked');
   const gameFaceoff  = pbp?.plays?.length ? liveStats.faceoff : getGameStat('faceoff');
 
@@ -2287,7 +2304,7 @@ export default function ShotMapView() {
           label={t('shotMapView.metrics.hits')}
           value={gameHits.car ?? '—'}
           sub={isAllN
-            ? (teamSeasonRow?.gp ? t('shotMapView.metrics.gp', { gp: teamSeasonRow.gp }) : t('shotMapView.metrics.season'))
+            ? (selectionTotals?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: selectionTotals.gamesPlayed }) : t('shotMapView.metrics.season'))
             : gameHits.opp != null ? t('shotMapView.metrics.opp', { value: gameHits.opp }) : t('shotMapView.metrics.thisGame')}
           color={!isAllN && gameHits.car > gameHits.opp ? 'green' : null}
           onClick={!isAllN && pbp ? () => setDrillKey('hits') : null}
@@ -2302,7 +2319,7 @@ export default function ShotMapView() {
         />
         {(() => {
           const pens = liveStats?.penalties;
-          const carP = isAllN ? (teamSeasonRow?.penalties ?? null) : (pens?.car ?? 0);
+          const carP = isAllN ? (selectionTotals?.penalties ?? null) : (pens?.car ?? 0);
           const oppP = isAllN ? null : (pens?.opp ?? 0);
           const color = !isAllN && carP < oppP ? 'green' : null;
           return (
@@ -2310,7 +2327,7 @@ export default function ShotMapView() {
               label={t('shotMapView.metrics.penalties')}
               value={carP ?? '—'}
               sub={isAllN
-                ? (teamSeasonRow?.gp ? t('shotMapView.metrics.gp', { gp: teamSeasonRow.gp }) : t('shotMapView.metrics.season'))
+                ? (selectionTotals?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: selectionTotals.gamesPlayed }) : t('shotMapView.metrics.season'))
                 : t('shotMapView.metrics.opp', { value: oppP ?? '—' })}
               color={color}
               onClick={!isAllN && pbp ? () => setDrillKey('penalties') : null}
@@ -2326,7 +2343,7 @@ export default function ShotMapView() {
           // endpoint (nhlApi.js fetchTeamSummaryRow) -- season-wide, so it
           // replaces the last-game-only gameFaceoff value here same as the
           // PP%/PK% cards below already do.
-          const seasonFO   = isAllN ? teamStats?.faceoffWinPct : null;
+          const seasonFO   = isAllN ? selectionTotals?.faceoffWinPct : null;
           const hasGameFO  = !isAllN && gameFaceoff.car != null;
           const hasSeasonFO = isAllN && seasonFO != null;
           return (
@@ -2338,7 +2355,7 @@ export default function ShotMapView() {
                   ? `${parsePct(seasonFO).toFixed(1)}%`
                   : '—'}
               sub={isAllN
-                ? (teamStats?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: teamStats.gamesPlayed }) : t('shotMapView.metrics.season'))
+                ? (selectionTotals?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: selectionTotals.gamesPlayed }) : t('shotMapView.metrics.season'))
                 : t('shotMapView.metrics.thisGame')}
               color={hasGameFO
                 ? (parsePct(gameFaceoff.car) > 50 ? 'green' : null)
@@ -2354,8 +2371,12 @@ export default function ShotMapView() {
           // becomes the headline value instead of a "Szn avg" footnote.
           const hasGamePP = !isAllN && gpp?.gamePPOpps > 0;
           const gamePPPct = hasGamePP ? gpp.gamePPGoals / gpp.gamePPOpps * 100 : null;
-          const avgPct    = ppPct ? (ppPct <= 1 ? (ppPct * 100).toFixed(1) : parseFloat(ppPct).toFixed(1)) : null;
-          const avgLabel  = inPlayoffs ? t('shotMapView.metrics.poAvg') : t('shotMapView.metrics.sznAvg');
+          // Live: the current season's average. Otherwise the season and
+          // Regular/Playoffs on screen -- a 2024-25 game against its own
+          // season's average, not the latest one.
+          const ppAvg     = isLive ? ppPct : selectionTotals?.powerPlayPct;
+          const avgPct    = ppAvg ? (ppAvg <= 1 ? (ppAvg * 100).toFixed(1) : parseFloat(ppAvg).toFixed(1)) : null;
+          const avgLabel  = (isLive ? inPlayoffs : seasonType === 'playoffs') ? t('shotMapView.metrics.poAvg') : t('shotMapView.metrics.sznAvg');
           return (
             <MetCard
               label={t('shotMapView.metrics.ppPct')}
@@ -2363,7 +2384,7 @@ export default function ShotMapView() {
               sub={hasGamePP
                 ? t('shotMapView.metrics.ppSub', { goals: gpp.gamePPGoals, opps: gpp.gamePPOpps, avgLabel, avgPct: avgPct ?? '—' })
                 : isAllN
-                  ? (teamStats?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: teamStats.gamesPlayed }) : avgLabel)
+                  ? (selectionTotals?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: selectionTotals.gamesPlayed }) : avgLabel)
                   : `${avgLabel}${avgPct ? ` ${avgPct}%` : ''}`}
               color={hasGamePP && avgPct && gamePPPct >= parseFloat(avgPct) ? 'green' : null}
               onClick={!isAllN && pbp ? () => setDrillKey('pp') : null}
@@ -2375,8 +2396,9 @@ export default function ShotMapView() {
           const hasGamePK = !isAllN && gpk?.gamePKOpps > 0;
           const survived  = hasGamePK ? gpk.gamePKOpps - gpk.gamePKGoalsAgainst : null;
           const gamePKPct = hasGamePK ? survived / gpk.gamePKOpps * 100 : null;
-          const avgPct    = pkPct ? (pkPct <= 1 ? (pkPct * 100).toFixed(1) : parseFloat(pkPct).toFixed(1)) : null;
-          const avgLabel  = inPlayoffs ? t('shotMapView.metrics.poAvg') : t('shotMapView.metrics.sznAvg');
+          const pkAvg     = isLive ? pkPct : selectionTotals?.penaltyKillPct;
+          const avgPct    = pkAvg ? (pkAvg <= 1 ? (pkAvg * 100).toFixed(1) : parseFloat(pkAvg).toFixed(1)) : null;
+          const avgLabel  = (isLive ? inPlayoffs : seasonType === 'playoffs') ? t('shotMapView.metrics.poAvg') : t('shotMapView.metrics.sznAvg');
           return (
             <MetCard
               label={t('shotMapView.metrics.pkPct')}
@@ -2384,7 +2406,7 @@ export default function ShotMapView() {
               sub={hasGamePK
                 ? t('shotMapView.metrics.pkSub', { survived, opps: gpk.gamePKOpps, avgLabel, avgPct: avgPct ?? '—' })
                 : isAllN
-                  ? (teamStats?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: teamStats.gamesPlayed }) : avgLabel)
+                  ? (selectionTotals?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: selectionTotals.gamesPlayed }) : avgLabel)
                   : `${avgLabel}${avgPct ? ` ${avgPct}%` : ''}`}
               color={hasGamePK && avgPct && gamePKPct >= parseFloat(avgPct) ? 'green' : null}
               onClick={!isAllN && pbp ? () => setDrillKey('pk') : null}
