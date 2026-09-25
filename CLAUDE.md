@@ -55,7 +55,7 @@ The app follows semantic versioning (MAJOR.MINOR.PATCH), one version per merged 
   - `semver:none` — doesn't ship to users: tests only, CI, docs (e.g. #355).
 - Unsure between two levels? Pick the higher one and say why in the PR description.
 - Dependabot labels its own PRs (`.github/dependabot.yml`): npm updates `semver:patch`, GitHub Actions updates `semver:none`.
-- **iOS:** when cutting an iOS build, run `npm run ios:version`. It copies `package.json`'s version into the Xcode project's `MARKETING_VERSION` and adds one to `CURRENT_PROJECT_VERSION` (App Store Connect needs a new build number for every upload). Don't hand-edit those in `project.pbxproj`. The iOS version skipping numbers between App Store releases is expected.
+- **iOS:** cut an iOS build with `npm run ios:release`: it builds the web app, `cap sync`s it into the iOS project, runs `ios:version`, and opens Xcode ready to archive. Don't archive from an Xcode that wasn't opened by it -- 1.3.0's first TestFlight attempt went out of an Xcode still on 1.1.0 (build 2) because `ios:version` had never run. `ios:version` on its own copies `package.json`'s version into the Xcode project's `MARKETING_VERSION` and adds one to `CURRENT_PROJECT_VERSION` (App Store Connect needs a new build number for every upload). Don't hand-edit those in `project.pbxproj`. The iOS version skipping numbers between App Store releases is expected.
 
 ## Live season resolution (built Session 35–36)
 
