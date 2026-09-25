@@ -12,7 +12,6 @@ import PlayerSearch from './PlayerSearch';
 
 const POLL_LIVE_MS = 10_000;      // 10s — matches ShotMapView
 const POLL_IDLE_MS = 5 * 60_000;  // 5min — no game active
-const SEASON_END   = new Date('2026-07-01');
 
 // Tailwind migration (Session 95, Phase 1) -- previously Topbar.css.
 // .topbar and .topbar-no-live are kept as literal marker strings alongside
@@ -64,7 +63,6 @@ export default function Topbar() {
   // ── Live poll ───────────────────────────────────────────────
   function scheduleNext(isLive) {
     clearInterval(intervalRef.current);
-    if (Date.now() > SEASON_END.getTime()) return;
     intervalRef.current = setInterval(checkLive, isLive ? POLL_LIVE_MS : POLL_IDLE_MS);
   }
 
@@ -139,7 +137,11 @@ export default function Topbar() {
 
   useEffect(() => {
     if (isPWHL || isAHL) return; // PWHL/AHL have no live game feed (yet, for AHL)
-    if (Date.now() > SEASON_END.getTime()) return;
+    // No end-of-season cutoff: a hardcoded `SEASON_END = 2026-07-01` here
+    // (from the first commit, never moved) switched this poll off for good
+    // on that date, so the live score chip never showed again -- not in the
+    // 2026 preseason, and it wouldn't have in the regular season either.
+    // The idle interval (5min) is cheap enough to leave running year-round.
     checkLive();
     return () => {
       clearInterval(intervalRef.current);

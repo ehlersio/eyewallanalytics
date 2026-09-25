@@ -1003,7 +1003,8 @@
       "giveaways": "Revirements",
       "takeaways": "Récupérations"
     },
-    "goalVideoTitle": "Vidéo du but de {{scorer}}"
+    "goalVideoTitle": "Vidéo du but de {{scorer}}",
+    "limitedFeed": "La LNH ne consigne que les buts et les pénalités pour ce match — ni tirs, ni mises en échec, ni mises au jeu — la patinoire et les statistiques de tirs restent donc vides."
   },
   "guestGame": {
     "viewingAs": "Du côté de {{team}}",

@@ -1003,7 +1003,8 @@
       "giveaways": "Giveaways",
       "takeaways": "Takeaways"
     },
-    "goalVideoTitle": "{{scorer}} goal video"
+    "goalVideoTitle": "{{scorer}} goal video",
+    "limitedFeed": "The NHL is only recording goals and penalties for this game — no shots, hits or faceoffs — so the rink and shot stats stay empty."
   },
   "guestGame": {
     "viewingAs": "Viewing as {{team}}",
