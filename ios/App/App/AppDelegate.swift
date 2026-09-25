@@ -7,7 +7,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Reports Live Activity push tokens natively -- including on the
+        // background launch iOS does after the poller starts one (see
+        // LiveActivityRegistrar in SceneDelegate.swift).
+        if #available(iOS 16.2, *) {
+            LiveActivityRegistrar.shared.start()
+        }
         return true
     }
 

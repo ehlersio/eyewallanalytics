@@ -79,7 +79,13 @@
       "goaliePulled": "Retrait du gardien adverse",
       "win": "Victoire",
       "loss": "Défaite"
-    }
+    },
+    "lockScreen": "Écran verrouillé",
+    "followTeamGames": "Suivre les matchs de {{team}}",
+    "followTeamGamesDesc": "Le pointage en direct s'affiche sur votre écran verrouillé dès la mise au jeu, même quand l'app est fermée.",
+    "lockScreenOn": "Activé",
+    "lockScreenTurnOn": "Activer",
+    "lockScreenTurnOff": "Désactiver"
   },
   "account": {
     "signInPrompt": "Connectez-vous pour synchroniser sur vos appareils",
@@ -752,10 +758,6 @@
     "gsaxEstimatedNote": "Estimation — le vrai GSAx nécessite des données de suivi (danger du tir selon l'emplacement)"
   },
   "shotMapView": {
-    "lockScreen": {
-      "follow": "Suivre sur l'écran verrouillé",
-      "following": "Sur l'écran verrouillé ✓ · Arrêter"
-    },
     "offseason": {
       "showingPrevious": "La saison {{current}} n'a pas commencé — voici {{fallback}}.",
       "firstGame": "Premier match le {{date}}."

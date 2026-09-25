@@ -16,6 +16,7 @@ import FaceoffIntro from './components/FaceoffIntro'
 import FaceoffLoader from './components/FaceoffLoader'
 import { applyTeamTheme, themeTeam } from './utils/applyTeamTheme';
 import { getTheme, subscribeSystemTheme } from './utils/themeConfig';
+import { syncAutoFollow } from './hooks/useLiveActivity';
 
 // Lazy-load all non-initial routes — reduces initial bundle by ~64 KiB
 const ScheduleView  = lazy(() => import('./views/ScheduleView'));
@@ -137,6 +138,11 @@ export default function App() {
     // Until the user picks a theme, follow the device's light/dark setting live.
     return subscribeSystemTheme(mode => applyTeamTheme(themeTeam(TEAM_CONFIG), mode));
   }, []); // runs once on mount; full reload on team change means this always reflects current team  
+
+  // Lock Screen auto-follow: re-send the favorite team and language with the
+  // setting on every launch, so a team switch (always a full reload) moves
+  // the poller's registration with it. No-op off the iOS app.
+  useEffect(() => { syncAutoFollow().catch(() => {}); }, []);
 
   // Show team picker on first launch (no team saved yet).
   // After selection, reload so all modules re-initialize with the chosen team.

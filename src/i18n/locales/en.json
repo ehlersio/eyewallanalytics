@@ -79,7 +79,13 @@
       "goaliePulled": "Opponent pulls goalie",
       "win": "Win",
       "loss": "Loss"
-    }
+    },
+    "lockScreen": "Lock Screen",
+    "followTeamGames": "Follow {{team}} games",
+    "followTeamGamesDesc": "The live score appears on your Lock Screen at puck drop, even when the app is closed.",
+    "lockScreenOn": "On",
+    "lockScreenTurnOn": "Turn on",
+    "lockScreenTurnOff": "Turn off"
   },
   "account": {
     "signInPrompt": "Sign in to sync across devices",
@@ -752,10 +758,6 @@
     "gsaxEstimatedNote": "Estimated — true GSAx requires tracking data (shot danger per location)"
   },
   "shotMapView": {
-    "lockScreen": {
-      "follow": "Follow on Lock Screen",
-      "following": "On Lock Screen ✓ · Stop"
-    },
     "offseason": {
       "showingPrevious": "The {{current}} season hasn't started yet — showing {{fallback}}.",
       "firstGame": "First game {{date}}."
