@@ -21,6 +21,7 @@ import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '.
 import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getTeamSeasonData, getSpecialTeamsUnits } from '../utils/supabaseClient';
 import { inferPPUnit, inferPKUnit } from '../utils/ppUnits';
 import { isValidSituationCode } from '../utils/situationCode';
+import { withoutShootout, formatElapsed } from '../utils/gamePlays';
 import InfoTip from '../components/InfoTip';
 import { MetCard } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
@@ -887,7 +888,8 @@ export default function ShotMapView() {
   // ── Publish momentum to shared store when PBP updates ───────
   useEffect(() => {
     if (!isLive || !pbp?.plays?.length) return;
-    const plays = pbp.plays;
+    const plays = withoutShootout(pbp.plays);
+    if (!plays.length) return;
     const windowSecs = WINDOW_MINS * 60;
 
     function playTimeSeconds(play) {
@@ -1232,7 +1234,7 @@ export default function ShotMapView() {
   // Build drill-down data from play-by-play
   const buildDrillDown = useCallback((statKey) => {
     if (!pbp?.plays) return;
-    const plays = pbp.plays;
+    const plays = withoutShootout(pbp.plays);
     const carId = team.teamId; // CAR team ID
     const oppId = opp?.id || null;
 
@@ -1769,7 +1771,7 @@ export default function ShotMapView() {
   // ── Live MetCard stats from PBP (updates every poll) ─────────
   // These replace rightRail.teamGameStats which only fetches once
   const liveStats = useMemo(() => {
-    const plays  = pbp?.plays || [];
+    const plays  = withoutShootout(pbp?.plays);
     const carId  = gameHome ? pbp?.homeTeam?.id : pbp?.awayTeam?.id;
 
     let carSOG = 0, oppSOG = 0;
@@ -1963,7 +1965,7 @@ export default function ShotMapView() {
     const playerMap = buildPlayerMap(pbp);
     const pName = id => { const n = playerMap[String(id)]; return n?.trim() || null; };
     const byPlayer = {};
-    pbp.plays
+    withoutShootout(pbp.plays)
       .filter(p => p.typeDescKey === 'goal' && p.details?.eventOwnerTeamId === team.teamId)
       .forEach(p => {
         const d = p.details || {};
@@ -3491,9 +3493,17 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
   const { t } = useTranslation();
   const { team } = useGameTeam();
   const insights = useMemo(() => {
-    const plays   = pbp?.plays || [];
+    const plays   = withoutShootout(pbp?.plays);
     const carTeam = gameHome ? pbp?.homeTeam?.id : pbp?.awayTeam?.id;
     const results = [];
+    // Insights built on shots, saves or faceoffs need a feed that tracks
+    // them. Some games' feeds carry only goals and penalties (see
+    // limitedFeed in ShotMapView) -- there every goal would count as the
+    // only "shot": CAR-NSH 2026-09-24 read "CAR won 6-5 and outshot NSH
+    // 6-5" and "only 1 shot attempts across 2 penalties".
+    const hasShotTracking = plays.some(p =>
+      ['shot-on-goal', 'missed-shot', 'blocked-shot', 'faceoff'].includes(p.typeDescKey));
+    const pushShot = (insight) => { if (hasShotTracking) results.push(insight); };
 
     // ── Shot advantage by period ──────────────────────────────
     const periodShots = {};
@@ -3506,7 +3516,12 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     });
 
     // During live: show current period. Post-game: show best/worst period
-    const currentPeriod = pbp?.periodDescriptor?.number;
+    // A shootout is period 5 in the feed but no period of play: in one,
+    // the game's last period is the OT before it. Without this the
+    // scoring drought counted the shootout ("hasn't scored in 3 periods"
+    // after a P2 goal, P3 and OT).
+    const pd = pbp?.periodDescriptor;
+    const currentPeriod = pd?.periodType === 'SO' ? pd.number - 1 : pd?.number;
     const periodsToCheck = isLive && currentPeriod
       ? [currentPeriod]
       : Object.keys(periodShots).map(Number);
@@ -3518,7 +3533,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       const periodLabel = per <= 3 ? `P${per}` : isPlayoff ? (per === 4 ? 'OT' : `${per - 3}OT`) : per === 4 ? 'OT' : 'SO';
       const threshold = isLive ? 4 : 6;
       if (Math.abs(diff) >= threshold) {
-        results.push({
+        pushShot({
           icon: diff > 0 ? '🎯' : '😬',
           text: diff > 0
             ? t('shotMapView.liveInsights.periodDominanceFor', { abbr: team.abbr, period: periodLabel, car: ps.car, opp: ps.opp })
@@ -3536,8 +3551,8 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       if (recentAttempts.length >= 6) {
         const carRecent = recentAttempts.filter(p => p.details?.eventOwnerTeamId === carTeam).length;
         const oppRecent = recentAttempts.length - carRecent;
-        if (carRecent >= 7) results.push({ icon: '🌀', text: t('shotMapView.liveInsights.onARoll', { abbr: team.abbr, n: carRecent, total: recentAttempts.length }), type: 'good' });
-        else if (oppRecent >= 7) results.push({ icon: '🧱', text: t('shotMapView.liveInsights.oppPressing', { oppAbbr, n: oppRecent, total: recentAttempts.length }), type: 'warn' });
+        if (carRecent >= 7) pushShot({ icon: '🌀', text: t('shotMapView.liveInsights.onARoll', { abbr: team.abbr, n: carRecent, total: recentAttempts.length }), type: 'good' });
+        else if (oppRecent >= 7) pushShot({ icon: '🧱', text: t('shotMapView.liveInsights.oppPressing', { oppAbbr, n: oppRecent, total: recentAttempts.length }), type: 'warn' });
       }
     }
 
@@ -3687,19 +3702,19 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       if (attemptsHit && sogHit) {
         // Both conditions met for the same period — one combined line
         // instead of two near-duplicate rows eating two of the six slots.
-        results.push({
+        pushShot({
           icon: '🔒',
           text: t('shotMapView.liveInsights.limitedAttemptsAndSog', { abbr: team.abbr, oppAbbr, attempts: pa.opp, sog: ps.opp, period: periodLabel }),
           type: 'good',
         });
       } else if (attemptsHit) {
-        results.push({
+        pushShot({
           icon: '🔒',
           text: t('shotMapView.liveInsights.limitedAttempts', { abbr: team.abbr, oppAbbr, attempts: pa.opp, period: periodLabel }),
           type: 'good',
         });
       } else if (sogHit) {
-        results.push({
+        pushShot({
           icon: '🧱',
           text: t('shotMapView.liveInsights.limitedSog', { abbr: team.abbr, oppAbbr, sog: ps.opp, period: periodLabel }),
           type: 'good',
@@ -3762,12 +3777,17 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     if (firstGoal) {
       const carScoredFirst = firstGoal.details?.eventOwnerTeamId === carTeam;
       const gl = gameLogInsights;
+      // Both are the watched team's own record: when it scored first, or
+      // when the other team did. The second used to read as the opponent's
+      // ("NSH wins 100% of games when scoring first") -- the number was
+      // CAR's win rate after trailing first, credited to NSH.
       const winPct = carScoredFirst ? gl?.scoredFirstWinPct : gl?.didntScoreFirstWinPct;
-      const gamesN = carScoredFirst ? gl?.scoredFirstGames : null;
-      const teamStat = winPct != null && gamesN != null
-        ? t('shotMapView.liveInsights.scoredFirstWinPctFor', { abbr: team.abbr, pct: winPct, n: gamesN })
-        : winPct != null
-        ? t('shotMapView.liveInsights.scoredFirstWinPctAgainst', { oppAbbr, pct: winPct })
+      const gamesN = carScoredFirst ? gl?.scoredFirstGames : gl?.didntScoreFirstGames;
+      // A percentage over one or two games says nothing (it read "100% ...
+      // (1 games)" in the first week of the preseason).
+      const teamStat = winPct != null && gamesN >= 3
+        ? t(carScoredFirst ? 'shotMapView.liveInsights.scoredFirstWinPctFor' : 'shotMapView.liveInsights.oppScoredFirstWinPct',
+          { abbr: team.abbr, pct: winPct, n: gamesN })
         : carScoredFirst
         ? t('shotMapView.liveInsights.struckFirst', { abbr: team.abbr })
         : t('shotMapView.liveInsights.oppStruckFirst', { oppAbbr });
@@ -3797,7 +3817,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
         const scorer2 = curr.details?.scoringPlayerId;
         results.push({
           icon: '🔥',
-          text: t('shotMapView.liveInsights.backToBackGoals', { abbr: team.abbr, gap, samePlayerNote: scorer1 && scorer2 && scorer1 === scorer2 ? t('shotMapView.liveInsights.backToBackGoalsSamePlayerNote') : '' }),
+          text: t('shotMapView.liveInsights.backToBackGoals', { abbr: team.abbr, gap: formatElapsed(gap), samePlayerNote: scorer1 && scorer2 && scorer1 === scorer2 ? t('shotMapView.liveInsights.backToBackGoalsSamePlayerNote') : '' }),
           type: 'good',
         });
         break; // only report the first back-to-back
@@ -3816,7 +3836,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       consecutiveSaves++;
     }
     if (consecutiveSaves >= 15) {
-      results.push({
+      pushShot({
         icon: '🧤',
         text: t('shotMapView.liveInsights.consecutiveSaves', { abbr: team.abbr, n: consecutiveSaves }),
         type: 'good',
@@ -3842,7 +3862,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       });
       if (oppAttempts.length >= 6 && hdAttempts.length === 0) {
         const pLabel = lastCompletedPer <= 3 ? `P${lastCompletedPer}` : 'OT';
-        results.push({
+        pushShot({
           icon: '🔒',
           text: t('shotMapView.liveInsights.highDangerSuppression', { abbr: team.abbr, oppAbbr, period: pLabel }),
           type: 'good',
@@ -3869,7 +3889,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       p.typeDescKey === 'penalty' && p.details?.eventOwnerTeamId === carTeam
     ).length;
     if (totalCarPens >= 2 && oppPPAttempts.length <= totalCarPens * 3) {
-      results.push({
+      pushShot({
         icon: '🛡️',
         text: t('shotMapView.liveInsights.pkLimitingChances', { n: oppPPAttempts.length, penalties: totalCarPens }),
         type: 'good',
@@ -3906,10 +3926,12 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       const carTot = Object.values(periodShots).reduce((s, p) => s + p.car, 0);
       const oppTot = Object.values(periodShots).reduce((s, p) => s + p.opp, 0);
       if (carTot !== oppTot) {
-        results.push({
+        pushShot({
           icon: won ? '✅' : '📉',
           text: won
-            ? t('shotMapView.liveInsights.finalWinOutshot', { abbr: team.abbr, car: carScore, opp: oppScore, oppAbbr, carTot, oppTot })
+            ? carTot > oppTot
+              ? t('shotMapView.liveInsights.finalWinOutshot', { abbr: team.abbr, car: carScore, opp: oppScore, oppAbbr, carTot, oppTot })
+              : t('shotMapView.liveInsights.finalWinDespiteOutshot', { abbr: team.abbr, car: carScore, opp: oppScore, carTot, oppTot })
             : t('shotMapView.liveInsights.finalLoss', { abbr: team.abbr, car: carScore, opp: oppScore, clause: carTot > oppTot
                 ? t('shotMapView.liveInsights.outshootingClause', { oppAbbr, carTot, oppTot })
                 : t('shotMapView.liveInsights.outshotClause', { carTot, oppTot }) }),
@@ -4000,7 +4022,7 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
   const { t } = useTranslation();
   const { team } = useGameTeam();
   const [window, setWindow] = useState(5);
-  const plays = pbp?.plays || [];
+  const plays = withoutShootout(pbp?.plays);
   // zoneCode: O = offensive, N = neutral, D = defensive (from the event owner's perspective)
   function eventScore(play, teamId) {
     const d    = play.details || {};
@@ -4172,7 +4194,7 @@ function MomentumCard({ pbp, _gameHome, _isLive, oppAbbr }) {
 function AdvancedGamePanel({ pbp, _gameHome, _isLive, _boxscore }) {
   const { t } = useTranslation();
   const { team } = useGameTeam();
-  const plays = pbp?.plays || [];
+  const plays = withoutShootout(pbp?.plays);
   const sa    = computeShotAttempts(plays, team.teamId);
   const pdo   = computePDO(plays, team.teamId);
   const luck  = computePuckLuck(plays, team.teamId);

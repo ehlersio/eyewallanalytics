@@ -922,10 +922,9 @@
       "scorelessSoFar": "{{abbr}} n'a pas encore marqué — toujours à la recherche du premier but",
       "scoringDrought": "{{abbr}} n'a pas marqué depuis {{n}} périodes — dernier but en {{period}}",
       "scoredFirstWinPctFor": "{{abbr}} gagne {{pct}}% de ses matchs quand elle marque en premier cette saison ({{n}} matchs)",
-      "scoredFirstWinPctAgainst": "{{oppAbbr}} gagne {{pct}}% de ses matchs quand elle marque en premier cette saison",
       "struckFirst": "{{abbr}} a marqué en premier — les équipes qui marquent en premier gagnent environ 65% des matchs de la LNH",
       "oppStruckFirst": "{{oppAbbr}} a marqué en premier",
-      "backToBackGoals": "{{abbr}} a marqué deux fois en {{gap}}s — deux buts rapides{{samePlayerNote}}",
+      "backToBackGoals": "{{abbr}} a marqué deux fois en {{gap}} — deux buts rapides{{samePlayerNote}}",
       "backToBackGoalsSamePlayerNote": " du même joueur !",
       "consecutiveSaves": "La gardienne de {{abbr}} a stoppé {{n}} tirs consécutifs",
       "highDangerSuppression": "{{abbr}} a confiné {{oppAbbr}} au périmètre en {{period}} — aucune tentative à haut danger",
@@ -939,7 +938,9 @@
       "outshootingClause": "avoir surclassé {{oppAbbr}} {{carTot}}–{{oppTot}} au chapitre des tirs",
       "outshotClause": "avoir été surclassée {{oppTot}}–{{carTot}} au chapitre des tirs",
       "oppPulledGoalie": "{{oppAbbr}} a retiré sa gardienne",
-      "carPulledGoalie": "{{abbr}} a retiré sa gardienne"
+      "carPulledGoalie": "{{abbr}} a retiré sa gardienne",
+      "finalWinDespiteOutshot": "{{abbr}} a gagné {{car}}–{{opp}} malgré {{oppTot}} tirs contre {{carTot}}",
+      "oppScoredFirstWinPct": "{{abbr}} gagne {{pct}}% de ses matchs quand l'adversaire marque en premier cette saison ({{n}} matchs)"
     },
     "liveInsightsCard": {
       "liveHeader": "🔴 Aperçus en direct",

@@ -922,10 +922,9 @@
       "scorelessSoFar": "{{abbr}} hasn't scored yet — looking for the first one",
       "scoringDrought": "{{abbr}} hasn't scored in {{n}} periods — last goal in {{period}}",
       "scoredFirstWinPctFor": "{{abbr}} wins {{pct}}% of games when scoring first this season ({{n}} games)",
-      "scoredFirstWinPctAgainst": "{{oppAbbr}} wins {{pct}}% of games when scoring first this season",
       "struckFirst": "{{abbr}} struck first — teams that score first win ~65% of NHL games",
       "oppStruckFirst": "{{oppAbbr}} struck first",
-      "backToBackGoals": "{{abbr}} scored twice in {{gap}}s — two quick goals{{samePlayerNote}}",
+      "backToBackGoals": "{{abbr}} scored twice in {{gap}} — two quick goals{{samePlayerNote}}",
       "backToBackGoalsSamePlayerNote": " from the same player!",
       "consecutiveSaves": "{{abbr}} goalie has stopped {{n}} straight shots",
       "highDangerSuppression": "{{abbr}} kept {{oppAbbr}} to the perimeter in {{period}} — zero high danger attempts",
@@ -939,7 +938,9 @@
       "outshootingClause": "outshooting {{oppAbbr}} {{carTot}}–{{oppTot}}",
       "outshotClause": "being outshot {{oppTot}}–{{carTot}}",
       "oppPulledGoalie": "{{oppAbbr}} has pulled their goalie",
-      "carPulledGoalie": "{{abbr}} goalie pulled"
+      "carPulledGoalie": "{{abbr}} goalie pulled",
+      "finalWinDespiteOutshot": "{{abbr}} won {{car}}–{{opp}} despite being outshot {{oppTot}}–{{carTot}}",
+      "oppScoredFirstWinPct": "{{abbr}} wins {{pct}}% of games when the opponent scores first this season ({{n}} games)"
     },
     "liveInsightsCard": {
       "liveHeader": "🔴 Live Insights",

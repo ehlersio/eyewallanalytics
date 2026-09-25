@@ -404,6 +404,7 @@ export async function getGameLogInsights(oppAbbr, season = currentSeason(), team
     scoredFirstWinPct,
     scoredFirstGames:  scoredFirst.length,
     didntScoreFirstWinPct,
+    didntScoreFirstGames: didntScoreFirst.length,
     vsOppRecord,
     seriesRecord,
   };

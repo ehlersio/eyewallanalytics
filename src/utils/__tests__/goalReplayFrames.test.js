@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from 'vitest'
 import {
-  replayWindow, orient, sampleAt, puckTrail, dotColours, inkFor, NEUTRAL_DOT,
+  replayWindow, orient, sampleAt, puckTrail, cameraFocus, dotColours, inkFor, NEUTRAL_DOT,
   LEAD_FRAMES, TAIL_FRAMES, TRAIL_FRAMES,
 } from '../goalReplayFrames'
 
@@ -95,5 +95,25 @@ describe('inkFor', () => {
     expect(inkFor('#ffb81c')).toBe('#0c1120')
     expect(inkFor('#041e42')).toBe('#ffffff')
     expect(inkFor('var(--text)')).toBe('#0c1120')
+  })
+})
+
+describe('cameraFocus', () => {
+  it('moves continuously between frames rather than in whole-frame steps', () => {
+    const r = replay()
+    const a = cameraFocus(r, 60)
+    const b = cameraFocus(r, 60.5)
+    const c = cameraFocus(r, 61)
+    expect(b).toBeGreaterThan(a)
+    expect(b).toBeLessThan(c)
+    expect(Math.abs(cameraFocus(r, 60.01) - a)).toBeLessThan(0.05)
+  })
+
+  it('weights the puck’s newest positions most', () => {
+    const r = replay()
+    const newest = sampleAt(r, 60).puck[0]
+    const oldest = sampleAt(r, 45).puck[0]
+    const plain = (newest + oldest) / 2
+    expect(cameraFocus(r, 60)).toBeGreaterThan(plain)
   })
 })

@@ -8,15 +8,15 @@
 // RinkMarkings, 600 x 255 units = 3 per foot). A whole rink across a phone
 // is ~1.75 px per foot -- too small for sweater numbers -- so the view is a
 // VIEW_FT window that pans with the puck. The camera is a pure function of
-// the frame (the puck's average position over the last CAMERA_FRAMES), so
-// scrubbing back and forth never jumps. Every replay is turned so the goal
+// the frame (goalReplayFrames.cameraFocus: the puck's recent path, taken
+// between frames too), so it pans smoothly and scrubbing never jumps. Every replay is turned so the goal
 // is in the right-hand net (goalReplayFrames.orient).
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RinkMarkings, W, H } from 'react-hockey-rink';
 import { teamTextColor } from '../utils/teamConfig';
-import { replayWindow, sampleAt, puckTrail, dotColours, inkFor, orient } from '../utils/goalReplayFrames';
+import { replayWindow, sampleAt, puckTrail, cameraFocus, dotColours, inkFor } from '../utils/goalReplayFrames';
 
 const FT = W / 200; // svg units per foot
 // The rink's ice is light in both themes, so the puck, its trail and the
@@ -45,12 +45,7 @@ function prefersReducedMotion() {
 
 // Left edge of the view in feet, following the puck.
 function cameraLeft(replay, frame) {
-  let sum = 0, n = 0;
-  for (let i = Math.max(0, Math.floor(frame) - CAMERA_FRAMES); i <= Math.floor(frame); i++) {
-    const p = replay.frames[i]?.puck;
-    if (p) { sum += orient(p, replay.attacksRight)[0]; n += 1; }
-  }
-  const focus = n ? sum / n : 60;
+  const focus = cameraFocus(replay, frame, CAMERA_FRAMES) ?? 60;
   return Math.min(100 - VIEW_FT, Math.max(-100, focus - VIEW_FT * 0.55));
 }
 
@@ -93,7 +88,9 @@ export default function GoalTrackingReplay({ replay, scorerName, autoPlay = true
   const trail = puckTrail(replay, frame);
   const left = cameraLeft(replay, frame);
   const isGoal = frame >= replay.goalFrame;
-  const r = 2 * FT;
+  // Player dot and number, puck: sized to read on a phone (2026-09 -- the
+  // first sizes, a 2 ft dot and a 0.9 ft puck, were hard to follow).
+  const r = 2.6 * FT;
 
   const togglePlay = () => {
     if (!playing && frameRef.current >= end) setFrame(start);
@@ -120,7 +117,7 @@ export default function GoalTrackingReplay({ replay, scorerName, autoPlay = true
             <circle
               key={`t${i}`}
               cx={toX(x)} cy={toY(y)}
-              r={0.4 * FT + (0.6 * FT * i) / trail.length}
+              r={0.5 * FT + (0.8 * FT * i) / trail.length}
               fill={INK}
               opacity={0.1 + (0.45 * i) / trail.length}
             />
@@ -133,12 +130,12 @@ export default function GoalTrackingReplay({ replay, scorerName, autoPlay = true
             return (
               <g key={id} className="goal-tracking-player" transform={`translate(${toX(x)} ${toY(y)})`}>
                 {info.playerId === replay.scorerId && (
-                  <circle r={r + 0.9 * FT} fill="none" stroke={INK} strokeWidth={0.5 * FT} />
+                  <circle r={r + 1 * FT} fill="none" stroke={INK} strokeWidth={0.6 * FT} />
                 )}
                 <circle r={r} fill={fill} />
                 <text
                   textAnchor="middle" dominantBaseline="central"
-                  fontSize={2.2 * FT} fontWeight={800}
+                  fontSize={2.8 * FT} fontWeight={800}
                   fill={inkFor(fill)}
                 >
                   {info.number ?? ''}
@@ -150,7 +147,7 @@ export default function GoalTrackingReplay({ replay, scorerName, autoPlay = true
             <circle
               className="goal-tracking-puck"
               cx={toX(puck[0])} cy={toY(puck[1])}
-              r={0.9 * FT} fill={INK} stroke="#ffffff" strokeWidth={0.3 * FT}
+              r={1.3 * FT} fill={INK} stroke="#ffffff" strokeWidth={0.4 * FT}
             />
           )}
         </svg>

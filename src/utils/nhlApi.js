@@ -3,6 +3,7 @@ import { NATIVE_ORIGIN } from './nativeOrigin';
 import { formatDate } from './formatters.js'
 import { isStandingsStale } from './standingsUtils.js'
 import { createLiveGameHold } from './liveGameHold.js'
+import { isShootoutPlay } from './gamePlays.js'
 
 // NHL API utility
 // Proxy routes (configured in vite.config.js):
@@ -1262,8 +1263,9 @@ export function extractShotEvents(playByPlay, team = TEAM_CONFIG) {
   // Name map lives in the same API response — no extra fetch needed
   const playerMap = buildPlayerMap(playByPlay);
 
+  // Shootout attempts aren't shots -- see gamePlays.js.
   return playByPlay.plays
-    .filter(p => shotTypes.has(p.typeDescKey) && p.details?.xCoord != null)
+    .filter(p => shotTypes.has(p.typeDescKey) && p.details?.xCoord != null && !isShootoutPlay(p))
     .map(p => {
       const d = p.details;
       // Goals use scoringPlayerId; all other shots use shootingPlayerId
