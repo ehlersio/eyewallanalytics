@@ -66,3 +66,16 @@ describe('getLiveGame', () => {
     expect(await getLiveGame(TEAM_CONFIG)).toBeNull()
   })
 })
+
+describe('extractShotEvents', () => {
+  it('leaves shootout attempts off the shot map', () => {
+    const pbp = {
+      rosterSpots: [],
+      plays: [
+        { eventId: 1, typeDescKey: 'goal', periodDescriptor: { number: 3, periodType: 'REG' }, details: { xCoord: 80, yCoord: 0, eventOwnerTeamId: BOS.teamId } },
+        { eventId: 2, typeDescKey: 'goal', periodDescriptor: { number: 5, periodType: 'SO' }, details: { xCoord: 80, yCoord: 0, eventOwnerTeamId: BOS.teamId } },
+      ],
+    }
+    expect(extractShotEvents(pbp, BOS).map(e => e.id)).toEqual([1])
+  })
+})
