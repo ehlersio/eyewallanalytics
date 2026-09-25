@@ -798,9 +798,10 @@ export default function ShotMapView() {
   );
   const pbp = devGame?.pbp ?? pbpReal;
 
-  // iOS app only: follow this live game on the lock screen (Live Activity).
-  // The favorite's games only -- the lock screen follows the user's team.
-  const lockScreen = useLiveActivity(isLive && !isGuest ? liveGame : null, pbp, team.abbr);
+  // iOS app only: with "Follow my team's games" on (Settings), starts this
+  // live game's Lock Screen activity if the server's start hasn't. The
+  // favorite's games only -- the lock screen follows the user's team.
+  useLiveActivity(isLive && !isGuest ? liveGame : null, pbp, team.abbr);
 
   // Landing data — source of goal video clips (discreteClip), merged into
   // shotEvents below so the shot map's goal-dot popup can show them.
@@ -2232,18 +2233,6 @@ export default function ShotMapView() {
       )}
 
       {/* ── Live rink + event ticker (Session 100) — live games only ── */}
-      {isLive && lockScreen.supported && (
-        <div className="flex justify-end mb-2">
-          <button
-            className={`lock-screen-follow text-[11px] font-semibold py-1 px-3 rounded-[20px] ${lockScreen.following
-              ? 'bg-[var(--red-dim)] text-[color:var(--red-bright)]'
-              : 'bg-[var(--btn-fill)] text-[color:var(--text-muted)] hover:bg-[var(--btn-fill-hover)]'}`}
-            onClick={() => (lockScreen.following ? lockScreen.unfollow() : lockScreen.follow()).catch(() => {})}>
-            {lockScreen.following ? t('shotMapView.lockScreen.following') : t('shotMapView.lockScreen.follow')}
-          </button>
-        </div>
-      )}
-
       {isLive && pbp?.plays?.length > 0 && (
         <div className={LIVE_RINK_ROW_CLASSES}>
           <LiveEventRink

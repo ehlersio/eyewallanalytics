@@ -14,6 +14,7 @@ import { upsertLocale } from '../utils/localeSync';
 import { applyTeamTheme, themeTeam } from '../utils/applyTeamTheme';
 import TeamLogo from '../components/TeamLogo';
 import AccountSection from './AccountSection';
+import { autoFollowSupported, getAutoFollow, setAutoFollow, syncAutoFollow } from '../hooks/useLiveActivity';
 
 // Tailwind migration (Session 95, Phase 1) -- previously NotificationBell.css.
 // notif-summary-chip* classes below were previously defined in
@@ -129,6 +130,32 @@ export default function NotificationBell() {
   const [theme, setThemeState]  = useState(getTheme);
   const [locale, setLocaleState] = useState(getLocale);
   const [prefs, setPrefsState]  = useState(() => loadPrefs());
+  // "Follow my team's games" on the Lock Screen: null until the native
+  // side answers, and the row only exists where it can work (iOS 17.2+
+  // app, Live Activities allowed, NHL favorite -- see useLiveActivity.js).
+  const [autoFollow, setAutoFollowState] = useState(null);
+  const [autoFollowBusy, setAutoFollowBusy] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!(await autoFollowSupported())) return;
+      const enabled = await getAutoFollow();
+      if (!cancelled) setAutoFollowState(enabled);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  const handleAutoFollowToggle = async () => {
+    const next = !autoFollow;
+    setAutoFollowBusy(true);
+    try {
+      await setAutoFollow(next);
+      setAutoFollowState(next);
+    } catch {
+      // Left as it was; the native side refused.
+    } finally {
+      setAutoFollowBusy(false);
+    }
+  };
 
   const { supported, permission, subscribed, subscribe, unsubscribe, updatePrefs, loading, error } =
     usePushNotifications();
@@ -178,6 +205,8 @@ export default function NotificationBell() {
     setLocale(next);
     setLocaleState(next);
     if (user?.id) upsertLocale(user.id, next);
+    // The Lock Screen's "puck drop" alert is sent in this language.
+    syncAutoFollow().catch(() => {});
   };
 
   // AHL/ECHL have no live-game-tracking push backend yet -- this key is
@@ -266,6 +295,23 @@ export default function NotificationBell() {
               </button>
             </div>
           </div>
+
+          {/* Lock Screen auto-follow */}
+          {autoFollow !== null && (
+            <div className={MY_TEAM_CLASSES}>
+              <div className={EVENT_LABEL_CLASSES}>🔒 {t('settings.lockScreen')}</div>
+              <div className={TEAM_ROW_CLASSES}>
+                <span className={TEAM_NAME_CLASSES}>
+                  {t('settings.followTeamGames', { team: TEAM_CONFIG.abbr })}{autoFollow ? ` · ${t('settings.lockScreenOn')}` : ''}
+                </span>
+                <button className={`lock-screen-auto-follow ${CHANGE_TEAM_BTN_CLASSES}`} onClick={handleAutoFollowToggle}
+                  disabled={autoFollowBusy} aria-pressed={autoFollow}>
+                  {autoFollow ? t('settings.lockScreenTurnOff') : t('settings.lockScreenTurnOn')}
+                </button>
+              </div>
+              <p className={DESC_CLASSES}>{t('settings.followTeamGamesDesc')}</p>
+            </div>
+          )}
 
           {/* Push notifications */}
           {!supported && (
