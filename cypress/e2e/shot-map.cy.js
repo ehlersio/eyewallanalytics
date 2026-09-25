@@ -378,6 +378,46 @@ describe('Shot Map — season/game history selector', () => {
   })
 })
 
+// ── "All N" follows the season and Regular/Playoffs on screen ─────────────
+// With 2025-26 Playoffs picked, "All 19" used to show the current season's
+// newest game (2026 preseason) in the score bar and Game Insights, the
+// whole season's shots (regular season + playoffs, 3,455 SOG), and
+// regular-season "82 GP" hits/penalties/FO/PP/PK. Real data, no stubs:
+// CAR's finished 2025-26 playoffs don't change.
+describe('Shot Map — "All" follows the selected season and game type', () => {
+  const card = label => cy.contains('div', new RegExp(`^${label}$`, 'i'), { timeout: DATA_TIMEOUT }).parent()
+
+  beforeEach(function () {
+    cy.visit('/')
+    cy.get('.season-type-toggle', { timeout: DATA_TIMEOUT }).then($toggle => {
+      if ($toggle.hasClass('chip-disabled')) {
+        cy.log('Skipping — a real live game is in progress, selector is disabled')
+        this.skip()
+      }
+    })
+    cy.contains('2025-26').click()
+    cy.contains('Playoffs').click()
+    cy.contains(/^All 19$/, { timeout: DATA_TIMEOUT }).should('exist')
+  })
+
+  it('shows a 2025-26 playoff game in the score bar, not the latest game of the current season', () => {
+    cy.get('.score-card', { timeout: DATA_TIMEOUT }).should('contain.text', 'Playoff').and('not.contain.text', 'Preseason ·')
+  })
+
+  it('counts only the 19 playoff games on every card', () => {
+    for (const label of ['Hits', 'Penalties', 'Faceoff %', 'PP %', 'PK %']) {
+      card(label).should('contain.text', '19 GP')
+    }
+    card('PP %').should('contain.text', '17.3%')
+    card('PK %').should('contain.text', '91.5%')
+    // Playoff shots only -- the full season's were 3,455.
+    card('Shots on Goal').invoke('text').then(text => {
+      const sog = Number(text.match(/(\d[\d,]*)/)[1].replace(/,/g, ''))
+      expect(sog).to.be.within(400, 900)
+    })
+  })
+})
+
 // ── Special teams units ───────────────────────────────────────────────────
 // The PP/PK unit chips and the per-opportunity PP1/PP2 badges render from
 // the `special_teams_units` Supabase table, via the Worker's /special-teams

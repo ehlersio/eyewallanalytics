@@ -1646,6 +1646,39 @@ async function _getTeamHomeSplit(gameTypeId = 2, season = TEAM_CONFIG.season) {
   };
 }
 
+// One team's totals for exactly one season and game type -- the shot map's
+// "All N" cards, which describe whatever season and Regular/Playoffs is on
+// screen. They used to mix sources that didn't follow the selection:
+// hits/penalties from the regular-season team_seasons row, faceoff/PP/PK
+// from getTeamStats() (always the latest regular season), so 2025-26
+// Playoffs showed "82 GP" regular-season numbers. Three NHL team reports,
+// each filtered to the franchise, season and gameTypeId. null when the
+// NHL has nothing for that combination (e.g. a team that missed the
+// playoffs).
+export async function getTeamSelectionTotals(team, season, gameTypeId) {
+  return cached(`selectionTotals:${team.abbr}:${season}:${gameTypeId}`, async () => {
+    const exp = encodeURIComponent(
+      `franchiseId=${team.franchiseId} and gameTypeId=${gameTypeId} and seasonId<=${season} and seasonId>=${season}`
+    );
+    // Each report only accepts a sort field it actually has.
+    const report = (name, sort) =>
+      nhlFetch(`/nhl-stats/stats/rest/en/team/${name}?isAggregate=false&isGame=false&sort=${sort}&limit=1&cayenneExp=${exp}`)
+        .then(d => d?.data?.[0] || null);
+    const [summary, realtime, penalties] = await Promise.all([
+      report('summary', 'wins'), report('realtime', 'hits'), report('penalties', 'penalties'),
+    ]);
+    if (!summary) return null;
+    return {
+      gamesPlayed:    summary.gamesPlayed ?? null,
+      faceoffWinPct:  summary.faceoffWinPct ?? null,
+      powerPlayPct:   summary.powerPlayPct ?? null,
+      penaltyKillPct: summary.penaltyKillPct ?? null,
+      hits:           realtime?.hits ?? null,
+      penalties:      penalties?.penalties ?? null,
+    };
+  }, TTL.ADVANCED);
+}
+
 // Playoff team stats (same endpoints with gameTypeId=3)
 export async function getTeamPlayoffStats(team = TEAM_CONFIG) {
   const [corsi, scoreState, pp, pk] = await Promise.all([
