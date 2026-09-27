@@ -14,6 +14,7 @@
 
 import { useState, useCallback } from 'react';
 import { SHARE_FONTS, SHARE_W, SHARE_H } from '../utils/shareCardTheme';
+import { fitShareAiBlocks } from '../components/ShareCardFrame';
 
 // The card's Barlow faces as inline @font-face rules. html-to-image renders
 // through an SVG <foreignObject>, which can't see the page's fonts, so the
@@ -45,6 +46,8 @@ export async function renderToPng(node) {
   }
   // A font fetch failure still exports the card, just in the fallback font.
   const fontEmbedCSS = await shareFontEmbedCSS().catch(() => '');
+  // The AI blurb's line count depends on how the share fonts wrap it.
+  fitShareAiBlocks(node);
   return toPng(node, {
     width:  SHARE_W,
     height: SHARE_H,

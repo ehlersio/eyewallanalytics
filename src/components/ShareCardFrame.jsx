@@ -8,6 +8,7 @@
 //
 // Rendered off-screen at 1080x1350 and captured by useShareCard.
 
+import { useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SHARE, SHARE_W, SHARE_H, FONT_DISPLAY, FONT_LABEL, FONT_BODY } from '../utils/shareCardTheme';
 
@@ -65,7 +66,7 @@ export default function ShareCardFrame({
         )}
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', padding: `30px ${PAD}px 20px`, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div data-share-content style={{ flex: 1, minHeight: 0, overflow: 'hidden', padding: `30px ${PAD}px 20px`, display: 'flex', flexDirection: 'column', gap: 20 }}>
         {children}
       </div>
 
@@ -106,20 +107,50 @@ export function ShareRow({ accent = SHARE.bg3, children, style }) {
   );
 }
 
-// "⚡ EyeWall AI" block, clamped so a long narrative can't push the rest
-// of the card out of the frame.
-export function ShareAiBlock({ text, lines = 5, style }) {
+// Grows each fitting "⚡ EyeWall AI" block in `root` one line at a time,
+// from its `lines` up to its `maxLines`, while the card's content still
+// fits the frame. Run on render and again by renderToPng once the share
+// fonts have loaded, since they change how the text wraps.
+export function fitShareAiBlocks(root) {
+  for (const el of root?.querySelectorAll('[data-share-ai-max]') || []) {
+    const box = el.closest('[data-share-content]');
+    if (!box) continue;
+    const min = Number(el.dataset.shareAiMin);
+    let n = Number(el.dataset.shareAiMax);
+    for (; n > min; n--) {
+      el.style.webkitLineClamp = String(n);
+      if (box.scrollHeight <= box.clientHeight) break;
+    }
+    el.style.webkitLineClamp = String(n);
+  }
+}
+
+// "⚡ EyeWall AI" block, clamped to `lines` so a long narrative can't push
+// the rest of the card out of the frame. With `maxLines`, it takes up to
+// that many if the card has the room -- see fitShareAiBlocks.
+export function ShareAiBlock({ text, lines = 5, maxLines, style }) {
   const { t } = useTranslation();
+  const textRef = useRef(null);
+  const fit = maxLines > lines;
+  // Every render: the rest of the card (goals, stars) changes the room too.
+  useLayoutEffect(() => {
+    if (fit) fitShareAiBlocks(textRef.current?.closest('[data-share-content]')?.parentElement);
+  });
   if (!text) return null;
   return (
-    <div style={{ background: SHARE.bg2, borderRadius: 12, padding: '18px 24px', borderLeft: '6px solid var(--team-canvas)', ...style }}>
+    <div style={{ background: SHARE.bg2, borderRadius: 12, padding: '18px 24px', borderLeft: '6px solid var(--team-canvas)', flexShrink: 0, ...style }}>
       <div style={{ fontFamily: FONT_LABEL, fontSize: 24, color: 'var(--team-canvas)', marginBottom: 8 }}>
         {t('gameStatsPopup.summary.badge')}
       </div>
-      <div style={{
-        fontSize: 25, lineHeight: 1.45, color: 'rgba(228,232,240,0.88)',
-        display: '-webkit-box', WebkitLineClamp: lines, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-      }}>
+      <div
+        ref={textRef}
+        data-share-ai-min={fit ? lines : undefined}
+        data-share-ai-max={fit ? maxLines : undefined}
+        style={{
+          fontSize: 25, lineHeight: 1.45, color: 'rgba(228,232,240,0.88)',
+          display: '-webkit-box', WebkitLineClamp: lines, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+        }}
+      >
         {text}
       </div>
     </div>
