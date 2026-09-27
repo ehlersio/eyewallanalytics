@@ -2478,6 +2478,8 @@
     "unavailable": "Win probability isn't available right now."
   },
   "shareCard": {
+    "getTheApp": "Get the iPhone app: {{url}}",
+    "onTheAppStore": "Free iPhone app on the App Store",
     "matchupTitle": "{{team}} vs {{opp}}",
     "probabilityNote": "Probabilities, not certainties",
     "predictionSubtitle": "Win probability and projected score",

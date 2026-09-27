@@ -24,6 +24,7 @@ export function fitTitleSize(text, max = 92, width = SHARE_W - PAD * 2) {
 export default function ShareCardFrame({
   canvasRef, id, kicker, title, subtitle, note, accent = SHARE.redBright, children,
 }) {
+  const { t } = useTranslation();
   return (
     <div
       ref={canvasRef}
@@ -74,7 +75,10 @@ export default function ShareCardFrame({
         margin: `0 ${PAD}px`, height: 96, flexShrink: 0, borderTop: `2px solid ${SHARE.bg3}`,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24,
       }}>
-        <span style={{ fontFamily: FONT_LABEL, fontSize: 30 }}>eyewallanalytics.com</span>
+        <span style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
+          <span style={{ fontFamily: FONT_LABEL, fontSize: 30, lineHeight: 1.1 }}>eyewallanalytics.com</span>
+          <span style={{ fontSize: 20, lineHeight: 1.2, color: SHARE.muted }}>{t('shareCard.onTheAppStore')}</span>
+        </span>
         {note && <span style={{ fontSize: 24, color: SHARE.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{note}</span>}
       </div>
     </div>
