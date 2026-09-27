@@ -1090,6 +1090,8 @@
     },
     "goal": {
       "title": "BUT !",
+      "updateTitle": "MISE À JOUR DU BUT",
+      "updateNote": "Changement au pointage — pas un nouveau but",
       "assistsLabel": "Aides : {{assists}}",
       "periodTime": "{{period}} · {{time}}"
     },

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TEAM_CONFIG } from '../utils/nhlApi';
+import { classifyGoal, goalSignature, recordGoal } from '../utils/goalUpdates';
 
 // ── Tailwind class constants (Phase 4, sub-PR 2 -- GameEvents.css deleted) ──
 // Duplicated in PWHLGameEvents.jsx per established per-file convention
@@ -28,6 +29,9 @@ const GOAL_SCORER_CLASSES = 'text-[20px] font-bold text-[color:var(--text)] mb-1
 const GOAL_ASSISTS_CLASSES = 'text-[13px] text-[color:var(--text-muted)] mb-1';
 const GOAL_SHOT_TYPE_CLASSES = 'text-[11px] text-[color:var(--text-dim)] uppercase tracking-[0.08em]';
 const GOAL_PERIOD_CLASSES = 'text-[11px] text-[color:var(--text-dim)] mt-1';
+// Longer word than GOAL!, so smaller -- fits the card in one line.
+const GOAL_UPDATE_WORD_CLASSES = 'font-[family-name:var(--font-display)] text-[30px] font-black text-[color:var(--red-bright)] tracking-[0.05em] leading-[1.1] mb-2';
+const GOAL_UPDATE_NOTE_CLASSES = 'goal-update-note text-[12px] font-semibold text-[color:var(--text-muted)] uppercase tracking-[0.08em] mb-3';
 
 const PENALTY_POPUP_CLASSES = 'penalty-popup bg-[var(--bg1)] border-[2px] border-[var(--amber)] rounded-[20px] py-8 px-10 text-center max-w-[300px] w-[90%] animate-[goalBurst_0.3s_ease] shadow-[0_0_40px_rgba(240,160,48,0.3)]';
 const PENALTY_WORDS_CLASSES = 'flex flex-col gap-1 mb-4';
@@ -86,11 +90,14 @@ function playGoalHorn() {
 }
 
 // ── Goal Popup ────────────────────────────────────────────────
+// `data.isUpdate`: the NHL corrected a goal already shown (assists added,
+// scorer changed). Same card, labelled as an update, and no horn -- the
+// horn is for the goal, once.
 export function GoalPopup({ data, onClose }) {
   const { t } = useTranslation();
   useEffect(() => {
     if (!data) return;
-    playGoalHorn();
+    if (!data.isUpdate) playGoalHorn();
     const t = setTimeout(onClose, 8000);
     return () => clearTimeout(t);
   }, [data]);
@@ -99,8 +106,11 @@ export function GoalPopup({ data, onClose }) {
   return (
     <div className={overlayClasses(false)} onClick={onClose}>
       <div className={GOAL_POPUP_CLASSES}>
-        <div className={GOAL_LIGHT_CLASSES}>🚨</div>
-        <div className={GOAL_WORD_CLASSES}>{t('gameEvents.goal.title')}</div>
+        {!data.isUpdate && <div className={GOAL_LIGHT_CLASSES}>🚨</div>}
+        {data.isUpdate
+          ? <div className={GOAL_UPDATE_WORD_CLASSES}>{t('gameEvents.goal.updateTitle')}</div>
+          : <div className={GOAL_WORD_CLASSES}>{t('gameEvents.goal.title')}</div>}
+        {data.isUpdate && <div className={GOAL_UPDATE_NOTE_CLASSES}>{t('gameEvents.goal.updateNote')}</div>}
         {data.scorer && <div className={GOAL_SCORER_CLASSES}>{data.scorer}</div>}
         {data.assists?.length > 0 && (
           <div className={GOAL_ASSISTS_CLASSES}>{t('gameEvents.goal.assistsLabel', { assists: data.assists.join(', ') })}</div>
@@ -273,6 +283,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr
     gameId ? JSON.parse(sessionStorage.getItem(`penalties_${gameId}`) || '[]') : []
   ));
   const scorerGoals = useRef({}); // { scorerId: goalCount } for hat trick tracking
+  const goalScorerIds = useRef({}); // { eventId: scorerId } -- moves the count if a review changes the scorer
   // Track whether we were recently live (so we catch the final OT play)
   const wasLiveRef   = useRef(false);
 
@@ -322,33 +333,40 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr
       const per = periodLabel(play.periodDescriptor?.number);
       const time = play.timeInPeriod || null;
 
-      // CAR goal — fire event, dedup by eventId
-      // Also re-fire if scorer/assists changed (goal review)
+      // Favorite's goal. A new eventId is a new goal: horn and popup. The
+      // same eventId back with different players (assists posted late, a
+      // scorer change on review) is an update to it -- see goalUpdates.js.
       if (play.typeDescKey === 'goal' && d.eventOwnerTeamId === _teamId) {
         const eventId = play.eventId || `goal-${play.sortOrder}`;
         const scorer  = pName(d.scoringPlayerId);
         const assists = [d.assist1PlayerId, d.assist2PlayerId]
           .filter(Boolean).map(pName).filter(Boolean);
-        const goalSig = `${eventId}:${scorer}:${assists.join(',')}`;
-        if (!shownGoals.current.has(goalSig)) {
-          // Remove any prior sig for this eventId (goal review — different players)
-          shownGoals.current = new Set(
-            [...shownGoals.current].filter(s => !s.startsWith(`${eventId}:`))
-          );
-          shownGoals.current.add(goalSig);
+        const goalSig = goalSignature(eventId, scorer, assists);
+        const kind = classifyGoal(shownGoals.current, eventId, goalSig);
+        if (kind !== 'seen') {
+          shownGoals.current = recordGoal(shownGoals.current, eventId, goalSig);
           if (gameId) sessionStorage.setItem(`goals_${gameId}`, JSON.stringify([...shownGoals.current]));
 
-          // Track goals per scorer for hat trick detection
+          // Goals per scorer, for hat tricks. An update counts nothing new,
+          // but a changed scorer takes the goal with them.
           const scorerId = String(d.scoringPlayerId || '');
-          if (scorerId) {
+          const prevScorerId = goalScorerIds.current[eventId];
+          if (kind === 'update' && prevScorerId && prevScorerId !== scorerId) {
+            scorerGoals.current[prevScorerId] = Math.max(0, (scorerGoals.current[prevScorerId] || 1) - 1);
+          }
+          if (scorerId && (kind === 'new' || prevScorerId !== scorerId)) {
             scorerGoals.current[scorerId] = (scorerGoals.current[scorerId] || 0) + 1;
           }
+          goalScorerIds.current[eventId] = scorerId;
 
-          if (scorerId && scorerGoals.current[scorerId] === 3) {
+          const goal = { scorer, assists, shotType: d.shotType || null, period: per, time };
+          if (kind === 'update') {
+            setGoalPopup({ ...goal, isUpdate: true });
+          } else if (scorerId && scorerGoals.current[scorerId] === 3) {
             // Hat trick — fire hat trick popup instead of regular goal
-            setHatTrickPopup({ scorer, assists, shotType: d.shotType || null, period: per, time, teamColor: _teamColor });
+            setHatTrickPopup({ ...goal, teamColor: _teamColor });
           } else {
-            setGoalPopup({ scorer, assists, shotType: d.shotType || null, period: per, time });
+            setGoalPopup(goal);
           }
           continue;
         }
