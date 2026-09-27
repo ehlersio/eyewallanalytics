@@ -2478,6 +2478,8 @@
     "unavailable": "La probabilité de victoire n'est pas disponible pour le moment."
   },
   "shareCard": {
+    "getTheApp": "L’app iPhone : {{url}}",
+    "onTheAppStore": "App iPhone gratuite sur l’App Store",
     "matchupTitle": "{{team}} c. {{opp}}",
     "probabilityNote": "Des probabilités, pas des certitudes",
     "predictionSubtitle": "Probabilité de victoire et pointage projeté",

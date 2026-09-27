@@ -13,6 +13,8 @@
 //                     it stays disabled/spinning through either path.
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { APP_STORE_URL, withAppStoreLink } from '../utils/appStore';
 import { SHARE_FONTS, SHARE_W, SHARE_H } from '../utils/shareCardTheme';
 import { fitShareAiBlocks } from '../components/ShareCardFrame';
 import { maybeRequestReview } from '../utils/reviewPrompt';
@@ -70,6 +72,9 @@ const canNativeShare =
   typeof navigator.canShare === 'function';
 
 export function useShareCard({ canvasRef, filename, xCaption, mountCanvas, getNode: getNodeOverride }) {
+  const { t } = useTranslation();
+  // Every shared card's text ends with the App Store link.
+  const shareText = withAppStoreLink(xCaption, t('shareCard.getTheApp', { url: APP_STORE_URL }));
   const [saving,  setSaving]  = useState(false);
   const [sharing, setSharing] = useState(false);
 
@@ -117,14 +122,14 @@ export function useShareCard({ canvasRef, filename, xCaption, mountCanvas, getNo
 
       if (!navigator.canShare({ files: [file] })) {
         // Files not supported — fall back to text share
-        await navigator.share({ title: 'EyeWall Analytics', text: xCaption, url: 'https://eyewallanalytics.com' });
+        await navigator.share({ title: 'EyeWall Analytics', text: shareText, url: 'https://eyewallanalytics.com' });
         onSuccess?.('share');
         return;
       }
 
       await navigator.share({
         title: 'EyeWall Analytics',
-        text:  xCaption,
+        text:  shareText,
         files: [file],
       });
       onSuccess?.('share');
@@ -139,7 +144,7 @@ export function useShareCard({ canvasRef, filename, xCaption, mountCanvas, getNo
     } finally {
       setSharing(false);
     }
-  }, [getNode, filename, xCaption, handleSave]);
+  }, [getNode, filename, shareText, handleSave]);
 
   return {
     saving,
