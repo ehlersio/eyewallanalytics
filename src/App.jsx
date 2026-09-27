@@ -17,6 +17,7 @@ import FaceoffLoader from './components/FaceoffLoader'
 import { applyTeamTheme, themeTeam } from './utils/applyTeamTheme';
 import { getTheme, subscribeSystemTheme } from './utils/themeConfig';
 import { syncAutoFollow } from './hooks/useLiveActivity';
+import { recordAppOpen } from './utils/reviewPrompt';
 
 // Lazy-load all non-initial routes — reduces initial bundle by ~64 KiB
 const ScheduleView  = lazy(() => import('./views/ScheduleView'));
@@ -143,6 +144,9 @@ export default function App() {
   // setting on every launch, so a team switch (always a full reload) moves
   // the poller's registration with it. No-op off the iOS app.
   useEffect(() => { syncAutoFollow().catch(() => {}); }, []);
+
+  // Counts toward "a regular" for the App Store rating ask (reviewPrompt.js).
+  useEffect(() => { recordAppOpen(); }, []);
 
   // Show team picker on first launch (no team saved yet).
   // After selection, reload so all modules re-initialize with the chosen team.

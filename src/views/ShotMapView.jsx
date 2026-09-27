@@ -17,6 +17,7 @@ import useLiveGoalReplay from '../hooks/useLiveGoalReplay';
 import GoalReplay from '../components/GoalReplay';
 import { goalReplayTarget } from '../utils/goalReplayTarget';
 import { GoalPopup, HatTrickPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
+import { maybeRequestReview } from '../utils/reviewPrompt';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getSpecialTeamsUnits } from '../utils/supabaseClient';
 import { inferPPUnit, inferPKUnit } from '../utils/ppUnits';
@@ -1132,6 +1133,13 @@ export default function ShotMapView() {
     puckDropPopup, clearPuckDropPopup } =
     useGameEvents(pbp, isLive, strMapForEvents, gameHome,
       team.teamId, team.abbr, team.displayColor);
+
+  // After a win celebration is the moment to ask for an App Store rating
+  // (iOS app only; reviewPrompt.js decides). The favorite's wins only.
+  const closeWinPopup = () => {
+    clearWinPopup();
+    if (!isGuest) maybeRequestReview('win');
+  };
 
   // Keep refs current so the visibility handler always calls the latest versions
   useEffect(() => { clearGoalPopupRef.current    = clearGoalPopup;    }, [clearGoalPopup]);
@@ -2648,7 +2656,7 @@ export default function ShotMapView() {
     {puckDropPopup && <PuckDropPopup data={puckDropPopup}  onClose={clearPuckDropPopup} />}
     {goalPopup     && <GoalPopup    data={goalPopup}       onClose={clearGoalPopup}    />}
     {penaltyPopup  && <PenaltyPopup data={penaltyPopup}    onClose={clearPenaltyPopup} />}
-    {winPopup      && <WinPopup     data={winPopup}        onClose={clearWinPopup}     />}
+    {winPopup      && <WinPopup     data={winPopup}        onClose={closeWinPopup}     />}
     {hatTrickPopup && <HatTrickPopup data={hatTrickPopup}   onClose={clearHatTrickPopup} />}
 
     {/* ── Debug popups ── */}
