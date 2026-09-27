@@ -92,14 +92,16 @@ describe('Watching as another team leaves the favorite alone', () => {
     })
 
     cy.get('.guest-game-back').click()
-    cy.location('pathname').should('eq', '/')
+    cy.location('pathname').should('eq', '/league')
     cy.then(() => {
       recording = false
       expect(writes, 'writes during the guest visit').to.deep.equal([])
     })
 
     // The favorite's own view, as it always is: its team, its season
-    // history, no guest bar.
+    // history, no guest bar. Reached in-app, as a user would.
+    cy.get('.nav-tab').contains('Shot Map').click()
+    cy.location('pathname').should('eq', '/')
     cy.get('.score-card', { timeout: DATA_TIMEOUT }).should('contain', 'CAR')
     cy.get('.season-selector').should('exist')
     cy.get('.guest-game-bar').should('not.exist')

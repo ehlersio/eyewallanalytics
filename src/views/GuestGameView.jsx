@@ -30,9 +30,11 @@ function GuestBar({ team }) {
         <TeamLogo abbr={team.abbr} size={20} />
         <span className="truncate">{t('guestGame.viewingAs', { team: team.abbr })}</span>
       </span>
-      <Link to="/" className={BACK_CLASSES}>
-        <TeamLogo abbr={TEAM_CONFIG.abbr} size={16} />
-        {t('guestGame.backTo', { team: TEAM_CONFIG.abbr })}
+      {/* Back where the game was opened from. The Scoreboard is the
+          League page's first tab, so /league lands on it. */}
+      <Link to="/league" className={BACK_CLASSES}>
+        <span aria-hidden="true">‹</span>
+        {t('guestGame.backToScoreboard')}
       </Link>
     </div>
   );

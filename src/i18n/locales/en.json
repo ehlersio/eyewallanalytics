@@ -1010,7 +1010,7 @@
   },
   "guestGame": {
     "viewingAs": "Viewing as {{team}}",
-    "backTo": "Back to {{team}}"
+    "backToScoreboard": "Back to Scoreboard"
   },
   "pwhlShotMapView": {
     "scoreBar": {

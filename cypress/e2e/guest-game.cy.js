@@ -56,8 +56,10 @@ describe('Scoreboard → guest game view', () => {
       expect(JSON.parse(win.localStorage.getItem('eyewall:team')).abbr).to.eq('CAR')
     })
 
-    cy.get('.guest-game-back').should('contain', 'Back to CAR').click()
-    cy.location('pathname').should('eq', '/')
+    // Back to the Scoreboard it was opened from, not the favorite's game.
+    cy.get('.guest-game-back').should('contain', 'Back to Scoreboard').click()
+    cy.location('pathname').should('eq', '/league')
+    cy.get('.scoreboard-team-link').should('have.length', 4)
     cy.get('.guest-game-bar').should('not.exist')
     cy.get('@favoriteColor').then(favoriteColor => {
       cy.window().then(win => expect(teamPrimary(win)).to.eq(favoriteColor))
