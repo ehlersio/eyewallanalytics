@@ -1,6 +1,7 @@
 import UIKit
 import Capacitor
 import ActivityKit
+import StoreKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
@@ -30,6 +31,35 @@ class AppViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(KeepAwakePlugin())
         bridge?.registerPluginInstance(LiveGamePlugin())
+        bridge?.registerPluginInstance(AppReviewPlugin())
+    }
+}
+
+// Apple's "Enjoying EyeWall?" rating sheet (utils/reviewPrompt.js decides
+// when to ask). iOS decides whether it actually shows -- at most 3 times a
+// year, never in TestFlight -- and doesn't say, so this always resolves.
+@objc(AppReviewPlugin)
+public class AppReviewPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "AppReviewPlugin"
+    public let jsName = "AppReview"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "requestReview", returnType: CAPPluginReturnPromise),
+    ]
+
+    @objc func requestReview(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            let scene = UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .first { $0.activationState == .foregroundActive }
+            if let scene {
+                if #available(iOS 16.0, *) {
+                    AppStore.requestReview(in: scene)
+                } else {
+                    SKStoreReviewController.requestReview(in: scene)
+                }
+            }
+            call.resolve()
+        }
     }
 }
 

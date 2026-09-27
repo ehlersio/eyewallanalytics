@@ -15,6 +15,7 @@
 import { useState, useCallback } from 'react';
 import { SHARE_FONTS, SHARE_W, SHARE_H } from '../utils/shareCardTheme';
 import { fitShareAiBlocks } from '../components/ShareCardFrame';
+import { maybeRequestReview } from '../utils/reviewPrompt';
 
 // The card's Barlow faces as inline @font-face rules. html-to-image renders
 // through an SVG <foreignObject>, which can't see the page's fonts, so the
@@ -127,6 +128,8 @@ export function useShareCard({ canvasRef, filename, xCaption, mountCanvas, getNo
         files: [file],
       });
       onSuccess?.('share');
+      // Someone who just shared a card is enjoying the app.
+      maybeRequestReview('share');
     } catch (e) {
       if (e?.name !== 'AbortError') {
         console.error('[useShareCard] Native share failed:', e);
