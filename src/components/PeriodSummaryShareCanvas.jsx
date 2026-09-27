@@ -70,7 +70,8 @@ export default function PeriodSummaryShareCanvas({
   const carGoals = summary.goals.filter(g => g.isCar);
   const oppGoals = summary.goals.filter(g => !g.isCar);
   // A busy final (lots of goals, plus the three stars) gets fewer goal rows
-  // per side and a shorter AI blurb so everything stays inside the frame.
+  // per side, and its AI blurb starts shorter; either way the blurb then
+  // takes whatever room the rest of the card leaves (ShareAiBlock maxLines).
   const busy = isGame && Math.max(carGoals.length, oppGoals.length) > 4;
   const maxGoals = isGame ? 4 : 5;
 
@@ -82,7 +83,7 @@ export default function PeriodSummaryShareCanvas({
       title={t('shareCard.scoreTitle', { team: carAbbr, teamScore: carScore ?? '–', oppScore: oppScore ?? '–', opp: oppAbbr })}
       note={note}
     >
-      <ShareAiBlock text={narrative || t('periodSummary.ai.generatingCanvas')} lines={busy ? 2 : isGame ? 3 : 4} />
+      <ShareAiBlock text={narrative || t('periodSummary.ai.generatingCanvas')} lines={busy ? 2 : isGame ? 3 : 4} maxLines={8} />
 
       <StatGrid stats={stats} />
 

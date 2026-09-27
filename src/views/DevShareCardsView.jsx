@@ -34,6 +34,9 @@ const PREDICTION = {
 
 const NARRATIVE = 'Carolina controlled the middle frame, outshooting New York 14-6 and turning a one-goal lead into a comfortable cushion. Andrei Svechnikov converted on the power play, and the Hurricanes limited the Islanders to two high-danger looks all period.';
 
+// A game card caption at the Worker's 50-word limit.
+const CARD_CAPTION = 'Carolina edged New York 2-1 behind a dominant middle frame, outshooting the Islanders 14-6 in the second. Andrei Svechnikov\'s power-play goal held up as the winner, and Frederik Andersen shut the door late. The Hurricanes controlled 58% of shot attempts, so the result matched the play.';
+
 const goal = (isCar, scorerName, period, time, strength = 'ev') => ({ isCar, scorerName, period, time, strength });
 const SUMMARY_BASE = {
   corsiForPct: 58.2, fenwickForPct: 56.9, carSOG: 31, oppSOG: 22, carHits: 18, carFOPct: 54, carHDCF: 11, oppHDCF: 6,
@@ -152,6 +155,12 @@ export default function DevShareCardsView() {
           myExp={3.1} oppExp={2.4} myStreak="W3" oppStreak="L1" myCorsi={53.4} oppCorsi={46.6} narrative={NARRATIVE} />
       </CardSlot>
       <CardSlot name="game-summary"><PeriodSummaryShareCanvas summary={GAME_SUMMARY} {...SUMMARY_PROPS} /></CardSlot>
+      {/* A usual final: a few goals, and the Worker's full-length card caption
+          (up to ~50 words), which gets the room the goals leave. */}
+      <CardSlot name="game-summary-typical">
+        <PeriodSummaryShareCanvas summary={{ ...GAME_SUMMARY, goals: GAME_SUMMARY.goals.slice(0, 3) }} {...SUMMARY_PROPS}
+          carScore={2} oppScore={1} narrative={CARD_CAPTION} />
+      </CardSlot>
       <CardSlot name="game-summary-busiest">
         <PeriodSummaryShareCanvas summary={{ ...GAME_SUMMARY, goals: [
           ...['Aho', 'Aho', 'Aho', 'Svechnikov', 'Jarvis'].map((n, i) => goal(true, `Sebastian ${n}`, 1 + (i % 3), `1${i}:0${i}`, i === 1 ? 'pp' : 'ev')),
