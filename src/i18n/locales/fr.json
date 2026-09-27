@@ -1010,7 +1010,7 @@
   },
   "guestGame": {
     "viewingAs": "Du côté de {{team}}",
-    "backTo": "Retour à {{team}}"
+    "backToScoreboard": "Retour au pointage"
   },
   "pwhlShotMapView": {
     "scoreBar": {
