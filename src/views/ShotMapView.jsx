@@ -2675,6 +2675,7 @@ export default function ShotMapView() {
             <div className={DEBUG_SECTION_LABEL_CLASSES}>Popups</div>
             <div className={DEBUG_PANEL_BTNS_CLASSES}>
               <button className={debugBtnClasses('goal')} onClick={() => setDebugGoalPopup({ scorer: 'Sebastian Aho', assists: ['Andrei Svechnikov', 'Jaccob Slavin'], shotType: 'Wrist', period: 'P2', time: '14:32' })}>🚨 CAR Goal</button>
+              <button className={debugBtnClasses('goal')} onClick={() => setDebugGoalPopup({ scorer: 'Sebastian Aho', assists: ['Andrei Svechnikov', 'Jaccob Slavin'], shotType: 'Wrist', period: 'P2', time: '14:32', isUpdate: true })}>📝 Goal Update</button>
               <button className={debugBtnClasses()} style={{ background: 'rgba(204,34,0,0.15)', color: 'var(--red-bright)' }} onClick={() => setDebugPuckDropPopup({ gameId: 'debug' })}>🏒 Puck Drop</button>
               <button className={debugBtnClasses('penalty')} onClick={() => setDebugPenaltyPopup({ id: 'debug-1', player: 'Brad Marchand', description: 'Hooking', duration: 2, period: 'P2', time: '08:17' })}>⚡ PP Alert</button>
               <button className={debugBtnClasses('win')} onClick={() => setDebugWinPopup({ score: `${team.abbr} 4 – BOS 2`, teamAbbr: team.abbr })}>🏆 Win Popup</button>
