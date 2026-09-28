@@ -107,7 +107,13 @@
     "follow": "Follow",
     "following": "Following",
     "followTeam": "Follow {{team}}",
-    "noTeamsFound": "No teams match “{{query}}”."
+    "noTeamsFound": "No teams match “{{query}}”.",
+    "notificationsSubTeams": "Game alerts for your {{count}} teams on this device",
+    "subscribedTextTeams": "Alerts are on for the teams you follow. Pick a team to choose its alerts.",
+    "getAlertsTextTeams": "Get instant alerts on your phone for the teams you follow — even when the app is closed.",
+    "alertsForTeam": "Choose a team's alerts",
+    "alertsForTeamNamed": "Alerts for {{team}}",
+    "teamAlertsNote": "Your primary team's alerts follow the main on/off above."
   },
   "bell": {
     "title": "Notifications",

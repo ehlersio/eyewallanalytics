@@ -12,9 +12,9 @@
 // Tailwind utilities -- notif-bell/notif-popup/notif-close/notif-title/
 // notif-change-team-btn. Cypress selects on them (auth, theme,
 // topnav-safe-area, period-summary); they carry no CSS of their own.
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { usePushNotifications, loadPrefs, savePrefs, hasSavedPrefs } from '../hooks/usePushNotifications';
+import { usePushNotifications, savePrefs } from '../hooks/usePushNotifications';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { useSport } from '../utils/SportContext';
 import { useAuth } from '../utils/AuthContext';
@@ -32,8 +32,9 @@ import {
   ROW_SUB_CLASSES, ROW_TEXT_CLASSES, ROW_TITLE_CLASSES, ROW_VALUE_CLASSES, SECTIONS_CLASSES, SECTION_LABEL_CLASSES,
   Section, Segments, Sheet, Switch, TITLE_CLASSES, useSheet,
 } from './SheetParts';
-import { AddTeamScreen, TeamsScreen, TeamsSection } from './SettingsTeams';
-import { FOLLOWED_CHANGED_EVENT, getFollowedTeams } from '../utils/followedTeams';
+import { AddTeamScreen, LeagueTeamLogo, TeamsScreen, TeamsSection } from './SettingsTeams';
+import { alertSettingsFor, lastSynced, loadAlertTeams, saveAlertSettings, setLastSynced, subscriptionTeams } from '../utils/alertTeams';
+import { FOLLOWED_CHANGED_EVENT, getFollowedTeams, sameTeam, teamFor } from '../utils/followedTeams';
 import { getLocalSelection } from '../utils/favoriteTeamSync';
 import { autoFollowSupported, getAutoFollow, setAutoFollow, syncAutoFollow } from '../hooks/useLiveActivity';
 
@@ -127,11 +128,13 @@ export default function SettingsMenu() {
   const activeTeam              = isPWHL ? PWHL_TEAM_CONFIG : isAHL ? AHL_TEAM_CONFIG : isECHL ? ECHL_TEAM_CONFIG : TEAM_CONFIG;
   const activeTeamAbbr          = activeTeam?.abbr || TEAM_CONFIG.abbr;
   const activeTeamName          = activeTeam?.displayName || TEAM_CONFIG.displayName;
-  const league                  = isPWHL ? 'PWHL' : isAHL ? 'AHL' : isECHL ? 'ECHL' : 'NHL';
   // 'dark' | 'light' | 'system' -- system: nothing saved, following the device.
   const [themeChoice, setThemeChoice] = useState(() => getSavedTheme() ?? 'system');
   const [locale, setLocaleState] = useState(getLocale);
-  const [prefs, setPrefsState]  = useState(() => loadPrefs());
+  // Each followed team's alert choices on this device (utils/alertTeams.js),
+  // and the team the Alerts screen is showing.
+  const [alertTeams, setAlertTeams] = useState(loadAlertTeams);
+  const [alertTeamPick, setAlertTeamPick] = useState(null);
   // "Follow my team's games" on the Lock Screen: null until the native
   // side answers, and the row only exists where it can work (iOS 17.2+
   // app, Live Activities allowed, NHL favorite -- see useLiveActivity.js).
@@ -186,39 +189,50 @@ export default function SettingsMenu() {
     syncAutoFollow().catch(() => {});
   };
 
-  const leagueTeamKey = `${league}:${activeTeamAbbr}`;
+  // The Alerts screen's team: the one picked, else the primary.
+  const alertTeam = (alertTeamPick && followed.find(f => sameTeam(f, alertTeamPick))) || primary || followed[0];
+  const alertTeamIsPrimary = sameTeam(alertTeam, primary);
+  const alertSettings = alertTeam ? alertSettingsFor(alertTeam, alertTeams) : { on: true, prefs: {} };
+  const alertLeague = (alertTeam?.sport || 'nhl').toUpperCase();
+  const alertTeamName = (alertTeam && teamFor(alertTeam)?.displayName) || activeTeamName;
+  const manyTeams = followed.length > 1;
 
   const handleToggle = async () => {
     if (subscribed) {
       await unsubscribe();
+      setLastSynced(null);
     } else {
-      await subscribe(leagueTeamKey, prefs);
+      const teams = subscriptionTeams(followed, primary, alertTeams);
+      if (teams.length && await subscribe(teams[0].key, teams[0].prefs, teams)) setLastSynced(JSON.stringify(teams));
     }
   };
 
-  const handlePrefToggle = useCallback(async (key) => {
-    const next = { ...prefs, [key]: !prefs[key] };
-    setPrefsState(next);
-    savePrefs(next);
-    // Update server if already subscribed
-    if (subscribed) {
-      await updatePrefs(leagueTeamKey, next);
-    }
-  }, [prefs, subscribed, leagueTeamKey, updatePrefs]);
+  const saveAlertTeam = next => {
+    setAlertTeams(saveAlertSettings(alertTeam, next, alertTeams));
+    // The primary's choices double as the template a newly followed
+    // team starts from.
+    if (alertTeamIsPrimary) savePrefs(next.prefs);
+  };
+  const handlePrefToggle = key =>
+    saveAlertTeam({ ...alertSettings, prefs: { ...alertSettings.prefs, [key]: !alertSettings.prefs[key] } });
+  const handleTeamAlertsToggle = () => saveAlertTeam({ ...alertSettings, on: !alertSettings.on });
 
-  // End-of-period alerts became on by default (2026-09). A subscriber who
-  // never changed their alert choices is on the defaults, so their
-  // subscription gets the new ones once; saved only when the server took
-  // them, so a failed try runs again next launch.
+  // Keeps the poller's copy of this device's teams and choices current:
+  // after any change here, a team followed or dropped, or an update to
+  // the app (the first launch with this sends every followed team, and
+  // the end-of-period default from 2026-09). Sent only when different
+  // from what was last stored there.
   useEffect(() => {
-    if (!subscribed || hasSavedPrefs()) return;
+    if (!subscribed) return;
+    const teams = subscriptionTeams(followed, primary, alertTeams);
+    const sig = JSON.stringify(teams);
+    if (!teams.length || lastSynced() === sig) return;
     let cancelled = false;
     (async () => {
-      const current = loadPrefs();
-      if (await updatePrefs(leagueTeamKey, current) && !cancelled) savePrefs(current);
+      if (await updatePrefs(teams[0].key, teams[0].prefs, teams) && !cancelled) setLastSynced(sig);
     })();
     return () => { cancelled = true; };
-  }, [subscribed, updatePrefs, leagueTeamKey]);
+  }, [subscribed, followed, primary?.sport, primary?.abbr, alertTeams, updatePrefs]);
 
   const handleOpenAbout = () => {
     closePanel();
@@ -230,7 +244,7 @@ export default function SettingsMenu() {
       : subscribed ? t('settings.notifOn') : t('settings.notifOff');
 
   const prefGroups = PREF_GROUPS
-    .map(g => ({ ...g, items: g.items.filter(item => league === 'NHL' || !item.nhlOnly) }))
+    .map(g => ({ ...g, items: g.items.filter(item => alertLeague === 'NHL' || !item.nhlOnly) }))
     .filter(g => g.items.length);
 
   const mainScreen = (
@@ -249,7 +263,7 @@ export default function SettingsMenu() {
             <span className={ICON_CLASSES} aria-hidden="true">🔔</span>
             <span className={ROW_TEXT_CLASSES}>
               <span className={ROW_TITLE_CLASSES}>{t('settings.notifications')}</span>
-              <span className={ROW_SUB_CLASSES}>{t('settings.notificationsSub', { team: activeTeamAbbr })}</span>
+              <span className={ROW_SUB_CLASSES}>{manyTeams ? t('settings.notificationsSubTeams', { count: followed.length }) : t('settings.notificationsSub', { team: activeTeamAbbr })}</span>
             </span>
             <span className={ROW_VALUE_CLASSES}>{alertsValue}</span>
             <span className={CHEVRON_CLASSES} aria-hidden="true">›</span>
@@ -361,9 +375,11 @@ export default function SettingsMenu() {
           {supported && (
             <>
               <p className={DESC_CLASSES}>
-                {subscribed
-                  ? t('settings.subscribedText', { team: activeTeamName })
-                  : t('settings.getAlertsText', { team: activeTeamName })}
+                {manyTeams
+                  ? (subscribed ? t('settings.subscribedTextTeams') : t('settings.getAlertsTextTeams'))
+                  : subscribed
+                    ? t('settings.subscribedText', { team: activeTeamName })
+                    : t('settings.getAlertsText', { team: activeTeamName })}
               </p>
               {permission === 'denied' && <p className={BLOCKED_CLASSES}>{t('settings.blockedText')}</p>}
               {error && <p className={ERROR_CLASSES}>{error}</p>}
@@ -380,13 +396,48 @@ export default function SettingsMenu() {
           )}
         </div>
 
+        {/* Following several: one team's choices at a time. */}
+        {supported && manyTeams && (
+          <div className="settings-alert-teams flex gap-2 overflow-x-auto -mx-1 px-1 pb-1" role="radiogroup" aria-label={t('settings.alertsForTeam')}>
+            {followed.map(team => {
+              const picked = sameTeam(team, alertTeam);
+              return (
+                <button
+                  key={`${team.sport}:${team.abbr}`}
+                  type="button"
+                  role="radio"
+                  aria-checked={picked}
+                  aria-label={teamFor(team)?.displayName || team.abbr}
+                  onClick={() => setAlertTeamPick(team)}
+                  className={`settings-alert-team-${team.sport}-${team.abbr} flex items-center gap-1.5 shrink-0 min-h-[40px] pl-1 pr-3 rounded-[20px] border text-[13px] font-semibold cursor-pointer ${picked ? 'border-[color:var(--text)] bg-[var(--btn-fill-hover)] text-[color:var(--text)]' : 'border-[var(--border-2)] bg-transparent text-[color:var(--text-muted)]'}`}
+                >
+                  <LeagueTeamLogo team={team} size={28} />{team.abbr}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* The primary's alerts are push's own on/off above; each other
+            team has its own. */}
+        {supported && manyTeams && !alertTeamIsPrimary && (
+          <Section footer={t('settings.teamAlertsNote')}>
+            <div className={`settings-team-alerts ${ROW_CLASSES}`}>
+              <span className={ROW_TEXT_CLASSES}>
+                <span className={ROW_TITLE_CLASSES}>{t('settings.alertsForTeamNamed', { team: alertTeamName })}</span>
+              </span>
+              <Switch on={alertSettings.on} onToggle={handleTeamAlertsToggle} label={t('settings.alertsForTeamNamed', { team: alertTeamName })} />
+            </div>
+          </Section>
+        )}
+
         {/* Choices apply as soon as alerts are on; before that they're what
-            turning them on will ask for. Only this league's alert types. */}
-        {supported && prefGroups.map((group, i) => (
+            turning them on will ask for. Only this team's league's types. */}
+        {supported && alertSettings.on && prefGroups.map((group, i) => (
           <Section
             key={group.labelKey}
             label={t(group.labelKey)}
-            footer={i === prefGroups.length - 1 ? t('settings.alertsFooter', { league }) : null}
+            footer={i === prefGroups.length - 1 ? t('settings.alertsFooter', { league: alertLeague }) : null}
           >
             {group.items.map(item => (
               <div key={item.key} className={`settings-pref-${item.key} ${ROW_CLASSES}`}>
@@ -394,7 +445,7 @@ export default function SettingsMenu() {
                   <span className={ROW_TITLE_CLASSES}>{t(item.labelKey)}</span>
                   {item.subKey && <span className={ROW_SUB_CLASSES}>{t(item.subKey)}</span>}
                 </span>
-                <Switch on={!!prefs[item.key]} onToggle={() => handlePrefToggle(item.key)} label={t(item.labelKey)} />
+                <Switch on={!!alertSettings.prefs[item.key]} onToggle={() => handlePrefToggle(item.key)} label={t(item.labelKey)} />
               </div>
             ))}
           </Section>
