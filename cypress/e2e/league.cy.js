@@ -175,8 +175,17 @@ describe('League page — CAR', () => {
     })
 
     it('shows L10 dot indicators', () => {
-      cy.get('.l10-dots').first().should('be.visible')
-      cy.get('.l10-dot').should('have.length.greaterThan', 0)
+      // Before a season's first game (the standings roll over to the new
+      // season in late September with every L10 at 0-0-0) there's nothing
+      // to draw: one empty .l10-dots per team. First seen 2026-09-28.
+      cy.get('.l10-dots').should('have.length.greaterThan', 0)
+      cy.get('body').then($body => {
+        if ($body.find('.l10-dot').length === 0) {
+          cy.log('No L10 games yet this season — nothing to draw')
+          return
+        }
+        cy.get('.l10-dots').first().should('be.visible')
+      })
     })
 
     it('switching to By conference view shows conference labels', () => {
