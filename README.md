@@ -114,6 +114,7 @@ canes-analytics-starter/
 │   │   ├── SettingsMenu.jsx            # ⚙️ Settings (was NotificationBell.jsx; redesign Option A, 2026-09) — one list: Your teams, Alerts (drill-in screen, only the alert types the team's league sends), App (Appearance Dark/Light/Match device, Language), Help (About), Account
 │   │   ├── SettingsTeams.jsx           # Settings' teams: the Your teams section (tap a followed team to switch to it), Your teams screen (★ primary, reorder, unfollow), Add a team (all four leagues, search)
 │   │   ├── SheetParts.jsx              # What the bell and Settings share: the sheet (full-screen on phones, a panel under its button wider), sections, rows, useSheet()
+│   │   ├── TeamSwitcher.jsx            # Primary team's logo in the top bar (following 2+ teams): your followed teams, tap one to switch (reloads, any league); Manage teams → Settings
 │   │   ├── AccountSection.jsx/.css     # Sign-in UI inside Settings (Session 90) — signed-out row, two-step email sign-in, signed-in row (avatar/email/Synced badge) + sign-out
 │   │   ├── TriviaFeed.jsx              # Daily Trivia tab content (Session 92) — three tier cards, answer/reveal flow, aggregate correct/attempted stats. Same "rendered as a tab inside NewsView" pattern as MilestonesFeed.jsx. Tailwind (Phase 1 own classes; NewsView.css-owned classes finished Phase 4, sub-PR 4, imported from utils/newsViewClasses.js)
 │   │   ├── PeriodSummary.jsx           # Period/game summary popup + share canvas + hat trick badges — fully Tailwind (Phase 4, sub-PRs 5a/5b; PeriodSummary.css deleted)

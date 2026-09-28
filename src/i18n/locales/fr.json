@@ -126,6 +126,13 @@
     "alertSettings": "Réglages des alertes",
     "alertSettingsSub": "Choisissez ce qui vous est signalé"
   },
+  "teamSwitcher": {
+    "title": "Vos équipes",
+    "label": "Changer d’équipe (actuellement {{team}})",
+    "current": "Actuelle",
+    "switching": "Changement…",
+    "note": "Changer d’équipe recharge l’app avec celle-ci."
+  },
   "account": {
     "signInPrompt": "Connectez-vous pour synchroniser sur vos appareils",
     "signInWithEmail": "Connexion par courriel",

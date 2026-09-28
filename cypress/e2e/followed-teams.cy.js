@@ -139,3 +139,37 @@ describe('Alerts for every followed team', () => {
     })
   })
 })
+
+describe('Top-bar team switcher', () => {
+  const followTwo = win => win.localStorage.setItem('eyewall:followed', JSON.stringify([
+    { sport: 'nhl', abbr: 'CAR' }, { sport: 'pwhl', abbr: 'MIN' },
+  ]))
+
+  it('isn’t shown when following just one team', () => {
+    cy.setTeam('CAR')
+    cy.visit('/')
+    cy.get('button.notif-bell').should('exist')
+    cy.get('button.team-switcher').should('not.exist')
+  })
+
+  it('lists the followed teams, the current one marked, and switches to another', () => {
+    cy.setTeam('CAR')
+    cy.visit('/', { onBeforeLoad: followTwo })
+    cy.get('button.team-switcher').click()
+    cy.contains('.team-switcher-row', 'Carolina Hurricanes').should('contain', 'Current')
+    cy.contains('button.team-switcher-row', 'Minnesota Frost').click()
+    cy.location('pathname', { timeout: DATA_TIMEOUT }).should('eq', '/pwhl/shots')
+    cy.window().its('localStorage').invoke('getItem', 'eyewall:sport').should('eq', 'pwhl')
+    cy.get('button.team-switcher').click()
+    cy.contains('.team-switcher-row', 'Minnesota Frost').should('contain', 'Current')
+  })
+
+  it('Manage teams opens Settings on Your teams', () => {
+    cy.setTeam('CAR')
+    cy.visit('/', { onBeforeLoad: followTwo })
+    cy.get('button.team-switcher').click()
+    cy.get('.team-switcher-manage').click()
+    cy.get('.team-switcher-panel').should('not.exist')
+    cy.contains('.notif-popup .notif-title', 'Your teams').should('be.visible')
+  })
+})

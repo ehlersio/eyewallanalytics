@@ -126,6 +126,13 @@
     "alertSettings": "Alert settings",
     "alertSettingsSub": "Choose what you’re notified about"
   },
+  "teamSwitcher": {
+    "title": "Your teams",
+    "label": "Switch team (now {{team}})",
+    "current": "Current",
+    "switching": "Switching…",
+    "note": "Switching reloads the app as that team."
+  },
   "account": {
     "signInPrompt": "Sign in to sync across devices",
     "signInWithEmail": "Sign in with email",
