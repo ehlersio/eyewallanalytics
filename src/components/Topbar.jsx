@@ -7,7 +7,7 @@ import { TEAM_CONFIG } from '../utils/nhlApi';
 import { useSport } from '../utils/SportContext';
 import AboutPopup from './AboutPopup';
 import { subscribeClock, getClockDisplay, publishClock, subscribeMomentum, subscribeMockLiveGame } from '../utils/liveClockStore';
-import NotificationBell from './NotificationBell';
+import SettingsMenu from './SettingsMenu';
 import PlayerSearch from './PlayerSearch';
 
 const POLL_LIVE_MS = 10_000;      // 10s — matches ShotMapView
@@ -194,7 +194,7 @@ export default function Topbar() {
 
         <div className={ICONS_CLASSES}>
           <PlayerSearch />
-          <NotificationBell />
+          <SettingsMenu />
         </div>
       </div>
 

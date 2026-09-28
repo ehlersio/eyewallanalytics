@@ -93,10 +93,20 @@ function IconFacebook() {
   );
 }
 
+// Settings' "About EyeWall" row opens this popup, which lives in the top
+// bar's logo button, by dispatching this on window.
+export const OPEN_ABOUT_EVENT = 'eyewall:open-about';
+
 export default function AboutPopup({ isLive = false }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+
+  useEffect(() => {
+    const openAbout = () => setOpen(true);
+    window.addEventListener(OPEN_ABOUT_EVENT, openAbout);
+    return () => window.removeEventListener(OPEN_ABOUT_EVENT, openAbout);
+  }, []);
 
   useEffect(() => {
     if (!open) return;

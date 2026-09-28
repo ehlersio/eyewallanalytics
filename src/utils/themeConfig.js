@@ -9,6 +9,7 @@
 //   import { getTheme, setTheme, subscribeSystemTheme } from './themeConfig';
 //   getTheme()         // → 'dark' | 'light' (saved choice, else the device's)
 //   setTheme('light')  // persists and applies immediately
+//   clearTheme()       // back to following the device
 //   subscribeSystemTheme(mode => ...)  // device changes, only while nothing is saved
 
 const STORAGE_KEY = 'eyewall:theme';
@@ -46,6 +47,19 @@ export function setTheme(theme) {
     console.warn('setTheme: localStorage unavailable');
   }
   document.documentElement.setAttribute('data-theme', theme);
+}
+
+// Forgets the saved choice, so the app follows the device again (Settings'
+// "Match device"). Returns the theme now in effect.
+export function clearTheme() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // localStorage unavailable — nothing was saved to forget
+  }
+  const theme = getSystemTheme();
+  document.documentElement.setAttribute('data-theme', theme);
+  return theme;
 }
 
 // Calls onChange('light' | 'dark') when the device's setting flips, but only

@@ -20,7 +20,7 @@ const assertStoredTheme = (mode) => {
 
 const openSettings = () => {
   cy.get('.notif-bell').click()
-  cy.contains('🎨 Appearance').should('exist')
+  cy.contains('Appearance').should('exist')
 }
 
 const closeSettings = () => {
@@ -48,7 +48,7 @@ describe('Theme toggle', () => {
     })
     assertDataTheme('light')
     openSettings()
-    cy.contains('Dark mode').should('exist')
+    cy.get('.settings-theme-system').should('have.attr', 'aria-checked', 'true')
     closeSettings()
     cy.window().then(win => {
       expect(win.localStorage.getItem('eyewall:theme')).to.equal(null)
@@ -72,7 +72,7 @@ describe('Theme toggle', () => {
       },
     })
     openSettings()
-    cy.contains('Dark mode').click()
+    cy.get('.settings-theme-dark').click()
     assertDataTheme('dark')
     assertStoredTheme('dark')
     closeSettings()
@@ -83,7 +83,7 @@ describe('Theme toggle', () => {
   it('switches to light mode, updates data-theme and localStorage immediately', () => {
     cy.visit('/')
     openSettings()
-    cy.contains('Light mode').click()
+    cy.get('.settings-theme-light').click()
     assertDataTheme('light')
     assertStoredTheme('light')
     closeSettings()
@@ -98,7 +98,7 @@ describe('Theme toggle', () => {
     })
     assertDataTheme('light')
     openSettings()
-    cy.contains('Dark mode').click()
+    cy.get('.settings-theme-dark').click()
     assertDataTheme('dark')
     assertStoredTheme('dark')
     closeSettings()
@@ -108,7 +108,7 @@ describe('Theme toggle', () => {
   it('persists light mode across a full page reload', () => {
     cy.visit('/')
     openSettings()
-    cy.contains('Light mode').click()
+    cy.get('.settings-theme-light').click()
     closeSettings()
 
     cy.reload()
@@ -119,7 +119,7 @@ describe('Theme toggle', () => {
   it('persists light mode across navigation to all main routes', () => {
     cy.visit('/')
     openSettings()
-    cy.contains('Light mode').click()
+    cy.get('.settings-theme-light').click()
     closeSettings()
 
     const routes = ['/', '/schedule', '/players', '/team', '/news']
@@ -144,26 +144,46 @@ describe('Theme toggle', () => {
   })
 })
 
-// ── Button label reflects current theme ──────────────────────────────────
+// ── The Appearance choice shown reflects the current setting ─────────────
 
-describe('Theme toggle button label', () => {
-  it('shows "Light mode" button when in dark mode', () => {
-    cy.visit('/')
+describe('Appearance choice', () => {
+  it('shows Dark picked when dark is saved', () => {
+    cy.visit('/', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('eyewall:theme', 'dark')
+      },
+    })
     openSettings()
-    cy.contains('Light mode').should('exist')
-    cy.contains('Dark mode').should('not.exist')
+    cy.get('.settings-theme-dark').should('have.attr', 'aria-checked', 'true')
+    cy.get('.settings-theme-light').should('have.attr', 'aria-checked', 'false')
     closeSettings()
   })
 
-  it('shows "Dark mode" button when in light mode', () => {
+  it('shows Light picked when light is saved', () => {
     cy.visit('/', {
       onBeforeLoad(win) {
         win.localStorage.setItem('eyewall:theme', 'light')
       },
     })
     openSettings()
-    cy.contains('Dark mode').should('exist')
-    cy.contains('Light mode').should('not.exist')
+    cy.get('.settings-theme-light').should('have.attr', 'aria-checked', 'true')
+    closeSettings()
+  })
+
+  it('Match device forgets the saved choice and follows the device again', () => {
+    cy.visit('/', {
+      onBeforeLoad(win) {
+        win.__eyewallSystemScheme = 'light'
+        win.localStorage.setItem('eyewall:theme', 'dark')
+      },
+    })
+    assertDataTheme('dark')
+    openSettings()
+    cy.get('.settings-theme-system').click().should('have.attr', 'aria-checked', 'true')
+    assertDataTheme('light')
+    cy.window().then(win => {
+      expect(win.localStorage.getItem('eyewall:theme')).to.equal(null)
+    })
     closeSettings()
   })
 })
