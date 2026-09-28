@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { usePushNotifications, loadPrefs, savePrefs } from '../hooks/usePushNotifications';
+import { usePushNotifications, loadPrefs, savePrefs, hasSavedPrefs } from '../hooks/usePushNotifications';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { useSport } from '../utils/SportContext';
@@ -91,7 +91,7 @@ const PREF_GROUPS = [
     items: [
       { key: 'gameStart',   icon: '🏒', labelKey: 'settings.prefItem.gameStart' },
       { key: 'periodStart', icon: '🔔', labelKey: 'settings.prefItem.periodStart' },
-      { key: 'periodEnd',   icon: '🔕', labelKey: 'settings.prefItem.periodEnd' },
+      { key: 'periodEnd',   icon: '📋', labelKey: 'settings.prefItem.periodEnd' },
     ],
   },
   {
@@ -233,6 +233,20 @@ export default function NotificationBell() {
       await updatePrefs(leagueTeamKey, next);
     }
   }, [prefs, subscribed, activeTeamAbbr, updatePrefs]);
+
+  // End-of-period alerts became on by default (2026-09). A subscriber who
+  // never changed their alert choices is on the defaults, so their
+  // subscription gets the new ones once; saved only when the server took
+  // them, so a failed try runs again next launch.
+  useEffect(() => {
+    if (!subscribed || hasSavedPrefs()) return;
+    let cancelled = false;
+    (async () => {
+      const current = loadPrefs();
+      if (await updatePrefs(leagueTeamKey, current) && !cancelled) savePrefs(current);
+    })();
+    return () => { cancelled = true; };
+  }, [subscribed, updatePrefs, leagueTeamKey]);
 
   const handleOpenSummary = (summary) => {
     closePopup();

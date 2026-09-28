@@ -30,7 +30,9 @@ export const DEFAULT_PREFS = {
   oppGoal:      true,
   gameStart:    true,
   periodStart:  true,
-  periodEnd:    false, // off by default — noisy
+  // On since 2026-09: tapping one opens that period's summary. It was off
+  // as "noisy" before the summary made it worth the buzz.
+  periodEnd:    true,
   penalty:      true,
   win:          true,
   loss:         true,
@@ -47,6 +49,12 @@ export function loadPrefs() {
   } catch {
     return { ...DEFAULT_PREFS };
   }
+}
+
+// Whether this device has ever saved its own alert choices -- if not,
+// it's on the defaults, and follows them when they change.
+export function hasSavedPrefs() {
+  try { return localStorage.getItem(PREFS_KEY) !== null; } catch { return true; }
 }
 
 export function savePrefs(prefs) {
