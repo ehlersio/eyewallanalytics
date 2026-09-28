@@ -131,7 +131,10 @@
     "label": "Switch team (now {{team}})",
     "current": "Current",
     "switching": "Switching…",
-    "note": "Switching reloads the app as that team."
+    "note": "Switching reloads the app as that team.",
+    "watch": "Live",
+    "watchLabel": "Watch {{team}}’s live game",
+    "noteWatch": "Switching reloads the app as that team. ▶ Live opens a team’s game from its side, without switching."
   },
   "account": {
     "signInPrompt": "Sign in to sync across devices",
