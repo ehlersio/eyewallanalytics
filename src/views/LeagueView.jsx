@@ -1320,6 +1320,12 @@ function SeasonNotStartedState({ children }) {
  *   rosterWeight = 0.15 * (1 - alpha) — tapers from 15% → 0%
  *   Other weights scale proportionally to fill the remaining 85%→100%.
  */
+// Rankings wait until every team has played this many games -- the same
+// rule as eyewall-pipeline's power_rankings.py (MIN_GAMES_TO_RANK). Before
+// that every component ties for all 32 teams and the order is just the
+// order standings arrive in (2026-09-28: 0 GP, a random top 10).
+const MIN_GAMES_TO_RANK = 3;
+
 function computePowerRankings(standings, xgData) {
   if (!standings?.length) return [];
 
@@ -1495,6 +1501,8 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
   // skeleton forever instead of a "not started yet" message.
   const loading = standingsLoading || xgLoading;
   const empty   = !loading && !standings?.length;
+  const tooEarly = !loading && !empty
+    && Math.min(...standings.map(s => s.gamesPlayed || 0)) < MIN_GAMES_TO_RANK;
 
   // Find this team's rank + prior for movement
   const myData    = ranked.find(t => t.abbr === PRIMARY);
@@ -1538,6 +1546,9 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
 
   if (empty) {
     return <SeasonNotStartedState>{t('leagueView.rankings.emptyState')}</SeasonNotStartedState>;
+  }
+  if (tooEarly) {
+    return <SeasonNotStartedState>{t('leagueView.rankings.tooEarly', { games: MIN_GAMES_TO_RANK })}</SeasonNotStartedState>;
   }
 
   return (

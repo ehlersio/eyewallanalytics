@@ -321,7 +321,8 @@
       "ofTeams": "of 32 teams",
       "scrollTopAriaLabel": "Scroll to top",
       "scrollTopLabel": "Top",
-      "shareCaptionRank": "{{team}} Power Rankings — #{{rank}} in the NHL"
+      "shareCaptionRank": "{{team}} Power Rankings — #{{rank}} in the NHL",
+      "tooEarly": "Power rankings return once every team has played {{games}} games — about a week into the season."
     }
   },
   "pwhlLeagueView": {
