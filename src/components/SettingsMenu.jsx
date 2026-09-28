@@ -105,7 +105,7 @@ function isIOSBrowserTab() {
 // ── Component ─────────────────────────────────────────────────
 
 // Dispatched on window to open Settings from elsewhere; `detail.screen`
-// 'alerts' opens the Alerts screen.
+// 'alerts' or 'teams' opens that screen.
 export const OPEN_SETTINGS_EVENT = 'eyewall:open-settings';
 
 export default function SettingsMenu() {
@@ -165,10 +165,11 @@ export default function SettingsMenu() {
   const { supported, permission, subscribed, subscribe, unsubscribe, updatePrefs, loading, error } =
     usePushNotifications();
 
-  // The bell's "Alert settings" (NotificationsBell.jsx) opens Settings
-  // straight on the Alerts screen.
+  // The bell's "Alert settings" (NotificationsBell.jsx) and the team
+  // switcher's "Manage teams" (TeamSwitcher.jsx) open Settings straight on
+  // those screens.
   useEffect(() => {
-    const onOpen = e => { setScreen(e.detail?.screen === 'alerts' ? 'alerts' : 'main'); openSheet(); };
+    const onOpen = e => { setScreen(['alerts', 'teams'].includes(e.detail?.screen) ? e.detail.screen : 'main'); openSheet(); };
     window.addEventListener(OPEN_SETTINGS_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_SETTINGS_EVENT, onOpen);
   }, [openSheet]);

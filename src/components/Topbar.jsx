@@ -9,6 +9,7 @@ import AboutPopup from './AboutPopup';
 import { subscribeClock, getClockDisplay, publishClock, subscribeMomentum, subscribeMockLiveGame } from '../utils/liveClockStore';
 import SettingsMenu from './SettingsMenu';
 import NotificationsBell from './NotificationsBell';
+import TeamSwitcher from './TeamSwitcher';
 import PlayerSearch from './PlayerSearch';
 
 const POLL_LIVE_MS = 10_000;      // 10s — matches ShotMapView
@@ -194,6 +195,7 @@ export default function Topbar() {
         )}
 
         <div className={ICONS_CLASSES}>
+          <TeamSwitcher />
           <PlayerSearch />
           <NotificationsBell />
           <SettingsMenu />
