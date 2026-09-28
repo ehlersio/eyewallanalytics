@@ -90,3 +90,52 @@ describe('Following teams', () => {
     cy.window().its('localStorage').invoke('getItem', 'eyewall:team').should('contain', '"BOS"')
   })
 })
+
+describe('Alerts for every followed team', () => {
+  const alertTeams = win => JSON.parse(win.localStorage.getItem('eyewall:notif:teams') || '{}')
+
+  beforeEach(() => {
+    cy.setTeam('CAR')
+    cy.visit('/', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('eyewall:followed', JSON.stringify([
+          { sport: 'nhl', abbr: 'CAR' }, { sport: 'pwhl', abbr: 'MIN' },
+        ]))
+      },
+    })
+    cy.get('button.notif-bell').click()
+    cy.get('.settings-alerts-row').should('contain', '2 teams').click()
+  })
+
+  it('shows one team’s alerts at a time, starting with the primary', () => {
+    cy.get('.settings-alert-team-nhl-CAR').should('have.attr', 'aria-checked', 'true')
+    cy.get('.settings-pref-periodEnd').should('exist')
+    // The primary's alerts are the main on/off, not a switch of their own.
+    cy.get('.settings-team-alerts').should('not.exist')
+  })
+
+  it('lists only the alert types a team’s league sends', () => {
+    cy.get('.settings-alert-team-pwhl-MIN').click().should('have.attr', 'aria-checked', 'true')
+    cy.get('.settings-pref-goal').should('exist')
+    cy.get('.settings-pref-periodEnd').should('not.exist')
+  })
+
+  it('keeps each team’s choices separately', () => {
+    cy.get('.settings-alert-team-pwhl-MIN').click()
+    cy.get('.settings-pref-goal [role=switch]').click().should('have.attr', 'aria-checked', 'false')
+    cy.get('.settings-alert-team-nhl-CAR').click()
+    cy.get('.settings-pref-goal [role=switch]').should('have.attr', 'aria-checked', 'true')
+    cy.window().then(win => {
+      expect(alertTeams(win)['PWHL:MIN'].prefs.goal).to.equal(false)
+    })
+  })
+
+  it('turns another team’s alerts off without touching the primary’s', () => {
+    cy.get('.settings-alert-team-pwhl-MIN').click()
+    cy.get('.settings-team-alerts [role=switch]').click().should('have.attr', 'aria-checked', 'false')
+    cy.get('.settings-pref-goal').should('not.exist')
+    cy.window().then(win => {
+      expect(alertTeams(win)['PWHL:MIN'].on).to.equal(false)
+    })
+  })
+})

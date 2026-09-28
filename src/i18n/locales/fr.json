@@ -107,7 +107,13 @@
     "follow": "Suivre",
     "following": "Suivie",
     "followTeam": "Suivre {{team}}",
-    "noTeamsFound": "Aucune équipe ne correspond à « {{query}} »."
+    "noTeamsFound": "Aucune équipe ne correspond à « {{query}} ».",
+    "notificationsSubTeams": "Alertes des matchs de vos {{count}} équipes sur cet appareil",
+    "subscribedTextTeams": "Les alertes sont activées pour les équipes que vous suivez. Choisissez une équipe pour régler ses alertes.",
+    "getAlertsTextTeams": "Recevez des alertes instantanées sur votre téléphone pour les équipes que vous suivez — même lorsque l'application est fermée.",
+    "alertsForTeam": "Choisir les alertes d'une équipe",
+    "alertsForTeamNamed": "Alertes de {{team}}",
+    "teamAlertsNote": "Les alertes de votre équipe principale suivent le bouton principal ci-dessus."
   },
   "bell": {
     "title": "Notifications",

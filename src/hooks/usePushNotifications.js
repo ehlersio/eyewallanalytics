@@ -177,7 +177,10 @@ export function usePushNotifications() {
   // Must be called directly from a user gesture (button click)
   // teamAbbr: league-prefixed team key, e.g. 'NHL:CAR' or 'PWHL:MTL'
   // prefs: notification preference object
-  const subscribe = useCallback(async (teamAbbr = 'CAR', prefs = null) => {
+  // teams: every followed team with alerts on, [{ key, prefs }], primary
+  //   first (utils/alertTeams.js) -- the poller's multi-team shape;
+  //   teamAbbr/prefs are the first of them, for a poller that predates it.
+  const subscribe = useCallback(async (teamAbbr = 'CAR', prefs = null, teams = null) => {
     if (Capacitor.isNativePlatform()) {
       if (!WORKER_URL) {
         setError('Push notifications not configured');
@@ -201,7 +204,7 @@ export function usePushNotifications() {
         const res = await fetch(`${WORKER_URL}/push/subscribe`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ platform: 'ios', token, teamAbbr, prefs: prefs || loadPrefs() }),
+          body:    JSON.stringify({ platform: 'ios', token, teamAbbr, prefs: prefs || loadPrefs(), ...(teams ? { teams } : {}) }),
         });
         if (!res.ok) throw new Error('Failed to save subscription to server');
 
@@ -245,6 +248,7 @@ export function usePushNotifications() {
           ...subJson,
           teamAbbr: teamAbbr,
           prefs:    prefs || loadPrefs(),
+          ...(teams ? { teams } : {}),
         }),
       });
 
@@ -260,15 +264,16 @@ export function usePushNotifications() {
     }
   }, [swReg]);
 
-  // Update prefs on server without re-subscribing
-  const updatePrefs = useCallback(async (teamAbbr, prefs) => {
+  // Update prefs on server without re-subscribing. Send `teams` whenever
+  // following several: an update without it makes a one-team subscription.
+  const updatePrefs = useCallback(async (teamAbbr, prefs, teams = null) => {
     if (Capacitor.isNativePlatform()) {
       if (!deviceToken || !WORKER_URL) return false;
       try {
         const res = await fetch(`${WORKER_URL}/push/subscribe`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ platform: 'ios', token: deviceToken, teamAbbr, prefs }),
+          body:    JSON.stringify({ platform: 'ios', token: deviceToken, teamAbbr, prefs, ...(teams ? { teams } : {}) }),
         });
         return res.ok;
       } catch {
@@ -289,6 +294,7 @@ export function usePushNotifications() {
           ...sub.toJSON(),
           teamAbbr,
           prefs,
+          ...(teams ? { teams } : {}),
         }),
       });
       return res.ok;
