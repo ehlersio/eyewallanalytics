@@ -38,6 +38,26 @@ const WORKER_URL_LEAGUE = Cypress.expose('VITE_WORKER_URL') || 'https://eyewall-
 // the same spec file had visited /league for real first, and passed
 // instantly in isolation or when run first).
 
+// 2026-09-28: the new season's standings arrived with every team at 0 GP.
+// Every ranking component tied, so the order was just the order standings
+// came in -- it has to say it's too early instead.
+describe('Power rankings before every team has played 3 games', () => {
+  const standings = gp => ['CAR', 'BOS', 'STL', 'TOR'].map((abbr, i) => ({
+    seasonId: 20262027, teamAbbrev: { default: abbr }, teamName: { default: abbr },
+    gamesPlayed: i === 0 ? gp : 5, wins: 0, losses: 0, otLosses: 0, points: 0,
+    goalFor: 0, goalAgainst: 0, l10Wins: 0, l10Losses: 0, l10OtLosses: 0,
+  }))
+
+  it('says when rankings return, instead of a tied order', () => {
+    cy.intercept('GET', `${WORKER_URL_LEAGUE}/cache/standings*`, { body: standings(2) }).as('getStandings')
+    cy.setTeam('CAR')
+    cy.visit('/league')
+    cy.get('.league-tab').contains('Power rankings').click()
+    cy.get('.lv-season-empty').should('be.visible').and('contain', 'every team has played 3 games')
+    cy.get('.pr-row').should('not.exist')
+  })
+})
+
 describe('Standings / Power rankings / Leaders — season-not-started empty state', () => {
   beforeEach(() => {
     cy.intercept('GET', `${WORKER_URL_LEAGUE}/cache/standings*`, { body: [] }).as('getStandings')

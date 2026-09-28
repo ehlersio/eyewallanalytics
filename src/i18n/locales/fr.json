@@ -321,7 +321,8 @@
       "ofTeams": "sur 32 équipes",
       "scrollTopAriaLabel": "Retour en haut",
       "scrollTopLabel": "Haut",
-      "shareCaptionRank": "Classement de puissance {{team}} — #{{rank}} dans la LNH"
+      "shareCaptionRank": "Classement de puissance {{team}} — #{{rank}} dans la LNH",
+      "tooEarly": "Le classement de puissance revient une fois que chaque équipe a joué {{games}} matchs — environ une semaine après le début de la saison."
     }
   },
   "pwhlLeagueView": {
