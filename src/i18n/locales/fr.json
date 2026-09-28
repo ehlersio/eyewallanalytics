@@ -113,7 +113,9 @@
     "getAlertsTextTeams": "Recevez des alertes instantanées sur votre téléphone pour les équipes que vous suivez — même lorsque l'application est fermée.",
     "alertsForTeam": "Choisir les alertes d'une équipe",
     "alertsForTeamNamed": "Alertes de {{team}}",
-    "teamAlertsNote": "Les alertes de votre équipe principale suivent le bouton principal ci-dessus."
+    "teamAlertsNote": "Les alertes de votre équipe principale suivent le bouton principal ci-dessus.",
+    "takeTour": "Faire le tour",
+    "takeTourSub": "Un aperçu rapide de l’app"
   },
   "bell": {
     "title": "Notifications",
@@ -137,6 +139,48 @@
     "watch": "Direct",
     "watchLabel": "Regarder le match de {{team}} en direct",
     "noteWatch": "Changer d’équipe recharge l’app avec celle-ci. ▶ Direct ouvre le match d’une équipe de son côté, sans changer d’équipe."
+  },
+  "tour": {
+    "next": "Suivant",
+    "back": "Retour",
+    "done": "Terminé",
+    "progress": "{{current}} sur {{total}}",
+    "invite": {
+      "title": "Tirez le maximum d’EyeWall",
+      "body": "Un tour de 30 secondes de ce qu’on trouve ici — la carte des tirs, les prédictions, les alertes et plus.",
+      "start": "Faire le tour",
+      "notNow": "Plus tard"
+    },
+    "steps": {
+      "score": {
+        "title": "Votre match",
+        "body": "Le match en cours ou le dernier match de votre équipe : pointage, temps et tirs. À la fin d’un match, son résumé s’ouvre ici."
+      },
+      "rink": {
+        "title": "Carte des tirs",
+        "body": "Chaque tir et chaque but, et d’où il est venu. Touchez-en un pour les détails."
+      },
+      "nav": {
+        "title": "Tout le reste",
+        "body": "Le calendrier a les prédictions, Joueurs et Équipe les statistiques, Ligue le classement et le pointage — touchez-y une équipe en direct pour suivre son match — et Nouvelles."
+      },
+      "search": {
+        "title": "Recherche",
+        "body": "Trouvez n’importe quel joueur, dans n’importe quelle ligue."
+      },
+      "switcher": {
+        "title": "Vos équipes",
+        "body": "Passez d’une équipe suivie à l’autre."
+      },
+      "bell": {
+        "title": "Notifications",
+        "body": "Les résumés de période et de match, et les alertes récentes de vos équipes — même avec les notifications désactivées."
+      },
+      "settings": {
+        "title": "Paramètres",
+        "body": "Suivez d’autres équipes, choisissez vos alertes, changez l’apparence. Vous pouvez refaire ce tour depuis Aide."
+      }
+    }
   },
   "account": {
     "signInPrompt": "Connectez-vous pour synchroniser sur vos appareils",

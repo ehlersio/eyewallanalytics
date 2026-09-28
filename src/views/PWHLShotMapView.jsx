@@ -2145,7 +2145,7 @@ export default function PWHLShotMapView() {
       {/* ── two-col: left = rink, right = scorers + team stats ── */}
       <div className={TWO_COL_CLASSES}>
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-          <div className="card">
+          <div className="card" data-tour="rink">
             <div className="sec-label">{t('pwhlShotMapView.rink.shotLocations', { abbr })}</div>
             {rawShots === null && (
               <div style={{ textAlign:'center', padding:32, color:'var(--text-dim)' }}>{t('pwhlShotMapView.rink.loadingShots')}</div>

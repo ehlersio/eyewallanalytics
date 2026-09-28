@@ -113,7 +113,9 @@
     "getAlertsTextTeams": "Get instant alerts on your phone for the teams you follow — even when the app is closed.",
     "alertsForTeam": "Choose a team's alerts",
     "alertsForTeamNamed": "Alerts for {{team}}",
-    "teamAlertsNote": "Your primary team's alerts follow the main on/off above."
+    "teamAlertsNote": "Your primary team's alerts follow the main on/off above.",
+    "takeTour": "Take the tour",
+    "takeTourSub": "A quick walk through the app"
   },
   "bell": {
     "title": "Notifications",
@@ -137,6 +139,48 @@
     "watch": "Live",
     "watchLabel": "Watch {{team}}’s live game",
     "noteWatch": "Switching reloads the app as that team. ▶ Live opens a team’s game from its side, without switching."
+  },
+  "tour": {
+    "next": "Next",
+    "back": "Back",
+    "done": "Done",
+    "progress": "{{current}} of {{total}}",
+    "invite": {
+      "title": "Get more out of EyeWall",
+      "body": "Take a 30-second tour of what’s here — the shot map, predictions, alerts and more.",
+      "start": "Take the tour",
+      "notNow": "Not now"
+    },
+    "steps": {
+      "score": {
+        "title": "Your game",
+        "body": "Your team’s live or latest game: score, clock and shots. When a game ends, its final summary opens here."
+      },
+      "rink": {
+        "title": "Shot map",
+        "body": "Every shot and goal, and where it came from. Tap one for details."
+      },
+      "nav": {
+        "title": "Everything else",
+        "body": "Schedule has win predictions, Players and Team the stats, League the standings and Scoreboard — tap a live team there to watch their game — and News."
+      },
+      "search": {
+        "title": "Search",
+        "body": "Find any player, in any league."
+      },
+      "switcher": {
+        "title": "Your teams",
+        "body": "Jump between the teams you follow."
+      },
+      "bell": {
+        "title": "Notifications",
+        "body": "Period and final summaries, and recent alerts for the teams you follow — even with notifications off."
+      },
+      "settings": {
+        "title": "Settings",
+        "body": "Follow more teams, choose your alerts, change the look. You can replay this tour from Help."
+      }
+    }
   },
   "account": {
     "signInPrompt": "Sign in to sync across devices",

@@ -27,6 +27,7 @@ import { upsertLocale } from '../utils/localeSync';
 import { applyTeamTheme, themeTeam } from '../utils/applyTeamTheme';
 import AccountSection from './AccountSection';
 import { OPEN_ABOUT_EVENT } from './AboutPopup';
+import { START_TOUR_EVENT } from '../utils/tour';
 import {
   BACK_CLASSES, CHEVRON_CLASSES, CLOSE_CLASSES, HEADER_ROW_CLASSES, ICON_CLASSES, ROW_BUTTON_CLASSES, ROW_CLASSES,
   ROW_SUB_CLASSES, ROW_TEXT_CLASSES, ROW_TITLE_CLASSES, ROW_VALUE_CLASSES, SECTIONS_CLASSES, SECTION_LABEL_CLASSES,
@@ -235,6 +236,11 @@ export default function SettingsMenu() {
     return () => { cancelled = true; };
   }, [subscribed, followed, primary?.sport, primary?.abbr, alertTeams, updatePrefs]);
 
+  const handleTakeTour = () => {
+    closePanel();
+    window.dispatchEvent(new window.Event(START_TOUR_EVENT));
+  };
+
   const handleOpenAbout = () => {
     closePanel();
     window.dispatchEvent(new window.Event(OPEN_ABOUT_EVENT));
@@ -313,6 +319,14 @@ export default function SettingsMenu() {
         </Section>
 
         <Section label={t('settings.help')}>
+          <button className={`settings-tour-row ${ROW_BUTTON_CLASSES}`} onClick={handleTakeTour}>
+            <span className={ICON_CLASSES} aria-hidden="true">🧭</span>
+            <span className={ROW_TEXT_CLASSES}>
+              <span className={ROW_TITLE_CLASSES}>{t('settings.takeTour')}</span>
+              <span className={ROW_SUB_CLASSES}>{t('settings.takeTourSub')}</span>
+            </span>
+            <span className={CHEVRON_CLASSES} aria-hidden="true">›</span>
+          </button>
           <button className={`settings-about-row ${ROW_BUTTON_CLASSES}`} onClick={handleOpenAbout}>
             <span className={ICON_CLASSES} aria-hidden="true">ℹ️</span>
             <span className={ROW_TEXT_CLASSES}>
