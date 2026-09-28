@@ -84,6 +84,12 @@ describe('Settings (⚙️ button)', () => {
     cy.get('.about-popup').should('be.visible')
   })
 
+  it('no longer lists game summaries in Settings -- the bell has them', () => {
+    cy.get('button.notif-bell').click()
+    cy.get('.notif-popup').should('be.visible')
+    cy.get('.notif-popup .notif-summary-chip').should('not.exist')
+  })
+
   it('closes the drawer when X is clicked', () => {
     cy.get('button.notif-bell').click()
     cy.get('.notif-popup').should('be.visible')
@@ -91,19 +97,21 @@ describe('Settings (⚙️ button)', () => {
     cy.get('.notif-popup').should('not.exist')
   })
 
-  describe('Game Summaries section', () => {
+  describe('Game summaries (🔔 bell)', () => {
     beforeEach(() => {
       cy.visit(`/?mockGame=${MOCK_GAME_ID}`)
       cy.team().then(t => cy.contains(t.abbr, { timeout: 10000 }).should('exist'))
     })
 
     it('shows period chips after summaries load', () => {
-      cy.get('button.notif-bell').click()
+      cy.get('button.summary-bell').click()
       cy.contains(/P1|P2|P3|FINAL/, { timeout: 15000 }).should('exist')
     })
 
     it('period chips show period label and goal score', () => {
-      cy.get('button.notif-bell').click()
+      // Summaries exist once the bell's dot shows (sessionStorage and localStorage start empty).
+      cy.get('.summary-bell-dot', { timeout: DATA_TIMEOUT }).should('exist')
+      cy.get('button.summary-bell').click()
       cy.get('.notif-summary-chip', { timeout: 15000 }).should('have.length.greaterThan', 0)
       cy.get('.notif-summary-chip').first().within(() => {
         cy.get('.notif-summary-chip-period').should('exist')
@@ -112,7 +120,7 @@ describe('Settings (⚙️ button)', () => {
     })
 
     it('score chip uses team abbr not hardcoded CAR', () => {
-      cy.get('button.notif-bell').click()
+      cy.get('button.summary-bell').click()
       cy.team().then(t => {
         cy.get('.notif-summary-chip', { timeout: 15000 }).first().within(() => {
           cy.get('.notif-summary-chip-score').invoke('text')
@@ -122,7 +130,9 @@ describe('Settings (⚙️ button)', () => {
     })
 
     it('FINAL chip is styled distinctly', () => {
-      cy.get('button.notif-bell').click()
+      // Summaries exist once the bell's dot shows (sessionStorage and localStorage start empty).
+      cy.get('.summary-bell-dot', { timeout: DATA_TIMEOUT }).should('exist')
+      cy.get('button.summary-bell').click()
       cy.get('.notif-summary-chip-game', { timeout: 15000 }).should('exist')
       cy.get('.notif-summary-chip-game .notif-summary-chip-period').should('contain', 'FINAL')
     })
@@ -136,7 +146,9 @@ describe('Period Summary popup', () => {
     cy.visit(`/?mockGame=${MOCK_GAME_ID}`)
     cy.team().then(t => cy.contains(t.abbr, { timeout: 10000 }).should('exist'))
     waitForMockGameLive()
-    cy.get('button.notif-bell').click()
+    // Summaries exist once the bell's dot shows (sessionStorage and localStorage start empty).
+    cy.get('.summary-bell-dot', { timeout: DATA_TIMEOUT }).should('exist')
+    cy.get('button.summary-bell').click()
     cy.get('.notif-summary-chip', { timeout: 15000 }).first().click()
     cy.get('.ps-card', { timeout: 5000 }).should('exist')
   })
@@ -243,7 +255,9 @@ describe('Final Game Summary popup', () => {
     cy.visit(`/?mockGame=${MOCK_GAME_ID}`)
     cy.team().then(t => cy.contains(t.abbr, { timeout: 10000 }).should('exist'))
     waitForMockGameLive()
-    cy.get('button.notif-bell').click()
+    // Summaries exist once the bell's dot shows (sessionStorage and localStorage start empty).
+    cy.get('.summary-bell-dot', { timeout: DATA_TIMEOUT }).should('exist')
+    cy.get('button.summary-bell').click()
     cy.get('.notif-summary-chip-game', { timeout: 15000 }).click()
     cy.get('.ps-card', { timeout: 5000 }).should('exist')
   })
@@ -282,5 +296,60 @@ describe('Final Game Summary popup', () => {
         cy.get('.ps-carousel-dot').should('have.length.greaterThan', 3)
       }
     })
+  })
+})
+
+describe('Notifications bell', () => {
+  it('shows a dot for a summary not yet seen, and clears it once opened', () => {
+    cy.visit(`/?mockGame=${MOCK_GAME_ID}`, {
+      onBeforeLoad(win) { win.localStorage.removeItem('eyewall:summaries-seen') },
+    })
+    waitForMockGameLive()
+    cy.get('.summary-bell-dot', { timeout: 15000 }).should('exist')
+    cy.get('button.summary-bell').click()
+    cy.get('.summary-bell-panel .notif-summary-chip').should('have.length.greaterThan', 0)
+    cy.get('.summary-bell-dot').should('not.exist')
+    cy.get('.summary-bell-close').click()
+    cy.reload()
+    waitForMockGameLive()
+    cy.get('button.summary-bell').should('exist')
+    cy.get('.summary-bell-dot').should('not.exist')
+  })
+
+  it('says why it’s empty when there are no summaries yet', () => {
+    // Loaded straight onto the League page, no game view has built any.
+    cy.visit('/league')
+    cy.get('button.summary-bell').click()
+    cy.get('.summary-bell-panel .notif-summary-chip').should('not.exist')
+    cy.get('.summary-bell-empty').should('contain', 'summaries')
+  })
+
+  it('Alert settings opens Settings on the Alerts screen', () => {
+    cy.visit('/')
+    cy.get('button.summary-bell').click()
+    cy.get('.summary-bell-alert-settings').click()
+    cy.get('.summary-bell-panel').should('not.exist')
+    cy.contains('.notif-popup .notif-title', 'Alerts').should('be.visible')
+  })
+
+  it('opening one top-bar panel closes the other', () => {
+    cy.visit('/')
+    cy.get('button.notif-bell').click()
+    cy.get('.notif-popup').should('exist')
+    cy.get('.notif-close').click()
+    cy.get('button.summary-bell').click()
+    cy.get('.summary-bell-panel').should('exist')
+    cy.get('.notif-popup').should('not.exist')
+  })
+
+  it('isn’t shown for AHL, whose game view has no summaries', () => {
+    cy.visit('/ahl/shots', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('eyewall:sport', 'ahl')
+        win.localStorage.setItem('eyewall:ahl_team', JSON.stringify({ abbr: 'HER', teamId: 319 }))
+      },
+    })
+    cy.get('button.notif-bell', { timeout: DATA_TIMEOUT }).should('exist')
+    cy.get('button.summary-bell').should('not.exist')
   })
 })

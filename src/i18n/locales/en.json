@@ -92,6 +92,17 @@
     "account": "Account",
     "alertsFooter": "Only alerts {{league}} games send are listed."
   },
+  "bell": {
+    "title": "Notifications",
+    "titleNew": "Notifications, new summary",
+    "latestGame": "Latest game",
+    "periodSummary": "{{period}} summary",
+    "finalSummary": "Final summary",
+    "new": "New",
+    "empty": "Period and final summaries for {{team}} games show up here as each period ends.",
+    "alertSettings": "Alert settings",
+    "alertSettingsSub": "Choose what you’re notified about"
+  },
   "account": {
     "signInPrompt": "Sign in to sync across devices",
     "signInWithEmail": "Sign in with email",
