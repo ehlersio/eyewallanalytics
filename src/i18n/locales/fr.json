@@ -122,9 +122,11 @@
     "periodSummary": "Résumé : {{period}}",
     "finalSummary": "Résumé du match",
     "new": "Nouveau",
-    "empty": "Les résumés de période et de match de {{team}} s’affichent ici à la fin de chaque période.",
+    "empty": "Les alertes et les résumés de période des équipes que vous suivez s’affichent ici pendant leurs matchs.",
     "alertSettings": "Réglages des alertes",
-    "alertSettingsSub": "Choisissez ce qui vous est signalé"
+    "alertSettingsSub": "Choisissez ce qui vous est signalé",
+    "recentAlerts": "Alertes récentes",
+    "recentAlertsNote": "Les alertes des 3 derniers jours pour les équipes que vous suivez — même avec les notifications désactivées."
   },
   "teamSwitcher": {
     "title": "Vos équipes",

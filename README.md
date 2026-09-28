@@ -110,7 +110,7 @@ canes-analytics-starter/
 │   │   ├── GameEvents.jsx              # Goal/penalty/win/puck drop popups — Tailwind (Phase 4, sub-PR 2), no .css file
 │   │   ├── ScoutingTab.jsx             # NHL opponent scouting — Tailwind (Phase 6), no .css file
 │   │   ├── DraftTab.jsx                # NHL draft board — Tailwind (Phase 6), no .css file
-│   │   ├── NotificationsBell.jsx       # 🔔 next to ⚙️ (redesign Option C, 2026-09) — the latest game's period/final summaries, newest first, dot while one is unseen (utils/summarySeen.js); NHL/PWHL only
+│   │   ├── NotificationsBell.jsx       # 🔔 next to ⚙️ (redesign Option C, 2026-09) — the latest game's period/final summaries (NHL/PWHL) and Recent alerts for every followed team (eyewall-poller's GET /alerts/recent, last 3 days, push on or off; utils/recentAlerts.js); dot while something's new (utils/summarySeen.js)
 │   │   ├── SettingsMenu.jsx            # ⚙️ Settings (was NotificationBell.jsx; redesign Option A, 2026-09) — one list: Your teams, Alerts (drill-in screen, only the alert types the team's league sends), App (Appearance Dark/Light/Match device, Language), Help (About), Account
 │   │   ├── SettingsTeams.jsx           # Settings' teams: the Your teams section (tap a followed team to switch to it), Your teams screen (★ primary, reorder, unfollow), Add a team (all four leagues, search)
 │   │   ├── SheetParts.jsx              # What the bell and Settings share: the sheet (full-screen on phones, a panel under its button wider), sections, rows, useSheet()

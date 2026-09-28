@@ -316,9 +316,11 @@ describe('Notifications bell', () => {
     cy.get('.summary-bell-dot').should('not.exist')
   })
 
-  it('says why it’s empty when there are no summaries yet', () => {
+  it('says why it’s empty when there are no summaries or alerts yet', () => {
     // Loaded straight onto the League page, no game view has built any.
+    cy.intercept('GET', '**/alerts/recent*', []).as('alerts')
     cy.visit('/league')
+    cy.wait('@alerts')
     cy.get('button.summary-bell').click()
     cy.get('.summary-bell-panel .notif-summary-chip').should('not.exist')
     cy.get('.summary-bell-empty').should('contain', 'summaries')
@@ -342,14 +344,71 @@ describe('Notifications bell', () => {
     cy.get('.notif-popup').should('not.exist')
   })
 
-  it('isn’t shown for AHL, whose game view has no summaries', () => {
+  it('is there for AHL too, with its recent alerts (no summaries there)', () => {
+    cy.intercept('GET', '**/alerts/recent*', req => {
+      expect(req.query.teams).to.eq('AHL:HER')
+      req.reply([{ team: 'AHL:HER', vs: 'AHL:HFD', type: 'goal', title: '🚨 GOAL! HER 1–0 HFD', body: 'Bears score', url: '/ahl/shots', at: Date.now() - 60000 }])
+    })
     cy.visit('/ahl/shots', {
       onBeforeLoad(win) {
         win.localStorage.setItem('eyewall:sport', 'ahl')
         win.localStorage.setItem('eyewall:ahl_team', JSON.stringify({ abbr: 'HER', teamId: 319 }))
       },
     })
-    cy.get('button.notif-bell', { timeout: DATA_TIMEOUT }).should('exist')
-    cy.get('button.summary-bell').should('not.exist')
+    cy.get('button.summary-bell', { timeout: DATA_TIMEOUT }).click()
+    cy.contains('.summary-bell-alert', 'GOAL! HER 1–0 HFD').should('contain', 'Bears score')
+  })
+})
+
+describe('Notifications bell: recent alerts', () => {
+  const now = () => Date.now()
+  const alerts = () => [
+    { team: 'NHL:CAR', vs: 'NHL:BOS', type: 'periodEnd', title: '🔔 End of P1', body: 'CAR 1–0 BOS after P1', url: '/?summary=1&game=2026020001', at: now() - 2 * 60000 },
+    { team: 'NHL:BOS', vs: 'NHL:CAR', type: 'oppGoal', title: 'CAR scores. BOS 0–1 CAR', body: '', url: '/', at: now() - 5 * 60000 },
+    { team: 'NHL:CAR', vs: 'NHL:BOS', type: 'goal', title: '🚨 GOAL! CAR 1–0 BOS', body: 'Aho (Jarvis)', url: '/', at: now() - 5 * 60000 },
+  ]
+  const followBoth = win => win.localStorage.setItem('eyewall:followed', JSON.stringify([
+    { sport: 'nhl', abbr: 'CAR' }, { sport: 'nhl', abbr: 'BOS' },
+  ]))
+
+  beforeEach(() => cy.intercept('GET', '**/alerts/recent*', alerts()).as('alerts'))
+
+  it('lists the followed teams’ alerts, newest first, once per event for a fan of both teams', () => {
+    cy.visit('/league', { onBeforeLoad: followBoth })
+    cy.wait('@alerts')
+    cy.get('button.summary-bell').click()
+    cy.get('.summary-bell-alert').should('have.length', 2)
+    cy.get('.summary-bell-alert').first().should('contain', 'End of P1')
+    cy.get('.summary-bell-alert').last().should('contain', 'GOAL! CAR 1–0 BOS')
+    cy.contains('.summary-bell-alert', 'BOS 0–1 CAR').should('not.exist')
+  })
+
+  it('an alert with a link opens it', () => {
+    cy.visit('/league', { onBeforeLoad: followBoth })
+    cy.get('button.summary-bell').click()
+    cy.contains('button.summary-bell-alert', 'End of P1').click()
+    cy.location('pathname').should('eq', '/')
+    cy.get('.summary-bell-panel').should('not.exist')
+  })
+
+  it('shows a dot only for alerts newer than the last look', () => {
+    cy.visit('/league', {
+      onBeforeLoad(win) {
+        followBoth(win)
+        // Last looked 3 minutes ago: the End of P1 alert (2 minutes ago) is new.
+        win.localStorage.setItem('eyewall:alerts-seen-at', String(Date.now() - 3 * 60000))
+      },
+    })
+    cy.wait('@alerts')
+    cy.get('.summary-bell-dot').should('exist')
+    cy.get('button.summary-bell').click()
+    cy.get('.summary-bell-dot').should('not.exist')
+  })
+
+  it('a first look counts what’s there as seen: no dot', () => {
+    cy.visit('/league', { onBeforeLoad: followBoth })
+    cy.wait('@alerts')
+    cy.get('button.summary-bell').should('exist')
+    cy.get('.summary-bell-dot').should('not.exist')
   })
 })

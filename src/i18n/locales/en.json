@@ -122,9 +122,11 @@
     "periodSummary": "{{period}} summary",
     "finalSummary": "Final summary",
     "new": "New",
-    "empty": "Period and final summaries for {{team}} games show up here as each period ends.",
+    "empty": "Alerts and period summaries for the teams you follow show up here during their games.",
     "alertSettings": "Alert settings",
-    "alertSettingsSub": "Choose what you’re notified about"
+    "alertSettingsSub": "Choose what you’re notified about",
+    "recentAlerts": "Recent alerts",
+    "recentAlertsNote": "The last 3 days of alerts for the teams you follow — here even with notifications off."
   },
   "teamSwitcher": {
     "title": "Your teams",
