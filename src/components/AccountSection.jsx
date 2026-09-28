@@ -60,7 +60,7 @@ export default function AccountSection() {
   const [error, setError] = useState(null);
   const compactRowRef = useRef(null);
 
-  // Settings popup (.notif-popup, in NotificationBell.jsx) is a scrollable
+  // Settings popup (.notif-popup, in SettingsMenu.jsx) is a scrollable
   // panel taller than its own max-height in every state (confirmed: adding
   // the Language row, Session ~locale, pushed it into overflow even in the
   // compact view). Cypress's click() scrolls the Cancel/Sign-out button

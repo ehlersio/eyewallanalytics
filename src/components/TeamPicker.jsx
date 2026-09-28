@@ -481,7 +481,7 @@ export default function TeamPicker({ onSelect }) {
     // Save sport choice then team, then let caller reload
     localStorage.setItem('eyewall:sport', 'nhl');
     setTeamConfig(abbr);
-    // Consume the "Change team" flag (see NotificationBell.jsx /
+    // Consume the "Change team" flag (see SettingsMenu.jsx /
     // favoriteTeamSync.js) now that a real pick has been made — first-launch
     // selects never set it, so this is a harmless no-op there.
     localStorage.removeItem('eyewall:team-change-pending');

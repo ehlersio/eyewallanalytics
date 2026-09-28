@@ -103,7 +103,7 @@ export async function upsertFavoriteTeam(userId, sport, abbr) {
 }
 
 export async function syncFavoriteTeamOnSignIn(userId) {
-  // A "Change team" in progress (see NotificationBell.jsx) clears local
+  // A "Change team" in progress (see SettingsMenu.jsx) clears local
   // storage on purpose so TeamPicker can show. Without this check, that
   // looks identical to "fresh device, no local opinion yet" and this
   // function would silently re-apply the old server value before the user

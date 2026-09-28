@@ -37,12 +37,12 @@ describe('Settings (⚙️ button)', () => {
   it('opens the Settings drawer on click', () => {
     cy.get('button.notif-bell').click()
     cy.get('.notif-popup').should('be.visible')
-    cy.contains('⚙️ Settings').should('exist')
+    cy.contains('.notif-title', 'Settings').should('exist')
   })
 
-  it('drawer shows My Team section with team name', () => {
+  it('drawer shows Your team section with team name', () => {
     cy.get('button.notif-bell').click()
-    cy.contains('My Team').should('exist')
+    cy.contains('Your team').should('exist')
     cy.team().then(t => cy.contains(t.displayName).should('exist'))
   })
 
@@ -53,8 +53,35 @@ describe('Settings (⚙️ button)', () => {
 
   it('drawer shows push notification toggle section', () => {
     cy.get('button.notif-bell').click()
-    cy.contains(/Alert Preferences|Push Notifications/i).should('exist')
-    cy.contains(/Turn on notifications|Turn off notifications|Notifications blocked/i).should('exist')
+    cy.get('.settings-alerts-row').should('contain', 'Notifications').click()
+    cy.contains('.notif-title', 'Alerts').should('exist')
+    cy.contains(/Turn on notifications|Turn off notifications|Notifications are blocked|aren.t supported|Home Screen/i).should('exist')
+  })
+
+  it('lists only the alerts the team’s league sends, and goes back to Settings', () => {
+    cy.get('button.notif-bell').click()
+    cy.get('.settings-alerts-row').click()
+    cy.get('.settings-pref-goal [role=switch]').should('exist')
+    // An NHL favorite gets end-of-period alerts (other leagues don't send them).
+    cy.get('.settings-pref-periodEnd [role=switch]').should('have.attr', 'aria-checked', 'true')
+    cy.get('.settings-back').click()
+    cy.contains('.notif-title', 'Settings').should('exist')
+  })
+
+  it('a switch on the Alerts screen saves that choice on the device', () => {
+    cy.get('button.notif-bell').click()
+    cy.get('.settings-alerts-row').click()
+    cy.get('.settings-pref-hatTrick [role=switch]').click().should('have.attr', 'aria-checked', 'false')
+    cy.window().then(win => {
+      expect(JSON.parse(win.localStorage.getItem('eyewall:notif:prefs')).hatTrick).to.equal(false)
+    })
+  })
+
+  it('About EyeWall opens the About popup', () => {
+    cy.get('button.notif-bell').click()
+    cy.get('.settings-about-row').click()
+    cy.get('.notif-popup').should('not.exist')
+    cy.get('.about-popup').should('be.visible')
   })
 
   it('closes the drawer when X is clicked', () => {

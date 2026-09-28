@@ -61,7 +61,7 @@ const ECHL_TABS = [
 // a plain flex-shrink:0 child of .app-shell, relying entirely on the
 // shell's height:100dvh calc staying in sync with the real viewport. After
 // a hard reload (the only way to switch sport -- see SportContext.jsx's
-// setSportAndReload/NotificationBell's handleChangeTeam), that calc could
+// setSportAndReload/SettingsMenu's handleChangeTeam), that calc could
 // end up taller than the actual visible viewport on Android/Chrome,
 // silently pushing this nav below the fold with no positioning of its own
 // to fall back on. Fixed position removes that dependency entirely -- this
