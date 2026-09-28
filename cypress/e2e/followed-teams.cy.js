@@ -173,3 +173,38 @@ describe('Top-bar team switcher', () => {
     cy.contains('.notif-popup .notif-title', 'Your teams').should('be.visible')
   })
 })
+
+describe('Team switcher: watch a followed team’s live game', () => {
+  // TOR's preseason win at OTT on 2026-09-23, stubbed as live today --
+  // the same real game guest-game.cy.js opens.
+  const GAME_ID = 2026010036
+  const TODAY = [
+    { gameId: GAME_ID, gameDate: '2026-09-23', homeTeamCode: 'OTT', awayTeamCode: 'TOR',
+      homeScore: 2, awayScore: 4, status: 'live', period: 3, periodType: 'REG', clock: '05:00', inIntermission: false },
+  ]
+  const follow = list => win => win.localStorage.setItem('eyewall:followed', JSON.stringify(list))
+
+  beforeEach(() => cy.intercept('GET', '**/nhl/today', TODAY).as('today'))
+
+  it('offers Live for a followed NHL team that’s playing, and opens it from their side', () => {
+    cy.setTeam('CAR')
+    cy.visit('/', { onBeforeLoad: follow([{ sport: 'nhl', abbr: 'CAR' }, { sport: 'nhl', abbr: 'TOR' }, { sport: 'pwhl', abbr: 'MIN' }]) })
+    cy.get('button.team-switcher').click()
+    cy.wait('@today')
+    cy.get('.team-switcher-watch').should('have.length', 1)
+      .and('have.attr', 'href', `/game/${GAME_ID}?as=TOR`)
+      .click()
+    cy.location('pathname').should('eq', `/game/${GAME_ID}`)
+    cy.get('.guest-game-bar').should('contain', 'Viewing as TOR')
+    // Watching, not switching: the saved team is still CAR.
+    cy.window().then(win => expect(JSON.parse(win.localStorage.getItem('eyewall:team')).abbr).to.eq('CAR'))
+  })
+
+  it('offers nothing to watch while the primary team isn’t NHL', () => {
+    cy.setPWHLTeam('MIN')
+    cy.visit('/pwhl/shots', { onBeforeLoad: follow([{ sport: 'pwhl', abbr: 'MIN' }, { sport: 'nhl', abbr: 'TOR' }]) })
+    cy.get('button.team-switcher').click()
+    cy.contains('button.team-switcher-row', 'Toronto Maple Leafs').should('exist')
+    cy.get('.team-switcher-watch').should('not.exist')
+  })
+})

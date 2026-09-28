@@ -131,7 +131,10 @@
     "label": "Changer d’équipe (actuellement {{team}})",
     "current": "Actuelle",
     "switching": "Changement…",
-    "note": "Changer d’équipe recharge l’app avec celle-ci."
+    "note": "Changer d’équipe recharge l’app avec celle-ci.",
+    "watch": "Direct",
+    "watchLabel": "Regarder le match de {{team}} en direct",
+    "noteWatch": "Changer d’équipe recharge l’app avec celle-ci. ▶ Direct ouvre le match d’une équipe de son côté, sans changer d’équipe."
   },
   "account": {
     "signInPrompt": "Connectez-vous pour synchroniser sur vos appareils",
