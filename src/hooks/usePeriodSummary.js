@@ -323,6 +323,21 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
 
   const dismissNewSummary = useCallback(() => setNewSummary(null), []);
 
+  // Builds one period's summary on demand -- a tapped End of P1
+  // notification can arrive mid-P2, when only the current intermission's
+  // summary gets built on its own. Returns false if that period isn't over
+  // in the pbp on hand (or the pbp is still another game's), so the caller
+  // can stop waiting for it.
+  const requestSummary = useCallback((period) => {
+    if (!pbp || !gameId || isOtherGame(pbp, gameId)) return false;
+    const plays = pbp.plays || [];
+    const over = plays.some(p => p.typeDescKey === 'period-end' && p.periodDescriptor?.number === period)
+      || (pbp.clock?.inIntermission && pbp.periodDescriptor?.number === period);
+    if (!over) return false;
+    buildAndStoreSummary(period, plays, false);
+    return true;
+  }, [pbp, gameId, buildAndStoreSummary]);
+
   const updateSummaryNarrative = useCallback((period, narrative) => {
     setSummaries(prev => {
       const next = prev.map(s =>
@@ -336,7 +351,7 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
     );
   }, [gameId]);
 
-  return { summaries, newSummary, dismissNewSummary, updateSummaryNarrative };
+  return { summaries, newSummary, dismissNewSummary, updateSummaryNarrative, requestSummary };
 }
 
 // ── Full game summary ─────────────────────────────────────────
@@ -457,6 +472,10 @@ function saveStoredGame(gameId, teamId, summary) {
 export function useGameSummary({ pbp, _isLive, gameId, carTeamId }) {
   const [gameSummary, setGameSummary] = useState(null);
   const builtRef = useRef(false);
+  // The game on screen now, so a build that finishes after a switch to
+  // another game is dropped rather than shown as this one's.
+  const gameIdRef = useRef(gameId);
+  gameIdRef.current = gameId;
 
   // Restore from sessionStorage on gameId change
   useEffect(() => {
@@ -472,7 +491,11 @@ export function useGameSummary({ pbp, _isLive, gameId, carTeamId }) {
   }, [gameId]);
 
   useEffect(() => {
-    if (!pbp || !gameId || builtRef.current) return;
+    // isOtherGame: right after a switch, the pbp on hand is still the last
+    // game's -- building from it filed that game's final under this one
+    // (opening a final from a notification, or picking another game while
+    // the first was loading).
+    if (!pbp || !gameId || builtRef.current || isOtherGame(pbp, gameId)) return;
     const plays = pbp?.plays || [];
     const periods = [...new Set(plays.map(p => p.periodDescriptor?.number).filter(Boolean))];
     const hasGameEnd = plays.some(p => p.typeDescKey === 'game-end');
@@ -492,10 +515,11 @@ export function useGameSummary({ pbp, _isLive, gameId, carTeamId }) {
         summary.aiLoading   = false;
       }
 
+      if (gameIdRef.current !== gameId) return;
       setGameSummary(summary);
       saveStoredGame(gameId, carTeamId, summary);
     })();
-  }, [gameId, pbp?.plays?.length, carTeamId]);
+  }, [gameId, pbp?.id, pbp?.plays?.length, carTeamId]);
 
   const updateNarrative = useCallback((narrative) => {
     setGameSummary(prev => {
