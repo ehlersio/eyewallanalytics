@@ -508,6 +508,15 @@ async function _getStandings() {
  * directly, so an extra cache layer here would just serve stale data
  * between poll ticks instead of a fresh fetch.
  */
+// The alerts eyewall-poller sent for these teams (['NHL:CAR', 'PWHL:MIN'])
+// in the last 3 days, newest first -- the notifications bell's Recent
+// alerts (utils/recentAlerts.js). [] if the Worker has none or is down.
+export async function getRecentAlerts(teamKeys) {
+  if (!teamKeys?.length) return [];
+  const data = await workerFetch(`/alerts/recent?teams=${encodeURIComponent(teamKeys.join(','))}`);
+  return Array.isArray(data) ? data : [];
+}
+
 export async function getTodaysGames() {
   return (await workerFetch('/nhl/today')) || [];
 }
