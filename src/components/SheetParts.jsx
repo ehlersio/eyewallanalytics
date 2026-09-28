@@ -34,6 +34,13 @@ export const CHEVRON_CLASSES = 'text-[18px] leading-none text-[color:var(--text-
 export const ICON_CLASSES = 'w-[30px] h-[30px] rounded-[8px] bg-[var(--bg3)] flex items-center justify-center text-[15px] shrink-0';
 const FOOT_CLASSES = 'text-[12px] text-[color:var(--text-dim)] leading-snug px-1 pt-1.5';
 
+const SEGMENTS_CLASSES = 'flex gap-0.5 p-[3px] rounded-[11px] bg-[var(--bg3)] w-full';
+const SEGMENT_BASE = 'flex-1 min-h-[36px] rounded-[8px] border-0 text-[13px] font-semibold cursor-pointer';
+const SEGMENT_ON = 'bg-[var(--bg1)] text-[color:var(--text)] shadow-[0_1px_2px_rgba(0,0,0,0.25)]';
+const SEGMENT_OFF = 'bg-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text)]';
+const SWITCH_BASE = 'relative w-[50px] h-[30px] shrink-0 rounded-full border-0 p-0 cursor-pointer [transition:background_0.15s] disabled:opacity-50 disabled:cursor-wait';
+const SWITCH_KNOB_BASE = 'absolute top-[3px] w-6 h-6 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.3)] [transition:left_0.15s]';
+
 // One top-bar panel open at a time: opening one tells the others.
 const SHEET_OPEN_EVENT = 'eyewall:sheet-open';
 
@@ -94,3 +101,39 @@ export function Sheet({ className = '', anchor, label, children }) {
     document.body
   );
 }
+
+export function Switch({ on, onToggle, label, disabled, className = '' }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onToggle}
+      className={`${SWITCH_BASE} ${on ? 'bg-[var(--green)]' : 'bg-[var(--btn-fill-hover)]'} ${className}`}
+    >
+      <span className={`${SWITCH_KNOB_BASE} ${on ? 'left-[23px]' : 'left-[3px]'}`} />
+    </button>
+  );
+}
+
+export function Segments({ options, value, onChange, label }) {
+  return (
+    <div className={SEGMENTS_CLASSES} role="radiogroup" aria-label={label}>
+      {options.map(o => (
+        <button
+          key={o.value}
+          type="button"
+          role="radio"
+          aria-checked={value === o.value}
+          className={`${o.className || ''} ${SEGMENT_BASE} ${value === o.value ? SEGMENT_ON : SEGMENT_OFF}`}
+          onClick={() => onChange(o.value)}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+

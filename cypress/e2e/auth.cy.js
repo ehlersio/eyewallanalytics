@@ -117,7 +117,7 @@ describe('Account section — signed in', () => {
       expect(win.localStorage.getItem(AUTH_STORAGE_KEY)).to.be.null;
     });
     // Regression check — the rest of Settings (unrelated to auth) still renders.
-    cy.contains('Your team').should('be.visible');
+    cy.contains('Your teams').should('be.visible');
   });
 
   // In-app account deletion (App Store Guideline 5.1.1(v)). The RPC is

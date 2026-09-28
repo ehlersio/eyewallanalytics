@@ -14,6 +14,7 @@ import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { supabaseAuth } from './supabaseAuth';
 import { syncFavoriteTeamOnSignIn } from './favoriteTeamSync';
+import { syncFollowedTeamsOnSignIn } from './followedTeams';
 import { syncTriviaAnswersOnSignIn } from './triviaAnswers';
 import { syncLocaleOnSignIn } from './localeSync';
 
@@ -100,6 +101,7 @@ export function AuthProvider({ children }) {
     if (!userId || reconciledUserId.current === userId) return;
     reconciledUserId.current = userId;
     syncFavoriteTeamOnSignIn(userId);
+    syncFollowedTeamsOnSignIn(userId);
     syncTriviaAnswersOnSignIn(userId);
     syncLocaleOnSignIn(userId);
   }, [session]);

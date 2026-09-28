@@ -28,7 +28,8 @@ import { ECHL_TEAM_MAP } from './echlConfig';
 const UPSERT_TIMEOUT_MS = 5000;
 const FETCH_TIMEOUT_MS = 5000;
 
-function getLocalSelection() {
+// { sport, abbr } of the team this device is set to, or null.
+export function getLocalSelection() {
   const sport = localStorage.getItem('eyewall:sport') || 'nhl';
   try {
     if (sport === 'pwhl') {
@@ -56,7 +57,7 @@ function getLocalSelection() {
 
 // Mirrors TeamPicker.jsx's own write pattern exactly, so a server-wins
 // reconcile looks identical to a manual pick in that same picker.
-function applyLocalSelection({ sport, abbr }) {
+export function applyLocalSelection({ sport, abbr }) {
   if (sport === 'pwhl') {
     const team = PWHL_TEAM_MAP[abbr];
     if (!team) return false;

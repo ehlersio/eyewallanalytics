@@ -40,15 +40,15 @@ describe('Settings (⚙️ button)', () => {
     cy.contains('.notif-title', 'Settings').should('exist')
   })
 
-  it('drawer shows Your team section with team name', () => {
+  it('drawer shows Your teams with the team, marked primary', () => {
     cy.get('button.notif-bell').click()
-    cy.contains('Your team').should('exist')
-    cy.team().then(t => cy.contains(t.displayName).should('exist'))
+    cy.contains('Your teams').should('exist')
+    cy.team().then(t => cy.contains('.settings-team-row', t.displayName).should('contain', 'Primary'))
   })
 
-  it('drawer shows Change team button', () => {
+  it('drawer offers Manage teams', () => {
     cy.get('button.notif-bell').click()
-    cy.get('.notif-change-team-btn').should('exist').should('contain', 'Change')
+    cy.get('.settings-manage-teams').should('contain', 'Manage teams')
   })
 
   it('drawer shows push notification toggle section', () => {
