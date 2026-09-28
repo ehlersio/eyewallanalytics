@@ -27,7 +27,9 @@ function openSummary() {
   // Settled on the mock game before opening a summary -- see
   // period-summary.cy.js's waitForMockGameLive() for the race this avoids.
   cy.get('.score-card', { timeout: DATA_TIMEOUT }).should('contain', 'LIVE')
-  cy.get('button.notif-bell').click()
+  // Summaries exist once the bell's dot shows (sessionStorage and localStorage start empty).
+  cy.get('.summary-bell-dot', { timeout: DATA_TIMEOUT }).should('exist')
+  cy.get('button.summary-bell').click()
   cy.get('.notif-summary-chip', { timeout: 15000 }).first().click()
   cy.get('.ps-card', { timeout: 5000 }).should('exist')
   cy.get('.ps-goal-card', { timeout: 10000 }).should('exist')

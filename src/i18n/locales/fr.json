@@ -92,6 +92,17 @@
     "account": "Compte",
     "alertsFooter": "Seules les alertes envoyées pour les matchs de la {{league}} sont listées."
   },
+  "bell": {
+    "title": "Notifications",
+    "titleNew": "Notifications, nouveau résumé",
+    "latestGame": "Dernier match",
+    "periodSummary": "Résumé : {{period}}",
+    "finalSummary": "Résumé du match",
+    "new": "Nouveau",
+    "empty": "Les résumés de période et de match de {{team}} s’affichent ici à la fin de chaque période.",
+    "alertSettings": "Réglages des alertes",
+    "alertSettingsSub": "Choisissez ce qui vous est signalé"
+  },
   "account": {
     "signInPrompt": "Connectez-vous pour synchroniser sur vos appareils",
     "signInWithEmail": "Connexion par courriel",

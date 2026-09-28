@@ -110,7 +110,9 @@ canes-analytics-starter/
 │   │   ├── GameEvents.jsx              # Goal/penalty/win/puck drop popups — Tailwind (Phase 4, sub-PR 2), no .css file
 │   │   ├── ScoutingTab.jsx             # NHL opponent scouting — Tailwind (Phase 6), no .css file
 │   │   ├── DraftTab.jsx                # NHL draft board — Tailwind (Phase 6), no .css file
-│   │   ├── SettingsMenu.jsx            # ⚙️ Settings (was NotificationBell.jsx; redesign Option A, 2026-09) — one list: Your team, Game summaries, Alerts (drill-in screen, only the alert types the team's league sends), App (Appearance Dark/Light/Match device, Language), Help (About), Account
+│   │   ├── NotificationsBell.jsx       # 🔔 next to ⚙️ (redesign Option C, 2026-09) — the latest game's period/final summaries, newest first, dot while one is unseen (utils/summarySeen.js); NHL/PWHL only
+│   │   ├── SettingsMenu.jsx            # ⚙️ Settings (was NotificationBell.jsx; redesign Option A, 2026-09) — one list: Your team, Alerts (drill-in screen, only the alert types the team's league sends), App (Appearance Dark/Light/Match device, Language), Help (About), Account
+│   │   ├── SheetParts.jsx              # What the bell and Settings share: the sheet (full-screen on phones, a panel under its button wider), sections, rows, useSheet()
 │   │   ├── AccountSection.jsx/.css     # Sign-in UI inside Settings (Session 90) — signed-out row, two-step email sign-in, signed-in row (avatar/email/Synced badge) + sign-out
 │   │   ├── TriviaFeed.jsx              # Daily Trivia tab content (Session 92) — three tier cards, answer/reveal flow, aggregate correct/attempted stats. Same "rendered as a tab inside NewsView" pattern as MilestonesFeed.jsx. Tailwind (Phase 1 own classes; NewsView.css-owned classes finished Phase 4, sub-PR 4, imported from utils/newsViewClasses.js)
 │   │   ├── PeriodSummary.jsx           # Period/game summary popup + share canvas + hat trick badges — fully Tailwind (Phase 4, sub-PRs 5a/5b; PeriodSummary.css deleted)

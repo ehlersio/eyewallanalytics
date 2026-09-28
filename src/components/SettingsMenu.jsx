@@ -3,21 +3,18 @@
 // bell, for a long time).
 //
 // Layout (Settings redesign, Option A, 2026-09): one list of sections --
-// your team, game summaries, alerts, app, help, account -- with Alerts as
-// a screen of its own you drill into. Full-screen on phones, a panel under
-// the gear on wider screens. Following several teams and the separate
-// notifications bell (Option C) build on this; see the redesign canvas.
+// your team, alerts, app, help, account -- with Alerts as a screen of its
+// own you drill into. Full-screen on phones, a panel under the gear on
+// wider screens (SheetParts.jsx). Game summaries live under the
+// notifications bell (NotificationsBell.jsx, Option C).
 //
 // Several class names are kept as literal marker strings alongside the
 // Tailwind utilities -- notif-bell/notif-popup/notif-close/notif-title/
-// notif-change-team-btn/notif-summary-chip and its period/score/game
-// variants. Cypress selects on them (auth, theme, topnav-safe-area,
-// period-summary, shot-map, goal-replay); they carry no CSS of their own.
+// notif-change-team-btn. Cypress selects on them (auth, theme,
+// topnav-safe-area, period-summary); they carry no CSS of their own.
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { usePushNotifications, loadPrefs, savePrefs, hasSavedPrefs } from '../hooks/usePushNotifications';
-import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { useSport } from '../utils/SportContext';
 import { useAuth } from '../utils/AuthContext';
@@ -31,35 +28,16 @@ import { applyTeamTheme, themeTeam } from '../utils/applyTeamTheme';
 import TeamLogo from '../components/TeamLogo';
 import AccountSection from './AccountSection';
 import { OPEN_ABOUT_EVENT } from './AboutPopup';
+import {
+  BACK_CLASSES, CHEVRON_CLASSES, CLOSE_CLASSES, HEADER_ROW_CLASSES, ICON_CLASSES, ROW_BUTTON_CLASSES, ROW_CLASSES,
+  ROW_SUB_CLASSES, ROW_TEXT_CLASSES, ROW_TITLE_CLASSES, ROW_VALUE_CLASSES, SECTIONS_CLASSES, SECTION_LABEL_CLASSES,
+  Section, Sheet, TITLE_CLASSES, useSheet,
+} from './SheetParts';
 import { autoFollowSupported, getAutoFollow, setAutoFollow, syncAutoFollow } from '../hooks/useLiveActivity';
 
 // ── Classes ───────────────────────────────────────────────────
 const WRAP_CLASSES = 'relative';
 const TRIGGER_CLASSES = 'notif-bell bg-transparent border-0 text-[18px] cursor-pointer py-1 px-1.5 rounded-[8px]';
-// Rendered into <body> (a portal): inside the top bar it could never sit
-// above the bottom nav, whatever its z-index. Phones: the whole screen,
-// clear of the notch and home indicator. Wider: a panel under the gear,
-// placed from the gear's position (see `anchor`).
-const PANEL_CLASSES = 'notif-popup fixed z-[600] bg-[var(--bg1)] overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] '
-  + 'inset-0 pt-[max(12px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))] px-4 animate-[sheetIn_0.2s_ease-out] '
-  + 'min-[701px]:inset-auto min-[701px]:w-[380px] min-[701px]:max-h-[min(640px,calc(100vh-90px))] min-[701px]:p-4 min-[701px]:rounded-[16px] min-[701px]:border-[0.5px] min-[701px]:border-[var(--border-2)] min-[701px]:shadow-[var(--popup-shadow)] min-[701px]:animate-[popupIn_0.18s_cubic-bezier(0.34,1.56,0.64,1)]';
-const WIDE_QUERY = '(min-width: 701px)';
-const HEADER_ROW_CLASSES = 'flex items-center justify-between min-h-[44px]';
-const CLOSE_CLASSES = 'notif-close w-11 h-11 flex items-center justify-center rounded-full border-0 bg-[var(--btn-fill)] text-[15px] text-[color:var(--text-muted)] cursor-pointer hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text)]';
-const BACK_CLASSES = 'settings-back flex items-center gap-1 min-h-[44px] pr-2 border-0 bg-transparent text-[15px] font-semibold text-[color:var(--team-primary)] cursor-pointer';
-const TITLE_CLASSES = 'notif-title m-0 mb-4 font-[family-name:var(--font-display)] text-[30px] font-extrabold leading-none text-[color:var(--text)]';
-const SECTIONS_CLASSES = 'flex flex-col gap-5';
-const SECTION_LABEL_CLASSES = 'text-[11px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] px-1 pb-1.5';
-const GROUP_CLASSES = 'bg-[var(--bg2)] border-[0.5px] border-[var(--border)] rounded-[14px] overflow-hidden divide-y divide-[var(--border)]';
-const ROW_CLASSES = 'flex items-center gap-3 px-3.5 py-2.5 min-h-[52px] w-full text-left';
-const ROW_BUTTON_CLASSES = `${ROW_CLASSES} border-0 bg-transparent cursor-pointer text-[color:var(--text)] hover:bg-[var(--btn-fill)]`;
-const ROW_TEXT_CLASSES = 'flex flex-col gap-0.5 flex-1 min-w-0';
-const ROW_TITLE_CLASSES = 'text-[15px] font-semibold text-[color:var(--text)] leading-tight';
-const ROW_SUB_CLASSES = 'text-[12px] text-[color:var(--text-muted)] leading-snug';
-const ROW_VALUE_CLASSES = 'text-[14px] text-[color:var(--text-muted)] whitespace-nowrap';
-const CHEVRON_CLASSES = 'text-[18px] leading-none text-[color:var(--text-dim)]';
-const ICON_CLASSES = 'w-[30px] h-[30px] rounded-[8px] bg-[var(--bg3)] flex items-center justify-center text-[15px] shrink-0';
-const FOOT_CLASSES = 'text-[12px] text-[color:var(--text-dim)] leading-snug px-1 pt-1.5';
 const CHANGE_TEAM_BTN_CLASSES = 'notif-change-team-btn min-h-[36px] py-1 px-3 text-[13px] rounded-[18px] border-0 text-[color:var(--team-primary)] bg-[color-mix(in_srgb,var(--team-primary)_12%,transparent)] cursor-pointer font-semibold hover:bg-[color-mix(in_srgb,var(--team-primary)_20%,transparent)]';
 const SEGMENTS_CLASSES = 'flex gap-0.5 p-[3px] rounded-[11px] bg-[var(--bg3)] w-full';
 const SEGMENT_BASE = 'flex-1 min-h-[36px] rounded-[8px] border-0 text-[13px] font-semibold cursor-pointer';
@@ -73,12 +51,6 @@ const ERROR_CLASSES = 'text-[12px] text-[color:var(--red-bright)] m-0';
 const TOGGLE_BTN_BASE = 'w-full min-h-[44px] rounded-[12px] border-0 text-[14px] font-bold cursor-pointer disabled:opacity-50 disabled:cursor-wait enabled:hover:opacity-90';
 const TOGGLE_BTN_ON = 'bg-[var(--red-bright)] text-white';
 const TOGGLE_BTN_OFF = 'bg-[var(--bg3)] text-[color:var(--text-muted)]';
-
-const SUMMARY_CHIP_BASE = `notif-summary-chip ${ROW_BUTTON_CLASSES}`;
-const SUMMARY_CHIP_GAME = 'notif-summary-chip-game bg-[rgba(var(--team-primary-rgb),0.06)]';
-const SUMMARY_CHIP_PERIOD_BASE = 'notif-summary-chip-period min-w-[44px] h-[30px] rounded-[8px] flex items-center justify-center font-[family-name:var(--font-display)] text-[14px] font-extrabold text-white bg-[var(--red)] shrink-0';
-const SUMMARY_CHIP_PERIOD_GAME = 'text-[12px] tracking-[0.06em]';
-const SUMMARY_CHIP_SCORE_CLASSES = `notif-summary-chip-score ${ROW_TITLE_CLASSES} flex-1`;
 
 // ── Alert types ───────────────────────────────────────────────
 
@@ -134,16 +106,6 @@ function isIOSBrowserTab() {
 
 // ── Building blocks ───────────────────────────────────────────
 
-function Section({ label, footer, children }) {
-  return (
-    <section>
-      {label && <h2 className={SECTION_LABEL_CLASSES}>{label}</h2>}
-      <div className={GROUP_CLASSES}>{children}</div>
-      {footer && <p className={FOOT_CLASSES}>{footer}</p>}
-    </section>
-  );
-}
-
 function Switch({ on, onToggle, label, disabled, className = '' }) {
   return (
     <button
@@ -181,13 +143,16 @@ function Segments({ options, value, onChange, label }) {
 
 // ── Component ─────────────────────────────────────────────────
 
+// Dispatched on window to open Settings from elsewhere; `detail.screen`
+// 'alerts' opens the Alerts screen.
+export const OPEN_SETTINGS_EVENT = 'eyewall:open-settings';
+
 export default function SettingsMenu() {
   const { t }                   = useTranslation();
-  const [open, setOpen]         = useState(false);
   const [screen, setScreen]     = useState('main'); // 'main' | 'alerts'
   const triggerRef              = useRef(null);
-  // Wide screens: where the panel hangs, from the gear's position at open.
-  const [anchor, setAnchor]     = useState(null);
+  // Closing always lands back on the main screen next time.
+  const { open, anchor, openSheet, closeSheet: closePanel } = useSheet('settings', triggerRef, () => setScreen('main'));
   const { isPWHL, isAHL, isECHL } = useSport();
   const { user }                 = useAuth();
   const activeTeam              = isPWHL ? PWHL_TEAM_CONFIG : isAHL ? AHL_TEAM_CONFIG : isECHL ? ECHL_TEAM_CONFIG : TEAM_CONFIG;
@@ -227,29 +192,14 @@ export default function SettingsMenu() {
 
   const { supported, permission, subscribed, subscribe, unsubscribe, updatePrefs, loading, error } =
     usePushNotifications();
-  const { summaries, openSummary } = usePeriodSummaryContext();
 
-  // Closing always lands back on the main screen next time.
-  const closePanel = () => {
-    setOpen(false);
-    setScreen('main');
-  };
-
-  // Escape closes, as a full-screen panel on a keyboard should.
+  // The bell's "Alert settings" (NotificationsBell.jsx) opens Settings
+  // straight on the Alerts screen.
   useEffect(() => {
-    if (!open) return;
-    const onKey = e => { if (e.key === 'Escape') closePanel(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open]);
-
-  const openPanel = () => {
-    const r = triggerRef.current?.getBoundingClientRect();
-    setAnchor(r && window.matchMedia(WIDE_QUERY).matches
-      ? { top: r.bottom + 10, right: Math.max(12, window.innerWidth - r.right) }
-      : null);
-    setOpen(true);
-  };
+    const onOpen = e => { setScreen(e.detail?.screen === 'alerts' ? 'alerts' : 'main'); openSheet(); };
+    window.addEventListener(OPEN_SETTINGS_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_SETTINGS_EVENT, onOpen);
+  }, [openSheet]);
 
   const handleChangeTeam = () => {
     closePanel();
@@ -320,11 +270,6 @@ export default function SettingsMenu() {
     return () => { cancelled = true; };
   }, [subscribed, updatePrefs, leagueTeamKey]);
 
-  const handleOpenSummary = (summary) => {
-    closePanel();
-    openSummary(summary);
-  };
-
   const handleOpenAbout = () => {
     closePanel();
     window.dispatchEvent(new window.Event(OPEN_ABOUT_EVENT));
@@ -342,9 +287,9 @@ export default function SettingsMenu() {
     <>
       <div className={HEADER_ROW_CLASSES}>
         <span />
-        <button className={CLOSE_CLASSES} onClick={closePanel} aria-label={t('common.close')}>✕</button>
+        <button className={`notif-close ${CLOSE_CLASSES}`} onClick={closePanel} aria-label={t('common.close')}>✕</button>
       </div>
-      <h1 className={TITLE_CLASSES}>{t('settings.title')}</h1>
+      <h1 className={`notif-title ${TITLE_CLASSES}`}>{t('settings.title')}</h1>
 
       <div className={SECTIONS_CLASSES}>
         <Section label={t('settings.yourTeam')}>
@@ -357,29 +302,6 @@ export default function SettingsMenu() {
             <button className={CHANGE_TEAM_BTN_CLASSES} onClick={handleChangeTeam}>{t('settings.change')}</button>
           </div>
         </Section>
-
-        {/* Until the notifications bell takes them (redesign Option C). */}
-        {summaries.length > 0 && (
-          <Section label={t('settings.gameSummaries')}>
-            {summaries.map(s => (
-              <button
-                key={s.isGameSummary ? 'game' : s.period}
-                className={`${SUMMARY_CHIP_BASE} ${s.isGameSummary ? SUMMARY_CHIP_GAME : ''}`}
-                onClick={() => handleOpenSummary(s)}
-              >
-                <span className={`${SUMMARY_CHIP_PERIOD_BASE} ${s.isGameSummary ? SUMMARY_CHIP_PERIOD_GAME : ''}`}>
-                  {s.isGameSummary ? 'FINAL' : s.periodShort}
-                </span>
-                <span className={SUMMARY_CHIP_SCORE_CLASSES}>
-                  {s.carGoals !== undefined
-                    ? `${activeTeamAbbr} ${s.carGoals}–${s.oppGoals}`
-                    : t('settings.viewSummary')}
-                </span>
-                <span className={CHEVRON_CLASSES} aria-hidden="true">›</span>
-              </button>
-            ))}
-          </Section>
-        )}
 
         <Section label={t('settings.alerts')}>
           <button className={`settings-alerts-row ${ROW_BUTTON_CLASSES}`} onClick={() => setScreen('alerts')}>
@@ -456,12 +378,12 @@ export default function SettingsMenu() {
   const alertsScreen = (
     <>
       <div className={HEADER_ROW_CLASSES}>
-        <button className={BACK_CLASSES} onClick={() => setScreen('main')}>
+        <button className={`settings-back ${BACK_CLASSES}`} onClick={() => setScreen('main')}>
           <span aria-hidden="true" className="text-[22px] leading-none">‹</span>{t('settings.title')}
         </button>
-        <button className={CLOSE_CLASSES} onClick={closePanel} aria-label={t('common.close')}>✕</button>
+        <button className={`notif-close ${CLOSE_CLASSES}`} onClick={closePanel} aria-label={t('common.close')}>✕</button>
       </div>
-      <h1 className={TITLE_CLASSES}>{t('settings.alerts')}</h1>
+      <h1 className={`notif-title ${TITLE_CLASSES}`}>{t('settings.alerts')}</h1>
 
       <div className={SECTIONS_CLASSES}>
         <div className="flex flex-col gap-3">
@@ -520,7 +442,7 @@ export default function SettingsMenu() {
       <button
         ref={triggerRef}
         className={TRIGGER_CLASSES}
-        onClick={() => (open ? closePanel() : openPanel())}
+        onClick={() => (open ? closePanel() : openSheet())}
         aria-label={t('settings.title')}
         aria-expanded={open}
         title={t('settings.title')}
@@ -528,11 +450,10 @@ export default function SettingsMenu() {
         ⚙️
       </button>
 
-      {open && createPortal(
-        <div className={PANEL_CLASSES} style={anchor || undefined} role="dialog" aria-modal="true" aria-label={t('settings.title')}>
+      {open && (
+        <Sheet className="notif-popup" anchor={anchor} label={t('settings.title')}>
           {screen === 'alerts' ? alertsScreen : mainScreen}
-        </div>,
-        document.body
+        </Sheet>
       )}
     </div>
   );
