@@ -25,26 +25,21 @@ import { getSavedTheme, getTheme, setTheme, clearTheme } from '../utils/themeCon
 import { getLocale, setLocale } from '../utils/localeConfig';
 import { upsertLocale } from '../utils/localeSync';
 import { applyTeamTheme, themeTeam } from '../utils/applyTeamTheme';
-import TeamLogo from '../components/TeamLogo';
 import AccountSection from './AccountSection';
 import { OPEN_ABOUT_EVENT } from './AboutPopup';
 import {
   BACK_CLASSES, CHEVRON_CLASSES, CLOSE_CLASSES, HEADER_ROW_CLASSES, ICON_CLASSES, ROW_BUTTON_CLASSES, ROW_CLASSES,
   ROW_SUB_CLASSES, ROW_TEXT_CLASSES, ROW_TITLE_CLASSES, ROW_VALUE_CLASSES, SECTIONS_CLASSES, SECTION_LABEL_CLASSES,
-  Section, Sheet, TITLE_CLASSES, useSheet,
+  Section, Segments, Sheet, Switch, TITLE_CLASSES, useSheet,
 } from './SheetParts';
+import { AddTeamScreen, TeamsScreen, TeamsSection } from './SettingsTeams';
+import { FOLLOWED_CHANGED_EVENT, getFollowedTeams } from '../utils/followedTeams';
+import { getLocalSelection } from '../utils/favoriteTeamSync';
 import { autoFollowSupported, getAutoFollow, setAutoFollow, syncAutoFollow } from '../hooks/useLiveActivity';
 
 // ── Classes ───────────────────────────────────────────────────
 const WRAP_CLASSES = 'relative';
 const TRIGGER_CLASSES = 'notif-bell bg-transparent border-0 text-[18px] cursor-pointer py-1 px-1.5 rounded-[8px]';
-const CHANGE_TEAM_BTN_CLASSES = 'notif-change-team-btn min-h-[36px] py-1 px-3 text-[13px] rounded-[18px] border-0 text-[color:var(--team-primary)] bg-[color-mix(in_srgb,var(--team-primary)_12%,transparent)] cursor-pointer font-semibold hover:bg-[color-mix(in_srgb,var(--team-primary)_20%,transparent)]';
-const SEGMENTS_CLASSES = 'flex gap-0.5 p-[3px] rounded-[11px] bg-[var(--bg3)] w-full';
-const SEGMENT_BASE = 'flex-1 min-h-[36px] rounded-[8px] border-0 text-[13px] font-semibold cursor-pointer';
-const SEGMENT_ON = 'bg-[var(--bg1)] text-[color:var(--text)] shadow-[0_1px_2px_rgba(0,0,0,0.25)]';
-const SEGMENT_OFF = 'bg-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text)]';
-const SWITCH_BASE = 'relative w-[50px] h-[30px] shrink-0 rounded-full border-0 p-0 cursor-pointer [transition:background_0.15s] disabled:opacity-50 disabled:cursor-wait';
-const SWITCH_KNOB_BASE = 'absolute top-[3px] w-6 h-6 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.3)] [transition:left_0.15s]';
 const DESC_CLASSES = 'text-[13px] text-[color:var(--text-muted)] leading-[1.5] m-0';
 const BLOCKED_CLASSES = 'text-[12px] text-[color:var(--amber)] bg-[rgba(240,160,48,0.1)] rounded-[10px] py-2 px-3 leading-[1.5] m-0';
 const ERROR_CLASSES = 'text-[12px] text-[color:var(--red-bright)] m-0';
@@ -106,41 +101,6 @@ function isIOSBrowserTab() {
 
 // ── Building blocks ───────────────────────────────────────────
 
-function Switch({ on, onToggle, label, disabled, className = '' }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      disabled={disabled}
-      onClick={onToggle}
-      className={`${SWITCH_BASE} ${on ? 'bg-[var(--green)]' : 'bg-[var(--btn-fill-hover)]'} ${className}`}
-    >
-      <span className={`${SWITCH_KNOB_BASE} ${on ? 'left-[23px]' : 'left-[3px]'}`} />
-    </button>
-  );
-}
-
-function Segments({ options, value, onChange, label }) {
-  return (
-    <div className={SEGMENTS_CLASSES} role="radiogroup" aria-label={label}>
-      {options.map(o => (
-        <button
-          key={o.value}
-          type="button"
-          role="radio"
-          aria-checked={value === o.value}
-          className={`${o.className || ''} ${SEGMENT_BASE} ${value === o.value ? SEGMENT_ON : SEGMENT_OFF}`}
-          onClick={() => onChange(o.value)}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 // ── Component ─────────────────────────────────────────────────
 
 // Dispatched on window to open Settings from elsewhere; `detail.screen`
@@ -149,12 +109,21 @@ export const OPEN_SETTINGS_EVENT = 'eyewall:open-settings';
 
 export default function SettingsMenu() {
   const { t }                   = useTranslation();
-  const [screen, setScreen]     = useState('main'); // 'main' | 'alerts'
+  const [screen, setScreen]     = useState('main'); // 'main' | 'alerts' | 'teams' | 'addTeam'
   const triggerRef              = useRef(null);
   // Closing always lands back on the main screen next time.
   const { open, anchor, openSheet, closeSheet: closePanel } = useSheet('settings', triggerRef, () => setScreen('main'));
   const { isPWHL, isAHL, isECHL } = useSport();
   const { user }                 = useAuth();
+  const userId                  = user?.id;
+  // Followed teams (utils/followedTeams.js), kept current as they change.
+  const [followed, setFollowed] = useState(getFollowedTeams);
+  const primary                 = getLocalSelection();
+  useEffect(() => {
+    const onChange = e => setFollowed(e.detail || getFollowedTeams());
+    window.addEventListener(FOLLOWED_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(FOLLOWED_CHANGED_EVENT, onChange);
+  }, []);
   const activeTeam              = isPWHL ? PWHL_TEAM_CONFIG : isAHL ? AHL_TEAM_CONFIG : isECHL ? ECHL_TEAM_CONFIG : TEAM_CONFIG;
   const activeTeamAbbr          = activeTeam?.abbr || TEAM_CONFIG.abbr;
   const activeTeamName          = activeTeam?.displayName || TEAM_CONFIG.displayName;
@@ -200,25 +169,6 @@ export default function SettingsMenu() {
     window.addEventListener(OPEN_SETTINGS_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_SETTINGS_EVENT, onOpen);
   }, [openSheet]);
-
-  const handleChangeTeam = () => {
-    closePanel();
-    localStorage.removeItem('eyewall:sport');
-    localStorage.removeItem('eyewall:team');
-    localStorage.removeItem('eyewall:pwhl_team');
-    localStorage.removeItem('eyewall:ahl_team');
-    localStorage.removeItem('eyewall:echl_team');
-    // Signed-in users get their favorite team reconciled from the server on
-    // every load (see favoriteTeamSync.js) -- without this flag, clearing
-    // local storage here looks identical to "fresh device, no opinion yet"
-    // to that reconciliation, which would silently re-apply the OLD server
-    // value before TeamPicker ever renders, defeating this button entirely.
-    // TeamPicker clears this flag itself once a new pick is made.
-    localStorage.setItem('eyewall:team-change-pending', '1');
-    // Navigate to root so TeamPicker shows at / regardless of current route.
-    // After team selection, App.jsx redirects to the correct sport root.
-    window.location.href = '/';
-  };
 
   const handleThemeChange = choice => {
     if (choice === 'system') clearTheme();
@@ -292,16 +242,7 @@ export default function SettingsMenu() {
       <h1 className={`notif-title ${TITLE_CLASSES}`}>{t('settings.title')}</h1>
 
       <div className={SECTIONS_CLASSES}>
-        <Section label={t('settings.yourTeam')}>
-          <div className={ROW_CLASSES}>
-            <TeamLogo abbr={activeTeamAbbr} size={32} sport={league.toLowerCase()} />
-            <span className={ROW_TEXT_CLASSES}>
-              <span className={ROW_TITLE_CLASSES}>{activeTeamName}</span>
-              <span className={ROW_SUB_CLASSES}>{league}</span>
-            </span>
-            <button className={CHANGE_TEAM_BTN_CLASSES} onClick={handleChangeTeam}>{t('settings.change')}</button>
-          </div>
-        </Section>
+        <TeamsSection followed={followed} primary={primary} userId={userId} onManage={() => setScreen('teams')} />
 
         <Section label={t('settings.alerts')}>
           <button className={`settings-alerts-row ${ROW_BUTTON_CLASSES}`} onClick={() => setScreen('alerts')}>
@@ -375,15 +316,40 @@ export default function SettingsMenu() {
     </>
   );
 
-  const alertsScreen = (
+  // A drill-in screen's back button, close and title.
+  const subHeader = (title, back, backLabel) => (
     <>
       <div className={HEADER_ROW_CLASSES}>
-        <button className={`settings-back ${BACK_CLASSES}`} onClick={() => setScreen('main')}>
-          <span aria-hidden="true" className="text-[22px] leading-none">‹</span>{t('settings.title')}
+        <button className={`settings-back ${BACK_CLASSES}`} onClick={() => setScreen(back)}>
+          <span aria-hidden="true" className="text-[22px] leading-none">‹</span>{backLabel}
         </button>
         <button className={`notif-close ${CLOSE_CLASSES}`} onClick={closePanel} aria-label={t('common.close')}>✕</button>
       </div>
-      <h1 className={`notif-title ${TITLE_CLASSES}`}>{t('settings.alerts')}</h1>
+      <h1 className={`notif-title ${TITLE_CLASSES}`}>{title}</h1>
+    </>
+  );
+
+  const teamsScreen = (
+    <>
+      {subHeader(t('settings.yourTeams'), 'main', t('settings.title'))}
+      <div className={SECTIONS_CLASSES}>
+        <TeamsScreen followed={followed} primary={primary} userId={userId} onAdd={() => setScreen('addTeam')} />
+      </div>
+    </>
+  );
+
+  const addTeamScreen = (
+    <>
+      {subHeader(t('settings.addTeam'), 'teams', t('settings.yourTeams'))}
+      <div className={`${SECTIONS_CLASSES} gap-4`}>
+        <AddTeamScreen followed={followed} primary={primary} userId={userId} />
+      </div>
+    </>
+  );
+
+  const alertsScreen = (
+    <>
+      {subHeader(t('settings.alerts'), 'main', t('settings.title'))}
 
       <div className={SECTIONS_CLASSES}>
         <div className="flex flex-col gap-3">
@@ -452,7 +418,10 @@ export default function SettingsMenu() {
 
       {open && (
         <Sheet className="notif-popup" anchor={anchor} label={t('settings.title')}>
-          {screen === 'alerts' ? alertsScreen : mainScreen}
+          {screen === 'alerts' ? alertsScreen
+            : screen === 'teams' ? teamsScreen
+              : screen === 'addTeam' ? addTeamScreen
+                : mainScreen}
         </Sheet>
       )}
     </div>
