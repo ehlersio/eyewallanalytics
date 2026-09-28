@@ -18,6 +18,8 @@ import GoalReplay from '../components/GoalReplay';
 import { goalReplayTarget } from '../utils/goalReplayTarget';
 import { GoalPopup, HatTrickPopup, PenaltyPopup, WinPopup, PuckDropPopup, useGameEvents } from '../components/GameEvents';
 import { maybeRequestReview } from '../utils/reviewPrompt';
+import { useSearchParams } from 'react-router-dom';
+import { parseSummaryLink, withoutSummaryLink } from '../utils/summaryLink';
 import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '../utils/advancedStats';
 import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getSpecialTeamsUnits } from '../utils/supabaseClient';
 import { inferPPUnit, inferPKUnit } from '../utils/ppUnits';
@@ -1167,7 +1169,7 @@ export default function ShotMapView() {
   }, []); // register once — refs handle stale closure
 
   // ── Period summaries ──────────────────────────────────────────
-  const { summaries: periodSummaries, newSummary, dismissNewSummary, updateSummaryNarrative } =
+  const { summaries: periodSummaries, newSummary, dismissNewSummary, updateSummaryNarrative, requestSummary } =
     usePeriodSummary({ pbp, isLive, gameId, carTeamId: team.teamId, isPlayoff: inPlayoffs });
   const { gameSummary, updateGameNarrative } = useGameSummary({
     pbp, isLive, gameId, carTeamId: team.teamId, summaries: periodSummaries,
@@ -1209,6 +1211,55 @@ export default function ShotMapView() {
       setViewingSummaryPeriod('game');
     }
   }, [gameSummary, isLive]);
+
+  // Opened from an End of P1 / final notification: /?summary=1&game=...
+  // (utils/summaryLink.js). Points the view at that game, then opens the
+  // summary once it exists, building a past period's on demand. Dropped
+  // quietly if that game can't be shown here: another game is live (a
+  // live game always wins), or it isn't in the season on screen. Not in a
+  // guest view -- notifications are the favorite's.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const summaryLink = isGuest ? null : parseSummaryLink(searchParams);
+  const linkGameId = summaryLink?.gameId;
+  const linkPeriod = summaryLink?.period;
+  const clearSummaryLink = useCallback(
+    () => setSearchParams(p => withoutSummaryLink(p), { replace: true }),
+    [setSearchParams]
+  );
+  // Switches to that game's Preseason/Regular/Playoffs too, since the
+  // game row only lists the type on screen.
+  const linkedGame = linkGameId ? seasonSchedule?.find(g => g.id === linkGameId) || null : null;
+  useEffect(() => {
+    if (!linkedGame) return;
+    setPickedSeasonType(linkedGame.gameType === GAME_TYPE.PLAYOFFS ? 'playoffs'
+      : linkedGame.gameType === GAME_TYPE.PRESEASON ? 'preseason' : 'regular');
+    setSelectedGameId(linkedGame.id);
+  }, [linkedGame]);
+  useEffect(() => {
+    if (!linkGameId || !gameId) return;
+    if (gameId !== linkGameId) {
+      if ((liveGame && liveGame.id !== linkGameId) || (seasonSchedule && !linkedGame)) clearSummaryLink();
+      return;
+    }
+    const pbpIsThisGame = !!pbp && String(pbp.id) === String(gameId);
+    if (linkPeriod === 'game') {
+      if (gameSummary) { setViewingSummaryPeriod('game'); clearSummaryLink(); }
+      // No game-end play, no final summary to wait for (some preseason
+      // games' pbp is goals only).
+      else if (pbpIsThisGame && !pbp.plays?.some(p => p.typeDescKey === 'game-end')) clearSummaryLink();
+      return;
+    }
+    // Already popping up on its own (this intermission's summary).
+    if (newSummary?.period === linkPeriod) { clearSummaryLink(); return; }
+    if (periodSummaries.some(s => s.period === linkPeriod)) {
+      setViewingSummaryPeriod(linkPeriod);
+      clearSummaryLink();
+      return;
+    }
+    // Not built yet: build it, or stop waiting if that period isn't over.
+    if (pbpIsThisGame && !requestSummary(linkPeriod)) clearSummaryLink();
+  }, [linkGameId, linkPeriod, gameId, liveGame, seasonSchedule, linkedGame, gameSummary, newSummary,
+    periodSummaries, pbp, requestSummary, clearSummaryLink]);
 
   // ── Debug panel (5 taps on score bar, dev only) ──────────────
   const [debugOpen,  setDebugOpen]  = useState(false);

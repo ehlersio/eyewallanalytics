@@ -18,6 +18,7 @@ import { applyTeamTheme, themeTeam } from './utils/applyTeamTheme';
 import { getTheme, subscribeSystemTheme } from './utils/themeConfig';
 import { syncAutoFollow } from './hooks/useLiveActivity';
 import { recordAppOpen } from './utils/reviewPrompt';
+import { useNotificationTaps } from './hooks/useNotificationTaps';
 
 // Lazy-load all non-initial routes — reduces initial bundle by ~64 KiB
 const ScheduleView  = lazy(() => import('./views/ScheduleView'));
@@ -89,6 +90,12 @@ function RootRoute() {
 }
 
 // Tracks route changes as pageviews
+// iOS: a tapped notification opens where it points (useNotificationTaps.js).
+function NotificationTaps() {
+  useNotificationTaps();
+  return null;
+}
+
 function PageTracker() {
   const location = useLocation();
   useEffect(() => {
@@ -186,6 +193,7 @@ export default function App() {
               <div className="app-shell flex flex-col h-dvh overflow-hidden">
                 <a href="#main-content" className="skip-link absolute -top-[100px] left-4 z-[9999] py-2 px-4 bg-[var(--red-bright)] text-white font-bold rounded-b-[8px] no-underline [transition:top_0.15s] focus:top-0 focus:outline-[3px] focus:outline-white focus:outline-offset-2">{t('app.skipToMainContent')}</a>
                 <PageTracker />
+                <NotificationTaps />
                 <Topbar />
                 <main id="main-content" className="app-main flex-1 overflow-y-auto overflow-x-hidden pb-[calc(var(--nav-height)+env(safe-area-inset-bottom,0px))]" aria-label={t('app.mainContentAriaLabel')}>
                   <Suspense fallback={<ViewFallback />}>
