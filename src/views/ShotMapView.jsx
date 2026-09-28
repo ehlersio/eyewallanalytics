@@ -2511,7 +2511,7 @@ export default function ShotMapView() {
       <div className={TWO_COL_CLASSES}>
         {/* ── Left: rink + event log ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div className="card">
+          <div className="card" data-tour="rink">
             <div className="sec-label">{t('shotMapView.boxscore.shotMap')}</div>
             <HockeyRink events={toHockeyRinkEvents(shotEvents)} teamAbbr={team.abbr} teamColor="var(--team-primary)" renderMedia={renderGoalMedia} />
           </div>

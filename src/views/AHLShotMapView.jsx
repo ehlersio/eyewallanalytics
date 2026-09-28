@@ -335,7 +335,7 @@ export default function AHLShotMapView() {
         />
       </div>
 
-      <div className={RINK_CARD_CLASSES}>
+      <div className={RINK_CARD_CLASSES} data-tour="rink">
         {shotsLoading ? (
           <div className={SKELETON_CLASSES} style={{ height: 280, width: '100%', borderRadius: 8 }} />
         ) : rinkEvents.length > 0 ? (

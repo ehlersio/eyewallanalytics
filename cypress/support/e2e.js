@@ -109,6 +109,9 @@ beforeEach(() => {
       // deliberate concern (not yet added), not something every existing
       // test should have to account for.
       win.localStorage.setItem('eyewall:locale', 'en')
+      // The app tour (utils/tour.js) would start or invite on every home
+      // page and cover what specs click. tour.cy.js clears this itself.
+      win.localStorage.setItem('eyewall:tour', JSON.stringify({ done: true }))
     })
   })
 })
