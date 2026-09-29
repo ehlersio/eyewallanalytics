@@ -172,11 +172,15 @@ export default function AHLGamePreviewPopup({ game, teamId, abbr, color, onClose
                   <div className="pgp-winbar-fill h-full" style={{ width: `${myWinPct}%`, background: color }} />
                   <div className="pgp-winbar-fill h-full" style={{ width: `${oppWinPct}%`, background: oppColor }} />
                 </div>
-                <div className="pgp-exp-row grid gap-2 items-center font-[family-name:var(--font-mono)] text-[16px] font-semibold text-center mb-2.5 [grid-template-columns:1fr_auto_1fr] [&>span:first-child]:text-right [&>span:last-child]:text-left">
-                  <span style={{ color }}>{myExp}</span>
-                  <span className="pgp-exp-label font-[family-name:var(--font-body)] text-[9px] font-semibold text-[color:var(--text-dim)] uppercase tracking-[0.06em]">{t('pwhlGamePreview.prediction.expectedScoreLabel')}</span>
-                  <span style={{ color: oppColor }}>{oppExp}</span>
-                </div>
+                {/* No expected score when either team's goal rates are unavailable
+                    (e.g. an expansion team's first game) -- hide the row, don't show it empty. */}
+                {myExp != null && oppExp != null && (
+                  <div className="pgp-exp-row grid gap-2 items-center font-[family-name:var(--font-mono)] text-[16px] font-semibold text-center mb-2.5 [grid-template-columns:1fr_auto_1fr] [&>span:first-child]:text-right [&>span:last-child]:text-left">
+                    <span style={{ color }}>{myExp}</span>
+                    <span className="pgp-exp-label font-[family-name:var(--font-body)] text-[9px] font-semibold text-[color:var(--text-dim)] uppercase tracking-[0.06em]">{t('pwhlGamePreview.prediction.expectedScoreLabel')}</span>
+                    <span style={{ color: oppColor }}>{oppExp}</span>
+                  </div>
+                )}
                 <p className="pgp-narrative text-[13px] leading-[1.5] text-[color:var(--text-muted)] my-0 mb-3">{prediction.narrative}</p>
                 <div className="pgp-stat-grid flex flex-col gap-2">
                   <div className={PGP_STAT_GRID_ROW_CLASSES}>

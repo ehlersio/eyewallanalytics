@@ -39,6 +39,20 @@ describe('pwhlPredictionStore', () => {
     expect(pred.scoreDiff).toBeCloseTo(1 + 1); // |3-4| + |2-1|
   });
 
+  it('leaves score error unmeasured when there was no predicted score, instead of counting the whole actual score', () => {
+    // The Worker returns expHome/expAway null when goal rates are unavailable
+    // (e.g. an expansion team's first game).
+    savePWHLPrediction({ gameId: 7, predictedTeamWin: true, predictedTeamScore: null, predictedOppScore: null });
+    savePWHLPrediction({ gameId: 8, predictedTeamWin: true, predictedTeamScore: 3, predictedOppScore: 2 });
+    recordPWHLOutcome(7, 4, 1);
+    recordPWHLOutcome(8, 4, 1);
+    const pred7 = loadPWHLPredictions().find(p => p.gameId === 7);
+    expect(pred7.scoreDiff).toBeNull();
+    expect(pred7.correct).toBe(true);
+    // avgError is over game 8 only: |3-4| + |2-1| = 2
+    expect(getPWHLPredictionStats()).toMatchObject({ total: 2, correct: 2, avgError: 2 });
+  });
+
   it('records an incorrect outcome', () => {
     savePWHLPrediction({ gameId: 3, predictedTeamWin: true, predictedTeamScore: 3, predictedOppScore: 2 });
     recordPWHLOutcome(3, 1, 4);

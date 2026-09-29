@@ -31,8 +31,11 @@ export function recordOutcome(gameId, carActual, oppActual) {
   pred.oppActual  = oppActual;
   pred.carWon     = carActual > oppActual;
   pred.correct    = pred.carWon === pred.predictedCarWin;
-  pred.scoreDiff  = Math.abs((pred.predictedCarScore - carActual) || 0) +
-                    Math.abs((pred.predictedOppScore  - oppActual) || 0);
+  // No predicted score (goal rates were unavailable) means no error to
+  // measure -- not the whole actual score counted as error.
+  pred.scoreDiff  = pred.predictedCarScore != null && pred.predictedOppScore != null
+    ? Math.abs(pred.predictedCarScore - carActual) + Math.abs(pred.predictedOppScore - oppActual)
+    : null;
   localStorage.setItem(KEY, JSON.stringify(preds));
 }
 
@@ -40,8 +43,9 @@ export function getPredictionStats() {
   const preds    = loadPredictions().filter(p => p.carActual != null);
   const total    = preds.length;
   const correct  = preds.filter(p => p.correct).length;
-  const avgError = total > 0
-    ? +(preds.reduce((s, p) => s + (p.scoreDiff || 0), 0) / total).toFixed(1)
+  const scored   = preds.filter(p => p.scoreDiff != null);
+  const avgError = scored.length > 0
+    ? +(scored.reduce((s, p) => s + p.scoreDiff, 0) / scored.length).toFixed(1)
     : null;
   return { total, correct, pct: total > 0 ? Math.round(correct/total*100) : null, avgError };
 }
