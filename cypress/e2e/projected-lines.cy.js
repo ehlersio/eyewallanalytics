@@ -23,13 +23,28 @@ const PROJECTION = {
   ],
 }
 
-function openScouting(projectedReply) {
+// /team-lines rows: three of this season's lines and one carried over from
+// last season to fill Line 4 (line_combinations.source).
+const line = (rank, source, names) => ({
+  unit_type: 'F', rank, source,
+  name_a: names[0], name_b: names[1], name_c: names[2],
+  pos_a: 'L', pos_b: 'C', pos_c: 'R', toi_secs: 3600, xgf_pct: 0.55,
+})
+const TEAM_LINES = [
+  line(1, 'current', ['Andrei Svechnikov', 'Sebastian Aho', 'Seth Jarvis']),
+  line(2, 'current', ['Taylor Hall', 'Logan Stankoven', 'Jackson Blake']),
+  line(3, 'current', ['Nikolaj Ehlers', 'Jordan Staal', 'Jordan Martinook']),
+  line(4, 'prior_season', ['William Carrier', 'Mark Jankowski', 'Eric Robinson']),
+]
+
+function openScouting(projectedReply, teamLines = TEAM_LINES) {
   cy.fixture('schedule-car-2026-27.json').then(schedule => {
     const games = schedule.games.slice(0, 1)
     cy.intercept('GET', /\/cache\/schedule%3ACAR%3A\d{8}/, games).as('scheduleKv')
     cy.intercept('GET', '**/club-schedule-season/CAR/**', { ...schedule, games }).as('schedule')
   })
   cy.intercept('GET', '**/projected-lines?team=*', projectedReply).as('projected')
+  cy.intercept('GET', '**/team-lines?*', teamLines).as('teamLines')
   cy.setTeam('CAR')
   cy.visit('/schedule')
   cy.contains('.gc-abbr', 'FLA', { timeout: 15000 }).should('exist')
@@ -39,7 +54,7 @@ function openScouting(projectedReply) {
 }
 
 describe('Scouting tab — Projected lines', () => {
-  it('shows the projection above the season lines, with its basis, accuracy and fill-ins', () => {
+  it('before the opener shows only the projection, with its basis, accuracy and fill-ins', () => {
     openScouting(PROJECTION)
     cy.get('.sc-projected-lines', { timeout: 15000 }).within(() => {
       cy.contains('CAR projected lines').should('exist')
@@ -51,20 +66,30 @@ describe('Scouting tab — Projected lines', () => {
       cy.get('.sc-projected-unit').eq(1).find('.sc-projected-filled').should('contain', 'fill-in')
       cy.contains('Defence pairs').should('exist')
     })
-    // renamed so the two blocks aren't confused (only when season lines exist)
+    // No regular-season game yet: no "most-used lines this season" block,
+    // even though /team-lines (or the static fallback) has units -- they'd
+    // be last season's, not this season's.
+    cy.get('.scouting-section-label').then($labels => {
+      const text = [...$labels].map(el => el.innerText.toLowerCase())
+      expect(text.some(t => t.includes('projected lines'))).to.equal(true)
+      expect(text.some(t => t.includes('most-used lines'))).to.equal(false)
+    })
+  })
+
+  it('in season shows the projection above the season lines, tagging carried-over units', () => {
+    openScouting({ ...PROJECTION, basis: 'last_game', basisGameId: 2026020001, basisGames: 1 })
+    cy.get('.sc-projected-basis', { timeout: 15000 }).should('contain', 'Based on the last game')
+    cy.get('.sc-projected-accuracy').should('contain', 'last two seasons')
+    cy.wait('@teamLines').its('request.url').should('include', 'gameType=2')
     cy.get('.scouting-section-label').then($labels => {
       const text = [...$labels].map(el => el.innerText.toLowerCase())
       const projected = text.findIndex(t => t.includes('projected lines'))
       const mostUsed = text.findIndex(t => t.includes('most-used lines'))
       expect(projected).to.be.greaterThan(-1)
-      if (mostUsed > -1) expect(mostUsed).to.be.greaterThan(projected)
+      expect(mostUsed).to.be.greaterThan(projected)
     })
-  })
-
-  it('uses in-season copy for a last-game projection', () => {
-    openScouting({ ...PROJECTION, basis: 'last_game', basisGameId: 2026020001, basisGames: 1 })
-    cy.get('.sc-projected-basis', { timeout: 15000 }).should('contain', 'Based on the last game')
-    cy.get('.sc-projected-accuracy').should('contain', 'last two seasons')
+    cy.get('.sc-line-carried').should('have.length', 1).and('contain', 'Last season')
+    cy.get('.sc-line-unit').not('.sc-projected-unit').eq(3).find('.sc-line-carried').should('exist')
   })
 
   it('renders nothing when there is no projection yet', () => {

@@ -297,8 +297,12 @@ export async function getTeamLines(team = 'CAR', season = currentSeason(), gameT
   } catch {}
   const posMap = buildStaticPosMap(staticData);
 
-  // Try live inferred data from the Worker
-  const rows = await workerFetch(`/team-lines?team=${team}&season=${season}`).catch(() => []);
+  // Try live inferred data from the Worker. Lines are per game type (the
+  // pipeline builds regular-season and playoff units separately, never
+  // from preseason), so ask for this one. Each row's source says whether a
+  // unit came from these games ('current') or was carried over to fill a
+  // slot ('prior_season', or 'regular_season' in the playoffs).
+  const rows = await workerFetch(`/team-lines?team=${team}&season=${season}&gameType=${gameType}`).catch(() => []);
 
   const inferredLines = (rows || []).filter(r => r.unit_type === 'F').map(r => ({
     rank:     r.rank,
@@ -310,6 +314,7 @@ export async function getTeamLines(team = 'CAR', season = currentSeason(), gameT
     toiMins:  r.toi_secs != null ? Math.round(r.toi_secs / 60) : null,
     xgfPct:   r.xgf_pct != null  ? Math.round(r.xgf_pct * 1000) / 10 : null,
     isStatic: false,
+    source:   r.source ?? 'current',
   }));
 
   const inferredPairs = (rows || []).filter(r => r.unit_type === 'D').map(r => ({
@@ -321,6 +326,7 @@ export async function getTeamLines(team = 'CAR', season = currentSeason(), gameT
     toiMins:  r.toi_secs != null ? Math.round(r.toi_secs / 60) : null,
     xgfPct:   r.xgf_pct != null  ? Math.round(r.xgf_pct * 1000) / 10 : null,
     isStatic: false,
+    source:   r.source ?? 'current',
   }));
 
   // If inference has all 4 lines, use it
@@ -576,9 +582,14 @@ export async function getTeamSkaterStatsFromDB(team = 'CAR', season = currentSea
 // passes the season it is actually displaying, since it can be showing a
 // past one (its off-season fallback, or a season picked from the chips)
 // and PP1/PP2 labels drawn from the wrong season would be worse than none.
-export async function getSpecialTeamsUnits(season) {
-  const qs  = season ? `?season=${encodeURIComponent(season)}` : '';
-  const map = await workerFetch(`/special-teams${qs}`).catch(() => null);
+// PP/PK units for one season and game type: 2 regular season (default),
+// 3 playoffs. Units are never inferred from preseason, so gameType null
+// (a preseason view) returns {} without a request.
+export async function getSpecialTeamsUnits(season, gameType = 2) {
+  if (gameType == null) return {};
+  const params = new URLSearchParams({ gameType: String(gameType) });
+  if (season) params.set('season', season);
+  const map = await workerFetch(`/special-teams?${params}`).catch(() => null);
   return map || {};
 }
 

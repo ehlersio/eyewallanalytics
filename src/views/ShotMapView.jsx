@@ -706,12 +706,6 @@ export default function ShotMapView() {
     [effectiveSeason, team, isGuest]
   );
 
-  // PP/PK unit compositions for the season on screen, for the unit chips
-  // and the per-opportunity PP1/PP2 badges in the special-teams drill-downs.
-  // Keyed to effectiveSeason, not CURRENT_SEASON: labelling last season's
-  // power plays with this season's units would be quietly wrong.
-  const { data: specialTeamsMap } = useFetch(() => getSpecialTeamsUnits(effectiveSeason), [effectiveSeason]);
-
   // Preseason (2026-09). Completed preseason games used to be unreachable
   // here -- only regular/playoff games made the chip row -- while the score
   // bar still showed the latest one (lastGame doesn't filter by type), over
@@ -751,6 +745,17 @@ export default function ShotMapView() {
   const { data: selectionTotals } = useFetch(
     () => isGuest ? Promise.resolve(null) : getTeamSelectionTotals(team, effectiveSeason, selectionGameType),
     [team, effectiveSeason, selectionGameType, isGuest]
+  );
+
+  // PP/PK unit compositions for the season and game type on screen, for the
+  // unit chips and the per-opportunity PP1/PP2 badges in the special-teams
+  // drill-downs. Keyed to effectiveSeason, not CURRENT_SEASON: labelling
+  // last season's power plays with this season's units would be quietly
+  // wrong -- and a playoff power play gets the playoff units. Preseason has
+  // none: the pipeline never infers units from preseason games.
+  const unitsGameType = seasonType === 'preseason' ? null : selectionGameType;
+  const { data: specialTeamsMap } = useFetch(
+    () => getSpecialTeamsUnits(effectiveSeason, unitsGameType), [effectiveSeason, unitsGameType]
   );
 
   // Preseason has no "All N" -- nothing aggregates preseason shots -- so

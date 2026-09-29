@@ -9,6 +9,13 @@ export function hasProjection(data) {
   return !!(data && !data.unavailable && data.basis && (data.lines?.length || data.pairs?.length));
 }
 
+// Whether the projection is from preseason games, i.e. the team hasn't
+// played a regular-season game yet. The Scouting tab then shows only the
+// projection: there are no regular-season lines to show.
+export function isPreOpener(data) {
+  return hasProjection(data) && data.basis === 'preseason';
+}
+
 // i18n keys under scoutingTab.projectedLines for the basis line and the
 // accuracy line. The accuracy figures differ by basis (see eyewall-pipeline's
 // docs/projected_lines_backtest_results.md): in-season ~7 in 10 forward

@@ -6,7 +6,7 @@ import {
   getTeamInjuries, buildInjuryIndex, getProjectedLines,
   TEAM_CONFIG,
 } from '../utils/nhlApi';
-import { hasProjection, projectionCopyKeys } from '../utils/projectedLines';
+import { hasProjection, isPreOpener, projectionCopyKeys } from '../utils/projectedLines';
 import { teamTextColor } from '../utils/teamConfig';
 import { computeGSAx } from '../utils/advancedStats';
 import { getGoalieAnalytics, getTeamLines, getGameMatchup } from '../utils/supabaseClient';
@@ -384,13 +384,25 @@ function XgfBadge({ pct }) {
   );
 }
 
+// A unit the pipeline carried over to fill a slot this game type's games
+// can't fill yet (line_combinations.source) -> its label's i18n key.
+const CARRIED_KEYS = { prior_season: 'carriedPriorSeason', regular_season: 'carriedRegularSeason' };
+
 function LineUnit({ unit, label, color, _isDefence, injuries }) {
   const { t } = useTranslation();
   const toiLabel = unit.toiMins != null ? t('scoutingTab.lines.toiTogether', { mins: unit.toiMins }) : null;
   return (
     <div className={`sc-line-unit${unit.isStatic ? ' sc-line-static border-dashed' : ''} bg-[var(--bg2)] border-[0.5px] border-[color:var(--border)] rounded-[8px] py-[9px] px-[11px]`}>
       <div className="sc-line-header flex items-center justify-between mb-1.5">
-        <span className="sc-line-label text-[11px] font-bold tracking-[0.03em] min-w-[44px]" style={{ color }}>{label}</span>
+        <span className="sc-line-label text-[11px] font-bold tracking-[0.03em] min-w-[44px] flex items-center gap-1.5" style={{ color }}>
+          {label}
+          {CARRIED_KEYS[unit.source] && (
+            <span className="sc-line-carried inline-flex items-center gap-[2px] text-[9px] font-semibold uppercase tracking-[0.04em] text-[color:var(--amber)]">
+              {t(`scoutingTab.lines.${CARRIED_KEYS[unit.source]}`)}
+              <InfoTip text={t(`scoutingTab.lines.${CARRIED_KEYS[unit.source]}Tip`)} position="above" />
+            </span>
+          )}
+        </span>
         <div className="sc-line-meta flex items-center gap-2.5">
           {toiLabel && (
             <span className="sc-line-toi text-[10px] text-[color:var(--text-dim)] flex items-center gap-[3px]">
@@ -759,8 +771,12 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
       {/* Projected lines for the next game (hidden when there's no projection) */}
       <ProjectedLinesSection data={carProjected} color={carColor} abbr={TEAM_CONFIG.abbr} injuries={carInjuries} />
 
-      {/* Line combinations -- the season's most-used units */}
-      {carLines && (
+      {/* Line combinations -- the season's most-used units. Hidden before
+          the team's first regular-season game (the projection is based on
+          preseason then): the pipeline builds no lines from preseason, and
+          anything here would be last season's or the static fallback's,
+          not this season's. */}
+      {carLines && !(isPreOpener(carProjected) && !isPlayoff) && (
         <LinesSection lines={carLines} color={carColor} isPlayoff={isPlayoff} abbr={TEAM_CONFIG.abbr} injuries={carInjuries} />
       )}
 

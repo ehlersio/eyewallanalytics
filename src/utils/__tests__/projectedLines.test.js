@@ -3,7 +3,7 @@
 // "Projected lines" block shows, and which copy it uses.
 
 import { describe, it, expect } from 'vitest'
-import { hasProjection, projectionCopyKeys } from '../projectedLines'
+import { hasProjection, isPreOpener, projectionCopyKeys } from '../projectedLines'
 
 const unit = { rank: 1, players: [{ id: 1, name: 'A', pos: 'C', filled: false }] }
 
@@ -25,5 +25,14 @@ describe('projectionCopyKeys', () => {
   it('uses opening-night copy only for preseason projections', () => {
     expect(projectionCopyKeys('preseason')).toEqual({ basisKey: 'basisPreseason', accuracyKey: 'accuracyPreseason' })
     expect(projectionCopyKeys('last_game')).toEqual({ basisKey: 'basisLastGame', accuracyKey: 'accuracyInSeason' })
+  })
+})
+
+describe('isPreOpener', () => {
+  it('is a preseason-based projection: no regular-season game yet', () => {
+    expect(isPreOpener({ basis: 'preseason', lines: [unit], pairs: [] })).toBe(true)
+    expect(isPreOpener({ basis: 'last_game', lines: [unit], pairs: [] })).toBe(false)
+    expect(isPreOpener(null)).toBe(false)
+    expect(isPreOpener({ basis: 'preseason', lines: [], pairs: [], unavailable: true })).toBe(false)
   })
 })
