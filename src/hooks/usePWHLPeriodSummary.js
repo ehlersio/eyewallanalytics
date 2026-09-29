@@ -153,6 +153,21 @@ function annotateFaceoffs(events, teamId, homeTeamId) {
   });
 }
 
+// The team's goalies in net -- in one period, or the whole game when period
+// is null -- from /pwhl/summary's goalieLog (one row per stint), in order.
+// Grounds the AI summary. Not the three stars' goalie, which was used before
+// and is often the other team's. A summary without goalieLog names no one.
+export function pwhlGoaliesInNet(htSummary, teamId, period = null) {
+  const names = [];
+  for (const s of htSummary?.goalieLog || []) {
+    if (Number(s.teamId) !== Number(teamId)) continue;
+    if (period != null && ((s.periodStart ?? 0) > period || (s.periodEnd ?? Infinity) < period)) continue;
+    const name = `${s.firstName || ''} ${s.lastName || ''}`.trim();
+    if (name && !names.includes(name)) names.push(name);
+  }
+  return names;
+}
+
 // ── Build a single period summary ────────────────────────────
 
 function buildPWHLSummary(period, events, teamId, htSummary, gameId, isPlayoff = false) {
@@ -259,6 +274,7 @@ function buildPWHLSummary(period, events, teamId, htSummary, gameId, isPlayoff =
     // AI
     aiNarrative: null,
     aiLoading:   true,
+    goalieNames: pwhlGoaliesInNet(htSummary, teamId, period),
     gameId,
   };
 }
@@ -333,12 +349,6 @@ function buildPWHLGameSummary(events, teamId, htSummary, gameId) {
     isGoalie:   !!mvp.isGoalie,
   }));
 
-  // Primary goalie (for AI grounding) — prefer MVP goalie
-  const mvpGoalie = (htSummary?.mvps || []).find(m => m.isGoalie);
-  const primaryGoalieName = mvpGoalie
-    ? `${mvpGoalie.player?.info?.firstName || ''} ${mvpGoalie.player?.info?.lastName || ''}`.trim() || null
-    : null;
-
   return {
     period:        'game',
     periodLabel:   'Final',
@@ -373,7 +383,7 @@ function buildPWHLGameSummary(events, teamId, htSummary, gameId) {
     // AI
     aiNarrative:       null,
     aiLoading:         true,
-    primaryGoalieName,
+    goalieNames:       pwhlGoaliesInNet(htSummary, teamId),
     gameId,
   };
 }
