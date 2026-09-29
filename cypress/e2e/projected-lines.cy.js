@@ -68,8 +68,10 @@ describe('Scouting tab — Projected lines', () => {
     })
     // No regular-season game yet: no "most-used lines this season" block,
     // even though /team-lines (or the static fallback) has units -- they'd
-    // be last season's, not this season's.
-    cy.get('.scouting-section-label').then($labels => {
+    // be last season's, not this season's. Waits for the lines response
+    // first, so the block being absent isn't just "not loaded yet".
+    cy.wait('@teamLines')
+    cy.get('.scouting-section-label').should($labels => {
       const text = [...$labels].map(el => el.innerText.toLowerCase())
       expect(text.some(t => t.includes('projected lines'))).to.equal(true)
       expect(text.some(t => t.includes('most-used lines'))).to.equal(false)
@@ -81,7 +83,8 @@ describe('Scouting tab — Projected lines', () => {
     cy.get('.sc-projected-basis', { timeout: 15000 }).should('contain', 'Based on the last game')
     cy.get('.sc-projected-accuracy').should('contain', 'last two seasons')
     cy.wait('@teamLines').its('request.url').should('include', 'gameType=2')
-    cy.get('.scouting-section-label').then($labels => {
+    // .should, not .then: it retries until the lines block has rendered.
+    cy.get('.scouting-section-label').should($labels => {
       const text = [...$labels].map(el => el.innerText.toLowerCase())
       const projected = text.findIndex(t => t.includes('projected lines'))
       const mostUsed = text.findIndex(t => t.includes('most-used lines'))
