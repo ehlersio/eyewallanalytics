@@ -290,6 +290,7 @@ export default function TeamView() {
   const { data: homeSplit   } = useFetch(forStatsSeason(s => getTeamHomeSplit(2, s)), [statsSeason])
   const { data: rankings    } = useFetch(forStatsSeason(s => getTeamSeasonRankings(2, s)), [statsSeason])
   const { data: xgTrend     } = useFetch(forStatsSeason(s => getTeamXgTrend(TEAM_CONFIG.abbr, s)), [statsSeason])
+  const { data: xgTrendPO   } = useFetch(forStatsSeason(s => getTeamXgTrend(TEAM_CONFIG.abbr, s, 3)), [statsSeason])
   const { data: scoreState } = useFetch(() => getTeamScoreState(2))
   const { data: poAdv      } = useFetch(getTeamPlayoffStats)
   const { data: gameLog    } = useFetch(() => getTeamGameLog(20))
@@ -358,7 +359,7 @@ export default function TeamView() {
       </div>
 
       {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} realtimeReg={realtimeReg} rankings={rankings} />}
-      {tab === 'Advanced'  && <AdvancedTab priorSeason={priorSeason} corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} homeSplit={homeSplit} xgTrend={xgTrend} />}
+      {tab === 'Advanced'  && <AdvancedTab priorSeason={priorSeason} corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} homeSplit={homeSplit} xgTrend={xgTrend} xgTrendPO={xgTrendPO} />}
       {tab === 'Splits'    && <SplitsTab priorSeason={priorSeason} homeSplit={homeSplit} homeSplitPO={homeSplitPO} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} ppReg={ppReg} pkReg={pkReg} corsiReg={corsiReg} />}
       {tab === 'Trends'    && <TrendsTab gameLog={gameLog} />}
       {tab === 'Cap'   && <CapTab capSummary={capSummary} capPct={capPct} sortedContracts={sortedContracts} />}
@@ -930,7 +931,7 @@ function XgfSparkline({ data }) {
   );
 }
 
-function AdvancedTab({ priorSeason, corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, inPlayoffs, _homeSplit, xgTrend }) {
+function AdvancedTab({ priorSeason, corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, inPlayoffs, _homeSplit, xgTrend, xgTrendPO }) {
   const { t } = useTranslation();
   const pdoData = seasonPDO(corsiReg);
   const [showPO, setShowPO] = useState(inPlayoffs);
@@ -1037,7 +1038,9 @@ function AdvancedTab({ priorSeason, corsiReg, realtimeReg, ppReg, pkReg, _scoreS
       </div>
 
       {/* xGF% per-game sparkline */}
-      {xgTrend && <XgfSparkline data={xgTrend} />}
+      {/* Follows the Regular/Playoffs toggle above: /xg-trend returns one
+          game type's games (it used to mix the playoffs into the season). */}
+      {(showPO ? xgTrendPO : xgTrend) && <XgfSparkline key={showPO ? 'po' : 'reg'} data={showPO ? xgTrendPO : xgTrend} />}
 
       {/* PDO & Puck Luck */}
       {pdoData && (

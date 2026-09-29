@@ -36,6 +36,7 @@ import { nhlSeasonLabel } from '../utils/seasonComparison'
 import { HockeyRink } from 'react-hockey-rink'
 import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents'
 import InfoTip from '../components/InfoTip'
+import SeasonTypeToggle from './SeasonTypeToggle'
 import SeasonComparisonPicker from '../components/SeasonComparisonPicker'
 import { seasonRampColor, CHART_DASH_PATTERNS } from '../utils/seasonChart'
 import SeasonOverlayChart from './SeasonOverlayChart'
@@ -673,8 +674,128 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
 
 // PercentileBar moved to components/PercentileBar.jsx (Session 91).
 
-function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, narrativeData, isLeagueContext }) {
+// ── Analytics tab building blocks ─────────────────────────────
+const fmtToiMins = (mins) => { if (mins == null) return null; const m = Math.floor(mins); const s = Math.round((mins - m) * 60); return `${m}:${String(s).padStart(2, '0')}` }
+const signed = (v, digits) => v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(digits)}`
+
+// The MoneyPuck rate tiles (xGF%, per-60s, PP/PK TOI) -- regular season or
+// playoffs, whichever row `d` is.
+function SkaterRateTiles({ d }) {
   const { t } = useTranslation()
+  const { xGF_pct, xGF60, xGA60, hdca60, goals60, a1_60, ppToi, pkToi } = d
+  return (
+    <div className={PA_CONTEXT_CLASSES}>
+      {xGF_pct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{xGF_pct}%</span><span className={PA_CTX_LABEL_CLASSES}>EV xGF% <InfoTip text={t('playerPopup.analytics.skater.tipEvXgfPct')} position="above" /></span></div>}
+      {xGF60  != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{xGF60}</span><span className={PA_CTX_LABEL_CLASSES}>xGF/60 <InfoTip text={t('playerPopup.analytics.skater.tipXgf60')} position="above" /></span></div>}
+      {xGA60  != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES} style={{ color: xGA60 < 2.0 ? 'var(--green)' : xGA60 > 2.8 ? 'var(--red-bright)' : 'inherit' }}>{xGA60}</span><span className={PA_CTX_LABEL_CLASSES}>xGA/60 <InfoTip text={t('playerPopup.analytics.skater.tipXga60')} position="above" /></span></div>}
+      {hdca60 != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES} style={{ color: hdca60 < 7 ? 'var(--green)' : hdca60 > 10 ? 'var(--red-bright)' : 'inherit' }}>{hdca60}</span><span className={PA_CTX_LABEL_CLASSES}>HDCA/60 <InfoTip text={t('playerPopup.analytics.skater.tipHdca60')} position="above" /></span></div>}
+      {goals60!= null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{goals60}</span><span className={PA_CTX_LABEL_CLASSES}>G/60 <InfoTip text={t('playerPopup.analytics.skater.tipGoals60')} position="above" /></span></div>}
+      {a1_60  != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{a1_60}</span><span className={PA_CTX_LABEL_CLASSES}>A1/60 <InfoTip text={t('playerPopup.analytics.skater.tipA160')} position="above" /></span></div>}
+      {ppToi != null && ppToi > 0 && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{fmtToiMins(ppToi)}</span><span className={PA_CTX_LABEL_CLASSES}>PP TOI <InfoTip text={t('playerPopup.analytics.skater.tipPpToi')} position="above" /></span></div>}
+      {pkToi != null && pkToi > 0 && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{fmtToiMins(pkToi)}</span><span className={PA_CTX_LABEL_CLASSES}>PK TOI <InfoTip text={t('playerPopup.analytics.skater.tipPkToi')} position="above" /></span></div>}
+    </div>
+  )
+}
+
+// Playoffs view of the skater Analytics tab: playoff WAR, the playoff RAPM
+// next to the regular-season one (with the difference and the playoff
+// minutes behind it), and the playoff rates. No percentile bars -- the
+// pipeline doesn't rank playoff samples.
+function PlayoffSkaterAnalytics({ po, regularRapm, seasonLabel }) {
+  const { t } = useTranslation()
+  const { war, rapm, rapmToiMin, gp, gameScore } = po
+  const warColor = war == null ? 'var(--text-dim)' : war >= 0.2 ? '#4ade80' : war >= 0 ? '#fbbf24' : '#f87171'
+  const diff = rapm != null && regularRapm != null ? rapm - regularRapm : null
+  return (
+    <>
+      <div className={`${PA_SECTION_LABEL_CLASSES} pa-playoff-season`}>{t('playerPopup.analytics.playoffs.seasonLabel', { season: seasonLabel })}</div>
+      <div className={`${PA_WAR_CARD_CLASSES} pa-playoff-war`}>
+        <div className={PA_WAR_MAIN_CLASSES}>
+          <span className={PA_WAR_NUM_CLASSES} style={{ color: warColor }}>{war == null ? '—' : `${war > 0 ? '+' : ''}${war}`}</span>
+          <span className={PA_WAR_LABEL_CLASSES}>
+            {t('playerPopup.analytics.playoffs.warLabel')}
+            <InfoTip text={t('playerPopup.analytics.playoffs.warTip')} position="above" />
+          </span>
+        </div>
+        <div className={PA_WAR_META_CLASSES}>
+          <span className={PA_WAR_SUB_CLASSES}>
+            {gameScore != null
+              ? t('playerPopup.analytics.playoffs.gpAndGameScore', { count: gp ?? 0, score: gameScore })
+              : t('playerPopup.analytics.playoffs.gp', { count: gp ?? 0 })}
+          </span>
+        </div>
+      </div>
+      <div className={PA_SECTION_LABEL_CLASSES}>
+        {t('playerPopup.analytics.playoffs.rapmSection')}
+        <InfoTip text={t('playerPopup.analytics.playoffs.rapmTip')} position="above" />
+      </div>
+      <div className={`${PA_CONTEXT_CLASSES} pa-playoff-rapm`}>
+        <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{signed(regularRapm, 3)}</span><span className={PA_CTX_LABEL_CLASSES}>{t('playerPopup.analytics.playoffs.rapmRegular')}</span></div>
+        <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{signed(rapm, 3)}</span><span className={PA_CTX_LABEL_CLASSES}>{t('playerPopup.analytics.playoffs.rapmPlayoffs')}</span></div>
+        <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES} style={{ color: diff == null ? 'inherit' : diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red-bright)' : 'inherit' }}>{signed(diff, 3)}</span><span className={PA_CTX_LABEL_CLASSES}>{t('playerPopup.analytics.playoffs.rapmDiff')}</span></div>
+        <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{rapmToiMin != null ? Math.round(rapmToiMin) : '—'}</span><span className={PA_CTX_LABEL_CLASSES}>{t('playerPopup.analytics.playoffs.rapmMinutes')}</span></div>
+      </div>
+      <SkaterRateTiles d={po} />
+      <div className="pa-playoff-note text-[11px] text-[color:var(--text-dim)] italic">{t('playerPopup.analytics.playoffs.noPercentiles')}</div>
+      <div className={PA_SOURCE_CLASSES}>{t('playerPopup.analytics.dataSource')}</div>
+    </>
+  )
+}
+
+// Playoffs view of the goalie Analytics tab: playoff GSAX and save %, no
+// percentile bars.
+function PlayoffGoalieAnalytics({ po, seasonLabel }) {
+  const { t } = useTranslation()
+  const { gsax, gsax60, gp, evSvPct, hdSvPct, mdSvPct, pkSvPct } = po
+  const gsaxColor = gsax == null ? 'var(--text-dim)' : gsax >= 2 ? '#4ade80' : gsax >= 0 ? '#fbbf24' : '#f87171'
+  return (
+    <>
+      <div className={`${PA_SECTION_LABEL_CLASSES} pa-playoff-season`}>{t('playerPopup.analytics.playoffs.seasonLabel', { season: seasonLabel })}</div>
+      <div className={`${PA_WAR_CARD_CLASSES} pa-playoff-gsax`}>
+        <div className={PA_WAR_MAIN_CLASSES}>
+          <span className={PA_WAR_NUM_CLASSES} style={{ color: gsaxColor }}>{gsax == null ? '—' : `${gsax > 0 ? '+' : ''}${gsax}`}</span>
+          <span className={PA_WAR_LABEL_CLASSES}>{t('playerPopup.analytics.playoffs.gsaxLabel')}</span>
+        </div>
+        <div className={PA_WAR_META_CLASSES}>
+          <span className={PA_WAR_SUB_CLASSES}>
+            {gsax60 != null
+              ? t('playerPopup.analytics.playoffs.gpAndPer60', { count: gp ?? 0, value: `${gsax60 > 0 ? '+' : ''}${gsax60}` })
+              : t('playerPopup.analytics.playoffs.gp', { count: gp ?? 0 })}
+          </span>
+          <span className={PA_WAR_SUB_CLASSES} style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
+            {t('playerPopup.analytics.goalie.gsaxCaption')}
+          </span>
+        </div>
+      </div>
+      <div className={`${PA_CONTEXT_CLASSES} ${PA_CONTEXT_CENTERED_CLASSES}`}>
+        {evSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{evSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>5on5 SV% <InfoTip text={t('playerPopup.analytics.goalie.tip5v5SvPct')} position="above" /></span></div>}
+        {hdSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{hdSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>HD SV% <InfoTip text={t('playerPopup.analytics.goalie.tipHdSvPct')} position="above" /></span></div>}
+        {mdSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{mdSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>MD SV% <InfoTip text={t('playerPopup.analytics.goalie.tipMdSvPct')} position="above" /></span></div>}
+        {pkSvPct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{pkSvPct}%</span><span className={PA_CTX_LABEL_CLASSES}>PK SV% <InfoTip text={t('playerPopup.analytics.goalie.tipPkSvPct')} position="above" /></span></div>}
+      </div>
+      <div className="pa-playoff-note text-[11px] text-[color:var(--text-dim)] italic">{t('playerPopup.analytics.playoffs.noPercentiles')}</div>
+      <div className={PA_SOURCE_CLASSES}>{t('playerPopup.analytics.dataSource')}</div>
+    </>
+  )
+}
+
+function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, narrativeData, isLeagueContext, inPlayoffs = false }) {
+  const { t } = useTranslation()
+  // Regular season / Playoffs (game-type split, 2026-09). Only offered when
+  // the player has playoff analytics -- `po` from getPlayerAnalytics()/
+  // getGoalieAnalytics() -- and it opens on the playoffs when the popup is
+  // in playoff context.
+  const po = isGoalie ? goalieData?.po : mpData?.po
+  const [view, setView] = useState(inPlayoffs && po ? 'playoffs' : 'regular')
+  const showPlayoffs = view === 'playoffs' && !!po
+  // Which season's playoffs: the popup's season, or -- before it has any
+  // analytics -- the season the Worker fell back to (statsSeason).
+  const poSeasonLabel = nhlSeasonLabel((isGoalie ? goalieData : mpData)?.statsSeason || SEASON)
+  const toggle = po ? (
+    <div className="pa-season-type flex justify-end mb-2.5">
+      <SeasonTypeToggle value={showPlayoffs ? 'playoffs' : 'regular'} onChange={setView} />
+    </div>
+  ) : null
   if (isGoalie) {
     if (!goalieData) {
       return (
@@ -685,11 +806,20 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
         </div>
       )
     }
+    if (showPlayoffs) {
+      return (
+        <div className={PA_WRAP_CLASSES}>
+          {toggle}
+          <PlayoffGoalieAnalytics po={po} seasonLabel={poSeasonLabel} />
+        </div>
+      )
+    }
     const { gsax, gsax60, gp, evSvPct, hdSvPct, mdSvPct, pkSvPct, percentiles: p } = goalieData
     const gsaxColor = gsax >= 5 ? '#4ade80' : gsax >= 0 ? '#fbbf24' : '#f87171'
     const gsaxLabel = gsax >= 10 ? t('playerPopup.analytics.goalie.tierElite') : gsax >= 5 ? t('playerPopup.analytics.goalie.tierAboveAverage') : gsax >= 0 ? t('playerPopup.analytics.goalie.tierAverage') : t('playerPopup.analytics.goalie.tierBelowAverage')
     return (
       <div className={PA_WRAP_CLASSES}>
+        {toggle}
         <div className={PA_WAR_CARD_CLASSES}>
           <div className={PA_WAR_MAIN_CLASSES}>
             <span className={PA_WAR_NUM_CLASSES} style={{ color: gsaxColor }}>{gsax > 0 ? '+' : ''}{gsax}</span>
@@ -733,17 +863,26 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
     )
   }
 
-  const { war, percentiles, gp, xGF_pct, xGF60, xGA60, hdca60, goals60, a1_60, ppToi, pkToi, gameScore } = mpData
+  if (showPlayoffs) {
+    return (
+      <div className={PA_WRAP_CLASSES}>
+        {toggle}
+        <PlayoffSkaterAnalytics po={po} regularRapm={mpData.rapm} seasonLabel={poSeasonLabel} />
+      </div>
+    )
+  }
+
+  const { war, percentiles, gp, gameScore } = mpData
   const pos      = ['C','L','R','F'].includes(position) ? 'F' : 'D'
   const posLbl   = pos === 'F' ? t('playerPopup.analytics.positionForwards') : t('playerPopup.analytics.positionDefensemen')
   const p        = percentiles || {}
-  const fmtToi   = (mins) => { if (mins == null) return null; const m = Math.floor(mins); const s = Math.round((mins - m) * 60); return `${m}:${String(s).padStart(2, '0')}` }
   const warColor = war >= 2 ? '#4ade80' : war >= 0.5 ? '#fbbf24' : '#f87171'
   const warLabel = war >= 4 ? t('playerPopup.analytics.skater.tierMvp') : war >= 2 ? t('playerPopup.analytics.skater.tierTop')
     : war >= 0.5 ? t('playerPopup.analytics.skater.tierSolid') : war >= -0.5 ? t('playerPopup.analytics.skater.tierReplacement') : t('playerPopup.analytics.skater.tierBelowReplacement')
 
   return (
     <div className={PA_WRAP_CLASSES}>
+      {toggle}
       <div className={PA_WAR_CARD_CLASSES}>
         <div className={PA_WAR_MAIN_CLASSES}>
           <span className={PA_WAR_NUM_CLASSES} style={{ color: warColor }}>{war > 0 ? '+' : ''}{war}</span>
@@ -760,16 +899,7 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
           </span>
         </div>
       </div>
-      <div className={PA_CONTEXT_CLASSES}>
-        {xGF_pct != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{xGF_pct}%</span><span className={PA_CTX_LABEL_CLASSES}>EV xGF% <InfoTip text={t('playerPopup.analytics.skater.tipEvXgfPct')} position="above" /></span></div>}
-        {xGF60  != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{xGF60}</span><span className={PA_CTX_LABEL_CLASSES}>xGF/60 <InfoTip text={t('playerPopup.analytics.skater.tipXgf60')} position="above" /></span></div>}
-        {xGA60  != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES} style={{ color: xGA60 < 2.0 ? 'var(--green)' : xGA60 > 2.8 ? 'var(--red-bright)' : 'inherit' }}>{xGA60}</span><span className={PA_CTX_LABEL_CLASSES}>xGA/60 <InfoTip text={t('playerPopup.analytics.skater.tipXga60')} position="above" /></span></div>}
-        {hdca60 != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES} style={{ color: hdca60 < 7 ? 'var(--green)' : hdca60 > 10 ? 'var(--red-bright)' : 'inherit' }}>{hdca60}</span><span className={PA_CTX_LABEL_CLASSES}>HDCA/60 <InfoTip text={t('playerPopup.analytics.skater.tipHdca60')} position="above" /></span></div>}
-        {goals60!= null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{goals60}</span><span className={PA_CTX_LABEL_CLASSES}>G/60 <InfoTip text={t('playerPopup.analytics.skater.tipGoals60')} position="above" /></span></div>}
-        {a1_60  != null && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{a1_60}</span><span className={PA_CTX_LABEL_CLASSES}>A1/60 <InfoTip text={t('playerPopup.analytics.skater.tipA160')} position="above" /></span></div>}
-        {ppToi != null && ppToi > 0 && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{fmtToi(ppToi)}</span><span className={PA_CTX_LABEL_CLASSES}>PP TOI <InfoTip text={t('playerPopup.analytics.skater.tipPpToi')} position="above" /></span></div>}
-        {pkToi != null && pkToi > 0 && <div className={PA_CTX_ITEM_CLASSES}><span className={PA_CTX_VAL_CLASSES}>{fmtToi(pkToi)}</span><span className={PA_CTX_LABEL_CLASSES}>PK TOI <InfoTip text={t('playerPopup.analytics.skater.tipPkToi')} position="above" /></span></div>}
-      </div>
+      <SkaterRateTiles d={mpData} />
       <div className={PA_SECTION_LABEL_CLASSES}>{t('playerPopup.analytics.percentileVsPosition', { position: posLbl })}</div>
       <div className={PA_BARS_CLASSES}>
         <PercentileBar label={t('playerPopup.analytics.skater.barEvOffence')}    pct={p.evOff?.pct}     note={p.evOff?.note} />
@@ -1024,8 +1154,15 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   const statsTabSections = loading ? [] : sections
     .map(({ label, stats: s, highlight }) => {
       if (!s) return null
-      let enriched = (isGoalie && goalieData?.qsPct != null)
-        ? { ...s, qualityStartPct: goalieData.qsPct }
+      // QS% for this section's own game type: the regular season's on a
+      // regular-season section, the playoffs' on a playoff one (it used to
+      // put the regular season's on every section). Career sections carry
+      // no gameTypeId, so they get none -- there's no career QS%.
+      const sectionQsPct = s?.gameTypeId === 2 ? goalieData?.qsPct
+        : s?.gameTypeId === 3 ? goalieData?.po?.qsPct
+        : null
+      let enriched = (isGoalie && sectionQsPct != null)
+        ? { ...s, qualityStartPct: sectionQsPct }
         : s
       if (!isGoalie && mpData) {
         if (s?.gameTypeId === 2) {
@@ -1041,7 +1178,10 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
         node: (
           <TileStatSection
             key={label} label={label} groups={groups} highlight={highlight}
-            percentiles={!isGoalie && highlight ? mpData?.percentiles : undefined}
+            // Regular-season percentiles only on the regular-season section:
+            // in playoff context the highlighted section is the playoffs, and
+            // there are no playoff percentiles to badge it with.
+            percentiles={!isGoalie && highlight && s?.gameTypeId === 2 ? mpData?.percentiles : undefined}
             statsStale={boxStatsStale} statsSeason={boxStatsSeason}
             pctMap={STAT_PCT_MAP}
           />
@@ -1501,7 +1641,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
         {/* ── Analytics tab ── */}
         {ppTab === 'analytics' && (
-          <PlayerAnalytics mpData={mpData} goalieData={goalieData} playerName={name} isGoalie={isGoalie} position={positionCode} narrativeData={rvpNarrative} isLeagueContext={isLeagueContext} />
+          <PlayerAnalytics mpData={mpData} goalieData={goalieData} playerName={name} isGoalie={isGoalie} position={positionCode} narrativeData={rvpNarrative} isLeagueContext={isLeagueContext} inPlayoffs={inPlayoffs} />
         )}
 
         {/* ── Scout tab — CAR context only ── */}
