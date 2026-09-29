@@ -33,8 +33,11 @@ export function recordECHLOutcome(gameId, teamActual, oppActual) {
   pred.oppActual  = oppActual;
   pred.teamWon    = teamActual > oppActual;
   pred.correct    = pred.teamWon === pred.predictedTeamWin;
-  pred.scoreDiff  = Math.abs((pred.predictedTeamScore - teamActual) || 0) +
-                    Math.abs((pred.predictedOppScore  - oppActual) || 0);
+  // No predicted score (goal rates were unavailable) means no error to
+  // measure -- not the whole actual score counted as error.
+  pred.scoreDiff  = pred.predictedTeamScore != null && pred.predictedOppScore != null
+    ? Math.abs(pred.predictedTeamScore - teamActual) + Math.abs(pred.predictedOppScore - oppActual)
+    : null;
   localStorage.setItem(KEY, JSON.stringify(preds));
 }
 
@@ -42,8 +45,9 @@ export function getECHLPredictionStats() {
   const preds    = loadECHLPredictions().filter(p => p.teamActual != null);
   const total    = preds.length;
   const correct  = preds.filter(p => p.correct).length;
-  const avgError = total > 0
-    ? +(preds.reduce((s, p) => s + (p.scoreDiff || 0), 0) / total).toFixed(1)
+  const scored   = preds.filter(p => p.scoreDiff != null);
+  const avgError = scored.length > 0
+    ? +(scored.reduce((s, p) => s + p.scoreDiff, 0) / scored.length).toFixed(1)
     : null;
   return { total, correct, pct: total > 0 ? Math.round(correct/total*100) : null, avgError };
 }
