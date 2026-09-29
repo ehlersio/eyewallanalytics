@@ -1057,10 +1057,14 @@ export default function ShotMapView() {
   const oppScore   = activeGame ? getOppScore(activeGame, team) : null;
   const oppAbbr    = opp?.abbrev;
 
-  // Game log insights — team-specific situational stats (scored first win%, H2H record)
+  // Game log insights — team-specific situational stats (scored first win%,
+  // H2H record) from the season and game type of the game on screen: its
+  // playoff games for a playoff game, none at all for a preseason game.
+  const insightsSeason   = activeGame?.season;
+  const insightsGameType = activeGame?.gameType ?? GAME_TYPE.REGULAR;
   const { data: gameLogInsights } = useFetch(
-    () => oppAbbr ? getGameLogInsights(oppAbbr, undefined, team.abbr) : Promise.resolve(null),
-    [oppAbbr, team]
+    () => oppAbbr ? getGameLogInsights(oppAbbr, insightsSeason, team.abbr, insightsGameType) : Promise.resolve(null),
+    [oppAbbr, team, insightsSeason, insightsGameType]
   );
   const oppColor   = teamTextColor(oppAbbr) || 'var(--text-muted)';
   const gameHome   = activeGame ? isHomeGame(activeGame, team) : true;
@@ -3856,8 +3860,10 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       const gamesN = carScoredFirst ? gl?.scoredFirstGames : gl?.didntScoreFirstGames;
       // A percentage over one or two games says nothing (it read "100% ...
       // (1 games)" in the first week of the preseason).
+      // "this season" or, from playoff games only, "in these playoffs".
+      const scope = gl?.gameType === GAME_TYPE.PLAYOFFS ? 'Playoffs' : '';
       const teamStat = winPct != null && gamesN >= 3
-        ? t(carScoredFirst ? 'shotMapView.liveInsights.scoredFirstWinPctFor' : 'shotMapView.liveInsights.oppScoredFirstWinPct',
+        ? t(`shotMapView.liveInsights.${carScoredFirst ? 'scoredFirstWinPctFor' : 'oppScoredFirstWinPct'}${scope}`,
           { abbr: team.abbr, pct: winPct, n: gamesN })
         : carScoredFirst
         ? t('shotMapView.liveInsights.struckFirst', { abbr: team.abbr })
@@ -3970,9 +3976,10 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     // ── Head-to-head record ───────────────────────────────────
     if (gameLogInsights?.vsOppRecord?.gp >= 2) {
       const { w, l, gp } = gameLogInsights.vsOppRecord;
+      const scope = gameLogInsights.gameType === GAME_TYPE.PLAYOFFS ? 'Playoffs' : '';
       results.push({
         icon: w > l ? '📈' : w < l ? '📉' : '⚖️',
-        text: t('shotMapView.liveInsights.headToHeadRecord', { abbr: team.abbr, w, l, gp }),
+        text: t(`shotMapView.liveInsights.headToHeadRecord${scope}`, { abbr: team.abbr, oppAbbr, w, l, gp }),
         type: w > l ? 'good' : w < l ? 'warn' : 'neutral',
       });
     }

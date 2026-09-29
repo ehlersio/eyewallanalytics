@@ -1038,7 +1038,10 @@
       "oppPulledGoalie": "{{oppAbbr}} has pulled their goalie",
       "carPulledGoalie": "{{abbr}} goalie pulled",
       "finalWinDespiteOutshot": "{{abbr}} won {{car}}–{{opp}} despite being outshot {{oppTot}}–{{carTot}}",
-      "oppScoredFirstWinPct": "{{abbr}} wins {{pct}}% of games when the opponent scores first this season ({{n}} games)"
+      "oppScoredFirstWinPct": "{{abbr}} wins {{pct}}% of games when the opponent scores first this season ({{n}} games)",
+      "scoredFirstWinPctForPlayoffs": "{{abbr}} wins {{pct}}% of games when scoring first in these playoffs ({{n}} games)",
+      "oppScoredFirstWinPctPlayoffs": "{{abbr}} wins {{pct}}% of games when the opponent scores first in these playoffs ({{n}} games)",
+      "headToHeadRecordPlayoffs": "{{abbr}} is {{w}}-{{l}} vs {{oppAbbr}} in these playoffs ({{gp}} games)"
     },
     "liveInsightsCard": {
       "liveHeader": "🔴 Live Insights",
