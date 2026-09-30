@@ -2005,6 +2005,25 @@
         "barPenalties": "Penalties",
         "barCompetition": "Competition",
         "barTeammates": "Teammates"
+      },
+      "playoffs": {
+        "warLabel": "Playoff WAR",
+        "warTip": "Wins Above Replacement in these playoffs (beta). Built like regular-season WAR, but from the player's playoff RAPM and playoff penalties and finishing, with the replacement-level term scaled to their playoff 5-on-5 ice time. Small samples: a playoff run is a fraction of a season's ice time.",
+        "gp_one": "{{count}} playoff GP",
+        "gp_other": "{{count}} playoff GP",
+        "gpAndGameScore_one": "{{count}} playoff GP · Game Score {{score}}",
+        "gpAndGameScore_other": "{{count}} playoff GP · Game Score {{score}}",
+        "gpAndPer60_one": "{{count}} playoff GP · {{value}} per 60",
+        "gpAndPer60_other": "{{count}} playoff GP · {{value}} per 60",
+        "gsaxLabel": "Playoff GSAX",
+        "rapmSection": "5v5 RAPM (xG/60)",
+        "rapmTip": "RAPM isolates a player's 5-on-5 impact on expected goals, adjusting for teammates, opponents, score and zone starts. The playoff value pools the last three seasons' playoffs and starts from the regular-season value: a short run barely moves it, a deep run can. Playoff min is the ice time behind it.",
+        "rapmRegular": "Regular season",
+        "rapmPlayoffs": "Playoffs",
+        "rapmDiff": "Difference",
+        "rapmMinutes": "Playoff min",
+        "noPercentiles": "No playoff percentiles: the players from a few teams aren't a pool to rank against.",
+        "seasonLabel": "{{season}} playoffs"
       }
     },
     "resultsVsProcess": {

@@ -2005,6 +2005,25 @@
         "barPenalties": "Pénalités",
         "barCompetition": "Compétition",
         "barTeammates": "Coéquipiers"
+      },
+      "playoffs": {
+        "warLabel": "WAR en séries",
+        "warTip": "Victoires au-dessus du remplaçant dans ces séries (bêta). Calculée comme la WAR de saison régulière, mais à partir du RAPM en séries du joueur et de ses pénalités et de sa finition en séries, avec le terme de remplacement ajusté à son temps de glace à 5 contre 5 en séries. Petits échantillons : un parcours en séries ne représente qu'une fraction du temps de glace d'une saison.",
+        "gp_one": "{{count}} PJ en séries",
+        "gp_other": "{{count}} PJ en séries",
+        "gpAndGameScore_one": "{{count}} PJ en séries · Pointage du match {{score}}",
+        "gpAndGameScore_other": "{{count}} PJ en séries · Pointage du match {{score}}",
+        "gpAndPer60_one": "{{count}} PJ en séries · {{value}} par 60",
+        "gpAndPer60_other": "{{count}} PJ en séries · {{value}} par 60",
+        "gsaxLabel": "GSAX en séries",
+        "rapmSection": "RAPM à 5 c. 5 (xG/60)",
+        "rapmTip": "Le RAPM isole l'effet d'un joueur à 5 contre 5 sur les buts attendus, en tenant compte des coéquipiers, des adversaires, du pointage et des mises en jeu. La valeur en séries regroupe les séries des trois dernières saisons et part de la valeur de saison régulière : un court parcours la bouge à peine, un long parcours peut la faire bouger. Min en séries : le temps de glace sur lequel elle repose.",
+        "rapmRegular": "Saison régulière",
+        "rapmPlayoffs": "Séries",
+        "rapmDiff": "Écart",
+        "rapmMinutes": "Min en séries",
+        "noPercentiles": "Aucun centile en séries : les joueurs de quelques équipes ne forment pas un bassin de comparaison.",
+        "seasonLabel": "Séries {{season}}"
       }
     },
     "resultsVsProcess": {

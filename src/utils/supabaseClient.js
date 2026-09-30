@@ -45,13 +45,35 @@ async function workerFetch(path) {
 }
 
 // ── Player analytics ──────────────────────────────────────────
+// The MoneyPuck rate columns a player_seasons row carries, regular season
+// or playoffs alike, in the shape the Analytics tab reads.
+function skaterRates(r) {
+  return {
+    xGF_pct: r.ev_off_pct != null ? Math.round(r.ev_off_pct * 1000) / 10 : null,
+    xGF60:   r.xgf_per60 != null ? Math.round(r.xgf_per60 * 100) / 100 : null,
+    xGA60:   r.xga_per60 != null ? Math.round(r.xga_per60 * 100) / 100 : null,
+    hdca60:  r.hdca_per60 != null ? Math.round(r.hdca_per60 * 10) / 10 : null,
+    goals60: r.goals_per60,
+    a1_60:   r.a1_per60,
+    ppToi:   r.pp_icetime ?? null,
+    pkToi:   r.pk_icetime ?? null,
+  };
+}
+
 // Returns analytics object keyed by player_id (string), matching
 // the shape the app already expects from moneypuck:skaters KV.
 export async function getPlayerAnalytics(season = currentSeason()) {
   const { rows, poRows, statsStale, statsSeason } = await workerFetch(`/player-analytics?season=${season}`);
 
   // Build playoff defensive map: player_id → { hits, blocked_shots, takeaways, giveaways }
+  // and the playoff analytics (game-type split, 2026-09): playoff WAR and
+  // RAPM -- pooled over three seasons of playoffs, shrunk toward the
+  // regular-season RAPM, rapmToiMin the playoff minutes behind it -- and
+  // the MoneyPuck rates. No percentiles: the pipeline doesn't rank playoff
+  // samples. `po` is null for a player with none of them, so the Analytics
+  // tab only offers "Playoffs" where there's something to show.
   const poDefMap = {};
+  const poMap = {};
   for (const r of (poRows || [])) {
     poDefMap[String(r.player_id)] = {
       hits:         r.hits         ?? null,
@@ -59,6 +81,16 @@ export async function getPlayerAnalytics(season = currentSeason()) {
       takeaways:    r.takeaways    ?? null,
       giveaways:    r.giveaways    ?? null,
     };
+    if (r.war != null || r.rapm != null || r.ev_off_pct != null) {
+      poMap[String(r.player_id)] = {
+        war:        r.war ?? null,
+        rapm:       r.rapm ?? null,
+        rapmToiMin: r.rapm_toi_min ?? null,
+        gp:         r.games_played ?? null,
+        gameScore:  r.game_score ?? null,
+        ...skaterRates(r),
+      };
+    }
   }
 
   // Transform into the shape PlayerAnalytics component expects
@@ -66,16 +98,11 @@ export async function getPlayerAnalytics(season = currentSeason()) {
   for (const r of rows) {
     result[String(r.player_id)] = {
       war:        r.war,
+      rapm:       r.rapm ?? null,
+      rapmToiMin: r.rapm_toi_min ?? null,
       gp:         r.games_played,
       gameScore:  r.game_score,
-      xGF_pct:    r.ev_off_pct != null ? Math.round(r.ev_off_pct * 1000) / 10 : null,
-      xGF60:      r.xgf_per60 != null ? Math.round(r.xgf_per60 * 100) / 100 : null,
-      xGA60:      r.xga_per60 != null ? Math.round(r.xga_per60 * 100) / 100 : null,
-      hdca60:     r.hdca_per60 != null ? Math.round(r.hdca_per60 * 10) / 10 : null,
-      goals60:    r.goals_per60,
-      a1_60:      r.a1_per60,
-      ppToi:      r.pp_icetime ?? null,
-      pkToi:      r.pk_icetime ?? null,
+      ...skaterRates(r),
       // Results-vs-process (Session 56) — both null below eyewall-pipeline's
       // GP≥25 guardrail (moneypuck.py::RESULTS_VS_PROCESS_MIN_GP). Treat
       // "null" as "not enough games yet," not a missing-data error.
@@ -88,6 +115,8 @@ export async function getPlayerAnalytics(season = currentSeason()) {
       giveaways:    r.giveaways    ?? null,
       // Playoff defensive — separate object so frontend can inject per section
       poDef: poDefMap[String(r.player_id)] || null,
+      // Playoff analytics (see poMap above), or null
+      po: poMap[String(r.player_id)] || null,
       // Whole-season fallback flag (Session 66) — true when the live season
       // had no player_seasons rows at all yet (e.g. schedule released well
       // before puck drop) and every field above came from one season back
@@ -229,21 +258,34 @@ export async function getSeasonShots(team, season = currentSeason()) {
 // one season back rather than returning nothing for every goalie.
 // statsStale/statsSeason are stamped onto each goalie's object below,
 // same denormalized-per-player pattern getPlayerAnalytics() already uses.
+// A goalie_seasons row's GSAX / save % / QS% columns, regular season or
+// playoffs alike.
+function goalieNumbers(r) {
+  return {
+    gsax:    r.gsax,
+    gsax60:  r.gsax_per60,
+    gp:      r.games_played,
+    qsPct:   r.qs_pct ?? null,
+    qs:      r.qs ?? null,
+    evSvPct: r.ev_sv_pct != null ? Math.round(r.ev_sv_pct * 1000) / 10 : null,
+    hdSvPct: r.hd_sv_pct != null ? Math.round(r.hd_sv_pct * 1000) / 10 : null,
+    mdSvPct: r.md_sv_pct != null ? Math.round(r.md_sv_pct * 1000) / 10 : null,
+    pkSvPct: r.pk_sv_pct != null ? Math.round(r.pk_sv_pct * 1000) / 10 : null,
+  };
+}
+
 export async function getGoalieAnalytics(season = currentSeason()) {
-  const { rows, statsStale, statsSeason } = await workerFetch(`/goalie-analytics?season=${season}`);
+  const { rows, poRows, statsStale, statsSeason } = await workerFetch(`/goalie-analytics?season=${season}`);
+
+  // Playoff GSAX / save % / QS% (game-type split, 2026-09), no percentiles.
+  const poMap = {};
+  for (const r of (poRows || [])) poMap[String(r.player_id)] = goalieNumbers(r);
 
   const result = {};
   for (const r of (rows || [])) {
     result[String(r.player_id)] = {
-      gsax:    r.gsax,
-      gsax60:  r.gsax_per60,
-      gp:      r.games_played,
-      qsPct:   r.qs_pct ?? null,
-      qs:      r.qs ?? null,
-      evSvPct: r.ev_sv_pct != null ? Math.round(r.ev_sv_pct * 1000) / 10 : null,
-      hdSvPct: r.hd_sv_pct != null ? Math.round(r.hd_sv_pct * 1000) / 10 : null,
-      mdSvPct: r.md_sv_pct != null ? Math.round(r.md_sv_pct * 1000) / 10 : null,
-      pkSvPct: r.pk_sv_pct != null ? Math.round(r.pk_sv_pct * 1000) / 10 : null,
+      ...goalieNumbers(r),
+      po: poMap[String(r.player_id)] || null,
       statsStale:  !!statsStale,
       statsSeason: statsSeason ?? null,
       percentiles: {
@@ -608,9 +650,11 @@ export async function getSpecialTeamsUnits(season, gameType = 2) {
 // Each item: { gameId, date, opponent, teamScore, oppScore, xgfPct }
 // Joins game_xg (5on5) with game_log for date + opponent.
 // Both arrays are chronological (oldest first).
-export async function getTeamXgTrend(team = 'CAR', season = currentSeason()) {
+// gameType 2 (regular season, default) or 3 (playoffs): /xg-trend returns
+// one game type's games.
+export async function getTeamXgTrend(team = 'CAR', season = currentSeason(), gameType = 2) {
   const [xgRows, logRows] = await Promise.all([
-    workerFetch(`/xg-trend?team=${team}&season=${season}`).catch(() => []),
+    workerFetch(`/xg-trend?team=${team}&season=${season}&gameType=${gameType}`).catch(() => []),
     workerFetch(`/game-log?team=${team}&season=${season}`).catch(() => []),
   ]);
 
