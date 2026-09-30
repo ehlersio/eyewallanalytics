@@ -28,17 +28,21 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
     })
 
     describe('Overview tab', () => {
+      // Waits for the record card to settle: the real record, or its
+      // explicit "unavailable" state when there's no standings row (skip).
+      // Gating on "Season stats" right after .records-row mounted skipped
+      // these whenever stats were still loading.
       it('shows season record', function () {
-        cy.skipUnlessContentAppears('.records-row', 'Season stats')
+        cy.skipIfEither('.record-unavailable', '.record-big', { timeout: DATA_TIMEOUT })
         cy.contains('Season stats').should('be.visible')
         cy.contains(/\d+–\d+–\d+/).should('be.visible')
       })
 
       it('shows season stats with league ranks', function () {
-        cy.skipUnlessContentAppears('.records-row', 'Season stats')
+        cy.skipIfEither('.record-unavailable', '.record-big', { timeout: DATA_TIMEOUT })
         cy.contains('Season stats').should('be.visible')
         cy.contains(/Goals\/GP|GA\/GP|PP%|PK%/).should('be.visible')
-        cy.get('.overview-stat-rank').first().then($el => {
+        cy.get('.overview-stat-rank', { timeout: DATA_TIMEOUT }).first().then($el => {
           expect($el.text().trim()).to.match(/^\d+(st|nd|rd|th)$/)
         })
       })
@@ -303,5 +307,23 @@ describe('Season correctness — rendered label matches live /config/seasons', (
       cy.visit('/team')
       cy.get('.view-sub', { timeout: 15000 }).should('contain', expectedLabel)
     })
+  })
+})
+
+// No standings row for the team (standings down, or not loaded): the
+// Overview used to show a hardcoded 54-20-8, 116-point record and made-up
+// rates as the team's own. It has to say the stats aren't available.
+describe('Team view — standings unavailable', () => {
+  it('says the record is unavailable instead of inventing one', () => {
+    cy.intercept('GET', /\/cache\/standings(\?|$)/, { body: [] }).as('getStandings')
+    cy.setTeam('CAR')
+    cy.visit('/team')
+    cy.wait('@getStandings')
+    cy.get('.record-unavailable', { timeout: DATA_TIMEOUT })
+      .should('be.visible')
+      .and('contain', "aren't available right now")
+    cy.get('.record-big').should('not.exist')
+    cy.contains('54–20–8').should('not.exist')
+    cy.contains('Season stats').should('not.exist')
   })
 })

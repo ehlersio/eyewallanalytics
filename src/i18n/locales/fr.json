@@ -410,7 +410,8 @@
     "legendGoalsAgainst": "■ Buts contre",
     "goalDiffTitle": "Différentiel de buts par match",
     "avgLabel": "moy. {{avg}}",
-    "liveRecordBadge": "🔴 EN DIRECT — la fiche se met à jour après la sirène finale"
+    "liveRecordBadge": "🔴 EN DIRECT — la fiche se met à jour après la sirène finale",
+    "recordUnavailable": "La fiche et les statistiques de la saison ne sont pas disponibles pour le moment."
   },
   "teamView": {
     "tabs": {
@@ -1781,7 +1782,8 @@
       "tipPkPct": "Pourcentage de désavantage numérique",
       "tipSfGp": "Tirs au but par match — indicateur de possession",
       "tipFoWinPct": "Pourcentage de mises en jeu gagnées en séries",
-      "priorSeasonNote": "Statistiques {{season}} affichées — la saison n'a pas encore commencé"
+      "priorSeasonNote": "Statistiques {{season}} affichées — la saison n'a pas encore commencé",
+      "teamUnavailable": "Les statistiques de la saison de {{team}} ne sont pas disponibles pour le moment."
     },
     "playerTable": {
       "noData": "Aucune donnée",
