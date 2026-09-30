@@ -508,9 +508,11 @@ describe('Schedule view — CAR (deep)', () => {
   describe('Regular Season tab — CAR extended', () => {
     beforeEach(() => cy.get('.sched-tab').contains('Regular Season').click())
 
+    // Any count: it was pinned to a full season's "82 played", which stopped
+    // being true the day the 2026-27 season started (1 played).
     it('shows total games played', function () {
       cy.skipIfContentAppears('.sort-bar-count', '0 played')
-      cy.contains(/82 played/).should('be.visible')
+      cy.get('.sort-bar-count').invoke('text').should('match', /\b[1-9]\d* played\b/)
     })
 
     it('stats popup shows period-by-period breakdown', function () {

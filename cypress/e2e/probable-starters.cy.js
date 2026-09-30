@@ -5,10 +5,12 @@
 // and /probable-starters are stubbed, so nothing depends on the season
 // calendar or live data: the schedule is the real 2026-27 CAR schedule
 // (cypress/fixtures/schedule-car-2026-27.json) cut to its opener,
-// 2026020001 CAR-FLA on 2026-09-29, so "the first Matchup breakdown" is
-// unambiguous. The route's own query/caching logic is covered by
+// 2026020001 CAR-FLA, so "the first Matchup breakdown" is unambiguous, and
+// moved to tomorrow (asUpcoming) so it's upcoming whenever this runs. The route's own query/caching logic is covered by
 // eyewall-poller's Vitest suite (nhl-routes.test.js,
 // probableStarters.test.js).
+
+import { asUpcoming } from '../support/upcomingGame'
 
 const OPENER = 2026020001
 
@@ -43,7 +45,7 @@ function openOpener(startersReply) {
   // because the real first upcoming game happened to be the FLA opener,
   // which would have stopped being true after 2026-09-29.)
   cy.fixture('schedule-car-2026-27.json').then(schedule => {
-    const games = schedule.games.slice(0, 1)
+    const games = schedule.games.slice(0, 1).map(g => asUpcoming(g))
     cy.intercept('GET', /\/cache\/schedule%3ACAR%3A\d{8}/, games).as('scheduleKv')
     cy.intercept('GET', '**/club-schedule-season/CAR/**', { ...schedule, games }).as('schedule')
   })

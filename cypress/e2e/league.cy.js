@@ -60,9 +60,24 @@ describe('Power rankings before every team has played 3 games', () => {
 
 describe('Standings / Power rankings / Leaders — season-not-started empty state', () => {
   beforeEach(() => {
+    // The NHL API sends the leaders with max-age=11, so a test that loads
+    // /league within 11s of an earlier one's real leaders gets them from
+    // the browser cache -- no request, so the empty stubs below never apply.
+    // Harmless while the real leaders were empty too; from 2026-27's opening
+    // night it made the Leaders case fail whenever it ran soon enough after
+    // the tests above. Chromium browsers (Electron in CI) only.
+    if (Cypress.isBrowser({ family: 'chromium' })) {
+      cy.wrap(Cypress.automation('remote:debugger:protocol', {
+        command: 'Network.setCacheDisabled',
+        params: { cacheDisabled: true },
+      }))
+    }
     cy.intercept('GET', `${WORKER_URL_LEAGUE}/cache/standings*`, { body: [] }).as('getStandings')
-    cy.intercept('GET', '**/nhl-api/v1/skater-stats-leaders/**', { body: { points: [], goals: [] } }).as('getSkaterLeaders')
-    cy.intercept('GET', '**/nhl-api/v1/goalie-stats-leaders/**', { body: { savePctg: [], goalsAgainstAverage: [] } }).as('getGoalieLeaders')
+    // RegExps, not globs: the glob form never matched these requests (their
+    // query string), so this block only passed while the real leaders were
+    // empty -- it started failing the day the 2026-27 season began.
+    cy.intercept('GET', /\/nhl-api\/v1\/skater-stats-leaders\//, { body: { points: [], goals: [] } }).as('getSkaterLeaders')
+    cy.intercept('GET', /\/nhl-api\/v1\/goalie-stats-leaders\//, { body: { savePctg: [], goalsAgainstAverage: [] } }).as('getGoalieLeaders')
     cy.setTeam('CAR')
     cy.visit('/league')
     cy.get('.league-view', { timeout: 15000 }).should('be.visible')
@@ -84,8 +99,18 @@ describe('Standings / Power rankings / Leaders — season-not-started empty stat
     cy.get('.pr-row').should('not.exist')
   })
 
+  after(() => {
+    if (Cypress.isBrowser({ family: 'chromium' })) {
+      cy.wrap(Cypress.automation('remote:debugger:protocol', {
+        command: 'Network.setCacheDisabled',
+        params: { cacheDisabled: false },
+      }))
+    }
+  })
+
   it('Leaders tab shows the season-not-started message instead of four blank cards', () => {
     cy.get('.league-tab').contains('Leaders').click()
+    cy.wait(['@getSkaterLeaders', '@getGoalieLeaders'])
     cy.get('.lv-season-empty').should('be.visible').and('contain', 'Stat leaders will appear')
     cy.get('.lv-leaders-card').should('not.exist')
   })
@@ -418,9 +443,11 @@ describe('League page — CAR', () => {
       cy.get('.lv-leaders-card').contains('Save percentage').should('exist')
     })
 
-    it('each card shows 10 player rows', () => {
+    // Live data: up to 10 rows per card, but the first days of a season
+    // have fewer players with a stat (2 goalies after opening night).
+    it('each card shows 1 to 10 player rows', () => {
       cy.get('.lv-leaders-card', { timeout: 10000 }).each($card => {
-        cy.wrap($card).find('.lv-leaders-row').should('have.length', 10)
+        cy.wrap($card).find('.lv-leaders-row').its('length').should('be.within', 1, 10)
       })
     })
 
@@ -445,11 +472,13 @@ describe('League page — CAR', () => {
         .should('match', /^\d+\.\d{2}$/)
     })
 
+    // .920-style; a perfect 1.000 is real early in a season (a shutout on
+    // opening night).
     it('SV% leader shows a decimal stat value like .920', () => {
       cy.get('.lv-leaders-card').contains('Save percentage').parents('.lv-leaders-card')
         .find('.lv-leaders-stat').first()
         .invoke('text')
-        .should('match', /^\.\d{3}$/)
+        .should('match', /^(\.\d{3}|1\.000)$/)
     })
 
     it('each row shows a team abbreviation', () => {
