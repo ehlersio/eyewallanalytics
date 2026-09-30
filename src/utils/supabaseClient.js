@@ -363,12 +363,21 @@ export async function getGameXG(gameId) {
 // ── Game log insights ─────────────────────────────────────────
 // Returns team-specific situational stats for Live Insights.
 // Requires team_scored_first boolean in game_log (added by nhl_stats.py).
-export async function getGameLogInsights(oppAbbr, season = currentSeason(), teamAbbr = 'CAR') {
+// Situational records for the live insights, from this season's games of
+// one game type -- the game on screen's: 2 regular season, 3 playoffs.
+// Preseason games never count, so a preseason game (or any other type)
+// gets null. Until 2026-09 this counted every game_log game of the
+// season: on 2026-27's opening night it read "CAR is 1-1 vs FLA this
+// season (2 games)" from the two preseason meetings.
+export async function getGameLogInsights(oppAbbr, season = currentSeason(), teamAbbr = 'CAR', gameType = 2) {
+  if (gameType !== 2 && gameType !== 3) return null;
   const rows = await workerFetch(`/game-log?team=${teamAbbr}&season=${season}`).catch(() => null);
 
   if (!rows?.length) return null;
 
-  const completed = rows.filter(r => r.team_score != null && r.opp_score != null);
+  const completed = rows.filter(r =>
+    r.game_type === gameType && r.team_score != null && r.opp_score != null
+  );
   const wins      = completed.filter(r => r.team_score > r.opp_score);
   const total     = completed.length;
 
@@ -384,7 +393,7 @@ export async function getGameLogInsights(oppAbbr, season = currentSeason(), team
   const didntScoreFirstWinPct = didntScoreFirst.length > 0
     ? Math.round(didntScoreFirstWins.length / didntScoreFirst.length * 100) : null;
 
-  // Head-to-head vs this opponent (regular season)
+  // Head-to-head vs this opponent (this game type)
   const vsOpp      = completed.filter(r => r.opponent === oppAbbr);
   const vsOppWins  = vsOpp.filter(r => r.team_score > r.opp_score);
   const vsOppRecord = vsOpp.length > 0
@@ -399,6 +408,7 @@ export async function getGameLogInsights(oppAbbr, season = currentSeason(), team
     : null;
 
   return {
+    gameType,
     total,
     wins: wins.length,
     scoredFirstWinPct,

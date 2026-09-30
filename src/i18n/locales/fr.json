@@ -1038,7 +1038,10 @@
       "oppPulledGoalie": "{{oppAbbr}} a retiré sa gardienne",
       "carPulledGoalie": "{{abbr}} a retiré sa gardienne",
       "finalWinDespiteOutshot": "{{abbr}} a gagné {{car}}–{{opp}} malgré {{oppTot}} tirs contre {{carTot}}",
-      "oppScoredFirstWinPct": "{{abbr}} gagne {{pct}}% de ses matchs quand l'adversaire marque en premier cette saison ({{n}} matchs)"
+      "oppScoredFirstWinPct": "{{abbr}} gagne {{pct}}% de ses matchs quand l'adversaire marque en premier cette saison ({{n}} matchs)",
+      "scoredFirstWinPctForPlayoffs": "{{abbr}} gagne {{pct}}% de ses matchs quand elle marque en premier dans ces séries ({{n}} matchs)",
+      "oppScoredFirstWinPctPlayoffs": "{{abbr}} gagne {{pct}}% de ses matchs quand l'adversaire marque en premier dans ces séries ({{n}} matchs)",
+      "headToHeadRecordPlayoffs": "{{abbr}} présente une fiche de {{w}}-{{l}} contre {{oppAbbr}} dans ces séries ({{gp}} matchs)"
     },
     "liveInsightsCard": {
       "liveHeader": "🔴 Aperçus en direct",
