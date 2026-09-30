@@ -83,16 +83,20 @@ function buildRosterMap(pbp) {
   return map;
 }
 
-// Extract CAR goalie name from rosterSpots — used to ground the AI prompt
-function getPrimaryGoalieName(pbp, carTeamId) {
-  const spots = pbp?.rosterSpots || [];
-  const carGoalies = spots.filter(p =>
-    p.teamId === carTeamId && p.positionCode === 'G'
-  );
-  // Prefer the first listed goalie (starter) — roster spots are typically ordered
-  if (!carGoalies.length) return null;
-  const g = carGoalies[0];
-  return `${g.firstName?.default || ''} ${g.lastName?.default || ''}`.trim() || null;
+// The team's goalies who actually faced shots in these plays, in the order
+// they first appeared -- used to ground the AI prompt. Every shot, miss and
+// goal names the goalie in net (goalieInNetId). This used to take the first
+// goalie in rosterSpots, which isn't ordered by who starts, so the summary
+// often credited the backup. No shots against = no name, never a guess.
+export function goaliesInNet(plays, rosterMap, teamId) {
+  const ids = [];
+  for (const p of plays) {
+    if (!['shot-on-goal', 'missed-shot', 'goal'].includes(p.typeDescKey)) continue;
+    const id = p.details?.goalieInNetId;
+    if (!id || p.details?.eventOwnerTeamId === teamId || ids.includes(id)) continue;
+    ids.push(id);
+  }
+  return ids.map(id => rosterMap[id]).filter(Boolean);
 }
 
 function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlayoff = false) {
@@ -220,7 +224,7 @@ function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlay
     aiNarrative: null,
     aiLoading: true,
     gameId,
-    primaryGoalieName: getPrimaryGoalieName(pbp, carTeamId),
+    carGoalieNames: goaliesInNet(periodPlays, rosterMap, carTeamId),
   };
 }
 
@@ -450,7 +454,7 @@ function buildGameSummary(plays, carTeamId, landingData, pbp, gameId) {
     // AI
     aiNarrative: null, aiLoading: true,
     gameId,
-    primaryGoalieName: getPrimaryGoalieName(pbp, carTeamId),
+    carGoalieNames: goaliesInNet(plays, rosterMap, carTeamId),
   };
 }
 
