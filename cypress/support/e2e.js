@@ -1,6 +1,7 @@
 // cypress/support/e2e.js
 
 import { addCompareSnapshotCommand } from 'cypress-visual-regression/dist/command'
+import { interceptLiveGames } from './noLiveGames'
 
 // errorThreshold: 1 (%) -- these pages hit the live Worker API with no fixture
 // seeding, so a baseline captured minutes before a diff run will show small,
@@ -97,6 +98,11 @@ Cypress.Commands.add('setTeam', (abbr) => {
   cy.window().then(win => {
     win.localStorage.setItem('eyewall:team', JSON.stringify({ abbr }))
   })
+})
+
+// Real games in progress stay out of every spec -- see noLiveGames.js.
+beforeEach(() => {
+  interceptLiveGames()
 })
 
 beforeEach(() => {
