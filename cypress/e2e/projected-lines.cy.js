@@ -6,6 +6,8 @@
 // (2026020001 CAR-FLA). The route's own query/caching logic is covered by
 // eyewall-poller's Vitest suite (nhl-routes.test.js, projectedLines.test.js).
 
+import { asUpcoming } from '../support/upcomingGame'
+
 const player = (id, name, pos, filled = false) => ({ id, name, pos, filled })
 
 const PROJECTION = {
@@ -25,7 +27,7 @@ const PROJECTION = {
 
 function openScouting(projectedReply) {
   cy.fixture('schedule-car-2026-27.json').then(schedule => {
-    const games = schedule.games.slice(0, 1)
+    const games = schedule.games.slice(0, 1).map(g => asUpcoming(g))
     cy.intercept('GET', /\/cache\/schedule%3ACAR%3A\d{8}/, games).as('scheduleKv')
     cy.intercept('GET', '**/club-schedule-season/CAR/**', { ...schedule, games }).as('schedule')
   })
