@@ -52,6 +52,11 @@ function openOpener(startersReply) {
     if (typeof startersReply === 'function') return startersReply(req, game)
     req.reply(game === OPENER ? startersReply : { gameId: game, gameDate: null, runDate: null, teams: {} })
   }).as('starters')
+  // The stubbed opener has to still be upcoming, and the schedule decides
+  // that from today's date -- from 2026-09-30 UTC (CI's clock) the one-game
+  // schedule showed nothing. Pin the page's Date, not its timers, to the
+  // fixtures' own run date.
+  cy.clock(Date.UTC(2026, 8, 28, 16), ['Date'])
   cy.setTeam('CAR')
   cy.visit('/schedule')
   // Guard: the stubbed one-game schedule is what rendered -- the real

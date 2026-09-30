@@ -38,26 +38,6 @@ const WORKER_URL_LEAGUE = Cypress.expose('VITE_WORKER_URL') || 'https://eyewall-
 // the same spec file had visited /league for real first, and passed
 // instantly in isolation or when run first).
 
-// 2026-09-28: the new season's standings arrived with every team at 0 GP.
-// Every ranking component tied, so the order was just the order standings
-// came in -- it has to say it's too early instead.
-describe('Power rankings before every team has played 3 games', () => {
-  const standings = gp => ['CAR', 'BOS', 'STL', 'TOR'].map((abbr, i) => ({
-    seasonId: 20262027, teamAbbrev: { default: abbr }, teamName: { default: abbr },
-    gamesPlayed: i === 0 ? gp : 5, wins: 0, losses: 0, otLosses: 0, points: 0,
-    goalFor: 0, goalAgainst: 0, l10Wins: 0, l10Losses: 0, l10OtLosses: 0,
-  }))
-
-  it('says when rankings return, instead of a tied order', () => {
-    cy.intercept('GET', `${WORKER_URL_LEAGUE}/cache/standings*`, { body: standings(2) }).as('getStandings')
-    cy.setTeam('CAR')
-    cy.visit('/league')
-    cy.get('.league-tab').contains('Power rankings').click()
-    cy.get('.lv-season-empty').should('be.visible').and('contain', 'every team has played 3 games')
-    cy.get('.pr-row').should('not.exist')
-  })
-})
-
 describe('Standings / Power rankings / Leaders — season-not-started empty state', () => {
   beforeEach(() => {
     cy.intercept('GET', `${WORKER_URL_LEAGUE}/cache/standings*`, { body: [] }).as('getStandings')
@@ -88,6 +68,30 @@ describe('Standings / Power rankings / Leaders — season-not-started empty stat
     cy.get('.league-tab').contains('Leaders').click()
     cy.get('.lv-season-empty').should('be.visible').and('contain', 'Stat leaders will appear')
     cy.get('.lv-leaders-card').should('not.exist')
+  })
+})
+
+// Comes after the season-not-started block above, which must be the first
+// /league visit in this spec: this block visits it for real (only
+// standings stubbed), and once real 2026-27 leaders existed their cached
+// responses reached that block's stubbed Leaders test.
+// 2026-09-28: the new season's standings arrived with every team at 0 GP.
+// Every ranking component tied, so the order was just the order standings
+// came in -- it has to say it's too early instead.
+describe('Power rankings before every team has played 3 games', () => {
+  const standings = gp => ['CAR', 'BOS', 'STL', 'TOR'].map((abbr, i) => ({
+    seasonId: 20262027, teamAbbrev: { default: abbr }, teamName: { default: abbr },
+    gamesPlayed: i === 0 ? gp : 5, wins: 0, losses: 0, otLosses: 0, points: 0,
+    goalFor: 0, goalAgainst: 0, l10Wins: 0, l10Losses: 0, l10OtLosses: 0,
+  }))
+
+  it('says when rankings return, instead of a tied order', () => {
+    cy.intercept('GET', `${WORKER_URL_LEAGUE}/cache/standings*`, { body: standings(2) }).as('getStandings')
+    cy.setTeam('CAR')
+    cy.visit('/league')
+    cy.get('.league-tab').contains('Power rankings').click()
+    cy.get('.lv-season-empty').should('be.visible').and('contain', 'every team has played 3 games')
+    cy.get('.pr-row').should('not.exist')
   })
 })
 
@@ -418,9 +422,11 @@ describe('League page — CAR', () => {
       cy.get('.lv-leaders-card').contains('Save percentage').should('exist')
     })
 
-    it('each card shows 10 player rows', () => {
+    // Up to 10: early in a season fewer have played (one game into 2026-27,
+    // two goalies).
+    it('each card shows up to 10 player rows', () => {
       cy.get('.lv-leaders-card', { timeout: 10000 }).each($card => {
-        cy.wrap($card).find('.lv-leaders-row').should('have.length', 10)
+        cy.wrap($card).find('.lv-leaders-row').should('have.length.within', 1, 10)
       })
     })
 
@@ -445,11 +451,12 @@ describe('League page — CAR', () => {
         .should('match', /^\d+\.\d{2}$/)
     })
 
+    // 1.000 is a real leader early on (a shutout in a goalie's only game).
     it('SV% leader shows a decimal stat value like .920', () => {
       cy.get('.lv-leaders-card').contains('Save percentage').parents('.lv-leaders-card')
         .find('.lv-leaders-stat').first()
         .invoke('text')
-        .should('match', /^\.\d{3}$/)
+        .should('match', /^(\.\d{3}|1\.000)$/)
     })
 
     it('each row shows a team abbreviation', () => {

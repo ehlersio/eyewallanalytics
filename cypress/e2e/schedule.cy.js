@@ -508,9 +508,15 @@ describe('Schedule view — CAR (deep)', () => {
   describe('Regular Season tab — CAR extended', () => {
     beforeEach(() => cy.get('.sched-tab').contains('Regular Season').click())
 
+    // "N played · M upcoming" covers the whole season on any date -- "82
+    // played" held only between the last game and the next opener. 82 games
+    // through 2025-26, 84 from 2026-27 (the NHL's expanded schedule).
     it('shows total games played', function () {
       cy.skipIfContentAppears('.sort-bar-count', '0 played')
-      cy.contains(/82 played/).should('be.visible')
+      cy.get('.sort-bar-count').first().invoke('text').then(text => {
+        const [, played, upcoming = '0'] = text.match(/(\d+) played(?: · (\d+) upcoming)?/) || []
+        expect(Number(played) + Number(upcoming), text).to.be.oneOf([82, 84])
+      })
     })
 
     it('stats popup shows period-by-period breakdown', function () {

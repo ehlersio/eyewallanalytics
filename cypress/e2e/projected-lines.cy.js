@@ -30,6 +30,11 @@ function openScouting(projectedReply) {
     cy.intercept('GET', '**/club-schedule-season/CAR/**', { ...schedule, games }).as('schedule')
   })
   cy.intercept('GET', '**/projected-lines?team=*', projectedReply).as('projected')
+  // The stubbed opener has to still be upcoming, and the schedule decides
+  // that from today's date -- from 2026-09-30 UTC (CI's clock) the one-game
+  // schedule showed nothing. Pin the page's Date, not its timers, to the
+  // projection's own date (see probable-starters.cy.js).
+  cy.clock(Date.UTC(2026, 8, 28, 16), ['Date'])
   cy.setTeam('CAR')
   cy.visit('/schedule')
   cy.contains('.gc-abbr', 'FLA', { timeout: 15000 }).should('exist')
