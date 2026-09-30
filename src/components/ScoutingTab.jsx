@@ -69,11 +69,15 @@ function FormDots({ games }) {
 
 
 // Comparison row — green = CAR advantage
-function CompareRow({ label, carVal, oppVal, higherBetter = true, fmt = v => v?.toFixed(2) ?? '—', tip }) {
-  const c = Number(carVal) || 0, o = Number(oppVal) || 0;
-  const carBetter = higherBetter ? c > o : c < o;
-  const oppBetter = higherBetter ? o > c : o < c;
-  const pct = (c + o) > 0 ? Math.round(c / (c + o) * 100) : 50;
+export function CompareRow({ label, carVal, oppVal, higherBetter = true, fmt = v => v?.toFixed(2) ?? '—', tip }) {
+  // A side with no stat shows "—" and the row picks no winner: counting a
+  // missing value as 0 would color the other side "better" for no reason.
+  if (carVal == null && oppVal == null) return null;
+  const both = carVal != null && oppVal != null;
+  const c = Number(carVal), o = Number(oppVal);
+  const carBetter = both && (higherBetter ? c > o : c < o);
+  const oppBetter = both && (higherBetter ? o > c : o < c);
+  const pct = both && (c + o) > 0 ? Math.round(c / (c + o) * 100) : 50;
   return (
     <div className="scouting-compare-row grid [grid-template-columns:48px_1fr_48px] items-center gap-1.5 py-1">
       <span className="scouting-compare-car font-[family-name:var(--font-mono)] text-[12px] font-bold text-left"
@@ -238,9 +242,12 @@ function GoalieMatchupCard({ carPlayers, oppPlayers, oppAbbr: _oppAbbr, oppColor
 }
 
 // ── Team total projection ────────────────────────────────────
-function TeamTotalCard({ carStats, oppStats, oppAbbr, isPlayoff }) {
+export function TeamTotalCard({ carStats, oppStats, oppAbbr, isPlayoff }) {
   const { t } = useTranslation();
-  if (!carStats || !oppStats) return null;
+  // Both teams' GF/GP and GA/GP are needed; with any missing there's no
+  // projection to make, so the card is hidden rather than filled in.
+  if ([carStats?.goalsForPerGame, carStats?.goalsAgainstPerGame,
+       oppStats?.goalsForPerGame, oppStats?.goalsAgainstPerGame].some(v => v == null)) return null;
   const carExp = (carStats.goalsForPerGame + oppStats.goalsAgainstPerGame) / 2;
   const oppExp = (oppStats.goalsForPerGame + carStats.goalsAgainstPerGame) / 2;
   const total  = +(carExp + oppExp).toFixed(1);
@@ -270,14 +277,26 @@ function TeamTotalCard({ carStats, oppStats, oppAbbr, isPlayoff }) {
 export function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers, oppPlayers,
   oppAbbr, oppColor, isPlayoff, carLines, matchupText }) {
   const { t } = useTranslation();
-  if (!carStats || !oppStats) return null;
 
   const car = TEAM_CONFIG.abbr;
   const carColor = TEAM_CONFIG.displayColor;
   const oppCol = oppColor || SHARE.text;
   const gpgFmt = v => v?.toFixed(2) ?? '—';
   const pctFmt = v => v != null ? `${(v * 100).toFixed(1)}%` : '—';
-  const side = carBetter => (carBetter ? 'left' : 'right');
+  const oneDec = v => v?.toFixed(1) ?? '—';
+  // null when either team lacks the stat: ShareCompareRow then highlights
+  // neither side.
+  const better = (l, r, higherBetter = true) =>
+    l == null || r == null || l === r ? null : (higherBetter ? l > r : l < r) ? 'left' : 'right';
+  // Only stats at least one team has; the block is dropped if neither team
+  // has any (standings unavailable), and the rest of the card still shares.
+  const statRows = [
+    { label: t('scoutingTab.shareCanvas.stats.goalsForGp'),     key: 'goalsForPerGame',     fmt: gpgFmt },
+    { label: t('scoutingTab.shareCanvas.stats.goalsAgainstGp'), key: 'goalsAgainstPerGame', fmt: gpgFmt, higherBetter: false },
+    { label: t('scoutingTab.shareCanvas.stats.powerPlayPct'),   key: 'powerPlayPct',        fmt: pctFmt },
+    { label: t('scoutingTab.shareCanvas.stats.penaltyKillPct'), key: 'penaltyKillPct',      fmt: pctFmt },
+    { label: t('scoutingTab.shareCanvas.stats.shotsForGp'),     key: 'shotsForPerGame',     fmt: oneDec },
+  ].filter(row => carStats?.[row.key] != null || oppStats?.[row.key] != null);
   const logo = abbr => (
     <img src={`${NATIVE_ORIGIN}/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`} alt={abbr}
       style={{ width: 40, height: 40, objectFit: 'contain' }} onError={e => { e.target.style.display = 'none'; }} />
@@ -298,15 +317,11 @@ export function ScoutingShareCanvas({ canvasRef, carStats, oppStats, carPlayers,
           <span style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: FONT_DISPLAY, fontSize: 36, color: carColor }}>{logo(car)}{car}</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: FONT_DISPLAY, fontSize: 36, color: oppCol }}>{oppAbbr}{logo(oppAbbr)}</span>
         </div>
-        {[
-          { label: t('scoutingTab.shareCanvas.stats.goalsForGp'),     l: gpgFmt(carStats.goalsForPerGame),     r: gpgFmt(oppStats.goalsForPerGame),     better: side((carStats.goalsForPerGame ?? 0) > (oppStats.goalsForPerGame ?? 0)) },
-          { label: t('scoutingTab.shareCanvas.stats.goalsAgainstGp'), l: gpgFmt(carStats.goalsAgainstPerGame), r: gpgFmt(oppStats.goalsAgainstPerGame), better: side((carStats.goalsAgainstPerGame ?? 99) < (oppStats.goalsAgainstPerGame ?? 99)) },
-          { label: t('scoutingTab.shareCanvas.stats.powerPlayPct'),   l: pctFmt(carStats.powerPlayPct),        r: pctFmt(oppStats.powerPlayPct),        better: side((carStats.powerPlayPct ?? 0) > (oppStats.powerPlayPct ?? 0)) },
-          { label: t('scoutingTab.shareCanvas.stats.penaltyKillPct'), l: pctFmt(carStats.penaltyKillPct),      r: pctFmt(oppStats.penaltyKillPct),      better: side((carStats.penaltyKillPct ?? 0) > (oppStats.penaltyKillPct ?? 0)) },
-          { label: t('scoutingTab.shareCanvas.stats.shotsForGp'),     l: (carStats.shotsForPerGame ?? 0).toFixed(1), r: (oppStats.shotsForPerGame ?? 0).toFixed(1), better: side((carStats.shotsForPerGame ?? 0) > (oppStats.shotsForPerGame ?? 0)) },
-        ].map(row => (
-          <ShareCompareRow key={row.label} label={row.label} left={row.l} right={row.r}
-            better={row.better} leftColor={carColor} rightColor={oppCol} compact />
+        {statRows.map(({ label, key, fmt, higherBetter }) => (
+          <ShareCompareRow key={key} label={label}
+            left={fmt(carStats?.[key])} right={fmt(oppStats?.[key])}
+            better={better(carStats?.[key], oppStats?.[key], higherBetter)}
+            leftColor={carColor} rightColor={oppCol} compact />
         ))}
       </div>
 
@@ -670,6 +685,13 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
           <div className={SCOUTING_SECTION_LABEL_CLASSES}>
             {isPlayoff ? t('scoutingTab.playoffComparison') : t('scoutingTab.seasonComparison')}
           </div>
+          {/* One team's stats missing: its column reads "—" throughout;
+              say why rather than leave a column of dashes unexplained. */}
+          {(!compCarStats || !compOppStats) && (
+            <div className="sc-compare-unavailable text-[11px] text-[color:var(--text-dim)] italic mb-1.5">
+              {t('scoutingTab.compare.teamUnavailable', { team: compCarStats ? oppAbbr : TEAM_CONFIG.abbr })}
+            </div>
+          )}
           {/* getTeamStats() falls back to real prior-season numbers (tagged
               isPriorSeason) rather than null once TEAM_CONFIG.season is
               resolved ahead of live standings data -- e.g. the first few

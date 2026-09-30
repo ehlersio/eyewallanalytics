@@ -410,7 +410,8 @@
     "legendGoalsAgainst": "■ Goals Against",
     "goalDiffTitle": "Goal differential by game",
     "avgLabel": "avg {{avg}}",
-    "liveRecordBadge": "🔴 LIVE — record updates after final horn"
+    "liveRecordBadge": "🔴 LIVE — record updates after final horn",
+    "recordUnavailable": "Record and season stats aren't available right now."
   },
   "teamView": {
     "tabs": {
@@ -1781,7 +1782,8 @@
       "tipPkPct": "Penalty kill percentage",
       "tipSfGp": "Shots for per game — possession proxy",
       "tipFoWinPct": "Faceoff win percentage in playoffs",
-      "priorSeasonNote": "Showing {{season}} stats — this season hasn't started yet"
+      "priorSeasonNote": "Showing {{season}} stats — this season hasn't started yet",
+      "teamUnavailable": "{{team}} season stats aren't available right now."
     },
     "playerTable": {
       "noData": "No data",

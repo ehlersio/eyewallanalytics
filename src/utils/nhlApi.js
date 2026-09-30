@@ -541,18 +541,18 @@ export async function getTeamStatsPlayoff(teamAbbr = TEAM_CONFIG.abbr) {
       t.teamFullName.toLowerCase().includes(teamAbbr.toLowerCase())
     ));
     if (!team) return null;
-    const gp = team.gamesPlayed || 1;
+    // A field the endpoint leaves out is null (shown as "—"), not 0.
     return {
-      gamesPlayed:         gp,
+      gamesPlayed:         team.gamesPlayed          ?? 0,
       wins:                team.wins                ?? 0,
       losses:              team.losses              ?? 0,
-      goalsForPerGame:     team.goalsForPerGame      ?? 0,
-      goalsAgainstPerGame: team.goalsAgainstPerGame  ?? 0,
+      goalsForPerGame:     team.goalsForPerGame      ?? null,
+      goalsAgainstPerGame: team.goalsAgainstPerGame  ?? null,
       // PP/PK already 0–1 scale in this endpoint
-      powerPlayPct:        team.powerPlayPct         ?? 0,
-      penaltyKillPct:      team.penaltyKillPct       ?? 0,
-      shotsForPerGame:     team.shotsForPerGame       ?? 0,
-      shotsAgainstPerGame: team.shotsAgainstPerGame   ?? 0,
+      powerPlayPct:        team.powerPlayPct         ?? null,
+      penaltyKillPct:      team.penaltyKillPct       ?? null,
+      shotsForPerGame:     team.shotsForPerGame       ?? null,
+      shotsAgainstPerGame: team.shotsAgainstPerGame   ?? null,
       faceoffWinPct:       team.faceoffWinPct         ?? null,
       _raw: team,
     };
@@ -582,9 +582,12 @@ async function _getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
   const standings = await getStandings();
   const team = standings.find(t => t.teamAbbrev?.default === teamAbbr);
 
+  // No standings row, no stats: callers show an "unavailable" state. This
+  // used to return a hardcoded 54-20-8 record with invented rates, which
+  // every team rendered as its own whenever standings failed to load.
   if (!team) {
-    console.warn('Could not find team in standings, using fallback');
-    return FALLBACK_STATS;
+    console.warn(`Could not find ${teamAbbr} in standings; team stats unavailable`);
+    return null;
   }
 
   // The NHL's own /standings/now redirects to whatever date it last
@@ -620,13 +623,17 @@ async function _getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
   // already found here rather than re-deriving it inline.
   const isPriorSeason = isStandingsStale([team], TEAM_CONFIG.season);
 
-  const gp = team.gamesPlayed || 1;
+  const gp = team.gamesPlayed ?? 0;
   const statsSeasonId = team.seasonId != null ? String(team.seasonId) : TEAM_CONFIG.season;
   const summary = await fetchTeamSummaryRow(team, teamAbbr, statsSeasonId).catch(() => null);
+  const perGame = total => (total != null && gp > 0 ? total / gp : null);
+  const pct100 = v => (v != null ? v / 100 : null);
 
   // Field name notes for NHL API standings:
   //   goalFor / goalAgainst = season totals (not per-game averages)
   //   powerPlayPct / penaltyKillPct = 0–100 scale (e.g. 23.5 = 23.5%)
+  // A rate neither team/summary nor standings carries is null, never a
+  // made-up league-average default.
   return {
     gamesPlayed:         gp,
     wins:                team.wins         ?? 0,
@@ -635,15 +642,15 @@ async function _getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
     points:              team.points       ?? 0,
     // team/summary's rates match the league's official GF/GP (standings'
     // goalFor counts a shootout win as a goal) and what the rank badges use.
-    goalsForPerGame:     summary?.goalsForPerGame     ?? (team.goalFor     ?? 0) / gp,
-    goalsAgainstPerGame: summary?.goalsAgainstPerGame ?? (team.goalAgainst ?? 0) / gp,
-    // team/summary first (0-1 scale); the standings fields/defaults below
-    // are only reached if that fetch fails.
-    powerPlayPct:        summary?.powerPlayPct   ?? (team.powerPlayPct  ?? 22) / 100,
-    penaltyKillPct:      summary?.penaltyKillPct ?? (team.penaltyKillPct ?? 80) / 100,
-    shotsForPerGame:     summary?.shotsForPerGame     ?? team.shotsForPerGame     ?? 31.2,
-    shotsAgainstPerGame: summary?.shotsAgainstPerGame ?? team.shotsAgainstPerGame ?? 28.4,
-    blockedShotsPerGame: team.blockedShots != null ? team.blockedShots / gp : null,
+    goalsForPerGame:     summary?.goalsForPerGame     ?? perGame(team.goalFor),
+    goalsAgainstPerGame: summary?.goalsAgainstPerGame ?? perGame(team.goalAgainst),
+    // team/summary first (0-1 scale); the standings fields below are only
+    // reached if that fetch fails.
+    powerPlayPct:        summary?.powerPlayPct   ?? pct100(team.powerPlayPct),
+    penaltyKillPct:      summary?.penaltyKillPct ?? pct100(team.penaltyKillPct),
+    shotsForPerGame:     summary?.shotsForPerGame     ?? team.shotsForPerGame     ?? null,
+    shotsAgainstPerGame: summary?.shotsAgainstPerGame ?? team.shotsAgainstPerGame ?? null,
+    blockedShotsPerGame: perGame(team.blockedShots),
     faceoffWinPct:       summary?.faceoffWinPct ?? null,
     divisionName:        team.divisionName,
     conferenceName:      team.conferenceName,
@@ -654,14 +661,6 @@ async function _getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
     _raw: team,
   };
 }
-
-const FALLBACK_STATS = {
-  gamesPlayed: 82, wins: 54, losses: 20, otLosses: 8, points: 116,
-  goalsForPerGame: 3.52, goalsAgainstPerGame: 2.61,
-  powerPlayPct: 0.248, penaltyKillPct: 0.841,
-  shotsForPerGame: 33.1, shotsAgainstPerGame: 27.4,
-  divisionName: 'Metropolitan', _raw: null,
-};
 
 // ─── TEAM SEASON RANKINGS ────────────────────────────────────
 // Returns CAR's league rank (1 = best) for key stats.

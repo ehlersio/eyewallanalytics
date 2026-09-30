@@ -314,17 +314,10 @@ export default function TeamView() {
   // Playoff home/away splits — only fetch when in playoffs (inPlayoffs must be defined first)
   const { data: homeSplitPO } = useFetch(() => inPlayoffs ? getTeamHomeSplit(3) : Promise.resolve(null), [inPlayoffs])
 
-  // Fetch live game so we can exclude in-progress result from standings
+  // Live game, for the Overview record's live badge. The standings API
+  // reflects current score, so during a live game the leading team shows
+  // +1 win. We show a live indicator instead of adjusting.
   const { data: liveGame } = useFetch(getLiveGame)
-  const gameIsLive = !!(liveGame)
-
-  // Standings update in real-time during games — exclude in-progress result
-  const wins   = (stats?.wins    || 0) - (gameIsLive && (stats?.wins    || 0) > 0 ? 0 : 0)
-  const losses = (stats?.losses  || 0)
-  const otl    = (stats?.otLosses|| 0)
-  const pts    = (stats?.points  || 0)
-  // Note: the standings API reflects current score, so during a live game
-  // the leading team shows +1 win. We show a live indicator instead of adjusting.
 
   // Cap data
   const capSummary      = getCapSummary()
@@ -358,7 +351,7 @@ export default function TeamView() {
         ))}
       </div>
 
-      {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} wins={wins} losses={losses} otl={otl} pts={pts} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} realtimeReg={realtimeReg} rankings={rankings} />}
+      {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} realtimeReg={realtimeReg} rankings={rankings} />}
       {tab === 'Advanced'  && <AdvancedTab priorSeason={priorSeason} corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} homeSplit={homeSplit} xgTrend={xgTrend} xgTrendPO={xgTrendPO} />}
       {tab === 'Splits'    && <SplitsTab priorSeason={priorSeason} homeSplit={homeSplit} homeSplitPO={homeSplitPO} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} ppReg={ppReg} pkReg={pkReg} corsiReg={corsiReg} />}
       {tab === 'Trends'    && <TrendsTab gameLog={gameLog} />}
@@ -370,7 +363,10 @@ export default function TeamView() {
 }
 
 // ── Overview tab ──────────────────────────────────────────────
-function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStanding, playoffSummary, wins, losses, otl, pts, inPlayoffs, liveGame, _corsiReg, realtimeReg, rankings }) {
+// PP%/PK% arrive 0-1 from team/summary; a 0-100 value is passed through.
+const fmtStatPct = v => v == null ? '—' : `${(v <= 1 ? v * 100 : v).toFixed(1)}%`
+
+export function OverviewTab({ stats, standLoading, statsLoading, poLoading, carStanding, playoffSummary, inPlayoffs, liveGame, _corsiReg, realtimeReg, rankings }) {
   const { t } = useTranslation()
 
 
@@ -390,13 +386,16 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
               </span>
             )}
           </div>
-          {standLoading ? <div className={SKELETON_CLASSES} style={{ height: 28, width: '70%' }} /> : (
+          {/* No standings row means no record: say so rather than show 0-0-0. */}
+          {standLoading || statsLoading ? <div className={SKELETON_CLASSES} style={{ height: 28, width: '70%' }} /> : !stats ? (
+            <div className="record-unavailable text-[12px] text-[color:var(--text-dim)] py-1">{t('team.recordUnavailable')}</div>
+          ) : (
             <div className={RECORD_MAIN_ROW_CLASSES}>
-              <span className={RECORD_BIG_CLASSES}>{wins}–{losses}–{otl}</span>
+              <span className={RECORD_BIG_CLASSES}>{stats.wins}–{stats.losses}–{stats.otLosses}</span>
               {liveGame && !inPlayoffs && (
                 <span className={RECORD_LIVE_BADGE_CLASSES}>{t('team.liveRecordBadge')}</span>
               )}
-              <span className={PTS_CHIP_CLASSES}>{pts} pts</span>
+              <span className={PTS_CHIP_CLASSES}>{stats.points} pts</span>
             </div>
           )}
           {carStanding && (
@@ -454,10 +453,10 @@ function OverviewTab({ stats, standLoading, _statsLoading, poLoading, carStandin
           <div className="sec-label" style={{ marginBottom: 10 }}>{t('team.seasonStats')}</div>
           <div className={OVERVIEW_STAT_GRID_CLASSES}>
             {[
-              ['Goals/GP',  (stats.goalsForPerGame??0).toFixed(2),   rankings?.goalsForPG],
-              ['GA/GP',     (stats.goalsAgainstPerGame??0).toFixed(2), rankings?.goalsAgainstPG],
-              ['PP%',       (stats.powerPlayPct != null ? (stats.powerPlayPct <= 1 ? (stats.powerPlayPct*100).toFixed(1) : stats.powerPlayPct.toFixed(1)) : '—') + '%', rankings?.ppPct],
-              ['PK%',       (stats.penaltyKillPct != null ? (stats.penaltyKillPct <= 1 ? (stats.penaltyKillPct*100).toFixed(1) : stats.penaltyKillPct.toFixed(1)) : '—') + '%', rankings?.pkPct],
+              ['Goals/GP',  stats.goalsForPerGame?.toFixed(2) ?? '—',     rankings?.goalsForPG],
+              ['GA/GP',     stats.goalsAgainstPerGame?.toFixed(2) ?? '—', rankings?.goalsAgainstPG],
+              ['PP%',       fmtStatPct(stats.powerPlayPct),   rankings?.ppPct],
+              ['PK%',       fmtStatPct(stats.penaltyKillPct), rankings?.pkPct],
               ['SOG/GP',    stats.shotsForPerGame?.toFixed(1) ?? '—', rankings?.shotsForPG],
               ['SA/GP',     stats.shotsAgainstPerGame?.toFixed(1) ?? '—', rankings?.shotsAgainstPG],
               ['Blks/GP',   realtimeReg?.blockedShots != null ? (realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1)).toFixed(1) : '—', null],
