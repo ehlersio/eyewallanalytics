@@ -531,6 +531,14 @@ const PP_SHOTTYPE_CHIP_CLASSES = 'text-[10px] py-0.5 px-[7px] rounded-[20px] bg-
 const PP_MINI_RINK_CLASSES = 'mt-1';
 const PP_MINI_RINK_LABEL_CLASSES = 'text-[10px] text-[color:var(--text-dim)] mb-1';
 
+// special_teams_units game type for a game's gameType: playoffs get the
+// playoff units, the regular season its own, preseason none (null).
+function unitsGameTypeFor(gameType) {
+  if (gameType === GAME_TYPE.PLAYOFFS) return GAME_TYPE.PLAYOFFS;
+  if (gameType === GAME_TYPE.PRESEASON) return null;
+  return GAME_TYPE.REGULAR;
+}
+
 export default function ShotMapView() {
   const { t } = useTranslation();
   // The team this view watches from: the favorite, or -- on the
@@ -706,12 +714,6 @@ export default function ShotMapView() {
     [effectiveSeason, team, isGuest]
   );
 
-  // PP/PK unit compositions for the season on screen, for the unit chips
-  // and the per-opportunity PP1/PP2 badges in the special-teams drill-downs.
-  // Keyed to effectiveSeason, not CURRENT_SEASON: labelling last season's
-  // power plays with this season's units would be quietly wrong.
-  const { data: specialTeamsMap } = useFetch(() => getSpecialTeamsUnits(effectiveSeason), [effectiveSeason]);
-
   // Preseason (2026-09). Completed preseason games used to be unreachable
   // here -- only regular/playoff games made the chip row -- while the score
   // bar still showed the latest one (lastGame doesn't filter by type), over
@@ -824,6 +826,19 @@ export default function ShotMapView() {
     [gameId, isLive, !!devGame]
   );
   const pbp = devGame?.pbp ?? pbpReal;
+
+  // PP/PK unit compositions for the unit chips and the per-opportunity
+  // PP1/PP2 badges in the special-teams drill-downs. Keyed to
+  // effectiveSeason, not CURRENT_SEASON: labelling last season's power plays
+  // with this season's units would be quietly wrong. And to the game type of
+  // the game whose power plays are drawn (the play-by-play's own game, which
+  // ?mockGame= can make a different game from activeGame): a playoff power
+  // play gets the playoff units, and a preseason game gets none -- the
+  // pipeline never infers units from preseason games.
+  const unitsGameType = unitsGameTypeFor(pbp?.gameType ?? activeGame?.gameType ?? selectionGameType);
+  const { data: specialTeamsMap } = useFetch(
+    () => getSpecialTeamsUnits(effectiveSeason, unitsGameType), [effectiveSeason, unitsGameType]
+  );
 
   // iOS app only: with "Follow my team's games" on (Settings), starts this
   // live game's Lock Screen activity if the server's start hasn't. The

@@ -466,6 +466,15 @@ describe('Shot Map — special teams units', () => {
     cy.wait('@specialTeams').its('request.url').should('match', /[?&]season=\d{8}(&|$)/)
   })
 
+  // Units are per game type: MOCK_GAME_ID is a playoff game, so its power
+  // plays are labeled with the playoff units.
+  it('requests the units of the game type on screen', () => {
+    cy.wait('@specialTeams')
+    cy.get('@specialTeams.all').should(calls => {
+      expect(calls.some(c => /[?&]gameType=3(&|$)/.test(c.request.url))).to.equal(true)
+    })
+  })
+
   // Scoped to the unit row rather than asserted against the whole page:
   // LiveEventRink renders an <svg><title> per shot dot carrying the
   // shooter's name, so a bare cy.contains('Staal') matches an invisible

@@ -1825,7 +1825,11 @@
       "toiTogether": "{{mins}} min together",
       "defencePairs": "Defence pairs",
       "line": "Line {{n}}",
-      "pair": "Pair {{n}}"
+      "pair": "Pair {{n}}",
+      "carriedPriorSeason": "Last season",
+      "carriedPriorSeasonTip": "This season's games can't fill this slot yet, so it's last season's unit (its players are still on the roster). Its TOI and xGF% are from last season.",
+      "carriedRegularSeason": "Regular season",
+      "carriedRegularSeasonTip": "The playoff games can't fill this slot yet, so it's this season's regular-season unit. Its TOI and xGF% are from the regular season."
     },
     "shareCanvas": {
       "badge": "Scouting Report",

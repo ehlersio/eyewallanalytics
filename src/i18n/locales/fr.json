@@ -1825,7 +1825,11 @@
       "toiTogether": "{{mins}} min ensemble",
       "defencePairs": "Paires de défenseurs",
       "line": "Trio {{n}}",
-      "pair": "Paire {{n}}"
+      "pair": "Paire {{n}}",
+      "carriedPriorSeason": "Saison dernière",
+      "carriedPriorSeasonTip": "Les matchs de cette saison ne suffisent pas encore à remplir cette place : c'est l'unité de la saison dernière (ses joueurs font toujours partie de l'équipe). Son TDG et son xGF% sont ceux de la saison dernière.",
+      "carriedRegularSeason": "Saison régulière",
+      "carriedRegularSeasonTip": "Les matchs des séries ne suffisent pas encore à remplir cette place : c'est l'unité de la saison régulière. Son TDG et son xGF% viennent de la saison régulière."
     },
     "shareCanvas": {
       "badge": "Rapport de dépistage",
