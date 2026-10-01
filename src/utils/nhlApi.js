@@ -1176,6 +1176,12 @@ export async function getGameDetail(gameId) {
 export function bustLiveGameCache(gameId, team = TEAM_CONFIG) {
   invalidate(`pbp:${gameId}`);
   invalidate(`boxscore:${gameId}`);
+  bustScheduleCache(team);
+}
+
+// Next getAllGames()/getLiveGame() reads the Worker again, not the 20s
+// in-memory copy -- for a re-check that has to see a game that just went live.
+export function bustScheduleCache(team = TEAM_CONFIG) {
   // getAllGames()'s real key -- this used to invalidate a bare 'allGames',
   // which nothing has been stored under since that key became team+season
   // scoped, so it was a silent no-op.
@@ -1422,6 +1428,18 @@ export function getRecapLinks(game) {
 
 export function isNeutralSite(game) {
   return game?.neutralSite === true;
+}
+
+// The game with its score taken from that game's play-by-play, when it's
+// the one given. The schedule's score is only as fresh as its cached copy
+// (eyewall-poller restamps it once a minute), while pbp polls every 10s
+// live -- a goal popped up from pbp with the score bar still a goal behind.
+export function withPbpScore(game, pbp) {
+  if (!game || !pbp || String(pbp.id) !== String(game.id)) return game;
+  const home = pbp.homeTeam?.score, away = pbp.awayTeam?.score;
+  if (home == null || away == null) return game;
+  if (home === game.homeTeam?.score && away === game.awayTeam?.score) return game;
+  return { ...game, homeTeam: { ...game.homeTeam, score: home }, awayTeam: { ...game.awayTeam, score: away } };
 }
 
 export function getCarScore(game, team = TEAM_CONFIG) {
