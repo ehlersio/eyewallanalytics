@@ -7,7 +7,7 @@ import {
   getGameLanding, attachGoalVideos,
   getCarScore, getOppScore, getOpponent, isHomeGame, isCompleted,
   getTeamStats, getTeamPlayoffStats, getTeamSelectionTotals, formatGameDate, getRoster, buildPlayerMap,
-  bustLiveGameCache, bustScheduleCache, GAME_TYPE,
+  bustLiveGameCache, bustScheduleCache, withPbpScore, GAME_TYPE,
 } from '../utils/nhlApi';
 import { livePollInterval, onPushReceived } from '../utils/livePolling';
 import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON, teamTextColor } from '../utils/teamConfig';
@@ -1056,8 +1056,10 @@ export default function ShotMapView() {
   }, [isAllN, selectionShots]);
 
   const opp        = activeGame ? getOpponent(activeGame, team) : null;
-  const carScore   = activeGame ? getCarScore(activeGame, team) : null;
-  const oppScore   = activeGame ? getOppScore(activeGame, team) : null;
+  // Live, the score moves with pbp (the goal popups' source), not the schedule.
+  const scoreGame  = withPbpScore(activeGame, pbp);
+  const carScore   = scoreGame ? getCarScore(scoreGame, team) : null;
+  const oppScore   = scoreGame ? getOppScore(scoreGame, team) : null;
   const oppAbbr    = opp?.abbrev;
 
   // Game log insights — team-specific situational stats (scored first win%,

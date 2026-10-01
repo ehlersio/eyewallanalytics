@@ -1430,6 +1430,18 @@ export function isNeutralSite(game) {
   return game?.neutralSite === true;
 }
 
+// The game with its score taken from that game's play-by-play, when it's
+// the one given. The schedule's score is only as fresh as its cached copy
+// (eyewall-poller restamps it once a minute), while pbp polls every 10s
+// live -- a goal popped up from pbp with the score bar still a goal behind.
+export function withPbpScore(game, pbp) {
+  if (!game || !pbp || String(pbp.id) !== String(game.id)) return game;
+  const home = pbp.homeTeam?.score, away = pbp.awayTeam?.score;
+  if (home == null || away == null) return game;
+  if (home === game.homeTeam?.score && away === game.awayTeam?.score) return game;
+  return { ...game, homeTeam: { ...game.homeTeam, score: home }, awayTeam: { ...game.awayTeam, score: away } };
+}
+
 export function getCarScore(game, team = TEAM_CONFIG) {
   if (!game) return null;
   return game.homeTeam?.abbrev === team.abbr

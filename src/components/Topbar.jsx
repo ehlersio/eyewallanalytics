@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getLiveGame, getAllGames, getCarScore, getOppScore, getOpponent, getGameDetail, bustLiveGameCache, bustScheduleCache } from '../utils/nhlApi';
+import { getLiveGame, getAllGames, getCarScore, getOppScore, getOpponent, getGameDetail, bustLiveGameCache, bustScheduleCache, withPbpScore } from '../utils/nhlApi';
 import { livePollInterval, onPushReceived } from '../utils/livePolling';
 import { teamTextColor } from '../utils/teamConfig';
 import TeamLogo from './TeamLogo';
@@ -73,10 +73,13 @@ export default function Topbar() {
   async function checkLive() {
     try {
       const game = await getLiveGame();
-      setLiveGame(game);
+      if (!game?.id) setLiveGame(game);
       if (game?.id) {
         bustLiveGameCache(game.id); // bypass module cache
         const pbp = await getGameDetail(game.id).catch(() => null);
+        // Score from pbp, as the shot map's score bar does -- set once, so
+        // the chip never flashes the schedule's older score first.
+        setLiveGame(withPbpScore(game, pbp));
         if (pbp) {
           setLiveMeta({ period: pbp.periodDescriptor, clock: pbp.clock });
           // Publish clock — fall back to raw string if structured data missing
