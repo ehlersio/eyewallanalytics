@@ -1,0 +1,61 @@
+{
+  "available": true,
+  "kind": "skater",
+  "playerId": 8478402,
+  "season": "20252026",
+  "gameType": 2,
+  "gamesPlayed": 82,
+  "metrics": {
+    "topSpeed": {
+      "imperial": 24.6119,
+      "metric": 39.6089,
+      "pct": 100,
+      "avg": {
+        "imperial": 22.1684,
+        "metric": 35.6765
+      }
+    },
+    "burstsOver20": {
+      "value": 681,
+      "pct": 100,
+      "avg": 75.2
+    },
+    "distancePer60": {
+      "imperial": 10.5136,
+      "metric": 16.9192,
+      "pct": 99,
+      "avg": {
+        "imperial": 9.6011,
+        "metric": 15.4507
+      }
+    },
+    "topShotSpeed": {
+      "imperial": 82.05,
+      "metric": 132.0467,
+      "pct": 31,
+      "avg": {
+        "imperial": 83.6208,
+        "metric": 134.5747
+      }
+    },
+    "avgShotSpeed": {
+      "imperial": 48.3919,
+      "metric": 77.8792,
+      "pct": 26,
+      "avg": {
+        "imperial": 53.1912,
+        "metric": 85.603
+      }
+    },
+    "highDangerShots": {
+      "value": 120,
+      "pct": 100,
+      "avg": 31.6244
+    },
+    "offensiveZoneTimeEv": {
+      "value": 0.45271129,
+      "pct": 97,
+      "avg": 0.42022407
+    }
+  }
+}

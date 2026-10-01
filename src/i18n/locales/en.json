@@ -42,6 +42,9 @@
   "settings": {
     "title": "Settings",
     "language": "Language",
+    "units": "Units",
+    "unitsImperial": "Imperial (mph)",
+    "unitsMetric": "Metric (km/h)",
     "appearance": "Appearance",
     "iosInstructions": "On iPhone/iPad, push notifications require adding EyeWall Analytics to your Home Screen first: tap Share, then \"Add to Home Screen\" — then open it from there.",
     "unsupported": "Push notifications aren't supported in this browser.",
@@ -2138,6 +2141,26 @@
       "noRegularSeasonData": "No regular-season data for {{season}}.",
       "noDataPwhl": "No data for this player in {{label}}.",
       "noData": "No data for this player in {{label}}."
+    },
+    "edge": {
+      "sectionLabel_one": "Tracking (NHL EDGE) · {{season}} · {{count}} GP",
+      "sectionLabel_other": "Tracking (NHL EDGE) · {{season}} · {{count}} GP",
+      "note": "{{value}} · league avg {{avg}}",
+      "tooFewGames": "{{value}} · percentile after {{count}} games played",
+      "source": "Player & puck tracking: NHL EDGE · percentiles vs the NHL",
+      "metrics": {
+        "topSpeed": "Top speed",
+        "burstsOver20": "Bursts 20+ mph",
+        "burstsOver20_metric": "Bursts 32+ km/h",
+        "distancePer60": "Distance / 60",
+        "topShotSpeed": "Hardest shot",
+        "avgShotSpeed": "Avg shot speed",
+        "highDangerShots": "High-danger SOG",
+        "offensiveZoneTimeEv": "O-zone time (EV)",
+        "gamesAbove900Pct": "Games ≥ .900",
+        "savePctg5v5Close": "5v5 SV% (close)",
+        "longRangeSavePctg": "Long-range SV%"
+      }
     }
   },
   "percentileBar": {
@@ -2630,5 +2653,11 @@
     "goal": "GOAL",
     "credit": "Player & puck tracking: NHL EDGE",
     "trackingAria": "Tracking replay of the goal by {{scorer}}: every skater and the puck"
+  },
+  "units": {
+    "mph": "{{value}} mph",
+    "kph": "{{value}} km/h",
+    "mi": "{{value}} mi",
+    "km": "{{value}} km"
   }
 }
