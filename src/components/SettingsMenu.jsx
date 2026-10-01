@@ -23,6 +23,8 @@ import { AHL_TEAM_CONFIG } from '../utils/ahlApi';
 import { ECHL_TEAM_CONFIG } from '../utils/echlApi';
 import { getSavedTheme, getTheme, setTheme, clearTheme } from '../utils/themeConfig';
 import { getLocale, setLocale } from '../utils/localeConfig';
+import { setUnits } from '../utils/unitsConfig';
+import { useUnits } from '../hooks/useUnits';
 import { upsertLocale } from '../utils/localeSync';
 import { applyTeamTheme, themeTeam } from '../utils/applyTeamTheme';
 import AccountSection from './AccountSection';
@@ -132,6 +134,7 @@ export default function SettingsMenu() {
   // 'dark' | 'light' | 'system' -- system: nothing saved, following the device.
   const [themeChoice, setThemeChoice] = useState(() => getSavedTheme() ?? 'system');
   const [locale, setLocaleState] = useState(getLocale);
+  const units = useUnits();
   // Each followed team's alert choices on this device (utils/alertTeams.js),
   // and the team the Alerts screen is showing.
   const [alertTeams, setAlertTeams] = useState(loadAlertTeams);
@@ -314,6 +317,18 @@ export default function SettingsMenu() {
               value={locale}
               onChange={handleLocaleChange}
               options={[{ value: 'en', label: 'English' }, { value: 'fr', label: 'Français' }]}
+            />
+          </div>
+          <div className={`${ROW_CLASSES} flex-col items-stretch gap-2`}>
+            <span className={ROW_TITLE_CLASSES}>{t('settings.units')}</span>
+            <Segments
+              label={t('settings.units')}
+              value={units}
+              onChange={setUnits}
+              options={[
+                { value: 'imperial', label: t('settings.unitsImperial'), className: 'settings-units-imperial' },
+                { value: 'metric', label: t('settings.unitsMetric'), className: 'settings-units-metric' },
+              ]}
             />
           </div>
         </Section>

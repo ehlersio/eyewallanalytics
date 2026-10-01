@@ -42,6 +42,7 @@ import { seasonRampColor, CHART_DASH_PATTERNS } from '../utils/seasonChart'
 import SeasonOverlayChart from './SeasonOverlayChart'
 import { TileStatSection, PercentileScopeLegend } from './StatTileGrid'
 import PercentileBar from './PercentileBar'
+import EdgeTrackingSection from './EdgeTrackingSection'
 import PlayerComparisonEntry from './PlayerComparisonEntry'
 import {
   SKATER_STATS, GOALIE_STATS, groupStats, posLabel,
@@ -779,7 +780,7 @@ function PlayoffGoalieAnalytics({ po, seasonLabel }) {
   )
 }
 
-function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, narrativeData, isLeagueContext, inPlayoffs = false }) {
+function PlayerAnalytics({ playerId, mpData, goalieData, _playerName, isGoalie, position, narrativeData, isLeagueContext, inPlayoffs = false }) {
   const { t } = useTranslation()
   // Regular season / Playoffs (game-type split, 2026-09). Only offered when
   // the player has playoff analytics -- `po` from getPlayerAnalytics()/
@@ -796,14 +797,25 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
       <SeasonTypeToggle value={showPlayoffs ? 'playoffs' : 'regular'} onChange={setView} />
     </div>
   ) : null
+  // NHL EDGE tracking, for the same season and game type as the rest of the
+  // tab; renders nothing when the NHL has none.
+  const edgeProps = {
+    kind: isGoalie ? 'goalie' : 'skater',
+    playerId,
+    season: (isGoalie ? goalieData : mpData)?.statsSeason || SEASON,
+    gameType: showPlayoffs ? 3 : 2,
+  }
   if (isGoalie) {
     if (!goalieData) {
       return (
-        <div className={PP_HEATMAP_EMPTY_CLASSES}>
-          <div className={PP_HEATMAP_ICON_CLASSES}>🥅</div>
-          <div>{t('playerPopup.analytics.emptyState')}</div>
-          <div className={PP_HEATMAP_SUB_CLASSES}>{t('playerPopup.analytics.emptyStateSub')}</div>
-        </div>
+        <>
+          <div className={PP_HEATMAP_EMPTY_CLASSES}>
+            <div className={PP_HEATMAP_ICON_CLASSES}>🥅</div>
+            <div>{t('playerPopup.analytics.emptyState')}</div>
+            <div className={PP_HEATMAP_SUB_CLASSES}>{t('playerPopup.analytics.emptyStateSub')}</div>
+          </div>
+          <EdgeTrackingSection {...edgeProps} className="px-4 pb-4" />
+        </>
       )
     }
     if (showPlayoffs) {
@@ -811,6 +823,7 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
         <div className={PA_WRAP_CLASSES}>
           {toggle}
           <PlayoffGoalieAnalytics po={po} seasonLabel={poSeasonLabel} />
+          <EdgeTrackingSection {...edgeProps} />
         </div>
       )
     }
@@ -849,17 +862,21 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
           <PercentileBar label={t('playerPopup.analytics.goalie.barPkSvPct')}          pct={p.pkSv?.pct}   note={p.pkSv?.note} />
         </div>
         <div className={PA_SOURCE_CLASSES}>{t('playerPopup.analytics.dataSource')}</div>
+        <EdgeTrackingSection {...edgeProps} />
       </div>
     )
   }
 
   if (!mpData) {
     return (
-      <div className={PP_HEATMAP_EMPTY_CLASSES}>
-        <div className={PP_HEATMAP_ICON_CLASSES}>🧮</div>
-        <div>{t('playerPopup.analytics.emptyState')}</div>
-        <div className={PP_HEATMAP_SUB_CLASSES}>{t('playerPopup.analytics.emptyStateSub')}</div>
-      </div>
+      <>
+        <div className={PP_HEATMAP_EMPTY_CLASSES}>
+          <div className={PP_HEATMAP_ICON_CLASSES}>🧮</div>
+          <div>{t('playerPopup.analytics.emptyState')}</div>
+          <div className={PP_HEATMAP_SUB_CLASSES}>{t('playerPopup.analytics.emptyStateSub')}</div>
+        </div>
+        <EdgeTrackingSection {...edgeProps} className="px-4 pb-4" />
+      </>
     )
   }
 
@@ -868,6 +885,7 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
       <div className={PA_WRAP_CLASSES}>
         {toggle}
         <PlayoffSkaterAnalytics po={po} regularRapm={mpData.rapm} seasonLabel={poSeasonLabel} />
+        <EdgeTrackingSection {...edgeProps} />
       </div>
     )
   }
@@ -921,6 +939,7 @@ function PlayerAnalytics({ mpData, goalieData, _playerName, isGoalie, position, 
         />
       )}
       <div className={PA_SOURCE_CLASSES}>{t('playerPopup.analytics.dataSource')}</div>
+      <EdgeTrackingSection {...edgeProps} />
     </div>
   )
 }
@@ -1641,7 +1660,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
         {/* ── Analytics tab ── */}
         {ppTab === 'analytics' && (
-          <PlayerAnalytics mpData={mpData} goalieData={goalieData} playerName={name} isGoalie={isGoalie} position={positionCode} narrativeData={rvpNarrative} isLeagueContext={isLeagueContext} inPlayoffs={inPlayoffs} />
+          <PlayerAnalytics playerId={p.id} mpData={mpData} goalieData={goalieData} playerName={name} isGoalie={isGoalie} position={positionCode} narrativeData={rvpNarrative} isLeagueContext={isLeagueContext} inPlayoffs={inPlayoffs} />
         )}
 
         {/* ── Scout tab — CAR context only ── */}

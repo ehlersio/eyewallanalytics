@@ -42,6 +42,9 @@
   "settings": {
     "title": "Paramètres",
     "language": "Langue",
+    "units": "Unités",
+    "unitsImperial": "Impériales (mi/h)",
+    "unitsMetric": "Métriques (km/h)",
     "appearance": "Apparence",
     "iosInstructions": "Sur iPhone/iPad, les notifications push nécessitent d'abord d'ajouter EyeWall Analytics à l'écran d'accueil : appuyez sur Partager, puis « Sur l'écran d'accueil » — puis ouvrez l'application depuis là.",
     "unsupported": "Les notifications push ne sont pas prises en charge par ce navigateur.",
@@ -2138,6 +2141,26 @@
       "noRegularSeasonData": "Aucune donnée de saison régulière pour {{season}}.",
       "noDataPwhl": "Aucune donnée pour cette joueuse en {{label}}.",
       "noData": "Aucune donnée pour ce joueur en {{label}}."
+    },
+    "edge": {
+      "sectionLabel_one": "Suivi (NHL EDGE) · {{season}} · {{count}} PJ",
+      "sectionLabel_other": "Suivi (NHL EDGE) · {{season}} · {{count}} PJ",
+      "note": "{{value}} · moy. de la ligue {{avg}}",
+      "tooFewGames": "{{value}} · centile après {{count}} matchs joués",
+      "source": "Suivi des joueurs et de la rondelle : NHL EDGE · centiles vs la LNH",
+      "metrics": {
+        "topSpeed": "Vitesse max.",
+        "burstsOver20": "Pointes 20+ mi/h",
+        "burstsOver20_metric": "Pointes 32+ km/h",
+        "distancePer60": "Distance / 60",
+        "topShotSpeed": "Tir le plus fort",
+        "avgShotSpeed": "Vitesse moy. tirs",
+        "highDangerShots": "Tirs cadrés, danger élevé",
+        "offensiveZoneTimeEv": "Temps zone off. (FÉ)",
+        "gamesAbove900Pct": "Matchs ≥ ,900",
+        "savePctg5v5Close": "% arrêts 5c5 (serré)",
+        "longRangeSavePctg": "% arrêts, longue dist."
+      }
     }
   },
   "percentileBar": {
@@ -2630,5 +2653,11 @@
     "goal": "BUT",
     "credit": "Suivi des joueurs et de la rondelle : NHL EDGE",
     "trackingAria": "Reprise du but de {{scorer}} d'après le suivi : chaque patineur et la rondelle"
+  },
+  "units": {
+    "mph": "{{value}} mi/h",
+    "kph": "{{value}} km/h",
+    "mi": "{{value}} mi",
+    "km": "{{value}} km"
   }
 }
