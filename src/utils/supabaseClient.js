@@ -226,9 +226,10 @@ export async function getGoalieShots(goalieId, season = currentSeason()) {
 // ── Season-wide shots for the shot map's "All N" chip ──────────
 // Both teams' shots from every game `team` played this season — matches
 // what extractShotEvents(pbp) already returns for a single game, just
-// aggregated. No shooter/goalie names (shot_events only stores player_id,
-// not a name — resolving those would need a season-long roster join this
-// view doesn't otherwise need); IceRink renders fine without them.
+// aggregated. The Worker names each row's shooter and goalie from its
+// players table (eyewall-poller#167); a name it doesn't have is null and
+// the shot popup falls back as before. No assists or blocker: shot_events
+// doesn't store them.
 export async function getSeasonShots(team, season = currentSeason()) {
   const rows = await workerFetch(`/nhl/shots?team=${team}&season=${season}`);
   if (!rows?.length) return [];
@@ -247,6 +248,9 @@ export async function getSeasonShots(team, season = currentSeason()) {
     timeInPeriod: r.time_in_period,
     shotType:     r.shot_type,
     isCanes:      r.team === team,
+    shooterId:    r.player_id ?? null,
+    shooterName:  r.shooter_name ?? null,
+    goalieName:   r.goalie_name ?? null,
   }));
 }
 
