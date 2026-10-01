@@ -1,7 +1,7 @@
 // EyeWall Analytics v1.1
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import Topbar from './components/Topbar'
 import BottomNav from './components/BottomNav'
 import ShotMapView from './views/ShotMapView'
@@ -10,7 +10,8 @@ import { SportProvider, useSport } from './utils/SportContext'
 import { AuthProvider } from './utils/AuthContext'
 import { capture } from './utils/analytics'
 // App.css import removed (Phase 7b) -- migrated to Tailwind.
-import { hasTeamConfig, TEAM_CONFIG } from './utils/teamConfig'
+import { getTeamByAbbr, hasTeamConfig, TEAM_CONFIG } from './utils/teamConfig'
+import { parseSummaryLink, summaryHref } from './utils/summaryLink'
 import TeamPicker from './components/TeamPicker'
 import FaceoffIntro from './components/FaceoffIntro'
 import FaceoffLoader from './components/FaceoffLoader'
@@ -82,9 +83,17 @@ const ViewFallback = () => {
   return <FaceoffLoader label={t('common.loading')} className="p-8" />;
 };
 
-// Redirects PWHL/AHL/ECHL users from / to their sport's shot map
+// Redirects PWHL/AHL/ECHL users from / to their sport's shot map. A
+// summary link for a followed NHL team's game goes to that game from that
+// team's side (utils/summaryLink.js) -- first, so it isn't dropped by the
+// favorite's own view or by these redirects.
 function RootRoute() {
   const { isPWHL, isAHL, isECHL } = useSport();
+  const [searchParams] = useSearchParams();
+  const link = parseSummaryLink(searchParams);
+  if (link?.team && link.team !== TEAM_CONFIG.abbr && getTeamByAbbr(link.team)) {
+    return <Navigate to={summaryHref(link, TEAM_CONFIG.abbr)} replace />;
+  }
   if (isPWHL) return <Navigate to="/pwhl/shots" replace />;
   if (isAHL) return <Navigate to="/ahl/shots" replace />;
   if (isECHL) return <Navigate to="/echl/shots" replace />;

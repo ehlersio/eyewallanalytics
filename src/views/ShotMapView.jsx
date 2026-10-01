@@ -1237,10 +1237,12 @@ export default function ShotMapView() {
   // (utils/summaryLink.js). Points the view at that game, then opens the
   // summary once it exists, building a past period's on demand. Dropped
   // quietly if that game can't be shown here: another game is live (a
-  // live game always wins), or it isn't in the season on screen. Not in a
-  // guest view -- notifications are the favorite's.
+  // live game always wins), or it isn't in the season on screen. A guest
+  // view takes only its own game's: a followed team's alert lands there
+  // (App.jsx's RootRoute).
   const [searchParams, setSearchParams] = useSearchParams();
-  const summaryLink = isGuest ? null : parseSummaryLink(searchParams);
+  const anySummaryLink = parseSummaryLink(searchParams);
+  const summaryLink = isGuest && anySummaryLink?.gameId !== guestGameId ? null : anySummaryLink;
   const linkGameId = summaryLink?.gameId;
   const linkPeriod = summaryLink?.period;
   const clearSummaryLink = useCallback(

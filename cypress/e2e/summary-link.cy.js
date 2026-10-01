@@ -1,8 +1,8 @@
 // cypress/e2e/summary-link.cy.js
 // Tapping an End of P1 / final notification lands on
-// /?summary=<period|game>&game=<id> (eyewall-poller's summaryUrl(), read by
-// utils/summaryLink.js): the game view switches to that game and opens its
-// summary.
+// /?summary=<period|game>&game=<id>[&team=<abbr>] (eyewall-poller's
+// summaryUrl(), read by utils/summaryLink.js): the game view switches to
+// that game and opens its summary.
 //
 // The season schedule is stubbed to one real, permanent game so this
 // doesn't depend on the season on screen: CAR's 3-2 preseason win over
@@ -31,6 +31,17 @@ describe('Opening a summary from a notification link', () => {
     cy.visit(`/?summary=game&game=${GAME_ID}`)
     cy.get('.ps-card', { timeout: DATA_TIMEOUT }).should('contain', 'FINAL').and('contain', 'FLA')
     cy.location('search').should('eq', '')
+  })
+
+  // A followed team's alert (2026-09-30: MTL's, with CAR primary) used to
+  // be dropped here -- the game isn't in the favorite's schedule. It opens
+  // from that team's side instead. FLA's own schedule is the real one.
+  it('opens a followed team’s game from that team’s side', () => {
+    cy.visit(`/?summary=1&game=${GAME_ID}&team=FLA`)
+    cy.location('pathname', { timeout: DATA_TIMEOUT }).should('eq', `/game/${GAME_ID}`)
+    cy.get('.ps-card', { timeout: DATA_TIMEOUT }).should('contain', 'P1')
+    cy.get('.guest-game-bar').should('contain', 'FLA')
+    cy.location('search').should('eq', '?as=FLA')
   })
 
   it('drops a link to a game it can’t show, opening nothing', () => {

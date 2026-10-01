@@ -33,6 +33,14 @@ describe('alertLink', () => {
     expect(alertLink({ url: '//evil.example' })).toBeNull();
     expect(alertLink({ url: 'https://example.com' })).toBeNull();
   });
+
+  // MTL Win! with CAR primary (2026-09-30): the link had only the game, so
+  // the favorite's view couldn't find it and the row did nothing.
+  it("puts the alert's team on a summary link", () => {
+    expect(alertLink({ team: 'NHL:MTL', url: '/?summary=game&game=2026010042' })).toBe('/?summary=game&game=2026010042&team=MTL');
+    expect(alertLink({ team: 'NHL:MTL', url: '/?summary=2&game=1&team=MTL' })).toBe('/?summary=2&game=1&team=MTL');
+    expect(alertLink({ team: 'PWHL:MIN', url: '/pwhl/shots' })).toBe('/pwhl/shots');
+  });
 });
 
 describe('hasNewAlerts', () => {
