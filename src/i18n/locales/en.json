@@ -128,7 +128,9 @@
     "alertSettings": "Alert settings",
     "alertSettingsSub": "Choose what you’re notified about",
     "recentAlerts": "Recent alerts",
-    "recentAlertsNote": "The last 3 days of alerts for the teams you follow — here even with notifications off."
+    "recentAlertsNote": "The last 3 days of alerts for the teams you follow — here even with notifications off.",
+    "clearAll": "Clear all",
+    "clearAlert": "Clear {{title}}"
   },
   "teamSwitcher": {
     "title": "Your teams",

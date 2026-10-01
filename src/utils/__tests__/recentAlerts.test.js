@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { alertAge, alertLink, dedupeAlerts, hasNewAlerts } from '../recentAlerts';
+import { alertAge, alertId, alertLink, clearAllAlerts, dedupeAlerts, dismissAlert, hasNewAlerts, loadCleared, visibleAlerts } from '../recentAlerts';
 
 const goal = { team: 'NHL:CAR', vs: 'NHL:BOS', type: 'goal', at: 3, url: '/' };
 const oppGoal = { team: 'NHL:BOS', vs: 'NHL:CAR', type: 'oppGoal', at: 3, url: '/' };
@@ -40,5 +40,39 @@ describe('hasNewAlerts', () => {
     expect(hasNewAlerts([{ at: 10 }], null)).toBe(false);
     expect(hasNewAlerts([{ at: 10 }], 10)).toBe(false);
     expect(hasNewAlerts([{ at: 11 }], 10)).toBe(true);
+  });
+});
+
+describe('clearing alerts', () => {
+  const store = new Map();
+  globalThis.localStorage = {
+    getItem: k => (store.has(k) ? store.get(k) : null),
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: k => store.delete(k),
+  };
+  const NOW = 10 * 24 * 3600 * 1000;
+  const a1 = { team: 'NHL:PIT', type: 'goal', at: NOW - 60_000 };
+  const a2 = { team: 'NHL:PIT', type: 'penalty', at: NOW - 30_000 };
+  const later = { team: 'NHL:MTL', type: 'win', at: NOW + 60_000 };
+
+  it('hides one alert, and keeps it hidden across loads', () => {
+    store.clear();
+    const c = dismissAlert(loadCleared(), a1, NOW);
+    expect(visibleAlerts([a2, a1], c)).toEqual([a2]);
+    expect(visibleAlerts([a2, a1], loadCleared())).toEqual([a2]);
+  });
+
+  it('clear all hides everything so far, not what comes after', () => {
+    store.clear();
+    const c = clearAllAlerts([a2, a1]);
+    expect(visibleAlerts([later, a2, a1], c)).toEqual([later]);
+    expect(loadCleared().at).toBe(a2.at);
+  });
+
+  it('forgets ids older than the 3-day log', () => {
+    store.clear();
+    const old = { team: 'NHL:CAR', type: 'goal', at: NOW - 4 * 24 * 3600 * 1000 };
+    const c = dismissAlert(dismissAlert(loadCleared(), old, NOW), a1, NOW);
+    expect([...c.ids]).toEqual([alertId(a1)]);
   });
 });

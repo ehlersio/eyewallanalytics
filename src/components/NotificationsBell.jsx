@@ -19,8 +19,10 @@ import { FOLLOWED_CHANGED_EVENT, getFollowedTeams, sameTeam } from '../utils/fol
 import { getLocalSelection } from '../utils/favoriteTeamSync';
 import { alertKey } from '../utils/alertTeams';
 import {
-  ALERT_ICONS, alertAge, alertLink, dedupeAlerts, hasNewAlerts, loadAlertsSeenAt, saveAlertsSeenAt,
+  ALERT_ICONS, alertAge, alertId, alertLink, clearAllAlerts, dedupeAlerts, dismissAlert, hasNewAlerts,
+  loadAlertsSeenAt, loadCleared, saveAlertsSeenAt, visibleAlerts,
 } from '../utils/recentAlerts';
+import SwipeToDelete from './SwipeToDelete';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import { useSport } from '../utils/SportContext';
 import { TEAM_CONFIG } from '../utils/teamConfig';
@@ -29,7 +31,7 @@ import { hasUnseen, loadSeen, markSeen, newestFirst, summaryKey } from '../utils
 import { OPEN_SETTINGS_EVENT } from './SettingsMenu';
 import {
   CHEVRON_CLASSES, CLOSE_CLASSES, HEADER_ROW_CLASSES, ICON_CLASSES, ROW_BUTTON_CLASSES, ROW_CLASSES, ROW_SUB_CLASSES,
-  ROW_TEXT_CLASSES, ROW_TITLE_CLASSES, SECTIONS_CLASSES, Section, Sheet, TITLE_CLASSES, useSheet,
+  ROW_TEXT_CLASSES, ROW_TITLE_CLASSES, SECTION_ACTION_CLASSES, SECTIONS_CLASSES, Section, Sheet, TITLE_CLASSES, useSheet,
 } from './SheetParts';
 
 const WRAP_CLASSES = 'relative';
@@ -42,6 +44,8 @@ const CHIP_PERIOD_CLASSES = 'notif-summary-chip-period min-w-[44px] h-[30px] rou
 const CHIP_PERIOD_GAME_CLASSES = 'text-[12px] tracking-[0.06em]';
 const CHIP_SCORE_CLASSES = `notif-summary-chip-score ${ROW_TITLE_CLASSES}`;
 const AGE_CLASSES = 'text-[12px] text-[color:var(--text-dim)] whitespace-nowrap self-start pt-0.5';
+// The age and › make way for the row's hover × (SwipeToDelete).
+const UNDER_X_CLASSES = '[@media(hover:hover)]:group-hover:invisible group-has-[.swipe-row-x:focus-visible]:invisible';
 const ALERTS_REFRESH_MS = 2 * 60 * 1000;
 const EMPTY_CLASSES = 'summary-bell-empty text-[14px] text-[color:var(--text-muted)] leading-[1.5] m-0 px-1';
 
@@ -67,6 +71,9 @@ export default function NotificationsBell() {
   const alertOrder = [...followed.filter(t => sameTeam(t, primary)), ...followed.filter(t => !sameTeam(t, primary))].map(alertKey);
   const orderKey = alertOrder.join(',');
   const [alerts, setAlerts] = useState([]);
+  // Cleared on this device, one by one or all at once (recentAlerts.js).
+  const [cleared, setCleared] = useState(loadCleared);
+  const shownAlerts = visibleAlerts(alerts, cleared);
   const [alertsSeenAt, setAlertsSeenAt] = useState(loadAlertsSeenAt);
   const [newAlertsAtOpen, setNewAlertsAtOpen] = useState(0);
 
@@ -96,7 +103,7 @@ export default function NotificationsBell() {
     return () => clearInterval(id);
   }, [loadAlerts]);
 
-  const unseen = hasUnseen(summaries, seen) || hasNewAlerts(alerts, alertsSeenAt);
+  const unseen = hasUnseen(summaries, seen) || hasNewAlerts(shownAlerts, alertsSeenAt);
 
   // Anything that arrives while it's open counts as seen too.
   useEffect(() => {
@@ -179,9 +186,17 @@ export default function NotificationsBell() {
               </Section>
             )}
 
-            {alerts.length > 0 && (
-              <Section label={t('bell.recentAlerts')} footer={t('bell.recentAlertsNote')}>
-                {alerts.map(a => {
+            {shownAlerts.length > 0 && (
+              <Section
+                label={t('bell.recentAlerts')}
+                footer={t('bell.recentAlertsNote')}
+                action={(
+                  <button className={`summary-bell-clear-all ${SECTION_ACTION_CLASSES}`} onClick={() => setCleared(clearAllAlerts(alerts))}>
+                    {t('bell.clearAll')}
+                  </button>
+                )}
+              >
+                {shownAlerts.map(a => {
                   const link = alertLink(a);
                   const isNew = a.at > newAlertsAtOpen;
                   const content = (
@@ -192,19 +207,26 @@ export default function NotificationsBell() {
                         {a.body && <span className={ROW_SUB_CLASSES}>{a.body}</span>}
                       </span>
                       {isNew && <span className={NEW_DOT_CLASSES} aria-label={t('bell.new')} />}
-                      <span className={AGE_CLASSES}>{alertAge(a.at, Date.now(), i18n.language)}</span>
-                      {link && <span className={CHEVRON_CLASSES} aria-hidden="true">›</span>}
+                      <span className={`${AGE_CLASSES} ${UNDER_X_CLASSES}`}>{alertAge(a.at, Date.now(), i18n.language)}</span>
+                      {link && <span className={`${CHEVRON_CLASSES} ${UNDER_X_CLASSES}`} aria-hidden="true">›</span>}
                     </>
                   );
-                  const key = `${a.team}:${a.at}:${a.type}`;
-                  return link
-                    ? <button key={key} className={`summary-bell-alert ${ROW_BUTTON_CLASSES}`} onClick={() => handleOpenAlert(link)}>{content}</button>
-                    : <div key={key} className={`summary-bell-alert ${ROW_CLASSES}`}>{content}</div>;
+                  return (
+                    <SwipeToDelete
+                      key={alertId(a)}
+                      deleteLabel={t('bell.clearAlert', { title: a.title })}
+                      onDelete={() => setCleared(c => dismissAlert(c, a))}
+                    >
+                      {link
+                        ? <button className={`summary-bell-alert ${ROW_BUTTON_CLASSES}`} onClick={() => handleOpenAlert(link)}>{content}</button>
+                        : <div className={`summary-bell-alert ${ROW_CLASSES}`}>{content}</div>}
+                    </SwipeToDelete>
+                  );
                 })}
               </Section>
             )}
 
-            {summaries.length === 0 && alerts.length === 0 && (
+            {summaries.length === 0 && shownAlerts.length === 0 && (
               <p className={EMPTY_CLASSES}>{t('bell.empty')}</p>
             )}
 

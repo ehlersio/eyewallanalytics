@@ -405,6 +405,54 @@ describe('Notifications bell: recent alerts', () => {
     cy.get('.summary-bell-dot').should('not.exist')
   })
 
+  // Clearing (2026-09-30): on this device only -- the poller's log is
+  // shared per team.
+  it('the × clears one alert, and it stays cleared', () => {
+    cy.visit('/league', { onBeforeLoad: followBoth })
+    cy.get('button.summary-bell').click()
+    // Shows on hover; Cypress can't hover, so force the click.
+    cy.contains('.swipe-row', 'GOAL! CAR 1–0 BOS').find('.swipe-row-x').click({ force: true })
+    cy.contains('.summary-bell-alert', 'GOAL! CAR 1–0 BOS').should('not.exist')
+    cy.location('pathname').should('eq', '/league')
+    cy.reload()
+    cy.get('button.summary-bell').click()
+    cy.get('.summary-bell-alert').should('have.length', 1).and('contain', 'End of P1')
+  })
+
+  it('swiping a row left shows its delete button, which clears it', () => {
+    cy.visit('/league', { onBeforeLoad: followBoth })
+    cy.get('button.summary-bell').click()
+    cy.contains('.swipe-row', 'End of P1').then($row => {
+      const { right, top, height } = $row[0].getBoundingClientRect()
+      const y = top + height / 2
+      const at = x => ({ touches: [{ clientX: x, clientY: y }], changedTouches: [{ clientX: x, clientY: y }] })
+      cy.wrap($row).trigger('touchstart', at(right - 10))
+        .trigger('touchmove', at(right - 40)).trigger('touchmove', at(right - 90))
+        .trigger('touchend', { touches: [], changedTouches: [{ clientX: right - 90, clientY: y }] })
+    })
+    cy.contains('.swipe-row', 'End of P1').find('.swipe-row-delete').click()
+    cy.contains('.summary-bell-alert', 'End of P1').should('not.exist')
+    cy.location('pathname').should('eq', '/league')
+  })
+
+  it('Clear all clears every alert there is now, not ones after', () => {
+    const before = alerts() // the same times on both loads
+    cy.intercept('GET', '**/alerts/recent*', before)
+    cy.visit('/league', { onBeforeLoad: followBoth })
+    cy.get('button.summary-bell').click()
+    cy.get('.summary-bell-clear-all').click()
+    cy.get('.summary-bell-alert').should('not.exist')
+    cy.get('.summary-bell-empty').should('exist')
+    cy.get('.summary-bell-clear-all').should('not.exist')
+    cy.intercept('GET', '**/alerts/recent*', [
+      { team: 'NHL:CAR', vs: 'NHL:BOS', type: 'win', title: '🏆 CAR Win!', body: '', url: '/', at: Date.now() + 60000 },
+      ...before,
+    ])
+    cy.reload()
+    cy.get('button.summary-bell').click()
+    cy.get('.summary-bell-alert').should('have.length', 1).and('contain', 'CAR Win!')
+  })
+
   it('a first look counts what’s there as seen: no dot', () => {
     cy.visit('/league', { onBeforeLoad: followBoth })
     cy.wait('@alerts')

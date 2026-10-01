@@ -32,6 +32,8 @@ export const ROW_SUB_CLASSES = 'text-[12px] text-[color:var(--text-muted)] leadi
 export const ROW_VALUE_CLASSES = 'text-[14px] text-[color:var(--text-muted)] whitespace-nowrap';
 export const CHEVRON_CLASSES = 'text-[18px] leading-none text-[color:var(--text-dim)]';
 export const ICON_CLASSES = 'w-[30px] h-[30px] rounded-[8px] bg-[var(--bg3)] flex items-center justify-center text-[15px] shrink-0';
+const SECTION_HEAD_CLASSES = 'flex items-end gap-2';
+export const SECTION_ACTION_CLASSES = 'border-0 bg-transparent px-1 pb-1.5 text-[13px] font-semibold text-[color:var(--team-primary)] cursor-pointer';
 const FOOT_CLASSES = 'text-[12px] text-[color:var(--text-dim)] leading-snug px-1 pt-1.5';
 
 const SEGMENTS_CLASSES = 'flex gap-0.5 p-[3px] rounded-[11px] bg-[var(--bg3)] w-full';
@@ -44,10 +46,18 @@ const SWITCH_KNOB_BASE = 'absolute top-[3px] w-6 h-6 rounded-full bg-white shado
 // One top-bar panel open at a time: opening one tells the others.
 const SHEET_OPEN_EVENT = 'eyewall:sheet-open';
 
-export function Section({ label, footer, children }) {
+// `action`: a small control at the end of the label line (the bell's
+// Clear all).
+export function Section({ label, footer, action, children }) {
   return (
     <section>
-      {label && <h2 className={SECTION_LABEL_CLASSES}>{label}</h2>}
+      {label && !action && <h2 className={SECTION_LABEL_CLASSES}>{label}</h2>}
+      {label && action && (
+        <div className={SECTION_HEAD_CLASSES}>
+          <h2 className={`${SECTION_LABEL_CLASSES} flex-1`}>{label}</h2>
+          {action}
+        </div>
+      )}
       <div className={GROUP_CLASSES}>{children}</div>
       {footer && <p className={FOOT_CLASSES}>{footer}</p>}
     </section>
