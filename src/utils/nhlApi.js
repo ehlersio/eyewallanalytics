@@ -1176,6 +1176,12 @@ export async function getGameDetail(gameId) {
 export function bustLiveGameCache(gameId, team = TEAM_CONFIG) {
   invalidate(`pbp:${gameId}`);
   invalidate(`boxscore:${gameId}`);
+  bustScheduleCache(team);
+}
+
+// Next getAllGames()/getLiveGame() reads the Worker again, not the 20s
+// in-memory copy -- for a re-check that has to see a game that just went live.
+export function bustScheduleCache(team = TEAM_CONFIG) {
   // getAllGames()'s real key -- this used to invalidate a bare 'allGames',
   // which nothing has been stored under since that key became team+season
   // scoped, so it was a silent no-op.

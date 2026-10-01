@@ -33,6 +33,10 @@ async function handlePush(e) {
     }
   }
 
+  // Open pages re-check for a live game now (utils/livePolling.js).
+  const pages = await self.clients.matchAll({ type: 'window' });
+  pages.forEach(c => c.postMessage({ type: 'push-received' }));
+
   return self.registration.showNotification(title, {
     body,
     icon:     '/favicon-192.png',

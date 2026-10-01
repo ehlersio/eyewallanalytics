@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getLiveGame, getCarScore, getOppScore, getOpponent, getGameDetail, bustLiveGameCache } from '../utils/nhlApi';
+import { getLiveGame, getAllGames, getCarScore, getOppScore, getOpponent, getGameDetail, bustLiveGameCache, bustScheduleCache } from '../utils/nhlApi';
+import { livePollInterval, onPushReceived } from '../utils/livePolling';
 import { teamTextColor } from '../utils/teamConfig';
 import TeamLogo from './TeamLogo';
 import { TEAM_CONFIG } from '../utils/nhlApi';
@@ -13,7 +14,8 @@ import TeamSwitcher from './TeamSwitcher';
 import PlayerSearch from './PlayerSearch';
 
 const POLL_LIVE_MS = 10_000;      // 10s — matches ShotMapView
-const POLL_IDLE_MS = 5 * 60_000;  // 5min — no game active
+// No game live: as often as the shot map checks (utils/livePolling.js) --
+// a flat 5 minutes here left the score chip that far behind puck drop.
 
 // Tailwind migration (Session 95, Phase 1) -- previously Topbar.css.
 // .topbar and .topbar-no-live are kept as literal marker strings alongside
@@ -63,9 +65,9 @@ export default function Topbar() {
   // Clock display is derived from shared liveClockStore — no local countdown needed
 
   // ── Live poll ───────────────────────────────────────────────
-  function scheduleNext(isLive) {
+  function scheduleNext(isLive, games) {
     clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(checkLive, isLive ? POLL_LIVE_MS : POLL_IDLE_MS);
+    intervalRef.current = setInterval(checkLive, isLive ? POLL_LIVE_MS : livePollInterval(games, false));
   }
 
   async function checkLive() {
@@ -94,7 +96,8 @@ export default function Topbar() {
         setDisplayClock(null);
         if (clockRef.current) clearInterval(clockRef.current);
       }
-      scheduleNext(!!game);
+      // getLiveGame() just read the schedule, so this is its cached copy.
+      scheduleNext(!!game, game ? null : await getAllGames().catch(() => null));
     } catch { /* ignore */ }
   }
 
@@ -143,9 +146,12 @@ export default function Topbar() {
     // (from the first commit, never moved) switched this poll off for good
     // on that date, so the live score chip never showed again -- not in the
     // 2026 preseason, and it wouldn't have in the regular season either.
-    // The idle interval (5min) is cheap enough to leave running year-round.
+    // The idle interval (up to 30min) is cheap enough to leave running year-round.
     checkLive();
+    // A push just arrived (Game Starting, usually) -- check now.
+    const offPush = onPushReceived(() => { bustScheduleCache(); checkLive(); });
     return () => {
+      offPush();
       clearInterval(intervalRef.current);
       clearInterval(clockRef.current);
     };

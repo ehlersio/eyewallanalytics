@@ -50,25 +50,29 @@ export function useFetch(fetchFn, deps = []) {
 }
 
 // Polls at `intervalMs`. Backs off to 5× the interval after 3 consecutive errors.
+// `intervalMs` may be a (stable) function, asked again before every poll --
+// for intervals that depend on the clock, like ShotMapView's.
 export function usePoll(fetchFn, intervalMs = 30000, deps = []) {
   const result      = useFetch(fetchFn, deps);
   const intervalRef = useRef(null);
   const errCount    = useRef(0);
 
   useEffect(() => {
+    function schedule() {
+      const base = typeof intervalMs === 'function' ? intervalMs() : intervalMs;
+      // Back off if errors are accumulating
+      intervalRef.current = setTimeout(tick, errCount.current >= 3 ? base * 5 : base);
+    }
     function tick() {
       result.refetch().then(() => {
         errCount.current = 0;
       }).catch(() => {
         errCount.current++;
       });
-      // Reschedule with backoff if errors accumulating
-      clearInterval(intervalRef.current);
-      const ms = errCount.current >= 3 ? intervalMs * 5 : intervalMs;
-      intervalRef.current = setInterval(tick, ms);
+      schedule();
     }
-    intervalRef.current = setInterval(tick, intervalMs);
-    return () => clearInterval(intervalRef.current);
+    schedule();
+    return () => clearTimeout(intervalRef.current);
   }, [intervalMs, ...deps]);  
 
   return result;

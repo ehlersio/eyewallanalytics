@@ -7,8 +7,9 @@ import {
   getGameLanding, attachGoalVideos,
   getCarScore, getOppScore, getOpponent, isHomeGame, isCompleted,
   getTeamStats, getTeamPlayoffStats, getTeamSelectionTotals, formatGameDate, getRoster, buildPlayerMap,
-  bustLiveGameCache, GAME_TYPE,
+  bustLiveGameCache, bustScheduleCache, GAME_TYPE,
 } from '../utils/nhlApi';
+import { livePollInterval, onPushReceived } from '../utils/livePolling';
 import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON, teamTextColor } from '../utils/teamConfig';
 import { HockeyRink } from 'react-hockey-rink';
 import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
@@ -556,21 +557,16 @@ export default function ShotMapView() {
   const devGame = useDevGame();
 
   // ── Adaptive polling interval for live game detection ─────────
-  // We use a ref to persist last known state between renders so the interval
-  // calculation never creates a circular dependency on liveGameReal itself.
-  // getAllGames covers both completed and upcoming games — recentGames only
-  // returns completed, so we'd never find a future game time from it.
-  const liveStateRef = useRef({ isLive: false, nextGameTime: null });
-
-  const scheduleInterval = useMemo(() => {
-    const { isLive: wasLive, nextGameTime } = liveStateRef.current;
-    if (wasLive) return 20_000;                         // live game — 20s
-    if (!nextGameTime) return 30 * 60_000;              // offseason / no data — 30min
-    const minsToGame = (nextGameTime - Date.now()) / 60_000;
-    if (minsToGame < 180) return 60_000;                // within 3hrs of puck drop — 1min
-    return 5 * 60_000;                                  // between games — 5min
-   
-  }, [liveStateRef.current.isLive, liveStateRef.current.nextGameTime]);
+  // A ref keeps the last known state, so the interval never depends on
+  // liveGameReal itself; usePoll asks again before every poll, so it
+  // tightens as puck drop nears (utils/livePolling.js). getAllGames covers
+  // both completed and upcoming games — recentGames only returns completed,
+  // so we'd never find a future game time from it.
+  const liveStateRef = useRef({ isLive: false, games: null });
+  const scheduleInterval = useCallback(
+    () => livePollInterval(liveStateRef.current.games, liveStateRef.current.isLive),
+    []
+  );
 
   // Live game polling — interval adapts to game state
   const { data: liveGameReal, refetch: refetchLive } = usePoll(() => getLiveGame(team), scheduleInterval);
@@ -585,15 +581,7 @@ export default function ShotMapView() {
 
   // Update liveStateRef whenever live status or schedule changes
   useEffect(() => {
-    const now = Date.now();
-    const nextGame = allGames?.find(g =>
-      g.startTimeUTC && new Date(g.startTimeUTC).getTime() > now &&
-      !['OFF', 'FINAL', 'F', 'FINAL_OVERTIME', 'FINAL_SHOOTOUT'].includes(g.gameState)
-    );
-    liveStateRef.current = {
-      isLive,
-      nextGameTime: nextGame ? new Date(nextGame.startTimeUTC).getTime() : null,
-    };
+    liveStateRef.current = { isLive, games: allGames ?? null };
   }, [isLive, allGames]);
 
   // Most recent completed game as fallback
@@ -1170,6 +1158,8 @@ export default function ShotMapView() {
   const clearHatTrickRef = useRef(null);
   useEffect(() => { clearHatTrickRef.current     = clearHatTrickPopup;}, [clearHatTrickPopup]);
   useEffect(() => { refetchLiveRef.current       = refetchLive;       }, [refetchLive]);
+  const teamRef = useRef(team);
+  useEffect(() => { teamRef.current = team; }, [team]);
 
   // Visibility change — fires when user returns to the app from another tab/app.
   // Refetch live game immediately (browser may have throttled polling while hidden)
@@ -1177,6 +1167,9 @@ export default function ShotMapView() {
   useEffect(() => {
     function handleVisibility() {
       if (document.visibilityState !== 'visible') return;
+      // Past the 20s in-memory schedule copy: a game may have gone live
+      // while the app was in the background.
+      bustScheduleCache(teamRef.current);
       refetchLiveRef.current?.();
       clearGoalPopupRef.current?.();
       clearPenaltyPopupRef.current?.();
@@ -1186,6 +1179,13 @@ export default function ShotMapView() {
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []); // register once — refs handle stale closure
+
+  // A push just arrived (Game Starting, usually): the poller stamps the
+  // schedule before sending it, so check now rather than at the next poll.
+  useEffect(() => onPushReceived(() => {
+    bustScheduleCache(teamRef.current);
+    refetchLiveRef.current?.();
+  }), []);
 
   // ── Period summaries ──────────────────────────────────────────
   const { summaries: periodSummaries, newSummary, dismissNewSummary, updateSummaryNarrative, requestSummary } =
