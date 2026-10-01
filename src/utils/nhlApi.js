@@ -1302,8 +1302,9 @@ export function extractShotEvents(playByPlay, team = TEAM_CONFIG) {
         assist2Name:  d.assist2PlayerId    ? (playerMap[d.assist2PlayerId]    || null) : null,
         blockerName:  d.blockingPlayerId   ? (playerMap[d.blockingPlayerId]   || null) : null,
         goalieName:   d.goalieInNetId      ? (playerMap[d.goalieInNetId]      || null) : null,
-        // Shot speed in mph — present on some events via NHL edge data
-        shotSpeed:    d.shotSpeed          ?? null,
+        // No shotSpeed: the NHL's play-by-play has no per-shot speed (NHL
+        // EDGE publishes only a player's season top-10 hardest shots), so
+        // the shot popup leaves its speed row out.
       };
     });
 }

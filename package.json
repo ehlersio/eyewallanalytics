@@ -45,7 +45,7 @@
     "posthog-js": "^1.434.13",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-hockey-rink": "^0.2.0",
+    "react-hockey-rink": "^0.2.1",
     "react-i18next": "^17.0.15",
     "react-router-dom": "^7.18.4",
     "react-swipeable": "^7.0.2",
