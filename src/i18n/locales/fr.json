@@ -128,7 +128,9 @@
     "alertSettings": "Réglages des alertes",
     "alertSettingsSub": "Choisissez ce qui vous est signalé",
     "recentAlerts": "Alertes récentes",
-    "recentAlertsNote": "Les alertes des 3 derniers jours pour les équipes que vous suivez — même avec les notifications désactivées."
+    "recentAlertsNote": "Les alertes des 3 derniers jours pour les équipes que vous suivez — même avec les notifications désactivées.",
+    "clearAll": "Tout effacer",
+    "clearAlert": "Effacer : {{title}}"
   },
   "teamSwitcher": {
     "title": "Vos équipes",
