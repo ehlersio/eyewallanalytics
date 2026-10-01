@@ -63,15 +63,19 @@ function teamTabClasses(active) {
   return `${TEAM_TAB_BASE_CLASSES} ${active ? TEAM_TAB_ACTIVE_CLASSES : TEAM_TAB_INACTIVE_CLASSES}`
 }
 
-const RECORDS_ROW_CLASSES = 'records-row grid grid-cols-2 gap-[10px]'
+// Two columns only when the playoff card is there to fill the second; a
+// lone record card at half width wrapped "0–0–0" one number per line.
+const RECORDS_ROW_CLASSES = 'records-row grid grid-cols-1 gap-[10px]'
+const RECORDS_ROW_PLAYOFFS_CLASSES = 'records-row grid grid-cols-2 gap-[10px]'
 const RECORD_BLOCK_CLASSES = 'record-block flex flex-col gap-1'
 const RECORD_BLOCK_LABEL_CLASSES = 'text-[11px] text-[color:var(--text-dim)] font-semibold'
-const RECORD_MAIN_ROW_CLASSES = 'flex items-baseline gap-2'
-const RECORD_BIG_CLASSES = 'record-big font-[family-name:var(--font-display)] text-[22px] font-bold text-[color:var(--text)]'
+const RECORD_MAIN_ROW_CLASSES = 'flex flex-wrap items-baseline gap-x-2'
+const RECORD_BIG_CLASSES = 'record-big whitespace-nowrap font-[family-name:var(--font-display)] text-[22px] font-bold text-[color:var(--text)]'
 const PTS_CHIP_CLASSES = 'text-[12px] text-[color:var(--amber)] font-semibold'
-const RECORD_META_CLASSES = 'text-[11px] text-[color:var(--text-muted)] flex items-center gap-[5px]'
+const RECORD_META_CLASSES = 'text-[11px] text-[color:var(--text-muted)] flex flex-wrap items-center gap-[5px]'
 const RECORD_META_SEP_CLASSES = 'text-[color:var(--border-2)]'
-const RECORD_LIVE_BADGE_CLASSES = 'block text-[10px] text-[color:var(--red-bright)] opacity-80 mt-[2px] font-normal'
+// Its own line under the record, not squeezed in beside it.
+const RECORD_LIVE_BADGE_CLASSES = 'record-live-badge block text-[10px] text-[color:var(--red-bright)] opacity-80 font-normal'
 
 const STREAK_CHIP_BASE_CLASSES = 'streak-chip text-[10px] font-bold py-[1px] px-[6px] rounded-[4px]'
 const STREAK_W_CLASSES = 'bg-[rgba(61,186,126,0.15)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.3)]'
@@ -372,7 +376,7 @@ export function OverviewTab({ stats, standLoading, statsLoading, poLoading, carS
 
   return (
     <>
-      <div className={RECORDS_ROW_CLASSES}>
+      <div className={inPlayoffs ? RECORDS_ROW_PLAYOFFS_CLASSES : RECORDS_ROW_CLASSES}>
         <div className={`card ${RECORD_BLOCK_CLASSES}`}>
           <div className={RECORD_BLOCK_LABEL_CLASSES} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <TeamLogo abbr={TEAM_CONFIG.abbr} size={14} /> {t('team.regularSeason')}
@@ -390,13 +394,15 @@ export function OverviewTab({ stats, standLoading, statsLoading, poLoading, carS
           {standLoading || statsLoading ? <div className={SKELETON_CLASSES} style={{ height: 28, width: '70%' }} /> : !stats ? (
             <div className="record-unavailable text-[12px] text-[color:var(--text-dim)] py-1">{t('team.recordUnavailable')}</div>
           ) : (
-            <div className={RECORD_MAIN_ROW_CLASSES}>
-              <span className={RECORD_BIG_CLASSES}>{stats.wins}–{stats.losses}–{stats.otLosses}</span>
+            <>
+              <div className={RECORD_MAIN_ROW_CLASSES}>
+                <span className={RECORD_BIG_CLASSES}>{stats.wins}–{stats.losses}–{stats.otLosses}</span>
+                <span className={PTS_CHIP_CLASSES}>{stats.points} pts</span>
+              </div>
               {liveGame && !inPlayoffs && (
                 <span className={RECORD_LIVE_BADGE_CLASSES}>{t('team.liveRecordBadge')}</span>
               )}
-              <span className={PTS_CHIP_CLASSES}>{stats.points} pts</span>
-            </div>
+            </>
           )}
           {carStanding && (
             <div className={RECORD_META_CLASSES}>
@@ -421,10 +427,10 @@ export function OverviewTab({ stats, standLoading, statsLoading, poLoading, carS
                   {playoffSummary.reduce((s,x) => s+x.carWins, 0)}–
                   {playoffSummary.reduce((s,x) => s+x.oppWins, 0)}
                 </span>
-                {liveGame && (
-                  <span className={RECORD_LIVE_BADGE_CLASSES}>{t('team.liveRecordBadge')}</span>
-                )}
               </div>
+            )}
+            {!poLoading && liveGame && (
+              <span className={RECORD_LIVE_BADGE_CLASSES}>{t('team.liveRecordBadge')}</span>
             )}
             <div className={PO_SERIES_LIST_CLASSES}>
               {playoffSummary.sort((a,b) => b.round-a.round).map((s, i) => {

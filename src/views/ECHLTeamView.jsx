@@ -48,11 +48,12 @@ function teamTabClasses(active) {
   return `${TEAM_TAB_BASE_CLASSES} ${active ? TEAM_TAB_ACTIVE_CLASSES : TEAM_TAB_INACTIVE_CLASSES}`
 }
 
-const RECORDS_ROW_CLASSES = 'records-row grid grid-cols-2 gap-[10px]'
+// One card, so one column: at half width the record wrapped.
+const RECORDS_ROW_CLASSES = 'records-row grid grid-cols-1 gap-[10px]'
 const RECORD_BLOCK_CLASSES = 'record-block flex flex-col gap-1'
 const RECORD_BLOCK_LABEL_CLASSES = 'text-[11px] text-[color:var(--text-dim)] font-semibold'
-const RECORD_MAIN_ROW_CLASSES = 'flex items-baseline gap-2'
-const RECORD_BIG_CLASSES = 'record-big font-[family-name:var(--font-display)] text-[22px] font-bold text-[color:var(--text)]'
+const RECORD_MAIN_ROW_CLASSES = 'flex flex-wrap items-baseline gap-x-2'
+const RECORD_BIG_CLASSES = 'record-big whitespace-nowrap font-[family-name:var(--font-display)] text-[22px] font-bold text-[color:var(--text)]'
 const PTS_CHIP_CLASSES = 'text-[12px] text-[color:var(--amber)] font-semibold'
 const RECORD_META_CLASSES = 'text-[11px] text-[color:var(--text-muted)] flex items-center gap-[5px]'
 const RECORD_META_SEP_CLASSES = 'text-[color:var(--border-2)]'

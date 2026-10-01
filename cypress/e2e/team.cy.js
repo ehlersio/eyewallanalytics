@@ -327,3 +327,22 @@ describe('Team view — standings unavailable', () => {
     cy.contains('Season stats').should('not.exist')
   })
 })
+
+// A live game's note used to sit between the record and its points in a
+// half-width card, wrapping "0–0–0" one number per line on a phone
+// (2026-09-30, PIT). ?mockGame (dev only) makes that game live.
+describe('Team view — record card during a live game', () => {
+  it('keeps the record on one line, the live note under it', () => {
+    cy.viewport(375, 812)
+    cy.setTeam('PIT')
+    cy.visit('/team?mockGame=2026020006')
+    cy.skipIfEither('.record-unavailable', '.record-big', { timeout: DATA_TIMEOUT })
+    cy.get('.record-live-badge', { timeout: DATA_TIMEOUT }).should('be.visible')
+    cy.get('.record-big').then($r => {
+      expect($r[0].getBoundingClientRect().height, 'one line').to.be.lessThan(40)
+    })
+    cy.get('.record-block').then($card => {
+      cy.get('.records-row').invoke('outerWidth').should('eq', $card.outerWidth())
+    })
+  })
+})
