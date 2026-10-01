@@ -118,9 +118,14 @@ export default function NotificationsBell() {
     navigate(link);
   };
 
+  // The game view opens it in place when it's on screen. From any other
+  // page these rows used to do nothing (the view that holds the summaries
+  // wasn't there to open them), so go to it: NHL by summary link, which
+  // also finds the game; PWHL's view opens the held summary as it mounts.
   const handleOpenSummary = s => {
     closeSheet();
-    openSummary(s);
+    if (openSummary(s)) return;
+    navigate(isPWHL ? '/pwhl/shots' : `/?summary=${s.isGameSummary ? 'game' : s.period}&game=${s.gameId}`);
   };
 
   const handleAlertSettings = () => {

@@ -3,6 +3,8 @@
 // teams you follow in the last 3 days (GET /alerts/recent), whether or not
 // push is on here.
 
+import { withAlertTeam } from './summaryLink';
+
 const SEEN_KEY = 'eyewall:alerts-seen-at';
 
 // One entry per event for a fan of both teams in a game, from the side of
@@ -28,8 +30,10 @@ export function alertAge(at, now = Date.now(), locale = 'en') {
 }
 
 // Where tapping an alert goes: an in-app path other than the home page
-// (a summary link), or nowhere -- the row is just information.
-export const alertLink = a => (typeof a.url === 'string' && a.url.startsWith('/') && !a.url.startsWith('//') && a.url !== '/' ? a.url : null);
+// (a summary link, with the alert's team on it), or nowhere -- the row is
+// just information.
+export const alertLink = a => (typeof a.url === 'string' && a.url.startsWith('/') && !a.url.startsWith('//') && a.url !== '/'
+  ? withAlertTeam(a.url, a.team) : null);
 
 // The newest alert time this device has already seen in the bell. The
 // first time there's none: whatever is there now counts as seen, so a new
