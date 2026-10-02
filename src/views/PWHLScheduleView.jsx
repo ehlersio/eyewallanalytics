@@ -12,6 +12,7 @@ import {
   PWHL_REGULAR_SEASONS as REGULAR_SEASONS,
   PWHL_PLAYOFF_SEASONS as PLAYOFF_SEASONS,
   PWHL_PRESEASON_SEASONS as PRESEASON_SEASONS,
+  getPWHLSeasonLabel, pwhlSeasonsReady,
 } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import PWHLGameStatsPopup from '../components/PWHLGameStatsPopup';
@@ -132,6 +133,7 @@ export default function PWHLScheduleView() {
   const [season,    setSeason]    = useState(PWHL_CURRENT_SEASON);
   const [poSeason,  setPoSeason]  = useState(9); // current playoffs season
   const [preSeason, setPreSeason] = useState(PRESEASON_SEASONS[0]?.id ?? null);
+  const userPickedPreSeason = useRef(false);
 
   // useState's initial value only runs once, at first mount -- if this
   // component mounts before pwhlConfig.js's async live-season fetch
@@ -176,6 +178,34 @@ export default function PWHLScheduleView() {
     () => teamId ? fetchPWHLSchedule(teamId, poSeason) : Promise.resolve(null), [teamId, poSeason]);
   const { data: preSchedule, loading: preLoading } = useFetch(
     () => teamId && preSeason ? fetchPWHLSchedule(teamId, preSeason) : Promise.resolve(null), [teamId, preSeason]);
+  // The upcoming season (/config/seasons pwhl.next, e.g. 2026-27 before
+  // the Worker switches to it) and the preseason leading into it. Each is
+  // offered as a picker button only once this team actually has games in
+  // it -- never an empty choice. Listed seasons (PWHL_SEASONS) don't need
+  // the check, so a preseason already listed there isn't fetched twice.
+  const { data: liveSeasons } = useFetch(() => pwhlSeasonsReady, []);
+  const nextSeason = liveSeasons?.next && !REGULAR_SEASONS.some(s => s.id === liveSeasons.next.id)
+    ? liveSeasons.next : null;
+  const upcomingPre = liveSeasons?.preseason && !PRESEASON_SEASONS.some(s => s.id === liveSeasons.preseason.id)
+    ? liveSeasons.preseason : null;
+  const { data: nextSchedule } = useFetch(
+    () => teamId && nextSeason ? fetchPWHLSchedule(teamId, nextSeason.id) : Promise.resolve(null), [teamId, nextSeason?.id]);
+  const { data: upcomingPreSchedule } = useFetch(
+    () => teamId && upcomingPre ? fetchPWHLSchedule(teamId, upcomingPre.id) : Promise.resolve(null), [teamId, upcomingPre?.id]);
+  const regularOptions = useMemo(() => (
+    nextSeason && nextSchedule?.length > 0 ? [nextSeason, ...REGULAR_SEASONS] : REGULAR_SEASONS
+  // liveSeasons is a dep because REGULAR_SEASONS / PRESEASON_SEASONS are
+  // live bindings pwhlConfig.js updates when it resolves.
+  ), [nextSeason, nextSchedule, liveSeasons]);
+  const preseasonOptions = useMemo(() => (
+    upcomingPre && upcomingPreSchedule?.length > 0 ? [upcomingPre, ...PRESEASON_SEASONS] : PRESEASON_SEASONS
+  ), [upcomingPre, upcomingPreSchedule, liveSeasons]);
+  // A newly offered preseason is the one about to be played: default to
+  // it, unless the user already picked one.
+  useEffect(() => {
+    if (!userPickedPreSeason.current && preseasonOptions[0]) setPreSeason(preseasonOptions[0].id);
+  }, [preseasonOptions]);
+
   // Fetch authoritative record from standings (has reg_wins/non_reg_wins/ot_losses breakdown)
   const { data: teamRecord } = useFetch(
     () => teamId ? fetchPWHLTeamRecord(teamId, season) : Promise.resolve(null), [teamId, season]);
@@ -216,9 +246,9 @@ export default function PWHLScheduleView() {
     [...preCompleted].sort((a,b) => preSort === 'desc' ? b.game_id - a.game_id : a.game_id - b.game_id),
     [preCompleted, preSort]);
 
-  const seasonLabel = REGULAR_SEASONS.find(s => s.id === season)?.label || String(season);
-  const poLabel     = PLAYOFF_SEASONS.find(s => s.id === poSeason)?.label || String(poSeason);
-  const preLabel    = PRESEASON_SEASONS.find(s => s.id === preSeason)?.label || String(preSeason);
+  const seasonLabel = getPWHLSeasonLabel(season);
+  const poLabel     = getPWHLSeasonLabel(poSeason);
+  const preLabel    = getPWHLSeasonLabel(preSeason);
 
   if (!abbr || !teamId) {
     return (
@@ -281,9 +311,9 @@ export default function PWHLScheduleView() {
         <>
           {/* Preseason season picker */}
           <div className={SCHED_TABS_CLASSES} style={{ marginBottom: 4, marginTop: 0 }}>
-            {PRESEASON_SEASONS.map(s => (
+            {preseasonOptions.map(s => (
               <button key={s.id} className={schedTabClasses(preSeason === s.id)}
-                onClick={() => setPreSeason(s.id)}>{s.label}</button>
+                onClick={() => { userPickedPreSeason.current = true; setPreSeason(s.id); }}>{s.label}</button>
             ))}
           </div>
 
@@ -326,7 +356,7 @@ export default function PWHLScheduleView() {
         <>
           {/* Season picker */}
           <div className={SCHED_TABS_CLASSES} style={{ marginBottom: 4, marginTop: 0 }}>
-            {REGULAR_SEASONS.map(s => (
+            {regularOptions.map(s => (
               <button key={s.id} className={schedTabClasses(season === s.id)}
                 onClick={() => { userPickedSeason.current = true; setSeason(s.id); }}>{s.label}</button>
             ))}

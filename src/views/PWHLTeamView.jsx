@@ -7,7 +7,7 @@ import {
   fetchPWHLStandings, fetchPWHLPlayers, fetchPWHLSchedule, fetchPWHLSalaries,
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
-import { PWHL_SEASONS, PWHL_PLAYOFF_SEASON_MAP } from '../utils/pwhlConfig';
+import { PWHL_PLAYOFF_SEASON_MAP, getPWHLSeasonLabel } from '../utils/pwhlConfig';
 import { useSport } from '../utils/SportContext';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
@@ -251,7 +251,7 @@ export default function PWHLTeamView() {
   const loading = sLoad || pLoad;
   // Was a hardcoded "2025-26 season" string -- silently wrong every season
   // after this one. currentSeason is reactive (see SportContext.jsx).
-  const seasonLabel = PWHL_SEASONS.find(s => s.id === currentSeason)?.label || `Season ${currentSeason}`;
+  const seasonLabel = getPWHLSeasonLabel(currentSeason);
 
   return (
     <div className={`${PAGE_CLASSES} team-view`}>
