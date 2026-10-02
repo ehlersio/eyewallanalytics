@@ -301,6 +301,11 @@ describe('Final Game Summary popup', () => {
 
 describe('Notifications bell', () => {
   it('shows a dot for a summary not yet seen, and clears it once opened', () => {
+    // The dot also lights for a new live alert, and the bell refetches
+    // /alerts/recent. On a game night a real goal alert landing between
+    // opening the panel and the reload relit it -- this failed twice that
+    // way (2026-10-02). This test is about summaries, so no alerts.
+    cy.intercept('GET', '**/alerts/recent*', [])
     cy.visit(`/?mockGame=${MOCK_GAME_ID}`, {
       onBeforeLoad(win) { win.localStorage.removeItem('eyewall:summaries-seen') },
     })
