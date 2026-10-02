@@ -4,7 +4,7 @@ import { useFetch } from '../hooks/useFetch'
 import {
   getTeamStats, getStandings,
   getPlayoffGames, buildCarPlayoffSummary,
-  getTeamCorsi, getTeamRealtime, getTeamScoreState, getTeamPowerplay, getTeamPenaltyKill,
+  getTeamCorsi, getTeamRealtime, getTeamScoreState, getTeamPowerplay, getTeamPenaltyKill, getLeagueTeamAverages,
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
   getTeamSeasonRankings, TEAM_CONFIG,
   getDraftOrder, getDraftPicks, getTeamInjuries, getTeamScratches, getDraftPickHistory,
@@ -951,25 +951,18 @@ function AdvancedTab({ statsSeason, priorSeason, corsiReg, realtimeReg, ppReg, p
   const pp    = showPO ? poAdv?.pp    : ppReg
   const pk    = showPO ? poAdv?.pk    : pkReg
 
-  // League average benchmarks (2024-25 season approximations)
-  const LEAGUE_AVG = {
-    corsiForPct:     0.500,
-    fenwickForPct:   0.500,
-    satForPerGame:   58.0,
-    shotsForPerGame: 30.5,
-    shotsAgainstPerGame: 30.5,
-    blockedForPerGame:   9.5,
-    blockedAgainstPerGame: 9.5,
-    goalsForPerGame:     3.05,
-    goalsAgainstPerGame: 3.05,
-    pdo:             100,
-    shPct:           10.5,
-    svPct:           90.0,
-    ppPct:           20.0,
-    netPpPct:        19.5,
-    pkPct:           80.0,
-    netPkPct:        79.5,
-  };
+  // League averages for the season and game type on screen, computed from
+  // every NHL team's season totals (getLeagueTeamAverages /
+  // leagueAverages.js) -- they used to be a hardcoded table of "2024-25
+  // approximations" that had drifted (shots/GP 30.5 vs a real 27.8, blocked
+  // 9.5 vs 14-16, SV% .900 vs .889). The Blocked and PDO rows always show
+  // the regular season, so they compare with its averages. No average (and
+  // no ▲/▼) when the NHL's numbers can't be had -- never a guess.
+  const { data: laReg } = useFetch(() => statsSeason ? getLeagueTeamAverages(2, statsSeason) : Promise.resolve(null), [statsSeason])
+  const { data: laPO } = useFetch(() => showPO ? getLeagueTeamAverages(3, TEAM_CONFIG.season) : Promise.resolve(null), [showPO])
+  const la = showPO ? laPO : laReg
+  const avgNum = (v, dec) => (v == null ? null : Number(v).toFixed(dec))
+  const avgPct = (v) => (v == null ? null : `${(v * 100).toFixed(1)}%`)
 
   // Returns 'good', 'bad', or null based on whether higher is better
   function rateVal(val, avg, higherIsBetter = true) {
@@ -977,7 +970,7 @@ function AdvancedTab({ statsSeason, priorSeason, corsiReg, realtimeReg, ppReg, p
     const num = typeof val === 'string' ? parseFloat(val) : val;
     if (isNaN(num)) return null;
     const diff = num - avg;
-    const pctDiff = Math.abs(diff) / avg;
+    const pctDiff = Math.abs(diff) / Math.abs(avg);
     if (pctDiff < 0.02) return null; // within 2% of average — neutral
     return (diff > 0) === higherIsBetter ? 'good' : 'bad';
   }
@@ -997,6 +990,9 @@ function AdvancedTab({ statsSeason, priorSeason, corsiReg, realtimeReg, ppReg, p
           {priorSeason ? t('team.showingPriorRegularSeason', { season: priorSeason }) : t('team.showingRegularSeason')}
         </div>
       )}
+      {la && (
+        <div className={ADV_CONTEXT_NOTE_CLASSES}>{t('teamView.advanced.avgSource', { count: la.teams })}</div>
+      )}
 
       {/* Shot differential */}
       <div className="card">
@@ -1009,41 +1005,41 @@ function AdvancedTab({ statsSeason, priorSeason, corsiReg, realtimeReg, ppReg, p
         {corsi?.isProxyCorsi === false ? (
           <>
             <AdvStatRow label="Corsi For% (CF%)"  val={pct(corsi?.corsiForPct)}
-              rating={rateVal(corsi?.corsiForPct, LEAGUE_AVG.corsiForPct)} avg="50.0%"
+              rating={rateVal(corsi?.corsiForPct, 0.5)} avg="50.0%"
               note={t('teamView.advanced.cfNote')} />
-            <AdvStatRow label="Fenwick For% (FF%)" val={pct(corsi?.fenwickForPct)}
-              rating={rateVal(corsi?.fenwickForPct, LEAGUE_AVG.fenwickForPct)} avg="50.0%"
-              note={t('teamView.advanced.ffNote')} />
-            <AdvStatRow label="Shot Attempts For/GP" val={corsi?.satForPerGame ? fmt(corsi.satForPerGame) : null}
-              rating={rateVal(corsi?.satForPerGame, LEAGUE_AVG.satForPerGame)} avg={LEAGUE_AVG.satForPerGame.toFixed(1)} />
-            <AdvStatRow label="Shot Attempts Against/GP" val={corsi?.satAgainstPerGame ? fmt(corsi.satAgainstPerGame) : null}
-              rating={rateVal(corsi?.satAgainstPerGame, LEAGUE_AVG.satForPerGame, false)} avg={LEAGUE_AVG.satForPerGame.toFixed(1)} />
+            <AdvStatRow label="Shots For% (SF%)" val={pct(corsi?.shotsForPct)}
+              rating={rateVal(corsi?.shotsForPct, 0.5)} avg="50.0%"
+              note={t('teamView.advanced.sfNote')} />
+            <AdvStatRow label="Shot Attempts For/GP" val={corsi?.satForPerGame != null ? fmt(corsi.satForPerGame, 1) : null}
+              rating={rateVal(corsi?.satForPerGame, la?.satForPerGame)} avg={avgNum(la?.satForPerGame, 1)} />
+            <AdvStatRow label="Shot Attempts Against/GP" val={corsi?.satAgainstPerGame != null ? fmt(corsi.satAgainstPerGame, 1) : null}
+              rating={rateVal(corsi?.satAgainstPerGame, la?.satAgainstPerGame, false)} avg={avgNum(la?.satAgainstPerGame, 1)} />
           </>
         ) : (
-          <AdvStatRow label="Shot For% (proxy)" val={pct(corsi?.corsiForPct)}
-            rating={rateVal(corsi?.corsiForPct, LEAGUE_AVG.corsiForPct)} avg="50.0%"
+          <AdvStatRow label="Shot For% (proxy)" val={pct(corsi?.shotsForPct)}
+            rating={rateVal(corsi?.shotsForPct, 0.5)} avg="50.0%"
             note={t('teamView.advanced.proxyNote')} />
         )}
-        <AdvStatRow label="Shots For/GP" val={corsi?.shotsForPerGame ? fmt(corsi.shotsForPerGame) : null}
-          rating={rateVal(corsi?.shotsForPerGame, LEAGUE_AVG.shotsForPerGame)} avg={LEAGUE_AVG.shotsForPerGame.toFixed(1)} />
-        <AdvStatRow label="Shots Against/GP" val={corsi?.shotsAgainstPerGame ? fmt(corsi.shotsAgainstPerGame) : null}
-          rating={rateVal(corsi?.shotsAgainstPerGame, LEAGUE_AVG.shotsAgainstPerGame, false)} avg={LEAGUE_AVG.shotsAgainstPerGame.toFixed(1)} />
+        <AdvStatRow label="Shots For/GP" val={corsi?.shotsForPerGame != null ? fmt(corsi.shotsForPerGame, 1) : null}
+          rating={rateVal(corsi?.shotsForPerGame, la?.shotsForPerGame)} avg={avgNum(la?.shotsForPerGame, 1)} />
+        <AdvStatRow label="Shots Against/GP" val={corsi?.shotsAgainstPerGame != null ? fmt(corsi.shotsAgainstPerGame, 1) : null}
+          rating={rateVal(corsi?.shotsAgainstPerGame, la?.shotsAgainstPerGame, false)} avg={avgNum(la?.shotsAgainstPerGame, 1)} />
         <AdvStatRow label="Blocked For/GP"
-          val={realtimeReg?.blockedShots != null ? fmt(realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1)) : null}
-          rating={rateVal(realtimeReg?.blockedShots != null ? realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1) : null, LEAGUE_AVG.blockedForPerGame)}
-          avg={LEAGUE_AVG.blockedForPerGame.toFixed(1)} note={t('teamView.advanced.blockedForNote', { abbr: TEAM_CONFIG.abbr })} />
+          val={realtimeReg?.blockedShots != null ? fmt(realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1), 1) : null}
+          rating={rateVal(realtimeReg?.blockedShots != null ? realtimeReg.blockedShots / (realtimeReg.gamesPlayed || 1) : null, laReg?.blockedForPerGame)}
+          avg={avgNum(laReg?.blockedForPerGame, 1)} note={t('teamView.advanced.blockedForNote', { abbr: TEAM_CONFIG.abbr })} />
         <AdvStatRow label="Blocked Against/GP"
-          val={realtimeReg?.shotAttemptsBlocked != null ? fmt(realtimeReg.shotAttemptsBlocked / (realtimeReg.gamesPlayed || 1)) : null}
-          rating={rateVal(realtimeReg?.shotAttemptsBlocked != null ? realtimeReg.shotAttemptsBlocked / (realtimeReg.gamesPlayed || 1) : null, LEAGUE_AVG.blockedAgainstPerGame, false)}
-          avg={LEAGUE_AVG.blockedAgainstPerGame.toFixed(1)} note={t('teamView.advanced.blockedAgainstNote', { abbr: TEAM_CONFIG.abbr })} />
+          val={realtimeReg?.shotAttemptsBlocked != null ? fmt(realtimeReg.shotAttemptsBlocked / (realtimeReg.gamesPlayed || 1), 1) : null}
+          rating={rateVal(realtimeReg?.shotAttemptsBlocked != null ? realtimeReg.shotAttemptsBlocked / (realtimeReg.gamesPlayed || 1) : null, laReg?.blockedAgainstPerGame, false)}
+          avg={avgNum(laReg?.blockedAgainstPerGame, 1)} note={t('teamView.advanced.blockedAgainstNote', { abbr: TEAM_CONFIG.abbr })} />
         {corsi?.possessionPct != null && (
           <AdvStatRow label="Puck Possession%" val={pct(corsi.possessionPct / 100)}
             rating={rateVal(corsi.possessionPct / 100, 0.5)} avg="50.0%" note={t('teamView.advanced.possessionNote')} />
         )}
-        <AdvStatRow label="Goals For/GP" val={corsi?.goalsForPerGame ? fmt(corsi.goalsForPerGame) : null}
-          rating={rateVal(corsi?.goalsForPerGame, LEAGUE_AVG.goalsForPerGame)} avg={LEAGUE_AVG.goalsForPerGame.toFixed(2)} />
-        <AdvStatRow label="Goals Against/GP" val={corsi?.goalsAgainstPerGame ? fmt(corsi.goalsAgainstPerGame) : null}
-          rating={rateVal(corsi?.goalsAgainstPerGame, LEAGUE_AVG.goalsAgainstPerGame, false)} avg={LEAGUE_AVG.goalsAgainstPerGame.toFixed(2)} />
+        <AdvStatRow label="Goals For/GP" val={corsi?.goalsForPerGame != null ? fmt(corsi.goalsForPerGame) : null}
+          rating={rateVal(corsi?.goalsForPerGame, la?.goalsForPerGame)} avg={avgNum(la?.goalsForPerGame, 2)} />
+        <AdvStatRow label="Goals Against/GP" val={corsi?.goalsAgainstPerGame != null ? fmt(corsi.goalsAgainstPerGame) : null}
+          rating={rateVal(corsi?.goalsAgainstPerGame, la?.goalsAgainstPerGame, false)} avg={avgNum(la?.goalsAgainstPerGame, 2)} />
       </div>
 
       {/* xGF% per-game sparkline */}
@@ -1059,14 +1055,14 @@ function AdvancedTab({ statsSeason, priorSeason, corsiReg, realtimeReg, ppReg, p
             {t('teamView.advanced.pdoExplain')}
           </div>
           <AdvStatRow label="PDO" val={pdoData.pdo} note={pdoData.luck}
-            rating={rateVal(parseFloat(pdoData.pdo), LEAGUE_AVG.pdo)} avg="100" />
+            rating={rateVal(parseFloat(pdoData.pdo), laReg?.pdo)} avg={avgNum(laReg?.pdo, 1)} />
           <AdvStatRow label="Team SH%" val={`${pdoData.shPct}%`} note={t('teamView.advanced.shNote')}
-            rating={rateVal(parseFloat(pdoData.shPct), LEAGUE_AVG.shPct)} avg={`${LEAGUE_AVG.shPct}%`} />
+            rating={rateVal(parseFloat(pdoData.shPct), laReg?.shPct != null ? laReg.shPct * 100 : null)} avg={avgPct(laReg?.shPct)} />
           <AdvStatRow label="Team SV%"
-            val={pdoData.svPct != null ? (pdoData.svPct / 100).toFixed(3) : null}
+            val={pdoData.svPct != null ? (pdoData.svPct / 100).toFixed(3).replace(/^0/, '') : null}
             note={t('teamView.advanced.svNote')}
-            rating={rateVal(pdoData.svPct != null ? pdoData.svPct : null, LEAGUE_AVG.svPct)}
-            avg=".900" />
+            rating={rateVal(pdoData.svPct != null ? pdoData.svPct : null, laReg?.svPct != null ? laReg.svPct * 100 : null)}
+            avg={laReg?.svPct != null ? laReg.svPct.toFixed(3).replace(/^0/, '') : null} />
         </div>
       )}
 
@@ -1075,10 +1071,9 @@ function AdvancedTab({ statsSeason, priorSeason, corsiReg, realtimeReg, ppReg, p
         <div className="sec-label" style={{ marginBottom: 8 }}>{t('teamView.advanced.powerPlayTitle')}</div>
         <div className={ADV_EXPLAIN_CLASSES}>{t('teamView.advanced.netPpExplain')}</div>
         <AdvStatRow label="PP%" val={pp ? pct(pp.powerPlayPct) : null}
-          rating={pp ? rateVal(pp.powerPlayPct, LEAGUE_AVG.ppPct / 100) : null} avg={`${LEAGUE_AVG.ppPct}%`}
-          note={t('teamView.advanced.ppAvgNote')} />
+          rating={pp ? rateVal(pp.powerPlayPct, la?.ppPct) : null} avg={avgPct(la?.ppPct)} />
         <AdvStatRow label="Net PP%" val={pp ? pct(pp.powerPlayNetPct) : null}
-          rating={pp ? rateVal(pp.powerPlayNetPct, LEAGUE_AVG.netPpPct / 100) : null} avg={`${LEAGUE_AVG.netPpPct}%`} />
+          rating={pp ? rateVal(pp.powerPlayNetPct, la?.netPpPct) : null} avg={avgPct(la?.netPpPct)} />
         <AdvStatRow label="Faceoff Win%" val={pp ? pct(pp.faceoffWinPct) : null}
           rating={pp ? rateVal(pp.faceoffWinPct, 0.5) : null} avg="50.0%" note={t('teamView.advanced.faceoffAvgNote')} />
       </div>
@@ -1088,10 +1083,9 @@ function AdvancedTab({ statsSeason, priorSeason, corsiReg, realtimeReg, ppReg, p
         <div className="sec-label" style={{ marginBottom: 8 }}>{t('teamView.advanced.penaltyKillTitle')}</div>
         <div className={ADV_EXPLAIN_CLASSES}>{t('teamView.advanced.netPkExplain')}</div>
         <AdvStatRow label="PK%" val={pk ? pct(pk.penaltyKillPct) : null}
-          rating={pk ? rateVal(pk.penaltyKillPct, LEAGUE_AVG.pkPct / 100) : null} avg={`${LEAGUE_AVG.pkPct}%`}
-          note={t('teamView.advanced.pkAvgNote')} />
+          rating={pk ? rateVal(pk.penaltyKillPct, la?.pkPct) : null} avg={avgPct(la?.pkPct)} />
         <AdvStatRow label="Net PK%" val={pk ? pct(pk.penaltyKillNetPct) : null}
-          rating={pk ? rateVal(pk.penaltyKillNetPct, LEAGUE_AVG.netPkPct / 100) : null} avg={`${LEAGUE_AVG.netPkPct}%`} />
+          rating={pk ? rateVal(pk.penaltyKillNetPct, la?.netPkPct) : null} avg={avgPct(la?.netPkPct)} />
         <AdvStatRow label={t('teamView.advanced.teamShutoutsLabel')} val={pk?.teamShutouts} />
       </div>
 
