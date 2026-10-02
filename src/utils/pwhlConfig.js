@@ -23,6 +23,7 @@
 //   in the same scope at runtime.
 
 import { fetchSeasonsConfig } from './seasonClient';
+import { pwhlSeasonLabel } from './seasonComparison';
 
 // ── Season constant ───────────────────────────────────────────────────────────
 // This used to be the ONE value updated each October alongside CURRENT_SEASON
@@ -45,23 +46,6 @@ export let PWHL_CURRENT_SEASON = 8;
 // place once live resolution succeeds.
 export let PWHL_SEASON_LABEL = '2025-26';
 
-(async () => {
-  try {
-    const data = await fetchSeasonsConfig();
-    const seasonId   = data?.pwhl?.seasonId;
-    const startYear  = data?.pwhl?.startYear;
-    if (seasonId && seasonId !== PWHL_CURRENT_SEASON) {
-      PWHL_CURRENT_SEASON = seasonId;
-      window.dispatchEvent(new window.CustomEvent('eyewall:pwhl-season-updated', { detail: PWHL_CURRENT_SEASON }));
-    }
-    if (startYear) {
-      PWHL_SEASON_LABEL = `${startYear}-${String(startYear + 1).slice(2)}`;
-    }
-  } catch (e) {
-    console.warn('Live PWHL season lookup failed, using fallback:', e.message);
-  }
-})();
-
 // ── Season / playoff-type enumeration ────────────────────────────────────────
 // Single source of truth for "which season_ids are playoffs, and which
 // regular season each one follows" — this same data used to be duplicated
@@ -82,7 +66,13 @@ export let PWHL_SEASON_LABEL = '2025-26';
 // "2026-27 Pre-Season", currently zero games since PWHL hasn't published
 // that schedule yet). Only the current year's entry is kept, same as
 // playoffs/regular -- no need to backfill past preseasons nobody asks for.
-export const PWHL_SEASONS = [
+//
+// Since 2026-10 a new season needs no entry here: the live current season
+// is added (labelled from its start year) by applyPWHLSeasonsConfig() once
+// /config/seasons answers, and the upcoming one is PWHL_NEXT_SEASON. Past
+// seasons keep their hand-checked labels -- HockeyTech's start dates would
+// label id 1 (which started 2024-01-01) "2024-25".
+const PWHL_LISTED_SEASONS = [
   { id: 10, label: '2026-27 Preseason', type: 'preseason' },
   { id: 8, label: '2025-26', type: 'regular' },
   { id: 9, label: '2025-26 Playoffs', type: 'playoffs' },
@@ -92,15 +82,74 @@ export const PWHL_SEASONS = [
   { id: 3, label: '2023-24 Playoffs', type: 'playoffs' },
 ];
 
-export const PWHL_REGULAR_SEASONS = PWHL_SEASONS.filter(s => s.type === 'regular');
-export const PWHL_PLAYOFF_SEASONS = PWHL_SEASONS.filter(s => s.type === 'playoffs');
-export const PWHL_PRESEASON_SEASONS = PWHL_SEASONS.filter(s => s.type === 'preseason');
+export let PWHL_SEASONS = PWHL_LISTED_SEASONS;
+export let PWHL_REGULAR_SEASONS = PWHL_SEASONS.filter(s => s.type === 'regular');
+export let PWHL_PLAYOFF_SEASONS = PWHL_SEASONS.filter(s => s.type === 'playoffs');
+export let PWHL_PRESEASON_SEASONS = PWHL_SEASONS.filter(s => s.type === 'preseason');
+
+// The upcoming regular season the Worker names (/config/seasons
+// pwhl.next -- the one it's still holding back until two weeks before its
+// first game), as { id, label, type, startYear, startDate }, or null.
+// Deliberately NOT in PWHL_SEASONS: the stats views' season pickers read
+// those lists, and a season with no games played would be an empty
+// choice there. Only PWHLScheduleView offers it, once it has games.
+export let PWHL_NEXT_SEASON = null;
+// The preseason leading into the next season (or, once that season is
+// current, into the current one) -- { id, label, type } or null. Also
+// kept out of PWHL_SEASONS; PWHLScheduleView offers it once it has games
+// when it isn't already listed above.
+export let PWHL_UPCOMING_PRESEASON = null;
+
+function liveSeasonEntry(raw) {
+  const id = Number(raw?.seasonId);
+  if (!id || !raw?.startYear || !['regular', 'preseason'].includes(raw.seasonType)) return null;
+  return {
+    id,
+    label: pwhlSeasonLabel({ seasonId: id, seasonType: raw.seasonType, startYear: raw.startYear }),
+    type: raw.seasonType,
+    startYear: raw.startYear,
+    startDate: raw.startDate || null,
+  };
+}
+
+// Applies /config/seasons' `pwhl` entry: adds the current season to
+// PWHL_SEASONS if it isn't listed (newest first, labelled from data -- so
+// on the switch to 2026-27, id 11 reads "2026-27", not "11"), and sets
+// PWHL_NEXT_SEASON / PWHL_UPCOMING_PRESEASON. Exported for tests.
+export function applyPWHLSeasonsConfig(pwhl) {
+  const listed = new Set(PWHL_LISTED_SEASONS.map(s => s.id));
+  const current = liveSeasonEntry(pwhl);
+  PWHL_SEASONS = current && !listed.has(current.id)
+    ? [{ id: current.id, label: current.label, type: current.type }, ...PWHL_LISTED_SEASONS]
+    : PWHL_LISTED_SEASONS;
+  PWHL_REGULAR_SEASONS = PWHL_SEASONS.filter(s => s.type === 'regular');
+  PWHL_PLAYOFF_SEASONS = PWHL_SEASONS.filter(s => s.type === 'playoffs');
+  PWHL_PRESEASON_SEASONS = PWHL_SEASONS.filter(s => s.type === 'preseason');
+
+  const next = pwhl?.next ? liveSeasonEntry(pwhl.next) : null;
+  PWHL_NEXT_SEASON = next && next.type === 'regular' && next.id !== current?.id ? next : null;
+  const pre = liveSeasonEntry(pwhl?.next ? pwhl.next.preseason : pwhl?.preseason);
+  PWHL_UPCOMING_PRESEASON = pre && pre.type === 'preseason' ? pre : null;
+}
+
+// A season_id's display label: its PWHL_SEASONS entry, else the upcoming
+// season's or preseason's data-derived label, else "Season N" -- never a
+// bare id.
+export function getPWHLSeasonLabel(seasonId) {
+  const id = Number(seasonId);
+  const known = [...PWHL_SEASONS, PWHL_NEXT_SEASON, PWHL_UPCOMING_PRESEASON].find(s => s?.id === id);
+  return known?.label || `Season ${seasonId}`;
+}
 
 // Regular-season season_id -> its corresponding playoff season_id.
 // Derived from PWHL_SEASONS by pairing consecutive regular/playoffs entries
 // rather than hand-duplicating the {8:9, 5:6, 1:3} mapping a second time.
+// From the listed seasons only: a live season with no playoffs yet would
+// shift every pairing by one.
 export const PWHL_PLAYOFF_SEASON_MAP = Object.fromEntries(
-  PWHL_REGULAR_SEASONS.map((reg, i) => [reg.id, PWHL_PLAYOFF_SEASONS[i]?.id])
+  PWHL_LISTED_SEASONS.filter(s => s.type === 'regular').map((reg, i) => [
+    reg.id, PWHL_LISTED_SEASONS.filter(s => s.type === 'playoffs')[i]?.id,
+  ])
 );
 
 // Reverse of the above -- playoffs season_id -> its regular season_id.
@@ -110,6 +159,35 @@ export const PWHL_PLAYOFF_SEASON_MAP = Object.fromEntries(
 export const PWHL_REGULAR_SEASON_MAP = Object.fromEntries(
   Object.entries(PWHL_PLAYOFF_SEASON_MAP).map(([regId, poId]) => [poId, Number(regId)])
 );
+
+// Live season lookup. Resolves (never rejects) once it has finished, with
+// what it learned about the upcoming season -- see applyPWHLSeasonsConfig().
+// Components that offer the upcoming season wait on this (useFetch), so
+// they re-render once it's known instead of reading PWHL_NEXT_SEASON
+// before it's set. Sits below the season lists it updates so they're
+// initialized however the fetch settles.
+let resolveSeasonsReady;
+export const pwhlSeasonsReady = new Promise((resolve) => { resolveSeasonsReady = resolve; });
+
+(async () => {
+  try {
+    const data = await fetchSeasonsConfig();
+    const seasonId   = data?.pwhl?.seasonId;
+    const startYear  = data?.pwhl?.startYear;
+    // Before the event below: its listeners re-render with these lists.
+    applyPWHLSeasonsConfig(data?.pwhl);
+    if (seasonId && seasonId !== PWHL_CURRENT_SEASON) {
+      PWHL_CURRENT_SEASON = seasonId;
+      window.dispatchEvent(new window.CustomEvent('eyewall:pwhl-season-updated', { detail: PWHL_CURRENT_SEASON }));
+    }
+    if (startYear) {
+      PWHL_SEASON_LABEL = `${startYear}-${String(startYear + 1).slice(2)}`;
+    }
+  } catch (e) {
+    console.warn('Live PWHL season lookup failed, using fallback:', e.message);
+  }
+  resolveSeasonsReady({ next: PWHL_NEXT_SEASON, preseason: PWHL_UPCOMING_PRESEASON });
+})();
 
 // Is this specific season_id (e.g. a game's own season_id) a playoffs season?
 // Used to derive per-game isPlayoff state (period/OT/shootout labeling —

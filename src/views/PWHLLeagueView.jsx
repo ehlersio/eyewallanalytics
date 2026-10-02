@@ -11,7 +11,7 @@ import {
 import {
   PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById,
   PWHL_REGULAR_SEASONS as SEASONS,
-  PWHL_PLAYOFF_SEASON_MAP as PLAYOFF_SEASON,
+  PWHL_PLAYOFF_SEASON_MAP as PLAYOFF_SEASON, getPWHLSeasonLabel,
 } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
@@ -332,7 +332,7 @@ export default function PWHLLeagueView() {
   const myTeamId = PWHL_TEAM_ID;
   const myAbbr   = PWHL_TEAM_CONFIG?.abbr;
   const myColor  = PWHL_TEAM_CONFIG?.displayColor || 'var(--team-primary)';
-  const seasonLabel = SEASONS.find(s => s.id === season)?.label || String(season);
+  const seasonLabel = getPWHLSeasonLabel(season);
   const poSeasonId  = PLAYOFF_SEASON[season] || 9;
 
   // useState's initial value only runs once, at first mount -- if this

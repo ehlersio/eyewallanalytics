@@ -13,7 +13,7 @@ import {
   PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, isPWHLPlayoffSeason,
   PWHL_REGULAR_SEASONS as SEASONS,
   PWHL_PLAYOFF_SEASON_MAP, PWHL_REGULAR_SEASON_MAP,
-  getPWHLTeamById,
+  getPWHLTeamById, getPWHLSeasonLabel,
 } from '../utils/pwhlConfig';
 import { usePWHLDevGame } from '../utils/PWHLDevGameContext';
 import {
@@ -1801,7 +1801,7 @@ export default function PWHLShotMapView() {
 
   const oppTeam     = scoreBarData ? PWHL_TEAM_MAP[scoreBarData.oppAbbr] : null;
   const oppColor    = oppTeam?.displayColor || 'var(--text-dim)';
-  const seasonLabel = SEASONS.find(s => s.id === season)?.label || String(season);
+  const seasonLabel = getPWHLSeasonLabel(season);
   const _viewLabel   = selectedGameId && scoreBarData
     ? `vs ${scoreBarData.oppAbbr} · ${scoreBarData.won ? 'W' : 'L'} ${scoreBarData.myScore}–${scoreBarData.oppScore}`
     : seasonLabel;

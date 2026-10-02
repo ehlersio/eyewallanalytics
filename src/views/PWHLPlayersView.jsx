@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { fetchPWHLPlayers, PWHL_TEAM_CONFIG, PWHL_TEAM_ID } from '../utils/pwhlApi';
-import { PWHL_CURRENT_SEASON, PWHL_REGULAR_SEASONS } from '../utils/pwhlConfig';
+import { PWHL_CURRENT_SEASON, PWHL_REGULAR_SEASONS, getPWHLSeasonLabel } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
 import { PAGE_CLASSES } from '../utils/pageClasses';
@@ -155,7 +155,7 @@ export default function PWHLPlayersView() {
   const skaters = useMemo(() => data?.skaters || [], [data]);
   const goalies = useMemo(() => data?.goalies || [], [data]);
 
-  const seasonLabel = PWHL_REGULAR_SEASONS.find(s => s.id === season)?.label || String(season);
+  const seasonLabel = getPWHLSeasonLabel(season);
 
   if (!abbr || !teamId) {
     return (

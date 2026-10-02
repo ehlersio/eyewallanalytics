@@ -66,6 +66,8 @@ Mechanism worth understanding before touching this:
 - Every team object's `season` field is a **getter**, not a plain value — this is what lets `team.season` reflect the live-resolved value everywhere it's read without touching every consuming component. Don't refactor this into a plain property without understanding why it's a getter.
 - `PWHLPlayersView.jsx`'s season-picker default only reads `PWHL_CURRENT_SEASON` once at `useState` mount — if the component mounts before live resolution finishes, it locks in the fallback forever. Fixed via listening for an `eyewall:pwhl-season-updated` event, without overriding a season the user picked manually. Keep this pattern in mind for any other component with a season-dependent initial state.
 
+PWHL season lists (2026-10): `PWHL_SEASONS` and its filtered lists are `let`s too. `applyPWHLSeasonsConfig()` adds the live current season when it isn't hand-listed, labelled from its start year. The upcoming season (`PWHL_NEXT_SEASON`, from the Worker's `pwhl.next`) and its preseason (`PWHL_UPCOMING_PRESEASON`) are kept OUT of those lists, so stats views never offer an empty season; only `PWHLScheduleView` offers them, once the team has games there. Use `getPWHLSeasonLabel(id)` for any PWHL season label, never `String(id)`. `PWHL_PLAYOFF_SEASON_MAP` pairs only the hand-listed seasons.
+
 Manual override exists on the Worker side (`config:season:nhl:override` / `config:season:pwhl:override` KV keys) if live resolution ever misjudges the real Sept/Oct boundary — **that transition has never actually been observed by this logic yet.**
 
 ## NHL team config (multi-team, expanded 2026-07)

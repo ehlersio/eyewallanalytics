@@ -275,6 +275,8 @@ Added 2026-07, replacing what used to be a yearly manual flip of `CURRENT_SEASON
 
 **How the frontend consumes it:** `teamConfig.js` and `pwhlConfig.js` each fire a fetch to `GET /config/seasons` at module load (via the shared `seasonClient.js`, which memoizes the in-flight promise so both modules loading on the same page only trigger one real request, not two). The fetch is fire-and-forget — first paint uses the hardcoded fallback seed, and the `let` binding updates in place once the real value resolves. Every team object's `season` field is a getter reading that `let`, so `team.season` stays live everywhere without touching every consuming component.
 
+**PWHL season lists and the upcoming season (2026-10):** `pwhlConfig.js`'s hand-maintained season list keeps the past seasons' checked labels (HockeyTech's start dates would label season 1, which began 2024-01-01, "2024-25"). New seasons come from `/config/seasons`. `applyPWHLSeasonsConfig()` adds the live current season to `PWHL_SEASONS`/`PWHL_REGULAR_SEASONS` when it isn't listed, labelled from its start year. So on the switch to 2026-27, season 11 reads "2026-27" (never "11") and gets a picker button, with no edit here. The Worker's `pwhl.next` (the upcoming regular season, e.g. 11 before the ~Nov 20 switch) becomes `PWHL_NEXT_SEASON`, and the preseason leading into it becomes `PWHL_UPCOMING_PRESEASON`. Neither goes into those lists, so the stats views (team/players/league/shot map) never offer a season with no games. Only the Schedule offers them, as an extra picker button, once the selected team has games in that season. `getPWHLSeasonLabel(id)` is the one label lookup: the list entry, then the live entries, then "Season N". `pwhlSeasonsReady` resolves once the lookup has finished, for components that need to re-render with it.
+
 **Manual override**, if live resolution ever misjudges the real season boundary (this has happened once already, from a real bug — see Known Limitations below):
 ```powershell
 wrangler kv key put --binding=CACHE "config:season:nhl:override" '"20262027"' --remote
@@ -864,7 +866,7 @@ See `CLAUDE.md`'s versioning rule for the level definitions with examples.
 **Most of this is now automatic (2026-07)** — see [Live Season Resolution](#live-season-resolution). What's left:
 
 1. ~~Update `CURRENT_SEASON` in `teamConfig.js`~~ — automatic now, live-resolved at app boot
-2. ~~Update `PWHL_CURRENT_SEASON` in `pwhlConfig.js`~~ — automatic now
+2. ~~Update `PWHL_CURRENT_SEASON` in `pwhlConfig.js`~~ — automatic now. ~~Add the new season to `PWHL_SEASONS`~~ — automatic since 2026-10 for regular seasons and preseasons; add a playoffs entry by hand once its season_id exists (the playoff pairing is positional)
 3. ~~Update `NHL_SEASON` and `PWHL_SEASON` GitHub Actions secrets~~ — fallback-only now, safe to leave stale
 4. ~~Update `MP_SEASON` in `moneypuck.py`~~ — automatic now, derived from `NHL_SEASON`
 5. Update `OFFSEASON_BRACKET` in `LeagueView.jsx` — **still manual**, not touched during the 2026-07 season-resolution work
