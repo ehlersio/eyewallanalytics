@@ -43,6 +43,9 @@ import SeasonOverlayChart from './SeasonOverlayChart'
 import { TileStatSection, PercentileScopeLegend } from './StatTileGrid'
 import PercentileBar from './PercentileBar'
 import EdgeTrackingSection from './EdgeTrackingSection'
+import GoalieAreaMap, { GoalieDotMap } from './GoalieAreaMap'
+import { nhlAreaRows, hasAreaData } from '../utils/goalieAreas'
+import { getPlayerEdge } from '../utils/edgeApi'
 import PlayerComparisonEntry from './PlayerComparisonEntry'
 import {
   SKATER_STATS, GOALIE_STATS, groupStats, posLabel,
@@ -439,7 +442,7 @@ function GoalieHeaderPanel({ percentiles, boxStats, teamColor, statsStale, stats
 
 // ─── Heat Map ─────────────────────────────────────────────────
 
-function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
+function PlayerHeatMap({ shotData, goalieShotData, goalieEdge, _playerName, isGoalie }) {
   const { t } = useTranslation()
   const [filter, setFilter] = useState('all')
   const [mapMode, setMapMode] = useState('dots')
@@ -461,53 +464,15 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
     const total  = goals + saves
     const svPct  = total > 0 ? (saves / total).toFixed(3) : '—'
 
-    const ZONES = [
-      { id: 'slot_hi',   label: t('playerPopup.heatMap.goalie.zones.highSlot'),    test: s => Math.abs(s.y) <= 22 && s.x >= 55 && s.x < 75 },
-      { id: 'slot_lo',   label: t('playerPopup.heatMap.goalie.zones.lowSlot'),     test: s => Math.abs(s.y) <= 22 && s.x >= 75 },
-      { id: 'left_hi',   label: t('playerPopup.heatMap.goalie.zones.leftCircle'),  test: s => s.y < -10 && s.x >= 55 && s.x < 80 },
-      { id: 'right_hi',  label: t('playerPopup.heatMap.goalie.zones.rightCircle'), test: s => s.y > 10  && s.x >= 55 && s.x < 80 },
-      { id: 'left_lo',   label: t('playerPopup.heatMap.goalie.zones.leftWing'),    test: s => s.y < -22 && s.x >= 55 },
-      { id: 'right_lo',  label: t('playerPopup.heatMap.goalie.zones.rightWing'),   test: s => s.y > 22  && s.x >= 55 },
-      { id: 'perimeter', label: t('playerPopup.heatMap.goalie.zones.perimeter'),   test: s => s.x < 55 },
-    ]
-
-    const zoneStats = ZONES.map(z => {
-      const zShots = shots.filter(s => z.test(s))
-      const zGoals = zShots.filter(s => s.t === 'g').length
-      const zSaves = zShots.filter(s => s.t === 's').length
-      const zTotal = zGoals + zSaves
-      const zSvPct = zTotal >= 5 ? (zSaves / zTotal) : null
-      return { ...z, goals: zGoals, saves: zSaves, total: zTotal, svPct: zSvPct }
-    })
-
-    function svColor(pct) {
-      if (pct == null) return 'transparent'
-      if (pct >= 0.960) return '#1D9E75'
-      if (pct >= 0.930) return '#5DCAA5'
-      if (pct >= 0.900) return '#FAC775'
-      if (pct >= 0.860) return '#EF9F27'
-      return '#E24B4A'
-    }
-
-    const ZONE_RECTS = {
-      slot_hi:   { x: 105, y: 45,  w: 90, h: 48 },
-      slot_lo:   { x: 105, y: 93,  w: 90, h: 45 },
-      left_hi:   { x: 35,  y: 40,  w: 70, h: 53 },
-      right_hi:  { x: 195, y: 40,  w: 70, h: 53 },
-      left_lo:   { x: 25,  y: 93,  w: 80, h: 45 },
-      right_lo:  { x: 195, y: 93,  w: 80, h: 45 },
-      perimeter: { x: 25,  y: 138, w: 250,h: 40 },
-    }
+    // Zone SV%: the NHL's own per-area numbers (NHL EDGE), offered only when
+    // at least one area has enough shots -- see GoalieAreaMap.
+    const areaRows = nhlAreaRows(goalieEdge?.status === 'ok' ? goalieEdge.data.areas : null)
+    const showZones = hasAreaData(areaRows)
+    const mode = showZones ? mapMode : 'dots'
 
     const dotFiltered = filter === 'goals' ? shots.filter(s => s.t === 'g')
       : filter === 'saves' ? shots.filter(s => s.t === 's')
       : shots.filter(s => s.t === 'g' || s.t === 's')
-
-    function toSvg(nx, ny) {
-      const svgX = 150 + (ny / 42.5) * 125
-      const svgY = 30  + ((89 - nx) / 34) * 148
-      return { sx: Math.round(svgX), sy: Math.round(svgY) }
-    }
 
     return (
       <div className={PP_HEATMAP_CLASSES}>
@@ -517,11 +482,13 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
           <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{total}</span><span>{t('playerPopup.heatMap.goalie.shotsFaced')}</span></div>
           <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{svPct}</span><span>SV%</span></div>
         </div>
-        <div className={PP_HEATMAP_FILTERS_CLASSES} style={{ marginBottom: 6 }}>
-          <button className={heatmapChipClasses(mapMode === 'dots')} onClick={() => setMapMode('dots')}>{t('playerPopup.heatMap.goalie.dotMapToggle')}</button>
-          <button className={heatmapChipClasses(mapMode === 'zones')} onClick={() => setMapMode('zones')}>{t('playerPopup.heatMap.goalie.zoneToggle')}</button>
-        </div>
-        {mapMode === 'dots' && (
+        {showZones && (
+          <div className={PP_HEATMAP_FILTERS_CLASSES} style={{ marginBottom: 6 }}>
+            <button className={heatmapChipClasses(mode === 'dots')} onClick={() => setMapMode('dots')}>{t('playerPopup.heatMap.goalie.dotMapToggle')}</button>
+            <button className={heatmapChipClasses(mode === 'zones')} onClick={() => setMapMode('zones')}>{t('playerPopup.heatMap.goalie.zoneToggle')}</button>
+          </div>
+        )}
+        {mode === 'dots' && (
           <div className={PP_HEATMAP_FILTERS_CLASSES}>
             {[
               { key: 'all',   label: t('playerPopup.heatMap.goalie.filterAll', { count: total }) },
@@ -533,79 +500,12 @@ function PlayerHeatMap({ shotData, goalieShotData, _playerName, isGoalie }) {
             ))}
           </div>
         )}
-        {mapMode === 'zones' && (
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 6, fontSize: 11 }}>
-            {[['#1D9E75','.960+'],['#5DCAA5','.930+'],['#FAC775','.900+'],['#EF9F27','.860+'],['#E24B4A','<.860']].map(([c,l]) => (
-              <span key={l} style={{ display:'flex', alignItems:'center', gap:4, color:'var(--text-muted)' }}>
-                <span style={{ width:10, height:10, borderRadius:2, background:c, display:'inline-block' }} />{l}
-              </span>
-            ))}
-            <span style={{ color:'var(--text-dim)', marginLeft:'auto' }}>{t('playerPopup.heatMap.goalie.minShots')}</span>
-          </div>
-        )}
         <div className={PP_HEATMAP_RINK_CLASSES}>
-          <svg viewBox="0 0 300 230" width="100%" xmlns="http://www.w3.org/2000/svg" style={{ display:'block' }}>
-            <rect x="20" y="10" width="260" height="205" rx="12" fill="#d6eaf5" stroke="#9ab8cc" strokeWidth="1" />
-            <rect x="133" y="10" width="34" height="14" rx="2" fill="rgba(204,34,0,0.08)" stroke="#cc2200" strokeWidth="1.5" />
-            <line x1="35" y1="24" x2="265" y2="24" stroke="#E24B4A" strokeWidth="1.5" opacity="0.7" />
-            <path d="M 128 24 A 22 18 0 0 0 172 24" fill="#378ADD" fillOpacity="0.2" stroke="#378ADD" strokeWidth="1" />
-            <line x1="20" y1="178" x2="280" y2="178" stroke="#378ADD" strokeWidth="1.5" opacity="0.5" />
-            <circle cx="90" cy="88" r="3.5" fill="#E24B4A" opacity="0.5" />
-            <circle cx="210" cy="88" r="3.5" fill="#E24B4A" opacity="0.5" />
-            <circle cx="90" cy="88" r="30" fill="none" stroke="#E24B4A" strokeWidth="0.7" opacity="0.25" />
-            <circle cx="210" cy="88" r="30" fill="none" stroke="#E24B4A" strokeWidth="0.7" opacity="0.25" />
-            {mapMode === 'zones' ? (
-              <>
-                {zoneStats.map(z => {
-                  const r = ZONE_RECTS[z.id]
-                  const col = svColor(z.svPct)
-                  return (
-                    <g key={z.id}>
-                      <rect x={r.x} y={r.y} width={r.w} height={r.h} rx="3"
-                        fill={col} opacity={z.svPct != null ? 0.55 : 0.08}
-                        stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
-                      {z.svPct != null && (
-                        <>
-                          <text x={r.x + r.w/2} y={r.y + r.h/2 - 4} textAnchor="middle"
-                            fontSize="12" fontWeight="700" fill="#111"
-                            style={{ filter: 'drop-shadow(0px 0px 2px rgba(255,255,255,0.9))' }}>
-                            .{Math.round(z.svPct * 1000)}
-                          </text>
-                          <text x={r.x + r.w/2} y={r.y + r.h/2 + 11} textAnchor="middle"
-                            fontSize="9" fontWeight="600" fill="#333"
-                            style={{ filter: 'drop-shadow(0px 0px 2px rgba(255,255,255,0.9))' }}>
-                            {t('playerPopup.heatMap.goalie.zoneShotsCount', { count: z.total })}
-                          </text>
-                        </>
-                      )}
-                      {z.svPct == null && z.total > 0 && (
-                        <text x={r.x + r.w/2} y={r.y + r.h/2 + 4} textAnchor="middle"
-                          fontSize="9" fontWeight="600" fill="#333"
-                          style={{ filter: 'drop-shadow(0px 0px 2px rgba(255,255,255,0.9))' }}>
-                          {t('playerPopup.heatMap.goalie.zoneShotsCount', { count: z.total })}
-                        </text>
-                      )}
-                    </g>
-                  )
-                })}
-              </>
-            ) : (
-              <>
-                {dotFiltered.map((s, i) => {
-                  const { sx, sy } = toSvg(s.x, s.y || 0)
-                  if (sy < 10 || sy > 225 || sx < 10 || sx > 290) return null
-                  return (
-                    <circle key={i} cx={sx} cy={sy} r={s.t === 'g' ? 4.5 : 3.5}
-                      fill={s.t === 'g' ? '#E24B4A' : '#1D9E75'}
-                      opacity={s.t === 'g' ? 0.85 : 0.45} />
-                  )
-                })}
-              </>
-            )}
-            <text x="150" y="224" textAnchor="middle" fontSize="9" fill="var(--text-dim)">
-              {t('playerPopup.heatMap.goalie.shooterCaption')}
-            </text>
-          </svg>
+          {mode === 'zones' ? (
+            <GoalieAreaMap rows={areaRows} mode="nhl" />
+          ) : (
+            <GoalieDotMap shots={dotFiltered} caption={t('playerPopup.heatMap.goalie.dotCaption')} ariaLabel={t('playerPopup.heatMap.goalie.dotMapToggle')} />
+          )}
         </div>
       </div>
     )
@@ -1072,6 +972,12 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   )
   const { data: goalieShotData } = useFetch(
     () => (!isLeagueContext && isGoalie) ? getGoalieShots(p.id) : Promise.resolve(null),
+    [p.id, isGoalie, isLeagueContext]
+  )
+  // The NHL's per-area numbers for the Heat Map's Zone SV% (same season as
+  // its shots, regular season); a failed or empty fetch just hides Zones.
+  const { data: goalieEdge } = useFetch(
+    () => (!isLeagueContext && isGoalie) ? getPlayerEdge('goalie', p.id, String(SEASON), 2).catch(() => null) : Promise.resolve(null),
     [p.id, isGoalie, isLeagueContext]
   )
 
@@ -1655,7 +1561,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
         {/* ── Heat map tab — CAR context only ── */}
         {ppTab === 'heatmap' && !isLeagueContext && (
-          <PlayerHeatMap shotData={shotData} goalieShotData={goalieShotData} playerName={name} isGoalie={isGoalie} />
+          <PlayerHeatMap shotData={shotData} goalieShotData={goalieShotData} goalieEdge={goalieEdge} playerName={name} isGoalie={isGoalie} />
         )}
 
         {/* ── Analytics tab ── */}

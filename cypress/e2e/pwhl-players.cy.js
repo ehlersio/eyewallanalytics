@@ -169,14 +169,21 @@ PWHL_TEST_TEAMS.forEach(abbr => {
         cy.get('.pp-tab').contains('Heat Map').click()
         cy.get('svg', { timeout: DATA_TIMEOUT }).should('exist')
         cy.contains(/Shots faced/i, { timeout: DATA_TIMEOUT }).should('exist')
+        // Zone SV% waits on the league's shots (/pwhl/league-goalie-shots)
+        cy.contains(/Zone SV%/i, { timeout: DATA_TIMEOUT }).should('exist')
         cy.contains(/Dot map/i).should('exist')
-        cy.contains(/Zone SV%/i).should('exist')
         cy.assertNoErrors()
       })
 
-      it('can switch to Zone SV% mode without erroring', () => {
+      it('switches to Zone SV%: save % in the NHL\'s shot areas, vs the PWHL average', () => {
         cy.get('.pp-tab').contains('Heat Map').click()
         cy.contains(/Zone SV%/i, { timeout: DATA_TIMEOUT }).click()
+        cy.get('[data-testid="goalie-area-map"]').should('exist')
+        cy.get('[data-testid="goalie-area-map"] path.rhr-area').should('have.length', 17)
+        cy.get('[data-testid="goalie-area-map"]').should('contain', 'PWHL avg')
+        // tap an area with a save % shown for its numbers
+        cy.get('[data-testid="goalie-area-map"] path.rhr-area[fill^="#"]').first().click({ force: true })
+        cy.get('[data-testid="goalie-area-map"]').contains(/\d+ shots/).should('exist')
         cy.assertNoErrors()
       })
 

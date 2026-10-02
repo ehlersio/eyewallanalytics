@@ -16,7 +16,7 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { useFetch } from '../hooks/useFetch';
-import { fetchPWHLPlayerShots, fetchPWHLGoalieShots, fetchPWHLPlayerLanding, fetchPWHLPlayerGameLog, fetchPWHLPlayerCareer, fetchPWHLPlayerPercentiles, fetchPWHLGoaliePercentiles } from '../utils/pwhlApi';
+import { fetchPWHLPlayerShots, fetchPWHLGoalieShots, fetchPWHLLeagueGoalieShots, fetchPWHLPlayerLanding, fetchPWHLPlayerGameLog, fetchPWHLPlayerCareer, fetchPWHLPlayerPercentiles, fetchPWHLGoaliePercentiles } from '../utils/pwhlApi';
 import { fetchComparisonSeasons } from '../utils/seasonClient';
 import { normalizeComparisonSeasons } from '../utils/seasonComparison';
 import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById } from '../utils/pwhlConfig';
@@ -29,7 +29,9 @@ import { perGameValue, seasonRampColor, CHART_DASH_PATTERNS } from '../utils/sea
 // Use getPWHLTeamById instead (already imported below).
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
-import { HockeyRink } from 'react-hockey-rink';
+import { HockeyRink, shotArea } from 'react-hockey-rink';
+import GoalieAreaMap, { GoalieDotMap } from './GoalieAreaMap';
+import { pwhlAreaRows, hasAreaData } from '../utils/goalieAreas';
 import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import { TileStatSection } from './StatTileGrid';
 import SeasonComparisonPicker from './SeasonComparisonPicker';
@@ -343,52 +345,28 @@ function PWHLGoalieHeaderPanel({ percentiles, boxStats, teamColor, comparisonEnt
 
 // ── Heat Map ──────────────────────────────────────────────────
 
-// Same 7-zone breakdown + colour scale NHL's PlayerPopup.jsx uses for its
-// goalie heat map (PlayerHeatMap's isGoalie branch) -- kept as an
-// independent copy rather than a shared import, consistent with this
-// codebase's convention of not cross-importing between the NHL and PWHL
-// component trees (they're only coupled at the API-fetch/config layer).
-const GOALIE_ZONE_RECTS = {
-  slot_hi:   { x: 105, y: 45,  w: 90, h: 48 },
-  slot_lo:   { x: 105, y: 93,  w: 90, h: 45 },
-  left_hi:   { x: 35,  y: 40,  w: 70, h: 53 },
-  right_hi:  { x: 195, y: 40,  w: 70, h: 53 },
-  left_lo:   { x: 25,  y: 93,  w: 80, h: 45 },
-  right_lo:  { x: 195, y: 93,  w: 80, h: 45 },
-  perimeter: { x: 25,  y: 138, w: 250,h: 40 },
-};
-
-function goalieSvColor(pct) {
-  if (pct == null) return 'transparent';
-  if (pct >= 0.960) return '#1D9E75';
-  if (pct >= 0.930) return '#5DCAA5';
-  if (pct >= 0.900) return '#FAC775';
-  if (pct >= 0.860) return '#EF9F27';
-  return '#E24B4A';
-}
-
-function goalieToSvg(nx, ny) {
-  const svgX = 150 + (ny / 42.5) * 125;
-  const svgY = 30  + ((89 - nx) / 34) * 148;
-  return { sx: Math.round(svgX), sy: Math.round(svgY) };
-}
-
-function PWHLGoalieHeatMap({ goalieShotData }) {
+// The goalie heat map: shots faced as dots, or save % in each of the NHL's
+// 17 shot areas (GoalieAreaMap) colored against the PWHL's own save % in that
+// area -- from every shot on goal any PWHL goalie faced that season
+// (/pwhl/league-goalie-shots), classified with the same react-hockey-rink
+// shotArea the NHL popup uses. Zone SV% is offered only once an area has
+// enough shots. Replaced a hand-drawn 7-zone grid whose zones overlapped
+// (a shot could count in two) (2026-10).
+function PWHLGoalieHeatMap({ goalieShotData, season }) {
   const { t } = useTranslation();
   const [filter, setFilter] = useState('all');
   const [mapMode, setMapMode] = useState('dots');
+  const { data: leagueShots } = useFetch(
+    () => (season && goalieShotData?.shots?.length) ? fetchPWHLLeagueGoalieShots(season).catch(() => null) : Promise.resolve(null),
+    [season, !!goalieShotData?.shots?.length]
+  );
+  const shots = goalieShotData?.shots || [];
+  const areaRows = useMemo(
+    () => pwhlAreaRows(shots.map(s => [s.x, s.y, s.t === 'g' ? 1 : 0]), leagueShots?.shots, shotArea),
+    [shots, leagueShots]
+  );
 
-  const GOALIE_ZONES = [
-    { id: 'slot_hi',   label: t('playerPopup.heatMap.goalie.zones.highSlot'),    test: s => Math.abs(s.y) <= 22 && s.x >= 55 && s.x < 75 },
-    { id: 'slot_lo',   label: t('playerPopup.heatMap.goalie.zones.lowSlot'),     test: s => Math.abs(s.y) <= 22 && s.x >= 75 },
-    { id: 'left_hi',   label: t('playerPopup.heatMap.goalie.zones.leftCircle'), test: s => s.y < -10 && s.x >= 55 && s.x < 80 },
-    { id: 'right_hi',  label: t('playerPopup.heatMap.goalie.zones.rightCircle'), test: s => s.y > 10  && s.x >= 55 && s.x < 80 },
-    { id: 'left_lo',   label: t('playerPopup.heatMap.goalie.zones.leftWing'),    test: s => s.y < -22 && s.x >= 55 },
-    { id: 'right_lo',  label: t('playerPopup.heatMap.goalie.zones.rightWing'),   test: s => s.y > 22  && s.x >= 55 },
-    { id: 'perimeter', label: t('playerPopup.heatMap.goalie.zones.perimeter'),   test: s => s.x < 55 },
-  ];
-
-  if (!goalieShotData || !goalieShotData.shots?.length) {
+  if (!shots.length) {
     return (
       <div className={PP_HEATMAP_EMPTY_CLASSES}>
         <div className={PP_HEATMAP_ICON_CLASSES}>🥅</div>
@@ -398,20 +376,12 @@ function PWHLGoalieHeatMap({ goalieShotData }) {
     );
   }
 
-  const shots = goalieShotData.shots;
   const goals = shots.filter(s => s.t === 'g').length;
   const saves = shots.filter(s => s.t === 's').length;
   const total = goals + saves;
   const svPct = total > 0 ? (saves / total).toFixed(3) : '—';
-
-  const zoneStats = GOALIE_ZONES.map(z => {
-    const zShots = shots.filter(s => z.test(s));
-    const zGoals = zShots.filter(s => s.t === 'g').length;
-    const zSaves = zShots.filter(s => s.t === 's').length;
-    const zTotal = zGoals + zSaves;
-    const zSvPct = zTotal >= 5 ? (zSaves / zTotal) : null;
-    return { ...z, goals: zGoals, saves: zSaves, total: zTotal, svPct: zSvPct };
-  });
+  const showZones = hasAreaData(areaRows);
+  const mode = showZones ? mapMode : 'dots';
 
   const dotFiltered = filter === 'goals' ? shots.filter(s => s.t === 'g')
     : filter === 'saves' ? shots.filter(s => s.t === 's')
@@ -425,14 +395,16 @@ function PWHLGoalieHeatMap({ goalieShotData }) {
         <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{total}</span><span>{t('playerPopup.heatMap.goalie.shotsFaced')}</span></div>
         <div className={PP_HEATMAP_STAT_CLASSES}><span className={`${PP_HEATMAP_NUM_BASE_CLASSES} ${PP_HEATMAP_NUM_DEFAULT_CLASSES}`}>{svPct}</span><span>SV%</span></div>
       </div>
-      <div className={PP_HEATMAP_FILTERS_CLASSES} style={{ marginBottom: 6 }}>
-        <button className={heatmapChipClasses(mapMode === 'dots')} onClick={() => setMapMode('dots')}>{t('playerPopup.heatMap.goalie.dotMapToggle')}</button>
-        <button className={heatmapChipClasses(mapMode === 'zones')} onClick={() => setMapMode('zones')}>{t('playerPopup.heatMap.goalie.zoneToggle')}</button>
-      </div>
-      {mapMode === 'dots' && (
+      {showZones && (
+        <div className={PP_HEATMAP_FILTERS_CLASSES} style={{ marginBottom: 6 }}>
+          <button className={heatmapChipClasses(mode === 'dots')} onClick={() => setMapMode('dots')}>{t('playerPopup.heatMap.goalie.dotMapToggle')}</button>
+          <button className={heatmapChipClasses(mode === 'zones')} onClick={() => setMapMode('zones')}>{t('playerPopup.heatMap.goalie.zoneToggle')}</button>
+        </div>
+      )}
+      {mode === 'dots' && (
         <div className={PP_HEATMAP_FILTERS_CLASSES}>
           {[
-            { key: 'all',   label: t('playerPopup.heatMap.goalie.filterAll', { count: total }) },
+            { key: 'all', label: t('playerPopup.heatMap.goalie.filterAll', { count: total }) },
             { key: 'goals', label: t('playerPopup.heatMap.goalie.filterGoals', { count: goals }) },
             { key: 'saves', label: t('playerPopup.heatMap.goalie.filterSaves', { count: saves }) },
           ].map(f => (
@@ -441,79 +413,12 @@ function PWHLGoalieHeatMap({ goalieShotData }) {
           ))}
         </div>
       )}
-      {mapMode === 'zones' && (
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 6, fontSize: 11 }}>
-          {[['#1D9E75', '.960+'], ['#5DCAA5', '.930+'], ['#FAC775', '.900+'], ['#EF9F27', '.860+'], ['#E24B4A', '<.860']].map(([c, l]) => (
-            <span key={l} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-muted)' }}>
-              <span style={{ width: 10, height: 10, borderRadius: 2, background: c, display: 'inline-block' }} />{l}
-            </span>
-          ))}
-          <span style={{ color: 'var(--text-dim)', marginLeft: 'auto' }}>{t('playerPopup.heatMap.goalie.minShots')}</span>
-        </div>
-      )}
       <div className={PP_HEATMAP_RINK_CLASSES}>
-        <svg viewBox="0 0 300 230" width="100%" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
-          <rect x="20" y="10" width="260" height="205" rx="12" fill="#d6eaf5" stroke="#9ab8cc" strokeWidth="1" />
-          <rect x="133" y="10" width="34" height="14" rx="2" fill="rgba(204,34,0,0.08)" stroke="#cc2200" strokeWidth="1.5" />
-          <line x1="35" y1="24" x2="265" y2="24" stroke="#E24B4A" strokeWidth="1.5" opacity="0.7" />
-          <path d="M 128 24 A 22 18 0 0 0 172 24" fill="#378ADD" fillOpacity="0.2" stroke="#378ADD" strokeWidth="1" />
-          <line x1="20" y1="178" x2="280" y2="178" stroke="#378ADD" strokeWidth="1.5" opacity="0.5" />
-          <circle cx="90" cy="88" r="3.5" fill="#E24B4A" opacity="0.5" />
-          <circle cx="210" cy="88" r="3.5" fill="#E24B4A" opacity="0.5" />
-          <circle cx="90" cy="88" r="30" fill="none" stroke="#E24B4A" strokeWidth="0.7" opacity="0.25" />
-          <circle cx="210" cy="88" r="30" fill="none" stroke="#E24B4A" strokeWidth="0.7" opacity="0.25" />
-          {mapMode === 'zones' ? (
-            <>
-              {zoneStats.map(z => {
-                const r = GOALIE_ZONE_RECTS[z.id];
-                const col = goalieSvColor(z.svPct);
-                return (
-                  <g key={z.id}>
-                    <rect x={r.x} y={r.y} width={r.w} height={r.h} rx="3"
-                      fill={col} opacity={z.svPct != null ? 0.55 : 0.08}
-                      stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
-                    {z.svPct != null && (
-                      <>
-                        <text x={r.x + r.w / 2} y={r.y + r.h / 2 - 4} textAnchor="middle"
-                          fontSize="12" fontWeight="700" fill="#111"
-                          style={{ filter: 'drop-shadow(0px 0px 2px rgba(255,255,255,0.9))' }}>
-                          .{Math.round(z.svPct * 1000)}
-                        </text>
-                        <text x={r.x + r.w / 2} y={r.y + r.h / 2 + 11} textAnchor="middle"
-                          fontSize="9" fontWeight="600" fill="#333"
-                          style={{ filter: 'drop-shadow(0px 0px 2px rgba(255,255,255,0.9))' }}>
-                          {t('playerPopup.heatMap.goalie.zoneShotsCount', { count: z.total })}
-                        </text>
-                      </>
-                    )}
-                    {z.svPct == null && z.total > 0 && (
-                      <text x={r.x + r.w / 2} y={r.y + r.h / 2 + 4} textAnchor="middle"
-                        fontSize="9" fontWeight="600" fill="#333"
-                        style={{ filter: 'drop-shadow(0px 0px 2px rgba(255,255,255,0.9))' }}>
-                        {t('playerPopup.heatMap.goalie.zoneShotsCount', { count: z.total })}
-                      </text>
-                    )}
-                  </g>
-                );
-              })}
-            </>
-          ) : (
-            <>
-              {dotFiltered.map((s, i) => {
-                const { sx, sy } = goalieToSvg(s.x, s.y || 0);
-                if (sy < 10 || sy > 225 || sx < 10 || sx > 290) return null;
-                return (
-                  <circle key={i} cx={sx} cy={sy} r={s.t === 'g' ? 4.5 : 3.5}
-                    fill={s.t === 'g' ? '#E24B4A' : '#1D9E75'}
-                    opacity={s.t === 'g' ? 0.85 : 0.45} />
-                );
-              })}
-            </>
-          )}
-          <text x="150" y="224" textAnchor="middle" fontSize="9" fill="var(--text-dim)">
-            {t('playerPopup.heatMap.goalie.shooterCaption')}
-          </text>
-        </svg>
+        {mode === 'zones' ? (
+          <GoalieAreaMap rows={areaRows} mode="pwhl" />
+        ) : (
+          <GoalieDotMap shots={dotFiltered} caption={t('playerPopup.heatMap.goalie.dotCaption')} ariaLabel={t('playerPopup.heatMap.goalie.dotMapToggle')} />
+        )}
       </div>
     </div>
   );
@@ -541,7 +446,7 @@ function PWHLHeatMap({ playerId, season, isGoalie, teamId }) {
         </div>
       );
     }
-    return <PWHLGoalieHeatMap goalieShotData={goalieShotData} />;
+    return <PWHLGoalieHeatMap goalieShotData={goalieShotData} season={season} />;
   }
 
   if (loading) {

@@ -16,6 +16,8 @@ import { getPlayerEdge } from '../utils/edgeApi'
 import { EDGE_HEADLINES, EDGE_METRICS, formatEdgeMetric, presentEdgeMetrics } from '../utils/edgeFormat'
 import { nhlSeasonLabel } from '../utils/seasonComparison'
 import PercentileBar from './PercentileBar'
+import GoalieAreaMap from './GoalieAreaMap'
+import { nhlAreaRows, hasAreaData } from '../utils/goalieAreas'
 
 const WRAP_CLASSES = 'edge-tracking mt-[18px]'
 const SECTION_LABEL_CLASSES = 'text-[10px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] mb-2'
@@ -46,6 +48,8 @@ export default function EdgeTrackingSection({ kind, playerId, season, gameType, 
   )
   if (data?.status !== 'ok') return null
   const { metrics, gamesPlayed } = data.data
+  // Goalies: save % in each NHL shot area, when an area has enough shots
+  const areaRows = kind === 'goalie' ? nhlAreaRows(data.data.areas) : null
   const rows = presentEdgeMetrics(kind, metrics)
   if (rows.length === 0) return null
 
@@ -81,6 +85,7 @@ export default function EdgeTrackingSection({ kind, playerId, season, gameType, 
           return <PercentileBar key={name} label={label(name)} pct={metrics[name].pct} note={note} />
         })}
       </div>
+      {hasAreaData(areaRows) && <GoalieAreaMap rows={areaRows} mode="nhl" className="mt-4" />}
       <div className={SOURCE_CLASSES}>{t('playerPopup.edge.source')}</div>
     </div>
   )

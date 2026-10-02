@@ -67,6 +67,14 @@ export async function fetchPWHLPlayerShots(playerId, season = PWHL_CURRENT_SEASO
   return workerFetch(`/pwhl/player-shots?playerId=${playerId}&season=${season}`);
 }
 
+/**
+ * Every shot on goal any PWHL goalie faced in a season, as [x, y, isGoal]
+ * rows -- the league average the goalie heat map's Zone SV% colors against.
+ */
+export async function fetchPWHLLeagueGoalieShots(season = PWHL_CURRENT_SEASON) {
+  return workerFetch(`/pwhl/league-goalie-shots?season=${season}`);
+}
+
 /** Fetch shots faced by a specific goalie (for goalie heat map). */
 export async function fetchPWHLGoalieShots(goalieId, season = PWHL_CURRENT_SEASON) {
   if (!goalieId) return null;

@@ -1924,23 +1924,50 @@
         "emptySub": "Data builds up as games complete.",
         "saves": "Saves",
         "shotsFaced": "Shots faced",
-        "zones": {
-          "highSlot": "High slot",
-          "lowSlot": "Low slot",
-          "leftCircle": "Left circle",
-          "rightCircle": "Right circle",
-          "leftWing": "Left wing",
-          "rightWing": "Right wing",
-          "perimeter": "Perimeter"
-        },
         "dotMapToggle": "Dot map",
         "zoneToggle": "Zone SV%",
-        "minShots": "min 5 shots",
         "filterAll": "All ({{count}})",
         "filterGoals": "Goals ({{count}})",
         "filterSaves": "Saves ({{count}})",
-        "zoneShotsCount": "{{count}} shots",
-        "shooterCaption": "Shooter perspective · green = save · red = goal"
+        "areas": {
+          "crease": "Crease",
+          "lowSlot": "Low slot",
+          "lNetSide": "Left net side",
+          "rNetSide": "Right net side",
+          "highSlot": "High slot",
+          "lCircle": "Left circle",
+          "rCircle": "Right circle",
+          "outsideL": "Outside left",
+          "outsideR": "Outside right",
+          "centerPoint": "Center point",
+          "lPoint": "Left point",
+          "rPoint": "Right point",
+          "behindNet": "Behind the net",
+          "lCorner": "Left corner",
+          "rCorner": "Right corner",
+          "neutralZone": "Neutral zone",
+          "beyondRedLine": "Beyond the red line"
+        },
+        "areaLegendNhl": {
+          "high": "67th+ percentile",
+          "mid": "34th–66th",
+          "low": "Below 34th"
+        },
+        "areaLegendPwhl": {
+          "high": "Better than PWHL avg",
+          "mid": "Within .020",
+          "low": "Worse than PWHL avg"
+        },
+        "areaHint": "Tap an area · save % shown with {{count}}+ shots",
+        "areaDetailNhl": "{{area}} · {{count}} shots · {{sv}} · {{pct}} percentile",
+        "areaDetailPlain": "{{area}} · {{count}} shots · {{sv}}",
+        "areaDetailPwhl": "{{area}} · {{count}} shots · {{sv}} (PWHL {{league}})",
+        "areaDetailFew": "{{area}} · {{count}} shots, too few to rate",
+        "areaDetailNone": "{{area}} · no shots",
+        "areaMapLabel": "Save percentage by shot area",
+        "areaSourceNhl": "Shot areas and percentiles vs NHL goalies: NHL EDGE · left/right as the shooter sees it",
+        "areaSourcePwhl": "PWHL average: every shot on goal this season · left/right as the shooter sees it",
+        "dotCaption": "Net at right · green = save · red = goal"
       },
       "skater": {
         "empty": "No season shot data yet.",

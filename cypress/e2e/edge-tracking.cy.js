@@ -48,6 +48,45 @@ describe('NHL EDGE tracking section', () => {
   })
 })
 
+describe('Goalie shot-area map (Analytics tab)', () => {
+  // fixtures/edge-goalie.json: a real 39-GP response (Blackwood 2025-26)
+  // with the NHL's per-area numbers (`areas`).
+  const openGoalieAnalytics = () => {
+    cy.setTeam('CAR')
+    cy.visit('/players')
+    cy.contains('Goalies', { timeout: 15000 }).should('exist')
+    cy.team('CAR').then(t => cy.contains(t.goalie).first().click())
+    cy.get('.pp-tab', { timeout: DATA_TIMEOUT }).contains('Analytics').click()
+  }
+
+  it('shows save % by NHL shot area, colored by percentile, tappable', () => {
+    cy.intercept('GET', '**/nhl/edge/goalie/**', { fixture: 'edge-goalie.json' }).as('edge')
+    openGoalieAnalytics()
+    cy.wait('@edge')
+    cy.get('[data-testid="edge-tracking"] [data-testid="goalie-area-map"]', { timeout: DATA_TIMEOUT }).within(() => {
+      cy.get('path.rhr-area').should('have.length', 17)
+      // Low Slot: 229 shots, .825, 61st percentile -> the middle color
+      cy.get('path[data-area="Low Slot"]').should('have.attr', 'fill', '#fbbf24')
+      // L Corner: 2 shots -- too few to color, however the NHL ranks it
+      cy.get('path[data-area="L Corner"]').should('have.attr', 'fill', 'transparent')
+      cy.get('path[data-area="Low Slot"]').click({ force: true })
+      cy.contains('Low slot · 229 shots · .825 · 61st percentile')
+      cy.get('path[data-area="L Corner"]').click({ force: true })
+      cy.contains('too few to rate')
+    })
+  })
+
+  it('leaves the map out when the NHL has no area data', () => {
+    cy.fixture('edge-goalie.json').then(body => {
+      cy.intercept('GET', '**/nhl/edge/goalie/**', { ...body, areas: null }).as('edge')
+    })
+    openGoalieAnalytics()
+    cy.wait('@edge')
+    cy.get('[data-testid="edge-tracking"]', { timeout: DATA_TIMEOUT }).should('exist')
+    cy.get('[data-testid="goalie-area-map"]').should('not.exist')
+  })
+})
+
 describe('Units setting', () => {
   it('follows the language until chosen, then keeps the choice', () => {
     cy.visit('/')
