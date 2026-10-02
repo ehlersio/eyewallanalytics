@@ -175,6 +175,66 @@ describe('League view: NHL EDGE leaders', () => {
   })
 })
 
+describe('Player comparison: Tracking tab (NHL EDGE)', () => {
+  // McDavid vs Draisaitl; both stubbed with fixtures/edge-skater.json (a
+  // real 82-GP response), Draisaitl's percentiles lowered so one side wins.
+  const openComparison = () => {
+    cy.setTeam('CAR')
+    cy.visit('/')
+    cy.get('.player-search-toggle').click()
+    cy.get('.player-search-input').type('mcdavid')
+    cy.contains('.player-search-result', 'Connor McDavid', { timeout: DATA_TIMEOUT }).click()
+    cy.get('.player-popup', { timeout: 10000 }).should('exist')
+    cy.get('.pp-quickstats-col .pce-toggle', { timeout: 10000 }).click()
+    cy.get('.pce-input').type('draisaitl')
+    cy.contains('.pce-result', 'Leon Draisaitl', { timeout: DATA_TIMEOUT }).click()
+    cy.get('.pcp-root', { timeout: DATA_TIMEOUT }).should('exist')
+  }
+
+  it('compares the two players metric by metric, the better percentile highlighted', () => {
+    cy.fixture('edge-skater.json').then(body => {
+      cy.intercept('GET', '**/nhl/edge/skater/**', req => {
+        if (req.url.includes('/8478402/')) return req.reply(body)
+        const metrics = Object.fromEntries(Object.entries(body.metrics).map(([k, m]) => [k, m && { ...m, pct: 10 }]))
+        return req.reply({ ...body, playerId: 8477934, metrics })
+      }).as('edge')
+    })
+    openComparison()
+    cy.contains('.pcp-tab', 'Tracking', { timeout: DATA_TIMEOUT }).click()
+    cy.get('[data-testid="edge-h2h"]').within(() => {
+      cy.contains('2025-26 · 82 GP')
+      cy.get('tr[data-metric="topSpeed"]').should('contain', '24.6 mph').and('contain', '100th pct.')
+      // McDavid (left, 100th) beats the stubbed 10th
+      cy.get('tr[data-metric="topSpeed"] td').first().find('span').first().should('have.class', 'font-bold')
+      cy.get('tr[data-metric="topSpeed"] td').last().find('span').first().should('not.have.class', 'font-bold')
+    })
+  })
+
+  it('offers no Tracking tab when neither player has EDGE data', () => {
+    cy.intercept('GET', '**/nhl/edge/skater/**', { statusCode: 404, body: { available: false } }).as('edge')
+    openComparison()
+    cy.contains('.pcp-tab', 'Scoring', { timeout: DATA_TIMEOUT }).should('exist')
+    cy.wait('@edge', { timeout: DATA_TIMEOUT })
+    cy.get('.pcp-tab').should('not.contain', 'Tracking')
+  })
+})
+
+describe('Team comparison: NHL EDGE rows', () => {
+  it('adds each season card\'s EDGE metrics with the NHL rank', () => {
+    cy.intercept('GET', '**/nhl/edge/team/**', { fixture: 'edge-team.json' }).as('edge')
+    cy.setTeam('CAR')
+    cy.visit('/team')
+    cy.contains('🆚 Compare Seasons', { timeout: 15000 }).click()
+    cy.get('.season-chip', { timeout: DATA_TIMEOUT }).eq(1).click()
+    cy.wait('@edge', { timeout: DATA_TIMEOUT })
+    cy.get('[data-testid="edge-team-rows"]', { timeout: DATA_TIMEOUT }).first().scrollIntoView()
+      .should('contain', 'Tracking (NHL EDGE)')
+      .and('contain', 'O-zone time')
+      .and('contain', '1st in NHL')
+      .and('contain', '45.5%')
+  })
+})
+
 describe('Units setting', () => {
   it('follows the language until chosen, then keeps the choice', () => {
     cy.visit('/')

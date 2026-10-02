@@ -90,6 +90,11 @@
   padding: 0 16px 16px;
 }
 
+/* Tracking tab: the head-to-head table, same side padding as the blocks */
+.pcp-tracking {
+  padding: 0 16px 16px;
+}
+
 .pcp-player-block-label {
   font-size: 12px;
   font-weight: 700;

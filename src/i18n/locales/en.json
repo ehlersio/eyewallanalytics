@@ -2312,7 +2312,15 @@
     "tabs": {
       "possession": "Possession",
       "physical": "Physical",
-      "performance": "Performance"
+      "performance": "Performance",
+      "tracking": "Tracking"
+    },
+    "edge": {
+      "seasonGp_one": "{{season}} · {{count}} GP",
+      "seasonGp_other": "{{season}} · {{count}} GP",
+      "noData": "No EDGE data",
+      "pct": "{{pct}} pct.",
+      "source": "Player & puck tracking: NHL EDGE · percentiles vs the NHL, after {{count}} games played · the better percentile in green"
     }
   },
   "posLabel": {

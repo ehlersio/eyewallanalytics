@@ -25,6 +25,8 @@
 // fetching only the other.
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { EdgeHeadToHead } from './EdgeCompare'
+import { getPlayerEdge } from '../utils/edgeApi'
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts'
 import { useFetch } from '../hooks/useFetch'
 import { getPlayerStats, TEAM_CONFIG } from '../utils/nhlApi'
@@ -116,6 +118,19 @@ function usePlayerComparisonData(sport, player) {
   )
   const pwhlPct = isGoalie ? pwhlGoaliePct : pwhlSkaterPct
 
+  // The NHL's regular season to show: this season's, else the most recent
+  // with games (see the whole-season fallback note below). NHL EDGE follows
+  // the same season, so the Tracking tab compares what the other tabs do.
+  const nhlRegSeasons = (nhlStats?.seasonTotals || []).filter(s => s.gameTypeId === 2 && s.leagueAbbrev === 'NHL')
+  const seasonReg = nhlRegSeasons.find(s => s.season === NHL_SEASON)
+    || [...nhlRegSeasons].sort((a, b) => b.season - a.season)[0]
+  const edgeSeason = !isPwhl ? seasonReg?.season : null
+  const { data: edgeData } = useFetch(
+    () => (edgeSeason && id) ? getPlayerEdge(isGoalie ? 'goalie' : 'skater', id, String(edgeSeason), 2).catch(() => null) : Promise.resolve(null),
+    [edgeSeason, id, isGoalie]
+  )
+  const edge = edgeData?.status === 'ok' ? edgeData.data : null
+
   if (isPwhl) {
     const p = { ...player, ...(pwhlLanding || {}) }
     const name = p.player_name || `${p.first_name || ''} ${p.last_name || ''}`.trim() || player?.name || ''
@@ -143,9 +158,6 @@ function usePlayerComparisonData(sport, player) {
   // PlayerPopup's mpData.statsStale/statsSeason machinery exactly (that's
   // resolved server-side against a different data source and isn't
   // guaranteed to agree with which season the raw NHL feed falls back to).
-  const nhlRegSeasons = (stats?.seasonTotals || []).filter(s => s.gameTypeId === 2 && s.leagueAbbrev === 'NHL')
-  const seasonReg = nhlRegSeasons.find(s => s.season === NHL_SEASON)
-    || [...nhlRegSeasons].sort((a, b) => b.season - a.season)[0]
   const name = stats
     ? `${stats.firstName?.default || ''} ${stats.lastName?.default || ''}`.trim()
     : (player?.name || '')
@@ -171,6 +183,7 @@ function usePlayerComparisonData(sport, player) {
     position: stats?.positionCode || player?.position,
     boxStats,
     percentiles: mpData?.percentiles || null,
+    edge,
   }
 }
 
@@ -332,7 +345,11 @@ export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose
     { key: 'performance',  label: t('playerComparisonPopup.tabs.performance') },
     { key: 'advanced',     label: t('teamView.tabs.advanced') },
   ]
-  const tabs = bothGoalie ? GOALIE_TABS : SKATER_TABS
+  // Tracking (NHL EDGE): NHL only, and only when at least one of the two
+  // has EDGE data for their season -- never an empty tab
+  const TRACKING_TAB = { key: 'tracking', label: t('playerComparisonPopup.tabs.tracking') }
+  const showTracking = !isPwhl && !!(a.edge || b.edge)
+  const tabs = [...(bothGoalie ? GOALIE_TABS : SKATER_TABS), ...(showTracking ? [TRACKING_TAB] : [])]
   const [tab, setTab] = useState(tabs[0].key)
   const activeTab = tabs.find(tabDef => tabDef.key === tab) ? tab : tabs[0].key
 
@@ -425,6 +442,16 @@ export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose
                   labels at this app's normal (mobile-first) popup widths.
                   Confirmed visually before landing on this over a side-by-
                   side layout. */}
+              {activeTab === 'tracking' && (
+                <div className="pcp-tracking mt-2">
+                  <EdgeHeadToHead
+                    kind={bothGoalie ? 'goalie' : 'skater'}
+                    left={{ name: a.name, color: a.teamColor, edge: a.edge }}
+                    right={{ name: b.name, color: b.teamColor, edge: b.edge }}
+                  />
+                </div>
+              )}
+              {activeTab !== 'tracking' && (
               <div className="flex flex-col gap-4 mt-2">
                 <div className="pcp-player-block">
                   <div className="pcp-player-block-label" style={{ color: a.teamColor }}>{a.name}</div>
@@ -453,6 +480,7 @@ export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose
                   )}
                 </div>
               </div>
+              )}
             </>
           )}
         </div>
