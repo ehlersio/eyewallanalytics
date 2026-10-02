@@ -61,8 +61,12 @@ describe('Goalie shot-area map (Analytics tab)', () => {
 
   it('shows save % by NHL shot area, colored by percentile, tappable', () => {
     cy.intercept('GET', '**/nhl/edge/goalie/**', { fixture: 'edge-goalie.json' }).as('edge')
+    // The tab re-lays itself out when the MoneyPuck goalie data lands, which
+    // remounts the map and clears a tapped area -- let it land first
+    cy.intercept('GET', '**/goalie-analytics*').as('goalieAnalytics')
     openGoalieAnalytics()
     cy.wait('@edge')
+    cy.wait('@goalieAnalytics')
     cy.get('[data-testid="edge-tracking"] [data-testid="goalie-area-map"]', { timeout: DATA_TIMEOUT }).within(() => {
       cy.get('path.rhr-area').should('have.length', 17)
       // Low Slot: 229 shots, .825, 61st percentile -> the middle color
@@ -84,6 +88,54 @@ describe('Goalie shot-area map (Analytics tab)', () => {
     cy.wait('@edge')
     cy.get('[data-testid="edge-tracking"]', { timeout: DATA_TIMEOUT }).should('exist')
     cy.get('[data-testid="goalie-area-map"]').should('not.exist')
+  })
+})
+
+describe('Team page: NHL EDGE ranks (Advanced tab)', () => {
+  // fixtures/edge-team.json: Carolina's real 2025-26 regular season
+  const openAdvanced = () => {
+    cy.setTeam('CAR')
+    cy.visit('/team')
+    cy.contains('Advanced', { timeout: 15000 }).click()
+  }
+
+  it('lists each metric with its value, NHL rank and league average', () => {
+    cy.intercept('GET', '**/nhl/edge/team/**', { fixture: 'edge-team.json' }).as('edge')
+    openAdvanced()
+    // Fires only once the live team stats have settled which season to show
+    cy.wait('@edge', { timeout: DATA_TIMEOUT }).its('request.url').should('match', /\/nhl\/edge\/team\/12\/\d{8}\/2$/)
+    cy.get('[data-testid="edge-team"]', { timeout: DATA_TIMEOUT }).within(() => {
+      cy.contains('Tracking (NHL EDGE)')
+      cy.contains('O-zone time').parent().should('contain', '1st in NHL')
+      cy.contains('45.5%')
+      cy.contains('D-zone time').parent().should('contain', '1st in NHL')
+      cy.contains('Top skating speed').parent().should('contain', '22nd in NHL')
+      cy.contains('23.6 mph')
+      // season totals (shots, bursts, distance) aren't shown: they grow with games played
+      cy.contains('Distance skated').should('not.exist')
+    })
+  })
+
+  it('holds back ranks and averages under 10 games played', () => {
+    cy.fixture('edge-team.json').then(body => {
+      cy.intercept('GET', '**/nhl/edge/team/**', { ...body, gamesPlayed: 1 }).as('edge')
+    })
+    openAdvanced()
+    cy.wait('@edge', { timeout: DATA_TIMEOUT })
+    cy.get('[data-testid="edge-team"]', { timeout: DATA_TIMEOUT }).within(() => {
+      cy.contains('Ranks and averages after 10 games played')
+      cy.contains('45.5%')
+      cy.contains('in NHL').should('not.exist')
+      cy.contains('avg').should('not.exist')
+    })
+  })
+
+  it('shows nothing when the NHL has no EDGE data for the team', () => {
+    cy.intercept('GET', '**/nhl/edge/team/**', { statusCode: 404, body: { available: false } }).as('edge')
+    openAdvanced()
+    cy.wait('@edge', { timeout: DATA_TIMEOUT })
+    cy.contains(/Shot Volume|Possession/i, { timeout: DATA_TIMEOUT }).should('exist')
+    cy.get('[data-testid="edge-team"]').should('not.exist')
   })
 })
 

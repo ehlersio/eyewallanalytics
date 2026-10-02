@@ -25,7 +25,31 @@ export const EDGE_METRICS = {
     ['savePctg5v5Close', 'share'],
     ['longRangeSavePctg', 'share'],
   ],
+  // Teams carry the NHL's rank among teams instead of a percentile. Only
+  // metrics that don't grow with games played: the NHL gives season TOTALS
+  // for shots, bursts and distance, ranked and averaged across teams that
+  // have played different numbers of games (one game in, a team that's
+  // played one ranks below every team that's played two), with no per-game
+  // league average to compare against.
+  team: [
+    ['offensiveZoneTime', 'share'],
+    ['offensiveZoneTimeEv', 'share'],
+    ['defensiveZoneTime', 'share'],
+    ['highDangerShootingPctg', 'share'],
+    ['topSpeed', 'speed'],
+    ['topShotSpeed', 'speed'],
+  ],
 };
+
+// Metrics where less is better (the NHL ranks the least first)
+export const LOWER_IS_BETTER = new Set(['defensiveZoneTime']);
+
+// A metric's number in the user's units, for comparing with its average
+export function metricNumber(kind, metric, units) {
+  if (!metric) return null;
+  const measured = kind === 'speed' || kind === 'distance';
+  return { value: measured ? metric[units] : metric.value, avg: measured ? metric.avg?.[units] ?? null : metric.avg ?? null };
+}
 
 // The values worth reading at a glance, above the percentile bars
 export const EDGE_HEADLINES = {

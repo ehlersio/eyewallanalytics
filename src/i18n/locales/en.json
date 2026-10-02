@@ -554,6 +554,23 @@
       "historyUnavailable": "Draft history isn't available right now.",
       "yearAriaLabel": "Draft year",
       "historySource": "Source: NHL draft records"
+    },
+    "edge": {
+      "title": "Tracking (NHL EDGE)",
+      "explain": "Player and puck tracking. Rank is among all NHL teams, 1st best (for defensive-zone time, the least).",
+      "explainPlayoffs": "Player and puck tracking. Rank is among the playoff teams, 1st best (for defensive-zone time, the least).",
+      "rank": "{{rank}} in NHL",
+      "rankPlayoffs": "{{rank}} of playoff teams",
+      "source": "Player & puck tracking, ranks and league averages: NHL EDGE",
+      "metrics": {
+        "offensiveZoneTime": "O-zone time",
+        "offensiveZoneTimeEv": "O-zone time (EV)",
+        "defensiveZoneTime": "D-zone time",
+        "highDangerShootingPctg": "High-danger SH%",
+        "topSpeed": "Top skating speed",
+        "topShotSpeed": "Hardest shot"
+      },
+      "tooFewGames": "Player and puck tracking. Ranks and averages after {{count}} games played."
     }
   },
   "pwhlTeamView": {

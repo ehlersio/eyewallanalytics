@@ -14,7 +14,11 @@ import { teamTextColor } from '../utils/teamConfig'
 import { InjuryBadge, InjuryDetailLine } from '../components/InjuryBadge'
 import { sortInjuries, parseLocalDate } from '../utils/injuryDetails'
 import { nhlSeasonLabel } from '../utils/seasonComparison'
-import { formatDate } from '../utils/formatters'
+import { formatDate, formatOrdinal } from '../utils/formatters'
+import { getPlayerEdge } from '../utils/edgeApi'
+import { formatEdgeMetric, presentEdgeMetrics, metricNumber, LOWER_IS_BETTER } from '../utils/edgeFormat'
+import { useUnits } from '../hooks/useUnits'
+import { EDGE_MIN_GP } from '../components/EdgeTrackingSection'
 import { getTeamGameLog as getDbTeamGameLog, getTeamXgTrend } from '../utils/supabaseClient'
 import { CONTRACTS, getCapSummary, CAP_CEILING, CURRENT_SEASON, CONTRACT_DATA_DATE } from '../utils/carContracts'
 import { DraftPopup } from '../components/DraftTab'
@@ -356,7 +360,7 @@ export default function TeamView() {
       </div>
 
       {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} realtimeReg={realtimeReg} rankings={rankings} />}
-      {tab === 'Advanced'  && <AdvancedTab priorSeason={priorSeason} corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} homeSplit={homeSplit} xgTrend={xgTrend} xgTrendPO={xgTrendPO} />}
+      {tab === 'Advanced'  && <AdvancedTab statsSeason={statsSeason} priorSeason={priorSeason} corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} homeSplit={homeSplit} xgTrend={xgTrend} xgTrendPO={xgTrendPO} />}
       {tab === 'Splits'    && <SplitsTab priorSeason={priorSeason} homeSplit={homeSplit} homeSplitPO={homeSplitPO} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} ppReg={ppReg} pkReg={pkReg} corsiReg={corsiReg} />}
       {tab === 'Trends'    && <TrendsTab gameLog={gameLog} />}
       {tab === 'Cap'   && <CapTab capSummary={capSummary} capPct={capPct} sortedContracts={sortedContracts} />}
@@ -936,7 +940,7 @@ function XgfSparkline({ data }) {
   );
 }
 
-function AdvancedTab({ priorSeason, corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, inPlayoffs, _homeSplit, xgTrend, xgTrendPO }) {
+function AdvancedTab({ statsSeason, priorSeason, corsiReg, realtimeReg, ppReg, pkReg, _scoreState, poAdv, inPlayoffs, _homeSplit, xgTrend, xgTrendPO }) {
   const { t } = useTranslation();
   const pdoData = seasonPDO(corsiReg);
   const [showPO, setShowPO] = useState(inPlayoffs);
@@ -1093,6 +1097,8 @@ function AdvancedTab({ priorSeason, corsiReg, realtimeReg, ppReg, pkReg, _scoreS
 
 
 
+      <EdgeTeamCard season={statsSeason} gameType={showPO ? 3 : 2} />
+
       {!corsiReg && !ppReg && (
         <div className={`card ${EMPTY_STATE_CLASSES}`}>
           <div className={EMPTY_ICON_CLASSES}>📊</div>
@@ -1100,6 +1106,62 @@ function AdvancedTab({ priorSeason, corsiReg, realtimeReg, ppReg, pkReg, _scoreS
           <div className={EMPTY_SUB_CLASSES}>{t('teamView.advanced.loadingSub')}</div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── NHL EDGE ranks ───────────────────────────────────────────
+// The team's NHL EDGE tracking stats (Worker /nhl/edge/team), each with the
+// NHL's own rank among teams -- 1st is best, which for defensive-zone time
+// is the least -- and its league average where the NHL gives one. In the
+// playoffs the NHL ranks only the playoff teams. ▲/▼ compare with that
+// average, like the rest of this tab. Under EDGE_MIN_GP regular-season games
+// the values show without ranks or ▲/▼ -- one game in, they rank a night,
+// as the player popup's EDGE bars do. Nothing renders when the NHL has no
+// EDGE data for the season (or the fetch failed).
+function EdgeTeamCard({ season, gameType }) {
+  const { t } = useTranslation()
+  const units = useUnits()
+  const { data } = useFetch(
+    () => season ? getPlayerEdge('team', TEAM_CONFIG.teamId, String(season), gameType).catch(() => null) : Promise.resolve(null),
+    [season, gameType]
+  )
+  if (data?.status !== 'ok') return null
+  const { metrics, gamesPlayed } = data.data
+  const rows = presentEdgeMetrics('team', metrics)
+  if (rows.length === 0) return null
+  const playoffs = gameType === 3
+  const tooFewGames = !playoffs && (gamesPlayed ?? 0) < EDGE_MIN_GP
+
+  function rate(name, kind) {
+    const n = metricNumber(kind, metrics[name], units)
+    if (n?.value == null || n.avg == null || n.avg === 0) return null
+    const diff = n.value - n.avg
+    if (Math.abs(diff) / Math.abs(n.avg) < 0.02) return null // within 2% of average
+    return (diff > 0) !== LOWER_IS_BETTER.has(name) ? 'good' : 'bad'
+  }
+
+  return (
+    <div className="card" data-testid="edge-team">
+      <div className="sec-label" style={{ marginBottom: 8 }}>{t('teamView.edge.title')}</div>
+      <div className={ADV_EXPLAIN_CLASSES}>
+        {tooFewGames ? t('teamView.edge.tooFewGames', { count: EDGE_MIN_GP }) : t(playoffs ? 'teamView.edge.explainPlayoffs' : 'teamView.edge.explain')}
+      </div>
+      {rows.map(([name, kind]) => {
+        const f = formatEdgeMetric(kind, metrics[name], units, t)
+        const rank = metrics[name].rank
+        return (
+          <AdvStatRow
+            key={name}
+            label={t(`teamView.edge.metrics.${name}`, { context: units })}
+            val={f.value}
+            avg={tooFewGames ? undefined : (f.avg ?? undefined)}
+            rating={tooFewGames ? null : rate(name, kind)}
+            note={!tooFewGames && rank != null ? t(playoffs ? 'teamView.edge.rankPlayoffs' : 'teamView.edge.rank', { rank: formatOrdinal(rank) }) : undefined}
+          />
+        )
+      })}
+      <div className={ADV_EXPLAIN_CLASSES} style={{ marginTop: 8, marginBottom: 0 }}>{t('teamView.edge.source')}</div>
     </div>
   )
 }
