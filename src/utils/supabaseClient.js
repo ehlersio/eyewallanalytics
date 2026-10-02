@@ -227,9 +227,9 @@ export async function getGoalieShots(goalieId, season = currentSeason()) {
 // Both teams' shots from every game `team` played this season — matches
 // what extractShotEvents(pbp) already returns for a single game, just
 // aggregated. The Worker names each row's shooter and goalie from its
-// players table (eyewall-poller#167); a name it doesn't have is null and
-// the shot popup falls back as before. No assists or blocker: shot_events
-// doesn't store them.
+// players table (eyewall-poller#167), and a goal's assists and a blocked
+// shot's blocker too (eyewall-poller#168); a name it doesn't have is null
+// and the shot popup leaves it out or falls back as before.
 export async function getSeasonShots(team, season = currentSeason()) {
   const rows = await workerFetch(`/nhl/shots?team=${team}&season=${season}`);
   if (!rows?.length) return [];
@@ -251,6 +251,9 @@ export async function getSeasonShots(team, season = currentSeason()) {
     shooterId:    r.player_id ?? null,
     shooterName:  r.shooter_name ?? null,
     goalieName:   r.goalie_name ?? null,
+    assist1Name:  r.assist1_name ?? null,
+    assist2Name:  r.assist2_name ?? null,
+    blockerName:  r.blocker_name ?? null,
   }));
 }
 

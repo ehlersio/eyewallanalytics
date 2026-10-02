@@ -1,7 +1,8 @@
 // src/utils/__tests__/seasonShots.test.js
 // getSeasonShots() feeds the shot map's "All N" season view. Its dots said
 // "Shot by: Unknown" until the Worker named each row's shooter and goalie
-// (eyewall-poller#167); this keeps those names on the way through.
+// (eyewall-poller#167), then assists and blocker (#168); this keeps those
+// names on the way through.
 
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 
@@ -31,6 +32,16 @@ describe('getSeasonShots', () => {
       gameId: 2026020001, eventId: 190, type: 'missed-shot', isCanes: false,
       shooterId: 8479314, shooterName: 'Matthew Tkachuk', goalieName: 'Brandon Bussi',
     })
+  })
+
+  it('carries a goal\'s assists and a blocked shot\'s blocker through', async () => {
+    fetchWithRetry.mockResolvedValue({ ok: true, json: async () => [
+      { ...row, event_type: 'goal', assist1_name: 'Aleksander Barkov', assist2_name: 'Sam Reinhart' },
+      { ...row, event_type: 'blocked-shot', blocker_name: 'Sebastian Aho' },
+    ] })
+    const [goal, block] = await getSeasonShots('CAR', 20262027)
+    expect(goal).toMatchObject({ assist1Name: 'Aleksander Barkov', assist2Name: 'Sam Reinhart', blockerName: null })
+    expect(block).toMatchObject({ blockerName: 'Sebastian Aho', assist1Name: null, assist2Name: null })
   })
 
   it('leaves a name the Worker does not have as null', async () => {
