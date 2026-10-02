@@ -40,10 +40,21 @@ jobs:
           VITE_WORKER_URL: ${{ secrets.VITE_WORKER_URL }}
           VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
 
-  e2e:
+  # Cypress, split across parallel shards by cypress-split (cypress.config.js).
+  # One job ran every spec in ~23-29 min against a 30-min limit, and got cut
+  # off on its last spec (2026-10-02, #416). Three shards, balanced by the
+  # per-spec times in cypress/timings.json, take ~10 min of specs each.
+  # Refresh that file now and then (any spec missing from it is given the
+  # average time); its numbers only steer the split, never pass or fail.
+  e2e-shard:
     needs: check
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
+    strategy:
+      # Let every shard finish, so one failure doesn't hide another's
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
 
     steps:
       # ── Checkout ────────────────────────────────────────────
@@ -91,6 +102,10 @@ jobs:
           record: ${{ secrets.CYPRESS_RECORD_KEY != '' }}
         env:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          # This shard's share of the specs (cypress-split)
+          SPLIT: ${{ strategy.job-total }}
+          SPLIT_INDEX: ${{ strategy.job-index }}
+          SPLIT_FILE: cypress/timings.json
           # Pass Supabase anon key so Cypress env block can read it
           CYPRESS_SUPABASE_ANON: sb_publishable_e_zwr1UA7GnHq4OuQSas5Q_kO8bQ_Ct
           VITE_WORKER_URL: https://eyewall-poller.billowing-queen-bf23.workers.dev
@@ -108,7 +123,7 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: cypress-report
+          name: cypress-report-${{ matrix.shard }}
           path: cypress/reports/html/merged.html
           if-no-files-found: ignore
           retention-days: 14
@@ -120,7 +135,7 @@ jobs:
         uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: cypress-screenshots
+          name: cypress-screenshots-${{ matrix.shard }}
           path: cypress/screenshots
           if-no-files-found: ignore
           retention-days: 7
@@ -132,7 +147,19 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: cypress-videos
+          name: cypress-videos-${{ matrix.shard }}
           path: cypress/videos
           if-no-files-found: ignore
           retention-days: 3
+
+  # One "e2e" result for the PR, as before the split: passes only when every
+  # shard did.
+  e2e:
+    needs: e2e-shard
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: All shards passed
+        run: |
+          echo "e2e shards: ${{ needs.e2e-shard.result }}"
+          test "${{ needs.e2e-shard.result }}" = "success"

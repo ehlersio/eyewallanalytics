@@ -1,5 +1,6 @@
 import { defineConfig } from 'cypress'
 import { configureVisualRegression } from 'cypress-visual-regression'
+import cypressSplit from 'cypress-split'
 
 export default defineConfig({
   e2e: {
@@ -43,8 +44,16 @@ export default defineConfig({
       visualRegressionType: 'regression',
       WORKER_URL: 'https://eyewall-poller.billowing-queen-bf23.workers.dev',
     },
-    setupNodeEvents(on) {
+    // cypress-split runs one share of the specs when SPLIT / SPLIT_INDEX are
+    // set (CI's e2e shards, see .github/workflows/ci.yml), balanced by the
+    // per-spec times in cypress/timings.json; with neither set it's a no-op
+    // and every spec runs. It must get, and the function must return, the
+    // config -- otherwise Cypress runs all specs. Its events (after:spec,
+    // after:run) don't overlap visual regression's (task).
+    setupNodeEvents(on, config) {
       configureVisualRegression(on)
+      cypressSplit(on, config)
+      return config
     },
   },
 })

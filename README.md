@@ -239,7 +239,7 @@ canes-analytics-starter/
 │   └── support/e2e.js                  # Custom commands incl. cy.setPWHLTeam()
 ├── scripts/ios-version.mjs          # `npm run ios:version` (run by `npm run ios:release`, which also builds, `cap sync`s and opens Xcode) — copies package.json's version into the iOS project's MARKETING_VERSION and bumps its build number, for cutting an iOS build (see Versioning)
 └── .github/workflows/
-    ├── ci.yml                        # Every PR: lint, Vitest, build, then Cypress E2E
+    ├── ci.yml                        # Every PR: lint, Vitest, build, then Cypress E2E in 3 parallel shards (one "e2e" result)
     └── version.yml                   # Every PR needs one semver:* label; on merge, bumps package.json, commits "Release vX.Y.Z (#PR)" and tags it
 ```
 
@@ -758,6 +758,8 @@ npm run cypress:open
 npm run cypress:run
 npm run cypress:full    # Clean → run → HTML report
 ```
+
+**In CI (2026-10)** the specs run in 3 parallel shards (`e2e-shard` in `ci.yml`), split by [`cypress-split`](https://github.com/bahmutov/cypress-split). One job used to run them all in ~23-29 min against a 30-min limit, and was cut off on its last spec. Each shard runs about 10 min of specs, balanced by the per-spec times in `cypress/timings.json`; a spec missing from that file gets the average time, so refresh it now and then from a CI run. A single `e2e` job passes only when every shard does. Locally nothing changes: with no `SPLIT`/`SPLIT_INDEX` set, cypress-split does nothing and every spec runs. To run one shard's share: `SPLIT=3 SPLIT_INDEX=0 SPLIT_FILE=cypress/timings.json npm run cypress:run`. That rewrites `cypress/timings.json` with your machine's times (usually faster than CI's), so don't commit the result. The committed numbers come from a CI run.
 
 ### Visual regression (Tailwind migration, Session 94)
 ```bash
