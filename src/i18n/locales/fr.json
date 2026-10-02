@@ -554,6 +554,23 @@
       "historyUnavailable": "L'historique de repêchage n'est pas disponible pour le moment.",
       "yearAriaLabel": "Année de repêchage",
       "historySource": "Source : registres de repêchage de la LNH"
+    },
+    "edge": {
+      "title": "Suivi (NHL EDGE)",
+      "explain": "Suivi des joueurs et de la rondelle. Rang parmi toutes les équipes de la LNH, 1er = meilleur (pour le temps en zone défensive, le moins).",
+      "explainPlayoffs": "Suivi des joueurs et de la rondelle. Rang parmi les équipes en séries, 1er = meilleur (pour le temps en zone défensive, le moins).",
+      "rank": "{{rank}} dans la LNH",
+      "rankPlayoffs": "{{rank}} des équipes en séries",
+      "source": "Suivi des joueurs et de la rondelle, rangs et moyennes : NHL EDGE",
+      "metrics": {
+        "offensiveZoneTime": "Temps en zone off.",
+        "offensiveZoneTimeEv": "Temps en zone off. (FÉ)",
+        "defensiveZoneTime": "Temps en zone déf.",
+        "highDangerShootingPctg": "% tirs, danger élevé",
+        "topSpeed": "Vitesse max.",
+        "topShotSpeed": "Tir le plus fort"
+      },
+      "tooFewGames": "Suivi des joueurs et de la rondelle. Rangs et moyennes après {{count}} matchs joués."
     }
   },
   "pwhlTeamView": {

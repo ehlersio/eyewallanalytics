@@ -1,0 +1,82 @@
+{
+  "available": true,
+  "kind": "team",
+  "teamId": 12,
+  "season": "20252026",
+  "gameType": 2,
+  "gamesPlayed": 82,
+  "metrics": {
+    "offensiveZoneTime": {
+      "value": 0.4554579,
+      "rank": 1,
+      "avg": 0.4154386
+    },
+    "offensiveZoneTimeEv": {
+      "value": 0.4551603,
+      "rank": 1,
+      "avg": 0.4099338
+    },
+    "defensiveZoneTime": {
+      "value": 0.3609277,
+      "rank": 1,
+      "avg": 0.4154386
+    },
+    "shotsOnGoal": {
+      "value": 2637,
+      "rank": 2,
+      "avg": 2282.25
+    },
+    "highDangerShots": {
+      "value": 723,
+      "rank": 2,
+      "avg": 648.7813
+    },
+    "highDangerShootingPctg": {
+      "value": 0.1867,
+      "rank": 20,
+      "avg": 0.1941
+    },
+    "topSpeed": {
+      "imperial": 23.5969,
+      "metric": 37.9754,
+      "rank": 22,
+      "avg": {
+        "imperial": 23.8027,
+        "metric": 38.3066
+      }
+    },
+    "burstsOver20": {
+      "value": 1787,
+      "rank": 11,
+      "avg": 1762
+    },
+    "burstsOver22": {
+      "value": 103,
+      "rank": 8,
+      "avg": null
+    },
+    "distanceTotal": {
+      "imperial": 3764.1643,
+      "metric": 6057.5396,
+      "rank": 9,
+      "avg": {
+        "imperial": 3727.0127,
+        "metric": 5997.7528
+      }
+    },
+    "topShotSpeed": {
+      "imperial": 99.4,
+      "metric": 159.9688,
+      "rank": 15,
+      "avg": {
+        "imperial": 99.6925,
+        "metric": 160.4395
+      }
+    },
+    "shotAttemptsOver90": {
+      "value": 78,
+      "rank": 7,
+      "avg": null
+    }
+  }
+}

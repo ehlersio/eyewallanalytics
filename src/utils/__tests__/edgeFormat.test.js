@@ -6,7 +6,7 @@ import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('../localeConfig', () => ({ getLocale: () => 'en' }))
 
-const { formatEdgeMetric, presentEdgeMetrics } = await import('../edgeFormat.js')
+const { formatEdgeMetric, presentEdgeMetrics, metricNumber, LOWER_IS_BETTER } = await import('../edgeFormat.js')
 
 const t = (key, { value }) => ({
   'units.mph': `${value} mph`, 'units.kph': `${value} km/h`, 'units.mi': `${value} mi`, 'units.km': `${value} km`,
@@ -40,5 +40,25 @@ describe('presentEdgeMetrics', () => {
     const rows = presentEdgeMetrics('skater', { topShotSpeed: speed, topSpeed: speed, avgShotSpeed: null })
     expect(rows).toEqual([['topSpeed', 'speed'], ['topShotSpeed', 'speed']])
     expect(presentEdgeMetrics('goalie', null)).toEqual([])
+  })
+})
+
+describe('team metrics', () => {
+  it('lists the team rows in order and knows which are better lower', () => {
+    const rows = presentEdgeMetrics('team', {
+      defensiveZoneTime: { value: 0.36, rank: 1, avg: 0.415 },
+      offensiveZoneTime: { value: 0.455, rank: 1, avg: 0.415 },
+      // a season total: grows with games played, so never listed
+      distanceTotal: { imperial: 3764, metric: 6057, rank: 9, avg: { imperial: 3727, metric: 5997 } },
+    })
+    expect(rows).toEqual([['offensiveZoneTime', 'share'], ['defensiveZoneTime', 'share']])
+    expect(LOWER_IS_BETTER.has('defensiveZoneTime')).toBe(true)
+    expect(LOWER_IS_BETTER.has('offensiveZoneTime')).toBe(false)
+  })
+
+  it('reads a metric\'s number in the chosen units, for comparing with its average', () => {
+    expect(metricNumber('speed', speed, 'metric')).toEqual({ value: 39.6089, avg: 35.6765 })
+    expect(metricNumber('count', { value: 103, rank: 8, avg: null }, 'imperial')).toEqual({ value: 103, avg: null })
+    expect(metricNumber('count', null, 'imperial')).toBeNull()
   })
 })
