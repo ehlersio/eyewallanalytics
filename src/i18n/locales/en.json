@@ -246,6 +246,17 @@
       "wins": "{{team}} wins {{score}}",
       "leads": "{{team}} leads {{score}}",
       "tied": "Tied {{score}}"
+    },
+    "edgeLeaders": {
+      "title": "Tracking leaders (NHL EDGE)",
+      "speed": "Fastest skaters",
+      "shotSpeed": "Hardest shots",
+      "distance": "Distance skated",
+      "offensiveZoneTime": "Offensive-zone time",
+      "mph": "MPH",
+      "ozShort": "OZ%",
+      "moment": "{{date}} · {{away}} @ {{home}}",
+      "source": "Player & puck tracking: NHL EDGE · season so far"
     }
   },
   "leagueView": {

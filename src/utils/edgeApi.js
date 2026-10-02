@@ -20,12 +20,10 @@ export const EDGE_RETRY_DELAYS_MS = [1000, 3000];
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-export async function getPlayerEdge(kind, playerId, season, gameType, {
-  workerUrl = WORKER_URL,
-  delays = EDGE_RETRY_DELAYS_MS,
-} = {}) {
-  if (!workerUrl || !playerId || !season || (gameType !== 2 && gameType !== 3)) return { status: 'none' };
-  const url = `${workerUrl}/nhl/edge/${kind}/${playerId}/${season}/${gameType}`;
+// GET a Worker /nhl/edge path with the rules above
+async function fetchEdge(path, { workerUrl = WORKER_URL, delays = EDGE_RETRY_DELAYS_MS } = {}) {
+  if (!workerUrl) return { status: 'none' };
+  const url = `${workerUrl}${path}`;
   let lastError;
   for (let attempt = 0; attempt <= delays.length; attempt += 1) {
     if (attempt > 0) await sleep(delays[attempt - 1]);
@@ -42,4 +40,18 @@ export async function getPlayerEdge(kind, playerId, season, gameType, {
     }
   }
   throw lastError;
+}
+
+const validGameType = gt => gt === 2 || gt === 3;
+
+export async function getPlayerEdge(kind, playerId, season, gameType, opts) {
+  if (!playerId || !season || !validGameType(gameType)) return { status: 'none' };
+  return fetchEdge(`/nhl/edge/${kind}/${playerId}/${season}/${gameType}`, opts);
+}
+
+// The NHL's EDGE top 10s (fastest skaters, hardest shots, distance, offensive-
+// zone time) for the League view's leaders -- /nhl/edge/leaders.
+export async function getEdgeLeaders(season, gameType = 2, opts) {
+  if (!season || !validGameType(gameType)) return { status: 'none' };
+  return fetchEdge(`/nhl/edge/leaders/${season}/${gameType}`, opts);
 }

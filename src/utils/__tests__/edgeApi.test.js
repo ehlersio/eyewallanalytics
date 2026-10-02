@@ -3,7 +3,7 @@
 // from "failed" (a 5xx or a network error: retried, then thrown).
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { getPlayerEdge } from '../edgeApi.js'
+import { getPlayerEdge, getEdgeLeaders } from '../edgeApi.js'
 
 const opts = { workerUrl: 'https://worker', delays: [0, 0] }
 const res = (status, body) => new Response(body ? JSON.stringify(body) : 'x', { status })
@@ -47,5 +47,22 @@ describe('getPlayerEdge', () => {
     vi.stubGlobal('fetch', fetchMock)
     expect(await getPlayerEdge('skater', 8478402, '20252026', 1, opts)).toEqual({ status: 'none' })
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('getEdgeLeaders', () => {
+  it('asks the Worker for the season\'s leaders', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(res(200, { available: true, categories: {} }))
+    vi.stubGlobal('fetch', fetchMock)
+    expect((await getEdgeLeaders('20252026', 2, opts)).status).toBe('ok')
+    expect(fetchMock.mock.calls[0][0]).toBe('https://worker/nhl/edge/leaders/20252026/2')
+  })
+
+  it('reports no data on a 404, and never asks for the preseason', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(res(404, { available: false }))
+    vi.stubGlobal('fetch', fetchMock)
+    expect(await getEdgeLeaders('20202021', 2, opts)).toEqual({ status: 'none' })
+    expect(await getEdgeLeaders('20252026', 1, opts)).toEqual({ status: 'none' })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })

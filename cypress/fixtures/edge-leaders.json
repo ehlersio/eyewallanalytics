@@ -1,0 +1,566 @@
+{
+  "available": true,
+  "kind": "leaders",
+  "season": "20252026",
+  "gameType": 2,
+  "categories": {
+    "speed": [
+      {
+        "playerId": 8479359,
+        "firstName": "Beck",
+        "lastName": "Malenstyn",
+        "team": "BUF",
+        "position": "L",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/BUF/8479359.png",
+        "imperial": 24.9389,
+        "metric": 40.1352,
+        "moment": {
+          "date": "2026-03-12",
+          "away": "WSH",
+          "home": "BUF",
+          "period": 3,
+          "periodType": "REG",
+          "time": "12:05"
+        }
+      },
+      {
+        "playerId": 8477492,
+        "firstName": "Nathan",
+        "lastName": "MacKinnon",
+        "team": "COL",
+        "position": "C",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/COL/8477492.png",
+        "imperial": 24.7795,
+        "metric": 39.8786,
+        "moment": {
+          "date": "2026-04-05",
+          "away": "STL",
+          "home": "COL",
+          "period": 2,
+          "periodType": "REG",
+          "time": "07:56"
+        }
+      },
+      {
+        "playerId": 8478402,
+        "firstName": "Connor",
+        "lastName": "McDavid",
+        "team": "EDM",
+        "position": "C",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/EDM/8478402.png",
+        "imperial": 24.6119,
+        "metric": 39.6089,
+        "moment": {
+          "date": "2025-10-08",
+          "away": "CGY",
+          "home": "EDM",
+          "period": 2,
+          "periodType": "REG",
+          "time": "08:04"
+        }
+      },
+      {
+        "playerId": 8483431,
+        "firstName": "Logan",
+        "lastName": "Cooley",
+        "team": "UTA",
+        "position": "C",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/UTA/8483431.png",
+        "imperial": 24.3765,
+        "metric": 39.2301,
+        "moment": {
+          "date": "2025-11-26",
+          "away": "MTL",
+          "home": "UTA",
+          "period": 1,
+          "periodType": "REG",
+          "time": "18:44"
+        }
+      },
+      {
+        "playerId": 8482105,
+        "firstName": "Jake",
+        "lastName": "Sanderson",
+        "team": "OTT",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/OTT/8482105.png",
+        "imperial": 24.3656,
+        "metric": 39.2125,
+        "moment": {
+          "date": "2026-01-13",
+          "away": "VAN",
+          "home": "OTT",
+          "period": 3,
+          "periodType": "REG",
+          "time": "01:55"
+        }
+      },
+      {
+        "playerId": 8484186,
+        "firstName": "Ryan",
+        "lastName": "Leonard",
+        "team": "WSH",
+        "position": "R",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/WSH/8484186.png",
+        "imperial": 24.2609,
+        "metric": 39.0441,
+        "moment": {
+          "date": "2026-03-28",
+          "away": "WSH",
+          "home": "VGK",
+          "period": 1,
+          "periodType": "REG",
+          "time": "14:41"
+        }
+      },
+      {
+        "playerId": 8482259,
+        "firstName": "Bobby",
+        "lastName": "McMann",
+        "team": "SEA",
+        "position": "C",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/SEA/8482259.png",
+        "imperial": 24.25,
+        "metric": 39.0264,
+        "moment": {
+          "date": "2025-12-02",
+          "away": "TOR",
+          "home": "FLA",
+          "period": 2,
+          "periodType": "REG",
+          "time": "04:11"
+        }
+      },
+      {
+        "playerId": 8479675,
+        "firstName": "Trevor",
+        "lastName": "Moore",
+        "team": "LAK",
+        "position": "L",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/LAK/8479675.png",
+        "imperial": 24.2194,
+        "metric": 38.9773,
+        "moment": {
+          "date": "2026-04-01",
+          "away": "STL",
+          "home": "LAK",
+          "period": 4,
+          "periodType": "OT",
+          "time": "01:54"
+        }
+      },
+      {
+        "playerId": 8481043,
+        "firstName": "Cole",
+        "lastName": "Koepke",
+        "team": "WPG",
+        "position": "L",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/WPG/8481043.png",
+        "imperial": 24.2193,
+        "metric": 38.9771,
+        "moment": {
+          "date": "2026-03-07",
+          "away": "VAN",
+          "home": "WPG",
+          "period": 3,
+          "periodType": "REG",
+          "time": "09:46"
+        }
+      },
+      {
+        "playerId": 8480015,
+        "firstName": "Owen",
+        "lastName": "Tippett",
+        "team": "PHI",
+        "position": "R",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/PHI/8480015.png",
+        "imperial": 23.9739,
+        "metric": 38.5821,
+        "moment": {
+          "date": "2026-04-13",
+          "away": "CAR",
+          "home": "PHI",
+          "period": 1,
+          "periodType": "REG",
+          "time": "11:09"
+        }
+      }
+    ],
+    "shotSpeed": [
+      {
+        "playerId": 8482095,
+        "firstName": "Tyler",
+        "lastName": "Kleven",
+        "team": "OTT",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/OTT/8482095.png",
+        "imperial": 103.51,
+        "metric": 166.5832,
+        "moment": {
+          "date": "2026-01-31",
+          "away": "NJD",
+          "home": "OTT",
+          "period": 3,
+          "periodType": "REG",
+          "time": "12:37"
+        }
+      },
+      {
+        "playerId": 8479987,
+        "firstName": "Morgan",
+        "lastName": "Geekie",
+        "team": "BOS",
+        "position": "C",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/BOS/8479987.png",
+        "imperial": 103.03,
+        "metric": 165.8107,
+        "moment": {
+          "date": "2025-11-11",
+          "away": "TOR",
+          "home": "BOS",
+          "period": 3,
+          "periodType": "REG",
+          "time": "14:25"
+        }
+      },
+      {
+        "playerId": 8477506,
+        "firstName": "Ryan",
+        "lastName": "Pulock",
+        "team": "NYI",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/NYI/8477506.png",
+        "imperial": 103.01,
+        "metric": 165.7785,
+        "moment": {
+          "date": "2025-11-23",
+          "away": "SEA",
+          "home": "NYI",
+          "period": 1,
+          "periodType": "REG",
+          "time": "16:52"
+        }
+      },
+      {
+        "playerId": 8481806,
+        "firstName": "Louis",
+        "lastName": "Crevier",
+        "team": "CHI",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/CHI/8481806.png",
+        "imperial": 102.83,
+        "metric": 165.4888,
+        "moment": {
+          "date": "2026-02-28",
+          "away": "CHI",
+          "home": "COL",
+          "period": 1,
+          "periodType": "REG",
+          "time": "03:19"
+        }
+      },
+      {
+        "playerId": 8476468,
+        "firstName": "J.T.",
+        "lastName": "Miller",
+        "team": "NYR",
+        "position": "C",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/NYR/8476468.png",
+        "imperial": 102.58,
+        "metric": 165.0865,
+        "moment": {
+          "date": "2026-01-20",
+          "away": "NYR",
+          "home": "LAK",
+          "period": 2,
+          "periodType": "REG",
+          "time": "19:12"
+        }
+      },
+      {
+        "playerId": 8476525,
+        "firstName": "Colin",
+        "lastName": "Miller",
+        "team": "WPG",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/WPG/8476525.png",
+        "imperial": 102.47,
+        "metric": 164.9095,
+        "moment": {
+          "date": "2025-11-26",
+          "away": "WPG",
+          "home": "WSH",
+          "period": 1,
+          "periodType": "REG",
+          "time": "17:49"
+        }
+      },
+      {
+        "playerId": 8478013,
+        "firstName": "Jake",
+        "lastName": "Walman",
+        "team": "EDM",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/EDM/8478013.png",
+        "imperial": 101.97,
+        "metric": 164.1048,
+        "moment": {
+          "date": "2026-04-16",
+          "away": "VAN",
+          "home": "EDM",
+          "period": 2,
+          "periodType": "REG",
+          "time": "06:08"
+        }
+      },
+      {
+        "playerId": 8477986,
+        "firstName": "Brandon",
+        "lastName": "Montour",
+        "team": "SEA",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/SEA/8477986.png",
+        "imperial": 101.56,
+        "metric": 163.445,
+        "moment": {
+          "date": "2026-03-26",
+          "away": "SEA",
+          "home": "TBL",
+          "period": 3,
+          "periodType": "REG",
+          "time": "08:37"
+        }
+      },
+      {
+        "playerId": 8475167,
+        "firstName": "Victor",
+        "lastName": "Hedman",
+        "team": "TBL",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/TBL/8475167.png",
+        "imperial": 101.42,
+        "metric": 163.2197,
+        "moment": {
+          "date": "2025-10-17",
+          "away": "TBL",
+          "home": "DET",
+          "period": 2,
+          "periodType": "REG",
+          "time": "01:08"
+        }
+      },
+      {
+        "playerId": 8479982,
+        "firstName": "Conor",
+        "lastName": "Timmins",
+        "team": "BUF",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/BUF/8479982.png",
+        "imperial": 101.12,
+        "metric": 162.7369,
+        "moment": {
+          "date": "2025-11-23",
+          "away": "CAR",
+          "home": "BUF",
+          "period": 1,
+          "periodType": "REG",
+          "time": "16:09"
+        }
+      }
+    ],
+    "distance": [
+      {
+        "playerId": 8478402,
+        "firstName": "Connor",
+        "lastName": "McDavid",
+        "team": "EDM",
+        "position": "C",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/EDM/8478402.png",
+        "imperial": 330.2671,
+        "metric": 531.4875
+      },
+      {
+        "playerId": 8480800,
+        "firstName": "Quinn",
+        "lastName": "Hughes",
+        "team": "MIN",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/MIN/8480800.png",
+        "imperial": 307.4574,
+        "metric": 494.7805
+      },
+      {
+        "playerId": 8478500,
+        "firstName": "Ivan",
+        "lastName": "Provorov",
+        "team": "CBJ",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/CBJ/8478500.png",
+        "imperial": 299.8601,
+        "metric": 482.5545
+      },
+      {
+        "playerId": 8481542,
+        "firstName": "Moritz",
+        "lastName": "Seider",
+        "team": "DET",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/DET/8481542.png",
+        "imperial": 299.8488,
+        "metric": 482.5363
+      },
+      {
+        "playerId": 8485366,
+        "firstName": "Matthew",
+        "lastName": "Schaefer",
+        "team": "NYI",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/NYI/8485366.png",
+        "imperial": 298.6049,
+        "metric": 480.5345
+      },
+      {
+        "playerId": 8481605,
+        "firstName": "Jackson",
+        "lastName": "LaCombe",
+        "team": "ANA",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/ANA/8481605.png",
+        "imperial": 295.8582,
+        "metric": 476.1143
+      },
+      {
+        "playerId": 8483457,
+        "firstName": "Lane",
+        "lastName": "Hutson",
+        "team": "MTL",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/MTL/8483457.png",
+        "imperial": 295.2105,
+        "metric": 475.0721
+      },
+      {
+        "playerId": 8484801,
+        "firstName": "Macklin",
+        "lastName": "Celebrini",
+        "team": "SJS",
+        "position": "C",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/SJS/8484801.png",
+        "imperial": 293.7159,
+        "metric": 472.6669
+      },
+      {
+        "playerId": 8478398,
+        "firstName": "Kyle",
+        "lastName": "Connor",
+        "team": "WPG",
+        "position": "L",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/WPG/8478398.png",
+        "imperial": 292.9836,
+        "metric": 471.4884
+      },
+      {
+        "playerId": 8479425,
+        "firstName": "Filip",
+        "lastName": "Hronek",
+        "team": "VAN",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/VAN/8479425.png",
+        "imperial": 292.3157,
+        "metric": 470.4135
+      }
+    ],
+    "offensiveZoneTime": [
+      {
+        "playerId": 8476906,
+        "firstName": "Shayne",
+        "lastName": "Gostisbehere",
+        "team": "CAR",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/CAR/8476906.png",
+        "value": 0.49576938
+      },
+      {
+        "playerId": 8480830,
+        "firstName": "Andrei",
+        "lastName": "Svechnikov",
+        "team": "CAR",
+        "position": "R",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/CAR/8480830.png",
+        "value": 0.49256099
+      },
+      {
+        "playerId": 8480801,
+        "firstName": "Brady",
+        "lastName": "Tkachuk",
+        "team": "OTT",
+        "position": "L",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/OTT/8480801.png",
+        "value": 0.48589532
+      },
+      {
+        "playerId": 8475786,
+        "firstName": "Zach",
+        "lastName": "Hyman",
+        "team": "EDM",
+        "position": "L",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/EDM/8475786.png",
+        "value": 0.4846114
+      },
+      {
+        "playerId": 8480208,
+        "firstName": "Drake",
+        "lastName": "Batherson",
+        "team": "OTT",
+        "position": "R",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/OTT/8480208.png",
+        "value": 0.48307217
+      },
+      {
+        "playerId": 8482093,
+        "firstName": "Seth",
+        "lastName": "Jarvis",
+        "team": "CAR",
+        "position": "R",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/CAR/8482093.png",
+        "value": 0.48229181
+      },
+      {
+        "playerId": 8478427,
+        "firstName": "Sebastian",
+        "lastName": "Aho",
+        "team": "CAR",
+        "position": "C",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/CAR/8478427.png",
+        "value": 0.48226122
+      },
+      {
+        "playerId": 8479323,
+        "firstName": "Adam",
+        "lastName": "Fox",
+        "team": "NYR",
+        "position": "D",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/NYR/8479323.png",
+        "value": 0.48021838
+      },
+      {
+        "playerId": 8481528,
+        "firstName": "Dylan",
+        "lastName": "Cozens",
+        "team": "OTT",
+        "position": "C",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/OTT/8481528.png",
+        "value": 0.47968587
+      },
+      {
+        "playerId": 8475791,
+        "firstName": "Taylor",
+        "lastName": "Hall",
+        "team": "CAR",
+        "position": "L",
+        "headshot": "https://assets.nhle.com/mugs/nhl/20252026/CAR/8475791.png",
+        "value": 0.4772639
+      }
+    ]
+  }
+}

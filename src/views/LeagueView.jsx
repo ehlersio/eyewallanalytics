@@ -32,6 +32,9 @@ import { SHARE, FONT_DISPLAY, FONT_LABEL } from '../utils/shareCardTheme';
 import DraftTab from '../components/DraftTab';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
+import { getEdgeLeaders } from '../utils/edgeApi';
+import { useUnits } from '../hooks/useUnits';
+import { formatNumber, formatPercent, formatDate } from '../utils/formatters';
 
 // .pp-close (Session 97, Phase 3, sub-PR 3) -- was PlayersView.css's,
 // used here only via importing PlayerPopup (which imported that file as a
@@ -175,6 +178,8 @@ const LV_SCROLL_TOP_CLASSES = 'fixed bottom-[72px] right-4 z-[200] py-[7px] px-[
 // migrates cleanly to a plain Tailwind arbitrary-value utility instead of
 // staying real CSS -- the --row-accent custom property it reads is set via
 // inline style on the SAME element.
+const LV_EDGE_HEADER_CLASSES = 'text-[11px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] mb-2'
+const LV_EDGE_SOURCE_CLASSES = 'text-[10px] text-[color:var(--text-dim)] mt-2 text-center'
 const LV_LEADERS_GRID_CLASSES = 'grid grid-cols-2 gap-3 max-[600px]:grid-cols-1'
 const LV_LEADERS_CARD_CLASSES = 'lv-leaders-card bg-[var(--bg1)] border-[0.5px] border-[var(--border)] rounded-[var(--radius)] overflow-hidden'
 const LV_LEADERS_CARD_HEADER_CLASSES = 'text-[12px] font-semibold text-[color:var(--text-muted)] py-2 px-3 border-b-[0.5px] border-[var(--border)] bg-[var(--bg2)] flex justify-between items-center'
@@ -190,6 +195,7 @@ function lvLeadersRowClasses(isClickable, isYou) {
 }
 
 const LV_LEADERS_RANK_CLASSES = 'text-[color:var(--text-dim)] min-w-[16px] text-[11px]'
+const LV_LEADERS_SUBLINE_CLASSES = 'lv-leaders-subline text-[10px] text-[color:var(--text-dim)] overflow-hidden text-ellipsis'
 const LV_LEADERS_NAME_CLASSES = 'lv-leaders-name flex-1 text-[color:var(--text)] whitespace-nowrap overflow-hidden text-ellipsis'
 const LV_LEADERS_TEAM_CLASSES = 'lv-leaders-team text-[11px] min-w-[28px] text-right font-[family-name:var(--font-display)] font-bold'
 const LV_LEADERS_STAT_CLASSES = 'lv-leaders-stat font-bold text-[color:var(--text)] min-w-[36px] text-right font-[family-name:var(--font-mono)]'
@@ -696,7 +702,14 @@ function LeadersCard({ title, statLabel, rows, formatStat, onPlayerClick }) {
             onKeyDown={playerObj ? (e => e.key === 'Enter' && onPlayerClick?.(playerObj)) : undefined}
           >
             <span className={LV_LEADERS_RANK_CLASSES}>{i + 1}</span>
-            <span className={LV_LEADERS_NAME_CLASSES}>{name}</span>
+            {p.subline ? (
+              <span className={`${LV_LEADERS_NAME_CLASSES} flex flex-col`}>
+                <span className="overflow-hidden text-ellipsis">{name}</span>
+                <span className={LV_LEADERS_SUBLINE_CLASSES}>{p.subline}</span>
+              </span>
+            ) : (
+              <span className={LV_LEADERS_NAME_CLASSES}>{name}</span>
+            )}
             <span className={LV_LEADERS_TEAM_CLASSES} style={{ color: teamColor }}>{abbrev}</span>
             <span className={LV_LEADERS_STAT_CLASSES}>{formatStat ? formatStat(stat) : stat}</span>
           </div>
@@ -706,7 +719,65 @@ function LeadersCard({ title, statLabel, rows, formatStat, onPlayerClick }) {
   );
 }
 
-function LeadersPanel({ scoring, goals, gaa, svp }) {
+// NHL EDGE leaders (Worker /nhl/edge/leaders): the NHL's own top 10s for
+// fastest skating speed, hardest shot, distance skated and offensive-zone
+// time, as LeadersCards under the box-score leaders. Speed and shot rows say
+// when the NHL clocked it. Speeds and distances follow Settings -> Units. A
+// list the NHL has nothing for is left out; nothing renders when it has none.
+const EDGE_LEADER_CARDS = [
+  { name: 'speed', kind: 'speed' },
+  { name: 'shotSpeed', kind: 'speed' },
+  { name: 'distance', kind: 'distance' },
+  { name: 'offensiveZoneTime', kind: 'share' },
+];
+
+function EdgeLeaders({ season, onPlayerClick }) {
+  const { t } = useTranslation();
+  const units = useUnits();
+  const { data } = useFetch(
+    () => season ? getEdgeLeaders(String(season), 2).catch(() => null) : Promise.resolve(null),
+    [season]
+  );
+  if (data?.status !== 'ok') return null;
+  const { categories } = data.data;
+  const cards = EDGE_LEADER_CARDS.filter(c => categories?.[c.name]?.length);
+  if (!cards.length) return null;
+
+  const one = { minimumFractionDigits: 1, maximumFractionDigits: 1 };
+  const valueOf = (kind, r) => (kind === 'share' ? r.value : r[units]);
+  const formatOf = kind => (kind === 'share' ? v => formatPercent(v, 1) : v => formatNumber(v, one));
+  const unitLabel = kind => (kind === 'speed' ? (units === 'metric' ? 'km/h' : t('league.edgeLeaders.mph'))
+    : kind === 'distance' ? (units === 'metric' ? 'km' : 'mi') : t('league.edgeLeaders.ozShort'));
+  const momentOf = m => (m ? t('league.edgeLeaders.moment', { date: formatDate(`${m.date}T12:00:00`), away: m.away, home: m.home }) : null);
+
+  return (
+    <section className="mt-5" data-testid="edge-leaders">
+      <div className={LV_EDGE_HEADER_CLASSES}>{t('league.edgeLeaders.title')}</div>
+      <div className={LV_LEADERS_GRID_CLASSES}>
+        {cards.map(({ name, kind }) => (
+          <LeadersCard
+            key={name}
+            title={t(`league.edgeLeaders.${name}`)}
+            statLabel={unitLabel(kind)}
+            rows={categories[name].map(r => ({
+              playerId: r.playerId,
+              firstName: { default: r.firstName },
+              lastName: { default: r.lastName },
+              teamAbbrev: r.team,
+              value: valueOf(kind, r),
+              subline: momentOf(r.moment),
+            }))}
+            formatStat={formatOf(kind)}
+            onPlayerClick={onPlayerClick}
+          />
+        ))}
+      </div>
+      <div className={LV_EDGE_SOURCE_CLASSES}>{t('league.edgeLeaders.source')}</div>
+    </section>
+  );
+}
+
+function LeadersPanel({ scoring, goals, gaa, svp, season }) {
   const { t } = useTranslation();
   const [selectedPlayer, setSelectedPlayer] = React.useState(null);
 
@@ -735,6 +806,8 @@ function LeadersPanel({ scoring, goals, gaa, svp }) {
           onPlayerClick={setSelectedPlayer}
         />
       </div>
+
+      <EdgeLeaders season={season} onPlayerClick={setSelectedPlayer} />
 
       {selectedPlayer && (
         <PlayerPopup
@@ -1957,7 +2030,7 @@ export default function LeagueView() {
             {leadersLoading && <LoadingRows />}
             {scoringError   && <ErrorState message={t('leagueView.error.leaders')} />}
             {!leadersLoading && !scoringError && (
-              <LeadersPanel scoring={scoring} goals={goals} gaa={gaa} svp={svp} />
+              <LeadersPanel scoring={scoring} goals={goals} gaa={gaa} svp={svp} season={SEASON} />
             )}
           </>
         )}
