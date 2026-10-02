@@ -2312,7 +2312,15 @@
     "tabs": {
       "possession": "Possession",
       "physical": "Physique",
-      "performance": "Performance"
+      "performance": "Performance",
+      "tracking": "Suivi"
+    },
+    "edge": {
+      "seasonGp_one": "{{season}} · {{count}} PJ",
+      "seasonGp_other": "{{season}} · {{count}} PJ",
+      "noData": "Aucune donnée EDGE",
+      "pct": "{{pct}} centile",
+      "source": "Suivi des joueurs et de la rondelle : NHL EDGE · centiles vs la LNH, après {{count}} matchs joués · le meilleur centile en vert"
     }
   },
   "posLabel": {

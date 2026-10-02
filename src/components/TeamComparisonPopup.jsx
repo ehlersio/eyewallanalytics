@@ -14,6 +14,7 @@ import { AHL_TEAMS, getAHLTeamById } from '../utils/ahlConfig';
 import { ECHL_TEAMS, getECHLTeamById } from '../utils/echlConfig';
 import SeasonComparisonPicker from './SeasonComparisonPicker';
 import { seasonRampColor, CHART_DASH_PATTERNS } from '../utils/seasonChart';
+import { EdgeTeamRows } from './EdgeCompare';
 import SeasonOverlayChart from './SeasonOverlayChart';
 import TeamOpponentPicker from './TeamOpponentPicker';
 import TeamLogo from './TeamLogo';
@@ -61,6 +62,8 @@ const SECTION_PEERS_CLASSES = 'stat-section-peers flex flex-wrap gap-[10px] px-4
 const ROW_CLASSES = 'stat-row flex items-center justify-between py-[6px] border-b-[0.5px] border-[rgba(255,255,255,0.04)]'
 const ROW_LEFT_CLASSES = 'flex items-center gap-[6px] flex-1 min-w-0'
 const ROW_LABEL_CLASSES = 'text-[13px] text-[color:var(--text-muted)]'
+const ROW_NOTE_CLASSES = 'text-[10px] text-[color:var(--text-dim)] whitespace-nowrap'
+const EDGE_HEADING_CLASSES = 'text-[10px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] mt-3 mb-1'
 const ROW_VALUE_CLASSES = 'font-[family-name:var(--font-display)] text-[18px] font-bold text-[color:var(--text)] shrink-0 min-w-[48px] text-right'
 
 // Head-to-head scoreboard/narrative + team-vs-team mode-switch classes
@@ -183,20 +186,31 @@ const METRICS = [
   { key: 'pkPct',        label: 'PK%', fmt: v => `${(v * 100).toFixed(1)}%` },
 ];
 
-function MetricRow({ label, value, fmt }) {
+function MetricRow({ label, value, fmt, note }) {
   // Row exists (team has data for this season) but this specific field is
   // null -- "not tracked yet" state, distinct from the whole-season "not
   // yet available" case in TeamCompareSeasonCard below.
   const display = value == null ? '—' : (fmt ? fmt(value) : value);
   return (
     <div className={ROW_CLASSES}>
-      <div className={ROW_LEFT_CLASSES}><span className={ROW_LABEL_CLASSES}>{label}</span></div>
-      <span className={ROW_VALUE_CLASSES}>{display}</span>
+      <div className={ROW_LEFT_CLASSES}>
+        {note ? (
+          <span className="flex flex-col min-w-0">
+            <span className={ROW_LABEL_CLASSES}>{label}</span>
+            <span className={ROW_NOTE_CLASSES}>{note}</span>
+          </span>
+        ) : (
+          <span className={ROW_LABEL_CLASSES}>{label}</span>
+        )}
+      </div>
+      <span className={`${ROW_VALUE_CLASSES} pl-2`}>{display}</span>
     </div>
   );
 }
 
-function TeamCompareSeasonCard({ label, row }) {
+// NHL cards also get the team's NHL EDGE rows for that season, with the
+// NHL's rank (EdgeTeamRows; nothing before 2021-22 or without data).
+function TeamCompareSeasonCard({ label, row, edge }) {
   const { t } = useTranslation();
   return (
     <div className={SECTION_CLASSES}>
@@ -208,6 +222,7 @@ function TeamCompareSeasonCard({ label, row }) {
           <div className={PP_NO_STATS_CLASSES}>{t('teamComparisonPopup.notYetAvailable')}</div>
         )}
         {row && METRICS.map(m => <MetricRow key={m.key} label={m.label} value={row[m.key]} fmt={m.fmt} />)}
+        {edge && <EdgeTeamRows abbr={edge.abbr} season={edge.season} Row={MetricRow} headingClassName={EDGE_HEADING_CLASSES} />}
       </div>
     </div>
   );
@@ -259,8 +274,10 @@ function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, oppon
       )}
       {!loading && opponent && selectedSeason && (
         <div className={SECTION_PEERS_CLASSES}>
-          <TeamCompareSeasonCard label={teamLabel} row={rowByTeam.get(String(teamValue))} />
-          <TeamCompareSeasonCard label={opponentLabel} row={rowByTeam.get(String(opponent))} />
+          <TeamCompareSeasonCard label={teamLabel} row={rowByTeam.get(String(teamValue))}
+            edge={league === 'nhl' ? { abbr: teamValue, season: selectedSeason } : null} />
+          <TeamCompareSeasonCard label={opponentLabel} row={rowByTeam.get(String(opponent))}
+            edge={league === 'nhl' ? { abbr: opponent, season: selectedSeason } : null} />
         </div>
       )}
     </>
@@ -620,6 +637,7 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
                       key={season}
                       label={labelFor(season)}
                       row={rowBySeason.get(season)}
+                      edge={isNhl ? { abbr: teamValue, season } : null}
                     />
                   ))}
                 </div>
