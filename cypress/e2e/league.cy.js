@@ -411,6 +411,10 @@ describe('League page — CAR', () => {
   // ── Leaders tab ───────────────────────────────────────────────
 
   describe('Leaders tab', () => {
+    // The stat leaders only -- the NHL EDGE leaders below them (#421) use the
+    // same card, and appear once the season has EDGE data.
+    const STAT_CARDS = '[data-testid="stat-leaders"] .lv-leaders-card'
+
     // These assert real leader data (10 rows/card, real names/stats). That's
     // only ever true once real games exist for the app's current season —
     // not true right after a season flip, and not true for most of every
@@ -424,49 +428,49 @@ describe('League page — CAR', () => {
     })
 
     it('shows four leader cards', () => {
-      cy.get('.lv-leaders-card', { timeout: 10000 }).should('have.length', 4)
+      cy.get(STAT_CARDS, { timeout: 10000 }).should('have.length', 4)
     })
 
     it('shows Points card', () => {
-      cy.get('.lv-leaders-card').contains('Points').should('exist')
+      cy.get(STAT_CARDS).contains('Points').should('exist')
     })
 
     it('shows Goals card', () => {
-      cy.get('.lv-leaders-card').contains('Goals').should('exist')
+      cy.get(STAT_CARDS).contains('Goals').should('exist')
     })
 
     it('shows Goals against avg. card', () => {
-      cy.get('.lv-leaders-card').contains('Goals against avg.').should('exist')
+      cy.get(STAT_CARDS).contains('Goals against avg.').should('exist')
     })
 
     it('shows Save percentage card', () => {
-      cy.get('.lv-leaders-card').contains('Save percentage').should('exist')
+      cy.get(STAT_CARDS).contains('Save percentage').should('exist')
     })
 
     // Live data: up to 10 rows per card, but the first days of a season
     // have fewer players with a stat (2 goalies after opening night).
     it('each card shows 1 to 10 player rows', () => {
-      cy.get('.lv-leaders-card', { timeout: 10000 }).each($card => {
+      cy.get(STAT_CARDS, { timeout: 10000 }).each($card => {
         cy.wrap($card).find('.lv-leaders-row').its('length').should('be.within', 1, 10)
       })
     })
 
     it('Points leader shows a numeric stat value', () => {
-      cy.get('.lv-leaders-card').contains('Points').parents('.lv-leaders-card')
+      cy.get(STAT_CARDS).contains('Points').parents('.lv-leaders-card')
         .find('.lv-leaders-stat').first()
         .invoke('text')
         .should('match', /^\d+$/)
     })
 
     it('Goals leader shows a numeric stat value', () => {
-      cy.get('.lv-leaders-card').contains('Goals').parents('.lv-leaders-card')
+      cy.get(STAT_CARDS).contains('Goals').parents('.lv-leaders-card')
         .find('.lv-leaders-stat').first()
         .invoke('text')
         .should('match', /^\d+$/)
     })
 
     it('GAA leader shows a decimal stat value', () => {
-      cy.get('.lv-leaders-card').contains('Goals against avg.').parents('.lv-leaders-card')
+      cy.get(STAT_CARDS).contains('Goals against avg.').parents('.lv-leaders-card')
         .find('.lv-leaders-stat').first()
         .invoke('text')
         .should('match', /^\d+\.\d{2}$/)
@@ -475,20 +479,20 @@ describe('League page — CAR', () => {
     // .920-style; a perfect 1.000 is real early in a season (a shutout on
     // opening night).
     it('SV% leader shows a decimal stat value like .920', () => {
-      cy.get('.lv-leaders-card').contains('Save percentage').parents('.lv-leaders-card')
+      cy.get(STAT_CARDS).contains('Save percentage').parents('.lv-leaders-card')
         .find('.lv-leaders-stat').first()
         .invoke('text')
         .should('match', /^(\.\d{3}|1\.000)$/)
     })
 
     it('each row shows a team abbreviation', () => {
-      cy.get('.lv-leaders-card').first().find('.lv-leaders-team').first()
+      cy.get(STAT_CARDS).first().find('.lv-leaders-team').first()
         .invoke('text')
         .should('match', /^[A-Z]{2,3}$/)
     })
 
     it('each row shows a player name', () => {
-      cy.get('.lv-leaders-card').first().find('.lv-leaders-name').first()
+      cy.get(STAT_CARDS).first().find('.lv-leaders-name').first()
         .invoke('text')
         .should('match', /[A-Za-z]/)
     })
@@ -496,7 +500,7 @@ describe('League page — CAR', () => {
     it('highlights CAR player with lv-leaders-row--you class if they appear', () => {
       // CAR may or may not have a player in the top 10 — just assert the
       // class is applied correctly when present, without asserting presence
-      cy.get('.lv-leaders-card').first().find('.lv-leaders-row').then($rows => {
+      cy.get(STAT_CARDS).first().find('.lv-leaders-row').then($rows => {
         const youRows = $rows.filter('.lv-leaders-row--you')
         if (youRows.length > 0) {
           cy.wrap(youRows.first()).find('.lv-leaders-team').should('contain', 'CAR')
@@ -505,7 +509,7 @@ describe('League page — CAR', () => {
     })
 
     it('all leader rows have the clickable class', () => {
-      cy.get('.lv-leaders-card', { timeout: 10000 }).first()
+      cy.get(STAT_CARDS, { timeout: 10000 }).first()
         .find('.lv-leaders-row')
         .each($row => {
           cy.wrap($row).should('have.class', 'lv-leaders-row--clickable')
@@ -513,20 +517,20 @@ describe('League page — CAR', () => {
     })
 
     it('team abbreviation cell has an inline color style', () => {
-      cy.get('.lv-leaders-card', { timeout: 10000 }).first()
+      cy.get(STAT_CARDS, { timeout: 10000 }).first()
         .find('.lv-leaders-team').first()
         .should('have.attr', 'style')
         .and('include', 'color')
     })
 
     it('clicking a player row opens the player popup', () => {
-      cy.get('.lv-leaders-card', { timeout: 10000 }).first()
+      cy.get(STAT_CARDS, { timeout: 10000 }).first()
         .find('.lv-leaders-row').first().click()
       cy.get('.player-popup', { timeout: DATA_TIMEOUT }).should('be.visible')
     })
 
     it('player popup from Leaders tab shows Stats and Analytics tabs only', () => {
-      cy.get('.lv-leaders-card', { timeout: 10000 }).first()
+      cy.get(STAT_CARDS, { timeout: 10000 }).first()
         .find('.lv-leaders-row').first().click()
       cy.get('.player-popup', { timeout: DATA_TIMEOUT }).should('be.visible')
       cy.get('.pp-tab').should('contain', '📊 Stats')
@@ -536,7 +540,7 @@ describe('League page — CAR', () => {
     })
 
     it('player popup closes when the ✕ button is clicked', () => {
-      cy.get('.lv-leaders-card', { timeout: 10000 }).first()
+      cy.get(STAT_CARDS, { timeout: 10000 }).first()
         .find('.lv-leaders-row').first().click()
       cy.get('.player-popup', { timeout: DATA_TIMEOUT }).should('be.visible')
       cy.get('.pp-close').click()

@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import {
-  fetchPWHLStandings, fetchPWHLPlayers, fetchPWHLSchedule, fetchPWHLSalaries,
+  fetchPWHLStandings, fetchPWHLPlayers, fetchPWHLSchedule, fetchPWHLSalaries, fetchPWHLLeagueAverages,
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
 import { PWHL_PLAYOFF_SEASON_MAP, getPWHLSeasonLabel } from '../utils/pwhlConfig';
@@ -288,7 +288,7 @@ export default function PWHLTeamView() {
         <AdvancedTab teamRow={teamRow} skaters={skaters} goalies={goalies}
           abbr={abbr} color={color} loading={sLoad || pLoad || scLoad}
           schedule={schedule} poSchedule={poSchedule} teamId={teamId}
-          standings={standings} inPlayoffs={inPlayoffs} />
+          standings={standings} inPlayoffs={inPlayoffs} season={currentSeason} />
       )}
       {tab === 'Stats'     && (
         <StatsTab skaters={skaters} goalies={goalies} loading={pLoad} abbr={abbr} color={color} />
@@ -705,9 +705,13 @@ function SplitsTab({ schedule, poSchedule, teamId, abbr: _abbr, color: _color, l
 }
 
 // ── Advanced tab ──────────────────────────────────────────────────────────────
-function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, standings, inPlayoffs, teamId, schedule: _schedule, poSchedule }) {
+function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, standings, inPlayoffs, teamId, schedule: _schedule, poSchedule, season }) {
   const { t } = useTranslation();
   const [showPO, setShowPO] = React.useState(false);
+  // Real league averages (regular season) -- see the Worker's
+  // /pwhl/league-averages. While they load, or for a part with no data, a
+  // row shows no average and no good/bad coloring rather than a guess.
+  const { data: lg } = useFetch(() => fetchPWHLLeagueAverages(season), [season]);
   function fmt(v, dec=2)  { return v == null ? '—' : Number(v).toFixed(dec); }
   function fmtPct(v)      { return v == null ? '—' : `${(v*100).toFixed(1)}%`; }
 
@@ -782,13 +786,15 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
     return idx >= 0 ? idx + 1 : null;
   }
 
-  // ── League averages (2025-26 PWHL approximations) ────────────
+  // League averages are regular season, so the playoff view's goals per game
+  // shows none rather than comparing against the wrong thing.
   const AVG = {
-    gfpg: 3.2, gapg: 3.2,
-    sogpg: 28.0, sapg: 28.0, shotForPct: 0.5,
-    shPct: 0.094, svPct: 0.906, pdo: 100,
-    ppPct: 0.175, pkPct: 0.825,
+    gfpg: useReg ? lg?.goalsForPerGame : null, gapg: useReg ? lg?.goalsAgainstPerGame : null,
+    sogpg: lg?.shotsForPerGame, sapg: lg?.shotsAgainstPerGame,
+    shPct: lg?.shPct, svPct: lg?.svPct, pdo: lg?.pdo,
+    ppPct: lg?.ppPct, pkPct: lg?.pkPct,
   };
+  const avgOf = (v, f) => (v != null ? f(v) : null);
 
   function rate(v, avg, higherBetter=true) {
     if (v == null || avg == null) return null;
@@ -843,13 +849,13 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
           <div className={ADV_EXPLAIN_CLASSES}>{t('pwhlTeamView.advanced.runPwhlStatsNote')}</div>
         ) : null}
         <AdvStatRow label="Shots For/GP"     val={sogPG != null ? fmt(sogPG,1) : null}
-          avg={AVG.sogpg.toFixed(1)} rating={rate(sogPG, AVG.sogpg)} />
+          avg={avgOf(AVG.sogpg, v => v.toFixed(1))} rating={rate(sogPG, AVG.sogpg)} />
         <AdvStatRow label="Shots Against/GP" val={saPG  != null ? fmt(saPG, 1) : null}
-          avg={AVG.sapg.toFixed(1)}  rating={rate(saPG,  AVG.sapg, false)} />
+          avg={avgOf(AVG.sapg, v => v.toFixed(1))}  rating={rate(saPG,  AVG.sapg, false)} />
         <AdvStatRow label="Goals For/GP"     val={gfpg != null ? fmt(gfpg) : null}
-          avg={AVG.gfpg.toFixed(2)} rating={rate(gfpg, AVG.gfpg)} />
+          avg={avgOf(AVG.gfpg, v => v.toFixed(2))} rating={rate(gfpg, AVG.gfpg)} />
         <AdvStatRow label="Goals Against/GP" val={gapg != null ? fmt(gapg) : null}
-          avg={AVG.gapg.toFixed(2)} rating={rate(gapg, AVG.gapg, false)} />
+          avg={avgOf(AVG.gapg, v => v.toFixed(2))} rating={rate(gapg, AVG.gapg, false)} />
       </div>
 
       {/* PDO & Puck Luck */}
@@ -866,15 +872,15 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
         )}
         <AdvStatRow label={showPO ? t('pwhlTeamView.advanced.pdoLabelReg') : t('pwhlTeamView.advanced.pdoLabel')}
           val={pdo != null ? fmt(pdo,1) : null}
-          avg="100.0" rating={rate(pdo, AVG.pdo)}
+          avg={avgOf(AVG.pdo, v => v.toFixed(1))} rating={rate(pdo, AVG.pdo)}
           note={pdo != null ? (pdo > 102 ? t('pwhlTeamView.advanced.luckPositive') : pdo < 98 ? t('pwhlTeamView.advanced.luckNegative') : t('pwhlTeamView.advanced.luckNeutral')) : null} />
         <AdvStatRow label={showPO ? t('pwhlTeamView.advanced.shLabelReg') : t('pwhlTeamView.advanced.shLabel')}
           val={shPct != null ? fmtPct(shPct) : null}
-          avg={fmtPct(AVG.shPct)} rating={rate(shPct, AVG.shPct)}
+          avg={avgOf(AVG.shPct, fmtPct)} rating={rate(shPct, AVG.shPct)}
           note={t('pwhlTeamView.advanced.shNote', { goals: totalGoals, shots: totalShots })} />
         <AdvStatRow label={showPO ? t('pwhlTeamView.advanced.svLabelReg') : t('pwhlTeamView.advanced.svLabel')}
           val={svPct != null ? svPct.toFixed(3).replace('0.','.') : null}
-          avg={AVG.svPct.toFixed(3).replace('0.','.')} rating={rate(svPct, AVG.svPct)} />
+          avg={avgOf(AVG.svPct, v => v.toFixed(3).replace('0.','.'))} rating={rate(svPct, AVG.svPct)} />
       </div>
 
       {/* Special Teams */}
@@ -884,14 +890,14 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
           <>
             <AdvStatRow label="PP%"
               val={ppPct != null ? fmtPct(ppPct) : null}
-              avg={fmtPct(AVG.ppPct)} rating={rate(ppPct, AVG.ppPct)}
+              avg={avgOf(AVG.ppPct, fmtPct)} rating={rate(ppPct, AVG.ppPct)}
               note={teamRow.pp_goals != null && teamRow.pp_opportunities
-                ? t('pwhlTeamView.advanced.ppNote', { goals: teamRow.pp_goals, chances: teamRow.pp_opportunities }) : t('pwhlTeamView.advanced.ppAvgFallback')} />
+                ? t('pwhlTeamView.advanced.ppNote', { goals: teamRow.pp_goals, chances: teamRow.pp_opportunities }) : null} />
             <AdvStatRow label="PK%"
               val={pkPct != null ? fmtPct(pkPct) : null}
-              avg={fmtPct(AVG.pkPct)} rating={rate(pkPct, AVG.pkPct)}
+              avg={avgOf(AVG.pkPct, fmtPct)} rating={rate(pkPct, AVG.pkPct)}
               note={teamRow.pk_goals_against != null && teamRow.times_shorthanded
-                ? t('pwhlTeamView.advanced.pkNote', { ga: teamRow.pk_goals_against, pks: teamRow.times_shorthanded }) : t('pwhlTeamView.advanced.pkAvgFallback')} />
+                ? t('pwhlTeamView.advanced.pkNote', { ga: teamRow.pk_goals_against, pks: teamRow.times_shorthanded }) : null} />
             {teamRow.sh_goals_for != null && (
               <AdvStatRow label={t('pwhlTeamView.advanced.shgForLabel')}  val={teamRow.sh_goals_for}  note={t('pwhlTeamView.advanced.shgForNote')} />
             )}

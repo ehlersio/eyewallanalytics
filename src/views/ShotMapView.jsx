@@ -7,7 +7,7 @@ import {
   getGameLanding, attachGoalVideos,
   getCarScore, getOppScore, getOpponent, isHomeGame, isCompleted,
   getTeamStats, getTeamPlayoffStats, getTeamSelectionTotals, formatGameDate, getRoster, buildPlayerMap,
-  bustLiveGameCache, bustScheduleCache, withPbpScore, GAME_TYPE,
+  bustLiveGameCache, bustScheduleCache, withPbpScore, GAME_TYPE, getLeagueTeamAverages,
 } from '../utils/nhlApi';
 import { livePollInterval, onPushReceived } from '../utils/livePolling';
 import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON, teamTextColor } from '../utils/teamConfig';
@@ -1070,6 +1070,12 @@ export default function ShotMapView() {
   const { data: gameLogInsights } = useFetch(
     () => oppAbbr ? getGameLogInsights(oppAbbr, insightsSeason, team.abbr, insightsGameType) : Promise.resolve(null),
     [oppAbbr, team, insightsSeason, insightsGameType]
+  );
+  // The league's real SV% for the same season and game type -- the box
+  // score's per-game GSAx estimate is measured against it.
+  const { data: leagueAvg } = useFetch(
+    () => insightsSeason ? getLeagueTeamAverages(insightsGameType, insightsSeason) : Promise.resolve(null),
+    [insightsSeason, insightsGameType]
   );
   const oppColor   = teamTextColor(oppAbbr) || 'var(--text-muted)';
   const gameHome   = activeGame ? isHomeGame(activeGame, team) : true;
@@ -2615,6 +2621,7 @@ export default function ShotMapView() {
                     savePctg={g.savePctg}
                     color="var(--team-primary)"
                     seasonData={goalieAnalytics?.[String(g.playerId)] || null}
+                    leagueSvPct={leagueAvg?.svPct}
                   />
                 </div>
               ))}
@@ -2633,6 +2640,7 @@ export default function ShotMapView() {
                     savePctg={g.savePctg}
                     color={oppColor}
                     seasonData={goalieAnalytics?.[String(g.playerId)] || null}
+                    leagueSvPct={leagueAvg?.svPct}
                   />
                 </div>
               ))}
@@ -2812,12 +2820,12 @@ export default function ShotMapView() {
 
 // ── Sub-components ────────────────────────────────────────────
 
-function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color, seasonData }) {
+function GoalieRow({ name, abbr, saves, shotsAgainst, savePctg, color, seasonData, leagueSvPct }) {
   const { t } = useTranslation();
   const svPct = savePctg != null
     ? (savePctg <= 1 ? savePctg.toFixed(3) : (savePctg / 100).toFixed(3))
     : '—';
-  const gameGsax = computeGSAx(shotsAgainst, saves);
+  const gameGsax = computeGSAx(shotsAgainst, saves, leagueSvPct);
 
   const seasonGsax = seasonData?.gsax ?? null;
   const seasonGp   = seasonData?.gp ?? null;

@@ -69,7 +69,7 @@ function decisionColor(decision) {
   return 'var(--amber)';
 }
 
-function SkaterTable({ players, goalies }) {
+function SkaterTable({ players, goalies, leagueSvPct }) {
   const { t } = useTranslation();
   function fmtSvPct(v) {
     if (v == null) return '—';
@@ -136,7 +136,7 @@ function SkaterTable({ players, goalies }) {
             <span className="gp-goalie-stat flex flex-col items-center gap-[1px] text-[13px] font-medium"><span className="gp-goalie-label text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]">SV</span>{g.saves ?? "—"}</span>
             <span className="gp-goalie-stat flex flex-col items-center gap-[1px] text-[13px] font-medium"><span className="gp-goalie-label text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]">SV%</span>{fmtSvPct(g.savePctg)}</span>
             <span className="gp-goalie-stat flex flex-col items-center gap-[1px] text-[13px] font-medium"><span className="gp-goalie-label text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]">TOI</span>{g.toi ?? "—"}</span>
-            {(() => { const gsax = computeGSAx(g.shotsAgainst, g.saves); return gsax ? (
+            {(() => { const gsax = computeGSAx(g.shotsAgainst, g.saves, leagueSvPct); return gsax ? (
               <span className="gp-goalie-stat flex flex-col items-center gap-[1px] text-[13px] font-medium">
                 <span className="gp-goalie-label text-[9px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]">GSAx</span>
                 <span style={{color:gsax.color}}>{gsax.label} <InfoTip text={gsax.note} position="above" /></span>

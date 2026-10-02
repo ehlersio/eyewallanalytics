@@ -788,7 +788,7 @@ function LeadersPanel({ scoring, goals, gaa, svp, season }) {
 
   return (
     <>
-      <div className={LV_LEADERS_GRID_CLASSES}>
+      <div className={LV_LEADERS_GRID_CLASSES} data-testid="stat-leaders">
         <LeadersCard title={t('league.leaders.titlePoints')} statLabel="PTS" rows={scoring ?? []} onPlayerClick={setSelectedPlayer} />
         <LeadersCard title={t('league.leaders.titleGoals')}  statLabel="G"   rows={goals   ?? []} onPlayerClick={setSelectedPlayer} />
         <LeadersCard
