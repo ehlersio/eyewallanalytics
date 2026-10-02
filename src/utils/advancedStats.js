@@ -113,15 +113,16 @@ export function computePuckLuck(plays, carTeamId = TEAM_CONFIG.teamId) {
 // ── GSAx (Goals Saved Above Expected) ────────────────────────
 // True GSAx requires tracking data (xG per shot location/type).
 // Public API approximation: compare goalie's actual SV% to league average.
-// League average SV% ≈ .900 for regular season, .905 for playoffs.
 // GSAx = (actualSV% - leagueAvgSV%) × shots faced
+//
+// leagueAvgSv is the league's real SV% for the same season and game type
+// (getLeagueTeamAverages().svPct). It used to default to a hardcoded .900;
+// now there's no estimate at all without it.
 //
 // This is an approximation — real GSAx weights by shot danger.
 // Clearly label it as estimated.
-const LEAGUE_AVG_SV = 0.900;
-
-export function computeGSAx(shotsAgainst, saves, leagueAvgSv = LEAGUE_AVG_SV) {
-  if (!shotsAgainst || shotsAgainst === 0) return null;
+export function computeGSAx(shotsAgainst, saves, leagueAvgSv) {
+  if (!shotsAgainst || shotsAgainst === 0 || leagueAvgSv == null) return null;
   const actualSvPct  = saves / shotsAgainst;
   const expectedSaves = leagueAvgSv * shotsAgainst;
   const gsax          = +(saves - expectedSaves).toFixed(2);

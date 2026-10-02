@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import {
   getTeamStats, getTeamStatsPlayoff, getTeamRecentGames, getTeamTopPlayers,
-  getTeamInjuries, buildInjuryIndex, getProjectedLines,
+  getTeamInjuries, buildInjuryIndex, getProjectedLines, getLeagueTeamAverages,
   TEAM_CONFIG,
 } from '../utils/nhlApi';
 import { hasProjection, isPreOpener, projectionCopyKeys } from '../utils/projectedLines';
@@ -104,7 +104,7 @@ export function CompareRow({ label, carVal, oppVal, higherBetter = true, fmt = v
 
 
 // Player table for one team
-function PlayerTable({ players, loading, color, goalieAnalytics, injuries }) {
+function PlayerTable({ players, loading, color, goalieAnalytics, injuries, leagueSvPct }) {
   const { t } = useTranslation();
   if (loading) return <div className="scouting-loading text-[11px] text-[color:var(--text-dim)] py-2">{t('common.loading')}</div>;
   if (!players?.skaters?.length) return <div className={SCOUTING_EMPTY_CLASSES}>{t('scoutingTab.playerTable.noData')}</div>;
@@ -140,7 +140,7 @@ function PlayerTable({ players, loading, color, goalieAnalytics, injuries }) {
             const seasonData  = goalieAnalytics?.[String(g.playerId)] || null;
             const realGsax    = seasonData?.gsax ?? null;
             const realGp      = seasonData?.gp ?? null;
-            const estGsax     = computeGSAx(g.shotsAgainst, g.saves);
+            const estGsax     = computeGSAx(g.shotsAgainst, g.saves, leagueSvPct);
             const gsaxColor   = realGsax != null
               ? realGsax >= 5 ? 'var(--green)' : realGsax >= 0 ? 'var(--text-muted)' : 'var(--red-bright)'
               : estGsax?.color;
@@ -625,6 +625,10 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
     [oppAbbr, 'po', isPlayoff]
   );
   const { data: goalieAnalytics } = useFetch(() => getGoalieAnalytics());
+  // The league's real SV% for the same season and game type as the goalie
+  // lines above (getTeamTopPlayers reads TEAM_CONFIG.season) -- the GSAx
+  // estimate's baseline.
+  const { data: leagueAvg } = useFetch(() => getLeagueTeamAverages(gameType, TEAM_CONFIG.season), [gameType, TEAM_CONFIG.season]);
   const { data: carLines } = useFetch(() => getTeamLines(TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType), [TEAM_CONFIG.abbr, TEAM_CONFIG.season, gameType]);
   const { data: carProjected } = useFetch(() => getProjectedLines(TEAM_CONFIG.abbr), [TEAM_CONFIG.abbr]);
   const { data: matchupData } = useFetch(() => getGameMatchup(gameId, i18n.language), [gameId, i18n.language]);
@@ -781,11 +785,11 @@ export default function ScoutingTab({ oppAbbr, oppStanding, carStanding, isPlayo
         <div className="scouting-players-row grid [grid-template-columns:1fr_1fr] gap-3">
           <div className="scouting-players-col flex flex-col gap-1">
             <div className="scouting-players-team text-[10px] font-bold mb-[2px]" style={{color: carColor}}>{TEAM_CONFIG.abbr}</div>
-            <PlayerTable players={carTopPlayers} loading={carPlayersLoading} color={carColor} goalieAnalytics={goalieAnalytics} injuries={carInjuries} />
+            <PlayerTable players={carTopPlayers} loading={carPlayersLoading} color={carColor} goalieAnalytics={goalieAnalytics} injuries={carInjuries} leagueSvPct={leagueAvg?.svPct} />
           </div>
           <div className="scouting-players-col flex flex-col gap-1">
             <div className="scouting-players-team text-[10px] font-bold mb-[2px]" style={{color: oppColor}}>{oppAbbr}</div>
-            <PlayerTable players={oppTopPlayers} loading={oppPlayersLoading} color={oppColor} goalieAnalytics={goalieAnalytics} injuries={oppInjuries} />
+            <PlayerTable players={oppTopPlayers} loading={oppPlayersLoading} color={oppColor} goalieAnalytics={goalieAnalytics} injuries={oppInjuries} leagueSvPct={leagueAvg?.svPct} />
           </div>
         </div>
       </div>

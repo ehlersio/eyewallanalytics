@@ -45,6 +45,13 @@ export async function fetchPWHLStandings(season = PWHL_CURRENT_SEASON) {
   return workerFetch(`/pwhl/standings?season=${season}`);
 }
 
+/** Fetch the league averages the Team page's Advanced tab compares against
+ *  (regular season, from every team's real totals). Fields with no data are
+ *  null; the whole thing is null when the season has no team rows. */
+export async function fetchPWHLLeagueAverages(season = PWHL_CURRENT_SEASON) {
+  return workerFetch(`/pwhl/league-averages?season=${season}`);
+}
+
 /** Fetch the league-wide signings/moves feed for the Transactions tab. */
 export async function fetchPWHLTransactions(season = PWHL_CURRENT_SEASON) {
   return workerFetch(`/pwhl/transactions?season=${season}`);

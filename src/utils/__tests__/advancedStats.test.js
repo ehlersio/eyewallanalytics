@@ -2,7 +2,7 @@
 // Unit tests for pure shot-analysis functions in advancedStats.js
 
 import { describe, it, expect } from 'vitest'
-import { computeShotAttempts, seasonPDO } from '../advancedStats.js'
+import { computeShotAttempts, seasonPDO, computeGSAx } from '../advancedStats.js'
 
 const CAR_TEAM_ID = 12
 const OPP_TEAM_ID = 99
@@ -167,5 +167,23 @@ describe('seasonPDO', () => {
     }
     const result = seasonPDO(corsi)
     expect(parseFloat(result.pdo)).toBeCloseTo(100.0, 0)
+  })
+})
+
+// ── computeGSAx ───────────────────────────────────────────────
+describe('computeGSAx', () => {
+  it('measures saves against the league SV% it is given', () => {
+    // 30 shots at a .900 league SV% is 27 expected saves
+    expect(computeGSAx(30, 29, 0.9)).toMatchObject({ gsax: 2, expectedSaves: 27, label: '+2' })
+    expect(computeGSAx(30, 29, 0.95)).toMatchObject({ gsax: 0.5, expectedSaves: 28.5 })
+  })
+
+  it('gives no estimate without a league SV%, instead of assuming one', () => {
+    expect(computeGSAx(30, 29)).toBeNull()
+    expect(computeGSAx(30, 29, null)).toBeNull()
+  })
+
+  it('gives no estimate for a goalie who faced no shots', () => {
+    expect(computeGSAx(0, 0, 0.9)).toBeNull()
   })
 })

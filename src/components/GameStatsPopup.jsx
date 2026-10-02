@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import {
   getCompletedGameStats, getOpponent, isHomeGame, getCarScore, getOppScore,
-  formatGameDate, getVenue, getWinningGoalScorer, getRecapLinks, isNeutralSite, } from '../utils/nhlApi';
+  formatGameDate, getVenue, getWinningGoalScorer, getRecapLinks, isNeutralSite, getLeagueTeamAverages, } from '../utils/nhlApi';
 import { computeShotAttempts, computePDO, computePuckLuck } from '../utils/advancedStats';
 import TeamLogo from '../components/TeamLogo';
 import InfoTip from '../components/InfoTip';
@@ -73,6 +73,13 @@ const GP_SUMMARY_CHIP_CLASSES = 'gp-summary-chip text-[11px] font-semibold bg-[v
 function GameStatsPopup({ game, onClose }) {
   const { t } = useTranslation();
   const { data, loading } = useFetch(() => getCompletedGameStats(game.id), [game.id]);
+  // The league's real SV% for this game's season and game type, the GSAx
+  // estimate's baseline. An NHL game id carries both: 2025020274 is the
+  // 2025-26 season (20252026), game type 02 (regular season).
+  const gameIdStr = String(game.id);
+  const gameSeason = Number(`${gameIdStr.slice(0, 4)}${Number(gameIdStr.slice(0, 4)) + 1}`);
+  const gameTypeId = Number(gameIdStr.slice(4, 6));
+  const { data: leagueAvg } = useFetch(() => getLeagueTeamAverages(gameTypeId, gameSeason), [gameTypeId, gameSeason]);
   const [skaterTeam, setSkaterTeam] = useState('car');
   const [summary, setSummary]       = useState(null);
   const [showTop, setShowTop]       = useState(false);
@@ -509,6 +516,7 @@ function GameStatsPopup({ game, onClose }) {
                     goalies={(skaterTeam === "car" ? carGoalies : oppGoalies).filter(
                       g => (g.toi && g.toi !== "00:00") || (g.shotsAgainst ?? 0) > 0
                     )}
+                    leagueSvPct={leagueAvg?.svPct}
                   />
                 </div>
               )}

@@ -401,3 +401,44 @@ describe('Season correctness — rendered label matches live /config/seasons', (
     })
   })
 })
+
+// The Advanced tab's league averages come from the Worker's
+// /pwhl/league-averages (every team's real season totals) -- they used to be
+// a hardcoded table of "2025-26 approximations".
+describe('PWHL Advanced tab — league averages', () => {
+  function openAdvanced() {
+    cy.visit('/pwhl/team', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('eyewall:sport', 'pwhl')
+        win.localStorage.setItem('eyewall:pwhl_team', JSON.stringify({ abbr: 'BOS', teamId: 1 }))
+      },
+    })
+    cy.contains('Advanced', { timeout: DATA_TIMEOUT }).click()
+  }
+
+  it('compares against the averages the Worker returns', () => {
+    cy.intercept('GET', '**/pwhl/league-averages*', {
+      season: 8, teams: 8, gamesPlayed: 240,
+      goalsForPerGame: 2.34, goalsAgainstPerGame: 2.34, shotsForPerGame: 27.9, shotsAgainstPerGame: 27.8,
+      shPct: 0.081, svPct: 0.923, pdo: 100.4, ppPct: 0.123, pkPct: 0.877,
+    }).as('leagueAvg')
+    openAdvanced()
+    cy.wait('@leagueAvg')
+    cy.contains('avg 12.3%', { timeout: DATA_TIMEOUT }).should('exist') // PP%
+    cy.contains('avg 87.7%').should('exist') // PK%
+    cy.contains('avg .923').should('exist') // SV%
+    cy.contains('avg 2.34').should('exist') // goals per game
+  })
+
+  it('shows no averages, rather than guesses, when there are none', () => {
+    cy.intercept('GET', '**/pwhl/league-averages*', { statusCode: 404, body: { error: 'No team data for that season' } }).as('leagueAvg')
+    openAdvanced()
+    cy.wait('@leagueAvg')
+    cy.contains(/Special Teams/i, { timeout: DATA_TIMEOUT }).should('exist')
+    // CF%/FF%'s 50% is the league average by definition; nothing else has one
+    cy.get('body').invoke('prop', 'innerText').then(text => {
+      const avgs = text.match(/avg [^\s]+/g) || []
+      expect(avgs.filter(a => a !== 'avg 50.0%')).to.deep.equal([])
+    })
+  })
+})
