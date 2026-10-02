@@ -1,4 +1,5 @@
 import { cached, TTL, invalidate } from './cache.js'
+import { leagueTeamAverages, teamShotAttempts } from './leagueAverages';
 import { NATIVE_ORIGIN } from './nativeOrigin';
 import { formatDate } from './formatters.js'
 import { isStandingsStale } from './standingsUtils.js'
@@ -1564,8 +1565,16 @@ async function _getTeamSummary(gameTypeId, season = TEAM_CONFIG.season, team = T
   return d?.data?.[0] || null;
 }
 
-// True Corsi/Fenwick using realtime + summary data we already fetch
-// shotattempts and puckPossessions endpoints return 500 on NHL API
+// Shot share for the Team page's Advanced tab, from the NHL's own reports:
+// Corsi from the realtime report's totalShotAttempts (shots + missed + own
+// attempts blocked) and satPct (CF%), attempts against derived from the two
+// (see leagueAverages.js teamShotAttempts); SF% is shots on goal for over
+// all shots on goal. Until 2026-10 "Corsi" here was SOG + the team's OWN
+// blocks (realtime blockedShots is blocks made by the team's skaters, not
+// its attempts that got blocked) and left out missed shots, and "FF%" was
+// this SOG share labelled Fenwick -- unblocked attempts against can't be
+// derived exactly from these reports (skater-credited blocks undercount
+// blocked attempts by ~9%), so it's shown as what it is.
 // season: defaults to the current season. The Team page's Advanced and Splits
 // tabs pass getTeamStats()'s statsSeasonId instead, so out of season they
 // show last season (labelled) rather than an empty current one -- same as
@@ -1576,48 +1585,40 @@ export async function getTeamCorsi(gameTypeId = 2, season = TEAM_CONFIG.season, 
 
   const sf = t.shotsForPerGame    || 0;
   const sa = t.shotsAgainstPerGame || 0;
-  const gp = t.gamesPlayed || 1;
-
-  // Get realtime data which has blockedShots + shotAttemptsBlocked
-  const rt = await cached(`teamRealtime:${team.abbr}:${gameTypeId}:${season}`, async () => {
-    const s   = season;
-    const exp = encodeURIComponent(
-      `franchiseId=${team.franchiseId} and gameTypeId=${gameTypeId} and seasonId<=${s} and seasonId>=${s}`
-    );
-    const url = `/nhl-stats/stats/rest/en/team/realtime?isAggregate=false&isGame=false&sort=blockedShots&sortDirection=DESC&limit=1&cayenneExp=${exp}`;
-    const d   = await nhlFetch(url).catch(() => null);
-    return d?.data?.[0] || null;
-  }, TTL.ADVANCED);
-
-  // True Corsi = SOG + missed shots + blocked shots (for and against)
-  // We have: SOG for/against from summary, blocked shots from realtime
-  // Missing: missed shots — not available at season level, so we approximate:
-  // Corsi ≈ SOG + blocked (we have both sides from realtime)
-  const blockedFor     = rt?.blockedShots          || 0; // CAR shots blocked by opponents
-  const blockedAgainst = rt?.shotAttemptsBlocked   || 0; // Opponent shots blocked by CAR
-
-  // Approximate Corsi per game using what we have
-  const satForPerGame     = sf + (blockedFor     / gp); // SOG for + blocked against CAR
-  const satAgainstPerGame = sa + (blockedAgainst / gp); // SOG against + blocked by CAR
-  const satTotal          = satForPerGame + satAgainstPerGame;
-  const corsiForPct       = satTotal > 0 ? satForPerGame / satTotal : null;
-
-  // Fenwick = unblocked attempts only (exclude blocked shots)
-  // FF% = SOG for / (SOG for + SOG against) — same as our proxy but labeled correctly
-  const sogTotal    = sf + sa;
-  const fenwickForPct = sogTotal > 0 ? sf / sogTotal : null;
+  const rt = await getTeamRealtime(gameTypeId, season, team).catch(() => null);
+  const attempts = teamShotAttempts(rt, t.gamesPlayed);
+  const sogTotal = sf + sa;
 
   return {
     ...t,
-    corsiForPct,
-    fenwickForPct,
-    satForPerGame:     satTotal > 0 ? satForPerGame     : null,
-    satAgainstPerGame: satTotal > 0 ? satAgainstPerGame : null,
+    corsiForPct:       attempts?.corsiForPct ?? null,
+    satForPerGame:     attempts?.satForPerGame ?? null,
+    satAgainstPerGame: attempts?.satAgainstPerGame ?? null,
+    shotsForPct:       sogTotal > 0 ? sf / sogTotal : null,
     shotsForPerGame:   sf,
     shotsAgainstPerGame: sa,
-    // True Corsi if we have realtime blocked data, proxy otherwise
-    isProxyCorsi: !rt || (blockedFor === 0 && blockedAgainst === 0),
+    // No realtime shot-attempt data: only the SOG-based share is shown
+    isProxyCorsi: !attempts,
   };
+}
+
+// League averages for the Advanced tab -- every team's NHL report rows for
+// the season and game type, aggregated by leagueTeamAverages(). null when
+// the NHL has nothing for it (the tab then shows no average or rating).
+export async function getLeagueTeamAverages(gameTypeId = 2, season = TEAM_CONFIG.season) {
+  return cached(`leagueTeamAverages:${gameTypeId}:${season}`, async () => {
+    const exp = encodeURIComponent(`gameTypeId=${gameTypeId} and seasonId<=${season} and seasonId>=${season}`);
+    // Each report only accepts a sort field it actually has.
+    const report = (name, sort) =>
+      nhlFetch(`/nhl-stats/stats/rest/en/team/${name}?isAggregate=false&isGame=false&sort=${sort}&limit=50&cayenneExp=${exp}`)
+        .then(d => d?.data || [])
+        .catch(() => []);
+    const [summary, realtime, powerplay, penaltykill] = await Promise.all([
+      report('summary', 'wins'), report('realtime', 'hits'),
+      report('powerplay', 'powerPlayGoalsFor'), report('penaltykill', 'penaltyKillPct'),
+    ]);
+    return leagueTeamAverages({ summary, realtime, powerplay, penaltykill });
+  }, TTL.ADVANCED);
 }
 
 // Realtime stats: blocked shots, hits, giveaways, takeaways

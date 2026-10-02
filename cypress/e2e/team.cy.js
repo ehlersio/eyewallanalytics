@@ -59,6 +59,23 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
     describe('Advanced tab', () => {
       beforeEach(() => cy.contains('Advanced').click())
 
+      // League averages come from every team's NHL season totals (stubbed
+      // here with the real 2025-26 reports), not a hardcoded table: 2025-26
+      // was 27.8 shots, 3.08 goals per team-game, .889 SV%, 21.1% PP.
+      it('compares with league averages computed from every team\'s totals', () => {
+        cy.fixture('league-team-reports.json').then(r => {
+          ;['summary', 'realtime', 'powerplay', 'penaltykill'].forEach(name => {
+            cy.intercept({ method: 'GET', url: new RegExp(`/team/${name}\\?.*limit=50`) }, r[name])
+          })
+        })
+        cy.reload()
+        cy.contains('Advanced').click()
+        cy.contains(/across 32 NHL teams/, { timeout: DATA_TIMEOUT }).should('exist')
+        cy.contains('Shots For/GP').parents('div').first().should('contain', 'avg 27.8')
+        cy.contains('Goals For/GP').parents('div').first().should('contain', 'avg 3.08')
+        cy.contains(/^PP%$/).parents('div').first().should('contain', 'avg 21.1%')
+      })
+
       it('renders possession stats', () => {
         cy.contains(/Corsi|CF%|Shot/i, { timeout: DATA_TIMEOUT }).should('exist')
       })
