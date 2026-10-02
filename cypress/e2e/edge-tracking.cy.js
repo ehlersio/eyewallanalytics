@@ -139,6 +139,42 @@ describe('Team page: NHL EDGE ranks (Advanced tab)', () => {
   })
 })
 
+describe('League view: NHL EDGE leaders', () => {
+  // fixtures/edge-leaders.json: the NHL's real 2025-26 top 10s
+  const openLeaders = () => {
+    cy.setTeam('CAR')
+    cy.visit('/league')
+    cy.contains('button', /^Leaders$/, { timeout: 15000 }).click()
+  }
+
+  it('lists the four top 10s, with when a speed was clocked, and opens a player', () => {
+    cy.intercept('GET', '**/nhl/edge/leaders/**', { fixture: 'edge-leaders.json' }).as('edge')
+    openLeaders()
+    cy.wait('@edge', { timeout: DATA_TIMEOUT })
+    cy.get('[data-testid="edge-leaders"]', { timeout: DATA_TIMEOUT }).within(() => {
+      cy.contains('Fastest skaters')
+      cy.contains('Hardest shots')
+      cy.contains('Distance skated')
+      cy.contains('Offensive-zone time')
+      cy.get('.lv-leaders-card').first().within(() => {
+        cy.get('.lv-leaders-row').should('have.length', 10)
+        cy.get('.lv-leaders-row').first().should('contain', 'Beck Malenstyn').and('contain', '24.9').and('contain', 'WSH @ BUF')
+      })
+      cy.contains('.lv-leaders-row', 'Shayne Gostisbehere').should('contain', '49.6%')
+      cy.contains('.lv-leaders-row', 'Beck Malenstyn').click()
+    })
+    cy.get('.player-popup', { timeout: DATA_TIMEOUT }).should('contain', 'Malenstyn')
+  })
+
+  it('shows nothing when the NHL has no leaders for the season', () => {
+    cy.intercept('GET', '**/nhl/edge/leaders/**', { statusCode: 404, body: { available: false } }).as('edge')
+    openLeaders()
+    cy.wait('@edge', { timeout: DATA_TIMEOUT })
+    cy.get('.lv-leaders-card', { timeout: DATA_TIMEOUT }).should('exist')
+    cy.get('[data-testid="edge-leaders"]').should('not.exist')
+  })
+})
+
 describe('Units setting', () => {
   it('follows the language until chosen, then keeps the choice', () => {
     cy.visit('/')

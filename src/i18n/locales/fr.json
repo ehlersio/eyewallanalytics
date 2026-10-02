@@ -246,6 +246,17 @@
       "wins": "{{team}} gagne {{score}}",
       "leads": "{{team}} mène {{score}}",
       "tied": "Égalité {{score}}"
+    },
+    "edgeLeaders": {
+      "title": "Meneurs du suivi (NHL EDGE)",
+      "speed": "Patineurs les plus rapides",
+      "shotSpeed": "Tirs les plus forts",
+      "distance": "Distance parcourue",
+      "offensiveZoneTime": "Temps en zone offensive",
+      "mph": "MI/H",
+      "ozShort": "% ZO",
+      "moment": "{{date}} · {{away}} @ {{home}}",
+      "source": "Suivi des joueurs et de la rondelle : NHL EDGE · saison en cours"
     }
   },
   "leagueView": {
