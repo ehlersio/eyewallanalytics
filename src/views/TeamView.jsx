@@ -8,7 +8,7 @@ import {
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
   getTeamSeasonRankings, TEAM_CONFIG,
   getDraftOrder, getDraftPicks, getTeamInjuries, getTeamScratches, getDraftPickHistory,
-  getPlayoffOdds, getInjuryImpact,
+  getPlayoffOdds, getInjuryImpact, getCallupWatch,
 } from '../utils/nhlApi'
 import { teamTextColor } from '../utils/teamConfig'
 import { InjuryBadge, InjuryDetailLine } from '../components/InjuryBadge'
@@ -31,6 +31,7 @@ import Sparkline from '../components/Sparkline'
 import TeamHistorySections from '../components/TeamHistorySections'
 import RankBadge from '../components/RankBadge'
 import { getTeamHistory } from '../utils/teamHistory'
+import { getAHLTeamConfig } from '../utils/ahlConfig'
 import { PAGE_CLASSES } from '../utils/pageClasses'
 import { SKELETON_CLASSES } from '../utils/skeletonClasses'
 import { useFeatureViewed, trackFeature } from '../utils/analytics'
@@ -483,6 +484,7 @@ export function OverviewTab({ stats, standLoading, statsLoading, poLoading, carS
 
       <InjuryReportCard />
       <InjuryImpactCard />
+      <CallupWatchCard />
       <ScratchesCard />
     </>
   )
@@ -694,6 +696,148 @@ function InjuryReportCard() {
         </div>
       )}
       <div className="text-[10px] text-[color:var(--text-dim)] mt-2 italic">{t('injury.source')}</div>
+    </div>
+  )
+}
+
+// ── Call-up watch (Overview) ──────────────────────────────────
+// Who's out, by position group, and the AHL affiliate's players next in
+// line (Worker /nhl/callup-watch). A ranking from real stats -- AHL points
+// per game over this season and last, save % for goalies -- not a
+// probability: contracts and waivers aren't known. Hidden for a team with
+// no affiliate on record (teamHistory.js), rather than offering an empty card.
+const CALLUP_GROUPS = ['F', 'D', 'G']
+const CALLUP_SHOWN = 3
+
+function callupStatLine(c, t) {
+  if (c.group === 'G') {
+    return c.combined.svPct != null
+      ? t('callupWatch.goalieLine', { sv: c.combined.svPct.toFixed(3).replace(/^0/, ''), gp: c.combined.gp })
+      : t('callupWatch.noGames')
+  }
+  return c.combined.gp > 0
+    ? t('callupWatch.skaterLine', { ppg: (c.combined.pointsPerGame ?? 0).toFixed(2), pts: c.combined.points, gp: c.combined.gp })
+    : t('callupWatch.noGames')
+}
+
+function callupRecentLine(c, t) {
+  const parts = []
+  if (c.group === 'G') {
+    parts.push(t('callupWatch.thisSeasonGoalie', { gp: c.current.gp, sv: c.current.svPct != null ? c.current.svPct.toFixed(3).replace(/^0/, '') : '—' }))
+    if (c.lastGames.gp > 0 && c.lastGames.svPct != null) parts.push(t('callupWatch.lastGoalie', { n: c.lastGames.gp, sv: c.lastGames.svPct.toFixed(3).replace(/^0/, '') }))
+  } else {
+    parts.push(t('callupWatch.thisSeasonSkater', { gp: c.current.gp, pts: c.current.points }))
+    if (c.lastGames.gp > 0) parts.push(t('callupWatch.lastSkater', { n: c.lastGames.gp, pts: c.lastGames.points }))
+  }
+  return parts.join(' · ')
+}
+
+function CallupCandidate({ c }) {
+  const { t } = useTranslation()
+  return (
+    <div className="callup-candidate flex flex-col gap-[2px] py-[6px] border-b-[0.5px] border-b-[color:var(--border)] last:border-b-0">
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <span className="text-[13px] font-semibold text-[color:var(--text)]">{c.name}</span>
+        <span className="text-[10px] text-[color:var(--text-dim)]">{c.position}</span>
+        <span className="callup-stat ml-auto font-[family-name:var(--font-mono)] text-[12px] text-[color:var(--text)]">{callupStatLine(c, t)}</span>
+      </div>
+      <div className="text-[11px] text-[color:var(--text-dim)]">{callupRecentLine(c, t)}</div>
+      <div className="flex flex-wrap gap-1 mt-[2px]">
+        {!c.ranked && <span className="callup-chip text-[9px] py-px px-1.5 rounded-[3px] bg-[var(--bg3)] text-[color:var(--text-dim)]">{t('callupWatch.underGames', { n: 5 })}</span>}
+        {c.holdsRights && <span className="callup-chip text-[9px] py-px px-1.5 rounded-[3px] bg-[var(--bg3)] text-[color:var(--text-muted)]">{t('callupWatch.rights')}</span>}
+        {c.recalls.length > 0 && (
+          <span className="callup-chip text-[9px] py-px px-1.5 rounded-[3px] bg-[var(--bg3)] text-[color:var(--text-muted)]" title={c.recalls.map(r => `${r.date}: ${r.description}`).join('\n')}>
+            {t('callupWatch.recalls', { count: c.recalls.length })}
+          </span>
+        )}
+        {!c.holdsRights && c.lastMove && (
+          <span className="callup-chip text-[9px] py-px px-1.5 rounded-[3px] bg-[var(--bg3)] text-[color:var(--text-muted)] max-w-full truncate" title={c.lastMove.description}>
+            {t('callupWatch.lastMove', { date: formatDate(parseLocalDate(c.lastMove.date), { month: 'short', day: 'numeric' }), text: c.lastMove.description })}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function CallupGroup({ group, data, teamAbbr, ahlAbbr }) {
+  const { t } = useTranslation()
+  const [expanded, setExpanded] = useState(false)
+  const shown = expanded ? data.candidates : data.candidates.slice(0, CALLUP_SHOWN)
+  return (
+    <div className="callup-group mt-2" data-group={group}>
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-muted)]">{t(`callupWatch.group.${group}`)}</span>
+        <span className="callup-out text-[11px] text-[color:var(--text-dim)]">
+          {data.out.length === 0 ? t('callupWatch.noneOut') : (
+            <>
+              {t('callupWatch.out')}{' '}
+              {data.out.map((o, i) => (
+                <span key={`${o.name}-${i}`}>{i > 0 && ', '}{o.name}<InjuryBadge status={o.status} /></span>
+              ))}
+            </>
+          )}
+        </span>
+      </div>
+      {data.upNow.length > 0 && (
+        <div className="callup-up text-[11px] text-[color:var(--text-dim)] mt-[2px]">{t('callupWatch.upNow', { team: teamAbbr, names: data.upNow.map(u => u.name).join(', ') })}</div>
+      )}
+      {data.hurt.length > 0 && (
+        <div className="callup-hurt text-[11px] text-[color:var(--text-dim)] mt-[2px]">{t('callupWatch.hurt', { team: ahlAbbr, names: data.hurt.map(h => h.name).join(', ') })}</div>
+      )}
+      {shown.length === 0 ? (
+        <div className="text-[12px] text-[color:var(--text-dim)] py-1">{t('callupWatch.noCandidates')}</div>
+      ) : (
+        <div className="flex flex-col">
+          {shown.map(c => <CallupCandidate key={c.ahlPlayerId} c={c} />)}
+        </div>
+      )}
+      {data.candidates.length > CALLUP_SHOWN && (
+        <button className="callup-more text-[11px] text-[color:var(--text-muted)] bg-transparent border-0 p-0 mt-1 cursor-pointer underline" onClick={() => setExpanded(v => !v)}>
+          {expanded ? t('callupWatch.showFewer') : t('callupWatch.showAll', { count: data.candidates.length })}
+        </button>
+      )}
+    </div>
+  )
+}
+
+function CallupWatchCard() {
+  const { t } = useTranslation()
+  const teamAbbr = TEAM_CONFIG.abbr
+  const ahlAbbr = getTeamHistory('nhl', teamAbbr)?.affiliates?.ahl || null
+  const ahlTeam = ahlAbbr ? getAHLTeamConfig(ahlAbbr) : null
+  const { data, loading } = useFetch(
+    () => (ahlTeam ? getCallupWatch(teamAbbr, ahlTeam.teamId) : Promise.resolve(null)),
+    [teamAbbr, ahlTeam?.teamId]
+  )
+  const viewRef = useFeatureViewed('callup_watch')
+  if (!ahlTeam) return null
+
+  // Busiest group first: the position with the most players out.
+  const groups = data?.groups
+    ? [...CALLUP_GROUPS].sort((a, b) => (data.groups[b].out.length - data.groups[a].out.length))
+    : []
+
+  return (
+    <div className="card callup-watch" style={{ marginTop: 10 }} ref={viewRef}>
+      <div className="sec-label" style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+        {t('callupWatch.title')}
+        <InfoTip label={t('callupWatch.title')} text={t('callupWatch.infoTip', { team: teamAbbr })} position="above" />
+      </div>
+      <div className="text-[11px] text-[color:var(--text-dim)]">{t('callupWatch.affiliate', { name: ahlTeam.displayName })}</div>
+      {loading ? (
+        <div className={SKELETON_CLASSES} style={{ height: 120, width: '100%', marginTop: 8 }} />
+      ) : !data?.groups ? (
+        <div className="text-[12px] text-[color:var(--text-dim)] py-1">{t('callupWatch.unavailable')}</div>
+      ) : (
+        <>
+          {groups.map(g => <CallupGroup key={g} group={g} data={data.groups[g]} teamAbbr={teamAbbr} ahlAbbr={ahlTeam.abbr} />)}
+          {data.unplaced?.length > 0 && (
+            <div className="callup-unplaced text-[11px] text-[color:var(--text-dim)] mt-2">{t('callupWatch.unplaced', { names: data.unplaced.map(u => u.name).join(', ') })}</div>
+          )}
+        </>
+      )}
+      <div className="text-[10px] text-[color:var(--text-dim)] mt-2 italic">{t('callupWatch.method', { team: teamAbbr })}</div>
     </div>
   )
 }

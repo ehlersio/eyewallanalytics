@@ -860,6 +860,16 @@ export async function getPlayoffOdds(teamAbbr = TEAM_CONFIG.abbr) {
 // history starts 2026-09-12), `unavailable` means the Worker's own read
 // failed. Not memoized client-side -- the Worker's 1hr KV cache is the
 // cache. Returns null on any Worker failure.
+// Call-up watch: who's out on the NHL team by position group and the AHL
+// affiliate's players next in line (Worker /nhl/callup-watch, a ranking
+// from real stats -- not a probability). `ahlTeamId` is the affiliate's
+// HockeyTech id (teamHistory.js affiliates -> ahlConfig.js). Null on any
+// failure; the Worker's 1hr KV cache is the cache.
+export async function getCallupWatch(teamAbbr, ahlTeamId) {
+  if (!teamAbbr || !ahlTeamId) return null;
+  return workerFetch(`/nhl/callup-watch?team=${encodeURIComponent(teamAbbr)}&ahlTeamId=${ahlTeamId}`);
+}
+
 export async function getInjuryImpact(teamAbbr = TEAM_CONFIG.abbr) {
   return workerFetch(`/injury-impact?team=${encodeURIComponent(teamAbbr)}`);
 }

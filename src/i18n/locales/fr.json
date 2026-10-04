@@ -2749,5 +2749,37 @@
     "kph": "{{value}} km/h",
     "mi": "{{value}} mi",
     "km": "{{value}} km"
+  },
+  "callupWatch": {
+    "title": "Rappels à surveiller",
+    "affiliate": "Des {{name}} (LAH)",
+    "infoTip": "Les absents de {{team}}, par position, et les joueurs du club-école avec les meilleures statistiques dans la LAH à chacune. Un classement selon les statistiques, pas une prédiction.",
+    "group": {
+      "F": "Attaquants",
+      "D": "Défenseurs",
+      "G": "Gardiens"
+    },
+    "out": "Absents :",
+    "noneOut": "Aucun absent",
+    "upNow": "Avec {{team}} en ce moment : {{names}}",
+    "hurt": "Blessés, avec {{team}} : {{names}}",
+    "unplaced": "Aussi absents (position inconnue) : {{names}}",
+    "noCandidates": "Aucun joueur du club-école à afficher.",
+    "skaterLine": "{{ppg}} PTS/PJ · {{pts}} PTS en {{gp}} PJ",
+    "goalieLine": "{{sv}} % d'arrêts en {{gp}} PJ",
+    "noGames": "Aucun match dans la LAH",
+    "thisSeasonSkater": "Cette saison : {{gp}} PJ, {{pts}} PTS",
+    "thisSeasonGoalie": "Cette saison : {{gp}} PJ, {{sv}} % d'arrêts",
+    "lastSkater": "{{n}} derniers : {{pts}} PTS",
+    "lastGoalie": "{{n}} derniers : {{sv}} % d'arrêts",
+    "underGames": "Moins de {{n}} matchs dans la LAH",
+    "rights": "Droits LNH",
+    "recalls_one": "Rappelé une fois au cours de la dernière année",
+    "recalls_other": "Rappelé {{count}} fois au cours de la dernière année",
+    "lastMove": "{{date}} : {{text}}",
+    "showAll": "Afficher les {{count}}",
+    "showFewer": "Afficher moins",
+    "unavailable": "Les rappels à surveiller ne sont pas disponibles pour le moment.",
+    "method": "Classés selon les points par match dans la LAH cette saison et la précédente (% d'arrêts pour les gardiens). Joueurs du club-école dont {{team}} détient les droits LNH ou qui ont fait la navette entre les deux clubs au cours de la dernière année. Pas une prédiction : les contrats et le ballottage ne sont pas pris en compte."
   }
 }
