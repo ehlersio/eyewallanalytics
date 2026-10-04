@@ -350,7 +350,10 @@
       "emptyState": "Aucune donnée de classement.",
       "headerTitle": "Classement de la Ligue LPHF · système de points 3-2-1-0",
       "footerHintSort": "Triez selon n'importe quelle colonne",
-      "footerHintSource": "Source : HockeyTech / LPHF"
+      "footerHintSource": "Source : HockeyTech / LPHF",
+      "conferenceTitleEast": "Association de l'Est · système 3-2-1-0",
+      "conferenceTitleWest": "Association de l'Ouest · système 3-2-1-0",
+      "footerHintPlayoffLine": "Ligne verte : qualification (4 premières)"
     },
     "bracket": {
       "emptyState": "Aucune donnée éliminatoire pour {{season}}.",
@@ -358,14 +361,20 @@
       "walterCupFinalHeading": "Finale de la Coupe Walter",
       "awaitingSemiWinners": "En attente des gagnantes des demi-finales",
       "formatExplainer": "Série trois de cinq · Première équipe à 3 victoires avance",
-      "modalWinsSeries": "{{team}} remporte la série 🏆"
+      "modalWinsSeries": "{{team}} remporte la série 🏆",
+      "quarterfinalsHeading": "Quarts de finale",
+      "conferenceFinalHeadingEast": "Finale de l'Est",
+      "conferenceFinalHeadingWest": "Finale de l'Ouest",
+      "formatExplainerConference": "4 premières de chaque association · Quarts de finale 2 de 3 · Finales d'association et finale de la Coupe Walter 3 de 5",
+      "projectedNote": "Établi selon le classement au {{date}} : les 4 premières de chaque association, selon le pourcentage de points. La 1re choisit son adversaire de quart de finale parmi la 3e et la 4e, donc 1 c. 4 est provisoire.",
+      "ifStartedToday": "Si les séries commençaient aujourd'hui"
     },
     "leaders": {
       "emptyState": "Aucune donnée de joueuse pour {{season}}."
     },
     "rankings": {
       "emptyState": "Aucune donnée de classement pour le classement de puissance.",
-      "howCalculatedIntro": "Le classement de puissance de la LPHF combine cinq facteurs en un score composite. Chaque mesure est normalisée de 0 à 1 parmi les 8 équipes, puis pondérée et additionnée.",
+      "howCalculatedIntro": "Le classement de puissance de la LPHF combine cinq facteurs en un score composite. Chaque mesure est normalisée de 0 à 1 parmi toutes les équipes, puis pondérée et additionnée.",
       "componentPointsLabel": "Pourcentage de points",
       "componentPointsDesc": "Points de saison ÷ maximum possible (PJ×3)",
       "componentL10Label": "Pourcentage de points (10 derniers)",
@@ -653,7 +662,7 @@
       "shgAgainstNote": "buts en désavantage numérique accordés",
       "runPpPkNote": "L'exécution de pwhl_stats.py remplira les données AN/DN.",
       "leagueContextTitle": "Contexte de la ligue",
-      "leagueContextExplain": "Classement de {{abbr}} parmi les 8 équipes de la LPHF cette saison.",
+      "leagueContextExplain": "Classement de {{abbr}} parmi toutes les équipes de la LPHF cette saison.",
       "rankPoints": "Points",
       "rankGoalsFor": "Buts pour",
       "rankGoalsAgainst": "Buts contre",

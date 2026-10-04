@@ -350,7 +350,10 @@
       "emptyState": "No standings data.",
       "headerTitle": "PWHL League Standings · 3-2-1-0 pts system",
       "footerHintSort": "Sort by any column",
-      "footerHintSource": "Source: HockeyTech / PWHL"
+      "footerHintSource": "Source: HockeyTech / PWHL",
+      "conferenceTitleEast": "Eastern Conference · 3-2-1-0 pts system",
+      "conferenceTitleWest": "Western Conference · 3-2-1-0 pts system",
+      "footerHintPlayoffLine": "Green line: playoff cut (top 4)"
     },
     "bracket": {
       "emptyState": "No playoff data for {{season}}.",
@@ -358,14 +361,20 @@
       "walterCupFinalHeading": "Walter Cup Final",
       "awaitingSemiWinners": "Awaiting semi winners",
       "formatExplainer": "Best-of-5 series · First to 3 wins advances",
-      "modalWinsSeries": "{{team}} wins the series 🏆"
+      "modalWinsSeries": "{{team}} wins the series 🏆",
+      "quarterfinalsHeading": "Quarterfinals",
+      "conferenceFinalHeadingEast": "East Final",
+      "conferenceFinalHeadingWest": "West Final",
+      "formatExplainerConference": "Top 4 in each conference · Quarterfinals best-of-3 · Conference finals and Walter Cup Final best-of-5",
+      "projectedNote": "Seeded from the standings as of {{date}}: the top 4 in each conference, by points percentage. The 1st seed picks its quarterfinal opponent from the 3rd and 4th, so 1 v 4 is a placeholder.",
+      "ifStartedToday": "If the playoffs started today"
     },
     "leaders": {
       "emptyState": "No player data for {{season}}."
     },
     "rankings": {
       "emptyState": "No standings data for rankings.",
-      "howCalculatedIntro": "PWHL Power Rankings combine five factors into a composite score. Each metric is normalized 0–1 across all 8 teams, then weighted and summed.",
+      "howCalculatedIntro": "PWHL Power Rankings combine five factors into a composite score. Each metric is normalized 0–1 across all teams, then weighted and summed.",
       "componentPointsLabel": "Points%",
       "componentPointsDesc": "Season points ÷ max possible (GP×3)",
       "componentL10Label": "L10 Points%",

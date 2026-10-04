@@ -226,8 +226,11 @@ export default function PWHLTeamView() {
   const { data: schedule,  loading: scLoad  } = useFetch(
     () => teamId ? fetchPWHLSchedule(teamId, currentSeason) : Promise.resolve(null), [teamId, currentSeason]
   );
+  // No playoff season paired with this one yet means no playoff games --
+  // `|| 9` used to read the 2026 playoffs for 2026-27.
+  const poSeasonId = PWHL_PLAYOFF_SEASON_MAP[currentSeason];
   const { data: poSchedule, loading: poScLoad } = useFetch(
-    () => teamId ? fetchPWHLSchedule(teamId, PWHL_PLAYOFF_SEASON_MAP[currentSeason] || 9) : Promise.resolve(null), [teamId, currentSeason]
+    () => teamId && poSeasonId ? fetchPWHLSchedule(teamId, poSeasonId) : Promise.resolve(null), [teamId, poSeasonId]
   );
   const inPlayoffs = (poSchedule?.length || 0) > 0;
   const { data: salaries, loading: salLoad } = useFetch(

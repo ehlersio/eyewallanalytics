@@ -9,10 +9,15 @@ import {
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
 import {
-  PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById,
+  PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, PWHL_TEAMS, getPWHLTeamById,
   PWHL_REGULAR_SEASONS as SEASONS,
   PWHL_PLAYOFF_SEASON_MAP as PLAYOFF_SEASON, getPWHLSeasonLabel,
 } from '../utils/pwhlConfig';
+import {
+  PWHL_CONFERENCES, pwhlUsesConferences, pwhlPlayoffFormat, rankPWHLConference,
+  projectPWHLBracket, buildPWHLSeries, arrangePWHLConferenceBracket,
+} from '../utils/pwhlPlayoffs';
+import { formatDate } from '../utils/formatters';
 import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
@@ -47,8 +52,9 @@ const SST_HINT_CLASSES = 'text-[10px] text-[color:var(--text-dim)] text-center m
 // Leaders/Bracket/SeriesModal/PowerRankings classes are still plain CSS,
 // migrated in later sub-PRs.
 //
-// Unlike NHL, PWHL has no conference/division split (single flat sortable
-// table) and no ScrollTopButton (not used anywhere in this file). PWHL DOES
+// Through 2025-26 PWHL had no conference/division split (one flat sortable
+// table); from 2026-27 standings split into East/West (pwhlPlayoffs.js).
+// No ScrollTopButton (not used anywhere in this file). PWHL DOES
 // use .lv-empty across 4 tabs including Standings (NHL only uses it for
 // Bracket). As of sub-PR 3, Standings/Bracket/Leaders' call sites are all
 // migrated -- only PowerRankings' remains literal, since .lv-empty's CSS
@@ -166,8 +172,10 @@ const BKT_CARD_BASE_CLASSES = 'bkt-card w-full rounded-[var(--radius-sm)] p-[6px
 const BKT_CARD_DEFAULT_CLASSES = 'bg-[var(--bg1)] border-[0.5px] border-[var(--border)]'
 const BKT_CARD_PRIMARY_CLASSES = 'bkt-card--primary bg-[var(--bg2)] border'
 const BKT_CARD_EMPTY_CLASSES = 'bkt-card--empty bg-transparent border-[0.5px] border-transparent min-h-[56px]'
+const BKT_CARD_OPEN_CLASSES = 'bkt-card--open bg-transparent border-[0.5px] border-dashed border-[var(--border)] min-h-[56px]'
 const BKT_CARD_CLICKABLE_CLASSES = 'bkt-card--clickable cursor-pointer [transition:background_0.12s_ease,border-color_0.12s_ease] hover:bg-[rgba(255,255,255,0.06)] focus-visible:outline focus-visible:outline-[1.5px] focus-visible:outline-[var(--red-bright)] focus-visible:outline-offset-[1px]'
 function bktCardClasses({ variant = 'default', isClickable = false } = {}) {
+  if (variant === 'open') return `${BKT_CARD_BASE_CLASSES} ${BKT_CARD_OPEN_CLASSES}`;
   const v = variant === 'empty' ? BKT_CARD_EMPTY_CLASSES : variant === 'primary' ? BKT_CARD_PRIMARY_CLASSES : BKT_CARD_DEFAULT_CLASSES
   const clickable = isClickable ? ` ${BKT_CARD_CLICKABLE_CLASSES}` : ''
   return `${BKT_CARD_BASE_CLASSES} ${v}${clickable}`
@@ -187,6 +195,11 @@ function bktAbbrClasses(isEliminated) {
   return `${BKT_ABBR_BASE_CLASSES} ${isEliminated ? BKT_ABBR_DIM_CLASSES : BKT_ABBR_DEFAULT_CLASSES}`
 }
 const BKT_DOTS_CLASSES = 'bkt-dots flex gap-[3px]'
+const BKT_SEED_CLASSES = 'bkt-seed text-[9px] font-semibold text-[color:var(--text-dim)]'
+const BKT_PROJECTED_NOTE_CLASSES = 'bkt-projected-note text-[11px] leading-[1.45] text-[color:var(--text-dim)] mb-3'
+const BKT_PROJECTED_TITLE_CLASSES = 'bkt-projected-title font-[family-name:var(--font-display)] text-[14px] font-bold text-[color:var(--text)] mb-0.5'
+// The playoff line under each conference's 4th team (2026-27 on).
+const LV_CUT_ROW_STYLE = { boxShadow: 'inset 0 -1.5px 0 var(--green)' }
 const BKT_DOT_CLASSES = 'bkt-dot w-[7px] h-[7px] rounded-full border border-[var(--border-2)] bg-transparent shrink-0'
 const BKT_SERIES_LABEL_CLASSES = 'bkt-series-label text-[9px] text-[color:var(--text-dim)] mt-[3px] whitespace-nowrap overflow-hidden text-ellipsis'
 const BKT_CONNECTOR_CLASSES = 'bkt-connector w-5 shrink-0 self-stretch'
@@ -253,6 +266,8 @@ function teamColor(abbr) {
   return PWHL_TEAM_MAP[abbr]?.displayColor || 'var(--text-dim)';
 }
 
+const conferenceOf = teamId => getPWHLTeamById(teamId)?.conference;
+
 // Hoisted to module scope (not defined inside BracketPanel) so React keeps a
 // stable component identity across re-renders. Defining these inside
 // BracketPanel's function body created a brand-new function reference every
@@ -261,10 +276,10 @@ function teamColor(abbr) {
 // causing "series cards are clickable and show modal" to flake in Cypress
 // (card detaches from the DOM mid-click) and could cause the same
 // flicker/remount for real users on any re-render (e.g. closing the modal).
-function WinDots({ wins, color }) {
+function WinDots({ wins, color, count = 3 }) {
   return (
     <span className={BKT_DOTS_CLASSES}>
-      {Array.from({length:3}).map((_,i) => (
+      {Array.from({length:count}).map((_,i) => (
         <span key={i} className={BKT_DOT_CLASSES}
           style={i < wins && color ? {background:color, borderColor:color} : undefined} />
       ))}
@@ -272,19 +287,20 @@ function WinDots({ wins, color }) {
   );
 }
 
-function BktSeriesCard({ series, onClick, myTeamId, myColor }) {
+function BktSeriesCard({ series, onClick, myTeamId, myColor, winsNeeded = 3, open = false }) {
   const { t } = useTranslation();
-  if (!series) return <div className={bktCardClasses({ variant: 'empty' })} />;
+  if (!series) return <div className={bktCardClasses({ variant: open ? 'open' : 'empty' })} />;
+  const projected = series.seedA != null;
   const abbrA   = teamAbbr(series.teamA) || '?';
   const abbrB   = teamAbbr(series.teamB) || '?';
   const colorA  = teamColor(abbrA);
   const colorB  = teamColor(abbrB);
-  const doneA   = series.winsA >= 3;
-  const doneB   = series.winsB >= 3;
+  const doneA   = series.winsA >= winsNeeded;
+  const doneB   = series.winsB >= winsNeeded;
   const hasGames = series.games.length > 0;
   const isPrimary = series.teamA === myTeamId || series.teamB === myTeamId;
-  const label = doneA ? t('league.bracket.wins',  { team: abbrA, score: `3–${series.winsB}` })
-    : doneB ? t('league.bracket.wins',  { team: abbrB, score: `3–${series.winsA}` })
+  const label = doneA ? t('league.bracket.wins',  { team: abbrA, score: `${series.winsA}–${series.winsB}` })
+    : doneB ? t('league.bracket.wins',  { team: abbrB, score: `${series.winsB}–${series.winsA}` })
     : series.winsA > series.winsB ? t('league.bracket.leads', { team: abbrA, score: `${series.winsA}–${series.winsB}` })
     : series.winsB > series.winsA ? t('league.bracket.leads', { team: abbrB, score: `${series.winsB}–${series.winsA}` })
     : t('league.bracket.tied', { score: `${series.winsA}–${series.winsB}` });
@@ -298,11 +314,15 @@ function BktSeriesCard({ series, onClick, myTeamId, myColor }) {
       onKeyDown={hasGames && onClick ? (e => e.key==='Enter' && onClick()) : undefined}>
       <div className={BKT_TEAM_ROW_CLASSES}>
         <span className={bktAbbrClasses(doneB)} style={!doneB && colorA ? { color: colorA } : undefined}>{abbrA}</span>
-        <WinDots wins={series.winsA} color={colorA} />
+        {projected
+          ? <span className={BKT_SEED_CLASSES}>{series.seedA}</span>
+          : <WinDots wins={series.winsA} color={colorA} count={winsNeeded} />}
       </div>
       <div className={BKT_TEAM_ROW_CLASSES}>
         <span className={bktAbbrClasses(doneA)} style={!doneA && colorB ? { color: colorB } : undefined}>{abbrB}</span>
-        <WinDots wins={series.winsB} color={colorB} />
+        {projected
+          ? <span className={BKT_SEED_CLASSES}>{series.seedB}</span>
+          : <WinDots wins={series.winsB} color={colorB} count={winsNeeded} />}
       </div>
       {series.games.length > 0 && <div className={BKT_SERIES_LABEL_CLASSES}>{label}</div>}
     </div>
@@ -333,7 +353,9 @@ export default function PWHLLeagueView() {
   const myAbbr   = PWHL_TEAM_CONFIG?.abbr;
   const myColor  = PWHL_TEAM_CONFIG?.displayColor || 'var(--team-primary)';
   const seasonLabel = getPWHLSeasonLabel(season);
-  const poSeasonId  = PLAYOFF_SEASON[season] || 9;
+  // No pairing yet (a season whose playoffs have no season_id) means no
+  // playoff games -- not the 2026 playoffs, which `|| 9` used to show.
+  const poSeasonId  = PLAYOFF_SEASON[season] ?? null;
 
   // useState's initial value only runs once, at first mount -- if this
   // component mounts before pwhlConfig.js's async live-season fetch
@@ -399,6 +421,7 @@ export default function PWHLLeagueView() {
         {activeTab === 'standings' && (
           <StandingsPanel
             standings={standings || []}
+            season={season}
             loading={standLoading}
             myTeamId={myTeamId}
             myColor={myColor}
@@ -406,6 +429,8 @@ export default function PWHLLeagueView() {
         )}
         {activeTab === 'bracket' && (
           <BracketPanel
+            season={season}
+            standings={standings || []}
             poSeasonId={poSeasonId}
             seasonLabel={seasonLabel}
             myTeamId={myTeamId}
@@ -455,7 +480,7 @@ function L10Dots({ w, otl, l }) {
 }
 
 // ── Standings ─────────────────────────────────────────────────
-function StandingsPanel({ standings, loading, myTeamId, myColor }) {
+function StandingsPanel({ standings, season, loading, myTeamId, myColor }) {
   const { t } = useTranslation();
   const [sortKey, setSortKey] = useState('points');
   const [sortDir, setSortDir] = useState('desc');
@@ -496,12 +521,33 @@ function StandingsPanel({ standings, loading, myTeamId, myColor }) {
     else { setSortKey(key); setSortDir('desc'); }
   }
 
+  // From 2026-27: one table per conference, the playoff line under each
+  // one's 4th team (drawn while the order on screen is the seeding order).
+  const byConference = pwhlUsesConferences(season);
+  const groups = byConference
+    ? PWHL_CONFERENCES.map(conf => {
+      const seeded = rankPWHLConference(standings, conf, conferenceOf);
+      return {
+        key: conf,
+        title: t(`pwhlLeagueView.standings.conferenceTitle${conf}`),
+        rows: sorted.filter(r => conferenceOf(r.team_id) === conf),
+        cutTeamId: seeded.length > 4 ? seeded[3].team_id : null,
+        seededIds: seeded.slice(0, 4).map(r => r.team_id),
+      };
+    })
+    : [{ key: 'all', title: t('pwhlLeagueView.standings.headerTitle'), rows: sorted, cutTeamId: null, seededIds: [] }];
+
   if (loading) return <LoadingRows />;
   if (!sorted.length) return <div className={LV_EMPTY_CLASSES}>{t('pwhlLeagueView.standings.emptyState')}</div>;
 
   return (
-    <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES}`}>
-      <div className={LV_DIV_CARD_HEADER_CLASSES}>{t('pwhlLeagueView.standings.headerTitle')}</div>
+    <>
+    {groups.map(group => {
+      const drawCut = group.cutTeamId != null
+        && group.rows.slice(0, 4).every((r, i) => r.team_id === group.seededIds[i]);
+      return (
+    <div key={group.key} className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES}`} data-conference={byConference ? group.key : undefined}>
+      <div className={LV_DIV_CARD_HEADER_CLASSES}>{group.title}</div>
       <div style={{ overflowX: 'auto' }}>
         <table className={LV_TABLE_CLASSES} style={{ minWidth: 560 }}>
           <thead>
@@ -518,15 +564,15 @@ function StandingsPanel({ standings, loading, myTeamId, myColor }) {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((row, i) => {
+            {group.rows.map((row, i) => {
               const abbr   = teamAbbr(row.team_id) || '—';
               const color  = teamColor(abbr);
               const isMe   = row.team_id === myTeamId;
               const diff   = row._diff;
               return (
                 <tr key={row.team_id}
-                  className={`lv-row${isMe ? ' lv-row--you' : ''}`}
-                  style={isMe ? { '--row-accent': myColor } : undefined}>
+                  className={`lv-row${isMe ? ' lv-row--you' : ''}${drawCut && row.team_id === group.cutTeamId ? ' lv-row--cut' : ''}`}
+                  style={{ ...(isMe ? { '--row-accent': myColor } : {}), ...(drawCut && row.team_id === group.cutTeamId ? LV_CUT_ROW_STYLE : {}) }}>
                   <td className={lvTdClasses('rank')}>{i + 1}</td>
                   <td className={lvTdClasses('team')}>
                     <span className={LV_TEAM_CELL_CLASSES}>
@@ -565,24 +611,105 @@ function StandingsPanel({ standings, loading, myTeamId, myColor }) {
         </table>
       </div>
       <div className={SST_HINT_CLASSES} style={{ padding: '6px 0 8px' }}>
-        W–OTW–OTL–L · PTS = W×3 + OTW×2 + OTL×1 · {t('pwhlLeagueView.standings.footerHintSort')} · {t('pwhlLeagueView.standings.footerHintSource')}
+        W–OTW–OTL–L · PTS = W×3 + OTW×2 + OTL×1 · {byConference ? `${t('pwhlLeagueView.standings.footerHintPlayoffLine')} · ` : ''}{t('pwhlLeagueView.standings.footerHintSort')} · {t('pwhlLeagueView.standings.footerHintSource')}
+      </div>
+    </div>
+      );
+    })}
+    </>
+  );
+}
+
+// ── Bracket ───────────────────────────────────────────────────
+// Bracket connectors: `count` series on the outer side pairing into half as
+// many, or one straight line (into and out of the Final).
+function PwConnector({ count = 1, direction = 'right', straight = false }) {
+  const xIn = direction === 'left' ? 20 : 0;
+  const xOut = direction === 'left' ? 0 : 20;
+  const stroke = 'var(--bkt-line)';
+  if (straight) {
+    return (
+      <svg className={BKT_CONNECTOR_CLASSES} viewBox="0 0 20 100" preserveAspectRatio="none" aria-hidden="true">
+        <line x1={xIn} y1={50} x2={xOut} y2={50} stroke={stroke} strokeWidth="1" />
+      </svg>
+    );
+  }
+  const totalH = count * 100;
+  return (
+    <svg className={BKT_CONNECTOR_CLASSES} viewBox={`0 0 20 ${totalH}`} preserveAspectRatio="none" aria-hidden="true">
+      {Array.from({ length: Math.ceil(count / 2) }).map((_, i) => {
+        const topY = i * 200 + 50, botY = i * 200 + 150, midY = (topY + botY) / 2;
+        return (
+          <g key={i}>
+            <line x1={xIn} y1={topY} x2={10} y2={topY} stroke={stroke} strokeWidth="1" />
+            <line x1={xIn} y1={botY} x2={10} y2={botY} stroke={stroke} strokeWidth="1" />
+            <line x1={10} y1={topY} x2={10} y2={botY} stroke={stroke} strokeWidth="1" />
+            <line x1={10} y1={midY} x2={xOut} y2={midY} stroke={stroke} strokeWidth="1" />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+// 2026-27 on: East quarterfinals and final on the left, the Walter Cup
+// Final in the middle, the West mirrored on the right. `bracket` is
+// arrangePWHLConferenceBracket()'s or projectPWHLBracket()'s shape.
+function ConferenceBracket({ bracket, rounds, myTeamId, myColor, onSelect }) {
+  const { t } = useTranslation();
+  const open = bracket.projected || !bracket.final;
+  const col = (series, roundIdx, label) => (
+    <div className={BKT_ROUND_COL_CLASSES}>
+      <div className={BKT_ROUND_LABEL_CLASSES}>{label}</div>
+      <div className={BKT_ROUND_SERIES_CLASSES}>
+        {series.map((s, i) => (
+          <div key={i} className={BKT_SERIES_SLOT_CLASSES}>
+            <BktSeriesCard series={s} onClick={s ? () => onSelect({ ...s, winsNeeded: rounds[roundIdx].winsNeeded }) : undefined} myTeamId={myTeamId} myColor={myColor}
+              winsNeeded={rounds[roundIdx].winsNeeded} open={open} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+  const [east, west] = [bracket.sides.East, bracket.sides.West];
+  return (
+    <div className={BKT_ROOT_CLASSES}>
+      <div className={BKT_BRACKET_CLASSES} style={{ minWidth: 640 }}>
+        {col(east[0], 0, t('pwhlLeagueView.bracket.quarterfinalsHeading'))}
+        <PwConnector count={2} direction="right" />
+        {col(east[1], 1, t('pwhlLeagueView.bracket.conferenceFinalHeadingEast'))}
+        <PwConnector straight direction="right" />
+        <div className={BKT_FINAL_COL_CLASSES}>
+          <div className={BKT_ROUND_LABEL_CLASSES}>{t('pwhlLeagueView.bracket.walterCupFinalHeading')}</div>
+          <div className={BKT_FINAL_CENTER_CLASSES}>
+            <BktSeriesCard series={bracket.final} onClick={bracket.final ? () => onSelect({ ...bracket.final, winsNeeded: rounds[2].winsNeeded }) : undefined}
+              myTeamId={myTeamId} myColor={myColor} winsNeeded={rounds[2].winsNeeded} open={open} />
+          </div>
+        </div>
+        <PwConnector straight direction="left" />
+        {col(west[1], 1, t('pwhlLeagueView.bracket.conferenceFinalHeadingWest'))}
+        <PwConnector count={2} direction="left" />
+        {col(west[0], 0, t('pwhlLeagueView.bracket.quarterfinalsHeading'))}
       </div>
     </div>
   );
 }
 
-// ── Bracket ───────────────────────────────────────────────────
-// Fetches all 8 teams' playoff schedules and builds the bracket
-function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
+// Fetches every team's playoff schedule and builds the bracket; for a
+// conference season with no playoff games yet, "if the playoffs started
+// today" from the standings instead.
+function BracketPanel({ season, standings, poSeasonId, seasonLabel, myTeamId, myColor }) {
   const { t } = useTranslation();
   const [allPoGames, setAllPoGames]   = useState(null);
   const [loading, setLoading]         = useState(true);
   const [selectedSeries, setSelected] = useState(null);
   const WORKER = import.meta.env.VITE_WORKER_URL || '';
+  const format = pwhlPlayoffFormat(season);
 
   useEffect(() => {
+    if (poSeasonId == null) { setAllPoGames([]); setLoading(false); return; }
     setLoading(true);
-    const teamIds = [1,2,3,4,5,6,8,9];
+    const teamIds = PWHL_TEAMS.map(team => team.teamId);
     Promise.all(
       teamIds.map(tid =>
         fetch(`${WORKER}/pwhl/schedule?teamId=${tid}&season=${poSeasonId}`, { cache: 'no-store' })
@@ -603,31 +730,31 @@ function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
   }, [poSeasonId]);
 
   if (loading) return <LoadingRows />;
-  if (!allPoGames?.length) return (
+
+  const allSeries = buildPWHLSeries(allPoGames);
+  const confBracket = format.byConference
+    ? (allSeries.length ? arrangePWHLConferenceBracket(allSeries, conferenceOf) : projectPWHLBracket(standings, conferenceOf))
+    : null;
+
+  if (format.byConference ? !confBracket : !allPoGames?.length) return (
     <div className={LV_EMPTY_CLASSES}>{t('pwhlLeagueView.bracket.emptyState', { season: seasonLabel })}</div>
   );
 
-  // Build series from games
-  const seriesMap = {};
-  for (const g of allPoGames) {
-    if (g.game_state !== 'Final') continue;
-    const ids  = [g.home_team_id, g.away_team_id].sort((a,b)=>a-b);
-    const key  = ids.join('-');
-    if (!seriesMap[key]) seriesMap[key] = { key, teamA: ids[0], teamB: ids[1], games: [], winsA: 0, winsB: 0 };
-    seriesMap[key].games.push(g);
-    const homeWon = g.home_score > g.away_score;
-    const aIsHome = g.home_team_id === ids[0];
-    if (homeWon === aIsHome) seriesMap[key].winsA++;
-    else seriesMap[key].winsB++;
-  }
-
-  const allSeries = Object.values(seriesMap)
-    .sort((a,b) => Math.min(...a.games.map(g=>g.game_id)) - Math.min(...b.games.map(g=>g.game_id)));
+  // Through 2025-26: semifinals, then the Final.
   const semis  = allSeries.slice(0, 2);
   const finals = allSeries.slice(2);
 
   return (
     <div>
+      {confBracket?.projected && (
+        <div className={BKT_PROJECTED_NOTE_CLASSES}>
+          <div className={BKT_PROJECTED_TITLE_CLASSES}>{t('pwhlLeagueView.bracket.ifStartedToday')}</div>
+          {t('pwhlLeagueView.bracket.projectedNote', { date: formatDate(new Date(), { month: 'short', day: 'numeric' }) })}
+        </div>
+      )}
+      {confBracket ? (
+        <ConferenceBracket bracket={confBracket} rounds={format.rounds} myTeamId={myTeamId} myColor={myColor} onSelect={setSelected} />
+      ) : (
       <div className={BKT_ROOT_CLASSES}>
         <div className={BKT_BRACKET_CLASSES} style={{ minWidth: 380 }}>
           {/* Semifinals */}
@@ -665,8 +792,9 @@ function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
           </div>
         </div>
       </div>
+      )}
       <div style={{ fontSize:10, color:'var(--text-dim)', marginTop:8 }}>
-        {t('pwhlLeagueView.bracket.formatExplainer')}
+        {t(format.byConference ? 'pwhlLeagueView.bracket.formatExplainerConference' : 'pwhlLeagueView.bracket.formatExplainer')}
       </div>
       {selectedSeries && (
         <div className="popup-backdrop popup-backdrop--centered" onClick={() => setSelected(null)}>
@@ -677,7 +805,8 @@ function BracketPanel({ poSeasonId, seasonLabel, myTeamId, myColor }) {
               const abbrB = teamAbbr(s.teamB) || '?';
               const colorA = teamColor(abbrA);
               const colorB = teamColor(abbrB);
-              const doneA = s.winsA >= 3, doneB = s.winsB >= 3;
+              const need = s.winsNeeded ?? 3;
+              const doneA = s.winsA >= need, doneB = s.winsB >= need;
               const winner = doneA ? abbrA : doneB ? abbrB : null;
               return (
                 <>

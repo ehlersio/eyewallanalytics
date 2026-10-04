@@ -218,10 +218,16 @@ export function isPWHLPlayoffSeason(seasonId) {
 //   LV  #686F12 → fails AA (3.28:1) → lightened to #818916 (4.68:1)
 //   SJS #0072CE → fails AA (3.64:1) → lightened to #0083ED (4.62:1)
 
+// `conference` (2026-27): the PWHL split into two six-team conferences,
+// no divisions, when it went to 12 teams -- East: BOS, HAM, MTL, NY, OTT,
+// TOR; West: DET, LV, MIN, SJS, SEA, VAN (thepwhl.com, 2026-10-02). From
+// this map, not the feed: HockeyTech's standings still group all 12 teams
+// as one "PWHL" conference as of 2026-10-04.
 export const PWHL_TEAMS = [
   // ── Original eight ───────────────────────────────────────────────────────
   {
     abbr: 'BOS',
+    conference: 'East',
     teamId: 1,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'Boston Fleet',
@@ -231,6 +237,7 @@ export const PWHL_TEAMS = [
   },
   {
     abbr: 'MIN',
+    conference: 'West',
     teamId: 2,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'Minnesota Frost',
@@ -240,6 +247,7 @@ export const PWHL_TEAMS = [
   },
   {
     abbr: 'MTL',
+    conference: 'East',
     teamId: 3,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'Montréal Victoire',
@@ -249,6 +257,7 @@ export const PWHL_TEAMS = [
   },
   {
     abbr: 'NY',
+    conference: 'East',
     teamId: 4,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'New York Sirens',
@@ -258,6 +267,7 @@ export const PWHL_TEAMS = [
   },
   {
     abbr: 'OTT',
+    conference: 'East',
     teamId: 5,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'Ottawa Charge',
@@ -267,6 +277,7 @@ export const PWHL_TEAMS = [
   },
   {
     abbr: 'TOR',
+    conference: 'East',
     teamId: 6,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'Toronto Sceptres',
@@ -276,6 +287,7 @@ export const PWHL_TEAMS = [
   },
   {
     abbr: 'SEA',
+    conference: 'West',
     teamId: 8,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'Seattle Torrent',
@@ -285,6 +297,7 @@ export const PWHL_TEAMS = [
   },
   {
     abbr: 'VAN',
+    conference: 'West',
     teamId: 9,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'Vancouver Goldeneyes',
@@ -303,6 +316,7 @@ export const PWHL_TEAMS = [
   // to update once each team's real branding drops, likely this fall.
   {
     abbr: 'DET',
+    conference: 'West',
     teamId: 10,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL Detroit',
@@ -321,6 +335,7 @@ export const PWHL_TEAMS = [
   },
   {
     abbr: 'HAM',
+    conference: 'East',
     teamId: 11,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL Hamilton',
@@ -340,6 +355,7 @@ export const PWHL_TEAMS = [
   },
   {
     abbr: 'LV',
+    conference: 'West',
     teamId: 12,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL Las Vegas',
@@ -356,6 +372,7 @@ export const PWHL_TEAMS = [
   },
   {
     abbr: 'SJS',
+    conference: 'West',
     teamId: 13,
     get season() { return PWHL_CURRENT_SEASON; },
     displayName: 'PWHL San Jose',
