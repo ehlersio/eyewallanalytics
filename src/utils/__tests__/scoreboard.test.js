@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { dayLabelKind, liveDetail, localDateString, periodLabel, startTimeLabel, teamRowHref } from '../scoreboard';
+import { dayLabelKind, finalSuffix, liveDetail, localDateString, periodLabel, startTimeLabel, teamRowHref } from '../scoreboard';
 
 const NOW = new Date('2026-09-15T18:00:00');
 
@@ -83,5 +83,15 @@ describe('teamRowHref', () => {
     expect(teamRowHref('pwhl', live, 'BOS', 'CAR', nhl)).toBeNull();
     expect(teamRowHref('nhl', live, 'ARI', 'CAR', nhl)).toBeNull();
     expect(teamRowHref('nhl', { status: 'live' }, 'BOS', 'CAR', nhl)).toBeNull();
+  });
+});
+
+describe('finalSuffix', () => {
+  it('marks a final decided in OT or a shootout, and nothing else', () => {
+    expect(finalSuffix('OT')).toBe('/OT');
+    expect(finalSuffix('SO')).toBe('/SO');
+    expect(finalSuffix('REG')).toBe(''); // NHL gameOutcome.lastPeriodType
+    expect(finalSuffix(null)).toBe('');
+    expect(finalSuffix(undefined)).toBe('');
   });
 });

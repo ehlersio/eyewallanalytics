@@ -468,7 +468,7 @@ export default function PWHLPeriodSummary({
   const { saving, sharing, handleNativeShare } =
     useShareCard({
       canvasRef,
-      filename: `EyeWall-PWHL-${carAbbr}-${summary?.periodShort}-Summary.png`,
+      filename: `EyeWall-PWHL-${carAbbr}-${summary?.periodShort?.replace('/', '-')}-Summary.png`,
       xCaption,
       mountCanvas: async () => {
         if (!canvasMounted) {

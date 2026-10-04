@@ -21,6 +21,7 @@ import ECHLGamePreviewPopup from '../components/ECHLGamePreviewPopup';
 import TeamLogo from '../components/TeamLogo';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
+import { finalSuffix } from '../utils/scoreboard';
 
 const HEADER_WRAP_CLASSES = 'mb-[14px]';
 const VIEW_TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[20px] font-bold flex items-center gap-2 mb-[2px]';
@@ -178,7 +179,7 @@ function GameCard({ game: g, teamId, abbr, onClick }) {
         <span className="text-[11px] text-[color:var(--text-muted)]">{dayOfWeek(g.game_date)} {formatDate(g.game_date)}</span>
         {isFinal && (
           <span className={`font-[family-name:var(--font-display)] text-[12px] font-bold py-[2px] px-2 rounded ${won ? 'bg-[rgba(61,186,126,0.15)] text-[color:var(--green)]' : 'bg-[rgba(255,68,34,0.1)] text-[color:var(--red-bright)]'}`}>
-            {won ? 'W' : 'L'}
+            {won ? 'W' : 'L'}{finalSuffix(g.ended_in)}
           </span>
         )}
         <span className="text-[10px] text-[color:var(--text-dim)] ml-auto">{g.venue_name}</span>

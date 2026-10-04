@@ -13,7 +13,7 @@ import { getPWHLTeamConfig } from '../utils/pwhlConfig';
 import { getAHLTeamConfig } from '../utils/ahlConfig';
 import { getECHLTeamConfig } from '../utils/echlConfig';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
-import { dayLabelKind, liveDetail, startTimeLabel, teamRowHref } from '../utils/scoreboard';
+import { dayLabelKind, finalSuffix, liveDetail, startTimeLabel, teamRowHref } from '../utils/scoreboard';
 import { formatDate } from '../utils/formatters';
 import { parseLocalDate } from '../utils/injuryDetails';
 
@@ -67,7 +67,7 @@ function StatusBadge({ game }) {
   if (game.status === 'final') {
     return (
       <span className={BADGE_FINAL_CLASSES}>
-        {t('league.scoreboard.statusFinal')}{game.endedIn ? `/${game.endedIn}` : ''}
+        {t('league.scoreboard.statusFinal')}{finalSuffix(game.endedIn)}
       </span>
     );
   }

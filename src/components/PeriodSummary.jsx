@@ -505,7 +505,7 @@ export default function PeriodSummary({
   const { saving, sharing, handleNativeShare } =
     useShareCard({
       canvasRef,
-      filename: `EyeWall-${carAbbr}-${summary?.periodShort ?? 'Summary'}.png`,
+      filename: `EyeWall-${carAbbr}-${(summary?.periodShort ?? 'Summary').replace('/', '-')}.png`,
       xCaption,
       mountCanvas: async () => {
         if (!canvasMounted) {

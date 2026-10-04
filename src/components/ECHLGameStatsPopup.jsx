@@ -125,7 +125,7 @@ export default function ECHLGameStatsPopup({ game, teamId, abbr, color, onClose 
               <span className="pgs-score-big font-[family-name:var(--font-display)] text-[42px] font-bold leading-none" style={{ color }}>{my ?? '—'}</span>
             </div>
             <div className="pgs-center-col flex flex-col items-center gap-1">
-              <div className={`pgs-result-badge font-[family-name:var(--font-display)] text-[12px] font-bold py-[3px] px-2.5 rounded-[20px] ${won ? 'win bg-[rgba(61,186,126,0.2)] text-[color:var(--green)]' : 'loss bg-[rgba(255,68,34,0.15)] text-[color:var(--red-bright)]'}`}>{won ? t('gameStatsPopup.header.resultWin') : t('gameStatsPopup.header.resultLoss')}</div>
+              <div className={`pgs-result-badge font-[family-name:var(--font-display)] text-[12px] font-bold py-[3px] px-2.5 rounded-[20px] ${won ? 'win bg-[rgba(61,186,126,0.2)] text-[color:var(--green)]' : 'loss bg-[rgba(255,68,34,0.15)] text-[color:var(--red-bright)]'}`}>{won ? t('gameStatsPopup.header.resultWin') : t('gameStatsPopup.header.resultLoss')}{game.ended_in ? ` (${game.ended_in})` : ''}</div>
               <div className="pgs-date text-[11px] text-[color:var(--text-muted)]">{formatDateLong(game.game_date)}</div>
               <div className="pgs-venue text-[10px] text-[color:var(--text-dim)]">{isHome ? '📍' : '✈'} {venueName || (isHome ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away'))}</div>
             </div>

@@ -35,6 +35,7 @@ import SeasonChipRow from '../components/SeasonChipRow';
 import SeasonTypeToggle from '../components/SeasonTypeToggle';
 import { rinkBtnClasses } from '../utils/rinkBtnClasses';
 import { PAGE_CLASSES } from '../utils/pageClasses';
+import { finalSuffix } from '../utils/scoreboard';
 // ShotMapView.css import removed (Phase 5, sub-PR 6) -- the file is now
 // fully deleted, every rule migrated to Tailwind across all 6 sub-PRs.
 
@@ -1856,7 +1857,7 @@ export default function PWHLShotMapView() {
               </>
             ) : scoreBarData ? (
               <>
-                <div className={SCORE_PERIOD_CLASSES}>{t('shotMapView.scoreBar.final')}{scoreBarData.ot?' OT':scoreBarData.shootout?' SO':''}</div>
+                <div className={SCORE_PERIOD_CLASSES}>{t('shotMapView.scoreBar.final')}{finalSuffix(scoreBarData.shootout ? 'SO' : scoreBarData.ot ? 'OT' : null)}</div>
                 <div style={{ fontSize:10, color:'var(--text-dim)', marginTop:2 }}>
                   {scoreBarData.won ? t('pwhlShotMapView.scoreBar.win') : t('pwhlShotMapView.scoreBar.loss')} · {scoreBarData.isHome ? t('pwhlShotMapView.scoreBar.home') : t('pwhlShotMapView.scoreBar.away')}
                 </div>
