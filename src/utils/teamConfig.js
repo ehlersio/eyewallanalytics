@@ -48,8 +48,8 @@ export let CURRENT_SEASON = '20262027';
 // ── Season chip lists (Session 77 — shot map history selector) ────────────
 // Mirrors pwhlConfig.js's PWHL_REGULAR_SEASONS: a static, hand-maintained
 // list of selectable seasons for the shot map's season-chip row. Same
-// once-a-year manual-bump convention as PWHL_SEASONS and LeagueView.jsx's
-// OFFSEASON_BRACKET -- add the new season here when it starts.
+// once-a-year manual-bump convention PWHL_SEASONS had -- add the new
+// season here when it starts.
 //
 // No NHL_PLAYOFF_SEASONS here, unlike PWHL. PWHL's HockeyTech data models
 // playoffs as a distinct season_id (e.g. id 9 = "2025-26 Playoffs", paired

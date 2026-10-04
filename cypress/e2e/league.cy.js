@@ -278,16 +278,22 @@ describe('League page — CAR', () => {
 
   // ── Playoff bracket tab ───────────────────────────────────────
 
+  // These cover a finished bracket: last season's, which sits beside this
+  // season's projection (or real bracket) from opening night on, and is the
+  // only one before then. The projection has its own block below.
   describe('Playoff bracket tab', () => {
-    beforeEach(() => cy.get('.league-tab').contains('Playoff bracket').click())
+    beforeEach(() => {
+      cy.get('.league-tab').contains('Playoff bracket').click()
+      cy.get('.bkt-root', { timeout: 15000 }).should('be.visible')
+      cy.get('body').then(($body) => {
+        if ($body.find('[data-bracket-view="previous"]').length) cy.get('[data-bracket-view="previous"]').click()
+      })
+    })
 
     it('shows bracket panel content area', () => {
       cy.get('.league-content').should('be.visible')
     })
 
-    // Offseason: API returns null → OFFSEASON_BRACKET fallback always shows.
-    // We never show the empty-state message unless we're mid-playoffs with a
-    // genuinely bad API response — not testable in e2e, so we assert the bracket.
     it('shows bracket root with round columns', () => {
       cy.get('.bkt-root', { timeout: 10000 }).should('be.visible')
       cy.get('.bkt-bracket').should('exist')
@@ -358,13 +364,9 @@ describe('League page — CAR', () => {
       cy.get('.series-modal .bkt-dots').should('have.length', 2)
     })
 
-    // Per-game data is only fetchable for OFFSEASON_BRACKET's series once
-    // the app's "current season" still matches the season those games
-    // actually belong to. Once the season flips, that stops being true
-    // until OFFSEASON_BRACKET itself gets refreshed to a fetchable season —
-    // the modal already handles this gracefully ("Game data unavailable for
-    // this series."), so these accept either outcome rather than asserting
-    // real games always load.
+    // The modal handles a series whose games can't be fetched gracefully
+    // ("Game data unavailable for this series."), so these accept either
+    // outcome rather than asserting real games always load.
     it('series modal shows game rows after loading, or the graceful empty state', () => {
       cy.get('.bkt-card--clickable').first().click()
       cy.get('.series-modal', { timeout: 3000 }).should('be.visible')
@@ -723,6 +725,74 @@ const MAGIC_TEAM_SEASONS = [
   { team: 'NYR', magic_number: 4,  tragic_number: 45, clinched: false, eliminated: false },
   { team: 'CBJ', magic_number: 30, tragic_number: 6,  clinched: false, eliminated: false },
 ]
+
+// "If the playoffs started today": this season's bracket, seeded from the
+// standings until its playoffs start. 16 teams per conference, every team
+// with games played; the order below is each division's.
+const PROJECTION_DIVS = {
+  A: { conf: 'E', div: 'Atlantic', teams: ['BUF', 'TBL', 'MTL', 'BOS', 'OTT', 'DET', 'FLA', 'TOR'] },
+  M: { conf: 'E', div: 'Metropolitan', teams: ['CAR', 'PIT', 'PHI', 'NJD', 'NYR', 'CBJ', 'WSH', 'NYI'] },
+  C: { conf: 'W', div: 'Central', teams: ['COL', 'DAL', 'MIN', 'UTA', 'WPG', 'NSH', 'STL', 'CHI'] },
+  P: { conf: 'W', div: 'Pacific', teams: ['VGK', 'EDM', 'ANA', 'LAK', 'SEA', 'SJS', 'CGY', 'VAN'] },
+}
+const PROJECTION_CONF_ORDER = {
+  E: ['CAR', 'BUF', 'TBL', 'PIT', 'MTL', 'PHI', 'BOS', 'OTT'],
+  W: ['COL', 'VGK', 'DAL', 'EDM', 'MIN', 'ANA', 'LAK', 'UTA'],
+}
+const PROJECTION_WC_ORDER = {
+  E: ['BOS', 'OTT', 'NJD', 'NYR', 'DET', 'CBJ', 'FLA', 'WSH', 'TOR', 'NYI'],
+  W: ['LAK', 'UTA', 'WPG', 'SEA', 'NSH', 'SJS', 'STL', 'CGY', 'CHI', 'VAN'],
+}
+const PROJECTION_STANDINGS = Object.entries(PROJECTION_DIVS).flatMap(([divAbbr, { conf, div, teams }]) =>
+  teams.map((abbr, i) => standingsEntry({
+    abbr, seasonId: 20262027, gamesPlayed: 3,
+    conferenceAbbrev: conf, conferenceName: conf === 'E' ? 'Eastern' : 'Western',
+    divisionAbbrev: divAbbr, divisionName: div, divisionSequence: i + 1,
+    conferenceSequence: PROJECTION_CONF_ORDER[conf].indexOf(abbr) + 1 || 16,
+    wildcardSequence: i < 3 ? 0 : PROJECTION_WC_ORDER[conf].indexOf(abbr) + 1,
+    clinchIndicator: abbr === 'CAR' ? 'x' : null,
+  })))
+
+describe('Playoff bracket — if the playoffs started today', () => {
+  beforeEach(() => {
+    cy.intercept('GET', `${WORKER_URL_LEAGUE}/cache/standings*`, { body: PROJECTION_STANDINGS }).as('getStandings')
+    // No 2027 series yet: the NHL answers 200 with an empty list.
+    cy.intercept('GET', /\/playoff-bracket\/2027/, { body: { series: [] } }).as('bracket2027')
+    cy.setTeam('CAR')
+    cy.visit('/league')
+    cy.get('.league-view', { timeout: 15000 }).should('be.visible')
+    cy.get('.league-tab').contains('Playoff bracket').click()
+  })
+
+  it('opens on the projection, headed as one', () => {
+    cy.get('.bkt-projected-title', { timeout: 15000 }).should('contain', 'If the playoffs started today')
+    cy.get('[data-bracket-view="current"]').should('have.class', 'lv-filter-btn--active')
+  })
+
+  it('seeds each first-round series with division and wild-card tags', () => {
+    cy.get('.bkt-round-col').first().within(() => {
+      cy.get('.bkt-card').eq(0).should('contain', 'BUF').and('contain', 'BOS').and('contain', 'D1').and('contain', 'WC1')
+      cy.get('.bkt-card').eq(2).should('contain', 'CAR').and('contain', 'OTT').and('contain', 'WC2')
+      cy.get('.bkt-card').eq(3).should('contain', 'PIT').and('contain', 'PHI')
+    })
+  })
+
+  it("shows a clinched team's letter, and no win dots or series results", () => {
+    cy.get('.bkt-clinch').should('contain', 'x')
+    cy.get('.bkt-round-col').first().find('.bkt-dots').should('not.exist')
+    cy.get('.bkt-round-col').first().find('.bkt-series-label').should('not.exist')
+  })
+
+  it('leaves later rounds and the final as open slots', () => {
+    cy.get('.bkt-card--open').should('have.length', 7) // 2+1 per side, plus the final
+  })
+
+  it("switches to last season's finished bracket", () => {
+    cy.get('[data-bracket-view="previous"]').should('contain', '2026 playoffs').click()
+    cy.get('.bkt-projected-title').should('not.exist')
+    cy.get('.bkt-winner-line').should('contain', '🏆')
+  })
+})
 
 describe('Standings tab — magic/tragic number display', () => {
   beforeEach(() => {

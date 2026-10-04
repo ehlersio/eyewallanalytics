@@ -249,10 +249,15 @@ const BKT_CARD_BASE_CLASSES = 'bkt-card w-full rounded-[var(--radius-sm)] p-[6px
 const BKT_CARD_DEFAULT_CLASSES = 'bg-[var(--bg1)] border-[0.5px] border-[var(--border)]'
 const BKT_CARD_PRIMARY_CLASSES = 'bkt-card--primary bg-[var(--bg2)] border'
 const BKT_CARD_EMPTY_CLASSES = 'bkt-card--empty bg-transparent border-[0.5px] border-transparent min-h-[56px]'
+// A slot the projection can't fill yet (later rounds of "if the playoffs
+// started today").
+const BKT_CARD_OPEN_CLASSES = 'bkt-card--open bg-transparent border-[0.5px] border-dashed border-[var(--border)] min-h-[56px]'
 const BKT_CARD_FINAL_CLASSES = 'bkt-card--final w-[110px]'
 const BKT_CARD_CLICKABLE_CLASSES = 'bkt-card--clickable cursor-pointer [transition:background_0.12s_ease,border-color_0.12s_ease] hover:bg-[rgba(255,255,255,0.06)] focus-visible:outline focus-visible:outline-[1.5px] focus-visible:outline-[var(--red-bright)] focus-visible:outline-offset-[1px]'
 function bktCardClasses({ variant = 'default', isFinal = false, isClickable = false } = {}) {
-  const v = variant === 'empty' ? BKT_CARD_EMPTY_CLASSES : variant === 'primary' ? BKT_CARD_PRIMARY_CLASSES : BKT_CARD_DEFAULT_CLASSES
+  const v = variant === 'empty' ? BKT_CARD_EMPTY_CLASSES
+    : variant === 'open' ? BKT_CARD_OPEN_CLASSES
+      : variant === 'primary' ? BKT_CARD_PRIMARY_CLASSES : BKT_CARD_DEFAULT_CLASSES
   const final = isFinal ? ` ${BKT_CARD_FINAL_CLASSES}` : ''
   const clickable = isClickable ? ` ${BKT_CARD_CLICKABLE_CLASSES}` : ''
   return `${BKT_CARD_BASE_CLASSES} ${v}${final}${clickable}`
@@ -277,6 +282,10 @@ function bktAbbrClasses(isEliminated) {
 // class) -- not migrated.
 
 const BKT_DOTS_CLASSES = 'bkt-dots flex gap-[3px]'
+const BKT_SEED_CLASSES = 'bkt-seed text-[9px] font-semibold text-[color:var(--text-dim)] tracking-[0.03em]'
+const BKT_CLINCH_CLASSES = 'bkt-clinch text-[9px] font-bold text-[color:var(--green)] uppercase'
+const BKT_PROJECTED_NOTE_CLASSES = 'bkt-projected-note text-[11px] leading-[1.45] text-[color:var(--text-dim)] mb-3'
+const BKT_PROJECTED_TITLE_CLASSES = 'bkt-projected-title font-[family-name:var(--font-display)] text-[14px] font-bold text-[color:var(--text)] mb-0.5'
 const BKT_DOT_CLASSES = 'bkt-dot w-[7px] h-[7px] rounded-full border border-[var(--border-2)] bg-transparent shrink-0'
 // .bkt-dot--won is confirmed dead -- the win-dot fill is applied via
 // inline style={{background,borderColor}} using teamTextColor(), not this
@@ -564,7 +573,7 @@ function StandingsTable({ rows, caption, teamSeasonData }) {
   );
 }
 
-import { groupByDivision, groupByConference, buildWildCard } from '../utils/leagueUtils';
+import { groupByDivision, groupByConference, buildWildCard, parseNhlBracket, projectNhlBracket } from '../utils/leagueUtils';
 import { isStandingsStale } from '../utils/standingsUtils';
 
 // ─── Standings Panel ──────────────────────────────────────────────────────────
@@ -828,116 +837,6 @@ function LeadersPanel({ scoring, goals, gaa, svp, season }) {
 // Primary team display color for YOU-row highlights and bracket card accent.
 const PRIMARY_COLOR = TEAM_CONFIG.displayColor;
 
-// Last completed playoff bracket — shown during offseason when the API
-// returns no data. Verified against the real 2025-26 results (NHL's
-// /playoff-series/carousel/20252026) as part of the 2026-27 season flip —
-// already accurate, no data change needed. Update again once the 2026-27
-// playoffs actually conclude (MP_SEASON no longer exists as a separate
-// concept to bump alongside — season resolution is live now, see
-// teamConfig.js).
-const OFFSEASON_BRACKET = {
-  east: [
-    { round: 1, series: [
-      { top: 'CAR', bottom: 'OTT', topWins: 4, bottomWins: 0 },
-      { top: 'PHI', bottom: 'PIT', topWins: 4, bottomWins: 2 },
-      { top: 'MTL', bottom: 'TBL', topWins: 4, bottomWins: 3 },
-      { top: 'BUF', bottom: 'BOS', topWins: 4, bottomWins: 2 },
-    ]},
-    { round: 2, series: [
-      { top: 'CAR', bottom: 'PHI', topWins: 4, bottomWins: 0 },
-      { top: 'MTL', bottom: 'BUF', topWins: 4, bottomWins: 3 },
-    ]},
-    { round: 3, series: [
-      { top: 'CAR', bottom: 'MTL', topWins: 4, bottomWins: 1 },
-    ]},
-  ],
-  west: [
-    { round: 1, series: [
-      { top: 'VGK', bottom: 'UTA', topWins: 4, bottomWins: 2 },
-      { top: 'ANA', bottom: 'EDM', topWins: 4, bottomWins: 2 },
-      { top: 'MIN', bottom: 'DAL', topWins: 4, bottomWins: 2 },
-      { top: 'COL', bottom: 'LAK', topWins: 4, bottomWins: 0 },
-    ]},
-    { round: 2, series: [
-      { top: 'VGK', bottom: 'ANA', topWins: 4, bottomWins: 2 },
-      { top: 'COL', bottom: 'MIN', topWins: 4, bottomWins: 1 },
-    ]},
-    { round: 3, series: [
-      { top: 'VGK', bottom: 'COL', topWins: 4, bottomWins: 0 },
-    ]},
-  ],
-  final: { top: 'CAR', bottom: 'VGK', topWins: 4, bottomWins: 2 },
-};
-
-
-/**
- * Normalise one raw series from either known NHL API shape into
- *   { top, bottom, topWins, bottomWins }
- *
- * Shape A: { topSeedTeam, bottomSeedTeam, topSeedWins, bottomSeedWins }
- * Shape B: { matchupTeams: [{ team: { abbrev }, wins }, ...] }
- */
-function normaliseSeries(raw) {
-  if (!raw) return null;
-  if (Array.isArray(raw.matchupTeams)) {
-    const [a, b] = raw.matchupTeams;
-    return {
-      top:        a?.team?.abbrev ?? a?.team ?? '—',
-      bottom:     b?.team?.abbrev ?? b?.team ?? '—',
-      topWins:    a?.wins ?? 0,
-      bottomWins: b?.wins ?? 0,
-    };
-  }
-  return {
-    top:        raw.topSeedTeam?.abbrev    ?? raw.topSeedTeam?.default    ?? raw.topSeedTeam    ?? '—',
-    bottom:     raw.bottomSeedTeam?.abbrev ?? raw.bottomSeedTeam?.default ?? raw.bottomSeedTeam ?? '—',
-    topWins:    raw.topSeedWins    ?? 0,
-    bottomWins: raw.bottomSeedWins ?? 0,
-  };
-}
-
-/**
- * Parse NHL API bracketData into { east, west, final }.
- * Logs raw shape in dev so you can verify field names on first load.
- * Returns null if shape is unrecognised or data is absent (offseason empty state).
- */
-function parseBracketData(raw) {
-  if (!raw) return null;
-  if (process.env.NODE_ENV !== 'production') {
-    console.warn('[BracketPanel] bracketData shape:', JSON.stringify(raw, null, 2));
-  }
-  try {
-    if (!Array.isArray(raw.rounds)) return null;
-    const east = [];
-    const west = [];
-    let final  = null;
-
-    raw.rounds.forEach((round) => {
-      const r = round.roundNumber ?? round.round;
-      if (r === 4) {
-        final = normaliseSeries(round.series?.[0]);
-        return;
-      }
-      const eastSeries = [];
-      const westSeries = [];
-      (round.series ?? []).forEach((s) => {
-        const norm = normaliseSeries(s);
-        const conf = (s.conference?.abbrev ?? s.conferenceAbbrev ?? '').toUpperCase();
-        // Assign by conference abbrev; fall back to East if unknown
-        if (conf.startsWith('W')) westSeries.push(norm);
-        else eastSeries.push(norm);
-      });
-      if (eastSeries.length) east.push({ round: r, series: eastSeries });
-      if (westSeries.length) west.push({ round: r, series: westSeries });
-    });
-
-    if (east.length || west.length || final) return { east, west, final };
-    return null;
-  } catch {
-    return null;
-  }
-}
-
 // ── Dot row ──
 
 function WinDots({ wins, color }) {
@@ -968,9 +867,20 @@ function TeamAbbr({ abbrev, _isWinner, isEliminated }) {
   );
 }
 
-function SeriesCard({ series, onSeriesClick }) {
+// "D1" / "WC2" and the NHL's clinch letter (x/y/z/p) beside a projected
+// team.
+function SeedTag({ seed, clinch }) {
+  return (
+    <>
+      {seed && <span className={BKT_SEED_CLASSES}>{seed}</span>}
+      {clinch && <span className={BKT_CLINCH_CLASSES}>{clinch}</span>}
+    </>
+  );
+}
+
+function SeriesCard({ series, onSeriesClick, projected = false }) {
   const { t } = useTranslation();
-  if (!series) return <div className={bktCardClasses({ variant: 'empty' })} />;
+  if (!series) return <div className={bktCardClasses({ variant: projected ? 'open' : 'empty' })} />;
 
   const { top, bottom, topWins, bottomWins } = series;
   const isPrimary  = top === PRIMARY || bottom === PRIMARY;
@@ -998,11 +908,15 @@ function SeriesCard({ series, onSeriesClick }) {
     >
       <div className={BKT_TEAM_ROW_CLASSES}>
         <TeamAbbr abbrev={top} isEliminated={isComplete && topWins !== 4} />
-        <WinDots wins={topWins} color={teamTextColor(top)} />
+        {projected
+          ? <SeedTag seed={series.topSeed} clinch={series.topClinch} />
+          : <WinDots wins={topWins} color={teamTextColor(top)} />}
       </div>
       <div className={BKT_TEAM_ROW_CLASSES}>
         <TeamAbbr abbrev={bottom} isEliminated={isComplete && bottomWins !== 4} />
-        <WinDots wins={bottomWins} color={teamTextColor(bottom)} />
+        {projected
+          ? <SeedTag seed={series.bottomSeed} clinch={series.bottomClinch} />
+          : <WinDots wins={bottomWins} color={teamTextColor(bottom)} />}
       </div>
       {label && <div className={BKT_SERIES_LABEL_CLASSES}>{label}</div>}
     </div>
@@ -1069,7 +983,7 @@ function roundLabel(roundNum, t) {
   return t('leagueView.bracket.roundFallback', { n: roundNum });
 }
 
-function RoundCol({ round, label, onSeriesClick }) {
+function RoundCol({ round, label, onSeriesClick, projected = false }) {
   const { t } = useTranslation();
   return (
     <div className={BKT_ROUND_COL_CLASSES}>
@@ -1077,7 +991,7 @@ function RoundCol({ round, label, onSeriesClick }) {
       <div className={BKT_ROUND_SERIES_CLASSES}>
         {round.series.map((s, i) => (
           <div key={i} className={BKT_SERIES_SLOT_CLASSES}>
-            <SeriesCard series={s} onSeriesClick={onSeriesClick} />
+            <SeriesCard series={s} onSeriesClick={onSeriesClick} projected={projected} />
           </div>
         ))}
       </div>
@@ -1089,7 +1003,17 @@ function RoundCol({ round, label, onSeriesClick }) {
 
 function CupFinalCol({ series, onSeriesClick }) {
   const { t } = useTranslation();
-  if (!series) return null;
+  // Not reached yet (a projection, or playoffs still in an earlier round).
+  if (!series) {
+    return (
+      <div className={BKT_FINAL_COL_CLASSES}>
+        <div className={BKT_ROUND_LABEL_CLASSES}>{t('leagueView.bracket.cupFinalHeading')}</div>
+        <div className={BKT_FINAL_CENTER_CLASSES}>
+          <div className={`${bktCardClasses({ variant: 'open', isFinal: true })}`} />
+        </div>
+      </div>
+    );
+  }
   const { top, bottom, topWins, bottomWins } = series;
   const winner      = topWins === 4 ? top : bottomWins === 4 ? bottom : null;
   const isComplete  = topWins === 4 || bottomWins === 4;
@@ -1260,20 +1184,41 @@ function SeriesModal({ series, carouselRounds, season, onClose }) {
 
 // ── Main BracketPanel ──
 
-function BracketPanel({ data }) {
+function BracketPanel({ standings }) {
   const { t } = useTranslation();
   const { currentSeason: SEASON } = useSport();
   const [selectedSeries, setSelectedSeries] = useState(null);
+  const [pickedView, setPickedView] = useState(null); // 'current' | 'previous'
 
-  const bracket = useMemo(() => {
-    return parseBracketData(data) ?? OFFSEASON_BRACKET;
-  }, [data]);
+  // /playoff-bracket takes the year the playoffs are played in: 2027 for
+  // 20262027, so last season's is 2026.
+  const endYear = Number(String(SEASON).slice(4));
+  const prevSeason = `${endYear - 2}${endYear - 1}`;
+  const { data: currentRaw, loading: currentLoading } = useFetch(() => getPlayoffBracket(endYear), [endYear]);
+  const { data: previousRaw, loading: previousLoading } = useFetch(() => getPlayoffBracket(endYear - 1), [endYear]);
+
+  // This season: its real bracket once the playoffs start, until then
+  // "if the playoffs started today" from the live standings (it moves with
+  // every result, clinch letters included). Last season: its final bracket.
+  const liveBracket = useMemo(() => parseNhlBracket(currentRaw), [currentRaw]);
+  const projected   = useMemo(() => (liveBracket ? null : projectNhlBracket(standings)), [liveBracket, standings]);
+  const previous    = useMemo(() => parseNhlBracket(previousRaw), [previousRaw]);
+  const current     = liveBracket || projected;
+
+  const view = pickedView === 'previous' && previous ? 'previous'
+    : pickedView === 'current' && current ? 'current'
+      : current ? 'current' : 'previous';
+  const bracket = view === 'current' ? current : previous;
+  const bracketSeason = view === 'current' ? SEASON : prevSeason;
+  const isProjected = !!bracket?.projected;
 
   // Fetch carousel for seriesLetter lookup — only when bracket tab is active
   const { data: carouselRounds } = useFetch(
-    () => getPlayoffSeries(SEASON),
-    [SEASON]
+    () => getPlayoffSeries(bracketSeason),
+    [bracketSeason]
   );
+
+  if (currentLoading || previousLoading) return <LoadingRows />;
 
   if (!bracket) {
     return (
@@ -1284,16 +1229,37 @@ function BracketPanel({ data }) {
   }
 
   const { east, west, final } = bracket;
+  const currentLabel = liveBracket
+    ? t('leagueView.bracket.playoffsYear', { year: endYear })
+    : t('leagueView.bracket.ifStartedToday');
 
   return (
     <>
+      {current && previous && (
+        <div className={LV_FILTER_ROW_CLASSES} role="group" aria-label={t('leagueView.bracket.viewAriaLabel')}>
+          <button className={lvFilterBtnClasses(view === 'current')} data-bracket-view="current" onClick={() => setPickedView('current')}>
+            {currentLabel}
+          </button>
+          <button className={lvFilterBtnClasses(view === 'previous')} data-bracket-view="previous" onClick={() => setPickedView('previous')}>
+            {t('leagueView.bracket.playoffsYear', { year: endYear - 1 })}
+          </button>
+        </div>
+      )}
+
+      {isProjected && (
+        <div className={BKT_PROJECTED_NOTE_CLASSES}>
+          <div className={BKT_PROJECTED_TITLE_CLASSES}>{t('leagueView.bracket.ifStartedToday')}</div>
+          {t('leagueView.bracket.projectedNote', { date: formatDate(new Date(), { month: 'short', day: 'numeric' }) })}
+        </div>
+      )}
+
       <div className={BKT_ROOT_CLASSES}>
         <div className={BKT_BRACKET_CLASSES}>
 
           {/* East rounds — left side, connectors flow right */}
           {east.map((round, ri) => (
             <React.Fragment key={`e${ri}`}>
-              <RoundCol round={round} onSeriesClick={setSelectedSeries} />
+              <RoundCol round={round} onSeriesClick={setSelectedSeries} projected={isProjected} />
               {ri < east.length - 1 && (
                 <Connector count={round.series.length} direction="right" />
               )}
@@ -1317,7 +1283,7 @@ function BracketPanel({ data }) {
                 {ri > 0 && (
                   <Connector count={round.series.length} direction="left" />
                 )}
-                <RoundCol round={round} onSeriesClick={setSelectedSeries} />
+                <RoundCol round={round} onSeriesClick={setSelectedSeries} projected={isProjected} />
               </React.Fragment>
             );
           })}
@@ -1329,7 +1295,7 @@ function BracketPanel({ data }) {
         <SeriesModal
           series={selectedSeries}
           carouselRounds={carouselRounds}
-          season={SEASON}
+          season={bracketSeason}
           onClose={() => setSelectedSeries(null)}
         />
       )}
@@ -1959,9 +1925,6 @@ export default function LeagueView() {
   const { data: svp,     loading: svpLoading }
     = useFetch(() => getGoalieLeaders('savePctg', SEASON, 10, '2'), [SEASON]);
 
-  const { data: bracket, loading: bracketLoading }
-    = useFetch(getPlayoffBracket, []);
-
   // Also needed on the Standings tab (not just Power rankings) for the
   // magic/tragic number display (Session 59).
   const { data: xgData, loading: xgLoading } = useFetch(
@@ -2018,12 +1981,7 @@ export default function LeagueView() {
           </>
         )}
 
-        {activeTab === 'bracket' && (
-          <>
-            {bracketLoading  && <LoadingRows />}
-            {!bracketLoading && <BracketPanel data={bracket} />}
-          </>
-        )}
+        {activeTab === 'bracket' && <BracketPanel standings={standingsEntries} />}
 
         {activeTab === 'leaders' && (
           <>

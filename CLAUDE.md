@@ -87,7 +87,6 @@ Expansion team logos and permanent names are still placeholders — no official 
 
 ## Known gaps
 - Cypress PWHL specs likely don't cover the 4 expansion teams yet — not verified/updated as of Session 36. Endpoints do return all 12 teams' data correctly; this is undercounted coverage, not broken coverage.
-- `OFFSEASON_BRACKET` in `LeagueView.jsx` is still a manual flip each October — not yet part of the automated season resolution.
 
 ## Testing
 Run the full Cypress suite before every push — this is a hard rule for this repo, not optional. `VITE_WORKER_URL` must be present in GH Actions env blocks or `news.cy.js` (and likely others) will fail.

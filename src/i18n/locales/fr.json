@@ -295,7 +295,11 @@
       "championSuffix": "championne 🏆",
       "closeSeriesAriaLabel": "Fermer la série",
       "seriesLabelFallback": "Série {{letter}}",
-      "gameDataUnavailable": "Données de match indisponibles pour cette série."
+      "gameDataUnavailable": "Données de match indisponibles pour cette série.",
+      "ifStartedToday": "Si les séries commençaient aujourd'hui",
+      "playoffsYear": "Séries {{year}}",
+      "projectedNote": "Établi selon le classement au {{date}} : les 3 premiers de chaque division et deux équipes repêchées par association. D = rang de division, WC = équipe repêchée; une lettre après une équipe indique qu'elle est qualifiée.",
+      "viewAriaLabel": "Tableau"
     },
     "loading": {
       "ariaLabel": "Chargement"
