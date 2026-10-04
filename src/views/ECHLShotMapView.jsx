@@ -147,9 +147,11 @@ export default function ECHLShotMapView() {
 
   const liveGame = useMemo(() => {
     if (!todayGames?.length || !teamId) return null;
+    // Only a game that's under way: the chip always reads "🔴 LIVE" with a
+    // score, so a scheduled game read "LIVE 0-0" until puck drop (AHL
+    // Chicago, 2026-10-04), and tapping it showed nothing.
     return todayGames.find(g =>
-      (g.homeTeamId === teamId || g.awayTeamId === teamId) &&
-      (g.status === 'live' || g.status === 'pre')
+      (g.homeTeamId === teamId || g.awayTeamId === teamId) && g.status === 'live'
     ) || null;
   }, [todayGames, teamId]);
 
