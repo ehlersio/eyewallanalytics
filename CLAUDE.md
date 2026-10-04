@@ -85,6 +85,8 @@ This same team-ID map is independently duplicated in `eyewall-poller`'s `pwhl.js
 
 Expansion team logos and permanent names are still placeholders — no official branding revealed yet, expected fall 2026.
 
+Conferences (2026-27): each team's `conference` ('East'/'West') is hand-set in `pwhlConfig.js` from the league's 2026-10-02 announcement -- HockeyTech's standings still return one 12-team "PWHL" group. `utils/pwhlPlayoffs.js` holds the per-season playoff format (season 11 on: top 4 per conference, best-of-3 quarterfinals). If HockeyTech starts sending conference groupings, check they agree with the map.
+
 ## Known gaps
 - Cypress PWHL specs likely don't cover the 4 expansion teams yet — not verified/updated as of Session 36. Endpoints do return all 12 teams' data correctly; this is undercounted coverage, not broken coverage.
 - `OFFSEASON_BRACKET` in `LeagueView.jsx` is still a manual flip each October — not yet part of the automated season resolution.
