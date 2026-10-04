@@ -2749,5 +2749,37 @@
     "kph": "{{value}} km/h",
     "mi": "{{value}} mi",
     "km": "{{value}} km"
+  },
+  "callupWatch": {
+    "title": "Call-up watch",
+    "affiliate": "From the {{name}} (AHL)",
+    "infoTip": "Who {{team}} is missing, by position, and the affiliate players with the best AHL numbers at each one. A ranking from stats, not a prediction.",
+    "group": {
+      "F": "Forwards",
+      "D": "Defense",
+      "G": "Goalies"
+    },
+    "out": "Out:",
+    "noneOut": "No one out",
+    "upNow": "Up with {{team}} now: {{names}}",
+    "hurt": "Injured, with {{team}}: {{names}}",
+    "unplaced": "Also out (position unknown): {{names}}",
+    "noCandidates": "No affiliate players to list.",
+    "skaterLine": "{{ppg}} P/GP · {{pts}} PTS in {{gp}} GP",
+    "goalieLine": "{{sv}} SV% in {{gp}} GP",
+    "noGames": "No AHL games yet",
+    "thisSeasonSkater": "This season: {{gp}} GP, {{pts}} PTS",
+    "thisSeasonGoalie": "This season: {{gp}} GP, {{sv}} SV%",
+    "lastSkater": "Last {{n}}: {{pts}} PTS",
+    "lastGoalie": "Last {{n}}: {{sv}} SV%",
+    "underGames": "Under {{n}} AHL games",
+    "rights": "NHL rights",
+    "recalls_one": "Recalled once in the past year",
+    "recalls_other": "Recalled {{count}}× in the past year",
+    "lastMove": "{{date}}: {{text}}",
+    "showAll": "Show all {{count}}",
+    "showFewer": "Show fewer",
+    "unavailable": "Call-up watch is unavailable right now.",
+    "method": "Ranked by AHL points per game this season and last (save % for goalies). Lists affiliate players who hold {{team}}'s NHL rights or moved between the clubs in the past year. Not a prediction: contracts and waivers aren't factored in."
   }
 }
