@@ -176,6 +176,16 @@ export async function fetchAHLTeamSeasonSummary(teamId = AHL_TEAM_ID, season = A
   return workerFetch(`/ahl/team-season-summary?teamId=${teamId}&season=${season}`);
 }
 
+/**
+ * Both teams' shots and goals in one game (the shot map's game view);
+ * /ahl/shots holds one team's shots only. Empty until the nightly run has
+ * ingested the game.
+ */
+export async function fetchAHLGameShots(gameId) {
+  if (!gameId) return null;
+  return workerFetch(`/ahl/game-shots?gameId=${gameId}`);
+}
+
 export async function fetchAHLSchedule(teamId = AHL_TEAM_ID, season = AHL_CURRENT_SEASON) {
   if (!teamId) return null;
   return workerFetch(`/ahl/schedule?teamId=${teamId}&season=${season}`);

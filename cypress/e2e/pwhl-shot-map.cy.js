@@ -112,13 +112,13 @@ describe('PWHL Shot Map', () => {
       cy.contains(/^All \d+$/).should('exist')
     })
 
-    it('game chips are clickable and filter shots', () => {
-      // Click the first non-All chip (a real game)
-      cy.get('.game-chip').not('.game-chip-all').first().click()
-      cy.get('.game-chip-active').should('exist')
-      // Click All to deselect
+    // The page opens on the last game played (2026-10), not "All".
+    it('opens on the newest game, and All and the game chips switch views', () => {
+      cy.get('.game-chip').not('.game-chip-all').first().should('have.class', 'game-chip-active')
       cy.get('.game-chip-all').click()
       cy.get('.game-chip-all').should('have.class', 'game-chip-active')
+      cy.get('.game-chip').not('.game-chip-all').eq(1).click()
+      cy.get('.game-chip').not('.game-chip-all').eq(1).should('have.class', 'game-chip-active')
     })
   })
 
@@ -142,8 +142,7 @@ describe('PWHL Shot Map', () => {
 
   describe('MetCards — row 2 (game view)', () => {
     beforeEach(() => {
-      // Select a game to activate PBP MetCards
-      cy.get('.game-chip').not('.game-chip-all').first().click()
+      // The page opens on the newest game, which activates PBP MetCards.
       cy.get('.game-chip-active').not('.game-chip-all').should('exist')
     })
 
@@ -170,7 +169,7 @@ describe('PWHL Shot Map', () => {
 
   describe('Shot Attempts panel (game view)', () => {
     beforeEach(() => {
-      cy.get('.game-chip').not('.game-chip-all').first().click()
+      cy.get('.game-chip-active').not('.game-chip-all').should('exist') // opens on the newest game
     })
 
     it('shows Shot Attempts section header', () => {
@@ -254,7 +253,7 @@ describe('PWHL Shot Map', () => {
 
   describe('Game view sidebar (scoring + team stats)', () => {
     beforeEach(() => {
-      cy.get('.game-chip').not('.game-chip-all').first().click()
+      cy.get('.game-chip-active').not('.game-chip-all').should('exist') // opens on the newest game
     })
 
     it('shows scoring section with team abbr', () => {

@@ -81,13 +81,13 @@ canes-analytics-starter/
 │   │   ├── PWHLPlayersView.jsx         # PWHL roster + stats + player popup
 │   │   ├── PWHLLeagueView.jsx          # PWHL 6-tab league page (Scoreboard added, session102)
 │   │   ├── PWHLNewsView.jsx            # PWHL news feed + News/Milestones/Trivia/Transactions tab toggle
-│   │   ├── AHLShotMapView.jsx          # AHL shot map — deliberately leaner than PWHLShotMapView.jsx: season-aggregate rink + PP/PK summary only, no per-game history browser, no Corsi/Fenwick/PDO (no `blocked_shot` event type exists in AHL's HockeyTech feed at all). Live-tracking layer (score chip, event popups, dev-only debug panel) added in AHL/PWHL parity Phase 6
+│   │   ├── AHLShotMapView.jsx          # AHL shot map — deliberately leaner than PWHLShotMapView.jsx: opens on the last game played (game chips over the season tabs, both teams' shots from `/ahl/game-shots`, per-game cards computed from them; 2026-10), season-aggregate rink + PP/PK summary behind All, no Corsi/Fenwick/PDO (no `blocked_shot` event type exists in AHL's HockeyTech feed at all). Live-tracking layer (score chip, event popups, dev-only debug panel) added in AHL/PWHL parity Phase 6
 │   │   ├── AHLScheduleView.jsx         # AHL schedule + calendar + game box/preview popups + predictions (parity Phase 3). No separate Regular Season/Playoffs tab — `AHL_SEASONS` lists "2026 Playoffs" as its own selectable season tab instead; no round-based bracket view (Calder Cup's up-to-4-round format was never ported/verified against PWHL's fixed-2-round bracket logic)
 │   │   ├── AHLTeamView.jsx             # AHL 4-tab team analytics (Overview/Stats/Splits/Trends) — Advanced (Corsi/Fenwick/PDO) and Salaries tabs dropped, both real data walls not scope choices. "Compare Seasons" (parity Phase 4) opens `TeamComparisonPopup.jsx`'s `'ahl'` branch
 │   │   ├── AHLPlayersView.jsx          # AHL roster (photo grid) + sortable stats table + player popup (parity Phase 2). Skater columns drop `shot_pct`/`gw_goals` — confirmed absent from AHL's HockeyTech feed entirely
 │   │   ├── AHLLeagueView.jsx           # AHL Scoreboard + standings, grouped by AHL's real Atlantic/North/Central/Pacific division structure (unlike PWHL's flat table) + Leaders tab — no Bracket or Power Rankings tabs (infrastructure never built for AHL)
 │   │   ├── AHLNewsView.jsx             # AHL news feed, News tab only — no Milestones/Trivia/Transactions toggle; genuinely no pipeline data source for any of the three (not a missing branch in a generic component)
-│   │   ├── ECHLShotMapView.jsx         # ECHL shot map — mirrors AHLShotMapView.jsx's exact shape (season-aggregate rink + PP/PK summary, same live-tracking layer added in ECHL's own Phase 6 equivalent)
+│   │   ├── ECHLShotMapView.jsx         # ECHL shot map — mirrors AHLShotMapView.jsx's exact shape (last-game view by default, season-aggregate rink + PP/PK summary, same live-tracking layer added in ECHL's own Phase 6 equivalent)
 │   │   ├── ECHLScheduleView.jsx        # ECHL schedule + calendar + game box/preview popups + predictions — port of AHLScheduleView.jsx, same Reg/Playoffs and bracket scope cuts
 │   │   ├── ECHLTeamView.jsx            # ECHL 4-tab team analytics — mirrors AHLTeamView.jsx exactly, same Advanced/Salaries data walls
 │   │   ├── ECHLPlayersView.jsx         # ECHL roster + stats + player popup — mirrors AHLPlayersView.jsx (same `shot_pct`/`gw_goals` column drop)
@@ -153,7 +153,7 @@ canes-analytics-starter/
 │   │   ├── AHLGameEvents.jsx           # AHL live game event popups (goal/penalty/win/puck drop) — port of PWHLGameEvents.jsx's sessionStorage-deduped popup layer (parity Phase 6). Deliberately does NOT port PWHLLiveInsights — several of its callouts (faceoff dominance in particular) depend on event types AHL's PBP doesn't have at all
 │   │   ├── HockeyTechPlayerPopup.jsx   # Player detail popup shared by AHL and ECHL (2026-09) — Stats, Heat Map, and Compare (season-over-season stat cards + per-game trend chart from `/{league}/player-game-log`, same as PWHL's). No percentile radar header or Scout tab (no percentile pipeline for either league), no goalie heat map (both leagues' PBP goal events carry `goalie_id: null`)
 │   │   ├── AHLPlayerPopup.jsx          # AHL player popup — `HockeyTechPlayerPopup` with AHL's league config (API functions, team lookup, stat defs, headshot size)
-│   │   ├── AHLGameStatsPopup.jsx       # AHL box-score popup (parity Phase 3) — team-stat comparison bars drop hits/blocked-shots/faceoff% entirely (always 0 in AHL's feed, never ingested); no "View Shot Map" CTA (AHLShotMapView.jsx is season-aggregate, not per-game)
+│   │   ├── AHLGameStatsPopup.jsx       # AHL box-score popup (parity Phase 3) — team-stat comparison bars drop hits/blocked-shots/faceoff% entirely (always 0 in AHL's feed, never ingested); no "View Shot Map" CTA yet (the shot map has had a game view since 2026-10, but this popup doesn't link to it)
 │   │   ├── AHLBoxScoreTable.jsx        # Per-player skater/goalie table for AHLGameStatsPopup — drops HIT/BLK/FO%/skater-TOI columns entirely; AHL's gameSummary reports these as a hardcoded 0 regardless of real ice time, so the pipeline never ingested them
 │   │   ├── AHLGamePreviewPopup.jsx     # AHL pre-game preview popup (parity Phase 3) — real field-NAME differences from PWHL's `gameCenterPreview` shape (`teamRecord.overall`/`.past_10_games` not `overallRecord`/`last10Record`, `powerPlayStats`/`penaltyKillStats` not `powerPlay`/`penaltyKill`, `previousMeetings` not `seasonSeries`); no shot-attempt-share row at all (no `corsiForPct` data source)
 │   │   ├── AHLCalendarView.jsx         # AHL monthly schedule grid — port of PWHLCalendarView.jsx; no distinct OT/shootout-loss cell variant since `ahl_game_log` has no ot/shootout boolean columns, so every non-win renders as a plain loss
@@ -523,7 +523,7 @@ All existing NHL features unchanged — see original documentation. Key features
 
 Brought to full 6-phase feature parity with PWHL — see [AHL & ECHL Frontend Build](#ahl--echl-frontend-build) for the phase-by-phase history and the real bugs found while shipping it. Every feature below has a real, confirmed data-source reason for anything dropped relative to PWHL — none are unfinished scope.
 
-**Shot Map** — Season-aggregate `react-hockey-rink` view + PP/PK summary card. No Corsi/Fenwick/PDO panel (no `blocked_shot` event type in AHL's HockeyTech feed, ever). No per-game history browser — shot markers don't open a player popup. Live-tracking layer (score chip, goal/penalty/win/puck-drop popups, dev-only 5-tap debug panel) added in Phase 6.
+**Shot Map** — Opens on the team's last game played (2026-10): game chips over the season tabs, that game's shots for both teams (`/ahl/game-shots`) and goals/SOG/shooting %/save % computed from them. All or a season tab shows the season-aggregate `react-hockey-rink` view + PP/PK summary card. No Corsi/Fenwick/PDO panel (no `blocked_shot` event type in AHL's HockeyTech feed, ever). Shot markers don't open a player popup. Live-tracking layer (score chip, goal/penalty/win/puck-drop popups, dev-only 5-tap debug panel) added in Phase 6.
 
 **Schedule** — Game cards + calendar toggle + box-score/preview popups + win predictions (Phase 3). No separate Regular Season/Playoffs tab (playoffs is its own selectable season entry instead); no round-based playoff bracket (Calder Cup's format is up to 4 rounds, never ported).
 
@@ -541,7 +541,7 @@ Brought to full 6-phase feature parity with PWHL — see [AHL & ECHL Frontend Bu
 
 Same HockeyTech/LeagueStat vendor as AHL/PWHL. Started as a foundation + basic-display pass (Shot Map/Players/Schedule/League/Team, no player popups/comparisons/news/live-tracking), then brought to the same full 6-phase parity as AHL within the same session, per the user's explicit choice to stage it exactly the way AHL itself was staged rather than build everything in one pass. Every feature and every scope cut below mirrors AHL's own, confirmed live rather than assumed to transfer.
 
-**Shot Map** — Same season-aggregate rink + PP/PK summary shape as AHL's, including the Phase 6 live-tracking layer (score chip, event popups, debug panel).
+**Shot Map** — Same shape as AHL's (last-game view by default, season-aggregate rink + PP/PK summary behind All), including the Phase 6 live-tracking layer (score chip, event popups, debug panel).
 
 **Schedule** — Game cards + calendar + box-score/preview popups + predictions, same Reg/Playoffs and bracket scope cuts as AHL's.
 

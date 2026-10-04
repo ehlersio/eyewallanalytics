@@ -9,26 +9,27 @@
 //     goal + goals (matches echl_shot_events' actual event_type values).
 //   - No ECHLPlayerPopup equivalent wired here -- shot markers don't
 //     open a player profile on click.
-//   - No per-game history browsing (GameChipsRow's past-games list,
-//     danger-zone drill popups, period/game AI summaries) -- out of the
-//     parity plan's stated Phase 6 scope, which is live tracking
-//     specifically, not the full per-game view PWHLShotMapView.jsx is.
-//     The live pieces added below (score chip, event popups, debug
-//     panel) layer on top of the season-aggregate view rather than
-//     replacing it with one.
+//   - A lighter per-game view than PWHL's: game chips over the season
+//     tabs, opening on the last game played (2026-10), with that game's
+//     shots for both teams and cards computed from them -- no danger-zone
+//     drill popups or period/game AI summaries.
+//     The live pieces below (score chip, event popups, debug panel) are
+//     separate from it.
 // PP/PK summary numbers come straight from echl_team_seasons (via
 // /echl/team-season-summary), which the pipeline already populates from
 // HockeyTech's own special-teams view -- not derived from PBP here.
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch, usePoll } from '../hooks/useFetch';
-import { fetchECHLShots, fetchECHLRoster, fetchECHLTeamSeasonSummary, fetchECHLToday, fetchECHLLive, ECHL_TEAM_CONFIG, ECHL_TEAM_ID } from '../utils/echlApi';
-import { ECHL_CURRENT_SEASON, ECHL_SEASONS, ECHL_REGULAR_SEASONS, ECHL_REGULAR_SEASON_MAP, getECHLTeamConfig } from '../utils/echlConfig';
+import { fetchECHLShots, fetchECHLGameShots, fetchECHLSchedule, fetchECHLRoster, fetchECHLTeamSeasonSummary, fetchECHLToday, fetchECHLLive, ECHL_TEAM_CONFIG, ECHL_TEAM_ID } from '../utils/echlApi';
+import { ECHL_CURRENT_SEASON, ECHL_SEASONS, ECHL_REGULAR_SEASONS, ECHL_REGULAR_SEASON_MAP, getECHLTeamConfig, getECHLTeamById } from '../utils/echlConfig';
 import { HockeyRink } from 'react-hockey-rink';
 import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
-import { LiveGameChip } from '../components/GameChipsRow';
+import GameChipsRow, { LiveGameChip } from '../components/GameChipsRow';
+import { finalSuffix } from '../utils/scoreboard';
+import { formatDate as formatDateIntl } from '../utils/formatters';
 import {
   ECHLPuckDropPopup, ECHLGoalPopup, ECHLPenaltyPopup, ECHLWinPopup, useECHLGameEvents,
 } from '../components/ECHLGameEvents';
@@ -99,6 +100,42 @@ function adaptShot(row, playerMap) {
   };
 }
 
+// The opponent's shots in a game view, same fold as PWHLShotMapView.jsx's
+// adaptOppShot(): onto the attacking half, marked as the opponent's.
+function adaptOppShot(row) {
+  const secs = row.time_seconds || 0;
+  const mm = String(Math.floor(secs / 60)).padStart(2, '0');
+  const ss = String(secs % 60).padStart(2, '0');
+  let x = parseFloat(row.x_norm);
+  let y = parseFloat(row.y_norm);
+  if (Number.isNaN(x) || Number.isNaN(y)) return null;
+  if (x > 0) { x = -x; y = -y; }
+  x = Math.min(Math.abs(x), 99);
+  y = Math.max(-42, Math.min(42, y));
+  return {
+    id: row.id, x, y,
+    type: mapEventType(row.event_type),
+    isCanes: false,
+    period: row.period_id,
+    timeInPeriod: `${mm}:${ss}`,
+    shooterName: null,
+    gameId: row.game_id,
+    shotType: row.shot_type || null,
+  };
+}
+
+function shortDate(dateStr) {
+  const d = new Date(`${dateStr}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return dateStr || '';
+  return formatDateIntl(d, { month: 'short', day: 'numeric', timeZone: 'UTC' });
+}
+
+const pct = (num, den) => (den > 0 ? `${((num / den) * 100).toFixed(1)}%` : '—');
+
+// pickedGameId for the season aggregate, as opposed to null, "nothing
+// picked", which opens the newest final.
+const ALL_GAMES = 'all';
+
 export default function ECHLShotMapView() {
   const { t } = useTranslation();
   const team = ECHL_TEAM_CONFIG;
@@ -127,10 +164,16 @@ export default function ECHLShotMapView() {
     return () => window.removeEventListener('eyewall:echl-season-updated', handleSeasonUpdate);
   }, [fellBackFrom]);
 
+  // A game id, ALL_GAMES for the season aggregate, or null: the newest
+  // final, which is where the page opens.
+  const [pickedGameId, setPickedGameId] = useState(null);
+
+  // Picking a season opens its aggregate.
   function handleSeasonPick(id) {
     userPickedSeason.current = true;
     setFellBackFrom(null);
     setSeason(id);
+    setPickedGameId(ALL_GAMES);
   }
 
   // ── Live game detection ───────────────────────────────────────
@@ -262,13 +305,68 @@ export default function ECHLShotMapView() {
     return map;
   }, [roster]);
 
+  // ── Game view ────────────────────────────────────────────────
+  const { data: schedule } = useFetch(
+    () => teamId ? fetchECHLSchedule(teamId, season) : Promise.resolve(null),
+    [teamId, season]
+  );
+  // Finished games, newest first.
+  const games = useMemo(() => (schedule || [])
+    .filter(g => g.game_state === 'Final')
+    .sort((a, b) => (b.game_date || '').localeCompare(a.game_date || '') || b.game_id - a.game_id),
+  [schedule]);
+  const viewGameId = pickedGameId === ALL_GAMES ? null : pickedGameId ?? games[0]?.game_id ?? null;
+  const viewGame = games.find(g => g.game_id === viewGameId) || null;
+  const isGameView = !!viewGame;
+  const handleGameSelect = id => setPickedGameId(id === viewGameId ? ALL_GAMES : id);
+  const handleAllGames = () => setPickedGameId(ALL_GAMES);
+
+  const gameChipGames = useMemo(() => games.map(g => {
+    const isHome = g.home_team_id === teamId;
+    const oppAbbr = getECHLTeamById(isHome ? g.away_team_id : g.home_team_id)?.abbr;
+    return {
+      id: g.game_id,
+      opponentAbbr: oppAbbr,
+      opponentColor: getECHLTeamConfig(oppAbbr)?.displayColor,
+      myScore: isHome ? g.home_score : g.away_score,
+      oppScore: isHome ? g.away_score : g.home_score,
+      isHome,
+    };
+  }), [games, teamId]);
+
+  const { data: gameShots, loading: gameShotsLoading } = useFetch(
+    () => viewGameId ? fetchECHLGameShots(viewGameId) : Promise.resolve(null),
+    [viewGameId]
+  );
+  const ourGameShots = useMemo(() => (gameShots || []).filter(r => r.team_id === teamId), [gameShots, teamId]);
+  const oppGameShots = useMemo(() => (gameShots || []).filter(r => r.team_id !== teamId), [gameShots, teamId]);
+  const countGoals = rows => rows.filter(r => r.event_type === 'goal').length;
+
   const rinkEvents = useMemo(() => {
+    if (isGameView) {
+      return [
+        ...ourGameShots.map(r => adaptShot(r, playerMap)),
+        ...oppGameShots.map(adaptOppShot),
+      ].filter(Boolean);
+    }
     if (!shots) return [];
     return shots.map(r => adaptShot(r, playerMap)).filter(Boolean);
-  }, [shots, playerMap]);
+  }, [isGameView, ourGameShots, oppGameShots, shots, playerMap]);
 
   const goals = useMemo(() => (shots || []).filter(s => s.event_type === 'goal').length, [shots]);
   const shotsOnGoal = useMemo(() => (shots || []).length, [shots]);
+  const rinkLoading = isGameView ? gameShotsLoading : shotsLoading;
+
+  let subtitle = t('echlShotMapView.subtitle');
+  if (viewGame) {
+    const isHome = viewGame.home_team_id === teamId;
+    subtitle = t('echlShotMapView.gameSubtitle', {
+      final: `${t('shotMapView.scoreBar.final')}${finalSuffix(viewGame.ended_in)}`,
+      where: isHome ? t('echlShotMapView.vs') : t('echlShotMapView.at'),
+      opp: getECHLTeamById(isHome ? viewGame.away_team_id : viewGame.home_team_id)?.abbr || '',
+      date: shortDate(viewGame.game_date),
+    });
+  }
 
   if (!abbr || !teamId) {
     return (
@@ -287,7 +385,7 @@ export default function ECHLShotMapView() {
           <TeamLogo abbr={abbr} sport="echl" size={22} />
           {t('nav.shotMap')}
         </h2>
-        <p className={SUB_CLASSES}>{t('echlShotMapView.subtitle')}</p>
+        <p className={SUB_CLASSES}>{subtitle}</p>
       </div>
 
       {liveGame && (
@@ -310,44 +408,66 @@ export default function ECHLShotMapView() {
         </div>
       )}
 
+      {games.length > 0 && (
+        <GameChipsRow games={gameChipGames} sport="echl"
+          selectedGameId={viewGameId} onSelect={handleGameSelect} onAll={handleAllGames} />
+      )}
+
       <div className={TABS_WRAP_CLASSES} style={{ marginTop: 0 }}>
         {ECHL_SEASONS.map(s => (
           <button key={s.id} className={tabClasses(season === s.id)} onClick={() => handleSeasonPick(s.id)}>{s.label}</button>
         ))}
       </div>
 
-      <div className={METRICS_GRID_CLASSES}>
-        <MetCard label={t('echlShotMapView.goals')} value={shotsLoading ? '—' : goals} />
-        <MetCard label={t('echlShotMapView.shotsOnGoal')} value={shotsLoading ? '—' : shotsOnGoal} />
-        <MetCard
-          label={t('echlShotMapView.ppPct')}
-          value={summaryLoading || summary?.ppPct == null ? '—' : `${(summary.ppPct * 100).toFixed(1)}%`}
-        />
-      </div>
+      {isGameView ? (
+        <>
+          <div className={METRICS_GRID_CLASSES}>
+            <MetCard label={t('echlShotMapView.goals')} value={gameShotsLoading || !gameShots?.length ? '—' : countGoals(ourGameShots)} />
+            <MetCard label={t('echlShotMapView.shotsOnGoal')} value={gameShotsLoading || !gameShots?.length ? '—' : ourGameShots.length} />
+            <MetCard label={t('echlShotMapView.shootingPct')} value={gameShotsLoading ? '—' : pct(countGoals(ourGameShots), ourGameShots.length)} />
+          </div>
+          <div className={METRICS_GRID_CLASSES}>
+            <MetCard label={t('echlShotMapView.oppGoals')} value={gameShotsLoading || !gameShots?.length ? '—' : countGoals(oppGameShots)} />
+            <MetCard label={t('echlShotMapView.oppShotsOnGoal')} value={gameShotsLoading || !gameShots?.length ? '—' : oppGameShots.length} />
+            <MetCard label={t('echlShotMapView.savePct')} value={gameShotsLoading ? '—' : pct(oppGameShots.length - countGoals(oppGameShots), oppGameShots.length)} />
+          </div>
+        </>
+      ) : (
+        <>
+          <div className={METRICS_GRID_CLASSES}>
+            <MetCard label={t('echlShotMapView.goals')} value={shotsLoading ? '—' : goals} />
+            <MetCard label={t('echlShotMapView.shotsOnGoal')} value={shotsLoading ? '—' : shotsOnGoal} />
+            <MetCard
+              label={t('echlShotMapView.ppPct')}
+              value={summaryLoading || summary?.ppPct == null ? '—' : `${(summary.ppPct * 100).toFixed(1)}%`}
+            />
+          </div>
 
-      <div className={METRICS_GRID_CLASSES}>
-        <MetCard
-          label={t('echlShotMapView.pkPct')}
-          value={summaryLoading || summary?.pkPct == null ? '—' : `${(summary.pkPct * 100).toFixed(1)}%`}
-        />
-        <MetCard
-          label={t('echlShotMapView.sogFor')}
-          value={summaryLoading ? '—' : summary?.sog?.car ?? '—'}
-        />
-        <MetCard
-          label={t('echlShotMapView.sogAgainst')}
-          value={summaryLoading ? '—' : summary?.sog?.opp ?? '—'}
-        />
-      </div>
+          <div className={METRICS_GRID_CLASSES}>
+            <MetCard
+              label={t('echlShotMapView.pkPct')}
+              value={summaryLoading || summary?.pkPct == null ? '—' : `${(summary.pkPct * 100).toFixed(1)}%`}
+            />
+            <MetCard
+              label={t('echlShotMapView.sogFor')}
+              value={summaryLoading ? '—' : summary?.sog?.car ?? '—'}
+            />
+            <MetCard
+              label={t('echlShotMapView.sogAgainst')}
+              value={summaryLoading ? '—' : summary?.sog?.opp ?? '—'}
+            />
+          </div>
+        </>
+      )}
 
       <div className={RINK_CARD_CLASSES} data-tour="rink">
-        {shotsLoading ? (
+        {rinkLoading ? (
           <div className={SKELETON_CLASSES} style={{ height: 280, width: '100%', borderRadius: 8 }} />
         ) : rinkEvents.length > 0 ? (
           <HockeyRink events={toHockeyRinkEvents(rinkEvents)} teamAbbr={abbr} />
         ) : (
           <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-dim)', fontSize: 13 }}>
-            {t('echlShotMapView.noShots')}
+            {isGameView ? t('echlShotMapView.noShotsGame') : t('echlShotMapView.noShots')}
           </div>
         )}
       </div>

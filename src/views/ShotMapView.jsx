@@ -541,6 +541,10 @@ function unitsGameTypeFor(gameType) {
   return GAME_TYPE.REGULAR;
 }
 
+// selectedGameId for the season aggregate ("All N"), as opposed to null,
+// "nothing picked", which opens the newest completed game.
+const ALL_GAMES = 'all';
+
 export default function ShotMapView() {
   const { t } = useTranslation();
   // The team this view watches from: the favorite, or -- on the
@@ -604,6 +608,8 @@ export default function ShotMapView() {
   // 'regular' | 'playoffs' | 'preseason', or null for "not picked" -- see
   // seasonType below for what that resolves to.
   const [pickedSeasonType, setPickedSeasonType] = useState(null);
+  // A game id, ALL_GAMES for the season aggregate ("All N"), or null for
+  // "not picked": the newest completed game (effectiveSelectedGameId).
   const [selectedGameId, setSelectedGameId] = useState(null);
   // State rather than the ref this used to be: the off-season fallback
   // below derives from it, and a ref mutation doesn't re-render. The case
@@ -619,10 +625,10 @@ export default function ShotMapView() {
     window.addEventListener('eyewall:nhl-season-updated', handleSeasonUpdate);
     return () => window.removeEventListener('eyewall:nhl-season-updated', handleSeasonUpdate);
   }, [userPickedSeason]);
-  const handleSeasonChange = id => { setUserPickedSeason(true); setSeason(id); setSelectedGameId(null); };
-  const handleSeasonTypeChange = type => { setPickedSeasonType(type); setSelectedGameId(null); };
-  const handleSelect = id => setSelectedGameId(p => p === id ? null : id);
-  const handleAll     = ()  => setSelectedGameId(null);
+  // Picking a season or Regular/Playoffs opens its aggregate.
+  const handleSeasonChange = id => { setUserPickedSeason(true); setSeason(id); setSelectedGameId(ALL_GAMES); };
+  const handleSeasonTypeChange = type => { setPickedSeasonType(type); setSelectedGameId(ALL_GAMES); };
+  const handleAll     = ()  => setSelectedGameId(ALL_GAMES);
 
   // ── Off-season fallback ────────────────────────────────────────
   // CURRENT_SEASON rolls to the new season id as soon as the NHL
@@ -688,10 +694,20 @@ export default function ShotMapView() {
   const handleDisabledTap  = useCallback(() => setShowDisabledHint(true), []);
   const dismissDisabledHint = useCallback(() => setShowDisabledHint(false), []);
 
+  // Refetched when a live game ends: the page opens on the newest
+  // completed game, and the schedule loaded before puck drop doesn't have
+  // the one that just finished as completed.
+  const [scheduleRefresh, setScheduleRefresh] = useState(0);
+  const scheduleSawLiveRef = useRef(isLive);
+  useEffect(() => {
+    if (scheduleSawLiveRef.current && !isLive) setScheduleRefresh(n => n + 1);
+    scheduleSawLiveRef.current = isLive;
+  }, [isLive]);
+
   // Season history is the favorite's alone -- a guest view is one game.
   const { data: seasonSchedule } = useFetch(
     () => isGuest ? Promise.resolve(null) : getScheduleForSeason(team.abbr, effectiveSeason),
-    [effectiveSeason, team, isGuest]
+    [effectiveSeason, team, isGuest, scheduleRefresh]
   );
 
   // Season-wide shots for the "All N" chip — both teams' shots from every
@@ -710,11 +726,20 @@ export default function ShotMapView() {
   // has no preseason games in it. The option only exists when the season
   // on screen has a completed preseason game, and it's where the page opens
   // until the regular season has one of its own.
+  //
+  // Unpicked, it's the type of the newest completed game, so the page
+  // opens on the last game played: preseason until the regular season has
+  // a game, the playoffs once they've started.
   const hasCompletedOfType = type => !!seasonSchedule?.some(g => g.gameType === type && isCompleted(g));
   const hasPreseasonGames = hasCompletedOfType(GAME_TYPE.PRESEASON);
+  const newestCompleted = useMemo(
+    () => (seasonSchedule || []).filter(isCompleted).sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate))[0] || null,
+    [seasonSchedule]
+  );
+  const newestType = newestCompleted?.gameType === GAME_TYPE.PLAYOFFS ? 'playoffs'
+    : newestCompleted?.gameType === GAME_TYPE.PRESEASON ? 'preseason' : 'regular';
   const seasonType = pickedSeasonType === 'preseason' && !hasPreseasonGames ? 'regular'
-    : pickedSeasonType
-      || (hasPreseasonGames && !hasCompletedOfType(GAME_TYPE.REGULAR) ? 'preseason' : 'regular');
+    : pickedSeasonType || newestType;
 
   // Completed games for the selected season+type, newest first.
   const games = useMemo(() => {
@@ -744,10 +769,13 @@ export default function ShotMapView() {
     [team, effectiveSeason, selectionGameType, isGuest]
   );
 
-  // Preseason has no "All N" -- nothing aggregates preseason shots -- so
-  // with nothing picked it shows the newest game.
-  const effectiveSelectedGameId = selectedGameId
-    ?? (seasonType === 'preseason' ? games[0]?.id ?? null : null);
+  // With nothing picked, the newest game. Preseason has no "All N" --
+  // nothing aggregates preseason shots -- so ALL_GAMES lands there too.
+  const effectiveSelectedGameId = selectedGameId === ALL_GAMES
+    ? (seasonType === 'preseason' ? games[0]?.id ?? null : null)
+    : selectedGameId ?? games[0]?.id ?? null;
+  // Tapping the game on screen goes back to the aggregate.
+  const handleSelect = id => setSelectedGameId(id === effectiveSelectedGameId ? ALL_GAMES : id);
   const selectedGame = useMemo(() => games.find(g => g.id === effectiveSelectedGameId) || null, [games, effectiveSelectedGameId]);
 
   // Normalized shape for the shared GameChipsRow — getOpponent/getCarScore/

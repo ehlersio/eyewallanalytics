@@ -797,7 +797,15 @@
     "pkPct": "% DÉS",
     "sogFor": "Tirs pour",
     "sogAgainst": "Tirs contre",
-    "noShots": "Aucune donnée de tirs disponible pour cette saison."
+    "noShots": "Aucune donnée de tirs disponible pour cette saison.",
+    "gameSubtitle": "{{final}} · {{where}} {{opp}} · {{date}}",
+    "vs": "c.",
+    "at": "à",
+    "oppGoals": "Buts adv.",
+    "oppShotsOnGoal": "Tirs au but adv.",
+    "shootingPct": "% de tirs",
+    "savePct": "% d'arrêts",
+    "noShotsGame": "Les données de tirs de ce match ne sont pas encore disponibles. Elles sont habituellement ajoutées pendant la nuit."
   },
   "echlTeamView": {
     "noTeamSelected": "Aucune équipe de la ECHL sélectionnée.",
@@ -881,7 +889,15 @@
     "pkPct": "% DÉS",
     "sogFor": "Tirs pour",
     "sogAgainst": "Tirs contre",
-    "noShots": "Aucune donnée de tirs disponible pour cette saison."
+    "noShots": "Aucune donnée de tirs disponible pour cette saison.",
+    "gameSubtitle": "{{final}} · {{where}} {{opp}} · {{date}}",
+    "vs": "c.",
+    "at": "à",
+    "oppGoals": "Buts adv.",
+    "oppShotsOnGoal": "Tirs au but adv.",
+    "shootingPct": "% de tirs",
+    "savePct": "% d'arrêts",
+    "noShotsGame": "Les données de tirs de ce match ne sont pas encore disponibles. Elles sont habituellement ajoutées pendant la nuit."
   },
   "common": {
     "loading": "Chargement…",
