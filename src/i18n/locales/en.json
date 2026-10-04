@@ -295,7 +295,11 @@
       "championSuffix": "champion 🏆",
       "closeSeriesAriaLabel": "Close series",
       "seriesLabelFallback": "Series {{letter}}",
-      "gameDataUnavailable": "Game data unavailable for this series."
+      "gameDataUnavailable": "Game data unavailable for this series.",
+      "ifStartedToday": "If the playoffs started today",
+      "playoffsYear": "{{year}} playoffs",
+      "projectedNote": "Seeded from the standings as of {{date}}: the top 3 in each division plus two wild cards per conference. D = division seed, WC = wild card; a letter after a team means it has clinched.",
+      "viewAriaLabel": "Bracket"
     },
     "loading": {
       "ariaLabel": "Loading"

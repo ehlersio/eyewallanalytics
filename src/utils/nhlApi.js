@@ -315,11 +315,14 @@ export function isCompleted(game) {
 
 // ─── PLAYOFF SERIES ──────────────────────────────────────────
 
-// Get the current playoff bracket/series overview
-export async function getPlayoffBracket() {
-  return cached('playoffBracket', async () => {
+// One year's playoff bracket. `endYear` is the year the playoffs are
+// played in -- 2027 for 20262027. The season id this used to send 404s, so
+// the League tab never had a real bracket and fell back to a hardcoded one.
+// Before a season's playoffs the NHL answers 200 with `series: []`.
+export async function getPlayoffBracket(endYear) {
+  return cached(`playoffBracket:${endYear}`, async () => {
     try {
-      const res = await fetch(resolveProxyUrl(`${BASE}/playoff-bracket/${TEAM_CONFIG.season}`));
+      const res = await fetch(resolveProxyUrl(`${BASE}/playoff-bracket/${endYear}`));
       if (!res.ok) return null; // 404 expected during offseason — no log
       return await res.json();
     } catch {
