@@ -174,7 +174,7 @@ export default function NotificationsBell() {
                     onClick={() => handleOpenSummary(s)}
                   >
                     <span className={`${CHIP_PERIOD_CLASSES} ${s.isGameSummary ? CHIP_PERIOD_GAME_CLASSES : ''}`}>
-                      {s.isGameSummary ? 'FINAL' : s.periodShort}
+                      {s.isGameSummary ? (s.periodShort || 'FINAL') : s.periodShort}
                     </span>
                     <span className={ROW_TEXT_CLASSES}>
                       <span className={CHIP_SCORE_CLASSES}>

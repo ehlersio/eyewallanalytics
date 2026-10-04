@@ -15,6 +15,7 @@
 //   shots:     { teamId, shooter, isGoal, x_norm, y_norm }
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { finalSuffix } from '../utils/scoreboard';
 
 const WORKER_URL = typeof import.meta !== 'undefined'
   ? import.meta.env?.VITE_WORKER_URL
@@ -351,8 +352,8 @@ function buildPWHLGameSummary(events, teamId, htSummary, gameId) {
 
   return {
     period:        'game',
-    periodLabel:   'Final',
-    periodShort:   'FINAL',
+    periodLabel:   `Final${finalSuffix(htSummary?.endedIn)}`,
+    periodShort:   `FINAL${finalSuffix(htSummary?.endedIn)}`,
     generatedAt:   Date.now(),
     isGameSummary: true,
     // Shot stats

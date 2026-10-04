@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getGameLanding } from '../utils/nhlApi';
 import { computeShotAttempts } from '../utils/advancedStats';
+import { finalSuffix } from '../utils/scoreboard';
 
 const WORKER_URL = typeof import.meta !== 'undefined'
   ? import.meta.env?.VITE_WORKER_URL
@@ -424,10 +425,14 @@ function buildGameSummary(plays, carTeamId, landingData, pbp, gameId) {
   // Final score from last goal or last play
   const lastGoal = [...allGoals].reverse()[0];
 
+  // Final, Final/OT or Final/SO: the game's last period type ('REG' | 'OT' |
+  // 'SO'), from the PBP's own outcome or else its last play.
+  const ended = finalSuffix(pbp?.gameOutcome?.lastPeriodType ?? plays[plays.length - 1]?.periodDescriptor?.periodType);
+
   return {
     period: 'game',
-    periodLabel: 'Final',
-    periodShort: 'FINAL',
+    periodLabel: `Final${ended}`,
+    periodShort: `FINAL${ended}`,
     generatedAt: Date.now(),
     isGameSummary: true,
     // Shot stats

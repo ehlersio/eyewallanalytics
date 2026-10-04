@@ -32,6 +32,13 @@ export function startTimeLabel(game, locale = undefined) {
   return d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
 }
 
+// What follows "Final" for a game decided past regulation: '/OT' or '/SO',
+// '' otherwise (null, NHL's 'REG'). Every league's finished game reads the
+// same way: Final, Final/OT, Final/SO.
+export function finalSuffix(endedIn) {
+  return endedIn === 'OT' || endedIn === 'SO' ? `/${endedIn}` : '';
+}
+
 // Ordinal period label: 1 -> '1st'. OT/SO come through periodType instead,
 // so a 4th period in an OT game reads 'OT', not '4th'.
 export function periodLabel(game) {

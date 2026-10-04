@@ -47,6 +47,7 @@ import { usePeriodSummary, useGameSummary } from '../hooks/usePeriodSummary';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import FaceoffLoader from '../components/FaceoffLoader';
+import { finalSuffix } from '../utils/scoreboard';
 
 // Lazy so Recharts stays off the default route's initial load -- the wave
 // only renders inside the live momentum card.
@@ -2238,7 +2239,7 @@ export default function ShotMapView() {
                 </>
               ) : activeGame ? (
                 <>
-                  <div className={SCORE_PERIOD_CLASSES}>{t('shotMapView.scoreBar.final')}</div>
+                  <div className={SCORE_PERIOD_CLASSES}>{t('shotMapView.scoreBar.final')}{finalSuffix(activeGame.gameOutcome?.lastPeriodType)}</div>
                   <div className={SCORE_STATE_CLASSES}>
                     {activeIsPlayoff ? t('shotMapView.scoreBar.playoffTag')
                       : activeGame.gameType === GAME_TYPE.PRESEASON ? t('shotMapView.scoreBar.preseasonTag') : ''}{formatGameDate(activeGame.gameDate)}
