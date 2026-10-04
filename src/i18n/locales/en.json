@@ -793,7 +793,15 @@
     "pkPct": "PK%",
     "sogFor": "SOG For",
     "sogAgainst": "SOG Against",
-    "noShots": "No shot data available for this season."
+    "noShots": "No shot data available for this season.",
+    "gameSubtitle": "{{final}} · {{where}} {{opp}} · {{date}}",
+    "vs": "vs",
+    "at": "at",
+    "oppGoals": "Opp Goals",
+    "oppShotsOnGoal": "Opp Shots on Goal",
+    "shootingPct": "Shooting %",
+    "savePct": "Save %",
+    "noShotsGame": "Shot data for this game isn't in yet. It's usually added overnight."
   },
   "echlTeamView": {
     "noTeamSelected": "No ECHL team selected.",
@@ -877,7 +885,15 @@
     "pkPct": "PK%",
     "sogFor": "SOG For",
     "sogAgainst": "SOG Against",
-    "noShots": "No shot data available for this season."
+    "noShots": "No shot data available for this season.",
+    "gameSubtitle": "{{final}} · {{where}} {{opp}} · {{date}}",
+    "vs": "vs",
+    "at": "at",
+    "oppGoals": "Opp Goals",
+    "oppShotsOnGoal": "Opp Shots on Goal",
+    "shootingPct": "Shooting %",
+    "savePct": "Save %",
+    "noShotsGame": "Shot data for this game isn't in yet. It's usually added overnight."
   },
   "common": {
     "loading": "Loading…",

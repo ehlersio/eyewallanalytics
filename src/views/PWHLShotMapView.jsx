@@ -1016,9 +1016,17 @@ export default function PWHLShotMapView() {
   // pwhlConfig.js dispatches on resolution, but only if the user hasn't
   // manually picked a season themselves.
   const userPickedSeason = useRef(false);
+  // Whether the game on screen was chosen (a chip, All, a season tab, a
+  // schedule link) rather than defaulted to the newest final -- see the
+  // effect after `games`.
+  const userPickedGame = useRef(location.state?.selectedGameId != null);
   useEffect(() => {
     function handleSeasonUpdate(e) {
-      if (!userPickedSeason.current) setSeason(e.detail);
+      if (userPickedSeason.current) return;
+      setSeason(e.detail);
+      // A defaulted game belongs to the old season; let the new one's
+      // newest final take over.
+      if (!userPickedGame.current) setSelected(null);
     }
     window.addEventListener('eyewall:pwhl-season-updated', handleSeasonUpdate);
     return () => window.removeEventListener('eyewall:pwhl-season-updated', handleSeasonUpdate);
@@ -1147,6 +1155,13 @@ export default function PWHLShotMapView() {
     if (!schedule?.length) return [];
     return [...schedule].filter(g => g.game_state === 'Final').sort((a,b) => b.game_id - a.game_id);
   }, [schedule]);
+
+  // The page opens on the last game played, not the season aggregate,
+  // until the user picks something; a live game takes over on its own.
+  useEffect(() => {
+    if (devGame || isLive || userPickedGame.current || selectedGameId != null || !games[0]) return;
+    setSelected(games[0].game_id);
+  }, [games, isLive, devGame, selectedGameId]);
 
   // Normalized shape for the shared GameChipsRow (Session 77) — raw PWHL
   // schedule rows use home_team_id/away_team_id/home_score/away_score;
@@ -1418,9 +1433,10 @@ export default function PWHLShotMapView() {
     () => liveShotEvents.filter(e => !e.isCanes),
     [liveShotEvents]
   );
-  const handleSeasonChange = id => { userPickedSeason.current = true; setSeason(id); setSelected(null); setDrill(null); };
-  const handleSelect       = id => { setSelected(p => p === id ? null : id); setDrill(null); };
-  const handleAll          = ()  => { setSelected(null); setDrill(null); };
+  // Picking a season opens its aggregate.
+  const handleSeasonChange = id => { userPickedSeason.current = true; userPickedGame.current = true; setSeason(id); setSelected(null); setDrill(null); };
+  const handleSelect       = id => { userPickedGame.current = true; setSelected(p => p === id ? null : id); setDrill(null); };
+  const handleAll          = ()  => { userPickedGame.current = true; setSelected(null); setDrill(null); };
 
   // Reg/Playoffs toggle (Session 77) — PWHL models playoffs as a distinct
   // season_id, so toggling just swaps which paired id gets fetched via the

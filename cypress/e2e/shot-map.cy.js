@@ -368,13 +368,15 @@ describe('Shot Map — season/game history selector', () => {
     cy.contains('Preseason').should('not.exist')
   })
 
-  it('shows game chips from the stubbed schedule and selecting one highlights it', () => {
+  // The page opens on the last game played (2026-10), not "All".
+  it('opens on the newest game from the stubbed schedule; All and the chips switch views', () => {
     cy.wait('@schedule')
     cy.contains(/^All \d+$/).should('exist')
-    cy.get('.game-chip').not('.game-chip-all').first().click()
-    cy.get('.game-chip-active').not('.game-chip-all').should('exist')
+    cy.get('.game-chip').not('.game-chip-all').first().should('have.class', 'game-chip-active')
     cy.get('.game-chip-all').click()
     cy.get('.game-chip-all').should('have.class', 'game-chip-active')
+    cy.get('.game-chip').not('.game-chip-all').first().click()
+    cy.get('.game-chip-active').not('.game-chip-all').should('exist')
   })
 })
 

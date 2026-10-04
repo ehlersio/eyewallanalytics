@@ -65,6 +65,16 @@ export async function fetchECHLShots(teamId = ECHL_TEAM_ID, season = ECHL_CURREN
   return workerFetch(`/echl/shots?teamId=${teamId}&season=${season}`);
 }
 
+/**
+ * Both teams' shots and goals in one game (the shot map's game view);
+ * /echl/shots holds one team's shots only. Empty until the nightly run has
+ * ingested the game.
+ */
+export async function fetchECHLGameShots(gameId) {
+  if (!gameId) return null;
+  return workerFetch(`/echl/game-shots?gameId=${gameId}`);
+}
+
 export async function fetchECHLSchedule(teamId = ECHL_TEAM_ID, season = ECHL_CURRENT_SEASON) {
   if (!teamId) return null;
   return workerFetch(`/echl/schedule?teamId=${teamId}&season=${season}`);
