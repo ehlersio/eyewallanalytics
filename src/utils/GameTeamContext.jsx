@@ -37,3 +37,16 @@ export function GameTeamProvider({ team, gameId, children }) {
 export function useGameTeam() {
   return useContext(GameTeamContext);
 }
+
+// The same team with the id the game on screen gives it (teamIdInGame()),
+// for the game view's own panels: a 2024-25 Utah game's play-by-play says
+// 59, not today's 68. Keeps whatever else the provider above says --
+// favorite or guest.
+export function GameTeamIdProvider({ teamId, children }) {
+  const outer = useGameTeam();
+  const value = useMemo(
+    () => teamId === outer.team.teamId ? outer : { ...outer, team: { ...outer.team, teamId } },
+    [outer, teamId]
+  );
+  return <GameTeamContext.Provider value={value}>{children}</GameTeamContext.Provider>;
+}
