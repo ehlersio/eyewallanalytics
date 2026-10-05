@@ -8,7 +8,8 @@
  *
  * TeamLogo renders its initials fallback instead of the logo. Logos and
  * headshots drawn with a plain <img> are hidden by the `.capture-no-logos`
- * rule in index.css.
+ * rule in index.css. GoalReplay skips the broadcast clip and shows its
+ * Tracking replay.
  *
  * Never active in production builds.
  */

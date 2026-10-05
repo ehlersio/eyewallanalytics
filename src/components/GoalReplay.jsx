@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { getGoalReplay } from '../utils/nhlApi';
 import GoalTrackingReplay from './GoalTrackingReplay';
+import { logosHidden } from '../utils/captureMode';
 
 const SWITCH_CLASSES = 'goal-replay-switch flex bg-[var(--btn-fill)] rounded-[20px] overflow-hidden w-fit mb-2';
 const switchBtnClasses = (on) => {
@@ -35,7 +36,9 @@ export default function GoalReplay({ gameId, eventId, videoUrl, videoTitle, vide
   const [replay, setReplay] = useState(null);
   useEffect(() => { if (data) setReplay(data); }, [data]);
 
-  const hasVideo = Boolean(videoUrl);
+  // Dev capture mode leaves out the broadcast clip (arena ads, team
+  // jerseys), so App Store footage shows the Tracking replay instead.
+  const hasVideo = Boolean(videoUrl) && !logosHidden();
   const hasTracking = Boolean(replay);
   if (!hasVideo && !hasTracking) return null;
   const showing = !hasVideo ? 'tracking' : !hasTracking ? 'video' : mode;
