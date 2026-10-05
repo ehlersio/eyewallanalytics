@@ -19,11 +19,17 @@ const carRow = (extra = {}) => ({
 })
 
 // A Worker KV miss (404), the NHL standings, and team/summary, the way
-// _getStandings() and fetchTeamSummaryRow() read them.
+// _getStandings() and fetchTeamSummaryRow() read them. On a KV miss
+// _getStandings() asks /standings-season which date to read standings for.
 function stubFetch({ standings = [], summary = null }) {
   vi.stubGlobal('fetch', vi.fn(async (url) => {
     const u = String(url)
     if (u.includes('/cache/')) return { ok: false, status: 404 }
+    if (u.includes('/standings-season')) {
+      return { ok: true, json: async () => ({ currentDate: '2026-10-05', seasons: [
+        { id: Number(TEAM_CONFIG.season), standingsStart: '2026-09-29', standingsEnd: '2026-10-05' },
+      ] }) }
+    }
     if (u.includes('/standings/')) return { ok: true, json: async () => ({ standings }) }
     if (u.includes('/team/summary')) {
       return summary ? { ok: true, json: async () => ({ data: summary }) } : { ok: false, status: 500 }
