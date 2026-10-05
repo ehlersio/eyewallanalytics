@@ -10,7 +10,7 @@ import {
   bustLiveGameCache, bustScheduleCache, withPbpScore, GAME_TYPE, getLeagueTeamAverages,
 } from '../utils/nhlApi';
 import { livePollInterval, onPushReceived } from '../utils/livePolling';
-import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON, teamTextColor } from '../utils/teamConfig';
+import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON, teamTextColor, teamIdInGame } from '../utils/teamConfig';
 import { HockeyRink } from 'react-hockey-rink';
 import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import LiveEventRink from '../components/LiveEventRink';
@@ -39,7 +39,7 @@ import DisabledHint from '../components/DisabledHint';
 
 import { sharedClockStore, createClockStore } from '../utils/liveClockStore';
 import { useDevGame } from '../utils/DevGameContext';
-import { useGameTeam } from '../utils/GameTeamContext';
+import { useGameTeam, GameTeamIdProvider } from '../utils/GameTeamContext';
 import { useWakeLock } from '../hooks/useWakeLock';
 import { useLiveActivity } from '../hooks/useLiveActivity';
 import PeriodSummary from '../components/PeriodSummary';
@@ -844,6 +844,17 @@ export default function ShotMapView() {
   );
   const pbp = devGame?.pbp ?? pbpReal;
 
+  // "Our" team as this game has it: the id its play-by-play uses, which for
+  // an older season can differ from today's (2024-25 Utah is 59, not 68 --
+  // see teamIdInGame()). Everything below that compares against the
+  // play-by-play reads gameTeam, and the panels get it through
+  // GameTeamIdProvider around the page.
+  const gameTeamId = teamIdInGame(team, pbp);
+  const gameTeam = useMemo(
+    () => gameTeamId === team.teamId ? team : { ...team, teamId: gameTeamId },
+    [team, gameTeamId]
+  );
+
   // PP/PK unit compositions for the unit chips and the per-opportunity
   // PP1/PP2 badges in the special-teams drill-downs. Keyed to
   // effectiveSeason, not CURRENT_SEASON: labelling last season's power plays
@@ -955,7 +966,7 @@ export default function ShotMapView() {
       const d    = play.details || {};
       const zone = d.zoneCode;
       const type = play.typeDescKey;
-      const owned = isCAR ? d.eventOwnerTeamId === team.teamId : (d.eventOwnerTeamId && d.eventOwnerTeamId !== team.teamId);
+      const owned = isCAR ? d.eventOwnerTeamId === gameTeam.teamId : (d.eventOwnerTeamId && d.eventOwnerTeamId !== gameTeam.teamId);
       if (type === 'faceoff') {
         return zone === 'O' && owned ? 0.6 : 0;
       }
@@ -979,7 +990,7 @@ export default function ShotMapView() {
       oppScore += weightedScore(p, false);
       const SHOT_TYPES = new Set(['goal', 'shot-on-goal', 'missed-shot', 'blocked-shot']);
       if (SHOT_TYPES.has(p.typeDescKey)) {
-        if (p.details?.eventOwnerTeamId === team.teamId) carShots++;
+        if (p.details?.eventOwnerTeamId === gameTeam.teamId) carShots++;
         else oppShots++;
       }
     });
@@ -988,7 +999,7 @@ export default function ShotMapView() {
     const carPct = Math.round((carScore / total) * 100);
 
     clockStore.publishMomentum({ carPct, oppPct: 100 - carPct, carShots, oppShots, window: WINDOW_MINS, nowSecs });
-  }, [pbp?.plays?.length, isLive, team, clockStore]);
+  }, [pbp?.plays?.length, isLive, gameTeam, clockStore]);
 
   // ── Tick display from shared store (same math as Topbar → no drift) ──
   useEffect(() => {
@@ -1020,7 +1031,7 @@ export default function ShotMapView() {
   // above), and an explicitly-picked historical game keeps using its own
   // pbp — neither of those cases changes here.
   const rawShotEvents = (isLive || effectiveSelectedGameId || isGuest)
-    ? (pbp ? extractShotEvents(pbp, team) : [])
+    ? (pbp ? extractShotEvents(pbp, gameTeam) : [])
     : (selectionShots || []);
 
   // Goal video (discreteClip from landing) only applies to a single selected
@@ -1178,7 +1189,7 @@ export default function ShotMapView() {
     penaltyPopup, clearPenaltyPopup, winPopup, clearWinPopup,
     puckDropPopup, clearPuckDropPopup } =
     useGameEvents(pbp, isLive, strMapForEvents, gameHome,
-      team.teamId, team.abbr, team.displayColor);
+      gameTeam.teamId, team.abbr, team.displayColor);
 
   // After a win celebration is the moment to ask for an App Store rating
   // (iOS app only; reviewPrompt.js decides). The favorite's wins only.
@@ -1226,9 +1237,9 @@ export default function ShotMapView() {
 
   // ── Period summaries ──────────────────────────────────────────
   const { summaries: periodSummaries, newSummary, dismissNewSummary, updateSummaryNarrative, requestSummary } =
-    usePeriodSummary({ pbp, isLive, gameId, carTeamId: team.teamId, isPlayoff: inPlayoffs });
+    usePeriodSummary({ pbp, isLive, gameId, carTeamId: gameTeam.teamId, isPlayoff: inPlayoffs });
   const { gameSummary, updateGameNarrative } = useGameSummary({
-    pbp, isLive, gameId, carTeamId: team.teamId, summaries: periodSummaries,
+    pbp, isLive, gameId, carTeamId: gameTeam.teamId, summaries: periodSummaries,
   });
   const homeAbbr = activeGame?.homeTeam?.abbrev || team.abbr;
   const awayAbbr = activeGame?.awayTeam?.abbrev || 'OPP';
@@ -1369,7 +1380,7 @@ export default function ShotMapView() {
   const buildDrillDown = useCallback((statKey) => {
     if (!pbp?.plays) return;
     const plays = withoutShootout(pbp.plays);
-    const carId = team.teamId; // CAR team ID
+    const carId = gameTeam.teamId; // CAR team ID
     const oppId = opp?.id || null;
 
     // Build a string-keyed map from rosterSpots so lookups always work
@@ -1506,7 +1517,7 @@ export default function ShotMapView() {
     } else if (statKey === 'pp') {
       // ── Rich PP Analysis ────────────────────────────────────
       // Parse all plays into discrete PP opportunities
-      const carId   = team.teamId;
+      const carId   = gameTeam.teamId;
       const isCarPP = (sc) => {
         if (!isValidSituationCode(sc)) return false;
         const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
@@ -2101,7 +2112,7 @@ export default function ShotMapView() {
     const pName = id => { const n = playerMap[String(id)]; return n?.trim() || null; };
     const byPlayer = {};
     withoutShootout(pbp.plays)
-      .filter(p => p.typeDescKey === 'goal' && p.details?.eventOwnerTeamId === team.teamId)
+      .filter(p => p.typeDescKey === 'goal' && p.details?.eventOwnerTeamId === gameTeam.teamId)
       .forEach(p => {
         const d = p.details || {};
         // Count goals
@@ -2169,7 +2180,7 @@ export default function ShotMapView() {
   });
 
   return (
-    <>
+    <GameTeamIdProvider teamId={gameTeamId}>
     <div className={PAGE_CLASSES} ref={pageRef}>
 
       {/* ── Period summary auto-popup ── */}
@@ -2688,7 +2699,7 @@ export default function ShotMapView() {
 
               {/* Shot attempts (Corsi) + xG — from PBP, prepended to right-rail stats */}
               {pbp?.plays?.length > 0 && (() => {
-                const sa = computeShotAttempts(pbp.plays, team.teamId);
+                const sa = computeShotAttempts(pbp.plays, gameTeam.teamId);
 
                 // xG source: MoneyPuck (post-game, 5v5) → coordinate estimate (live fallback)
                 const xgCar    = gameXGData?.find(r => r.team === team.abbr);
@@ -2843,7 +2854,7 @@ export default function ShotMapView() {
           aria-label={t('shotMapView.boxscore.backToTop')}
         >{t('shotMapView.boxscore.backToTopShort')}</button>
       )}
-    </>
+    </GameTeamIdProvider>
   );
 }
 

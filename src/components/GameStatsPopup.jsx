@@ -8,7 +8,7 @@ import { computeShotAttempts, computePDO, computePuckLuck } from '../utils/advan
 import TeamLogo from '../components/TeamLogo';
 import InfoTip from '../components/InfoTip';
 import { capture } from '../utils/analytics';
-import { TEAM_CONFIG, teamTextColor } from '../utils/teamConfig';
+import { TEAM_CONFIG, teamTextColor, teamIdInGame } from '../utils/teamConfig';
 
 
 // ── Game stats popup ─────────────────────────────────────────
@@ -118,10 +118,13 @@ function GameStatsPopup({ game, onClose }) {
   // Pull team stats from right-rail
   const rr         = data?.rightRail;
   const pbpPlays   = data?.pbp?.plays || [];
-  const isCarHome  = data?.homeTeamId === TEAM_CONFIG.teamId;
-  const advStats   = pbpPlays.length ? computeShotAttempts(pbpPlays) : null;
-  const pdoStats   = pbpPlays.length ? computePDO(pbpPlays) : null;
-  const luckStats  = pbpPlays.length ? computePuckLuck(pbpPlays) : null;
+  // The id this game gives the team, not today's -- a 2024-25 Utah game
+  // says 59, not 68 (see teamIdInGame()).
+  const carTeamId  = teamIdInGame(TEAM_CONFIG, data?.pbp);
+  const isCarHome  = data?.homeTeamId === carTeamId;
+  const advStats   = pbpPlays.length ? computeShotAttempts(pbpPlays, carTeamId) : null;
+  const pdoStats   = pbpPlays.length ? computePDO(pbpPlays, carTeamId) : null;
+  const luckStats  = pbpPlays.length ? computePuckLuck(pbpPlays, carTeamId) : null;
   const teamStats  = rr?.teamGameStats || [];
 
   // Pull scoring summary from boxscore

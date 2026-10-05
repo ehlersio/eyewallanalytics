@@ -161,6 +161,18 @@ export function getTeamByAbbr(abbr) {
   return ALL_TEAMS.find(t => t.abbr === abbr) ?? null;
 }
 
+// The team's id in one game, as that game's own play-by-play (or landing /
+// boxscore) gives it. A team's id can change while its abbreviation stays:
+// Utah was 59 in 2024-25 and 68 since, so comparing a 2024-25 game's
+// eventOwnerTeamIds with today's teamId matched nothing. Falls back to
+// teamId when the game doesn't name the team (not loaded yet, or another
+// game's play-by-play).
+export function teamIdInGame(team, game) {
+  if (game?.homeTeam?.abbrev === team.abbr && game.homeTeam.id != null) return game.homeTeam.id;
+  if (game?.awayTeam?.abbrev === team.abbr && game.awayTeam.id != null) return game.awayTeam.id;
+  return team.teamId;
+}
+
 // Any team's color for text, lines and dots on the app's current
 // background: displayColor (the WCAG AA variant -- see ALL_TEAMS above) in
 // dark mode, primaryColor in light. Same rule applyTeamTheme() uses for the
