@@ -3,6 +3,7 @@ import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
 import { pwhlLogoUrl } from '../utils/pwhlConfig';
 import { ahlLogoUrl, getAHLTeamForDisplay } from '../utils/ahlConfig';
 import { echlLogoUrl, getECHLTeamForDisplay } from '../utils/echlConfig';
+import { logosHidden } from '../utils/captureMode';
 
 // Tailwind migration (Session 95, Phase 1) -- previously TeamLogo.css.
 const LOGO_CLASSES = 'inline-block object-contain shrink-0 align-middle drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]';
@@ -65,7 +66,7 @@ export default function TeamLogo({ abbr, sport = 'nhl', size = 24, color, classN
     : sport === 'echl' ? echlLogoUrl(getECHLTeamForDisplay(abbr)?.teamId)
     : nhlLogoUrl(abbr);
 
-  if (!abbr || !src || errored) {
+  if (!abbr || !src || errored || logosHidden()) {
     return <Fallback abbr={abbr} size={size} color={color} />;
   }
 

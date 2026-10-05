@@ -753,3 +753,18 @@
 .driver-popover.eyewall-tour .driver-popover-arrow-side-bottom { border-bottom-color: var(--bg1); }
 .driver-popover.eyewall-tour .driver-popover-arrow-side-left { border-left-color: var(--bg1); }
 .driver-popover.eyewall-tour .driver-popover-arrow-side-right { border-right-color: var(--bg1); }
+
+/* ── Dev capture mode (utils/captureMode.js, ?nologos=1) ─────────────────
+   Hides team and league logos and player headshots drawn with a plain
+   <img>, so App Store previews and screenshots carry no team branding.
+   TeamLogo already swaps to its initials fallback. The class is only ever
+   set in dev builds. */
+.capture-no-logos img[src*="nhl-assets/logos/"],
+.capture-no-logos img[src*="assets.nhle.com"],
+.capture-no-logos img[src*="assets.leaguestat.com"],
+.capture-no-logos img[src*="/pwhl-logos/"],
+.capture-no-logos img[src$="/pwhl-logo.svg"],
+.capture-no-logos img[src$="/ahl-logo.svg"],
+.capture-no-logos img[src$="/echl-logo.png"] {
+  visibility: hidden;
+}
