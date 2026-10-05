@@ -133,7 +133,11 @@ export const ALL_TEAMS = [
   { abbr: 'MIN', teamId: 30, franchiseId: 37, get season() { return CURRENT_SEASON; }, displayName: 'Minnesota Wild',          shortName: 'Wild',          fullNameFragment: 'Minnesota',    primaryColor: '#154734', displayColor: '#2b926b' },
   { abbr: 'NSH', teamId: 18, franchiseId: 34, get season() { return CURRENT_SEASON; }, displayName: 'Nashville Predators',     shortName: 'Predators',     fullNameFragment: 'Nashville',    primaryColor: '#FFB81C', displayColor: '#FFB81C' },
   { abbr: 'STL', teamId: 19, franchiseId: 18, get season() { return CURRENT_SEASON; }, displayName: 'St. Louis Blues',         shortName: 'Blues',         fullNameFragment: 'St. Louis',    primaryColor: '#002F87', displayColor: '#659bff' },
-  { abbr: 'UTA', teamId: 59, franchiseId: 28, get season() { return CURRENT_SEASON; }, displayName: 'Utah Mammoth',            shortName: 'Mammoth',       fullNameFragment: 'Utah',         primaryColor: '#6CAEDF', displayColor: '#6CAEDF' },
+  // 68/40 since the 2025-26 Mammoth rebrand. 59 was the 2024-25 Utah Hockey
+  // Club (its games' play-by-play still says 59) and franchise 28 is the
+  // Arizona Coyotes -- with those, nothing in a current game matched Utah,
+  // and a game watched as UTA came out 0 for every UTA stat.
+  { abbr: 'UTA', teamId: 68, franchiseId: 40, get season() { return CURRENT_SEASON; }, displayName: 'Utah Mammoth',            shortName: 'Mammoth',       fullNameFragment: 'Utah',         primaryColor: '#6CAEDF', displayColor: '#6CAEDF' },
   { abbr: 'WPG', teamId: 52, franchiseId: 35, get season() { return CURRENT_SEASON; }, displayName: 'Winnipeg Jets',           shortName: 'Jets',          fullNameFragment: 'Winnipeg',     primaryColor: '#041E42', displayColor: '#5b9ef9' },
   // Pacific
   { abbr: 'ANA', teamId: 24, franchiseId: 32, get season() { return CURRENT_SEASON; }, displayName: 'Anaheim Ducks',           shortName: 'Ducks',         fullNameFragment: 'Anaheim',      primaryColor: '#F47A38', displayColor: '#F47A38' },
