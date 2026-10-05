@@ -8,6 +8,9 @@ import './light-mode-overrides.css'
 import './tailwind.css'
 import App from './App.jsx'
 import { TEAM_CONFIG } from './utils/teamConfig'
+import { initCaptureMode } from './utils/captureMode'
+
+initCaptureMode()
 
 // Initialise PostHog — only in production builds (not local dev)
 if (import.meta.env.PROD) {

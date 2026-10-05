@@ -5,8 +5,18 @@
  * Route: /dev
  * Usage: enter a game ID, scrub or play through the game,
  *        watch all live UI (momentum, insights, topbar bar) respond in real time.
+ *
+ * URL parameters, for recording App Store previews:
+ *   game=<id>     load this game on open
+ *   speed=<n>     seconds of game time per real second (default 60)
+ *   start=<secs>  start the playhead here (1200 = start of P2)
+ *   capture=1     hide the control panel and autoplay once loaded
+ *   delay=<secs>  capture mode's wait before autoplay (default 2)
+ * e.g. /dev?game=2025020800&capture=1&speed=30&nologos=1
+ * (nologos is app-wide; see utils/captureMode.js)
  */
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { getGameDetail, getGameBoxscore } from '../utils/nhlApi';
 import { DevGameContext } from '../utils/DevGameContext';
 import { publishClock, publishMockLiveGame, clearMockLiveGame } from '../utils/liveClockStore';
@@ -197,6 +207,13 @@ export default function DevReplayView() {
 }
 
 function DevReplayViewInner() {
+  const [searchParams] = useSearchParams();
+  const capture    = searchParams.get('capture') === '1';
+  const paramGame  = Number(searchParams.get('game')) || null;
+  const paramSpeed = Number(searchParams.get('speed')) || null;
+  const paramStart = Number(searchParams.get('start')) || 0;
+  const paramDelay = searchParams.has('delay') ? Number(searchParams.get('delay')) || 0 : 2;
+
   const [gameIdInput, setGameIdInput]   = useState('');
   const [loadedGameId, setLoadedGameId] = useState(null);
   const [fullPbp, setFullPbp]           = useState(null);
@@ -206,7 +223,7 @@ function DevReplayViewInner() {
   const [playheadSecs, setPlayheadSecs] = useState(0);
   const [maxSecs, setMaxSecs]           = useState(3600);
   const [playing, setPlaying]           = useState(false);
-  const [speed, setSpeed]               = useState(60); // secs of game time per real second
+  const [speed, setSpeed]               = useState(paramSpeed || 60); // secs of game time per real second
   const [recentGames, setRecentGames]   = useState([]);
   const playRef = useRef(null);
 
@@ -253,8 +270,9 @@ function DevReplayViewInner() {
     })();
   }, [seasonVersion]);
 
+  // Returns the game's length in seconds once loaded, or null.
   const loadGame = async (id) => {
-    if (!id) return;
+    if (!id) return null;
     setLoading(true);
     setError(null);
     setPlaying(false);
@@ -279,12 +297,28 @@ function DevReplayViewInner() {
       setFullBoxscore(box);
       setMaxSecs(total);
       setLoadedGameId(id);
+      return total;
     } catch (e) {
       setError(e.message || 'Failed to load game.');
+      return null;
     } finally {
       setLoading(false);
     }
   };
+
+  // ?game= loads on open; ?start= moves the playhead; ?capture=1 autoplays.
+  useEffect(() => {
+    if (!paramGame) return;
+    let cancelled = false;
+    let timer;
+    setGameIdInput(String(paramGame));
+    loadGame(paramGame).then(total => {
+      if (cancelled || !total) return;
+      if (paramStart) setPlayheadSecs(Math.min(paramStart, total));
+      if (capture) timer = setTimeout(() => setPlaying(true), paramDelay * 1000);
+    });
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, []);
 
   // Play/pause ticker
   useEffect(() => {
@@ -391,8 +425,8 @@ function DevReplayViewInner() {
 
   return (
     <div className={DEV_REPLAY_CLASSES}>
-      {/* ── Control panel ── */}
-      <div className={DEV_PANEL_CLASSES}>
+      {/* ── Control panel (hidden in capture mode) ── */}
+      {!capture && <div className={DEV_PANEL_CLASSES}>
         <div className={DEV_PANEL_HEADER_CLASSES}>
           <span className={DEV_BADGE_CLASSES}>DEV</span>
           <span className={DEV_TITLE_CLASSES}>Live Game Replay</span>
@@ -532,7 +566,7 @@ function DevReplayViewInner() {
             </div>
           </>
         )}
-      </div>
+      </div>}
 
       {/* ── Shot Map rendered with injected data ── */}
       <div className={DEV_SHOTMAP_CLASSES}>
