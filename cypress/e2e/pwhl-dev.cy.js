@@ -87,9 +87,13 @@ describe('PWHL Dev Replay View', () => {
 
   describe('Debug panel inside dev replay', () => {
     beforeEach(() => {
-      // Load a game first so score-card is rendered
+      // Load a game first. The score card is on screen before the game is
+      // (the view renders with no game), so wait for the scrubber -- it only
+      // shows once the game has loaded. Tapping while it was still loading
+      // raced the load's re-renders and now and then left the panel shut.
       cy.get('.dev-game-btn', { timeout: 10000 }).first().click()
-      cy.get('.dev-shotmap .score-card', { timeout: 15000 }).should('exist')
+      cy.get('.dev-scrubber', { timeout: 15000 }).should('exist')
+      cy.get('.dev-shotmap .score-card').should('exist')
       // 5 taps to open debug panel
       Cypress._.times(5, () => {
         cy.get('.dev-shotmap .score-card').click()
