@@ -2491,7 +2491,8 @@
     "beat": "{{winner}} a battu {{loser}}",
     "residual": "Classement Elo et matchs plus lointains",
     "nextTitle": "Prochaine journée · {{date}}",
-    "ifWin": "Victoire {{team}} : {{pct}}",
+    "nextHint": "Chances de {{team}} de participer aux séries selon chaque résultat",
+    "ifWin": "Si {{team}} gagne : {{pct}}",
     "trendLabel": "Chances de participer aux séries cette saison",
     "source": "{{sims}} simulations · mis à jour le {{date}}",
     "none": "Les chances de participer aux séries s'afficheront après la première exécution nocturne du modèle cette saison.",
@@ -2587,7 +2588,7 @@
           "22,1 % des matchs simulés dépassent le temps réglementaire, ce qui donne un point au perdant — la proportion mesurée de 2023-2024 à 2025-2026.",
           "Les cotes actuelles ne sont que des estimations, donc chaque saison simulée décale la force de chaque équipe d'un montant aléatoire qui lui est propre. Cet écart est le plus grand avant la saison et se resserre à mesure que les matchs sont joués; sans lui, les chances étaient trop assurées (une équipe affichait 95 % avant le premier match). Sa largeur de départ et la vitesse à laquelle il se resserre ont été ajustées sur la rétro-analyse de 2023-2024 à 2025-2026.",
           "Dans chaque saison simulée, les trois premières équipes de chaque division et les deux meilleures suivantes de chaque association se qualifient. Les égalités se départagent aux points, puis aux victoires en temps réglementaire, puis aux victoires, puis au hasard.",
-          "Le changement de chaque jour est expliqué match par match : les chances sont conservées pour chaque résultat possible des matchs du lendemain, afin que le traitement suivant montre l'effet de chaque résultat.",
+          "Le changement de chaque jour est expliqué match par match : pour chaque match du lendemain, les chances sont calculées avec ce match gagné par l'une puis l'autre équipe dans chaque saison simulée, tout le reste inchangé, afin que le traitement suivant montre l'effet de chaque résultat. Un match qui ne peut pas toucher une équipe ne change rien pour elle.",
           "Évaluation : les chances au premier traitement de la saison, au 15 novembre, au 1er janvier et au 1er mars, comparées aux équipes réellement qualifiées. La référence : « les équipes qualifiées à ce moment-là »."
         ],
         "limits": [

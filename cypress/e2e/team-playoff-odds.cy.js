@@ -61,9 +61,12 @@ describe('Team page — Overview tab, Playoff odds card', () => {
 
   it("shows the next game day's stakes, own game first", () => {
     openOverview(ODDS)
+    // Both numbers are CAR's playoff odds under each result, not each
+    // side's chance of winning the game.
+    cy.get('.playoff-odds-next-hint').should('contain', "CAR's playoff odds under each result")
     cy.get('.playoff-odds-next-game').should('have.length', 2)
-    cy.get('.playoff-odds-next-game').first().should('contain', 'OTT @ CAR').and('contain', 'OTT win: 57%').and('contain', 'CAR win: 66%')
-    cy.get('.playoff-odds-next-game').eq(1).should('contain', 'BOS @ NYR')
+    cy.get('.playoff-odds-next-game').first().should('contain', 'OTT @ CAR').and('contain', 'If OTT wins: 57%').and('contain', 'If CAR wins: 66%')
+    cy.get('.playoff-odds-next-game').eq(1).should('contain', 'BOS @ NYR').and('contain', 'If BOS wins: 60%').and('contain', 'If NYR wins: 62%')
   })
 
   it('labels early-season odds, and drops the label later in the season', () => {

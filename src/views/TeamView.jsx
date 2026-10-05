@@ -644,10 +644,13 @@ function PlayoffOddsCard() {
           {!data.stale && nextGames.length > 0 && (
             <div className={`playoff-odds-next ${ODDS_SECTION_CLASSES}`}>
               <div className={ODDS_LABEL_CLASSES}>{t('playoffOdds.nextTitle', { date: formatOddsDate(nextGames[0].game_date) })}</div>
+              {/* Both numbers are this team's playoff odds -- one per result
+                  of that game -- not each side's chance of winning it. */}
+              <div className="playoff-odds-next-hint text-[11px] text-[color:var(--text-dim)] mb-[2px]">{t('playoffOdds.nextHint', { team: TEAM_CONFIG.abbr })}</div>
               {nextGames.map(g => (
                 <div key={g.game_id} className={`playoff-odds-next-game ${ODDS_ROW_CLASSES}`}>
-                  <span className={g.own ? 'font-semibold text-[color:var(--text)]' : 'text-[color:var(--text-muted)]'}>{g.away} @ {g.home}</span>
-                  <span className="flex gap-3 font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--text-muted)]">
+                  <span className={`shrink-0 ${g.own ? 'font-semibold text-[color:var(--text)]' : 'text-[color:var(--text-muted)]'}`}>{g.away} @ {g.home}</span>
+                  <span className="flex flex-wrap justify-end gap-x-3 font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--text-muted)]">
                     <span>{t('playoffOdds.ifWin', { team: g.away, pct: formatOddsPct(g.ifAwayWins) })}</span>
                     <span>{t('playoffOdds.ifWin', { team: g.home, pct: formatOddsPct(g.ifHomeWins) })}</span>
                   </span>

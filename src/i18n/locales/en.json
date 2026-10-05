@@ -2491,7 +2491,8 @@
     "beat": "{{winner}} beat {{loser}}",
     "residual": "Rating changes & games further out",
     "nextTitle": "Next game day · {{date}}",
-    "ifWin": "{{team}} win: {{pct}}",
+    "nextHint": "{{team}}'s playoff odds under each result",
+    "ifWin": "If {{team}} wins: {{pct}}",
     "trendLabel": "Playoff odds this season",
     "source": "{{sims}} simulations · updated {{date}}",
     "none": "Playoff odds appear after the first nightly model run of the season.",
@@ -2587,7 +2588,7 @@
           "22.1% of simulated games go past regulation, giving the loser a point — the share measured across 2023-24 to 2025-26.",
           "Current ratings are only estimates, so each simulated season shifts every team's strength by its own random amount. That spread is widest before the season and narrows as games are played; without it the odds were overconfident (one team showed 95% before a game was played). How wide it starts and how fast it narrows were tuned on the 2023-24 to 2025-26 backtest.",
           "In each simulated season the top three teams in each division and the next two best in each conference make the playoffs. Ties go to points, then regulation wins, then wins, then a coin flip.",
-          "Each day's change is explained game by game: the odds are stored for every possible result of the next day's games, so the next run can show how much each result moved them.",
+          "Each day's change is explained game by game: for each of the next day's games, the odds are worked out with that game going each way in every simulated season, everything else unchanged, so the next run can show how much each result moved them. A game that can't affect a team shows no change.",
           "Graded: the odds as of the season's first run, Nov 15, Jan 1 and Mar 1, against who actually made the playoffs. The baseline is \"whoever holds a playoff spot at that moment\"."
         ],
         "limits": [
