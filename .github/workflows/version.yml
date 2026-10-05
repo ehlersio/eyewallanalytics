@@ -15,6 +15,12 @@ name: Version
 # version themselves -- with several open at once they'd all fight over
 # the same line. See CLAUDE.md's versioning rule; the iOS app's
 # MARKETING_VERSION is copied from package.json when an iOS build is cut.
+#
+# Both jobs ask the API for the PR's labels when they run rather than
+# reading them from the event payload. `gh pr create --label` and
+# Dependabot add labels a moment after opening the PR, and the payload of
+# the `opened` (and even the `labeled`) run could still list none, leaving
+# a stale failing `label` check (#434, #440).
 
 on:
   pull_request:
@@ -25,13 +31,27 @@ jobs:
   label:
     if: github.event.action != 'closed'
     runs-on: ubuntu-latest
+    # Read-only is all this needs, which is also all a Dependabot run gets.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - name: Require exactly one semver label
         env:
-          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
         run: |
+          # Labels added right after opening can still be landing; look
+          # again a few times before failing.
+          for attempt in 1 2 3; do
+            LABELS=$(gh pr view "$PR" --repo "$REPO" --json labels --jq '[.labels[].name]')
+            count=$(jq '[.[] | select(startswith("semver:"))] | length' <<< "$LABELS")
+            [ "$count" = "1" ] && break
+            [ "$attempt" = "3" ] || sleep 5
+          done
+          echo "Labels: $LABELS"
           found=$(jq -r '[.[] | select(startswith("semver:"))] | join(", ")' <<< "$LABELS")
-          count=$(jq '[.[] | select(startswith("semver:"))] | length' <<< "$LABELS")
           if [ "$count" != "1" ]; then
             echo "::error::Label this PR with exactly one of semver:major, semver:minor, semver:patch, semver:none (has: ${found:-none})"
             exit 1
@@ -43,6 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: read
     # One bump at a time, in merge order: two PRs merged moments apart must
     # not both read the same version and claim the same next one.
     concurrency:
@@ -52,8 +73,12 @@ jobs:
       - name: Pick the level
         id: level
         env:
-          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
         run: |
+          LABELS=$(gh pr view "$PR" --repo "$REPO" --json labels --jq '[.labels[].name]')
+          echo "Labels: $LABELS"
           level=$(jq -r '[.[] | select(startswith("semver:")) | sub("^semver:"; "")] | if length == 1 then .[0] else "none" end' <<< "$LABELS")
           echo "level=$level" >> "$GITHUB_OUTPUT"
           echo "Level: $level"
