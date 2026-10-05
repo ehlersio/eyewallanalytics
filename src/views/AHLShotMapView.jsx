@@ -242,8 +242,8 @@ export default function AHLShotMapView() {
 
   // ── Debug panel (5 taps on the header, dev only) ─────────────────
   const [debugOpen, setDebugOpen] = useState(false);
-  const [debugTaps, setDebugTaps] = useState(0);
   const debugTapRef = useRef(null);
+  const debugTapCount = useRef(0);
   const [debugGoalPopup,    setDebugGoalPopup]    = useState(null);
   const [debugPenaltyPopup, setDebugPenaltyPopup] = useState(null);
   const [debugWinPopup,     setDebugWinPopup]     = useState(null);
@@ -251,11 +251,13 @@ export default function AHLShotMapView() {
 
   const handleDebugTap = () => {
     if (!import.meta.env.DEV) return;
-    const next = debugTaps + 1;
-    setDebugTaps(next);
+    // Counted in a ref, not state: taps that land before a re-render all
+    // read the same count from state, so some went uncounted and five
+    // quick taps didn't always open the panel.
+    const next = ++debugTapCount.current;
     clearTimeout(debugTapRef.current);
-    if (next >= 5) { setDebugOpen(o => !o); setDebugTaps(0); return; }
-    debugTapRef.current = setTimeout(() => setDebugTaps(0), 2000);
+    if (next >= 5) { debugTapCount.current = 0; setDebugOpen(o => !o); return; }
+    debugTapRef.current = setTimeout(() => { debugTapCount.current = 0; }, 2000);
   };
 
   const { data: shots, loading: shotsLoading } = useFetch(
