@@ -9,6 +9,7 @@ import ShareButtons from './ShareButtons';
 import PeriodSummaryShareCanvas from './PeriodSummaryShareCanvas';
 import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
 import GoalReplay from './GoalReplay';
+import { summaryPenaltyLines } from '../utils/penaltyText';
 
 // ── Tailwind class constants -- POPUP HALF (Phase 4, sub-PR 5a) ──
 // PeriodSummary.css's ps-canvas-* export-image classes are a separate,
@@ -99,7 +100,7 @@ function psPenaltyTeamClasses(isCar) {
 }
 const PS_PENALTY_INFO_CLASSES = 'flex flex-col gap-px flex-1 min-w-0';
 const PS_PENALTY_PLAYER_CLASSES = 'ps-penalty-player text-[12px] font-bold text-[color:var(--text)] whitespace-nowrap overflow-hidden text-ellipsis';
-const PS_PENALTY_TYPE_CLASSES = 'text-[11px] text-[color:var(--text-dim)] capitalize';
+const PS_PENALTY_TYPE_CLASSES = 'text-[11px] text-[color:var(--text-dim)]';
 const PS_PENALTIES_TOGGLE_CLASSES = 'ps-penalties-toggle w-full py-2 bg-[var(--btn-fill)] border-[0.5px] border-transparent rounded-[8px] text-[color:var(--text-dim)] text-[12px] font-semibold cursor-pointer [transition:background_0.15s,color_0.15s] mt-[2px] hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text-muted)]';
 
 const PS_NARRATIVE_CLASSES = 'ps-narrative mx-[14px] [background:linear-gradient(135deg,rgba(var(--team-primary-rgb),0.06),rgba(74,144,226,0.04))] border-[0.5px] border-[rgba(var(--team-primary-rgb),0.2)] rounded-[12px] p-[14px]';
@@ -430,21 +431,21 @@ function PenaltiesSection({ penalties, carAbbr, oppAbbr }) {
     <>
       <div className={PS_SECTION_LABEL_CLASSES}>{t('periodSummary.penalties.sectionLabel', { count: penalties.length })}</div>
       <div className={PS_PENALTIES_CLASSES}>
-        {visible.map((p, i) => (
-          <div key={i} className={PS_PENALTY_ROW_CLASSES}>
-            <span className={psPenaltyTeamClasses(p.isCar)}>
-              {p.isCar ? carAbbr : oppAbbr}
-            </span>
-            <div className={PS_PENALTY_INFO_CLASSES}>
-              <span className={PS_PENALTY_PLAYER_CLASSES}>{p.playerName || t('periodSummary.penalties.unknown')}</span>
-              <span className={PS_PENALTY_TYPE_CLASSES}>
-                {p.type || t('periodSummary.penalties.typeFallback')}{p.duration ? ` · ${t('periodSummary.penalties.durationSuffix', { count: p.duration })}` : ''}
-                {p.period ? ` · P${p.period}` : ''}
+        {visible.map((p, i) => {
+          const { who, what } = summaryPenaltyLines(p, t);
+          return (
+            <div key={i} className={PS_PENALTY_ROW_CLASSES}>
+              <span className={psPenaltyTeamClasses(p.isCar)}>
+                {p.isCar ? carAbbr : oppAbbr}
               </span>
+              <div className={PS_PENALTY_INFO_CLASSES}>
+                <span className={PS_PENALTY_PLAYER_CLASSES}>{who}</span>
+                <span className={PS_PENALTY_TYPE_CLASSES}>{what}</span>
+              </div>
+              <span style={{marginLeft:'auto',fontSize:11,color:'var(--text-dim)',flexShrink:0}}>{p.time}</span>
             </div>
-            <span style={{marginLeft:'auto',fontSize:11,color:'var(--text-dim)',flexShrink:0}}>{p.time}</span>
-          </div>
-        ))}
+          );
+        })}
         {hasMore && (
           <button className={PS_PENALTIES_TOGGLE_CLASSES} onClick={() => setExpanded(e => !e)}>
             {expanded ? t('periodSummary.penalties.showLess') : t('periodSummary.penalties.showMore', { count: penalties.length - PENALTY_COLLAPSE_AT })}
