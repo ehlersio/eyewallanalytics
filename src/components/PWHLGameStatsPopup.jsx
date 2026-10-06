@@ -12,8 +12,9 @@
 //     (pwhl_skater_game_box/pwhl_goalie_game_box, Session 41/50)
 //   - /pwhl/summary?gameId=    -- period scoring + three stars (already
 //     built for PWHLPeriodSummary's shot-map game summary, Session 37-ish)
-//   - /pwhl/roster?teamId=     -- player_id -> name resolution (box rows
-//     only carry player_id + jersey_number)
+//   - /pwhl/roster?teamId=     -- fallback names, only for a box row
+//     without player_name (the Worker names rows from the game's own
+//     lineup since 2026-10; utils/boxScoreNames.js)
 //
 // Deliberately does NOT fetch/generate an AI narrative -- that stays
 // exclusive to the shot-map's PWHLPeriodSummary (isGameSummary mode),
@@ -27,6 +28,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { fetchPWHLGameBox, fetchPWHLGameSummary, fetchPWHLRoster } from '../utils/pwhlApi';
+import { boxScoreNames, boxNeedsRosters } from '../utils/boxScoreNames';
 import { getPWHLTeamById } from '../utils/pwhlConfig';
 import { formatDate } from '../utils/formatters';
 import TeamLogo from './TeamLogo';
@@ -59,11 +61,6 @@ function periodLabel(id, i) {
   return num === 4 ? 'OT' : `OT${num - 3}`;
 }
 
-function playerFullName(p) {
-  const name = `${p.first_name || ''} ${p.last_name || ''}`.trim();
-  return name || null;
-}
-
 export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose, onViewShotMap }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -85,21 +82,16 @@ export default function PWHLGameStatsPopup({ game, teamId, abbr, color, onClose,
 
   const { data: box,     loading: boxLoading }     = useFetch(() => fetchPWHLGameBox(game.game_id), [game.game_id]);
   const { data: summary, loading: summaryLoading }  = useFetch(() => fetchPWHLGameSummary(game.game_id), [game.game_id]);
+  // Box rows are named by the Worker from the game's own lineup; the two
+  // current rosters are fetched only when some row has no name
+  // (utils/boxScoreNames.js).
+  const needsRosters = boxNeedsRosters(box);
   const { data: rosters } = useFetch(
-    () => Promise.all([fetchPWHLRoster(teamId), fetchPWHLRoster(oppId)]),
-    [teamId, oppId]
+    () => (needsRosters ? Promise.all([fetchPWHLRoster(teamId), fetchPWHLRoster(oppId)]) : Promise.resolve(null)),
+    [teamId, oppId, needsRosters]
   );
 
-  const playerNames = useMemo(() => {
-    const map = {};
-    (rosters || []).forEach(roster => {
-      (roster || []).forEach(p => {
-        const name = playerFullName(p);
-        if (name) map[p.player_id] = name;
-      });
-    });
-    return map;
-  }, [rosters]);
+  const playerNames = useMemo(() => boxScoreNames(box, rosters), [box, rosters]);
 
   const skaters = box?.skaters || [];
   const goalies = box?.goalies || [];

@@ -83,7 +83,7 @@ canes-analytics-starter/
 │   │   ├── PWHLNewsView.jsx            # PWHL news feed + News/Milestones/Trivia/Transactions tab toggle
 │   │   ├── AHLShotMapView.jsx          # AHL shot map — deliberately leaner than PWHLShotMapView.jsx: opens on the last game played (game chips over the season tabs, both teams' shots from `/ahl/game-shots`, per-game cards computed from them; 2026-10), season-aggregate rink + PP/PK summary behind All, no Corsi/Fenwick/PDO (no `blocked_shot` event type exists in AHL's HockeyTech feed at all). Live-tracking layer (score chip, event popups, dev-only debug panel) added in AHL/PWHL parity Phase 6
 │   │   ├── AHLScheduleView.jsx         # AHL schedule + calendar + game box/preview popups + predictions (parity Phase 3). No separate Regular Season/Playoffs tab — `AHL_SEASONS` lists "2026 Playoffs" as its own selectable season tab instead; no round-based bracket view (Calder Cup's up-to-4-round format was never ported/verified against PWHL's fixed-2-round bracket logic)
-│   │   ├── AHLTeamView.jsx             # AHL 4-tab team analytics (Overview/Stats/Splits/Trends) — Advanced (Corsi/Fenwick/PDO) and Salaries tabs dropped, both real data walls not scope choices. "Compare Seasons" (parity Phase 4) opens `TeamComparisonPopup.jsx`'s `'ahl'` branch
+│   │   ├── AHLTeamView.jsx             # AHL 4-tab team analytics (Overview/Stats/Splits/Trends; Last 5, Splits W–L–OTL/Pts% and Trends streak/L10 count OT/SO losses separately from `ended_in`, `utils/hockeyTechResults.js`) — Advanced (Corsi/Fenwick/PDO) and Salaries tabs dropped, both real data walls not scope choices. "Compare Seasons" (parity Phase 4) opens `TeamComparisonPopup.jsx`'s `'ahl'` branch
 │   │   ├── AHLPlayersView.jsx          # AHL roster (photo grid) + sortable stats table + player popup (parity Phase 2). Skater columns drop `shot_pct`/`gw_goals` — confirmed absent from AHL's HockeyTech feed entirely
 │   │   ├── AHLLeagueView.jsx           # AHL Scoreboard + standings, grouped by AHL's real Atlantic/North/Central/Pacific division structure (unlike PWHL's flat table) + Leaders tab — no Bracket or Power Rankings tabs (infrastructure never built for AHL)
 │   │   ├── AHLNewsView.jsx             # AHL news feed, News tab only — no Milestones/Trivia/Transactions toggle; genuinely no pipeline data source for any of the three (not a missing branch in a generic component)
@@ -392,7 +392,7 @@ Added 2026-08 as the 3rd league, brought to full feature parity with PWHL across
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /ahl/standings?season=` | Standings, grouped by real division |
+| `GET /ahl/standings?season=` | Standings, grouped by real division. `streakType` is `W`, `L` or `OT` (OT/SO losses, shown amber) |
 | `GET /ahl/players?teamId=&season=` | Team skaters + goalies + roster |
 | `GET /ahl/league-players?season=` | All 32 teams' players (Leaders tab) |
 | `GET /ahl/roster?teamId=` | Roster only (player_id → name resolution for box scores) |
@@ -400,7 +400,7 @@ Added 2026-08 as the 3rd league, brought to full feature parity with PWHL across
 | `GET /ahl/shots?teamId=&season=` | Season shot/goal events with coordinates — no `blocked_shot` event type exists in this data source, a strict subset of `/pwhl/shots`'s shape |
 | `GET /ahl/team-season-summary?teamId=&season=` | Season-aggregate SOG + PP%/PK% for the Shot Map's summary card — no hits/blocked/faceoff/penalties sections, no data source for those |
 | `GET /ahl/lastgame?teamId=&season=` | Most recent completed game, opponent abbr resolved |
-| `GET /ahl/game-box?gameId=` | Per-player skater/goalie box score — no hits/faceoff/blocked-shots/skater-TOI fields |
+| `GET /ahl/game-box?gameId=` | Per-player skater/goalie box score — no hits/faceoff/blocked-shots/skater-TOI fields. Each row's `player_name` comes from that game's own lineup, so the Game Stats popups name players who have since changed teams (current rosters are only a fallback, `utils/boxScoreNames.js`) |
 | `GET /ahl/summary?gameId=` | Period scoring + MVPs/three stars for a completed game |
 | `GET /ahl/preview?gameId=` | Pre-game preview — raw HockeyTech `gameCenterPreview` passthrough |
 | `GET /ahl/prediction?gameId=` | Win probability + AI narrative — no `corsiForPct` field (no shot-attempts data source) |

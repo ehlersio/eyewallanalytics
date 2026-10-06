@@ -4,7 +4,8 @@
 // ECHLScheduleView.jsx -- port of AHLGameStatsPopup.jsx. Fetches:
 //   - /echl/game-box?gameId=  -- per-player skater/goalie box score
 //   - /echl/summary?gameId=   -- period scoring + three stars
-//   - /echl/roster?teamId=    -- player_id -> name resolution
+//   - /echl/roster?teamId=    -- fallback names, only for a box row
+//     without player_name (utils/boxScoreNames.js)
 //
 // Two real differences from PWHL's version, same as AHL's:
 //   - Team-stat comparison bars drop hits/blocked-shots/faceoff% entirely
@@ -18,6 +19,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { fetchECHLGameBox, fetchECHLGameSummary, fetchECHLRoster } from '../utils/echlApi';
+import { boxScoreNames, boxNeedsRosters } from '../utils/boxScoreNames';
 import { getECHLTeamById } from '../utils/echlConfig';
 import { formatDate } from '../utils/formatters';
 import TeamLogo from './TeamLogo';
@@ -43,11 +45,6 @@ function periodLabel(id, i) {
   return num === 4 ? 'OT' : `OT${num - 3}`;
 }
 
-function playerFullName(p) {
-  const name = `${p.first_name || ''} ${p.last_name || ''}`.trim();
-  return name || null;
-}
-
 export default function ECHLGameStatsPopup({ game, teamId, abbr, color, onClose }) {
   const { t } = useTranslation();
   const [skaterTeam, setSkaterTeam] = useState('car');
@@ -67,21 +64,16 @@ export default function ECHLGameStatsPopup({ game, teamId, abbr, color, onClose 
 
   const { data: box,     loading: boxLoading }     = useFetch(() => fetchECHLGameBox(game.game_id), [game.game_id]);
   const { data: summary, loading: summaryLoading }  = useFetch(() => fetchECHLGameSummary(game.game_id), [game.game_id]);
+  // Box rows are named by the Worker from the game's own lineup; the two
+  // current rosters are fetched only when some row has no name
+  // (utils/boxScoreNames.js).
+  const needsRosters = boxNeedsRosters(box);
   const { data: rosters } = useFetch(
-    () => Promise.all([fetchECHLRoster(teamId), fetchECHLRoster(oppId)]),
-    [teamId, oppId]
+    () => (needsRosters ? Promise.all([fetchECHLRoster(teamId), fetchECHLRoster(oppId)]) : Promise.resolve(null)),
+    [teamId, oppId, needsRosters]
   );
 
-  const playerNames = useMemo(() => {
-    const map = {};
-    (rosters || []).forEach(roster => {
-      (roster || []).forEach(p => {
-        const name = playerFullName(p);
-        if (name) map[p.player_id] = name;
-      });
-    });
-    return map;
-  }, [rosters]);
+  const playerNames = useMemo(() => boxScoreNames(box, rosters), [box, rosters]);
 
   const skaters = box?.skaters || [];
   const goalies = box?.goalies || [];
