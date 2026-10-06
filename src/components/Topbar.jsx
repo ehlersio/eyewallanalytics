@@ -38,6 +38,21 @@ const LIVE_CLOCK_CLASSES = 'text-[11px] text-[color:var(--amber)] font-[family-n
 const STATUS_CLASSES = 'flex items-center gap-1.5 text-[11px] text-[color:var(--text-dim)]';
 const STATUS_DOT_CLASSES = 'w-1.5 h-1.5 rounded-full bg-[var(--text-dim)]';
 const NO_LIVE_CLASSES = 'topbar-no-live hidden';
+
+// Only NHL routes run the NHL favourite's live-score poll: the other leagues
+// have no NHL game to follow, and their shot maps poll their own feeds. The
+// gate used to list the non-NHL sports by hand (`isPWHL || isAHL`), so the
+// ECHL routes, added later, kept polling the NHL favourite's schedule and
+// could show its live chip over ECHL pages (audit 2026-10-06, arch F1).
+export function pollsNhlLive(sport) {
+  return sport === 'nhl';
+}
+
+// Text of the hidden `.topbar-no-live` marker: the league on non-NHL routes,
+// null on NHL routes (the caller shows the translated "Off season" there).
+export function noLiveLabel(sport) {
+  return pollsNhlLive(sport) ? null : sport.toUpperCase();
+}
 const CLOCK_STOPPED_CLASSES = 'text-[#fbbf24] text-[10px] ml-[3px]';
 const MOMENTUM_CLASSES = 'pb-[7px] flex flex-col gap-[3px]';
 const MOM_LABELS_CLASSES = 'flex justify-between text-[9px] tracking-[0.05em] uppercase';
@@ -51,7 +66,8 @@ const MOM_FILL_OPP_CLASSES = 'absolute left-1/2 top-0 bottom-0 bg-[var(--text-di
 
 export default function Topbar() {
   const { t } = useTranslation();
-  const { isPWHL, isAHL } = useSport();
+  const { sport } = useSport();
+  const pollNhl = pollsNhlLive(sport);
   const [liveGame,    setLiveGame]    = useState(null);
   const [liveMeta,    setLiveMeta]    = useState(null);
   const [displayClock, setDisplayClock] = useState(null);
@@ -144,7 +160,7 @@ export default function Topbar() {
   }, []);
 
   useEffect(() => {
-    if (isPWHL || isAHL) return; // PWHL/AHL have no live game feed (yet, for AHL)
+    if (!pollNhl) return; // only NHL routes follow the NHL favourite's live game
     // No end-of-season cutoff: a hardcoded `SEASON_END = 2026-07-01` here
     // (from the first commit, never moved) switched this poll off for good
     // on that date, so the live score chip never showed again -- not in the
@@ -158,7 +174,7 @@ export default function Topbar() {
       clearInterval(intervalRef.current);
       clearInterval(clockRef.current);
     };
-  }, [isPWHL, isAHL]);
+  }, [pollNhl]);
 
   const activeLiveGame = mockLiveGame || liveGame;
   const opp      = activeLiveGame ? getOpponent(activeLiveGame) : null;
@@ -199,7 +215,7 @@ export default function Topbar() {
         ) : (
           <div className={STATUS_CLASSES}>
             <span className={STATUS_DOT_CLASSES} />
-            <span className={NO_LIVE_CLASSES}>{isPWHL ? 'PWHL' : isAHL ? 'AHL' : t('topbar.offSeason')}</span>
+            <span className={NO_LIVE_CLASSES}>{noLiveLabel(sport) ?? t('topbar.offSeason')}</span>
           </div>
         )}
 
