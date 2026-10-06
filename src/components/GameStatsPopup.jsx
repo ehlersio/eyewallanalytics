@@ -255,9 +255,13 @@ function GameStatsPopup({ game, onClose }) {
               </div>
               <p className="gp-summary-narrative text-[13px] leading-[1.65] text-[color:var(--text)] mt-0 mb-3">{summary.narrative}</p>
               <div className="gp-summary-chips flex gap-1.5 flex-wrap justify-center items-center mb-2.5">
-                <span className={GP_SUMMARY_CHIP_CLASSES} style={{color: summary.cfPct >= 50 ? 'var(--green)' : 'var(--red-bright)'}}>
-                  {t('gameStatsPopup.summary.cfPctChip', { pct: summary.cfPct })}
-                </span>
+                {/* cfPct is null when the Worker had no play-by-play to count
+                    shot attempts from (it used to store a made-up 50). */}
+                {summary.cfPct != null && (
+                  <span className={GP_SUMMARY_CHIP_CLASSES} style={{color: summary.cfPct >= 50 ? 'var(--green)' : 'var(--red-bright)'}}>
+                    {t('gameStatsPopup.summary.cfPctChip', { pct: summary.cfPct })}
+                  </span>
+                )}
                 {summary.topScorer && summary.topScorer !== 'Unknown' && (
                   <span className={GP_SUMMARY_CHIP_CLASSES}>🚨 {summary.topScorer}</span>
                 )}
