@@ -7,6 +7,8 @@ import { fetchAHLTeamSeasonsCompare, fetchAHLTeamSeasonsCompareTeams, fetchAHLTe
 import { fetchECHLTeamSeasonsCompare, fetchECHLTeamSeasonsCompareTeams, fetchECHLTeamHeadToHead } from '../utils/echlApi';
 import { fetchComparisonSeasons } from '../utils/seasonClient';
 import { normalizeComparisonSeasons } from '../utils/seasonComparison';
+import { compareSeasonOffered } from '../utils/teamSeasons';
+import { useTeamCompareSeasonGames } from '../hooks/useTeamSeasonGames';
 import { getTeamXgTrend } from '../utils/supabaseClient';
 import { ALL_TEAMS } from '../utils/teamConfig';
 import { PWHL_TEAMS } from '../utils/pwhlConfig';
@@ -237,9 +239,24 @@ function TeamCompareSeasonCard({ label, row, edge }) {
 // Opponent is lifted all the way to the parent (Session 88: shared with
 // HeadToHeadPanel below, one picker for both sub-tabs) and rendered once
 // by the parent, not here -- this panel only owns the season picker.
-function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, opponentLabel, season, onSeasonChange }) {
+//
+// Offers only seasons BOTH teams have played games in (see
+// compareSeasonOffered in utils/teamSeasons.js): picking an opponent drops any
+// season it didn't play, and a picked season the new opponent didn't play
+// is cleared.
+function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, opponentLabel, season, onSeasonChange, seasonIds, teamCounts, compareFn }) {
   const { t } = useTranslation();
-  const selectedSeason = season[0] ?? null;
+  const opponentCounts = useTeamCompareSeasonGames(compareFn, opponent, seasonIds);
+  const countsReady = teamCounts != null && (!opponent || opponentCounts != null);
+  const offered = (value) => compareSeasonOffered(teamCounts, value)
+    && (!opponent || compareSeasonOffered(opponentCounts, value));
+  const anyOffered = seasonIds.some(offered);
+  const picked = season[0] ?? null;
+  const selectedSeason = countsReady && picked != null && offered(picked) ? picked : null;
+  const stalePick = countsReady && picked != null && !offered(picked);
+  useEffect(() => {
+    if (stalePick) onSeasonChange([]);
+  }, [stalePick, onSeasonChange]);
   const fetchFn = league === 'ahl' ? fetchAHLTeamSeasonsCompareTeams
     : league === 'echl' ? fetchECHLTeamSeasonsCompareTeams
     : league === 'pwhl' ? fetchPWHLTeamSeasonsCompareTeams
@@ -259,13 +276,16 @@ function FullStatComparisonPanel({ league, teamValue, teamLabel, opponent, oppon
           selected={season}
           onChange={onSeasonChange}
           maxSelected={1}
+          filterSeasons={s => offered(s.value)}
+          filterPending={!countsReady}
+          emptyMessage={opponent ? t('teamComparisonPopup.noSharedSeasons') : null}
         />
       </div>
 
       {!opponent && (
         <div className={PP_NO_STATS_CLASSES}>{t('teamComparisonPopup.chooseOpponentAndSeason')}</div>
       )}
-      {opponent && !selectedSeason && (
+      {opponent && !selectedSeason && countsReady && anyOffered && (
         <div className={PP_NO_STATS_CLASSES}>{t('teamComparisonPopup.chooseSeason')}</div>
       )}
 
@@ -482,15 +502,21 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
   const seasonOptions = normalizeComparisonSeasons(league, comparisonConfig?.[league]?.seasons);
   const labelFor = (val) => seasonOptions.find(s => s.value === val)?.label || t('teamComparisonPopup.seasonFallback', { val });
 
+  // The comparison seasons are league-wide; this team's own rows say which
+  // of them it played games in (no PWHL expansion team before 2026-27, no
+  // UTA before 2024-25, no row-with-0-GP playoffs it missed), so only those
+  // are offered.
+  const seasonIds = seasonOptions.map(s => s.value);
+  const teamCounts = useTeamCompareSeasonGames(fetchFn, teamValue, seasonIds);
+  const offeredCount = seasonIds.filter(id => compareSeasonOffered(teamCounts, id)).length;
+
   // Session 66: no artificial 4-season ceiling. This is the same
   // /config/seasons/comparison-backed list SeasonComparisonPicker itself
   // renders chips from -- the least-bad existing source of "how many
   // seasons exist to compare" (there's no per-team team_seasons count
   // endpoint; see Session 63/65 notes on the missing NHL season-list
-  // source of truth). It's a league-wide list, not literally scoped to
-  // this team, but it's what's already being fetched here and it's what
-  // bounds the picker's own chip set, so it can't ever under-count what's
-  // actually selectable.
+  // source of truth). It's the league-wide list; the chips offered are
+  // the subset this team played (compareSeasonOffered), so it never caps them.
   const maxSelected = seasonOptions.length > 0 ? seasonOptions.length : FALLBACK_MAX_SELECTED;
 
   const rowBySeason = new Map((rows || []).map(r => [r.season, r]));
@@ -597,9 +623,14 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
                 selected={compareSeasons}
                 onChange={setCompareSeasons}
                 maxSelected={maxSelected}
+                filterSeasons={s => compareSeasonOffered(teamCounts, s.value)}
+                filterPending={teamCounts == null}
               />
-              {compareSeasons.length === 0 && (
-                <div className={PP_NO_STATS_CLASSES}>{t('playerPopup.compareTab.selectSeasons')}</div>
+              {compareSeasons.length === 0 && teamCounts != null && offeredCount > 0 && (
+                <div className={PP_NO_STATS_CLASSES}>
+                  {/* "two or more" only reads right with two to pick from */}
+                  {offeredCount > 1 ? t('playerPopup.compareTab.selectSeasons') : t('teamComparisonPopup.chooseSeason')}
+                </div>
               )}
 
               {isNhl && compareSeasons.length > 0 && (
@@ -680,6 +711,9 @@ export default function TeamComparisonPopup({ league, teamValue, teamLabel, onCl
                     opponentLabel={opponentLabel}
                     season={vsTeamSeason}
                     onSeasonChange={setVsTeamSeason}
+                    seasonIds={seasonIds}
+                    teamCounts={teamCounts}
+                    compareFn={fetchFn}
                   />
                 )
                 : (

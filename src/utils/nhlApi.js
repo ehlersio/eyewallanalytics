@@ -766,7 +766,8 @@ async function _getTeamSeasonRankings(gameTypeId, season, team) {
 export async function fetchTeamSeasonsCompare(team, seasons) {
   if (!seasons?.length) return [];
   const rows = await workerFetch(`/team-seasons/compare?team=${encodeURIComponent(team)}&seasons=${seasons.join(',')}`);
-  if (!rows) return [];
+  // null when the request failed -- unknown, not "no seasons".
+  if (!rows) return null;
   return rows.map(r => ({
     season:        r.season,
     gamesPlayed:   r.games_played,

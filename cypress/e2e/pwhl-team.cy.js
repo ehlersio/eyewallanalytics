@@ -327,22 +327,23 @@ describe('PWHL Team view — DET (expansion, no games played yet)', () => {
     })
   })
 
-  // The durable case for SESSION_64_BUILD's "team has no row at all for a
-  // selected season" requirement -- unlike the NHL current-season null-field
-  // case in team.cy.js (which will stop being true once real games are
-  // played), DET never having existed as a franchise before the 2026-27
-  // expansion is a permanent historical fact, not a transient data gap. Safe
-  // to assert this indefinitely.
+  // DET never existed as a franchise before the 2026-27 expansion -- a
+  // permanent historical fact, safe to assert indefinitely. The season
+  // pickers offer only seasons the team has games in (no dead options), so
+  // 2025-26 is never a choice for DET, alone or against an opponent.
+  // The picker has settled: chips, or the message saying there are none.
+  const seasonsLoaded = () =>
+    cy.get('[aria-label="Select seasons to compare"], .season-picker-empty', { timeout: DATA_TIMEOUT }).should('exist')
+
   describe('Compare Seasons', () => {
     beforeEach(() => cy.contains('🆚 Compare Seasons').click())
 
-    it('shows "Not yet available" instead of zeroed stats for a pre-expansion season', () => {
-      cy.get('.season-chip', { timeout: DATA_TIMEOUT }).contains('2025-26').click()
-      cy.get('.stat-section').should('have.length', 1)
-      cy.contains('Not yet available for this season').should('be.visible')
-      // No metric rows at all for this card -- confirms the empty state
-      // replaces the stat list rather than rendering it zeroed-out.
-      cy.get('.stat-section').find('.stat-row').should('not.exist')
+    it('offers no season DET did not play', () => {
+      seasonsLoaded()
+      cy.contains('.season-chip', '2025-26').should('not.exist')
+      cy.contains('.season-chip', '2024-25').should('not.exist')
+      cy.contains('Not yet available for this season').should('not.exist')
+      cy.assertNoErrors()
     })
   })
 
@@ -352,10 +353,11 @@ describe('PWHL Team view — DET (expansion, no games played yet)', () => {
       cy.get('[aria-label="Compare vs team"]').click()
     })
 
-    it('shows "Not yet available" for an expansion team with no prior-season row', () => {
+    it('offers no season DET and its opponent did not both play', () => {
       cy.get('select[aria-label="Choose opponent team"]').select('2') // Minnesota Frost
-      cy.get('.season-chip', { timeout: DATA_TIMEOUT }).contains('2025-26').click()
-      cy.contains('Not yet available for this season', { timeout: 15000 }).should('be.visible')
+      seasonsLoaded()
+      cy.contains('.season-chip', '2025-26').should('not.exist')
+      cy.contains('Not yet available for this season').should('not.exist')
     })
 
     // DET has never played a game in this pipeline's history (2026-27

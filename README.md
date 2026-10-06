@@ -77,7 +77,7 @@ canes-analytics-starter/
 │   │   ├── NewsView.jsx                # NHL news feed + News/Milestones/Trivia tab toggle (Trivia added Session 92) — Tailwind (Phase 4, sub-PR 4), no .css file
 │   │   ├── PWHLShotMapView.jsx         # PWHL shot map + PBP metrics — season/game history + Regular Season/Playoffs toggle (Session 77, new capability, not just NHL parity)
 │   │   ├── PWHLScheduleView.jsx        # PWHL schedule + calendar + playoffs. Auto-records prediction outcomes for completed games via `recordPWHLOutcome()` (Session 100), mirroring NHL `ScheduleView.jsx`'s own effect
-│   │   ├── PWHLTeamView.jsx            # PWHL 5-tab team analytics
+│   │   ├── PWHLTeamView.jsx            # PWHL 5-tab team analytics (Trends L10 is W–L–OTL over the games actually played, `utils/teamTrends.js` `recentRecord`, like AHL/ECHL)
 │   │   ├── PWHLPlayersView.jsx         # PWHL roster + stats + player popup
 │   │   ├── PWHLLeagueView.jsx          # PWHL 6-tab league page (Scoreboard added, session102). 2026-27 format (from season 11, `utils/pwhlPlayoffs.js`): standings split East/West with a playoff line under each 4th team; the bracket is East/West quarterfinals (best-of-3) and conference finals around the Walter Cup Final, "If the playoffs started today" from the standings until the playoffs have games. Conferences come from `pwhlConfig.js` (HockeyTech's feed doesn't group them yet). 2025-26 and earlier keep the flat table and 4-team bracket
 │   │   ├── PWHLNewsView.jsx            # PWHL news feed + News/Milestones/Trivia/Transactions tab toggle
@@ -145,7 +145,7 @@ canes-analytics-starter/
 │   │   ├── InfoTip.jsx/.css            # Tap-to-open tooltip
 │   │   ├── StatBar.jsx/.css            # Comparative stat bar
 │   │   ├── SeasonComparisonPicker.jsx/.css # Generic N-season selector for season-over-season comparison (NHL + PWHL, not league-specific)
-│   │   ├── TeamComparisonPopup.jsx     # Team-level season-over-season comparison dialog (NHL + PWHL, box-score stats only) — reuses PlayersView.css's popup/stat-section styles; its Head-to-Head tab also renders an AI narrative card (Session 90) via HeadToHeadNarrativeCard
+│   │   ├── TeamComparisonPopup.jsx     # Team-level season-over-season comparison dialog (NHL, PWHL, AHL, ECHL; box-score stats only; offers only seasons the team — and in vs-Team mode both teams — has games in, from its own compare rows, `utils/teamSeasons.js` `compareSeasonCounts`) — reuses PlayersView.css's popup/stat-section styles; its Head-to-Head tab also renders an AI narrative card (Session 90) via HeadToHeadNarrativeCard
 │   │   ├── GameChipsRow.jsx            # Shot map game-selector chip row (NHL + PWHL, shared) — normalized {id, opponentAbbr, opponentColor, myScore, oppScore, isHome} shape, each sport maps its own schedule-row into it
 │   │   ├── SeasonChipRow.jsx           # Shot map season-selector chip stack (NHL + PWHL, shared) — recent seasons inline + a "More seasons" overflow dropdown for older ones
 │   │   ├── SeasonTypeToggle.jsx        # Regular Season/Playoffs segmented toggle (NHL + PWHL, shared) — same UI, different wiring per sport (PWHL swaps season_id; NHL filters the fetched season's games by gameType)

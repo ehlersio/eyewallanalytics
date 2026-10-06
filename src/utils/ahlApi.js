@@ -79,7 +79,8 @@ export async function fetchAHLLastGame(teamId = AHL_TEAM_ID, season = AHL_CURREN
 export async function fetchAHLTeamSeasonsCompare(teamId, seasons) {
   if (!teamId || !seasons?.length) return [];
   const rows = await workerFetch(`/ahl/team-seasons/compare?teamId=${teamId}&seasons=${seasons.join(',')}`);
-  if (!Array.isArray(rows)) return [];
+  // null when the request failed -- unknown, not "no seasons".
+  if (!Array.isArray(rows)) return null;
   return rows.map(r => ({
     season:        r.season_id,
     gamesPlayed:   r.gp,

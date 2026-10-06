@@ -15,11 +15,13 @@ vi.mock('../seasonClient', () => ({
   fetchSeasonsConfig: vi.fn(() => Promise.reject(new Error('offline in tests'))),
 }))
 
-import { summarizeSeasonGames, teamHasGames, seasonsWithGames, fallbackSeason } from '../teamSeasons'
+import { summarizeSeasonGames, teamHasGames, seasonsWithGames, fallbackSeason, compareSeasonCounts, compareSeasonOffered } from '../teamSeasons'
+import { normalizeComparisonSeasons } from '../seasonComparison'
 import { PWHL_REGULAR_SEASONS, PWHL_PLAYOFF_SEASONS, PWHL_PRESEASON_SEASONS } from '../pwhlConfig'
 import { AHL_SEASONS } from '../ahlConfig'
 import { ECHL_SEASONS } from '../echlConfig'
 import schedules from './fixtures/team-season-schedules.json'
+import compare from './fixtures/team-compare-seasons-2026-10-06.json'
 
 const countsFor = (league, teamId) => Object.fromEntries(
   Object.entries(schedules[league][teamId]).map(([id, rows]) => [Number(id), summarizeSeasonGames(rows)])
@@ -150,5 +152,74 @@ describe('while the schedules load', () => {
 
   it('keeps a season whose schedule could not be read', () => {
     expect(ids(seasonsWithGames(AHL_SEASONS, { 94: null, 90: { games: 0, finals: 0 }, 92: null }))).toEqual([94, 92])
+  })
+})
+
+// Team "Compare Seasons" popup (TeamComparisonPopup): the league-wide
+// /config/seasons/comparison list, narrowed to the seasons the team's own
+// comparison rows have games in. Real Worker answers on 2026-10-06
+// (fixtures/team-compare-seasons-2026-10-06.json): the config, and each
+// team's /{league}/team-seasons/compare rows for every listed season.
+describe('Compare Seasons: seasons the team played', () => {
+  // The rows as fetch{,PWHL,AHL,ECHL}TeamSeasonsCompare return them.
+  const rowsFor = (league, team) => compare.rows[league][team].map(r => ({
+    season: r.season ?? r.season_id,
+    gamesPlayed: r.games_played ?? r.gp,
+  }))
+  const offered = (league, team, rows = rowsFor(league, team)) => {
+    const seasons = normalizeComparisonSeasons(league, compare.config[league].seasons)
+    const counts = compareSeasonCounts(seasons.map(s => s.value), rows)
+    return seasons.filter(s => compareSeasonOffered(counts, s.value)).map(s => s.label)
+  }
+
+  it('lists the league-wide seasons the picker used to offer every team', () => {
+    expect(normalizeComparisonSeasons('pwhl', compare.config.pwhl.seasons)).toHaveLength(7)
+    expect(normalizeComparisonSeasons('nhl', compare.config.nhl.seasons).map(s => s.label))
+      .toEqual(['2026-27', '2025-26', '2024-25', '2023-24', '2022-23'])
+  })
+
+  it('offers a PWHL expansion team (DET) nothing: it has no rows yet', () => {
+    expect(compare.rows.pwhl['10']).toEqual([])
+    expect(offered('pwhl', '10')).toEqual([])
+  })
+
+  it('offers SEA and VAN only 2025-26, their first season', () => {
+    expect(offered('pwhl', '8')).toEqual(['2025-26'])
+    expect(offered('pwhl', '9')).toEqual(['2025-26'])
+  })
+
+  it('leaves out a playoffs row with 0 GP (OTT missed the 2024 playoffs)', () => {
+    const ott = rowsFor('pwhl', '5')
+    expect(ott.find(r => r.season === 3)).toEqual({ season: 3, gamesPlayed: 0 })
+    expect(offered('pwhl', '5')).toHaveLength(6)
+    expect(offered('pwhl', '5')).not.toContain('Season 3')
+    expect(offered('pwhl', '2')).toHaveLength(7) // MIN played in all of them
+  })
+
+  it('offers UTA no NHL season before 2024-25, and SEA/CAR all five', () => {
+    expect(offered('nhl', 'UTA')).toEqual(['2026-27', '2025-26', '2024-25'])
+    expect(offered('nhl', 'SEA')).toHaveLength(5)
+    expect(offered('nhl', 'CAR')).toHaveLength(5)
+  })
+
+  it('offers AHL Hamilton only 2026-27 and ECHL teams only what they played', () => {
+    expect(offered('ahl', '457')).toEqual(['2026-27'])
+    expect(offered('ahl', '380')).toHaveLength(3)
+    expect(offered('echl', '52')).toEqual(['2025-26'])
+    expect(offered('echl', '74')).toEqual(['2026 Kelly Cup Playoffs', '2025-26'])
+  })
+
+  it('vs a team: only the seasons both played (BOS vs SEA is 2025-26)', () => {
+    const bos = offered('pwhl', '1')
+    expect(bos.length).toBeGreaterThan(1)
+    expect(bos.filter(label => offered('pwhl', '8').includes(label))).toEqual(['2025-26'])
+    expect(bos.filter(label => offered('pwhl', '10').includes(label))).toEqual([])
+  })
+
+  it('keeps every season offered when the rows could not be read, and waits while loading', () => {
+    expect(offered('pwhl', '10', null)).toHaveLength(7)
+    expect(compareSeasonCounts([8, 5], null)).toEqual({ 8: null, 5: null })
+    expect(compareSeasonCounts([8], [{ season: 8, gamesPlayed: null }])).toEqual({ 8: null })
+    expect(compareSeasonOffered(null, 8)).toBe(true)
   })
 })

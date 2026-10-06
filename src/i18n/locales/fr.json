@@ -428,7 +428,6 @@
     "homeVsAwayTitle": "Domicile vs visiteur — {{label}}",
     "loadingAdvancedStats": "Chargement des statistiques avancées…",
     "currentStreak": "Séquence actuelle",
-    "last10Games": "10 derniers matchs",
     "lastNGames_one": "Dernier {{count}} match",
     "lastNGames_other": "{{count}} derniers matchs",
     "legendHot": "■ En forme (≥60%)",
@@ -674,7 +673,6 @@
     "trends": {
       "loadingTitle": "Chargement des tendances…",
       "noDataTitle": "Aucune donnée de match pour l'instant",
-      "winPctL10": "% de victoires (10 derniers)",
       "simpleDotTooltip": "{{result}} {{my}}–{{op}}",
       "rollingWinPctTitle": "% de victoires — fenêtre mobile de 10 matchs",
       "simpleBarTooltip": "{{pct}}% de victoires",
@@ -764,7 +762,6 @@
     "trends": {
       "loadingTitle": "Chargement des tendances…",
       "noDataTitle": "Aucune donnée de match pour l'instant",
-      "winPctL10": "% de victoires (10 derniers)",
       "simpleDotTooltip": "{{result}} {{my}}–{{op}}",
       "rollingWinPctTitle": "% de victoires — fenêtre mobile de 10 matchs",
       "simpleBarTooltip": "{{pct}}% de victoires",
@@ -856,7 +853,6 @@
     "trends": {
       "loadingTitle": "Chargement des tendances…",
       "noDataTitle": "Aucune donnée de match pour l'instant",
-      "winPctL10": "% de victoires (10 derniers)",
       "simpleDotTooltip": "{{result}} {{my}}–{{op}}",
       "rollingWinPctTitle": "% de victoires — fenêtre mobile de 10 matchs",
       "simpleBarTooltip": "{{pct}}% de victoires",
@@ -2435,6 +2431,7 @@
     "notYetAvailable": "Pas encore disponible pour cette saison.",
     "chooseOpponentAndSeason": "Choisissez un adversaire ci-dessus et une saison à comparer.",
     "chooseSeason": "Choisissez une saison ci-dessus pour comparer.",
+    "noSharedSeasons": "Ces équipes n'ont encore aucune saison en commun à comparer.",
     "chooseOpponentForH2h": "Choisissez un adversaire ci-dessus pour voir l'historique des confrontations.",
     "noMeetings": "Aucune confrontation enregistrée entre ces équipes pour l'instant.",
     "since2023": "Depuis 2023-24",

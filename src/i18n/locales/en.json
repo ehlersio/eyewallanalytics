@@ -428,7 +428,6 @@
     "homeVsAwayTitle": "Home vs Away — {{label}}",
     "loadingAdvancedStats": "Loading advanced stats…",
     "currentStreak": "Current streak",
-    "last10Games": "Last 10 games",
     "lastNGames_one": "Last {{count}} game",
     "lastNGames_other": "Last {{count}} games",
     "legendHot": "■ Hot (≥60%)",
@@ -674,7 +673,6 @@
     "trends": {
       "loadingTitle": "Loading trends…",
       "noDataTitle": "No game data yet",
-      "winPctL10": "Win% L10",
       "simpleDotTooltip": "{{result}} {{my}}–{{op}}",
       "rollingWinPctTitle": "Win% — rolling 10-game window",
       "simpleBarTooltip": "{{pct}}% win rate",
@@ -764,7 +762,6 @@
     "trends": {
       "loadingTitle": "Loading trends…",
       "noDataTitle": "No game data yet",
-      "winPctL10": "Win% L10",
       "simpleDotTooltip": "{{result}} {{my}}–{{op}}",
       "rollingWinPctTitle": "Win% — rolling 10-game window",
       "simpleBarTooltip": "{{pct}}% win rate",
@@ -856,7 +853,6 @@
     "trends": {
       "loadingTitle": "Loading trends…",
       "noDataTitle": "No game data yet",
-      "winPctL10": "Win% L10",
       "simpleDotTooltip": "{{result}} {{my}}–{{op}}",
       "rollingWinPctTitle": "Win% — rolling 10-game window",
       "simpleBarTooltip": "{{pct}}% win rate",
@@ -2435,6 +2431,7 @@
     "notYetAvailable": "Not yet available for this season.",
     "chooseOpponentAndSeason": "Choose an opponent above and a season to compare.",
     "chooseSeason": "Choose a season above to compare.",
+    "noSharedSeasons": "These teams have no season in common to compare yet.",
     "chooseOpponentForH2h": "Choose an opponent above to see head-to-head history.",
     "noMeetings": "No meetings on record between these teams yet.",
     "since2023": "Since 2023-24",
