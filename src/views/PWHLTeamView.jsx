@@ -15,6 +15,8 @@ import TeamComparisonPopup from '../components/TeamComparisonPopup';
 import TeamHistorySections from '../components/TeamHistorySections';
 import RankBadge from '../components/RankBadge'
 import { getTeamHistory } from '../utils/teamHistory';
+import { gameResultFor } from '../utils/hockeyTechResults';
+import { recentRecord } from '../utils/teamTrends';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 // ShotMapView.css import removed (Phase 5, sub-PR 1) -- this file's only
@@ -943,22 +945,16 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
 }
 
 // ── Trends tab ────────────────────────────────────────────────────────────────
-function TrendsTab({ schedule, teamId, loading }) {
+export function TrendsTab({ schedule, teamId, loading }) {
   const { t } = useTranslation();
   const gameLog = useMemo(() => {
     if (!schedule?.length || !teamId) return [];
     return [...schedule]
       .filter(g => g.game_state === 'Final')
       .sort((a,b) => a.game_id - b.game_id)
-      .map(g => {
-        const isHome = g.home_team_id === teamId;
-        const my     = isHome ? g.home_score : g.away_score;
-        const op     = isHome ? g.away_score : g.home_score;
-        const won    = my > op;
-        const isExtra = g.ot || g.shootout;
-        const result = won ? (isExtra ? 'OTW' : 'W') : (!won && isExtra ? 'OTL' : 'L');
-        return { won, my, op, result, ot: g.ot, so: g.shootout, game_id: g.game_id };
-      });
+      // result is W / OTL / L (an OT/SO win is a W); endedIn marks the
+      // OT/SO wins the dots below show apart.
+      .map(g => ({ ...gameResultFor(g, teamId), game_id: g.game_id }));
   }, [schedule, teamId]);
 
   if (loading) return (
@@ -1000,8 +996,10 @@ function TrendsTab({ schedule, teamId, loading }) {
     else break;
   }
 
-  const last10   = gameLog.slice(-10);
-  const last10W  = last10.filter(g => g.won).length;
+  // Record over the last 10 games -- or fewer, over the games actually
+  // played -- W–L–OTL like the standings' L10 (used to read W–(10−W) over
+  // 10 whatever the games played, OT/SO losses counted as losses).
+  const recent   = recentRecord(gameLog, 10);
   const display  = gameLog.slice(-20); // show last 20 games
   const rollDisp = rolling.slice(-20);
   const gfDisp   = rollingGF.slice(-20);
@@ -1020,12 +1018,12 @@ function TrendsTab({ schedule, teamId, loading }) {
             </div>
           </div>
           <div className={TQ_ITEM_CLASSES}>
-            <div className={TQ_LABEL_CLASSES}>{t('team.last10Games')}</div>
-            <div className={TQ_VAL_CLASSES}>{last10W}–{10-last10W}</div>
+            <div className={TQ_LABEL_CLASSES}>{t('team.lastNGames', { count: recent.games })}</div>
+            <div className={TQ_VAL_CLASSES}>{recent.wins}–{recent.losses}–{recent.otLosses}</div>
           </div>
           <div className={TQ_ITEM_CLASSES}>
-            <div className={TQ_LABEL_CLASSES}>{t('pwhlTeamView.trends.winPctL10')}</div>
-            <div className={TQ_VAL_CLASSES}>{Math.round(last10W/10*100)}%</div>
+            <div className={TQ_LABEL_CLASSES}>{t('teamView.trends.winPctLastN', { count: recent.games })}</div>
+            <div className={TQ_VAL_CLASSES}>{recent.winPct}%</div>
           </div>
         </div>
       </div>
@@ -1036,9 +1034,9 @@ function TrendsTab({ schedule, teamId, loading }) {
         <div className={RESULT_DOTS_CLASSES}>
           {display.map((g, i) => (
             <div key={i}
-              className={resultDotClasses(g.won ? (g.ot||g.so ? 'otw' : 'w') : (g.ot||g.so ? 'otl' : 'l'))}
-              title={t('pwhlTeamView.trends.simpleDotTooltip', { result: g.result, my: g.my, op: g.op })}>
-              {g.result === 'OTW' ? 'W' : g.result === 'OTL' ? 'O' : g.result}
+              className={resultDotClasses(g.won ? (g.endedIn ? 'otw' : 'w') : (g.endedIn ? 'otl' : 'l'))}
+              title={t('pwhlTeamView.trends.simpleDotTooltip', { result: g.won && g.endedIn ? 'OTW' : g.result, my: g.my, op: g.op })}>
+              {g.result === 'OTL' ? 'O' : g.result}
             </div>
           ))}
         </div>

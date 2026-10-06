@@ -183,7 +183,8 @@ export async function fetchECHLPrediction(gameId) {
 export async function fetchECHLTeamSeasonsCompare(teamId, seasons) {
   if (!teamId || !seasons?.length) return [];
   const rows = await workerFetch(`/echl/team-seasons/compare?teamId=${teamId}&seasons=${seasons.join(',')}`);
-  if (!Array.isArray(rows)) return [];
+  // null when the request failed -- unknown, not "no seasons".
+  if (!Array.isArray(rows)) return null;
   return rows.map(r => ({
     season:        r.season_id,
     gamesPlayed:   r.gp,

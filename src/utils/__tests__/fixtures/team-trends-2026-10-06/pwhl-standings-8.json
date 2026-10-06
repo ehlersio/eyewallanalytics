@@ -1,0 +1,90 @@
+[
+{
+"team_id": 1,
+"season_id": 8,
+"gp": 30,
+"wins": 21,
+"losses": 5,
+"ot_losses": 4,
+"l10W": 7,
+"l10L": 1,
+"l10OTL": 2
+},
+{
+"team_id": 3,
+"season_id": 8,
+"gp": 30,
+"wins": 22,
+"losses": 6,
+"ot_losses": 2,
+"l10W": 8,
+"l10L": 1,
+"l10OTL": 1
+},
+{
+"team_id": 2,
+"season_id": 8,
+"gp": 30,
+"wins": 16,
+"losses": 9,
+"ot_losses": 5,
+"l10W": 3,
+"l10L": 5,
+"l10OTL": 2
+},
+{
+"team_id": 5,
+"season_id": 8,
+"gp": 30,
+"wins": 17,
+"losses": 12,
+"ot_losses": 1,
+"l10W": 7,
+"l10L": 3,
+"l10OTL": 0
+},
+{
+"team_id": 6,
+"season_id": 8,
+"gp": 30,
+"wins": 11,
+"losses": 13,
+"ot_losses": 6,
+"l10W": 4,
+"l10L": 5,
+"l10OTL": 1
+},
+{
+"team_id": 9,
+"season_id": 8,
+"gp": 30,
+"wins": 12,
+"losses": 14,
+"ot_losses": 4,
+"l10W": 5,
+"l10L": 5,
+"l10OTL": 0
+},
+{
+"team_id": 4,
+"season_id": 8,
+"gp": 30,
+"wins": 12,
+"losses": 15,
+"ot_losses": 3,
+"l10W": 4,
+"l10L": 6,
+"l10OTL": 0
+},
+{
+"team_id": 8,
+"season_id": 8,
+"gp": 30,
+"wins": 9,
+"losses": 16,
+"ot_losses": 5,
+"l10W": 3,
+"l10L": 4,
+"l10OTL": 3
+}
+]

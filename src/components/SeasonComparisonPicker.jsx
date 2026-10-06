@@ -48,6 +48,8 @@ export default function SeasonComparisonPicker({
   onChange,             // (nextSelectedArray) => void
   maxSelected = null,   // null = unlimited
   filterSeasons = null, // optional (normalizedSeason) => boolean, applied before rendering
+  filterPending = false, // true while filterSeasons' data is still loading: chips wait, so none flashes in then out
+  emptyMessage = null,  // optional text when no season is offered (default: noSeasons)
 }) {
   const { t } = useTranslation();
   const { data, loading, error, refetch } = useFetch(fetchComparisonSeasons, []);
@@ -66,7 +68,7 @@ export default function SeasonComparisonPicker({
     onChange([...selected, value]);
   }
 
-  if (loading) {
+  if (loading || (filterPending && !error)) {
     return (
       <div className={PICKER_LOADING_CLASSES} role="status" aria-label={t('seasonComparisonPicker.loadingAriaLabel')}>
         <div className={SKELETON_CLASSES} />
@@ -85,7 +87,8 @@ export default function SeasonComparisonPicker({
   }
 
   if (seasons.length === 0) {
-    return <div className={PICKER_MESSAGE_CLASSES}>{t('seasonComparisonPicker.noSeasons')}</div>;
+    // season-picker-empty: a test hook (pwhl-team.cy.js), like season-chip.
+    return <div className={`season-picker-empty ${PICKER_MESSAGE_CLASSES}`}>{emptyMessage || t('seasonComparisonPicker.noSeasons')}</div>;
   }
 
   return (

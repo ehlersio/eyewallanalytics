@@ -175,7 +175,8 @@ export async function fetchPWHLTeamRecord(teamId, season) {
 export async function fetchPWHLTeamSeasonsCompare(teamId, seasons) {
   if (!teamId || !seasons?.length) return [];
   const rows = await workerFetch(`/pwhl/team-seasons/compare?teamId=${teamId}&seasons=${seasons.join(',')}`);
-  if (!Array.isArray(rows)) return [];
+  // null when the request failed -- unknown, not "no seasons".
+  if (!Array.isArray(rows)) return null;
   return rows.map(r => ({
     season:        r.season_id,
     gamesPlayed:   r.gp,

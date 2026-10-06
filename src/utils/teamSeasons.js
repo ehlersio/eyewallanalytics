@@ -46,3 +46,29 @@ export function fallbackSeason(current, offered, counts, opts) {
   const target = offered.find(s => s.type === 'regular') ?? offered[0];
   return target ? target.id : current;
 }
+
+// The same { [seasonId]: { games, finals } | null } counts from a team's
+// season-comparison rows (fetch{,PWHL,AHL,ECHL}TeamSeasonsCompare, one row
+// per season with gamesPlayed), for the Team "Compare Seasons" pickers --
+// the rows those cards show, so a season is offered only when its card has
+// games in it. A season without a row has none (a PWHL expansion team's
+// earlier seasons, an NHL team's seasons before it existed); a row with 0
+// GP (a PWHL team that missed that year's playoffs) has none either.
+// `rows` null (the request failed) leaves every season unknown -- offered.
+export function compareSeasonCounts(seasonIds, rows) {
+  const ids = seasonIds.map(Number);
+  if (!Array.isArray(rows)) return Object.fromEntries(ids.map(id => [id, null]));
+  const gp = new Map(rows.map(r => [Number(r.season), r.gamesPlayed]));
+  return Object.fromEntries(ids.map(id => {
+    if (!gp.has(id)) return [id, { games: 0, finals: 0 }];
+    const n = gp.get(id);
+    return [id, n == null ? null : { games: n, finals: n }];
+  }));
+}
+
+// Whether the Compare Seasons popup offers `seasonId` for a team with these
+// counts: it played games in it, or that's unknown (the rows couldn't be
+// read). Still loading (counts null) is unknown too -- the picker waits.
+export function compareSeasonOffered(counts, seasonId) {
+  return teamHasGames(counts, seasonId, { played: true }) !== false;
+}

@@ -21,6 +21,7 @@ import {
 import { AHL_SEASONS, AHL_PLAYOFF_SEASON_MAP, AHL_REGULAR_SEASON_MAP, isAHLPlayoffSeason } from '../utils/ahlConfig';
 import { useSport } from '../utils/SportContext';
 import { gameResultFor, currentStreak, pointsPct, streakColor } from '../utils/hockeyTechResults';
+import { recentRecord } from '../utils/teamTrends';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
 import TeamComparisonPopup from '../components/TeamComparisonPopup';
@@ -656,7 +657,7 @@ function SplitsTab({ schedule, poSchedule, teamId, loading, inPlayoffs }) {
 }
 
 // ── Trends tab ────────────────────────────────────────────────────────────────
-function TrendsTab({ schedule, teamId, loading }) {
+export function TrendsTab({ schedule, teamId, loading }) {
   const { t } = useTranslation();
   const gameLog = useMemo(() => {
     if (!schedule?.length || !teamId) return [];
@@ -697,10 +698,8 @@ function TrendsTab({ schedule, teamId, loading }) {
   // OT/SO losses form their own 'OT' streak (utils/hockeyTechResults.js).
   const { type: streakType, count: streak } = currentStreak(gameLog.map(g => g.result));
 
-  const last10   = gameLog.slice(-10);
-  const last10W  = last10.filter(g => g.won).length;
-  const last10L  = last10.filter(g => g.result === 'L').length;
-  const last10OTL = last10.filter(g => g.result === 'OTL').length;
+  // Last 10 -- or fewer, over the games actually played.
+  const recent   = recentRecord(gameLog, 10);
   const display  = gameLog.slice(-20);
   const rollDisp = rolling.slice(-20);
   const gfDisp   = rollingGF.slice(-20);
@@ -718,12 +717,12 @@ function TrendsTab({ schedule, teamId, loading }) {
             </div>
           </div>
           <div className={TQ_ITEM_CLASSES}>
-            <div className={TQ_LABEL_CLASSES}>{t('team.last10Games')}</div>
-            <div className={TQ_VAL_CLASSES}>{last10W}–{last10L}–{last10OTL}</div>
+            <div className={TQ_LABEL_CLASSES}>{t('team.lastNGames', { count: recent.games })}</div>
+            <div className={TQ_VAL_CLASSES}>{recent.wins}–{recent.losses}–{recent.otLosses}</div>
           </div>
           <div className={TQ_ITEM_CLASSES}>
-            <div className={TQ_LABEL_CLASSES}>{t('ahlTeamView.trends.winPctL10')}</div>
-            <div className={TQ_VAL_CLASSES}>{Math.round(last10W/last10.length*100)}%</div>
+            <div className={TQ_LABEL_CLASSES}>{t('teamView.trends.winPctLastN', { count: recent.games })}</div>
+            <div className={TQ_VAL_CLASSES}>{recent.winPct}%</div>
           </div>
         </div>
       </div>

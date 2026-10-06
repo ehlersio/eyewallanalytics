@@ -1,17 +1,18 @@
 // utils/hockeyTechResults.js
 //
 // AHL/ECHL game results from a team's side. Their game_log rows carry
-// ended_in ('OT' | 'SO' | null) -- an overtime or shootout loss is worth a
-// point and is not a regulation loss, so it's its own result ('OTL') in
-// last-5 chips, streaks, L10 and points percentage. (These views used to
-// count every non-win as a plain loss.)
+// ended_in ('OT' | 'SO' | null), PWHL's carry ot/shootout flags -- an
+// overtime or shootout loss is worth a point and is not a regulation loss,
+// so it's its own result ('OTL') in last-5 chips, streaks, L10 and points
+// percentage. (These views used to count every non-win as a plain loss.)
 
 // { won, result: 'W' | 'OTL' | 'L', endedIn, my, op } for one final game.
 export function gameResultFor(g, teamId) {
   const isHome  = g.home_team_id === teamId;
   const my      = isHome ? g.home_score : g.away_score;
   const op      = isHome ? g.away_score : g.home_score;
-  const endedIn = g.ended_in === 'OT' || g.ended_in === 'SO' ? g.ended_in : null;
+  const endedIn = g.ended_in === 'OT' || g.ended_in === 'SO' ? g.ended_in
+    : g.shootout ? 'SO' : g.ot ? 'OT' : null;
   const won     = my > op;
   return { won, result: won ? 'W' : endedIn ? 'OTL' : 'L', endedIn, my, op };
 }
