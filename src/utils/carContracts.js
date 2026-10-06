@@ -120,9 +120,14 @@ export function findContract(playerId, lastName) {
 // ELC contracts are excluded — their tiny cap hit makes the metric
 // nonsensical vs market-rate deals.
 //
-// WAR scaling: WAR/$M is multiplied by 6 to bring it onto the same
-// axis as points/$M. A player with 3.0 WAR on a $4M deal scores
-// ~4.5 on this axis — comparable to 18 pts/$M before blending.
+// WAR scaling: WAR/$M is multiplied by WAR_SCALE to bring it onto the
+// same axis as points/$M. The scale was 6 when a top skater's season
+// was taken to be 2-4 WAR; in the current model (eyewall-pipeline#191)
+// the same players post about 0.7-1.2 (see TIERS in warTier.js: Top
+// player 2 -> 0.7, MVP candidate 4 -> 1.2), roughly a third, so the
+// scale is 18 and WAR keeps its intended weight in the blend. A
+// player with 1.0 WAR on a $4M deal scores 4.5 on this axis, as a
+// 3.0-WAR player did at the old scale.
 //
 // Blended scale (market-rate skaters):
 //   >= 8.0  → Exceptional value
@@ -131,6 +136,8 @@ export function findContract(playerId, lastName) {
 //   >= 1.8  → Fair value
 //   >= 1.0  → Below average
 //    < 1.0  → Overpaid
+export const WAR_SCALE = 18;
+
 export function contractValue(points, gamesPlayed, capHit, isELC, war = null) {
   if (!capHit || !gamesPlayed) return null;
   if (isELC || capHit < 1_200_000) return null;
@@ -141,7 +148,7 @@ export function contractValue(points, gamesPlayed, capHit, isELC, war = null) {
 
   if (war != null && !isNaN(war)) {
     const warPerM   = war / capM;
-    const warScaled = warPerM * 6;
+    const warScaled = warPerM * WAR_SCALE;
     const blended   = (pointsPerM * 0.6) + (warScaled * 0.4);
     return { score: Math.round(blended * 10) / 10, method: 'blended' };
   }
