@@ -29,6 +29,15 @@ export function livePollInterval(games, isLive, now = Date.now()) {
   return 5 * 60_000;                             // between games
 }
 
+// The HockeyTech shot maps' "/today" live-detection poll: every 60s until a
+// game for the team is live, every 30s from then on. Returns a function for
+// usePoll to ask before every tick, reading the view's `isLiveRef` each time.
+// Each view used to compute the number once at mount (`useMemo(..., [])`),
+// when the ref is still false, so the 30s poll never happened.
+export function hockeyTechTodayInterval(isLiveRef) {
+  return () => (isLiveRef.current ? 30_000 : 60_000);
+}
+
 // A push (iOS foreground, or the web service worker) means the poller just
 // saw something change -- usually a game going live.
 export const PUSH_RECEIVED = 'eyewall:push-received';

@@ -19,6 +19,7 @@
 // /echl/team-season-summary), which the pipeline already populates from
 // HockeyTech's own special-teams view -- not derived from PBP here.
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { hockeyTechTodayInterval } from '../utils/livePolling';
 import { useTranslation } from 'react-i18next';
 import { useFetch, usePoll } from '../hooks/useFetch';
 import { useTeamSeasonGames } from '../hooks/useTeamSeasonGames';
@@ -182,7 +183,7 @@ export default function ECHLShotMapView() {
   // Poll /echl/today every 60s (30s once live) to detect a live/pre game
   // for our team today. Mirrors AHLShotMapView.jsx's identical pattern.
   const isLiveRef = useRef(false);
-  const liveInterval = useMemo(() => isLiveRef.current ? 30_000 : 60_000, []);
+  const liveInterval = useMemo(() => hockeyTechTodayInterval(isLiveRef), []);
 
   // Always the live current season, not the one on screen: the view can
   // open on an older season (the fallback below), and today's games are
