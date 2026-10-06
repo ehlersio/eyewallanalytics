@@ -33,6 +33,7 @@ import {
 } from '../utils/supabaseClient'
 import { findContract, contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING } from '../utils/carContracts'
 import { nhlSeasonLabel } from '../utils/seasonComparison'
+import { warTier, warPer82, WAR_TIER_MIN_GP } from '../utils/warTier'
 import { HockeyRink } from 'react-hockey-rink'
 import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents'
 import InfoTip from '../components/InfoTip'
@@ -603,6 +604,41 @@ function SkaterRateTiles({ d }) {
 // next to the regular-season one (with the difference and the playoff
 // minutes behind it), and the playoff rates. No percentile bars -- the
 // pipeline doesn't rank playoff samples.
+// Regular-season WAR card. The number is the real season-to-date WAR; the
+// tier beside it reads WAR per 82 games (utils/warTier.js), and isn't shown
+// under WAR_TIER_MIN_GP games -- an early-season WAR is near 0 for everyone
+// and would read "Replacement level" against full-season thresholds.
+export function SkaterWarCard({ war, gp, gameScore }) {
+  const { t } = useTranslation()
+  const tier = warTier(war, gp)
+  const numColor = tier ? tier.color : war == null ? 'var(--text-dim)' : 'var(--text)'
+  return (
+    <div className={`pa-war ${PA_WAR_CARD_CLASSES}`}>
+      <div className={PA_WAR_MAIN_CLASSES}>
+        <span className={`pa-war-num ${PA_WAR_NUM_CLASSES}`} style={{ color: numColor }}>{war == null ? '—' : `${war > 0 ? '+' : ''}${war}`}</span>
+        <span className={PA_WAR_LABEL_CLASSES}>
+          WAR
+          <InfoTip text={t('playerPopup.analytics.skater.warTip', { count: WAR_TIER_MIN_GP })} position="above" />
+        </span>
+      </div>
+      <div className={PA_WAR_META_CLASSES}>
+        {war == null ? null : tier
+          ? <span className="pa-war-tier" style={{ color: tier.color }}>{t(`playerPopup.analytics.skater.${tier.key}`)}</span>
+          : <span className="pa-war-tier pa-war-small-sample" style={{ color: 'var(--text-dim)' }}>{t('playerPopup.analytics.skater.tierSmallSample', { count: WAR_TIER_MIN_GP })}</span>}
+        {tier?.pace != null && (
+          <span className={`pa-war-pace ${PA_WAR_SUB_CLASSES}`}>
+            {t('playerPopup.analytics.skater.warPace', { value: `${tier.pace > 0 ? '+' : ''}${tier.pace.toFixed(2)}` })}
+          </span>
+        )}
+        <span className={PA_WAR_SUB_CLASSES}>{t('playerPopup.analytics.skater.gpAndGameScore', { gp, score: gameScore })}</span>
+        <span className={PA_WAR_SUB_CLASSES} style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
+          {t('playerPopup.analytics.skater.rapmCaption')}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 function PlayoffSkaterAnalytics({ po, regularRapm, seasonLabel }) {
   const { t } = useTranslation()
   const { war, rapm, rapmToiMin, gp, gameScore } = po
@@ -795,29 +831,11 @@ function PlayerAnalytics({ playerId, mpData, goalieData, _playerName, isGoalie, 
   const pos      = ['C','L','R','F'].includes(position) ? 'F' : 'D'
   const posLbl   = pos === 'F' ? t('playerPopup.analytics.positionForwards') : t('playerPopup.analytics.positionDefensemen')
   const p        = percentiles || {}
-  const warColor = war >= 2 ? '#4ade80' : war >= 0.5 ? '#fbbf24' : '#f87171'
-  const warLabel = war >= 4 ? t('playerPopup.analytics.skater.tierMvp') : war >= 2 ? t('playerPopup.analytics.skater.tierTop')
-    : war >= 0.5 ? t('playerPopup.analytics.skater.tierSolid') : war >= -0.5 ? t('playerPopup.analytics.skater.tierReplacement') : t('playerPopup.analytics.skater.tierBelowReplacement')
 
   return (
     <div className={PA_WRAP_CLASSES}>
       {toggle}
-      <div className={PA_WAR_CARD_CLASSES}>
-        <div className={PA_WAR_MAIN_CLASSES}>
-          <span className={PA_WAR_NUM_CLASSES} style={{ color: warColor }}>{war > 0 ? '+' : ''}{war}</span>
-          <span className={PA_WAR_LABEL_CLASSES}>
-            WAR
-            <InfoTip text={t('playerPopup.analytics.skater.warTip')} position="above" />
-          </span>
-        </div>
-        <div className={PA_WAR_META_CLASSES}>
-          <span style={{ color: warColor }}>{warLabel}</span>
-          <span className={PA_WAR_SUB_CLASSES}>{t('playerPopup.analytics.skater.gpAndGameScore', { gp, score: gameScore })}</span>
-          <span className={PA_WAR_SUB_CLASSES} style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
-            {t('playerPopup.analytics.skater.rapmCaption')}
-          </span>
-        </div>
-      </div>
+      <SkaterWarCard war={war} gp={gp} gameScore={gameScore} />
       <SkaterRateTiles d={mpData} />
       <div className={PA_SECTION_LABEL_CLASSES}>{t('playerPopup.analytics.percentileVsPosition', { position: posLbl })}</div>
       <div className={PA_BARS_CLASSES}>
@@ -1452,7 +1470,9 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
               const pts   = regStats?.points ?? 0
               const gp    = regStats?.gamesPlayed ?? 0
               const isELC = contract.note === 'ELC' || contract.capHit < 1_200_000
-              const war   = mpData?.war ?? null
+              // WAR per 82 GP, so it sits on the same footing as points per
+              // 82 -- null under WAR_TIER_MIN_GP games (points only, then).
+              const war   = warPer82(mpData?.war, mpData?.gp)
               const result = !isGoalie && gp > 0 ? contractValue(pts, gp, contract.capHit, isELC, war) : null
               const score  = result?.score ?? null
               const method = result?.method ?? 'points'
@@ -1464,7 +1484,9 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                 : null
               const valueTooltip = method === 'blended'
                 ? t('playerPopup.contract.valueTooltipBlended')
-                : t('playerPopup.contract.valueTooltipPointsOnly')
+                : mpData?.war != null
+                  ? t('playerPopup.contract.valueTooltipPointsOnlySmallSample', { count: WAR_TIER_MIN_GP })
+                  : t('playerPopup.contract.valueTooltipPointsOnly')
               return (
                 <div className={PP_VALUE_ROW_CLASSES}>
                   {score != null && vl && (
