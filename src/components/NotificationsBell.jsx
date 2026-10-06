@@ -178,7 +178,12 @@ export default function NotificationsBell() {
                     </span>
                     <span className={ROW_TEXT_CLASSES}>
                       <span className={CHIP_SCORE_CLASSES}>
-                        {s.carGoals !== undefined ? `${teamAbbr} ${s.carGoals}–${s.oppGoals}` : t('settings.viewSummary')}
+                        {/* The score at the end of that period (or the final) --
+                            carGoals is only the goals scored IN it, which read
+                            'Final/SO CAR 2–2' for a 3-2 shootout win. Summaries
+                            stored before carScore existed keep the old text. */}
+                        {s.carScore != null ? `${teamAbbr} ${s.carScore}–${s.oppScore}`
+                          : s.carGoals !== undefined ? `${teamAbbr} ${s.carGoals}–${s.oppGoals}` : t('settings.viewSummary')}
                       </span>
                       <span className={ROW_SUB_CLASSES}>
                         {s.isGameSummary ? t('bell.finalSummary') : t('bell.periodSummary', { period: s.periodLabel })}

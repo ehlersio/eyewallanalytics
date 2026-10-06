@@ -5,6 +5,8 @@ import {
   getCompletedGameStats, getOpponent, isHomeGame, getCarScore, getOppScore,
   formatGameDate, getVenue, getWinningGoalScorer, getRecapLinks, isNeutralSite, getLeagueTeamAverages, } from '../utils/nhlApi';
 import { computeShotAttempts, computePDO, computePuckLuck } from '../utils/advancedStats';
+import { withoutShootout, hasShotTracking } from '../utils/gamePlays';
+import { summaryTeam } from '../utils/summaryTeam';
 import TeamLogo from '../components/TeamLogo';
 import InfoTip from '../components/InfoTip';
 import { capture } from '../utils/analytics';
@@ -90,12 +92,17 @@ function GameStatsPopup({ game, onClose }) {
     capture('game_stats_opened', { gameId: game?.id, opponent: getOpponent(game)?.abbrev });
   }, []);
 
+  // The Worker writes one summary per game, from one team's side (today
+  // only Carolina's -- won, CF%, goalie and narrative are all that team's).
+  // Shown only to that team's fans: a PHI fan opening CAR 3-2 PHI saw
+  // '✓ W 3–2', CAR's CF% and Kochetkov's SV% under the EyeWall AI badge.
   useEffect(() => {
     const workerUrl = import.meta.env.VITE_WORKER_URL;
+    setSummary(null);
     if (!workerUrl || !game?.id) return;
     fetch(`${workerUrl}/cache/${encodeURIComponent(`summary:${game.id}`)}`)
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.narrative) setSummary(d); })
+      .then(d => { if (d?.narrative && summaryTeam(d, game) === TEAM_CONFIG.abbr) setSummary(d); })
       .catch(() => {});
   }, [game?.id]);
 
@@ -117,7 +124,10 @@ function GameStatsPopup({ game, onClose }) {
 
   // Pull team stats from right-rail
   const rr         = data?.rightRail;
-  const pbpPlays   = data?.pbp?.plays || [];
+  // Without the shootout -- its attempts are no shots or goals (see
+  // gamePlays.js) -- and none of it for a feed that tracks no shots
+  // (goals and penalties only): Corsi there would count only the goals.
+  const pbpPlays   = hasShotTracking(data?.pbp?.plays) ? withoutShootout(data.pbp.plays) : [];
   // The id this game gives the team, not today's -- a 2024-25 Utah game
   // says 59, not 68 (see teamIdInGame()).
   const carTeamId  = teamIdInGame(TEAM_CONFIG, data?.pbp);
@@ -455,7 +465,8 @@ function GameStatsPopup({ game, onClose }) {
                     {[
                       [t('gameStatsPopup.advStats.corsi'),   advStats.carCorsi,   advStats.oppCorsi,   'All shot attempts incl. blocked'],
                       [t('gameStatsPopup.advStats.fenwick'), advStats.carFenwick, advStats.oppFenwick, 'Unblocked shot attempts (excl. blocks)'],
-                      [t('gameStatsPopup.teamStats.shotsOnGoal'),advStats.car.goals+advStats.car.sog, advStats.opp.goals+advStats.opp.sog, 'Shots that reached the goalie'],
+                      // sog already counts goals (until 2026-10 this added them again)
+                      [t('gameStatsPopup.teamStats.shotsOnGoal'),advStats.car.sog, advStats.opp.sog, 'Shots that reached the goalie'],
                       [t('gameStatsPopup.advStats.missedShots'), advStats.car.missed, advStats.opp.missed, 'Attempts that missed the net'],
                       [t('gameStatsPopup.teamStats.blockedShots'),advStats.car.blocked,advStats.opp.blocked,'Attempts blocked by a skater'],
                     ].map(([label, car, opp, _help]) => {
@@ -473,14 +484,18 @@ function GameStatsPopup({ game, onClose }) {
                       );
                     })}
                     <div className="gp-adv-chips flex gap-1.5 flex-wrap mt-2 justify-center">
-                      <span className="gp-adv-chip text-[11px] font-semibold bg-[var(--bg3)] py-[3px] px-2 rounded-[5px] cursor-help"
-                        style={{color: advStats.corsiForPct>=50?'var(--green)':'var(--team-primary)'}}>
-                        {t('gameStatsPopup.advStats.cfPctChip', { pct: advStats.corsiForPct })}
-                      <InfoTip text={t('gameStatsPopup.advStats.cfPctTip', { abbr: TEAM_CONFIG.abbr })} position="above" /></span>
-                      <span className="gp-adv-chip text-[11px] font-semibold bg-[var(--bg3)] py-[3px] px-2 rounded-[5px] cursor-help"
-                        style={{color: advStats.fenwickForPct>=50?'var(--green)':'var(--team-primary)'}}>
-                        {t('gameStatsPopup.advStats.ffPctChip', { pct: advStats.fenwickForPct })}
-                      <InfoTip text={t('gameStatsPopup.advStats.ffPctTip', { abbr: TEAM_CONFIG.abbr })} position="above" /></span>
+                      {advStats.corsiForPct != null && (
+                        <span className="gp-adv-chip text-[11px] font-semibold bg-[var(--bg3)] py-[3px] px-2 rounded-[5px] cursor-help"
+                          style={{color: advStats.corsiForPct>=50?'var(--green)':'var(--team-primary)'}}>
+                          {t('gameStatsPopup.advStats.cfPctChip', { pct: advStats.corsiForPct })}
+                        <InfoTip text={t('gameStatsPopup.advStats.cfPctTip', { abbr: TEAM_CONFIG.abbr })} position="above" /></span>
+                      )}
+                      {advStats.fenwickForPct != null && (
+                        <span className="gp-adv-chip text-[11px] font-semibold bg-[var(--bg3)] py-[3px] px-2 rounded-[5px] cursor-help"
+                          style={{color: advStats.fenwickForPct>=50?'var(--green)':'var(--team-primary)'}}>
+                          {t('gameStatsPopup.advStats.ffPctChip', { pct: advStats.fenwickForPct })}
+                        <InfoTip text={t('gameStatsPopup.advStats.ffPctTip', { abbr: TEAM_CONFIG.abbr })} position="above" /></span>
+                      )}
                       {pdoStats && (
                         <span className="gp-adv-chip text-[11px] font-semibold bg-[var(--bg3)] py-[3px] px-2 rounded-[5px] cursor-help"
                           style={{color: pdoStats.pdo>102?'var(--amber)':pdoStats.pdo<98?'var(--blue-bright)':'var(--text-muted)'}}>

@@ -64,6 +64,12 @@ describe('Watching as another team leaves the favorite alone', () => {
     })
     cy.wait('@today')
     cy.get('.scoreboard-team-link', { timeout: DATA_TIMEOUT }).should('have.length', 2)
+    // The bell saves "alerts seen" on this device the first time its alerts
+    // load (NotificationsBell.jsx) -- part of the favorite's page settling,
+    // not the guest visit. Waited for, so the snapshot below doesn't race it
+    // (the alerts landed ~100-400ms either side of the snapshot).
+    cy.window({ timeout: DATA_TIMEOUT }).its('localStorage')
+      .invoke('getItem', 'eyewall:alerts-seen-at').should('not.be.null')
   })
 
   it('saves nothing on the device or to the account, and comes back to the same favorite', () => {
