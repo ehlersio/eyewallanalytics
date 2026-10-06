@@ -1,6 +1,6 @@
 // src/utils/__tests__/livePolling.test.js
 import { describe, it, expect } from 'vitest'
-import { livePollInterval } from '../livePolling.js'
+import { livePollInterval, hockeyTechTodayInterval } from '../livePolling.js'
 import { withPbpScore } from '../nhlApi.js'
 
 const NOW = Date.parse('2026-09-30T23:00:00Z')
@@ -48,5 +48,18 @@ describe('withPbpScore', () => {
     expect(withPbpScore(game, pbp(2026020007, 3, 3))).toBe(game)
     expect(withPbpScore(game, null)).toBe(game)
     expect(withPbpScore(null, pbp(1, 0, 0))).toBe(null)
+  })
+})
+
+describe('hockeyTechTodayInterval', () => {
+  it('reads the live ref on every call: 60s until live, 30s from then on', () => {
+    const isLiveRef = { current: false }
+    const interval = hockeyTechTodayInterval(isLiveRef)
+    expect(typeof interval).toBe('function')
+    expect(interval()).toBe(60_000)
+    isLiveRef.current = true
+    expect(interval()).toBe(30_000)
+    isLiveRef.current = false
+    expect(interval()).toBe(60_000)
   })
 })

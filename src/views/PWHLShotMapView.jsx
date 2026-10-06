@@ -1,5 +1,6 @@
 // views/PWHLShotMapView.jsx
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { hockeyTechTodayInterval } from '../utils/livePolling';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useFetch, usePoll } from '../hooks/useFetch';
@@ -1044,10 +1045,10 @@ export default function PWHLShotMapView() {
   // Detect dev route — suppress /pwhl/today polling entirely on /pwhl/dev
   const isDevRoute = location.pathname === '/pwhl/dev';
 
-  // Poll /pwhl/today every 60s to detect live games for the current team.
+  // Poll /pwhl/today every 60s (30s once live) to detect live games for the current team.
   // Skip entirely in dev route or when dev game is injected.
   const isLiveRef = useRef(false);
-  const liveInterval = useMemo(() => isLiveRef.current ? 30_000 : 60_000, []);
+  const liveInterval = useMemo(() => hockeyTechTodayInterval(isLiveRef), []);
 
   // Always the live current season, not the one on screen: the view can
   // open on an older season (see the season fallback below), and today's
