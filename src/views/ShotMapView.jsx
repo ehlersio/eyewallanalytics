@@ -25,7 +25,8 @@ import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '.
 import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getSpecialTeamsUnits } from '../utils/supabaseClient';
 import { inferPPUnit, inferPKUnit } from '../utils/ppUnits';
 import { isValidSituationCode } from '../utils/situationCode';
-import { withoutShootout, formatElapsed } from '../utils/gamePlays';
+import { withoutShootout, formatElapsed, hasShotTracking, nhlPeriodLabel } from '../utils/gamePlays';
+import { powerPlayOpportunities, powerPlayRecord, teamOnPowerPlay } from '../utils/powerPlays';
 import InfoTip from '../components/InfoTip';
 import { MetCard } from '../components/StatBar';
 import TeamLogo from '../components/TeamLogo';
@@ -845,6 +846,12 @@ export default function ShotMapView() {
   );
   const pbp = devGame?.pbp ?? pbpReal;
 
+  // Whether the game on screen is a playoff game -- what OT/2OT/SO labels
+  // go by. Not inPlayoffs ("the team has playoff games this season"): a
+  // 2025-26 playoff double-OT game opened in October 2026 got SO labels,
+  // and a regular-season shootout opened during the playoffs got 2OT.
+  const gameIsPlayoff = (pbp?.gameType ?? activeGame?.gameType) === GAME_TYPE.PLAYOFFS;
+
   // "Our" team as this game has it: the id its play-by-play uses, which for
   // an older season can differ from today's (2024-25 Utah is 59, not 68 --
   // see teamIdInGame()). Everything below that compares against the
@@ -1055,7 +1062,7 @@ export default function ShotMapView() {
   // one that's simply young.
   const limitedFeed = !isAllN && !!pbp?.plays?.length
     && pbp.plays.some(p => p.typeDescKey === 'goal' || p.typeDescKey === 'penalty')
-    && !pbp.plays.some(p => ['faceoff', 'shot-on-goal', 'missed-shot', 'blocked-shot'].includes(p.typeDescKey));
+    && !hasShotTracking(pbp.plays);
 
   // A goal's popup gets the NHL's video and/or EyeWall's tracking replay
   // (GoalReplay, which shows a Video | Tracking switch only when both
@@ -1238,7 +1245,7 @@ export default function ShotMapView() {
 
   // ── Period summaries ──────────────────────────────────────────
   const { summaries: periodSummaries, newSummary, dismissNewSummary, updateSummaryNarrative, requestSummary } =
-    usePeriodSummary({ pbp, isLive, gameId, carTeamId: gameTeam.teamId, isPlayoff: inPlayoffs });
+    usePeriodSummary({ pbp, isLive, gameId, carTeamId: gameTeam.teamId, isPlayoff: gameIsPlayoff });
   const { gameSummary, updateGameNarrative } = useGameSummary({
     pbp, isLive, gameId, carTeamId: gameTeam.teamId, summaries: periodSummaries,
   });
@@ -1425,7 +1432,7 @@ export default function ShotMapView() {
       return rosterNameById[String(id)] || null;
     };
 
-    const periodLabel = n => n <= 3 ? `P${n}` : inPlayoffs ? (n === 4 ? "OT" : `${n - 3}OT`) : n === 4 ? "OT" : "SO";
+    const periodLabel = n => nhlPeriodLabel(n, gameIsPlayoff);
 
     // Helper: build per-player period breakdown for a filtered set of plays
     function buildPlayerRows(filteredPlays, getPlayerId) {
@@ -1519,88 +1526,21 @@ export default function ShotMapView() {
 
     } else if (statKey === 'pp') {
       // ── Rich PP Analysis ────────────────────────────────────
-      // Parse all plays into discrete PP opportunities
-      const carId   = gameTeam.teamId;
-      const isCarPP = (sc) => {
-        if (!isValidSituationCode(sc)) return false;
-        const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
-        const awayG = sc[0] === '1',   homeG = sc[3] === '1';
-        const carS  = gameHome ? homeS : awayS;
-        const oppS  = gameHome ? awayS : homeS;
-        const carG  = gameHome ? homeG : awayG;
-        return carS > oppS && carG;
-      };
-
-      // Walk plays and group into PP windows
-      const opportunities = [];
-      let current = null;
-
-      plays.forEach(p => {
-        const sc        = p.situationCode;
-        const onPP      = isCarPP(sc);
-        const periodNum = p.periodDescriptor?.number || 1;
-        const timeSecs  = (() => {
-          const [m, s] = (p.timeInPeriod || '0:00').split(':').map(Number);
-          return m * 60 + (s || 0);
-        })();
-
-        if (onPP && !current) {
-          // PP started
-          current = {
-            id:        opportunities.length,
-            period:    periodNum,
-            startTime: timeSecs,
-            endTime:   timeSecs,
-            startLabel: p.timeInPeriod || '—',
-            endLabel:   p.timeInPeriod || '—',
-            plays:     [],
-            scored:    false,
-          };
-          opportunities.push(current);
-        }
-        if (onPP && current) {
-          current.plays.push(p);
-          current.endTime  = timeSecs;
-          current.endLabel = p.timeInPeriod || '—';
-        }
-        if (!onPP && current) {
-          // PP ended
-          current = null;
-        }
-      });
-
-      // Merge opportunities that are < 5s apart (split by goal then immediate resumption)
-      const merged = [];
-      opportunities.forEach(opp => {
-        const prev = merged[merged.length - 1];
-        if (prev && opp.period === prev.period && opp.startTime - prev.endTime < 5) {
-          prev.plays.push(...opp.plays);
-          prev.endTime  = opp.endTime;
-          prev.endLabel = opp.endLabel;
-        } else {
-          merged.push(opp);
-        }
-      });
+      // One row per power-play opportunity, counted the same way as the
+      // PP% card (powerPlays.js), so the card and this panel agree.
+      const carId  = gameTeam.teamId;
+      const merged = powerPlayOpportunities(plays, gameHome, carId);
 
       // Enrich each opportunity
       const shotTypes  = ['shot-on-goal', 'goal', 'missed-shot', 'blocked-shot'];
       const ppOpps = merged.map((opp, idx) => {
-        const shots    = opp.plays.filter(p => shotTypes.includes(p.typeDescKey));
-        const sog      = opp.plays.filter(p => ['shot-on-goal','goal'].includes(p.typeDescKey));
+        // The team's own attempts -- the window also holds any
+        // short-handed attempts against, which aren't power-play shots.
+        const shots    = opp.plays.filter(p => shotTypes.includes(p.typeDescKey) && p.details?.eventOwnerTeamId === carId);
+        const sog      = shots.filter(p => ['shot-on-goal','goal'].includes(p.typeDescKey));
         const goals    = opp.plays.filter(p => p.typeDescKey === 'goal' && p.details?.eventOwnerTeamId === carId);
-        const duration = opp.endTime - opp.startTime;
-
-        // xG from shot coordinates
-        const xg = shots.reduce((sum, p) => {
-          const d = p.details || {};
-          const x = d.xCoord, y = d.yCoord;
-          if (x == null || y == null) return sum + 0.08;
-          const absX = Math.abs(x);
-          const dist = Math.sqrt(Math.pow(absX - 89, 2) + y * y);
-          const angle = Math.abs(Math.atan2(Math.abs(y), Math.max(89 - absX, 1)) * 180 / Math.PI);
-          const raw = Math.min(Math.exp(-dist / 15) * Math.max(Math.cos(angle * Math.PI / 180), 0.2), 1);
-          return sum + Math.max(raw * 0.55, 0.02);
-        }, 0);
+        const duration = opp.endSecs - opp.startSecs;
+        const xg       = sumCoordXG(shots);
 
         // Players who appeared (from rosterSpots + event details)
         const playerIds = new Set();
@@ -1662,7 +1602,7 @@ export default function ShotMapView() {
           goals:     goalDetails,
           sog:       sog.length,
           shots:     shots.length,
-          xg:        parseFloat(xg.toFixed(2)),
+          xg,
           shotTypeCounts,
           quickEntry,
           shotEvents,
@@ -1710,9 +1650,10 @@ export default function ShotMapView() {
       const ppUnit2 = (ppUnits?.[2] ?? []).map(unitName).filter(Boolean);
 
       // Summary totals
-      const totalGoals = ppOpps.filter(o => o.scored).length;
+      // Goals, not opportunities scored on: a 5-on-3 can give up two.
+      const totalGoals = ppOpps.reduce((n, o) => n + o.goals.length, 0);
       const totalSOG   = ppOpps.reduce((s, o) => s + o.sog, 0);
-      const totalXG    = parseFloat(ppOpps.reduce((s, o) => s + o.xg, 0).toFixed(2));
+      const totalXG    = sumKnown(ppOpps.map(o => o.xg));
 
       setDrillStat({
         label: t('shotMapView.drillTitles.ppAnalysis', { abbr: team.abbr }),
@@ -1755,44 +1696,9 @@ export default function ShotMapView() {
       });
     } else if (statKey === 'pk') {
       // ── Rich PK Analysis ────────────────────────────────────
-      const isOppPP = (sc) => {
-        if (!isValidSituationCode(sc)) return false;
-        const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
-        const awayG = sc[0] === '1',   homeG = sc[3] === '1';
-        const carS  = gameHome ? homeS : awayS;
-        const oppS  = gameHome ? awayS : homeS;
-        const oppG  = gameHome ? awayG : homeG;
-        return oppS > carS && oppG;
-      };
-
-      // Walk plays and group into PK windows
-      const pkOpportunities = [];
-      let current = null;
-      plays.forEach(p => {
-        const sc       = p.situationCode;
-        const onPK     = isOppPP(sc);
-        const periodNum = p.periodDescriptor?.number || 1;
-        const timeSecs  = (() => {
-          const [m, s] = (p.timeInPeriod || '0:00').split(':').map(Number);
-          return m * 60 + (s || 0);
-        })();
-        if (onPK && !current) {
-          current = { id: pkOpportunities.length, period: periodNum, startTime: timeSecs,
-            endTime: timeSecs, startLabel: p.timeInPeriod || '—', endLabel: p.timeInPeriod || '—', plays: [] };
-          pkOpportunities.push(current);
-        }
-        if (onPK && current) { current.plays.push(p); current.endTime = timeSecs; current.endLabel = p.timeInPeriod || '—'; }
-        if (!onPK && current) current = null;
-      });
-
-      // Merge close windows
-      const merged = [];
-      pkOpportunities.forEach(opp => {
-        const prev = merged[merged.length - 1];
-        if (prev && opp.period === prev.period && opp.startTime - prev.endTime < 5) {
-          prev.plays.push(...opp.plays); prev.endTime = opp.endTime; prev.endLabel = opp.endLabel;
-        } else { merged.push(opp); }
-      });
+      // One row per opponent power play, counted the same way as the PK%
+      // card (powerPlays.js).
+      const merged = powerPlayOpportunities(plays, !gameHome, gameHome ? pbp.awayTeam?.id : pbp.homeTeam?.id);
 
       const shotTypes = ['shot-on-goal', 'goal', 'missed-shot', 'blocked-shot'];
 
@@ -1801,7 +1707,7 @@ export default function ShotMapView() {
         const oppSOG   = opp.plays.filter(p => ['shot-on-goal','goal'].includes(p.typeDescKey) && p.details?.eventOwnerTeamId !== carId);
         const goals    = opp.plays.filter(p => p.typeDescKey === 'goal' && p.details?.eventOwnerTeamId !== carId);
         const blocks   = opp.plays.filter(p => p.typeDescKey === 'blocked-shot' && p.details?.eventOwnerTeamId !== carId);
-        const duration = opp.endTime - opp.startTime;
+        const duration = opp.endSecs - opp.startSecs;
 
         // Blockers (CAR players doing the blocking)
         const blockerCounts = {};
@@ -1813,17 +1719,8 @@ export default function ShotMapView() {
           .sort((a, b) => b[1] - a[1])
           .map(([id, n]) => ({ name: pName(parseInt(id)), count: n }));
 
-        // xG against from OPP shots
-        const xgAgainst = oppShots.reduce((sum, p) => {
-          const d = p.details || {};
-          const x = d.xCoord, y = d.yCoord;
-          if (x == null || y == null) return sum + 0.08;
-          const absX = Math.abs(x);
-          const dist = Math.sqrt(Math.pow(absX - 89, 2) + y * y);
-          const angle = Math.abs(Math.atan2(Math.abs(y), Math.max(89 - absX, 1)) * 180 / Math.PI);
-          const raw = Math.min(Math.exp(-dist / 15) * Math.max(Math.cos(angle * Math.PI / 180), 0.2), 1);
-          return sum + Math.max(raw * 0.55, 0.02);
-        }, 0);
+        // xG against from OPP shots (none without coordinates)
+        const xgAgainst = sumCoordXG(oppShots);
 
         // Shot type breakdown (OPP shots)
         const shotTypeCounts = {};
@@ -1876,7 +1773,7 @@ export default function ShotMapView() {
           })),
           sog:         oppSOG.length,
           shots:       oppShots.length,
-          xgAgainst:   parseFloat(xgAgainst.toFixed(2)),
+          xgAgainst,
           shotTypeCounts,
           blockerList,
           shotEvents,
@@ -1906,9 +1803,10 @@ export default function ShotMapView() {
       const pkUnit1 = (pkUnits?.[1] ?? []).map(unitName).filter(Boolean);
       const pkUnit2 = (pkUnits?.[2] ?? []).map(unitName).filter(Boolean);
 
-      const totalGoalsAgainst = pkOpps.filter(o => o.allowed).length;
+      // Goals against, not opportunities scored on: a 5-on-3 can give up two.
+      const totalGoalsAgainst = pkOpps.reduce((n, o) => n + o.goalDetails.length, 0);
       const totalSOGAgainst   = pkOpps.reduce((s, o) => s + o.sog, 0);
-      const totalXGAgainst    = parseFloat(pkOpps.reduce((s, o) => s + o.xgAgainst, 0).toFixed(2));
+      const totalXGAgainst    = sumKnown(pkOpps.map(o => o.xgAgainst));
       const totalBlocks       = pkOpps.reduce((s, o) => s + o.blockerList.reduce((b, bl) => b + bl.count, 0), 0);
 
       setDrillStat({
@@ -1921,7 +1819,7 @@ export default function ShotMapView() {
         oppAbbr: opp?.abbrev || null,
       });
     }
-  }, [pbp, roster, opp, t, specialTeamsMap, team]);
+  }, [pbp, roster, opp, t, specialTeamsMap, team, gameTeam, gameHome, gameIsPlayoff]);
 
   // ── Live MetCard stats from PBP (updates every poll) ─────────
   // These replace rightRail.teamGameStats which only fetches once
@@ -1933,11 +1831,8 @@ export default function ShotMapView() {
     let carHits = 0, oppHits = 0;
     let carBlocks = 0, oppBlocks = 0;
     let carFOW = 0, carFOL = 0;
-    let carPPGoals = 0, carPPOpps = 0;
-    let carPens = 0, oppPens = 0; // track PP goals and opportunities
-    let carPKOpps = 0, carPKGoalsAgainst = 0;
+    let carPens = 0, oppPens = 0;
 
-    // Track power play opportunities from penalty events
     plays.forEach(p => {
       const isCar = p.details?.eventOwnerTeamId === carId;
       switch (p.typeDescKey) {
@@ -1953,62 +1848,25 @@ export default function ShotMapView() {
           }
           break;
         case 'penalty':
-          // Opponent penalty = CAR PP opportunity
-          if (!isCar) carPPOpps++;
           isCar ? carPens++ : oppPens++;
           break;
       }
     });
 
-    // CAR PP goals = goals scored while CAR had more skaters (and CAR goalie still in)
-    plays.forEach(p => {
-      if (p.typeDescKey !== 'goal') return;
-      const isCar = p.details?.eventOwnerTeamId === carId;
-      if (!isCar) return;
-      const sc = p.situationCode;
-      if (!isValidSituationCode(sc)) return;
-      const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
-      const awayG = sc[0] === '1',   homeG = sc[3] === '1';
-      const carS  = gameHome ? homeS : awayS;
-      const oppS  = gameHome ? awayS : homeS;
-      const carG  = gameHome ? homeG : awayG;
-      if (carS > oppS && carG) carPPGoals++;
-    });
-
-    // PK goals against — OPP scoring while on PP (OPP goalie still in)
-    plays.forEach(p => {
-      if (p.typeDescKey !== 'goal') return;
-      const sc = p.situationCode;
-      if (!isValidSituationCode(sc)) return;
-      const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
-      const awayG = sc[0] === '1',   homeG = sc[3] === '1';
-      const carS  = gameHome ? homeS : awayS;
-      const oppS  = gameHome ? awayS : homeS;
-      const oppG  = gameHome ? awayG : homeG;
-      if (oppS > carS && oppG && p.details?.eventOwnerTeamId !== carId) carPKGoalsAgainst++;
-    });
-
-    // Count distinct OPP PP windows as PK opportunities
-    let onOppPP = false;
-    plays.forEach(p => {
-      const sc = p.situationCode;
-      if (!isValidSituationCode(sc)) return;
-      const awayS = parseInt(sc[1]), homeS = parseInt(sc[2]);
-      const awayG = sc[0] === '1',   homeG = sc[3] === '1';
-      const carS  = gameHome ? homeS : awayS;
-      const oppS  = gameHome ? awayS : homeS;
-      const oppG  = gameHome ? awayG : homeG;
-      const isOppPP = oppS > carS && oppG;
-      if (isOppPP && !onOppPP) { carPKOpps++; onOppPP = true; }
-      if (!isOppPP) onOppPP = false;
-    });
+    // Power plays for and against, counted as the NHL does (powerPlays.js)
+    // -- the same count the PP/PK drill-downs list. This used to add an
+    // opportunity for every opponent penalty play, fighting majors and
+    // coincidental minors included.
+    const oppId = gameHome ? pbp?.awayTeam?.id : pbp?.homeTeam?.id;
+    const pp = powerPlayRecord(plays, gameHome, carId);
+    const pk = powerPlayRecord(plays, !gameHome, oppId);
 
     // xG — simple distance+angle model from shot coordinates
     // Higher weight for closer shots and better angles
     function shotXG(play) {
       const d = play.details || {};
       const x = d.xCoord, y = d.yCoord;
-      if (x == null || y == null) return 0.05; // no coords: league avg ~5%
+      if (x == null || y == null) return null; // no coordinates, no estimate
       // Distance from net (net at x=±89, y=0)
       const absX = Math.abs(x);
       const dist  = Math.sqrt(Math.pow(absX - 89, 2) + y * y);
@@ -2026,11 +1884,16 @@ export default function ShotMapView() {
       return Math.round(Math.max(raw * 0.55, 0.02) * 100) / 100;
     }
 
-    let carXG = 0, oppXG = 0;
+    // A shot without coordinates adds nothing (it used to add a guessed
+    // 0.05), and a game none of whose shots has them (a goals-only feed)
+    // has no estimate at all.
+    let carXG = 0, oppXG = 0, located = false;
     plays.forEach(p => {
       if (!['shot-on-goal','goal','missed-shot'].includes(p.typeDescKey)) return;
       const isCar = p.details?.eventOwnerTeamId === carId;
       const xg = shotXG(p);
+      if (xg == null) return;
+      located = true;
       if (isCar) carXG += xg; else oppXG += xg;
     });
 
@@ -2040,9 +1903,9 @@ export default function ShotMapView() {
       blocked:  { car: carBlocks, opp: oppBlocks },
       faceoff:  { car: carFOW + carFOL > 0 ? carFOW / (carFOW + carFOL) * 100 : null, opp: null },
       penalties:{ car: carPens,   opp: oppPens },
-      pp:       { gamePPGoals: carPPGoals, gamePPOpps: carPPOpps },
-      pk:       { gamePKOpps: carPKOpps, gamePKGoalsAgainst: carPKGoalsAgainst },
-      xg:       { car: parseFloat(carXG.toFixed(2)), opp: parseFloat(oppXG.toFixed(2)) },
+      pp:       { gamePPGoals: pp.goals, gamePPOpps: pp.opps },
+      pk:       { gamePKOpps: pk.opps, gamePKGoalsAgainst: pk.goals },
+      xg:       located ? { car: parseFloat(carXG.toFixed(2)), opp: parseFloat(oppXG.toFixed(2)) } : { car: null, opp: null },
     };
   }, [pbp, boxscore, gameHome]);
 
@@ -2051,9 +1914,20 @@ export default function ShotMapView() {
   // total only, no opponent side; see the Penalties card below for the
   // same treatment).
   // Otherwise fall back to rightRail when no PBP available (pre-game).
-  const gameSog      = isAllN ? seasonStats.sog     : pbp?.plays?.length ? liveStats.sog     : getGameStat('sog');
-  const gameHits     = isAllN ? { car: selectionTotals?.hits ?? null, opp: null } : pbp?.plays?.length ? liveStats.hits    : getGameStat('hits');
-  const gameBlocked  = isAllN ? seasonStats.blocked : pbp?.plays?.length ? liveStats.blocked : getGameStat('blocked');
+  //
+  // A limited feed (goals and penalties only, see limitedFeed) has no shot
+  // plays to count: its SOG comes from the game's own totals, which the
+  // NHL still keeps (CAR-NSH 2026-09-24: 31-28, where counting the feed's
+  // goals gave 6-5), and hits and blocks it doesn't record show as "—".
+  const feedSog = () => {
+    const car = gameHome ? pbp?.homeTeam?.sog : pbp?.awayTeam?.sog;
+    const opp = gameHome ? pbp?.awayTeam?.sog : pbp?.homeTeam?.sog;
+    return car != null && opp != null ? { car, opp } : getGameStat('sog');
+  };
+  const notTracked   = { car: null, opp: null };
+  const gameSog      = isAllN ? seasonStats.sog     : limitedFeed ? feedSog() : pbp?.plays?.length ? liveStats.sog     : getGameStat('sog');
+  const gameHits     = isAllN ? { car: selectionTotals?.hits ?? null, opp: null } : limitedFeed ? notTracked : pbp?.plays?.length ? liveStats.hits    : getGameStat('hits');
+  const gameBlocked  = isAllN ? seasonStats.blocked : limitedFeed ? notTracked : pbp?.plays?.length ? liveStats.blocked : getGameStat('blocked');
   const gameFaceoff  = pbp?.plays?.length ? liveStats.faceoff : getGameStat('faceoff');
 
   // ── Shot danger breakdown from coordinate data ──────────────
@@ -2074,7 +1948,7 @@ export default function ShotMapView() {
   // ── Danger zone drill-down builder ─────────────────────────
   const buildDangerDrill = useCallback((zone) => {
     if (!dangerCounts.hiShots) return;
-    const periodLabel = n => n <= 3 ? `P${n}` : inPlayoffs ? (n === 4 ? "OT" : `${n - 3}OT`) : n === 4 ? "OT" : "SO";
+    const periodLabel = n => nhlPeriodLabel(n, gameIsPlayoff);
     const shotSets = {
       hi:  { shots: dangerCounts.hiShots,  label: t('shotMapView.drillTitles.highDanger') },
       med: { shots: dangerCounts.medShots, label: t('shotMapView.drillTitles.mediumDanger') },
@@ -2094,7 +1968,7 @@ export default function ShotMapView() {
     setDrillStat({ label, rows, type: 'shots' });
     // pbp and opp are read throughout this callback but were missing from
     // these deps, so it could close over an earlier game's play-by-play.
-  }, [dangerCounts, t, pbp, opp]);
+  }, [dangerCounts, t, pbp, opp, gameIsPlayoff]);
 
   // Rebuild the open drill-down whenever the game data behind it changes.
   //
@@ -2203,7 +2077,7 @@ export default function ShotMapView() {
           oppAbbr={oppAbbr}
           homeAbbr={homeAbbr}
           awayAbbr={awayAbbr}
-          isPlayoff={inPlayoffs}
+          isPlayoff={gameIsPlayoff}
         />
       )}
 
@@ -2220,7 +2094,7 @@ export default function ShotMapView() {
           homeAbbr={homeAbbr}
           awayAbbr={awayAbbr}
           readOnly
-          isPlayoff={inPlayoffs}
+          isPlayoff={gameIsPlayoff}
         />
       )}
 
@@ -2271,11 +2145,9 @@ export default function ShotMapView() {
                         {(() => {
                           const n = pbp?.periodDescriptor?.number;
                           if (!n) return '—';
-                          if (n <= 3) return `P${n}`;
                           // Playoffs: OT1=4, OT2=5, OT3=6 — all full 20min periods
                           // Regular season: period 4 = OT (5min 3v3), period 5 = SO
-                          if (inPlayoffs) return n === 4 ? 'OT' : `${n - 3}OT`;
-                          return n === 4 ? 'OT' : 'SO';
+                          return nhlPeriodLabel(n, gameIsPlayoff);
                         })()}
                       </div>
                       <div className={SCORE_CLOCK_CLASSES}>
@@ -2404,7 +2276,7 @@ export default function ShotMapView() {
           isLive={isLive}
           debugInsight={debugInsight}
           gameLogInsights={gameLogInsights}
-          isPlayoff={inPlayoffs}
+          isPlayoff={gameIsPlayoff}
         />
       )}
 
@@ -2436,7 +2308,7 @@ export default function ShotMapView() {
           value={gameSog.car ?? '—'}
           sub={gameSog.opp != null ? `${t('shotMapView.metrics.opp', { value: gameSog.opp })}${isAllN ? ` · ${t('shotMapView.metrics.season')}` : ''}` : t('shotMapView.metrics.thisGame')}
           color={gameSog.car > gameSog.opp ? 'green' : null}
-          onClick={!isAllN && pbp ? () => setDrillKey('sog') : null}
+          onClick={!isAllN && pbp && !limitedFeed ? () => setDrillKey('sog') : null}
         />
         <MetCard
           label={t('shotMapView.metrics.hits')}
@@ -2445,7 +2317,7 @@ export default function ShotMapView() {
             ? (selectionTotals?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: selectionTotals.gamesPlayed }) : t('shotMapView.metrics.season'))
             : gameHits.opp != null ? t('shotMapView.metrics.opp', { value: gameHits.opp }) : t('shotMapView.metrics.thisGame')}
           color={!isAllN && gameHits.car > gameHits.opp ? 'green' : null}
-          onClick={!isAllN && pbp ? () => setDrillKey('hits') : null}
+          onClick={!isAllN && pbp && !limitedFeed ? () => setDrillKey('hits') : null}
         />
         <MetCard
           label={t('shotMapView.metrics.blocks')}
@@ -2453,7 +2325,7 @@ export default function ShotMapView() {
           sub={gameBlocked.opp != null ? `${t('shotMapView.metrics.opp', { value: gameBlocked.opp })}${isAllN ? ` · ${t('shotMapView.metrics.season')}` : ''}` : t('shotMapView.metrics.thisGame')}
           color={gameBlocked.car > gameBlocked.opp ? 'green' : null}
           help={t('shotMapView.metrics.blocksHelp', { abbr: team.abbr })}
-          onClick={!isAllN && pbp ? () => setDrillKey('blocked') : null}
+          onClick={!isAllN && pbp && !limitedFeed ? () => setDrillKey('blocked') : null}
         />
         {(() => {
           const pens = liveStats?.penalties;
@@ -2498,7 +2370,7 @@ export default function ShotMapView() {
               color={hasGameFO
                 ? (parsePct(gameFaceoff.car) > 50 ? 'green' : null)
                 : hasSeasonFO ? (parsePct(seasonFO) > 50 ? 'green' : null) : null}
-              onClick={!isAllN && pbp ? () => setDrillKey('faceoff') : null}
+              onClick={!isAllN && pbp && !limitedFeed ? () => setDrillKey('faceoff') : null}
             />
           );
         })()}
@@ -2525,7 +2397,7 @@ export default function ShotMapView() {
                   ? (selectionTotals?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: selectionTotals.gamesPlayed }) : avgLabel)
                   : `${avgLabel}${avgPct ? ` ${avgPct}%` : ''}`}
               color={hasGamePP && avgPct && gamePPPct >= parseFloat(avgPct) ? 'green' : null}
-              onClick={!isAllN && pbp ? () => setDrillKey('pp') : null}
+              onClick={!isAllN && pbp && !limitedFeed ? () => setDrillKey('pp') : null}
             />
           );
         })()}
@@ -2547,14 +2419,14 @@ export default function ShotMapView() {
                   ? (selectionTotals?.gamesPlayed ? t('shotMapView.metrics.gp', { gp: selectionTotals.gamesPlayed }) : avgLabel)
                   : `${avgLabel}${avgPct ? ` ${avgPct}%` : ''}`}
               color={hasGamePK && avgPct && gamePKPct >= parseFloat(avgPct) ? 'green' : null}
-              onClick={!isAllN && pbp ? () => setDrillKey('pk') : null}
+              onClick={!isAllN && pbp && !limitedFeed ? () => setDrillKey('pk') : null}
             />
           );
         })()}
       </div>
 
       {/* ── Shot Volume + Corsi/Fenwick/PDO ── */}
-      {pbp?.plays && (
+      {pbp?.plays && !limitedFeed && (
         <AdvancedGamePanel pbp={pbp} gameHome={gameHome} isLive={isLive} boxscore={boxscore} />
       )}
 
@@ -2707,16 +2579,18 @@ export default function ShotMapView() {
                 <span style={{color:oppColor}}>{oppAbbr}</span>
               </div>
 
-              {/* Shot attempts (Corsi) + xG — from PBP, prepended to right-rail stats */}
-              {pbp?.plays?.length > 0 && (() => {
-                const sa = computeShotAttempts(pbp.plays, gameTeam.teamId);
+              {/* Shot attempts (Corsi) + xG — from PBP, prepended to right-rail stats.
+                  Not for a limited feed: it logs goals but no other
+                  attempts, and no coordinates to estimate xG from. */}
+              {pbp?.plays?.length > 0 && !limitedFeed && (() => {
+                const sa = computeShotAttempts(withoutShootout(pbp.plays), gameTeam.teamId);
 
                 // xG source: MoneyPuck (post-game, 5v5) → coordinate estimate (live fallback)
                 const xgCar    = gameXGData?.find(r => r.team === team.abbr);
                 const xgOpp    = gameXGData?.find(r => r.team === oppAbbr);
                 const mpXG     = xgCar != null && xgOpp != null;
-                const carXG    = mpXG ? xgCar.xgf : (liveStats?.xg?.car ?? 0);
-                const oppXG    = mpXG ? xgOpp.xgf : (liveStats?.xg?.opp ?? 0);
+                const carXG    = mpXG ? xgCar.xgf : (liveStats?.xg?.car ?? null);
+                const oppXG    = mpXG ? xgOpp.xgf : (liveStats?.xg?.opp ?? null);
                 const xgHelp   = mpXG
                   ? t('shotMapView.boxscore.xgHelpMoneyPuck')
                   : t('shotMapView.boxscore.xgHelpEstimate');
@@ -2784,7 +2658,7 @@ export default function ShotMapView() {
         </div>
       </div>
     </div>
-    {drillStat     && <StatDrillPopup drillStat={drillStat} onClose={() => setDrillKey(null)} oppAbbr={oppAbbr} isPlayoff={inPlayoffs} />}
+    {drillStat     && <StatDrillPopup drillStat={drillStat} onClose={() => setDrillKey(null)} oppAbbr={oppAbbr} isPlayoff={gameIsPlayoff} />}
     {puckDropPopup && <PuckDropPopup data={puckDropPopup}  onClose={clearPuckDropPopup} />}
     {goalPopup     && <GoalPopup    data={goalPopup}       onClose={clearGoalPopup}    />}
     {penaltyPopup  && <PenaltyPopup data={penaltyPopup}    onClose={clearPenaltyPopup} />}
@@ -3341,7 +3215,7 @@ function PPAnalysisPanel({ drillStat }) {
         </div>
         <div className={PP_SUMMARY_DIVIDER_CLASSES} />
         <div className={PP_SUMMARY_STAT_CLASSES}>
-          <span className={PP_SUMMARY_VAL_CLASSES}>{summary.xg}</span>
+          <span className={PP_SUMMARY_VAL_CLASSES}>{summary.xg ?? '—'}</span>
           <span className={PP_SUMMARY_LABEL_CLASSES}>
             xG <InfoTip text={t('shotMapView.ppAnalysis.xgHelp')} position="above" />
           </span>
@@ -3426,7 +3300,7 @@ function PPAnalysisPanel({ drillStat }) {
                     <span className={PP_DETAIL_LABEL_CLASSES}>SA</span>
                   </div>
                   <div className={PP_DETAIL_STAT_CLASSES}>
-                    <span className={PP_DETAIL_VAL_CLASSES}>{opp.xg}</span>
+                    <span className={PP_DETAIL_VAL_CLASSES}>{opp.xg ?? '—'}</span>
                     <span className={PP_DETAIL_LABEL_CLASSES}>xG</span>
                   </div>
                   <div className={PP_DETAIL_STAT_CLASSES}>
@@ -3521,7 +3395,7 @@ function PKAnalysisPanel({ drillStat }) {
         </div>
         <div className={PP_SUMMARY_DIVIDER_CLASSES} />
         <div className={PP_SUMMARY_STAT_CLASSES}>
-          <span className={PP_SUMMARY_VAL_CLASSES}>{summary.xgAgainst}</span>
+          <span className={PP_SUMMARY_VAL_CLASSES}>{summary.xgAgainst ?? '—'}</span>
           <span className={PP_SUMMARY_LABEL_CLASSES}>
             xGA <InfoTip text={t('shotMapView.pkAnalysis.xgaHelp')} position="above" />
           </span>
@@ -3593,7 +3467,7 @@ function PKAnalysisPanel({ drillStat }) {
                 <div className={PP_DETAIL_STATS_CLASSES}>
                   <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.sog}</span><span className={PP_DETAIL_LABEL_CLASSES}>{t('shotMapView.pkAnalysis.sogVs')}</span></div>
                   <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.shots}</span><span className={PP_DETAIL_LABEL_CLASSES}>SA</span></div>
-                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.xgAgainst}</span><span className={PP_DETAIL_LABEL_CLASSES}>xGA</span></div>
+                  <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.xgAgainst ?? '—'}</span><span className={PP_DETAIL_LABEL_CLASSES}>xGA</span></div>
                   <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.blockerList.reduce((s, b) => s + b.count, 0)}</span><span className={PP_DETAIL_LABEL_CLASSES}>{t('shotMapView.pkAnalysis.blocks')}</span></div>
                   <div className={PP_DETAIL_STAT_CLASSES}><span className={PP_DETAIL_VAL_CLASSES}>{opp.duration}s</span><span className={PP_DETAIL_LABEL_CLASSES} style={{display:'flex',alignItems:'center',gap:2}}>{t('shotMapView.ppkShared.duration')} <InfoTip text={t('shotMapView.ppkShared.durationHelp')} position="above" /></span></div>
                 </div>
@@ -3682,7 +3556,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
       const ps = periodShots[per];
       if (!ps) return;
       const diff = ps.car - ps.opp;
-      const periodLabel = per <= 3 ? `P${per}` : isPlayoff ? (per === 4 ? 'OT' : `${per - 3}OT`) : per === 4 ? 'OT' : 'SO';
+      const periodLabel = nhlPeriodLabel(per, isPlayoff);
       const threshold = isLive ? 4 : 6;
       if (Math.abs(diff) >= threshold) {
         pushShot({
@@ -3721,36 +3595,20 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     }
 
     // ── PK performance ───────────────────────────────────────
-    const penalties = plays.filter(p => p.typeDescKey === 'penalty');
-    const carPens   = penalties.filter(p => p.details?.eventOwnerTeamId === carTeam).length;
-    // situationCode lives on the play itself, not inside details
-    const ppGoalsAgainst = plays.filter(p => {
-      if (p.typeDescKey !== 'goal') return false;
-      if (p.details?.eventOwnerTeamId === carTeam) return false;
-      const sc = p.situationCode;
-      if (!isValidSituationCode(sc)) return false;
-      // OPP PP = OPP has more skaters than CAR
-      // situationCode: [awayGoalie][awaySkaters][homeSkaters][homeGoalie]
-      const awayS = parseInt(sc[1]);
-      const homeS = parseInt(sc[2]);
-      const awayG = sc[0] === '1', homeG = sc[3] === '1';
-      const carS  = gameHome ? homeS : awayS;
-      const oppS  = gameHome ? awayS : homeS;
-      const oppG  = gameHome ? awayG : homeG;
-      return oppS > carS && oppG;
-    }).length;
+    // The opponent's power plays, counted as the PK% card counts them
+    // (powerPlays.js). N used to be the team's penalty plays, so 7 penalty
+    // plays (fights, coincidental minors) read 'went 7-for-7' against 4
+    // real power plays (UTA, 2026020036).
+    const oppTeam = gameHome ? pbp?.awayTeam?.id : pbp?.homeTeam?.id;
+    const oppPP = powerPlayRecord(plays, !gameHome, oppTeam);
+    const ppGoalsAgainst = oppPP.goals;
 
     // Only show "perfect PK" after OPP PP has expired — don't fire while penalty is still active
     const lastPlay = plays[plays.length - 1];
-    const lastSc   = lastPlay?.situationCode;
-    const oppCurrentlyOnPP = isValidSituationCode(lastSc) && (() => {
-      const awayS = parseInt(lastSc[1]);
-      const homeS = parseInt(lastSc[2]);
-      return gameHome ? awayS > homeS : homeS > awayS;
-    })();
+    const oppCurrentlyOnPP = teamOnPowerPlay(lastPlay?.situationCode, !gameHome);
 
-    if (carPens >= 2 && ppGoalsAgainst === 0 && !oppCurrentlyOnPP) {
-      results.push({ icon: '🛡️', text: t('shotMapView.liveInsights.perfectPk', { abbr: team.abbr, n: carPens }), type: 'good' });
+    if (oppPP.opps >= 2 && ppGoalsAgainst === 0 && !oppCurrentlyOnPP) {
+      results.push({ icon: '🛡️', text: t('shotMapView.liveInsights.perfectPk', { abbr: team.abbr, n: oppPP.opps }), type: 'good' });
     } else if (ppGoalsAgainst >= 2) {
       results.push({ icon: '😤', text: t('shotMapView.liveInsights.pkStruggled', { n: ppGoalsAgainst }), type: 'warn' });
     }
@@ -3844,7 +3702,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     completedPeriods.forEach(per => {
       const pa = periodAttempts[per];
       const ps = periodSOG[per];
-      const periodLabel = per <= 3 ? `P${per}` : isPlayoff ? (per === 4 ? 'OT' : `${per - 3}OT`) : per === 4 ? 'OT' : 'SO';
+      const periodLabel = nhlPeriodLabel(per, isPlayoff);
 
       // ≤8 OPP shot attempts in a period is strong suppression (league avg ~12)
       const attemptsHit = pa && pa.opp <= 8 && pa.car >= 5;
@@ -4108,7 +3966,7 @@ function LiveInsights({ pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, to
     }
 
     return results.slice(0, 6);
-  }, [pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers, isLive, gameLogInsights, t]);
+  }, [pbp, boxscore, gameHome, carScore, oppScore, oppAbbr, topScorers, isLive, gameLogInsights, t, isPlayoff, team]);
 
   if (!insights.length && !debugInsight) return null;
   const displayInsights = debugInsight ? [debugInsight, ...insights].slice(0, 5) : insights;
@@ -4402,7 +4260,7 @@ function AdvancedGamePanel({ pbp, _gameHome, _isLive, _boxscore }) {
              car={sa.carFenwick} opp={sa.oppFenwick}
              help={t('shotMapView.advanced.helpFenwick')} />
         <Row label={t('shotMapView.advanced.rowSogLabel')}
-             car={sa.car.goals + sa.car.sog} opp={sa.opp.goals + sa.opp.sog}
+             car={sa.car.sog} opp={sa.opp.sog}
              help={t('shotMapView.advanced.helpSog')} />
         <Row label={t('shotMapView.advanced.rowMissedLabel')}
              car={sa.car.missed} opp={sa.opp.missed}
@@ -4416,14 +4274,14 @@ function AdvancedGamePanel({ pbp, _gameHome, _isLive, _boxscore }) {
       <div className={ADV_CHIPS_ROW_CLASSES}>
         <StatChip
           label="CF%"
-          value={`${sa.corsiForPct}%`}
-          color={sa.corsiForPct >= 50 ? 'var(--green)' : 'var(--team-primary)'}
+          value={sa.corsiForPct != null ? `${sa.corsiForPct}%` : '—'}
+          color={sa.corsiForPct == null ? 'var(--text-muted)' : sa.corsiForPct >= 50 ? 'var(--green)' : 'var(--team-primary)'}
           help={t('shotMapView.advanced.helpCfPct', { abbr: team.abbr })}
         />
         <StatChip
           label="FF%"
-          value={`${sa.fenwickForPct}%`}
-          color={sa.fenwickForPct >= 50 ? 'var(--green)' : 'var(--team-primary)'}
+          value={sa.fenwickForPct != null ? `${sa.fenwickForPct}%` : '—'}
+          color={sa.fenwickForPct == null ? 'var(--text-muted)' : sa.fenwickForPct >= 50 ? 'var(--green)' : 'var(--team-primary)'}
           help={t('shotMapView.advanced.helpFfPct', { abbr: team.abbr })}
         />
         <StatChip
@@ -4444,6 +4302,30 @@ function AdvancedGamePanel({ pbp, _gameHome, _isLive, _boxscore }) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────
+
+// Distance-and-angle xG of the shots that have rink coordinates, summed;
+// null when none of them do. A shot without coordinates has no estimate:
+// these used to count 0.08 (power-play panels) or 0.05 (the xG row) each,
+// so a goals-only feed (CAR-NSH, 2026-09-24) showed an invented xG.
+function sumCoordXG(shots) {
+  let sum = null;
+  for (const p of shots) {
+    const x = p.details?.xCoord, y = p.details?.yCoord;
+    if (x == null || y == null) continue;
+    const absX = Math.abs(x);
+    const dist = Math.sqrt(Math.pow(absX - 89, 2) + y * y);
+    const angle = Math.abs(Math.atan2(Math.abs(y), Math.max(89 - absX, 1)) * 180 / Math.PI);
+    const raw = Math.min(Math.exp(-dist / 15) * Math.max(Math.cos(angle * Math.PI / 180), 0.2), 1);
+    sum = (sum ?? 0) + Math.max(raw * 0.55, 0.02);
+  }
+  return sum == null ? null : parseFloat(sum.toFixed(2));
+}
+
+// Sum of the known values, or null when none is known.
+function sumKnown(values) {
+  const known = values.filter(v => v != null);
+  return known.length ? parseFloat(known.reduce((a, b) => a + b, 0).toFixed(2)) : null;
+}
 
 function parsePct(val) {
   if (val == null) return 0;

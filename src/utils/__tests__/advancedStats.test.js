@@ -58,11 +58,9 @@ describe('computeShotAttempts', () => {
     expect(result.opp.blocked).toBe(0)
   })
 
-  it('Corsi includes sog (goals count as sog) + missed + blocked', () => {
-    // goal → goals++ AND sog++
-    // So: 1 goal = goals:1 sog:1; 1 shot-on-goal = sog:1; 1 missed = missed:1; 1 blocked = blocked:1
-    // carCorsi = goals(1) + sog(2) + missed(1) + blocked(1) = 5
-    // opp: 1 goal = goals:1 sog:1 → oppCorsi = goals(1) + sog(1) = 2
+  it('Corsi counts each goal once: sog (goals included) + missed + blocked', () => {
+    // A goal is a shot on goal: sog counts it, and Corsi doesn't add it
+    // again. Until 2026-10 this test asserted 5 here -- every goal twice.
     const plays = [
       play('goal', CAR_TEAM_ID),
       play('shot-on-goal', CAR_TEAM_ID),
@@ -73,13 +71,11 @@ describe('computeShotAttempts', () => {
     const result = computeShotAttempts(plays, CAR_TEAM_ID)
     expect(result.car.goals).toBe(1)
     expect(result.car.sog).toBe(2)    // goal + shot-on-goal both add to sog
-    expect(result.carCorsi).toBe(5)   // goals(1) + sog(2) + missed(1) + blocked(1)
-    expect(result.oppCorsi).toBe(2)   // opp goal: goals(1) + sog(1)
+    expect(result.carCorsi).toBe(4)   // sog(2) + missed(1) + blocked(1)
+    expect(result.oppCorsi).toBe(1)   // the opp goal, once
   })
 
-  it('Fenwick excludes blocked shots (goals count as sog)', () => {
-    // carFenwick = goals + sog + missed (no blocked) = 1+2+1 = 4
-    // oppFenwick = goals + sog = 1+1 = 2
+  it('Fenwick excludes blocked shots and counts each goal once', () => {
     const plays = [
       play('goal', CAR_TEAM_ID),
       play('shot-on-goal', CAR_TEAM_ID),
@@ -88,8 +84,8 @@ describe('computeShotAttempts', () => {
       play('goal', OPP_TEAM_ID),
     ]
     const result = computeShotAttempts(plays, CAR_TEAM_ID)
-    expect(result.carFenwick).toBe(4)   // goals(1) + sog(2) + missed(1)
-    expect(result.oppFenwick).toBe(2)   // opp goals(1) + sog(1)
+    expect(result.carFenwick).toBe(3)   // sog(2) + missed(1)
+    expect(result.oppFenwick).toBe(1)
   })
 
   it('corsiForPct reflects actual goals+sog+missed+blocked ratio', () => {
@@ -114,13 +110,12 @@ describe('computeShotAttempts', () => {
     expect(result.corsiForPct).toBe(50.0)
   })
 
-  it('handles empty play array gracefully', () => {
+  it('has no CF% / FF% without a single attempt (not a made-up 0 or 50)', () => {
     const result = computeShotAttempts([], CAR_TEAM_ID)
     expect(result.carCorsi).toBe(0)
     expect(result.oppCorsi).toBe(0)
-    // Should not throw or return NaN
-    expect(result.corsiForPct).toBeTypeOf('number')
-    expect(isNaN(result.corsiForPct)).toBe(false)
+    expect(result.corsiForPct).toBeNull()
+    expect(result.fenwickForPct).toBeNull()
   })
 
   it('ignores irrelevant play types', () => {

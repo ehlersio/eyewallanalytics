@@ -4,6 +4,7 @@ import { getGameLanding } from '../utils/nhlApi';
 import { computeShotAttempts } from '../utils/advancedStats';
 import { finalSuffix } from '../utils/scoreboard';
 import { penaltyParties } from '../utils/penaltyText';
+import { withoutShootout, isShootoutPlay, hasShotTracking, nhlPeriodLabel } from '../utils/gamePlays';
 
 const WORKER_URL = typeof import.meta !== 'undefined'
   ? import.meta.env?.VITE_WORKER_URL
@@ -125,12 +126,62 @@ export function summaryPenalty(play, rosterMap, carTeamId) {
   };
 }
 
-function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlayoff = false) {
+// The game's type decides what period 5 is (2OT in the playoffs, SO
+// otherwise) -- the play-by-play's own gameType, else what the caller says.
+function playoffGame(pbp, isPlayoff) {
+  return pbp?.gameType != null ? pbp.gameType === 3 : !!isPlayoff;
+}
+
+// The score at the end of `period`: the last goal at or before it, from
+// every period so far, or 0-0 before any goal. Reading only the goals IN
+// the period left a scoreless period with no score at all ('CAR – – FLA'
+// for P3 of FLA@CAR 2026-09-22, 2-2 at the time). Shootout plays never
+// reach here: their goals carry the tied pre-shootout score.
+export function scoreAfterPeriod(plays, period) {
+  const goals = (plays || []).filter(p => p.typeDescKey === 'goal' && (p.periodDescriptor?.number || 0) <= period);
+  const last = goals[goals.length - 1];
+  if (!last) return { awayScore: 0, homeScore: 0 };
+  return { awayScore: last.details?.awayScore ?? null, homeScore: last.details?.homeScore ?? null };
+}
+
+// carScore / oppScore: a score from the summary team's side, for lists
+// that show it without knowing which side that team was (the bell).
+function teamScore(pbp, carTeamId, awayScore, homeScore) {
+  const home = pbp?.homeTeam?.id, away = pbp?.awayTeam?.id;
+  if (carTeamId !== home && carTeamId !== away) return { carScore: null, oppScore: null };
+  const carIsHome = carTeamId === home;
+  return { carScore: carIsHome ? homeScore : awayScore, oppScore: carIsHome ? awayScore : homeScore };
+}
+
+// Shot-based numbers are null when the game's feed tracks no shots
+// (goals and penalties only, see hasShotTracking) -- they'd count only
+// the goals. Never a made-up 50%.
+function shotSummary(plays, carTeamId, tracked) {
+  if (!tracked) {
+    return { carCorsi: null, oppCorsi: null, carSOG: null, oppSOG: null, corsiForPct: null, fenwickForPct: null };
+  }
+  const shotStats = computeShotAttempts(plays, carTeamId);
+  return {
+    carCorsi:      shotStats.carCorsi,
+    oppCorsi:      shotStats.oppCorsi,
+    carSOG:        shotStats.car.sog,
+    oppSOG:        shotStats.opp.sog,
+    corsiForPct:   shotStats.corsiForPct,
+    fenwickForPct: shotStats.fenwickForPct == null ? null : Math.round(shotStats.fenwickForPct),
+  };
+}
+
+export function buildSummary(period, allPlays, carTeamId, landingData, pbp, gameId, isPlayoff = false) {
+  // A shootout is no period of play (see gamePlays.js): no summary is
+  // built for it, and its attempts count nowhere.
+  const plays = withoutShootout(allPlays);
+  const tracked = hasShotTracking(plays);
   const periodPlays = plays.filter(p => p.periodDescriptor?.number === period);
   const rosterMap = buildRosterMap(pbp);
+  const playoff = playoffGame(pbp, isPlayoff);
 
   // Shot stats for this period
-  const shotStats = computeShotAttempts(periodPlays, carTeamId);
+  const shots = shotSummary(periodPlays, carTeamId, tracked);
 
   // High-danger chances — matches Shot Map formula exactly:
   // dist < 15 (strict), includes blocked shots, uses |xCoord| - 89 distance
@@ -140,8 +191,8 @@ function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlay
     return Math.sqrt((x - 89) ** 2 + y ** 2) < 15;
   };
   const shotTypes = new Set(['goal', 'shot-on-goal', 'missed-shot', 'blocked-shot']);
-  const carHDCF = periodPlays.filter(p => shotTypes.has(p.typeDescKey) && p.details?.eventOwnerTeamId === carTeamId && isHighDanger(p)).length;
-  const oppHDCF = periodPlays.filter(p => shotTypes.has(p.typeDescKey) && p.details?.eventOwnerTeamId !== carTeamId && isHighDanger(p)).length;
+  const carHDCF = tracked ? periodPlays.filter(p => shotTypes.has(p.typeDescKey) && p.details?.eventOwnerTeamId === carTeamId && isHighDanger(p)).length : null;
+  const oppHDCF = tracked ? periodPlays.filter(p => shotTypes.has(p.typeDescKey) && p.details?.eventOwnerTeamId !== carTeamId && isHighDanger(p)).length : null;
 
   // Faceoffs
   const carFOwon = periodPlays.filter(p => p.typeDescKey === 'faceoff' && p.details?.eventOwnerTeamId === carTeamId).length;
@@ -149,9 +200,9 @@ function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlay
   const carFOPct = totalFO > 0 ? Math.round((carFOwon / totalFO) * 100) : null;
 
   // Takeaways / Giveaways
-  const carTK = periodPlays.filter(p => p.typeDescKey === 'takeaway' && p.details?.eventOwnerTeamId === carTeamId).length;
-  const carGV = periodPlays.filter(p => p.typeDescKey === 'giveaway' && p.details?.eventOwnerTeamId === carTeamId).length;
-  const carHits = periodPlays.filter(p => p.typeDescKey === 'hit' && p.details?.eventOwnerTeamId === carTeamId).length;
+  const carTK = tracked ? periodPlays.filter(p => p.typeDescKey === 'takeaway' && p.details?.eventOwnerTeamId === carTeamId).length : null;
+  const carGV = tracked ? periodPlays.filter(p => p.typeDescKey === 'giveaway' && p.details?.eventOwnerTeamId === carTeamId).length : null;
+  const carHits = tracked ? periodPlays.filter(p => p.typeDescKey === 'hit' && p.details?.eventOwnerTeamId === carTeamId).length : null;
 
   // Goals from PBP
   const goals = periodPlays
@@ -197,31 +248,18 @@ function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlay
   const maxPeriod = Math.max(...plays.map(p => p.periodDescriptor?.number || 0));
   const threeStars = period === maxPeriod ? (landingData?.summary?.threeStars || []) : [];
 
-  // Period-end score from last goal or period-end event
-  const lastGoal = goals[goals.length - 1];
-  const awayScore = lastGoal?.awayScore ?? null;
-  const homeScore = lastGoal?.homeScore ?? null;
+  // Score at the end of the period, from every goal so far
+  const { awayScore, homeScore } = scoreAfterPeriod(plays, period);
 
   return {
     period,
     // Period label — playoff OT periods are full 20min (OT, 2OT, 3OT...)
-    // Regular season: period 4 = OT (5min 3v3), period 5 = SO
-    periodLabel: period <= 3 ? `Period ${period}`
-      : isPlayoff ? (period === 4 ? 'OT' : `${period - 3}OT`)
-      : period === 4 ? 'OT' : 'SO',
-    periodShort: period <= 3 ? `P${period}`
-      : isPlayoff ? (period === 4 ? 'OT' : `${period - 3}OT`)
-      : period === 4 ? 'OT' : 'SO',
+    // Regular season: period 4 = OT (5min 3v3)
+    periodLabel: period <= 3 ? `Period ${period}` : nhlPeriodLabel(period, playoff),
+    periodShort: nhlPeriodLabel(period, playoff),
     generatedAt: Date.now(),
     // Shot stats
-    carCorsi:     shotStats.carCorsi,
-    oppCorsi:     shotStats.oppCorsi,
-    carSOG:       shotStats.car?.sog || 0,
-    oppSOG:       shotStats.opp?.sog || 0,
-    corsiForPct:  shotStats.corsiForPct,
-    fenwickForPct: shotStats.carFenwick + shotStats.oppFenwick > 0
-      ? Math.round((shotStats.carFenwick / (shotStats.carFenwick + shotStats.oppFenwick)) * 100)
-      : 50,
+    ...shots,
     // Period-specific stats
     carHDCF, oppHDCF,
     carFOPct,
@@ -232,8 +270,9 @@ function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlay
     // Events
     goals: enrichedGoals,
     penalties,
-    // Score
+    // Score at the end of the period, and the same from the team's side
     awayScore, homeScore,
+    ...teamScore(pbp, carTeamId, awayScore, homeScore),
     // Three stars
     threeStars,
     // AI — check Worker KV cache first before showing loading state
@@ -304,7 +343,7 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
     } finally {
       buildingRef.current.delete(period);
     }
-  }, [gameId, carTeamId, pbp, fetchLanding]);
+  }, [gameId, carTeamId, pbp, fetchLanding, isPlayoff]);
 
   // Live: show each period's summary once its intermission is on. Keyed on
   // "in an intermission for a period not yet summarized", not on catching
@@ -318,6 +357,7 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
     if (!isLive || !pbp || !gameId || isOtherGame(pbp, gameId)) return;
     const inIntermission = pbp?.clock?.inIntermission || false;
     const currentPeriod = pbp?.periodDescriptor?.number || 0;
+    if (pbp?.periodDescriptor?.periodType === 'SO') return; // no shootout summary
     if (inIntermission && currentPeriod > lastProcessedPeriod.current) {
       lastProcessedPeriod.current = currentPeriod;
       buildAndStoreSummary(currentPeriod, pbp?.plays || [], true);
@@ -328,7 +368,8 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
   useEffect(() => {
     if (isLive || !pbp || !gameId || isOtherGame(pbp, gameId)) return;
     const plays = pbp?.plays || [];
-    const periods = [...new Set(plays.map(p => p.periodDescriptor?.number).filter(Boolean))].sort();
+    // Every period but a shootout (see buildSummary)
+    const periods = [...new Set(withoutShootout(plays).map(p => p.periodDescriptor?.number).filter(Boolean))].sort((a, b) => a - b);
     if (!periods.length) return;
     // Check which periods are already stored — don't overwrite them
     const stored = loadStored(gameId, carTeamId);
@@ -351,6 +392,7 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
   const requestSummary = useCallback((period) => {
     if (!pbp || !gameId || isOtherGame(pbp, gameId)) return false;
     const plays = pbp.plays || [];
+    if (plays.some(p => isShootoutPlay(p) && p.periodDescriptor?.number === period)) return false;
     const over = plays.some(p => p.typeDescKey === 'period-end' && p.periodDescriptor?.number === period)
       || (pbp.clock?.inIntermission && pbp.periodDescriptor?.number === period);
     if (!over) return false;
@@ -377,21 +419,39 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
 // ── Full game summary ─────────────────────────────────────────
 // Built once when all periods are complete (completed games on load,
 // live games when gameState goes FINAL).
-function buildGameSummary(plays, carTeamId, landingData, pbp, gameId) {
+export function buildGameSummary(allPlays, carTeamId, landingData, pbp, gameId) {
+  // Without the shootout: its attempts aren't shots or goals (the NHL
+  // credits the winner one goal, no player any), and its goals carry the
+  // tied pre-shootout score -- a Final/SO card read 'CAR 4 – COL 4' for a
+  // 5-4 shootout win (2025020121).
+  const plays = withoutShootout(allPlays);
+  const tracked = hasShotTracking(plays);
+  const playoff = playoffGame(pbp);
   const rosterMap = buildRosterMap(pbp);
-  const shotStats = computeShotAttempts(plays, carTeamId);
+  const carIsHome = pbp?.homeTeam?.id === carTeamId;
+  const shots = shotSummary(plays, carTeamId, tracked);
+  if (!tracked) {
+    // A goals-only feed still has the NHL's own shots-on-goal totals.
+    const home = pbp?.homeTeam?.sog, away = pbp?.awayTeam?.sog;
+    if (home != null && away != null) {
+      shots.carSOG = carIsHome ? home : away;
+      shots.oppSOG = carIsHome ? away : home;
+    }
+  }
 
-  // Aggregate per-period stats for comparison
-  const periods = [...new Set(plays.map(p => p.periodDescriptor?.number).filter(Boolean))].sort();
+  // Aggregate per-period stats for comparison (none without shot tracking)
+  const periods = tracked
+    ? [...new Set(plays.map(p => p.periodDescriptor?.number).filter(Boolean))].sort((a, b) => a - b)
+    : [];
   const periodStats = periods.map(period => {
-    const pp = plays.filter(p => p.periodDescriptor?.number === period);
-    const ps = computeShotAttempts(pp, carTeamId);
-    return { period, corsiForPct: ps.corsiForPct, carSOG: ps.car?.sog || 0, oppSOG: ps.opp?.sog || 0 };
+    const ps = computeShotAttempts(plays.filter(p => p.periodDescriptor?.number === period), carTeamId);
+    return { period, label: nhlPeriodLabel(period, playoff), corsiForPct: ps.corsiForPct, carSOG: ps.car.sog, oppSOG: ps.opp.sog };
   });
 
-  // Best and worst period for CAR
-  const bestPeriod = [...periodStats].sort((a,b) => b.corsiForPct - a.corsiForPct)[0];
-  const worstPeriod = [...periodStats].sort((a,b) => a.corsiForPct - b.corsiForPct)[0];
+  // Best and worst period for CAR (of those with any shot attempt)
+  const ranked = periodStats.filter(ps => ps.corsiForPct != null);
+  const bestPeriod = [...ranked].sort((a,b) => b.corsiForPct - a.corsiForPct)[0] ?? null;
+  const worstPeriod = [...ranked].sort((a,b) => a.corsiForPct - b.corsiForPct)[0] ?? null;
 
   // All goals
   const allGoals = plays.filter(p => p.typeDescKey === 'goal').map(p => ({
@@ -422,9 +482,9 @@ function buildGameSummary(plays, carTeamId, landingData, pbp, gameId) {
   // Faceoffs, hits, TK/GV
   const carFOwon = plays.filter(p => p.typeDescKey === 'faceoff' && p.details?.eventOwnerTeamId === carTeamId).length;
   const totalFO = plays.filter(p => p.typeDescKey === 'faceoff').length;
-  const carTK = plays.filter(p => p.typeDescKey === 'takeaway' && p.details?.eventOwnerTeamId === carTeamId).length;
-  const carGV = plays.filter(p => p.typeDescKey === 'giveaway' && p.details?.eventOwnerTeamId === carTeamId).length;
-  const carHits = plays.filter(p => p.typeDescKey === 'hit' && p.details?.eventOwnerTeamId === carTeamId).length;
+  const carTK = tracked ? plays.filter(p => p.typeDescKey === 'takeaway' && p.details?.eventOwnerTeamId === carTeamId).length : null;
+  const carGV = tracked ? plays.filter(p => p.typeDescKey === 'giveaway' && p.details?.eventOwnerTeamId === carTeamId).length : null;
+  const carHits = tracked ? plays.filter(p => p.typeDescKey === 'hit' && p.details?.eventOwnerTeamId === carTeamId).length : null;
 
   const isHighDanger = (p) => {
     const x = Math.abs(p.details?.xCoord || 0);
@@ -432,15 +492,19 @@ function buildGameSummary(plays, carTeamId, landingData, pbp, gameId) {
     return Math.sqrt((x-89)**2 + y**2) < 15;
   };
   const shotTypes = new Set(['goal','shot-on-goal','missed-shot','blocked-shot']);
-  const carHDCF = plays.filter(p => shotTypes.has(p.typeDescKey) && p.details?.eventOwnerTeamId === carTeamId && isHighDanger(p)).length;
-  const oppHDCF = plays.filter(p => shotTypes.has(p.typeDescKey) && p.details?.eventOwnerTeamId !== carTeamId && isHighDanger(p)).length;
+  const carHDCF = tracked ? plays.filter(p => shotTypes.has(p.typeDescKey) && p.details?.eventOwnerTeamId === carTeamId && isHighDanger(p)).length : null;
+  const oppHDCF = tracked ? plays.filter(p => shotTypes.has(p.typeDescKey) && p.details?.eventOwnerTeamId !== carTeamId && isHighDanger(p)).length : null;
 
-  // Final score from last goal or last play
-  const lastGoal = [...allGoals].reverse()[0];
+  // Final score: the game's own (a shootout winner gets its extra goal
+  // there), else the last goal's.
+  const lastGoal = allGoals[allGoals.length - 1];
+  const finalAway = pbp?.awayTeam?.score ?? lastGoal?.awayScore ?? null;
+  const finalHome = pbp?.homeTeam?.score ?? lastGoal?.homeScore ?? null;
 
   // Final, Final/OT or Final/SO: the game's last period type ('REG' | 'OT' |
   // 'SO'), from the PBP's own outcome or else its last play.
-  const ended = finalSuffix(pbp?.gameOutcome?.lastPeriodType ?? plays[plays.length - 1]?.periodDescriptor?.periodType);
+  const lastPlay = allPlays[allPlays.length - 1];
+  const ended = finalSuffix(pbp?.gameOutcome?.lastPeriodType ?? lastPlay?.periodDescriptor?.periodType);
 
   return {
     period: 'game',
@@ -449,11 +513,7 @@ function buildGameSummary(plays, carTeamId, landingData, pbp, gameId) {
     generatedAt: Date.now(),
     isGameSummary: true,
     // Shot stats
-    carCorsi: shotStats.carCorsi, oppCorsi: shotStats.oppCorsi,
-    carSOG: shotStats.car?.sog || 0, oppSOG: shotStats.opp?.sog || 0,
-    corsiForPct: shotStats.corsiForPct,
-    fenwickForPct: shotStats.carFenwick + shotStats.oppFenwick > 0
-      ? Math.round((shotStats.carFenwick / (shotStats.carFenwick + shotStats.oppFenwick)) * 100) : 50,
+    ...shots,
     carHDCF, oppHDCF,
     carFOPct: totalFO > 0 ? Math.round((carFOwon / totalFO) * 100) : null,
     carTK, carGV, carHits,
@@ -465,8 +525,9 @@ function buildGameSummary(plays, carTeamId, landingData, pbp, gameId) {
     // Period breakdown
     periodStats, bestPeriod, worstPeriod,
     // Score
-    awayScore: lastGoal?.awayScore ?? null,
-    homeScore: lastGoal?.homeScore ?? null,
+    awayScore: finalAway,
+    homeScore: finalHome,
+    ...teamScore(pbp, carTeamId, finalAway, finalHome),
     // Three stars
     threeStars: landingData?.summary?.threeStars || [],
     // AI

@@ -178,6 +178,7 @@ function strengthLabel(strength) {
 }
 
 function corsiColor(pct) {
+  if (pct == null) return '';
   if (pct >= 55) return 'good';
   if (pct <= 45) return 'bad';
   return '';
@@ -371,25 +372,30 @@ function GoalCarousel({ goals, carAbbr, gameId }) {
   );
 }
 
+// Shot-based numbers are null for a game whose feed tracks no shots
+// (usePeriodSummary.js) -- shown as '—', not 0 or 50%.
+const pctOrDash  = v => v != null ? `${v}%` : '—';
+const pairOrDash = (a, b) => a != null && b != null ? `${a}–${b}` : '—';
+
 // ── Share canvas (1080×1350, off-screen -- PeriodSummaryShareCanvas) ──
 // Shared stat definitions — used by both the popup grid and the share canvas
 // so they're always in sync
 function getPeriodStats(summary, carAbbr, t) {
   return [
-    { val: `${summary.corsiForPct}%`,  label: t('periodSummary.stats.corsiForPct', { abbr: carAbbr }),    color: corsiColor(summary.corsiForPct) },
-    { val: `${summary.carSOG}–${summary.oppSOG}`, label: t('gameStatsPopup.teamStats.shotsOnGoal') },
-    { val: `${summary.fenwickForPct}%`, label: t('periodSummary.stats.fenwickForPct', { abbr: carAbbr }), color: corsiColor(summary.fenwickForPct) },
-    { val: summary.carHits,             label: t('periodSummary.stats.hits', { abbr: carAbbr }) },
+    { val: pctOrDash(summary.corsiForPct),  label: t('periodSummary.stats.corsiForPct', { abbr: carAbbr }),    color: corsiColor(summary.corsiForPct) },
+    { val: pairOrDash(summary.carSOG, summary.oppSOG), label: t('gameStatsPopup.teamStats.shotsOnGoal') },
+    { val: pctOrDash(summary.fenwickForPct), label: t('periodSummary.stats.fenwickForPct', { abbr: carAbbr }), color: corsiColor(summary.fenwickForPct) },
+    { val: summary.carHits ?? '—',      label: t('periodSummary.stats.hits', { abbr: carAbbr }) },
     { val: summary.carFOPct != null ? `${summary.carFOPct}%` : '—', label: t('periodSummary.stats.faceoffWinPct') },
-    { val: `${summary.carHDCF ?? 0}–${summary.oppHDCF ?? 0}`, label: t('periodSummary.stats.highDangerChances'),
-      color: (summary.carHDCF ?? 0) > (summary.oppHDCF ?? 0) ? 'good' : (summary.carHDCF ?? 0) < (summary.oppHDCF ?? 0) ? 'bad' : '' },
+    { val: pairOrDash(summary.carHDCF, summary.oppHDCF), label: t('periodSummary.stats.highDangerChances'),
+      color: summary.carHDCF == null || summary.oppHDCF == null ? '' : summary.carHDCF > summary.oppHDCF ? 'good' : summary.carHDCF < summary.oppHDCF ? 'bad' : '' },
   ];
 }
 
 function ShareCanvas({ summary, carAbbr, oppAbbr, homeAbbr, canvasRef, cardNarrative }) {
   const { t } = useTranslation();
   const carIsHome = homeAbbr === carAbbr;
-  const dominatedBy = summary.corsiForPct >= 55 ? carAbbr : summary.corsiForPct <= 45 ? oppAbbr : null;
+  const dominatedBy = summary.corsiForPct == null ? null : summary.corsiForPct >= 55 ? carAbbr : summary.corsiForPct <= 45 ? oppAbbr : null;
   const carPenalties = summary.penalties.filter(p => p.isCar).length;
   const oppPenalties = summary.penalties.filter(p => !p.isCar).length;
   const insights = [
@@ -498,7 +504,9 @@ export default function PeriodSummary({
 
   const xCaption = summary ? [
     t('periodSummary.xCaption.line1', { period: summary.periodLabel, abbr: carAbbr, car: carScore ?? '\u2013', opp: oppScore ?? '\u2013', oppAbbr }),
-    t('periodSummary.xCaption.line2', { cf: summary.corsiForPct, carSog: summary.carSOG, oppSog: summary.oppSOG, carGoals: summary.carGoals, oppGoals: summary.oppGoals }),
+    summary.corsiForPct != null && summary.carSOG != null
+      ? t('periodSummary.xCaption.line2', { cf: summary.corsiForPct, carSog: summary.carSOG, oppSog: summary.oppSOG, carGoals: summary.carGoals, oppGoals: summary.oppGoals })
+      : null,
     summary.aiNarrative || '',
     `#${carAbbr} #EyeWallAnalytics`,
   ].filter(Boolean).join('\n') : '';
@@ -610,7 +618,8 @@ export default function PeriodSummary({
               <div className={PS_PERIOD_BREAKDOWN_CLASSES}>
                 {summary.periodStats.map(ps => (
                   <div key={ps.period} className={PS_PERIOD_ROW_CLASSES}>
-                    <span className={PS_PERIOD_ROW_LABEL_CLASSES}>P{ps.period}</span>
+                    {/* ps.label: OT, 2OT -- summaries stored before it existed fall back */}
+                    <span className={PS_PERIOD_ROW_LABEL_CLASSES}>{ps.label ?? `P${ps.period}`}</span>
                     <div className={PS_PERIOD_ROW_BAR_WRAP_CLASSES}>
                       <div
                         className={psPeriodRowBarClasses(ps.corsiForPct)}

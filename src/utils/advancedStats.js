@@ -6,8 +6,16 @@ import { TEAM_CONFIG } from './teamConfig';
 import i18n from '../i18n';
 
 // ── Shot attempt classification ───────────────────────────────
-// Corsi  = goals + shots on goal + missed shots + blocked shots
-// Fenwick = goals + shots on goal + missed shots (excludes blocked)
+// sog counts every shot on goal, goals included (a goal is a shot on goal;
+// it's what the NHL's SOG totals count). So:
+// Corsi   = sog + missed shots + blocked shots
+// Fenwick = sog + missed shots (excludes blocked)
+// Until 2026-10 both added `goals` on top of sog, counting every goal
+// twice: WSH@CAR 2026-10-02 (2026020018) read CF 83-48 for a real 81-43.
+//
+// corsiForPct / fenwickForPct are null when neither side has an attempt
+// (a goals-and-penalties-only feed has goals, so it isn't null there --
+// callers check hasShotTracking() for that), never a made-up 0 or 50.
 
 export function computeShotAttempts(plays, carTeamId = TEAM_CONFIG.teamId) {
   const counts = {
@@ -26,21 +34,21 @@ export function computeShotAttempts(plays, carTeamId = TEAM_CONFIG.teamId) {
     }
   });
 
-  const carCorsi   = counts.car.goals + counts.car.sog + counts.car.missed + counts.car.blocked;
-  const oppCorsi   = counts.opp.goals + counts.opp.sog + counts.opp.missed + counts.opp.blocked;
-  const carFenwick = counts.car.goals + counts.car.sog + counts.car.missed;
-  const oppFenwick = counts.opp.goals + counts.opp.sog + counts.opp.missed;
+  const carCorsi   = counts.car.sog + counts.car.missed + counts.car.blocked;
+  const oppCorsi   = counts.opp.sog + counts.opp.missed + counts.opp.blocked;
+  const carFenwick = counts.car.sog + counts.car.missed;
+  const oppFenwick = counts.opp.sog + counts.opp.missed;
 
-  const totalCorsi   = carCorsi   + oppCorsi   || 1;
-  const totalFenwick = carFenwick + oppFenwick || 1;
+  const totalCorsi   = carCorsi   + oppCorsi;
+  const totalFenwick = carFenwick + oppFenwick;
 
   return {
     car:          counts.car,
     opp:          counts.opp,
     carCorsi,     oppCorsi,
     carFenwick,   oppFenwick,
-    corsiForPct:   +(carCorsi   / totalCorsi   * 100).toFixed(1),
-    fenwickForPct: +(carFenwick / totalFenwick * 100).toFixed(1),
+    corsiForPct:   totalCorsi   ? +(carCorsi   / totalCorsi   * 100).toFixed(1) : null,
+    fenwickForPct: totalFenwick ? +(carFenwick / totalFenwick * 100).toFixed(1) : null,
     corsiDiff:     carCorsi   - oppCorsi,
     fenwickDiff:   carFenwick - oppFenwick,
   };
@@ -89,7 +97,7 @@ export function computePuckLuck(plays, carTeamId = TEAM_CONFIG.teamId) {
   const pdo  = computePDO(plays, carTeamId);
 
   const totalGoals  = pdo.carGoals + pdo.oppGoals;
-  const expectedGF  = +(sa.fenwickForPct / 100 * totalGoals).toFixed(1);
+  const expectedGF  = +((sa.fenwickForPct ?? 0) / 100 * totalGoals).toFixed(1);
   const actualGF    = pdo.carGoals;
   const luckDelta   = +(actualGF - expectedGF).toFixed(1);
 

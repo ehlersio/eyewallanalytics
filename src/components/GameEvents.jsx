@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { TEAM_CONFIG } from '../utils/nhlApi';
 import { classifyGoal, goalSignature, recordGoal } from '../utils/goalUpdates';
 import { penaltyParties, penaltyHeadline, penaltyServedBy, penaltyDescription } from '../utils/penaltyText';
+import { nhlPeriodLabel } from '../utils/gamePlays';
 
 // ── Tailwind class constants (Phase 4, sub-PR 2 -- GameEvents.css deleted) ──
 // Duplicated in PWHLGameEvents.jsx per established per-file convention
@@ -294,7 +295,10 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr
     const n = playerMap[String(id)];
     return n?.trim() || null;
   };
-  const periodLabel = n => n === 4 ? 'OT' : n === 5 ? 'SO' : `P${n}`;
+  // By the game's own type: a playoff game's period 5 is 2OT, not SO (this
+  // used to call every period 5 SO, so a playoff double-OT goal popped up
+  // as 'SO 13:53').
+  const periodLabel = n => nhlPeriodLabel(n, pbp?.gameType === 3);
 
   // Track liveness — stay "active" for one extra cycle after game ends
   // so the OT/final goal can be processed even after isLive flips false
