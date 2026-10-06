@@ -98,12 +98,26 @@ describe('PWHL Shot Map', () => {
     })
 
     it('keeps the same year selected when toggling to Playoffs', () => {
-      cy.contains('2024-25').click()
+      cy.contains('2023-24').click()
       cy.contains('Playoffs').click()
       // The year chip row highlights by regular-season id even while
       // viewing that year's playoffs (see selectedYear in PWHLShotMapView.jsx)
-      cy.contains('2024-25').should('have.class', 'on')
+      cy.contains('2023-24').should('have.class', 'on')
       cy.contains('Regular').click()
+    })
+
+    // BOS played no 2025 playoff games (season 6 is empty for team 1):
+    // no Playoffs choice for 2024-25, and picking that year from the
+    // 2026 playoffs lands on its regular season, not an empty map.
+    it('offers no Playoffs for a year the team played no playoff games in', () => {
+      cy.contains('2024-25').click()
+      cy.get('.season-type-toggle').should('not.exist')
+      cy.contains('2025-26').click()
+      cy.contains('Playoffs').click()
+      cy.contains('2024-25').click()
+      cy.contains('2024-25').should('have.class', 'on')
+      cy.get('.season-type-toggle').should('not.exist')
+      cy.assertNoErrors()
     })
   })
 

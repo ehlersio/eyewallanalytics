@@ -3,7 +3,9 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
-import { fetchPWHLPlayers, PWHL_TEAM_CONFIG, PWHL_TEAM_ID } from '../utils/pwhlApi';
+import { useTeamSeasonGames } from '../hooks/useTeamSeasonGames';
+import { seasonsWithGames, fallbackSeason } from '../utils/teamSeasons';
+import { fetchPWHLPlayers, fetchPWHLSchedule, PWHL_TEAM_CONFIG, PWHL_TEAM_ID } from '../utils/pwhlApi';
 import { PWHL_CURRENT_SEASON, PWHL_REGULAR_SEASONS, getPWHLSeasonLabel } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
@@ -146,6 +148,18 @@ export default function PWHLPlayersView() {
     setSeason(id);
   }
 
+  // Stats seasons: only those this team has played games in (#15). The
+  // 2026-27 expansion teams (DET/HAM/LV/SJS) have none before 2026-27, SEA
+  // and VAN none before 2025-26; a team with none in the current season
+  // opens on its newest one. PWHL_REGULAR_SEASONS is a live binding
+  // pwhlConfig.js updates, so it's read on every render, not memoized.
+  const seasonCounts = useTeamSeasonGames(fetchPWHLSchedule, teamId, [PWHL_CURRENT_SEASON, ...PWHL_REGULAR_SEASONS.map(s => s.id)]);
+  const seasonOptions = seasonsWithGames(PWHL_REGULAR_SEASONS, seasonCounts, { played: true });
+  const fallback = fallbackSeason(season, seasonOptions, seasonCounts, { played: true });
+  useEffect(() => {
+    if (!userPickedSeason.current && seasonCounts && fallback !== season) setSeason(fallback);
+  }, [fallback, season, seasonCounts]);
+
   const { data, loading } = useFetch(
     () => teamId ? fetchPWHLPlayers(teamId, season) : Promise.resolve(null),
     [teamId, season]
@@ -228,7 +242,7 @@ export default function PWHLPlayersView() {
         <>
           {/* Season picker */}
           <div className={TABS_WRAP_CLASSES} style={{ marginTop: 0, marginBottom: 0 }}>
-            {PWHL_REGULAR_SEASONS.map(s => (
+            {seasonOptions.map(s => (
               <button key={s.id} className={tabClasses(season === s.id)}
                 onClick={() => handleSeasonPick(s.id)}>{s.label}</button>
             ))}
