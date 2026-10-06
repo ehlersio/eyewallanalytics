@@ -12,11 +12,12 @@
 //   - at 82+ games it reads the WAR itself.
 // The WAR shown in the popup stays the real season-to-date value.
 //
-// WAR_TIER_MIN_GP is the same 10 GP the MoneyPuck percentile pools use
-// (eyewall-pipeline moneypuck.py MIN_GP; the PercentileBar rows and
-// EDGE_MIN_GP in EdgeTrackingSection.jsx follow it too).
+// WAR_TIER_MIN_GP is 20 GP, twice the 10 GP the percentile pools use
+// (eyewall-pipeline moneypuck.py MIN_GP): a per-82 pace over 10-19 games
+// could still read "MVP candidate" on a hot streak (2025-26: Josh Doan at
+// 11 GP, Owen Beck at 12, after the #456 re-tune), so tiers wait for 20.
 
-export const WAR_TIER_MIN_GP = 10
+export const WAR_TIER_MIN_GP = 20
 export const WAR_PACE_GAMES = 82
 
 // WAR per 82 games played, or null when there's no WAR or too few games.

@@ -1,7 +1,7 @@
 // src/utils/__tests__/warTier.test.jsx
 // The player popup's WAR tier. WAR adds up with games played (the
 // replacement term scales with GP since eyewall-pipeline#191), so the tier
-// reads WAR per 82 games, and there's no tier under 10 GP -- an October WAR
+// reads WAR per 82 games, and there's no tier under 20 GP -- an October WAR
 // of +0.349 at 3 GP isn't rated against full-season cut-offs. The WAR
 // number itself stays the real season-to-date value.
 
@@ -26,11 +26,12 @@ beforeAll(() => {
 afterAll(() => vi.restoreAllMocks())
 
 describe('warPer82', () => {
-  it('uses the same 10 GP minimum as the percentile pools', () => {
-    expect(WAR_TIER_MIN_GP).toBe(10)
+  it('waits for 20 GP, so a 10-19 game hot streak gets no pace', () => {
+    expect(WAR_TIER_MIN_GP).toBe(20)
     expect(warPer82(0.349, 3)).toBeNull()
-    expect(warPer82(0.349, 9)).toBeNull()
-    expect(warPer82(0.2, 10)).toBeCloseTo(1.64)
+    expect(warPer82(0.2, 10)).toBeNull()
+    expect(warPer82(0.3, 19)).toBeNull()
+    expect(warPer82(0.4, 20)).toBeCloseTo(1.64)
   })
 
   it('projects to 82 games below a full season, and keeps the WAR at 82+', () => {
@@ -46,9 +47,12 @@ describe('warPer82', () => {
 })
 
 describe('warTier', () => {
-  it('has no tier under 10 GP', () => {
+  it('has no tier under 20 GP', () => {
     expect(warTier(0.349, 3)).toBeNull()
     expect(warTier(-0.3, 1)).toBeNull()
+    // 0.2 WAR in 11 GP would pace at 1.49 per 82, an "MVP candidate".
+    expect(warTier(0.2, 11)).toBeNull()
+    expect(warTier(0.3, 19)).toBeNull()
   })
 
   it('tiers by WAR per 82 games and reports that pace', () => {
@@ -82,8 +86,9 @@ describe('warTier', () => {
 })
 
 describe('contract value WAR', () => {
-  it('is points only under 10 GP, and blends WAR per 82 from there', () => {
+  it('is points only under 20 GP, and blends WAR per 82 from there', () => {
     expect(contractValue(3, 3, 5_000_000, false, warPer82(0.349, 3)).method).toBe('points')
+    expect(contractValue(8, 15, 5_000_000, false, warPer82(0.2, 15)).method).toBe('points')
     const blended = contractValue(10, 20, 5_000_000, false, warPer82(0.25, 20))
     expect(blended.method).toBe('blended')
     // 41 pts per 82 / $5M = 8.2; 1.025 WAR per 82 / $5M x 18 = 3.69
@@ -99,7 +104,7 @@ describe('SkaterWarCard', () => {
     const html = card({ war: 0.349, gp: 3 })
     expect(html).toContain('+0.349')
     expect(html).not.toContain(en('playerPopup.analytics.skater.tierReplacement'))
-    expect(html).toContain(en('playerPopup.analytics.skater.tierSmallSample', { count: 10 }))
+    expect(html).toContain(en('playerPopup.analytics.skater.tierSmallSample', { count: 20 }))
     expect(html).not.toContain('pa-war-pace')
   })
 
@@ -123,9 +128,9 @@ describe('SkaterWarCard', () => {
   })
 
   it('has the new strings in French', () => {
-    expect(fr('playerPopup.analytics.skater.tierSmallSample', { count: 10 })).toContain('10')
+    expect(fr('playerPopup.analytics.skater.tierSmallSample', { count: 20 })).toContain('20')
     expect(fr('playerPopup.analytics.skater.warPace', { value: '+1.03' })).toContain('+1.03')
-    expect(fr('playerPopup.contract.valueTooltipPointsOnlySmallSample', { count: 10 })).toContain('10')
+    expect(fr('playerPopup.contract.valueTooltipPointsOnlySmallSample', { count: 20 })).toContain('20')
     expect(fr('playerPopup.analytics.skater.tierSmallSample')).not.toBe(en('playerPopup.analytics.skater.tierSmallSample'))
   })
 })
