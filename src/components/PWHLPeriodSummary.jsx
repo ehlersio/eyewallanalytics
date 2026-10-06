@@ -17,6 +17,7 @@ import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
 import { summaryPenaltyLines } from '../utils/penaltyText';
 import PeriodSummaryShareCanvas from './PeriodSummaryShareCanvas';
+import { fetchCachedNarrative, pwhlNarrativeCacheKey } from '../utils/narrativeCache';
 
 // ── Tailwind class constants -- POPUP HALF (Phase 4, sub-PR 5a) ──
 // Duplicated from PeriodSummary.jsx per established per-file convention.
@@ -136,7 +137,7 @@ const PS_PERIOD_ROW_BAR_GOOD_CLASSES = 'good bg-[var(--green)]';
 const PS_PERIOD_ROW_BAR_BAD_CLASSES = 'bad bg-[var(--red-bright)]';
 const PS_PERIOD_ROW_BAR_NEUTRAL_CLASSES = 'neutral bg-[var(--text-dim)]';
 function psPeriodRowBarClasses(pct) {
-  const variant = pct >= 55 ? PS_PERIOD_ROW_BAR_GOOD_CLASSES : pct <= 45 ? PS_PERIOD_ROW_BAR_BAD_CLASSES : PS_PERIOD_ROW_BAR_NEUTRAL_CLASSES;
+  const variant = pct == null ? PS_PERIOD_ROW_BAR_NEUTRAL_CLASSES : pct >= 55 ? PS_PERIOD_ROW_BAR_GOOD_CLASSES : pct <= 45 ? PS_PERIOD_ROW_BAR_BAD_CLASSES : PS_PERIOD_ROW_BAR_NEUTRAL_CLASSES;
   return `${PS_PERIOD_ROW_BAR_BASE_CLASSES} ${variant}`;
 }
 const PS_PERIOD_ROW_PCT_BASE_CLASSES = 'ps-period-row-pct text-[12px] font-bold w-[38px] text-right flex-shrink-0';
@@ -144,7 +145,7 @@ const PS_PERIOD_ROW_PCT_DEFAULT_CLASSES = 'text-[color:var(--text-muted)]';
 const PS_PERIOD_ROW_PCT_GOOD_CLASSES = 'good text-[color:var(--green)]';
 const PS_PERIOD_ROW_PCT_BAD_CLASSES = 'bad text-[color:var(--red-bright)]';
 function psPeriodRowPctClasses(pct) {
-  const variant = pct >= 55 ? PS_PERIOD_ROW_PCT_GOOD_CLASSES : pct <= 45 ? PS_PERIOD_ROW_PCT_BAD_CLASSES : PS_PERIOD_ROW_PCT_DEFAULT_CLASSES;
+  const variant = pct == null ? PS_PERIOD_ROW_PCT_DEFAULT_CLASSES : pct >= 55 ? PS_PERIOD_ROW_PCT_GOOD_CLASSES : pct <= 45 ? PS_PERIOD_ROW_PCT_BAD_CLASSES : PS_PERIOD_ROW_PCT_DEFAULT_CLASSES;
   return `${PS_PERIOD_ROW_PCT_BASE_CLASSES} ${variant}`;
 }
 const PS_PERIOD_ROW_SOG_CLASSES = 'text-[11px] text-[color:var(--text-dim)] w-[60px] text-right flex-shrink-0';
@@ -184,6 +185,13 @@ async function generatePWHLNarrative(summary, carAbbr, oppAbbr) {
 
   const periodKey = summary.isGameSummary ? 'game' : String(summary.period);
 
+  // One already generated for this team (Worker KV, read through the
+  // un-rate-limited /cache route) before asking for one.
+  const cached = await fetchCachedNarrative(pwhlNarrativeCacheKey(periodKey, summary.gameId, carAbbr));
+  if (cached) return cached;
+
+  // A stat with no value (CF% with no shot attempts, no period to rank)
+  // is left out (undefined drops from the JSON), not sent as 0.
   const statsPayload = {
     carAbbr,
     oppAbbr,
@@ -191,7 +199,7 @@ async function generatePWHLNarrative(summary, carAbbr, oppAbbr) {
     oppName:         pwhlTeamName(oppAbbr),
     league:          'pwhl',
     periodLabel:     summary.periodLabel,
-    corsiForPct:     summary.corsiForPct,
+    corsiForPct:     summary.corsiForPct ?? undefined,
     carSOG:          summary.carSOG,
     oppSOG:          summary.oppSOG,
     carGoals:        summary.carGoals,
@@ -202,8 +210,8 @@ async function generatePWHLNarrative(summary, carAbbr, oppAbbr) {
     oppHDCF:         summary.oppHDCF,
     penaltyCount:    summary.penalties?.length ?? 0,
     carPenaltyCount: summary.penalties?.filter(p => p.isCar).length ?? 0,
-    bestPeriod:      summary.bestPeriod,
-    worstPeriod:     summary.worstPeriod,
+    bestPeriod:      summary.bestPeriod ?? undefined,
+    worstPeriod:     summary.worstPeriod ?? undefined,
     goalieNames:     summary.goalieNames || [],
     goals: (summary.goals || []).map(g => ({
       isCar:      g.isCar,
@@ -244,16 +252,21 @@ function strengthLabel(s) {
 }
 
 function corsiColor(pct) {
+  if (pct == null) return '';
   if (pct >= 55) return 'good';
   if (pct <= 45) return 'bad';
   return '';
 }
 
+// CF%/FF% are null for a period with no shot attempts
+// (computePWHLShotStats) -- shown as '—', not 0%.
+const pctOrDash = v => v != null ? `${v}%` : '—';
+
 function getPeriodStats(summary, carAbbr, t) {
   return [
-    { val: `${summary.corsiForPct}%`,                          label: t('periodSummary.stats.corsiForPct', { abbr: carAbbr }),    color: corsiColor(summary.corsiForPct) },
+    { val: pctOrDash(summary.corsiForPct),                     label: t('periodSummary.stats.corsiForPct', { abbr: carAbbr }),    color: corsiColor(summary.corsiForPct) },
     { val: `${summary.carSOG}–${summary.oppSOG}`,              label: t('gameStatsPopup.teamStats.shotsOnGoal') },
-    { val: `${summary.fenwickForPct}%`,                        label: t('periodSummary.stats.fenwickForPct', { abbr: carAbbr }),  color: corsiColor(summary.fenwickForPct) },
+    { val: pctOrDash(summary.fenwickForPct),                   label: t('periodSummary.stats.fenwickForPct', { abbr: carAbbr }),  color: corsiColor(summary.fenwickForPct) },
     { val: summary.carHits,                                    label: t('periodSummary.stats.hits', { abbr: carAbbr }) },
     { val: summary.carFOPct != null ? `${summary.carFOPct}%` : '—', label: t('periodSummary.stats.faceoffWinPct') },
     { val: `${summary.carHDCF ?? 0}–${summary.oppHDCF ?? 0}`, label: t('periodSummary.stats.highDangerChances'),
@@ -366,7 +379,8 @@ function GoalCarousel({ goals, carAbbr }) {
 
 function ShareCanvas({ summary, carAbbr, oppAbbr, isCarHome, canvasRef, cardNarrative }) {
   const { t } = useTranslation();
-  const dominatedBy = summary.corsiForPct >= 55 ? carAbbr
+  const dominatedBy = summary.corsiForPct == null ? null
+    : summary.corsiForPct >= 55 ? carAbbr
     : summary.corsiForPct <= 45 ? oppAbbr : null;
   const carPens = summary.penalties.filter(p => p.isCar).length;
   const oppPens = summary.penalties.filter(p => !p.isCar).length;
@@ -462,7 +476,10 @@ export default function PWHLPeriodSummary({
 
   const xCaption = [
     t('periodSummary.xCaption.line1Pwhl', { period: summary?.periodLabel, abbr: carAbbr, car: carScore ?? '–', opp: oppScore ?? '–', oppAbbr }),
-    t('periodSummary.xCaption.line2Pwhl', { cf: summary?.corsiForPct, carSog: summary?.carSOG, oppSog: summary?.oppSOG, carGoals: summary?.carGoals, oppGoals: summary?.oppGoals }),
+    // Left out with no CF%, as the NHL caption is (PeriodSummary.jsx).
+    summary?.corsiForPct != null
+      ? t('periodSummary.xCaption.line2Pwhl', { cf: summary.corsiForPct, carSog: summary.carSOG, oppSog: summary.oppSOG, carGoals: summary.carGoals, oppGoals: summary.oppGoals })
+      : null,
     summary?.aiNarrative || '',
     '#PWHL #EyeWallAnalytics',
   ].filter(Boolean).join('\n');
@@ -586,11 +603,11 @@ export default function PWHLPeriodSummary({
                     <div className={PS_PERIOD_ROW_BAR_WRAP_CLASSES}>
                       <div
                         className={psPeriodRowBarClasses(ps.corsiForPct)}
-                        style={{ width: `${ps.corsiForPct}%` }}
+                        style={{ width: `${ps.corsiForPct ?? 0}%` }}
                       />
                     </div>
                     <span className={psPeriodRowPctClasses(ps.corsiForPct)}>
-                      {ps.corsiForPct}%
+                      {pctOrDash(ps.corsiForPct)}
                     </span>
                     <span className={PS_PERIOD_ROW_SOG_CLASSES}>{t('periodSummary.sogSuffix', { car: ps.carSOG, opp: ps.oppSOG })}</span>
                   </div>

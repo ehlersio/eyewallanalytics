@@ -123,7 +123,10 @@ function isHighDanger(e) {
 // Shot stats from PWHL events (live shape) for a period, or all when null.
 // SOG counts shot events, goals included (isGoal); the separate goal event
 // isn't counted again. Corsi adds blocked shots (HockeyTech logs no missed
-// shots, so Fenwick is the shots on goal).
+// shots, so Fenwick is the shots on goal). corsiForPct/fenwickForPct are
+// null with no attempts from either side -- there's no share of nothing,
+// and 0% would read as the other team having all of it (advancedStats.js's
+// computeShotAttempts does the same for the NHL).
 export function computePWHLShotStats(events, teamId, period = null) {
   const evts = period != null ? events.filter(e => e.period === period) : events;
 
@@ -143,14 +146,14 @@ export function computePWHLShotStats(events, teamId, period = null) {
     if (isHighDanger(e)) { if (isCar) carHDCF++; else oppHDCF++; }
   }
 
-  const totalCorsi   = carCorsi + oppCorsi || 1;
-  const totalFenwick = carFenwick + oppFenwick || 1;
+  const totalCorsi   = carCorsi + oppCorsi;
+  const totalFenwick = carFenwick + oppFenwick;
 
   return {
     carCorsi, oppCorsi, carFenwick, oppFenwick,
     carSOG, oppSOG, carHDCF, oppHDCF,
-    corsiForPct:   Math.round((carCorsi   / totalCorsi)   * 100),
-    fenwickForPct: Math.round((carFenwick / totalFenwick) * 100),
+    corsiForPct:   totalCorsi   ? Math.round((carCorsi   / totalCorsi)   * 100) : null,
+    fenwickForPct: totalFenwick ? Math.round((carFenwick / totalFenwick) * 100) : null,
   };
 }
 
@@ -344,8 +347,10 @@ export function buildPWHLGameSummary(events, teamId, htSummary, gameId) {
     const ps = computePWHLShotStats(events, teamId, p);
     return { period: p, corsiForPct: ps.corsiForPct, carSOG: ps.carSOG, oppSOG: ps.oppSOG };
   });
-  const bestPeriod  = [...periodStats].sort((a, b) => b.corsiForPct - a.corsiForPct)[0];
-  const worstPeriod = [...periodStats].sort((a, b) => a.corsiForPct - b.corsiForPct)[0];
+  // Only periods with a CF% are ranked; none, no best or worst.
+  const ranked      = periodStats.filter(ps => ps.corsiForPct != null);
+  const bestPeriod  = [...ranked].sort((a, b) => b.corsiForPct - a.corsiForPct)[0] ?? null;
+  const worstPeriod = [...ranked].sort((a, b) => a.corsiForPct - b.corsiForPct)[0] ?? null;
 
   // All goals — enrich from htSummary
   const allHtGoals = (htSummary?.periods || []).flatMap(p => p.goals || []);

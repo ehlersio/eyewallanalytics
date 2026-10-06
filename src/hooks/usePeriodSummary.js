@@ -5,25 +5,10 @@ import { computeShotAttempts } from '../utils/advancedStats';
 import { finalSuffix } from '../utils/scoreboard';
 import { penaltyParties } from '../utils/penaltyText';
 import { withoutShootout, isShootoutPlay, hasShotTracking, nhlPeriodLabel } from '../utils/gamePlays';
-
-const WORKER_URL = typeof import.meta !== 'undefined'
-  ? import.meta.env?.VITE_WORKER_URL
-  : null;
+import { fetchCachedNarrative, nhlNarrativeCacheKey } from '../utils/narrativeCache';
 
 const SESSION_KEY = 'eyewall_period_summaries';
 const GAME_SUMMARY_KEY = 'eyewall_game_summary';
-
-// Fetch a cached narrative from Worker KV — returns string or null
-async function fetchCachedNarrative(gameId, period) {
-  if (!WORKER_URL || !gameId) return null;
-  try {
-    const key = `narrative:${period}:${gameId}`;
-    const res = await fetch(`${WORKER_URL}/cache/${encodeURIComponent(key)}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data?.narrative || null;
-  } catch { return null; }
-}
 
 // Pair a play-by-play goal with its `landing` entry (video clip, assists,
 // headshot). Both feeds give a goal the same eventId -- checked against real
@@ -290,7 +275,9 @@ function isOtherGame(pbp, gameId) {
   return pbp.id != null && String(pbp.id) !== String(gameId);
 }
 
-export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = false }) {
+// carAbbr: the team the game is watched as (a guest team's on a guest
+// view) -- the Worker caches one narrative per team, under its abbr.
+export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, carAbbr, isPlayoff = false }) {
   const [summaries, setSummaries] = useState([]);
   const [newSummary, setNewSummary] = useState(null);
   const lastProcessedPeriod = useRef(0);
@@ -327,10 +314,11 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
       const summary = buildSummary(period, plays, carTeamId, landing, pbp, gameId, isPlayoff);
 
       // Pre-fetch cached narrative from Worker KV — if found, skip the AI loading state
-      const cachedNarrative = await fetchCachedNarrative(gameId, String(period));
-      if (cachedNarrative) {
-        summary.aiNarrative = cachedNarrative;
-        summary.aiLoading   = false;
+      const cached = await fetchCachedNarrative(nhlNarrativeCacheKey(period, gameId, carAbbr));
+      if (cached) {
+        summary.aiNarrative   = cached.narrative;
+        summary.cardNarrative = cached.cardNarrative;
+        summary.aiLoading     = false;
       }
 
       setSummaries(prev => {
@@ -343,7 +331,7 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, isPlayoff = f
     } finally {
       buildingRef.current.delete(period);
     }
-  }, [gameId, carTeamId, pbp, fetchLanding, isPlayoff]);
+  }, [gameId, carTeamId, carAbbr, pbp, fetchLanding, isPlayoff]);
 
   // Live: show each period's summary once its intermission is on. Keyed on
   // "in an intermission for a period not yet summarized", not on catching
@@ -590,13 +578,10 @@ export function useGameSummary({ pbp, _isLive, gameId, carTeamId }) {
       let landing = null;
       try { landing = await getGameLanding(gameId); } catch {}
       const summary = buildGameSummary(plays, carTeamId, landing, pbp, gameId);
-
-      // Pre-fetch cached narrative from Worker KV
-      const cachedNarrative = await fetchCachedNarrative(gameId, 'game');
-      if (cachedNarrative) {
-        summary.aiNarrative = cachedNarrative;
-        summary.aiLoading   = false;
-      }
+      // No Worker KV pre-fetch here, unlike a period's: a game summary
+      // reads the stored one first, in the viewer's language
+      // (PeriodSummary.jsx's generateNarrative), and the KV narrative,
+      // English only, would win over it.
 
       if (gameIdRef.current !== gameId) return;
       setGameSummary(summary);
