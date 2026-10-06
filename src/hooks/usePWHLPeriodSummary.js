@@ -3,7 +3,9 @@
 // Derives period and game summaries from PWHL live/PBP event data.
 // Data sources:
 //   - liveData.events  — normalized events from /pwhl/live/:gameId (live games)
-//   - pbpData.events   — Supabase PBP rows from /pwhl/pbp?gameId= (completed games)
+//   - pbpData          — fetchPWHLPBP's stored rows from /pwhl/pbp?gameId=
+//                        (completed games), turned into the live shape by
+//                        pwhlEventsFromStoredPBP (utils/pwhlStoredPbp.js)
 //   - /pwhl/summary?gameId= — HockeyTech gameSummary for goal enrichment + MVPs
 //
 // PWHL event shape (normalized by Worker):
@@ -12,11 +14,14 @@
 //   penalties: { takenBy: { firstName, lastName }, description, minutes }
 //   faceoffs:  { homeWin: bool, homePlayer, visitingPlayer }
 //   hits:      { player, onPlayer, teamId }
-//   shots:     { teamId, shooter, isGoal, x_norm, y_norm }
+//   shots:     { teamId, shooter, isGoal, x, y (HockeyTech's 600x300 rink) }
+// Every HockeyTech shot event is a shot on goal (blocked ones are
+// blocked_shot), and a goal arrives twice: a shot with isGoal, then a goal.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { finalSuffix } from '../utils/scoreboard';
 import { hockeyTechPenaltyParties } from '../utils/hockeyTechPenalty';
+import { pwhlEventsFromStoredPBP, pwhlSummaryPlayerNames } from '../utils/pwhlStoredPbp';
 
 const WORKER_URL = typeof import.meta !== 'undefined'
   ? import.meta.env?.VITE_WORKER_URL
@@ -97,9 +102,29 @@ function periodShort(p, isPlayoff = false) {
   return p === 5 ? 'SO' : `${p - 3}OT`;
 }
 
-// Compute shot stats from normalized PWHL events for a period (or all).
-// Events use { eventType, teamId, period, x_norm, y_norm, isGoal }
-function computePWHLShotStats(events, teamId, period = null) {
+// A shot's spot in feet (NHL rink coords, the net 89 ft from center): the
+// stored rows carry it as xFeet/yFeet; a live event has HockeyTech's raw
+// 600x300 x/y, converted as PWHLShotMapView's adaptLiveShot does. Null
+// when the event has no location.
+function shotFeet(e) {
+  if (e.xFeet != null && e.yFeet != null) return { x: e.xFeet, y: e.yFeet };
+  if (e.x == null || e.y == null) return null;
+  return { x: (e.x / 600 - 0.5) * 200, y: (e.y / 300 - 0.5) * 85 };
+}
+
+// High danger as the NHL summaries count it (usePeriodSummary.js): within
+// 15 ft of either net.
+function isHighDanger(e) {
+  const f = shotFeet(e);
+  if (!f) return false;
+  return Math.sqrt((Math.abs(f.x) - 89) ** 2 + f.y ** 2) < 15;
+}
+
+// Shot stats from PWHL events (live shape) for a period, or all when null.
+// SOG counts shot events, goals included (isGoal); the separate goal event
+// isn't counted again. Corsi adds blocked shots (HockeyTech logs no missed
+// shots, so Fenwick is the shots on goal).
+export function computePWHLShotStats(events, teamId, period = null) {
   const evts = period != null ? events.filter(e => e.period === period) : events;
 
   let carCorsi = 0, oppCorsi = 0;
@@ -107,32 +132,15 @@ function computePWHLShotStats(events, teamId, period = null) {
   let carSOG = 0, oppSOG = 0;
   let carHDCF = 0, oppHDCF = 0;
 
-  // High danger: attacking zone, close to net
-  // x_norm in [-1,1]: |x| > 0.75 and |y| < 0.35 approximates slot/crease area
-  const isHD = (e) => {
-    const x = e.x_norm ?? e.xNorm ?? null;
-    const y = e.y_norm ?? e.yNorm ?? null;
-    if (x == null || y == null) return false;
-    return Math.abs(x) > 0.75 && Math.abs(y) < 0.35;
-  };
-
   for (const e of evts) {
+    const type = e.eventType;
+    if (type !== 'shot' && type !== 'blocked_shot') continue;
     const isCar = e.teamId === teamId;
-    const type  = e.eventType;
-
-    if (type === 'goal') {
-      isCar ? (carCorsi++, carFenwick++, carSOG++) : (oppCorsi++, oppFenwick++, oppSOG++);
-      if (isHD(e)) isCar ? carHDCF++ : oppHDCF++;
-    } else if (type === 'shot') {
-      if (e.isGoal) {
-        isCar ? (carCorsi++, carFenwick++, carSOG++) : (oppCorsi++, oppFenwick++, oppSOG++);
-      } else {
-        isCar ? (carCorsi++, carFenwick++) : (oppCorsi++, oppFenwick++);
-      }
-      if (isHD(e)) isCar ? carHDCF++ : oppHDCF++;
-    } else if (type === 'blocked_shot') {
-      isCar ? carCorsi++ : oppCorsi++;
+    if (isCar) carCorsi++; else oppCorsi++;
+    if (type === 'shot') {
+      if (isCar) { carFenwick++; carSOG++; } else { oppFenwick++; oppSOG++; }
     }
+    if (isHighDanger(e)) { if (isCar) carHDCF++; else oppHDCF++; }
   }
 
   const totalCorsi   = carCorsi + oppCorsi || 1;
@@ -149,10 +157,62 @@ function computePWHLShotStats(events, teamId, period = null) {
 // Annotate faceoff events with _carWonFO based on homeWin + whether our team is home
 function annotateFaceoffs(events, teamId, homeTeamId) {
   return events.map(e => {
-    if (e.eventType !== 'faceoff') return e;
+    if (e.eventType !== 'faceoff' || e.homeWin == null) return e;
     const carIsHome = homeTeamId === teamId;
     return { ...e, _carWonFO: carIsHome ? e.homeWin : !e.homeWin };
   });
+}
+
+// The game's events in the live shape, faceoffs annotated: the live feed
+// for a live game, the stored rows for a finished one. htSummary only lends
+// the stored rows names they're missing, by player id. Rows for another
+// game (the last one picked, still showing while this one's load) count as
+// none.
+export function pwhlSummaryEvents({ isLive, liveData, pbpData, teamId, gameId = null, htSummary = null }) {
+  const otherGame = !isLive && gameId != null && pbpData?.gameId != null
+    && String(pbpData.gameId) !== String(gameId);
+  const raw = isLive
+    ? (liveData?.events || [])
+    : otherGame ? [] : pwhlEventsFromStoredPBP(pbpData, pwhlSummaryPlayerNames(htSummary));
+  const homeTeamId = isLive
+    ? (liveData?.homeTeamId ?? null)
+    : (pbpData?.homeTeamId ?? pbpData?.home_team_id ?? null);
+  return annotateFaceoffs(raw, teamId, homeTeamId);
+}
+
+// Strength from the summary's goal, else the live event's own flags; the
+// stored rows have neither, so it stays null.
+function goalStrength(ht, e) {
+  if (ht?.properties) {
+    const p = ht.properties;
+    return p.isPowerPlay === '1' ? 'pp'
+      : p.isShortHanded === '1' ? 'sh'
+      : p.isEmptyNet === '1' ? 'en'
+      : 'ev';
+  }
+  if (e?.isPowerPlay == null && e?.isShortHanded == null && e?.isEmptyNet == null) return null;
+  return e.isPowerPlay ? 'pp' : e.isShortHanded ? 'sh' : e.isEmptyNet ? 'en' : 'ev';
+}
+
+// One goal event as the summaries list it, enriched by the matching goal in
+// /pwhl/summary when there is one.
+function pwhlSummaryGoal(e, ht, teamId) {
+  const eventScorer = e.scoredBy
+    ? (`${e.scoredBy.firstName || ''} ${e.scoredBy.lastName || ''}`.trim() || null)
+    : (e.scorerName ?? null);
+  return {
+    isCar:  e.teamId === teamId,
+    period: e.period,
+    time:   e.time || ht?.time || '—',
+    scorerName: ht
+      ? `${ht.scoredBy?.firstName || ''} ${ht.scoredBy?.lastName || ''}`.trim()
+      : eventScorer,
+    scorerHeadshot: ht?.scoredBy?.playerImageURL?.replace('/120x160/', '/240x240/') || null,
+    assists: ht
+      ? (ht.assists || []).map(a => ({ name: { default: `${a.firstName || ''} ${a.lastName || ''}`.trim() } }))
+      : (e.assists || []).map(a => ({ name: { default: `${a.firstName || ''} ${a.lastName || ''}`.trim() } })),
+    strength: goalStrength(ht, e),
+  };
 }
 
 // The team's goalies in net -- in one period, or the whole game when period
@@ -174,8 +234,9 @@ export function pwhlGoaliesInNet(htSummary, teamId, period = null) {
 // usePeriodSummary.js's summaryPenalty shape. A bench penalty's takenBy
 // names no one (see hockeyTechPenalty.js): playerName stays null and
 // teamPenalty/benchMinor say so, with the skater who serves it.
+// A stored row (pwhlStoredPbp.js) brings its parties already worked out.
 export function pwhlSummaryPenalty(e, teamId) {
-  const parties = hockeyTechPenaltyParties(e);
+  const parties = e.parties ?? hockeyTechPenaltyParties(e);
   return {
     period:       e.period,
     time:         e.time || '—',
@@ -185,13 +246,13 @@ export function pwhlSummaryPenalty(e, teamId) {
     teamPenalty:  parties.teamPenalty,
     benchMinor:   parties.benchMinor,
     type:         e.description || null,
-    duration:     e.minutes ?? 2,
+    duration:     e.minutes ?? null,
   };
 }
 
 // ── Build a single period summary ────────────────────────────
 
-function buildPWHLSummary(period, events, teamId, htSummary, gameId, isPlayoff = false) {
+export function buildPWHLSummary(period, events, teamId, htSummary, gameId, isPlayoff = false) {
   const periodEvts = events.filter(e => e.period === period);
   const shots      = computePWHLShotStats(events, teamId, period);
 
@@ -209,26 +270,7 @@ function buildPWHLSummary(period, events, teamId, htSummary, gameId, isPlayoff =
   const htPeriod = htSummary?.periods?.find(p => p.info?.id === period);
   const htGoals  = htPeriod?.goals || [];
 
-  const goals = goalEvts.map((e, i) => {
-    const ht    = htGoals[i] || null;
-    const isCar = e.teamId === teamId;
-    return {
-      isCar,
-      time:       e.time || ht?.time || '—',
-      period,
-      scorerName: ht
-        ? `${ht.scoredBy?.firstName || ''} ${ht.scoredBy?.lastName || ''}`.trim()
-        : (e.scoredBy ? `${e.scoredBy.firstName || ''} ${e.scoredBy.lastName || ''}`.trim() : null),
-      scorerHeadshot: ht?.scoredBy?.playerImageURL?.replace('/120x160/', '/240x240/') || null,
-      assists: (ht?.assists || []).map(a => ({
-        name: { default: `${a.firstName || ''} ${a.lastName || ''}`.trim() },
-      })),
-      strength: ht?.properties?.isPowerPlay    === '1' ? 'pp'
-        : ht?.properties?.isShortHanded  === '1'       ? 'sh'
-        : ht?.properties?.isEmptyNet     === '1'       ? 'en'
-        : 'ev',
-    };
-  });
+  const goals = goalEvts.map((e, i) => pwhlSummaryGoal(e, htGoals[i] || null, teamId));
 
   // Penalties
   const penalties = periodEvts
@@ -293,7 +335,7 @@ function buildPWHLSummary(period, events, teamId, htSummary, gameId, isPlayoff =
 
 // ── Build game summary ────────────────────────────────────────
 
-function buildPWHLGameSummary(events, teamId, htSummary, gameId) {
+export function buildPWHLGameSummary(events, teamId, htSummary, gameId) {
   const shots = computePWHLShotStats(events, teamId);
 
   // Per-period breakdown
@@ -308,25 +350,7 @@ function buildPWHLGameSummary(events, teamId, htSummary, gameId) {
   // All goals — enrich from htSummary
   const allHtGoals = (htSummary?.periods || []).flatMap(p => p.goals || []);
   const goalEvts   = events.filter(e => e.eventType === 'goal');
-  const goals = goalEvts.map((e, i) => {
-    const ht = allHtGoals[i] || null;
-    return {
-      isCar:  e.teamId === teamId,
-      period: e.period,
-      time:   e.time || ht?.time || '—',
-      scorerName: ht
-        ? `${ht.scoredBy?.firstName || ''} ${ht.scoredBy?.lastName || ''}`.trim()
-        : (e.scoredBy ? `${e.scoredBy.firstName || ''} ${e.scoredBy.lastName || ''}`.trim() : null),
-      scorerHeadshot: ht?.scoredBy?.playerImageURL?.replace('/120x160/', '/240x240/') || null,
-      assists: (ht?.assists || []).map(a => ({
-        name: { default: `${a.firstName || ''} ${a.lastName || ''}`.trim() },
-      })),
-      strength: ht?.properties?.isPowerPlay   === '1' ? 'pp'
-        : ht?.properties?.isShortHanded === '1'       ? 'sh'
-        : ht?.properties?.isEmptyNet    === '1'       ? 'en'
-        : 'ev',
-    };
-  });
+  const goals = goalEvts.map((e, i) => pwhlSummaryGoal(e, allHtGoals[i] || null, teamId));
 
   // All penalties
   const penalties = events
@@ -426,18 +450,16 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
     return data;
   }, [gameId]);
 
-  const getEvents = useCallback(() => {
-    const raw        = isLive ? (liveData?.events || []) : (pbpData?.events || []);
-    const homeTeamId = liveData?.homeTeamId ?? pbpData?.home_team_id ?? null;
-    return annotateFaceoffs(raw, teamId, homeTeamId);
-  }, [isLive, liveData, pbpData, teamId]);
+  const getEvents = useCallback(
+    (htSummary = null) => pwhlSummaryEvents({ isLive, liveData, pbpData, teamId, gameId, htSummary }),
+    [isLive, liveData, pbpData, teamId, gameId]);
 
   const buildAndStore = useCallback(async (period, showAsNew = false) => {
     if (buildingRef.current.has(period)) return;
     buildingRef.current.add(period);
     try {
-      const events    = getEvents();
       const htSummary = await getHTSummary();
+      const events    = getEvents(htSummary);
       const summary   = buildPWHLSummary(period, events, teamId, htSummary, gameId, isPlayoff);
 
       setSummaries(prev => {
@@ -493,7 +515,7 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
         buildAndStore(p, false);
       }
     });
-  }, [gameId, isLive, pbpData?.events?.length, buildAndStore, getEvents]);
+  }, [gameId, isLive, pbpData, buildAndStore, getEvents]);
 
   const dismissNewSummary = useCallback(() => setNewSummary(null), []);
 
@@ -534,7 +556,7 @@ export function usePWHLGameSummary({ liveData, pbpData, isLive, gameId, teamId }
   useEffect(() => {
     if (!gameId || builtRef.current) return;
 
-    const events     = isLive ? (liveData?.events || []) : (pbpData?.events || []);
+    const events     = pwhlSummaryEvents({ isLive, liveData, pbpData, teamId, gameId });
     const gameStatus = liveData?.gameStatus || '';
     const isFinal    = gameStatus === 'final' || gameStatus === 'official';
     const hasGoals   = events.some(e => e.eventType === 'goal');
@@ -546,14 +568,13 @@ export function usePWHLGameSummary({ liveData, pbpData, isLive, gameId, teamId }
     builtRef.current = true;
 
     (async () => {
-      const homeTeamId = liveData?.homeTeamId ?? pbpData?.home_team_id ?? null;
-      const annotated  = annotateFaceoffs(events, teamId, homeTeamId);
-      const htSummary  = await fetchHTSummary(gameId);
-      const summary    = buildPWHLGameSummary(annotated, teamId, htSummary, gameId);
+      const htSummary = await fetchHTSummary(gameId);
+      const summary   = buildPWHLGameSummary(
+        pwhlSummaryEvents({ isLive, liveData, pbpData, teamId, gameId, htSummary }), teamId, htSummary, gameId);
       setGameSummary(summary);
       saveStoredGame(gameId, summary);
     })();
-  }, [gameId, isLive, liveData?.gameStatus, liveData?.events?.length, pbpData?.events?.length, teamId]);
+  }, [gameId, isLive, liveData, pbpData, teamId]);
 
   const updateNarrative = useCallback((narrative) => {
     setGameSummary(prev => {
