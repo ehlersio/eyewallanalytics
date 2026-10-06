@@ -348,6 +348,7 @@
     }
   },
   "pwhlLeagueView": {
+    "showingPrevious": "The {{current}} season hasn't started yet — showing {{fallback}}.",
     "standings": {
       "emptyState": "No standings data.",
       "headerTitle": "PWHL League Standings · 3-2-1-0 pts system",
@@ -601,6 +602,7 @@
   },
   "pwhlTeamView": {
     "noTeamSelected": "No PWHL team selected.",
+    "showingPrevious": "{{abbr}} hasn't played a {{current}} game yet — showing {{fallback}}.",
     "tabs": {
       "overview": "Overview",
       "advanced": "Advanced",
@@ -609,6 +611,8 @@
       "salaries": "Salaries"
     },
     "overview": {
+      "noGamesTitle": "No games yet",
+      "noGamesSub": "{{abbr}} hasn't played a {{season}} regular-season game yet.",
       "gfLabel": "GF: {{val}}",
       "gaLabel": "GA: {{val}}",
       "diffSuffix": "{{sign}}{{gd}} diff",
@@ -681,7 +685,8 @@
     "salaries": {
       "noDataTitle": "No salary data",
       "noDataSub": "Run python pwhl_salaries.py to populate.",
-      "summaryTitle": "2025-26 Salary Summary",
+      "summaryTitle": "{{season}} Salary Summary",
+      "showingPrevious": "No {{current}} salaries published yet — showing {{fallback}}.",
       "totalPayroll": "Total Payroll",
       "players": "Players",
       "avgSalary": "Avg Salary",

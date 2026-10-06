@@ -22,6 +22,7 @@ import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 import { streakColor } from '../utils/hockeyTechResults';
+import { summarizeStandings, seasonsWithGames, fallbackSeason, teamHasGames } from '../utils/teamSeasons';
 
 // Tailwind migration (Session 97, Phase 3, sub-PR 1) -- only the small
 // PlayersView.css-owned pieces this file actually uses (.players-tabs/.tab,
@@ -41,6 +42,7 @@ function tabClasses(isActive) {
 const PP_CLOSE_CLASSES = 'pp-close absolute top-3 right-3 w-[28px] h-[28px] rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]'
 const SST_SORT_ICON_CLASSES = 'text-[10px]'
 const SST_HINT_CLASSES = 'text-[10px] text-[color:var(--text-dim)] text-center mt-[6px]'
+const SEASON_NOTE_CLASSES = 'text-[11px] text-[color:var(--text-dim)] italic mt-0 mb-2'
 
 // ── Tailwind class constants -- SHELL + STANDINGS + DRAFT (Phase 4,
 // LeagueView.css sub-PR 1) --
@@ -380,9 +382,33 @@ export default function PWHLLeagueView() {
   const { data: todaysGames, loading: todaysGamesLoading, error: todaysGamesError }
     = usePoll(() => activeTab === 'scoreboard' ? fetchPWHLToday() : Promise.resolve(null), 30000, [activeTab]);
 
-  const { data: standings, loading: standLoading } = useFetch(
-    () => fetchPWHLStandings(season), [season]
-  );
+  // Standings for every regular season the picker could offer, fetched
+  // once (switching chips is then instant): they decide which chips are
+  // offered and which season the tab opens on. From the season flip (~Nov
+  // 20) to the first game (Dec 5) the new current season has no standings,
+  // so the tab opens on the newest season with some instead of an empty
+  // Standings/Bracket/Leaders/Rankings. SEASONS is a live binding
+  // pwhlConfig.js updates, so it's read on every render.
+  const standingsIds = [...new Set([season, PWHL_CURRENT_SEASON, ...SEASONS.map(s => s.id)])].sort((a, b) => a - b);
+  const standingsKey = standingsIds.join(',');
+  const { data: standingsBySeason, loading: standLoading } = useFetch(async () => {
+    const rows = await Promise.all(standingsIds.map(id => fetchPWHLStandings(id)));
+    return Object.fromEntries(standingsIds.map((id, i) => [id, rows[i]]));
+  }, [standingsKey]);
+  const standings = standingsBySeason?.[season] ?? null;
+  const seasonCounts = useMemo(() => standingsBySeason && !standLoading
+    ? Object.fromEntries(Object.entries(standingsBySeason).map(([id, rows]) => [id, summarizeStandings(rows)]))
+    : null, [standingsBySeason, standLoading]);
+  const seasonOptions = seasonsWithGames(SEASONS, seasonCounts);
+  const fallback = fallbackSeason(season, seasonOptions, seasonCounts);
+  useEffect(() => {
+    if (!userPickedSeason.current && seasonCounts && fallback !== season) setSeason(fallback);
+  }, [fallback, season, seasonCounts]);
+  // Shown while the tab is on that fallback: the current season exists but
+  // has no games yet.
+  const openingSeason = fallbackSeason(PWHL_CURRENT_SEASON, seasonOptions, seasonCounts);
+  const showingPrevious = teamHasGames(seasonCounts, PWHL_CURRENT_SEASON) === false
+    && openingSeason !== PWHL_CURRENT_SEASON && season === openingSeason;
   const { data: leaguePlayers, loading: playersLoading } = useFetch(
     () => activeTab === 'leaders' ? fetchPWHLLeaguePlayers(season) : Promise.resolve(null),
     [activeTab, season]
@@ -397,11 +423,18 @@ export default function PWHLLeagueView() {
     <div className={LEAGUE_VIEW_CLASSES}>
       {/* Season picker */}
       <div className={TABS_WRAP_CLASSES} style={{ marginBottom: 8 }}>
-        {SEASONS.map(s => (
+        {seasonOptions.map(s => (
           <button key={s.id} className={tabClasses(season === s.id)}
             onClick={() => handleSeason(s.id)}>{s.label}</button>
         ))}
       </div>
+      {showingPrevious && (
+        <p className={SEASON_NOTE_CLASSES} data-testid="pwhl-league-season-note">
+          {t('pwhlLeagueView.showingPrevious', {
+            current: getPWHLSeasonLabel(PWHL_CURRENT_SEASON), fallback: seasonLabel,
+          })}
+        </p>
+      )}
 
       {/* Tab bar — mirrors NHL */}
       <nav className={LEAGUE_TABS_CLASSES} role="tablist">

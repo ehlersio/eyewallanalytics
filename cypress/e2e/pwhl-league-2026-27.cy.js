@@ -64,3 +64,37 @@ describe('PWHL League — 2026-27 conferences', () => {
     cy.contains('Quarterfinals best-of-3').should('exist')
   })
 })
+
+// From the season flip (~Nov 20) to the first game (Dec 5) season 11 has
+// no standings: the League tab opens on 2025-26 (live Worker), says so, and
+// offers no empty 2026-27 chip.
+describe('PWHL League — 2026-27 before its first game', () => {
+  beforeEach(() => {
+    cy.intercept('GET', '**/config/seasons', {
+      nhl: { seasonId: '20262027' },
+      pwhl: AFTER_SWITCH,
+      ahl: { seasonId: 94, seasonType: 'regular' },
+      echl: { seasonId: 78, seasonType: 'regular' },
+    }).as('seasons')
+    cy.intercept('GET', '**/pwhl/standings?season=11', []).as('standings11')
+    cy.visit('/pwhl/league', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('eyewall:sport', 'pwhl')
+        win.localStorage.setItem('eyewall:pwhl_team', JSON.stringify({ abbr: 'BOS', teamId: 1 }))
+      },
+    })
+    cy.wait('@seasons')
+  })
+
+  it('opens Standings on 2025-26, labelled, with no 2026-27 chip', () => {
+    cy.contains('[role="tab"]', 'Standings').click()
+    cy.wait('@standings11')
+    cy.get('[data-testid="pwhl-league-season-note"]', { timeout: DATA_TIMEOUT })
+      .should('contain', "The 2026-27 season hasn't started yet")
+      .and('contain', 'showing 2025-26')
+    cy.contains('button', /^2025-26$/).should('exist')
+    cy.contains('button', /^2026-27$/).should('not.exist')
+    cy.get('.lv-row', { timeout: DATA_TIMEOUT }).should('have.length.at.least', 8)
+    cy.assertNoErrors()
+  })
+})
