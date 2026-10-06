@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../utils/AuthContext';
+import { isAdminSession } from '../utils/adminApi';
 
 // Tailwind migration (Session 95, Phase 1) -- previously AccountSection.css.
 // Every `var(--text-primary)` below was `var(--text-primary)` in the
@@ -50,9 +52,27 @@ const DELETE_CONFIRM_CLASSES = 'account-delete-confirm flex-1 py-2 px-2.5 rounde
 // States: signed-out row, two-step sign-in (email → check-your-email), and
 // signed-in (avatar + email + Synced badge, then Sign out and Delete account
 // rows; Delete account swaps those two rows for a confirm panel first).
-export default function AccountSection() {
+// onClose: closes the Settings sheet before the Admin row navigates away
+// (SettingsMenu passes its closePanel).
+export default function AccountSection({ onClose }) {
   const { t } = useTranslation();
-  const { user, loading, isAuthenticated, signInWithOtp, signOut, deleteAccount } = useAuth();
+  const navigate = useNavigate();
+  const { user, session, loading, isAuthenticated, signInWithOtp, signOut, deleteAccount } = useAuth();
+  // The Admin health row (/admin/health has no other in-app entry point;
+  // the iOS app has no address bar) shows only once the Worker has said
+  // this session is the owner -- never a dead row for anyone else.
+  const accessToken = session?.access_token || null;
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    if (!accessToken) { setIsAdmin(false); return; }
+    isAdminSession(accessToken).then(ok => { if (!cancelled) setIsAdmin(ok); });
+    return () => { cancelled = true; };
+  }, [accessToken]);
+  const handleOpenAdmin = () => {
+    onClose?.();
+    navigate('/admin/health');
+  };
   const [step, setStep] = useState('idle'); // 'idle' | 'email' | 'sent' | 'confirmDelete'
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
@@ -147,6 +167,13 @@ export default function AccountSection() {
             </div>
           </div>
         ) : (<>
+          {isAdmin && (
+            <button className={`account-admin-row ${ROW_CLASSES} ${ROW_BUTTON_CLASSES}`} onClick={handleOpenAdmin}>
+              <span className={ROW_ICON_CLASSES}>🩺</span>
+              <span className={ROW_LABEL_CLASSES}>{t('account.adminHealth')}</span>
+              <span className={ROW_CHEVRON_CLASSES}>›</span>
+            </button>
+          )}
           <button className={`${ROW_CLASSES} ${ROW_BUTTON_CLASSES}`} onClick={handleSignOut}>
             <span className={ROW_ICON_CLASSES}>↩️</span>
             <span className={`${ROW_LABEL_CLASSES} ${ROW_LABEL_MUTED_CLASSES}`}>{t('account.signOut')}</span>

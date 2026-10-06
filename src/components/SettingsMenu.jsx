@@ -354,7 +354,7 @@ export default function SettingsMenu() {
 
         <section>
           <h2 className={SECTION_LABEL_CLASSES}>{t('settings.account')}</h2>
-          <AccountSection />
+          <AccountSection onClose={closePanel} />
         </section>
       </div>
     </>

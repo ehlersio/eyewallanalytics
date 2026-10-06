@@ -38,6 +38,19 @@ export async function getAdminHealth(accessToken) {
   return adminFetch('/admin/health', accessToken);
 }
 
+// Whether this session is the app owner, as the Worker decides it: true
+// only when /admin/health answers 200. 401 (not the owner), 404 (Worker
+// without the route), network errors and a missing token all mean "no",
+// so a non-owner never sees a dead Admin row in Settings.
+export async function isAdminSession(accessToken) {
+  if (!accessToken) return false;
+  try {
+    return (await getAdminHealth(accessToken)) !== null;
+  } catch {
+    return false;
+  }
+}
+
 const jsonPost = body => ({
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
