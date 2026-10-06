@@ -1038,9 +1038,16 @@ export default function ShotMapView() {
   // A live game always wins regardless of selectedGameId (see activeGame
   // above), and an explicitly-picked historical game keeps using its own
   // pbp — neither of those cases changes here.
-  const rawShotEvents = (isLive || effectiveSelectedGameId || isGuest)
-    ? (pbp ? extractShotEvents(pbp, gameTeam) : [])
-    : (selectionShots || []);
+  // Memoised: the view re-renders every 250ms during a live game (the
+  // clock tick), and extractShotEvents walks every play and builds a
+  // player map each time. A fresh array here also defeated the memos
+  // keyed on it (shotEvents, dangerCounts) and the rink's events prop.
+  const rawShotEvents = useMemo(
+    () => (isLive || effectiveSelectedGameId || isGuest)
+      ? (pbp ? extractShotEvents(pbp, gameTeam) : [])
+      : (selectionShots || []),
+    [isLive, effectiveSelectedGameId, isGuest, pbp, gameTeam, selectionShots]
+  );
 
   // Goal video (discreteClip from landing) only applies to a single selected
   // game's own events, not the "All N" season aggregate — attachGoalVideos
@@ -1049,6 +1056,8 @@ export default function ShotMapView() {
     () => attachGoalVideos(rawShotEvents, gameLanding),
     [rawShotEvents, gameLanding]
   );
+
+  const rinkEvents = useMemo(() => toHockeyRinkEvents(shotEvents), [shotEvents]);
 
   const isAllN = !isLive && !effectiveSelectedGameId && !isGuest;
 
@@ -2464,7 +2473,7 @@ export default function ShotMapView() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div className="card" data-tour="rink">
             <div className="sec-label">{t('shotMapView.boxscore.shotMap')}</div>
-            <HockeyRink events={toHockeyRinkEvents(shotEvents)} teamAbbr={team.abbr} teamColor="var(--team-primary)" renderMedia={renderGoalMedia} />
+            <HockeyRink events={rinkEvents} teamAbbr={team.abbr} teamColor="var(--team-primary)" renderMedia={renderGoalMedia} />
           </div>
 
 
