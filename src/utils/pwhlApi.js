@@ -259,7 +259,7 @@ export async function fetchPWHLLastGame(teamId = PWHL_TEAM_ID, season = PWHL_CUR
 // ── PBP (hits, penalties, faceoffs, goalie changes) ───────────────────────────
 
 /**
- * Returns { events, oppShots, homeTeamId, awayTeamId } or null.
+ * Returns { gameId, events, oppShots, homeTeamId, awayTeamId } or null.
  * events    — PBP events with player_name and team_id resolved by Worker
  * oppShots  — raw shot rows for both teams (for OPP SOG drill-down)
  * homeTeamId / awayTeamId — game team IDs
@@ -271,6 +271,7 @@ export async function fetchPWHLPBP(gameId) {
   // Shape: { events, opp_shots, home_team_id, away_team_id }
   if (data.events) {
     return {
+      gameId,
       events:       Array.isArray(data.events)    ? data.events    : [],
       oppShots:     Array.isArray(data.opp_shots) ? data.opp_shots : [],
       homeTeamId:   data.home_team_id   ?? null,
@@ -281,7 +282,7 @@ export async function fetchPWHLPBP(gameId) {
   }
   // Legacy: flat array (pre-deploy cache hits)
   if (Array.isArray(data)) {
-    return { events: data, oppShots: [], homeTeamId: null, awayTeamId: null, faceoffStats: {}, goalieStats: [] };
+    return { gameId, events: data, oppShots: [], homeTeamId: null, awayTeamId: null, faceoffStats: {}, goalieStats: [] };
   }
   return null;
 }
