@@ -21,6 +21,7 @@ import { formatDate } from '../utils/formatters';
 import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
+import { streakColor } from '../utils/hockeyTechResults';
 
 // Tailwind migration (Session 97, Phase 3, sub-PR 1) -- only the small
 // PlayersView.css-owned pieces this file actually uses (.players-tabs/.tab,
@@ -480,7 +481,7 @@ function L10Dots({ w, otl, l }) {
 }
 
 // ── Standings ─────────────────────────────────────────────────
-function StandingsPanel({ standings, season, loading, myTeamId, myColor }) {
+export function StandingsPanel({ standings, season, loading, myTeamId, myColor }) {
   const { t } = useTranslation();
   const [sortKey, setSortKey] = useState('points');
   const [sortDir, setSortDir] = useState('desc');
@@ -598,8 +599,9 @@ function StandingsPanel({ standings, season, loading, myTeamId, myColor }) {
                       : '—'}
                   </td>
                   <td className={lvTdClasses()} style={{ textAlign: 'center' }}>
+                    {/* The Worker sends 'W', 'L' or 'OT' (an OT/SO-loss streak, amber). */}
                     {row.streakType && row.streakCount
-                      ? <span style={{ color: row.streakType==='W' ? 'var(--green)' : 'var(--red-bright)', fontWeight: 600 }}>
+                      ? <span style={{ color: streakColor(row.streakType), fontWeight: 600 }}>
                           {row.streakType}{row.streakCount}
                         </span>
                       : '—'}

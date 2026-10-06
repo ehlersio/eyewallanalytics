@@ -23,8 +23,10 @@ export function nhlSeasonLabel(season) {
 // — same string shape, so a comparison label reads identically to every
 // other season label in the UI. startYear/seasonType can be null (a season
 // with team_seasons rows that HockeyTech's live bootstrap doesn't currently
-// describe, e.g. PWHL season_id 3 as of Session 64) — falls back to a bare
-// "Season N" rather than showing "undefined-NaN".
+// describe, e.g. PWHL season_id 3 until the Worker listed hidden seasons in
+// 2026-10) — falls back to a bare "Season N" rather than showing
+// "undefined-NaN". PWHL rows from a current Worker carry their own `label`,
+// which normalizeComparisonSeasons() prefers.
 export function pwhlSeasonLabel({ seasonId, seasonType, startYear }) {
   if (!startYear) return `Season ${seasonId}`;
   const base = `${startYear}-${String(startYear + 1).slice(2)}`;
@@ -81,9 +83,12 @@ export function normalizeComparisonSeasons(league, seasons = []) {
     }));
   }
   if (league === 'pwhl') {
+    // The Worker labels PWHL seasons itself since 2026-10 (from each
+    // season's dates and type: "2025-26 Playoffs" for id 9, "2023-24" for
+    // id 1); an older response without `label` is labelled here.
     return seasons.map(s => ({
       value: s.seasonId,
-      label: pwhlSeasonLabel(s),
+      label: s.label || pwhlSeasonLabel(s),
       comparable: s.comparable,
       teamCount: s.teamCount,
       seasonType: s.seasonType,
