@@ -21,8 +21,10 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch, usePoll } from '../hooks/useFetch';
+import { useTeamSeasonGames } from '../hooks/useTeamSeasonGames';
+import { seasonsWithGames, teamHasGames } from '../utils/teamSeasons';
 import { fetchECHLShots, fetchECHLGameShots, fetchECHLSchedule, fetchECHLRoster, fetchECHLTeamSeasonSummary, fetchECHLToday, fetchECHLLive, ECHL_TEAM_CONFIG, ECHL_TEAM_ID } from '../utils/echlApi';
-import { ECHL_CURRENT_SEASON, ECHL_SEASONS, ECHL_REGULAR_SEASONS, ECHL_REGULAR_SEASON_MAP, getECHLTeamConfig, getECHLTeamById } from '../utils/echlConfig';
+import { ECHL_CURRENT_SEASON, ECHL_SEASONS, getECHLTeamConfig, getECHLTeamById } from '../utils/echlConfig';
 import { HockeyRink } from 'react-hockey-rink';
 import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import TeamLogo from '../components/TeamLogo';
@@ -182,10 +184,13 @@ export default function ECHLShotMapView() {
   const isLiveRef = useRef(false);
   const liveInterval = useMemo(() => isLiveRef.current ? 30_000 : 60_000, []);
 
+  // Always the live current season, not the one on screen: the view can
+  // open on an older season (the fallback below), and today's games are
+  // in the current one.
   const { data: todayGames } = usePoll(
-    () => fetchECHLToday(season),
+    () => fetchECHLToday(),
     liveInterval,
-    [season]
+    []
   );
 
   const liveGame = useMemo(() => {
@@ -269,25 +274,31 @@ export default function ECHLShotMapView() {
 
   // ── Empty-season fallback ──────────────────────────────────────
   // ECHL_CURRENT_SEASON is whatever the resolver found data for league-
-  // wide, which for most of the off-season is the playoffs -- and a team
-  // that missed them has no shots in it at all. Landing on a season this
-  // team never played gives a brand-new user an all-zero shot map on the
-  // app's first screen, which is what got the TestFlight build rejected
-  // under 2.1(a) in September 2026.
+  // wide -- a new season before this team's first game, or the playoffs
+  // for a team that missed them -- and landing on a season this team has
+  // no shots in gives a brand-new user an all-zero shot map on the app's
+  // first screen, which is what got the TestFlight build rejected under
+  // 2.1(a) in September 2026.
   //
-  // One hop, not a search: the playoffs' own regular season if that's
-  // where we are, otherwise the newest regular season that isn't the one
-  // we just found empty. If that's empty too, the existing "no shot data"
-  // message is the honest answer and we stop.
+  // The season tabs offer only seasons this team has played games in
+  // (#15/#33: AHL Hamilton has none before 2026-27, ECHL's 2026-27 none
+  // until it starts), and the view opens on the newest of them -- a
+  // regular season first -- when the current one has no games or no shots.
+  // One hop; if there's nothing to hop to, the existing "no shot data"
+  // message is the honest answer.
+  const seasonCounts = useTeamSeasonGames(fetchECHLSchedule, teamId, [ECHL_CURRENT_SEASON, ...ECHL_SEASONS.map(s => s.id)]);
+  const seasonOptions = useMemo(() => seasonsWithGames(ECHL_SEASONS, seasonCounts, { played: true }), [seasonCounts]);
   useEffect(() => {
-    if (userPickedSeason.current || fellBackFrom) return;
-    if (shotsLoading || !shots || shots.length > 0) return;
-    const next = ECHL_REGULAR_SEASON_MAP[season]
-      ?? ECHL_REGULAR_SEASONS.find(s => s.id !== season)?.id;
-    if (!next || next === season) return;
+    if (userPickedSeason.current || fellBackFrom || !seasonCounts) return;
+    const noGames = teamHasGames(seasonCounts, season, { played: true }) === false;
+    const noShots = !shotsLoading && Array.isArray(shots) && shots.length === 0;
+    if (!noGames && !noShots) return;
+    const others = seasonOptions.filter(s => s.id !== season);
+    const next = (others.find(s => s.type === 'regular') ?? others[0])?.id;
+    if (!next) return;
     setFellBackFrom(season);
     setSeason(next);
-  }, [shots, shotsLoading, season, fellBackFrom]);
+  }, [shots, shotsLoading, season, fellBackFrom, seasonCounts, seasonOptions]);
 
   const seasonLabel = id => ECHL_SEASONS.find(s => s.id === id)?.label ?? id;
   const { data: roster } = useFetch(
@@ -416,7 +427,7 @@ export default function ECHLShotMapView() {
       )}
 
       <div className={TABS_WRAP_CLASSES} style={{ marginTop: 0 }}>
-        {ECHL_SEASONS.map(s => (
+        {seasonOptions.map(s => (
           <button key={s.id} className={tabClasses(season === s.id)} onClick={() => handleSeasonPick(s.id)}>{s.label}</button>
         ))}
       </div>

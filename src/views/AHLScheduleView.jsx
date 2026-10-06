@@ -16,6 +16,8 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDate as formatDateIntl } from '../utils/formatters';
 import { useFetch } from '../hooks/useFetch';
+import { useTeamSeasonGames } from '../hooks/useTeamSeasonGames';
+import { seasonsWithGames, fallbackSeason } from '../utils/teamSeasons';
 import { fetchAHLSchedule, AHL_TEAM_CONFIG, AHL_TEAM_ID } from '../utils/ahlApi';
 import { AHL_CURRENT_SEASON, AHL_TEAM_BY_ID, AHL_SEASONS, getAHLTeamById } from '../utils/ahlConfig';
 import { recordAHLOutcome } from '../utils/ahlPredictionStore';
@@ -78,6 +80,18 @@ export default function AHLScheduleView() {
     return () => window.removeEventListener('eyewall:ahl-season-updated', handleSeasonUpdate);
   }, []);
 
+  // Only the seasons this team has games in (#15/#33): AHL Hamilton has
+  // none before 2026-27, and a new season's schedule only arrives once the
+  // pipeline ingests it -- its button appears then, never empty before.
+  // A team with no games in the current season opens on its newest one.
+  const seasonCounts = useTeamSeasonGames(fetchAHLSchedule, teamId, [AHL_CURRENT_SEASON, ...AHL_SEASONS.map(s => s.id)]);
+  const seasonOptions = useMemo(() => seasonsWithGames(AHL_SEASONS, seasonCounts), [seasonCounts]);
+  useEffect(() => {
+    if (userPickedSeason.current || !seasonCounts) return;
+    const pick = fallbackSeason(season, seasonOptions, seasonCounts);
+    if (pick !== season) setSeason(pick);
+  }, [season, seasonOptions, seasonCounts]);
+
   const { data, loading } = useFetch(
     () => teamId ? fetchAHLSchedule(teamId, season) : Promise.resolve(null),
     [teamId, season]
@@ -126,7 +140,7 @@ export default function AHLScheduleView() {
       </div>
 
       <div className={TABS_WRAP_CLASSES}>
-        {AHL_SEASONS.map(s => (
+        {seasonOptions.map(s => (
           <button key={s.id} className={tabClasses(season === s.id)}
             onClick={() => { userPickedSeason.current = true; setSeason(s.id); }}>{s.label}</button>
         ))}
@@ -167,7 +181,7 @@ export default function AHLScheduleView() {
   );
 }
 
-function GameCard({ game: g, teamId, abbr, onClick }) {
+export function GameCard({ game: g, teamId, abbr, onClick }) {
   const { t } = useTranslation();
   const isHome = g.home_team_id === teamId;
   const oppId = isHome ? g.away_team_id : g.home_team_id;
@@ -198,7 +212,7 @@ function GameCard({ game: g, teamId, abbr, onClick }) {
             <span className="text-[22px] font-bold text-[color:var(--text-muted)]">{op ?? '—'}</span>
           </>
         ) : (
-          <span className="text-[14px] text-[color:var(--text-dim)]">{isHome ? t('scheduleView.resultCard.home') : 'vs'}</span>
+          <span className="text-[14px] text-[color:var(--text-dim)]">{isHome ? t('scheduleView.resultCard.home') : t('scheduleView.resultCard.away')}</span>
         )}
         <span className="text-[16px] font-bold text-[color:var(--text-muted)]">{oppAbbr}</span>
         <TeamLogo abbr={oppAbbr} sport="ahl" size={20} />

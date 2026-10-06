@@ -9,7 +9,9 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
-import { fetchAHLPlayers, AHL_TEAM_CONFIG, AHL_TEAM_ID } from '../utils/ahlApi';
+import { useTeamSeasonGames } from '../hooks/useTeamSeasonGames';
+import { seasonsWithGames, fallbackSeason } from '../utils/teamSeasons';
+import { fetchAHLPlayers, fetchAHLSchedule, AHL_TEAM_CONFIG, AHL_TEAM_ID } from '../utils/ahlApi';
 import { AHL_CURRENT_SEASON, AHL_SEASONS } from '../utils/ahlConfig';
 import TeamLogo from '../components/TeamLogo';
 import AHLPlayerPopup from '../components/AHLPlayerPopup';
@@ -129,6 +131,18 @@ export default function AHLPlayersView() {
     setSeason(id);
   }
 
+  // Stats seasons: only those this team has played games in (#15/#33) --
+  // AHL Hamilton has none before 2026-27, and a season that hasn't started
+  // has no stats. A team with none in the current season opens on its
+  // newest one.
+  const seasonCounts = useTeamSeasonGames(fetchAHLSchedule, teamId, [AHL_CURRENT_SEASON, ...AHL_SEASONS.map(s => s.id)]);
+  const seasonOptions = useMemo(() => seasonsWithGames(AHL_SEASONS, seasonCounts, { played: true }), [seasonCounts]);
+  useEffect(() => {
+    if (userPickedSeason.current || !seasonCounts) return;
+    const pick = fallbackSeason(season, seasonOptions, seasonCounts, { played: true });
+    if (pick !== season) setSeason(pick);
+  }, [season, seasonOptions, seasonCounts]);
+
   const { data, loading } = useFetch(
     () => teamId ? fetchAHLPlayers(teamId, season) : Promise.resolve(null),
     [teamId, season]
@@ -195,7 +209,7 @@ export default function AHLPlayersView() {
       {view === 'stats' && (
         <>
           <div className={TABS_WRAP_CLASSES} style={{ marginTop: 0, marginBottom: 0 }}>
-            {AHL_SEASONS.map(s => (
+            {seasonOptions.map(s => (
               <button key={s.id} className={tabClasses(season === s.id)} onClick={() => handleSeasonPick(s.id)}>{s.label}</button>
             ))}
           </div>

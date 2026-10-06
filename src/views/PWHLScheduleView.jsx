@@ -5,6 +5,8 @@ import { formatDate as formatDateIntl } from '../utils/formatters';
 import { PWHLCalendarView } from '../components/PWHLCalendarView';
 import { useNavigate } from 'react-router-dom';
 import { useFetch } from '../hooks/useFetch';
+import { useTeamSeasonGames } from '../hooks/useTeamSeasonGames';
+import { seasonsWithGames, fallbackSeason } from '../utils/teamSeasons';
 import { fetchPWHLSchedule, fetchPWHLTeamRecord, PWHL_TEAM_CONFIG, PWHL_TEAM_ID } from '../utils/pwhlApi';
 import { recordPWHLOutcome } from '../utils/pwhlPredictionStore';
 import {
@@ -131,7 +133,7 @@ export default function PWHLScheduleView() {
 
   const [tab,       setTab]       = useState('Regular Season');
   const [season,    setSeason]    = useState(PWHL_CURRENT_SEASON);
-  const [poSeason,  setPoSeason]  = useState(9); // current playoffs season
+  const [poSeason,  setPoSeason]  = useState(PLAYOFF_SEASONS[0]?.id ?? null);
   const [preSeason, setPreSeason] = useState(PRESEASON_SEASONS[0]?.id ?? null);
   const userPickedPreSeason = useRef(false);
 
@@ -175,7 +177,7 @@ export default function PWHLScheduleView() {
   const { data: regSchedule, loading: regLoading } = useFetch(
     () => teamId ? fetchPWHLSchedule(teamId, season)   : Promise.resolve(null), [teamId, season]);
   const { data: poSchedule,  loading: poLoading  } = useFetch(
-    () => teamId ? fetchPWHLSchedule(teamId, poSeason) : Promise.resolve(null), [teamId, poSeason]);
+    () => teamId && poSeason ? fetchPWHLSchedule(teamId, poSeason) : Promise.resolve(null), [teamId, poSeason]);
   const { data: preSchedule, loading: preLoading } = useFetch(
     () => teamId && preSeason ? fetchPWHLSchedule(teamId, preSeason) : Promise.resolve(null), [teamId, preSeason]);
   // The upcoming season (/config/seasons pwhl.next, e.g. 2026-27 before
@@ -192,14 +194,44 @@ export default function PWHLScheduleView() {
     () => teamId && nextSeason ? fetchPWHLSchedule(teamId, nextSeason.id) : Promise.resolve(null), [teamId, nextSeason?.id]);
   const { data: upcomingPreSchedule } = useFetch(
     () => teamId && upcomingPre ? fetchPWHLSchedule(teamId, upcomingPre.id) : Promise.resolve(null), [teamId, upcomingPre?.id]);
-  const regularOptions = useMemo(() => (
-    nextSeason && nextSchedule?.length > 0 ? [nextSeason, ...REGULAR_SEASONS] : REGULAR_SEASONS
+  // The listed seasons too are offered only where this team has games
+  // (#15): the 2026-27 expansion teams (DET/HAM/LV/SJS) have none before
+  // 2026-27, SEA and VAN none before 2025-26, and a team that missed a
+  // postseason has no playoff games -- a tab with no seasons left isn't
+  // shown at all.
+  const seasonCounts = useTeamSeasonGames(fetchPWHLSchedule, teamId, [
+    PWHL_CURRENT_SEASON,
+    ...[...REGULAR_SEASONS, ...PLAYOFF_SEASONS, ...PRESEASON_SEASONS].map(s => s.id),
+  ]);
+  const regularOptions = useMemo(() => {
+    const listed = seasonsWithGames(REGULAR_SEASONS, seasonCounts);
+    return nextSeason && nextSchedule?.length > 0 ? [nextSeason, ...listed] : listed;
   // liveSeasons is a dep because REGULAR_SEASONS / PRESEASON_SEASONS are
   // live bindings pwhlConfig.js updates when it resolves.
-  ), [nextSeason, nextSchedule, liveSeasons]);
-  const preseasonOptions = useMemo(() => (
-    upcomingPre && upcomingPreSchedule?.length > 0 ? [upcomingPre, ...PRESEASON_SEASONS] : PRESEASON_SEASONS
-  ), [upcomingPre, upcomingPreSchedule, liveSeasons]);
+  }, [nextSeason, nextSchedule, liveSeasons, seasonCounts]);
+  const preseasonOptions = useMemo(() => {
+    const listed = seasonsWithGames(PRESEASON_SEASONS, seasonCounts);
+    return upcomingPre && upcomingPreSchedule?.length > 0 ? [upcomingPre, ...listed] : listed;
+  }, [upcomingPre, upcomingPreSchedule, liveSeasons, seasonCounts]);
+  const playoffOptions = useMemo(() => seasonsWithGames(PLAYOFF_SEASONS, seasonCounts), [liveSeasons, seasonCounts]);
+  // A team with no games in the current season opens on its newest season
+  // with games -- for an expansion team, the upcoming one -- and Playoffs
+  // on the newest postseason it played in.
+  useEffect(() => {
+    if (userPickedSeason.current || !seasonCounts) return;
+    const pick = fallbackSeason(season, regularOptions, seasonCounts);
+    if (pick !== season) setSeason(pick);
+  }, [season, regularOptions, seasonCounts]);
+  const userPickedPoSeason = useRef(false);
+  useEffect(() => {
+    if (userPickedPoSeason.current || !seasonCounts || !playoffOptions.length) return;
+    if (!playoffOptions.some(s => s.id === poSeason)) setPoSeason(playoffOptions[0].id);
+  }, [poSeason, playoffOptions, seasonCounts]);
+  const visibleTabs = [
+    preseasonOptions.length > 0 && 'Preseason',
+    'Regular Season',
+    playoffOptions.length > 0 && 'Playoffs',
+  ].filter(Boolean);
   // A newly offered preseason is the one about to be played: default to
   // it, unless the user already picked one.
   useEffect(() => {
@@ -288,7 +320,7 @@ export default function PWHLScheduleView() {
 
       {/* Tab bar */}
       <div className={SCHED_TABS_CLASSES}>
-        {['Preseason', 'Regular Season', 'Playoffs'].map(tabId => (
+        {visibleTabs.map(tabId => (
           <button key={tabId} className={schedTabClasses(tab === tabId)} onClick={() => setTab(tabId)}>
             {tabId === 'Playoffs' ? t('scheduleView.tabs.playoffs') : tabId === 'Preseason' ? t('scheduleView.tabs.preseason') : t('scheduleView.tabs.regularSeason')}
             {tabId === 'Playoffs' && (poRecord.w + poRecord.otw) > 0 && (
@@ -412,9 +444,9 @@ export default function PWHLScheduleView() {
         <>
           {/* Playoff season picker */}
           <div className={SCHED_TABS_CLASSES} style={{ marginBottom: 4, marginTop: 0 }}>
-            {PLAYOFF_SEASONS.map(s => (
+            {playoffOptions.map(s => (
               <button key={s.id} className={schedTabClasses(poSeason === s.id)}
-                onClick={() => setPoSeason(s.id)}>{s.label}</button>
+                onClick={() => { userPickedPoSeason.current = true; setPoSeason(s.id); }}>{s.label}</button>
             ))}
           </div>
 

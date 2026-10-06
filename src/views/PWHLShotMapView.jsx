@@ -3,6 +3,9 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useFetch, usePoll } from '../hooks/useFetch';
+import { useTeamSeasonGames } from '../hooks/useTeamSeasonGames';
+import { seasonsWithGames, teamHasGames, fallbackSeason } from '../utils/teamSeasons';
+import { pwhlShotMapCounts, dropRepeatedLiveGoals } from '../utils/pwhlShotMapStats';
 import {
   fetchPWHLShots, fetchPWHLRoster, fetchPWHLSchedule, fetchPWHLPBP,
   fetchPWHLToday, fetchPWHLLive, fetchPWHLTeamSeasonSummary,
@@ -11,7 +14,7 @@ import {
 } from '../utils/pwhlApi';
 import {
   PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, isPWHLPlayoffSeason,
-  PWHL_REGULAR_SEASONS as SEASONS,
+  PWHL_REGULAR_SEASONS as SEASONS, PWHL_SEASONS,
   PWHL_PLAYOFF_SEASON_MAP, PWHL_REGULAR_SEASON_MAP,
   getPWHLTeamById, getPWHLSeasonLabel,
 } from '../utils/pwhlConfig';
@@ -1046,10 +1049,13 @@ export default function PWHLShotMapView() {
   const isLiveRef = useRef(false);
   const liveInterval = useMemo(() => isLiveRef.current ? 30_000 : 60_000, []);
 
+  // Always the live current season, not the one on screen: the view can
+  // open on an older season (see the season fallback below), and today's
+  // games are in the current one.
   const { data: todayGames } = usePoll(
-    () => (isDevRoute || devGame) ? Promise.resolve(null) : fetchPWHLToday(season),
+    () => (isDevRoute || devGame) ? Promise.resolve(null) : fetchPWHLToday(),
     liveInterval,
-    [season, !!devGame, isDevRoute]
+    [!!devGame, isDevRoute]
   );
 
   // Find our team's game in progress today, if any
@@ -1418,7 +1424,9 @@ export default function PWHLShotMapView() {
   const liveShotEvents = useMemo(() => {
     if (!isLive || !liveData?.events?.length || !teamId) return [];
     const homeId = liveData.homeTeamId;
-    return liveData.events
+    // Each goal arrives as a shot (isGoal) and again as a goal event --
+    // keep one, or the map draws every goal twice.
+    return dropRepeatedLiveGoals(liveData.events)
       .filter(e => e.eventType === 'shot' || e.eventType === 'blocked_shot' || e.eventType === 'goal')
       .map(ev => {
         const isOurTeam = ev.teamId === teamId;
@@ -1454,6 +1462,29 @@ export default function PWHLShotMapView() {
   // to its regular id purely for highlighting the right chip.
   const seasonType   = isPWHLPlayoffSeason(season) ? 'playoffs' : 'regular';
   const selectedYear = seasonType === 'playoffs' ? PWHL_REGULAR_SEASON_MAP[season] : season;
+
+  // Only seasons this team has played games in (#15): the 2026-27
+  // expansion teams (DET/HAM/LV/SJS) have none before 2026-27, SEA and VAN
+  // none before 2025-26, and a team that missed a postseason has no
+  // playoff games in it. Year chips are the regular seasons it played;
+  // Playoffs is offered only for a year it played playoff games in.
+  // PWHL_SEASONS / SEASONS are live bindings pwhlConfig.js updates, so
+  // they're read on every render, not memoized.
+  const seasonCounts = useTeamSeasonGames(fetchPWHLSchedule, teamId, [PWHL_CURRENT_SEASON, ...PWHL_SEASONS.map(s => s.id)]);
+  const yearOptions = seasonsWithGames(SEASONS, seasonCounts, { played: true });
+  const hasPlayoffGames = regId => teamHasGames(seasonCounts, PWHL_PLAYOFF_SEASON_MAP[regId], { played: true }) === true;
+  const showSeasonTypeToggle = seasonType === 'playoffs' || hasPlayoffGames(selectedYear);
+
+  // A team with no games in the current season (an expansion team before
+  // its first game, or any team before the new season's first game) opens
+  // on its newest season with games instead of an all-zero map.
+  const fallback = fallbackSeason(season, yearOptions, seasonCounts, { played: true });
+  useEffect(() => {
+    if (userPickedSeason.current || !seasonCounts || isLive || fallback === season) return;
+    setSeason(fallback);
+    if (!userPickedGame.current) setSelected(null);
+  }, [fallback, season, seasonCounts, isLive]);
+
   const handleSeasonTypeChange = type => {
     if (type === seasonType) return;
     const nextSeason = type === 'playoffs' ? PWHL_PLAYOFF_SEASON_MAP[season] : PWHL_REGULAR_SEASON_MAP[season];
@@ -1461,9 +1492,10 @@ export default function PWHLShotMapView() {
   };
   // Picking a year chip preserves whichever seasonType is currently active
   // (e.g. picking "2024-25" while viewing Playoffs jumps straight to that
-  // year's playoffs, not back to its regular season).
+  // year's playoffs, not back to its regular season) -- unless the team
+  // played no playoff games that year, then it's that year's regular season.
   const handleYearSelect = regId => {
-    handleSeasonChange(seasonType === 'playoffs' ? (PWHL_PLAYOFF_SEASON_MAP[regId] ?? regId) : regId);
+    handleSeasonChange(seasonType === 'playoffs' && hasPlayoffGames(regId) ? PWHL_PLAYOFF_SEASON_MAP[regId] : regId);
   };
 
   // Roster name map (our team only — used for our shots)
@@ -1530,14 +1562,10 @@ export default function PWHLShotMapView() {
 
   // ── Shot stats ────────────────────────────────────────────────
 
+  // Shots on goal include goals (pwhlShotMapCounts).
   const shotStats = useMemo(() => {
     if (!ourShotEvents.length) return null;
-    const sog     = ourShotEvents.filter(e => e.type === 'shot-on-goal').length;
-    const blocks  = ourShotEvents.filter(e => e.type === 'blocked-shot').length;
-    const goals   = ourShotEvents.filter(e => e.type === 'goal').length;
-    const oppSOG     = oppShotEvents.filter(e => e.type === 'shot-on-goal').length;
-    const oppBlocked = oppShotEvents.filter(e => e.type === 'blocked-shot').length;
-    return { sog, blocks, goals, total: sog + blocks + goals, oppSOG, oppBlocked };
+    return pwhlShotMapCounts(ourShotEvents, oppShotEvents);
   }, [ourShotEvents, oppShotEvents]);
 
   // Danger counts (our shots only)
@@ -1925,8 +1953,8 @@ export default function PWHLShotMapView() {
           {/* Same responsive layout as ShotMapView's selector -- see the
               comment there. */}
           <div className="relative flex flex-col items-end gap-1.5 ml-auto max-[640px]:w-full max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:items-center max-[640px]:justify-end">
-            <SeasonTypeToggle value={seasonType} onChange={handleSeasonTypeChange} />
-            <SeasonChipRow seasons={SEASONS} selected={selectedYear} onSelect={handleYearSelect} className="max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:justify-end max-[640px]:items-center" />
+            {showSeasonTypeToggle && <SeasonTypeToggle value={seasonType} onChange={handleSeasonTypeChange} />}
+            <SeasonChipRow seasons={yearOptions} selected={selectedYear} onSelect={handleYearSelect} className="max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:justify-end max-[640px]:items-center" />
           </div>
         </div>
       </div>
