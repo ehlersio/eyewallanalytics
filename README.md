@@ -63,8 +63,7 @@ canes-analytics-starter/
 ├── functions/                    # Cloudflare Pages Functions (API proxy)
 │   ├── nhl-api/[[path]].js
 │   ├── nhl-stats/[[path]].js
-│   ├── nhl-assets/[[path]].js
-│   └── api/notification.js
+│   └── nhl-assets/[[path]].js
 ├── src/
 │   ├── App.jsx                   # Router, layout, sport context, theme init
 │   ├── views/
