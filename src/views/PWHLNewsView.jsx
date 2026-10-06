@@ -204,7 +204,7 @@ export default function PWHLNewsView() {
                   </div>
                 )}
               </div>
-              <button className={NEWS_REFRESH_BTN_CLASSES} onClick={fetchArticles} disabled={loading}
+              <button className={NEWS_REFRESH_BTN_CLASSES} onClick={() => fetchArticles()} disabled={loading}
                 aria-label={t('newsView.header.refreshAriaLabel')}>
                 {loading ? '…' : '↻'}
               </button>
@@ -238,7 +238,7 @@ export default function PWHLNewsView() {
             <div className={`${NEWS_ERROR_CLASSES} card`}>
               <div className={NEWS_ERROR_ICON_CLASSES}>📰</div>
               <div className={NEWS_ERROR_MSG_CLASSES}>{error}</div>
-              <button className={NEWS_REFRESH_BTN_CLASSES} onClick={fetchArticles}>{t('triviaFeed.error.tryAgain')}</button>
+              <button className={NEWS_REFRESH_BTN_CLASSES} onClick={() => fetchArticles()}>{t('triviaFeed.error.tryAgain')}</button>
             </div>
           )}
 
