@@ -36,6 +36,8 @@ import SeasonTypeToggle from '../components/SeasonTypeToggle';
 import { rinkBtnClasses } from '../utils/rinkBtnClasses';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import { finalSuffix } from '../utils/scoreboard';
+import { penaltyHeadline, penaltyServedBy } from '../utils/penaltyText';
+import { hockeyTechRowPenaltyParties } from '../utils/hockeyTechPenalty';
 // ShotMapView.css import removed (Phase 5, sub-PR 6) -- the file is now
 // fully deleted, every rule migrated to Tailwind across all 6 sub-PRs.
 
@@ -200,7 +202,7 @@ const PEN_ROW_TOP_CLASSES = 'flex items-center gap-2 mb-[3px]';
 const PEN_ROW_BOTTOM_CLASSES = 'flex items-center gap-2';
 const PEN_BADGE_CLASSES = 'text-[10px] font-bold py-0.5 px-[6px] rounded-[4px]';
 const PEN_PERIOD_CLASSES = 'text-[10px] text-[color:var(--text-dim)] ml-auto';
-const PEN_DESC_CLASSES = 'text-[11px] text-[color:var(--text-muted)] capitalize';
+const PEN_DESC_CLASSES = 'text-[11px] text-[color:var(--text-muted)]';
 
 // ── Shot Volume Bar / Advanced Game Panel / Debug panel (Phase 5,
 // ShotMapView.css sub-PR 4) -- duplicated from ShotMapView.jsx per
@@ -1347,9 +1349,12 @@ export default function PWHLShotMapView() {
         secPlayerId   = e.onPlayer?.id ?? null;
         secPlayerName = e.onPlayer ? `${e.onPlayer.firstName} ${e.onPlayer.lastName}`.trim() : null;
       } else if (type === 'penalty') {
-        // penalty: { takenBy, servedBy }
+        // penalty: { takenBy, servedBy } -- secondary is who serves it, as
+        // in the stored rows. A bench penalty's takenBy names no one.
         playerId   = e.takenBy?.id ?? null;
         playerName = e.takenBy ? `${e.takenBy.firstName} ${e.takenBy.lastName}`.trim() : null;
+        secPlayerId   = e.servedBy?.id ?? null;
+        secPlayerName = e.servedBy ? `${e.servedBy.firstName} ${e.servedBy.lastName}`.trim() : null;
       } else if (type === 'faceoff') {
         // faceoff: { homePlayer, visitingPlayer, homeWin }
         // team_id = winner's team ID
@@ -1387,6 +1392,7 @@ export default function PWHLShotMapView() {
         time_seconds:         e.timeSeconds,
         description: e.description ? e.description.replace(/^(?:Ob|Maj|Min|Mis|Gm)-/i, '').replace(/-/g, ' ').trim() : null,
         penalty_minutes:      e.minutes       ?? null,
+        is_bench_penalty:     e.isBench       ?? false,
       };
     });
   }, []);
@@ -1656,13 +1662,20 @@ export default function PWHLShotMapView() {
     } else if (statKey === 'penalties') {
       const carP = pbpStats?.penalties.carRows || [];
       const oppP = pbpStats?.penalties.oppRows || [];
-      const toRows = evs => evs.map(e => ({
-        name:        e.player_name || `#${e.player_id}`,
-        description: e.description ? e.description.replace(/^(?:Ob|Maj|Min|Mis|Gm)-/i, '').replace(/-/g, ' ').trim() : 'Penalty',
-        minutes:     e.penalty_minutes || 2,
-        period:      pLabel(e.period_id),
-        periods: {}, total: 1,
-      }));
+      const toRows = evs => evs.map(e => {
+        // A bench penalty names no one (player_id 0, or an empty takenBy
+        // live), only who serves it -- see hockeyTechPenalty.js. It used to
+        // read "#0".
+        const parties = hockeyTechRowPenaltyParties(e);
+        const desc = e.description ? e.description.replace(/^(?:Ob|Maj|Min|Mis|Gm)-/i, '').replace(/-/g, ' ').trim() : t('periodSummary.penalties.typeFallback');
+        return {
+          name:        penaltyHeadline(parties, t) || (e.player_id ? `#${e.player_id}` : '—'),
+          description: [desc, penaltyServedBy(parties, t)].filter(Boolean).join(' · '),
+          minutes:     e.penalty_minutes || 2,
+          period:      pLabel(e.period_id),
+          periods: {}, total: 1,
+        };
+      });
       setDrill({ label: t('shotMapView.drillTitles.penalties'), type: 'penalties', carRows: toRows(carP), oppRows: toRows(oppP) });
 
     } else if (statKey === 'faceoff') {
