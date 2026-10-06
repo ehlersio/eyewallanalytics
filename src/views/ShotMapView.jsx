@@ -2,14 +2,15 @@ import { lazy, Suspense, useMemo, useState, useCallback, useEffect, useRef } fro
 import { useTranslation } from 'react-i18next';
 import { usePoll, useFetch } from '../hooks/useFetch';
 import {
-  getLiveGame, getAllGames, getGameDetail, getGameBoxscore, getGameRightRail,
+  getAllGames, getGameDetail, getGameBoxscore, getGameRightRail,
   getRecentGames, getPlayoffGames, getScheduleForSeason, extractShotEvents,
   getGameLanding, attachGoalVideos,
   getCarScore, getOppScore, getOpponent, isHomeGame, isCompleted,
   getTeamStats, getTeamPlayoffStats, getTeamSelectionTotals, formatGameDate, getRoster, buildPlayerMap,
-  bustLiveGameCache, bustScheduleCache, withPbpScore, GAME_TYPE, getLeagueTeamAverages,
+  withPbpScore, GAME_TYPE, getLeagueTeamAverages,
 } from '../utils/nhlApi';
-import { livePollInterval, onPushReceived } from '../utils/livePolling';
+import { useLiveGame } from '../hooks/useLiveGame';
+import { LIVE_POLL_MS } from '../utils/liveGameStore';
 import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON, teamTextColor, teamIdInGame } from '../utils/teamConfig';
 import { HockeyRink } from 'react-hockey-rink';
 import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
@@ -563,33 +564,21 @@ export default function ShotMapView() {
   // ── Dev replay injection ──────────────────────────────────────
   const devGame = useDevGame();
 
-  // ── Adaptive polling interval for live game detection ─────────
-  // A ref keeps the last known state, so the interval never depends on
-  // liveGameReal itself; usePoll asks again before every poll, so it
-  // tightens as puck drop nears (utils/livePolling.js). getAllGames covers
-  // both completed and upcoming games — recentGames only returns completed,
-  // so we'd never find a future game time from it.
-  const liveStateRef = useRef({ isLive: false, games: null });
-  const scheduleInterval = useCallback(
-    () => livePollInterval(liveStateRef.current.games, liveStateRef.current.isLive),
-    []
-  );
-
-  // Live game polling — interval adapts to game state
-  const { data: liveGameReal, refetch: refetchLive } = usePoll(() => getLiveGame(team), scheduleInterval);
+  // ── Live game detection ───────────────────────────────────────
+  // The shared live-game poller (utils/liveGameStore.js) the Topbar reads
+  // too: one poll per team however many views show it -- every 10 s
+  // during a game, tightening as puck drop nears otherwise
+  // (utils/livePolling.js), and at once on a push. During a game it also
+  // fetches the live play-by-play, used below.
+  const { game: liveGameReal, pbp: livePbp, refresh: refetchLive } = useLiveGame(team);
   const anyLiveGame = devGame?.liveGame ?? liveGameReal;
   // A guest view follows the game it was opened on and nothing else.
   const liveGame = isGuest && anyLiveGame?.id !== guestGameId ? null : anyLiveGame;
   const isLive   = !!liveGame;
 
-  // All games (completed + scheduled) — used to find next upcoming game time
-  // for the adaptive interval. useFetch fires once; nhlApi.js caches the result.
+  // All games (completed + scheduled). useFetch fires once; nhlApi.js
+  // caches the result.
   const { data: allGames } = useFetch(() => getAllGames(team), [team]);
-
-  // Update liveStateRef whenever live status or schedule changes
-  useEffect(() => {
-    liveStateRef.current = { isLive, games: allGames ?? null };
-  }, [isLive, allGames]);
 
   // Most recent completed game as fallback
   const { data: recentGames } = useFetch(
@@ -830,21 +819,24 @@ export default function ShotMapView() {
   // Determine context of the active game
   const activeIsPlayoff = activeGame?.gameType === GAME_TYPE.PLAYOFFS;
 
-  // Play-by-play for shot map — poll every 20s during live games
+  // Play-by-play for the shot map. During a live game the shared poller
+  // above fetches it every 10 s (busting the cache first), and that copy is
+  // used as soon as it lands. This poll then only reads nhlApi's cached
+  // copy -- no second request -- and keeps the last play-by-play in hand
+  // for the moment the game ends. Otherwise every 5 minutes.
   const gameId = activeGame?.id;
-  const LIVE_POLL_MS = 10_000;
 
   const { data: pbpReal } = usePoll(
     () => {
       if (devGame) return Promise.resolve(null); // dev provides pbp directly
       if (!gameId) return Promise.resolve(null);
-      if (isLive) bustLiveGameCache(gameId, team);
       return getGameDetail(gameId);
     },
     isLive ? LIVE_POLL_MS : 300_000,
     [gameId, isLive, !!devGame]
   );
-  const pbp = devGame?.pbp ?? pbpReal;
+  const livePbpForGame = isLive && livePbp && String(livePbp.id) === String(gameId) ? livePbp : null;
+  const pbp = devGame?.pbp ?? livePbpForGame ?? pbpReal;
 
   // Whether the game on screen is a playoff game -- what OT/2OT/SO labels
   // go by. Not inPlayoffs ("the team has playoff games this season"): a
@@ -1223,8 +1215,6 @@ export default function ShotMapView() {
   const clearHatTrickRef = useRef(null);
   useEffect(() => { clearHatTrickRef.current     = clearHatTrickPopup;}, [clearHatTrickPopup]);
   useEffect(() => { refetchLiveRef.current       = refetchLive;       }, [refetchLive]);
-  const teamRef = useRef(team);
-  useEffect(() => { teamRef.current = team; }, [team]);
 
   // Visibility change — fires when user returns to the app from another tab/app.
   // Refetch live game immediately (browser may have throttled polling while hidden)
@@ -1234,8 +1224,7 @@ export default function ShotMapView() {
       if (document.visibilityState !== 'visible') return;
       // Past the 20s in-memory schedule copy: a game may have gone live
       // while the app was in the background.
-      bustScheduleCache(teamRef.current);
-      refetchLiveRef.current?.();
+      refetchLiveRef.current?.({ bustSchedule: true });
       clearGoalPopupRef.current?.();
       clearPenaltyPopupRef.current?.();
       clearWinPopupRef.current?.();
@@ -1245,12 +1234,8 @@ export default function ShotMapView() {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []); // register once — refs handle stale closure
 
-  // A push just arrived (Game Starting, usually): the poller stamps the
-  // schedule before sending it, so check now rather than at the next poll.
-  useEffect(() => onPushReceived(() => {
-    bustScheduleCache(teamRef.current);
-    refetchLiveRef.current?.();
-  }), []);
+  // A push (Game Starting, usually) re-checks at once: the shared poller
+  // listens for it (utils/liveGameStore.js).
 
   // ── Period summaries ──────────────────────────────────────────
   const { summaries: periodSummaries, newSummary, dismissNewSummary, updateSummaryNarrative, requestSummary } =

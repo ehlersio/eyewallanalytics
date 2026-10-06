@@ -96,7 +96,7 @@ canes-analytics-starter/
 │   │   ├── DevDraftView.jsx            # Dev-only draft simulator (/dev/draft)
 │   │   └── DevShareCardsView.jsx       # Dev-only gallery of every share card with sample data (/dev/share-cards) — flags any card whose content overflows the frame; Export PNG runs the real share render path
 │   ├── components/
-│   │   ├── Topbar.jsx/.css             # Live score, countdown clock, sport switcher
+│   │   ├── Topbar.jsx/.css             # Live score, countdown clock, sport switcher. The live score comes from hooks/useLiveGame.js (the shared poller ShotMapView reads too)
 │   │   ├── BottomNav.jsx               # Sport-aware bottom navigation
 │   │   ├── TeamPicker.jsx              # Sport + team selection (NHL + PWHL); active/expansion PWHL split derives from comingSoon (fixed 2026-07 — used to be a 2nd hardcoded list, ignored comingSoon entirely)
 │   │   ├── (season shot map rink)      # Was IceRink.jsx — extracted to the standalone `react-hockey-rink` npm package (github.com/ehlersio/react-hockey-rink) and deleted from this tree. App-side integration: `src/utils/hockeyRinkEvents.js` adapts this app's `isCanes`-boolean event shape to the package's `team: 'primary'|'opponent'` schema at each call site; `src/index.css` aliases the package's `--rink-*` CSS tokens onto this app's own theme-reactive tokens so light/dark mode and the live team color both still apply with zero drift. `RinkMarkings` + the `W`/`H`/`CX`/`CY` coordinate constants are named exports from the package — still the single source of truth for rink geometry, also consumed by LiveEventRink.jsx
@@ -164,13 +164,15 @@ canes-analytics-starter/
 │   │   └── ECHLCalendarView.jsx        # ECHL monthly schedule grid — port of AHLCalendarView.jsx
 │   ├── hooks/
 │   │   ├── useFetch.js                 # Data fetching + polling (cache: no-store)
+│   │   ├── useLiveGame.js              # A team's live game + its play-by-play from utils/liveGameStore.js (Topbar, ShotMapView)
 │   │   ├── usePushNotifications.js
 │   │   ├── usePeriodSummary.js
-│   │   ├── useLiveGoalReplay.js        # Feeds the live rink the most recent goal's NHL EDGE tracking, as soon as the NHL publishes it (median ~4 min after the goal, measured; max ~12 min). Rides ShotMapView's existing 10s play-by-play poll rather than adding a poller, and asks the Worker at most once a minute per goal (matching its TTL_MISSING), giving up after 15 min. Fetches BEFORE offering the control, so the control is never a dead option and playback starts instantly. Decision logic in utils/liveGoalReplay.js
+│   │   ├── useLiveGoalReplay.js        # Feeds the live rink the most recent goal's NHL EDGE tracking, as soon as the NHL publishes it (median ~4 min after the goal, measured; max ~12 min). Rides the live play-by-play ShotMapView already gets every 10 s (utils/liveGameStore.js) rather than adding a poller, and asks the Worker at most once a minute per goal (matching its TTL_MISSING), giving up after 15 min. Fetches BEFORE offering the control, so the control is never a dead option and playback starts instantly. Decision logic in utils/liveGoalReplay.js
 │   │   ├── useWakeLock.js
 │   │   └── useReadState.js             # Unseen-content badges for News/Milestones/Trivia tabs + BottomNav's combined dot (Session 92) — local-only, boolean-only; reuses SportContext.jsx's window.CustomEvent cross-component convention rather than a new Context
 │   └── utils/
 │       ├── nhlApi.js                   # NHL API calls + KV caching
+│       ├── liveGameStore.js            # One live-game poller per team, reference-counted: the first subscriber starts it, the last stops it. 10 s during a game (busts and fetches the play-by-play; the box score is busted for ShotMapView's own poll), livePollInterval() otherwise, at once on a push. Replaced separate Topbar and ShotMapView polls that busted each other's caches, the schedule included, every tick (audit 2026-10-06 §6)
 │       ├── pwhlApi.js                  # PWHL Worker API calls
 │       ├── retryFetch.js               # fetch() with a per-attempt time budget and one retry on a *thrown* fetch (timeout/network), not on an HTTP status. Used by every Worker read helper: nhlApi/pwhlApi/ahlApi/echlApi/supabaseClient/playerSearch. Deliberately NOT nhlApi's kvFetch (its short budget exists to fail fast and fall through to the NHL API) and not the supabase-js writes in triviaAnswers/favoriteTeamSync/localeSync
 │       ├── unitsConfig.js              # Imperial or metric (`eyewall:units`): follows the language (metric in French) until the user picks in Settings; hooks/useUnits.js re-renders on either change

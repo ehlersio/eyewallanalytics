@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getLiveGame, getAllGames, getCarScore, getOppScore, getOpponent, getGameDetail, bustLiveGameCache, bustScheduleCache, withPbpScore } from '../utils/nhlApi';
-import { livePollInterval, onPushReceived } from '../utils/livePolling';
+import { getCarScore, getOppScore, getOpponent, withPbpScore } from '../utils/nhlApi';
+import { useLiveGame } from '../hooks/useLiveGame';
 import { teamTextColor } from '../utils/teamConfig';
 import TeamLogo from './TeamLogo';
 import { TEAM_CONFIG } from '../utils/nhlApi';
@@ -13,9 +13,9 @@ import NotificationsBell from './NotificationsBell';
 import TeamSwitcher from './TeamSwitcher';
 import PlayerSearch from './PlayerSearch';
 
-const POLL_LIVE_MS = 10_000;      // 10s — matches ShotMapView
-// No game live: as often as the shot map checks (utils/livePolling.js) --
-// a flat 5 minutes here left the score chip that far behind puck drop.
+// The live score comes from the shared live-game poller
+// (utils/liveGameStore.js), the same one the shot map reads: every 10 s
+// during a game, livePollInterval() otherwise, and at once on a push.
 
 // Tailwind migration (Session 95, Phase 1) -- previously Topbar.css.
 // .topbar and .topbar-no-live are kept as literal marker strings alongside
@@ -68,57 +68,48 @@ export default function Topbar() {
   const { t } = useTranslation();
   const { sport } = useSport();
   const pollNhl = pollsNhlLive(sport);
-  const [liveGame,    setLiveGame]    = useState(null);
-  const [liveMeta,    setLiveMeta]    = useState(null);
   const [displayClock, setDisplayClock] = useState(null);
   const [clockRunning, setClockRunning] = useState(true);
   const [momentum,    setMomentum]    = useState(null);
   const [mockLiveGame, setMockLiveGame] = useState(null);
 
-  const intervalRef  = useRef(null);
   const clockRef     = useRef(null);
 
   // Clock display is derived from shared liveClockStore — no local countdown needed
 
-  // ── Live poll ───────────────────────────────────────────────
-  function scheduleNext(isLive, games) {
-    clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(checkLive, isLive ? POLL_LIVE_MS : livePollInterval(games, false));
-  }
+  // ── Live game ───────────────────────────────────────────────
+  // Only NHL routes follow the NHL favourite's live game. No end-of-season
+  // cutoff: a hardcoded `SEASON_END = 2026-07-01` here (from the first
+  // commit, never moved) once switched the poll off for good on that date.
+  // The idle interval (up to 30min) is cheap enough to leave running
+  // year-round. A push (Game Starting, usually) re-checks at once -- the
+  // store handles that.
+  const { game: storeGame, pbp } = useLiveGame(TEAM_CONFIG, pollNhl);
+  // Score from pbp, as the shot map's score bar does -- the store hands
+  // over the game and its play-by-play together, so the chip never
+  // flashes the schedule's older score first.
+  const liveGame = storeGame ? withPbpScore(storeGame, pbp) : null;
+  const pbpForGame = storeGame && pbp && String(pbp.id) === String(storeGame.id) ? pbp : null;
+  const liveMeta = pbpForGame ? { period: pbpForGame.periodDescriptor, clock: pbpForGame.clock } : null;
 
-  async function checkLive() {
-    try {
-      const game = await getLiveGame();
-      if (!game?.id) setLiveGame(game);
-      if (game?.id) {
-        bustLiveGameCache(game.id); // bypass module cache
-        const pbp = await getGameDetail(game.id).catch(() => null);
-        // Score from pbp, as the shot map's score bar does -- set once, so
-        // the chip never flashes the schedule's older score first.
-        setLiveGame(withPbpScore(game, pbp));
-        if (pbp) {
-          setLiveMeta({ period: pbp.periodDescriptor, clock: pbp.clock });
-          // Publish clock — fall back to raw string if structured data missing
-          const tr = pbp.clock?.timeRemaining;
-          if (tr) {
-            publishClock(tr, pbp.clock.inIntermission, pbp.clock.running !== false);
-          } else if (pbp.clock?.secondsRemaining != null) {
-            // Some API responses use secondsRemaining instead
-            const sec = pbp.clock.secondsRemaining;
-            const mm = String(Math.floor(sec / 60)).padStart(2, '0');
-            const ss = String(sec % 60).padStart(2, '0');
-            publishClock(`${mm}:${ss}`, pbp.clock.inIntermission, pbp.clock.running !== false);
-          }
-        }
-      } else {
-        setLiveMeta(null);
-        setDisplayClock(null);
-        if (clockRef.current) clearInterval(clockRef.current);
-      }
-      // getLiveGame() just read the schedule, so this is its cached copy.
-      scheduleNext(!!game, game ? null : await getAllGames().catch(() => null));
-    } catch { /* ignore */ }
-  }
+  // Publish clock — fall back to raw string if structured data missing
+  useEffect(() => {
+    if (!pbpForGame) return;
+    const tr = pbpForGame.clock?.timeRemaining;
+    if (tr) {
+      publishClock(tr, pbpForGame.clock.inIntermission, pbpForGame.clock.running !== false);
+    } else if (pbpForGame.clock?.secondsRemaining != null) {
+      // Some API responses use secondsRemaining instead
+      const sec = pbpForGame.clock.secondsRemaining;
+      const mm = String(Math.floor(sec / 60)).padStart(2, '0');
+      const ss = String(sec % 60).padStart(2, '0');
+      publishClock(`${mm}:${ss}`, pbpForGame.clock.inIntermission, pbpForGame.clock.running !== false);
+    }
+  }, [pbpForGame]);
+
+  useEffect(() => {
+    if (!storeGame) setDisplayClock(null);
+  }, [storeGame]);
 
   // Tick from shared clock store — same source as ShotMapView, guaranteed in sync
   useEffect(() => {
@@ -158,23 +149,6 @@ export default function Topbar() {
     const unsub = subscribeMockLiveGame(game => setMockLiveGame(game));
     return unsub;
   }, []);
-
-  useEffect(() => {
-    if (!pollNhl) return; // only NHL routes follow the NHL favourite's live game
-    // No end-of-season cutoff: a hardcoded `SEASON_END = 2026-07-01` here
-    // (from the first commit, never moved) switched this poll off for good
-    // on that date, so the live score chip never showed again -- not in the
-    // 2026 preseason, and it wouldn't have in the regular season either.
-    // The idle interval (up to 30min) is cheap enough to leave running year-round.
-    checkLive();
-    // A push just arrived (Game Starting, usually) -- check now.
-    const offPush = onPushReceived(() => { bustScheduleCache(); checkLive(); });
-    return () => {
-      offPush();
-      clearInterval(intervalRef.current);
-      clearInterval(clockRef.current);
-    };
-  }, [pollNhl]);
 
   const activeLiveGame = mockLiveGame || liveGame;
   const opp      = activeLiveGame ? getOpponent(activeLiveGame) : null;
