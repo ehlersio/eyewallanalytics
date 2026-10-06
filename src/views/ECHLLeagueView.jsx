@@ -13,6 +13,7 @@ import TeamLogo from '../components/TeamLogo';
 import ECHLPlayerPopup from '../components/ECHLPlayerPopup';
 import Scoreboard from '../components/Scoreboard';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
+import { streakColor } from '../utils/hockeyTechResults';
 
 const LEAGUE_VIEW_CLASSES = 'league-view flex flex-col pt-[14px] px-[14px]';
 const LEAGUE_CONTENT_CLASSES = 'league-content pb-6';
@@ -174,7 +175,7 @@ function StandingsPanel({ standings, loading, myTeamId }) {
                       <td className={lvTdClasses()}>{row.goals_against ?? '—'}</td>
                       <td className={lvTdClasses()} style={{ textAlign: 'center' }}>
                         {row.streakType && row.streakCount
-                          ? <span style={{ color: row.streakType === 'W' ? 'var(--green)' : 'var(--red-bright)', fontWeight: 600 }}>{row.streakType}{row.streakCount}</span>
+                          ? <span style={{ color: streakColor(row.streakType), fontWeight: 600 }}>{row.streakType}{row.streakCount}</span>
                           : '—'}
                       </td>
                     </tr>

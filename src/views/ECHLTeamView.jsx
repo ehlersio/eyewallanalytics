@@ -18,6 +18,7 @@ import {
 } from '../utils/echlApi';
 import { ECHL_SEASONS, ECHL_PLAYOFF_SEASON_MAP, ECHL_REGULAR_SEASON_MAP, isECHLPlayoffSeason } from '../utils/echlConfig';
 import { useSport } from '../utils/SportContext';
+import { gameResultFor, currentStreak, pointsPct, streakColor } from '../utils/hockeyTechResults';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
 import TeamComparisonPopup from '../components/TeamComparisonPopup';
@@ -326,20 +327,14 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
   }, [goalies, teamRow]);
 
 
-  // ECHL's game_log has no ot/shootout boolean columns (see echl.js's
-  // docstring, same as AHL) -- every non-win here counts as a plain loss.
+  // ended_in splits OT/SO losses from regulation ones (utils/hockeyTechResults.js).
   const last5 = useMemo(() => {
     if (!schedule?.length || !teamId) return [];
     return [...schedule]
       .filter(g => g.game_state === 'Final')
       .sort((a,b) => b.game_id - a.game_id)
       .slice(0, 5)
-      .map(g => {
-        const isHome = g.home_team_id === teamId;
-        const my     = isHome ? g.home_score : g.away_score;
-        const op     = isHome ? g.away_score : g.home_score;
-        return { won: my > op };
-      });
+      .map(g => gameResultFor(g, teamId));
   }, [schedule, teamId]);
 
   return (
@@ -379,11 +374,11 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
                 width: 36, height: 36, borderRadius: 6,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700,
-                background: g.won ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.12)',
-                color: g.won ? 'var(--green)' : 'var(--red-bright)',
-                border: `0.5px solid ${g.won ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)'}`,
+                background: g.won ? 'rgba(74,222,128,0.15)' : g.result === 'OTL' ? 'rgba(240,160,48,0.15)' : 'rgba(248,113,113,0.12)',
+                color: g.won ? 'var(--green)' : g.result === 'OTL' ? 'var(--amber)' : 'var(--red-bright)',
+                border: `0.5px solid ${g.won ? 'rgba(74,222,128,0.3)' : g.result === 'OTL' ? 'rgba(240,160,48,0.3)' : 'rgba(248,113,113,0.3)'}`,
               }}>
-                {g.won ? 'W' : 'L'}
+                {g.won ? 'W' : 'L'}{g.endedIn ? `/${g.endedIn}` : ''}
               </div>
             ))}
           </div>
@@ -552,24 +547,22 @@ function SplitsTab({ schedule, poSchedule, teamId, loading, inPlayoffs }) {
   const { t } = useTranslation();
   const [showPO, setShowPO] = React.useState(false);
 
-  // ECHL schedule rows have no ot/shootout boolean columns (see echl.js's
-  // docstring, same as AHL) -- every non-win counts as a plain loss.
-  function calcSplits(sched) {
+  // An OT/SO loss is worth a point in the regular season (W–L–OTL,
+  // Pts% = (2W + OTL) / 2GP); in the playoffs it's just a loss.
+  function calcSplits(sched, isPlayoffs = false) {
     if (!sched?.length || !teamId) return null;
     const final = sched.filter(g => g.game_state === 'Final');
     function calc(games) {
-      let w=0, l=0, gf=0, ga=0;
+      let w=0, l=0, otl=0, gf=0, ga=0;
       for (const g of games) {
-        const isHome  = g.home_team_id === teamId;
-        const my      = isHome ? g.home_score : g.away_score;
-        const op      = isHome ? g.away_score : g.home_score;
-        gf += my??0; ga += op??0;
-        if (my > op) w++; else l++;
+        const r = gameResultFor(g, teamId);
+        gf += r.my??0; ga += r.op??0;
+        if (r.won) w++; else if (r.result === 'OTL' && !isPlayoffs) otl++; else l++;
       }
       const n = games.length || 1;
-      return { w, l, gf, ga, gp: games.length,
+      return { w, l, otl, gf, ga, gp: games.length,
         gfpg: gf/n, gapg: ga/n,
-        ptsPct: (w*2)/(games.length*2||1) };
+        ptsPct: pointsPct({ w, otl, gp: games.length }) };
     }
     return {
       home: calc(final.filter(g => g.home_team_id === teamId)),
@@ -578,14 +571,15 @@ function SplitsTab({ schedule, poSchedule, teamId, loading, inPlayoffs }) {
   }
 
   const regSplits = useMemo(() => calcSplits(schedule),   [schedule, teamId]);
-  const poSplits  = useMemo(() => calcSplits(poSchedule), [poSchedule, teamId]);
+  const poSplits  = useMemo(() => calcSplits(poSchedule, true), [poSchedule, teamId]);
   const splits    = showPO ? poSplits : regSplits;
 
   function fmt(v, dec=2)  { return v == null ? '—' : Number(v).toFixed(dec); }
   function fmtPct(v)      { return v == null ? '—' : `${(v*100).toFixed(1)}%`; }
 
   function SplitRow({ label, hVal, aVal, better='higher', fmtFn }) {
-    const fn = fmtFn || (v => fmt(v));
+    // A side with no games reads '—', not "null" / "+null".
+    const fn = (v) => (v == null ? '—' : (fmtFn || (x => fmt(x)))(v));
     if (hVal == null && aVal == null) return null;
     const hBetter = hVal != null && aVal != null
       ? (better === 'higher' ? hVal >= aVal : hVal <= aVal) : false;
@@ -634,11 +628,11 @@ function SplitsTab({ schedule, poSchedule, teamId, loading, inPlayoffs }) {
           </div>
           <div className={SPLIT_ADV_ROW_CLASSES} style={{ fontWeight:700, fontSize:14 }}>
             <span className={splitAdvValClasses(false, false)}>
-              {splits.home.gp ? `${splits.home.w}–${splits.home.l}` : '—'}
+              {splits.home.gp ? (showPO ? `${splits.home.w}–${splits.home.l}` : `${splits.home.w}–${splits.home.l}–${splits.home.otl}`) : '—'}
             </span>
-            <span className={SPLIT_ADV_LABEL_CLASSES} style={{ color:'var(--text-dim)', fontSize:11 }}>W–L</span>
+            <span className={SPLIT_ADV_LABEL_CLASSES} style={{ color:'var(--text-dim)', fontSize:11 }}>{showPO ? 'W–L' : 'W–L–OTL'}</span>
             <span className={splitAdvValClasses(false, true)}>
-              {splits.away.gp ? `${splits.away.w}–${splits.away.l}` : '—'}
+              {splits.away.gp ? (showPO ? `${splits.away.w}–${splits.away.l}` : `${splits.away.w}–${splits.away.l}–${splits.away.otl}`) : '—'}
             </span>
           </div>
           <SplitRow label="GP"     hVal={splits.home.gp||null}    aVal={splits.away.gp||null}    fmtFn={v=>String(v)} />
@@ -663,13 +657,7 @@ function TrendsTab({ schedule, teamId, loading }) {
     return [...schedule]
       .filter(g => g.game_state === 'Final')
       .sort((a,b) => a.game_id - b.game_id)
-      .map(g => {
-        const isHome = g.home_team_id === teamId;
-        const my     = isHome ? g.home_score : g.away_score;
-        const op     = isHome ? g.away_score : g.home_score;
-        const won    = my > op;
-        return { won, my, op, result: won ? 'W' : 'L', game_id: g.game_id };
-      });
+      .map(g => ({ ...gameResultFor(g, teamId), game_id: g.game_id }));
   }, [schedule, teamId]);
 
   if (loading) return (
@@ -700,16 +688,13 @@ function TrendsTab({ schedule, teamId, loading }) {
     return parseFloat((w.reduce((s,x) => s+x.op, 0) / w.length).toFixed(1));
   });
 
-  let streak = 0, streakType = '';
-  for (let i = gameLog.length-1; i >= 0; i--) {
-    const g = gameLog[i];
-    if (i === gameLog.length-1) { streakType = g.won ? 'W' : 'L'; streak = 1; }
-    else if ((g.won && streakType === 'W') || (!g.won && streakType === 'L')) streak++;
-    else break;
-  }
+  // OT/SO losses form their own 'OT' streak (utils/hockeyTechResults.js).
+  const { type: streakType, count: streak } = currentStreak(gameLog.map(g => g.result));
 
   const last10   = gameLog.slice(-10);
   const last10W  = last10.filter(g => g.won).length;
+  const last10L  = last10.filter(g => g.result === 'L').length;
+  const last10OTL = last10.filter(g => g.result === 'OTL').length;
   const display  = gameLog.slice(-20);
   const rollDisp = rolling.slice(-20);
   const gfDisp   = rollingGF.slice(-20);
@@ -722,17 +707,17 @@ function TrendsTab({ schedule, teamId, loading }) {
         <div className={TRENDS_QUICK_CLASSES}>
           <div className={TQ_ITEM_CLASSES}>
             <div className={TQ_LABEL_CLASSES}>{t('team.currentStreak')}</div>
-            <div className={TQ_VAL_CLASSES} style={{ color: streakType === 'W' ? 'var(--green)' : 'var(--red-bright)' }}>
+            <div className={TQ_VAL_CLASSES} style={{ color: streakColor(streakType) }}>
               {streakType}{streak}
             </div>
           </div>
           <div className={TQ_ITEM_CLASSES}>
             <div className={TQ_LABEL_CLASSES}>{t('team.last10Games')}</div>
-            <div className={TQ_VAL_CLASSES}>{last10W}–{10-last10W}</div>
+            <div className={TQ_VAL_CLASSES}>{last10W}–{last10L}–{last10OTL}</div>
           </div>
           <div className={TQ_ITEM_CLASSES}>
             <div className={TQ_LABEL_CLASSES}>{t('echlTeamView.trends.winPctL10')}</div>
-            <div className={TQ_VAL_CLASSES}>{Math.round(last10W/10*100)}%</div>
+            <div className={TQ_VAL_CLASSES}>{Math.round(last10W/last10.length*100)}%</div>
           </div>
         </div>
       </div>
@@ -742,9 +727,9 @@ function TrendsTab({ schedule, teamId, loading }) {
         <div className={RESULT_DOTS_CLASSES}>
           {display.map((g, i) => (
             <div key={i}
-              className={resultDotClasses(g.won ? 'w' : 'l')}
+              className={resultDotClasses(g.result === 'OTL' ? 'otl' : g.won ? 'w' : 'l')}
               title={t('echlTeamView.trends.simpleDotTooltip', { result: g.result, my: g.my, op: g.op })}>
-              {g.result}
+              {g.result === 'OTL' ? 'O' : g.result}
             </div>
           ))}
         </div>
