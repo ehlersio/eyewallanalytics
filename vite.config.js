@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { readFileSync } from 'node:fs'
@@ -7,10 +7,7 @@ import { readFileSync } from 'node:fs'
 // .github/workflows/version.yml -- shown in the About popup.
 const APP_VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version
 
-export default defineConfig(({ mode }) => {
-  // Load .env, .env.local etc — exposes VITE_ prefixed vars to Node at config time
-  const env = loadEnv(mode, process.cwd(), '')
-
+export default defineConfig(() => {
   return {
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION),
@@ -41,26 +38,6 @@ export default defineConfig(({ mode }) => {
         changeOrigin: true,
         followRedirects: true,
         rewrite: (path) => path.replace(/^\/nhl-assets/, ''),
-      },
-      // Proxy Claude API — injects API key server-side, never in client bundle
-      '/anthropic': {
-        target: 'https://api.anthropic.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/anthropic/, ''),
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            const key = env.VITE_ANTHROPIC_API_KEY;
-            if (key) {
-              proxyReq.setHeader('x-api-key', key);
-              proxyReq.setHeader('anthropic-version', '2023-06-01');
-              // Required when request originates from a browser Origin
-              proxyReq.setHeader('anthropic-dangerous-direct-browser-access', 'true');
-              // Remove Origin so Anthropic doesn't treat this as a CORS request
-              proxyReq.removeHeader('origin');
-              proxyReq.removeHeader('referer');
-            }
-          });
-        },
       },
     },
   },
