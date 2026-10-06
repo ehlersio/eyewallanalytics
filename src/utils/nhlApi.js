@@ -492,15 +492,39 @@ async function _getStandings() {
   // Try Worker KV first
   const kv = await kvFetch('standings');
   if (kv) return kv;
-  // standings/now redirects to a dated URL which breaks the proxy (CORS on redirect).
-  // Use the final regular-season date directly — avoids the redirect entirely.
-  // Try most recent season end first, then fall back.
-  const dates = ['2026-04-18', '2026-04-17', '2026-04-16', '2025-04-18'];
-  for (const date of dates) {
-    const data = await nhlFetch(`${BASE}/standings/${date}`);
-    if (data?.standings?.length) return data.standings;
-  }
-  return [];
+  return fetchLatestStandings();
+}
+
+// The NHL's own standings when the Worker's copy is missing. That happens
+// routinely, not just when the Worker is down: its 'standings' key expires
+// every 5 minutes and /cache/standings 404s until the next poll refills it,
+// and kvFetch() gives up after 3s on a slow cold start.
+//
+// This used to read fixed dates ('2026-04-18', '2026-04-17', ...) -- last
+// season's finale. On 2026-10-05, with 2026-27 under way, a fresh install
+// that hit that gap got CAR's 2025-26 53-22-7 record, and getTeamStats()
+// (seeing a prior-season row) switched the whole Team page to 2025-26 while
+// the header still said 2026-27. An hour earlier, same build, it showed
+// 2026-27's 1-1-1.
+//
+// standings/now would give the right date, but it answers with a redirect
+// (see the CORS note this replaced), so ask /standings-season instead: it
+// lists every season's standings window plus today's date. The newest season
+// whose standings have started is the current one in season and last season
+// in the summer -- the same season standings/now resolves to -- and its
+// standings as of min(today, its last day) are the latest real ones.
+// Nothing hardcoded, so it doesn't go stale at the next rollover.
+export async function fetchLatestStandings() {
+  const data = await nhlFetch(`${BASE}/standings-season`);
+  const today = data?.currentDate;
+  const seasons = Array.isArray(data?.seasons) ? data.seasons : [];
+  const latest = seasons
+    .filter(s => s?.standingsStart && s?.standingsEnd && (!today || s.standingsStart <= today))
+    .sort((a, b) => (a.standingsStart < b.standingsStart ? 1 : -1))[0];
+  if (!latest) return [];
+  const date = today && today < latest.standingsEnd ? today : latest.standingsEnd;
+  const standings = await nhlFetch(`${BASE}/standings/${date}`);
+  return standings?.standings || [];
 }
 
 /**
