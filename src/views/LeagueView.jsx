@@ -16,6 +16,7 @@ import {
   getPlayoffSeries,
   getPlayoffSeriesGames,
   getTodaysGames,
+  getTeamSpecialTeams,
   TEAM_CONFIG,
 } from '../utils/nhlApi';
 import { getTeamSeasonData, getPowerRankingsNarrative, getPowerRankingsHistory } from '../utils/supabaseClient';
@@ -542,10 +543,12 @@ function StandingsRow({ entry, rank, teamSeasonData }) {
       </td>
       <td className={lvTdClasses()}>
         {(() => {
-          if (!entry.streakCode || !entry.streakCount) return '—';
-          const code = entry.streakCode === 'W' ? 'W' : 'L';
-          const color = code === 'W' ? 'var(--green)' : 'var(--red-bright)';
-          return <span style={{ color, fontWeight: 600 }}>{code}{entry.streakCount}</span>;
+          // W / L / OT as the NHL gives it; OT in amber like the Team page's
+          // streak chip (standingsStreak, leagueUtils.js).
+          const streak = standingsStreak(entry);
+          if (!streak) return '—';
+          const color = streak.tone === 'win' ? 'var(--green)' : streak.tone === 'ot' ? 'var(--amber)' : 'var(--red-bright)';
+          return <span style={{ color, fontWeight: 600 }}>{streak.label}</span>;
         })()}
       </td>
       <td className={lvTdClasses()} title={t('leagueView.standings.waiversTitle')}>{entry.waiversSequence ?? '—'}</td>
@@ -573,7 +576,7 @@ function StandingsTable({ rows, caption, teamSeasonData }) {
   );
 }
 
-import { groupByDivision, groupByConference, buildWildCard, parseNhlBracket, projectNhlBracket } from '../utils/leagueUtils';
+import { groupByDivision, groupByConference, buildWildCard, parseNhlBracket, projectNhlBracket, computePowerRankings, MIN_GAMES_TO_RANK, standingsStreak } from '../utils/leagueUtils';
 import { isStandingsStale } from '../utils/standingsUtils';
 
 // ─── Standings Panel ──────────────────────────────────────────────────────────
@@ -693,11 +696,14 @@ function LeadersCard({ title, statLabel, rows, formatStat, onPlayerClick }) {
         const teamColor = teamTextColor(abbrev) ?? 'var(--text-dim)';
         const pid       = p.playerId ?? p.id ?? null;
 
+        // positionCode: the GAA / SV% leaders are goalies -- without it the
+        // popup drew them as skaters (audit 2026-10-05 #24).
         const playerObj = pid ? {
-          id:         pid,
-          firstName:  { default: firstName },
-          lastName:   { default: lastName },
-          teamAbbrev: abbrev,
+          id:           pid,
+          firstName:    { default: firstName },
+          lastName:     { default: lastName },
+          teamAbbrev:   abbrev,
+          positionCode: p.positionCode ?? p.position ?? null,
         } : null;
 
         return (
@@ -1343,126 +1349,7 @@ function SeasonNotStartedState({ children }) {
 
 // ─── Power Rankings ───────────────────────────────────────────────────────────
 
-/**
- * Rank all 32 teams using five weighted, normalised components plus a
- * roster talent prior (WAR) that tapers off as the season progresses.
- *
- * Components (full season, alpha = 1.0):
- *   Points %       25%  — season-long win rate
- *   L10 points %   25%  — recent form (drives weekly movement)
- *   Goal diff/GP   20%  — scoring margin strength
- *   5v5 xGF%       20%  — true possession quality (MoneyPuck, nightly)
- *   Special teams  10%  — avg of PP% and PK%
- *
- * Roster WAR blending (early season):
- *   alpha = min(maxGP / 20, 1.0) — reaches 1.0 by game 20
- *   rosterWeight = 0.15 * (1 - alpha) — tapers from 15% → 0%
- *   Other weights scale proportionally to fill the remaining 85%→100%.
- */
-// Rankings wait until every team has played this many games -- the same
-// rule as eyewall-pipeline's power_rankings.py (MIN_GAMES_TO_RANK). Before
-// that every component ties for all 32 teams and the order is just the
-// order standings arrive in (2026-09-28: 0 GP, a random top 10).
-const MIN_GAMES_TO_RANK = 3;
-
-function computePowerRankings(standings, xgData) {
-  if (!standings?.length) return [];
-
-  const maxGP = Math.max(...standings.map(t => t.gamesPlayed || 0));
-  const alpha = Math.min(maxGP / 20, 1.0);
-  const wWar  = 0.15 * (1 - alpha);
-  const scale = 1 - wWar;
-
-  const W = {
-    pts: 0.25 * scale,
-    l10: 0.25 * scale,
-    gd:  0.20 * scale,
-    xgf: 0.20 * scale,
-    sp:  0.10 * scale,
-    war: wWar,
-  };
-
-  const teams = standings.map(t => {
-    const abbr = t.teamAbbrev?.default ?? t.teamAbbrev;
-    const gp   = t.gamesPlayed || 1;
-
-    const l10w  = t.l10Wins     ?? 0;
-    const l10l  = t.l10Losses   ?? 0;
-    const l10ot = t.l10OtLosses ?? 0;
-    const l10gp = (l10w + l10l + l10ot) || 10;
-
-    const rawPp = t.powerPlayPct   ?? t.ppPct ?? 0;
-    const rawPk = t.penaltyKillPct ?? t.pkPct ?? 0;
-    const ppPct = rawPp > 1 ? rawPp / 100 : rawPp;
-    const pkPct = rawPk > 1 ? rawPk / 100 : rawPk;
-
-    return {
-      abbr,
-      gp,
-      wins:      t.wins     ?? 0,
-      losses:    t.losses   ?? 0,
-      otLosses:  t.otLosses ?? 0,
-      ptsPct:    (t.points ?? 0) / (gp * 2),
-      l10PtsPct: ((l10w * 2) + l10ot) / (l10gp * 2),
-      gdPG:      ((t.goalFor ?? t.goalsFor ?? 0) - (t.goalAgainst ?? t.goalsAgainst ?? 0)) / gp,
-      xgfPct:    xgData?.[abbr]?.xgfPct    ?? null,
-      rosterWar: xgData?.[abbr]?.rosterWar ?? null,
-      spPct:     (ppPct + pkPct) / 2,
-      ppPct,
-      pkPct,
-      l10: `${l10w}-${l10l}-${l10ot}`,
-    };
-  });
-
-  function normalise(key) {
-    const vals  = teams.map(t => t[key]).filter(v => v != null);
-    if (!vals.length) return () => 0.5;
-    const min   = Math.min(...vals);
-    const range = Math.max(...vals) - min || 1;
-    return (v) => v == null ? 0.5 : (v - min) / range;
-  }
-
-  const normPts = normalise('ptsPct');
-  const normL10 = normalise('l10PtsPct');
-  const normGD  = normalise('gdPG');
-  const normXGF = normalise('xgfPct');
-  const normSP  = normalise('spPct');
-  const normWar = normalise('rosterWar');
-
-  // Per-component league rank for display (1 = best)
-  function leagueRank(key) {
-    const sorted = [...teams].sort((a, b) => (b[key] ?? -Infinity) - (a[key] ?? -Infinity));
-    const map = {};
-    sorted.forEach((t, i) => { map[t.abbr] = i + 1; });
-    return map;
-  }
-  const rankPts = leagueRank('ptsPct');
-  const rankL10 = leagueRank('l10PtsPct');
-  const rankGD  = leagueRank('gdPG');
-  const rankXGF = leagueRank('xgfPct');
-  const rankSP  = leagueRank('spPct');
-
-  return teams
-    .map(t => ({
-      ...t,
-      score:
-        normPts(t.ptsPct)    * W.pts +
-        normL10(t.l10PtsPct) * W.l10 +
-        normGD(t.gdPG)       * W.gd  +
-        normXGF(t.xgfPct)    * W.xgf +
-        normSP(t.spPct)      * W.sp  +
-        normWar(t.rosterWar) * W.war,
-      leagueRanks: {
-        pts: rankPts[t.abbr],
-        l10: rankL10[t.abbr],
-        gd:  rankGD[t.abbr],
-        xgf: rankXGF[t.abbr],
-        sp:  rankSP[t.abbr],
-      },
-    }))
-    .sort((a, b) => b.score - a.score)
-    .map((t, i) => ({ ...t, rank: i + 1 }));
-}
+// computePowerRankings() and MIN_GAMES_TO_RANK live in utils/leagueUtils.js.
 
 // ─── Movement arrow ───────────────────────────────────────────────────────────
 
@@ -1529,16 +1416,17 @@ function RankSparkline({ history, primaryColor }) {
 
 // ─── Rankings Panel ───────────────────────────────────────────────────────────
 
-function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrative, history }) {
+function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, specialTeams, specialTeamsLoading, narrative, history }) {
   const { t } = useTranslation();
   const [showHow,    setShowHow]    = useState(false);
   const [canvasMounted, setCanvasMounted] = useState(false);
-  const ranked  = computePowerRankings(standings, xgData);
+  const ranked  = computePowerRankings(standings, xgData, specialTeams);
+  const hasSpecialTeams = ranked.some(r => r.spPct != null);
   // standingsLoading/xgLoading in flight vs. fetch done but genuinely zero
   // rows (season live-flipped, no games played yet) are different states —
   // conflating them here used to mean an empty season showed this loading
   // skeleton forever instead of a "not started yet" message.
-  const loading = standingsLoading || xgLoading;
+  const loading = standingsLoading || xgLoading || specialTeamsLoading;
   const empty   = !loading && !standings?.length;
   const tooEarly = !loading && !empty
     && Math.min(...standings.map(s => s.gamesPlayed || 0)) < MIN_GAMES_TO_RANK;
@@ -1666,6 +1554,10 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
         })}
       </div>
 
+      {!hasSpecialTeams && (
+        <p className={PR_HOW_TEXT_CLASSES}>{t('leagueView.rankings.specialTeamsUnavailable')}</p>
+      )}
+
       {/* Export / share */}
       <ShareButtons
         onNativeShare={handleShareWithCapture}
@@ -1710,7 +1602,7 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, narrati
               {
                 label: t('league.rankings.componentSPLabel'), weight: '10%',
                 desc: t('leagueView.rankings.componentSPDesc'),
-                source: t('leagueView.rankings.sourceNHLStandings'),
+                source: t('leagueView.rankings.sourceNHLTeamStats'),
               },
               {
                 label: t('leagueView.rankings.componentWARLabel'), weight: '0–15%',
@@ -1792,7 +1684,7 @@ export function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, prim
             { label: 'L10',   val: myTeam.l10PtsPct * 100,                             fmt: () => myTeam.l10,        rank: myTeam.leagueRanks?.l10 },
             { label: 'xGF%',  val: myTeam.xgfPct != null ? myTeam.xgfPct * 100 : null, fmt: v => `${v.toFixed(1)}%`, rank: myTeam.leagueRanks?.xgf },
             { label: 'GD/GP', val: myTeam.gdPG,                                        fmt: v => (v > 0 ? '+' : '') + v.toFixed(2), rank: myTeam.leagueRanks?.gd },
-            { label: 'SP%',   val: myTeam.spPct * 100,                                 fmt: v => `${v.toFixed(1)}%`, rank: myTeam.leagueRanks?.sp },
+            { label: 'SP%',   val: myTeam.spPct != null ? myTeam.spPct * 100 : null,                                 fmt: v => `${v.toFixed(1)}%`, rank: myTeam.leagueRanks?.sp },
           ].map(({ label, val, fmt, rank }) => {
             const barPct = rank != null ? ((32 - rank) / 31) * 100 : 50;
             const barColor = rank != null && rank <= 10 ? '#4ade80' : rank != null && rank >= 23 ? '#f87171' : '#5b8fd4';
@@ -1931,6 +1823,11 @@ export default function LeagueView() {
     () => (activeTab === 'rankings' || activeTab === 'standings') ? getTeamSeasonData() : Promise.resolve(null),
     [activeTab]
   )
+  // PP%/PK% for the Special Teams component -- standings don't carry them.
+  const { data: specialTeams, loading: specialTeamsLoading } = useFetch(
+    () => activeTab === 'rankings' ? getTeamSpecialTeams(SEASON) : Promise.resolve(null),
+    [activeTab, SEASON]
+  )
   const { data: prNarrative } = useFetch(
     () => activeTab === 'rankings' ? getPowerRankingsNarrative(TEAM_CONFIG.abbr) : Promise.resolve(null),
     [activeTab]
@@ -2001,6 +1898,8 @@ export default function LeagueView() {
             standingsLoading={standingsLoading}
             xgData={xgData}
             xgLoading={xgLoading}
+            specialTeams={specialTeams}
+            specialTeamsLoading={specialTeamsLoading}
             narrative={prNarrative}
             history={prHistory}
           />

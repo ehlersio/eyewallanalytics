@@ -1,0 +1,478 @@
+{
+ "_source": "api-web.nhle.com/v1/player/8483548/landing seasonTotals, fetched 2026-10-05",
+ "playerId": 8483548,
+ "position": "G",
+ "seasonTotals": [
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 20,
+   "goalsAgainstAvg": 5.05,
+   "leagueAbbrev": "AYHL 13U",
+   "savePctg": 0.896,
+   "season": 20112012,
+   "sequence": 183089,
+   "teamName": {
+    "default": "Long Island Royals 13U AAA"
+   }
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 9,
+   "goalsAgainstAvg": 3.12,
+   "leagueAbbrev": "AYHL 16UA",
+   "savePctg": 0.885,
+   "season": 20122013,
+   "sequence": 206475,
+   "teamName": {
+    "default": "Long Island Royals 15U AAA"
+   }
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 8,
+   "goalsAgainstAvg": 2.75,
+   "leagueAbbrev": "AYHL 16UA",
+   "savePctg": 0.927,
+   "season": 20132014,
+   "sequence": 206475,
+   "teamName": {
+    "default": "Long Island Royals 15U AAA"
+   }
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 1,
+   "goalsAgainstAvg": 0.0,
+   "leagueAbbrev": "USPHL 18U",
+   "savePctg": 1.0,
+   "season": 20142015,
+   "sequence": 162938,
+   "teamName": {
+    "default": "P.A.L. Junior Islanders 18U AAA"
+   }
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 20,
+   "goalsAgainstAvg": 4.83,
+   "leagueAbbrev": "USPHL 16U",
+   "savePctg": 0.895,
+   "season": 20142015,
+   "sequence": 162946,
+   "teamName": {
+    "default": "P.A.L. Junior Islanders 16U AAA"
+   }
+  },
+  {
+   "gameTypeId": 3,
+   "gamesPlayed": 2,
+   "goalsAgainstAvg": 2.71,
+   "leagueAbbrev": "USPHL 16U",
+   "savePctg": 0.911,
+   "season": 20142015,
+   "sequence": 162946,
+   "teamName": {
+    "default": "P.A.L. Junior Islanders 16U AAA"
+   }
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 12,
+   "goalsAgainstAvg": 3.17,
+   "leagueAbbrev": "AYHL 18U",
+   "savePctg": 0.927,
+   "season": 20152016,
+   "sequence": 203428,
+   "teamName": {
+    "default": "Long Island Gulls 18U AAA"
+   }
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 13,
+   "goalsAgainstAvg": 3.37,
+   "leagueAbbrev": "NAHL",
+   "savePctg": 0.906,
+   "season": 20162017,
+   "sequence": 72444,
+   "teamName": {
+    "default": "Amarillo Bulls"
+   }
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 15,
+   "goalsAgainstAvg": 3.21,
+   "leagueAbbrev": "NAHL",
+   "savePctg": 0.903,
+   "season": 20162017,
+   "sequence": 190304,
+   "teamName": {
+    "default": "New Jersey Jr. Titans"
+   }
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 3,
+   "goalsAgainstAvg": 3.27,
+   "leagueAbbrev": "NAHL",
+   "savePctg": 0.896,
+   "season": 20172018,
+   "sequence": 72444,
+   "teamName": {
+    "default": "Amarillo Bulls"
+   }
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 23,
+   "goalsAgainstAvg": 3.07,
+   "leagueAbbrev": "NCDC",
+   "savePctg": 0.917,
+   "season": 20172018,
+   "sequence": 241975,
+   "teamName": {
+    "default": "P.A.L. Junior Islanders"
+   }
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 52,
+   "goalsAgainst": 115,
+   "goalsAgainstAvg": 2.44,
+   "leagueAbbrev": "USHL",
+   "losses": 12,
+   "otLosses": 4,
+   "savePctg": 0.915,
+   "season": 20182019,
+   "sequence": 6276,
+   "shotsAgainst": 1349,
+   "shutouts": 7,
+   "teamName": {
+    "default": "Muskegon Lumberjacks"
+   },
+   "timeOnIce": "2824:00",
+   "wins": 33
+  },
+  {
+   "gameTypeId": 3,
+   "gamesPlayed": 8,
+   "goalsAgainst": 20,
+   "goalsAgainstAvg": 2.53,
+   "leagueAbbrev": "USHL",
+   "losses": 4,
+   "otLosses": 4,
+   "savePctg": 0.894,
+   "season": 20182019,
+   "sequence": 6276,
+   "shotsAgainst": 188,
+   "shutouts": 1,
+   "teamName": {
+    "default": "Muskegon Lumberjacks"
+   },
+   "timeOnIce": "474:00",
+   "wins": 4
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 34,
+   "goalsAgainst": 85,
+   "goalsAgainstAvg": 2.65,
+   "leagueAbbrev": "NCAA",
+   "losses": 12,
+   "otLosses": 4,
+   "savePctg": 0.91,
+   "season": 20192020,
+   "sequence": 13060,
+   "shotsAgainst": 944,
+   "shutouts": 0,
+   "teamName": {
+    "default": "Western Michigan Univ."
+   },
+   "timeOnIce": "1922:00",
+   "wins": 18
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 4,
+   "goalsAgainst": 10,
+   "goalsAgainstAvg": 2.84,
+   "leagueAbbrev": "NCAA",
+   "losses": 1,
+   "otLosses": 0,
+   "savePctg": 0.889,
+   "season": 20202021,
+   "sequence": 13060,
+   "shotsAgainst": 90,
+   "shutouts": 0,
+   "teamName": {
+    "default": "Western Michigan Univ."
+   },
+   "timeOnIce": "211:00",
+   "wins": 2
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 5,
+   "goalsAgainst": 13,
+   "goalsAgainstAvg": 2.54,
+   "leagueAbbrev": "AHL",
+   "losses": 2,
+   "otLosses": 0,
+   "savePctg": 0.92,
+   "season": 20212022,
+   "sequence": 897,
+   "shotsAgainst": 162,
+   "shutouts": 1,
+   "teamName": {
+    "default": "Providence Bruins"
+   },
+   "timeOnIce": "307:00",
+   "wins": 3
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 39,
+   "goalsAgainst": 99,
+   "goalsAgainstAvg": 2.55,
+   "leagueAbbrev": "NCAA",
+   "losses": 12,
+   "otLosses": 1,
+   "savePctg": 0.912,
+   "season": 20212022,
+   "sequence": 13060,
+   "shotsAgainst": 1122,
+   "teamName": {
+    "default": "Western Michigan Univ."
+   },
+   "timeOnIce": "2334:00",
+   "wins": 26
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 32,
+   "goalsAgainst": 75,
+   "goalsAgainstAvg": 2.4,
+   "leagueAbbrev": "AHL",
+   "losses": 5,
+   "otLosses": 1,
+   "savePctg": 0.924,
+   "season": 20222023,
+   "sequence": 897,
+   "shotsAgainst": 981,
+   "shutouts": 1,
+   "teamName": {
+    "default": "Providence Bruins"
+   },
+   "timeOnIce": "1879:00",
+   "wins": 22
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 4,
+   "goalsAgainst": 10,
+   "goalsAgainstAvg": 2.5,
+   "leagueAbbrev": "ECHL",
+   "losses": 1,
+   "otLosses": 0,
+   "savePctg": 0.922,
+   "season": 20222023,
+   "sequence": 251095,
+   "shotsAgainst": 129,
+   "shutouts": 0,
+   "teamName": {
+    "default": "Maine Mariners"
+   },
+   "timeOnIce": "240:00",
+   "wins": 3
+  },
+  {
+   "gameTypeId": 3,
+   "gamesPlayed": 4,
+   "goalsAgainst": 9,
+   "goalsAgainstAvg": 2.28,
+   "leagueAbbrev": "AHL",
+   "losses": 3,
+   "otLosses": 4,
+   "savePctg": 0.926,
+   "season": 20222023,
+   "sequence": 897,
+   "shotsAgainst": 122,
+   "shutouts": 0,
+   "teamName": {
+    "default": "Providence Bruins"
+   },
+   "timeOnIce": "237:00",
+   "wins": 1
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 41,
+   "goalsAgainst": 107,
+   "goalsAgainstAvg": 2.67,
+   "leagueAbbrev": "AHL",
+   "losses": 10,
+   "otLosses": 5,
+   "savePctg": 0.913,
+   "season": 20232024,
+   "sequence": 897,
+   "shotsAgainst": 1232,
+   "shutouts": 1,
+   "teamName": {
+    "default": "Providence Bruins"
+   },
+   "timeOnIce": "2403:06",
+   "wins": 23
+  },
+  {
+   "gameTypeId": 3,
+   "gamesPlayed": 4,
+   "goalsAgainst": 9,
+   "goalsAgainstAvg": 2.14,
+   "leagueAbbrev": "AHL",
+   "losses": 3,
+   "otLosses": 5,
+   "savePctg": 0.922,
+   "season": 20232024,
+   "sequence": 897,
+   "shotsAgainst": 115,
+   "shutouts": 1,
+   "teamName": {
+    "default": "Providence Bruins"
+   },
+   "timeOnIce": "252:20",
+   "wins": 1
+  },
+  {
+   "gameTypeId": 2,
+   "gamesPlayed": 33,
+   "goalsAgainst": 88,
+   "goalsAgainstAvg": 2.77,
+   "leagueAbbrev": "AHL",
+   "losses": 14,
+   "otLosses": 3,
+   "savePctg": 0.907,
+   "season": 20242025,
+   "sequence": 897,
+   "shotsAgainst": 945,
+   "shutouts": 5,
+   "teamName": {
+    "default": "Providence Bruins"
+   },
+   "timeOnIce": "1905:00",
+   "wins": 15
+  },
+  {
+   "gameTypeId": 3,
+   "gamesPlayed": 2,
+   "goalsAgainst": 5,
+   "goalsAgainstAvg": 2.42,
+   "leagueAbbrev": "AHL",
+   "losses": 1,
+   "otLosses": 4,
+   "savePctg": 0.918,
+   "season": 20242025,
+   "sequence": 897,
+   "shotsAgainst": 61,
+   "shutouts": 0,
+   "teamName": {
+    "default": "Providence Bruins"
+   },
+   "timeOnIce": "124:00",
+   "wins": 1
+  },
+  {
+   "assists": 1,
+   "gameTypeId": 2,
+   "gamesPlayed": 39,
+   "gamesStarted": 39,
+   "goals": 0,
+   "goalsAgainst": 97,
+   "goalsAgainstAvg": 2.465249,
+   "leagueAbbrev": "NHL",
+   "losses": 6,
+   "otLosses": 2,
+   "pim": 2,
+   "savePctg": 0.894737,
+   "season": 20252026,
+   "sequence": 1,
+   "shotsAgainst": 912,
+   "shutouts": 2,
+   "teamCommonName": {
+    "default": "Hurricanes"
+   },
+   "teamName": {
+    "default": "Carolina Hurricanes",
+    "fr": "Hurricanes de la Caroline"
+   },
+   "teamPlaceNameWithPreposition": {
+    "default": "Carolina",
+    "fr": "de la Caroline"
+   },
+   "timeOnIce": "2360:49",
+   "wins": 31
+  },
+  {
+   "assists": 0,
+   "gameTypeId": 3,
+   "gamesPlayed": 4,
+   "gamesStarted": 3,
+   "goals": 0,
+   "goalsAgainst": 6,
+   "goalsAgainstAvg": 1.596924,
+   "leagueAbbrev": "NHL",
+   "losses": 1,
+   "otLosses": 0,
+   "pim": 0,
+   "savePctg": 0.931034,
+   "season": 20252026,
+   "sequence": 1,
+   "shotsAgainst": 87,
+   "shutouts": 1,
+   "teamCommonName": {
+    "default": "Hurricanes"
+   },
+   "teamName": {
+    "default": "Carolina Hurricanes",
+    "fr": "Hurricanes de la Caroline"
+   },
+   "teamPlaceNameWithPreposition": {
+    "default": "Carolina",
+    "fr": "de la Caroline"
+   },
+   "timeOnIce": "225:26",
+   "wins": 3
+  },
+  {
+   "assists": 0,
+   "gameTypeId": 2,
+   "gamesPlayed": 2,
+   "gamesStarted": 2,
+   "goals": 0,
+   "goalsAgainst": 6,
+   "goalsAgainstAvg": 2.881921,
+   "leagueAbbrev": "NHL",
+   "losses": 1,
+   "otLosses": 1,
+   "pim": 0,
+   "savePctg": 0.87234,
+   "season": 20262027,
+   "sequence": 1,
+   "shotsAgainst": 47,
+   "shutouts": 0,
+   "teamCommonName": {
+    "default": "Hurricanes"
+   },
+   "teamName": {
+    "default": "Carolina Hurricanes",
+    "fr": "Hurricanes de la Caroline"
+   },
+   "teamPlaceNameWithPreposition": {
+    "default": "Carolina",
+    "fr": "de la Caroline"
+   },
+   "timeOnIce": "124:55",
+   "wins": 0
+  }
+ ]
+}

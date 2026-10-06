@@ -98,7 +98,10 @@ export const NHL_ARCHIVE_SEASONS = [
 //   season           — current season string for API calls (derived from CURRENT_SEASON)
 //   displayName      — full official team name
 //   shortName        — common short name / nickname
-//   fullNameFragment — partial string to match NHL API full-name fields (e.g. city name)
+//   fullNameFragment — short place name for display (GameCard's series line).
+//                      Not for matching NHL API rows: the NHL says "New York
+//                      Islanders"/"San Jose Sharks", so 'NY Islanders'/'San José'
+//                      matched nothing. Use findTeamSummaryRow() (team id) instead.
 //   primaryColor     — canonical brand hex (used for light mode, storage, branding reference)
 //   displayColor     — WCAG AA-compliant variant for dark mode. equals primaryColor
 //                      where it already passes; lightened otherwise, targeting ~6.5:1
@@ -159,6 +162,22 @@ const DEFAULT_TEAM = ALL_TEAMS.find(t => t.abbr === 'CAR');
 // today, not just the user's own.
 export function getTeamByAbbr(abbr) {
   return ALL_TEAMS.find(t => t.abbr === abbr) ?? null;
+}
+
+// A team's row in the NHL stats REST team/summary (or any other NHL stats
+// REST team report), by team id -- the same id ALL_TEAMS carries. Name
+// fragments went stale: 'NY Islanders', 'NY Rangers' and 'San José' are
+// not substrings of the names team/summary returns, so NYI/NYR/SJS got no
+// rank badges at all (audit 2026-10-05 #27). An exact full-name match is
+// kept only as a fallback for rows without teamId (and older franchise ids,
+// e.g. Utah's 59 in 2024-25, when the caller passes that season's name).
+export function findTeamSummaryRow(rows, abbr, fullName = null) {
+  if (!Array.isArray(rows) || !rows.length) return null;
+  const team = getTeamByAbbr(abbr);
+  const byId = team ? rows.find(r => r?.teamId === team.teamId) : null;
+  if (byId) return byId;
+  const names = [fullName, team?.displayName].filter(Boolean);
+  return rows.find(r => r?.teamFullName && names.includes(r.teamFullName)) ?? null;
 }
 
 // The team's id in one game, as that game's own play-by-play (or landing /

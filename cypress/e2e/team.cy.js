@@ -120,8 +120,11 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
 
       it('renders quick stats cards', function () {
         cy.skipIfEither('.empty-title', '[class*="result-dot"]', { timeout: DATA_TIMEOUT })
-        cy.contains(/Current streak|W\d|L\d/i, { timeout: DATA_TIMEOUT }).should('exist')
-        cy.contains('Last 10 games', { timeout: DATA_TIMEOUT }).should('exist')
+        cy.contains(/Current streak|W\d|L\d|OT\d/i, { timeout: DATA_TIMEOUT }).should('exist')
+        // "Last N games" over the games actually played -- N is 10 only
+        // once a team has played 10 regular-season games (audit #8).
+        cy.contains(/Last \d+ games?/, { timeout: DATA_TIMEOUT }).should('exist')
+        cy.contains(/Win % L\d+/).should('exist')
       })
 
       it('renders result dots for last 20 games', function () {

@@ -342,7 +342,9 @@
       "scrollTopAriaLabel": "Scroll to top",
       "scrollTopLabel": "Top",
       "shareCaptionRank": "{{team}} Power Rankings — #{{rank}} in the NHL",
-      "tooEarly": "Power rankings return once every team has played {{games}} games — about a week into the season."
+      "tooEarly": "Power rankings return once every team has played {{games}} games — about a week into the season.",
+      "sourceNHLTeamStats": "NHL team stats (PP% and PK%)",
+      "specialTeamsUnavailable": "The NHL's PP% and PK% couldn't be loaded, so Special Teams is left out of these rankings."
     }
   },
   "pwhlLeagueView": {
@@ -520,7 +522,6 @@
     },
     "trends": {
       "loadingGameLog": "Loading game log…",
-      "winPctL10": "Win % L10",
       "dotTooltip": "{{date}} vs {{opp}}: {{result}} {{carScore}}–{{oppScore}}{{homeAway}}",
       "homeSuffix": " (Home)",
       "awaySuffix": " (Away)",
@@ -539,7 +540,9 @@
       "legendPk": "■ PK%",
       "diffTooltip": "{{date}} vs {{opp}}: {{sign}}{{diff}}",
       "legendWinDiff": "■ Win (positive diff)",
-      "legendLossDiff": "■ Loss (negative diff)"
+      "legendLossDiff": "■ Loss (negative diff)",
+      "winPctLastN": "Win % L{{count}}",
+      "noRegularSeasonGames": "No regular-season games played yet."
     },
     "cap": {
       "title": "Salary Cap · {{season}}",
@@ -2276,7 +2279,8 @@
       "loadingChart": "Loading chart…",
       "noRegularSeasonData": "No regular-season data for {{season}}.",
       "noDataPwhl": "No data for this player in {{label}}.",
-      "noData": "No data for this player in {{label}}."
+      "noData": "No data for this player in {{label}}.",
+      "noNhlRegularSeason": "No NHL regular-season games in {{season}}."
     },
     "edge": {
       "sectionLabel_one": "Tracking (NHL EDGE) · {{season}} · {{count}} GP",
@@ -2297,7 +2301,8 @@
         "savePctg5v5Close": "5v5 SV% (close)",
         "longRangeSavePctg": "Long-range SV%"
       }
-    }
+    },
+    "combinedTeams": "{{label}} ({{teams}} combined)"
   },
   "percentileBar": {
     "naFallback": "{{label}} data unavailable — player may not have enough ice time in this situation to generate a reliable percentile.",
