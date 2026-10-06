@@ -16,6 +16,8 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { penaltyHeadline, penaltyServedBy } from '../utils/penaltyText';
+import { hockeyTechPenaltyParties } from '../utils/hockeyTechPenalty';
 import { getPWHLTeamById } from '../utils/pwhlConfig';
 import { HatTrickPopup as _HatTrickPopup } from './GameEvents'; // reuse hat trick popup
 
@@ -159,6 +161,7 @@ export function PWHLPenaltyPopup({ data, onClose }) {
           </div>
         )}
         <div className={PENALTY_DESC_CLASSES}>{data.desc || data.description}</div>
+        {data.servedBy && <div className={PENALTY_DURATION_CLASSES}>{data.servedBy}</div>}
         <div className={PENALTY_DURATION_CLASSES}>
           {data.duration} min · {data.time ? `${data.periodLabel} ${data.time}` : data.periodLabel}
         </div>
@@ -381,12 +384,12 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
         if (!shownPenalties.current.has(penId)) {
           shownPenalties.current.add(penId);
           if (gameId) sessionStorage.setItem(`pwhl_penalties_${gameId}`, JSON.stringify([...shownPenalties.current]));
-          const player = ev.takenBy
-            ? `${ev.takenBy.firstName} ${ev.takenBy.lastName}`.trim()
-            : null;
+          // A bench penalty names no one -- see hockeyTechPenalty.js.
+          const parties = hockeyTechPenaltyParties(ev);
           setPenaltyPopup({
             id:          penId,
-            player,
+            player:      penaltyHeadline(parties, t),
+            servedBy:    penaltyServedBy(parties, t),
             ...parsePenaltyDesc(ev.description, t),
             duration:    ev.minutes || 2,
             periodLabel: per,

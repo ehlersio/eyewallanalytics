@@ -55,7 +55,9 @@ export function penaltyDescription(descKey, t) {
 // A period or game summary's penalty row (usePeriodSummary.js's
 // summaryPenalty) as its two lines: who, then what. A row saved before
 // teamPenalty existed, whose player has no name, still reads "Unknown".
-export function summaryPenaltyLines(p, t) {
+// typeIsText: p.type is already readable text (HockeyTech's "Too Many
+// Players"), shown as is rather than read as an NHL descKey.
+export function summaryPenaltyLines(p, t, { typeIsText = false } = {}) {
   const parties = {
     committedName: p?.playerName || null,
     servedByName:  p?.servedByName || null,
@@ -64,7 +66,7 @@ export function summaryPenaltyLines(p, t) {
   };
   const who = penaltyHeadline(parties, t) || t('periodSummary.penalties.unknown');
   const what = [
-    penaltyDescription(p?.type, t) || t('periodSummary.penalties.typeFallback'),
+    (typeIsText ? p?.type : penaltyDescription(p?.type, t)) || t('periodSummary.penalties.typeFallback'),
     p?.duration ? t('periodSummary.penalties.durationSuffix', { count: p.duration }) : null,
     penaltyServedBy(parties, t),
     p?.period ? `P${p.period}` : null,

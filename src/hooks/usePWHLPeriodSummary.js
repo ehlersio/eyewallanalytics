@@ -16,6 +16,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { finalSuffix } from '../utils/scoreboard';
+import { hockeyTechPenaltyParties } from '../utils/hockeyTechPenalty';
 
 const WORKER_URL = typeof import.meta !== 'undefined'
   ? import.meta.env?.VITE_WORKER_URL
@@ -169,6 +170,25 @@ export function pwhlGoaliesInNet(htSummary, teamId, period = null) {
   return names;
 }
 
+// One live penalty event as the period and game summaries list it, in
+// usePeriodSummary.js's summaryPenalty shape. A bench penalty's takenBy
+// names no one (see hockeyTechPenalty.js): playerName stays null and
+// teamPenalty/benchMinor say so, with the skater who serves it.
+export function pwhlSummaryPenalty(e, teamId) {
+  const parties = hockeyTechPenaltyParties(e);
+  return {
+    period:       e.period,
+    time:         e.time || '—',
+    isCar:        e.teamId === teamId,
+    playerName:   parties.committedName,
+    servedByName: parties.servedByName,
+    teamPenalty:  parties.teamPenalty,
+    benchMinor:   parties.benchMinor,
+    type:         e.description || null,
+    duration:     e.minutes ?? 2,
+  };
+}
+
 // ── Build a single period summary ────────────────────────────
 
 function buildPWHLSummary(period, events, teamId, htSummary, gameId, isPlayoff = false) {
@@ -213,16 +233,7 @@ function buildPWHLSummary(period, events, teamId, htSummary, gameId, isPlayoff =
   // Penalties
   const penalties = periodEvts
     .filter(e => e.eventType === 'penalty')
-    .map(e => ({
-      period,
-      time:       e.time || '—',
-      isCar:      e.teamId === teamId,
-      playerName: e.takenBy
-        ? `${e.takenBy.firstName || ''} ${e.takenBy.lastName || ''}`.trim()
-        : null,
-      type:     e.description || 'Penalty',
-      duration: e.minutes ?? 2,
-    }));
+    .map(e => pwhlSummaryPenalty(e, teamId));
 
   // Cumulative score through this period from htSummary
   let homeScore = 0, awayScore = 0;
@@ -320,16 +331,7 @@ function buildPWHLGameSummary(events, teamId, htSummary, gameId) {
   // All penalties
   const penalties = events
     .filter(e => e.eventType === 'penalty')
-    .map(e => ({
-      period:     e.period,
-      time:       e.time || '—',
-      isCar:      e.teamId === teamId,
-      playerName: e.takenBy
-        ? `${e.takenBy.firstName || ''} ${e.takenBy.lastName || ''}`.trim()
-        : null,
-      type:     e.description || 'Penalty',
-      duration: e.minutes ?? 2,
-    }));
+    .map(e => pwhlSummaryPenalty(e, teamId));
 
   // Faceoffs + hits
   const faceoffs = events.filter(e => e.eventType === 'faceoff');
