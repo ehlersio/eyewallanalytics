@@ -115,6 +115,51 @@ function registerNativeDevice() {
   });
 }
 
+// The body /push/subscribe takes: this device's push identity -- web: the
+// PushSubscription's JSON ({ endpoint, keys, expirationTime }); iOS:
+// { platform: 'ios', token } -- plus the team alerts it's for. Fields left
+// undefined drop out of the JSON. /ops/subscribe (the owner's ops alerts,
+// AdminHealthView) takes the same body and keeps only the device.
+export function subscriptionPayload(device, { teamAbbr, prefs, teams } = {}) {
+  return { ...device, teamAbbr, prefs, ...(teams ? { teams } : {}) };
+}
+
+// Asks for notification permission and this device's push identity, for
+// subscriptionPayload(). Must be called directly from a user gesture.
+// Returns { permission, device }; device is null when permission isn't
+// granted. `onPermission` hears the answer as soon as it's known. Tells
+// the Worker nothing and stores nothing. Web: needs the service worker
+// registered (usePushNotifications does that on mount) and the VAPID key.
+export async function requestPushDevice({ onPermission } = {}) {
+  if (Capacitor.isNativePlatform()) {
+    const status = await PushNotifications.requestPermissions();
+    const permission = status.receive === 'granted' ? 'granted' : 'denied';
+    onPermission?.(permission);
+    if (permission !== 'granted') return { permission, device: null };
+    const token = await registerNativeDevice();
+    return { permission, device: { platform: 'ios', token } };
+  }
+
+  const permission = await Notification.requestPermission();
+  onPermission?.(permission);
+  if (permission !== 'granted') return { permission, device: null };
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.subscribe({
+    userVisibleOnly:      true,
+    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+  });
+  return { permission, device: sub.toJSON() };
+}
+
+// Whether this device can take push at all, before asking: the native
+// shell, or a browser with a service worker, the Push API and the VAPID key.
+export function pushAvailable() {
+  if (Capacitor.isNativePlatform()) return !!WORKER_URL;
+  return typeof navigator !== 'undefined' && 'serviceWorker' in navigator
+    && typeof window !== 'undefined' && 'PushManager' in window
+    && !!VAPID_PUBLIC_KEY && !!WORKER_URL;
+}
+
 export function usePushNotifications() {
   const [supported,  setSupported]  = useState(false);
   const [permission, setPermission] = useState('default');
@@ -189,22 +234,19 @@ export function usePushNotifications() {
       setLoading(true);
       setError(null);
       try {
-        const status = await PushNotifications.requestPermissions();
-        const perm = status.receive === 'granted' ? 'granted' : 'denied';
-        setPermission(perm);
-        if (perm !== 'granted') {
+        const { device } = await requestPushDevice({ onPermission: setPermission });
+        if (!device) {
           setError('Permission not granted');
           return false;
         }
 
-        const token = await registerNativeDevice();
-        setDeviceToken(token);
-        localStorage.setItem(NATIVE_TOKEN_KEY, token);
+        setDeviceToken(device.token);
+        localStorage.setItem(NATIVE_TOKEN_KEY, device.token);
 
         const res = await fetch(`${WORKER_URL}/push/subscribe`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ platform: 'ios', token, teamAbbr, prefs: prefs || loadPrefs(), ...(teams ? { teams } : {}) }),
+          body:    JSON.stringify(subscriptionPayload(device, { teamAbbr, prefs: prefs || loadPrefs(), teams })),
         });
         if (!res.ok) throw new Error('Failed to save subscription to server');
 
@@ -225,31 +267,16 @@ export function usePushNotifications() {
     setLoading(true);
     setError(null);
     try {
-      const perm = await Notification.requestPermission();
-      setPermission(perm);
-      if (perm !== 'granted') {
+      const { permission: perm, device } = await requestPushDevice({ onPermission: setPermission });
+      if (!device) {
         setError(perm === 'denied' ? 'Permission denied — enable in browser settings' : 'Permission not granted');
         return false;
       }
 
-      const reg = await navigator.serviceWorker.ready;
-
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly:      true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-      });
-
-      const subJson = sub.toJSON();
-
       const res = await fetch(`${WORKER_URL}/push/subscribe`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          ...subJson,
-          teamAbbr: teamAbbr,
-          prefs:    prefs || loadPrefs(),
-          ...(teams ? { teams } : {}),
-        }),
+        body:    JSON.stringify(subscriptionPayload(device, { teamAbbr, prefs: prefs || loadPrefs(), teams })),
       });
 
       if (!res.ok) throw new Error('Failed to save subscription to server');
@@ -273,7 +300,7 @@ export function usePushNotifications() {
         const res = await fetch(`${WORKER_URL}/push/subscribe`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ platform: 'ios', token: deviceToken, teamAbbr, prefs, ...(teams ? { teams } : {}) }),
+          body:    JSON.stringify(subscriptionPayload({ platform: 'ios', token: deviceToken }, { teamAbbr, prefs, teams })),
         });
         return res.ok;
       } catch {
@@ -290,12 +317,7 @@ export function usePushNotifications() {
       const res = await fetch(`${WORKER_URL}/push/subscribe`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          ...sub.toJSON(),
-          teamAbbr,
-          prefs,
-          ...(teams ? { teams } : {}),
-        }),
+        body:    JSON.stringify(subscriptionPayload(sub.toJSON(), { teamAbbr, prefs, teams })),
       });
       return res.ok;
     } catch {
