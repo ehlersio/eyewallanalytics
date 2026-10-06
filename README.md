@@ -202,6 +202,7 @@ canes-analytics-starter/
 │       ├── echlConfig.js               # ECHL team configs — 30 teams, real North/South/Central/Mountain division structure (different alignment than AHL's); all 30 teams still render on one shared neutral color placeholder — real per-team colors are an explicit deferred follow-up, matching AHL's own two-pass color history
 │       ├── echlPlayerStats.js          # ECHL skater/goalie stat defs + formatters — mirrors ahlPlayerStats.js
 │       ├── echlPredictionStore.js      # ECHL prediction tracking (localStorage-only) — mirrors ahlPredictionStore.js
+│       ├── hockeyTechLeaders.js        # AHL/ECHL Leaders goalie gate — min GP scales with the season (half the busiest goalie's games, 1..5) so the GAA/SV% cards aren't empty headers for the first weeks
 │       └── analytics.js
 ├── src/brand/
 │   ├── rinkMark.js                     # Source of truth for the faceoff-E mark's geometry and the Ice Rink (light) / Night Rink (dark) palettes; plain JS so the asset script can import it under Node

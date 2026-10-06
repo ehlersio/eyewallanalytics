@@ -14,6 +14,7 @@ import ECHLPlayerPopup from '../components/ECHLPlayerPopup';
 import Scoreboard from '../components/Scoreboard';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 import { streakColor } from '../utils/hockeyTechResults';
+import { qualifiedGoalies } from '../utils/hockeyTechLeaders';
 
 const LEAGUE_VIEW_CLASSES = 'league-view flex flex-col pt-[14px] px-[14px]';
 const LEAGUE_CONTENT_CLASSES = 'league-content pb-6';
@@ -217,8 +218,11 @@ function LeadersPanel({ skaters, goalies, loading, onSelect }) {
 
   const top10pts = useMemo(() => [...skaters].filter(p => p.player_name).sort((a, b) => (b.points ?? 0) - (a.points ?? 0)).slice(0, 10), [skaters]);
   const top10g   = useMemo(() => [...skaters].filter(p => p.player_name).sort((a, b) => (b.goals ?? 0) - (a.goals ?? 0)).slice(0, 10), [skaters]);
-  const top10gaa = useMemo(() => [...goalies].filter(g => g.player_name && (g.gp ?? 0) >= 5).sort((a, b) => (a.gaa ?? 99) - (b.gaa ?? 99)).slice(0, 10), [goalies]);
-  const top10svp = useMemo(() => [...goalies].filter(g => g.player_name && (g.gp ?? 0) >= 5).sort((a, b) => (b.sv_pct ?? 0) - (a.sv_pct ?? 0)).slice(0, 10), [goalies]);
+  // The GP gate scales with the season (utils/hockeyTechLeaders.js): a
+  // flat 5 left both goalie cards empty for the first weeks of every year.
+  const qualified = useMemo(() => qualifiedGoalies(goalies), [goalies]);
+  const top10gaa = useMemo(() => [...qualified].sort((a, b) => (a.gaa ?? 99) - (b.gaa ?? 99)).slice(0, 10), [qualified]);
+  const top10svp = useMemo(() => [...qualified].sort((a, b) => (b.sv_pct ?? 0) - (a.sv_pct ?? 0)).slice(0, 10), [qualified]);
 
   if (loading) return <LoadingRows />;
   if (!skaters.length && !goalies.length) return <div className={LV_EMPTY_CLASSES}>{t('echlLeagueView.leadersEmpty')}</div>;
@@ -227,8 +231,12 @@ function LeadersPanel({ skaters, goalies, loading, onSelect }) {
     <div className={LV_LEADERS_GRID_CLASSES}>
       <LeadersCard title={t('league.leaders.titlePoints')} statLabel="PTS" rows={top10pts} formatStat={p => p.points ?? '—'} onSelect={onSelect} />
       <LeadersCard title={t('league.leaders.titleGoals')} statLabel="G" rows={top10g} formatStat={p => p.goals ?? '—'} onSelect={onSelect} />
-      <LeadersCard title={t('league.leaders.titleGAA')} statLabel="GAA" rows={top10gaa} formatStat={p => p.gaa != null ? Number(p.gaa).toFixed(2) : '—'} onSelect={onSelect} />
-      <LeadersCard title={t('league.leaders.titleSavePct')} statLabel="SV%" rows={top10svp} formatStat={p => p.sv_pct != null ? Number(p.sv_pct).toFixed(3).replace('0.', '.') : '—'} onSelect={onSelect} />
+      {top10gaa.length > 0 && (
+        <LeadersCard title={t('league.leaders.titleGAA')} statLabel="GAA" rows={top10gaa} formatStat={p => p.gaa != null ? Number(p.gaa).toFixed(2) : '—'} onSelect={onSelect} />
+      )}
+      {top10svp.length > 0 && (
+        <LeadersCard title={t('league.leaders.titleSavePct')} statLabel="SV%" rows={top10svp} formatStat={p => p.sv_pct != null ? Number(p.sv_pct).toFixed(3).replace('0.', '.') : '—'} onSelect={onSelect} />
+      )}
     </div>
   );
 }
