@@ -19,6 +19,17 @@ export function summarizeSeasonGames(rows) {
   };
 }
 
+// The same { games, finals } from one season's league standings rows, for
+// the PWHL League tab, whose picker is league-wide rather than one team's:
+// the number of teams with a game played. Standings carry games played,
+// not a schedule, so `games` and `finals` are the same count. null when
+// the request failed -- unknown, not empty.
+export function summarizeStandings(rows) {
+  if (!Array.isArray(rows)) return null;
+  const teams = rows.filter(r => (r?.gp ?? 0) > 0).length;
+  return { games: teams, finals: teams };
+}
+
 // Whether the team has games in `seasonId`: true/false, or null when not
 // known (still loading, never asked, or the request failed). `played`
 // counts finished games only -- what stats views (players, shot map) need;

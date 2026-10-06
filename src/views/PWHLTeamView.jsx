@@ -7,7 +7,10 @@ import {
   fetchPWHLStandings, fetchPWHLPlayers, fetchPWHLSchedule, fetchPWHLSalaries, fetchPWHLLeagueAverages,
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
-import { PWHL_PLAYOFF_SEASON_MAP, getPWHLSeasonLabel } from '../utils/pwhlConfig';
+import { PWHL_PLAYOFF_SEASON_MAP, PWHL_REGULAR_SEASONS, PWHL_SEASON_LABEL, getPWHLSeasonLabel } from '../utils/pwhlConfig';
+import { useTeamSeasonGames } from '../hooks/useTeamSeasonGames';
+import { seasonsWithGames, fallbackSeason } from '../utils/teamSeasons';
+import { salarySeasonLabels, fetchLatestSalaries } from '../utils/pwhlSalaries';
 import { useSport } from '../utils/SportContext';
 import TeamLogo from '../components/TeamLogo';
 import { MetCard } from '../components/StatBar';
@@ -109,6 +112,7 @@ const ADV_TOGGLE_BTN_ACTIVE_CLASSES = 'bg-[var(--bg4)] text-[color:var(--text)] 
 function advToggleBtnClasses(active) {
   return `${ADV_TOGGLE_BTN_BASE_CLASSES} ${active ? ADV_TOGGLE_BTN_ACTIVE_CLASSES : ADV_TOGGLE_BTN_INACTIVE_CLASSES}`
 }
+const SEASON_NOTE_CLASSES = 'text-[11px] text-[color:var(--text-dim)] italic mt-[6px] mb-0'
 const ADV_CONTEXT_NOTE_CLASSES = 'adv-context-note text-[11px] text-[color:var(--text-dim)] italic mb-1'
 
 const SPLIT_ADV_HEADER_CLASSES = 'grid grid-cols-[1fr_auto_1fr] text-[11px] font-bold text-[color:var(--text-dim)] py-[8px] pb-[6px] text-center [&>span:first-child]:text-left [&>span:last-child]:text-right'
@@ -191,6 +195,8 @@ const EMPTY_SUB_CLASSES = 'empty-sub text-[12px] text-[color:var(--text-muted)]'
 // PWHL teams, so this should be true for everyone once that data lands).
 const PWHL_TEAM_HAS_HISTORY = !!getTeamHistory('pwhl', PWHL_TEAM_CONFIG?.abbr)
 
+// Salaries is offered only once /pwhl/salaries has rows for this team (see
+// salaryOffered below): the 2026-27 expansion teams have none.
 const TABS = ['Overview', 'Advanced', 'Splits', 'Trends', 'Salaries',
   ...(PWHL_TEAM_HAS_HISTORY ? ['History'] : []),
 ];
@@ -221,23 +227,44 @@ export default function PWHLTeamView() {
   // once the live season resolves after mount.
   const { currentSeason } = useSport();
 
-  const { data: standings, loading: sLoad } = useFetch(() => fetchPWHLStandings(currentSeason), [currentSeason]);
+  // The season shown: the current one unless this team has played no game
+  // in it yet (every team between the season flip, ~Nov 20, and its first
+  // game), then its newest regular season with games -- same fallback as
+  // the Players/Shot Map/Schedule views, labelled below. A team with no
+  // games in any season (a 2026-27 expansion team before its first game)
+  // stays on the current one, whose empty state says so.
+  // PWHL_REGULAR_SEASONS is a live binding, read on every render.
+  const seasonCounts = useTeamSeasonGames(fetchPWHLSchedule, teamId, [currentSeason, ...PWHL_REGULAR_SEASONS.map(s => s.id)]);
+  const seasonOptions = seasonsWithGames(PWHL_REGULAR_SEASONS, seasonCounts, { played: true });
+  const season = fallbackSeason(currentSeason, seasonOptions, seasonCounts, { played: true });
+  const resolving = !seasonCounts;
+
+  const { data: standings, loading: sLoad } = useFetch(() => fetchPWHLStandings(season), [season]);
   const { data: players,   loading: pLoad } = useFetch(
-    () => teamId ? fetchPWHLPlayers(teamId, currentSeason) : Promise.resolve(null), [teamId, currentSeason]
+    () => teamId ? fetchPWHLPlayers(teamId, season) : Promise.resolve(null), [teamId, season]
   );
   const { data: schedule,  loading: scLoad  } = useFetch(
-    () => teamId ? fetchPWHLSchedule(teamId, currentSeason) : Promise.resolve(null), [teamId, currentSeason]
+    () => teamId ? fetchPWHLSchedule(teamId, season) : Promise.resolve(null), [teamId, season]
   );
   // No playoff season paired with this one yet means no playoff games --
   // `|| 9` used to read the 2026 playoffs for 2026-27.
-  const poSeasonId = PWHL_PLAYOFF_SEASON_MAP[currentSeason];
+  const poSeasonId = PWHL_PLAYOFF_SEASON_MAP[season];
   const { data: poSchedule, loading: poScLoad } = useFetch(
     () => teamId && poSeasonId ? fetchPWHLSchedule(teamId, poSeasonId) : Promise.resolve(null), [teamId, poSeasonId]
   );
   const inPlayoffs = (poSchedule?.length || 0) > 0;
-  const { data: salaries, loading: salLoad } = useFetch(
-    () => teamId ? fetchPWHLSalaries(teamId) : Promise.resolve(null), [teamId]
+  const { data: salaryData, loading: salLoad } = useFetch(
+    () => teamId
+      ? fetchLatestSalaries(teamId,
+        salarySeasonLabels([getPWHLSeasonLabel(currentSeason), PWHL_SEASON_LABEL, ...PWHL_REGULAR_SEASONS.map(s => s.label)]),
+        fetchPWHLSalaries)
+      : Promise.resolve(null),
+    [teamId, currentSeason]
   );
+  // Hidden while loading and when no season has rows for the team.
+  const salaryOffered = !salLoad && salaryData != null && salaryData.rows?.length !== 0;
+  const tabs = TABS.filter(id => id !== 'Salaries' || salaryOffered);
+  const activeTab = tabs.includes(tab) ? tab : 'Overview';
 
   const teamRow = useMemo(() => standings?.find(r => r.team_id === teamId) || null, [standings, teamId]);
   const skaters = useMemo(() => players?.skaters || [], [players]);
@@ -253,10 +280,11 @@ export default function PWHLTeamView() {
     );
   }
 
-  const loading = sLoad || pLoad;
+  const loading = sLoad || pLoad || resolving;
   // Was a hardcoded "2025-26 season" string -- silently wrong every season
   // after this one. currentSeason is reactive (see SportContext.jsx).
-  const seasonLabel = getPWHLSeasonLabel(currentSeason);
+  const seasonLabel = getPWHLSeasonLabel(season);
+  const showingPrevious = season !== currentSeason;
 
   return (
     <div className={`${PAGE_CLASSES} team-view`}>
@@ -268,6 +296,11 @@ export default function PWHLTeamView() {
         <p className={VIEW_SUB_CLASSES} style={{ margin: 0 }}>{t('teamView.seasonSubtitle', { years: seasonLabel })}</p>
         <button className={TEAM_COMPARE_BTN_CLASSES} onClick={() => setCompareOpen(true)}>{t('team.compareSeasons')}</button>
       </div>
+      {showingPrevious && (
+        <p className={SEASON_NOTE_CLASSES} data-testid="pwhl-team-season-note">
+          {t('pwhlTeamView.showingPrevious', { abbr, current: getPWHLSeasonLabel(currentSeason), fallback: seasonLabel })}
+        </p>
+      )}
 
       {compareOpen && (
         <TeamComparisonPopup
@@ -279,42 +312,43 @@ export default function PWHLTeamView() {
       )}
 
       <div className={TEAM_TABS_CLASSES}>
-        {TABS.map(tabId => (
-          <button key={tabId} className={teamTabClasses(tab === tabId)} onClick={() => setTab(tabId)}>{t(TAB_LABEL_KEYS[tabId])}</button>
+        {tabs.map(tabId => (
+          <button key={tabId} className={teamTabClasses(activeTab === tabId)} onClick={() => setTab(tabId)}>{t(TAB_LABEL_KEYS[tabId])}</button>
         ))}
       </div>
 
-      {tab === 'Overview'  && (
+      {activeTab === 'Overview'  && (
         <OverviewTab teamRow={teamRow} skaters={skaters} goalies={goalies}
           schedule={schedule} teamId={teamId} abbr={abbr} color={color} loading={loading}
-          standings={standings} />
+          standings={standings} seasonLabel={seasonLabel} />
       )}
-      {tab === 'Advanced'  && (
+      {activeTab === 'Advanced'  && (
         <AdvancedTab teamRow={teamRow} skaters={skaters} goalies={goalies}
-          abbr={abbr} color={color} loading={sLoad || pLoad || scLoad}
+          abbr={abbr} color={color} loading={sLoad || pLoad || scLoad || resolving}
           schedule={schedule} poSchedule={poSchedule} teamId={teamId}
-          standings={standings} inPlayoffs={inPlayoffs} season={currentSeason} />
+          standings={standings} inPlayoffs={inPlayoffs} season={season} />
       )}
-      {tab === 'Stats'     && (
-        <StatsTab skaters={skaters} goalies={goalies} loading={pLoad} abbr={abbr} color={color} />
+      {activeTab === 'Stats'     && (
+        <StatsTab skaters={skaters} goalies={goalies} loading={pLoad || resolving} abbr={abbr} color={color} />
       )}
-      {tab === 'Splits'    && (
+      {activeTab === 'Splits'    && (
         <SplitsTab schedule={schedule} poSchedule={poSchedule} teamId={teamId}
-          abbr={abbr} color={color} loading={scLoad || poScLoad} inPlayoffs={inPlayoffs} />
+          abbr={abbr} color={color} loading={scLoad || poScLoad || resolving} inPlayoffs={inPlayoffs} />
       )}
-      {tab === 'Trends'    && (
-        <TrendsTab schedule={schedule} teamId={teamId} loading={scLoad} />
+      {activeTab === 'Trends'    && (
+        <TrendsTab schedule={schedule} teamId={teamId} loading={scLoad || resolving} />
       )}
-      {tab === 'Salaries'  && (
-        <SalariesTab salaries={salaries} loading={salLoad} abbr={abbr} color={color} />
+      {activeTab === 'Salaries'  && (
+        <SalariesTab salaries={salaryData?.rows} salarySeason={salaryData?.season}
+          currentLabel={getPWHLSeasonLabel(currentSeason)} loading={salLoad} abbr={abbr} color={color} />
       )}
-      {tab === 'History' && <TeamHistorySections history={getTeamHistory('pwhl', abbr)} league="pwhl" />}
+      {activeTab === 'History' && <TeamHistorySections history={getTeamHistory('pwhl', abbr)} league="pwhl" />}
     </div>
   );
 }
 
 // ── Overview tab ──────────────────────────────────────────────────────────────
-function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color, loading, standings }) {
+function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color, loading, standings, seasonLabel }) {
   const { t } = useTranslation();
 
   const gd = teamRow ? (teamRow.goals_for ?? 0) - (teamRow.goals_against ?? 0) : null;
@@ -385,7 +419,17 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
 
   return (
     <>
+      {/* No standings row means no games in this season: say so, never a
+          0–0–0 record made up from a missing row. */}
+      {!loading && !teamRow && (
+        <div className={`card ${EMPTY_STATE_CLASSES}`} data-testid="pwhl-team-no-games">
+          <div className={EMPTY_TITLE_CLASSES}>{t('pwhlTeamView.overview.noGamesTitle')}</div>
+          <div className={EMPTY_SUB_CLASSES}>{t('pwhlTeamView.overview.noGamesSub', { abbr, season: seasonLabel })}</div>
+        </div>
+      )}
+
       {/* Record block — mirrors NHL record-block */}
+      {(loading || teamRow) && (
       <div className={RECORDS_ROW_CLASSES}>
         <div className={`card ${RECORD_BLOCK_CLASSES}`}>
           <div className={RECORD_BLOCK_LABEL_CLASSES} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -393,8 +437,8 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
           </div>
           {loading ? <div className={SKELETON_CLASSES} style={{ height: 28, width: '70%' }} /> : (
             <div className={RECORD_MAIN_ROW_CLASSES}>
-              <span className={RECORD_BIG_CLASSES}>{teamRow?.wins??0}–{teamRow?.losses??0}–{teamRow?.ot_losses??0}</span>
-              <span className={PTS_CHIP_CLASSES}>{teamRow?.points??0} pts</span>
+              <span className={RECORD_BIG_CLASSES}>{teamRow.wins ?? '—'}–{teamRow.losses ?? '—'}–{teamRow.ot_losses ?? '—'}</span>
+              <span className={PTS_CHIP_CLASSES}>{teamRow.points ?? '—'} pts</span>
             </div>
           )}
           {teamRow && (
@@ -411,6 +455,7 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
           )}
         </div>
       </div>
+      )}
 
       {/* Last 5 */}
       {last5.length > 0 && (
@@ -1125,7 +1170,7 @@ export function TrendsTab({ schedule, teamId, loading }) {
 }
 
 // ── Salaries tab ─────────────────────────────────────────────────────────────
-function SalariesTab({ salaries, loading, abbr, color }) {
+function SalariesTab({ salaries, salarySeason, currentLabel, loading, abbr, color }) {
   const { t } = useTranslation();
   if (loading) return (
     <div style={{ display:'flex', flexDirection:'column', gap:6, marginTop:10 }}>
@@ -1163,7 +1208,12 @@ function SalariesTab({ salaries, loading, abbr, color }) {
 
       {/* Cap summary */}
       <div className="card">
-        <div className="sec-label" style={{ marginBottom:10 }}>{t('pwhlTeamView.salaries.summaryTitle')}</div>
+        <div className="sec-label" style={{ marginBottom:10 }}>{t('pwhlTeamView.salaries.summaryTitle', { season: salarySeason })}</div>
+        {salarySeason && salarySeason !== currentLabel && (
+          <p className={SEASON_NOTE_CLASSES} style={{ marginTop: 0, marginBottom: 10 }} data-testid="pwhl-salaries-season-note">
+            {t('pwhlTeamView.salaries.showingPrevious', { current: currentLabel, fallback: salarySeason })}
+          </p>
+        )}
         <div className={OVERVIEW_STAT_GRID_CLASSES}>
           {[
             [t('pwhlTeamView.salaries.totalPayroll'),  fmtSalary(totalPay)],

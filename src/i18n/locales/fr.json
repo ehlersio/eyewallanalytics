@@ -348,6 +348,7 @@
     }
   },
   "pwhlLeagueView": {
+    "showingPrevious": "La saison {{current}} n'a pas commencé — voici {{fallback}}.",
     "standings": {
       "emptyState": "Aucune donnée de classement.",
       "headerTitle": "Classement de la Ligue LPHF · système de points 3-2-1-0",
@@ -601,6 +602,7 @@
   },
   "pwhlTeamView": {
     "noTeamSelected": "Aucune équipe LPHF sélectionnée.",
+    "showingPrevious": "{{abbr}} n'a pas encore joué de match en {{current}} — voici {{fallback}}.",
     "tabs": {
       "overview": "Aperçu",
       "advanced": "Avancé",
@@ -609,6 +611,8 @@
       "salaries": "Salaires"
     },
     "overview": {
+      "noGamesTitle": "Aucun match pour l'instant",
+      "noGamesSub": "{{abbr}} n'a pas encore joué de match de saison régulière en {{season}}.",
       "gfLabel": "BP : {{val}}",
       "gaLabel": "BC : {{val}}",
       "diffSuffix": "diff. {{sign}}{{gd}}",
@@ -681,7 +685,8 @@
     "salaries": {
       "noDataTitle": "Aucune donnée salariale",
       "noDataSub": "Exécutez python pwhl_salaries.py pour remplir les données.",
-      "summaryTitle": "Sommaire salarial 2025-26",
+      "summaryTitle": "Sommaire salarial {{season}}",
+      "showingPrevious": "Aucun salaire {{current}} publié pour l'instant — voici {{fallback}}.",
       "totalPayroll": "Masse salariale totale",
       "players": "Joueuses",
       "avgSalary": "Salaire moyen",

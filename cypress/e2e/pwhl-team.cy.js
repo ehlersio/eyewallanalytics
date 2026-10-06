@@ -235,10 +235,12 @@ describe('PWHL Team view — DET (expansion, no games played yet)', () => {
     cy.get('[alt="DET"]', { timeout: DATA_TIMEOUT }).should('exist')
   })
 
-  it('renders all tab buttons', () => {
-    ['Overview', 'Advanced', 'Splits', 'Trends', 'Salaries', 'History'].forEach(tab =>
+  it('renders all tab buttons, and no Salaries tab (no salary rows in any season)', () => {
+    ['Overview', 'Advanced', 'Splits', 'Trends', 'History'].forEach(tab =>
       cy.contains(tab).should('exist')
     )
+    cy.contains('.team-tab', 'History', { timeout: DATA_TIMEOUT }).should('exist')
+    cy.contains('.team-tab', 'Salaries').should('not.exist')
     cy.assertNoErrors()
   })
 
@@ -264,9 +266,13 @@ describe('PWHL Team view — DET (expansion, no games played yet)', () => {
   })
 
   describe('Overview tab', () => {
-    it('shows a 0–0–0 record instead of crashing', () => {
-      cy.contains(/^0–0–0$/, { timeout: DATA_TIMEOUT }).should('exist')
-      cy.contains('0 pts').should('exist')
+    // No standings row is no games, never a made-up 0–0–0 record.
+    it('says DET has no games yet instead of a 0–0–0 record', () => {
+      cy.get('[data-testid="pwhl-team-no-games"]', { timeout: DATA_TIMEOUT })
+        .should('contain', 'No games yet').and('contain', 'DET')
+      cy.get('.record-big').should('not.exist')
+      cy.contains(/^0–0–0$/).should('not.exist')
+      cy.contains('0 pts').should('not.exist')
     })
 
     it('does not show season stats, top scorers, or starting goalie sections', () => {
@@ -311,17 +317,8 @@ describe('PWHL Team view — DET (expansion, no games played yet)', () => {
     })
   })
 
-  describe('Salaries tab', () => {
-    beforeEach(() => cy.contains('Salaries').click())
-
-    it('shows the no-data empty state instead of real payroll numbers', () => {
-      cy.contains(/No salary data/i, { timeout: DATA_TIMEOUT }).should('exist')
-      cy.contains('Total Payroll').should('not.exist')
-    })
-  })
-
   it('never surfaces an error boundary while tabbing through', () => {
-    ['Advanced', 'Splits', 'Trends', 'Salaries', 'Overview'].forEach(tab => {
+    ['Advanced', 'Splits', 'Trends', 'Overview'].forEach(tab => {
       cy.contains(tab).click()
       cy.assertNoErrors()
     })
@@ -442,5 +439,63 @@ describe('PWHL Advanced tab — league averages', () => {
       const avgs = text.match(/avg [^\s]+/g) || []
       expect(avgs.filter(a => a !== 'avg 50.0%')).to.deep.equal([])
     })
+  })
+})
+
+// From the season flip (~Nov 20) to a team's first game (Dec 5) the new
+// current season (2026-27, id 11) has no games: the Team tab opens on the
+// team's newest season with games and says so, and Salaries falls back to
+// the newest season with salary rows. /config/seasons, BOS's 2026-27
+// schedule (HockeyTech's real opener time format, nothing played) and its
+// 2026-27 salaries are stubbed; 2025-26 is the live Worker.
+describe('PWHL Team view — new season before its first game (BOS)', () => {
+  const AFTER_SWITCH = {
+    seasonId: 11, seasonType: 'regular', startYear: 2026, startDate: '2026-12-04', source: 'live',
+    next: null, preseason: { seasonId: 10, seasonType: 'preseason', startYear: 2026, startDate: '2026-10-01' },
+  }
+  const SEASON_11_BOS = [{
+    game_id: 366, season_id: 11, game_date: '2026-12-05', home_team_id: 1, away_team_id: 3,
+    game_state: '7:00 pm EST', home_score: 0, away_score: 0, period: null, ot: false, shootout: false,
+    game_status_code: null, date_with_day: null,
+  }]
+
+  beforeEach(() => {
+    cy.intercept('GET', '**/config/seasons', {
+      nhl: { seasonId: '20262027' },
+      pwhl: AFTER_SWITCH,
+      ahl: { seasonId: 94, seasonType: 'regular' },
+      echl: { seasonId: 78, seasonType: 'regular' },
+    }).as('seasons')
+    cy.intercept('GET', '**/pwhl/schedule?teamId=1&season=11', SEASON_11_BOS).as('season11')
+    cy.intercept('GET', '**/pwhl/standings?season=11', [])
+    cy.intercept('GET', '**/pwhl/salaries?teamId=1&season=2026-27', []).as('salaries2627')
+    cy.visit('/pwhl/team', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('eyewall:sport', 'pwhl')
+        win.localStorage.setItem('eyewall:pwhl_team', JSON.stringify({ abbr: 'BOS', teamId: 1 }))
+      },
+    })
+    cy.wait('@seasons')
+  })
+
+  it('opens on 2025-26 with its real record, labelled', () => {
+    cy.get('[data-testid="pwhl-team-season-note"]', { timeout: DATA_TIMEOUT })
+      .should('contain', "BOS hasn't played a 2026-27 game yet")
+      .and('contain', 'showing 2025-26')
+    cy.contains('2025-26 season').should('exist')
+    cy.get('.record-big', { timeout: DATA_TIMEOUT }).should('exist')
+    cy.get('[data-testid="pwhl-team-no-games"]').should('not.exist')
+    cy.assertNoErrors()
+  })
+
+  it('shows 2025-26 salaries, labelled, while 2026-27 has none', () => {
+    cy.contains('.team-tab', 'Salaries', { timeout: DATA_TIMEOUT }).click()
+    cy.wait('@salaries2627')
+    cy.contains('2025-26 Salary Summary', { timeout: DATA_TIMEOUT }).should('exist')
+    cy.get('[data-testid="pwhl-salaries-season-note"]')
+      .should('contain', 'No 2026-27 salaries published yet')
+      .and('contain', 'showing 2025-26')
+    cy.contains('Total Payroll').should('exist')
+    cy.assertNoErrors()
   })
 })

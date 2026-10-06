@@ -15,7 +15,7 @@ vi.mock('../seasonClient', () => ({
   fetchSeasonsConfig: vi.fn(() => Promise.reject(new Error('offline in tests'))),
 }))
 
-import { summarizeSeasonGames, teamHasGames, seasonsWithGames, fallbackSeason, compareSeasonCounts, compareSeasonOffered } from '../teamSeasons'
+import { summarizeSeasonGames, summarizeStandings, teamHasGames, seasonsWithGames, fallbackSeason, compareSeasonCounts, compareSeasonOffered } from '../teamSeasons'
 import { normalizeComparisonSeasons } from '../seasonComparison'
 import { PWHL_REGULAR_SEASONS, PWHL_PLAYOFF_SEASONS, PWHL_PRESEASON_SEASONS } from '../pwhlConfig'
 import { AHL_SEASONS } from '../ahlConfig'
@@ -221,5 +221,44 @@ describe('Compare Seasons: seasons the team played', () => {
     expect(compareSeasonCounts([8, 5], null)).toEqual({ 8: null, 5: null })
     expect(compareSeasonCounts([8], [{ season: 8, gamesPlayed: null }])).toEqual({ 8: null })
     expect(compareSeasonOffered(null, 8)).toBe(true)
+  })
+})
+
+// The PWHL League tab's picker is league-wide, keyed on /pwhl/standings.
+// Rows are the Worker's real answers on 2026-10-06 (team_id, gp): season
+// 11 (2026-27) is [] until its first game on 2026-12-05, which is what the
+// League tab opens on from the ~Nov 20 season flip.
+describe('PWHL League standings (Nov 20 - Dec 4: 2026-27 current, no games)', () => {
+  const rows = pairs => pairs.map(([team_id, gp]) => ({ team_id, gp }))
+  const standings = {
+    11: [],
+    8: rows([[1, 30], [3, 30], [2, 30], [5, 30], [6, 30], [9, 30], [4, 30], [8, 30]]),
+    5: rows([[3, 30], [6, 30], [5, 30], [2, 30], [1, 30], [4, 30]]),
+    1: rows([[6, 24], [3, 24], [1, 24], [2, 24], [5, 24], [4, 24]]),
+  }
+  const counts = Object.fromEntries(Object.entries(standings).map(([id, r]) => [id, summarizeStandings(r)]))
+  const SEASONS = [
+    { id: 11, label: '2026-27', type: 'regular' },
+    ...PWHL_REGULAR_SEASONS,
+  ]
+
+  it('counts teams that have played', () => {
+    expect(summarizeStandings(standings[8])).toEqual({ games: 8, finals: 8 })
+    expect(summarizeStandings([])).toEqual({ games: 0, finals: 0 })
+    // Rows written before puck drop (gp 0 or missing) are not games.
+    expect(summarizeStandings(rows([[1, 0], [2, null]]))).toEqual({ games: 0, finals: 0 })
+    expect(summarizeStandings(null)).toBeNull()
+  })
+
+  it('offers only seasons with standings and opens on 2025-26', () => {
+    expect(seasonsWithGames(SEASONS, counts).map(s => s.id)).toEqual([8, 5, 1])
+    expect(fallbackSeason(11, seasonsWithGames(SEASONS, counts), counts)).toBe(8)
+  })
+
+  it('keeps 2026-27 once a game is in, and while its standings are unknown', () => {
+    const started = { ...counts, 11: summarizeStandings(rows([[9, 1], [8, 1]])) }
+    expect(fallbackSeason(11, seasonsWithGames(SEASONS, started), started)).toBe(11)
+    const failed = { ...counts, 11: summarizeStandings(null) }
+    expect(fallbackSeason(11, seasonsWithGames(SEASONS, failed), failed)).toBe(11)
   })
 })
