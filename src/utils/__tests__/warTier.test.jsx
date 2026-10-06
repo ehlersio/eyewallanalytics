@@ -2,14 +2,14 @@
 // The player popup's WAR tier. WAR adds up with games played (the
 // replacement term scales with GP since eyewall-pipeline#191), so the tier
 // reads WAR per 82 games, and there's no tier under 10 GP -- an October WAR
-// of +0.349 at 3 GP is not "Replacement level". The WAR number itself stays
-// the real season-to-date value.
+// of +0.349 at 3 GP isn't rated against full-season cut-offs. The WAR
+// number itself stays the real season-to-date value.
 
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import i18n from '../../i18n/index.js'
 import { warPer82, warTier, WAR_TIER_MIN_GP } from '../warTier'
-import { contractValue } from '../carContracts'
+import { contractValue, WAR_SCALE } from '../carContracts'
 import { SkaterWarCard } from '../../components/PlayerPopup.jsx'
 
 const en = i18n.getFixedT('en')
@@ -52,21 +52,32 @@ describe('warTier', () => {
   })
 
   it('tiers by WAR per 82 games and reports that pace', () => {
-    // 0.25 WAR in 20 GP = +1.025 per 82: Solid, where the raw 0.25 read
-    // "Replacement level" against the full-season thresholds.
+    // 0.25 WAR in 20 GP = +1.025 per 82: Top player, where the raw 0.25
+    // would read only "Solid contributor" against the full-season cut-offs.
     const t = warTier(0.25, 20)
-    expect(t.key).toBe('tierSolid')
+    expect(t.key).toBe('tierTop')
     expect(t.pace).toBeCloseTo(1.025)
-    expect(warTier(0.6, 20).key).toBe('tierTop')       // 2.46 per 82
-    expect(warTier(-0.2, 20).key).toBe('tierBelowReplacement') // -0.82 per 82
-    expect(warTier(0.05, 20).key).toBe('tierReplacement')       // 0.205 per 82
+    expect(warTier(0.3, 20).key).toBe('tierMvp')                // 1.23 per 82
+    expect(warTier(0.05, 20).key).toBe('tierSolid')             // 0.205 per 82
+    expect(warTier(0.02, 20).key).toBe('tierReplacement')       // 0.082 per 82
+    expect(warTier(-0.2, 20).key).toBe('tierBelowReplacement')  // -0.82 per 82
   })
 
   it('reads a full season as is, with no pace', () => {
     // A real 2025-26 row from the Worker: 1.046 WAR in 82 GP.
-    expect(warTier(1.046, 82)).toEqual({ key: 'tierSolid', color: '#fbbf24', pace: null })
-    expect(warTier(0.3, 84).key).toBe('tierReplacement')
-    expect(warTier(4.1, 82).key).toBe('tierMvp')
+    expect(warTier(1.046, 82)).toEqual({ key: 'tierTop', color: '#4ade80', pace: null })
+    expect(warTier(0.3, 84).key).toBe('tierSolid')
+  })
+
+  it('has replacement level at 0 and the cut-offs at 0.2, 0.7 and 1.2', () => {
+    expect(warTier(-0.001, 82).key).toBe('tierBelowReplacement')
+    expect(warTier(0, 82).key).toBe('tierReplacement')
+    expect(warTier(0.199, 82).key).toBe('tierReplacement')
+    expect(warTier(0.2, 82).key).toBe('tierSolid')
+    expect(warTier(0.699, 82).key).toBe('tierSolid')
+    expect(warTier(0.7, 82).key).toBe('tierTop')
+    expect(warTier(1.199, 82).key).toBe('tierTop')
+    expect(warTier(1.2, 82).key).toBe('tierMvp')
   })
 })
 
@@ -75,8 +86,9 @@ describe('contract value WAR', () => {
     expect(contractValue(3, 3, 5_000_000, false, warPer82(0.349, 3)).method).toBe('points')
     const blended = contractValue(10, 20, 5_000_000, false, warPer82(0.25, 20))
     expect(blended.method).toBe('blended')
-    // 41 pts per 82 / $5M = 8.2; 1.025 WAR per 82 / $5M x 6 = 1.23
-    expect(blended.score).toBeCloseTo(8.2 * 0.6 + 1.23 * 0.4, 1)
+    // 41 pts per 82 / $5M = 8.2; 1.025 WAR per 82 / $5M x 18 = 3.69
+    expect(WAR_SCALE).toBe(18)
+    expect(blended.score).toBeCloseTo(8.2 * 0.6 + 3.69 * 0.4, 1)
   })
 })
 
@@ -94,13 +106,13 @@ describe('SkaterWarCard', () => {
   it('shows the tier and the per-82 pace once rated', () => {
     const html = card({ war: 0.25, gp: 20 })
     expect(html).toContain('+0.25')
-    expect(html).toContain(en('playerPopup.analytics.skater.tierSolid'))
+    expect(html).toContain(en('playerPopup.analytics.skater.tierTop'))
     expect(html).toContain(en('playerPopup.analytics.skater.warPace', { value: '+1.03' }))
   })
 
   it('shows no pace for a full season', () => {
     const html = card({ war: 1.046, gp: 82 })
-    expect(html).toContain(en('playerPopup.analytics.skater.tierSolid'))
+    expect(html).toContain(en('playerPopup.analytics.skater.tierTop'))
     expect(html).not.toContain('pa-war-pace')
   })
 

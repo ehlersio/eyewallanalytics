@@ -31,11 +31,23 @@ export function warPer82(war, gp) {
 
 // The tier a WAR rating maps to. `rating` is a full-season figure: WAR per
 // 82 games (warPer82). Keys are i18n keys under playerPopup.analytics.skater.
+//
+// Set from the recalculated 2023-24, 2024-25 and 2025-26 regular seasons
+// (eyewall-pipeline#191). Replacement level is 0 by construction, so a
+// negative WAR is below replacement (about 15-20% of regulars). Skaters
+// with 60+ GP, in all three seasons: the median is about +0.25, the top
+// 10% start near +0.7, and 5-8 a season reach +1.2 (the league high was
+// +1.5 to +1.8).
+//   >= 1.2  MVP candidate      about the top 1-2% of regulars
+//   >= 0.7  Top player         about the top 10-15%
+//   >= 0.2  Solid contributor  the typical regular, up to the top group
+//   >= 0    Replacement level  0 up to about the lowest 35-40% of regulars
+//   <  0    Below replacement
 const TIERS = [
-  { min: 4,    key: 'tierMvp',              color: '#4ade80' },
-  { min: 2,    key: 'tierTop',              color: '#4ade80' },
-  { min: 0.5,  key: 'tierSolid',            color: '#fbbf24' },
-  { min: -0.5, key: 'tierReplacement',      color: '#f87171' },
+  { min: 1.2,  key: 'tierMvp',              color: '#4ade80' },
+  { min: 0.7,  key: 'tierTop',              color: '#4ade80' },
+  { min: 0.2,  key: 'tierSolid',            color: '#fbbf24' },
+  { min: 0,    key: 'tierReplacement',      color: '#f87171' },
   { min: -Infinity, key: 'tierBelowReplacement', color: '#f87171' },
 ]
 
