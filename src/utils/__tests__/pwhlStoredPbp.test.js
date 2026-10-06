@@ -158,6 +158,52 @@ describe('shots on goal', () => {
   })
 })
 
+describe('Corsi/Fenwick share with no shot attempts', () => {
+  // A share of no attempts has no value: null (shown as '—'), never 0%,
+  // which reads as the other team having had every attempt. The NHL's
+  // computeShotAttempts (advancedStats.js) does the same.
+  const noAttempts = events => events.filter(e => e.eventType !== 'shot' && e.eventType !== 'blocked_shot')
+
+  it('a period with no attempts (game 212 had no OT) has no CF% or FF%', () => {
+    const live = liveEvents(live212, OTT, summary212)
+    const p4 = computePWHLShotStats(live, OTT, 4)
+    expect(p4).toMatchObject({ carCorsi: 0, oppCorsi: 0, carSOG: 0, oppSOG: 0, corsiForPct: null, fenwickForPct: null })
+  })
+
+  it('a period with attempts still has its share', () => {
+    const live = liveEvents(live212, OTT, summary212)
+    const p1 = computePWHLShotStats(live, OTT, 1)
+    expect(p1.carCorsi + p1.oppCorsi).toBeGreaterThan(0)
+    expect(p1.corsiForPct).toBe(Math.round(p1.carCorsi / (p1.carCorsi + p1.oppCorsi) * 100))
+    expect(p1.fenwickForPct).toBe(Math.round(p1.carFenwick / (p1.carFenwick + p1.oppFenwick) * 100))
+    // Both sides' shares add up from either team's view.
+    expect(p1.corsiForPct + computePWHLShotStats(liveEvents(live212, NY, summary212), NY, 1).corsiForPct).toBe(100)
+  })
+
+  it('period and game summaries carry the null; no best or worst period to rank', () => {
+    const events = noAttempts(liveEvents(live233, OTT, summary233))
+    expect(buildPWHLSummary(2, events, OTT, summary233, 233)).toMatchObject({ corsiForPct: null, fenwickForPct: null })
+    const game = buildPWHLGameSummary(events, OTT, summary233, 233)
+    expect(game).toMatchObject({ corsiForPct: null, fenwickForPct: null, bestPeriod: null, worstPeriod: null })
+    expect(game.periodStats.map(ps => ps.corsiForPct)).toEqual([null, null, null, null])
+  })
+
+  it('a period without attempts is left out of the best/worst ranking (game 233)', () => {
+    // Game 233's events with the 2nd period's attempts removed: P2 would
+    // have ranked as the worst period at 0%.
+    const all    = liveEvents(live233, OTT, summary233)
+    const events = all.filter(e => e.period !== 2 || (e.eventType !== 'shot' && e.eventType !== 'blocked_shot'))
+    const game   = buildPWHLGameSummary(events, OTT, summary233, 233)
+    const p2     = game.periodStats.find(ps => ps.period === 2)
+    expect(p2.corsiForPct).toBeNull()
+    const ranked = game.periodStats.filter(ps => ps.corsiForPct != null)
+    expect(ranked.map(ps => ps.period)).toEqual([1, 3, 4])
+    expect(game.bestPeriod.corsiForPct).toBe(Math.max(...ranked.map(ps => ps.corsiForPct)))
+    expect(game.worstPeriod.corsiForPct).toBe(Math.min(...ranked.map(ps => ps.corsiForPct)))
+    expect([game.bestPeriod.period, game.worstPeriod.period]).not.toContain(2)
+  })
+})
+
 describe('a finished game\'s summaries match the live ones', () => {
   it('game 233 (OT): every period and the game, for both teams', () => {
     for (const teamId of [BOS, OTT]) {

@@ -1245,7 +1245,7 @@ export default function ShotMapView() {
 
   // ── Period summaries ──────────────────────────────────────────
   const { summaries: periodSummaries, newSummary, dismissNewSummary, updateSummaryNarrative, requestSummary } =
-    usePeriodSummary({ pbp, isLive, gameId, carTeamId: gameTeam.teamId, isPlayoff: gameIsPlayoff });
+    usePeriodSummary({ pbp, isLive, gameId, carTeamId: gameTeam.teamId, carAbbr: team.abbr, isPlayoff: gameIsPlayoff });
   const { gameSummary, updateGameNarrative } = useGameSummary({
     pbp, isLive, gameId, carTeamId: gameTeam.teamId, summaries: periodSummaries,
   });

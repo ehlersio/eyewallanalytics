@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { TEAM_CONFIG, ALL_TEAMS } from '../utils/teamConfig';
 import { buildBrightcoveUrl } from '../utils/nhlApi';
 import { getGameSummary } from '../utils/supabaseClient';
+import { fetchCachedNarrative, nhlNarrativeCacheKey } from '../utils/narrativeCache';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from './ShareButtons';
 import PeriodSummaryShareCanvas from './PeriodSummaryShareCanvas';
@@ -150,7 +151,7 @@ const PS_PERIOD_ROW_BAR_GOOD_CLASSES = 'good bg-[var(--green)]';
 const PS_PERIOD_ROW_BAR_BAD_CLASSES = 'bad bg-[var(--red-bright)]';
 const PS_PERIOD_ROW_BAR_NEUTRAL_CLASSES = 'neutral bg-[var(--text-dim)]';
 function psPeriodRowBarClasses(pct) {
-  const variant = pct >= 55 ? PS_PERIOD_ROW_BAR_GOOD_CLASSES : pct <= 45 ? PS_PERIOD_ROW_BAR_BAD_CLASSES : PS_PERIOD_ROW_BAR_NEUTRAL_CLASSES;
+  const variant = pct == null ? PS_PERIOD_ROW_BAR_NEUTRAL_CLASSES : pct >= 55 ? PS_PERIOD_ROW_BAR_GOOD_CLASSES : pct <= 45 ? PS_PERIOD_ROW_BAR_BAD_CLASSES : PS_PERIOD_ROW_BAR_NEUTRAL_CLASSES;
   return `${PS_PERIOD_ROW_BAR_BASE_CLASSES} ${variant}`;
 }
 const PS_PERIOD_ROW_PCT_BASE_CLASSES = 'ps-period-row-pct text-[12px] font-bold w-[38px] text-right flex-shrink-0';
@@ -158,7 +159,7 @@ const PS_PERIOD_ROW_PCT_DEFAULT_CLASSES = 'text-[color:var(--text-muted)]';
 const PS_PERIOD_ROW_PCT_GOOD_CLASSES = 'good text-[color:var(--green)]';
 const PS_PERIOD_ROW_PCT_BAD_CLASSES = 'bad text-[color:var(--red-bright)]';
 function psPeriodRowPctClasses(pct) {
-  const variant = pct >= 55 ? PS_PERIOD_ROW_PCT_GOOD_CLASSES : pct <= 45 ? PS_PERIOD_ROW_PCT_BAD_CLASSES : PS_PERIOD_ROW_PCT_DEFAULT_CLASSES;
+  const variant = pct == null ? PS_PERIOD_ROW_PCT_DEFAULT_CLASSES : pct >= 55 ? PS_PERIOD_ROW_PCT_GOOD_CLASSES : pct <= 45 ? PS_PERIOD_ROW_PCT_BAD_CLASSES : PS_PERIOD_ROW_PCT_DEFAULT_CLASSES;
   return `${PS_PERIOD_ROW_PCT_BASE_CLASSES} ${variant}`;
 }
 const PS_PERIOD_ROW_SOG_CLASSES = 'text-[11px] text-[color:var(--text-dim)] w-[60px] text-right flex-shrink-0';
@@ -204,6 +205,11 @@ async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false, l
   if (summary.isGameSummary && summary.gameId) {
     const dbResult = await getGameSummary(summary.gameId, carAbbr, locale);
     if (dbResult?.text) return { narrative: dbResult.text, cardNarrative: dbResult.cardText };
+    // Then one already generated for this team (Worker KV, read through the
+    // un-rate-limited /cache route). A period's KV lookup is
+    // usePeriodSummary's, before the summary gets here.
+    const cached = await fetchCachedNarrative(nhlNarrativeCacheKey('game', summary.gameId, carAbbr));
+    if (cached) return cached;
   }
 
   // Build the stats payload the Worker needs to generate the prompt
@@ -623,11 +629,11 @@ export default function PeriodSummary({
                     <div className={PS_PERIOD_ROW_BAR_WRAP_CLASSES}>
                       <div
                         className={psPeriodRowBarClasses(ps.corsiForPct)}
-                        style={{ width: `${ps.corsiForPct}%` }}
+                        style={{ width: `${ps.corsiForPct ?? 0}%` }}
                       />
                     </div>
                     <span className={psPeriodRowPctClasses(ps.corsiForPct)}>
-                      {ps.corsiForPct}%
+                      {pctOrDash(ps.corsiForPct)}
                     </span>
                     <span className={PS_PERIOD_ROW_SOG_CLASSES}>{t('periodSummary.sogSuffix', { car: ps.carSOG, opp: ps.oppSOG })}</span>
                   </div>
