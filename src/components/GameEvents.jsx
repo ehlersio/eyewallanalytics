@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TEAM_CONFIG } from '../utils/nhlApi';
 import { classifyGoal, goalSignature, recordGoal } from '../utils/goalUpdates';
+import { penaltyParties, penaltyHeadline, penaltyServedBy, penaltyDescription } from '../utils/penaltyText';
 
 // ── Tailwind class constants (Phase 4, sub-PR 2 -- GameEvents.css deleted) ──
 // Duplicated in PWHLGameEvents.jsx per established per-file convention
@@ -38,7 +39,7 @@ const PENALTY_WORDS_CLASSES = 'flex flex-col gap-1 mb-4';
 const PENALTY_WORD_SPAN_CLASSES = 'font-[family-name:var(--font-display)] text-[36px] font-black text-[color:var(--amber)] tracking-[0.06em] leading-none';
 const PENALTY_DIVIDER_CLASSES = 'h-px bg-[var(--border)] my-3';
 const PENALTY_PLAYER_CLASSES = 'text-[18px] font-bold text-[color:var(--text)] mb-1';
-const PENALTY_DESC_CLASSES = 'text-[13px] text-[color:var(--text-muted)] capitalize mb-1';
+const PENALTY_DESC_CLASSES = 'text-[13px] text-[color:var(--text-muted)] mb-1';
 const PENALTY_DURATION_CLASSES = 'text-[11px] text-[color:var(--text-dim)]';
 
 const WIN_POPUP_CLASSES = 'win-popup bg-[var(--bg1)] border-[2px] border-[var(--red-bright)] rounded-[20px] pt-10 px-12 pb-10 text-center max-w-[340px] w-[90%] z-[501] animate-[goalBurst_0.5s_cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_0_80px_rgba(255,68,34,0.5)]';
@@ -144,6 +145,7 @@ export function PenaltyPopup({ data, onClose }) {
         <div className={PENALTY_DIVIDER_CLASSES} />
         {data.player && <div className={PENALTY_PLAYER_CLASSES}>{data.player}</div>}
         <div className={PENALTY_DESC_CLASSES}>{data.description}</div>
+        {data.servedBy && <div className={PENALTY_DURATION_CLASSES}>{data.servedBy}</div>}
         <div className={PENALTY_DURATION_CLASSES}>{data.duration} min · {data.time ? `${data.period} ${data.time}` : data.period}</div>
         <div className={GAME_EVENT_DISMISS_CLASSES}>{t('gameEvents.dismissHint')}</div>
       </div>
@@ -378,10 +380,13 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr
         if (!shownPenalties.current.has(penId)) {
           shownPenalties.current.add(penId);
           if (gameId) sessionStorage.setItem(`penalties_${gameId}`, JSON.stringify([...shownPenalties.current]));
+          // A bench minor has no player who committed it -- see penaltyText.js.
+          const parties = penaltyParties(d, pName);
           setPenaltyPopup({
             id:          penId,
-            player:      pName(d.committedByPlayerId),
-            description: d.descKey ? d.descKey.replace(/-/g, ' ') : t('gameEvents.penalty.fallbackDescription'),
+            player:      penaltyHeadline(parties, t),
+            servedBy:    penaltyServedBy(parties, t),
+            description: penaltyDescription(d.descKey, t) || t('gameEvents.penalty.fallbackDescription'),
             duration:    d.duration || 2,
             period:      per,
             time,

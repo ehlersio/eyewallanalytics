@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { getGameLanding } from '../utils/nhlApi';
 import { computeShotAttempts } from '../utils/advancedStats';
 import { finalSuffix } from '../utils/scoreboard';
+import { penaltyParties } from '../utils/penaltyText';
 
 const WORKER_URL = typeof import.meta !== 'undefined'
   ? import.meta.env?.VITE_WORKER_URL
@@ -100,6 +101,30 @@ export function goaliesInNet(plays, rosterMap, teamId) {
   return ids.map(id => rosterMap[id]).filter(Boolean);
 }
 
+// One penalty play as the period and game summaries list it. playerName is
+// whoever committed it; a bench minor has none (committedByPlayerId is
+// absent) and names the skater who serves it instead -- see penaltyText.js.
+export function summaryPenalty(play, rosterMap, carTeamId) {
+  const d = play?.details || {};
+  const parties = penaltyParties(d, id => rosterMap[id]);
+  return {
+    time:         play?.timeInPeriod,
+    teamId:       d.eventOwnerTeamId,
+    isCar:        d.eventOwnerTeamId === carTeamId,
+    type:         d.descKey,
+    typeCode:     d.typeCode ?? null,
+    duration:     d.duration,
+    playerId:     d.committedByPlayerId ?? null,
+    playerName:   parties.committedName,
+    servedById:   d.servedByPlayerId ?? null,
+    servedByName: parties.servedByName,
+    teamPenalty:  parties.teamPenalty,
+    benchMinor:   parties.benchMinor,
+    drawnById:    d.drawnByPlayerId,
+    drawnByName:  rosterMap[d.drawnByPlayerId] || null,
+  };
+}
+
 function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlayoff = false) {
   const periodPlays = plays.filter(p => p.periodDescriptor?.number === period);
   const rosterMap = buildRosterMap(pbp);
@@ -147,17 +172,7 @@ function buildSummary(period, plays, carTeamId, landingData, pbp, gameId, isPlay
   // Penalties — include player names
   const penalties = periodPlays
     .filter(p => p.typeDescKey === 'penalty')
-    .map(p => ({
-      time:          p.timeInPeriod,
-      teamId:        p.details?.eventOwnerTeamId,
-      isCar:         p.details?.eventOwnerTeamId === carTeamId,
-      type:          p.details?.descKey,
-      duration:      p.details?.duration,
-      playerId:      p.details?.committedByPlayerId,
-      playerName:    rosterMap[p.details?.committedByPlayerId] || null,
-      drawnById:     p.details?.drawnByPlayerId,
-      drawnByName:   rosterMap[p.details?.drawnByPlayerId] || null,
-    }));
+    .map(p => summaryPenalty(p, rosterMap, carTeamId));
 
   // Enrich goals from landing -- see landingGoalPicker().
   const landingGoals = landingData?.summary?.scoring
@@ -400,10 +415,8 @@ function buildGameSummary(plays, carTeamId, landingData, pbp, gameId) {
 
   // Penalties
   const allPenalties = plays.filter(p => p.typeDescKey === 'penalty').map(p => ({
-    period: p.periodDescriptor?.number, time: p.timeInPeriod,
-    isCar: p.details?.eventOwnerTeamId === carTeamId,
-    type: p.details?.descKey, duration: p.details?.duration,
-    playerName: rosterMap[p.details?.committedByPlayerId] || null,
+    period: p.periodDescriptor?.number,
+    ...summaryPenalty(p, rosterMap, carTeamId),
   }));
 
   // Faceoffs, hits, TK/GV

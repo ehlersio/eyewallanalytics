@@ -48,6 +48,7 @@ import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import FaceoffLoader from '../components/FaceoffLoader';
 import { finalSuffix } from '../utils/scoreboard';
+import { penaltyParties, penaltyHeadline, penaltyServedBy, penaltyDescription } from '../utils/penaltyText';
 
 // Lazy so Recharts stays off the default route's initial load -- the wave
 // only renders inside the live momentum card.
@@ -307,7 +308,7 @@ const PEN_ROW_TOP_CLASSES = 'flex items-center gap-2 mb-[3px]';
 const PEN_ROW_BOTTOM_CLASSES = 'flex items-center gap-2';
 const PEN_BADGE_CLASSES = 'text-[10px] font-bold py-0.5 px-[6px] rounded-[4px]';
 const PEN_PERIOD_CLASSES = 'text-[10px] text-[color:var(--text-dim)] ml-auto';
-const PEN_DESC_CLASSES = 'text-[11px] text-[color:var(--text-muted)] capitalize';
+const PEN_DESC_CLASSES = 'text-[11px] text-[color:var(--text-muted)]';
 const PEN_TYPE_CLASSES = 'text-[10px] text-[color:var(--text-dim)] py-[1px] px-[5px] bg-[var(--bg3)] rounded-[4px]';
 const PEN_TOTALS_CLASSES = 'flex items-center gap-2 flex-wrap py-2 px-4 mt-1 border-t border-t-[color:var(--border)] font-bold';
 
@@ -1731,14 +1732,21 @@ export default function ShotMapView() {
       const penPlays = plays.filter(p => p.typeDescKey === 'penalty');
       const buildPenRows = (teamId) => penPlays
         .filter(p => p.details?.eventOwnerTeamId === teamId)
-        .map(p => ({
-          name:        pName(p.details?.committedByPlayerId || p.details?.drawnByPlayerId),
-          description: (p.details?.descKey || 'penalty').replace(/-/g, ' '),
-          penaltyType: p.details?.typeCode || '—',
-          duration:    p.details?.duration ?? 2,
-          period:      periodLabel(p.periodDescriptor?.number),
-          time:        p.timeInPeriod || '—',
-        }));
+        .map(p => {
+          // A bench minor names no one who committed it, only who serves
+          // it -- see penaltyText.js. (This used to fall back to the player
+          // who drew the penalty, naming the wrong team's player.)
+          const parties = penaltyParties(p.details, pName);
+          const desc = penaltyDescription(p.details?.descKey, t) || t('periodSummary.penalties.typeFallback');
+          return {
+            name:        penaltyHeadline(parties, t) || '—',
+            description: [desc, penaltyServedBy(parties, t)].filter(Boolean).join(' · '),
+            penaltyType: p.details?.typeCode || '—',
+            duration:    p.details?.duration ?? 2,
+            period:      periodLabel(p.periodDescriptor?.number),
+            time:        p.timeInPeriod || '—',
+          };
+        });
       setDrillStat({
         label: t('shotMapView.drillTitles.penalties'),
         carRows:  buildPenRows(carId),
@@ -3034,12 +3042,12 @@ function EventLog({ plays, playerMap = {} }) {
           headline = pName(d.shootingPlayerId) || '—';
           sub = d.shotType ? d.shotType : null;
         } else if (type === 'penalty') {
-          const committed = pName(d.committedByPlayerId);
-          const drawn     = pName(d.drawnByPlayerId);
-          headline = committed || '—';
+          const parties = penaltyParties(d, pName);
+          const drawn   = pName(d.drawnByPlayerId);
+          headline = penaltyHeadline(parties, t) || '—';
           const mins = d.duration != null ? t('shotMapView.eventLog.penaltyMinutes', { count: d.duration }) : '';
-          const desc = d.descKey ? d.descKey.replace(/-/g, ' ') : '';
-          sub = [mins, desc, drawn ? t('shotMapView.eventLog.penaltyDrawnBy', { name: drawn }) : ''].filter(Boolean).join(' · ');
+          const desc = penaltyDescription(d.descKey, t) || '';
+          sub = [mins, desc, penaltyServedBy(parties, t), drawn ? t('shotMapView.eventLog.penaltyDrawnBy', { name: drawn }) : ''].filter(Boolean).join(' · ');
         } else if (type === 'hit') {
           const hitter = pName(d.hittingPlayerId);
           const hittee = pName(d.hitteePlayerId);
