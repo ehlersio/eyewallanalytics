@@ -1227,11 +1227,15 @@ export async function getGameDetail(gameId) {
   }, TTL.GAME_DATA);
 }
 
-// Call this to force-refresh live game data (bypasses cache)
-export function bustLiveGameCache(gameId, team = TEAM_CONFIG) {
+// Force-refresh a live game's play-by-play and box score (bypasses the
+// cache). The live-game poller (utils/liveGameStore.js) calls it every
+// 10 s tick. It used to bust the schedule cache too, so every tick also
+// re-downloaded the 184 KB club schedule; getAllGames' own 20 s cache is
+// fresh enough to see a game end. Code that must see a game that just
+// went live calls bustScheduleCache() itself.
+export function bustLiveGameCache(gameId) {
   invalidate(`pbp:${gameId}`);
   invalidate(`boxscore:${gameId}`);
-  bustScheduleCache(team);
 }
 
 // Next getAllGames()/getLiveGame() reads the Worker again, not the 20s
