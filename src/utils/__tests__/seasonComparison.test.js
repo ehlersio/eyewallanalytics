@@ -3,8 +3,18 @@
 // (Session 64). These are pure functions with no React/fetch dependency —
 // same convention as statFormatting.test.js.
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+
+// pwhlConfig.js (for its hand-checked PWHL_SEASONS) looks up the live
+// season on import; keep it offline.
+vi.mock('../seasonClient', () => ({
+  fetchSeasonsConfig: vi.fn(() => Promise.reject(new Error('offline in tests'))),
+  fetchComparisonSeasons: vi.fn(() => Promise.reject(new Error('offline in tests'))),
+}))
 import { nhlSeasonLabel, pwhlSeasonLabel, ahlSeasonLabel, echlSeasonLabel, normalizeComparisonSeasons } from '../seasonComparison.js'
+import { PWHL_SEASONS } from '../pwhlConfig.js'
+import workerBefore from './fixtures/pwhl-comparison-seasons-2026-10-06/worker-before.json'
+import worker187 from './fixtures/pwhl-comparison-seasons-2026-10-06/worker-187.json'
 
 describe('nhlSeasonLabel', () => {
   it('formats the season number as "YYYY-YY"', () => {
@@ -121,5 +131,38 @@ describe('normalizeComparisonSeasons', () => {
     expect(normalizeComparisonSeasons('pwhl')).toEqual([])
     expect(normalizeComparisonSeasons('ahl')).toEqual([])
     expect(normalizeComparisonSeasons('echl')).toEqual([])
+  })
+})
+
+// /config/seasons/comparison's real PWHL entry on 2026-10-06, from the
+// deployed Worker (worker-before.json: labelled here from startYear, which
+// was the start date's calendar year) and from eyewall-poller #187 run
+// against the same data (worker-187.json: startYear is the hockey
+// season's, and each row carries the Worker's own label).
+describe('PWHL comparison labels from the Worker', () => {
+  const label = (data) => Object.fromEntries(normalizeComparisonSeasons('pwhl', data.seasons).map(s => [s.value, s.label]))
+
+  it('uses the Worker\'s label, which agrees with the hand-checked PWHL_SEASONS', () => {
+    const labels = label(worker187)
+    expect(labels).toEqual({
+      9: '2025-26 Playoffs', 8: '2025-26', 6: '2024-25 Playoffs', 5: '2024-25',
+      3: '2023-24 Playoffs', 2: '2023-24 Preseason', 1: '2023-24',
+    })
+    for (const s of PWHL_SEASONS) {
+      if (s.id in labels) expect({ id: s.id, label: labels[s.id] }).toEqual({ id: s.id, label: s.label })
+    }
+  })
+
+  it('prefers the Worker\'s label over one built from startYear', () => {
+    const [row] = worker187.seasons
+    expect(normalizeComparisonSeasons('pwhl', [{ ...row, label: 'from the Worker' }])[0].label).toBe('from the Worker')
+  })
+
+  it('still labels an older Worker\'s rows (no label) from startYear and type', () => {
+    expect(worker187.seasons.every(s => s.label)).toBe(true)
+    expect(workerBefore.seasons.some(s => 'label' in s)).toBe(false)
+    expect(label(worker187)).toMatchObject(label({ seasons: worker187.seasons.map(({ label: _l, ...s }) => s) }))
+    // What the deployed Worker's startYear produced: the labels this fixes.
+    expect(label(workerBefore)).toMatchObject({ 9: '2026-27 Playoffs', 1: '2024-25', 3: 'Season 3' })
   })
 })

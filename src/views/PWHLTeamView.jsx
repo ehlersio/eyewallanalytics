@@ -15,7 +15,7 @@ import TeamComparisonPopup from '../components/TeamComparisonPopup';
 import TeamHistorySections from '../components/TeamHistorySections';
 import RankBadge from '../components/RankBadge'
 import { getTeamHistory } from '../utils/teamHistory';
-import { gameResultFor } from '../utils/hockeyTechResults';
+import { gameResultFor, currentStreak, streakColor } from '../utils/hockeyTechResults';
 import { recentRecord } from '../utils/teamTrends';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
@@ -987,14 +987,9 @@ export function TrendsTab({ schedule, teamId, loading }) {
     return parseFloat((w.reduce((s,x) => s+x.op, 0) / w.length).toFixed(1));
   });
 
-  // Streak
-  let streak = 0, streakType = '';
-  for (let i = gameLog.length-1; i >= 0; i--) {
-    const g = gameLog[i];
-    if (i === gameLog.length-1) { streakType = g.won ? 'W' : 'L'; streak = 1; }
-    else if ((g.won && streakType === 'W') || (!g.won && streakType === 'L')) streak++;
-    else break;
-  }
+  // OT/SO losses form their own 'OT' streak, as for the AHL/ECHL
+  // (utils/hockeyTechResults.js) -- they used to extend an 'L' streak.
+  const { type: streakType, count: streak } = currentStreak(gameLog.map(g => g.result));
 
   // Record over the last 10 games -- or fewer, over the games actually
   // played -- W–L–OTL like the standings' L10 (used to read W–(10−W) over
@@ -1013,7 +1008,7 @@ export function TrendsTab({ schedule, teamId, loading }) {
         <div className={TRENDS_QUICK_CLASSES}>
           <div className={TQ_ITEM_CLASSES}>
             <div className={TQ_LABEL_CLASSES}>{t('team.currentStreak')}</div>
-            <div className={TQ_VAL_CLASSES} style={{ color: streakType === 'W' ? 'var(--green)' : 'var(--red-bright)' }}>
+            <div className={TQ_VAL_CLASSES} style={{ color: streakColor(streakType) }}>
               {streakType}{streak}
             </div>
           </div>

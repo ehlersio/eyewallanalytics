@@ -9,7 +9,9 @@
 // (season 8) and standings, ECHL Toledo's (68) 2025-26 schedule and
 // standings row, and AHL Texas's (380) standings row for 2026-27 (94),
 // whose schedule is fixtures/ahl-tex-2026-27 (a shootout win, then a
-// shootout loss).
+// shootout loss). pwhl-standings-8-ot-streak.json is the same standings
+// from the Worker with OT/SO-loss streaks (eyewall-poller #187), run
+// against the same data.
 
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 
@@ -20,13 +22,15 @@ vi.mock('../seasonClient', () => ({
 
 import { renderToStaticMarkup } from 'react-dom/server'
 import i18n from '../../i18n/index.js'
-import { gameResultFor } from '../hockeyTechResults.js'
+import { gameResultFor, currentStreak } from '../hockeyTechResults.js'
 import { recentRecord } from '../teamTrends.js'
 import { TrendsTab as PWHLTrendsTab } from '../../views/PWHLTeamView.jsx'
 import { TrendsTab as AHLTrendsTab } from '../../views/AHLTeamView.jsx'
 import { TrendsTab as ECHLTrendsTab } from '../../views/ECHLTeamView.jsx'
+import { StandingsPanel as PWHLStandingsPanel } from '../../views/PWHLLeagueView.jsx'
 import pwhlSchedules from './fixtures/team-trends-2026-10-06/pwhl-schedules-8.json'
 import pwhlStandings from './fixtures/team-trends-2026-10-06/pwhl-standings-8.json'
+import pwhlStandingsOtStreak from './fixtures/team-trends-2026-10-06/pwhl-standings-8-ot-streak.json'
 import echlSchedule from './fixtures/team-trends-2026-10-06/echl-schedule-68-73.json'
 import echlStandings from './fixtures/team-trends-2026-10-06/echl-standings-73-team-68.json'
 import ahlStandings from './fixtures/team-trends-2026-10-06/ahl-standings-94-team-380.json'
@@ -97,6 +101,41 @@ describe('PWHL TrendsTab', () => {
   it('keeps marking OT/SO wins apart in the result dots', () => {
     const html = renderToStaticMarkup(<PWHLTrendsTab schedule={pwhlSchedules['1']} teamId={1} loading={false} />)
     expect(html).toContain('title="OTL 2–3"') // 318, the OT loss at MTL
+  })
+})
+
+describe('PWHL streaks', () => {
+  // Minnesota finished OT loss, then three regulation losses before it:
+  // OT1, not the L4 every non-win used to add up to. Toronto: L, then OT
+  // (L1, was L2); Seattle: OT, then W (OT1, was L1).
+  it('matches the Worker\'s OT/SO-aware streak for every team', () => {
+    for (const row of pwhlStandingsOtStreak) {
+      const streak = currentStreak(logFor(pwhlSchedules[String(row.team_id)], row.team_id).map(g => g.result))
+      expect({ team: row.team_id, ...streak }).toEqual({ team: row.team_id, type: row.streakType, count: row.streakCount })
+    }
+    const byTeam = Object.fromEntries(pwhlStandingsOtStreak.map(r => [r.team_id, `${r.streakType}${r.streakCount}`]))
+    expect(byTeam).toMatchObject({ 2: 'OT1', 6: 'L1', 8: 'OT1' })
+  })
+
+  it('TrendsTab shows MIN\'s OT1 in amber and TOR\'s L1 in red', () => {
+    const min = renderToStaticMarkup(<PWHLTrendsTab schedule={pwhlSchedules['2']} teamId={2} loading={false} />)
+    expect(min).toMatch(/color:var\(--amber\)[^>]*>OT1</)
+    expect(min).not.toMatch(/>L4</)
+    const tor = renderToStaticMarkup(<PWHLTrendsTab schedule={pwhlSchedules['6']} teamId={6} loading={false} />)
+    expect(tor).toMatch(/color:var\(--red-bright\)[^>]*>L1</)
+  })
+
+  it('League standings STRK shows OT streaks in amber', () => {
+    const html = renderToStaticMarkup(<PWHLStandingsPanel standings={pwhlStandingsOtStreak} season={8} loading={false} />)
+    expect(html.match(/color:var\(--amber\);font-weight:600">OT1</g)).toHaveLength(2) // MIN, SEA
+    expect(html).toMatch(/color:var\(--green\);font-weight:600">W4</)
+    expect(html).toMatch(/color:var\(--red-bright\);font-weight:600">L1</)
+  })
+
+  it('League standings STRK still reads an older Worker\'s W/L-only streaks', () => {
+    const old = pwhlStandingsOtStreak.map(r => (r.team_id === 2 ? { ...r, streakType: 'L', streakCount: 4 } : r))
+    const html = renderToStaticMarkup(<PWHLStandingsPanel standings={old} season={8} loading={false} />)
+    expect(html).toMatch(/color:var\(--red-bright\);font-weight:600">L4</)
   })
 })
 

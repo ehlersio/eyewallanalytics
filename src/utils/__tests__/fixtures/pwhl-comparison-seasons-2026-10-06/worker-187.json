@@ -1,0 +1,61 @@
+{
+  "activeTeamCount": 12,
+  "seasons": [
+    {
+      "seasonId": 9,
+      "seasonType": "playoffs",
+      "startYear": 2025,
+      "label": "2025-26 Playoffs",
+      "teamCount": 4,
+      "comparable": false
+    },
+    {
+      "seasonId": 8,
+      "seasonType": "regular",
+      "startYear": 2025,
+      "label": "2025-26",
+      "teamCount": 8,
+      "comparable": true
+    },
+    {
+      "seasonId": 6,
+      "seasonType": "playoffs",
+      "startYear": 2024,
+      "label": "2024-25 Playoffs",
+      "teamCount": 4,
+      "comparable": false
+    },
+    {
+      "seasonId": 5,
+      "seasonType": "regular",
+      "startYear": 2024,
+      "label": "2024-25",
+      "teamCount": 6,
+      "comparable": false
+    },
+    {
+      "seasonId": 3,
+      "seasonType": "playoffs",
+      "startYear": 2023,
+      "label": "2023-24 Playoffs",
+      "teamCount": 6,
+      "comparable": false
+    },
+    {
+      "seasonId": 2,
+      "seasonType": "preseason",
+      "startYear": 2023,
+      "label": "2023-24 Preseason",
+      "teamCount": 6,
+      "comparable": false
+    },
+    {
+      "seasonId": 1,
+      "seasonType": "regular",
+      "startYear": 2023,
+      "label": "2023-24",
+      "teamCount": 6,
+      "comparable": false
+    }
+  ]
+}
