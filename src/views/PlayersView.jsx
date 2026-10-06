@@ -144,10 +144,12 @@ export default function PlayersView() {
   const [gameType, setGameType] = useState(2)
   const [rosterSort, setRosterSort] = useState('number')
   const inPlayoffs = (poGames?.length || 0) > 0
+  // Without playoff games there's no Playoffs choice, so always regular.
+  const statsGameType = inPlayoffs ? gameType : 2
 
   const { data: skaterStats, loading: statsLoading } = useFetch(
-    () => getTeamSkaterStatsFromDB(TEAM_CONFIG.abbr, SEASON, gameType),
-    [gameType, SEASON]
+    () => getTeamSkaterStatsFromDB(TEAM_CONFIG.abbr, SEASON, statsGameType),
+    [statsGameType, SEASON]
   )
 
   // Prospects tab -- lazy-fetched only once that tab is actually opened.
@@ -175,11 +177,16 @@ export default function PlayersView() {
 
       {view === 'stats' && (
         <>
-          <div className={TABS_WRAP_CLASSES} style={{ marginTop: 8, marginBottom: 4 }}>
-            <button className={tabClasses(gameType === 2)} onClick={() => setGameType(2)}>{t('team.regularSeason')}</button>
-            <button className={tabClasses(gameType === 3)} onClick={() => setGameType(3)}>{t('playersView.playoffsToggle')}</button>
-          </div>
-          <SkaterStatsTable skaters={skaterStats || []} loading={statsLoading} gameType={gameType} onSelect={(id) => {
+          {/* Playoffs is offered only once the team has playoff games this
+              season -- in the regular season it could only ever say "no
+              playoff stats yet" (audit 2026-10-05 #38). */}
+          {inPlayoffs && (
+            <div className={TABS_WRAP_CLASSES} style={{ marginTop: 8, marginBottom: 4 }}>
+              <button className={tabClasses(statsGameType === 2)} onClick={() => setGameType(2)}>{t('team.regularSeason')}</button>
+              <button className={tabClasses(statsGameType === 3)} onClick={() => setGameType(3)}>{t('playersView.playoffsToggle')}</button>
+            </div>
+          )}
+          <SkaterStatsTable skaters={skaterStats || []} loading={statsLoading} gameType={statsGameType} onSelect={(id) => {
             const p = roster?.all?.find(r => r.id === id);
             if (p) setSelected(p);
           }} />

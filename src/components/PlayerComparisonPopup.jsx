@@ -39,6 +39,7 @@ import {
   groupStats as nhlGroupStats, STAT_PCT_MAP as NHL_STAT_PCT_MAP,
   computeRadarAxes as nhlSkaterRadarAxes, computeGoalieRadarAxes as nhlGoalieRadarAxes,
   RADAR_AXIS_ABBR as NHL_RADAR_AXIS_ABBR, posLabel as nhlPosLabel,
+  nhlSeasonTotal, latestNhlSeasonTotal,
 } from '../utils/nhlPlayerStats'
 import {
   SKATER_STATS as PWHL_SKATER_STATS, GOALIE_STATS as PWHL_GOALIE_STATS,
@@ -121,9 +122,9 @@ function usePlayerComparisonData(sport, player) {
   // The NHL's regular season to show: this season's, else the most recent
   // with games (see the whole-season fallback note below). NHL EDGE follows
   // the same season, so the Tracking tab compares what the other tabs do.
-  const nhlRegSeasons = (nhlStats?.seasonTotals || []).filter(s => s.gameTypeId === 2 && s.leagueAbbrev === 'NHL')
-  const seasonReg = nhlRegSeasons.find(s => s.season === NHL_SEASON)
-    || [...nhlRegSeasons].sort((a, b) => b.season - a.season)[0]
+  // NHL rows only, a traded player's stints added up (nhlSeasonTotal).
+  const seasonReg = nhlSeasonTotal(nhlStats?.seasonTotals, NHL_SEASON, 2)
+    || latestNhlSeasonTotal(nhlStats?.seasonTotals, 2)
   const edgeSeason = !isPwhl ? seasonReg?.season : null
   const { data: edgeData } = useFetch(
     () => (edgeSeason && id) ? getPlayerEdge(isGoalie ? 'goalie' : 'skater', id, String(edgeSeason), 2).catch(() => null) : Promise.resolve(null),

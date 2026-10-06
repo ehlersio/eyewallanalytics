@@ -261,3 +261,91 @@ export const RADAR_AXIS_ABBR = {
   'MD SV%':         'MD',
   'PK SV%':         'PK',
 }
+
+// ── One NHL season from a landing's seasonTotals ─────────────────
+// /player/{id}/landing's seasonTotals mixes leagues (AHL, NCAA, juniors...)
+// and has one row per team stint. Taking the first row for a season showed
+// Brandon Bussi's AHL 2024-25 as an NHL season and only the PHI part of
+// Nicolas Deslauriers' PHI + CAR 2025-26 (audit 2026-10-05 #28). These
+// keep NHL rows only and add up a traded player's stints.
+//
+// Counting stats are summed. Rates are recomputed from the sums: S% from
+// goals/shots, SV% and GAA from goals against, shots against and time on
+// ice, TOI/G weighted by games played. FO% is left out of a combined row:
+// the landing gives no faceoff counts to combine it from.
+const SUMMED_KEYS = [
+  'gamesPlayed', 'goals', 'assists', 'points', 'plusMinus', 'pim',
+  'powerPlayGoals', 'powerPlayPoints', 'shorthandedGoals', 'shorthandedPoints',
+  'shots', 'gameWinningGoals', 'otGoals',
+  'gamesStarted', 'wins', 'losses', 'otLosses', 'ties', 'shutouts',
+  'goalsAgainst', 'shotsAgainst',
+];
+
+function clockToSeconds(v) {
+  if (typeof v !== 'string' || !v.includes(':')) return null;
+  const [m, s] = v.split(':').map(Number);
+  return Number.isFinite(m) && Number.isFinite(s) ? m * 60 + s : null;
+}
+function secondsToClock(total) {
+  const r = Math.round(total);
+  return `${Math.floor(r / 60)}:${String(r % 60).padStart(2, '0')}`;
+}
+
+function nhlRows(seasonTotals, gameTypeId) {
+  return (seasonTotals || []).filter(s => s.leagueAbbrev === 'NHL' && s.gameTypeId === gameTypeId);
+}
+
+function combineRows(rows) {
+  if (rows.length === 1) return rows[0];
+  const sorted = [...rows].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+  const out = {
+    season: sorted[0].season,
+    gameTypeId: sorted[0].gameTypeId,
+    leagueAbbrev: 'NHL',
+    combined: true,
+    teams: sorted.map(r => r.teamCommonName?.default ?? r.teamName?.default).filter(Boolean),
+  };
+  for (const key of SUMMED_KEYS) {
+    if (sorted.some(r => r[key] != null)) out[key] = sorted.reduce((sum, r) => sum + (r[key] ?? 0), 0);
+  }
+  if (out.shots != null && out.goals != null) out.shootingPctg = out.shots > 0 ? out.goals / out.shots : 0;
+  const toiRows = sorted.map(r => clockToSeconds(r.avgToi));
+  if (toiRows.every(v => v != null) && out.gamesPlayed > 0) {
+    const total = sorted.reduce((sum, r, i) => sum + toiRows[i] * (r.gamesPlayed ?? 0), 0);
+    out.avgToi = secondsToClock(total / out.gamesPlayed);
+  }
+  const goalieToi = sorted.map(r => clockToSeconds(r.timeOnIce));
+  if (goalieToi.every(v => v != null)) {
+    const seconds = goalieToi.reduce((a, b) => a + b, 0);
+    out.timeOnIce = secondsToClock(seconds);
+    if (out.goalsAgainst != null && seconds > 0) out.goalsAgainstAvg = (out.goalsAgainst * 3600) / seconds;
+  }
+  if (out.shotsAgainst > 0 && out.goalsAgainst != null) {
+    out.savePctg = (out.shotsAgainst - out.goalsAgainst) / out.shotsAgainst;
+  }
+  return out;
+}
+
+// The player's NHL totals for one season and game type (2 regular season,
+// 3 playoffs): the single NHL row, or a traded player's rows combined
+// (`combined: true`, `teams` in the order he played for them). null when he
+// played no NHL games of that type that season.
+export function nhlSeasonTotal(seasonTotals, season, gameTypeId = 2) {
+  const rows = nhlRows(seasonTotals, gameTypeId).filter(s => Number(s.season) === Number(season));
+  return rows.length ? combineRows(rows) : null;
+}
+
+// The most recent season (before `beforeSeason` when given) with NHL games
+// of that type, combined the same way. null when there is none.
+export function latestNhlSeasonTotal(seasonTotals, gameTypeId = 2, beforeSeason = null) {
+  const seasons = nhlRows(seasonTotals, gameTypeId)
+    .map(s => Number(s.season))
+    .filter(s => beforeSeason == null || s < Number(beforeSeason));
+  if (!seasons.length) return null;
+  return nhlSeasonTotal(seasonTotals, Math.max(...seasons), gameTypeId);
+}
+
+// Every season with NHL games of that type, as numbers.
+export function nhlSeasonsPlayed(seasonTotals, gameTypeId = 2) {
+  return new Set(nhlRows(seasonTotals, gameTypeId).map(s => Number(s.season)));
+}

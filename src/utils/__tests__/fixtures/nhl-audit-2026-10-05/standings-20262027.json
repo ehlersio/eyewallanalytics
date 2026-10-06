@@ -1,0 +1,709 @@
+{
+ "_source": "eyewall-poller /cache/standings?team=CAR, fetched 2026-10-05",
+ "standings": [
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "NYR"
+   },
+   "teamName": {
+    "default": "New York Rangers",
+    "fr": "Rangers de New York"
+   },
+   "gamesPlayed": 4,
+   "wins": 3,
+   "losses": 1,
+   "otLosses": 0,
+   "points": 6,
+   "goalFor": 11,
+   "goalAgainst": 6,
+   "l10Wins": 3,
+   "l10Losses": 1,
+   "l10OtLosses": 0,
+   "streakCode": "W",
+   "streakCount": 3
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "EDM"
+   },
+   "teamName": {
+    "default": "Edmonton Oilers",
+    "fr": "Oilers d'Edmonton"
+   },
+   "gamesPlayed": 3,
+   "wins": 2,
+   "losses": 0,
+   "otLosses": 1,
+   "points": 5,
+   "goalFor": 17,
+   "goalAgainst": 14,
+   "l10Wins": 2,
+   "l10Losses": 0,
+   "l10OtLosses": 1,
+   "streakCode": "W",
+   "streakCount": 2
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "COL"
+   },
+   "teamName": {
+    "default": "Colorado Avalanche",
+    "fr": "Avalanche du Colorado"
+   },
+   "gamesPlayed": 2,
+   "wins": 2,
+   "losses": 0,
+   "otLosses": 0,
+   "points": 4,
+   "goalFor": 14,
+   "goalAgainst": 5,
+   "l10Wins": 2,
+   "l10Losses": 0,
+   "l10OtLosses": 0,
+   "streakCode": "W",
+   "streakCount": 2
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "MIN"
+   },
+   "teamName": {
+    "default": "Minnesota Wild",
+    "fr": "Wild du Minnesota"
+   },
+   "gamesPlayed": 2,
+   "wins": 2,
+   "losses": 0,
+   "otLosses": 0,
+   "points": 4,
+   "goalFor": 7,
+   "goalAgainst": 2,
+   "l10Wins": 2,
+   "l10Losses": 0,
+   "l10OtLosses": 0,
+   "streakCode": "W",
+   "streakCount": 2
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "OTT"
+   },
+   "teamName": {
+    "default": "Ottawa Senators",
+    "fr": "S\u00e9nateurs d'Ottawa"
+   },
+   "gamesPlayed": 2,
+   "wins": 2,
+   "losses": 0,
+   "otLosses": 0,
+   "points": 4,
+   "goalFor": 7,
+   "goalAgainst": 3,
+   "l10Wins": 2,
+   "l10Losses": 0,
+   "l10OtLosses": 0,
+   "streakCode": "W",
+   "streakCount": 2
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "PIT"
+   },
+   "teamName": {
+    "default": "Pittsburgh Penguins",
+    "fr": "Penguins de Pittsburgh"
+   },
+   "gamesPlayed": 2,
+   "wins": 2,
+   "losses": 0,
+   "otLosses": 0,
+   "points": 4,
+   "goalFor": 13,
+   "goalAgainst": 5,
+   "l10Wins": 2,
+   "l10Losses": 0,
+   "l10OtLosses": 0,
+   "streakCode": "W",
+   "streakCount": 2
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "ANA"
+   },
+   "teamName": {
+    "default": "Anaheim Ducks",
+    "fr": "Ducks d'Anaheim"
+   },
+   "gamesPlayed": 2,
+   "wins": 2,
+   "losses": 0,
+   "otLosses": 0,
+   "points": 4,
+   "goalFor": 7,
+   "goalAgainst": 5,
+   "l10Wins": 2,
+   "l10Losses": 0,
+   "l10OtLosses": 0,
+   "streakCode": "W",
+   "streakCount": 2
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "SJS"
+   },
+   "teamName": {
+    "default": "San Jose Sharks",
+    "fr": "Sharks de San Jose"
+   },
+   "gamesPlayed": 2,
+   "wins": 2,
+   "losses": 0,
+   "otLosses": 0,
+   "points": 4,
+   "goalFor": 9,
+   "goalAgainst": 7,
+   "l10Wins": 2,
+   "l10Losses": 0,
+   "l10OtLosses": 0,
+   "streakCode": "W",
+   "streakCount": 2
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "SEA"
+   },
+   "teamName": {
+    "default": "Seattle Kraken",
+    "fr": "Kraken de Seattle"
+   },
+   "gamesPlayed": 3,
+   "wins": 2,
+   "losses": 1,
+   "otLosses": 0,
+   "points": 4,
+   "goalFor": 13,
+   "goalAgainst": 5,
+   "l10Wins": 2,
+   "l10Losses": 1,
+   "l10OtLosses": 0,
+   "streakCode": "W",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "UTA"
+   },
+   "teamName": {
+    "default": "Utah Mammoth",
+    "fr": "Mammoth de l'Utah"
+   },
+   "gamesPlayed": 3,
+   "wins": 2,
+   "losses": 1,
+   "otLosses": 0,
+   "points": 4,
+   "goalFor": 12,
+   "goalAgainst": 5,
+   "l10Wins": 2,
+   "l10Losses": 1,
+   "l10OtLosses": 0,
+   "streakCode": "L",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "VGK"
+   },
+   "teamName": {
+    "default": "Vegas Golden Knights",
+    "fr": "Golden Knights de Vegas"
+   },
+   "gamesPlayed": 3,
+   "wins": 2,
+   "losses": 1,
+   "otLosses": 0,
+   "points": 4,
+   "goalFor": 11,
+   "goalAgainst": 8,
+   "l10Wins": 2,
+   "l10Losses": 1,
+   "l10OtLosses": 0,
+   "streakCode": "W",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "TBL"
+   },
+   "teamName": {
+    "default": "Tampa Bay Lightning",
+    "fr": "Lightning de Tampa Bay"
+   },
+   "gamesPlayed": 3,
+   "wins": 2,
+   "losses": 1,
+   "otLosses": 0,
+   "points": 4,
+   "goalFor": 8,
+   "goalAgainst": 7,
+   "l10Wins": 2,
+   "l10Losses": 1,
+   "l10OtLosses": 0,
+   "streakCode": "W",
+   "streakCount": 2
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "FLA"
+   },
+   "teamName": {
+    "default": "Florida Panthers",
+    "fr": "Panthers de la Floride"
+   },
+   "gamesPlayed": 3,
+   "wins": 1,
+   "losses": 0,
+   "otLosses": 2,
+   "points": 4,
+   "goalFor": 6,
+   "goalAgainst": 7,
+   "l10Wins": 1,
+   "l10Losses": 0,
+   "l10OtLosses": 2,
+   "streakCode": "OT",
+   "streakCount": 2
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "VAN"
+   },
+   "teamName": {
+    "default": "Vancouver Canucks",
+    "fr": "Canucks de Vancouver"
+   },
+   "gamesPlayed": 4,
+   "wins": 2,
+   "losses": 2,
+   "otLosses": 0,
+   "points": 4,
+   "goalFor": 19,
+   "goalAgainst": 18,
+   "l10Wins": 2,
+   "l10Losses": 2,
+   "l10OtLosses": 0,
+   "streakCode": "L",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "BOS"
+   },
+   "teamName": {
+    "default": "Boston Bruins",
+    "fr": "Bruins de Boston"
+   },
+   "gamesPlayed": 4,
+   "wins": 2,
+   "losses": 2,
+   "otLosses": 0,
+   "points": 4,
+   "goalFor": 9,
+   "goalAgainst": 11,
+   "l10Wins": 2,
+   "l10Losses": 2,
+   "l10OtLosses": 0,
+   "streakCode": "L",
+   "streakCount": 2
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "MTL"
+   },
+   "teamName": {
+    "default": "Montr\u00e9al Canadiens",
+    "fr": "Canadiens de Montr\u00e9al"
+   },
+   "gamesPlayed": 2,
+   "wins": 1,
+   "losses": 0,
+   "otLosses": 1,
+   "points": 3,
+   "goalFor": 8,
+   "goalAgainst": 8,
+   "l10Wins": 1,
+   "l10Losses": 0,
+   "l10OtLosses": 1,
+   "streakCode": "OT",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "WPG"
+   },
+   "teamName": {
+    "default": "Winnipeg Jets",
+    "fr": "Jets de Winnipeg"
+   },
+   "gamesPlayed": 2,
+   "wins": 1,
+   "losses": 0,
+   "otLosses": 1,
+   "points": 3,
+   "goalFor": 6,
+   "goalAgainst": 6,
+   "l10Wins": 1,
+   "l10Losses": 0,
+   "l10OtLosses": 1,
+   "streakCode": "W",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "CAR"
+   },
+   "teamName": {
+    "default": "Carolina Hurricanes",
+    "fr": "Hurricanes de la Caroline"
+   },
+   "gamesPlayed": 3,
+   "wins": 1,
+   "losses": 1,
+   "otLosses": 1,
+   "points": 3,
+   "goalFor": 5,
+   "goalAgainst": 8,
+   "l10Wins": 1,
+   "l10Losses": 1,
+   "l10OtLosses": 1,
+   "streakCode": "W",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "NYI"
+   },
+   "teamName": {
+    "default": "New York Islanders",
+    "fr": "Islanders de New York"
+   },
+   "gamesPlayed": 2,
+   "wins": 1,
+   "losses": 1,
+   "otLosses": 0,
+   "points": 2,
+   "goalFor": 7,
+   "goalAgainst": 2,
+   "l10Wins": 1,
+   "l10Losses": 1,
+   "l10OtLosses": 0,
+   "streakCode": "W",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "WSH"
+   },
+   "teamName": {
+    "default": "Washington Capitals",
+    "fr": "Capitals de Washington"
+   },
+   "gamesPlayed": 2,
+   "wins": 1,
+   "losses": 1,
+   "otLosses": 0,
+   "points": 2,
+   "goalFor": 6,
+   "goalAgainst": 5,
+   "l10Wins": 1,
+   "l10Losses": 1,
+   "l10OtLosses": 0,
+   "streakCode": "L",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "CBJ"
+   },
+   "teamName": {
+    "default": "Columbus Blue Jackets",
+    "fr": "Blue Jackets de Columbus"
+   },
+   "gamesPlayed": 2,
+   "wins": 1,
+   "losses": 1,
+   "otLosses": 0,
+   "points": 2,
+   "goalFor": 7,
+   "goalAgainst": 7,
+   "l10Wins": 1,
+   "l10Losses": 1,
+   "l10OtLosses": 0,
+   "streakCode": "L",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "STL"
+   },
+   "teamName": {
+    "default": "St. Louis Blues",
+    "fr": "Blues de St. Louis"
+   },
+   "gamesPlayed": 2,
+   "wins": 1,
+   "losses": 1,
+   "otLosses": 0,
+   "points": 2,
+   "goalFor": 5,
+   "goalAgainst": 6,
+   "l10Wins": 1,
+   "l10Losses": 1,
+   "l10OtLosses": 0,
+   "streakCode": "L",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "NSH"
+   },
+   "teamName": {
+    "default": "Nashville Predators",
+    "fr": "Predators de Nashville"
+   },
+   "gamesPlayed": 2,
+   "wins": 1,
+   "losses": 1,
+   "otLosses": 0,
+   "points": 2,
+   "goalFor": 3,
+   "goalAgainst": 4,
+   "l10Wins": 1,
+   "l10Losses": 1,
+   "l10OtLosses": 0,
+   "streakCode": "W",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "BUF"
+   },
+   "teamName": {
+    "default": "Buffalo Sabres",
+    "fr": "Sabres de Buffalo"
+   },
+   "gamesPlayed": 2,
+   "wins": 1,
+   "losses": 1,
+   "otLosses": 0,
+   "points": 2,
+   "goalFor": 7,
+   "goalAgainst": 9,
+   "l10Wins": 1,
+   "l10Losses": 1,
+   "l10OtLosses": 0,
+   "streakCode": "W",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "NJD"
+   },
+   "teamName": {
+    "default": "New Jersey Devils",
+    "fr": "Devils du New Jersey"
+   },
+   "gamesPlayed": 2,
+   "wins": 1,
+   "losses": 1,
+   "otLosses": 0,
+   "points": 2,
+   "goalFor": 3,
+   "goalAgainst": 8,
+   "l10Wins": 1,
+   "l10Losses": 1,
+   "l10OtLosses": 0,
+   "streakCode": "L",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "TOR"
+   },
+   "teamName": {
+    "default": "Toronto Maple Leafs",
+    "fr": "Maple Leafs de Toronto"
+   },
+   "gamesPlayed": 3,
+   "wins": 1,
+   "losses": 2,
+   "otLosses": 0,
+   "points": 2,
+   "goalFor": 6,
+   "goalAgainst": 7,
+   "l10Wins": 1,
+   "l10Losses": 2,
+   "l10OtLosses": 0,
+   "streakCode": "L",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "PHI"
+   },
+   "teamName": {
+    "default": "Philadelphia Flyers",
+    "fr": "Flyers de Philadelphie"
+   },
+   "gamesPlayed": 4,
+   "wins": 0,
+   "losses": 2,
+   "otLosses": 2,
+   "points": 2,
+   "goalFor": 5,
+   "goalAgainst": 17,
+   "l10Wins": 0,
+   "l10Losses": 2,
+   "l10OtLosses": 2,
+   "streakCode": "L",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "LAK"
+   },
+   "teamName": {
+    "default": "Los Angeles Kings",
+    "fr": "Kings de Los Angeles"
+   },
+   "gamesPlayed": 2,
+   "wins": 0,
+   "losses": 1,
+   "otLosses": 1,
+   "points": 1,
+   "goalFor": 8,
+   "goalAgainst": 13,
+   "l10Wins": 0,
+   "l10Losses": 1,
+   "l10OtLosses": 1,
+   "streakCode": "OT",
+   "streakCount": 1
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "DET"
+   },
+   "teamName": {
+    "default": "Detroit Red Wings",
+    "fr": "Red Wings de Detroit"
+   },
+   "gamesPlayed": 2,
+   "wins": 0,
+   "losses": 2,
+   "otLosses": 0,
+   "points": 0,
+   "goalFor": 2,
+   "goalAgainst": 5,
+   "l10Wins": 0,
+   "l10Losses": 2,
+   "l10OtLosses": 0,
+   "streakCode": "L",
+   "streakCount": 2
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "DAL"
+   },
+   "teamName": {
+    "default": "Dallas Stars",
+    "fr": "Stars de Dallas"
+   },
+   "gamesPlayed": 2,
+   "wins": 0,
+   "losses": 2,
+   "otLosses": 0,
+   "points": 0,
+   "goalFor": 1,
+   "goalAgainst": 6,
+   "l10Wins": 0,
+   "l10Losses": 2,
+   "l10OtLosses": 0,
+   "streakCode": "L",
+   "streakCount": 2
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "CHI"
+   },
+   "teamName": {
+    "default": "Chicago Blackhawks",
+    "fr": "Blackhawks de Chicago"
+   },
+   "gamesPlayed": 3,
+   "wins": 0,
+   "losses": 3,
+   "otLosses": 0,
+   "points": 0,
+   "goalFor": 5,
+   "goalAgainst": 15,
+   "l10Wins": 0,
+   "l10Losses": 3,
+   "l10OtLosses": 0,
+   "streakCode": "L",
+   "streakCount": 3
+  },
+  {
+   "seasonId": 20262027,
+   "teamAbbrev": {
+    "default": "CGY"
+   },
+   "teamName": {
+    "default": "Calgary Flames",
+    "fr": "Flames de Calgary"
+   },
+   "gamesPlayed": 3,
+   "wins": 0,
+   "losses": 3,
+   "otLosses": 0,
+   "points": 0,
+   "goalFor": 3,
+   "goalAgainst": 16,
+   "l10Wins": 0,
+   "l10Losses": 3,
+   "l10OtLosses": 0,
+   "streakCode": "L",
+   "streakCount": 3
+  }
+ ]
+}

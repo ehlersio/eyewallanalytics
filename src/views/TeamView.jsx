@@ -6,7 +6,7 @@ import {
   getPlayoffGames, buildCarPlayoffSummary,
   getTeamCorsi, getTeamRealtime, getTeamScoreState, getTeamPowerplay, getTeamPenaltyKill, getLeagueTeamAverages,
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
-  getTeamSeasonRankings, TEAM_CONFIG,
+  getTeamSeasonRankings, TEAM_CONFIG, GAME_TYPE,
   getDraftOrder, getDraftPicks, getTeamInjuries, getTeamScratches, getDraftPickHistory,
   getPlayoffOdds, getInjuryImpact, getCallupWatch,
 } from '../utils/nhlApi'
@@ -31,6 +31,7 @@ import Sparkline from '../components/Sparkline'
 import TeamHistorySections from '../components/TeamHistorySections'
 import RankBadge from '../components/RankBadge'
 import { getTeamHistory } from '../utils/teamHistory'
+import { recentRecord, currentStreak } from '../utils/teamTrends'
 import { getAHLTeamConfig } from '../utils/ahlConfig'
 import { PAGE_CLASSES } from '../utils/pageClasses'
 import { SKELETON_CLASSES } from '../utils/skeletonClasses'
@@ -302,7 +303,9 @@ export default function TeamView() {
   const { data: xgTrendPO   } = useFetch(forStatsSeason(s => getTeamXgTrend(TEAM_CONFIG.abbr, s, 3)), [statsSeason])
   const { data: scoreState } = useFetch(() => getTeamScoreState(2))
   const { data: poAdv      } = useFetch(getTeamPlayoffStats)
-  const { data: gameLog    } = useFetch(() => getTeamGameLog(20))
+  // Trends: one game type at a time, never preseason (audit 2026-10-05 #8).
+  const { data: gameLog, loading: gameLogLoading } = useFetch(() => getTeamGameLog(20, GAME_TYPE.REGULAR))
+  const { data: gameLogPO } = useFetch(() => getTeamGameLog(20, GAME_TYPE.PLAYOFFS))
 
   // Same staleness risk getTeamStats() already guards against (see nhlApi.js):
   // NHL's /standings/now stays pinned to last season's finale for months
@@ -363,7 +366,7 @@ export default function TeamView() {
       {tab === 'Overview'  && <OverviewTab stats={stats} standLoading={standLoading} statsLoading={statsLoading} poLoading={poLoading} carStanding={carStanding} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} liveGame={liveGame} corsiReg={corsiReg} realtimeReg={realtimeReg} rankings={rankings} />}
       {tab === 'Advanced'  && <AdvancedTab statsSeason={statsSeason} priorSeason={priorSeason} corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} homeSplit={homeSplit} xgTrend={xgTrend} xgTrendPO={xgTrendPO} />}
       {tab === 'Splits'    && <SplitsTab priorSeason={priorSeason} homeSplit={homeSplit} homeSplitPO={homeSplitPO} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} ppReg={ppReg} pkReg={pkReg} corsiReg={corsiReg} />}
-      {tab === 'Trends'    && <TrendsTab gameLog={gameLog} />}
+      {tab === 'Trends'    && <TrendsTab gameLogReg={gameLog} gameLogPO={gameLogPO} loading={gameLogLoading} />}
       {tab === 'Cap'   && <CapTab capSummary={capSummary} capPct={capPct} sortedContracts={sortedContracts} />}
       {tab === 'Picks' && <PicksTab />}
       {tab === 'History' && <TeamHistorySections history={getTeamHistory('nhl', TEAM_CONFIG.abbr)} league="nhl" />}
@@ -1463,9 +1466,15 @@ function SplitsTab({ priorSeason, homeSplit, homeSplitPO, _stats, _playoffSummar
 
 // ── Trends tab ───────────────────────────────────────────────
 
-function TrendsTab({ gameLog }) {
+export function TrendsTab({ gameLogReg, gameLogPO, loading }) {
   const { t } = useTranslation()
   const [dbGameLog, setDbGameLog] = React.useState(null)
+  // Playoffs are offered only once the team has a finished playoff game
+  // (and shown first then, like the Advanced tab); never an empty option.
+  const hasPO = (gameLogPO?.length || 0) > 0
+  const [poChoice, setPoChoice] = useState(null)
+  const showPO = hasPO && (poChoice ?? true)
+  const gameLog = showPO ? gameLogPO : gameLogReg
 
   React.useEffect(() => {
     getDbTeamGameLog(120, TEAM_CONFIG.season, TEAM_CONFIG.abbr).then(setDbGameLog).catch(() => {})
@@ -1483,7 +1492,9 @@ function TrendsTab({ gameLog }) {
     return (
       <div className={`card ${EMPTY_STATE_CLASSES}`}>
         <div className={EMPTY_ICON_CLASSES}>📈</div>
-        <div className={EMPTY_TITLE_CLASSES}>{t('teamView.trends.loadingGameLog')}</div>
+        <div className={EMPTY_TITLE_CLASSES}>
+          {loading ? t('teamView.trends.loadingGameLog') : t('teamView.trends.noRegularSeasonGames')}
+        </div>
       </div>
     )
   }
@@ -1546,37 +1557,43 @@ function TrendsTab({ gameLog }) {
     return { ...g, w10pct }
   })
 
-  // Current streak
-  let streak = 0, streakType = ''
-  for (let i = gameLog.length - 1; i >= 0; i--) {
-    const g = gameLog[i]
-    if (i === gameLog.length - 1) { streakType = g.won ? 'W' : 'L'; streak = 1 }
-    else if ((g.won && streakType === 'W') || (!g.won && streakType === 'L')) streak++
-    else break
-  }
-
-  const last10  = gameLog.slice(-10)
-  const last10W = last10.filter(g => g.won).length
+  // Current streak (W / L / OT, as the standings give it) and the record
+  // over the last 10 games -- or fewer, over the games actually played.
+  const streak = currentStreak(gameLog)
+  const recent = recentRecord(gameLog, 10)
+  const streakColor = streak.code === 'W' ? 'var(--green)' : streak.code === 'OT' ? 'var(--amber)' : 'var(--red-bright)'
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+      {/* Reg / Playoff toggle -- only when there are playoff games to show */}
+      {hasPO ? (
+        <div className={ADV_TOGGLE_CLASSES}>
+          <button className={advToggleBtnClasses(!showPO)} onClick={() => setPoChoice(false)} aria-pressed={!showPO}>{t('team.regularSeasonToggle')}</button>
+          <button className={advToggleBtnClasses(showPO)} onClick={() => setPoChoice(true)} aria-pressed={showPO}>{t('team.playoffsToggle')}</button>
+        </div>
+      ) : (
+        <div className={ADV_CONTEXT_NOTE_CLASSES}>{t('team.showingRegularSeason')}</div>
+      )}
 
       {/* Quick stats */}
       <div className="card">
         <div className={TRENDS_QUICK_CLASSES}>
           <div className={TQ_ITEM_CLASSES}>
             <div className={TQ_LABEL_CLASSES}>{t('team.currentStreak')}</div>
-            <div className={TQ_VAL_CLASSES} style={{ color: streakType === 'W' ? 'var(--green)' : 'var(--red-bright)' }}>
-              {streakType}{streak}
+            <div className={TQ_VAL_CLASSES} style={{ color: streakColor }}>
+              {streak.code}{streak.count}
             </div>
           </div>
           <div className={TQ_ITEM_CLASSES}>
-            <div className={TQ_LABEL_CLASSES}>{t('team.last10Games')}</div>
-            <div className={TQ_VAL_CLASSES}>{last10W}–{10 - last10W}</div>
+            <div className={TQ_LABEL_CLASSES}>{t('team.lastNGames', { count: recent.games })}</div>
+            <div className={TQ_VAL_CLASSES}>
+              {showPO ? `${recent.wins}–${recent.losses}` : `${recent.wins}–${recent.losses}–${recent.otLosses}`}
+            </div>
           </div>
           <div className={TQ_ITEM_CLASSES}>
-            <div className={TQ_LABEL_CLASSES}>{t('teamView.trends.winPctL10')}</div>
-            <div className={TQ_VAL_CLASSES}>{Math.round(last10W / 10 * 100)}%</div>
+            <div className={TQ_LABEL_CLASSES}>{t('teamView.trends.winPctLastN', { count: recent.games })}</div>
+            <div className={TQ_VAL_CLASSES}>{recent.winPct}%</div>
           </div>
         </div>
       </div>

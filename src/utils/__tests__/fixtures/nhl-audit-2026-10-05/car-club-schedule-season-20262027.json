@@ -1,0 +1,220 @@
+{
+ "_source": "api-web.nhle.com/v1/club-schedule-season/CAR/20262027, fetched 2026-10-05 (finished games + next 2)",
+ "games": [
+  {
+   "id": 2026010010,
+   "season": 20262027,
+   "gameType": 1,
+   "gameDate": "2026-09-20",
+   "gameState": "FINAL",
+   "periodDescriptor": {
+    "number": 3,
+    "periodType": "REG",
+    "maxRegulationPeriods": 3
+   },
+   "gameOutcome": {
+    "lastPeriodType": "REG"
+   },
+   "awayTeam": {
+    "id": 12,
+    "abbrev": "CAR",
+    "score": 3
+   },
+   "homeTeam": {
+    "id": 13,
+    "abbrev": "FLA",
+    "score": 6
+   }
+  },
+  {
+   "id": 2026010026,
+   "season": 20262027,
+   "gameType": 1,
+   "gameDate": "2026-09-22",
+   "gameState": "FINAL",
+   "periodDescriptor": {
+    "number": 5,
+    "periodType": "SO",
+    "maxRegulationPeriods": 3
+   },
+   "gameOutcome": {
+    "lastPeriodType": "SO"
+   },
+   "awayTeam": {
+    "id": 13,
+    "abbrev": "FLA",
+    "score": 2
+   },
+   "homeTeam": {
+    "id": 12,
+    "abbrev": "CAR",
+    "score": 3
+   }
+  },
+  {
+   "id": 2026010044,
+   "season": 20262027,
+   "gameType": 1,
+   "gameDate": "2026-09-24",
+   "gameState": "FINAL",
+   "periodDescriptor": {
+    "number": 3,
+    "periodType": "REG",
+    "maxRegulationPeriods": 3
+   },
+   "gameOutcome": {
+    "lastPeriodType": "REG"
+   },
+   "awayTeam": {
+    "id": 18,
+    "abbrev": "NSH",
+    "score": 5
+   },
+   "homeTeam": {
+    "id": 12,
+    "abbrev": "CAR",
+    "score": 6
+   }
+  },
+  {
+   "id": 2026010053,
+   "season": 20262027,
+   "gameType": 1,
+   "gameDate": "2026-09-26",
+   "gameState": "FINAL",
+   "periodDescriptor": {
+    "number": 3,
+    "periodType": "REG",
+    "maxRegulationPeriods": 3
+   },
+   "gameOutcome": {
+    "lastPeriodType": "REG"
+   },
+   "awayTeam": {
+    "id": 12,
+    "abbrev": "CAR",
+    "score": 6
+   },
+   "homeTeam": {
+    "id": 18,
+    "abbrev": "NSH",
+    "score": 0
+   }
+  },
+  {
+   "id": 2026020001,
+   "season": 20262027,
+   "gameType": 2,
+   "gameDate": "2026-09-29",
+   "gameState": "OFF",
+   "periodDescriptor": {
+    "number": 4,
+    "periodType": "OT",
+    "maxRegulationPeriods": 3
+   },
+   "gameOutcome": {
+    "lastPeriodType": "OT"
+   },
+   "awayTeam": {
+    "id": 13,
+    "abbrev": "FLA",
+    "score": 1
+   },
+   "homeTeam": {
+    "id": 12,
+    "abbrev": "CAR",
+    "score": 0
+   }
+  },
+  {
+   "id": 2026020018,
+   "season": 20262027,
+   "gameType": 2,
+   "gameDate": "2026-10-02",
+   "gameState": "OFF",
+   "periodDescriptor": {
+    "number": 3,
+    "periodType": "REG",
+    "maxRegulationPeriods": 3
+   },
+   "gameOutcome": {
+    "lastPeriodType": "REG"
+   },
+   "awayTeam": {
+    "id": 15,
+    "abbrev": "WSH",
+    "score": 5
+   },
+   "homeTeam": {
+    "id": 12,
+    "abbrev": "CAR",
+    "score": 2
+   }
+  },
+  {
+   "id": 2026020025,
+   "season": 20262027,
+   "gameType": 2,
+   "gameDate": "2026-10-03",
+   "gameState": "OFF",
+   "periodDescriptor": {
+    "number": 4,
+    "periodType": "OT",
+    "maxRegulationPeriods": 3
+   },
+   "gameOutcome": {
+    "lastPeriodType": "OT"
+   },
+   "awayTeam": {
+    "id": 12,
+    "abbrev": "CAR",
+    "score": 3
+   },
+   "homeTeam": {
+    "id": 4,
+    "abbrev": "PHI",
+    "score": 2
+   }
+  },
+  {
+   "id": 2026020045,
+   "season": 20262027,
+   "gameType": 2,
+   "gameDate": "2026-10-06",
+   "gameState": "FUT",
+   "periodDescriptor": {
+    "number": 1,
+    "periodType": "REG",
+    "maxRegulationPeriods": 3
+   },
+   "awayTeam": {
+    "id": 12,
+    "abbrev": "CAR"
+   },
+   "homeTeam": {
+    "id": 8,
+    "abbrev": "MTL"
+   }
+  },
+  {
+   "id": 2026020061,
+   "season": 20262027,
+   "gameType": 2,
+   "gameDate": "2026-10-08",
+   "gameState": "FUT",
+   "periodDescriptor": {
+    "number": 1,
+    "periodType": "REG",
+    "maxRegulationPeriods": 3
+   },
+   "awayTeam": {
+    "id": 23,
+    "abbrev": "VAN"
+   },
+   "homeTeam": {
+    "id": 12,
+    "abbrev": "CAR"
+   }
+  }
+ ]
+}

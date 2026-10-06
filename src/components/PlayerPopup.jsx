@@ -49,6 +49,7 @@ import { getPlayerEdge } from '../utils/edgeApi'
 import PlayerComparisonEntry from './PlayerComparisonEntry'
 import {
   SKATER_STATS, GOALIE_STATS, groupStats, posLabel,
+  nhlSeasonTotal, latestNhlSeasonTotal, nhlSeasonsPlayed,
   STAT_PCT_MAP, computeRadarAxes, computeGoalieRadarAxes, RADAR_AXIS_ABBR,
 } from '../utils/nhlPlayerStats'
 import { SKELETON_CLASSES } from '../utils/skeletonClasses'
@@ -963,7 +964,10 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
   // headshot: prefer from stats response (always populated), fall back to roster object
   const name     = `${p.firstName?.default || ''} ${p.lastName?.default || ''}`.trim()
-  const isGoalie = p.positionCode === 'G'
+  // The player object's position, else the landing's (League > Leaders and
+  // NHL EDGE leader rows can arrive without one -- goalies opened from the
+  // GAA / SV% cards were drawn as skaters, audit 2026-10-05 #24).
+  const isGoalie = (p.positionCode || stats?.position) === 'G'
 
   // Shot data — only fetch in CAR roster context
   const { data: shotData } = useFetch(
@@ -1016,8 +1020,10 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   )
   const scratchRow = scratchSummary?.players?.find(s => s.player_id === Number(p.id)) || null
 
-  const seasonPO  = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 3)
-  let   seasonReg = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 2)
+  // NHL rows only, a traded player's stints added up (nhlSeasonTotal) --
+  // never an AHL row or one team's part of the season (audit #28).
+  const seasonPO  = nhlSeasonTotal(stats?.seasonTotals, SEASON, 3)
+  let   seasonReg = nhlSeasonTotal(stats?.seasonTotals, SEASON, 2)
   const careerPO  = stats?.careerTotals?.playoffs
   const careerReg = stats?.careerTotals?.regularSeason
 
@@ -1033,9 +1039,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   let boxStatsStale = false
   let boxStatsSeason = null
   if (!seasonReg) {
-    const priorReg = (stats?.seasonTotals || [])
-      .filter(s => s.season < SEASON && s.gameTypeId === 2)
-      .sort((a, b) => b.season - a.season)[0]
+    const priorReg = latestNhlSeasonTotal(stats?.seasonTotals, 2, SEASON)
     if (priorReg) {
       seasonReg = priorReg
       boxStatsStale = true
@@ -1043,6 +1047,10 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
     }
   }
   const regSeasonLabel = boxStatsStale ? nhlSeasonLabel(boxStatsSeason) : SEASON_LABEL
+  // "… (Flyers + Hurricanes combined)" on a traded player's season.
+  const withTeams = (label, row) => row?.combined
+    ? t('playerPopup.combinedTeams', { label, teams: row.teams.join(' + ') })
+    : label
 
   // Rankings — skip in league context (requires team/division membership we don't have)
   const { data: rankings } = useFetch(
@@ -1054,14 +1062,14 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
   const sections = inPlayoffs
     ? [
-        { label: t('playerPopup.sections.seasonPlayoffs', { season: SEASON_LABEL }), stats: seasonPO,  highlight: true },
+        { label: withTeams(t('playerPopup.sections.seasonPlayoffs', { season: SEASON_LABEL }), seasonPO), stats: seasonPO,  highlight: true },
         { label: t('playerPopup.sections.careerPlayoffs'),                            stats: careerPO,  highlight: false },
-        { label: t('playerPopup.sections.seasonRegular', { season: SEASON_LABEL }),  stats: seasonReg, highlight: false },
+        { label: withTeams(t('playerPopup.sections.seasonRegular', { season: regSeasonLabel }), seasonReg), stats: seasonReg, highlight: false },
         { label: t('playerPopup.sections.careerRegular'),                            stats: careerReg, highlight: false },
       ]
     : [
-        { label: t('playerPopup.sections.seasonRegular', { season: regSeasonLabel }), stats: seasonReg, highlight: true },
-        { label: t('playerPopup.sections.seasonPlayoffs', { season: SEASON_LABEL }), stats: seasonPO,  highlight: false },
+        { label: withTeams(t('playerPopup.sections.seasonRegular', { season: regSeasonLabel }), seasonReg), stats: seasonReg, highlight: true },
+        { label: withTeams(t('playerPopup.sections.seasonPlayoffs', { season: SEASON_LABEL }), seasonPO), stats: seasonPO,  highlight: false },
         { label: t('playerPopup.sections.careerRegular'),                            stats: careerReg, highlight: false },
         { label: t('playerPopup.sections.careerPlayoffs'),                            stats: careerPO,  highlight: false },
       ]
@@ -1130,6 +1138,8 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
       : Promise.resolve([])),
     [p.id, compareSeasons.join(',')]
   )
+
+  const nhlRegSeasons = useMemo(() => nhlSeasonsPlayed(stats?.seasonTotals, 2), [stats])
 
   const compareSeasonsSortedDesc = useMemo(
     () => [...compareSeasons].sort((a, b) => b - a),
@@ -1438,7 +1448,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
               </div>
             </div>
             {(() => {
-              const regStats = stats?.seasonTotals?.find(s => s.season === SEASON && s.gameTypeId === 2)
+              const regStats = nhlSeasonTotal(stats?.seasonTotals, SEASON, 2)
               const pts   = regStats?.points ?? 0
               const gp    = regStats?.gamesPlayed ?? 0
               const isELC = contract.note === 'ELC' || contract.capHit < 1_200_000
@@ -1589,6 +1599,9 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
               selected={compareSeasons}
               onChange={setCompareSeasons}
               maxSelected={4}
+              // Only seasons he played NHL regular-season games in -- an
+              // AHL-only season used to be offered (and showed AHL stats).
+              filterSeasons={stats ? (s => nhlRegSeasons.has(Number(s.value))) : null}
             />
             {compareSeasons.length === 0 && (
               <div className={PP_NO_STATS_CLASSES}>{t('playerPopup.compareTab.selectSeasons')}</div>
@@ -1624,17 +1637,17 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
             {compareSeasons.length > 0 && (
               <div className="stat-section-peers">
                 {compareSeasonsSortedDesc.map(season => {
-                  const seasonStats = stats?.seasonTotals?.find(s => s.season === season && s.gameTypeId === 2)
+                  const seasonStats = nhlSeasonTotal(stats?.seasonTotals, season, 2)
                   if (!seasonStats) {
                     return (
                       <div key={season} className={PP_NO_STATS_CLASSES}>
-                        {t('playerPopup.compareTab.noRegularSeasonData', { season: nhlSeasonLabel(season) })}
+                        {t('playerPopup.compareTab.noNhlRegularSeason', { season: nhlSeasonLabel(season) })}
                       </div>
                     )
                   }
                   const groups = groupStats(statDefs, seasonStats, isGoalie)
                   if (!groups.length) return null
-                  return <TileStatSection key={season} label={nhlSeasonLabel(season)} groups={groups} />
+                  return <TileStatSection key={season} label={withTeams(nhlSeasonLabel(season), seasonStats)} groups={groups} />
                 })}
               </div>
             )}

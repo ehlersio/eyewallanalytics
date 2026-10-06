@@ -5,6 +5,7 @@ import { formatDate } from './formatters.js'
 import { isStandingsStale } from './standingsUtils.js'
 import { createLiveGameHold } from './liveGameHold.js'
 import { isShootoutPlay } from './gamePlays.js'
+import { buildTeamGameLog } from './teamTrends.js'
 
 // NHL API utility
 // Proxy routes (configured in vite.config.js):
@@ -24,7 +25,7 @@ const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
 // All 32 teams and the get/set helpers live in teamConfig.js.
 // Re-exported here so existing imports of TEAM_CONFIG from nhlApi.js keep working.
 export { TEAM_CONFIG, ALL_TEAMS, getTeamConfig, setTeamConfig, hasTeamConfig } from './teamConfig'
-import { TEAM_CONFIG } from './teamConfig'
+import { TEAM_CONFIG, ALL_TEAMS, findTeamSummaryRow } from './teamConfig'
 import { fetchWithRetry } from './retryFetch';
 
 
@@ -559,15 +560,8 @@ export async function getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
 // Returns same shape as getTeamStats for drop-in use in ScoutingTab
 export async function getTeamStatsPlayoff(teamAbbr = TEAM_CONFIG.abbr) {
   return cached(`teamStatsPlayoff:${teamAbbr}`, async () => {
-    const exp = encodeURIComponent(`gameTypeId=3 and seasonId<=${TEAM_CONFIG.season} and seasonId>=${TEAM_CONFIG.season}`);
-    const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false&sort=shotsForPerGame&sortDirection=DESC&limit=32&cayenneExp=${exp}`;
-    const data = await nhlFetch(url);
-    const team = (data?.data || []).find(t => t.teamFullName && (
-      (teamAbbr === TEAM_CONFIG.abbr && t.teamFullName.includes(TEAM_CONFIG.fullNameFragment)) ||
-      (teamAbbr === 'VGK' && t.teamFullName.includes('Vegas')) ||
-      t.teamAbbrevs === teamAbbr ||
-      t.teamFullName.toLowerCase().includes(teamAbbr.toLowerCase())
-    ));
+    const rows = await fetchTeamSummaryRows(3, TEAM_CONFIG.season).catch(() => []);
+    const team = findTeamSummaryRow(rows, teamAbbr);
     if (!team) return null;
     // A field the endpoint leaves out is null (shown as "—"), not 0.
     return {
@@ -594,16 +588,42 @@ export async function getTeamStatsPlayoff(teamAbbr = TEAM_CONFIG.abbr) {
 // Best-effort: a failed fetch or unmatched team returns null rather than
 // failing the whole getTeamStats() call.
 async function fetchTeamSummaryRow(standingsRow, teamAbbr, season) {
-  const exp = encodeURIComponent(`gameTypeId=2 and seasonId<=${season} and seasonId>=${season}`);
-  const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false&sort=shotsForPerGame&sortDirection=DESC&limit=40&cayenneExp=${exp}`;
-  const data = await nhlFetch(url);
-  const rows = data?.data || [];
-  const fullName = standingsRow.teamName?.default;
-  return rows.find(t => fullName && t.teamFullName === fullName) ?? rows.find(t => t.teamFullName && (
-    (teamAbbr === TEAM_CONFIG.abbr && t.teamFullName.includes(TEAM_CONFIG.fullNameFragment)) ||
-    (teamAbbr === 'VGK' && t.teamFullName.includes('Vegas')) ||
-    t.teamFullName.toLowerCase().includes(teamAbbr.toLowerCase())
-  )) ?? null;
+  const rows = await fetchTeamSummaryRows(2, season);
+  return findTeamSummaryRow(rows, teamAbbr, standingsRow.teamName?.default);
+}
+
+// Every team's row in the NHL stats REST team/summary for one season and
+// game type (2 regular, 3 playoffs). Shared by the Team page (stats, rank
+// badges, playoff scouting) and League > Power rankings (PP%/PK%). Rows
+// carry teamId but no abbreviation -- match with findTeamSummaryRow().
+// Throws when the request fails; callers decide what "unavailable" means.
+function fetchTeamSummaryRows(gameTypeId, season) {
+  return cached(`teamSummaryRows:${gameTypeId}:${season}`, async () => {
+    const exp = encodeURIComponent(`gameTypeId=${gameTypeId} and seasonId<=${season} and seasonId>=${season}`);
+    const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false&sort=shotsForPerGame&sortDirection=DESC&limit=40&cayenneExp=${exp}`;
+    const data = await nhlFetch(url);
+    if (!data) throw new Error('team/summary unavailable');
+    return data.data || [];
+  }, TTL.TEAM_STATS);
+}
+
+// Each team's PP% and PK% (0-1) for a season's regular season, keyed by
+// abbreviation, from team/summary -- standings carry neither, which left
+// the Power rankings' Special Teams component at 0 for every team (audit
+// 2026-10-05 #25). A team the NHL has no number for is left out (null),
+// never 0. {} when team/summary can't be reached.
+export async function getTeamSpecialTeams(season = TEAM_CONFIG.season, gameTypeId = 2) {
+  const rows = await fetchTeamSummaryRows(gameTypeId, season).catch(() => []);
+  const out = {};
+  for (const team of ALL_TEAMS) {
+    const row = findTeamSummaryRow(rows, team.abbr);
+    if (!row) continue;
+    out[team.abbr] = {
+      ppPct: row.powerPlayPct ?? null,
+      pkPct: row.penaltyKillPct ?? null,
+    };
+  }
+  return out;
 }
 
 async function _getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
@@ -698,31 +718,27 @@ async function _getTeamStats(teamAbbr = TEAM_CONFIG.abbr) {
 // new season getTeamStats() carries last season forward (isPriorSeason)
 // while team/summary for TEAM_CONFIG.season is still empty, which left every
 // stat card with no rank at all.
-export async function getTeamSeasonRankings(gameTypeId = 2, season = TEAM_CONFIG.season) {
-  return cached(`teamSeasonRankings:${gameTypeId}:${season}`, () => _getTeamSeasonRankings(gameTypeId, season), TTL.TEAM_STATS);
+// team: the team to rank (default the selected team). Matched by team id
+// (findTeamSummaryRow) -- the old name-fragment match never found NYI, NYR
+// or SJS, so their Overview cards had no rank badges.
+export async function getTeamSeasonRankings(gameTypeId = 2, season = TEAM_CONFIG.season, team = TEAM_CONFIG) {
+  return cached(`teamSeasonRankings:${team.abbr}:${gameTypeId}:${season}`, () => _getTeamSeasonRankings(gameTypeId, season, team), TTL.TEAM_STATS);
 }
-async function _getTeamSeasonRankings(gameTypeId, season) {
+async function _getTeamSeasonRankings(gameTypeId, season, team) {
   try {
-    const exp = encodeURIComponent(
-      `gameTypeId=${gameTypeId} and seasonId<=${season} and seasonId>=${season}`
-    );
-    const url = `/nhl-stats/stats/rest/en/team/summary?isAggregate=false&isGame=false` +
-      `&sort=shotsForPerGame&sortDirection=DESC&limit=40&cayenneExp=${exp}`;
-    const data = await nhlFetch(url);
-    const teams = data?.data || [];
+    const teams = await fetchTeamSummaryRows(gameTypeId, season);
     if (!teams.length) return null;
 
-    // Find our team
-    const car = teams.find(t => t.teamFullName?.includes(TEAM_CONFIG.fullNameFragment));
-    if (!car) return null;
+    const mine = findTeamSummaryRow(teams, team.abbr);
+    if (!mine) return null;
 
-    // Rank helper — 1 = best. higherBetter: sort desc; lowerBetter: sort asc
+    // Rank helper — 1 = best: one plus the teams strictly better, so tied
+    // teams share a rank (two teams at the same PP% used to get different
+    // ranks from whichever order the endpoint listed them in).
     const rank = (field, higherBetter = true) => {
-      const sorted = [...teams]
-        .filter(t => t[field] != null)
-        .sort((a, b) => higherBetter ? b[field] - a[field] : a[field] - b[field]);
-      const pos = sorted.findIndex(t => t.teamFullName?.includes(TEAM_CONFIG.fullNameFragment));
-      return pos === -1 ? null : pos + 1;
+      const v = mine[field];
+      if (v == null) return null;
+      return 1 + teams.filter(t => t[field] != null && (higherBetter ? t[field] > v : t[field] < v)).length;
     };
 
     return {
@@ -1756,39 +1772,15 @@ export async function getTeamPlayoffStats(team = TEAM_CONFIG) {
 }
 
 // Rolling game-by-game results for trend chart
-// Returns the last N completed games with GF, GA, shots, outcome
-export async function getTeamGameLog(count = 20) {
-  return cached(`gameLog:${count}`, () => _getTeamGameLog(count), TTL.SCHEDULE);
+// Returns the last N completed games of ONE game type (2 regular season,
+// 3 playoffs) with GF, GA and outcome -- preseason never counts (audit
+// 2026-10-05 #8: CAR's 4 preseason games were shown as its last 10).
+export async function getTeamGameLog(count = 20, gameType = GAME_TYPE.REGULAR) {
+  return cached(`gameLog:${TEAM_CONFIG.abbr}:${TEAM_CONFIG.season}:${gameType}:${count}`, () => _getTeamGameLog(count, gameType), TTL.SCHEDULE);
 }
-async function _getTeamGameLog(count = 20) {
+async function _getTeamGameLog(count, gameType) {
   const games = await nhlFetch(`${BASE}/club-schedule-season/${TEAM_CONFIG.abbr}/${TEAM_CONFIG.season}`);
-  const allGames = games?.games || [];
-  const completed = allGames
-    .filter(g => ['OFF','FINAL','F'].includes(g.gameState))
-    .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate))
-    .slice(0, count)
-    .reverse(); // chronological
-
-  return completed.map(g => {
-    const home    = g.homeTeam?.abbrev === TEAM_CONFIG.abbr;
-    const carScore = home ? (g.homeTeam?.score ?? 0) : (g.awayTeam?.score ?? 0);
-    const oppScore = home ? (g.awayTeam?.score ?? 0) : (g.homeTeam?.score ?? 0);
-    const opp      = home ? g.awayTeam?.abbrev : g.homeTeam?.abbrev;
-    const won      = carScore > oppScore;
-    const ot       = !won && carScore === oppScore - 1 && g.periodDescriptor?.number > 3;
-    return {
-      date:     g.gameDate,
-      gameId:   g.id,
-      opp,
-      carScore,
-      oppScore,
-      home,
-      won,
-      ot,
-      result:   won ? 'W' : (ot ? 'OTL' : 'L'),
-      isPlayoff: g.gameType === 3,
-    };
-  });
+  return buildTeamGameLog(games?.games, TEAM_CONFIG.abbr, gameType, count);
 }
 
 // Sportsbook odds (getNhlOdds/findGameOdds/extractMoneyline/oddsToImplied/

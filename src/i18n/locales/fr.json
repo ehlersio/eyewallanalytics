@@ -342,7 +342,9 @@
       "scrollTopAriaLabel": "Retour en haut",
       "scrollTopLabel": "Haut",
       "shareCaptionRank": "Classement de puissance {{team}} — #{{rank}} dans la LNH",
-      "tooEarly": "Le classement de puissance revient une fois que chaque équipe a joué {{games}} matchs — environ une semaine après le début de la saison."
+      "tooEarly": "Le classement de puissance revient une fois que chaque équipe a joué {{games}} matchs — environ une semaine après le début de la saison.",
+      "sourceNHLTeamStats": "Statistiques d'équipe de la LNH (avantage et désavantage numériques)",
+      "specialTeamsUnavailable": "Les pourcentages en avantage et en désavantage numériques de la LNH n'ont pas pu être chargés : les unités spéciales sont exclues de ce classement."
     }
   },
   "pwhlLeagueView": {
@@ -520,7 +522,6 @@
     },
     "trends": {
       "loadingGameLog": "Chargement du journal des matchs…",
-      "winPctL10": "% de victoires (10 derniers)",
       "dotTooltip": "{{date}} vs {{opp}} : {{result}} {{carScore}}–{{oppScore}}{{homeAway}}",
       "homeSuffix": " (Domicile)",
       "awaySuffix": " (Visiteur)",
@@ -539,7 +540,9 @@
       "legendPk": "■ DN%",
       "diffTooltip": "{{date}} vs {{opp}} : {{sign}}{{diff}}",
       "legendWinDiff": "■ Victoire (différentiel positif)",
-      "legendLossDiff": "■ Défaite (différentiel négatif)"
+      "legendLossDiff": "■ Défaite (différentiel négatif)",
+      "winPctLastN": "% de victoires ({{count}} derniers)",
+      "noRegularSeasonGames": "Aucun match de saison régulière joué pour l'instant."
     },
     "cap": {
       "title": "Plafond salarial · {{season}}",
@@ -2276,7 +2279,8 @@
       "loadingChart": "Chargement du graphique…",
       "noRegularSeasonData": "Aucune donnée de saison régulière pour {{season}}.",
       "noDataPwhl": "Aucune donnée pour cette joueuse en {{label}}.",
-      "noData": "Aucune donnée pour ce joueur en {{label}}."
+      "noData": "Aucune donnée pour ce joueur en {{label}}.",
+      "noNhlRegularSeason": "Aucun match de saison régulière dans la LNH en {{season}}."
     },
     "edge": {
       "sectionLabel_one": "Suivi (NHL EDGE) · {{season}} · {{count}} PJ",
@@ -2297,7 +2301,8 @@
         "savePctg5v5Close": "% arrêts 5c5 (serré)",
         "longRangeSavePctg": "% arrêts, longue dist."
       }
-    }
+    },
+    "combinedTeams": "{{label}} ({{teams}}, cumulé)"
   },
   "percentileBar": {
     "naFallback": "Données {{label}} non disponibles — le joueur n'a peut-être pas assez de temps de glace dans cette situation pour générer un centile fiable.",
