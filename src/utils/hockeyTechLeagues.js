@@ -86,6 +86,7 @@ export const AHL = {
     fetchPlayerShots:             ahlApi.fetchAHLPlayerShots,
     fetchToday:                   ahlApi.fetchAHLToday,
     fetchLive:                    ahlApi.fetchAHLLive,
+    fetchNews:                    ahlApi.fetchAHLNews,
   },
   config: {
     teams:              ahlConfig.AHL_TEAMS,
@@ -157,6 +158,7 @@ export const ECHL = {
     fetchPlayerShots:             echlApi.fetchECHLPlayerShots,
     fetchToday:                   echlApi.fetchECHLToday,
     fetchLive:                    echlApi.fetchECHLLive,
+    fetchNews:                    echlApi.fetchECHLNews,
   },
   config: {
     teams:              echlConfig.ECHL_TEAMS,

@@ -11,7 +11,9 @@ LEAGUES.forEach(({ key, label, team, teamName }) => {
     // Stats rows, Splits/Trends cards) with no load failure.
     it(`/${key}/team renders every ${team.abbr} tab`, () => {
       // TeamPicker stores the whole team config, display name included.
-      visitAs(`/${key}/team`, key, { ...team, displayName: teamName })
+      // The stored team here is just { abbr, teamId }: the header falls back
+      // to the config's displayName.
+      visitAs(`/${key}/team`, key, team)
       cy.contains('h2', teamName, { timeout: DATA_TIMEOUT }).should('exist')
       cy.get('.team-view').find(leagueLogo(key, team.abbr)).should('exist')
       cy.get('.records-row', { timeout: DATA_TIMEOUT }).should('contain', 'pts')

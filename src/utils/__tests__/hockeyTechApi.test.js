@@ -122,6 +122,25 @@ describe.each([['ahl'], ['echl']])('%s client', (key) => {
     expect(await api.fetchTeamSeasonsCompare(2, [3])).toBeNull()
   })
 
+  // The News view shows its own error card, so its fetch throws instead.
+  it('fetchNews returns the articles, and throws on failure', async () => {
+    const api = createHockeyTechApi(key)
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    fetchWithRetry.mockImplementationOnce(async () => ok([{ id: 'a' }]))
+    expect(await api.fetchNews()).toEqual([{ id: 'a' }])
+    expect(fetchWithRetry).toHaveBeenLastCalledWith(`https://worker.test/${key}/news`, { init: {} })
+
+    fetchWithRetry.mockImplementationOnce(async () => ok([]))
+    await api.fetchNews({ fresh: true })
+    expect(fetchWithRetry).toHaveBeenLastCalledWith(`https://worker.test/${key}/news`, { init: { cache: 'no-cache' } })
+
+    fetchWithRetry.mockImplementationOnce(async () => ({ ok: false, status: 503 }))
+    await expect(api.fetchNews()).rejects.toMatchObject({ status: 503 })
+    fetchWithRetry.mockImplementationOnce(async () => { throw new Error('timeout') })
+    await expect(api.fetchNews()).rejects.toThrow('timeout')
+  })
+
   it('normalizes compare rows, folding shootout losses into OTL', async () => {
     const api = createHockeyTechApi(key)
     const row = { season_id: 3, team_id: 2, gp: 10, wins: 5, losses: 3, ot_losses: 1, shootout_losses: 1, points: 12, goals_for: 30, goals_against: 25, pp_pct: 0.2, pk_pct: 0.8 }
@@ -140,7 +159,7 @@ it('ahlApi.js/echlApi.js re-export the shared client under their old names', () 
   expect(echlApi.ECHL_TEAM_ID).toBeNull()
   for (const [mod, P] of [[ahlApi, 'AHL'], [echlApi, 'ECHL']]) {
     const fetches = Object.keys(mod).filter(k => k.startsWith('fetch'))
-    expect(fetches).toHaveLength(22)
+    expect(fetches).toHaveLength(23)
     for (const name of fetches) expect(typeof mod[name], name).toBe('function')
     expect(fetches.every(n => n.startsWith(`fetch${P}`))).toBe(true)
   }

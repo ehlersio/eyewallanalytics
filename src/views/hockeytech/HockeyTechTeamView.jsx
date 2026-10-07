@@ -178,6 +178,10 @@ export default function HockeyTechTeamView({ league }) {
   const team   = league.team;
   const teamId = league.teamId;
   const abbr   = team?.abbr || '—';
+  // The stored team carries its displayName (TeamPicker and the sign-in
+  // restore both store the config entry); a copy stored without it -- an
+  // older build's, or a hand-written one -- falls back to the config's.
+  const teamName = team?.displayName || league.config.getTeamByAbbr(abbr)?.displayName || abbr;
   const color  = team?.displayColor || 'var(--text-dim)';
   const [tab, setTab] = useState('Overview');
   const [compareOpen, setCompareOpen] = useState(false);
@@ -237,7 +241,7 @@ export default function HockeyTechTeamView({ league }) {
     <div className={`${PAGE_CLASSES} team-view`}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
         <TeamLogo abbr={abbr} sport={league.key} size={28} color={color} />
-        <h2 className={VIEW_TITLE_CLASSES} style={{ margin: 0 }}>{team.displayName}</h2>
+        <h2 className={VIEW_TITLE_CLASSES} style={{ margin: 0 }}>{teamName}</h2>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <p className={VIEW_SUB_CLASSES} style={{ margin: 0 }}>{t('teamView.seasonSubtitle', { years: seasonLabel })}</p>
@@ -248,7 +252,7 @@ export default function HockeyTechTeamView({ league }) {
         <TeamComparisonPopup
           league={league.key}
           teamValue={teamId}
-          teamLabel={team.displayName}
+          teamLabel={teamName}
           onClose={() => setCompareOpen(false)}
         />
       )}

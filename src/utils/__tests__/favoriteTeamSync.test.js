@@ -14,7 +14,7 @@ vi.mock('../supabaseAuth', () => ({
 }));
 
 import { supabaseAuth } from '../supabaseAuth';
-import { upsertFavoriteTeam, syncFavoriteTeamOnSignIn } from '../favoriteTeamSync.js';
+import { upsertFavoriteTeam, syncFavoriteTeamOnSignIn, applyLocalSelection } from '../favoriteTeamSync.js';
 
 // Real abbrs from teamConfig.js/pwhlConfig.js — the module looks these up
 // for real (applyLocalSelection), so fabricated abbrs would silently no-op.
@@ -126,5 +126,40 @@ describe('syncFavoriteTeamOnSignIn', () => {
 
     expect(JSON.parse(localStorage.getItem('eyewall:team')).abbr).toBe(NHL_ABBR);
     expect(window.location.reload).not.toHaveBeenCalled();
+  });
+});
+
+// The restore path stores the same team object TeamPicker does -- the
+// config entry, displayName included: the AHL/ECHL Team page header is the
+// stored team's displayName (Phase 2 handoff note).
+describe('restored team matches a TeamPicker pick', () => {
+  const cases = [
+    ['nhl',  'CAR', 'eyewall:team',      () => import('../teamConfig.js').then(m => m.ALL_TEAMS.find(t => t.abbr === 'CAR'))],
+    ['pwhl', 'TOR', 'eyewall:pwhl_team', () => import('../pwhlConfig.js').then(m => m.PWHL_TEAM_MAP.TOR)],
+    ['ahl',  'HER', 'eyewall:ahl_team',  () => import('../ahlConfig.js').then(m => m.AHL_TEAM_MAP.HER)],
+    ['echl', 'ADK', 'eyewall:echl_team', () => import('../echlConfig.js').then(m => m.ECHL_TEAM_MAP.ADK)],
+  ];
+
+  it.each(cases)('%s %s: server wins with the full team, displayName included', async (sport, abbr, key, configTeam) => {
+    localStorage.setItem('eyewall:sport', 'nhl');
+    localStorage.setItem('eyewall:team', JSON.stringify({ abbr: 'BOS' }));
+    supabaseAuth.from.mockImplementationOnce(() =>
+      makeQueryBuilder({ data: { favorite_team: abbr, favorite_sport: sport }, error: null })
+    );
+
+    await syncFavoriteTeamOnSignIn('user-a');
+
+    const team = await configTeam();
+    const stored = JSON.parse(localStorage.getItem(key));
+    expect(localStorage.getItem('eyewall:sport')).toBe(sport);
+    expect(stored.displayName).toBe(team.displayName);
+    expect(stored.displayName).toBeTruthy();
+    // Byte-for-byte what TeamPicker's handle*Select writes.
+    expect(localStorage.getItem(key)).toBe(JSON.stringify(team));
+  });
+
+  it('ignores an abbr the league does not have', async () => {
+    expect(applyLocalSelection({ sport: 'ahl', abbr: 'NOPE' })).toBe(false);
+    expect(localStorage.getItem('eyewall:ahl_team')).toBeNull();
   });
 });

@@ -34,7 +34,6 @@ import {
   NEWS_PAGE_INFO_CLASSES,
 } from '../../utils/newsViewClasses';
 import { PAGE_CLASSES } from '../../utils/pageClasses';
-import { workerFetchInit } from '../../utils/workerCache';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
 const PAGE_SIZE  = 10;
@@ -116,9 +115,7 @@ export default function HockeyTechNewsView({ league }) {
     if (!isRetry) setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${WORKER_URL}/${league.key}/news`, workerFetchInit({ fresh }));
-      if (!res.ok) throw new Error(t('newsView.error.notAvailable'));
-      const data = await res.json();
+      const data = await league.api.fetchNews({ fresh });
       const arr  = Array.isArray(data) ? data : [];
       const seen = new Set();
       const deduped = arr.filter(a => {
@@ -138,7 +135,8 @@ export default function HockeyTechNewsView({ league }) {
       setPage(1);
       setLastFetch(new Date());
     } catch (err) {
-      setError(err.message);
+      // An HTTP error reads "not available"; a network error its own message.
+      setError(err.status ? t('newsView.error.notAvailable') : err.message);
     } finally {
       if (isRetry || fetchingRef.current) {
         setLoading(false);
