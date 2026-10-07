@@ -14,6 +14,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../../hooks/useFetch';
+import { useLeagueSeasons } from '../../hooks/useLeagueSeasons';
 import { useTeamSeasonGames } from '../../hooks/useTeamSeasonGames';
 import { seasonsWithGames, fallbackSeason } from '../../utils/teamSeasons';
 import { leagueNameVars } from '../../utils/hockeyTechI18n';
@@ -110,6 +111,8 @@ const GOALIE_COLS = [
 
 export default function HockeyTechPlayersView({ league }) {
   const { t } = useTranslation();
+  // Re-render when the season list is rebuilt from the Worker (C7).
+  useLeagueSeasons(league);
   const team   = league.team;
   const teamId = league.teamId;
   const abbr   = team?.abbr || '—';

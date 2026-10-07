@@ -181,6 +181,7 @@ canes-analytics-starter/
 │   │   └── useReadState.js             # Unseen-content badges for News/Milestones/Trivia tabs + BottomNav's combined dot (Session 92) — local-only, boolean-only; reuses SportContext.jsx's window.CustomEvent cross-component convention rather than a new Context
 │   └── utils/
 │       ├── nhlApi.js                   # NHL API calls + KV caching
+│       ├── hockeyTechSeasons.js        # AHL/ECHL season lists + regular↔playoff maps from the Worker's /config/seasons/{ahl,echl}-seasons (C7); ahlConfig.js/echlConfig.js apply them over their hand-written seed at load
 │       ├── hockeyTechLiveStore.js      # PWHL/AHL/ECHL live-game poller per league + team, reference-counted like liveGameStore.js: /today every 60 s, every 30 s (with the game's /live for score and period/time) once the team's game is live, at once on a push
 │       ├── liveGameStore.js            # One live-game poller per team, reference-counted: the first subscriber starts it, the last stops it. 10 s during a game (busts and fetches the play-by-play; the box score is busted for ShotMapView's own poll), livePollInterval() otherwise, at once on a push. Replaced separate Topbar and ShotMapView polls that busted each other's caches, the schedule included, every tick (audit 2026-10-06 §6)
 │       ├── pwhlApi.js                  # PWHL Worker API calls
@@ -773,7 +774,7 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (927 tests, 102 files)
+### Vitest (934 tests, 103 files)
 ```bash
 npm test
 npm run test:watch

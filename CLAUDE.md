@@ -68,6 +68,8 @@ Mechanism worth understanding before touching this:
 
 PWHL season lists (2026-10): `PWHL_SEASONS` and its filtered lists are `let`s too. `applyPWHLSeasonsConfig()` adds the live current season when it isn't hand-listed, labelled from its start year. The upcoming season (`PWHL_NEXT_SEASON`, from the Worker's `pwhl.next`) and its preseason (`PWHL_UPCOMING_PRESEASON`) are kept OUT of those lists, so stats views never offer an empty season; only `PWHLScheduleView` offers them, once the team has games there. Use `getPWHLSeasonLabel(id)` for any PWHL season label, never `String(id)`. `PWHL_PLAYOFF_SEASON_MAP` pairs only the hand-listed seasons.
 
+AHL/ECHL season lists (2026-10, contract C7): `AHL_SEASONS`/`ECHL_SEASONS`, their regular/playoff splits and the regular↔playoff maps are `let`s too, seeded with hand-written lists and rebuilt at load from the Worker's `/config/seasons/{ahl,echl}-seasons` (`seasonClient.fetchLeagueSeasons`, `utils/hockeyTechSeasons.js`): regular seasons and playoffs only, from the seed's oldest id on; playoffs labelled by HockeyTech's name ("2026 Calder Cup Playoffs"), each paired with the regular season that started the year before. The league objects read them through getters, and `eyewall:{ahl,echl}-seasons-updated` re-renders the views (`hooks/useLeagueSeasons.js`). A failed fetch keeps the seed. Pickers still only offer seasons the team has games in.
+
 Manual override exists on the Worker side (`config:season:nhl:override` / `config:season:pwhl:override` KV keys) if live resolution ever misjudges the real Sept/Oct boundary — **that transition has never actually been observed by this logic yet.**
 
 ## NHL team config (multi-team, expanded 2026-07)

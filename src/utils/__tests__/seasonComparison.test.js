@@ -50,8 +50,8 @@ describe('ahlSeasonLabel', () => {
     expect(ahlSeasonLabel({ seasonId: 90, seasonType: 'regular', startYear: 2025 })).toBe('2025-26')
   })
 
-  it('formats a playoffs season using AHL\'s bare "{year} Playoffs" convention, not PWHL\'s season-range format', () => {
-    expect(ahlSeasonLabel({ seasonId: 92, seasonType: 'playoffs', startYear: 2026 })).toBe('2026 Playoffs')
+  it('formats a playoffs season by AHL\'s "{year} Calder Cup Playoffs" name, not PWHL\'s season-range format', () => {
+    expect(ahlSeasonLabel({ seasonId: 92, seasonType: 'playoffs', startYear: 2026 })).toBe('2026 Calder Cup Playoffs')
   })
 
   it('formats a preseason season', () => {
@@ -110,7 +110,7 @@ describe('normalizeComparisonSeasons', () => {
       { seasonId: 90, seasonType: 'regular',  startYear: 2025, teamCount: 32, comparable: true },
     ])
     expect(result).toEqual([
-      { value: 92, label: '2026 Playoffs', comparable: true, teamCount: 23, seasonType: 'playoffs' },
+      { value: 92, label: '2026 Calder Cup Playoffs', comparable: true, teamCount: 23, seasonType: 'playoffs' },
       { value: 90, label: '2025-26',       comparable: true, teamCount: 32, seasonType: 'regular' },
     ])
   })

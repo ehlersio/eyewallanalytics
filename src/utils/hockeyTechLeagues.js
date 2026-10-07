@@ -26,7 +26,10 @@
 //                    seasonUpdatedEvent (window event fired when it resolves),
 //                    seasons / regularSeasons / playoffSeasons,
 //                    playoffSeasonMap (regular -> playoffs id),
-//                    regularSeasonMap (playoffs -> regular id),
+//                    regularSeasonMap (playoffs -> regular id) -- getters:
+//                    built from the Worker after load (C7, *Config.js);
+//                    seasonsUpdatedEvent fires when they change
+//                    (hooks/useLeagueSeasons.js re-renders on it),
 //                    isPlayoffSeason(id), seasonLabel(id),
 //                    divisionOrder (standings division order),
 //                    storageKeys { team, predictions }
@@ -103,13 +106,15 @@ export const AHL = {
     getStoredTeam:      ahlConfig.getAHLStoredTeam,
     get currentSeason() { return ahlConfig.AHL_CURRENT_SEASON; },
     seasonUpdatedEvent: 'eyewall:ahl-season-updated',
-    seasons:            ahlConfig.AHL_SEASONS,
-    regularSeasons:     ahlConfig.AHL_REGULAR_SEASONS,
-    playoffSeasons:     ahlConfig.AHL_PLAYOFF_SEASONS,
-    playoffSeasonMap:   ahlConfig.AHL_PLAYOFF_SEASON_MAP,
-    regularSeasonMap:   ahlConfig.AHL_REGULAR_SEASON_MAP,
+    // Getters: the lists are rebuilt from the Worker after load (C7).
+    get seasons()          { return ahlConfig.AHL_SEASONS; },
+    get regularSeasons()   { return ahlConfig.AHL_REGULAR_SEASONS; },
+    get playoffSeasons()   { return ahlConfig.AHL_PLAYOFF_SEASONS; },
+    get playoffSeasonMap() { return ahlConfig.AHL_PLAYOFF_SEASON_MAP; },
+    get regularSeasonMap() { return ahlConfig.AHL_REGULAR_SEASON_MAP; },
+    seasonsUpdatedEvent: 'eyewall:ahl-seasons-updated',
     isPlayoffSeason:    ahlConfig.isAHLPlayoffSeason,
-    seasonLabel:        seasonLabelFrom(ahlConfig.AHL_SEASONS),
+    seasonLabel:        id => seasonLabelFrom(ahlConfig.AHL_SEASONS)(id),
     divisionOrder:      ['Atlantic', 'North', 'Central', 'Pacific'],
     storageKeys: {
       team:        'eyewall:ahl_team',
@@ -178,13 +183,15 @@ export const ECHL = {
     getStoredTeam:      echlConfig.getECHLStoredTeam,
     get currentSeason() { return echlConfig.ECHL_CURRENT_SEASON; },
     seasonUpdatedEvent: 'eyewall:echl-season-updated',
-    seasons:            echlConfig.ECHL_SEASONS,
-    regularSeasons:     echlConfig.ECHL_REGULAR_SEASONS,
-    playoffSeasons:     echlConfig.ECHL_PLAYOFF_SEASONS,
-    playoffSeasonMap:   echlConfig.ECHL_PLAYOFF_SEASON_MAP,
-    regularSeasonMap:   echlConfig.ECHL_REGULAR_SEASON_MAP,
+    // Getters: the lists are rebuilt from the Worker after load (C7).
+    get seasons()          { return echlConfig.ECHL_SEASONS; },
+    get regularSeasons()   { return echlConfig.ECHL_REGULAR_SEASONS; },
+    get playoffSeasons()   { return echlConfig.ECHL_PLAYOFF_SEASONS; },
+    get playoffSeasonMap() { return echlConfig.ECHL_PLAYOFF_SEASON_MAP; },
+    get regularSeasonMap() { return echlConfig.ECHL_REGULAR_SEASON_MAP; },
+    seasonsUpdatedEvent: 'eyewall:echl-seasons-updated',
     isPlayoffSeason:    echlConfig.isECHLPlayoffSeason,
-    seasonLabel:        seasonLabelFrom(echlConfig.ECHL_SEASONS),
+    seasonLabel:        id => seasonLabelFrom(echlConfig.ECHL_SEASONS)(id),
     divisionOrder:      ['North', 'South', 'Central', 'Mountain'],
     storageKeys: {
       team:        'eyewall:echl_team',

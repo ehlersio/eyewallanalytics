@@ -28,6 +28,7 @@ import { hockeyTechTodayInterval, onPushReceived } from '../../utils/livePolling
 import { leagueNameVars } from '../../utils/hockeyTechI18n';
 import { useTranslation } from 'react-i18next';
 import { useFetch, usePoll } from '../../hooks/useFetch';
+import { useLeagueSeasons } from '../../hooks/useLeagueSeasons';
 import { useTeamSeasonGames } from '../../hooks/useTeamSeasonGames';
 import { useWakeLock } from '../../hooks/useWakeLock';
 import { useEndedGameSnapshot } from '../../hooks/useEndedGameSnapshot';
@@ -149,6 +150,8 @@ const ALL_GAMES = 'all';
 
 export default function HockeyTechShotMapView({ league }) {
   const { t } = useTranslation();
+  // Re-render when the season list is rebuilt from the Worker (C7).
+  useLeagueSeasons(league);
   const team = league.team;
   const teamId = league.teamId;
   const abbr = team?.abbr || '—';

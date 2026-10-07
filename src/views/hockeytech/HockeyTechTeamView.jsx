@@ -20,6 +20,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../../hooks/useFetch';
+import { useLeagueSeasons } from '../../hooks/useLeagueSeasons';
 import { useSport } from '../../utils/SportContext';
 import { leagueNameVars } from '../../utils/hockeyTechI18n';
 import { gameResultFor, currentStreak, pointsPct, streakColor } from '../../utils/hockeyTechResults';
@@ -175,6 +176,8 @@ function tabLabelKey(league, tabId) {
 
 export default function HockeyTechTeamView({ league }) {
   const { t } = useTranslation();
+  // Re-render when the season list is rebuilt from the Worker (C7).
+  useLeagueSeasons(league);
   const team   = league.team;
   const teamId = league.teamId;
   const abbr   = team?.abbr || '—';

@@ -9,7 +9,7 @@ const LEAGUES = [
   {
     key: 'ahl', label: 'AHL', team: { abbr: 'TOR', teamId: 335 },
     regular:  { seasonId: 90, startYear: 2025, label: '2025-26' },
-    playoffs: { seasonId: 92, startYear: 2026, label: '2026 Playoffs' },
+    playoffs: { seasonId: 92, startYear: 2026, label: '2026 Calder Cup Playoffs' },
   },
   {
     key: 'echl', label: 'ECHL', team: { abbr: 'FLA', teamId: 8 },

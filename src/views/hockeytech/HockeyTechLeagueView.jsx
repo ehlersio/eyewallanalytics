@@ -14,6 +14,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch, usePoll } from '../../hooks/useFetch';
+import { useLeagueSeasons } from '../../hooks/useLeagueSeasons';
 import TeamLogo from '../../components/TeamLogo';
 import HockeyTechPlayerPopup from '../../components/HockeyTechPlayerPopup';
 import Scoreboard from '../../components/Scoreboard';
@@ -68,6 +69,8 @@ function teamAbbr(league, teamId) {
 
 export default function HockeyTechLeagueView({ league }) {
   const { t } = useTranslation();
+  // Re-render when the season list is rebuilt from the Worker (C7).
+  useLeagueSeasons(league);
   const [tab, setTab] = useState('scoreboard');
   const [selected, setSelected] = useState(null);
 
