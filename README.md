@@ -151,13 +151,13 @@ canes-analytics-starter/
 │   │   ├── DisabledHint.jsx            # Tap-triggered "why is this grayed out" tooltip — used by the shot map selector while a game is live
 │   │   ├── AHLGameEvents.jsx           # AHL live game event popups (goal/penalty/win/puck drop) — port of PWHLGameEvents.jsx's sessionStorage-deduped popup layer (parity Phase 6). Deliberately does NOT port PWHLLiveInsights — several of its callouts (faceoff dominance in particular) depend on event types AHL's PBP doesn't have at all
 │   │   ├── HockeyTechPlayerPopup.jsx   # Player detail popup shared by AHL and ECHL (2026-09) — Stats, Heat Map, and Compare (season-over-season stat cards + per-game trend chart from `/{league}/player-game-log`, same as PWHL's). No percentile radar header or Scout tab (no percentile pipeline for either league), no goalie heat map (both leagues' PBP goal events carry `goalie_id: null`)
-│   │   ├── AHLPlayerPopup.jsx          # AHL player popup — `HockeyTechPlayerPopup` with AHL's league config (API functions, team lookup, stat defs, headshot size)
+│   │   ├── AHLPlayerPopup.jsx          # AHL player popup — `HockeyTechPlayerPopup` with the AHL league object from `hockeyTechLeagues.js`
 │   │   ├── AHLGameStatsPopup.jsx       # AHL box-score popup (parity Phase 3) — team-stat comparison bars drop hits/blocked-shots/faceoff% entirely (always 0 in AHL's feed, never ingested); no "View Shot Map" CTA yet (the shot map has had a game view since 2026-10, but this popup doesn't link to it)
 │   │   ├── AHLBoxScoreTable.jsx        # Per-player skater/goalie table for AHLGameStatsPopup — drops HIT/BLK/FO%/skater-TOI columns entirely; AHL's gameSummary reports these as a hardcoded 0 regardless of real ice time, so the pipeline never ingested them
 │   │   ├── AHLGamePreviewPopup.jsx     # AHL pre-game preview popup (parity Phase 3) — real field-NAME differences from PWHL's `gameCenterPreview` shape (`teamRecord.overall`/`.past_10_games` not `overallRecord`/`last10Record`, `powerPlayStats`/`penaltyKillStats` not `powerPlay`/`penaltyKill`, `previousMeetings` not `seasonSeries`); no shot-attempt-share row at all (no `corsiForPct` data source)
 │   │   ├── AHLCalendarView.jsx         # AHL monthly schedule grid — port of PWHLCalendarView.jsx; no distinct OT/shootout-loss cell variant since `ahl_game_log` has no ot/shootout boolean columns, so every non-win renders as a plain loss
 │   │   ├── ECHLGameEvents.jsx          # ECHL live game event popups — port of AHLGameEvents.jsx (ECHL parity pass, Phase 6 equivalent), same faceoff-data-gap reasoning for dropping a live-insights panel
-│   │   ├── ECHLPlayerPopup.jsx         # ECHL player popup — `HockeyTechPlayerPopup` with ECHL's league config
+│   │   ├── ECHLPlayerPopup.jsx         # ECHL player popup — `HockeyTechPlayerPopup` with the ECHL league object from `hockeyTechLeagues.js`
 │   │   ├── ECHLGameStatsPopup.jsx      # ECHL box-score popup — port of AHLGameStatsPopup.jsx, same dropped-stat reasoning
 │   │   ├── ECHLBoxScoreTable.jsx       # Per-player skater/goalie table for ECHLGameStatsPopup — same dropped-columns shape as AHLBoxScoreTable.jsx
 │   │   ├── ECHLGamePreviewPopup.jsx    # ECHL pre-game preview popup — confirmed live 2026-08-30 that ECHL's `gameCenterPreview` shape is byte-identical to AHL's (same HockeyTech vendor generation)
@@ -204,6 +204,7 @@ canes-analytics-starter/
 │       ├── echlConfig.js               # ECHL team configs — 30 teams, real North/South/Central/Mountain division structure (different alignment than AHL's); all 30 teams still render on one shared neutral color placeholder — real per-team colors are an explicit deferred follow-up, matching AHL's own two-pass color history
 │       ├── echlPlayerStats.js          # ECHL skater/goalie stat defs + formatters — mirrors ahlPlayerStats.js
 │       ├── echlPredictionStore.js      # ECHL prediction tracking (localStorage-only) — mirrors ahlPredictionStore.js
+│       ├── hockeyTechLeagues.js        # `AHL` / `ECHL` league objects (key, label, api, config, stats, predictionStore, headshotSize, newsSources, PlayerPopup) that shared HockeyTech* components take as `league`; every AHL/ECHL difference lives here. Shape test keeps the two in step
 │       ├── hockeyTechLeaders.js        # AHL/ECHL Leaders goalie gate — min GP scales with the season (half the busiest goalie's games, 1..5) so the GAA/SV% cards aren't empty headers for the first weeks
 │       └── analytics.js
 ├── src/brand/

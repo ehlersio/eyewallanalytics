@@ -5,7 +5,8 @@
 // Each prediction stores: gameId, gameDate, opponent, predicted win%,
 // predicted score, actual outcome (filled in after game).
 
-const KEY = 'eyewall_echl_predictions_v1';
+export const ECHL_PREDICTIONS_KEY = 'eyewall_echl_predictions_v1';
+const KEY = ECHL_PREDICTIONS_KEY;
 
 export function loadECHLPredictions() {
   try {

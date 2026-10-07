@@ -1,6 +1,6 @@
 # eyewall-analytics
 
-React/Vite frontend for EyeWall Analytics, deployed on Cloudflare Pages at eyewallanalytics.com. Covers NHL (all 32 teams, user-selectable via `TeamPicker.jsx` — originally Carolina Hurricanes-only, expanded 2026-07) and PWHL (all 12 teams) game analytics, standings, players, milestones, news.
+React/Vite frontend for EyeWall Analytics, deployed on Cloudflare Pages at eyewallanalytics.com. Covers NHL (all 32 teams, user-selectable via `TeamPicker.jsx` — originally Carolina Hurricanes-only, expanded 2026-07), PWHL (all 12 teams), AHL and ECHL game analytics, standings, players, milestones, news. AHL and ECHL have no milestones, trivia or transactions.
 
 ## Stack
 - React, Vite, Cloudflare Pages
@@ -86,6 +86,13 @@ This same team-ID map is independently duplicated in `eyewall-poller`'s `pwhl.js
 Expansion team logos and permanent names are still placeholders — no official branding revealed yet, expected fall 2026.
 
 Conferences (2026-27): each team's `conference` ('East'/'West') is hand-set in `pwhlConfig.js` from the league's 2026-10-02 announcement -- HockeyTech's standings still return one 12-team "PWHL" group. `utils/pwhlPlayoffs.js` holds the per-season playoff format (season 11 on: top 4 per conference, best-of-3 quarterfinals). If HockeyTech starts sending conference groupings, check they agree with the map.
+
+## HockeyTech-generic views (AHL/ECHL, 2026-10)
+AHL and ECHL read the same HockeyTech feed through the same Worker routes, so their components used to be near-copies, and every fix had to land twice. They are being folded into shared `HockeyTech*` components, one family per PR.
+
+- `src/utils/hockeyTechLeagues.js` exports one object per league, `AHL` and `ECHL`. Each holds `key` (the route base, i18n prefix and Worker prefix), `label`, the followed `team`/`teamAbbr`/`teamId`, `api` (every fetch in `ahlApi.js`/`echlApi.js` under a league-neutral name), `config` (teams, lookups, seasons, the `currentSeason` getter, `divisionOrder`, `storageKeys`, ...), `stats`, `predictionStore`, `headshotSize`, `newsSources` and `PlayerPopup`. The file header documents every field. Where the leagues differ, the difference goes in this object, not in a component. If one league really behaves differently, put that behind a named flag here and document it; don't silently pick one side. `__tests__/hockeyTechLeagues.test.js` checks that both objects carry the same keys.
+- A shared component takes `league` and builds its i18n keys from it (``t(`${league.key}PlayersView.title`)``), so the per-league JSON namespaces keep working. `AHL<Name>.jsx`/`ECHL<Name>.jsx` stay as thin wrappers (`<HockeyTech<Name> league={AHL} {...props} />`), so routes, imports, class-name test hooks and Cypress specs don't change.
+- Done so far: the player popup (`HockeyTechPlayerPopup.jsx`). PWHL stays separate: its views share far less with AHL/ECHL and have more features.
 
 ## Known gaps
 - Cypress PWHL specs likely don't cover the 4 expansion teams yet — not verified/updated as of Session 36. Endpoints do return all 12 teams' data correctly; this is undercounted coverage, not broken coverage.
