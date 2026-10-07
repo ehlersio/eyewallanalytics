@@ -122,6 +122,19 @@ describe.each([['ahl'], ['echl']])('%s client', (key) => {
     expect(await api.fetchTeamSeasonsCompare(2, [3])).toBeNull()
   })
 
+  // The League view's Leaders tab and the player popup's rank badges share
+  // one fetch per season (cache.js); a failure isn't kept.
+  it('fetchLeaguePlayers shares one fetch per season and retries after a failure', async () => {
+    const api = createHockeyTechApi(key)
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    fetchWithRetry.mockImplementationOnce(async () => ({ ok: false, status: 503 }))
+    expect(await api.fetchLeaguePlayers(4242)).toBeNull()
+    fetchWithRetry.mockImplementationOnce(async () => ok({ skaters: [], goalies: [] }))
+    expect(await api.fetchLeaguePlayers(4242)).toEqual({ skaters: [], goalies: [] })
+    expect(await api.fetchLeaguePlayers(4242)).toEqual({ skaters: [], goalies: [] })
+    expect(urls().filter(u => u.endsWith('league-players?season=4242'))).toHaveLength(2)
+  })
+
   // The News view shows its own error card, so its fetch throws instead.
   it('fetchNews returns the articles, and throws on failure', async () => {
     const api = createHockeyTechApi(key)

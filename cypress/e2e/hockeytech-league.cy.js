@@ -40,5 +40,21 @@ LEAGUES.forEach(({ key, label, team, divisions }) => {
       cy.get('.pp-tab').should('have.length.at.least', 2)
       assertNoLoadFailure()
     })
+
+    // League rank badges (HockeyTechPlayerPopup, from the same
+    // /league-players the Leaders cards use): the points leader is 1st by
+    // points; the SV% leader 1st by SV%, with a GAA rank too.
+    it(`/${key}/league leaders' popups show their league rank`, () => {
+      visitAs(`/${key}/league`, key, team)
+      cy.get('.league-tab').contains('Leaders').click()
+      cy.contains('.lv-leaders-card', 'Points', { timeout: DATA_TIMEOUT }).find('.lv-leaders-row').first().click()
+      cy.get('[data-testid="pp-rank-banner"]', { timeout: DATA_TIMEOUT })
+        .should('contain', 'Ranked by points').and('contain', '1st').and('contain', 'League')
+      cy.get('.popup-backdrop').click('topLeft', { force: true })
+      cy.contains('.lv-leaders-card', 'Save percentage').find('.lv-leaders-row').first().click()
+      cy.get('[data-testid="pp-rank-banner"]', { timeout: DATA_TIMEOUT })
+        .should('contain', 'Ranked by SV%').and('contain', '1st').and('contain', 'Ranked by GAA')
+      assertNoLoadFailure()
+    })
   })
 })

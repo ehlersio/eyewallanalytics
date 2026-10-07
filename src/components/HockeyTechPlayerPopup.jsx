@@ -41,6 +41,8 @@ import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { fetchComparisonSeasons } from '../utils/seasonClient';
 import { leagueNameVars } from '../utils/hockeyTechI18n';
+import { playerLeagueRanks } from '../utils/hockeyTechRanks';
+import PlayerRankBanner from './PlayerRankBanner';
 import { normalizeComparisonSeasons } from '../utils/seasonComparison';
 import { perGameValue, seasonRampColor, CHART_DASH_PATTERNS } from '../utils/seasonChart';
 import { formatDate } from '../utils/formatters';
@@ -314,6 +316,22 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
     () => playerId ? league.api.fetchPlayerCareer(playerId) : Promise.resolve(null),
     [playerId]
   );
+
+  // League rank badges (AHL/ECHL: league.api.fetchLeaguePlayers, the League
+  // > Leaders data, shared through cache.js): points for a skater, SV% and
+  // GAA for a goalie. Hidden when the player has no row for the season.
+  const { data: leaguePlayers } = useFetch(
+    () => playerId && league.api.fetchLeaguePlayers ? league.api.fetchLeaguePlayers(season) : Promise.resolve(null),
+    [playerId, season]
+  );
+  const ranks = playerLeagueRanks(leaguePlayers, playerId, isGoalie);
+  const leagueScope = t('statTileGrid.scopes.league');
+  const rankRows = !ranks ? [] : isGoalie
+    ? [
+      { label: t('playerPopup.rankings.rankedBy', { stat: 'SV%' }), badges: [{ scope: leagueScope, rank: ranks.svPct }] },
+      { label: t('playerPopup.rankings.rankedByGaa'), badges: [{ scope: leagueScope, rank: ranks.gaa }] },
+    ]
+    : [{ label: t('playerPopup.rankings.rankedBy', { stat: 'points' }), badges: [{ scope: leagueScope, rank: ranks.points }] }];
   const careerRegGroups = groupStats(defs, career?.regularSeason);
   const careerPOGroups = groupStats(defs, career?.playoffs);
 
@@ -438,6 +456,8 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
             ))}
           </div>
         )}
+
+        <PlayerRankBanner rows={rankRows} testId="pp-rank-banner" />
 
         {/* ── Player Spotlight — draft + bio bullets, from /{league}/player/career
             (already fetched above) ── */}
