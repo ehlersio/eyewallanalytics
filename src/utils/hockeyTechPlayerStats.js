@@ -1,16 +1,16 @@
-// utils/echlPlayerStats.js
-// ECHL skater/goalie stat definitions + formatters -- mirrors
-// ahlPlayerStats.js's shape exactly (same {group, items: [{def, fmt}]}
-// output StatTileGrid's TileStatSection expects); echl_player_seasons/
-// echl_goalie_seasons is a byte-identical schema mirror of AHL's own
-// tables (see eyewall-pipeline's docs/echl_new_tables_ddl.sql), so the
-// same field-name set applies unchanged. No percentile map / radar-axis
-// functions here -- ECHL has no percentile pipeline, same as AHL.
+// utils/hockeyTechPlayerStats.js
+// AHL/ECHL skater/goalie stat definitions + formatters, shared by both
+// leagues (each league object's `stats`, utils/hockeyTechLeagues.js) --
+// the two leagues' feeds carry the same fields. Mirrors pwhlPlayerStats.js's
+// shape (same {group, items: [{def, fmt}]} output StatTileGrid's
+// TileStatSection expects), scoped to fields the HockeyTech feeds actually
+// have. No percentile map / radar-axis functions here -- neither league has
+// a percentile pipeline (see AHL_BUILD_BRIEF.md), unlike PWHL's.
 import i18n from '../i18n';
 
 // Drops shot_pct/gw_goals from PWHL's SKATER_STATS -- confirmed absent
-// from ECHL's HockeyTech feed entirely, same as AHL (see echl_stats.py's
-// fetch_skater_stats(), also ECHLPlayersView.jsx's own column list).
+// from both leagues' HockeyTech feeds entirely (see ahl_stats.py's
+// fetch_skater_stats(), also HockeyTechPlayersView.jsx's own column list).
 export const SKATER_STATS = [
   { key: 'goals',      label: 'Goals',  group: 'Scoring', perGame: true,
     tip: 'Total goals scored.',
@@ -81,9 +81,9 @@ export function posLabel(code) {
   }[code] || code
 }
 
-// Same shape as ahlPlayerStats.js's groupStats() -- kept as an
+// Same shape as pwhlPlayerStats.js's groupStats() -- kept as an
 // independent copy per this codebase's popup-owned-helper convention
-// rather than cross-importing between the AHL and ECHL component trees.
+// rather than cross-importing between the PWHL and HockeyTech component trees.
 export function groupStats(defs, stats) {
   const groups = {}
   defs.forEach(def => {

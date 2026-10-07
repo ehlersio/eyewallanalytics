@@ -28,9 +28,12 @@
 //                    isPlayoffSeason(id), seasonLabel(id),
 //                    divisionOrder (standings division order),
 //                    storageKeys { team, predictions }
-//   stats          the league's *PlayerStats.js module
-//                  { SKATER_STATS, GOALIE_STATS, posLabel, groupStats }
-//   predictionStore { load, save, recordOutcome, getStats }
+//   stats          utils/hockeyTechPlayerStats.js (shared: both feeds carry
+//                  the same fields) { SKATER_STATS, GOALIE_STATS, posLabel,
+//                  groupStats }
+//   predictionStore { load, save, recordOutcome, getStats } from
+//                  createPredictionStore(key) (utils/hockeyTechPredictionStore.js),
+//                  stored under config.storageKeys.predictions
 //   headshotSize   LeagueStat headshot path segment, fallback when a row has none
 //   newsSources    source id -> { label, color, bg } for the News badges;
 //                  matches the poller's *_NEWS_SOURCES
@@ -46,10 +49,8 @@ import * as ahlApi from './ahlApi';
 import * as echlApi from './echlApi';
 import * as ahlConfig from './ahlConfig';
 import * as echlConfig from './echlConfig';
-import * as ahlStats from './ahlPlayerStats';
-import * as echlStats from './echlPlayerStats';
-import * as ahlPredictions from './ahlPredictionStore';
-import * as echlPredictions from './echlPredictionStore';
+import * as stats from './hockeyTechPlayerStats';
+import { createPredictionStore, predictionStorageKey } from './hockeyTechPredictionStore';
 import AHLPlayerPopup from '../components/AHLPlayerPopup';
 import ECHLPlayerPopup from '../components/ECHLPlayerPopup';
 
@@ -110,16 +111,11 @@ export const AHL = {
     divisionOrder:      ['Atlantic', 'North', 'Central', 'Pacific'],
     storageKeys: {
       team:        'eyewall:ahl_team',
-      predictions: ahlPredictions.AHL_PREDICTIONS_KEY,
+      predictions: predictionStorageKey('ahl'),
     },
   },
-  stats: ahlStats,
-  predictionStore: {
-    load:          ahlPredictions.loadAHLPredictions,
-    save:          ahlPredictions.saveAHLPrediction,
-    recordOutcome: ahlPredictions.recordAHLOutcome,
-    getStats:      ahlPredictions.getAHLPredictionStats,
-  },
+  stats,
+  predictionStore: createPredictionStore('ahl'),
   headshotSize: '240x240',
   newsSources: {
     'official-ahl':      { label: 'TheAHL.com',         color: '#FFFFFF', bg: '#003876' },
@@ -187,16 +183,11 @@ export const ECHL = {
     divisionOrder:      ['North', 'South', 'Central', 'Mountain'],
     storageKeys: {
       team:        'eyewall:echl_team',
-      predictions: echlPredictions.ECHL_PREDICTIONS_KEY,
+      predictions: predictionStorageKey('echl'),
     },
   },
-  stats: echlStats,
-  predictionStore: {
-    load:          echlPredictions.loadECHLPredictions,
-    save:          echlPredictions.saveECHLPrediction,
-    recordOutcome: echlPredictions.recordECHLOutcome,
-    getStats:      echlPredictions.getECHLPredictionStats,
-  },
+  stats,
+  predictionStore: createPredictionStore('echl'),
   headshotSize: '120x160',
   newsSources: {
     'hockeywriters-echl': { label: 'The Hockey Writers', color: '#FFFFFF', bg: '#1a1a1a' },
