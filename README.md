@@ -774,7 +774,7 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (934 tests, 103 files)
+### Vitest (937 tests, 104 files)
 ```bash
 npm test
 npm run test:watch
