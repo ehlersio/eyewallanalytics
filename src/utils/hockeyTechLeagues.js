@@ -35,6 +35,8 @@
 //   newsSources    source id -> { label, color, bg } for the News badges;
 //                  matches the poller's *_NEWS_SOURCES
 //   PlayerPopup    the league's player popup component
+//   debugSamples   sample players/teams for the Shot Map's dev-only event
+//                  debug panel (never shown to users)
 //
 // PlayerPopup closes an import cycle (AHLPlayerPopup.jsx imports AHL from
 // here). It is safe in either load order: the popups are function
@@ -125,6 +127,11 @@ export const AHL = {
     'osc-ahl':           { label: 'OurSports Central',  color: '#FFFFFF', bg: '#8b0000' },
   },
   PlayerPopup: AHLPlayerPopup,
+  debugSamples: {
+    goalScorer: 'Easton Cowan', goalAssists: ['Luke Haymes', 'Alex Nylander'],
+    ppGoalScorer: 'Dakota Mermis', ppAlertPlayer: 'Luke Tuch', majorPlayer: 'Marc Del Gaizo',
+    winTeamAbbr: 'TOR', winOppAbbr: 'GR',
+  },
 };
 
 export const ECHL = {
@@ -196,6 +203,11 @@ export const ECHL = {
     'osc-echl':           { label: 'OurSports Central',  color: '#FFFFFF', bg: '#8b0000' },
   },
   PlayerPopup: ECHLPlayerPopup,
+  debugSamples: {
+    goalScorer: 'Anthony Romano', goalAssists: ['Oliver Chau', 'Jordan Sambrook'],
+    ppGoalScorer: 'Craig Needham', ppAlertPlayer: 'Cam Johnson', majorPlayer: 'Reid Duke',
+    winTeamAbbr: 'FLA', winOppAbbr: 'REA',
+  },
 };
 
 export const HOCKEYTECH_LEAGUES = { ahl: AHL, echl: ECHL };
