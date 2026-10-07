@@ -1,7 +1,7 @@
 {
   "name": "canes-analytics",
   "private": true,
-  "version": "1.29.22",
+  "version": "1.29.23",
   "type": "module",
   "overrides": {
     "xcode": {
