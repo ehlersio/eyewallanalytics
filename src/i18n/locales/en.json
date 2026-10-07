@@ -1349,6 +1349,9 @@
       "broadcastTitle": "Where to watch"
     }
   },
+  "winProbChip": {
+    "title": "Elo win probability: {{team}} {{pct}}% likely to win"
+  },
   "calendarView": {
     "legend": {
       "win": "Win",

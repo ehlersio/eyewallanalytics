@@ -72,6 +72,21 @@ describe('PWHL Schedule — upcoming season', () => {
     cy.contains('h2', '2025-26 Schedule').should('exist')
   })
 
+  // The Elo chip (contract C6): only on a row the Worker gives `winProb`.
+  it('shows the Elo win-probability chip only on games with a win probability', () => {
+    const [first, second] = SEASON_11_SEA
+    visitSchedule({ pwhl: BEFORE_SWITCH, season11: [{ ...first, winProb: { home: 0.58, away: 0.42, source: 'elo' } }, second] })
+    cy.wait('@season11')
+    cy.contains('button', /^2026-27$/, { timeout: DATA_TIMEOUT }).click()
+    cy.contains('.card', 'VAN', { timeout: DATA_TIMEOUT }).should('exist')
+    // SEA is away at VAN: VAN .58 is the more likely winner.
+    cy.get('[data-testid="win-prob-chip"]').should('have.length', 1)
+      .and('have.text', '⚠ VAN 58%')
+      .and('have.attr', 'title', 'Elo win probability: VAN 58% likely to win')
+    cy.contains('.card', 'NY').find('[data-testid="win-prob-chip"]').should('not.exist')
+    cy.assertNoErrors()
+  })
+
   it('offers no 2026-27 button while the team has no games in it', () => {
     visitSchedule({ pwhl: BEFORE_SWITCH, season11: [] })
     cy.wait('@season11')

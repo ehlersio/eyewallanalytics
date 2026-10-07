@@ -103,6 +103,7 @@ canes-analytics-starter/
 │   │       ├── HockeyTechScheduleView.jsx # Schedule list + calendar + box-score/preview popups + predictions (records outcomes for Final games). No separate Regular Season/Playoffs tab — the league's seasons list has its playoffs as their own season tab; no round-based bracket view (the Calder Cup/Kelly Cup up-to-4-round formats were never ported/verified against PWHL's fixed-2-round bracket logic)
 │   │       └── HockeyTechTeamView.jsx  # Overview/Stats/Splits/Trends (+ History from teamHistory.js) + Compare Seasons; Last 5, Splits W–L–OTL/Pts% and Trends' OT streak via utils/hockeyTechResults.js. No Advanced (no blocked-shot events in either feed) or Salaries tab
 │   ├── components/
+│   │   ├── WinProbChip.jsx             # PWHL/AHL/ECHL schedule cards' Elo win-probability chip (the NHL GameCard's chip), from the Worker schedule row's `winProb`; no chip on a row without one
 │   │   ├── Topbar.jsx/.css             # Live score, countdown clock, sport switcher. The NHL live score comes from hooks/useLiveGame.js (the shared poller ShotMapView reads too); on PWHL/AHL/ECHL routes the followed team's live game comes from hooks/useHockeyTechLiveGame.js
 │   │   ├── BottomNav.jsx               # Sport-aware bottom navigation
 │   │   ├── TeamPicker.jsx              # Sport + team selection (NHL + PWHL); active/expansion PWHL split derives from comingSoon (fixed 2026-07 — used to be a 2nd hardcoded list, ignored comingSoon entirely)
@@ -770,7 +771,7 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (909 tests, 99 files)
+### Vitest (915 tests, 100 files)
 ```bash
 npm test
 npm run test:watch
