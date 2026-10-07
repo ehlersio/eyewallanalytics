@@ -442,6 +442,44 @@ describe('PWHL Advanced tab — league averages', () => {
   })
 })
 
+// Phase 3 B7: the Advanced tab's Regular/Playoffs toggle comes with the
+// team's playoff pwhl_team_seasons row (/pwhl/team-seasons/compare, the real
+// MTL 2026 playoffs: 9 GP, 20 GF, 15 GA, PP .158, PK .929), and only then.
+describe('PWHL Advanced tab — playoffs', () => {
+  const MTL_PO_ROW = { season_id: 9, season_type: 'playoffs', gp: 9, wins: 6, losses: 3, ot_losses: 0, points: 18, goals_for: 20, goals_against: 15, pp_pct: 0.158, pk_pct: 0.929 }
+  function openAdvanced(poRows) {
+    cy.intercept('GET', '**/pwhl/team-seasons/compare?teamId=3&seasons=9', poRows).as('poRow')
+    cy.visit('/pwhl/team', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('eyewall:sport', 'pwhl')
+        win.localStorage.setItem('eyewall:pwhl_team', JSON.stringify({ abbr: 'MTL', teamId: 3 }))
+      },
+    })
+    cy.contains('Advanced', { timeout: DATA_TIMEOUT }).click()
+    cy.wait('@poRow')
+  }
+
+  it('shows the playoffs from the playoff row', () => {
+    openAdvanced([MTL_PO_ROW])
+    cy.contains('button', 'Playoffs', { timeout: DATA_TIMEOUT }).click()
+    cy.contains('Goals For/GP').parent().should('contain', '2.22')   // 20 / 9
+    cy.contains('Goals Against/GP').parent().should('contain', '1.67') // 15 / 9
+    cy.contains('PP%').parent().should('contain', '15.8%')
+    cy.contains('PK%').parent().should('contain', '92.9%')
+    // Regular-season standings ranks aren't shown as playoff ones.
+    cy.contains(/League context/i).should('not.exist')
+    cy.contains('button', 'Regular Season').click()
+    cy.contains(/League context/i).should('exist')
+  })
+
+  it('offers no Playoffs toggle when the team has no playoff row', () => {
+    openAdvanced([])
+    cy.contains(/Special Teams/i, { timeout: DATA_TIMEOUT }).should('exist')
+    cy.contains('button', 'Playoffs').should('not.exist')
+    cy.contains('Showing Regular Season stats').should('exist')
+  })
+})
+
 // From the season flip (~Nov 20) to a team's first game (Dec 5) the new
 // current season (2026-27, id 11) has no games: the Team tab opens on the
 // team's newest season with games and says so, and Salaries falls back to

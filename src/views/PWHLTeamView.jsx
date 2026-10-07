@@ -5,6 +5,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import {
   fetchPWHLStandings, fetchPWHLPlayers, fetchPWHLSchedule, fetchPWHLSalaries, fetchPWHLLeagueAverages,
+  fetchPWHLTeamSeasonsCompare,
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
 import { PWHL_PLAYOFF_SEASON_MAP, PWHL_REGULAR_SEASONS, PWHL_SEASON_LABEL, getPWHLSeasonLabel } from '../utils/pwhlConfig';
@@ -253,6 +254,13 @@ export default function PWHLTeamView() {
     () => teamId && poSeasonId ? fetchPWHLSchedule(teamId, poSeasonId) : Promise.resolve(null), [teamId, poSeasonId]
   );
   const inPlayoffs = (poSchedule?.length || 0) > 0;
+  // The team's playoff pwhl_team_seasons row (GP, GF/GA, PP%/PK% over the
+  // playoffs) -- the Advanced tab's Playoffs view, offered only when the row
+  // exists with games (no dead toggle).
+  const { data: poRows, loading: poRowLoad } = useFetch(
+    () => teamId && poSeasonId ? fetchPWHLTeamSeasonsCompare(teamId, [poSeasonId]) : Promise.resolve(null), [teamId, poSeasonId]
+  );
+  const poRow = playoffTeamRow(poRows, poSeasonId);
   const { data: salaryData, loading: salLoad } = useFetch(
     () => teamId
       ? fetchLatestSalaries(teamId,
@@ -324,9 +332,9 @@ export default function PWHLTeamView() {
       )}
       {activeTab === 'Advanced'  && (
         <AdvancedTab teamRow={teamRow} skaters={skaters} goalies={goalies}
-          abbr={abbr} color={color} loading={sLoad || pLoad || scLoad || resolving}
-          schedule={schedule} poSchedule={poSchedule} teamId={teamId}
-          standings={standings} inPlayoffs={inPlayoffs} season={season} />
+          abbr={abbr} color={color} loading={sLoad || pLoad || scLoad || poRowLoad || resolving}
+          poRow={poRow} teamId={teamId}
+          standings={standings} season={season} />
       )}
       {activeTab === 'Stats'     && (
         <StatsTab skaters={skaters} goalies={goalies} loading={pLoad || resolving} abbr={abbr} color={color} />
@@ -754,8 +762,19 @@ function SplitsTab({ schedule, poSchedule, teamId, abbr: _abbr, color: _color, l
   );
 }
 
+// The team's playoff row from fetchPWHLTeamSeasonsCompare([poSeasonId]),
+// or null when it has none with games (or the request failed).
+export function playoffTeamRow(rows, poSeasonId) {
+  if (!Array.isArray(rows) || poSeasonId == null) return null;
+  return rows.find(r => r.season === poSeasonId && (r.gamesPlayed ?? 0) > 0) || null;
+}
+
 // ── Advanced tab ──────────────────────────────────────────────────────────────
-function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, standings, inPlayoffs, teamId, schedule: _schedule, poSchedule, season }) {
+// Regular season from the standings row; Playoffs (only offered when the
+// team has a playoff pwhl_team_seasons row, `poRow`) from that row: games,
+// goals for/against, PP%/PK%. The player-built rows (shots, PDO, SH%/SV%)
+// and Corsi are regular season only and say so.
+export function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, standings, poRow, teamId, season }) {
   const { t } = useTranslation();
   const [showPO, setShowPO] = React.useState(false);
   // Real league averages (regular season) -- see the Worker's
@@ -782,16 +801,8 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
     );
   }
 
-  // ── Derive stats from schedule for playoff toggle (must be before early return) ──
-  const poSched = useMemo(() => {
-    if (!poSchedule?.length || !teamId) return null;
-    const done = poSchedule.filter(g => g.game_state === 'Final');
-    if (!done.length) return null;
-    const gf = done.reduce((s,g) => s + (g.home_team_id===teamId ? g.home_score : g.away_score)||0, 0);
-    const ga = done.reduce((s,g) => s + (g.home_team_id===teamId ? g.away_score : g.home_score)||0, 0);
-    return { gp: done.length, gf, ga, gfpg: gf/done.length, gapg: ga/done.length };
-  }, [poSchedule, teamId]);
-  const useReg = !showPO || !poSched;
+  const usePO = showPO && !!poRow;
+  const useReg = !usePO;
 
   if (loading) return (
     <div className={`card ${EMPTY_STATE_CLASSES}`} style={{ marginTop: 10 }}>
@@ -808,9 +819,13 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
     </div>
   );
 
-  const gp   = (showPO && poSched) ? poSched.gp   : teamRow.gp || 1;
-  const gfpg = (showPO && poSched) ? poSched.gfpg : (teamRow.goals_for  ? teamRow.goals_for  / (teamRow.gp||1) : null);
-  const gapg = (showPO && poSched) ? poSched.gapg : (teamRow.goals_against ? teamRow.goals_against / (teamRow.gp||1) : null);
+  const gp   = usePO ? poRow.gamesPlayed : teamRow.gp || 1;
+  const gfpg = usePO
+    ? (poRow.goalsFor != null ? poRow.goalsFor / poRow.gamesPlayed : null)
+    : (teamRow.goals_for  ? teamRow.goals_for  / (teamRow.gp||1) : null);
+  const gapg = usePO
+    ? (poRow.goalsAgainst != null ? poRow.goalsAgainst / poRow.gamesPlayed : null)
+    : (teamRow.goals_against ? teamRow.goals_against / (teamRow.gp||1) : null);
 
   // ── Shot volume — regular season from player data (no playoff player stats available) ──
   const totalGoals  = skaters.reduce((s,p) => s+(p.goals??0),  0);
@@ -820,10 +835,10 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
   const totalSA     = totalSaves + totalGA;
 
   // For playoffs: derive GF/GA from schedule; SOG not available
-  const sogPG      = !showPO && totalShots > 0 ? totalShots / gp : null;
-  const saPG       = !showPO && totalSA    > 0 ? totalSA    / gp : null;
-  const shPct  = !showPO && totalShots > 0 ? totalGoals / totalShots : null;
-  const svPct  = !showPO && totalSA    > 0 ? totalSaves / totalSA    : null;
+  const sogPG      = useReg && totalShots > 0 ? totalShots / gp : null;
+  const saPG       = useReg && totalSA    > 0 ? totalSA    / gp : null;
+  const shPct  = useReg && totalShots > 0 ? totalGoals / totalShots : null;
+  const svPct  = useReg && totalSA    > 0 ? totalSaves / totalSA    : null;
   const pdo    = shPct != null && svPct != null ? (shPct + svPct) * 100 : null;
 
 
@@ -855,12 +870,12 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
 
 
 
-  const ppPct = teamRow.pp_pct;
-  const pkPct = teamRow.pk_pct;
+  const ppPct = usePO ? poRow.ppPct : teamRow.pp_pct;
+  const pkPct = usePO ? poRow.pkPct : teamRow.pk_pct;
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:10 }}>
-      {inPlayoffs && (
+      {poRow && (
         <div className={ADV_TOGGLE_CLASSES}>
           <button className={advToggleBtnClasses(!showPO)}
             onClick={() => setShowPO(false)}>{t('team.regularSeasonToggle')}</button>
@@ -868,7 +883,7 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
             onClick={() => setShowPO(true)}>{t('team.playoffsToggle')}</button>
         </div>
       )}
-      {!inPlayoffs && <div className={ADV_CONTEXT_NOTE_CLASSES}>{t('team.showingRegularSeason')}</div>}
+      {!poRow && <div className={ADV_CONTEXT_NOTE_CLASSES}>{t('team.showingRegularSeason')}</div>}
 
       {/* Shot Volume & Possession */}
       <div className="card">
@@ -911,7 +926,7 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
       {/* PDO & Puck Luck */}
       <div className="card">
         <div className="sec-label" style={{ marginBottom:8 }}>{t('team.pdoPuckLuckTitle')}</div>
-        {showPO ? (
+        {usePO ? (
           <div className={ADV_EXPLAIN_CLASSES}>
             {t('pwhlTeamView.advanced.pdoPlayoffExplain')}
           </div>
@@ -920,15 +935,15 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
             {t('pwhlTeamView.advanced.pdoExplain')}
           </div>
         )}
-        <AdvStatRow label={showPO ? t('pwhlTeamView.advanced.pdoLabelReg') : t('pwhlTeamView.advanced.pdoLabel')}
+        <AdvStatRow label={usePO ? t('pwhlTeamView.advanced.pdoLabelReg') : t('pwhlTeamView.advanced.pdoLabel')}
           val={pdo != null ? fmt(pdo,1) : null}
           avg={avgOf(AVG.pdo, v => v.toFixed(1))} rating={rate(pdo, AVG.pdo)}
           note={pdo != null ? (pdo > 102 ? t('pwhlTeamView.advanced.luckPositive') : pdo < 98 ? t('pwhlTeamView.advanced.luckNegative') : t('pwhlTeamView.advanced.luckNeutral')) : null} />
-        <AdvStatRow label={showPO ? t('pwhlTeamView.advanced.shLabelReg') : t('pwhlTeamView.advanced.shLabel')}
+        <AdvStatRow label={usePO ? t('pwhlTeamView.advanced.shLabelReg') : t('pwhlTeamView.advanced.shLabel')}
           val={shPct != null ? fmtPct(shPct) : null}
           avg={avgOf(AVG.shPct, fmtPct)} rating={rate(shPct, AVG.shPct)}
           note={t('pwhlTeamView.advanced.shNote', { goals: totalGoals, shots: totalShots })} />
-        <AdvStatRow label={showPO ? t('pwhlTeamView.advanced.svLabelReg') : t('pwhlTeamView.advanced.svLabel')}
+        <AdvStatRow label={usePO ? t('pwhlTeamView.advanced.svLabelReg') : t('pwhlTeamView.advanced.svLabel')}
           val={svPct != null ? svPct.toFixed(3).replace('0.','.') : null}
           avg={avgOf(AVG.svPct, v => v.toFixed(3).replace('0.','.'))} rating={rate(svPct, AVG.svPct)} />
       </div>
@@ -941,17 +956,17 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
             <AdvStatRow label="PP%"
               val={ppPct != null ? fmtPct(ppPct) : null}
               avg={avgOf(AVG.ppPct, fmtPct)} rating={rate(ppPct, AVG.ppPct)}
-              note={teamRow.pp_goals != null && teamRow.pp_opportunities
+              note={useReg && teamRow.pp_goals != null && teamRow.pp_opportunities
                 ? t('pwhlTeamView.advanced.ppNote', { goals: teamRow.pp_goals, chances: teamRow.pp_opportunities }) : null} />
             <AdvStatRow label="PK%"
               val={pkPct != null ? fmtPct(pkPct) : null}
               avg={avgOf(AVG.pkPct, fmtPct)} rating={rate(pkPct, AVG.pkPct)}
-              note={teamRow.pk_goals_against != null && teamRow.times_shorthanded
+              note={useReg && teamRow.pk_goals_against != null && teamRow.times_shorthanded
                 ? t('pwhlTeamView.advanced.pkNote', { ga: teamRow.pk_goals_against, pks: teamRow.times_shorthanded }) : null} />
-            {teamRow.sh_goals_for != null && (
+            {useReg && teamRow.sh_goals_for != null && (
               <AdvStatRow label={t('pwhlTeamView.advanced.shgForLabel')}  val={teamRow.sh_goals_for}  note={t('pwhlTeamView.advanced.shgForNote')} />
             )}
-            {teamRow.sh_goals_against != null && (
+            {useReg && teamRow.sh_goals_against != null && (
               <AdvStatRow label={t('pwhlTeamView.advanced.shgAgainstLabel')} val={teamRow.sh_goals_against} note={t('pwhlTeamView.advanced.shgAgainstNote')} />
             )}
           </>
@@ -961,8 +976,8 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
       </div>
 
 
-      {/* League context */}
-      <div className="card">
+      {/* League context -- regular-season standings, so not in the playoff view */}
+      {useReg && <div className="card">
         <div className="sec-label" style={{ marginBottom:8 }}>{t('pwhlTeamView.advanced.leagueContextTitle')}</div>
         <div className={ADV_EXPLAIN_CLASSES}>
           {t('pwhlTeamView.advanced.leagueContextExplain', { abbr })}
@@ -983,7 +998,7 @@ function AdvancedTab({ teamRow, skaters, goalies, abbr, color: _color, loading, 
             </div>
           );
         })}
-      </div>
+      </div>}
 
     </div>
   );
