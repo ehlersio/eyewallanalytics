@@ -47,7 +47,9 @@ export function pwhlSeasonLabel({ seasonId, seasonType, startYear }) {
 // needed, just a different template than the regular-season branch below.
 export function ahlSeasonLabel({ seasonId, seasonType, startYear }) {
   if (!startYear) return `Season ${seasonId}`;
-  if (seasonType === 'playoffs') return `${startYear} Playoffs`;
+  // HockeyTech's own name, as the season pickers show it (ahlConfig.js,
+  // from /config/seasons/ahl-seasons): "2026 Calder Cup Playoffs".
+  if (seasonType === 'playoffs') return `${startYear} Calder Cup Playoffs`;
   const base = `${startYear}-${String(startYear + 1).slice(2)}`;
   if (seasonType === 'preseason') return `${base} Preseason`;
   return base;

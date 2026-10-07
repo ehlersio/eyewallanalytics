@@ -83,7 +83,7 @@ describe('AHL Hamilton (new in 2026-27)', () => {
       visitAs(path, 'ahl', HAM)
       button('2026-27').should('exist')
       button('2025-26').should('not.exist')
-      button('2026 Playoffs').should('not.exist')
+      button('2026 Calder Cup Playoffs').should('not.exist')
       cy.assertNoErrors()
     })
   })
@@ -93,7 +93,7 @@ describe('AHL Hamilton (new in 2026-27)', () => {
     cy.contains('button', 'Stats', { timeout: DATA_TIMEOUT }).click()
     button('2026-27').should('exist')
     button('2025-26').should('not.exist')
-    button('2026 Playoffs').should('not.exist')
+    button('2026 Calder Cup Playoffs').should('not.exist')
   })
 })
 
@@ -134,6 +134,32 @@ describe('ECHL 2026-27 (#33)', () => {
     visitAs('/echl/shots', 'echl', ADK)
     button('2025-26').should('exist')
     button('2026-27').should('not.exist')
+    cy.assertNoErrors()
+  })
+})
+
+// Contract C7: the AHL/ECHL season lists come from the Worker's
+// /config/seasons/{league}-seasons at load (ahlConfig.js), not a list in
+// the app, so the 2027 playoffs get a tab without an app release. Stubbed:
+// the real list (fixtures/ahl-seasons-2026-10-07.json) plus a 2027 Calder
+// Cup Playoffs season, and one HER game in it.
+describe('AHL seasons from the Worker (C7)', () => {
+  it('offers a season the app has never heard of, labelled as HockeyTech names it', () => {
+    cy.fixture('ahl-seasons-2026-10-07.json').then(rows => {
+      cy.intercept('GET', '**/config/seasons/ahl-seasons', [
+        { seasonId: 96, seasonName: '2027 Calder Cup Playoffs', seasonType: 'playoffs', startYear: 2027, startDate: '2027-04-19', endDate: '2027-06-20' },
+        ...rows,
+      ]).as('ahlSeasons')
+    })
+    cy.intercept('GET', '**/ahl/schedule?teamId=319&season=96', [
+      { game_id: 1099001, season_id: 96, game_date: '2027-04-23', home_team_id: 319, away_team_id: 384, home_score: 0, away_score: 0, game_state: '7:00 pm EDT', venue_name: 'Giant Center' },
+    ]).as('s96')
+    visitAs('/ahl/schedule', 'ahl', HER)
+    cy.wait('@ahlSeasons')
+    cy.wait('@s96', { timeout: DATA_TIMEOUT })
+    button('2027 Calder Cup Playoffs').click()
+    cy.contains('.card', /HER\s*Home\s*CLT/, { timeout: DATA_TIMEOUT }).should('exist')
+    button('2025-26').should('exist')
     cy.assertNoErrors()
   })
 })

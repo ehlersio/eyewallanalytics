@@ -23,7 +23,8 @@
 // AHL's initial display shipped, not as part of it).
 const ECHL_PLACEHOLDER_COLOR = '#6B7280'; // neutral slate, passes WCAG AA on #101827 (7.1:1)
 
-import { fetchSeasonsConfig } from './seasonClient';
+import { fetchSeasonsConfig, fetchLeagueSeasons } from './seasonClient';
+import { seasonsFromWorker, reverseSeasonMap } from './hockeyTechSeasons';
 
 // ── Season constant ───────────────────────────────────────────────────────────
 // Same live-resolution pattern as AHL_CURRENT_SEASON in ahlConfig.js.
@@ -44,18 +45,18 @@ export let ECHL_CURRENT_SEASON = 73;
 })();
 
 // ── Season / playoff-type enumeration ────────────────────────────────────────
-// Confirmed live 2026-08-30 via feed=modulekit&view=seasons: 78 = 2026-27
-// Regular Season (not started), 76 = 2026 Kelly Cup Playoffs (ECHL's own
-// single-calendar-year playoff-label convention, same as AHL's "2026
-// Playoffs"), 73 = 2025-26 Regular Season (last fully completed).
-export const ECHL_SEASONS = [
+// The seed (confirmed live 2026-08-30 via feed=modulekit&view=seasons: 78 =
+// 2026-27, 76 = 2026 Kelly Cup Playoffs, 73 = 2025-26), rebuilt from the
+// Worker at load -- see "Seasons from the Worker" below. Its oldest id is
+// how far back the built list goes.
+export let ECHL_SEASONS = [
   { id: 78, label: '2026-27', type: 'regular' },
   { id: 73, label: '2025-26', type: 'regular' },
   { id: 76, label: '2026 Kelly Cup Playoffs', type: 'playoffs' },
 ];
 
-export const ECHL_REGULAR_SEASONS = ECHL_SEASONS.filter((s) => s.type === 'regular');
-export const ECHL_PLAYOFF_SEASONS = ECHL_SEASONS.filter((s) => s.type === 'playoffs');
+export let ECHL_REGULAR_SEASONS = ECHL_SEASONS.filter((s) => s.type === 'regular');
+export let ECHL_PLAYOFF_SEASONS = ECHL_SEASONS.filter((s) => s.type === 'playoffs');
 
 export function isECHLPlayoffSeason(seasonId) {
   return ECHL_SEASONS.find((s) => s.id === seasonId)?.type === 'playoffs';
@@ -63,15 +64,44 @@ export function isECHLPlayoffSeason(seasonId) {
 
 // Regular-season season_id -> its corresponding playoff season_id.
 // Hand-authored, same as AHL_PLAYOFF_SEASON_MAP -- only one pair known so far.
-export const ECHL_PLAYOFF_SEASON_MAP = { 73: 76 }; // 2025-26 -> 2026 Kelly Cup Playoffs
+export let ECHL_PLAYOFF_SEASON_MAP = { 73: 76 }; // 2025-26 -> 2026 Kelly Cup Playoffs
 
 // Reverse of the above -- needed because ECHL's live-resolved "current"
 // season (see ECHL_CURRENT_SEASON above) is itself a playoffs id for most
 // of the off-season (confirmed live 2026-08-30: resolves to 76, not 73,
 // since 78 hasn't started yet) -- same recurring AHL/PWHL gotcha.
-export const ECHL_REGULAR_SEASON_MAP = Object.fromEntries(
-  Object.entries(ECHL_PLAYOFF_SEASON_MAP).map(([regId, poId]) => [poId, Number(regId)])
-);
+export let ECHL_REGULAR_SEASON_MAP = reverseSeasonMap(ECHL_PLAYOFF_SEASON_MAP);
+
+// ── Seasons from the Worker (contract C7) ────────────────────────────────────
+// The lists and maps above are the seed. At load they're rebuilt from
+// /config/seasons/echl-seasons (utils/hockeyTechSeasons.js), from the seed's
+// oldest season on, so a new season (a 2027 playoffs, a 2027-28) appears
+// without an app release; the `let`s are live bindings, and
+// 'eyewall:echl-seasons-updated' tells mounted pickers to re-read them.
+// A failed fetch keeps the seed.
+const ECHL_SEED_MIN_ID = Math.min(...ECHL_SEASONS.map((s) => s.id));
+
+export function applyECHLSeasons(rows) {
+  const built = seasonsFromWorker(rows, { minId: ECHL_SEED_MIN_ID });
+  if (!built) return false;
+  ECHL_SEASONS = built.seasons;
+  ECHL_REGULAR_SEASONS = ECHL_SEASONS.filter((s) => s.type === 'regular');
+  ECHL_PLAYOFF_SEASONS = ECHL_SEASONS.filter((s) => s.type === 'playoffs');
+  ECHL_PLAYOFF_SEASON_MAP = built.playoffSeasonMap;
+  ECHL_REGULAR_SEASON_MAP = reverseSeasonMap(ECHL_PLAYOFF_SEASON_MAP);
+  if (typeof window !== 'undefined' && window.dispatchEvent) {
+    window.dispatchEvent(new window.CustomEvent('eyewall:echl-seasons-updated'));
+  }
+  return true;
+}
+
+(async () => {
+  try {
+    applyECHLSeasons(await fetchLeagueSeasons('echl'));
+  } catch (e) {
+    console.warn('ECHL season list lookup failed, using the built-in list:', e.message);
+  }
+})();
 
 // ── Team configs ─────────────────────────────────────────────────────────────
 // team_id/code/division/name confirmed live via

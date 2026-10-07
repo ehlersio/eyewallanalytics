@@ -57,3 +57,25 @@ export function fetchComparisonSeasons() {
   }
   return comparisonInFlight;
 }
+
+// One league's full season list, /config/seasons/{ahl,echl}-seasons
+// (newest first: { seasonId, seasonName, seasonType, startYear, startDate,
+// endDate }), memoized per league like the two above. ahlConfig.js and
+// echlConfig.js build their season lists and regular<->playoff maps from
+// it (utils/hockeyTechSeasons.js).
+const leagueSeasonsInFlight = {};
+
+export function fetchLeagueSeasons(league) {
+  if (!leagueSeasonsInFlight[league]) {
+    leagueSeasonsInFlight[league] = fetch(`${WORKER_BASE}/config/seasons/${league}-seasons`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`config/seasons/${league}-seasons ${res.status}`);
+        return res.json();
+      })
+      .catch((e) => {
+        delete leagueSeasonsInFlight[league];
+        throw e;
+      });
+  }
+  return leagueSeasonsInFlight[league];
+}

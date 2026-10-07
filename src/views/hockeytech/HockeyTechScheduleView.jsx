@@ -8,7 +8,7 @@
 // Deliberately simpler than PWHLScheduleView.jsx in two ways, both real
 // scope cuts:
 //   - No separate Regular Season/Playoffs tab -- the league's seasons list
-//     already has its playoffs ("2026 Playoffs" / "2026 Kelly Cup
+//     already has its playoffs ("2026 Calder Cup Playoffs" / "2026 Kelly Cup
 //     Playoffs") as its own selectable season tab (matching the Players
 //     view's pattern), so there's no second nested tab layer the way
 //     PWHL's Reg/Playoffs split needs.
@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { formatDate as formatDateIntl } from '../../utils/formatters';
 import { leagueNameVars } from '../../utils/hockeyTechI18n';
 import { useFetch } from '../../hooks/useFetch';
+import { useLeagueSeasons } from '../../hooks/useLeagueSeasons';
 import { useTeamSeasonGames } from '../../hooks/useTeamSeasonGames';
 import { seasonsWithGames, fallbackSeason } from '../../utils/teamSeasons';
 import HockeyTechCalendarView from '../../components/hockeytech/HockeyTechCalendarView';
@@ -65,6 +66,8 @@ function formatDate(dateStr) {
 
 export default function HockeyTechScheduleView({ league }) {
   const { t } = useTranslation();
+  // Re-render when the season list is rebuilt from the Worker (C7).
+  useLeagueSeasons(league);
   const team = league.team;
   const teamId = league.teamId;
   const abbr = team?.abbr || '—';

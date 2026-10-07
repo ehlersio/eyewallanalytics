@@ -60,7 +60,8 @@ const AHL_PLACEHOLDER_COLOR = '#6B7280'; // neutral slate, passes WCAG AA on #10
 //   WBS #FEC23D (11.0:1) passes unchanged        SD  #FF4C00 (5.32:1) passes unchanged
 //   HSK #C3C7C9 (10.4:1) passes unchanged
 
-import { fetchSeasonsConfig } from './seasonClient';
+import { fetchSeasonsConfig, fetchLeagueSeasons } from './seasonClient';
+import { seasonsFromWorker, reverseSeasonMap } from './hockeyTechSeasons';
 
 // ── Season constant ───────────────────────────────────────────────────────────
 // Same live-resolution pattern as PWHL_CURRENT_SEASON in pwhlConfig.js --
@@ -82,17 +83,16 @@ export let AHL_CURRENT_SEASON = 90;
 })();
 
 // ── Season / playoff-type enumeration ────────────────────────────────────────
-// Same NOT-live-resolved convention as PWHL_SEASONS in pwhlConfig.js -- see
-// that file's comment. Only the seasons confirmed live during this pass are
-// listed; add entries here as further AHL seasons are ingested.
-export const AHL_SEASONS = [
+// The seed: rebuilt from the Worker at load (see "Seasons from the Worker"
+// below). Its oldest id is how far back the built list goes.
+export let AHL_SEASONS = [
   { id: 94, label: '2026-27', type: 'regular' },
   { id: 90, label: '2025-26', type: 'regular' },
-  { id: 92, label: '2026 Playoffs', type: 'playoffs' },
+  { id: 92, label: '2026 Calder Cup Playoffs', type: 'playoffs' },
 ];
 
-export const AHL_REGULAR_SEASONS = AHL_SEASONS.filter((s) => s.type === 'regular');
-export const AHL_PLAYOFF_SEASONS = AHL_SEASONS.filter((s) => s.type === 'playoffs');
+export let AHL_REGULAR_SEASONS = AHL_SEASONS.filter((s) => s.type === 'regular');
+export let AHL_PLAYOFF_SEASONS = AHL_SEASONS.filter((s) => s.type === 'playoffs');
 
 export function isAHLPlayoffSeason(seasonId) {
   return AHL_SEASONS.find((s) => s.id === seasonId)?.type === 'playoffs';
@@ -106,7 +106,7 @@ export function isAHLPlayoffSeason(seasonId) {
 // instead (94, 90, 92) specifically so season-tab lists render newest-first
 // -- reordering it to make positional zip work would misorder those tabs.
 // Hand-authored instead; only one pair is known so far.
-export const AHL_PLAYOFF_SEASON_MAP = { 90: 92 }; // 2025-26 -> 2026 Playoffs
+export let AHL_PLAYOFF_SEASON_MAP = { 90: 92 }; // 2025-26 -> 2026 Playoffs
 
 // Reverse of the above -- playoffs season_id -> its regular season_id.
 // Needed because AHL's live-resolved "current" season (see
@@ -117,9 +117,38 @@ export const AHL_PLAYOFF_SEASON_MAP = { 90: 92 }; // 2025-26 -> 2026 Playoffs
 // wants "this season's regular-season numbers" specifically (not just
 // whatever's current) needs to map back from 92 -> 90 rather than assume
 // currentSeason is already a regular-season id.
-export const AHL_REGULAR_SEASON_MAP = Object.fromEntries(
-  Object.entries(AHL_PLAYOFF_SEASON_MAP).map(([regId, poId]) => [poId, Number(regId)])
-);
+export let AHL_REGULAR_SEASON_MAP = reverseSeasonMap(AHL_PLAYOFF_SEASON_MAP);
+
+// ── Seasons from the Worker (contract C7) ────────────────────────────────────
+// The lists and maps above are the seed. At load they're rebuilt from
+// /config/seasons/ahl-seasons (utils/hockeyTechSeasons.js), from the seed's
+// oldest season on, so a new season (a 2027 playoffs, a 2027-28) appears
+// without an app release; the `let`s are live bindings, and
+// 'eyewall:ahl-seasons-updated' tells mounted pickers to re-read them.
+// A failed fetch keeps the seed.
+const AHL_SEED_MIN_ID = Math.min(...AHL_SEASONS.map((s) => s.id));
+
+export function applyAHLSeasons(rows) {
+  const built = seasonsFromWorker(rows, { minId: AHL_SEED_MIN_ID });
+  if (!built) return false;
+  AHL_SEASONS = built.seasons;
+  AHL_REGULAR_SEASONS = AHL_SEASONS.filter((s) => s.type === 'regular');
+  AHL_PLAYOFF_SEASONS = AHL_SEASONS.filter((s) => s.type === 'playoffs');
+  AHL_PLAYOFF_SEASON_MAP = built.playoffSeasonMap;
+  AHL_REGULAR_SEASON_MAP = reverseSeasonMap(AHL_PLAYOFF_SEASON_MAP);
+  if (typeof window !== 'undefined' && window.dispatchEvent) {
+    window.dispatchEvent(new window.CustomEvent('eyewall:ahl-seasons-updated'));
+  }
+  return true;
+}
+
+(async () => {
+  try {
+    applyAHLSeasons(await fetchLeagueSeasons('ahl'));
+  } catch (e) {
+    console.warn('AHL season list lookup failed, using the built-in list:', e.message);
+  }
+})();
 
 // ── Team configs ─────────────────────────────────────────────────────────────
 // team_id/code/division confirmed live via feed=modulekit&view=teamsbyseason
