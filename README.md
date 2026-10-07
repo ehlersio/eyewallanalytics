@@ -153,15 +153,18 @@ canes-analytics-starter/
 │   │   ├── HockeyTechPlayerPopup.jsx   # Player detail popup shared by AHL and ECHL (2026-09) — Stats, Heat Map, and Compare (season-over-season stat cards + per-game trend chart from `/{league}/player-game-log`, same as PWHL's). No percentile radar header or Scout tab (no percentile pipeline for either league), no goalie heat map (both leagues' PBP goal events carry `goalie_id: null`)
 │   │   ├── AHLPlayerPopup.jsx          # AHL player popup — `HockeyTechPlayerPopup` with the AHL league object from `hockeyTechLeagues.js`
 │   │   ├── AHLGameStatsPopup.jsx       # AHL box-score popup (parity Phase 3) — team-stat comparison bars drop hits/blocked-shots/faceoff% entirely (always 0 in AHL's feed, never ingested); no "View Shot Map" CTA yet (the shot map has had a game view since 2026-10, but this popup doesn't link to it)
-│   │   ├── AHLBoxScoreTable.jsx        # Per-player skater/goalie table for AHLGameStatsPopup — drops HIT/BLK/FO%/skater-TOI columns entirely; AHL's gameSummary reports these as a hardcoded 0 regardless of real ice time, so the pipeline never ingested them
+│   │   ├── AHLBoxScoreTable.jsx        # Wrapper: `hockeytech/HockeyTechBoxScoreTable` with the AHL league object
 │   │   ├── AHLGamePreviewPopup.jsx     # AHL pre-game preview popup (parity Phase 3) — real field-NAME differences from PWHL's `gameCenterPreview` shape (`teamRecord.overall`/`.past_10_games` not `overallRecord`/`last10Record`, `powerPlayStats`/`penaltyKillStats` not `powerPlay`/`penaltyKill`, `previousMeetings` not `seasonSeries`); no shot-attempt-share row at all (no `corsiForPct` data source)
-│   │   ├── AHLCalendarView.jsx         # AHL monthly schedule grid — port of PWHLCalendarView.jsx; no distinct OT/shootout-loss cell variant since `ahl_game_log` has no ot/shootout boolean columns, so every non-win renders as a plain loss
+│   │   ├── AHLCalendarView.jsx         # Wrapper: `hockeytech/HockeyTechCalendarView` with the AHL league object
 │   │   ├── ECHLGameEvents.jsx          # ECHL live game event popups — port of AHLGameEvents.jsx (ECHL parity pass, Phase 6 equivalent), same faceoff-data-gap reasoning for dropping a live-insights panel
 │   │   ├── ECHLPlayerPopup.jsx         # ECHL player popup — `HockeyTechPlayerPopup` with the ECHL league object from `hockeyTechLeagues.js`
 │   │   ├── ECHLGameStatsPopup.jsx      # ECHL box-score popup — port of AHLGameStatsPopup.jsx, same dropped-stat reasoning
-│   │   ├── ECHLBoxScoreTable.jsx       # Per-player skater/goalie table for ECHLGameStatsPopup — same dropped-columns shape as AHLBoxScoreTable.jsx
+│   │   ├── ECHLBoxScoreTable.jsx       # Wrapper: `hockeytech/HockeyTechBoxScoreTable` with the ECHL league object
 │   │   ├── ECHLGamePreviewPopup.jsx    # ECHL pre-game preview popup — confirmed live 2026-08-30 that ECHL's `gameCenterPreview` shape is byte-identical to AHL's (same HockeyTech vendor generation)
-│   │   └── ECHLCalendarView.jsx        # ECHL monthly schedule grid — port of AHLCalendarView.jsx
+│   │   ├── ECHLCalendarView.jsx        # Wrapper: `hockeytech/HockeyTechCalendarView` with the ECHL league object
+│   │   └── hockeytech/                 # AHL/ECHL components shared by both leagues; each takes `league` (utils/hockeyTechLeagues.js) and the AHL*/ECHL* files above wrap them
+│   │       ├── HockeyTechBoxScoreTable.jsx # Per-player skater/goalie table for the game stats popups — drops HIT/BLK/FO%/skater-TOI columns entirely; both leagues' gameSummary reports these as a hardcoded 0 regardless of real ice time, so the pipeline never ingested them
+│   │       └── HockeyTechCalendarView.jsx  # Monthly schedule grid — port of PWHLCalendarView.jsx; no distinct OT/shootout-loss cell variant since `{league}_game_log` has no ot/shootout boolean columns, so every non-win renders as a plain loss
 │   ├── hooks/
 │   │   ├── useFetch.js                 # Data fetching + polling (cache: no-store)
 │   │   ├── useLiveGame.js              # A team's live game + its play-by-play from utils/liveGameStore.js (Topbar, ShotMapView)
@@ -238,7 +241,7 @@ canes-analytics-starter/
 │   │   ├── pwhl-team.cy.js             # PWHL team (4 established teams, all 5 tabs, full features + 1 expansion team empty-state)
 │   │   ├── league.cy.js                # NHL league (all 6 tabs, incl. Scoreboard)
 │   │   ├── pwhl-league.cy.js           # PWHL league (all 6 tabs, incl. Scoreboard; standings/leaders scoped to established teams — see Known gaps)
-│   │   ├── hockeytech-routes.cy.js     # AHL + ECHL League/Schedule/News/Shot Map smoke: each renders its own league's page (logos, divisions, news footer), no load failure
+│   │   ├── hockeytech-routes.cy.js     # AHL + ECHL League/Schedule/News/Shot Map smoke: each renders its own league's page (logos, divisions, news footer), no load failure; schedule calendar opens a 2025-26 box score
 │   │   ├── draft.cy.js                 # NHL draft board
 │   │   ├── TeamPicker.cy.js            # Sport + team picker — all 12 PWHL teams selectable with real colors
 │   │   ├── theme.cy.js                 # Light/dark mode
