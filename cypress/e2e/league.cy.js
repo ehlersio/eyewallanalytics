@@ -281,13 +281,34 @@ describe('League page — CAR', () => {
   // These cover a finished bracket: last season's, which sits beside this
   // season's projection (or real bracket) from opening night on, and is the
   // only one before then. The projection has its own block below.
+  //
+  // Both brackets are stubbed with the real, finished 2025-26 one
+  // (fixtures/nhl-playoff-bracket-2026.json and its series carousel, saved
+  // from api-web.nhle.com 2026-10-07). Live, this season's view is a
+  // projection built from the standings, which can land after the tab
+  // opens: the view then switched from last season's bracket to the
+  // projection mid-test, and the series card about to be clicked was gone
+  // (flaky on #474, 2026-10-07). With both stubbed, the view toggle is
+  // there from the first render and nothing moves under the tests. The
+  // series modal's per-game lookups (up to 7 NHL /landing calls a series,
+  // which sometimes outlasted the 10 s loading wait) answer from
+  // fixtures/nhl-playoff-landings-2025-26.json: the 82 games played, cut to
+  // the fields the modal reads; a game never played is a 404, as live.
   describe('Playoff bracket tab', () => {
     beforeEach(() => {
+      cy.intercept('GET', '**/playoff-bracket/*', { fixture: 'nhl-playoff-bracket-2026.json' })
+      cy.intercept('GET', '**/playoff-series/carousel/*', { fixture: 'nhl-playoff-carousel-20252026.json' })
+      cy.fixture('nhl-playoff-landings-2025-26.json').then(landings => {
+        cy.intercept('GET', '**/gamecenter/2025030*/landing', req => {
+          const game = landings[req.url.match(/gamecenter\/(\d+)\//)[1]]
+          if (game) req.reply(game)
+          else req.reply(404, {})
+        })
+      })
       cy.get('.league-tab').contains('Playoff bracket').click()
       cy.get('.bkt-root', { timeout: 15000 }).should('be.visible')
-      cy.get('body').then(($body) => {
-        if ($body.find('[data-bracket-view="previous"]').length) cy.get('[data-bracket-view="previous"]').click()
-      })
+      cy.get('[data-bracket-view="previous"]').click()
+      cy.get('[data-bracket-view="previous"]').should('have.class', 'lv-filter-btn--active')
     })
 
     it('shows bracket panel content area', () => {
@@ -364,34 +385,23 @@ describe('League page — CAR', () => {
       cy.get('.series-modal .bkt-dots').should('have.length', 2)
     })
 
-    // The modal handles a series whose games can't be fetched gracefully
-    // ("Game data unavailable for this series."), so these accept either
-    // outcome rather than asserting real games always load.
-    it('series modal shows game rows after loading, or the graceful empty state', () => {
+    // A finished series has 4 to 7 games, all in the stubbed landings. (The
+    // modal's "Game data unavailable for this series." fallback for games
+    // that can't be fetched isn't reached with the stubs.)
+    it('series modal shows a row per game played once loaded', () => {
       cy.get('.bkt-card--clickable').first().click()
       cy.get('.series-modal', { timeout: 3000 }).should('be.visible')
       cy.get('.series-modal__loading', { timeout: 10000 }).should('not.exist')
-      cy.get('body').then(($body) => {
-        if ($body.find('.series-modal__empty').length > 0) {
-          cy.get('.series-modal__empty').should('contain', 'unavailable')
-        } else {
-          cy.get('.series-modal__game-row').should('have.length.gte', 1)
-        }
-      })
+      cy.get('.series-modal__empty').should('not.exist')
+      cy.get('.series-modal__game-row').should('have.length.within', 4, 7)
     })
 
-    it('game rows show a score for each team, when game data is available', () => {
+    it('game rows show a score for each team', () => {
       cy.get('.bkt-card--clickable').first().click()
       cy.get('.series-modal__loading', { timeout: 10000 }).should('not.exist')
-      cy.get('body').then(($body) => {
-        if ($body.find('.series-modal__empty').length > 0) {
-          cy.get('.series-modal__empty').should('exist')
-        } else {
-          cy.get('.series-modal__game-row').first().within(() => {
-            cy.get('.series-modal__score').should('have.length', 2)
-            cy.get('.series-modal__score').first().invoke('text').should('match', /^\d+$/)
-          })
-        }
+      cy.get('.series-modal__game-row').first().within(() => {
+        cy.get('.series-modal__score').should('have.length', 2)
+        cy.get('.series-modal__score').first().invoke('text').should('match', /^\d+$/)
       })
     })
 

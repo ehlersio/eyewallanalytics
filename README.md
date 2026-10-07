@@ -242,7 +242,13 @@ canes-analytics-starter/
 │   │   ├── pwhl-team.cy.js             # PWHL team (4 established teams, all 5 tabs, full features + 1 expansion team empty-state)
 │   │   ├── league.cy.js                # NHL league (all 6 tabs, incl. Scoreboard)
 │   │   ├── pwhl-league.cy.js           # PWHL league (all 6 tabs, incl. Scoreboard; standings/leaders scoped to established teams — see Known gaps)
-│   │   ├── hockeytech-routes.cy.js     # AHL + ECHL League/Schedule/News/Shot Map smoke: each renders its own league's page (logos, divisions, news footer), no load failure; schedule calendar opens a 2025-26 box score; box-score popup's logos, periods and team toggle; upcoming-game preview; shot map debug panel fires each event popup; news source badges and filter chips; schedule records a saved prediction's outcome; players roster and 2025-26 stats tables; League leader rows open the player popup; every Team tab renders; Shot Map wake lock + resume/push re-check
+│   │   ├── hockeytech-league.cy.js     # AHL + ECHL League tab: Scoreboard, standings by division (league's own logos and divisions), leaders, leader rows open the player popup
+│   │   ├── hockeytech-schedule.cy.js   # AHL + ECHL Schedule: team schedule, calendar opens a 2025-26 box score (logos, periods, team toggle), saved prediction's outcome recorded, upcoming-game preview
+│   │   ├── hockeytech-players.cy.js    # AHL + ECHL Players: roster and 2025-26 stats tables
+│   │   ├── hockeytech-team.cy.js       # AHL + ECHL Team: every tab renders
+│   │   ├── hockeytech-news.cy.js       # AHL + ECHL News: league news footer, source badges and filter chips
+│   │   ├── hockeytech-shots.cy.js      # AHL + ECHL Shot Map: renders; wake lock + resume/push re-check; win popup once when a stubbed live game ends in a win; debug panel fires each event popup
+│   │   │                               # (shared fixtures/helpers: cypress/support/hockeytech.js)
 │   │   ├── draft.cy.js                 # NHL draft board
 │   │   ├── TeamPicker.cy.js            # Sport + team picker — all 12 PWHL teams selectable with real colors
 │   │   ├── theme.cy.js                 # Light/dark mode
@@ -785,7 +791,7 @@ npm run cypress:visual            # diff current rendering against the committed
 ```
 48 baseline screenshots (`cypress/snapshots/base/`, committed) covering every NHL + PWHL route × mobile/desktop × dark/light. These routes hit the live Worker API with no fixture seeding, so a small amount of pixel drift between a baseline capture and a diff run is expected (real content changing, not a bug) — `errorThreshold: 1` (%) in `cypress/support/e2e.js` absorbs that noise; a real layout/spacing/color regression runs far higher and still fails. Intended workflow: capture a baseline immediately before a migration phase, diff immediately after.
 
-**28 spec files** (none of them cover AHL or ECHL yet — see [Known Limitations](#known-limitations) — the two newest leagues' only automated coverage is Vitest-level, `seasonComparison.test.js`'s AHL/ECHL season-label tests):
+**61 spec files** (AHL/ECHL: `hockeytech-{league,schedule,players,team,news,shots}.cy.js`, `ahl-team`, `echl-team`, `hockeytech-season-pickers`, `hockeytech-player-compare`):
 
 **Note (2026-08, Session 94):** `visual-regression.cy.js` added as part of Phase 0 of the full Tailwind migration (see `SESSION_94_FINDINGS_tailwind_migration.md`) — the parity-verification tooling that migration's later phases depend on.
 
@@ -915,7 +921,7 @@ See `CLAUDE.md`'s versioning rule for the level definitions with examples.
 - **HockeyTech `bootstrap` feed type:** it's `feed=statviewfeed`, not `feed=modulekit` — the latter returns a 200 OK with no real payload, which silently masqueraded as a working fallback for a while. If a HockeyTech URL is built from a written description rather than a captured real request, verify against actual DevTools traffic before trusting it.
 - **PWHL season resolution prefers regular seasons over playoffs, deliberately:** almost every `/pwhl/*` Worker endpoint filters `season_type=eq.regular` downstream, so resolving to a playoffs-type season_id breaks every PWHL view even for teams that played in that postseason. Shipped once without this preference and broke Cypress across every PWHL view before being caught.
 - **Milestone card titles never truncate (pre-existing, found during the Tailwind migration):** `MilestoneCard`'s `<h3>` combines two classes whose original CSS both set `display` — `.news-card-title`'s 3-line clamp (`display: -webkit-box`) loses to `.milestone-card-title`'s `display: flex`, which wins since it's defined later in the same stylesheet. The Tailwind migration (Phase 4, sub-PR 4) deliberately preserved this exact behavior rather than silently fixing it as a migration side effect — see `src/utils/newsViewClasses.js`'s `MILESTONE_CARD_TITLE_CLASSES` comment. If milestone titles should actually truncate, that's a real fix to make deliberately, not something to rediscover as a regression.
-- **AHL/ECHL have zero Cypress E2E coverage** — no `*.cy.js` spec file references either league anywhere in `cypress/e2e/`, unlike PWHL's own 12+ dedicated/shared specs. The one piece of automated coverage either league has is Vitest-level: `seasonComparison.test.js`'s `ahlSeasonLabel`/`echlSeasonLabel`/`normalizeComparisonSeasons('ahl'/'echl')` tests (added as a byproduct of the season-label formatting bug found during ECHL's Phase 4). Live-tracking (Phase 6) for both leagues has been verified only via the dev-only debug panel (see [AHL & ECHL Frontend Build](#ahl--echl-frontend-build)), not against a real game — neither league's 2026-27 season had started as of this writing.
+- **AHL/ECHL Cypress coverage is smoke-level** — every route has a spec (`hockeytech-*.cy.js`, `ahl-team`/`echl-team`), mostly against live Worker data; the live-game popups are covered by a stubbed live game (`hockeytech-shots.cy.js`) and the debug panel, not a real game.
 - ~~AHL's push-notification settings panel had no ECHL branch, and neither league had a push backend~~ — both fixed: `SettingsMenu.jsx` covers all four leagues, and `eyewall-poller`'s `hockeytech.js` sends AHL/ECHL alerts (everything but end-of-period, which only the NHL poller sends; the Alerts screen leaves it out for those leagues).
 - **AHL expansion/relocation team colors — one gap remains**: 31 of 32 AHL teams have real, WCAG-checked colors; Ontario Reign's June 2026 rebrand ("Inland Blue"/"Empire Gold") has no published hex anywhere checked (official press release, Mayor's Manor, teamcolorcodes.com all still show the pre-rebrand scheme) — correctly left on the shared neutral placeholder rather than guessed.
 - **ECHL real team colors are a full deferred follow-up**: all 30 teams currently render on one shared neutral placeholder — unlike AHL, where this was closed out for 31/32 teams in a dedicated follow-up pass. Matches AHL's own two-pass history (colors landed well after AHL's initial display shipped), not an oversight.
@@ -992,7 +998,7 @@ See `CLAUDE.md`'s versioning rule for the level definitions with examples.
 - [ ] ECHL real per-team colors — all 30 teams still on the shared neutral placeholder; a genuine research task (colors + a WCAG-AA contrast pass), same as AHL's own colors were before its dedicated follow-up pass
 - [ ] AHL's one remaining color gap — Ontario Reign's June 2026 rebrand has no published hex anywhere yet; revisit once real branding is documented somewhere
 - [ ] Live-game verification for AHL and ECHL against a real game — both leagues' live-tracking (Phase 6) has only been verified via the dev-only debug panel; AHL's 2026-27 season starts 2026-10-02, ECHL's hadn't started as of this writing either. Worth a deliberate live-game check-in once either season opener passes, rather than assuming the debug-panel verification generalizes perfectly.
-- [ ] Cypress E2E coverage for AHL and ECHL — currently zero spec files for either league (only Vitest-level `seasonComparison.test.js` coverage exists), unlike PWHL's dedicated + shared spec coverage
+- [x] Cypress E2E coverage for AHL and ECHL — route smoke specs per tab group (`hockeytech-*.cy.js`, 2026-10), Team, season pickers, player comparison
 - [x] ~~`NotificationBell.jsx`'s missing `isECHL` branch~~ — `SettingsMenu.jsx` handles all four leagues
 
 ---
