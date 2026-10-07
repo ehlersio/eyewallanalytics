@@ -1935,7 +1935,8 @@
   },
   "playerPopup": {
     "radar": {
-      "notEnoughData": "Pas assez de temps de jeu : {{missing}}"
+      "notEnoughData": "Pas assez de temps de jeu : {{missing}}",
+      "perGameNote": "Centiles par rapport à la ligue, par match joué"
     },
     "heatMap": {
       "loading": "Chargement des données de tirs…",

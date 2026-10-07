@@ -9,8 +9,9 @@
 // card per selected season plus a per-game trend chart built from
 // /{league}/player-game-log.
 //
-// league.playerPopup (AHL/ECHL set only comparisonEntry; the rest are real
-// data walls there rather than scope choices):
+// league.playerPopup (AHL/ECHL set comparisonEntry and, from C4,
+// percentiles/HeaderPanel/pctMap; the rest are real data walls there
+// rather than scope choices):
 //   percentiles        fetch league.api.fetchPlayerPercentiles/
 //                      fetchGoaliePercentiles; with HeaderPanel, the header
 //                      reflows around a radar + quick stats and a bio row
@@ -280,6 +281,13 @@ function CompareSeasonCard({ league, playerId, season, label, defs }) {
   return <TileStatSection label={label} groups={groups} />;
 }
 
+// Does a percentiles answer rank this player in anything? The routes answer
+// a player without a row with the category list and every `pct` null.
+export function hasPercentileData(pctData) {
+  const p = pctData?.percentiles;
+  return !!p && Object.values(p).some(c => c?.pct != null);
+}
+
 // ── Main popup ────────────────────────────────────────────────
 export default function HockeyTechPlayerPopup({ league, player: initial, seasonLabel, season, onClose }) {
   const { t } = useTranslation();
@@ -303,8 +311,9 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
   const teamColor = league.config.getTeamById(p.team_id)?.displayColor || '#4d80f0';
 
   const popup = league.playerPopup || {};
-  // League-wide percentiles (PWHL only): drive the radar header and the
-  // current-season tile highlights.
+  // League-wide percentiles (PWHL; AHL/ECHL from C4): drive the radar
+  // header and the current-season tile highlights. A player without data
+  // gets every `pct` null -- no radar then (hasPercentileData).
   const { data: pctData } = useFetch(
     () => playerId && popup.percentiles
       ? (isGoalie ? league.api.fetchGoaliePercentiles(playerId, season) : league.api.fetchPlayerPercentiles(playerId, season))
@@ -382,7 +391,8 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
 
   // Header reflow: a HeaderPanel league with percentiles in hand gets the
   // radar + quick stats beside the name and a 6-column bio row under it.
-  const reflow = !!popup.HeaderPanel && !!pctData?.percentiles;
+  const hasPct = hasPercentileData(pctData);
+  const reflow = !!popup.HeaderPanel && hasPct;
   const birthPlace = p[popup.birthPlaceField || 'birth_place'];
   const bioFields = [
     { label: t('playerPopup.bio.height'),    value: fmtHeight(p.height_inches) },
@@ -436,6 +446,7 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
             <popup.HeaderPanel
               isGoalie={isGoalie}
               percentiles={pctData.percentiles}
+              rateBasis={pctData.rateBasis}
               boxStats={p}
               teamColor={teamColor}
               comparisonEntry={comparisonEntry}
@@ -549,7 +560,7 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
                       label={popup.seasonSectionLabelKey ? t(popup.seasonSectionLabelKey, { season: seasonLabel }) : seasonLabel}
                       groups={currentGroups}
                       highlight
-                      {...(popup.pctMap ? { percentiles: !isGoalie ? pctData?.percentiles : undefined, pctMap: popup.pctMap } : {})}
+                      {...(popup.pctMap && hasPct ? { percentiles: !isGoalie ? pctData.percentiles : undefined, pctMap: popup.pctMap } : {})}
                     />
                   : <div className={PP_NO_STATS_CLASSES}>{t('playerPopup.bio.noStats')}</div>}
                 {(careerRegGroups.length > 0 || careerPOGroups.length > 0) && (

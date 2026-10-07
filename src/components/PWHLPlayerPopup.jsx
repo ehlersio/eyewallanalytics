@@ -14,8 +14,9 @@
 //   seasonLabel, onClose.
 import HockeyTechPlayerPopup from './HockeyTechPlayerPopup';
 import {
-  PWHLPopupHeaderPanel, PWHLGoalieHeatMapTab, PWHLScout, pwhlGoalieDecision,
+  PWHLGoalieHeatMapTab, PWHLScout, pwhlGoalieDecision,
 } from './pwhl/PWHLPlayerPopupExtras';
+import PercentileHeaderPanel from './PercentileHeaderPanel';
 import {
   fetchPWHLPlayerShots, fetchPWHLPlayerLanding, fetchPWHLPlayerGameLog, fetchPWHLPlayerCareer,
   fetchPWHLPlayerPercentiles, fetchPWHLGoaliePercentiles,
@@ -43,7 +44,7 @@ const PWHL = {
   stats,
   playerPopup: {
     percentiles:           true,
-    HeaderPanel:           PWHLPopupHeaderPanel,
+    HeaderPanel:           PercentileHeaderPanel,
     comparisonEntry:       true,
     birthPlaceField:       'birth_city',
     goalieDecision:        pwhlGoalieDecision,

@@ -263,6 +263,22 @@ export function createHockeyTechApi(key) {
       return workerFetch(`${base}/live/${gameId}`);
     },
 
+    // League percentile ranks for the player popup's radar (contract C4):
+    // the PWHL routes' shape plus `rateBasis` ('perGP' here -- AHL/ECHL box
+    // scores have no TOI). A player without a row comes back with every
+    // `pct` null.
+    async fetchPlayerPercentiles(playerId, season) {
+      if (!playerId) return null;
+      const qs = season ? `&season=${season}` : '';
+      return workerFetch(`${base}/player/percentiles?id=${playerId}${qs}`);
+    },
+
+    async fetchGoaliePercentiles(playerId, season) {
+      if (!playerId) return null;
+      const qs = season ? `&season=${season}` : '';
+      return workerFetch(`${base}/goalie/percentiles?id=${playerId}${qs}`);
+    },
+
     // The News view's articles. Throws on failure (the view shows its error
     // card), unlike every other fetch here; `fresh` for a refresh or retry.
     async fetchNews({ fresh = false } = {}) {

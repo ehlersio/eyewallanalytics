@@ -105,6 +105,7 @@ canes-analytics-starter/
 │   ├── components/
 │   │   ├── WinProbChip.jsx             # PWHL/AHL/ECHL schedule cards' Elo win-probability chip (the NHL GameCard's chip), from the Worker schedule row's `winProb`; no chip on a row without one
 │   │   ├── LocalPredictionScorecard.jsx # PWHL/AHL/ECHL League › Scorecard tab: this device's graded game predictions (hockeyTechPredictionStore getStats/load) — picked right, goals off, latest graded; the NHL scorecard's "No scorecard yet." until one is graded
+│   │   ├── PercentileHeaderPanel.jsx   # Player popup percentile radar + quick stats (PWHL per-60; AHL/ECHL per game played from the C4 routes, said under the radar, GSAX/GP axis, GP pill instead of TOI); HockeyTechPlayerPopup shows it only for a player the route ranks
 │   │   ├── PlayerRankBanner.jsx        # The player popups' "Ranked by …" banner of ordinal rank badges: NHL PlayerPopup (division/conference/league) and HockeyTechPlayerPopup (AHL/ECHL league rank by points; goalies by SV% and GAA, from utils/hockeyTechRanks.js)
 │   │   ├── Topbar.jsx/.css             # Live score, countdown clock, sport switcher. The NHL live score comes from hooks/useLiveGame.js (the shared poller ShotMapView reads too); on PWHL/AHL/ECHL routes the followed team's live game comes from hooks/useHockeyTechLiveGame.js
 │   │   ├── BottomNav.jsx               # Sport-aware bottom navigation
@@ -774,7 +775,7 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (937 tests, 104 files)
+### Vitest (943 tests, 105 files)
 ```bash
 npm test
 npm run test:watch
