@@ -19,6 +19,8 @@ const LEAGUES = [
     teamName: 'Hershey Bears',
     divisions: ['Atlantic', 'North', 'Central', 'Pacific'],
     newsFooter: /TheAHL\.com/,
+    // A real game (Worker /ahl/preview and /ahl/prediction answer for it).
+    upcoming: { game_id: 1029113, season_id: 94, game_date: '2026-10-10', home_team_id: 319, away_team_id: 380, venue_name: 'Giant Center' },
   },
   {
     key: 'echl',
@@ -27,6 +29,7 @@ const LEAGUES = [
     teamName: 'Adirondack Thunder',
     divisions: ['North', 'South', 'Central', 'Mountain'],
     newsFooter: /The Hockey Writers and OurSports Central/,
+    upcoming: { game_id: 25494, season_id: 78, game_date: '2026-10-17', home_team_id: 74, away_team_id: 113, venue_name: 'Harding Mazzotti Arena' },
   },
 ]
 
@@ -51,7 +54,7 @@ const assertNoLoadFailure = () => {
   cy.assertNoErrors()
 }
 
-LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter }) => {
+LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter, upcoming }) => {
   describe(`${label} routes smoke`, () => {
     it(`/${key}/league renders the Scoreboard, then ${label} standings by division`, () => {
       visitAs(`/${key}/league`, key, team)
@@ -103,6 +106,22 @@ LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter }) => {
       assertNoLoadFailure()
     })
 
+    // HockeyTechGamePreviewPopup. The schedule is stubbed to one upcoming
+    // game so the test doesn't depend on where the season is; its preview
+    // and prediction come from the live Worker.
+    it(`/${key}/schedule opens the preview for an upcoming game`, () => {
+      cy.intercept('GET', `**/${key}/schedule?teamId=${team.teamId}&season=*`, {
+        body: [{ ...upcoming, home_score: 0, away_score: 0, game_state: '7:00 pm EDT' }],
+      })
+      visitAs(`/${key}/schedule`, key, team)
+      cy.contains('.card', upcoming.venue_name, { timeout: DATA_TIMEOUT }).click()
+      cy.get('.pgp-card').should('exist')
+      cy.get('.pgp-header').find(leagueLogo(key, team.abbr)).should('exist')
+      cy.get('.pgp-card').contains('Prediction').should('exist')
+      cy.get('.pgp-winpct', { timeout: DATA_TIMEOUT }).first().should('contain', '%')
+      assertNoLoadFailure()
+    })
+
     it(`/${key}/news renders ${label} News`, () => {
       visitAs(`/${key}/news`, key, team)
       cy.contains(`${label} News`, { timeout: DATA_TIMEOUT }).should('be.visible')
@@ -126,6 +145,24 @@ LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter }) => {
         expect(hasRink || noData, 'the rink or its no-data message').to.equal(true)
       })
       assertNoLoadFailure()
+    })
+
+    // HockeyTechGameEvents' popups, fired from the dev-only debug panel
+    // (5 taps on the header), the way pwhl-shots-live.cy.js does for PWHL.
+    it(`/${key}/shots debug panel fires the ${label} event popups`, () => {
+      visitAs(`/${key}/shots`, key, team)
+      cy.contains('h2', 'Shot Map', { timeout: DATA_TIMEOUT })
+      Cypress._.times(5, () => cy.contains('h2', 'Shot Map').click())
+      cy.contains(`${label} Event Debug`, { timeout: 4000 }).should('exist')
+      cy.contains('⚡ PP Goal').click()
+      cy.get('.goal-popup').should('contain', 'Power Play').click({ force: true })
+      cy.contains('🟠 Major').click()
+      cy.get('.penalty-popup').should('contain', 'POWER').and('contain', 'Major').click({ force: true })
+      cy.contains('🏒 Puck Drop').click()
+      cy.get('.puck-drop-popup').should('contain', "Let's go!").click({ force: true })
+      cy.contains('🏆 Win').click()
+      cy.get('.win-popup').should('contain', team.abbr)
+      cy.assertNoErrors()
     })
   })
 })
