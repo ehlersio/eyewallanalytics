@@ -6,6 +6,7 @@ import { finalSuffix } from '../utils/scoreboard';
 import { penaltyParties } from '../utils/penaltyText';
 import { withoutShootout, isShootoutPlay, hasShotTracking, nhlPeriodLabel } from '../utils/gamePlays';
 import { fetchCachedNarrative, nhlNarrativeCacheKey } from '../utils/narrativeCache';
+import { sameGame, withSummary } from '../utils/summaryList';
 
 const SESSION_KEY = 'eyewall_period_summaries';
 const GAME_SUMMARY_KEY = 'eyewall_game_summary';
@@ -283,6 +284,11 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, carAbbr, isPl
   const lastProcessedPeriod = useRef(0);
   const buildingRef = useRef(new Set());
   const landingRef = useRef(null);
+  // The game on screen now: a build or a narrative that lands after a
+  // switch to another game is dropped, not filed under this one (see
+  // withSummary).
+  const gameIdRef = useRef(gameId);
+  gameIdRef.current = gameId;
 
   // Restore from sessionStorage on mount / gameId change
   useEffect(() => {
@@ -302,13 +308,18 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, carAbbr, isPl
 
   const fetchLanding = useCallback(async () => {
     if (landingRef.current || !gameId) return landingRef.current;
-    try { landingRef.current = await getGameLanding(gameId); } catch {}
-    return landingRef.current;
+    let landing = null;
+    try { landing = await getGameLanding(gameId); } catch {}
+    // Not the next game's landing, if the view has moved on meanwhile.
+    if (sameGame(gameIdRef.current, gameId)) landingRef.current = landing;
+    return landing;
   }, [gameId]);
 
   const buildAndStoreSummary = useCallback(async (period, plays, showAsNew = false) => {
-    if (buildingRef.current.has(period)) return;
-    buildingRef.current.add(period);
+    // This game's in-flight set: a gameId change swaps in a new one.
+    const building = buildingRef.current;
+    if (building.has(period)) return;
+    building.add(period);
     try {
       const landing = await fetchLanding();
       const summary = buildSummary(period, plays, carTeamId, landing, pbp, gameId, isPlayoff);
@@ -321,15 +332,15 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, carAbbr, isPl
         summary.aiLoading     = false;
       }
 
+      if (!sameGame(gameIdRef.current, gameId)) return;
       setSummaries(prev => {
-        const next = [...prev.filter(s => s.period !== period), summary]
-          .sort((a, b) => a.period - b.period);
-        saveStored(gameId, carTeamId, next);
+        const next = withSummary(prev, summary, gameIdRef.current);
+        if (next !== prev) saveStored(gameId, carTeamId, next);
         return next;
       });
       if (showAsNew) setNewSummary(summary);
     } finally {
-      buildingRef.current.delete(period);
+      building.delete(period);
     }
   }, [gameId, carTeamId, carAbbr, pbp, fetchLanding, isPlayoff]);
 
@@ -389,6 +400,7 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, carAbbr, isPl
   }, [pbp, gameId, buildAndStoreSummary]);
 
   const updateSummaryNarrative = useCallback((period, narrative) => {
+    if (!sameGame(gameIdRef.current, gameId)) return; // the last game's, finishing late
     setSummaries(prev => {
       const next = prev.map(s =>
         s.period === period ? { ...s, aiNarrative: narrative, aiLoading: false } : s
@@ -583,7 +595,7 @@ export function useGameSummary({ pbp, _isLive, gameId, carTeamId }) {
       // (PeriodSummary.jsx's generateNarrative), and the KV narrative,
       // English only, would win over it.
 
-      if (gameIdRef.current !== gameId) return;
+      if (!sameGame(gameIdRef.current, gameId)) return;
       setGameSummary(summary);
       saveStoredGame(gameId, carTeamId, summary);
     })();
