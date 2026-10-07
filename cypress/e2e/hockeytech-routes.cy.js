@@ -251,6 +251,41 @@ LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter, newsSource
       assertNoLoadFailure()
     })
 
+    // Live-game care brought over from the NHL ShotMapView (Phase 2 #9):
+    // a live game holds a screen wake lock, and returning to the app or a
+    // push re-checks today's games at once instead of on the next poll.
+    it(`/${key}/shots keeps the screen on and re-checks on resume and push`, () => {
+      const workerUrl = Cypress.expose('WORKER_URL')
+      let todayCalls = 0
+      cy.intercept('GET', `${workerUrl}/${key}/today*`, req => {
+        todayCalls++
+        req.reply([{ gameId: 777, gameDate: '2026-10-10', homeTeamId: team.teamId, awayTeamId: 1, homeTeamCode: team.abbr, awayTeamCode: 'OPP', homeScore: 1, awayScore: 0, status: 'live' }])
+      }).as('today')
+      cy.intercept('GET', `${workerUrl}/${key}/live/777`, { body: { gameId: 777, homeTeamId: team.teamId, awayTeamId: 1, homeScore: 1, awayScore: 0, gameStatus: 'live', events: [] } })
+      cy.visit(`/${key}/shots`, {
+        onBeforeLoad(win) {
+          win.localStorage.setItem('eyewall:sport', key)
+          win.localStorage.setItem(`eyewall:${key}_team`, JSON.stringify(team))
+          const request = cy.stub().resolves({ released: false, release: () => Promise.resolve(), addEventListener() {} }).as('wakeLock')
+          Object.defineProperty(win.navigator, 'wakeLock', { value: { request }, configurable: true })
+        },
+      })
+      cy.wait('@today', { timeout: DATA_TIMEOUT })
+      cy.get('@wakeLock', { timeout: DATA_TIMEOUT }).should('have.been.calledWith', 'screen')
+
+      // Settle (StrictMode double-mounts on the dev server), then count.
+      cy.wait(1000).then(() => {
+        const before = todayCalls
+        cy.document().then(doc => doc.dispatchEvent(new Event('visibilitychange')))
+        cy.wrap(null, { timeout: 5000 }).should(() => expect(todayCalls).to.be.greaterThan(before))
+      })
+      cy.wait(500).then(() => {
+        const before = todayCalls
+        cy.window().then(win => win.dispatchEvent(new win.Event('eyewall:push-received')))
+        cy.wrap(null, { timeout: 5000 }).should(() => expect(todayCalls).to.be.greaterThan(before))
+      })
+    })
+
     // HockeyTechGameEvents' popups, fired from the dev-only debug panel
     // (5 taps on the header), the way pwhl-shots-live.cy.js does for PWHL.
     it(`/${key}/shots debug panel fires the ${label} event popups`, () => {
