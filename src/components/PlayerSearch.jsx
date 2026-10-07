@@ -32,7 +32,7 @@ const AHLPlayerPopup  = lazy(() => import('./AHLPlayerPopup'));
 const ECHLPlayerPopup = lazy(() => import('./ECHLPlayerPopup'));
 
 // AHLPlayerPopup/ECHLPlayerPopup have no built-in seasonLabel default the
-// way PWHLPlayerPopup does (its own SEASON_LABEL) -- computed the same way
+// way PWHLPlayerPopup does (its season's label) -- computed the same way
 // AHLPlayersView.jsx/ECHLPlayersView.jsx already do, so a player opened
 // from global search shows the same season label as one opened from the
 // Players tab, not a blank one.

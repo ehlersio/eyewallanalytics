@@ -37,22 +37,19 @@
 //   headshotSize   LeagueStat headshot path segment, fallback when a row has none
 //   newsSources    source id -> { label, color, bg } for the News badges;
 //                  matches the poller's *_NEWS_SOURCES
-//   PlayerPopup    the league's player popup component
 //   debugSamples   sample players/teams for the Shot Map's dev-only event
-//                  debug panel (never shown to users)
+//                  debug panel; null in a production build, which has no
+//                  panel (the names don't ship)
 //
-// PlayerPopup closes an import cycle (AHLPlayerPopup.jsx imports AHL from
-// here). It is safe in either load order: the popups are function
-// declarations, hoisted at module instantiation, and they only read their
-// league object at render time.
+// No component lives here: views render HockeyTechPlayerPopup with
+// `league` directly. (A PlayerPopup field here used to close an import
+// cycle with AHLPlayerPopup.jsx/ECHLPlayerPopup.jsx, which import this.)
 import * as ahlApi from './ahlApi';
 import * as echlApi from './echlApi';
 import * as ahlConfig from './ahlConfig';
 import * as echlConfig from './echlConfig';
 import * as stats from './hockeyTechPlayerStats';
 import { createPredictionStore, predictionStorageKey } from './hockeyTechPredictionStore';
-import AHLPlayerPopup from '../components/AHLPlayerPopup';
-import ECHLPlayerPopup from '../components/ECHLPlayerPopup';
 
 function seasonLabelFrom(seasons) {
   return id => seasons.find(s => s.id === id)?.label || String(id);
@@ -122,12 +119,11 @@ export const AHL = {
     'hockeywriters-ahl': { label: 'The Hockey Writers', color: '#FFFFFF', bg: '#1a1a1a' },
     'osc-ahl':           { label: 'OurSports Central',  color: '#FFFFFF', bg: '#8b0000' },
   },
-  PlayerPopup: AHLPlayerPopup,
-  debugSamples: {
+  debugSamples: import.meta.env.DEV ? {
     goalScorer: 'Easton Cowan', goalAssists: ['Luke Haymes', 'Alex Nylander'],
     ppGoalScorer: 'Dakota Mermis', ppAlertPlayer: 'Luke Tuch', majorPlayer: 'Marc Del Gaizo',
     winTeamAbbr: 'TOR', winOppAbbr: 'GR',
-  },
+  } : null,
 };
 
 export const ECHL = {
@@ -193,12 +189,11 @@ export const ECHL = {
     'hockeywriters-echl': { label: 'The Hockey Writers', color: '#FFFFFF', bg: '#1a1a1a' },
     'osc-echl':           { label: 'OurSports Central',  color: '#FFFFFF', bg: '#8b0000' },
   },
-  PlayerPopup: ECHLPlayerPopup,
-  debugSamples: {
+  debugSamples: import.meta.env.DEV ? {
     goalScorer: 'Anthony Romano', goalAssists: ['Oliver Chau', 'Jordan Sambrook'],
     ppGoalScorer: 'Craig Needham', ppAlertPlayer: 'Cam Johnson', majorPlayer: 'Reid Duke',
     winTeamAbbr: 'FLA', winOppAbbr: 'REA',
-  },
+  } : null,
 };
 
 export const HOCKEYTECH_LEAGUES = { ahl: AHL, echl: ECHL };

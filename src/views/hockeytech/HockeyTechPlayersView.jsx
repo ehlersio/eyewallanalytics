@@ -17,6 +17,7 @@ import { useFetch } from '../../hooks/useFetch';
 import { useTeamSeasonGames } from '../../hooks/useTeamSeasonGames';
 import { seasonsWithGames, fallbackSeason } from '../../utils/teamSeasons';
 import TeamLogo from '../../components/TeamLogo';
+import HockeyTechPlayerPopup from '../../components/HockeyTechPlayerPopup';
 import { PAGE_CLASSES } from '../../utils/pageClasses';
 import { SKELETON_CLASSES } from '../../utils/skeletonClasses';
 
@@ -107,7 +108,6 @@ const GOALIE_COLS = [
 ];
 
 export default function HockeyTechPlayersView({ league }) {
-  const { PlayerPopup } = league;
   const { t } = useTranslation();
   const team   = league.team;
   const teamId = league.teamId;
@@ -237,7 +237,8 @@ export default function HockeyTechPlayersView({ league }) {
       </div>
 
       {selected && (
-        <PlayerPopup
+        <HockeyTechPlayerPopup
+          league={league}
           player={selected}
           seasonLabel={seasonLabel}
           season={season}

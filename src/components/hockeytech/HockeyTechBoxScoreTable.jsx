@@ -94,4 +94,3 @@ export default function HockeyTechBoxScoreTable({ skaters, goalies, playerNames 
   );
 }
 
-export { fmtToi, fmtSvPct };
