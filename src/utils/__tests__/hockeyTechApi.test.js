@@ -166,7 +166,12 @@ describe.each([['ahl'], ['echl']])('%s client', (key) => {
     expect(await api.fetchTeamSeasonsCompare(2, [3])).toEqual([expected])
     expect(await api.fetchTeamSeasonsCompareTeams(2, 5, 3)).toEqual([{ team: 2, ...expected }])
     fetchWithRetry.mockImplementation(async () => ok({ skaters: [1], goalies: 'bad' }))
-    expect(await api.fetchGameBox(6)).toEqual({ skaters: [1], goalies: [] })
+    expect(await api.fetchGameBox(6)).toEqual({ skaters: [1], goalies: [], goals: [], penaltyShots: [] })
+    // Contract C6: the scoring plays and penalty shots pass through.
+    const goal = { period: 2, time: '4:08', team_id: 5, scorer_id: 240, assist_ids: [115], plus_player_ids: [240], minus_player_ids: [66], strength: 'EV' }
+    const ps = { period: 3, time: '10:00', team_id: 5, shooter_id: 240, goalie_id: 317, result: 'miss' }
+    fetchWithRetry.mockImplementation(async () => ok({ skaters: [], goalies: [], goals: [goal], penaltyShots: [ps] }))
+    expect(await api.fetchGameBox(7)).toMatchObject({ goals: [goal], penaltyShots: [ps] })
   })
 })
 

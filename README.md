@@ -104,6 +104,7 @@ canes-analytics-starter/
 │   │       └── HockeyTechTeamView.jsx  # Overview/Stats/Splits/Trends (+ History from teamHistory.js) + Compare Seasons; Last 5, Splits W–L–OTL/Pts% and Trends' OT streak via utils/hockeyTechResults.js. No Advanced (no blocked-shot events in either feed) or Salaries tab
 │   ├── components/
 │   │   ├── WinProbChip.jsx             # PWHL/AHL/ECHL schedule cards' Elo win-probability chip (the NHL GameCard's chip), from the Worker schedule row's `winProb`; no chip on a row without one
+│   │   ├── GameGoalsSections.jsx       # PWHL/AHL/ECHL game-stats popups' Goals (scorer, assists, strength, expandable on-ice skaters) and Penalty shots ("No goal" for a non-goal) sections from /{league}/game-box goals/penaltyShots (C6); each only when non-empty
 │   │   ├── LocalPredictionScorecard.jsx # PWHL/AHL/ECHL League › Scorecard tab: this device's graded game predictions (hockeyTechPredictionStore getStats/load) — picked right, goals off, latest graded; the NHL scorecard's "No scorecard yet." until one is graded
 │   │   ├── PercentileHeaderPanel.jsx   # Player popup percentile radar + quick stats (PWHL per-60; AHL/ECHL per game played from the C4 routes, said under the radar, GSAX/GP axis, GP pill instead of TOI); HockeyTechPlayerPopup shows it only for a player the route ranks
 │   │   ├── PlayerRankBanner.jsx        # The player popups' "Ranked by …" banner of ordinal rank badges: NHL PlayerPopup (division/conference/league) and HockeyTechPlayerPopup (AHL/ECHL league rank by points; goalies by SV% and GAA, from utils/hockeyTechRanks.js)
@@ -775,7 +776,7 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (943 tests, 105 files)
+### Vitest (949 tests, 106 files)
 ```bash
 npm test
 npm run test:watch

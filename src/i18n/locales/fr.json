@@ -1524,6 +1524,24 @@
       "unassisted": "Sans aide"
     }
   },
+  "gameGoals": {
+    "title": "Buts",
+    "penaltyShotsTitle": "Tirs de pénalité",
+    "assists": "Aides : {{names}}",
+    "showOnIce": "Voir qui était sur la glace",
+    "hideOnIce": "Masquer qui était sur la glace",
+    "onIceFor": "Sur la glace pour : {{names}}",
+    "onIceAgainst": "Sur la glace contre : {{names}}",
+    "vsGoalie": "c. {{name}}",
+    "psGoal": "But",
+    "psNoGoal": "Pas de but",
+    "strength": {
+      "PP": "AN",
+      "SH": "DN",
+      "EN": "FV",
+      "PS": "TP"
+    }
+  },
   "pwhlGameStats": {
     "emptyState": "Sommaire du match pas encore disponible.",
     "cta": {

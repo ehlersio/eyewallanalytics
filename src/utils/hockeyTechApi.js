@@ -50,6 +50,10 @@ function skatersAndGoalies(data) {
   return {
     skaters: Array.isArray(data.skaters) ? data.skaters : [],
     goalies: Array.isArray(data.goalies) ? data.goalies : [],
+    // Contract C6: scoring plays with who was on the ice, and penalty
+    // shots -- empty until the pipeline's tables have the game.
+    goals: Array.isArray(data.goals) ? data.goals : [],
+    penaltyShots: Array.isArray(data.penaltyShots) ? data.penaltyShots : [],
   };
 }
 

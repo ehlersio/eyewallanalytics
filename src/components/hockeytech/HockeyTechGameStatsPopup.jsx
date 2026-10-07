@@ -22,6 +22,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../../hooks/useFetch';
 import { boxScoreNames, boxNeedsRosters } from '../../utils/boxScoreNames';
+import { GoalsSection, PenaltyShotsSection, playerLabeler } from '../GameGoalsSections';
 import { formatDate } from '../../utils/formatters';
 import TeamLogo from '../TeamLogo';
 import { capture } from '../../utils/analytics';
@@ -75,6 +76,7 @@ export default function HockeyTechGameStatsPopup({ league, game, teamId, abbr, c
   );
 
   const playerNames = useMemo(() => boxScoreNames(box, rosters), [box, rosters]);
+  const labelPlayer = useMemo(() => playerLabeler(playerNames, box), [playerNames, box]);
 
   const skaters = box?.skaters || [];
   const goalies = box?.goalies || [];
@@ -190,6 +192,12 @@ export default function HockeyTechGameStatsPopup({ league, game, teamId, abbr, c
               ))}
             </div>
           )}
+
+          {/* Goals and penalty shots (contract C6), each only when the Worker has them */}
+          <GoalsSection goals={box?.goals} label={labelPlayer}
+            teamId={teamId} abbr={abbr} oppAbbr={oppAbbr} color={color} oppColor={oppColor} />
+          <PenaltyShotsSection penaltyShots={box?.penaltyShots} label={labelPlayer}
+            teamId={teamId} abbr={abbr} oppAbbr={oppAbbr} color={color} oppColor={oppColor} />
 
           {/* Team stats comparison */}
           {!boxLoading && skaters.length > 0 && (

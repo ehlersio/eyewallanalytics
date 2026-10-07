@@ -1524,6 +1524,24 @@
       "unassisted": "Unassisted"
     }
   },
+  "gameGoals": {
+    "title": "Goals",
+    "penaltyShotsTitle": "Penalty shots",
+    "assists": "Assists: {{names}}",
+    "showOnIce": "Show who was on the ice",
+    "hideOnIce": "Hide who was on the ice",
+    "onIceFor": "On ice for: {{names}}",
+    "onIceAgainst": "On ice against: {{names}}",
+    "vsGoalie": "vs {{name}}",
+    "psGoal": "Goal",
+    "psNoGoal": "No goal",
+    "strength": {
+      "PP": "PP",
+      "SH": "SH",
+      "EN": "EN",
+      "PS": "PS"
+    }
+  },
   "pwhlGameStats": {
     "emptyState": "Box score not available for this game yet.",
     "cta": {

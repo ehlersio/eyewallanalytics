@@ -1,4 +1,5 @@
 // cypress/e2e/pwhl-schedule.cy.js
+import { withGameBoxPlays, restoreHttpCache } from '../support/gameBoxPlays'
 
 const PWHL_TEAMS = [
   { abbr: 'BOS', teamId: 1 },
@@ -143,6 +144,17 @@ describe('PWHL Schedule', () => {
           cy.assertNoErrors()
         }
       })
+    })
+
+    // Phase 3 B8, contract C6: a goal and a missed penalty shot added to
+    // the real box score (support/gameBoxPlays.js).
+    it('lists the goals and penalty shots', () => {
+      withGameBoxPlays('**/pwhl/game-box?gameId=*')
+      cy.get('.result-card.clickable', { timeout: DATA_TIMEOUT }).first().click()
+      cy.wait('@gameBox')
+      cy.get('[data-testid="game-goals"]', { timeout: DATA_TIMEOUT }).should('contain', 'P2 4:08')
+      cy.get('[data-testid="game-penalty-shots"]').should('contain', 'No goal')
+      restoreHttpCache()
     })
 
     it('CTA navigates to the shot map for the selected game', () => {
