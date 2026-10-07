@@ -54,7 +54,8 @@ import {
   STAT_PCT_MAP, computeRadarAxes, computeGoalieRadarAxes, RADAR_AXIS_ABBR,
 } from '../utils/nhlPlayerStats'
 import { SKELETON_CLASSES } from '../utils/skeletonClasses'
-import { formatOrdinal, formatDate } from '../utils/formatters'
+import { formatDate } from '../utils/formatters'
+import PlayerRankBanner from './PlayerRankBanner'
 // Tailwind migration (Session 97, Phase 3, sub-PR 2 + sub-PR 3). Most of
 // this file's classes were migrated in sub-PR 2. The remaining shell
 // classes -- player-popup, pp-header, pp-header-reflow, pp-close, pp-body,
@@ -101,12 +102,6 @@ const PP_CHIPS_CLASSES = 'flex gap-[5px] flex-wrap mt-[2px]'
 const PP_POS_CHIP_CLASSES = 'pp-pos-chip font-[family-name:var(--font-display)] text-[10px] font-bold bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[0.5px] border-[var(--red-border)] py-[2px] px-[7px] rounded'
 const PP_CHIP_CLASSES = 'pp-chip text-[10px] text-[color:var(--text-muted)] bg-[var(--bg3)] py-[2px] px-[6px] rounded'
 
-const PP_RANKINGS_CLASSES = 'flex flex-col items-center gap-2 py-3 px-4 bg-[var(--bg2)] border-b-[0.5px] border-[var(--border)] text-center'
-const PP_RANK_LABEL_CLASSES = 'text-[10px] text-[color:var(--text-dim)] uppercase tracking-[0.08em] font-[family-name:var(--font-display)] font-semibold'
-const PP_RANK_ITEMS_CLASSES = 'flex gap-6 justify-center flex-wrap'
-const RANK_BADGE_CLASSES = 'flex flex-col items-center gap-[2px]'
-const RANK_NUM_CLASSES = 'font-[family-name:var(--font-display)] text-[22px] font-bold leading-none'
-const RANK_SCOPE_CLASSES = 'text-[10px] text-[color:var(--text-dim)] uppercase tracking-[0.06em]'
 
 const PP_LOADING_CLASSES = 'p-4 flex flex-col gap-2'
 const PP_TABS_CLASSES = 'flex border-b-[0.5px] border-[var(--border)] mx-[-16px] px-4'
@@ -271,15 +266,7 @@ function teamColorFor(abbr) {
 
 // ─── Sub-components ───────────────────────────────────────────
 
-function RankBadge({ label, rank }) {
-  const color  = rank <= 3 ? 'var(--green)' : rank <= 10 ? 'var(--amber)' : 'var(--text-muted)'
-  return (
-    <div className={RANK_BADGE_CLASSES}>
-      <span className={RANK_NUM_CLASSES} style={{ color }}>{formatOrdinal(rank)}</span>
-      <span className={RANK_SCOPE_CLASSES}>{label}</span>
-    </div>
-  )
-}
+// RankBadge moved to PlayerRankBanner.jsx (shared with HockeyTechPlayerPopup).
 
 // StatRow/StatSection (vertical row-list accordion) removed Session 73 --
 // every section in this file now renders via the tile grid (TileStatSection,
@@ -1416,24 +1403,20 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
 
         {/* ── Rankings banner — CAR context only ── */}
         {!isLeagueContext && rankings && (rankings.division || rankings.conference || rankings.league) && (
-          <div className={PP_RANKINGS_CLASSES}>
-            <span className={PP_RANK_LABEL_CLASSES}>{t('playerPopup.rankings.rankedBy', { stat: rankings.statLabel })}</span>
-            <div className={PP_RANK_ITEMS_CLASSES}>
-              {rankings.division   && <RankBadge label={t('statTileGrid.scopes.div')}   rank={rankings.division} />}
-              {rankings.conference && <RankBadge label={t('statTileGrid.scopes.conf')} rank={rankings.conference} />}
-              {rankings.league     && <RankBadge label={t('statTileGrid.scopes.league')}     rank={rankings.league} />}
-            </div>
-            {rankings.gaa && (rankings.gaa.league || rankings.gaa.division) && (
-              <>
-                <span className={PP_RANK_LABEL_CLASSES} style={{ marginTop: 8 }}>{t('playerPopup.rankings.rankedByGaa')}</span>
-                <div className={PP_RANK_ITEMS_CLASSES}>
-                  {rankings.gaa.division   && <RankBadge label={t('statTileGrid.scopes.div')}   rank={rankings.gaa.division} />}
-                  {rankings.gaa.conference && <RankBadge label={t('statTileGrid.scopes.conf')} rank={rankings.gaa.conference} />}
-                  {rankings.gaa.league     && <RankBadge label={t('statTileGrid.scopes.league')}     rank={rankings.gaa.league} />}
-                </div>
-              </>
-            )}
-          </div>
+          <PlayerRankBanner rows={[
+            { label: t('playerPopup.rankings.rankedBy', { stat: rankings.statLabel }), badges: [
+              { scope: t('statTileGrid.scopes.div'),    rank: rankings.division },
+              { scope: t('statTileGrid.scopes.conf'),   rank: rankings.conference },
+              { scope: t('statTileGrid.scopes.league'), rank: rankings.league },
+            ] },
+            ...(rankings.gaa && (rankings.gaa.league || rankings.gaa.division) ? [
+              { label: t('playerPopup.rankings.rankedByGaa'), badges: [
+                { scope: t('statTileGrid.scopes.div'),    rank: rankings.gaa.division },
+                { scope: t('statTileGrid.scopes.conf'),   rank: rankings.gaa.conference },
+                { scope: t('statTileGrid.scopes.league'), rank: rankings.gaa.league },
+              ] },
+            ] : []),
+          ]} />
         )}
 
         {/* ── Contract & value panel — CAR context only ── */}

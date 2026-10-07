@@ -104,6 +104,7 @@ canes-analytics-starter/
 │   │       └── HockeyTechTeamView.jsx  # Overview/Stats/Splits/Trends (+ History from teamHistory.js) + Compare Seasons; Last 5, Splits W–L–OTL/Pts% and Trends' OT streak via utils/hockeyTechResults.js. No Advanced (no blocked-shot events in either feed) or Salaries tab
 │   ├── components/
 │   │   ├── WinProbChip.jsx             # PWHL/AHL/ECHL schedule cards' Elo win-probability chip (the NHL GameCard's chip), from the Worker schedule row's `winProb`; no chip on a row without one
+│   │   ├── PlayerRankBanner.jsx        # The player popups' "Ranked by …" banner of ordinal rank badges: NHL PlayerPopup (division/conference/league) and HockeyTechPlayerPopup (AHL/ECHL league rank by points; goalies by SV% and GAA, from utils/hockeyTechRanks.js)
 │   │   ├── Topbar.jsx/.css             # Live score, countdown clock, sport switcher. The NHL live score comes from hooks/useLiveGame.js (the shared poller ShotMapView reads too); on PWHL/AHL/ECHL routes the followed team's live game comes from hooks/useHockeyTechLiveGame.js
 │   │   ├── BottomNav.jsx               # Sport-aware bottom navigation
 │   │   ├── TeamPicker.jsx              # Sport + team selection (NHL + PWHL); active/expansion PWHL split derives from comingSoon (fixed 2026-07 — used to be a 2nd hardcoded list, ignored comingSoon entirely)
@@ -771,7 +772,7 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (915 tests, 100 files)
+### Vitest (923 tests, 101 files)
 ```bash
 npm test
 npm run test:watch

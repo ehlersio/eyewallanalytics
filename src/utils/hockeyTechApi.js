@@ -18,6 +18,7 @@ import * as ahlConfig from './ahlConfig';
 import * as echlConfig from './echlConfig';
 import { fetchWithRetry } from './retryFetch';
 import { workerFetchInit } from './workerCache';
+import { cached, TTL } from './cache';
 
 const LEAGUE_CONFIG = {
   ahl:  { currentSeason: () => ahlConfig.AHL_CURRENT_SEASON,   getStoredTeam: ahlConfig.getAHLStoredTeam },
@@ -105,9 +106,19 @@ export function createHockeyTechApi(key) {
       return workerFetch(`${base}/standings?season=${season}`);
     },
 
-    /** All teams' skaters + goalies, for the Leaders tab. */
+    /** All teams' skaters + goalies, for the Leaders tab and the player
+     *  popup's rank badges: one fetch per season while it's fresh, shared
+     *  (cache.js). A failed fetch isn't kept, so the next caller retries. */
     async fetchLeaguePlayers(season = currentSeason()) {
-      return workerFetch(`${base}/league-players?season=${season}`);
+      try {
+        return await cached(`${key}:league-players:${season}`, async () => {
+          const rows = await workerFetch(`${base}/league-players?season=${season}`);
+          if (rows == null) throw new Error('unavailable');
+          return rows;
+        }, TTL.RANKINGS);
+      } catch {
+        return null;
+      }
     },
 
     async fetchPlayers(team = teamId, season = currentSeason()) {
