@@ -11,7 +11,8 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
-const views = ['NewsView', 'PWHLNewsView', 'AHLNewsView', 'ECHLNewsView']
+// AHL/ECHL share hockeytech/HockeyTechNewsView.jsx (their own files are wrappers).
+const views = ['NewsView', 'PWHLNewsView', 'hockeytech/HockeyTechNewsView']
 const here = dirname(fileURLToPath(import.meta.url))
 
 describe.each(views)('%s refresh buttons', (view) => {

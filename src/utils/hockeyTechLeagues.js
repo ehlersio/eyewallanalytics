@@ -36,8 +36,8 @@
 //                  matches the poller's *_NEWS_SOURCES
 //   PlayerPopup    the league's player popup component
 //
-// divisionOrder and newsSources are still also declared in the League and
-// News views; those copies go when the views become HockeyTech* views.
+// divisionOrder is still also declared in the League views; that copy
+// goes when they become a HockeyTech* view.
 //
 // PlayerPopup closes an import cycle (AHLPlayerPopup.jsx imports AHL from
 // here). It is safe in either load order: the popups are function
