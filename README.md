@@ -201,12 +201,10 @@ canes-analytics-starter/
 │       ├── pwhlPlayerStats.js          # PWHL equivalent of nhlPlayerStats.js — extracted from PWHLPlayerPopup.jsx (Session 91)
 │       ├── ahlApi.js                   # AHL Worker API calls — parallel to pwhlApi.js, only covers the routes that actually exist (see eyewall-poller's `ahl.js`); no transactions/salaries/scouting/narrative endpoints for AHL
 │       ├── ahlConfig.js                # AHL team configs — 32 teams, real Atlantic/North/Central/Pacific division structure; `AHL_CURRENT_SEASON` live-resolved via the same getter pattern as NHL/PWHL; real per-team colors for 31/32 teams (Ontario Reign is still the one team on the neutral placeholder — their June 2026 rebrand has no published hex anywhere yet)
-│       ├── ahlPlayerStats.js           # AHL skater/goalie stat defs + formatters — mirrors pwhlPlayerStats.js's `{group, items: [{def, fmt}]}` shape; no percentile map or radar-axis functions (no AHL percentile pipeline exists)
-│       ├── ahlPredictionStore.js       # AHL prediction tracking (localStorage-only) — trivial port of pwhlPredictionStore.js, same neutral team/opponent field-name convention
+│       ├── hockeyTechPlayerStats.js    # AHL/ECHL skater/goalie stat defs + formatters (shared: both feeds carry the same fields) — mirrors pwhlPlayerStats.js's shape; no percentile map (no AHL/ECHL percentile pipeline)
+│       ├── hockeyTechPredictionStore.js # `createPredictionStore('ahl'|'echl'|'pwhl')`: prediction tracking (localStorage-only, keys `eyewall_<league>_predictions_v1`) for the AHL/ECHL league objects and behind pwhlPredictionStore.js
 │       ├── echlApi.js                  # ECHL Worker API calls — parallel to ahlApi.js; foundation + full 6-phase-parity routes only, no transactions/salaries/scouting endpoints (same limitation as AHL)
 │       ├── echlConfig.js               # ECHL team configs — 30 teams, real North/South/Central/Mountain division structure (different alignment than AHL's); all 30 teams still render on one shared neutral color placeholder — real per-team colors are an explicit deferred follow-up, matching AHL's own two-pass color history
-│       ├── echlPlayerStats.js          # ECHL skater/goalie stat defs + formatters — mirrors ahlPlayerStats.js
-│       ├── echlPredictionStore.js      # ECHL prediction tracking (localStorage-only) — mirrors ahlPredictionStore.js
 │       ├── hockeyTechLeagues.js        # `AHL` / `ECHL` league objects (key, label, api, config, stats, predictionStore, headshotSize, newsSources, PlayerPopup) that shared HockeyTech* components take as `league`; every AHL/ECHL difference lives here. Shape test keeps the two in step
 │       ├── hockeyTechLeaders.js        # AHL/ECHL Leaders goalie gate — min GP scales with the season (half the busiest goalie's games, 1..5) so the GAA/SV% cards aren't empty headers for the first weeks
 │       └── analytics.js
