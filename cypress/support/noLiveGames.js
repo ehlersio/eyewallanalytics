@@ -24,6 +24,19 @@ export function withoutLiveGames(games) {
   return games.map(g => (g && IN_PROGRESS.has(g.gameState) ? { ...g, gameState: 'FUT' } : g))
 }
 
+// PWHL/AHL/ECHL: the Worker's /{league}/today rows carry `status`; a game
+// under way ('live') reads as not started ('pre'), so neither the shot
+// maps nor the Topbar's live chip (hockeyTechLiveStore.js) go live on a
+// real game mid-suite.
+export function withoutHockeyTechLiveGames(rows) {
+  if (!Array.isArray(rows)) return rows
+  return rows.map(g => (g && g.status === 'live' ? { ...g, status: 'pre' } : g))
+}
+
+function relabelHockeyTech(res) {
+  res.body = withoutHockeyTechLiveGames(res.body)
+}
+
 function relabel(res) {
   if (res.body && Array.isArray(res.body.games)) {
     res.body = { ...res.body, games: withoutLiveGames(res.body.games) }
@@ -41,5 +54,8 @@ export function interceptLiveGames() {
   // Worker's /schedule route ({ games: [...] }).
   cy.intercept({ method: 'GET', url: /\/(cache\/schedule%3A|club-schedule-season\/|schedule\?team=)/ }, req => {
     req.on('before:response', relabel)
+  })
+  cy.intercept({ method: 'GET', url: /\/(pwhl|ahl|echl)\/today(\?|$)/ }, req => {
+    req.on('before:response', relabelHockeyTech)
   })
 }

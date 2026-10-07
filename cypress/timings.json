@@ -243,6 +243,10 @@
     {
       "spec": "cypress/e2e/visual-regression.cy.js",
       "duration": 60000
+    },
+    {
+      "spec": "cypress/e2e/topbar-live-chip.cy.js",
+      "duration": 4000
     }
   ]
 }
