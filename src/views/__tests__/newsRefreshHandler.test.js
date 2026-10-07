@@ -28,9 +28,13 @@ describe.each(views)('%s refresh buttons', (view) => {
     expect(src.match(/onClick=\{\(\) => fetchArticles\(false, true\)\}/g)).toHaveLength(2)
   })
 
-  it('fetch the news through workerFetchInit, fresh on a refresh or retry', () => {
+  it('fetch the news fresh on a refresh or retry', () => {
     expect(src).not.toMatch(/no-store/)
     expect(src).toMatch(/fetchArticles = useCallback\(async \(isRetry = false, fresh = isRetry\)/)
-    expect(src).toMatch(/workerFetchInit\(\{ fresh \}\)/)
+    // AHL/ECHL fetch through league.api (hockeyTechApi.js fetchNews, which
+    // throws so the view keeps its error card); NHL/PWHL fetch directly.
+    expect(src).toMatch(view.startsWith('hockeytech/')
+      ? /league\.api\.fetchNews\(\{ fresh \}\)/
+      : /workerFetchInit\(\{ fresh \}\)/)
   })
 })

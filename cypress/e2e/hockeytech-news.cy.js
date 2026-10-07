@@ -42,5 +42,22 @@ LEAGUES.forEach(({ key, label, team, newsFooter, newsSources }) => {
       cy.get('.news-card').should('have.length', ids.length)
       assertNoLoadFailure()
     })
+
+    // The view's fetch is league.api.fetchNews, which throws (unlike the
+    // other HockeyTech fetches, which resolve to null) so the view keeps
+    // its error card and Try again button.
+    it(`/${key}/news shows the error card when the Worker fails, and recovers on Try again`, () => {
+      const workerUrl = Cypress.expose('WORKER_URL')
+      let fail = true
+      cy.intercept('GET', `${workerUrl}/${key}/news`, req => {
+        if (fail) req.reply(503, {})
+        else req.reply([{ id: 'n1', source: Object.keys(newsSources)[0], sourceName: Object.values(newsSources)[0], title: 'Back up', url: 'https://example.com/n1', excerpt: 'x', publishedAt: '2026-10-07T12:00:00+00:00', imageUrl: null }])
+      })
+      visitAs(`/${key}/news`, key, team)
+      cy.get('.news-error', { timeout: DATA_TIMEOUT }).should('contain', 'News not yet available')
+      cy.then(() => { fail = false })
+      cy.get('.news-error').contains('button', /try again/i).click()
+      cy.get('.news-card', { timeout: DATA_TIMEOUT }).should('have.length', 1).and('contain', 'Back up')
+    })
   })
 })

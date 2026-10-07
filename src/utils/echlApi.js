@@ -33,4 +33,5 @@ export const fetchECHLPlayerGameLog           = api.fetchPlayerGameLog;
 export const fetchECHLPlayerCareer            = api.fetchPlayerCareer;
 export const fetchECHLPlayerShots             = api.fetchPlayerShots;
 export const fetchECHLToday                   = api.fetchToday;
+export const fetchECHLNews                   = api.fetchNews;
 export const fetchECHLLive                    = api.fetchLive;

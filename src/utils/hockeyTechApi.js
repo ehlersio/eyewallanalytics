@@ -62,23 +62,36 @@ export function createHockeyTechApi(key) {
   const teamAbbr   = teamConfig?.abbr || null;
   const teamId     = teamConfig?.teamId || null;
 
-  async function workerFetch(path) {
+  // A failure resolves to null -- or, with `throwOnError`, throws (an HTTP
+  // error carries `status`), for a view that shows its own error card.
+  // `fresh` revalidates past the browser's cached copy (workerCache.js).
+  async function workerFetch(path, { throwOnError = false, fresh = false } = {}) {
     if (!WORKER_URL) {
       console.warn(`${tag}: VITE_WORKER_URL not set`);
+      if (throwOnError) throw new Error(`${tag}: VITE_WORKER_URL not set`);
+      return null;
+    }
+    let res;
+    try {
+      // One retry on a stalled connection -- see retryFetch.js.
+      res = await fetchWithRetry(`${WORKER_URL}${path}`, {
+        init: workerFetchInit({ fresh }),
+      });
+    } catch (err) {
+      console.error(`${tag} fetch error:`, path, err.message);
+      if (throwOnError) throw err;
+      return null;
+    }
+    if (!res.ok) {
+      console.warn(`${tag} ${res.status}: ${path}`);
+      if (throwOnError) throw Object.assign(new Error(`${tag} ${res.status}: ${path}`), { status: res.status });
       return null;
     }
     try {
-      // One retry on a stalled connection -- see retryFetch.js.
-      const res = await fetchWithRetry(`${WORKER_URL}${path}`, {
-        init: workerFetchInit(),
-      });
-      if (!res.ok) {
-        console.warn(`${tag} ${res.status}: ${path}`);
-        return null;
-      }
       return await res.json();
     } catch (err) {
       console.error(`${tag} fetch error:`, path, err.message);
+      if (throwOnError) throw err;
       return null;
     }
   }
@@ -237,6 +250,12 @@ export function createHockeyTechApi(key) {
     async fetchLive(gameId) {
       if (!gameId) return null;
       return workerFetch(`${base}/live/${gameId}`);
+    },
+
+    // The News view's articles. Throws on failure (the view shows its error
+    // card), unlike every other fetch here; `fresh` for a refresh or retry.
+    async fetchNews({ fresh = false } = {}) {
+      return workerFetch(`${base}/news`, { throwOnError: true, fresh });
     },
   };
 }
