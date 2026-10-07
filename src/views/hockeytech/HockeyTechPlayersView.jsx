@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { useFetch } from '../../hooks/useFetch';
 import { useTeamSeasonGames } from '../../hooks/useTeamSeasonGames';
 import { seasonsWithGames, fallbackSeason } from '../../utils/teamSeasons';
+import { leagueNameVars } from '../../utils/hockeyTechI18n';
 import TeamLogo from '../../components/TeamLogo';
 import HockeyTechPlayerPopup from '../../components/HockeyTechPlayerPopup';
 import { PAGE_CLASSES } from '../../utils/pageClasses';
@@ -161,7 +162,7 @@ export default function HockeyTechPlayersView({ league }) {
     return (
       <div className={PAGE_CLASSES}>
         <div className="card" style={{ textAlign: 'center', padding: 32 }}>
-          <p style={{ color: 'var(--text-dim)' }}>{t(`${league.key}PlayersView.noTeamSelected`)}</p>
+          <p style={{ color: 'var(--text-dim)' }}>{t('hockeyTechPlayersView.noTeamSelected', leagueNameVars(t, league))}</p>
         </div>
       </div>
     );
@@ -174,7 +175,7 @@ export default function HockeyTechPlayersView({ league }) {
           <TeamLogo abbr={abbr} sport={league.key} size={22} />
           {t('players.roster')}
         </h2>
-        <p className={PLAYERS_SUB_CLASSES}>{t(`${league.key}PlayersView.subtitle`)}</p>
+        <p className={PLAYERS_SUB_CLASSES}>{t('hockeyTechPlayersView.subtitle')}</p>
       </div>
 
       <div className={TABS_WRAP_CLASSES}>
@@ -191,18 +192,18 @@ export default function HockeyTechPlayersView({ league }) {
           {loading && <RosterSkeleton />}
           {!loading && !data && (
             <div className="card" style={{ textAlign:'center', padding:32, color:'var(--text-dim)' }}>
-              {t(`${league.key}PlayersView.failedToLoadRoster`)}
+              {t('hockeyTechPlayersView.failedToLoadRoster')}
             </div>
           )}
           {!loading && data && roster.length === 0 && (
             <div className="card" style={{ textAlign:'center', padding:32, color:'var(--text-dim)' }}>
-              {t(`${league.key}PlayersView.noRosterData`)}
+              {t('hockeyTechPlayersView.noRosterData')}
             </div>
           )}
           {!loading && data && roster.length > 0 && (
             <>
               <RosterSection title={t('players.forwards')} league={league} players={roster.filter(p => ['C','LW','RW','F'].includes(p.position))} onSelect={setSelected} />
-              <RosterSection title={t(`${league.key}PlayersView.defencemen`)} league={league} players={roster.filter(p => ['D','LD','RD'].includes(p.position))} onSelect={setSelected} />
+              <RosterSection title={t('hockeyTechPlayersView.defencemen')} league={league} players={roster.filter(p => ['D','LD','RD'].includes(p.position))} onSelect={setSelected} />
               <RosterSection title={t('players.goalies')} league={league} players={roster.filter(p => p.position === 'G')} onSelect={setSelected} />
             </>
           )}
@@ -217,23 +218,23 @@ export default function HockeyTechPlayersView({ league }) {
             ))}
           </div>
           <div className={TABS_WRAP_CLASSES} style={{ marginTop: 4, marginBottom: 4 }}>
-            <button className={tabClasses(statType === 'skaters')} onClick={() => setStatType('skaters')}>{t(`${league.key}PlayersView.skatersToggle`)}</button>
+            <button className={tabClasses(statType === 'skaters')} onClick={() => setStatType('skaters')}>{t('hockeyTechPlayersView.skatersToggle')}</button>
             <button className={tabClasses(statType === 'goalies')} onClick={() => setStatType('goalies')}>{t('players.goalies')}</button>
           </div>
 
           {statType === 'skaters' && (
-            <SortableTable league={league} rows={skaters} cols={SKATER_COLS} defaultSort="points" loading={loading}
-              emptyMsg={t(`${league.key}PlayersView.emptySkaterStats`, { season: seasonLabel })} onRowClick={setSelected} />
+            <SortableTable rows={skaters} cols={SKATER_COLS} defaultSort="points" loading={loading}
+              emptyMsg={t('hockeyTechPlayersView.emptySkaterStats', { season: seasonLabel })} onRowClick={setSelected} />
           )}
           {statType === 'goalies' && (
-            <SortableTable league={league} rows={goalies} cols={GOALIE_COLS} defaultSort="wins" loading={loading}
-              emptyMsg={t(`${league.key}PlayersView.emptyGoalieStats`, { season: seasonLabel })} onRowClick={setSelected} />
+            <SortableTable rows={goalies} cols={GOALIE_COLS} defaultSort="wins" loading={loading}
+              emptyMsg={t('hockeyTechPlayersView.emptyGoalieStats', { season: seasonLabel })} onRowClick={setSelected} />
           )}
         </>
       )}
 
       <div style={{ fontSize: 10, color: 'var(--text-dim)', textAlign: 'center', padding: '8px 0' }}>
-        {t(`${league.key}PlayersView.footerHintSource`)}
+        {t('hockeyTechPlayersView.footerHintSource', leagueNameVars(t, league))}
       </div>
 
       {selected && (
@@ -303,7 +304,7 @@ function RosterSkeleton() {
   );
 }
 
-function SortableTable({ league, rows, cols, defaultSort, loading, emptyMsg, onRowClick }) {
+function SortableTable({ rows, cols, defaultSort, loading, emptyMsg, onRowClick }) {
   const { t } = useTranslation();
   const [sortKey, setSortKey] = useState(defaultSort);
   const [sortDir, setSortDir] = useState('desc');
@@ -342,7 +343,7 @@ function SortableTable({ league, rows, cols, defaultSort, loading, emptyMsg, onR
             <tr>
               {cols.map(col => (
                 <th key={col.key} className={thClasses(col, sortKey)} style={{ cursor: col.sortable ? 'pointer' : 'default' }} onClick={() => handleSort(col.key)}>
-                  {col.key === 'player_name' ? (cols === GOALIE_COLS ? t(`${league.key}PlayersView.colGoalie`) : t('players.colPlayer')) : col.label}
+                  {col.key === 'player_name' ? (cols === GOALIE_COLS ? t('hockeyTechPlayersView.colGoalie') : t('players.colPlayer')) : col.label}
                   {col.sortable && sortKey === col.key && (
                     <span className={SST_SORT_ICON_CLASSES}>{sortDir === 'desc' ? ' ↓' : ' ↑'}</span>
                   )}
@@ -367,7 +368,7 @@ function SortableTable({ league, rows, cols, defaultSort, loading, emptyMsg, onR
           </tbody>
         </table>
       </div>
-      <div className={SST_HINT_CLASSES}>{t(`${league.key}PlayersView.tableHint`)}</div>
+      <div className={SST_HINT_CLASSES}>{t('hockeyTechPlayersView.tableHint')}</div>
     </div>
   );
 }

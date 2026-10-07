@@ -25,6 +25,7 @@
 // HockeyTech's own special-teams view -- not derived from PBP here.
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { hockeyTechTodayInterval, onPushReceived } from '../../utils/livePolling';
+import { leagueNameVars } from '../../utils/hockeyTechI18n';
 import { useTranslation } from 'react-i18next';
 import { useFetch, usePoll } from '../../hooks/useFetch';
 import { useTeamSeasonGames } from '../../hooks/useTeamSeasonGames';
@@ -426,12 +427,12 @@ export default function HockeyTechShotMapView({ league }) {
   const shotsOnGoal = useMemo(() => (shots || []).length, [shots]);
   const rinkLoading = isGameView ? gameShotsLoading : shotsLoading;
 
-  let subtitle = t(`${league.key}ShotMapView.subtitle`);
+  let subtitle = t('hockeyTechShotMapView.subtitle');
   if (viewGame) {
     const isHome = viewGame.home_team_id === teamId;
-    subtitle = t(`${league.key}ShotMapView.gameSubtitle`, {
+    subtitle = t('hockeyTechShotMapView.gameSubtitle', {
       final: `${t('shotMapView.scoreBar.final')}${finalSuffix(viewGame.ended_in)}`,
-      where: isHome ? t(`${league.key}ShotMapView.vs`) : t(`${league.key}ShotMapView.at`),
+      where: isHome ? t('hockeyTechShotMapView.vs') : t('hockeyTechShotMapView.at'),
       opp: league.config.getTeamById(isHome ? viewGame.away_team_id : viewGame.home_team_id)?.abbr || '',
       date: shortDate(viewGame.game_date),
     });
@@ -441,7 +442,7 @@ export default function HockeyTechShotMapView({ league }) {
     return (
       <div className={PAGE_CLASSES}>
         <div className="card" style={{ textAlign: 'center', padding: 32 }}>
-          <p style={{ color: 'var(--text-dim)' }}>{t(`${league.key}PlayersView.noTeamSelected`)}</p>
+          <p style={{ color: 'var(--text-dim)' }}>{t('hockeyTechPlayersView.noTeamSelected', leagueNameVars(t, league))}</p>
         </div>
       </div>
     );
@@ -470,7 +471,7 @@ export default function HockeyTechShotMapView({ league }) {
 
       {fellBackFrom && (
         <div className={FALLBACK_NOTE_CLASSES}>
-          {t(`${league.key}ShotMapView.fallbackNote`, {
+          {t('hockeyTechShotMapView.fallbackNote', {
             empty:    seasonLabel(fellBackFrom),
             fallback: seasonLabel(season),
           })}
@@ -491,38 +492,38 @@ export default function HockeyTechShotMapView({ league }) {
       {isGameView ? (
         <>
           <div className={METRICS_GRID_CLASSES}>
-            <MetCard label={t(`${league.key}ShotMapView.goals`)} value={gameShotsLoading || !gameShots?.length ? '—' : countGoals(ourGameShots)} />
-            <MetCard label={t(`${league.key}ShotMapView.shotsOnGoal`)} value={gameShotsLoading || !gameShots?.length ? '—' : ourGameShots.length} />
-            <MetCard label={t(`${league.key}ShotMapView.shootingPct`)} value={gameShotsLoading ? '—' : pct(countGoals(ourGameShots), ourGameShots.length)} />
+            <MetCard label={t('hockeyTechShotMapView.goals')} value={gameShotsLoading || !gameShots?.length ? '—' : countGoals(ourGameShots)} />
+            <MetCard label={t('hockeyTechShotMapView.shotsOnGoal')} value={gameShotsLoading || !gameShots?.length ? '—' : ourGameShots.length} />
+            <MetCard label={t('hockeyTechShotMapView.shootingPct')} value={gameShotsLoading ? '—' : pct(countGoals(ourGameShots), ourGameShots.length)} />
           </div>
           <div className={METRICS_GRID_CLASSES}>
-            <MetCard label={t(`${league.key}ShotMapView.oppGoals`)} value={gameShotsLoading || !gameShots?.length ? '—' : countGoals(oppGameShots)} />
-            <MetCard label={t(`${league.key}ShotMapView.oppShotsOnGoal`)} value={gameShotsLoading || !gameShots?.length ? '—' : oppGameShots.length} />
-            <MetCard label={t(`${league.key}ShotMapView.savePct`)} value={gameShotsLoading ? '—' : pct(oppGameShots.length - countGoals(oppGameShots), oppGameShots.length)} />
+            <MetCard label={t('hockeyTechShotMapView.oppGoals')} value={gameShotsLoading || !gameShots?.length ? '—' : countGoals(oppGameShots)} />
+            <MetCard label={t('hockeyTechShotMapView.oppShotsOnGoal')} value={gameShotsLoading || !gameShots?.length ? '—' : oppGameShots.length} />
+            <MetCard label={t('hockeyTechShotMapView.savePct')} value={gameShotsLoading ? '—' : pct(oppGameShots.length - countGoals(oppGameShots), oppGameShots.length)} />
           </div>
         </>
       ) : (
         <>
           <div className={METRICS_GRID_CLASSES}>
-            <MetCard label={t(`${league.key}ShotMapView.goals`)} value={shotsLoading ? '—' : goals} />
-            <MetCard label={t(`${league.key}ShotMapView.shotsOnGoal`)} value={shotsLoading ? '—' : shotsOnGoal} />
+            <MetCard label={t('hockeyTechShotMapView.goals')} value={shotsLoading ? '—' : goals} />
+            <MetCard label={t('hockeyTechShotMapView.shotsOnGoal')} value={shotsLoading ? '—' : shotsOnGoal} />
             <MetCard
-              label={t(`${league.key}ShotMapView.ppPct`)}
+              label={t('hockeyTechShotMapView.ppPct')}
               value={summaryLoading || summary?.ppPct == null ? '—' : `${(summary.ppPct * 100).toFixed(1)}%`}
             />
           </div>
 
           <div className={METRICS_GRID_CLASSES}>
             <MetCard
-              label={t(`${league.key}ShotMapView.pkPct`)}
+              label={t('hockeyTechShotMapView.pkPct')}
               value={summaryLoading || summary?.pkPct == null ? '—' : `${(summary.pkPct * 100).toFixed(1)}%`}
             />
             <MetCard
-              label={t(`${league.key}ShotMapView.sogFor`)}
+              label={t('hockeyTechShotMapView.sogFor')}
               value={summaryLoading ? '—' : summary?.sog?.car ?? '—'}
             />
             <MetCard
-              label={t(`${league.key}ShotMapView.sogAgainst`)}
+              label={t('hockeyTechShotMapView.sogAgainst')}
               value={summaryLoading ? '—' : summary?.sog?.opp ?? '—'}
             />
           </div>
@@ -536,26 +537,26 @@ export default function HockeyTechShotMapView({ league }) {
           <HockeyRink events={toHockeyRinkEvents(rinkEvents)} teamAbbr={abbr} />
         ) : (
           <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-dim)', fontSize: 13 }}>
-            {isGameView ? t(`${league.key}ShotMapView.noShotsGame`) : t(`${league.key}ShotMapView.noShots`)}
+            {isGameView ? t('hockeyTechShotMapView.noShotsGame') : t('hockeyTechShotMapView.noShots')}
           </div>
         )}
       </div>
 
       <p style={{ fontSize: 10, color: 'var(--text-dim)', textAlign: 'center', padding: '8px 0' }}>
-        {t(`${league.key}PlayersView.footerHintSource`)}
+        {t('hockeyTechPlayersView.footerHintSource', leagueNameVars(t, league))}
       </p>
 
       {/* ── Game event popups ── */}
-      {puckDropPopup && <PuckDropPopup league={league} data={puckDropPopup} onClose={clearPuckDropPopup} />}
-      {goalPopup     && <GoalPopup     league={league} data={goalPopup}     onClose={clearGoalPopup}     />}
-      {penaltyPopup  && <PenaltyPopup  league={league} data={penaltyPopup}  onClose={clearPenaltyPopup}  />}
+      {puckDropPopup && <PuckDropPopup data={puckDropPopup} onClose={clearPuckDropPopup} />}
+      {goalPopup     && <GoalPopup     data={goalPopup}     onClose={clearGoalPopup}     />}
+      {penaltyPopup  && <PenaltyPopup  data={penaltyPopup}  onClose={clearPenaltyPopup}  />}
       {winPopup      && <WinPopup      data={winPopup}      onClose={clearWinPopup}      />}
 
       {/* ── Debug popups ── */}
-      {debugGoalPopup    && <GoalPopup     league={league} data={debugGoalPopup}    onClose={() => setDebugGoalPopup(null)}    />}
-      {debugPenaltyPopup && <PenaltyPopup  league={league} data={debugPenaltyPopup} onClose={() => setDebugPenaltyPopup(null)} />}
+      {debugGoalPopup    && <GoalPopup     data={debugGoalPopup}    onClose={() => setDebugGoalPopup(null)}    />}
+      {debugPenaltyPopup && <PenaltyPopup  data={debugPenaltyPopup} onClose={() => setDebugPenaltyPopup(null)} />}
       {debugWinPopup     && <WinPopup      data={debugWinPopup}     onClose={() => setDebugWinPopup(null)}     />}
-      {debugPuckPopup    && <PuckDropPopup league={league} data={debugPuckPopup}    onClose={() => setDebugPuckPopup(null)}    />}
+      {debugPuckPopup    && <PuckDropPopup data={debugPuckPopup}    onClose={() => setDebugPuckPopup(null)}    />}
 
       {/* ── Debug panel (5 taps on the header, dev only) ── */}
       {import.meta.env.DEV && debugOpen && (

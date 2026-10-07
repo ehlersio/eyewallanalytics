@@ -138,7 +138,7 @@ function StandingsPanel({ league, standings, loading, myTeamId }) {
   }, [league, standings]);
 
   if (loading) return <LoadingRows />;
-  if (!standings.length) return <div className={LV_EMPTY_CLASSES}>{t(`${league.key}LeagueView.standingsEmpty`)}</div>;
+  if (!standings.length) return <div className={LV_EMPTY_CLASSES}>{t('hockeyTechLeagueView.standingsEmpty')}</div>;
 
   return (
     <>
@@ -234,7 +234,7 @@ function LeadersPanel({ league, skaters, goalies, loading, onSelect }) {
   const top10svp = useMemo(() => [...qualified].sort((a, b) => (b.sv_pct ?? 0) - (a.sv_pct ?? 0)).slice(0, 10), [qualified]);
 
   if (loading) return <LoadingRows />;
-  if (!skaters.length && !goalies.length) return <div className={LV_EMPTY_CLASSES}>{t(`${league.key}LeagueView.leadersEmpty`)}</div>;
+  if (!skaters.length && !goalies.length) return <div className={LV_EMPTY_CLASSES}>{t('hockeyTechLeagueView.leadersEmpty')}</div>;
 
   return (
     <div className={LV_LEADERS_GRID_CLASSES}>

@@ -731,8 +731,22 @@
     "colGoalie": "Goalie",
     "tableHint": "Tap a row to open player profile · Sort by any column"
   },
-  "ahlTeamView": {
-    "noTeamSelected": "No AHL team selected.",
+  "hockeyTechLeagues": {
+    "ahl": {
+      "name": "AHL",
+      "of": "the AHL"
+    },
+    "echl": {
+      "name": "ECHL",
+      "of": "the ECHL"
+    },
+    "pwhl": {
+      "name": "PWHL",
+      "of": "the PWHL"
+    }
+  },
+  "hockeyTechTeamView": {
+    "noTeamSelected": "No {{league}} team selected.",
     "tabs": {
       "overview": "Overview",
       "stats": "Stats",
@@ -774,17 +788,17 @@
       "legendFootnoteShort": "— 50% ref"
     }
   },
-  "ahlPlayerPopup": {
+  "hockeyTechPlayerPopup": {
     "heatMap": {
       "goalieUnavailable": "Goalie heat map not available",
-      "goalieUnavailableSub": "AHL's play-by-play doesn't track which goalie was in net for each goal, so a heat map here would under-count goals allowed."
+      "goalieUnavailableSub": "{{league}}'s play-by-play doesn't track which goalie was in net for each goal, so a heat map here would under-count goals allowed."
     },
     "recentForm": {
-      "legendGoalie": "W = win · L = loss (AHL's data doesn't distinguish OT/shootout losses)"
+      "legendGoalie": "W = win · L = loss ({{league}}'s data doesn't distinguish OT/shootout losses)"
     }
   },
-  "ahlPlayersView": {
-    "noTeamSelected": "No AHL team selected.",
+  "hockeyTechPlayersView": {
+    "noTeamSelected": "No {{league}} team selected.",
     "subtitle": "Season stats",
     "skatersToggle": "Skaters",
     "defencemen": "Defencemen",
@@ -794,107 +808,16 @@
     "emptyGoalieStats": "No goalie stats for {{season}}.",
     "colGoalie": "Goalie",
     "tableHint": "Sort by any column",
-    "footerHintSource": "Source: HockeyTech / AHL"
+    "footerHintSource": "Source: HockeyTech / {{league}}"
   },
-  "ahlScheduleView": {
+  "hockeyTechScheduleView": {
     "empty": "No games found."
   },
-  "ahlLeagueView": {
+  "hockeyTechLeagueView": {
     "standingsEmpty": "No standings data available.",
     "leadersEmpty": "No leader data available."
   },
-  "ahlShotMapView": {
-    "fallbackNote": "No {{empty}} data for this team — showing {{fallback}}.",
-    "subtitle": "Season shot map",
-    "goals": "Goals",
-    "shotsOnGoal": "Shots on Goal",
-    "ppPct": "PP%",
-    "pkPct": "PK%",
-    "sogFor": "SOG For",
-    "sogAgainst": "SOG Against",
-    "noShots": "No shot data available for this season.",
-    "gameSubtitle": "{{final}} · {{where}} {{opp}} · {{date}}",
-    "vs": "vs",
-    "at": "at",
-    "oppGoals": "Opp Goals",
-    "oppShotsOnGoal": "Opp Shots on Goal",
-    "shootingPct": "Shooting %",
-    "savePct": "Save %",
-    "noShotsGame": "Shot data for this game isn't in yet. It's usually added overnight."
-  },
-  "echlTeamView": {
-    "noTeamSelected": "No ECHL team selected.",
-    "tabs": {
-      "overview": "Overview",
-      "stats": "Stats",
-      "splits": "Splits",
-      "trends": "Trends"
-    },
-    "overview": {
-      "gfLabel": "GF: {{val}}",
-      "gaLabel": "GA: {{val}}",
-      "diffSuffix": "{{sign}}{{gd}} diff",
-      "last5Title": "Last 5 games",
-      "pointsLeadersTitle": "{{abbr}} Points Leaders",
-      "playerFallbackName": "Player #{{id}}",
-      "ptsSuffix": "pts",
-      "startingGoalieTitle": "{{abbr}} Starting Goalie",
-      "shutoutNote_one": "{{count}} shutout",
-      "shutoutNote_other": "{{count}} shutouts"
-    },
-    "stats": {
-      "metGoals": "Goals",
-      "metAssists": "Assists",
-      "metPoints": "Points",
-      "metPpg": "PPG",
-      "subTeamTotal": "Team total",
-      "subPowerPlay": "Power play",
-      "viewSkaters": "Skaters",
-      "viewGoalies": "Goalies",
-      "playerFallbackShort": "#{{id}}"
-    },
-    "splits": {
-      "noDataYet": "No {{label}} data yet."
-    },
-    "trends": {
-      "loadingTitle": "Loading trends…",
-      "noDataTitle": "No game data yet",
-      "simpleDotTooltip": "{{result}} {{my}}–{{op}}",
-      "rollingWinPctTitle": "Win% — rolling 10-game window",
-      "simpleBarTooltip": "{{pct}}% win rate",
-      "legendFootnoteShort": "— 50% ref"
-    }
-  },
-  "echlPlayerPopup": {
-    "heatMap": {
-      "goalieUnavailable": "Goalie heat map not available",
-      "goalieUnavailableSub": "ECHL's play-by-play doesn't track which goalie was in net for each goal, so a heat map here would under-count goals allowed."
-    },
-    "recentForm": {
-      "legendGoalie": "W = win · L = loss (ECHL's data doesn't distinguish OT/shootout losses)"
-    }
-  },
-  "echlPlayersView": {
-    "noTeamSelected": "No ECHL team selected.",
-    "subtitle": "Season stats",
-    "skatersToggle": "Skaters",
-    "defencemen": "Defencemen",
-    "failedToLoadRoster": "Failed to load roster.",
-    "noRosterData": "No roster data available.",
-    "emptySkaterStats": "No skater stats for {{season}}.",
-    "emptyGoalieStats": "No goalie stats for {{season}}.",
-    "colGoalie": "Goalie",
-    "tableHint": "Sort by any column",
-    "footerHintSource": "Source: HockeyTech / ECHL"
-  },
-  "echlScheduleView": {
-    "empty": "No games found."
-  },
-  "echlLeagueView": {
-    "standingsEmpty": "No standings data available.",
-    "leadersEmpty": "No leader data available."
-  },
-  "echlShotMapView": {
+  "hockeyTechShotMapView": {
     "fallbackNote": "No {{empty}} data for this team — showing {{fallback}}.",
     "subtitle": "Season shot map",
     "goals": "Goals",
@@ -1300,27 +1223,7 @@
       "backToBackGoals": "{{abbr}} scored twice in {{gap}}s — two quick goals"
     }
   },
-  "ahlGameEvents": {
-    "puckDrop": {
-      "line3": "Let's go!"
-    },
-    "goal": {
-      "modifierPowerPlay": "Power Play",
-      "modifierShortHanded": "Short Handed",
-      "modifierEmptyNet": "Empty Net",
-      "modifierPenaltyShot": "Penalty Shot"
-    },
-    "penalty": {
-      "word1": "POWER",
-      "word2": "PLAY!",
-      "severity": {
-        "major": "Major",
-        "misconduct": "Misconduct",
-        "gameMisconduct": "Game Misconduct"
-      }
-    }
-  },
-  "echlGameEvents": {
+  "hockeyTechGameEvents": {
     "puckDrop": {
       "line3": "Let's go!"
     },

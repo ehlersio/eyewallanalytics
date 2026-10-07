@@ -2,11 +2,11 @@
  * hockeytech/HockeyTechGameEvents.jsx
  *
  * Game event popups (goal, penalty, win, puck drop) for the AHL/ECHL live
- * game view, shared by both leagues (AHLGameEvents/ECHLGameEvents are
- * wrappers). Every export but WinPopup takes `league`
- * (utils/hockeyTechLeagues.js): i18n keys are `${league.key}GameEvents.*`
- * and the sessionStorage dedupe keys `${league.key}_goals_<gameId>` etc.,
- * the same strings as before.
+ * game view, shared by both leagues. The popups' text is the shared
+ * `hockeyTechGameEvents.*` i18n namespace; the hook takes `league`
+ * (utils/hockeyTechLeagues.js) for its sessionStorage dedupe keys
+ * (`${league.key}_goals_<gameId>` etc., the same strings as before) and
+ * team lookups.
  *
  * Port of PWHLGameEvents.jsx's sessionStorage-deduped popup layer.
  * Deliberately does NOT port PWHLLiveInsights/PWHLInsightsCard: several of
@@ -69,7 +69,7 @@ const GAME_EVENT_DISMISS_CLASSES = 'game-event-dismiss mt-4 bg-[var(--btn-fill)]
 
 // ── Puck Drop ─────────────────────────────────────────────────
 
-export function PuckDropPopup({ league, data, onClose }) {
+export function PuckDropPopup({ data, onClose }) {
   const { t } = useTranslation();
   useEffect(() => {
     if (!data) return;
@@ -86,7 +86,7 @@ export function PuckDropPopup({ league, data, onClose }) {
         <div className={PUCK_DROP_TEXT_CLASSES}>
           {t('gameEvents.puckDrop.line1')}<br />
           {t('gameEvents.puckDrop.line2')}<br />
-          {t(`${league.key}GameEvents.puckDrop.line3`)}
+          {t('hockeyTechGameEvents.puckDrop.line3')}
         </div>
         <div className={GAME_EVENT_DISMISS_CLASSES}>{t('gameEvents.dismissHint')}</div>
       </div>
@@ -96,7 +96,7 @@ export function PuckDropPopup({ league, data, onClose }) {
 
 // ── Goal Popup ────────────────────────────────────────────────
 
-export function GoalPopup({ league, data, onClose }) {
+export function GoalPopup({ data, onClose }) {
   const { t } = useTranslation();
   useEffect(() => {
     if (!data) return;
@@ -107,10 +107,10 @@ export function GoalPopup({ league, data, onClose }) {
   if (!data) return null;
 
   const modifiers = [
-    data.isPowerPlay    && t(`${league.key}GameEvents.goal.modifierPowerPlay`),
-    data.isShortHanded  && t(`${league.key}GameEvents.goal.modifierShortHanded`),
-    data.isEmptyNet     && t(`${league.key}GameEvents.goal.modifierEmptyNet`),
-    data.isPenaltyShot  && t(`${league.key}GameEvents.goal.modifierPenaltyShot`),
+    data.isPowerPlay    && t('hockeyTechGameEvents.goal.modifierPowerPlay'),
+    data.isShortHanded  && t('hockeyTechGameEvents.goal.modifierShortHanded'),
+    data.isEmptyNet     && t('hockeyTechGameEvents.goal.modifierEmptyNet'),
+    data.isPenaltyShot  && t('hockeyTechGameEvents.goal.modifierPenaltyShot'),
   ].filter(Boolean);
 
   return (
@@ -137,7 +137,7 @@ export function GoalPopup({ league, data, onClose }) {
 
 // ── Penalty Popup ─────────────────────────────────────────────
 
-export function PenaltyPopup({ league, data, onClose }) {
+export function PenaltyPopup({ data, onClose }) {
   const { t } = useTranslation();
   useEffect(() => {
     if (!data) return;
@@ -150,8 +150,8 @@ export function PenaltyPopup({ league, data, onClose }) {
     <div className={overlayClasses(false)} onClick={onClose}>
       <div className={PENALTY_POPUP_CLASSES}>
         <div className={PENALTY_WORDS_CLASSES}>
-          <span className={PENALTY_WORD_SPAN_CLASSES}>{t(`${league.key}GameEvents.penalty.word1`)}</span>
-          <span className={PENALTY_WORD_SPAN_CLASSES}>{t(`${league.key}GameEvents.penalty.word2`)}</span>
+          <span className={PENALTY_WORD_SPAN_CLASSES}>{t('hockeyTechGameEvents.penalty.word1')}</span>
+          <span className={PENALTY_WORD_SPAN_CLASSES}>{t('hockeyTechGameEvents.penalty.word2')}</span>
         </div>
         <div className={PENALTY_DIVIDER_CLASSES} />
         {data.player && <div className={PENALTY_PLAYER_CLASSES}>{data.player}</div>}
@@ -230,20 +230,20 @@ export function WinPopup({ data, onClose }) {
 //   Mis-  → misconduct (10 min)
 //   Gm-   → game misconduct
 
-// Values are suffixes of `${league.key}GameEvents.`.
+// Values are suffixes of `hockeyTechGameEvents.`.
 const PENALTY_PREFIX_MAP = {
   'maj': 'penalty.severity.major',
   'mis': 'penalty.severity.misconduct',
   'gm':  'penalty.severity.gameMisconduct',
 };
 
-function parsePenaltyDesc(league, raw, t) {
+function parsePenaltyDesc(raw, t) {
   if (!raw) return { desc: t('gameEvents.penalty.fallbackDescription'), severity: null };
   const match = raw.match(/^([A-Za-z]+)-(.+)$/);
   if (!match) return { desc: raw, severity: null };
   const prefix = match[1].toLowerCase();
   const body   = match[2].trim();
-  const severity = PENALTY_PREFIX_MAP[prefix] ? t(`${league.key}GameEvents.${PENALTY_PREFIX_MAP[prefix]}`) : null;
+  const severity = PENALTY_PREFIX_MAP[prefix] ? t(`hockeyTechGameEvents.${PENALTY_PREFIX_MAP[prefix]}`) : null;
   return { desc: body, severity };
 }
 
@@ -376,7 +376,7 @@ export function useHockeyTechGameEvents(league, liveData, isLive, teamId, teamAb
             id:          penId,
             player:      penaltyHeadline(parties, t),
             servedBy:    penaltyServedBy(parties, t),
-            ...parsePenaltyDesc(league, ev.description, t),
+            ...parsePenaltyDesc(ev.description, t),
             duration:    ev.minutes || 2,
             periodLabel: per,
             time,

@@ -6,8 +6,10 @@
 //
 // Shape (both objects carry exactly the same keys; the shape test in
 // __tests__/hockeyTechLeagues.test.js enforces it):
-//   key            'ahl' | 'echl': route base (`/${key}`), i18n namespace
-//                  prefix (`${key}PlayersView.*`), Worker path prefix
+//   key            'ahl' | 'echl': route base (`/${key}`), Worker path
+//                  prefix, and the league's name in i18n
+//                  (hockeyTechLeagues.<key>; the shared hockeyTech*
+//                  namespaces take it through utils/hockeyTechI18n.js)
 //   label          'AHL' | 'ECHL', for display
 //   team / teamAbbr / teamId
 //                  the followed team, read from localStorage once at load

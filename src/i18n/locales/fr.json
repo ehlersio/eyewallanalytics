@@ -731,8 +731,22 @@
     "colGoalie": "Gardienne",
     "tableHint": "Touchez une ligne pour ouvrir le profil de la joueuse · Triez selon n'importe quelle colonne"
   },
-  "ahlTeamView": {
-    "noTeamSelected": "Aucune équipe de la LAH sélectionnée.",
+  "hockeyTechLeagues": {
+    "ahl": {
+      "name": "LAH",
+      "of": "de la LAH"
+    },
+    "echl": {
+      "name": "ECHL",
+      "of": "de l'ECHL"
+    },
+    "pwhl": {
+      "name": "LPHF",
+      "of": "de la LPHF"
+    }
+  },
+  "hockeyTechTeamView": {
+    "noTeamSelected": "Aucune équipe {{ofLeague}} sélectionnée.",
     "tabs": {
       "overview": "Aperçu",
       "stats": "Statistiques",
@@ -774,17 +788,17 @@
       "legendFootnoteShort": "— référence 50%"
     }
   },
-  "ahlPlayerPopup": {
+  "hockeyTechPlayerPopup": {
     "heatMap": {
       "goalieUnavailable": "Carte thermique du gardien non disponible",
-      "goalieUnavailableSub": "Les données de la LAH n'indiquent pas quel gardien était sur la glace pour chaque but, donc une carte thermique ici sous-compterait les buts accordés."
+      "goalieUnavailableSub": "Les données {{ofLeague}} n'indiquent pas quel gardien était sur la glace pour chaque but, donc une carte thermique ici sous-compterait les buts accordés."
     },
     "recentForm": {
-      "legendGoalie": "V = victoire · D = défaite (les données de la LAH ne distinguent pas les défaites en prolongation/tirs de barrage)"
+      "legendGoalie": "V = victoire · D = défaite (les données {{ofLeague}} ne distinguent pas les défaites en prolongation/tirs de barrage)"
     }
   },
-  "ahlPlayersView": {
-    "noTeamSelected": "Aucune équipe de la LAH sélectionnée.",
+  "hockeyTechPlayersView": {
+    "noTeamSelected": "Aucune équipe {{ofLeague}} sélectionnée.",
     "subtitle": "Statistiques de la saison",
     "skatersToggle": "Patineurs",
     "defencemen": "Défenseurs",
@@ -794,107 +808,16 @@
     "emptyGoalieStats": "Aucune statistique de gardiens pour {{season}}.",
     "colGoalie": "Gardien",
     "tableHint": "Triez selon n'importe quelle colonne",
-    "footerHintSource": "Source : HockeyTech / LAH"
+    "footerHintSource": "Source : HockeyTech / {{league}}"
   },
-  "ahlScheduleView": {
+  "hockeyTechScheduleView": {
     "empty": "Aucun match trouvé."
   },
-  "ahlLeagueView": {
+  "hockeyTechLeagueView": {
     "standingsEmpty": "Aucune donnée de classement disponible.",
     "leadersEmpty": "Aucune donnée de meneurs disponible."
   },
-  "ahlShotMapView": {
-    "fallbackNote": "Aucune donnée {{empty}} pour cette équipe — voici {{fallback}}.",
-    "subtitle": "Carte des tirs de la saison",
-    "goals": "Buts",
-    "shotsOnGoal": "Tirs au but",
-    "ppPct": "% AN",
-    "pkPct": "% DÉS",
-    "sogFor": "Tirs pour",
-    "sogAgainst": "Tirs contre",
-    "noShots": "Aucune donnée de tirs disponible pour cette saison.",
-    "gameSubtitle": "{{final}} · {{where}} {{opp}} · {{date}}",
-    "vs": "c.",
-    "at": "à",
-    "oppGoals": "Buts adv.",
-    "oppShotsOnGoal": "Tirs au but adv.",
-    "shootingPct": "% de tirs",
-    "savePct": "% d'arrêts",
-    "noShotsGame": "Les données de tirs de ce match ne sont pas encore disponibles. Elles sont habituellement ajoutées pendant la nuit."
-  },
-  "echlTeamView": {
-    "noTeamSelected": "Aucune équipe de la ECHL sélectionnée.",
-    "tabs": {
-      "overview": "Aperçu",
-      "stats": "Statistiques",
-      "splits": "Domicile/Visiteur",
-      "trends": "Tendances"
-    },
-    "overview": {
-      "gfLabel": "BP : {{val}}",
-      "gaLabel": "BC : {{val}}",
-      "diffSuffix": "diff. {{sign}}{{gd}}",
-      "last5Title": "5 derniers matchs",
-      "pointsLeadersTitle": "Meneurs au pointage de {{abbr}}",
-      "playerFallbackName": "Joueur #{{id}}",
-      "ptsSuffix": "pts",
-      "startingGoalieTitle": "Gardien partant de {{abbr}}",
-      "shutoutNote_one": "{{count}} blanchissage",
-      "shutoutNote_other": "{{count}} blanchissages"
-    },
-    "stats": {
-      "metGoals": "Buts",
-      "metAssists": "Aides",
-      "metPoints": "Points",
-      "metPpg": "BAN",
-      "subTeamTotal": "Total de l'équipe",
-      "subPowerPlay": "Avantage numérique",
-      "viewSkaters": "Patineurs",
-      "viewGoalies": "Gardiens",
-      "playerFallbackShort": "#{{id}}"
-    },
-    "splits": {
-      "noDataYet": "Aucune donnée {{label}} pour l'instant."
-    },
-    "trends": {
-      "loadingTitle": "Chargement des tendances…",
-      "noDataTitle": "Aucune donnée de match pour l'instant",
-      "simpleDotTooltip": "{{result}} {{my}}–{{op}}",
-      "rollingWinPctTitle": "% de victoires — fenêtre mobile de 10 matchs",
-      "simpleBarTooltip": "{{pct}}% de victoires",
-      "legendFootnoteShort": "— référence 50%"
-    }
-  },
-  "echlPlayerPopup": {
-    "heatMap": {
-      "goalieUnavailable": "Carte thermique du gardien non disponible",
-      "goalieUnavailableSub": "Les données de la ECHL n'indiquent pas quel gardien était sur la glace pour chaque but, donc une carte thermique ici sous-compterait les buts accordés."
-    },
-    "recentForm": {
-      "legendGoalie": "V = victoire · D = défaite (les données de la ECHL ne distinguent pas les défaites en prolongation/tirs de barrage)"
-    }
-  },
-  "echlPlayersView": {
-    "noTeamSelected": "Aucune équipe de la ECHL sélectionnée.",
-    "subtitle": "Statistiques de la saison",
-    "skatersToggle": "Patineurs",
-    "defencemen": "Défenseurs",
-    "failedToLoadRoster": "Échec du chargement de l'effectif.",
-    "noRosterData": "Aucune donnée d'effectif disponible.",
-    "emptySkaterStats": "Aucune statistique de patineurs pour {{season}}.",
-    "emptyGoalieStats": "Aucune statistique de gardiens pour {{season}}.",
-    "colGoalie": "Gardien",
-    "tableHint": "Triez selon n'importe quelle colonne",
-    "footerHintSource": "Source : HockeyTech / ECHL"
-  },
-  "echlScheduleView": {
-    "empty": "Aucun match trouvé."
-  },
-  "echlLeagueView": {
-    "standingsEmpty": "Aucune donnée de classement disponible.",
-    "leadersEmpty": "Aucune donnée de meneurs disponible."
-  },
-  "echlShotMapView": {
+  "hockeyTechShotMapView": {
     "fallbackNote": "Aucune donnée {{empty}} pour cette équipe — voici {{fallback}}.",
     "subtitle": "Carte des tirs de la saison",
     "goals": "Buts",
@@ -1300,27 +1223,7 @@
       "backToBackGoals": "{{abbr}} a marqué deux fois en {{gap}}s — deux buts rapides"
     }
   },
-  "ahlGameEvents": {
-    "puckDrop": {
-      "line3": "On y va !"
-    },
-    "goal": {
-      "modifierPowerPlay": "Avantage numérique",
-      "modifierShortHanded": "Désavantage numérique",
-      "modifierEmptyNet": "Filet vide",
-      "modifierPenaltyShot": "Tir de pénalité"
-    },
-    "penalty": {
-      "word1": "AVANTAGE",
-      "word2": "NUMÉRIQUE !",
-      "severity": {
-        "major": "Majeure",
-        "misconduct": "Inconduite",
-        "gameMisconduct": "Inconduite de partie"
-      }
-    }
-  },
-  "echlGameEvents": {
+  "hockeyTechGameEvents": {
     "puckDrop": {
       "line3": "On y va !"
     },

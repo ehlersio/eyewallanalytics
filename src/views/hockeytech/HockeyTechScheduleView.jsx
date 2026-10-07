@@ -21,6 +21,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDate as formatDateIntl } from '../../utils/formatters';
+import { leagueNameVars } from '../../utils/hockeyTechI18n';
 import { useFetch } from '../../hooks/useFetch';
 import { useTeamSeasonGames } from '../../hooks/useTeamSeasonGames';
 import { seasonsWithGames, fallbackSeason } from '../../utils/teamSeasons';
@@ -126,7 +127,7 @@ export default function HockeyTechScheduleView({ league }) {
     return (
       <div className={PAGE_CLASSES}>
         <div className="card" style={{ textAlign: 'center', padding: 32 }}>
-          <p style={{ color: 'var(--text-dim)' }}>{t(`${league.key}PlayersView.noTeamSelected`)}</p>
+          <p style={{ color: 'var(--text-dim)' }}>{t('hockeyTechPlayersView.noTeamSelected', leagueNameVars(t, league))}</p>
         </div>
       </div>
     );
@@ -157,7 +158,7 @@ export default function HockeyTechScheduleView({ league }) {
 
       {loading && <LoadingCards count={8} />}
       {!loading && games.length === 0 && (
-        <div className={EMPTY_STATE_CLASSES}>{t(`${league.key}ScheduleView.empty`)}</div>
+        <div className={EMPTY_STATE_CLASSES}>{t('hockeyTechScheduleView.empty')}</div>
       )}
       {!loading && games.length > 0 && viewMode === 'list' && games.map((g) => (
         <GameCard key={g.game_id} league={league} game={g} teamId={teamId} abbr={abbr} onClick={() => setPopup(g)} />
