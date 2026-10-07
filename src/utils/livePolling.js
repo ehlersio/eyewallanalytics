@@ -34,8 +34,11 @@ export function livePollInterval(games, isLive, now = Date.now()) {
 // usePoll to ask before every tick, reading the view's `isLiveRef` each time.
 // Each view used to compute the number once at mount (`useMemo(..., [])`),
 // when the ref is still false, so the 30s poll never happened.
+export const HOCKEYTECH_TODAY_LIVE_MS = 30_000;
+export const HOCKEYTECH_TODAY_IDLE_MS = 60_000;
+
 export function hockeyTechTodayInterval(isLiveRef) {
-  return () => (isLiveRef.current ? 30_000 : 60_000);
+  return () => (isLiveRef.current ? HOCKEYTECH_TODAY_LIVE_MS : HOCKEYTECH_TODAY_IDLE_MS);
 }
 
 // A push (iOS foreground, or the web service worker) means the poller just

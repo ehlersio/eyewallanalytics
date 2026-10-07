@@ -2,6 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCarScore, getOppScore, getOpponent, withPbpScore } from '../utils/nhlApi';
 import { useLiveGame } from '../hooks/useLiveGame';
+import { useHockeyTechLiveGame } from '../hooks/useHockeyTechLiveGame';
+import { chipScore, periodLabel } from '../utils/hockeyTechLiveStore';
+import { AHL_TEAM_ID } from '../utils/ahlApi';
+import { ECHL_TEAM_ID } from '../utils/echlApi';
+import { AHL_TEAM_MAP } from '../utils/ahlConfig';
+import { ECHL_TEAM_MAP } from '../utils/echlConfig';
+import { PWHL_TEAM_ID } from '../utils/pwhlApi';
+import { PWHL_TEAM_MAP } from '../utils/pwhlConfig';
 import { teamTextColor } from '../utils/teamConfig';
 import TeamLogo from './TeamLogo';
 import { TEAM_CONFIG } from '../utils/nhlApi';
@@ -48,6 +56,28 @@ export function pollsNhlLive(sport) {
   return sport === 'nhl';
 }
 
+// The followed team on a PWHL/AHL/ECHL route, for the HockeyTech live
+// chip (utils/hockeyTechLiveStore.js); null on NHL routes.
+function hockeyTechTeamId(sport) {
+  if (sport === 'pwhl') return PWHL_TEAM_ID;
+  if (sport === 'ahl') return AHL_TEAM_ID;
+  if (sport === 'echl') return ECHL_TEAM_ID;
+  return null;
+}
+function hockeyTechTeamColor(sport, abbr) {
+  const teams = { pwhl: PWHL_TEAM_MAP, ahl: AHL_TEAM_MAP, echl: ECHL_TEAM_MAP }[sport];
+  return teams?.[abbr]?.displayColor;
+}
+
+// What the HockeyTech live chip shows: the followed team's side of the
+// score, and the period and time of the latest event (null when there's
+// no live game).
+export function hockeyTechChip(state, teamId) {
+  if (!state?.game) return null;
+  const score = chipScore(state.game, teamId);
+  return { ...score, period: periodLabel(state.clock), time: state.clock?.time || null };
+}
+
 // Text of the hidden `.topbar-no-live` marker: the league on non-NHL routes,
 // null on NHL routes (the caller shows the translated "Off season" there).
 export function noLiveLabel(sport) {
@@ -91,6 +121,12 @@ export default function Topbar() {
   const liveGame = storeGame ? withPbpScore(storeGame, pbp) : null;
   const pbpForGame = storeGame && pbp && String(pbp.id) === String(storeGame.id) ? pbp : null;
   const liveMeta = pbpForGame ? { period: pbpForGame.periodDescriptor, clock: pbpForGame.clock } : null;
+
+  // PWHL/AHL/ECHL: the followed team's live game from the shared
+  // HockeyTech poller (the same /today the shot maps read).
+  const htTeamId = pollNhl ? null : hockeyTechTeamId(sport);
+  const htState  = useHockeyTechLiveGame(pollNhl ? null : sport, htTeamId);
+  const htChip   = hockeyTechChip(htState, htTeamId);
 
   // Publish clock — fall back to raw string if structured data missing
   useEffect(() => {
@@ -165,9 +201,27 @@ export default function Topbar() {
   return (
     <header className={TOPBAR_CLASSES}>
       <div className={ROW_CLASSES}>
-        <AboutPopup isLive={!!activeLiveGame} />
+        <AboutPopup isLive={!!activeLiveGame || !!htChip} />
 
-        {activeLiveGame ? (
+        {htChip ? (
+          <div className={LIVE_CLASSES} data-testid="ht-live-chip">
+            <div className="live-dot" />
+            <div className={LIVE_SCORE_CLASSES}>
+              <TeamLogo abbr={htChip.myAbbr} sport={sport} size={18} />
+              <span className={LIVE_TEAM_RED_CLASSES}>{htChip.myAbbr}</span>
+              <span className={LIVE_NUM_CLASSES}>{htChip.myScore}</span>
+              <span className={LIVE_SEP_CLASSES}>–</span>
+              <span className={LIVE_NUM_CLASSES}>{htChip.oppScore}</span>
+              <span className={LIVE_TEAM_MUTED_CLASSES}>{htChip.oppAbbr}</span>
+              <TeamLogo abbr={htChip.oppAbbr} sport={sport} size={18} color={hockeyTechTeamColor(sport, htChip.oppAbbr)} />
+            </div>
+            {(htChip.period || htChip.time) && (
+              <div className={LIVE_CLOCK_CLASSES}>
+                {htChip.period}{htChip.period && htChip.time ? ' · ' : ''}{htChip.time}
+              </div>
+            )}
+          </div>
+        ) : activeLiveGame ? (
           <div className={LIVE_CLASSES}>
             <div className="live-dot" />
             <div className={LIVE_SCORE_CLASSES}>

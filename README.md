@@ -103,7 +103,7 @@ canes-analytics-starter/
 │   │       ├── HockeyTechScheduleView.jsx # Schedule list + calendar + box-score/preview popups + predictions (records outcomes for Final games). No separate Regular Season/Playoffs tab — the league's seasons list has its playoffs as their own season tab; no round-based bracket view (the Calder Cup/Kelly Cup up-to-4-round formats were never ported/verified against PWHL's fixed-2-round bracket logic)
 │   │       └── HockeyTechTeamView.jsx  # Overview/Stats/Splits/Trends (+ History from teamHistory.js) + Compare Seasons; Last 5, Splits W–L–OTL/Pts% and Trends' OT streak via utils/hockeyTechResults.js. No Advanced (no blocked-shot events in either feed) or Salaries tab
 │   ├── components/
-│   │   ├── Topbar.jsx/.css             # Live score, countdown clock, sport switcher. The live score comes from hooks/useLiveGame.js (the shared poller ShotMapView reads too)
+│   │   ├── Topbar.jsx/.css             # Live score, countdown clock, sport switcher. The NHL live score comes from hooks/useLiveGame.js (the shared poller ShotMapView reads too); on PWHL/AHL/ECHL routes the followed team's live game comes from hooks/useHockeyTechLiveGame.js
 │   │   ├── BottomNav.jsx               # Sport-aware bottom navigation
 │   │   ├── TeamPicker.jsx              # Sport + team selection (NHL + PWHL); active/expansion PWHL split derives from comingSoon (fixed 2026-07 — used to be a 2nd hardcoded list, ignored comingSoon entirely)
 │   │   ├── (season shot map rink)      # Was IceRink.jsx — extracted to the standalone `react-hockey-rink` npm package (github.com/ehlersio/react-hockey-rink) and deleted from this tree. App-side integration: `src/utils/hockeyRinkEvents.js` adapts this app's `isCanes`-boolean event shape to the package's `team: 'primary'|'opponent'` schema at each call site; `src/index.css` aliases the package's `--rink-*` CSS tokens onto this app's own theme-reactive tokens so light/dark mode and the live team color both still apply with zero drift. `RinkMarkings` + the `W`/`H`/`CX`/`CY` coordinate constants are named exports from the package — still the single source of truth for rink geometry, also consumed by LiveEventRink.jsx
@@ -170,6 +170,7 @@ canes-analytics-starter/
 │   ├── hooks/
 │   │   ├── useFetch.js                 # Data fetching + polling (cache: no-store)
 │   │   ├── useLiveGame.js              # A team's live game + its play-by-play from utils/liveGameStore.js (Topbar, ShotMapView)
+│   │   ├── useHockeyTechLiveGame.js    # The followed PWHL/AHL/ECHL team's live game from utils/hockeyTechLiveStore.js (Topbar live chip)
 │   │   ├── usePushNotifications.js     # Team alerts (subscribe/unsubscribe/updatePrefs); also exports subscriptionPayload() (the /push/subscribe body) and requestPushDevice(), which the Admin › Health ops-alerts button reuses
 │   │   ├── usePeriodSummary.js
 │   │   ├── useLiveGoalReplay.js        # Feeds the live rink the most recent goal's NHL EDGE tracking, as soon as the NHL publishes it (median ~4 min after the goal, measured; max ~12 min). Rides the live play-by-play ShotMapView already gets every 10 s (utils/liveGameStore.js) rather than adding a poller, and asks the Worker at most once a minute per goal (matching its TTL_MISSING), giving up after 15 min. Fetches BEFORE offering the control, so the control is never a dead option and playback starts instantly. Decision logic in utils/liveGoalReplay.js
@@ -177,6 +178,7 @@ canes-analytics-starter/
 │   │   └── useReadState.js             # Unseen-content badges for News/Milestones/Trivia tabs + BottomNav's combined dot (Session 92) — local-only, boolean-only; reuses SportContext.jsx's window.CustomEvent cross-component convention rather than a new Context
 │   └── utils/
 │       ├── nhlApi.js                   # NHL API calls + KV caching
+│       ├── hockeyTechLiveStore.js      # PWHL/AHL/ECHL live-game poller per league + team, reference-counted like liveGameStore.js: /today every 60 s, every 30 s (with the game's /live for score and period/time) once the team's game is live, at once on a push
 │       ├── liveGameStore.js            # One live-game poller per team, reference-counted: the first subscriber starts it, the last stops it. 10 s during a game (busts and fetches the play-by-play; the box score is busted for ShotMapView's own poll), livePollInterval() otherwise, at once on a push. Replaced separate Topbar and ShotMapView polls that busted each other's caches, the schedule included, every tick (audit 2026-10-06 §6)
 │       ├── pwhlApi.js                  # PWHL Worker API calls
 │       ├── retryFetch.js               # fetch() with a per-attempt time budget and one retry on a *thrown* fetch (timeout/network), not on an HTTP status. Used by every Worker read helper: nhlApi/pwhlApi/ahlApi/echlApi/supabaseClient/playerSearch. Deliberately NOT nhlApi's kvFetch (its short budget exists to fail fast and fall through to the NHL API) and not the supabase-js writes in triviaAnswers/favoriteTeamSync/localeSync
@@ -252,6 +254,7 @@ canes-analytics-starter/
 │   │   ├── draft.cy.js                 # NHL draft board
 │   │   ├── TeamPicker.cy.js            # Sport + team picker — all 12 PWHL teams selectable with real colors
 │   │   ├── theme.cy.js                 # Light/dark mode
+│   │   ├── topbar-live-chip.cy.js      # PWHL/AHL/ECHL Topbar live chip: the followed team's stubbed live game (score from its side, period · time), off-season marker once it ends
 │   │   ├── topnav-safe-area.cy.js      # Topbar safe-area regression (mobile viewports)
 │   │   └── viewports.cy.js             # 4 viewports × all views
 │   └── support/e2e.js                  # Custom commands incl. cy.setPWHLTeam()
@@ -767,7 +770,7 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (896 tests, 98 files)
+### Vitest (909 tests, 99 files)
 ```bash
 npm test
 npm run test:watch
@@ -791,7 +794,7 @@ npm run cypress:visual            # diff current rendering against the committed
 ```
 48 baseline screenshots (`cypress/snapshots/base/`, committed) covering every NHL + PWHL route × mobile/desktop × dark/light. These routes hit the live Worker API with no fixture seeding, so a small amount of pixel drift between a baseline capture and a diff run is expected (real content changing, not a bug) — `errorThreshold: 1` (%) in `cypress/support/e2e.js` absorbs that noise; a real layout/spacing/color regression runs far higher and still fails. Intended workflow: capture a baseline immediately before a migration phase, diff immediately after.
 
-**61 spec files** (AHL/ECHL: `hockeytech-{league,schedule,players,team,news,shots}.cy.js`, `ahl-team`, `echl-team`, `hockeytech-season-pickers`, `hockeytech-player-compare`):
+**62 spec files** (AHL/ECHL: `hockeytech-{league,schedule,players,team,news,shots}.cy.js`, `ahl-team`, `echl-team`, `hockeytech-season-pickers`, `hockeytech-player-compare`):
 
 **Note (2026-08, Session 94):** `visual-regression.cy.js` added as part of Phase 0 of the full Tailwind migration (see `SESSION_94_FINDINGS_tailwind_migration.md`) — the parity-verification tooling that migration's later phases depend on.
 
