@@ -23,6 +23,7 @@ import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 import { streakColor } from '../utils/hockeyTechResults';
 import { summarizeStandings, seasonsWithGames, fallbackSeason, teamHasGames } from '../utils/teamSeasons';
+import { workerFetchInit } from '../utils/workerCache';
 
 // Tailwind migration (Session 97, Phase 3, sub-PR 1) -- only the small
 // PlayersView.css-owned pieces this file actually uses (.players-tabs/.tab,
@@ -747,7 +748,7 @@ function BracketPanel({ season, standings, poSeasonId, seasonLabel, myTeamId, my
     const teamIds = PWHL_TEAMS.map(team => team.teamId);
     Promise.all(
       teamIds.map(tid =>
-        fetch(`${WORKER}/pwhl/schedule?teamId=${tid}&season=${poSeasonId}`, { cache: 'no-store' })
+        fetch(`${WORKER}/pwhl/schedule?teamId=${tid}&season=${poSeasonId}`, workerFetchInit())
           .then(r => r.ok ? r.json() : [])
           .catch(() => [])
       )

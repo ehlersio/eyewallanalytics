@@ -11,6 +11,7 @@ import { TEAM_CONFIG } from '../utils/teamConfig';
 import { PWHL_TEAM_CONFIG } from '../utils/pwhlApi';
 import { getAnsweredMap, getStats, recordAnswer } from '../utils/triviaAnswers';
 import { capture } from '../utils/analytics';
+import { workerFetchInit } from '../utils/workerCache';
 import TeamLogo from './TeamLogo';
 import {
   NEWS_HEADER_CLASSES, NEWS_HEADER_ROW_CLASSES, NEWS_TITLE_CLASSES, NEWS_UPDATED_CLASSES,
@@ -151,7 +152,7 @@ export default function TriviaFeed() {
     setError(null);
     try {
       const params = new URLSearchParams({ sport: sportKey, team: activeTeamAbbr, locale: i18n.language });
-      const res = await fetch(`${WORKER_URL}/trivia/today?${params}`, { cache: 'no-store' });
+      const res = await fetch(`${WORKER_URL}/trivia/today?${params}`, workerFetchInit());
       if (!res.ok) throw new Error(t('triviaFeed.error.notAvailable'));
       const data = await res.json();
       setQuestions({ easy: data.easy, medium: data.medium, hard: data.hard });

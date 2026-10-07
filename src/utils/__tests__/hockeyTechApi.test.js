@@ -1,7 +1,8 @@
 // src/utils/__tests__/hockeyTechApi.test.js
 // createHockeyTechApi(key): one Worker client for AHL and ECHL. Every fetch
 // hits /{key}/..., goes through fetchWithRetry with its default 8s budget
-// and cache: 'no-store', defaults the season to the league's live current
+// and the browser's HTTP cache (no `cache: 'no-store'`: the Worker's
+// Cache-Control/ETag decide -- workerCache.js), defaults the season to the league's live current
 // season and the team to the stored one, and resolves to null on failure.
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 
@@ -31,10 +32,10 @@ const urls = () => fetchWithRetry.mock.calls.map(([u]) => u)
 describe.each([['ahl'], ['echl']])('%s client', (key) => {
   const current = () => (key === 'ahl' ? ahlConfig.AHL_CURRENT_SEASON : echlConfig.ECHL_CURRENT_SEASON)
 
-  it('sends every request to /<key>/ with no-store and the default 8s budget', async () => {
+  it('sends every request to /<key>/ through the HTTP cache with the default 8s budget', async () => {
     const api = createHockeyTechApi(key)
     await api.fetchStandings(90)
-    expect(fetchWithRetry).toHaveBeenCalledWith(`https://worker.test/${key}/standings?season=90`, { init: { cache: 'no-store' } })
+    expect(fetchWithRetry).toHaveBeenCalledWith(`https://worker.test/${key}/standings?season=90`, { init: {} })
     expect(retry.FETCH_TIMEOUT_MS).toBe(8000)
   })
 

@@ -13,6 +13,7 @@ import PlayerPopup from './PlayerPopup';
 import PWHLPlayerPopup from './PWHLPlayerPopup';
 import { capture } from '../utils/analytics';
 import { formatDate, formatNumber } from '../utils/formatters';
+import { workerFetchInit } from '../utils/workerCache';
 import {
   NEWS_HEADER_CLASSES, NEWS_HEADER_ROW_CLASSES, NEWS_TITLE_CLASSES, NEWS_UPDATED_CLASSES,
   NEWS_REFRESH_BTN_CLASSES, NEWS_FEED_CLASSES, NEWS_CARD_CLASSES, NEWS_CARD_BODY_CLASSES,
@@ -241,7 +242,7 @@ export default function MilestonesFeed() {
       if (pwhl) params.set('sport', 'pwhl');
       if (teamFilter && teamFilter !== 'all') params.set('team', teamFilter);
       const qs  = params.toString() ? `?${params.toString()}` : '';
-      const res = await fetch(`${WORKER_URL}/milestones${qs}`, { cache: 'no-store' });
+      const res = await fetch(`${WORKER_URL}/milestones${qs}`, workerFetchInit());
       if (!res.ok) throw new Error(t('milestonesFeed.error.notAvailable'));
       const data = await res.json();
       setMilestones(Array.isArray(data) ? data : []);
