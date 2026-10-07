@@ -85,6 +85,24 @@ LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter }) => {
       assertNoLoadFailure()
     })
 
+    // Calendar cells and the box-score table (HockeyTechCalendarView /
+    // HockeyTechBoxScoreTable). Date is pinned to mid-January so the
+    // calendar opens on a month of the completed 2025-26 season.
+    it(`/${key}/schedule calendar opens a 2025-26 box score`, () => {
+      cy.clock(new Date('2026-01-15T17:00:00Z').getTime(), ['Date'])
+      visitAs(`/${key}/schedule`, key, team)
+      cy.contains('button', /^2025-26$/, { timeout: DATA_TIMEOUT }).click()
+      cy.get('.view-mode-toggle button').eq(1).click()
+      cy.contains('.cal-month-label', 'January 2026').should('exist')
+      cy.get('.cal-cell.has-game', { timeout: DATA_TIMEOUT }).should('have.length.at.least', 1)
+      cy.get('.cal-cell.has-game').first().find(`img[src*="/${key}/logos/"]`).should('exist')
+      cy.get('.cal-cell.has-game.win, .cal-cell.has-game.loss').first().click()
+      cy.get('.pgs-card').should('exist')
+      cy.get('.pbs-row', { timeout: DATA_TIMEOUT }).should('have.length.at.least', 5)
+      cy.get('.pbs-goalie-row').should('have.length.at.least', 1)
+      assertNoLoadFailure()
+    })
+
     it(`/${key}/news renders ${label} News`, () => {
       visitAs(`/${key}/news`, key, team)
       cy.contains(`${label} News`, { timeout: DATA_TIMEOUT }).should('be.visible')
