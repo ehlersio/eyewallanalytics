@@ -16,7 +16,8 @@
 //     goalie_id: null, so a heat map would silently under-count goals.
 //     Shown as an honest "not available" state instead.
 //
-// Props: league {object} (see AHLPlayerPopup.jsx for its shape);
+// Props: league {object} (utils/hockeyTechLeagues.js; reads key, api,
+// config.getTeamById, stats, headshotSize);
 // player {object} -- minimum shape { player_id }; season {number};
 // seasonLabel {string}; onClose.
 import { useState, useMemo } from 'react';
@@ -125,7 +126,7 @@ function HeatMap({ league, playerId, season, isGoalie, teamId }) {
   const [filter, setFilter] = useState('all');
 
   const { data: shotData, loading } = useFetch(
-    () => !isGoalie && playerId ? league.fetchShots(playerId, season) : Promise.resolve(null),
+    () => !isGoalie && playerId ? league.api.fetchPlayerShots(playerId, season) : Promise.resolve(null),
     [playerId, season, isGoalie]
   );
 
@@ -176,8 +177,8 @@ function HeatMap({ league, playerId, season, isGoalie, teamId }) {
   const total = allEvents.length;
   const sh = (goals + sog) > 0 ? ((goals / (goals + sog)) * 100).toFixed(1) : '—';
 
-  const tAbbr = league.getTeamById(teamId)?.abbr || null;
-  const tColor = league.getTeamById(teamId)?.displayColor || 'var(--team-primary)';
+  const tAbbr = league.config.getTeamById(teamId)?.abbr || null;
+  const tColor = league.config.getTeamById(teamId)?.displayColor || 'var(--team-primary)';
 
   return (
     <div className={PP_HEATMAP_CLASSES}>
@@ -212,7 +213,7 @@ function HeatMap({ league, playerId, season, isGoalie, teamId }) {
 function CompareSeasonCard({ league, playerId, season, label, defs }) {
   const { t } = useTranslation();
   const { data: landing, loading } = useFetch(
-    () => playerId ? league.fetchLanding(playerId, season) : Promise.resolve(null),
+    () => playerId ? league.api.fetchPlayerLanding(playerId, season) : Promise.resolve(null),
     [playerId, season]
   );
   const groups = landing ? league.stats.groupStats(defs, landing) : [];
@@ -247,7 +248,7 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
 
   const playerId = initial.player_id;
   const { data: landing, loading: statsLoading } = useFetch(
-    () => playerId ? league.fetchLanding(playerId, season) : Promise.resolve(null),
+    () => playerId ? league.api.fetchPlayerLanding(playerId, season) : Promise.resolve(null),
     [playerId, season]
   );
   const p = { ...initial, ...(landing || {}) };
@@ -256,10 +257,10 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
   const isGoalie = p.position === 'G';
   const defs = isGoalie ? GOALIE_STATS : SKATER_STATS;
   const currentGroups = groupStats(defs, p);
-  const teamColor = league.getTeamById(p.team_id)?.displayColor || '#4d80f0';
+  const teamColor = league.config.getTeamById(p.team_id)?.displayColor || '#4d80f0';
 
   const { data: career } = useFetch(
-    () => playerId ? league.fetchCareer(playerId) : Promise.resolve(null),
+    () => playerId ? league.api.fetchPlayerCareer(playerId) : Promise.resolve(null),
     [playerId]
   );
   const careerRegGroups = groupStats(defs, career?.regularSeason);
@@ -277,7 +278,7 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
 
   const { data: gameLogsBySeason, loading: gameLogLoading } = useFetch(
     () => (compareSeasons.length
-      ? Promise.all(compareSeasons.map(s => league.fetchGameLog(playerId, s)))
+      ? Promise.all(compareSeasons.map(s => league.api.fetchPlayerGameLog(playerId, s)))
       : Promise.resolve([])),
     [playerId, compareSeasons.join(',')]
   );
