@@ -21,6 +21,8 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { capture } from '../../utils/analytics';
 import { useReadState } from '../../hooks/useReadState';
+import MilestonesFeed from '../../components/MilestonesFeed';
+import TriviaFeed from '../../components/TriviaFeed';
 import { formatDate } from '../../utils/formatters';
 import {
   NEWS_VIEW_CLASSES, NEWS_HEADER_CLASSES, NEWS_HEADER_ROW_CLASSES, NEWS_TITLE_CLASSES,
@@ -31,7 +33,7 @@ import {
   NEWS_LOADING_CLASSES, NEWS_SKELETON_CLASSES, SKEL_BADGE_CLASSES, SKEL_TITLE_CLASSES,
   SKEL_TEXT_CLASSES, NEWS_ERROR_CLASSES, NEWS_EMPTY_CLASSES, NEWS_ERROR_ICON_CLASSES,
   NEWS_ERROR_MSG_CLASSES, NEWS_FOOTER_CLASSES, NEWS_PAGINATION_CLASSES, NEWS_PAGE_BTN_CLASSES,
-  NEWS_PAGE_INFO_CLASSES,
+  NEWS_PAGE_INFO_CLASSES, NEWS_VIEW_TOGGLE_CLASSES, newsViewToggleBtnClasses, NEWS_VIEW_TOGGLE_DOT_CLASSES,
 } from '../../utils/newsViewClasses';
 import { PAGE_CLASSES } from '../../utils/pageClasses';
 
@@ -100,11 +102,16 @@ export default function HockeyTechNewsView({ league }) {
   const [error,     setError]     = useState(null);
   const [lastFetch, setLastFetch] = useState(null);
   const [filter,    setFilter]    = useState('all');
+  const [view,      setView]      = useState('news'); // 'news' | 'milestones' | 'trivia'
   const [page,      setPage]      = useState(1);
 
   const fetchingRef = useRef(false);
   const retryRef    = useRef(null);
   const readState   = useReadState();
+  // A tab whose route has nothing (anymore) isn't offered; its view falls
+  // back to News.
+  const activeView = view === 'milestones' && !readState.hasMilestones ? 'news'
+    : view === 'trivia' && !readState.hasTrivia ? 'news' : view;
 
   // `fresh` (the refresh buttons, the retry after an empty answer) skips the
   // browser's cached copy -- see workerCache.js.
@@ -183,83 +190,112 @@ export default function HockeyTechNewsView({ league }) {
 
   return (
     <div className={`${NEWS_VIEW_CLASSES} ${PAGE_CLASSES}`}>
-      <div className={`${NEWS_HEADER_CLASSES} card`}>
-        <div className={NEWS_HEADER_ROW_CLASSES}>
-          <div>
-            <div className={NEWS_TITLE_CLASSES}>{t(`newsView.header.${league.key}News`)}</div>
-            {lastFetch && (
-              <div className={NEWS_UPDATED_CLASSES}>
-                {t('newsView.header.updated', { time: timeAgo(lastFetch.toISOString(), t), count: articles.length })}
+      {/* News / Milestones / Trivia (contract C5): a tab only when its route
+          has something -- a milestone this season, a question today. */}
+      {(readState.hasMilestones || readState.hasTrivia) && (
+        <div className={NEWS_VIEW_TOGGLE_CLASSES}>
+          <button className={newsViewToggleBtnClasses(view === 'news')} onClick={() => { setView('news'); readState.markSeen('news'); }}>
+            {t('nav.news')}{readState.news && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
+          </button>
+          {readState.hasMilestones && (
+            <button className={newsViewToggleBtnClasses(view === 'milestones')}
+              onClick={() => { setView('milestones'); capture('milestones_tab_viewed', { sport: league.key }); readState.markSeen('milestones'); }}>
+              {t('milestonesFeed.header.title')}{readState.milestones && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
+            </button>
+          )}
+          {readState.hasTrivia && (
+            <button className={newsViewToggleBtnClasses(view === 'trivia')}
+              onClick={() => { setView('trivia'); capture('trivia_tab_viewed', { sport: league.key }); }}>
+              {t('newsView.tabs.trivia')}{readState.trivia && <span className={NEWS_VIEW_TOGGLE_DOT_CLASSES} />}
+            </button>
+          )}
+        </div>
+      )}
+
+      {activeView === 'milestones' && <MilestonesFeed sport={league.key} />}
+      {activeView === 'trivia' && <TriviaFeed sport={league.key} />}
+
+      {activeView === 'news' && (
+        <>
+        <div className={`${NEWS_HEADER_CLASSES} card`}>
+          <div className={NEWS_HEADER_ROW_CLASSES}>
+            <div>
+              <div className={NEWS_TITLE_CLASSES}>{t(`newsView.header.${league.key}News`)}</div>
+              {lastFetch && (
+                <div className={NEWS_UPDATED_CLASSES}>
+                  {t('newsView.header.updated', { time: timeAgo(lastFetch.toISOString(), t), count: articles.length })}
+                </div>
+              )}
+            </div>
+            <button className={NEWS_REFRESH_BTN_CLASSES} onClick={() => fetchArticles(false, true)} disabled={loading}
+              aria-label={t('newsView.header.refreshAriaLabel')}>
+              {loading ? '…' : '↻'}
+            </button>
+          </div>
+          <div className={NEWS_FILTER_CHIPS_CLASSES}>
+            {availableSources.map(s => (
+              <button key={s}
+                className={newsChipClasses(filter === s)}
+                onClick={() => { setFilter(s); if (s !== 'all') capture('news_filter_changed', { source: s, sport: league.key }); }}>
+                {s === 'all'
+                  ? t('newsView.header.allSources', { count: articles.length })
+                  : (league.newsSources[s]?.label || s)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {loading && (
+          <div className={NEWS_LOADING_CLASSES}>
+            {[1,2,3,4].map(i => (
+              <div key={i} className={`${NEWS_SKELETON_CLASSES} card`}>
+                <div className={SKEL_BADGE_CLASSES} />
+                <div className={SKEL_TITLE_CLASSES} />
+                <div className={SKEL_TEXT_CLASSES} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className={`${NEWS_ERROR_CLASSES} card`}>
+            <div className={NEWS_ERROR_ICON_CLASSES}>📰</div>
+            <div className={NEWS_ERROR_MSG_CLASSES}>{error}</div>
+            <button className={NEWS_REFRESH_BTN_CLASSES} onClick={() => fetchArticles(false, true)}>{t('triviaFeed.error.tryAgain')}</button>
+          </div>
+        )}
+
+        {!loading && !error && filtered.length === 0 && (
+          <div className={`${NEWS_EMPTY_CLASSES} card`}>
+            <div className={NEWS_ERROR_ICON_CLASSES}>📰</div>
+            <div>{filter !== 'all' ? t('newsView.emptyStateFromSource', { source: league.newsSources[filter]?.label || filter }) : t('newsView.emptyState')}</div>
+          </div>
+        )}
+
+        {!loading && !error && paginated.length > 0 && (
+          <>
+            <div className={NEWS_FEED_CLASSES}>
+              {paginated.map((item, i) => <ArticleCard key={`${item.id}-${i}`} league={league} item={item} />)}
+            </div>
+            {totalPages > 1 && (
+              <div className={NEWS_PAGINATION_CLASSES}>
+                <button className={NEWS_PAGE_BTN_CLASSES}
+                  onClick={() => { setPage(p => p-1); window.scrollTo({ top:0, behavior:'smooth' }); }}
+                  disabled={page === 1}>{t('newsView.pagination.prev')}</button>
+                <span className={NEWS_PAGE_INFO_CLASSES}>{page} / {totalPages}</span>
+                <button className={NEWS_PAGE_BTN_CLASSES}
+                  onClick={() => { setPage(p => p+1); window.scrollTo({ top:0, behavior:'smooth' }); }}
+                  disabled={page === totalPages}>{t('newsView.pagination.next')}</button>
               </div>
             )}
-          </div>
-          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={() => fetchArticles(false, true)} disabled={loading}
-            aria-label={t('newsView.header.refreshAriaLabel')}>
-            {loading ? '…' : '↻'}
-          </button>
-        </div>
-        <div className={NEWS_FILTER_CHIPS_CLASSES}>
-          {availableSources.map(s => (
-            <button key={s}
-              className={newsChipClasses(filter === s)}
-              onClick={() => { setFilter(s); if (s !== 'all') capture('news_filter_changed', { source: s, sport: league.key }); }}>
-              {s === 'all'
-                ? t('newsView.header.allSources', { count: articles.length })
-                : (league.newsSources[s]?.label || s)}
-            </button>
-          ))}
-        </div>
-      </div>
+          </>
+        )}
 
-      {loading && (
-        <div className={NEWS_LOADING_CLASSES}>
-          {[1,2,3,4].map(i => (
-            <div key={i} className={`${NEWS_SKELETON_CLASSES} card`}>
-              <div className={SKEL_BADGE_CLASSES} />
-              <div className={SKEL_TITLE_CLASSES} />
-              <div className={SKEL_TEXT_CLASSES} />
-            </div>
-          ))}
+        <div className={NEWS_FOOTER_CLASSES}>
+          {t(`newsView.footer.${league.key}`)}
         </div>
-      )}
-
-      {!loading && error && (
-        <div className={`${NEWS_ERROR_CLASSES} card`}>
-          <div className={NEWS_ERROR_ICON_CLASSES}>📰</div>
-          <div className={NEWS_ERROR_MSG_CLASSES}>{error}</div>
-          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={() => fetchArticles(false, true)}>{t('triviaFeed.error.tryAgain')}</button>
-        </div>
-      )}
-
-      {!loading && !error && filtered.length === 0 && (
-        <div className={`${NEWS_EMPTY_CLASSES} card`}>
-          <div className={NEWS_ERROR_ICON_CLASSES}>📰</div>
-          <div>{filter !== 'all' ? t('newsView.emptyStateFromSource', { source: league.newsSources[filter]?.label || filter }) : t('newsView.emptyState')}</div>
-        </div>
-      )}
-
-      {!loading && !error && paginated.length > 0 && (
-        <>
-          <div className={NEWS_FEED_CLASSES}>
-            {paginated.map((item, i) => <ArticleCard key={`${item.id}-${i}`} league={league} item={item} />)}
-          </div>
-          {totalPages > 1 && (
-            <div className={NEWS_PAGINATION_CLASSES}>
-              <button className={NEWS_PAGE_BTN_CLASSES}
-                onClick={() => { setPage(p => p-1); window.scrollTo({ top:0, behavior:'smooth' }); }}
-                disabled={page === 1}>{t('newsView.pagination.prev')}</button>
-              <span className={NEWS_PAGE_INFO_CLASSES}>{page} / {totalPages}</span>
-              <button className={NEWS_PAGE_BTN_CLASSES}
-                onClick={() => { setPage(p => p+1); window.scrollTo({ top:0, behavior:'smooth' }); }}
-                disabled={page === totalPages}>{t('newsView.pagination.next')}</button>
-            </div>
-          )}
         </>
       )}
-
-      <div className={NEWS_FOOTER_CLASSES}>
-        {t(`newsView.footer.${league.key}`)}
-      </div>
     </div>
   );
 }

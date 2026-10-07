@@ -55,6 +55,9 @@ export function useReadState() {
   const [news, setNews] = useState({ unseen: false, latestId: null });
   const [milestones, setMilestones] = useState({ unseen: false, latestId: null });
   const [trivia, setTrivia] = useState(false);
+  // Whether today has any trivia question for this sport/team at all --
+  // the AHL/ECHL News view offers its Trivia tab only then.
+  const [hasTrivia, setHasTrivia] = useState(false);
 
   // markSeen reads these instead of closing over `news`/`milestones` state
   // directly. A useCallback depending on that state only gets a fresh
@@ -101,13 +104,9 @@ export function useReadState() {
       // leave previous state — a failed check shouldn't flip the badge off
     }
 
-    // Milestones/trivia have no AHL/ECHL data source at all (no
-    // ahl_milestones.py/echl_milestones.py/trivia_questions.py-equivalent
-    // pipeline exists for either) -- skip these two fetches entirely
-    // rather than hitting routes that only ever badRequest for
-    // sport=ahl/echl. news/latest above is the only one of the three with
-    // a real AHL/ECHL backing (eyewall-poller#73, #80).
-    if (isAHL || isECHL) return;
+    // AHL/ECHL milestones and trivia since 2026-10 (contract C5: the
+    // pipeline's hockeytech_milestones.py and trivia_questions.py --sport
+    // ahl|echl; the routes answer "nothing" until those tables have rows).
 
     try {
       const res = await fetch(`${WORKER_URL}/milestones/latest?sport=${sport}`);
@@ -147,11 +146,12 @@ export function useReadState() {
           return q && !answered[String(q.id)];
         });
         setTrivia(unseen);
+        setHasTrivia(['easy', 'medium', 'hard'].some((tier) => !!data[tier]));
       }
     } catch {
       // leave previous state
     }
-  }, [sport, team, i18n.language, isAHL, isECHL]);
+  }, [sport, team, i18n.language]);
 
   useEffect(() => {
     refresh();
@@ -189,6 +189,10 @@ export function useReadState() {
     milestones: milestones.unseen,
     trivia,
     any: news.unseen || milestones.unseen || trivia,
+    // Whether there's anything to show at all: a milestone this season, a
+    // trivia question today (the AHL/ECHL News view's tabs depend on them).
+    hasMilestones: milestones.latestId != null,
+    hasTrivia,
     markSeen,
   };
 }
