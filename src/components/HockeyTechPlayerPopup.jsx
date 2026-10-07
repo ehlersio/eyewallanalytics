@@ -1,25 +1,41 @@
 // components/HockeyTechPlayerPopup.jsx
-// Player detail popup shared by AHL and ECHL -- same HockeyTech feed, same
-// data depth, same Worker routes (eyewall-poller's hockeytech.js), so the
-// two popups used to be near-copies. AHLPlayerPopup.jsx/ECHLPlayerPopup.jsx
-// now only pass their league config.
+// Player detail popup shared by AHL, ECHL and the PWHL -- same HockeyTech
+// feed and the same Worker route shapes, so the popups used to be
+// near-copies. AHLPlayerPopup.jsx/ECHLPlayerPopup.jsx pass their league
+// object (utils/hockeyTechLeagues.js); PWHLPlayerPopup.jsx passes a PWHL
+// one whose `playerPopup` options switch on the PWHL-only extras.
 //
-// Tabs: Stats, Heat Map, and Compare -- season-over-season, like PWHL's:
-// one stat card per selected season plus a per-game trend chart built from
-// /{league}/player-game-log. Deliberately absent, all real data walls
-// rather than scope choices:
-//   - Percentile radar header / percentile-highlighted tiles -- neither
-//     league has a percentile pipeline.
-//   - "vs Player" comparison entry (PlayerComparisonEntry) -- that
-//     component hardcodes an nhl/pwhl branch throughout.
-//   - Goalie heat map -- both leagues' PBP goal events carry
-//     goalie_id: null, so a heat map would silently under-count goals.
-//     Shown as an honest "not available" state instead.
+// Tabs: Stats, Heat Map, (Scout), Compare -- season-over-season: one stat
+// card per selected season plus a per-game trend chart built from
+// /{league}/player-game-log.
 //
-// Props: league {object} (utils/hockeyTechLeagues.js; reads key, api,
-// config.getTeamById, stats, headshotSize);
-// player {object} -- minimum shape { player_id }; season {number};
-// seasonLabel {string}; onClose.
+// league.playerPopup (absent for AHL/ECHL, so none of these apply there --
+// all real data walls rather than scope choices):
+//   percentiles        fetch league.api.fetchPlayerPercentiles/
+//                      fetchGoaliePercentiles; with HeaderPanel, the header
+//                      reflows around a radar + quick stats and a bio row
+//   HeaderPanel        component({ isGoalie, percentiles, boxStats,
+//                      teamColor, comparisonEntry })
+//   comparisonEntry    show the "vs Player" entry (PlayerComparisonEntry)
+//   birthPlaceField    landing field for the birthplace (default birth_place)
+//   goalieDecision     recent-form decision letter (default W/L only: AHL/
+//                      ECHL game logs have no OT/shootout columns)
+//   formSavePct        recent-form cards show the goalie's SV%
+//   goalieFormLegendKey  i18n key for the goalie recent-form legend
+//   seasonSectionLabelKey  i18n key ({season}) for the current-season
+//                      section; default the season label as-is
+//   pctMap             percentile map for the current-season tiles
+//   GoalieHeatMap      component({ playerId, season }); default a "not
+//                      available" note (AHL/ECHL goal events carry
+//                      goalie_id: null)
+//   shotTypeMap        heat-map shot code -> event type; default g = goal,
+//                      anything else = shot on goal
+//   heatMapFallbackAbbr  rink team when the player's team is unknown
+//   ScoutTab           component({ player, isGoalie, seasonLabel })
+//   compareNoDataKey   i18n key for an empty Compare season card
+//
+// Props: league {object}; player {object} -- minimum shape { player_id };
+// season {number}; seasonLabel {string}; onClose.
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
@@ -34,28 +50,29 @@ import { TileStatSection } from './StatTileGrid';
 import SeasonComparisonPicker from './SeasonComparisonPicker';
 import SeasonOverlayChart from './SeasonOverlayChart';
 import InfoTip from './InfoTip';
+import PlayerComparisonEntry from './PlayerComparisonEntry';
 
 // Reuses PlayerPopup.jsx/PWHLPlayerPopup.jsx's Tailwind class constants
 // verbatim -- same popup-owned-helper convention (duplicate per file
 // rather than cross-import between the NHL/PWHL/HockeyTech component trees).
-const PP_HEATMAP_CLASSES = 'py-3 px-4'
-const PP_HEATMAP_EMPTY_CLASSES = 'pp-heatmap-empty py-8 px-4 text-center text-[color:var(--text-muted)] text-[13px] flex flex-col items-center gap-2'
-const PP_HEATMAP_ICON_CLASSES = 'text-[28px]'
-const PP_HEATMAP_SUB_CLASSES = 'text-[11px] text-[color:var(--text-dim)]'
-const PP_HEATMAP_SUMMARY_CLASSES = 'flex justify-around py-[8px_0_12px] border-b-[0.5px] border-[var(--border)] mb-[10px]'
-const PP_HEATMAP_STAT_CLASSES = 'flex flex-col items-center gap-[2px] text-[10px] text-[color:var(--text-dim)]'
-const PP_HEATMAP_NUM_BASE_CLASSES = 'text-[18px] font-bold font-[family-name:var(--font-mono)]'
-const PP_HEATMAP_NUM_DEFAULT_CLASSES = 'text-[color:var(--text)]'
-const PP_HEATMAP_NUM_GOAL_CLASSES = 'text-[#f87171]'
-const PP_HEATMAP_NUM_SOG_CLASSES = 'text-[#4ade80]'
-const PP_HEATMAP_FILTERS_CLASSES = 'flex gap-[6px] flex-wrap mb-[10px]'
-const PP_HEATMAP_RINK_CLASSES = 'rounded-lg overflow-hidden w-full'
+export const PP_HEATMAP_CLASSES = 'py-3 px-4'
+export const PP_HEATMAP_EMPTY_CLASSES = 'pp-heatmap-empty py-8 px-4 text-center text-[color:var(--text-muted)] text-[13px] flex flex-col items-center gap-2'
+export const PP_HEATMAP_ICON_CLASSES = 'text-[28px]'
+export const PP_HEATMAP_SUB_CLASSES = 'text-[11px] text-[color:var(--text-dim)]'
+export const PP_HEATMAP_SUMMARY_CLASSES = 'flex justify-around py-[8px_0_12px] border-b-[0.5px] border-[var(--border)] mb-[10px]'
+export const PP_HEATMAP_STAT_CLASSES = 'flex flex-col items-center gap-[2px] text-[10px] text-[color:var(--text-dim)]'
+export const PP_HEATMAP_NUM_BASE_CLASSES = 'text-[18px] font-bold font-[family-name:var(--font-mono)]'
+export const PP_HEATMAP_NUM_DEFAULT_CLASSES = 'text-[color:var(--text)]'
+export const PP_HEATMAP_NUM_GOAL_CLASSES = 'text-[#f87171]'
+export const PP_HEATMAP_NUM_SOG_CLASSES = 'text-[#4ade80]'
+export const PP_HEATMAP_FILTERS_CLASSES = 'flex gap-[6px] flex-wrap mb-[10px]'
+export const PP_HEATMAP_RINK_CLASSES = 'rounded-lg overflow-hidden w-full'
 // Selected/unselected are separate, non-overlapping branches (lesson #9):
 // both set a background, so neither may sit on the shared base.
 const HEATMAP_CHIP_BASE_CLASSES = 'py-1 px-[10px] rounded-xl text-[11px] font-semibold leading-none border-[0.5px] border-transparent cursor-pointer'
 const HEATMAP_CHIP_INACTIVE_CLASSES = 'bg-[var(--btn-fill)] text-[color:var(--text-muted)] hover:bg-[var(--btn-fill-hover)]'
 const HEATMAP_CHIP_ACTIVE_CLASSES = 'bg-[var(--red-bright)] text-[#fff]'
-function heatmapChipClasses(active) { return `${HEATMAP_CHIP_BASE_CLASSES} ${active ? HEATMAP_CHIP_ACTIVE_CLASSES : HEATMAP_CHIP_INACTIVE_CLASSES}` }
+export function heatmapChipClasses(active) { return `${HEATMAP_CHIP_BASE_CLASSES} ${active ? HEATMAP_CHIP_ACTIVE_CLASSES : HEATMAP_CHIP_INACTIVE_CLASSES}` }
 
 const PP_PHOTO_CLASSES = 'w-[80px] h-[80px] object-cover object-top rounded-[var(--radius)] bg-[var(--bg3)] border-[0.5px] border-[var(--border-2)]'
 const PP_PHOTO_FALLBACK_CLASSES = 'w-[80px] h-[80px] rounded-[var(--radius)] bg-[var(--bg3)] border-[0.5px] border-[var(--border-2)] flex items-center justify-center font-[family-name:var(--font-display)] text-[24px] font-bold text-[color:var(--text-dim)]'
@@ -86,6 +103,18 @@ function ppTabClasses(active) { return `${PP_TAB_BASE_CLASSES} ${active ? PP_TAB
 const PLAYER_POPUP_CLASSES = 'player-popup bg-[var(--bg1)] border-[0.5px] border-[var(--border-2)] rounded-t-[var(--radius-lg)] w-full max-w-[420px] max-h-[90vh] overflow-y-auto overflow-x-hidden shadow-[0_-8px_40px_rgba(0,0,0,0.5)] animate-[slide-up_0.2s_cubic-bezier(0.34,1.2,0.64,1)] min-[560px]:rounded-[var(--radius-lg)] min-[560px]:animate-[pop-in_0.2s_cubic-bezier(0.34,1.2,0.64,1)]'
 const PP_HEADER_CLASSES = 'pp-header flex items-start gap-[14px] p-4 border-b-[0.5px] border-[var(--border)] [background:linear-gradient(135deg,rgba(204,34,0,0.07)_0%,transparent_55%)] relative'
 const PP_IDENTITY_CLASSES = 'flex-1 min-w-0 flex flex-col gap-1'
+// PWHL header reflow (playerPopup.HeaderPanel) -- same classes as before,
+// in PWHLPlayerPopup.jsx's order.
+const PP_HEADER_BASE_CLASSES = 'pp-header flex p-4 border-b-[0.5px] border-[var(--border)] [background:linear-gradient(135deg,rgba(204,34,0,0.07)_0%,transparent_55%)] relative'
+const PP_HEADER_LAYOUT_DEFAULT_CLASSES = 'items-start gap-[14px]'
+const PP_HEADER_LAYOUT_REFLOW_CLASSES = 'items-center gap-[10px]'
+function ppHeaderClasses(reflow) { return `${PP_HEADER_BASE_CLASSES} ${reflow ? PP_HEADER_LAYOUT_REFLOW_CLASSES : PP_HEADER_LAYOUT_DEFAULT_CLASSES}` }
+const PP_IDENTITY_REFLOW_CLASSES = 'flex-[0_1_84px] min-w-[60px] flex flex-col gap-[3px]'
+const PP_LAST_REFLOW_CLASSES = 'break-words'
+const PP_BIO_ROW_CLASSES = 'grid grid-cols-6 gap-[8px_4px] pt-2.5 pb-3.5 border-b-[0.5px] border-[var(--border)] max-[340px]:grid-cols-3'
+const PP_BIO_FIELD_CLASSES = 'flex flex-col items-center gap-[3px] text-center min-w-0'
+const PP_BIO_LABEL_CLASSES = 'text-[8px] uppercase tracking-[0.06em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] font-semibold'
+const PP_BIO_VALUE_CLASSES = 'text-[11px] font-semibold text-[color:var(--text)] [overflow-wrap:break-word]'
 const PP_NAME_CLASSES = 'pp-name flex flex-col leading-[1.1]'
 const PP_FIRST_CLASSES = 'pp-first text-[12px] text-[color:var(--text-muted)]'
 const PP_CLOSE_CLASSES = 'pp-close absolute top-3 right-3 w-[28px] h-[28px] rounded-full bg-[var(--bg3)] text-[color:var(--text-muted)] text-[12px] flex items-center justify-center [transition:all_0.12s] hover:bg-[var(--bg4)] hover:text-[color:var(--text)]'
@@ -107,6 +136,10 @@ function calcAge(str) {
       (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) age--;
   return age;
 }
+function fmtHeight(inches) {
+  if (!inches) return null;
+  return `${Math.floor(inches / 12)}′${inches % 12}″`;
+}
 
 // Goalie decision letter -- the {league}_game_log tables have no OT/shootout
 // columns, so gameByGame rows (from /{league}/player/career) can't tell an
@@ -125,11 +158,15 @@ function HeatMap({ league, playerId, season, isGoalie, teamId }) {
   const { t } = useTranslation();
   const [filter, setFilter] = useState('all');
 
+  const popup = league.playerPopup || {};
   const { data: shotData, loading } = useFetch(
     () => !isGoalie && playerId ? league.api.fetchPlayerShots(playerId, season) : Promise.resolve(null),
     [playerId, season, isGoalie]
   );
 
+  if (isGoalie && popup.GoalieHeatMap) {
+    return <popup.GoalieHeatMap playerId={playerId} season={season} />;
+  }
   if (isGoalie) {
     return (
       <div className={PP_HEATMAP_EMPTY_CLASSES}>
@@ -162,7 +199,7 @@ function HeatMap({ league, playerId, season, isGoalie, teamId }) {
   const shots = shotData.shots;
   const allEvents = shots.map((s, i) => ({
     id: i, x: s.x, y: s.y,
-    type: s.t === 'g' ? 'goal' : 'shot-on-goal',
+    type: popup.shotTypeMap ? (popup.shotTypeMap[s.t] || 'shot-on-goal') : (s.t === 'g' ? 'goal' : 'shot-on-goal'),
     period: s.p,
     isCanes: true,
     shooterId: 'player',
@@ -177,8 +214,11 @@ function HeatMap({ league, playerId, season, isGoalie, teamId }) {
   const total = allEvents.length;
   const sh = (goals + sog) > 0 ? ((goals / (goals + sog)) * 100).toFixed(1) : '—';
 
-  const tAbbr = league.config.getTeamById(teamId)?.abbr || null;
-  const tColor = league.config.getTeamById(teamId)?.displayColor || 'var(--team-primary)';
+  // The rink's team: the player's, else playerPopup.heatMapFallbackAbbr's
+  // (colored as that team), else TOR's name with the default team color.
+  const team = league.config.getTeamById(teamId);
+  const tAbbr = team?.abbr || popup.heatMapFallbackAbbr || null;
+  const tColor = (popup.heatMapFallbackAbbr ? league.config.getTeamByAbbr(tAbbr) : team)?.displayColor || 'var(--team-primary)';
 
   return (
     <div className={PP_HEATMAP_CLASSES}>
@@ -230,7 +270,7 @@ function CompareSeasonCard({ league, playerId, season, label, defs }) {
     return (
       <div className="stat-section">
         <div className="stat-section-header"><span className="stat-section-label">{label}</span></div>
-        <div className="stat-section-body"><div className={PP_NO_STATS_CLASSES}>{t('playerPopup.compareTab.noData', { label })}</div></div>
+        <div className="stat-section-body"><div className={PP_NO_STATS_CLASSES}>{t(league.playerPopup?.compareNoDataKey || 'playerPopup.compareTab.noData', { label })}</div></div>
       </div>
     );
   }
@@ -258,6 +298,16 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
   const defs = isGoalie ? GOALIE_STATS : SKATER_STATS;
   const currentGroups = groupStats(defs, p);
   const teamColor = league.config.getTeamById(p.team_id)?.displayColor || '#4d80f0';
+
+  const popup = league.playerPopup || {};
+  // League-wide percentiles (PWHL only): drive the radar header and the
+  // current-season tile highlights.
+  const { data: pctData } = useFetch(
+    () => playerId && popup.percentiles
+      ? (isGoalie ? league.api.fetchGoaliePercentiles(playerId, season) : league.api.fetchPlayerPercentiles(playerId, season))
+      : Promise.resolve(null),
+    [playerId, season, isGoalie]
+  );
 
   const { data: career } = useFetch(
     () => playerId ? league.api.fetchPlayerCareer(playerId) : Promise.resolve(null),
@@ -311,14 +361,34 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
   const headshot = p.headshot || `https://assets.leaguestat.com/${league.key}/${league.headshotSize}/${p.player_id}.jpg`;
   const initials = (firstName[0] || '') + (lastName[0] || '');
 
+  // Header reflow: a HeaderPanel league with percentiles in hand gets the
+  // radar + quick stats beside the name and a 6-column bio row under it.
+  const reflow = !!popup.HeaderPanel && !!pctData?.percentiles;
+  const birthPlace = p[popup.birthPlaceField || 'birth_place'];
+  const bioFields = [
+    { label: t('playerPopup.bio.height'),    value: fmtHeight(p.height_inches) },
+    { label: t('playerPopup.bio.weight'),    value: null },
+    { label: isGoalie ? t('playerPopup.bio.catches') : t('playerPopup.bio.shoots'),
+      value: p.shoots ? (p.shoots === 'L' ? t('playerPopup.bio.left') : p.shoots === 'R' ? t('playerPopup.bio.right') : p.shoots) : null },
+    { label: t('playerPopup.bio.age'),       value: p.birth_date ? calcAge(p.birth_date) : null },
+    { label: t('playerPopup.bio.birthdate'), value: p.birth_date ? fmtBirth(p.birth_date) : null },
+    { label: t('playerPopup.bio.hometown'),  value: birthPlace || null },
+  ];
+  // Inline in the header, or stacked in HeaderPanel when it reflows.
+  const comparisonEntry = popup.comparisonEntry ? (
+    <PlayerComparisonEntry
+      sport={league.key}
+      player={{ id: p.player_id, name, team: league.config.getTeamById(p.team_id)?.abbr, position: p.position }}
+    />
+  ) : null;
+  const decide = popup.goalieDecision || goalieDecision;
+
   return (
     <div className="popup-backdrop" onClick={onClose}>
       <div className={PLAYER_POPUP_CLASSES} onClick={e => e.stopPropagation()}>
 
-        {/* ── Header — always the plain identity layout (no percentile-driven
-            radar reflow the way PWHL's/NHL's headers get, since there's no
-            percentile data to drive one) ── */}
-        <div className={PP_HEADER_CLASSES}>
+        {/* ── Header ── */}
+        <div className={popup.HeaderPanel ? ppHeaderClasses(reflow) : PP_HEADER_CLASSES}>
           <div className={PP_PHOTO_WRAP_CLASSES}>
             {!imgErr ? (
               <img src={headshot} alt={name} className={PP_PHOTO_CLASSES} onError={() => setImgErr(true)} />
@@ -326,25 +396,47 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
               <div className={PP_PHOTO_FALLBACK_CLASSES}>{initials}</div>
             )}
           </div>
-          <div className={PP_IDENTITY_CLASSES}>
+          <div className={reflow ? PP_IDENTITY_REFLOW_CLASSES : PP_IDENTITY_CLASSES}>
             {p.jersey_number && <div className={PP_NUM_CLASSES}>#{p.jersey_number}</div>}
             <div className={PP_NAME_CLASSES}>
               <span className={PP_FIRST_CLASSES}>{firstName}</span>
-              <span className={PP_LAST_CLASSES}>{lastName}</span>
+              <span className={popup.HeaderPanel ? `${PP_LAST_CLASSES} ${reflow ? PP_LAST_REFLOW_CLASSES : ''}` : PP_LAST_CLASSES}>{lastName}</span>
             </div>
             <div className={PP_CHIPS_CLASSES}>
               {p.position && <span className={PP_POS_CHIP_CLASSES}>{posLabel(p.position)}</span>}
-              {p.shoots && <span className={PP_CHIP_CLASSES}>{isGoalie ? t('playerPopup.bio.catches') : t('playerPopup.bio.shoots')} {p.shoots === 'L' ? t('playerPopup.bio.left') : p.shoots === 'R' ? t('playerPopup.bio.right') : p.shoots}</span>}
+              {!reflow && p.shoots && <span className={PP_CHIP_CLASSES}>{isGoalie ? t('playerPopup.bio.catches') : t('playerPopup.bio.shoots')} {p.shoots === 'L' ? t('playerPopup.bio.left') : p.shoots === 'R' ? t('playerPopup.bio.right') : p.shoots}</span>}
             </div>
-            {p.birth_date && (
+            {!reflow && p.birth_date && (
               <div className={PP_BIRTH_CLASSES}>
                 {t('playerPopup.bio.birthAge', { birth: fmtBirth(p.birth_date), age: calcAge(p.birth_date) })}
-                {p.birth_place ? ` · ${p.birth_place}` : ''}
+                {birthPlace ? ` · ${birthPlace}` : ''}
               </div>
             )}
           </div>
+          {reflow && (
+            <popup.HeaderPanel
+              isGoalie={isGoalie}
+              percentiles={pctData.percentiles}
+              boxStats={p}
+              teamColor={teamColor}
+              comparisonEntry={comparisonEntry}
+            />
+          )}
+          {!reflow && comparisonEntry}
           <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label={t('common.close')}>✕</button>
         </div>
+
+        {/* ── Bio row — full width, 6 evenly-spaced columns ── */}
+        {reflow && (
+          <div className={PP_BIO_ROW_CLASSES}>
+            {bioFields.map(f => (
+              <div className={PP_BIO_FIELD_CLASSES} key={f.label}>
+                <div className={PP_BIO_LABEL_CLASSES}>{f.label}</div>
+                <div className={PP_BIO_VALUE_CLASSES}>{f.value ?? '—'}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* ── Player Spotlight — draft + bio bullets, from /{league}/player/career
             (already fetched above) ── */}
@@ -382,6 +474,7 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
         <div className={PP_TABS_CLASSES}>
           <button className={ppTabClasses(ppTab === 'stats')} onClick={() => setPpTab('stats')}>{t('playerPopup.tabs.stats')}</button>
           <button className={ppTabClasses(ppTab === 'heatmap')} onClick={() => setPpTab('heatmap')}>{t('playerPopup.tabs.heatMap')}</button>
+          {popup.ScoutTab && <button className={ppTabClasses(ppTab === 'scout')} onClick={() => setPpTab('scout')}>{t('playerPopup.tabs.scout')}</button>}
           <button className={ppTabClasses(ppTab === 'compare')} onClick={() => setPpTab('compare')}>{t('playerPopup.tabs.compare')}</button>
         </div>
 
@@ -399,14 +492,15 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
                   <div>
                     <div className={PP_FORM_LABEL_CLASSES}>
                       {t('playerPopup.recentForm.label')}
-                      <InfoTip text={isGoalie ? t(`${league.key}PlayerPopup.recentForm.legendGoalie`) : t('playerPopup.recentForm.legendSkater')} position="above" />
+                      <InfoTip text={isGoalie ? t(popup.goalieFormLegendKey || `${league.key}PlayerPopup.recentForm.legendGoalie`) : t('playerPopup.recentForm.legendSkater')} position="above" />
                     </div>
                     <div className={PP_FORM_STRIP_CLASSES}>
                       {career.recentGames.map((g, i) => {
-                        const decision = isGoalie ? goalieDecision(g) : null;
+                        const decision = isGoalie ? decide(g) : null;
                         const main = isGoalie
                           ? (decision || '—')
                           : `${g.goals ?? 0}-${g.assists ?? 0}-${g.points ?? 0}`;
+                        const sub = isGoalie && popup.formSavePct ? (g.svpct != null ? g.svpct.toFixed(3) : null) : null;
                         const color = isGoalie
                           ? decisionColor(decision)
                           : ((g.goals ?? 0) + (g.assists ?? 0) > 0 ? 'var(--green)' : 'var(--text-muted)');
@@ -414,6 +508,7 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
                           <div key={i} className={PP_FORM_CARD_CLASSES}>
                             <span className="text-[9px] text-[color:var(--text-dim)] whitespace-nowrap">{g.game}</span>
                             <span className="text-[13px] font-bold font-[family-name:var(--font-mono)]" style={{ color }}>{main}</span>
+                            {sub && <span className="text-[8px] text-[color:var(--text-dim)]">{sub}</span>}
                           </div>
                         );
                       })}
@@ -429,9 +524,10 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
                       // playoff label (both leagues' live current season
                       // is a playoff id for most of the offseason; see
                       // ahlConfig.js's AHL_REGULAR_SEASON_MAP comment).
-                      label={seasonLabel}
+                      label={popup.seasonSectionLabelKey ? t(popup.seasonSectionLabelKey, { season: seasonLabel }) : seasonLabel}
                       groups={currentGroups}
                       highlight
+                      {...(popup.pctMap ? { percentiles: !isGoalie ? pctData?.percentiles : undefined, pctMap: popup.pctMap } : {})}
                     />
                   : <div className={PP_NO_STATS_CLASSES}>{t('playerPopup.bio.noStats')}</div>}
                 {(careerRegGroups.length > 0 || careerPOGroups.length > 0) && (
@@ -448,6 +544,11 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
         {/* ── Heat map tab ── */}
         {ppTab === 'heatmap' && (
           <HeatMap league={league} playerId={p.player_id} season={season} isGoalie={isGoalie} teamId={p.team_id} />
+        )}
+
+        {/* ── Scout tab ── */}
+        {ppTab === 'scout' && popup.ScoutTab && (
+          <popup.ScoutTab player={p} isGoalie={isGoalie} seasonLabel={seasonLabel} />
         )}
 
         {/* ── Compare tab — season-over-season ── */}
