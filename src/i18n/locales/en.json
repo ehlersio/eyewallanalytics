@@ -197,6 +197,7 @@
     "checkYourEmailDesc": "We sent a sign-in link to <strong>{{email}}</strong>. Open it on this device to finish signing in.",
     "useDifferentEmail": "Use a different email",
     "signOut": "Sign out",
+    "adminHealth": "Admin health",
     "synced": "Synced",
     "errorGeneric": "Could not send sign-in link. Try again.",
     "deleteAccount": "Delete account",

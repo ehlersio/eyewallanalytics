@@ -197,6 +197,7 @@
     "checkYourEmailDesc": "Nous avons envoyé un lien de connexion à <strong>{{email}}</strong>. Ouvrez-le sur cet appareil pour terminer la connexion.",
     "useDifferentEmail": "Utiliser un autre courriel",
     "signOut": "Se déconnecter",
+    "adminHealth": "État du système",
     "synced": "Synchronisé",
     "errorGeneric": "Impossible d'envoyer le lien de connexion. Réessayez.",
     "deleteAccount": "Supprimer le compte",
