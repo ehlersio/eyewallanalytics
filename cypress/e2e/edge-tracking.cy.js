@@ -51,6 +51,16 @@ describe('NHL EDGE tracking section', () => {
 describe('Goalie shot-area map (Analytics tab)', () => {
   // fixtures/edge-goalie.json: a real 39-GP response (Blackwood 2025-26)
   // with the NHL's per-area numbers (`areas`).
+  //
+  // The Worker's /goalie-analytics is stubbed too
+  // (fixtures/goalie-analytics-car-2025-26.json: the real 2025-26 response,
+  // CAR goalies only). Live, it changes every game night and the dev
+  // server's StrictMode fetches it twice: when the second copy landed after
+  // the first was waited on, the tab re-laid itself out mid-test and
+  // dropped the tapped area (flaky on #472, 2026-10-07).
+  beforeEach(() => {
+    cy.intercept('GET', '**/goalie-analytics*', { fixture: 'goalie-analytics-car-2025-26.json' }).as('goalieAnalytics')
+  })
   const openGoalieAnalytics = () => {
     cy.setTeam('CAR')
     cy.visit('/players')
@@ -61,12 +71,13 @@ describe('Goalie shot-area map (Analytics tab)', () => {
 
   it('shows save % by NHL shot area, colored by percentile, tappable', () => {
     cy.intercept('GET', '**/nhl/edge/goalie/**', { fixture: 'edge-goalie.json' }).as('edge')
-    // The tab re-lays itself out when the MoneyPuck goalie data lands, which
-    // remounts the map and clears a tapped area -- let it land first
-    cy.intercept('GET', '**/goalie-analytics*').as('goalieAnalytics')
     openGoalieAnalytics()
     cy.wait('@edge')
     cy.wait('@goalieAnalytics')
+    // The tab re-lays itself out when the MoneyPuck goalie data lands, which
+    // remounts the map and clears a tapped area: interact only once the
+    // data layout (its GSAx card) is on screen.
+    cy.contains('Goals saved above expected', { timeout: DATA_TIMEOUT }).should('be.visible')
     cy.get('[data-testid="edge-tracking"] [data-testid="goalie-area-map"]', { timeout: DATA_TIMEOUT }).within(() => {
       cy.get('path.rhr-area').should('have.length', 17)
       // Low Slot: 229 shots, .825, 61st percentile -> the middle color

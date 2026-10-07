@@ -1,0 +1,1314 @@
+{
+  "2025030111": {
+    "id": 2025030111,
+    "gameState": "OFF",
+    "gameDate": "2026-04-19",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "BOS",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "BUF",
+      "score": 4
+    }
+  },
+  "2025030112": {
+    "id": 2025030112,
+    "gameState": "OFF",
+    "gameDate": "2026-04-21",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "BOS",
+      "score": 4
+    },
+    "homeTeam": {
+      "abbrev": "BUF",
+      "score": 2
+    }
+  },
+  "2025030113": {
+    "id": 2025030113,
+    "gameState": "OFF",
+    "gameDate": "2026-04-23",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "BUF",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "BOS",
+      "score": 1
+    }
+  },
+  "2025030114": {
+    "id": 2025030114,
+    "gameState": "OFF",
+    "gameDate": "2026-04-26",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "BUF",
+      "score": 6
+    },
+    "homeTeam": {
+      "abbrev": "BOS",
+      "score": 1
+    }
+  },
+  "2025030115": {
+    "id": 2025030115,
+    "gameState": "OFF",
+    "gameDate": "2026-04-28",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "BOS",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "BUF",
+      "score": 1
+    }
+  },
+  "2025030116": {
+    "id": 2025030116,
+    "gameState": "OFF",
+    "gameDate": "2026-05-01",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "BUF",
+      "score": 4
+    },
+    "homeTeam": {
+      "abbrev": "BOS",
+      "score": 1
+    }
+  },
+  "2025030121": {
+    "id": 2025030121,
+    "gameState": "OFF",
+    "gameDate": "2026-04-19",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "MTL",
+      "score": 4
+    },
+    "homeTeam": {
+      "abbrev": "TBL",
+      "score": 3
+    }
+  },
+  "2025030122": {
+    "id": 2025030122,
+    "gameState": "OFF",
+    "gameDate": "2026-04-21",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "MTL",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "TBL",
+      "score": 3
+    }
+  },
+  "2025030123": {
+    "id": 2025030123,
+    "gameState": "OFF",
+    "gameDate": "2026-04-24",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "TBL",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "MTL",
+      "score": 3
+    }
+  },
+  "2025030124": {
+    "id": 2025030124,
+    "gameState": "OFF",
+    "gameDate": "2026-04-26",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "TBL",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "MTL",
+      "score": 2
+    }
+  },
+  "2025030125": {
+    "id": 2025030125,
+    "gameState": "OFF",
+    "gameDate": "2026-04-29",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "MTL",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "TBL",
+      "score": 2
+    }
+  },
+  "2025030126": {
+    "id": 2025030126,
+    "gameState": "OFF",
+    "gameDate": "2026-05-01",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "TBL",
+      "score": 1
+    },
+    "homeTeam": {
+      "abbrev": "MTL",
+      "score": 0
+    }
+  },
+  "2025030127": {
+    "id": 2025030127,
+    "gameState": "OFF",
+    "gameDate": "2026-05-03",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "MTL",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "TBL",
+      "score": 1
+    }
+  },
+  "2025030131": {
+    "id": 2025030131,
+    "gameState": "OFF",
+    "gameDate": "2026-04-18",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "OTT",
+      "score": 0
+    },
+    "homeTeam": {
+      "abbrev": "CAR",
+      "score": 2
+    }
+  },
+  "2025030132": {
+    "id": 2025030132,
+    "gameState": "OFF",
+    "gameDate": "2026-04-20",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "OTT",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "CAR",
+      "score": 3
+    }
+  },
+  "2025030133": {
+    "id": 2025030133,
+    "gameState": "OFF",
+    "gameDate": "2026-04-23",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "CAR",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "OTT",
+      "score": 1
+    }
+  },
+  "2025030134": {
+    "id": 2025030134,
+    "gameState": "OFF",
+    "gameDate": "2026-04-25",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "CAR",
+      "score": 4
+    },
+    "homeTeam": {
+      "abbrev": "OTT",
+      "score": 2
+    }
+  },
+  "2025030141": {
+    "id": 2025030141,
+    "gameState": "OFF",
+    "gameDate": "2026-04-18",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "PHI",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "PIT",
+      "score": 2
+    }
+  },
+  "2025030142": {
+    "id": 2025030142,
+    "gameState": "OFF",
+    "gameDate": "2026-04-20",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "PHI",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "PIT",
+      "score": 0
+    }
+  },
+  "2025030143": {
+    "id": 2025030143,
+    "gameState": "OFF",
+    "gameDate": "2026-04-22",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "PIT",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "PHI",
+      "score": 5
+    }
+  },
+  "2025030144": {
+    "id": 2025030144,
+    "gameState": "OFF",
+    "gameDate": "2026-04-25",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "PIT",
+      "score": 4
+    },
+    "homeTeam": {
+      "abbrev": "PHI",
+      "score": 2
+    }
+  },
+  "2025030145": {
+    "id": 2025030145,
+    "gameState": "OFF",
+    "gameDate": "2026-04-27",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "PHI",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "PIT",
+      "score": 3
+    }
+  },
+  "2025030146": {
+    "id": 2025030146,
+    "gameState": "OFF",
+    "gameDate": "2026-04-29",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "PIT",
+      "score": 0
+    },
+    "homeTeam": {
+      "abbrev": "PHI",
+      "score": 1
+    }
+  },
+  "2025030151": {
+    "id": 2025030151,
+    "gameState": "OFF",
+    "gameDate": "2026-04-19",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "LAK",
+      "score": 1
+    },
+    "homeTeam": {
+      "abbrev": "COL",
+      "score": 2
+    }
+  },
+  "2025030152": {
+    "id": 2025030152,
+    "gameState": "OFF",
+    "gameDate": "2026-04-21",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "LAK",
+      "score": 1
+    },
+    "homeTeam": {
+      "abbrev": "COL",
+      "score": 2
+    }
+  },
+  "2025030153": {
+    "id": 2025030153,
+    "gameState": "OFF",
+    "gameDate": "2026-04-23",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "COL",
+      "score": 4
+    },
+    "homeTeam": {
+      "abbrev": "LAK",
+      "score": 2
+    }
+  },
+  "2025030154": {
+    "id": 2025030154,
+    "gameState": "OFF",
+    "gameDate": "2026-04-26",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "COL",
+      "score": 5
+    },
+    "homeTeam": {
+      "abbrev": "LAK",
+      "score": 1
+    }
+  },
+  "2025030161": {
+    "id": 2025030161,
+    "gameState": "OFF",
+    "gameDate": "2026-04-18",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "MIN",
+      "score": 6
+    },
+    "homeTeam": {
+      "abbrev": "DAL",
+      "score": 1
+    }
+  },
+  "2025030162": {
+    "id": 2025030162,
+    "gameState": "OFF",
+    "gameDate": "2026-04-20",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "MIN",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "DAL",
+      "score": 4
+    }
+  },
+  "2025030163": {
+    "id": 2025030163,
+    "gameState": "OFF",
+    "gameDate": "2026-04-22",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "DAL",
+      "score": 4
+    },
+    "homeTeam": {
+      "abbrev": "MIN",
+      "score": 3
+    }
+  },
+  "2025030164": {
+    "id": 2025030164,
+    "gameState": "OFF",
+    "gameDate": "2026-04-25",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "DAL",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "MIN",
+      "score": 3
+    }
+  },
+  "2025030165": {
+    "id": 2025030165,
+    "gameState": "OFF",
+    "gameDate": "2026-04-28",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "MIN",
+      "score": 4
+    },
+    "homeTeam": {
+      "abbrev": "DAL",
+      "score": 2
+    }
+  },
+  "2025030166": {
+    "id": 2025030166,
+    "gameState": "OFF",
+    "gameDate": "2026-04-30",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "DAL",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "MIN",
+      "score": 5
+    }
+  },
+  "2025030171": {
+    "id": 2025030171,
+    "gameState": "OFF",
+    "gameDate": "2026-04-19",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "UTA",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "VGK",
+      "score": 4
+    }
+  },
+  "2025030172": {
+    "id": 2025030172,
+    "gameState": "OFF",
+    "gameDate": "2026-04-21",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "UTA",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "VGK",
+      "score": 2
+    }
+  },
+  "2025030173": {
+    "id": 2025030173,
+    "gameState": "OFF",
+    "gameDate": "2026-04-24",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "VGK",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "UTA",
+      "score": 4
+    }
+  },
+  "2025030174": {
+    "id": 2025030174,
+    "gameState": "OFF",
+    "gameDate": "2026-04-27",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "VGK",
+      "score": 5
+    },
+    "homeTeam": {
+      "abbrev": "UTA",
+      "score": 4
+    }
+  },
+  "2025030175": {
+    "id": 2025030175,
+    "gameState": "OFF",
+    "gameDate": "2026-04-29",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "UTA",
+      "score": 4
+    },
+    "homeTeam": {
+      "abbrev": "VGK",
+      "score": 5
+    }
+  },
+  "2025030176": {
+    "id": 2025030176,
+    "gameState": "OFF",
+    "gameDate": "2026-05-01",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "VGK",
+      "score": 5
+    },
+    "homeTeam": {
+      "abbrev": "UTA",
+      "score": 1
+    }
+  },
+  "2025030181": {
+    "id": 2025030181,
+    "gameState": "OFF",
+    "gameDate": "2026-04-20",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "ANA",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "EDM",
+      "score": 4
+    }
+  },
+  "2025030182": {
+    "id": 2025030182,
+    "gameState": "OFF",
+    "gameDate": "2026-04-22",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "ANA",
+      "score": 6
+    },
+    "homeTeam": {
+      "abbrev": "EDM",
+      "score": 4
+    }
+  },
+  "2025030183": {
+    "id": 2025030183,
+    "gameState": "OFF",
+    "gameDate": "2026-04-24",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "EDM",
+      "score": 4
+    },
+    "homeTeam": {
+      "abbrev": "ANA",
+      "score": 7
+    }
+  },
+  "2025030184": {
+    "id": 2025030184,
+    "gameState": "OFF",
+    "gameDate": "2026-04-26",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "EDM",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "ANA",
+      "score": 4
+    }
+  },
+  "2025030185": {
+    "id": 2025030185,
+    "gameState": "OFF",
+    "gameDate": "2026-04-28",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "ANA",
+      "score": 1
+    },
+    "homeTeam": {
+      "abbrev": "EDM",
+      "score": 4
+    }
+  },
+  "2025030186": {
+    "id": 2025030186,
+    "gameState": "OFF",
+    "gameDate": "2026-04-30",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "EDM",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "ANA",
+      "score": 5
+    }
+  },
+  "2025030211": {
+    "id": 2025030211,
+    "gameState": "OFF",
+    "gameDate": "2026-05-06",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "MTL",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "BUF",
+      "score": 4
+    }
+  },
+  "2025030212": {
+    "id": 2025030212,
+    "gameState": "OFF",
+    "gameDate": "2026-05-08",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "MTL",
+      "score": 5
+    },
+    "homeTeam": {
+      "abbrev": "BUF",
+      "score": 1
+    }
+  },
+  "2025030213": {
+    "id": 2025030213,
+    "gameState": "OFF",
+    "gameDate": "2026-05-10",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "BUF",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "MTL",
+      "score": 6
+    }
+  },
+  "2025030214": {
+    "id": 2025030214,
+    "gameState": "OFF",
+    "gameDate": "2026-05-12",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "BUF",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "MTL",
+      "score": 2
+    }
+  },
+  "2025030215": {
+    "id": 2025030215,
+    "gameState": "OFF",
+    "gameDate": "2026-05-14",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "MTL",
+      "score": 6
+    },
+    "homeTeam": {
+      "abbrev": "BUF",
+      "score": 3
+    }
+  },
+  "2025030216": {
+    "id": 2025030216,
+    "gameState": "OFF",
+    "gameDate": "2026-05-16",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "BUF",
+      "score": 8
+    },
+    "homeTeam": {
+      "abbrev": "MTL",
+      "score": 3
+    }
+  },
+  "2025030217": {
+    "id": 2025030217,
+    "gameState": "OFF",
+    "gameDate": "2026-05-18",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "MTL",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "BUF",
+      "score": 2
+    }
+  },
+  "2025030221": {
+    "id": 2025030221,
+    "gameState": "OFF",
+    "gameDate": "2026-05-02",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "PHI",
+      "score": 0
+    },
+    "homeTeam": {
+      "abbrev": "CAR",
+      "score": 3
+    }
+  },
+  "2025030222": {
+    "id": 2025030222,
+    "gameState": "OFF",
+    "gameDate": "2026-05-04",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "PHI",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "CAR",
+      "score": 3
+    }
+  },
+  "2025030223": {
+    "id": 2025030223,
+    "gameState": "OFF",
+    "gameDate": "2026-05-07",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "CAR",
+      "score": 4
+    },
+    "homeTeam": {
+      "abbrev": "PHI",
+      "score": 1
+    }
+  },
+  "2025030224": {
+    "id": 2025030224,
+    "gameState": "OFF",
+    "gameDate": "2026-05-09",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "CAR",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "PHI",
+      "score": 2
+    }
+  },
+  "2025030231": {
+    "id": 2025030231,
+    "gameState": "OFF",
+    "gameDate": "2026-05-03",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "MIN",
+      "score": 6
+    },
+    "homeTeam": {
+      "abbrev": "COL",
+      "score": 9
+    }
+  },
+  "2025030232": {
+    "id": 2025030232,
+    "gameState": "OFF",
+    "gameDate": "2026-05-05",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "MIN",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "COL",
+      "score": 5
+    }
+  },
+  "2025030233": {
+    "id": 2025030233,
+    "gameState": "OFF",
+    "gameDate": "2026-05-09",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "COL",
+      "score": 1
+    },
+    "homeTeam": {
+      "abbrev": "MIN",
+      "score": 5
+    }
+  },
+  "2025030234": {
+    "id": 2025030234,
+    "gameState": "OFF",
+    "gameDate": "2026-05-11",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "COL",
+      "score": 5
+    },
+    "homeTeam": {
+      "abbrev": "MIN",
+      "score": 2
+    }
+  },
+  "2025030235": {
+    "id": 2025030235,
+    "gameState": "OFF",
+    "gameDate": "2026-05-13",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "MIN",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "COL",
+      "score": 4
+    }
+  },
+  "2025030241": {
+    "id": 2025030241,
+    "gameState": "OFF",
+    "gameDate": "2026-05-04",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "ANA",
+      "score": 1
+    },
+    "homeTeam": {
+      "abbrev": "VGK",
+      "score": 3
+    }
+  },
+  "2025030242": {
+    "id": 2025030242,
+    "gameState": "OFF",
+    "gameDate": "2026-05-06",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "ANA",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "VGK",
+      "score": 1
+    }
+  },
+  "2025030243": {
+    "id": 2025030243,
+    "gameState": "OFF",
+    "gameDate": "2026-05-08",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "VGK",
+      "score": 6
+    },
+    "homeTeam": {
+      "abbrev": "ANA",
+      "score": 2
+    }
+  },
+  "2025030244": {
+    "id": 2025030244,
+    "gameState": "OFF",
+    "gameDate": "2026-05-10",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "VGK",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "ANA",
+      "score": 4
+    }
+  },
+  "2025030245": {
+    "id": 2025030245,
+    "gameState": "OFF",
+    "gameDate": "2026-05-12",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "ANA",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "VGK",
+      "score": 3
+    }
+  },
+  "2025030246": {
+    "id": 2025030246,
+    "gameState": "OFF",
+    "gameDate": "2026-05-14",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "VGK",
+      "score": 5
+    },
+    "homeTeam": {
+      "abbrev": "ANA",
+      "score": 1
+    }
+  },
+  "2025030311": {
+    "id": 2025030311,
+    "gameState": "OFF",
+    "gameDate": "2026-05-21",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "MTL",
+      "score": 6
+    },
+    "homeTeam": {
+      "abbrev": "CAR",
+      "score": 2
+    }
+  },
+  "2025030312": {
+    "id": 2025030312,
+    "gameState": "OFF",
+    "gameDate": "2026-05-23",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "MTL",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "CAR",
+      "score": 3
+    }
+  },
+  "2025030313": {
+    "id": 2025030313,
+    "gameState": "OFF",
+    "gameDate": "2026-05-25",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "CAR",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "MTL",
+      "score": 2
+    }
+  },
+  "2025030314": {
+    "id": 2025030314,
+    "gameState": "OFF",
+    "gameDate": "2026-05-27",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "CAR",
+      "score": 4
+    },
+    "homeTeam": {
+      "abbrev": "MTL",
+      "score": 0
+    }
+  },
+  "2025030315": {
+    "id": 2025030315,
+    "gameState": "OFF",
+    "gameDate": "2026-05-29",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "MTL",
+      "score": 1
+    },
+    "homeTeam": {
+      "abbrev": "CAR",
+      "score": 6
+    }
+  },
+  "2025030321": {
+    "id": 2025030321,
+    "gameState": "OFF",
+    "gameDate": "2026-05-20",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "VGK",
+      "score": 4
+    },
+    "homeTeam": {
+      "abbrev": "COL",
+      "score": 2
+    }
+  },
+  "2025030322": {
+    "id": 2025030322,
+    "gameState": "OFF",
+    "gameDate": "2026-05-22",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "VGK",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "COL",
+      "score": 1
+    }
+  },
+  "2025030323": {
+    "id": 2025030323,
+    "gameState": "OFF",
+    "gameDate": "2026-05-24",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "COL",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "VGK",
+      "score": 5
+    }
+  },
+  "2025030324": {
+    "id": 2025030324,
+    "gameState": "OFF",
+    "gameDate": "2026-05-26",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "COL",
+      "score": 1
+    },
+    "homeTeam": {
+      "abbrev": "VGK",
+      "score": 2
+    }
+  },
+  "2025030411": {
+    "id": 2025030411,
+    "gameState": "OFF",
+    "gameDate": "2026-06-02",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "VGK",
+      "score": 5
+    },
+    "homeTeam": {
+      "abbrev": "CAR",
+      "score": 4
+    }
+  },
+  "2025030412": {
+    "id": 2025030412,
+    "gameState": "OFF",
+    "gameDate": "2026-06-04",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "VGK",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "CAR",
+      "score": 4
+    }
+  },
+  "2025030413": {
+    "id": 2025030413,
+    "gameState": "OFF",
+    "gameDate": "2026-06-06",
+    "periodDescriptor": {
+      "periodType": "OT"
+    },
+    "awayTeam": {
+      "abbrev": "CAR",
+      "score": 4
+    },
+    "homeTeam": {
+      "abbrev": "VGK",
+      "score": 5
+    }
+  },
+  "2025030414": {
+    "id": 2025030414,
+    "gameState": "OFF",
+    "gameDate": "2026-06-09",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "CAR",
+      "score": 5
+    },
+    "homeTeam": {
+      "abbrev": "VGK",
+      "score": 3
+    }
+  },
+  "2025030415": {
+    "id": 2025030415,
+    "gameState": "OFF",
+    "gameDate": "2026-06-11",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "VGK",
+      "score": 2
+    },
+    "homeTeam": {
+      "abbrev": "CAR",
+      "score": 4
+    }
+  },
+  "2025030416": {
+    "id": 2025030416,
+    "gameState": "OFF",
+    "gameDate": "2026-06-14",
+    "periodDescriptor": {
+      "periodType": "REG"
+    },
+    "awayTeam": {
+      "abbrev": "CAR",
+      "score": 3
+    },
+    "homeTeam": {
+      "abbrev": "VGK",
+      "score": 0
+    }
+  }
+}

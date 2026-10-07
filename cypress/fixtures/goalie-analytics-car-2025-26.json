@@ -1,0 +1,89 @@
+{
+  "rows": [
+    {
+      "player_id": 8483548,
+      "team": "CAR",
+      "games_played": 39,
+      "gsax": -1.75,
+      "gsax_per60": -0.044,
+      "qs_pct": 0.4359,
+      "qs": 17,
+      "ev_sv_pct": 0.9063,
+      "hd_sv_pct": 0.787,
+      "md_sv_pct": 0.8562,
+      "pk_sv_pct": 0.8131,
+      "pct_gsax": 58,
+      "pct_gsax60": 60,
+      "pct_ev_sv": 57,
+      "pct_hd_sv": 67,
+      "pct_md_sv": 26,
+      "pct_pk_sv": 12
+    },
+    {
+      "player_id": 8481611,
+      "team": "CAR",
+      "games_played": 9,
+      "gsax": -0.86,
+      "gsax_per60": -0.105,
+      "qs_pct": 0.375,
+      "qs": 3,
+      "ev_sv_pct": 0.8973,
+      "hd_sv_pct": 0.6842,
+      "md_sv_pct": 0.8182,
+      "pk_sv_pct": 0.8889,
+      "pct_gsax": 62,
+      "pct_gsax60": 54,
+      "pct_ev_sv": 33,
+      "pct_hd_sv": 6,
+      "pct_md_sv": 3,
+      "pct_pk_sv": 83
+    },
+    {
+      "player_id": 8475883,
+      "team": "CAR",
+      "games_played": 35,
+      "gsax": -8.78,
+      "gsax_per60": -0.251,
+      "qs_pct": 0.2571,
+      "qs": 9,
+      "ev_sv_pct": 0.8818,
+      "hd_sv_pct": 0.7522,
+      "md_sv_pct": 0.8576,
+      "pk_sv_pct": 0.8468,
+      "pct_gsax": 36,
+      "pct_gsax60": 39,
+      "pct_ev_sv": 7,
+      "pct_hd_sv": 33,
+      "pct_md_sv": 28,
+      "pct_pk_sv": 36
+    }
+  ],
+  "poRows": [
+    {
+      "player_id": 8483548,
+      "games_played": 4,
+      "gsax": 4.99,
+      "gsax_per60": 1.328,
+      "qs_pct": 0.75,
+      "qs": 3,
+      "ev_sv_pct": 0.9167,
+      "hd_sv_pct": 0.8333,
+      "md_sv_pct": 0.973,
+      "pk_sv_pct": 0.9375
+    },
+    {
+      "player_id": 8475883,
+      "games_played": 16,
+      "gsax": 4.56,
+      "gsax_per60": 0.27,
+      "qs_pct": 0.5625,
+      "qs": 9,
+      "ev_sv_pct": 0.9164,
+      "hd_sv_pct": 0.7907,
+      "md_sv_pct": 0.8571,
+      "pk_sv_pct": 0.8684
+    }
+  ],
+  "statsStale": false,
+  "statsSeason": null
+}

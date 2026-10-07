@@ -49,8 +49,28 @@
       "duration": 9751
     },
     {
-      "spec": "cypress/e2e/hockeytech-routes.cy.js",
-      "duration": 52000
+      "spec": "cypress/e2e/hockeytech-league.cy.js",
+      "duration": 4000
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-schedule.cy.js",
+      "duration": 20000
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-players.cy.js",
+      "duration": 3000
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-team.cy.js",
+      "duration": 3000
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-news.cy.js",
+      "duration": 3000
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-shots.cy.js",
+      "duration": 20000
     },
     {
       "spec": "cypress/e2e/hockeytech-season-pickers.cy.js",
