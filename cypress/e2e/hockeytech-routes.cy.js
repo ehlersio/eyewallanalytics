@@ -103,6 +103,14 @@ LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter, upcoming }
       cy.get('.pgs-card').should('exist')
       cy.get('.pbs-row', { timeout: DATA_TIMEOUT }).should('have.length.at.least', 5)
       cy.get('.pbs-goalie-row').should('have.length.at.least', 1)
+      // HockeyTechGameStatsPopup around it: league logos in the header,
+      // period scoring, and the opponent toggle swaps the table.
+      cy.get('.pgs-header').find(`img[src*="/${key}/logos/"]`).should('have.length', 2)
+      cy.get('.pgs-period-row', { timeout: DATA_TIMEOUT }).should('have.length', 3)
+      cy.get('.pbs-row').first().invoke('text').then(first => {
+        cy.get('.pgs-toggle-btn').eq(1).click()
+        cy.get('.pbs-row').first().invoke('text').should('not.eq', first)
+      })
       assertNoLoadFailure()
     })
 
