@@ -17,6 +17,7 @@ import {
   getPWHLSeasonLabel, pwhlSeasonsReady,
 } from '../utils/pwhlConfig';
 import TeamLogo from '../components/TeamLogo';
+import WinProbChip from '../components/WinProbChip';
 import PWHLGameStatsPopup from '../components/PWHLGameStatsPopup';
 import PWHLGamePreviewPopup from '../components/PWHLGamePreviewPopup';
 import { PAGE_CLASSES } from '../utils/pageClasses';
@@ -889,7 +890,12 @@ function UpcomingCard({ game: g, teamId, abbr, color, isPlayoff, isPreseason, on
         <span className="result-abbr muted">{oppAbbr}</span>
         <TeamLogo abbr={oppAbbr} sport="pwhl" size={20} color={oppColor} />
       </div>
-      {onClick && <span className="result-tap-hint" style={{ marginTop: 6, display: 'inline-block' }}>{t('pwhlScheduleView.upcomingCard.tapForPreview')}</span>}
+      {(onClick || g.winProb) && (
+        <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <WinProbChip winProb={g.winProb} isHome={isHome} abbr={abbr} oppAbbr={oppAbbr} />
+          {onClick && <span className="result-tap-hint" style={{ display: 'inline-block' }}>{t('pwhlScheduleView.upcomingCard.tapForPreview')}</span>}
+        </div>
+      )}
     </div>
   );
 }

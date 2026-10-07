@@ -29,6 +29,7 @@ import HockeyTechCalendarView from '../../components/hockeytech/HockeyTechCalend
 import HockeyTechGameStatsPopup from '../../components/hockeytech/HockeyTechGameStatsPopup';
 import HockeyTechGamePreviewPopup from '../../components/hockeytech/HockeyTechGamePreviewPopup';
 import TeamLogo from '../../components/TeamLogo';
+import WinProbChip from '../../components/WinProbChip';
 import { PAGE_CLASSES } from '../../utils/pageClasses';
 import { SKELETON_CLASSES } from '../../utils/skeletonClasses';
 import { finalSuffix } from '../../utils/scoreboard';
@@ -223,7 +224,10 @@ export function GameCard({ league, game: g, teamId, abbr, onClick }) {
         <TeamLogo abbr={oppAbbr} sport={league.key} size={20} />
       </div>
       {!isFinal && (
-        <span className="text-[10px] text-[color:var(--text-dim)] mt-1.5 inline-block">{t('pwhlScheduleView.upcomingCard.tapForPreview')}</span>
+        <div className="flex items-center gap-2 mt-1.5">
+          <WinProbChip winProb={g.winProb} isHome={isHome} abbr={abbr} oppAbbr={oppAbbr} />
+          <span className="text-[10px] text-[color:var(--text-dim)] inline-block">{t('pwhlScheduleView.upcomingCard.tapForPreview')}</span>
+        </div>
       )}
     </div>
   );

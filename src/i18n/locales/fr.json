@@ -1349,6 +1349,9 @@
       "broadcastTitle": "Où regarder"
     }
   },
+  "winProbChip": {
+    "title": "Probabilité de victoire Elo : {{team}}, {{pct}} %"
+  },
   "calendarView": {
     "legend": {
       "win": "Victoire",

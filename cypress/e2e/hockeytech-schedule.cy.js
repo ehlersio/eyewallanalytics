@@ -20,6 +20,41 @@ LEAGUES.forEach(({ key, label, team, teamName, upcoming, final }) => {
       assertNoLoadFailure()
     })
 
+    // The Elo chip (contract C6): the Worker's schedule rows carry `winProb`
+    // only where {league}_game_win_probs has a row, so one upcoming game is
+    // given one and every other row's is removed. The browser cache is off
+    // for the test: a cached schedule never reaches the intercept.
+    it(`/${key}/schedule shows the Elo win-probability chip only on games with a win probability`, () => {
+      const workerUrl = Cypress.expose('WORKER_URL')
+      if (Cypress.isBrowser({ family: 'chromium' })) {
+        cy.wrap(Cypress.automation('remote:debugger:protocol', { command: 'Network.setCacheDisabled', params: { cacheDisabled: true } }))
+      }
+      cy.intercept('GET', `${workerUrl}/${key}/schedule?teamId=${team.teamId}*`, req => {
+        req.on('before:response', res => {
+          if (!Array.isArray(res.body)) return
+          let given = false
+          res.body = res.body.map(({ winProb: _drop, ...g }) => {
+            if (given || g.game_state === 'Final') return g
+            given = true
+            const home = g.home_team_id === team.teamId
+            return { ...g, winProb: { home: home ? 0.64 : 0.36, away: home ? 0.36 : 0.64, source: 'elo' } }
+          })
+        })
+      })
+      visitAs(`/${key}/schedule`, key, team)
+      cy.contains('h2', 'Schedule', { timeout: DATA_TIMEOUT })
+      // The upcoming game is in 2026-27: the ECHL still opens on 2025-26.
+      cy.contains('button', /^2026-27$/, { timeout: DATA_TIMEOUT }).click()
+      cy.get('#main-content', { timeout: DATA_TIMEOUT }).should($main => {
+        expect($main.find('.card.cursor-pointer').length, 'game cards').to.be.greaterThan(0)
+      })
+      cy.get('[data-testid="win-prob-chip"]', { timeout: DATA_TIMEOUT }).should('have.length', 1).and('have.text', `✓ ${team.abbr} 64%`)
+      if (Cypress.isBrowser({ family: 'chromium' })) {
+        cy.wrap(Cypress.automation('remote:debugger:protocol', { command: 'Network.setCacheDisabled', params: { cacheDisabled: false } }))
+      }
+      assertNoLoadFailure()
+    })
+
     // Calendar cells and the box-score table (HockeyTechCalendarView /
     // HockeyTechBoxScoreTable). Date is pinned to mid-January so the
     // calendar opens on a month of the completed 2025-26 season.
