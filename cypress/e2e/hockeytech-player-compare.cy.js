@@ -153,3 +153,39 @@ LEAGUES.forEach((L) => {
     })
   })
 })
+
+// The percentile radar (Phase 3 B8, contract C4): /{league}/player/percentiles
+// ranks a player per game played; the popup draws the radar only when the
+// route ranks the player -- before the pipeline backfill it answers every
+// player with each `pct` null, and the popup shows no radar.
+LEAGUES.forEach((L) => {
+  describe(`${L.label} player popup — percentile radar`, () => {
+    const pct = v => ({ goals: { pct: v, label: 'Goals', note: 'per game played' }, a1: { pct: v, label: '1st Assists', note: '' }, penalties: { pct: v, label: 'Penalties', note: '' }, finishing: { pct: null, label: 'Finishing', note: '' } })
+    function open(percentiles) {
+      stubWorker(L)
+      cy.intercept('GET', `**/${L.key}/player/percentiles?*`, { player_id: PLAYER.player_id, rateBasis: 'perGP', percentiles }).as('pct')
+      cy.visit(`/${L.key}/players`, {
+        onBeforeLoad(win) {
+          win.localStorage.setItem('eyewall:sport', L.key)
+          win.localStorage.setItem(`eyewall:${L.key}_team`, JSON.stringify(L.team))
+        },
+      })
+      cy.contains(PLAYER.first_name, { timeout: 10000 }).click()
+      cy.wait('@pct')
+    }
+
+    it('draws the radar, per game played, for a ranked player', () => {
+      open(pct(80))
+      cy.get('.pp-radar-wrap', { timeout: DATA_TIMEOUT }).should('exist').and('contain', 'per game played')
+      cy.get('.pp-quickstats-col').should('contain', 'GP').and('not.contain', 'TOI')
+      cy.get('.pp-quickstats-col .pce-toggle').should('exist')
+    })
+
+    it('shows no radar when the route ranks nobody yet', () => {
+      open(pct(null))
+      cy.get('.pp-tab', { timeout: DATA_TIMEOUT }).should('exist')
+      cy.get('.pp-radar-wrap').should('not.exist')
+      cy.get('.pce-toggle').should('exist')
+    })
+  })
+})

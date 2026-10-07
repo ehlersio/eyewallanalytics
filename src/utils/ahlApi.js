@@ -33,5 +33,7 @@ export const fetchAHLPlayerGameLog           = api.fetchPlayerGameLog;
 export const fetchAHLPlayerCareer            = api.fetchPlayerCareer;
 export const fetchAHLPlayerShots             = api.fetchPlayerShots;
 export const fetchAHLToday                   = api.fetchToday;
+export const fetchAHLPlayerPercentiles       = api.fetchPlayerPercentiles;
+export const fetchAHLGoaliePercentiles       = api.fetchGoaliePercentiles;
 export const fetchAHLNews                   = api.fetchNews;
 export const fetchAHLLive                    = api.fetchLive;

@@ -68,6 +68,14 @@ export const GOALIE_STATS = [
     tip: 'Total goals allowed.', why: 'Context for GAA and SV%.' },
 ]
 
+// Stat tile -> percentile category, for the current-season tiles' markers
+// (the PWHL's PWHL_STAT_PCT_MAP; these box scores have no shooting %).
+export const PCT_MAP = {
+  goals:   'goals',
+  assists: 'a1',
+  pim:     'penalties',
+};
+
 export function posLabel(code) {
   return {
     C:  i18n.t('posLabel.pwhl.centre'),

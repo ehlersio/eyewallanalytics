@@ -1935,7 +1935,8 @@
   },
   "playerPopup": {
     "radar": {
-      "notEnoughData": "Not enough playing time yet: {{missing}}"
+      "notEnoughData": "Not enough playing time yet: {{missing}}",
+      "perGameNote": "Percentiles vs the league, per game played"
     },
     "heatMap": {
       "loading": "Loading shot data…",

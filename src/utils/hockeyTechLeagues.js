@@ -42,8 +42,8 @@
 //   headshotSize   LeagueStat headshot path segment, fallback when a row has none
 //   newsSources    source id -> { label, color, bg } for the News badges;
 //                  matches the poller's *_NEWS_SOURCES
-//   playerPopup    HockeyTechPlayerPopup options (see its header):
-//                  { comparisonEntry: true } -- the "vs Player" entry
+//   playerPopup    HockeyTechPlayerPopup options (see its header): the
+//                  "vs Player" entry, and the percentile radar (C4)
 //   debugSamples   sample players/teams for the Shot Map's dev-only event
 //                  debug panel; null in a production build, which has no
 //                  panel (the names don't ship)
@@ -57,6 +57,7 @@ import * as ahlConfig from './ahlConfig';
 import * as echlConfig from './echlConfig';
 import * as stats from './hockeyTechPlayerStats';
 import { createPredictionStore, predictionStorageKey } from './hockeyTechPredictionStore';
+import PercentileHeaderPanel from '../components/PercentileHeaderPanel';
 
 function seasonLabelFrom(seasons) {
   return id => seasons.find(s => s.id === id)?.label || String(id);
@@ -92,6 +93,8 @@ export const AHL = {
     fetchToday:                   ahlApi.fetchAHLToday,
     fetchLive:                    ahlApi.fetchAHLLive,
     fetchNews:                    ahlApi.fetchAHLNews,
+    fetchPlayerPercentiles:       ahlApi.fetchAHLPlayerPercentiles,
+    fetchGoaliePercentiles:       ahlApi.fetchAHLGoaliePercentiles,
   },
   config: {
     teams:              ahlConfig.AHL_TEAMS,
@@ -131,7 +134,14 @@ export const AHL = {
   },
   // HockeyTechPlayerPopup options (see its header): the "vs Player"
   // comparison entry.
-  playerPopup: { comparisonEntry: true },
+  playerPopup: {
+    comparisonEntry: true,
+    // League percentiles (C4): the radar header and the tile highlights,
+    // shown only for a player with percentile data.
+    percentiles:     true,
+    HeaderPanel:     PercentileHeaderPanel,
+    pctMap:          stats.PCT_MAP,
+  },
   debugSamples: import.meta.env.DEV ? {
     goalScorer: 'Easton Cowan', goalAssists: ['Luke Haymes', 'Alex Nylander'],
     ppGoalScorer: 'Dakota Mermis', ppAlertPlayer: 'Luke Tuch', majorPlayer: 'Marc Del Gaizo',
@@ -169,6 +179,8 @@ export const ECHL = {
     fetchToday:                   echlApi.fetchECHLToday,
     fetchLive:                    echlApi.fetchECHLLive,
     fetchNews:                    echlApi.fetchECHLNews,
+    fetchPlayerPercentiles:       echlApi.fetchECHLPlayerPercentiles,
+    fetchGoaliePercentiles:       echlApi.fetchECHLGoaliePercentiles,
   },
   config: {
     teams:              echlConfig.ECHL_TEAMS,
@@ -207,7 +219,14 @@ export const ECHL = {
   },
   // HockeyTechPlayerPopup options (see its header): the "vs Player"
   // comparison entry.
-  playerPopup: { comparisonEntry: true },
+  playerPopup: {
+    comparisonEntry: true,
+    // League percentiles (C4): the radar header and the tile highlights,
+    // shown only for a player with percentile data.
+    percentiles:     true,
+    HeaderPanel:     PercentileHeaderPanel,
+    pctMap:          stats.PCT_MAP,
+  },
   debugSamples: import.meta.env.DEV ? {
     goalScorer: 'Anthony Romano', goalAssists: ['Oliver Chau', 'Jordan Sambrook'],
     ppGoalScorer: 'Craig Needham', ppAlertPlayer: 'Cam Johnson', majorPlayer: 'Reid Duke',

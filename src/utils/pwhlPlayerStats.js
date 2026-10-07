@@ -146,6 +146,7 @@ export const RADAR_AXIS_ABBR = {
   'Penalties':    'PIM',
   'GSAX':         'GSAX',
   'GSAX/60':      'G60',
+  'GSAX/GP':      'G/GP',
   '5v5 SV%':      '5v5',
   'HD SV%':       'HD',
   'MD SV%':       'MD',
@@ -162,11 +163,13 @@ export const RADAR_AXIS_ABBR = {
 // shape (gsax/gsax60/evSv/hdSv/mdSv/pkSv keys), matching NHL's
 // getGoalieAnalytics() percentile shape exactly -- no key-name
 // translation needed between this function and its NHL counterpart.
-export function computeGoalieRadarAxes(percentiles) {
+// `perGame`: the AHL/ECHL routes rank GSAX per game played, not per 60
+// (rateBasis 'perGP'; their box scores have no TOI) -- the axis says so.
+export function computeGoalieRadarAxes(percentiles, { perGame = false } = {}) {
   const p = percentiles || {}
   return [
     { axis: 'GSAX',        value: p.gsax?.pct ?? null },
-    { axis: 'GSAX/60',     value: p.gsax60?.pct ?? null },
+    { axis: perGame ? 'GSAX/GP' : 'GSAX/60', value: p.gsax60?.pct ?? null },
     { axis: '5v5 SV%',     value: p.evSv?.pct ?? null },
     { axis: 'HD SV%',      value: p.hdSv?.pct ?? null },
     { axis: 'MD SV%',      value: p.mdSv?.pct ?? null },
