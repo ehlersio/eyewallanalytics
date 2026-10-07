@@ -834,7 +834,9 @@
     "oppShotsOnGoal": "Opp Shots on Goal",
     "shootingPct": "Shooting %",
     "savePct": "Save %",
-    "noShotsGame": "Shot data for this game isn't in yet. It's usually added overnight."
+    "noShotsGame": "Shot data for this game isn't in yet. It's usually added overnight.",
+    "live": "Live",
+    "guestSubtitle": "{{state}} · {{where}} {{opp}}"
   },
   "common": {
     "loading": "Loading…",

@@ -247,6 +247,14 @@
     {
       "spec": "cypress/e2e/topbar-live-chip.cy.js",
       "duration": 4000
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-guest-game.cy.js",
+      "duration": 9500
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-guest-game-invariants.cy.js",
+      "duration": 4500
     }
   ]
 }

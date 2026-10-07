@@ -7,38 +7,16 @@
 //
 // Reached from a live game's team row on the League page's Scoreboard.
 import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import ShotMapView from './ShotMapView';
-import TeamLogo from '../components/TeamLogo';
+import GuestGameBar from '../components/GuestGameBar';
 import { GameTeamProvider } from '../utils/GameTeamContext';
 import { getTeamByAbbr, TEAM_CONFIG } from '../utils/teamConfig';
 import { applyTeamTheme, setGuestThemeTeam } from '../utils/applyTeamTheme';
 import { getTheme } from '../utils/themeConfig';
 
 const WRAP_CLASSES = 'h-full flex flex-col';
-const BAR_CLASSES = 'guest-game-bar shrink-0 flex items-center justify-between gap-3 py-2 px-3.5 max-[700px]:px-2.5 bg-[var(--bg1)] border-b-[0.5px] border-b-[color:var(--border)]';
-const VIEWING_CLASSES = 'flex items-center gap-2 min-w-0 text-[12px] font-semibold team-primary-text';
-const BACK_CLASSES = 'guest-game-back shrink-0 flex items-center gap-1.5 min-h-[36px] py-1 px-3 rounded-[20px] text-[12px] font-semibold text-[color:var(--text-muted)] bg-[var(--btn-fill)] hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text)]';
 const VIEW_CLASSES = 'flex-1 min-h-0';
-
-function GuestBar({ team }) {
-  const { t } = useTranslation();
-  return (
-    <div className={BAR_CLASSES}>
-      <span className={VIEWING_CLASSES}>
-        <TeamLogo abbr={team.abbr} size={20} />
-        <span className="truncate">{t('guestGame.viewingAs', { team: team.abbr })}</span>
-      </span>
-      {/* Back where the game was opened from. The Scoreboard is the
-          League page's first tab, so /league lands on it. */}
-      <Link to="/league" className={BACK_CLASSES}>
-        <span aria-hidden="true">‹</span>
-        {t('guestGame.backToScoreboard')}
-      </Link>
-    </div>
-  );
-}
 
 // The guest team's colors while the view is open, the favorite's again
 // on the way out.
@@ -71,7 +49,7 @@ export default function GuestGameView() {
   // rather than carrying the last game's popups and drill-downs over.
   return (
     <div className={WRAP_CLASSES}>
-      <GuestBar team={team} />
+      <GuestGameBar abbr={team.abbr} backTo="/league" />
       <div className={VIEW_CLASSES}>
         <GameTeamProvider team={team} gameId={id}>
           <ShotMapView key={`${team.abbr}-${id}`} />

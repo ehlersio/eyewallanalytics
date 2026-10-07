@@ -23,11 +23,22 @@
 // PP/PK summary numbers come straight from {league}_team_seasons (via
 // /{league}/team-season-summary), which the pipeline already populates from
 // HockeyTech's own special-teams view -- not derived from PBP here.
+//
+// Whose side it's on: the league's followed team, or -- inside
+// HockeyTechGuestGameView's GameTeamProvider -- a guest team, with the view
+// pinned to the one game it was opened on (no season tabs or game chips,
+// as in the NHL guest view). See useLeagueGameTeam (GameTeamContext.jsx).
+//
+// The live game comes from the shared poller in utils/hockeyTechLiveStore.js
+// (the Topbar chip reads the same one), for whichever team the view is on,
+// so neither the followed team's page nor a guest view polls on its own.
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { hockeyTechTodayInterval, onPushReceived } from '../../utils/livePolling';
 import { leagueNameVars } from '../../utils/hockeyTechI18n';
 import { useTranslation } from 'react-i18next';
-import { useFetch, usePoll } from '../../hooks/useFetch';
+import { useFetch } from '../../hooks/useFetch';
+import { useHockeyTechLiveGame, hockeyTechLiveStore } from '../../hooks/useHockeyTechLiveGame';
+import { useLeagueGameTeam } from '../../utils/GameTeamContext';
+import { guestGameLine } from '../../utils/hockeyTechGuestGame';
 import { useLeagueSeasons } from '../../hooks/useLeagueSeasons';
 import { useTeamSeasonGames } from '../../hooks/useTeamSeasonGames';
 import { useWakeLock } from '../../hooks/useWakeLock';
@@ -152,8 +163,8 @@ export default function HockeyTechShotMapView({ league }) {
   const { t } = useTranslation();
   // Re-render when the season list is rebuilt from the Worker (C7).
   useLeagueSeasons(league);
-  const team = league.team;
-  const teamId = league.teamId;
+  const { team, guestGameId, isGuest } = useLeagueGameTeam(league);
+  const teamId = team?.teamId ?? null;
   const abbr = team?.abbr || '—';
 
   const [season, setSeason] = useState(league.config.currentSeason);
@@ -190,29 +201,17 @@ export default function HockeyTechShotMapView({ league }) {
   }
 
   // ── Live game detection ───────────────────────────────────────
-  // Poll /{league}/today every 60s (30s once live) to detect a live/pre game
-  // for our team today. Mirrors PWHLShotMapView.jsx's identical pattern.
-  const isLiveRef = useRef(false);
-  const liveInterval = useMemo(() => hockeyTechTodayInterval(isLiveRef), []);
-
-  // Always the live current season, not the one on screen: the view can
-  // open on an older season (the fallback below), and today's games are
-  // in the current one.
-  const { data: todayGames, refetch: refetchToday } = usePoll(
-    () => league.api.fetchToday(),
-    liveInterval,
-    []
-  );
-
-  const liveGame = useMemo(() => {
-    if (!todayGames?.length || !teamId) return null;
-    // Only a game that's under way: the chip always reads "🔴 LIVE" with a
-    // score, so a scheduled game read "LIVE 0-0" until puck drop (AHL
-    // Chicago, 2026-10-04), and tapping it showed nothing.
-    return todayGames.find(g =>
-      (g.homeTeamId === teamId || g.awayTeamId === teamId) && g.status === 'live'
-    ) || null;
-  }, [todayGames, teamId]);
+  // The team's live game from the shared poller (hockeyTechLiveStore.js):
+  // /{league}/today every 60s, and once a game is live (only one under way:
+  // a scheduled game used to read "LIVE 0-0" until puck drop, AHL Chicago
+  // 2026-10-04) /today and its /live play-by-play every 30s. Always the
+  // current season's /today, not the season on screen: the view can open
+  // on an older season (the fallback below). A guest view follows only the
+  // game it was opened on.
+  const liveState = useHockeyTechLiveGame(league.key, teamId);
+  const anyLiveGame = liveState.game;
+  const liveGame = isGuest && anyLiveGame && String(anyLiveGame.gameId) !== String(guestGameId)
+    ? null : anyLiveGame;
 
   const liveGameChipData = useMemo(() => {
     if (!liveGame) return null;
@@ -228,7 +227,6 @@ export default function HockeyTechShotMapView({ league }) {
   }, [liveGame, teamId]);
 
   const isLive = liveGame?.status === 'live';
-  useEffect(() => { isLiveRef.current = isLive; }, [isLive]);
 
   // Auto-select the live game when it starts
   const [selectedGameId, setSelectedGameId] = useState(null);
@@ -241,14 +239,8 @@ export default function HockeyTechShotMapView({ league }) {
     if (!isLive) autoSelectedRef.current = false;
   }, [isLive, liveGame]);
 
-  // Poll live PBP every 30s when a live game is selected.
-  const { data: liveData, refetch: refetchLive } = usePoll(
-    () => isLive && selectedGameId === liveGame?.gameId
-      ? league.api.fetchLive(selectedGameId)
-      : Promise.resolve(null),
-    30_000,
-    [isLive, selectedGameId, liveGame?.gameId]
-  );
+  // The live game's play-by-play, read by the same poller.
+  const liveData = isLive ? liveState.live : null;
 
   // Once /today says final the live poll above stops, so the popups get
   // the ended game's final snapshot instead: its last goals and the final
@@ -271,15 +263,13 @@ export default function HockeyTechShotMapView({ league }) {
 
   // Refs let the listeners below call the latest functions without
   // re-registering every render.
-  const refetchTodayRef      = useRef(null);
-  const refetchLiveRef       = useRef(null);
+  const refreshLiveRef       = useRef(null);
   const clearGoalPopupRef    = useRef(null);
   const clearPenaltyPopupRef = useRef(null);
   const clearWinPopupRef     = useRef(null);
   const clearPuckDropRef     = useRef(null);
   useEffect(() => {
-    refetchTodayRef.current      = refetchToday;
-    refetchLiveRef.current       = refetchLive;
+    refreshLiveRef.current       = () => hockeyTechLiveStore.refresh(league.key, teamId);
     clearGoalPopupRef.current    = clearGoalPopup;
     clearPenaltyPopupRef.current = clearPenaltyPopup;
     clearWinPopupRef.current     = clearWinPopup;
@@ -288,12 +278,12 @@ export default function HockeyTechShotMapView({ league }) {
 
   // Back from another app or tab: the browser may have throttled the polls
   // while hidden, so re-check today's games and the live play-by-play now,
-  // and clear popups that fired from stale pre-background data.
+  // and clear popups that fired from stale pre-background data. (A push
+  // re-checks at once too: the poller listens for it itself.)
   useEffect(() => {
     function handleVisibility() {
       if (document.visibilityState !== 'visible') return;
-      refetchTodayRef.current?.();
-      refetchLiveRef.current?.();
+      refreshLiveRef.current?.();
       clearGoalPopupRef.current?.();
       clearPenaltyPopupRef.current?.();
       clearWinPopupRef.current?.();
@@ -302,10 +292,6 @@ export default function HockeyTechShotMapView({ league }) {
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
-
-  // A push (usually Game Starting) re-checks today's games at once instead
-  // of waiting up to a minute for the next poll (utils/livePolling.js).
-  useEffect(() => onPushReceived(() => refetchTodayRef.current?.()), []);
 
   // ── Debug panel (5 taps on the header, dev only) ─────────────────
   const [debugOpen, setDebugOpen] = useState(false);
@@ -327,9 +313,11 @@ export default function HockeyTechShotMapView({ league }) {
     debugTapRef.current = setTimeout(() => { debugTapCount.current = 0; }, 2000);
   };
 
+  // The season aggregate and the season pickers: not in a guest view,
+  // which shows one game.
   const { data: shots, loading: shotsLoading } = useFetch(
-    () => teamId ? league.api.fetchShots(teamId, season) : Promise.resolve(null),
-    [teamId, season]
+    () => teamId && !isGuest ? league.api.fetchShots(teamId, season) : Promise.resolve(null),
+    [teamId, season, isGuest]
   );
 
   // ── Empty-season fallback ──────────────────────────────────────
@@ -346,10 +334,10 @@ export default function HockeyTechShotMapView({ league }) {
   // regular season first -- when the current one has no games or no shots.
   // One hop; if there's nothing to hop to, the existing "no shot data"
   // message is the honest answer.
-  const seasonCounts = useTeamSeasonGames(league.api.fetchSchedule, teamId, [league.config.currentSeason, ...league.config.seasons.map(s => s.id)]);
+  const seasonCounts = useTeamSeasonGames(league.api.fetchSchedule, isGuest ? null : teamId, [league.config.currentSeason, ...league.config.seasons.map(s => s.id)]);
   const seasonOptions = useMemo(() => seasonsWithGames(league.config.seasons, seasonCounts, { played: true }), [seasonCounts]);
   useEffect(() => {
-    if (userPickedSeason.current || fellBackFrom || !seasonCounts) return;
+    if (isGuest || userPickedSeason.current || fellBackFrom || !seasonCounts) return;
     const noGames = teamHasGames(seasonCounts, season, { played: true }) === false;
     const noShots = !shotsLoading && Array.isArray(shots) && shots.length === 0;
     if (!noGames && !noShots) return;
@@ -358,7 +346,7 @@ export default function HockeyTechShotMapView({ league }) {
     if (!next) return;
     setFellBackFrom(season);
     setSeason(next);
-  }, [shots, shotsLoading, season, fellBackFrom, seasonCounts, seasonOptions]);
+  }, [isGuest, shots, shotsLoading, season, fellBackFrom, seasonCounts, seasonOptions]);
 
   const seasonLabel = id => league.config.seasons.find(s => s.id === id)?.label ?? id;
   const { data: roster } = useFetch(
@@ -366,8 +354,8 @@ export default function HockeyTechShotMapView({ league }) {
     [teamId]
   );
   const { data: summary, loading: summaryLoading } = useFetch(
-    () => teamId ? league.api.fetchTeamSeasonSummary(teamId, season) : Promise.resolve(null),
-    [teamId, season]
+    () => teamId && !isGuest ? league.api.fetchTeamSeasonSummary(teamId, season) : Promise.resolve(null),
+    [teamId, season, isGuest]
   );
 
   const playerMap = useMemo(() => {
@@ -388,9 +376,12 @@ export default function HockeyTechShotMapView({ league }) {
     .filter(g => g.game_state === 'Final')
     .sort((a, b) => (b.game_date || '').localeCompare(a.game_date || '') || b.game_id - a.game_id),
   [schedule]);
-  const viewGameId = pickedGameId === ALL_GAMES ? null : pickedGameId ?? games[0]?.game_id ?? null;
+  // A guest view stays on its game, final or not (its shots arrive with the
+  // nightly run; the rink says so until then).
+  const viewGameId = isGuest ? guestGameId
+    : pickedGameId === ALL_GAMES ? null : pickedGameId ?? games[0]?.game_id ?? null;
   const viewGame = games.find(g => g.game_id === viewGameId) || null;
-  const isGameView = !!viewGame;
+  const isGameView = isGuest || !!viewGame;
   const handleGameSelect = id => setPickedGameId(id === viewGameId ? ALL_GAMES : id);
   const handleAllGames = () => setPickedGameId(ALL_GAMES);
 
@@ -406,6 +397,14 @@ export default function HockeyTechShotMapView({ league }) {
       isHome,
     };
   }), [games, teamId]);
+
+  // A guest view's game when it isn't live and isn't among this season's
+  // finals (an older game's link): its /live answer says who played and
+  // that it's over, for the subtitle.
+  const { data: guestGameData } = useFetch(
+    () => isGuest && !isLive ? league.api.fetchLive(guestGameId) : Promise.resolve(null),
+    [isGuest, guestGameId, isLive]
+  );
 
   const { data: gameShots, loading: gameShotsLoading } = useFetch(
     () => viewGameId ? league.api.fetchGameShots(viewGameId) : Promise.resolve(null),
@@ -431,7 +430,17 @@ export default function HockeyTechShotMapView({ league }) {
   const rinkLoading = isGameView ? gameShotsLoading : shotsLoading;
 
   let subtitle = t('hockeyTechShotMapView.subtitle');
-  if (viewGame) {
+  const guestLine = isGuest && !viewGame
+    ? guestGameLine(teamId, { liveGame, ended: endedData ?? guestGameData }) : null;
+  if (isGuest && !viewGame) {
+    subtitle = guestLine ? t('hockeyTechShotMapView.guestSubtitle', {
+      state: guestLine.state === 'final'
+        ? `${t('shotMapView.scoreBar.final')}${finalSuffix(guestLine.endedIn)}`
+        : t('hockeyTechShotMapView.live'),
+      where: guestLine.isHome ? t('hockeyTechShotMapView.vs') : t('hockeyTechShotMapView.at'),
+      opp: league.config.getTeamById(guestLine.oppId)?.abbr || '',
+    }) : '';
+  } else if (viewGame) {
     const isHome = viewGame.home_team_id === teamId;
     subtitle = t('hockeyTechShotMapView.gameSubtitle', {
       final: `${t('shotMapView.scoreBar.final')}${finalSuffix(viewGame.ended_in)}`,
@@ -472,7 +481,7 @@ export default function HockeyTechShotMapView({ league }) {
         </div>
       )}
 
-      {fellBackFrom && (
+      {!isGuest && fellBackFrom && (
         <div className={FALLBACK_NOTE_CLASSES}>
           {t('hockeyTechShotMapView.fallbackNote', {
             empty:    seasonLabel(fellBackFrom),
@@ -481,16 +490,18 @@ export default function HockeyTechShotMapView({ league }) {
         </div>
       )}
 
-      {games.length > 0 && (
+      {!isGuest && games.length > 0 && (
         <GameChipsRow games={gameChipGames} sport={league.key}
           selectedGameId={viewGameId} onSelect={handleGameSelect} onAll={handleAllGames} />
       )}
 
-      <div className={TABS_WRAP_CLASSES} style={{ marginTop: 0 }}>
-        {seasonOptions.map(s => (
-          <button key={s.id} className={tabClasses(season === s.id)} onClick={() => handleSeasonPick(s.id)}>{s.label}</button>
-        ))}
-      </div>
+      {!isGuest && (
+        <div className={TABS_WRAP_CLASSES} style={{ marginTop: 0 }}>
+          {seasonOptions.map(s => (
+            <button key={s.id} className={tabClasses(season === s.id)} onClick={() => handleSeasonPick(s.id)}>{s.label}</button>
+          ))}
+        </div>
+      )}
 
       {isGameView ? (
         <>

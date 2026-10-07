@@ -1,20 +1,25 @@
 // utils/hockeyTechLiveStore.js
-// The followed PWHL/AHL/ECHL team's live game, for the Topbar's live chip:
-// one poller per league and team, shared by every subscriber (the same
-// reference-counted shape as liveGameStore.js, the NHL's).
+// A PWHL/AHL/ECHL team's live game, for the Topbar's live chip and the
+// AHL/ECHL Shot Map (the followed team's, or a guest team's in
+// HockeyTechGuestGameView): one poller per league and team, shared by every
+// subscriber (the same reference-counted shape as liveGameStore.js, the
+// NHL's).
 //
 // Each tick reads the league's /today (max-age=5 at the Worker). A game of
 // the team's that is live: its /live play-by-play is read too, for the
 // latest score and the period/clock of the last event (what the shot maps
 // show), and the next tick is in 30 s. Nothing live: the next tick is in
-// 60 s (hockeyTechTodayInterval's numbers). A push ticks at once.
+// 60 s (hockeyTechTodayInterval's numbers). A push, or refresh() (the app
+// coming back into view), ticks at once.
 //
-// State: { game, clock, checked } -- game is the /today row (null when
-// none), clock { period, time, shootout } from /live (null until read).
+// State: { game, clock, live, checked } -- game is the /today row (null
+// when none), clock { period, time, shootout } from /live (null until
+// read), live the /live payload itself (the Shot Map's event popups read
+// its events; null until read).
 
 import { HOCKEYTECH_TODAY_LIVE_MS, HOCKEYTECH_TODAY_IDLE_MS } from './livePolling';
 
-export const EMPTY_HT_LIVE_STATE = Object.freeze({ game: null, clock: null, checked: false });
+export const EMPTY_HT_LIVE_STATE = Object.freeze({ game: null, clock: null, live: null, checked: false });
 
 // The team's live game in a /today answer, or null.
 export function liveGameFor(todayGames, teamId) {
@@ -93,12 +98,14 @@ export function createHockeyTechLiveStore({
           ? { ...found, homeScore: live.homeScore ?? found.homeScore, awayScore: live.awayScore ?? found.awayScore }
           : found;
         // A failed /live keeps the last clock of the same game.
-        const clock = (sameGame ? lastEventClock(live) : null)
-          ?? (String(p.state.game?.gameId) === String(found.gameId) ? p.state.clock : null);
-        publish(p, { game, clock, checked: true });
+        const wasSameGame = String(p.state.game?.gameId) === String(found.gameId);
+        const clock = (sameGame ? lastEventClock(live) : null) ?? (wasSameGame ? p.state.clock : null);
+        // ... and its last play-by-play.
+        const liveData = sameGame ? live : (wasSameGame ? p.state.live : null);
+        publish(p, { game, clock, live: liveData, checked: true });
         schedule(p, HOCKEYTECH_TODAY_LIVE_MS);
       } else {
-        if (p.state.game !== null || !p.state.checked) publish(p, { game: null, clock: null, checked: true });
+        if (p.state.game !== null || !p.state.checked) publish(p, { game: null, clock: null, live: null, checked: true });
         schedule(p, HOCKEYTECH_TODAY_IDLE_MS);
       }
     } catch {
@@ -141,5 +148,13 @@ export function createHockeyTechLiveStore({
     return pollers.get(idOf(key, teamId))?.state ?? EMPTY_HT_LIVE_STATE;
   }
 
-  return { subscribe, getSnapshot };
+  // Check now rather than on the next tick (the app back from the
+  // background, where the browser may have throttled the timer). Only a
+  // poller someone is subscribed to.
+  function refresh(key, teamId) {
+    const p = pollers.get(idOf(key, teamId));
+    if (p && p.refs > 0) tick(p);
+  }
+
+  return { subscribe, getSnapshot, refresh };
 }

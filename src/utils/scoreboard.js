@@ -59,13 +59,24 @@ export function liveDetail(game, intermissionWord = 'INT') {
   return game.clock ? `${period} · ${game.clock}` : period;
 }
 
-// Where a team's row goes: a live NHL game opens in the game view from
-// that team's side (GuestGameView.jsx) without touching the favorite, and
-// the favorite's own row opens the favorite's own view. null -- a plain,
-// untappable row -- for other leagues (their game views don't take a guest
-// team) and for any game that isn't live, where there'd be nothing to
-// follow. `isNhlTeam` guards against a code ALL_TEAMS doesn't know.
-export function teamRowHref(sport, game, code, favoriteAbbr, isNhlTeam) {
-  if (sport !== 'nhl' || game?.status !== 'live' || !game.gameId || !isNhlTeam(code)) return null;
-  return code === favoriteAbbr ? '/' : `/game/${game.gameId}?as=${encodeURIComponent(code)}`;
+// Each league's game view: the favorite's own, and the guest view that
+// takes another team (GuestGameView.jsx for the NHL,
+// HockeyTechGuestGameView.jsx for the AHL/ECHL). The PWHL's game view
+// doesn't take a guest team yet.
+const GAME_VIEWS = {
+  nhl:  { own: '/',           guest: '/game' },
+  ahl:  { own: '/ahl/shots',  guest: '/ahl/game' },
+  echl: { own: '/echl/shots', guest: '/echl/game' },
+};
+
+// Where a team's row goes: a live game opens in the game view from that
+// team's side without touching the favorite, and the favorite's own row
+// opens the favorite's own view. null -- a plain, untappable row -- for a
+// league whose game view doesn't take a guest team (PWHL) and for any game
+// that isn't live, where there'd be nothing to follow. `isLeagueTeam`
+// guards against a code the league's team list doesn't know.
+export function teamRowHref(sport, game, code, favoriteAbbr, isLeagueTeam) {
+  const views = GAME_VIEWS[sport];
+  if (!views || game?.status !== 'live' || !game.gameId || !isLeagueTeam(code)) return null;
+  return code === favoriteAbbr ? views.own : `${views.guest}/${game.gameId}?as=${encodeURIComponent(code)}`;
 }

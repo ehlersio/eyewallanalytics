@@ -62,7 +62,7 @@ describe('createHockeyTechLiveStore', () => {
     const states = []
     store.subscribe('ahl', HER, s => states.push(s))
     await settle()
-    expect(states.at(-1)).toEqual({ game: null, clock: null, checked: true })
+    expect(states.at(-1)).toEqual({ game: null, clock: null, live: null, checked: true })
     expect(api.fetchLive).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(59_000)
     expect(api.fetchToday).toHaveBeenCalledTimes(1)
@@ -79,6 +79,8 @@ describe('createHockeyTechLiveStore', () => {
     expect(api.fetchLive).toHaveBeenCalledWith(7)
     expect(states.at(-1).game).toMatchObject({ gameId: 7, homeScore: 2, awayScore: 1 })
     expect(states.at(-1).clock).toEqual({ period: 2, time: '12:34', shootout: false })
+    // The play-by-play itself, for the Shot Map's event popups.
+    expect(states.at(-1).live).toBe(liveData)
     await vi.advanceTimersByTimeAsync(30_000)
     expect(api.fetchToday).toHaveBeenCalledTimes(2)
   })
@@ -93,6 +95,30 @@ describe('createHockeyTechLiveStore', () => {
     await vi.advanceTimersByTimeAsync(30_000)
     expect(states.at(-1).clock).toEqual({ period: 2, time: '12:34', shootout: false })
     expect(states.at(-1).game.homeScore).toBe(1) // /today's, without /live
+    expect(states.at(-1).live).toBe(liveData)     // and the last play-by-play
+  })
+
+  it('drops the play-by-play once the game is no longer live', async () => {
+    const { store, api } = makeStore()
+    api.fetchToday.mockImplementation(async () => [live])
+    const states = []
+    store.subscribe('ahl', HER, s => states.push(s))
+    await settle()
+    api.fetchToday.mockImplementation(async () => [{ ...live, status: 'final' }])
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(states.at(-1)).toEqual({ game: null, clock: null, live: null, checked: true })
+  })
+
+  it('polls each team on its own: a guest team beside the followed one', async () => {
+    const { store, api } = makeStore()
+    api.fetchToday.mockImplementation(async () => [live])
+    const her = [], tex = []
+    store.subscribe('ahl', HER, s => her.push(s))
+    store.subscribe('ahl', 380, s => tex.push(s))
+    await settle()
+    expect(api.fetchToday).toHaveBeenCalledTimes(2)
+    expect(chipScore(her.at(-1).game, HER).myAbbr).toBe('HER')
+    expect(chipScore(tex.at(-1).game, 380).myAbbr).toBe('TEX')
   })
 
   it('shares one poll between subscribers and stops with the last', async () => {
@@ -115,6 +141,22 @@ describe('createHockeyTechLiveStore', () => {
     store.subscribe('ahl', HER, () => {})
     await settle()
     push()
+    await settle()
+    expect(api.fetchToday).toHaveBeenCalledTimes(2)
+  })
+
+  it('checks at once on refresh(), only while someone is subscribed', async () => {
+    const { store, api } = makeStore()
+    store.refresh('ahl', HER)
+    await settle()
+    expect(api.fetchToday).not.toHaveBeenCalled()
+    const off = store.subscribe('ahl', HER, () => {})
+    await settle()
+    store.refresh('ahl', HER)
+    await settle()
+    expect(api.fetchToday).toHaveBeenCalledTimes(2)
+    off()
+    store.refresh('ahl', HER)
     await settle()
     expect(api.fetchToday).toHaveBeenCalledTimes(2)
   })
