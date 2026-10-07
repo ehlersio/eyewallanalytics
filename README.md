@@ -104,6 +104,7 @@ canes-analytics-starter/
 │   │       └── HockeyTechTeamView.jsx  # Overview/Stats/Splits/Trends (+ History from teamHistory.js) + Compare Seasons; Last 5, Splits W–L–OTL/Pts% and Trends' OT streak via utils/hockeyTechResults.js. No Advanced (no blocked-shot events in either feed) or Salaries tab
 │   ├── components/
 │   │   ├── WinProbChip.jsx             # PWHL/AHL/ECHL schedule cards' Elo win-probability chip (the NHL GameCard's chip), from the Worker schedule row's `winProb`; no chip on a row without one
+│   │   ├── LocalPredictionScorecard.jsx # PWHL/AHL/ECHL League › Scorecard tab: this device's graded game predictions (hockeyTechPredictionStore getStats/load) — picked right, goals off, latest graded; the NHL scorecard's "No scorecard yet." until one is graded
 │   │   ├── PlayerRankBanner.jsx        # The player popups' "Ranked by …" banner of ordinal rank badges: NHL PlayerPopup (division/conference/league) and HockeyTechPlayerPopup (AHL/ECHL league rank by points; goalies by SV% and GAA, from utils/hockeyTechRanks.js)
 │   │   ├── Topbar.jsx/.css             # Live score, countdown clock, sport switcher. The NHL live score comes from hooks/useLiveGame.js (the shared poller ShotMapView reads too); on PWHL/AHL/ECHL routes the followed team's live game comes from hooks/useHockeyTechLiveGame.js
 │   │   ├── BottomNav.jsx               # Sport-aware bottom navigation
@@ -133,7 +134,7 @@ canes-analytics-starter/
 │   │   ├── GoalReplay.jsx              # One NHL goal two ways: the NHL's video, or EyeWall's tracking replay (Video | Tracking switch, shown only when both exist) — used by PeriodSummary.jsx's goal carousel
 │   │   ├── GoalTrackingReplay.jsx      # The tracking replay: react-hockey-rink's own rink, every skater as a team-coloured dot with their number, the scorer ringed, the puck with a trail, "GOAL" when it's in; puck-following 120 ft view, play/pause, restart, ½× speed, scrubber. Data: Worker /nhl/goal-replay (NHL EDGE tracking, every goal from 2023-24 on) via nhlApi.getGoalReplay(); frame math in utils/goalReplayFrames.js
 │   │   ├── PWHLPeriodSummary.jsx       # PWHL period/game summary popup + share canvas — fully Tailwind, same as above
-│   │   ├── PWHLPredictionShareCanvas.jsx # PWHL prediction track-record + share canvas (Session 100) — right-sized PWHL analogue of PredictionShareCanvas.jsx, scoped to what /pwhl/prediction actually returns (win%, expected score, narrative, streak, shot-attempt share); no odds/PP-PK-factors/line-combos section, since PWHLGamePreviewPopup.jsx doesn't fetch that for its Prediction section. Auto-save/track-record logic lives in utils/pwhlPredictionStore.js, an independent store (own localStorage key) rather than reusing predictionStore.js's Carolina-era `carActual`/`predictedCarWin` field names
+│   │   ├── PWHLPredictionShareCanvas.jsx # PWHL prediction track-record + share canvas (Session 100; also the AHL/ECHL preview's since 2026-10, via `sport`/`leagueLabel` props) — right-sized PWHL analogue of PredictionShareCanvas.jsx, scoped to what /pwhl/prediction actually returns (win%, expected score, narrative, streak, shot-attempt share); no odds/PP-PK-factors/line-combos section, since PWHLGamePreviewPopup.jsx doesn't fetch that for its Prediction section. Auto-save/track-record logic lives in utils/pwhlPredictionStore.js, an independent store (own localStorage key) rather than reusing predictionStore.js's Carolina-era `carActual`/`predictedCarWin` field names
 │   │   ├── ShareButtons.jsx            # Shared single Share button across all export cards — opens the OS share sheet, falls back to a PNG download where Web Share isn't supported (useShareCard.js)
 │   │   ├── ShareCardFrame.jsx          # Shell for every exported share card (1080×1350, 4:5): red top bar, logo + wordmark + kicker, title/subtitle, footer — same layout as eyewall-pipeline's social_posts.py so app shares and the auto-posted Instagram/Facebook cards match. Also the shared building blocks (matchup win bar, tiles, EyeWall AI block, head-to-head rows). Palette/fonts in utils/shareCardTheme.js
 │   │   ├── PeriodSummaryShareCanvas.jsx # Period/final game summary share card, shared by PeriodSummary.jsx (NHL) and PWHLPeriodSummary.jsx — each supplies its league's stats, strength labels, insights and headshots
@@ -772,7 +773,7 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (923 tests, 101 files)
+### Vitest (927 tests, 102 files)
 ```bash
 npm test
 npm run test:watch

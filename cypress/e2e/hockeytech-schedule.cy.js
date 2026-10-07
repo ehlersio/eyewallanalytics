@@ -115,6 +115,11 @@ LEAGUES.forEach(({ key, label, team, teamName, upcoming, final }) => {
       cy.get('.pgp-header').find(leagueLogo(key, team.abbr)).should('exist')
       cy.get('.pgp-card').contains('Prediction').should('exist')
       cy.get('.pgp-winpct', { timeout: DATA_TIMEOUT }).first().should('contain', '%')
+      // The prediction share card (the PWHL's, Phase 3 B5) comes with an
+      // expected score -- the card has nothing to draw without one.
+      cy.get('.pgp-card').then($card => {
+        cy.get('.pgp-export-row').should($card.find('.pgp-exp-row').length ? 'exist' : 'not.exist')
+      })
       assertNoLoadFailure()
     })
   })

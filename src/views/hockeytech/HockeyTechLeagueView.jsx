@@ -17,6 +17,7 @@ import { useFetch, usePoll } from '../../hooks/useFetch';
 import TeamLogo from '../../components/TeamLogo';
 import HockeyTechPlayerPopup from '../../components/HockeyTechPlayerPopup';
 import Scoreboard from '../../components/Scoreboard';
+import LocalPredictionScorecard from '../../components/LocalPredictionScorecard';
 import { SKELETON_CLASSES } from '../../utils/skeletonClasses';
 import { streakColor } from '../../utils/hockeyTechResults';
 import { qualifiedGoalies } from '../../utils/hockeyTechLeaders';
@@ -96,6 +97,7 @@ export default function HockeyTechLeagueView({ league }) {
         <button className={leagueTabClasses(tab === 'scoreboard')} onClick={() => setTab('scoreboard')}>{t('league.tabs.scoreboard')}</button>
         <button className={leagueTabClasses(tab === 'standings')} onClick={() => setTab('standings')}>{t('league.tabs.standings')}</button>
         <button className={leagueTabClasses(tab === 'leaders')} onClick={() => setTab('leaders')}>{t('league.tabs.leaders')}</button>
+        <button className={leagueTabClasses(tab === 'scorecard')} onClick={() => setTab('scorecard')}>{t('scorecard.tabLabel')}</button>
       </div>
       <div className={LEAGUE_CONTENT_CLASSES}>
         {tab === 'scoreboard' && (
@@ -107,6 +109,7 @@ export default function HockeyTechLeagueView({ league }) {
         {tab === 'leaders' && (
           <LeadersPanel league={league} skaters={leagueData?.skaters || []} goalies={leagueData?.goalies || []} loading={leadersLoading} onSelect={setSelected} />
         )}
+        {tab === 'scorecard' && <LocalPredictionScorecard store={league.predictionStore} />}
       </div>
 
       {selected && (

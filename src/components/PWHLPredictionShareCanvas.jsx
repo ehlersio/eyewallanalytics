@@ -11,6 +11,11 @@
 // Colors are passed in directly (color/oppColor props) -- the popup already
 // resolves per-team colors itself; ShareCardFrame exposes `color` to the
 // content as --team-canvas.
+//
+// Shared with the AHL/ECHL preview (HockeyTechGamePreviewPopup.jsx): `sport`
+// ('pwhl' | 'ahl' | 'echl') picks the logos, and `leagueLabel` the kicker,
+// hashtag and file name. Both default to the PWHL, whose analytics event
+// names stay as they were.
 
 import { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,7 +28,7 @@ import { SHARE, FONT_BODY } from '../utils/shareCardTheme';
 
 // ── Share canvas (off-screen, 1080×1350, ShareCardFrame) ─────
 export function PWHLPredictionCanvas({
-  canvasRef, abbr, oppAbbr, color, oppColor,
+  canvasRef, sport = 'pwhl', leagueLabel = 'PWHL', abbr, oppAbbr, color, oppColor,
   myWinPct, oppWinPct, myExp, oppExp, myStreak, oppStreak,
   myCorsi, oppCorsi, corsiCaveat, narrative,
 }) {
@@ -44,14 +49,14 @@ export function PWHLPredictionCanvas({
     <ShareCardFrame
       canvasRef={canvasRef}
       accent={color}
-      kicker={`PWHL · ${t('pwhlGamePreview.prediction.sectionLabel')}`}
+      kicker={`${leagueLabel} · ${t('pwhlGamePreview.prediction.sectionLabel')}`}
       title={t('shareCard.matchupTitle', { team: abbr, opp: oppAbbr })}
       subtitle={t('shareCard.predictionSubtitle')}
       note={t('shareCard.probabilityNote')}
     >
       <ShareMatchupHero
-        left={{ abbr, color, pct: myWinPct, logo: <TeamLogo abbr={abbr} sport="pwhl" size={76} color={color} /> }}
-        right={{ abbr: oppAbbr, color: oppColor, logo: <TeamLogo abbr={oppAbbr} sport="pwhl" size={76} color={oppColor} /> }}
+        left={{ abbr, color, pct: myWinPct, logo: <TeamLogo abbr={abbr} sport={sport} size={76} color={color} /> }}
+        right={{ abbr: oppAbbr, color: oppColor, logo: <TeamLogo abbr={oppAbbr} sport={sport} size={76} color={oppColor} /> }}
       />
 
       <ShareTiles tiles={[
@@ -84,7 +89,7 @@ export function PWHLPredictionCanvas({
 
 // ── Public export component — renders canvas + export button ──
 export default function PWHLPredictionExportSection({
-  abbr, oppAbbr, color, oppColor,
+  sport = 'pwhl', leagueLabel = 'PWHL', abbr, oppAbbr, color, oppColor,
   myWinPct, oppWinPct, myExp, oppExp, myStreak, oppStreak,
   myCorsi, oppCorsi, corsiCaveat, narrative, gameId,
 }) {
@@ -93,20 +98,20 @@ export default function PWHLPredictionExportSection({
   const [canvasMounted, setCanvasMounted] = useState(false);
 
   useEffect(() => {
-    if (canvasMounted) capture('pwhl_prediction_card_mounted', { gameId, opponent: oppAbbr });
-  }, [canvasMounted, gameId, oppAbbr]);
+    if (canvasMounted) capture(`${sport}_prediction_card_mounted`, { gameId, opponent: oppAbbr });
+  }, [canvasMounted, gameId, oppAbbr, sport]);
 
   const xCaption = (myWinPct != null && myExp != null) ? [
     t('predictionShareCanvas.xCaption.headline', { abbr, car: myExp, opp: oppExp, oppAbbr }),
     t('predictionShareCanvas.xCaption.winProbability', { abbr, pct: myWinPct, oppAbbr, oppPct: oppWinPct }),
     narrative || '',
-    `#${abbr} #PWHL #EyeWallAnalytics`,
+    `#${abbr} #${leagueLabel} #EyeWallAnalytics`,
   ].filter(Boolean).join('\n') : '';
 
   const { saving, sharing, handleNativeShare } =
     useShareCard({
       canvasRef,
-      filename: `EyeWall-PWHL-Prediction-${abbr}-vs-${oppAbbr}.png`,
+      filename: `EyeWall-${leagueLabel}-Prediction-${abbr}-vs-${oppAbbr}.png`,
       xCaption,
       mountCanvas: async () => {
         if (!canvasMounted) {
@@ -120,7 +125,7 @@ export default function PWHLPredictionExportSection({
 
   const handleShareWithCapture = async () => {
     await handleNativeShare();
-    capture('pwhl_prediction_card_exported', { opponent: oppAbbr, myWinPct, hasAI: !!narrative });
+    capture(`${sport}_prediction_card_exported`, { opponent: oppAbbr, myWinPct, hasAI: !!narrative });
   };
 
   return (
@@ -134,6 +139,7 @@ export default function PWHLPredictionExportSection({
       {canvasMounted && (
         <PWHLPredictionCanvas
           canvasRef={canvasRef}
+          sport={sport} leagueLabel={leagueLabel}
           abbr={abbr} oppAbbr={oppAbbr} color={color} oppColor={oppColor}
           myWinPct={myWinPct} oppWinPct={oppWinPct} myExp={myExp} oppExp={oppExp}
           myStreak={myStreak} oppStreak={oppStreak}

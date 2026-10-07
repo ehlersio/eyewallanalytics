@@ -2682,7 +2682,14 @@
         "desc": "Chances simulées, vérifiées avant la saison et les 15 nov., 1er janv. et 1er mars.",
         "pending": "Évaluées à la fin de la saison régulière, une fois les qualifiés connus."
       }
-    }
+    },
+    "localTitle": "Votre bilan de prédictions",
+    "localIntro": "Les résultats des prédictions de l'application pour les matchs dont vous avez ouvert l'aperçu sur cet appareil, évaluées une fois chaque match terminé.",
+    "localScoreErrorLabel": "Écart de buts",
+    "localScoreErrorHelp": "Écart de buts : la différence entre le pointage attendu et le pointage final, les deux équipes additionnées, par match.",
+    "localRecentItem": "{{date}} c. {{opp}} : {{outcome}} prédite, final {{score}}",
+    "localOutcomeWin": "victoire",
+    "localOutcomeLoss": "défaite"
   },
   "eloModel": {
     "source": "Modèle Elo",
