@@ -156,6 +156,21 @@ LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter, newsSource
       assertNoLoadFailure()
     })
 
+    // HockeyTechPlayersView: roster grid, then the 2025-26 stats tables.
+    it(`/${key}/players renders the ${team.abbr} roster and 2025-26 stats`, () => {
+      visitAs(`/${key}/players`, key, team)
+      cy.contains('h2', 'Roster', { timeout: DATA_TIMEOUT }).find(leagueLogo(key, team.abbr)).should('exist')
+      cy.contains('.sec-label', 'Defencemen', { timeout: DATA_TIMEOUT }).should('exist')
+      cy.get(`img[src*="leaguestat.com/${key}/"]`).should('have.length.at.least', 5)
+      cy.contains('button', 'Stats').click()
+      cy.contains('button', /^2025-26$/, { timeout: DATA_TIMEOUT }).click()
+      cy.get('table tbody tr', { timeout: DATA_TIMEOUT }).should('have.length.at.least', 10)
+      cy.contains('button', /^Goalies$/).click()
+      cy.contains('th', 'Goalie').should('exist')
+      cy.get('table tbody tr').should('have.length.at.least', 1)
+      assertNoLoadFailure()
+    })
+
     it(`/${key}/news renders ${label} News`, () => {
       visitAs(`/${key}/news`, key, team)
       cy.contains(`${label} News`, { timeout: DATA_TIMEOUT }).should('be.visible')

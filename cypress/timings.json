@@ -50,7 +50,7 @@
     },
     {
       "spec": "cypress/e2e/hockeytech-routes.cy.js",
-      "duration": 34000
+      "duration": 38000
     },
     {
       "spec": "cypress/e2e/hockeytech-season-pickers.cy.js",
