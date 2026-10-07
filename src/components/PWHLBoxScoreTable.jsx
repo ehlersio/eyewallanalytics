@@ -119,4 +119,3 @@ export default function PWHLBoxScoreTable({ skaters, goalies, playerNames }) {
   );
 }
 
-export { fmtToi, fmtFOPct, fmtSvPct };
