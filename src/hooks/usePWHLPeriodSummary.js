@@ -22,6 +22,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { finalSuffix } from '../utils/scoreboard';
 import { hockeyTechPenaltyParties } from '../utils/hockeyTechPenalty';
 import { pwhlEventsFromStoredPBP, pwhlSummaryPlayerNames } from '../utils/pwhlStoredPbp';
+import { sameGame, withSummary } from '../utils/summaryList';
 
 const WORKER_URL = typeof import.meta !== 'undefined'
   ? import.meta.env?.VITE_WORKER_URL
@@ -430,6 +431,9 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
   const buildingRef         = useRef(new Set());
   const htSummaryRef        = useRef(null);
   const lastPeriodRef       = useRef(0);
+  // The game on screen now -- see withSummary.
+  const gameIdRef           = useRef(gameId);
+  gameIdRef.current         = gameId;
 
   // Restore from sessionStorage on gameId change
   useEffect(() => {
@@ -451,7 +455,7 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
   const getHTSummary = useCallback(async () => {
     if (htSummaryRef.current) return htSummaryRef.current;
     const data = await fetchHTSummary(gameId);
-    htSummaryRef.current = data;
+    if (sameGame(gameIdRef.current, gameId)) htSummaryRef.current = data;
     return data;
   }, [gameId]);
 
@@ -460,22 +464,23 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
     [isLive, liveData, pbpData, teamId, gameId]);
 
   const buildAndStore = useCallback(async (period, showAsNew = false) => {
-    if (buildingRef.current.has(period)) return;
-    buildingRef.current.add(period);
+    const building = buildingRef.current;
+    if (building.has(period)) return;
+    building.add(period);
     try {
       const htSummary = await getHTSummary();
+      if (!sameGame(gameIdRef.current, gameId)) return;
       const events    = getEvents(htSummary);
       const summary   = buildPWHLSummary(period, events, teamId, htSummary, gameId, isPlayoff);
 
       setSummaries(prev => {
-        const next = [...prev.filter(s => s.period !== period), summary]
-          .sort((a, b) => a.period - b.period);
-        saveStored(gameId, next);
+        const next = withSummary(prev, summary, gameIdRef.current);
+        if (next !== prev) saveStored(gameId, next);
         return next;
       });
       if (showAsNew) setNewSummary(summary);
     } finally {
-      buildingRef.current.delete(period);
+      building.delete(period);
     }
   }, [gameId, teamId, isPlayoff, getEvents, getHTSummary]);
 
@@ -525,6 +530,7 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
   const dismissNewSummary = useCallback(() => setNewSummary(null), []);
 
   const updateSummaryNarrative = useCallback((period, narrative) => {
+    if (!sameGame(gameIdRef.current, gameId)) return; // the last game's, finishing late
     setSummaries(prev => {
       const next = prev.map(s =>
         s.period === period ? { ...s, aiNarrative: narrative, aiLoading: false } : s

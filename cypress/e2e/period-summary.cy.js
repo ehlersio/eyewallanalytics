@@ -305,6 +305,10 @@ describe('Notifications bell', () => {
     // /alerts/recent. On a game night a real goal alert landing between
     // opening the panel and the reload relit it -- this failed twice that
     // way (2026-10-02). This test is about summaries, so no alerts.
+    // After the reload the view shows CAR's last real game until the mock
+    // is found; its period summaries, still being built when the view
+    // switched, used to land in the mock game's list as never-seen ones
+    // and kept the dot lit (2026-10-07, fixed in utils/summaryList.js).
     cy.intercept('GET', '**/alerts/recent*', [])
     cy.visit(`/?mockGame=${MOCK_GAME_ID}`, {
       onBeforeLoad(win) { win.localStorage.removeItem('eyewall:summaries-seen') },
