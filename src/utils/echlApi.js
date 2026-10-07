@@ -1,243 +1,36 @@
 // utils/echlApi.js
-// ECHL API utility — parallel to ahlApi.js/pwhlApi.js. All requests go
-// through the Cloudflare Worker (/echl/* endpoints). Foundation + basic
-// display pass only (user's explicit scope choice) -- only covers the
-// routes that exist (see eyewall-poller's src/echl.js). No player
-// popup/game preview/box popup/prediction/comparison/news/live-tracking
-// endpoints exist for ECHL yet, unlike AHL's now-full parity set --
-// those are a deferred follow-up pass, matching AHL's own two-pass
-// history.
+// ECHL Worker API: createHockeyTechApi('echl') (utils/hockeyTechApi.js), shared
+// with the other HockeyTech league, re-exported under the names the app
+// already imports.
+import { createHockeyTechApi } from './hockeyTechApi';
 
-import i18n from '../i18n';
-import { getECHLStoredTeam, ECHL_CURRENT_SEASON } from './echlConfig';
-import { fetchWithRetry } from './retryFetch';
+const api = createHockeyTechApi('echl');
 
-const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
-
-// ── Active team ───────────────────────────────────────────────────────────────
-export const ECHL_TEAM_CONFIG = getECHLStoredTeam();
-export const ECHL_TEAM_ABBR = ECHL_TEAM_CONFIG?.abbr || null;
-export const ECHL_TEAM_ID = ECHL_TEAM_CONFIG?.teamId || null;
-
-// ── Fetch helper ──────────────────────────────────────────────────────────────
-async function workerFetch(path) {
-  if (!WORKER_URL) {
-    console.warn('echlApi: VITE_WORKER_URL not set');
-    return null;
-  }
-  try {
-    // One retry on a stalled connection -- see retryFetch.js.
-    const res = await fetchWithRetry(`${WORKER_URL}${path}`, {
-      init: { cache: 'no-store' },
-    });
-    if (!res.ok) {
-      console.warn(`echlApi ${res.status}: ${path}`);
-      return null;
-    }
-    return await res.json();
-  } catch (err) {
-    console.error('echlApi fetch error:', path, err.message);
-    return null;
-  }
-}
+// ── Active team (read once at load) ──────────────────────────────────────────
+export const ECHL_TEAM_CONFIG = api.teamConfig;
+export const ECHL_TEAM_ABBR   = api.teamAbbr;
+export const ECHL_TEAM_ID     = api.teamId;
 
 // ── API functions ─────────────────────────────────────────────────────────────
-
-export async function fetchECHLStandings(season = ECHL_CURRENT_SEASON) {
-  return workerFetch(`/echl/standings?season=${season}`);
-}
-
-/** Fetch all teams' skaters + goalies for the Leaders tab. */
-export async function fetchECHLLeaguePlayers(season = ECHL_CURRENT_SEASON) {
-  return workerFetch(`/echl/league-players?season=${season}`);
-}
-
-export async function fetchECHLPlayers(teamId = ECHL_TEAM_ID, season = ECHL_CURRENT_SEASON) {
-  if (!teamId) return null;
-  return workerFetch(`/echl/players?teamId=${teamId}&season=${season}`);
-}
-
-/** Shot-map data — shot/goal events with coordinates. No blocked_shot
- * event type exists in this data source (see eyewall-poller's echl.js) --
- * a strict subset of what /pwhl/shots returns, same as AHL's. */
-export async function fetchECHLShots(teamId = ECHL_TEAM_ID, season = ECHL_CURRENT_SEASON) {
-  if (!teamId) return null;
-  return workerFetch(`/echl/shots?teamId=${teamId}&season=${season}`);
-}
-
-/**
- * Both teams' shots and goals in one game (the shot map's game view);
- * /echl/shots holds one team's shots only. Empty until the nightly run has
- * ingested the game.
- */
-export async function fetchECHLGameShots(gameId) {
-  if (!gameId) return null;
-  return workerFetch(`/echl/game-shots?gameId=${gameId}`);
-}
-
-export async function fetchECHLSchedule(teamId = ECHL_TEAM_ID, season = ECHL_CURRENT_SEASON) {
-  if (!teamId) return null;
-  return workerFetch(`/echl/schedule?teamId=${teamId}&season=${season}`);
-}
-
-export async function fetchECHLRoster(teamId = ECHL_TEAM_ID) {
-  if (!teamId) return null;
-  return workerFetch(`/echl/roster?teamId=${teamId}`);
-}
-
-/** Season-aggregate SOG (car vs. opp) + PP%/PK% for the Shot Map's "All N"
- * summary card. No hits/blocked/faceoff/penalties sections, unlike
- * PWHL's equivalent — no data source for those in ECHL's feed. */
-export async function fetchECHLTeamSeasonSummary(teamId = ECHL_TEAM_ID, season = ECHL_CURRENT_SEASON) {
-  if (!teamId) return null;
-  return workerFetch(`/echl/team-season-summary?teamId=${teamId}&season=${season}`);
-}
-
-/** Player identity + one season's stat line, for ECHLPlayerPopup's self-fetch. */
-export async function fetchECHLPlayerLanding(playerId, season = ECHL_CURRENT_SEASON) {
-  if (!playerId) return null;
-  return workerFetch(`/echl/player/landing?id=${playerId}&season=${season}`);
-}
-
-/** One player's box-score row for every game of a season, oldest first --
- * the player popup's Compare-tab trend chart. Same shape and `season`
- * param as fetchAHLPlayerGameLog. */
-export async function fetchECHLPlayerGameLog(playerId, season) {
-  if (!playerId || !season) return null;
-  const data = await workerFetch(`/echl/player-game-log?playerId=${playerId}&season=${season}`);
-  if (!data) return null;
-  return {
-    skaters: Array.isArray(data.skaters) ? data.skaters : [],
-    goalies: Array.isArray(data.goalies) ? data.goalies : [],
-  };
-}
-
-/** Career totals (regular season + playoffs), recent-form games, bio
- * bullets, and draft info — live HockeyTech proxy, season-independent. */
-export async function fetchECHLPlayerCareer(playerId) {
-  if (!playerId) return null;
-  return workerFetch(`/echl/player/career?id=${playerId}`);
-}
-
-/** Shot-map heat map data for a single skater. No goalie equivalent --
- * ECHL's PBP doesn't carry goalie_id on goal events either (see
- * eyewall-poller's echl.js /echl/player-shots docstring), same structural
- * gap as AHL's feed. */
-export async function fetchECHLPlayerShots(playerId, season = ECHL_CURRENT_SEASON) {
-  if (!playerId) return null;
-  return workerFetch(`/echl/player-shots?playerId=${playerId}&season=${season}`);
-}
-
-/** Most recent completed game with opponent abbr resolved. */
-export async function fetchECHLLastGame(teamId = ECHL_TEAM_ID, season = ECHL_CURRENT_SEASON) {
-  if (!teamId) return null;
-  return workerFetch(`/echl/lastgame?teamId=${teamId}&season=${season}`);
-}
-
-/** Per-player box score (skaters + goalies) for a completed game.
- * Shape: { skaters: [...], goalies: [...] } — no hits/faceoff/blocked-
- * shots/skater-TOI fields, same as fetchAHLGameBox (see eyewall-pipeline's
- * echl_game_boxscore.py for why). */
-export async function fetchECHLGameBox(gameId) {
-  if (!gameId) return null;
-  const data = await workerFetch(`/echl/game-box?gameId=${gameId}`);
-  if (!data) return null;
-  return {
-    skaters: Array.isArray(data.skaters) ? data.skaters : [],
-    goalies: Array.isArray(data.goalies) ? data.goalies : [],
-  };
-}
-
-/** HockeyTech gameSummary enrichment (period scoring + MVPs/three stars)
- * for a completed game. Shape: { periods, mvps, venue, officials, coaches,
- * homeTeamStats, visitingTeamStats } — team stats already have hits/
- * faceoff fields stripped server-side (see eyewall-poller's echl.js). */
-export async function fetchECHLGameSummary(gameId) {
-  if (!gameId) return null;
-  return workerFetch(`/echl/summary?gameId=${gameId}`);
-}
-
-/** Pre-game preview for an upcoming ECHL game — raw HockeyTech
- * gameCenterPreview passthrough, same as fetchAHLPreview. Confirmed live
- * 2026-08-30 that ECHL's shape is identical to AHL's (teamRecord.overall/
- * past_10_games, powerPlayStats/penaltyKillStats nested per-team,
- * previousMeetings) -- see ECHLGamePreviewPopup.jsx's comments. */
-export async function fetchECHLPreview(gameId) {
-  if (!gameId) return null;
-  return workerFetch(`/echl/preview?gameId=${gameId}`);
-}
-
-/** Team-level win prediction (heuristic + AI narrative) for an upcoming
- * ECHL game. No corsiForPct field -- echl_team_seasons has no shot-
- * attempts data source, same as AHL.
- * Shape: { gameId, homeAbbr, awayAbbr, isPlayoff, homeWinPct, awayWinPct,
- *          expHome, expAway, narrative, h2hRecord, homeStreak, awayStreak } */
-export async function fetchECHLPrediction(gameId) {
-  if (!gameId) return null;
-  // ?locale= picks the narrative's language (the Worker caches each separately).
-  return workerFetch(`/echl/prediction?gameId=${gameId}&locale=${i18n.language}`);
-}
-
-/** One team across multiple seasons, for TeamComparisonPopup's "Compare
- * Seasons" mode. Mirrors fetchAHLTeamSeasonsCompare. */
-export async function fetchECHLTeamSeasonsCompare(teamId, seasons) {
-  if (!teamId || !seasons?.length) return [];
-  const rows = await workerFetch(`/echl/team-seasons/compare?teamId=${teamId}&seasons=${seasons.join(',')}`);
-  // null when the request failed -- unknown, not "no seasons".
-  if (!Array.isArray(rows)) return null;
-  return rows.map(r => ({
-    season:        r.season_id,
-    gamesPlayed:   r.gp,
-    wins:          r.wins,
-    losses:        r.losses,
-    otLosses:      (r.ot_losses ?? 0) + (r.shootout_losses ?? 0),
-    points:        r.points,
-    goalsFor:      r.goals_for,
-    goalsAgainst:  r.goals_against,
-    ppPct:         r.pp_pct,
-    pkPct:         r.pk_pct,
-  }));
-}
-
-/** Team vs team comparison -- two teams, one season. Mirrors
- * fetchAHLTeamSeasonsCompareTeams. */
-export async function fetchECHLTeamSeasonsCompareTeams(teamIdA, teamIdB, season) {
-  if (!teamIdA || !teamIdB || !season) return [];
-  const rows = await workerFetch(`/echl/team-seasons/compare-teams?teamIds=${teamIdA},${teamIdB}&season=${season}`);
-  if (!Array.isArray(rows)) return [];
-  return rows.map(r => ({
-    team:          r.team_id,
-    season:        r.season_id,
-    gamesPlayed:   r.gp,
-    wins:          r.wins,
-    losses:        r.losses,
-    otLosses:      (r.ot_losses ?? 0) + (r.shootout_losses ?? 0),
-    points:        r.points,
-    goalsFor:      r.goals_for,
-    goalsAgainst:  r.goals_against,
-    ppPct:         r.pp_pct,
-    pkPct:         r.pk_pct,
-  }));
-}
-
-/** Head-to-head -- mirrors fetchAHLTeamHeadToHead, already a clean
- * camelCase shape from /echl/team-seasons/head-to-head. */
-export async function fetchECHLTeamHeadToHead(teamIdA, teamIdB) {
-  if (!teamIdA || !teamIdB) return null;
-  return workerFetch(`/echl/team-seasons/head-to-head?teamIds=${teamIdA},${teamIdB}`);
-}
-
-/** Today's ECHL games (Eastern time), with a derived pre/live/final status. */
-export async function fetchECHLToday(season = ECHL_CURRENT_SEASON) {
-  return workerFetch(`/echl/today?season=${season}`);
-}
-
-/**
- * Live (or completed) normalized PBP for a single ECHL game. Mirrors
- * fetchAHLLive. No goalieStats/faceoffStats fields -- same data wall as
- * AHL's own feed.
- */
-export async function fetchECHLLive(gameId) {
-  if (!gameId) return null;
-  return workerFetch(`/echl/live/${gameId}`);
-}
+export const fetchECHLStandings               = api.fetchStandings;
+export const fetchECHLLeaguePlayers           = api.fetchLeaguePlayers;
+export const fetchECHLPlayers                 = api.fetchPlayers;
+export const fetchECHLShots                   = api.fetchShots;
+export const fetchECHLLastGame                = api.fetchLastGame;
+export const fetchECHLTeamSeasonsCompare      = api.fetchTeamSeasonsCompare;
+export const fetchECHLTeamSeasonsCompareTeams = api.fetchTeamSeasonsCompareTeams;
+export const fetchECHLTeamHeadToHead          = api.fetchTeamHeadToHead;
+export const fetchECHLGameBox                 = api.fetchGameBox;
+export const fetchECHLGameSummary             = api.fetchGameSummary;
+export const fetchECHLPreview                 = api.fetchPreview;
+export const fetchECHLPrediction              = api.fetchPrediction;
+export const fetchECHLTeamSeasonSummary       = api.fetchTeamSeasonSummary;
+export const fetchECHLGameShots               = api.fetchGameShots;
+export const fetchECHLSchedule                = api.fetchSchedule;
+export const fetchECHLRoster                  = api.fetchRoster;
+export const fetchECHLPlayerLanding           = api.fetchPlayerLanding;
+export const fetchECHLPlayerGameLog           = api.fetchPlayerGameLog;
+export const fetchECHLPlayerCareer            = api.fetchPlayerCareer;
+export const fetchECHLPlayerShots             = api.fetchPlayerShots;
+export const fetchECHLToday                   = api.fetchToday;
+export const fetchECHLLive                    = api.fetchLive;
