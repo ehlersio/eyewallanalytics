@@ -19,6 +19,7 @@ const LEAGUES = [
     teamName: 'Hershey Bears',
     divisions: ['Atlantic', 'North', 'Central', 'Pacific'],
     newsFooter: /TheAHL\.com/,
+    newsSources: { 'official-ahl': 'TheAHL.com', 'hockeywriters-ahl': 'The Hockey Writers', 'osc-ahl': 'OurSports Central' },
     // A real game (Worker /ahl/preview and /ahl/prediction answer for it).
     upcoming: { game_id: 1029113, season_id: 94, game_date: '2026-10-10', home_team_id: 319, away_team_id: 380, venue_name: 'Giant Center' },
   },
@@ -29,6 +30,7 @@ const LEAGUES = [
     teamName: 'Adirondack Thunder',
     divisions: ['North', 'South', 'Central', 'Mountain'],
     newsFooter: /The Hockey Writers and OurSports Central/,
+    newsSources: { 'hockeywriters-echl': 'The Hockey Writers', 'osc-echl': 'OurSports Central' },
     upcoming: { game_id: 25494, season_id: 78, game_date: '2026-10-17', home_team_id: 74, away_team_id: 113, venue_name: 'Harding Mazzotti Arena' },
   },
 ]
@@ -54,7 +56,7 @@ const assertNoLoadFailure = () => {
   cy.assertNoErrors()
 }
 
-LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter, upcoming }) => {
+LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter, newsSources, upcoming }) => {
   describe(`${label} routes smoke`, () => {
     it(`/${key}/league renders the Scoreboard, then ${label} standings by division`, () => {
       visitAs(`/${key}/league`, key, team)
@@ -140,6 +142,29 @@ LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter, upcoming }
           || $body.find('.news-error').length > 0
         expect(settled, 'news cards, the empty state or an error').to.equal(true)
       })
+      assertNoLoadFailure()
+    })
+
+    // HockeyTechNewsView's per-league source badges and filter chips, on a
+    // stubbed feed with one article per source.
+    it(`/${key}/news badges and filters by ${label} source`, () => {
+      const ids = Object.keys(newsSources)
+      // The Worker's route only: the page itself is also at /<league>/news.
+      cy.intercept('GET', `${Cypress.expose('WORKER_URL')}/${key}/news`, {
+        body: ids.map((source, i) => ({
+          id: `${source}-${i}`, source, sourceName: newsSources[source], title: `Story ${i} from ${source}`,
+          url: 'https://example.com/', excerpt: 'Excerpt', publishedAt: new Date(Date.now() - 3600e3).toISOString(),
+        })),
+      })
+      visitAs(`/${key}/news`, key, team)
+      cy.get('.news-card', { timeout: DATA_TIMEOUT }).should('have.length', ids.length)
+      cy.get('.news-source-badge').then($b => {
+        expect([...$b].map(b => b.textContent).sort()).to.deep.equal(Object.values(newsSources).sort())
+      })
+      cy.contains('.news-chip', newsSources[ids[0]]).click()
+      cy.get('.news-card').should('have.length', 1).and('contain', `from ${ids[0]}`)
+      cy.contains('.news-chip', /^All/).click()
+      cy.get('.news-card').should('have.length', ids.length)
       assertNoLoadFailure()
     })
 
