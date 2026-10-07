@@ -29,6 +29,8 @@ import { useTranslation } from 'react-i18next';
 import { useFetch, usePoll } from '../../hooks/useFetch';
 import { useTeamSeasonGames } from '../../hooks/useTeamSeasonGames';
 import { useWakeLock } from '../../hooks/useWakeLock';
+import { useEndedGameSnapshot } from '../../hooks/useEndedGameSnapshot';
+import { isHockeyTechFinal } from '../../utils/gameWatch';
 import { seasonsWithGames, teamHasGames } from '../../utils/teamSeasons';
 import { HockeyRink } from 'react-hockey-rink';
 import { toHockeyRinkEvents } from '../../utils/hockeyRinkEvents';
@@ -244,13 +246,20 @@ export default function HockeyTechShotMapView({ league }) {
     [isLive, selectedGameId, liveGame?.gameId]
   );
 
+  // Once /today says final the live poll above stops, so the popups get
+  // the ended game's final snapshot instead: its last goals and the final
+  // score are what fire the win popup.
+  const endedData = useEndedGameSnapshot(
+    isLive ? liveGame?.gameId : null, isLive, liveData, league.api.fetchLive, isHockeyTechFinal
+  );
+
   // ── Game event popups ───────────────────────────────────────────
   const {
     goalPopup,     clearGoalPopup,
     penaltyPopup,  clearPenaltyPopup,
     winPopup,      clearWinPopup,
     puckDropPopup, clearPuckDropPopup,
-  } = useHockeyTechGameEvents(league, isLive ? liveData : null, isLive, teamId, abbr);
+  } = useHockeyTechGameEvents(league, isLive ? liveData : endedData, isLive, teamId, abbr);
 
   // ── Live-game care, as in the NHL ShotMapView ────────────────────
   // Keep the screen on during a live game.

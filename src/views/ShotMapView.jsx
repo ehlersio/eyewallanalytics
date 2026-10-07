@@ -7,8 +7,9 @@ import {
   getGameLanding, attachGoalVideos,
   getCarScore, getOppScore, getOpponent, isHomeGame, isCompleted,
   getTeamStats, getTeamPlayoffStats, getTeamSelectionTotals, formatGameDate, getRoster, buildPlayerMap,
-  withPbpScore, GAME_TYPE, getLeagueTeamAverages,
+  withPbpScore, GAME_TYPE, getLeagueTeamAverages, bustLiveGameCache,
 } from '../utils/nhlApi';
+import { useEndedGameSnapshot } from '../hooks/useEndedGameSnapshot';
 import { useLiveGame } from '../hooks/useLiveGame';
 import { LIVE_POLL_MS } from '../utils/liveGameStore';
 import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON, teamTextColor, teamIdInGame } from '../utils/teamConfig';
@@ -547,6 +548,13 @@ function unitsGameTypeFor(gameType) {
 // selectedGameId for the season aggregate ("All N"), as opposed to null,
 // "nothing picked", which opens the newest completed game.
 const ALL_GAMES = 'all';
+
+// The just-ended live game's play-by-play, past nhlApi's 2-minute cache
+// (which still holds the last live copy) -- see useEndedGameSnapshot.
+function fetchFinalPbp(gameId) {
+  bustLiveGameCache(gameId);
+  return getGameDetail(gameId);
+}
 
 export default function ShotMapView() {
   const { t } = useTranslation();
@@ -1191,14 +1199,25 @@ export default function ShotMapView() {
   }, [boxscore, pbp, gameHome]);
 
   // ── Game event animations ────────────────────────────────
-  const playerMapForEvents = pbp ? buildPlayerMap(pbp) : {};
+  // Once the live game ends the page moves on (activeGame falls back to a
+  // completed game, which can be an older one until the schedule reloads),
+  // so the popups get the ended game's final play-by-play instead: its last
+  // plays and the final score are what fire the win popup. Not in the dev
+  // replay, which drives the game itself.
+  const endedPbp = useEndedGameSnapshot(
+    isLive && !devGame ? liveGame?.id : null, isLive, pbp, fetchFinalPbp, isCompleted
+  );
+  const eventsPbp    = endedPbp ?? pbp;
+  const eventsTeamId = endedPbp ? teamIdInGame(team, endedPbp) : gameTeam.teamId;
+  const eventsHome   = endedPbp ? endedPbp.homeTeam?.id === eventsTeamId : gameHome;
+  const playerMapForEvents = eventsPbp ? buildPlayerMap(eventsPbp) : {};
   const strMapForEvents = {};
   Object.entries(playerMapForEvents).forEach(([k,v]) => { strMapForEvents[String(k)] = v; });
   const { goalPopup, clearGoalPopup, hatTrickPopup, clearHatTrickPopup,
     penaltyPopup, clearPenaltyPopup, winPopup, clearWinPopup,
     puckDropPopup, clearPuckDropPopup } =
-    useGameEvents(pbp, isLive, strMapForEvents, gameHome,
-      gameTeam.teamId, team.abbr, team.displayColor);
+    useGameEvents(eventsPbp, isLive, strMapForEvents, eventsHome,
+      eventsTeamId, team.abbr, team.displayColor);
 
   // After a win celebration is the moment to ask for an App Store rating
   // (iOS app only; reviewPrompt.js decides). The favorite's wins only.

@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useFetch, usePoll } from '../hooks/useFetch';
 import { useTeamSeasonGames } from '../hooks/useTeamSeasonGames';
+import { useEndedGameSnapshot } from '../hooks/useEndedGameSnapshot';
+import { isHockeyTechFinal } from '../utils/gameWatch';
 import { seasonsWithGames, teamHasGames, fallbackSeason } from '../utils/teamSeasons';
 import { pwhlShotMapCounts, dropRepeatedLiveGoals } from '../utils/pwhlShotMapStats';
 import {
@@ -1112,6 +1114,14 @@ export default function PWHLShotMapView() {
 
   const liveData = devGame ? devGame.liveData : liveDataReal;
 
+  // Once /pwhl/today says final the live poll above stops, so the popups
+  // get the ended game's final snapshot instead: its last goals and the
+  // final score are what fire the win popup. Not in the dev replay, which
+  // drives the game itself.
+  const endedData = useEndedGameSnapshot(
+    isLive && !devGame ? liveGame?.gameId : null, isLive, liveData, fetchPWHLLive, isHockeyTechFinal
+  );
+
   // ── Derive situation from live events ─────────────────────────
   // Track goalie pull and PP from the most recent penalty/goalie_change events
   const liveSituation = useMemo(() => {
@@ -1221,7 +1231,7 @@ export default function PWHLShotMapView() {
     winPopup,      clearWinPopup,
     puckDropPopup, clearPuckDropPopup,
   } = usePWHLGameEvents(
-    isLive ? liveData : null,
+    isLive ? liveData : endedData,
     isLive,
     teamId,
     team?.abbr || '',
