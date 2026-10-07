@@ -3,7 +3,7 @@
 // fuzzy match across NHL + PWHL + AHL + ECHL against the Worker's
 // GET /players-search-index, opening the sport-appropriate popup (all
 // four self-fetch by id, so no pre-merge is needed here — see
-// PlayerSearch.jsx). AHL/ECHL result fixtures (Gendron/Amesbury) are real
+// PlayerSearch.jsx). AHL/ECHL result fixtures (Gendron/McManus) are real
 // live players, same "no mocking" convention as the NHL/PWHL tests below
 // — confirmed live via the /players-search-index response while building
 // this coverage, same as McDavid/Poulin were originally.
@@ -167,10 +167,16 @@ describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () =>
   })
 
   describe('ECHL result correctness', () => {
+    // Brannon McManus: on Adirondack's roster only and the only McManus in
+    // the index (Jeremy Hanzel is on ADK too but also exists in the NHL and
+    // AHL indexes, and cy.contains picks the first result). The previous pick, Daniel
+    // Amesbury, played for both Adirondack and Utah in 2025-26, so the index
+    // showed whichever roster the nightly wrote last (CI failed 2026-10-07
+    // after the roster write order changed). Pick single-team players here.
     it('finds a real ECHL player with correct team/position/sport badge', () => {
       cy.get('.player-search-toggle').click()
-      cy.get('.player-search-input').type('amesbury')
-      cy.contains('.player-search-result', 'Daniel Amesbury', { timeout: DATA_TIMEOUT }).within(() => {
+      cy.get('.player-search-input').type('mcmanus')
+      cy.contains('.player-search-result', 'Brannon McManus', { timeout: DATA_TIMEOUT }).within(() => {
         cy.contains('ADK').should('exist')
         cy.contains('ECHL').should('exist')
       })
@@ -178,10 +184,10 @@ describe('Global player search', { retries: { runMode: 2, openMode: 0 } }, () =>
 
     it('opens the ECHL player popup on selection, self-fetched stats included', () => {
       cy.get('.player-search-toggle').click()
-      cy.get('.player-search-input').type('amesbury')
-      cy.contains('.player-search-result', 'Daniel Amesbury', { timeout: DATA_TIMEOUT }).click()
+      cy.get('.player-search-input').type('mcmanus')
+      cy.contains('.player-search-result', 'Brannon McManus', { timeout: DATA_TIMEOUT }).click()
       cy.get('.popup-backdrop', { timeout: 10000 }).should('exist')
-      cy.contains('Amesbury').should('exist')
+      cy.contains('McManus').should('exist')
       cy.get('.pp-close').click()
       cy.get('.popup-backdrop').should('not.exist')
     })
