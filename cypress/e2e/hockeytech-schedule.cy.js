@@ -4,6 +4,7 @@
 // ../support/hockeytech.js.
 
 import { LEAGUES, visitAs, leagueLogo, assertNoLoadFailure } from '../support/hockeytech'
+import { withGameBoxPlays, restoreHttpCache } from '../support/gameBoxPlays'
 
 LEAGUES.forEach(({ key, label, team, teamName, upcoming, final }) => {
   describe(`${label} Schedule`, () => {
@@ -78,6 +79,25 @@ LEAGUES.forEach(({ key, label, team, teamName, upcoming, final }) => {
         cy.get('.pgs-toggle-btn').eq(1).click()
         cy.get('.pbs-row').first().invoke('text').should('not.eq', first)
       })
+      assertNoLoadFailure()
+    })
+
+    // Goals and Penalty shots sections (Phase 3 B8, contract C6): the box
+    // score's own players, with a goal and a missed penalty shot added to
+    // the real answer (support/gameBoxPlays.js).
+    it(`/${key}/schedule box score lists the goals and penalty shots`, () => {
+      withGameBoxPlays(`**/${key}/game-box?gameId=*`)
+      cy.clock(new Date('2026-01-15T17:00:00Z').getTime(), ['Date'])
+      visitAs(`/${key}/schedule`, key, team)
+      cy.contains('button', /^2025-26$/, { timeout: DATA_TIMEOUT }).click()
+      cy.get('.view-mode-toggle button').eq(1).click()
+      cy.get('.cal-cell.has-game.win, .cal-cell.has-game.loss', { timeout: DATA_TIMEOUT }).first().click()
+      cy.wait('@gameBox')
+      cy.get('[data-testid="game-goals"]', { timeout: DATA_TIMEOUT }).should('contain', 'Goals').and('contain', 'P2 4:08').and('contain', 'PP')
+      cy.get('[data-testid="game-goals"]').contains('button', 'Show who was on the ice').click()
+      cy.get('.pgs-on-ice').should('contain', 'On ice for:').and('contain', 'On ice against:')
+      cy.get('[data-testid="game-penalty-shots"]').should('contain', 'Penalty shots').and('contain', 'No goal')
+      restoreHttpCache()
       assertNoLoadFailure()
     })
 

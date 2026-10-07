@@ -303,6 +303,10 @@ export async function fetchPWHLGameBox(gameId) {
   return {
     skaters: Array.isArray(data.skaters) ? data.skaters : [],
     goalies: Array.isArray(data.goalies) ? data.goalies : [],
+    // Contract C6 (pwhl_goal_on_ice, pwhl_penalty_shots): empty until the
+    // pipeline has the game.
+    goals: Array.isArray(data.goals) ? data.goals : [],
+    penaltyShots: Array.isArray(data.penaltyShots) ? data.penaltyShots : [],
   };
 }
 
