@@ -50,3 +50,13 @@ export function GameTeamIdProvider({ teamId, children }) {
   );
   return <GameTeamContext.Provider value={value}>{children}</GameTeamContext.Provider>;
 }
+
+// The same question for a PWHL/AHL/ECHL game view (HockeyTechShotMapView):
+// the guest team inside a provider (HockeyTechGuestGameView wraps the view
+// in one with that league's team), the league's followed team (league.team,
+// see hockeyTechLeagues.js) everywhere else. Those leagues' teams aren't in
+// TEAM_CONFIG's list, so the NHL favorite above is never the answer.
+export function useLeagueGameTeam(league) {
+  const ctx = useGameTeam();
+  return ctx.isGuest ? ctx : { team: league.team, guestGameId: null, isGuest: false };
+}

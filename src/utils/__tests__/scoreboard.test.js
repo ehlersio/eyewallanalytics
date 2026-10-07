@@ -84,6 +84,19 @@ describe('teamRowHref', () => {
     expect(teamRowHref('nhl', live, 'ARI', 'CAR', nhl)).toBeNull();
     expect(teamRowHref('nhl', { status: 'live' }, 'BOS', 'CAR', nhl)).toBeNull();
   });
+
+  it('opens AHL/ECHL games in their own guest view, and the favorite’s row in its Shot Map', () => {
+    const ahl = abbr => ['HER', 'TEX'].includes(abbr);
+    const game = { gameId: 1029113, status: 'live' };
+    expect(teamRowHref('ahl', game, 'TEX', 'HER', ahl)).toBe('/ahl/game/1029113?as=TEX');
+    expect(teamRowHref('ahl', game, 'HER', 'HER', ahl)).toBe('/ahl/shots');
+    expect(teamRowHref('echl', game, 'TEX', 'ADK', ahl)).toBe('/echl/game/1029113?as=TEX');
+    expect(teamRowHref('echl', game, 'TEX', 'TEX', ahl)).toBe('/echl/shots');
+    // No followed team in that league: every row is a guest's.
+    expect(teamRowHref('ahl', game, 'HER', null, ahl)).toBe('/ahl/game/1029113?as=HER');
+    expect(teamRowHref('ahl', { ...game, status: 'final' }, 'TEX', 'HER', ahl)).toBeNull();
+    expect(teamRowHref('ahl', game, 'XYZ', 'HER', ahl)).toBeNull();
+  });
 });
 
 describe('finalSuffix', () => {

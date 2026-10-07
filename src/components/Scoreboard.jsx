@@ -10,8 +10,8 @@ import { Link } from 'react-router-dom';
 import TeamLogo from './TeamLogo';
 import { getTeamByAbbr, TEAM_CONFIG } from '../utils/teamConfig';
 import { getPWHLTeamConfig } from '../utils/pwhlConfig';
-import { getAHLTeamConfig } from '../utils/ahlConfig';
-import { getECHLTeamConfig } from '../utils/echlConfig';
+import { getAHLTeamConfig, getAHLStoredTeam } from '../utils/ahlConfig';
+import { getECHLTeamConfig, getECHLStoredTeam } from '../utils/echlConfig';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 import { dayLabelKind, finalSuffix, liveDetail, startTimeLabel, teamRowHref } from '../utils/scoreboard';
 import { formatDate } from '../utils/formatters';
@@ -115,8 +115,17 @@ function DayHeader({ games }) {
   return <div className={DAY_HEADER_CLASSES}>{label}</div>;
 }
 
-const teamHref = (sport, game, code) =>
-  teamRowHref(sport, game, code, TEAM_CONFIG.abbr, abbr => !!getTeamByAbbr(abbr));
+// The favorite in each league whose game view takes a guest team: its own
+// row opens its own view.
+const FAVORITE_ABBR = {
+  nhl:  () => TEAM_CONFIG.abbr,
+  ahl:  () => getAHLStoredTeam()?.abbr ?? null,
+  echl: () => getECHLStoredTeam()?.abbr ?? null,
+};
+
+const teamHref = (sport, game, code) => FAVORITE_ABBR[sport]
+  ? teamRowHref(sport, game, code, FAVORITE_ABBR[sport](), abbr => !!TEAM_LOOKUP[sport](abbr))
+  : null;
 
 function TeamRow({ code, score, status, sport, isLoser, href }) {
   const { t } = useTranslation();

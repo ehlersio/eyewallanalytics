@@ -47,6 +47,7 @@ const AHLScheduleView = lazy(() => import('./views/AHLScheduleView'));
 const AHLPlayersView  = lazy(() => import('./views/AHLPlayersView'));
 const AHLTeamView     = lazy(() => import('./views/AHLTeamView'));
 const AHLNewsView     = lazy(() => import('./views/AHLNewsView'));
+const AHLGuestGameView = lazy(() => import('./views/AHLGuestGameView'));
 
 // ECHL routes -- ECHLNewsView added (parity plan Phase 5 equivalent).
 const ECHLShotMapView  = lazy(() => import('./views/ECHLShotMapView'));
@@ -55,6 +56,7 @@ const ECHLScheduleView = lazy(() => import('./views/ECHLScheduleView'));
 const ECHLPlayersView  = lazy(() => import('./views/ECHLPlayersView'));
 const ECHLTeamView     = lazy(() => import('./views/ECHLTeamView'));
 const ECHLNewsView     = lazy(() => import('./views/ECHLNewsView'));
+const ECHLGuestGameView = lazy(() => import('./views/ECHLGuestGameView'));
 
 // Not linked from BottomNav or anywhere else -- reached only via direct
 // URL. See AdminHealthView.jsx's own header comment for why this is UX
@@ -139,9 +141,13 @@ function PageTracker() {
     };
     capture('$pageview', {
       path:      location.pathname,
-      // /game/:gameId?as= is one route however many games it's opened on.
+      // /game/:gameId?as= (and the AHL/ECHL /{league}/game/:gameId) is one
+      // route however many games it's opened on.
       page_name: names[location.pathname]
-        || (location.pathname.startsWith('/game/') ? 'Guest Game' : location.pathname),
+        || (location.pathname.startsWith('/game/') ? 'Guest Game'
+          : location.pathname.startsWith('/ahl/game/') ? 'AHL Guest Game'
+            : location.pathname.startsWith('/echl/game/') ? 'ECHL Guest Game'
+              : location.pathname),
     });
   }, [location.pathname]);
   return null;
@@ -236,6 +242,7 @@ export default function App() {
                       <Route path="/ahl/players"  element={<AHLPlayersView />} />
                       <Route path="/ahl/schedule" element={<AHLScheduleView />} />
                       <Route path="/ahl/news"     element={<AHLNewsView />} />
+                      <Route path="/ahl/game/:gameId" element={<AHLGuestGameView />} />
 
                       {/* ECHL routes */}
                       <Route path="/echl/shots"    element={<ECHLShotMapView />} />
@@ -244,6 +251,7 @@ export default function App() {
                       <Route path="/echl/players"  element={<ECHLPlayersView />} />
                       <Route path="/echl/schedule" element={<ECHLScheduleView />} />
                       <Route path="/echl/news"     element={<ECHLNewsView />} />
+                      <Route path="/echl/game/:gameId" element={<ECHLGuestGameView />} />
                       {import.meta.env.DEV && DevReplayView && (
                         <Route path="/dev" element={<DevReplayView />} />
                       )}

@@ -834,7 +834,9 @@
     "oppShotsOnGoal": "Tirs au but adv.",
     "shootingPct": "% de tirs",
     "savePct": "% d'arrêts",
-    "noShotsGame": "Les données de tirs de ce match ne sont pas encore disponibles. Elles sont habituellement ajoutées pendant la nuit."
+    "noShotsGame": "Les données de tirs de ce match ne sont pas encore disponibles. Elles sont habituellement ajoutées pendant la nuit.",
+    "live": "En direct",
+    "guestSubtitle": "{{state}} · {{where}} {{opp}}"
   },
   "common": {
     "loading": "Chargement…",

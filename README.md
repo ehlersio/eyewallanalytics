@@ -87,6 +87,7 @@ canes-analytics-starter/
 │   │   ├── AHLLeagueView.jsx           # Wrapper: `hockeytech/HockeyTechLeagueView` with the AHL league object
 │   │   ├── AHLNewsView.jsx             # Wrapper: `hockeytech/HockeyTechNewsView` with the AHL league object
 │   │   ├── ECHLShotMapView.jsx         # Wrapper: `hockeytech/HockeyTechShotMapView` with the ECHL league object
+│   │   ├── AHLGuestGameView.jsx / ECHLGuestGameView.jsx # Wrappers: `hockeytech/HockeyTechGuestGameView` with the league object (/ahl/game/:gameId, /echl/game/:gameId)
 │   │   ├── ECHLScheduleView.jsx        # Wrapper: `hockeytech/HockeyTechScheduleView` with the ECHL league object (also exports a league-bound `GameCard`)
 │   │   ├── ECHLTeamView.jsx            # Wrapper: `hockeytech/HockeyTechTeamView` with the ECHL league object (also exports a league-bound `TrendsTab`)
 │   │   ├── ECHLPlayersView.jsx         # Wrapper: `hockeytech/HockeyTechPlayersView` with the ECHL league object
@@ -100,6 +101,7 @@ canes-analytics-starter/
 │   │       ├── HockeyTechNewsView.jsx  # News feed, plus Milestones and Trivia sub-tabs (contract C5, MilestonesFeed/TriviaFeed with `sport={league.key}`) offered only when /milestones/latest or /trivia/today has something for the league (useReadState hasMilestones/hasTrivia); no Transactions tab
 │   │       ├── HockeyTechPlayersView.jsx # Roster (photo grid, headshots at `league.headshotSize`) + sortable skater/goalie stats table + the league's player popup. Skater columns drop shot_pct/gw_goals — absent from both leagues' HockeyTech feeds
 │   │       ├── HockeyTechShotMapView.jsx # Leaner shot map than PWHL's: season-aggregate rink + PP/PK summary (from {league}_team_seasons), game chips opening on the last game played, live score chip + event popups from /{league}/today and /{league}/live, dev-only 5-tap debug panel (sample events from `league.debugSamples`). Like the NHL shot map it holds a screen wake lock during a live game, and re-checks today's games on return to the app and on a push (`eyewall:push-received`). No Corsi/Fenwick (no blocked-shot events), no player popup on markers
+│   │       ├── HockeyTechGuestGameView.jsx # /{league}/game/:gameId?as=TEX — one AHL/ECHL game watched from a team that isn't the followed one: HockeyTechShotMapView inside a GameTeamProvider, pinned to that game (no season tabs or game chips). Opened from a live game's team row on the Scoreboard; a link without ?as= opens as the home team (from the game's /live). The live score and play-by-play come from hockeyTechLiveStore for the guest team (no polling of its own). Keeps the app's colors (AHL/ECHL pages aren't team-themed). Invalid links and the followed team's own redirect to /{league}/shots. The PWHL has no guest view yet (PWHLShotMapView reads its team from module constants)
 │   │       ├── HockeyTechScheduleView.jsx # Schedule list + calendar + box-score/preview popups + predictions (records outcomes for Final games). No separate Regular Season/Playoffs tab — the league's seasons list has its playoffs as their own season tab; no round-based bracket view (the Calder Cup/Kelly Cup up-to-4-round formats were never ported/verified against PWHL's fixed-2-round bracket logic)
 │   │       └── HockeyTechTeamView.jsx  # Overview/Stats/Splits/Trends (+ History from teamHistory.js) + Compare Seasons; Last 5, Splits W–L–OTL/Pts% and Trends' OT streak via utils/hockeyTechResults.js. No Advanced (no blocked-shot events in either feed) or Salaries tab
 │   ├── components/
@@ -146,7 +148,7 @@ canes-analytics-starter/
 │   │   ├── TransactionsFeed.jsx        # PWHL-only league-wide signings/moves feed, fourth tab on PWHLNewsView.jsx alongside News/Milestones/Trivia. Live proxy of HockeyTech's view=transactions (GET /pwhl/transactions) — not persisted to Supabase. Same card-reuse pattern as MilestonesFeed.jsx but non-tappable (transaction rows carry no player_id, just a display name) and no team filter. sport="nhl" (2026-09): the Worker's /transactions feed on NewsView, trades open TradeTree.jsx
 │   │   ├── PlayerSearch.jsx/.css       # Global NHL+PWHL+AHL+ECHL player search (Topbar) — Fuse.js fuzzy match against the Worker's flat player index; AHL/ECHL popups are lazy-loaded (this file lives in the always-loaded Topbar, so a static import would bloat the main bundle for NHL/PWHL-only users)
 │   │   ├── TeamLogo.jsx/.css           # NHL + PWHL team logo renderer
-│   │   ├── Scoreboard.jsx              # League page's Scoreboard tab (session102) — shared across all 4 leagues, same normalized shape from /nhl/today, /pwhl/today, /ahl/today, /echl/today. Mirrors TeamLogo.jsx's cross-sport design (one component, a `sport` prop resolves team lookup + logo per league). Day header says "Today" only when the games really are today (the routes return the next day with games otherwise); start time before puck drop, period + clock while live, OT/SO on finals — pure bits in utils/scoreboard.js. On a live NHL game each team row links to that game from that team's side (`teamRowHref()`: GuestGameView, or / for the favorite's own row); no other league's rows, and no non-live game's, are tappable
+│   │   ├── Scoreboard.jsx              # League page's Scoreboard tab (session102) — shared across all 4 leagues, same normalized shape from /nhl/today, /pwhl/today, /ahl/today, /echl/today. Mirrors TeamLogo.jsx's cross-sport design (one component, a `sport` prop resolves team lookup + logo per league). Day header says "Today" only when the games really are today (the routes return the next day with games otherwise); start time before puck drop, period + clock while live, OT/SO on finals — pure bits in utils/scoreboard.js. On a live NHL, AHL or ECHL game each team row links to that game from that team's side (`teamRowHref()`: GuestGameView / HockeyTechGuestGameView, or the favorite's own Shot Map for its own row); PWHL rows, and no non-live game's, are tappable
 │   │   ├── EyeWallLogo.jsx             # Theme-aware EyeWall wordmark (Session 100) — renders both eyewall-logo.svg (bright) and eyewall-logo-light.svg (contrast-darkened) stacked, toggled purely via CSS on [data-theme] (index.css), not a JS getTheme() check, so it reacts instantly to a live theme toggle. Only for logo placements on the app's own themed background (TeamPicker.jsx, AboutPopup.jsx) — the fixed-dark share-canvas components render /eyewall-logo.svg directly instead, since their canvas bg never changes with app theme
 │   │   ├── FaceoffRink.jsx             # Animated faceoff mark — geometry from src/brand/rinkMark.js, motion from src/brand/faceoffTimeline.js (pure frame functions), colors from index.css's --brand-* tokens so it follows the theme. Writes SVG attributes through refs each animation frame; one still frame under prefers-reduced-motion
 │   │   ├── FaceoffIntro.jsx            # ~2.5s cold-start intro over the app on iOS: ref drops the puck, centers take the draw, settles into the mark, fades out. The app loads underneath meanwhile. Once per session, tap to skip, never under reduced motion or Cypress; web only with ?intro=1
@@ -175,7 +177,7 @@ canes-analytics-starter/
 │   ├── hooks/
 │   │   ├── useFetch.js                 # Data fetching + polling (cache: no-store)
 │   │   ├── useLiveGame.js              # A team's live game + its play-by-play from utils/liveGameStore.js (Topbar, ShotMapView)
-│   │   ├── useHockeyTechLiveGame.js    # The followed PWHL/AHL/ECHL team's live game from utils/hockeyTechLiveStore.js (Topbar live chip)
+│   │   ├── useHockeyTechLiveGame.js    # A PWHL/AHL/ECHL team's live game from utils/hockeyTechLiveStore.js (Topbar live chip; the AHL/ECHL Shot Map, the followed team's or a guest's)
 │   │   ├── usePushNotifications.js     # Team alerts (subscribe/unsubscribe/updatePrefs); also exports subscriptionPayload() (the /push/subscribe body) and requestPushDevice(), which the Admin › Health ops-alerts button reuses
 │   │   ├── usePeriodSummary.js
 │   │   ├── useLiveGoalReplay.js        # Feeds the live rink the most recent goal's NHL EDGE tracking, as soon as the NHL publishes it (median ~4 min after the goal, measured; max ~12 min). Rides the live play-by-play ShotMapView already gets every 10 s (utils/liveGameStore.js) rather than adding a poller, and asks the Worker at most once a minute per goal (matching its TTL_MISSING), giving up after 15 min. Fetches BEFORE offering the control, so the control is never a dead option and playback starts instantly. Decision logic in utils/liveGoalReplay.js
@@ -184,7 +186,7 @@ canes-analytics-starter/
 │   └── utils/
 │       ├── nhlApi.js                   # NHL API calls + KV caching
 │       ├── hockeyTechSeasons.js        # AHL/ECHL season lists + regular↔playoff maps from the Worker's /config/seasons/{ahl,echl}-seasons (C7); ahlConfig.js/echlConfig.js apply them over their hand-written seed at load
-│       ├── hockeyTechLiveStore.js      # PWHL/AHL/ECHL live-game poller per league + team, reference-counted like liveGameStore.js: /today every 60 s, every 30 s (with the game's /live for score and period/time) once the team's game is live, at once on a push
+│       ├── hockeyTechLiveStore.js      # PWHL/AHL/ECHL live-game poller per league + team, reference-counted like liveGameStore.js: /today every 60 s, every 30 s (with the game's /live for score and period/time) once the team's game is live, at once on a push or `refresh()` (the Shot Map coming back into view); state carries the /live payload too, for the Shot Map's event popups
 │       ├── liveGameStore.js            # One live-game poller per team, reference-counted: the first subscriber starts it, the last stops it. 10 s during a game (busts and fetches the play-by-play; the box score is busted for ShotMapView's own poll), livePollInterval() otherwise, at once on a push. Replaced separate Topbar and ShotMapView polls that busted each other's caches, the schedule included, every tick (audit 2026-10-06 §6)
 │       ├── pwhlApi.js                  # PWHL Worker API calls
 │       ├── retryFetch.js               # fetch() with a per-attempt time budget and one retry on a *thrown* fetch (timeout/network), not on an HTTP status. Used by every Worker read helper: nhlApi/pwhlApi/ahlApi/echlApi/supabaseClient/playerSearch. Deliberately NOT nhlApi's kvFetch (its short budget exists to fail fast and fall through to the NHL API) and not the supabase-js writes in triviaAnswers/favoriteTeamSync/localeSync
@@ -200,7 +202,7 @@ canes-analytics-starter/
 │       ├── advancedStats.js
 │       ├── supabaseClient.js           # DB queries; getTeamXgTrend, getGoalieShots (no car_game filter) — Worker-proxied, NOT direct Supabase (see supabaseAuth.js for the one exception)
 │       ├── supabaseAuth.js             # Supabase Auth client (Session 90) — the only place this app imports @supabase/supabase-js directly; signInWithOtp/session handling only, never used for data reads
-│       ├── GameTeamContext.jsx         # Which team the game view watches from — the favorite (TEAM_CONFIG) outside a provider, a guest team inside GuestGameView's. ShotMapView and its children read `useGameTeam()` rather than TEAM_CONFIG, and nhlApi's game helpers take that team as an optional last argument. Nothing about a guest team is saved
+│       ├── GameTeamContext.jsx         # Which team the game view watches from — the favorite (TEAM_CONFIG) outside a provider, a guest team inside GuestGameView's (`useLeagueGameTeam(league)` answers the same for HockeyTechShotMapView: league.team, or HockeyTechGuestGameView's guest). ShotMapView and its children read `useGameTeam()` rather than TEAM_CONFIG, and nhlApi's game helpers take that team as an optional last argument. Nothing about a guest team is saved
 │       ├── AuthContext.jsx             # Auth state (Session 90) — mirrors SportContext.jsx's context+provider+hook pattern. Also runs favoriteTeamSync.js/followedTeams.js/triviaAnswers.js's sign-in reconciliation
 │       ├── favoriteTeamSync.js         # Favorite-team sync for signed-in users (Session 91) — write-on-switch (awaited before the team-change reload) + reconcile-on-session-load (first sign-in uploads local; existing server value wins on a new device)
 │       ├── tour.js                     # The app tour (driver.js, MIT, loaded only when a tour runs): stops found by selector at start and skipped when not on screen; eyewall:tour {done, invited, pending}; PostHog tour_started/_step/_completed/_skipped
@@ -255,6 +257,8 @@ canes-analytics-starter/
 │   │   ├── hockeytech-players.cy.js    # AHL + ECHL Players: roster and 2025-26 stats tables
 │   │   ├── hockeytech-team.cy.js       # AHL + ECHL Team: every tab renders
 │   │   ├── hockeytech-news.cy.js       # AHL + ECHL News: league news footer, source badges and filter chips
+│   │   ├── hockeytech-guest-game.cy.js # AHL + ECHL guest game view: live rows tappable (followed team's to its Shot Map), opening as either side, no season tabs, a final's stored shots + subtitle, home team without ?as=, bad links redirect
+│   │   ├── hockeytech-guest-game-invariants.cy.js # AHL + ECHL twin of guest-game-invariants: signed in, a guest visit writes nothing (device or account) and Back finds the followed team's Shot Map unchanged
 │   │   ├── hockeytech-shots.cy.js      # AHL + ECHL Shot Map: renders; wake lock + resume/push re-check; win popup once when a stubbed live game ends in a win; debug panel fires each event popup
 │   │   │                               # (shared fixtures/helpers: cypress/support/hockeytech.js)
 │   │   ├── draft.cy.js                 # NHL draft board
@@ -776,7 +780,7 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (949 tests, 106 files)
+### Vitest (961 tests, 108 files)
 ```bash
 npm test
 npm run test:watch
@@ -800,7 +804,7 @@ npm run cypress:visual            # diff current rendering against the committed
 ```
 48 baseline screenshots (`cypress/snapshots/base/`, committed) covering every NHL + PWHL route × mobile/desktop × dark/light. These routes hit the live Worker API with no fixture seeding, so a small amount of pixel drift between a baseline capture and a diff run is expected (real content changing, not a bug) — `errorThreshold: 1` (%) in `cypress/support/e2e.js` absorbs that noise; a real layout/spacing/color regression runs far higher and still fails. Intended workflow: capture a baseline immediately before a migration phase, diff immediately after.
 
-**62 spec files** (AHL/ECHL: `hockeytech-{league,schedule,players,team,news,shots}.cy.js`, `ahl-team`, `echl-team`, `hockeytech-season-pickers`, `hockeytech-player-compare`):
+**64 spec files** (AHL/ECHL: `hockeytech-{league,schedule,players,team,news,shots,guest-game,guest-game-invariants}.cy.js`, `ahl-team`, `echl-team`, `hockeytech-season-pickers`, `hockeytech-player-compare`):
 
 **Note (2026-08, Session 94):** `visual-regression.cy.js` added as part of Phase 0 of the full Tailwind migration (see `SESSION_94_FINDINGS_tailwind_migration.md`) — the parity-verification tooling that migration's later phases depend on.
 
@@ -816,6 +820,8 @@ npm run cypress:visual            # diff current rendering against the committed
 | `navigation.cy.js` | NHL routes + PWHL 12-team smoke (all 7 PWHL routes) |
 | `guest-game.cy.js` | Following a Scoreboard game as either team (stubs `/nhl/today`, `/pwhl/today`) — only live NHL rows tappable, the favorite's row goes to /, the guest view's bar/colors/one-game layout, the saved favorite untouched, Back restores it, bad links redirect |
 | `guest-game-invariants.cy.js` | Signed in (fake session, stubbed `user_preferences`), a guest visit reached from the Scoreboard makes no Supabase write and no `/push`/`/live-activity` POST, leaves `localStorage` byte-for-byte as it was, stores its summaries under the guest team's own `sessionStorage` key (the favorite's untouched), and Back lands on the favorite's usual view |
+| `hockeytech-guest-game.cy.js` | AHL + ECHL: following a Scoreboard game as either team (stubs `/{league}/today` and `/live`) — only live rows tappable, the followed team's row goes to its Shot Map, the guest view's bar/live chip/one-game layout, a real final's stored shots and subtitle, a link without `?as=` opens as the home team, bad links redirect |
+| `hockeytech-guest-game-invariants.cy.js` | AHL + ECHL twin of `guest-game-invariants.cy.js`: signed in, a guest visit makes no Supabase write or `/push`/`/live-activity` POST, leaves `localStorage` as it was, and Back finds the followed team's Shot Map |
 | `news.cy.js` | NHL news, source filters |
 | `milestones.cy.js` | Milestones feed, team filter dropdown, card structure, tap-to-open player popup |
 | `player-search.cy.js` | Global player search — open/close, debounce, typo tolerance, NHL+PWHL result correctness, popup opens for both |
