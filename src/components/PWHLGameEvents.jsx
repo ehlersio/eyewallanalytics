@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { penaltyHeadline, penaltyServedBy } from '../utils/penaltyText';
 import { hockeyTechPenaltyParties } from '../utils/hockeyTechPenalty';
 import { getPWHLTeamById } from '../utils/pwhlConfig';
+import { NO_GAME, watchGame } from '../utils/gameWatch';
 import { HatTrickPopup as _HatTrickPopup } from './GameEvents'; // reuse hat trick popup
 
 // ── Tailwind class constants (Phase 4, sub-PR 2 -- GameEvents.css deleted) ──
@@ -268,7 +269,10 @@ function periodLabel(n, isPlayoff = false) {
 /**
  * Watches liveData.events for new events and fires popups.
  *
- * @param {object}  liveData     - from /pwhl/live/:gameId (raw, before normalization)
+ * @param {object}  liveData     - from /pwhl/live/:gameId (raw, before normalization);
+ *                                 once the game ends, its final snapshot
+ *                                 (hooks/useEndedGameSnapshot.js) so the
+ *                                 win popup can fire
  * @param {boolean} isLive
  * @param {number}  teamId       - our selected team ID (integer)
  * @param {string}  teamAbbr     - our team abbrev for win popup
@@ -284,7 +288,7 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
 
   const gameId       = liveData?.gameId ? String(liveData.gameId) : null;
   const lastEventIdx = useRef(-1);
-  const wasLiveRef   = useRef(false);
+  const watchRef     = useRef(NO_GAME);  // see utils/gameWatch.js
   const gameEndFired = useRef(false);
   const puckDropFired = useRef(false);
 
@@ -295,14 +299,14 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
     gameId ? JSON.parse(sessionStorage.getItem(`pwhl_penalties_${gameId}`) || '[]') : []
   ));
 
-  // Track liveness for catching the final OT event
+  // Track liveness (for catching the final OT event and the win) and reset
+  // on game change, in one effect so a new game's reset can't land after
+  // it was seen live.
   useEffect(() => {
-    if (isLive) wasLiveRef.current = true;
-  }, [isLive]);
-
-  // Reset on game change
-  useEffect(() => {
-    wasLiveRef.current  = false;
+    const next = watchGame(watchRef.current, gameId, isLive);
+    const changed = next.gameId !== watchRef.current.gameId;
+    watchRef.current = next;
+    if (!changed) return;
     gameEndFired.current = false;
     puckDropFired.current = false;
     lastEventIdx.current = gameId
@@ -314,7 +318,7 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
     shownPenalties.current = new Set(
       gameId ? JSON.parse(sessionStorage.getItem(`pwhl_penalties_${gameId}`) || '[]') : []
     );
-  }, [gameId]);
+  }, [gameId, isLive]);
 
   const events       = liveData?.events || [];
   const eventsLength = events.length;
@@ -322,7 +326,7 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
   // Process new events on each poll
   useEffect(() => {
     if (!eventsLength) return;
-    if (!isLive && !wasLiveRef.current) return;
+    if (!isLive && !watchRef.current.wasLive) return;
 
     // On first load: skip existing events, watch only new ones
     if (lastEventIdx.current === -1) {
@@ -415,7 +419,7 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
 
   // Win detection
   useEffect(() => {
-    if (!liveData || gameEndFired.current || !wasLiveRef.current) return;
+    if (!liveData || gameEndFired.current || !watchRef.current.wasLive) return;
     if (liveData.gameStatus !== 'final') return;
     const sessionKey = `pwhl_win_${gameId}`;
     if (gameId && sessionStorage.getItem(sessionKey)) return;

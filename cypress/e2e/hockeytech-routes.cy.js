@@ -286,6 +286,38 @@ LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter, newsSource
       })
     })
 
+    // The win popup on a real game's end (audit 2026-10-06 §14: it never
+    // fired). /today says live, then final; once final the page stops
+    // polling /live but fetches the ended game once more, and the win
+    // pops up exactly once.
+    it(`/${key}/shots shows the win popup once when the followed team's live game ends in a win`, () => {
+      const workerUrl = Cypress.expose('WORKER_URL')
+      let status = 'live'
+      const game = () => ({ gameId: 777, gameDate: '2026-10-10', homeTeamId: team.teamId, awayTeamId: 1, homeTeamCode: team.abbr, awayTeamCode: 'OPP', homeScore: status === 'final' ? 2 : 1, awayScore: 1, status })
+      cy.intercept('GET', `${workerUrl}/${key}/today*`, req => req.reply([game()])).as('today')
+      cy.intercept('GET', `${workerUrl}/${key}/live/777`, req => req.reply({
+        gameId: 777, homeTeamId: team.teamId, awayTeamId: 1,
+        homeScore: status === 'final' ? 2 : 1, awayScore: 1,
+        gameStatus: status, events: [],
+      })).as('live')
+      visitAs(`/${key}/shots`, key, team)
+      cy.wait('@live', { timeout: DATA_TIMEOUT })
+      cy.get('.win-popup').should('not.exist')
+
+      cy.wait(1000).then(() => { status = 'final' })
+      cy.window().then(win => win.dispatchEvent(new win.Event('eyewall:push-received')))
+      cy.get('.win-popup', { timeout: DATA_TIMEOUT }).should('contain', `${team.abbr} 2 – `)
+      cy.get('.win-popup').click({ force: true })
+      cy.get('.win-popup').should('not.exist')
+
+      // Another re-check of a game already celebrated stays quiet.
+      cy.window().then(win => win.dispatchEvent(new win.Event('eyewall:push-received')))
+      cy.wait('@today')
+      cy.wait(1500)
+      cy.get('.win-popup').should('not.exist')
+      cy.assertNoErrors()
+    })
+
     // HockeyTechGameEvents' popups, fired from the dev-only debug panel
     // (5 taps on the header), the way pwhl-shots-live.cy.js does for PWHL.
     it(`/${key}/shots debug panel fires the ${label} event popups`, () => {

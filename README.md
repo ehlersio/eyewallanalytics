@@ -761,11 +761,13 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (450 tests, 52 files)
+### Vitest (870 tests, 95 files)
 ```bash
 npm test
 npm run test:watch
 ```
+
+Vitest runs under `environment: 'node'` (no DOM). To run a React hook for real (effects in order, re-renders), use `src/utils/__tests__/testHelpers/renderHook.jsx`: it renders into a stand-in container with `react-dom/client` and needs no extra dependency. `winPopupReplay.test.jsx` uses it to replay real completed games through the three game-event hooks.
 
 ### Cypress (E2E)
 ```bash
@@ -908,7 +910,7 @@ See `CLAUDE.md`'s versioning rule for the level definitions with examples.
 - **PWHL expansion team logos/names:** Real colors and roster data are live (2026-07), but logos and permanent team names are still placeholders — no official branding revealed yet. Expected this fall.
 - **PWHL expansion teams have no games yet (confirmed 2026-07 against the live Worker):** DET/HAM/LV/SJS have real rosters but empty schedule/skater-goalie-stats/standings/salaries until the 2026-27 season starts. Every data-driven view handles this gracefully: `PWHLScheduleView`, `PWHLShotMapView`, `PWHLPlayersView`'s Stats tab, and `PWHLTeamView`'s Advanced/Splits/Trends tabs show an explicit empty-state message, Team > Overview shows a "No games yet" card instead of a record, and the Salaries tab is hidden.
 - **Cache-busting order matters (learned 2026-07):** busting the Worker's KV cache *before* confirming the underlying data fix has actually landed just repopulates the same stale/empty entry. Always confirm the data first, then bust.
-- **Auth/Trivia/Badges test coverage (Session 93):** `favoriteTeamSync.js`/`triviaAnswers.js` have Vitest coverage (supabaseAuth mocked via `vi.mock`; localStorage/window stubbed via `vi.stubGlobal` since this repo's Vitest runs under `environment: 'node'`, not jsdom — see `src/utils/__tests__/testHelpers/mockSupabaseAuth.js`). `AuthContext.jsx`/`useReadState.js` (React hooks) are covered at the Cypress layer instead (`auth.cy.js`, `trivia.cy.js`, `read-state-badges.cy.js`) rather than adding a `@testing-library/react` dependency for hook-level unit tests.
+- **Auth/Trivia/Badges test coverage (Session 93):** `favoriteTeamSync.js`/`triviaAnswers.js` have Vitest coverage (supabaseAuth mocked via `vi.mock`; localStorage/window stubbed via `vi.stubGlobal` since this repo's Vitest runs under `environment: 'node'`, not jsdom — see `src/utils/__tests__/testHelpers/mockSupabaseAuth.js`). `AuthContext.jsx`/`useReadState.js` (React hooks) are covered at the Cypress layer instead (`auth.cy.js`, `trivia.cy.js`, `read-state-badges.cy.js`) rather than adding a `@testing-library/react` dependency for hook-level unit tests. (Since 2026-10, `testHelpers/renderHook.jsx` runs hooks under Vitest without that dependency; see Testing › Vitest.)
 - **Hard-tier trivia has no ongoing content pipeline:** only the 2 questions seeded for Session 92's live verification exist. No admin UI in v1 (intentional) — new hard questions need direct Supabase SQL editor inserts.
 - **HockeyTech `bootstrap` feed type:** it's `feed=statviewfeed`, not `feed=modulekit` — the latter returns a 200 OK with no real payload, which silently masqueraded as a working fallback for a while. If a HockeyTech URL is built from a written description rather than a captured real request, verify against actual DevTools traffic before trusting it.
 - **PWHL season resolution prefers regular seasons over playoffs, deliberately:** almost every `/pwhl/*` Worker endpoint filters `season_type=eq.regular` downstream, so resolving to a playoffs-type season_id breaks every PWHL view even for teams that played in that postseason. Shipped once without this preference and broke Cypress across every PWHL view before being caught.

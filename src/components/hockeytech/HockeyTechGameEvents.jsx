@@ -27,6 +27,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { penaltyHeadline, penaltyServedBy } from '../../utils/penaltyText';
 import { hockeyTechPenaltyParties } from '../../utils/hockeyTechPenalty';
+import { NO_GAME, watchGame } from '../../utils/gameWatch';
 
 // ── Tailwind class constants -- duplicated from PWHLGameEvents.jsx per
 // established per-file convention (see that file's own header comment
@@ -267,7 +268,10 @@ function periodLabel(n) {
  * sessionStorage-key/ref-vs-state race rationale, unchanged here.
  *
  * @param {object}  league       - utils/hockeyTechLeagues.js
- * @param {object}  liveData     - from /{league}/live/:gameId (raw, before normalization)
+ * @param {object}  liveData     - from /{league}/live/:gameId (raw, before normalization);
+ *                                 once the game ends, its final snapshot
+ *                                 (hooks/useEndedGameSnapshot.js) so the
+ *                                 win popup can fire
  * @param {boolean} isLive
  * @param {number}  teamId       - our selected team ID (integer)
  * @param {string}  teamAbbr     - our team abbrev for win popup
@@ -282,7 +286,7 @@ export function useHockeyTechGameEvents(league, liveData, isLive, teamId, teamAb
 
   const gameId       = liveData?.gameId ? String(liveData.gameId) : null;
   const lastEventIdx = useRef(-1);
-  const wasLiveRef   = useRef(false);
+  const watchRef     = useRef(NO_GAME);  // see utils/gameWatch.js
   const gameEndFired = useRef(false);
   const puckDropFired = useRef(false);
 
@@ -293,12 +297,12 @@ export function useHockeyTechGameEvents(league, liveData, isLive, teamId, teamAb
     gameId ? JSON.parse(sessionStorage.getItem(`${league.key}_penalties_${gameId}`) || '[]') : []
   ));
 
+  // One effect, so a new game's reset can't land after it was seen live.
   useEffect(() => {
-    if (isLive) wasLiveRef.current = true;
-  }, [isLive]);
-
-  useEffect(() => {
-    wasLiveRef.current  = false;
+    const next = watchGame(watchRef.current, gameId, isLive);
+    const changed = next.gameId !== watchRef.current.gameId;
+    watchRef.current = next;
+    if (!changed) return;
     gameEndFired.current = false;
     puckDropFired.current = false;
     lastEventIdx.current = gameId
@@ -310,14 +314,14 @@ export function useHockeyTechGameEvents(league, liveData, isLive, teamId, teamAb
     shownPenalties.current = new Set(
       gameId ? JSON.parse(sessionStorage.getItem(`${league.key}_penalties_${gameId}`) || '[]') : []
     );
-  }, [gameId]);
+  }, [gameId, isLive]);
 
   const events       = liveData?.events || [];
   const eventsLength = events.length;
 
   useEffect(() => {
     if (!eventsLength) return;
-    if (!isLive && !wasLiveRef.current) return;
+    if (!isLive && !watchRef.current.wasLive) return;
 
     if (lastEventIdx.current === -1) {
       lastEventIdx.current = eventsLength - 1;
@@ -397,7 +401,7 @@ export function useHockeyTechGameEvents(league, liveData, isLive, teamId, teamAb
 
   // Win detection
   useEffect(() => {
-    if (!liveData || gameEndFired.current || !wasLiveRef.current) return;
+    if (!liveData || gameEndFired.current || !watchRef.current.wasLive) return;
     if (liveData.gameStatus !== 'final') return;
     const sessionKey = `${league.key}_win_${gameId}`;
     if (gameId && sessionStorage.getItem(sessionKey)) return;

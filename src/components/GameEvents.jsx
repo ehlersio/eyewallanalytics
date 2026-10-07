@@ -4,6 +4,7 @@ import { TEAM_CONFIG } from '../utils/nhlApi';
 import { classifyGoal, goalSignature, recordGoal } from '../utils/goalUpdates';
 import { penaltyParties, penaltyHeadline, penaltyServedBy, penaltyDescription } from '../utils/penaltyText';
 import { nhlPeriodLabel } from '../utils/gamePlays';
+import { NO_GAME, watchGame } from '../utils/gameWatch';
 
 // ── Tailwind class constants (Phase 4, sub-PR 2 -- GameEvents.css deleted) ──
 // Duplicated in PWHLGameEvents.jsx per established per-file convention
@@ -287,8 +288,9 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr
   ));
   const scorerGoals = useRef({}); // { scorerId: goalCount } for hat trick tracking
   const goalScorerIds = useRef({}); // { eventId: scorerId } -- moves the count if a review changes the scorer
-  // Track whether we were recently live (so we catch the final OT play)
-  const wasLiveRef   = useRef(false);
+  // Which game we're on and whether we saw it live (so we catch the final
+  // OT play and only celebrate a game watched live) -- utils/gameWatch.js.
+  const watchRef     = useRef(NO_GAME);
 
   const pName = id => {
     if (!id || !playerMap) return null;
@@ -300,26 +302,26 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr
   // as 'SO 13:53').
   const periodLabel = n => nhlPeriodLabel(n, pbp?.gameType === 3);
 
-  // Track liveness — stay "active" for one extra cycle after game ends
-  // so the OT/final goal can be processed even after isLive flips false
+  // Track liveness -- stay "active" after the game ends so the OT/final
+  // goal and the win can be processed once isLive flips false -- and reset
+  // on game change. One effect, so a new game's reset can't land after it
+  // was seen live.
   useEffect(() => {
-    if (isLive) wasLiveRef.current = true;
-  }, [isLive]);
-
-  // Reset on game change — new game ID means fresh state
-  useEffect(() => {
-    wasLiveRef.current = false;
-    lastPlayIdx.current = gameId
-      ? parseInt(sessionStorage.getItem(`lastPlay_${gameId}`) || '-1', 10)
-      : -1;
-  }, [gameId]);
+    const next = watchGame(watchRef.current, gameId, isLive);
+    const changed = next.gameId !== watchRef.current.gameId;
+    watchRef.current = next;
+    if (!changed) return;
+    gameEndFired.current = false;
+    puckDropFired.current = false;
+    lastPlayIdx.current = parseInt(sessionStorage.getItem(`lastPlay_${gameId}`) || '-1', 10);
+  }, [gameId, isLive]);
 
   // Process new plays — runs when PBP updates regardless of isLive
   // so OT goals aren't missed when gameState flips to OFF
   useEffect(() => {
     if (!pbp?.plays?.length) return;
     // Only process if we're live OR we were recently live (catch final play)
-    if (!isLive && !wasLiveRef.current) return;
+    if (!isLive && !watchRef.current.wasLive) return;
 
     const plays = pbp.plays;
 
@@ -418,7 +420,7 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr
   // This catches wins in OT where isLive may already be false
   useEffect(() => {
     if (!pbp || gameEndFired.current) return;
-    if (!wasLiveRef.current) return; // only fire if we were in the game
+    if (!watchRef.current.wasLive) return; // only fire if we were in the game
 
     const state = pbp.gameState;
     if (!['OFF','FINAL','F','FINAL_OVERTIME','FINAL_SHOOTOUT'].includes(state)) return;
