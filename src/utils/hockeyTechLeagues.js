@@ -39,6 +39,8 @@
 //   headshotSize   LeagueStat headshot path segment, fallback when a row has none
 //   newsSources    source id -> { label, color, bg } for the News badges;
 //                  matches the poller's *_NEWS_SOURCES
+//   playerPopup    HockeyTechPlayerPopup options (see its header):
+//                  { comparisonEntry: true } -- the "vs Player" entry
 //   debugSamples   sample players/teams for the Shot Map's dev-only event
 //                  debug panel; null in a production build, which has no
 //                  panel (the names don't ship)
@@ -122,6 +124,9 @@ export const AHL = {
     'hockeywriters-ahl': { label: 'The Hockey Writers', color: '#FFFFFF', bg: '#1a1a1a' },
     'osc-ahl':           { label: 'OurSports Central',  color: '#FFFFFF', bg: '#8b0000' },
   },
+  // HockeyTechPlayerPopup options (see its header): the "vs Player"
+  // comparison entry.
+  playerPopup: { comparisonEntry: true },
   debugSamples: import.meta.env.DEV ? {
     goalScorer: 'Easton Cowan', goalAssists: ['Luke Haymes', 'Alex Nylander'],
     ppGoalScorer: 'Dakota Mermis', ppAlertPlayer: 'Luke Tuch', majorPlayer: 'Marc Del Gaizo',
@@ -193,6 +198,9 @@ export const ECHL = {
     'hockeywriters-echl': { label: 'The Hockey Writers', color: '#FFFFFF', bg: '#1a1a1a' },
     'osc-echl':           { label: 'OurSports Central',  color: '#FFFFFF', bg: '#8b0000' },
   },
+  // HockeyTechPlayerPopup options (see its header): the "vs Player"
+  // comparison entry.
+  playerPopup: { comparisonEntry: true },
   debugSamples: import.meta.env.DEV ? {
     goalScorer: 'Anthony Romano', goalAssists: ['Oliver Chau', 'Jordan Sambrook'],
     ppGoalScorer: 'Craig Needham', ppAlertPlayer: 'Cam Johnson', majorPlayer: 'Reid Duke',
