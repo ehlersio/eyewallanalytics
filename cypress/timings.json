@@ -5,6 +5,10 @@
       "duration": 19134
     },
     {
+      "spec": "cypress/e2e/admin-health.cy.js",
+      "duration": 3200
+    },
+    {
       "spec": "cypress/e2e/ahl-team.cy.js",
       "duration": 10132
     },
@@ -43,6 +47,14 @@
     {
       "spec": "cypress/e2e/hockeytech-player-compare.cy.js",
       "duration": 9751
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-routes.cy.js",
+      "duration": 15000
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-season-pickers.cy.js",
+      "duration": 27000
     },
     {
       "spec": "cypress/e2e/league-scorecard.cy.js",
@@ -113,6 +125,10 @@
       "duration": 28550
     },
     {
+      "spec": "cypress/e2e/pwhl-league-2026-27.cy.js",
+      "duration": 5200
+    },
+    {
       "spec": "cypress/e2e/pwhl-league.cy.js",
       "duration": 33778
     },
@@ -141,6 +157,10 @@
       "duration": 142510
     },
     {
+      "spec": "cypress/e2e/pwhl-upcoming-season.cy.js",
+      "duration": 7100
+    },
+    {
       "spec": "cypress/e2e/read-state-badges.cy.js",
       "duration": 18440
     },
@@ -155,6 +175,10 @@
     {
       "spec": "cypress/e2e/summary-link.cy.js",
       "duration": 9037
+    },
+    {
+      "spec": "cypress/e2e/team-callup-watch.cy.js",
+      "duration": 6000
     },
     {
       "spec": "cypress/e2e/team-injury-impact.cy.js",

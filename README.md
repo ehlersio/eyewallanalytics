@@ -237,6 +237,7 @@ canes-analytics-starter/
 │   │   ├── pwhl-team.cy.js             # PWHL team (4 established teams, all 5 tabs, full features + 1 expansion team empty-state)
 │   │   ├── league.cy.js                # NHL league (all 6 tabs, incl. Scoreboard)
 │   │   ├── pwhl-league.cy.js           # PWHL league (all 6 tabs, incl. Scoreboard; standings/leaders scoped to established teams — see Known gaps)
+│   │   ├── hockeytech-routes.cy.js     # AHL + ECHL League/Schedule/News/Shot Map smoke: each renders its own league's page (logos, divisions, news footer), no load failure
 │   │   ├── draft.cy.js                 # NHL draft board
 │   │   ├── TeamPicker.cy.js            # Sport + team picker — all 12 PWHL teams selectable with real colors
 │   │   ├── theme.cy.js                 # Light/dark mode
