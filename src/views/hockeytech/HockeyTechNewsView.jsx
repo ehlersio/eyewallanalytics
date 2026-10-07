@@ -34,6 +34,7 @@ import {
   NEWS_PAGE_INFO_CLASSES,
 } from '../../utils/newsViewClasses';
 import { PAGE_CLASSES } from '../../utils/pageClasses';
+import { workerFetchInit } from '../../utils/workerCache';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
 const PAGE_SIZE  = 10;
@@ -106,14 +107,16 @@ export default function HockeyTechNewsView({ league }) {
   const retryRef    = useRef(null);
   const readState   = useReadState();
 
-  const fetchArticles = useCallback(async (isRetry = false) => {
+  // `fresh` (the refresh buttons, the retry after an empty answer) skips the
+  // browser's cached copy -- see workerCache.js.
+  const fetchArticles = useCallback(async (isRetry = false, fresh = isRetry) => {
     if (!WORKER_URL) { setError(t('triviaFeed.error.workerNotConfigured')); setLoading(false); return; }
     if (fetchingRef.current && !isRetry) return;
     fetchingRef.current = true;
     if (!isRetry) setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${WORKER_URL}/${league.key}/news`, { cache: 'no-store' });
+      const res = await fetch(`${WORKER_URL}/${league.key}/news`, workerFetchInit({ fresh }));
       if (!res.ok) throw new Error(t('newsView.error.notAvailable'));
       const data = await res.json();
       const arr  = Array.isArray(data) ? data : [];
@@ -192,7 +195,7 @@ export default function HockeyTechNewsView({ league }) {
               </div>
             )}
           </div>
-          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={() => fetchArticles()} disabled={loading}
+          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={() => fetchArticles(false, true)} disabled={loading}
             aria-label={t('newsView.header.refreshAriaLabel')}>
             {loading ? '…' : '↻'}
           </button>
@@ -226,7 +229,7 @@ export default function HockeyTechNewsView({ league }) {
         <div className={`${NEWS_ERROR_CLASSES} card`}>
           <div className={NEWS_ERROR_ICON_CLASSES}>📰</div>
           <div className={NEWS_ERROR_MSG_CLASSES}>{error}</div>
-          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={() => fetchArticles()}>{t('triviaFeed.error.tryAgain')}</button>
+          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={() => fetchArticles(false, true)}>{t('triviaFeed.error.tryAgain')}</button>
         </div>
       )}
 

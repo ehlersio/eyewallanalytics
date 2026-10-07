@@ -6,6 +6,7 @@
 import i18n from '../i18n';
 import { getPWHLStoredTeam, PWHL_CURRENT_SEASON, PWHL_SEASON_LABEL } from './pwhlConfig';
 import { fetchWithRetry } from './retryFetch';
+import { workerFetchInit } from './workerCache';
 
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
 
@@ -25,8 +26,9 @@ async function workerFetch(path) {
     // single transient timeout leaves the Roster tab on a dead "Failed to
     // load roster." card with no way back, which is what a user on the
     // production build gets: no StrictMode there, so no second attempt.
+    // The browser's HTTP cache follows the Worker's headers -- workerCache.js.
     const res = await fetchWithRetry(`${WORKER_URL}${path}`, {
-      init: { cache: 'no-store' },
+      init: workerFetchInit(),
     });
     if (!res.ok) {
       console.warn(`pwhlApi ${res.status}: ${path}`);

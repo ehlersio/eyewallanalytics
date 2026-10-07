@@ -5,8 +5,9 @@
 // clients used to be copies; ahlApi.js and echlApi.js now re-export
 // createHockeyTechApi('ahl') / ('echl') under their old names.
 //
-// Requests use fetchWithRetry's 8s budget with one retry, and
-// `cache: 'no-store'`, as before. A failed request resolves to null.
+// Requests use fetchWithRetry's 8s budget with one retry and the browser's
+// HTTP cache, which follows the Worker's Cache-Control/ETag (see
+// workerCache.js). A failed request resolves to null.
 //
 // Season defaults read the league's live-resolved current season at call
 // time (see ahlConfig.js's AHL_CURRENT_SEASON), and team defaults the
@@ -16,6 +17,7 @@ import i18n from '../i18n';
 import * as ahlConfig from './ahlConfig';
 import * as echlConfig from './echlConfig';
 import { fetchWithRetry } from './retryFetch';
+import { workerFetchInit } from './workerCache';
 
 const LEAGUE_CONFIG = {
   ahl:  { currentSeason: () => ahlConfig.AHL_CURRENT_SEASON,   getStoredTeam: ahlConfig.getAHLStoredTeam },
@@ -68,7 +70,7 @@ export function createHockeyTechApi(key) {
     try {
       // One retry on a stalled connection -- see retryFetch.js.
       const res = await fetchWithRetry(`${WORKER_URL}${path}`, {
-        init: { cache: 'no-store' },
+        init: workerFetchInit(),
       });
       if (!res.ok) {
         console.warn(`${tag} ${res.status}: ${path}`);

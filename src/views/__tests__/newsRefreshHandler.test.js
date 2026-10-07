@@ -1,6 +1,8 @@
 // src/views/__tests__/newsRefreshHandler.test.js
-// The News views' Refresh and Try-again buttons must call fetchArticles()
-// with no argument. `onClick={fetchArticles}` handed it the MouseEvent as
+// The News views' Refresh and Try-again buttons must call
+// fetchArticles(false, true): not a retry (isRetry false), but fresh, so the
+// browser revalidates with the Worker instead of reusing its cached copy
+// (workerCache.js; requests no longer send no-store). `onClick={fetchArticles}` handed it the MouseEvent as
 // `isRetry`, which is truthy: the click skipped the in-flight guard, the
 // loading state and the cold-cache retry, so a manual refresh on a cold
 // Worker cache showed "0 articles" and never retried (audit 2026-10-06).
@@ -22,7 +24,13 @@ describe.each(views)('%s refresh buttons', (view) => {
     expect(src).not.toMatch(/onClick=\{fetchArticles\}/)
   })
 
-  it('call fetchArticles() as a fresh request on both buttons', () => {
-    expect(src.match(/onClick=\{\(\) => fetchArticles\(\)\}/g)).toHaveLength(2)
+  it('call fetchArticles(false, true) -- not a retry, fresh -- on both buttons', () => {
+    expect(src.match(/onClick=\{\(\) => fetchArticles\(false, true\)\}/g)).toHaveLength(2)
+  })
+
+  it('fetch the news through workerFetchInit, fresh on a refresh or retry', () => {
+    expect(src).not.toMatch(/no-store/)
+    expect(src).toMatch(/fetchArticles = useCallback\(async \(isRetry = false, fresh = isRetry\)/)
+    expect(src).toMatch(/workerFetchInit\(\{ fresh \}\)/)
   })
 })
