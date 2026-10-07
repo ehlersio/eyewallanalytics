@@ -80,6 +80,21 @@ LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter, newsSource
       assertNoLoadFailure()
     })
 
+    // HockeyTechLeagueView's leader rows open the league's player popup.
+    it(`/${key}/league leader rows open the ${label} player popup`, () => {
+      visitAs(`/${key}/league`, key, team)
+      cy.get('.league-tab').contains('Leaders').click()
+      cy.get('.lv-leaders-row', { timeout: DATA_TIMEOUT }).first().then($row => {
+        const name = $row.find('span').eq(1).text()
+        cy.wrap($row).click()
+        cy.get('.pp-last', { timeout: DATA_TIMEOUT }).should($last => {
+          expect(name).to.contain($last.text())
+        })
+      })
+      cy.get('.pp-tab').should('have.length.at.least', 2)
+      assertNoLoadFailure()
+    })
+
     it(`/${key}/schedule renders the ${team.abbr} schedule`, () => {
       visitAs(`/${key}/schedule`, key, team)
       cy.contains('h2', 'Schedule', { timeout: DATA_TIMEOUT })
