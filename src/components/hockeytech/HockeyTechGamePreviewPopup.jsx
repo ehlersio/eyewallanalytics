@@ -28,14 +28,16 @@
 //     homeTeamId, homeScore, visitingScore, datePlayed)
 // headToHeadRecords keeps the identical shape (previousFiveYears.formattedRecord).
 //
-// No prediction-share/export section (PWHLPredictionShareCanvas) -- out
-// of this phase's scope.
+// The prediction share card is the PWHL's (PWHLPredictionShareCanvas.jsx),
+// given the league's logos and label; no shot-attempt row (AHL/ECHL PBP
+// has no shot attempts beyond shots on goal).
 
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../../hooks/useFetch';
 import { formatDate as formatDateIntl } from '../../utils/formatters';
 import TeamLogo from '../TeamLogo';
+import PredictionExportSection from '../PWHLPredictionShareCanvas';
 import { capture } from '../../utils/analytics';
 import { SKELETON_CLASSES } from '../../utils/skeletonClasses';
 
@@ -190,6 +192,13 @@ export default function HockeyTechGamePreviewPopup({ league, game, teamId, abbr,
                     <span style={{ color: oppColor }}>{oppStreak}</span>
                   </div>
                 </div>
+                <PredictionExportSection
+                  sport={league.key} leagueLabel={league.label}
+                  abbr={abbr} oppAbbr={oppAbbr} color={color} oppColor={oppColor}
+                  myWinPct={myWinPct} oppWinPct={oppWinPct} myExp={myExp} oppExp={oppExp}
+                  myStreak={myStreak} oppStreak={oppStreak}
+                  narrative={prediction.narrative} gameId={game.game_id}
+                />
               </>
             )}
           </div>

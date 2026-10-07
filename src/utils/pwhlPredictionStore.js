@@ -10,7 +10,9 @@
 // predicted score, actual outcome (filled in after game).
 import { createPredictionStore } from './hockeyTechPredictionStore';
 
-const store = createPredictionStore('pwhl');
+// The store object itself, for components that take one (LocalPredictionScorecard).
+export const pwhlPredictionStore = createPredictionStore('pwhl');
+const store = pwhlPredictionStore;
 
 export const loadPWHLPredictions    = store.load;
 export const savePWHLPrediction     = store.save;

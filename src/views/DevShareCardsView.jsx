@@ -154,6 +154,10 @@ export default function DevShareCardsView() {
         <PWHLPredictionCanvas abbr="MIN" oppAbbr="BOS" color="#9d7ae1" oppColor="#4c9a73" myWinPct={57} oppWinPct={43}
           myExp={3.1} oppExp={2.4} myStreak="W3" oppStreak="L1" myCorsi={53.4} oppCorsi={46.6} narrative={NARRATIVE} />
       </CardSlot>
+      <CardSlot name="ahl-prediction">
+        <PWHLPredictionCanvas sport="ahl" leagueLabel="AHL" abbr="HER" oppAbbr="TEX" color="#AC7374" oppColor="#4c9a73" myWinPct={55} oppWinPct={45}
+          myExp={3.2} oppExp={3.1} myStreak="W2" oppStreak="L1" narrative={NARRATIVE} />
+      </CardSlot>
       <CardSlot name="game-summary"><PeriodSummaryShareCanvas summary={GAME_SUMMARY} {...SUMMARY_PROPS} /></CardSlot>
       {/* A usual final: a few goals, and the Worker's full-length card caption
           (up to ~50 words), which gets the room the goals leave. */}

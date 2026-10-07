@@ -35,6 +35,21 @@ describe('PWHL League view', () => {
     it('Scoreboard tab exists and is first', () => {
       cy.get('.league-tab').eq(0).should('contain', 'Scoreboard')
     })
+
+    // Phase 3 B5: this device's PWHL prediction record
+    // ('eyewall_pwhl_predictions_v1'), the NHL scorecard's empty state
+    // until a prediction is graded.
+    it('Scorecard tab shows the empty state, then a graded record', () => {
+      cy.get('.league-tab').contains('Scorecard').click()
+      cy.get('[data-testid="local-scorecard"]').should('contain', 'No scorecard yet.')
+      cy.window().then(win => win.localStorage.setItem('eyewall_pwhl_predictions_v1', JSON.stringify([
+        { gameId: 9, gameDate: '2026-03-01', opponent: 'MTL', predictedTeamWin: false, predictedTeamScore: 2, predictedOppScore: 3, teamActual: 1, oppActual: 4, teamWon: false, correct: true, scoreDiff: 2 },
+      ])))
+      cy.get('.league-tab').contains('Standings').click()
+      cy.get('.league-tab').contains('Scorecard').click()
+      cy.get('[data-testid="local-scorecard"]').should('contain', '100%').and('contain', '1 graded')
+        .and('contain', 'vs MTL: predicted a loss, final 1–4')
+    })
   })
 
   describe('Standings tab', () => {

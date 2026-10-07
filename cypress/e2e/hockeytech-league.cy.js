@@ -56,5 +56,32 @@ LEAGUES.forEach(({ key, label, team, divisions }) => {
         .should('contain', 'Ranked by SV%').and('contain', '1st').and('contain', 'Ranked by GAA')
       assertNoLoadFailure()
     })
+
+    // Scorecard tab (Phase 3 B5): this device's graded predictions, from
+    // the league's prediction store ('eyewall_<key>_predictions_v1');
+    // the NHL scorecard's empty state while nothing is graded.
+    it(`/${key}/league Scorecard tab shows this device's prediction record`, () => {
+      visitAs(`/${key}/league`, key, team)
+      cy.get('.league-tab').contains('Scorecard').click()
+      cy.get('[data-testid="local-scorecard"]').should('contain', 'Your prediction record').and('contain', 'No scorecard yet.')
+
+      cy.visit(`/${key}/league`, {
+        onBeforeLoad(win) {
+          win.localStorage.setItem('eyewall:sport', key)
+          win.localStorage.setItem(`eyewall:${key}_team`, JSON.stringify(team))
+          win.localStorage.setItem(`eyewall_${key}_predictions_v1`, JSON.stringify([
+            { gameId: 1, gameDate: '2026-10-10', opponent: 'OPA', predictedTeamWin: true, predictedTeamScore: 3, predictedOppScore: 2, teamActual: 4, oppActual: 2, teamWon: true, correct: true, scoreDiff: 1 },
+            { gameId: 2, gameDate: '2026-10-12', opponent: 'OPB', predictedTeamWin: true, predictedTeamScore: 3, predictedOppScore: 3, teamActual: 1, oppActual: 2, teamWon: false, correct: false, scoreDiff: 3 },
+            { gameId: 3, gameDate: '2026-10-15', opponent: 'OPC', predictedTeamWin: false, predictedTeamScore: 2, predictedOppScore: 3 },
+          ]))
+        },
+      })
+      cy.get('.league-tab', { timeout: 10000 }).contains('Scorecard').click()
+      cy.get('[data-testid="local-scorecard"]')
+        .should('contain', '50%').and('contain', '2 graded')
+        .and('contain', 'vs OPB: predicted a win, final 1–2')
+        .and('not.contain', 'OPC')
+      cy.assertNoErrors()
+    })
   })
 })

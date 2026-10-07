@@ -24,6 +24,8 @@ import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 import { streakColor } from '../utils/hockeyTechResults';
 import { summarizeStandings, seasonsWithGames, fallbackSeason, teamHasGames } from '../utils/teamSeasons';
 import { workerFetchInit } from '../utils/workerCache';
+import { pwhlPredictionStore } from '../utils/pwhlPredictionStore';
+import LocalPredictionScorecard from '../components/LocalPredictionScorecard';
 
 // Tailwind migration (Session 97, Phase 3, sub-PR 1) -- only the small
 // PlayersView.css-owned pieces this file actually uses (.players-tabs/.tab,
@@ -347,6 +349,7 @@ const TABS = [
   { id: 'leaders',   labelKey: 'league.tabs.leaders'   },
   { id: 'rankings',  labelKey: 'pwhlLeagueView.tabs.rankings'  },
   { id: 'draft',     labelKey: 'league.tabs.draft'     },
+  { id: 'scorecard', labelKey: 'scorecard.tabLabel'    },
 ];
 
 export default function PWHLLeagueView() {
@@ -492,6 +495,9 @@ export default function PWHLLeagueView() {
         )}
         {activeTab === 'draft' && (
           <DraftPanel season={season} />
+        )}
+        {activeTab === 'scorecard' && (
+          <LocalPredictionScorecard store={pwhlPredictionStore} />
         )}
       </div>
     </div>

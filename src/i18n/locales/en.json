@@ -2682,7 +2682,14 @@
         "desc": "Simulated playoff chances, checked preseason and on Nov 15, Jan 1 and Mar 1.",
         "pending": "Graded once the regular season ends and the playoff field is set."
       }
-    }
+    },
+    "localTitle": "Your prediction record",
+    "localIntro": "How the app's game predictions did for the games you opened a preview for on this device, graded once each game was over.",
+    "localScoreErrorLabel": "Goals off",
+    "localScoreErrorHelp": "Goals off: how far the expected score was from the final score, both teams added up, per game.",
+    "localRecentItem": "{{date}} vs {{opp}}: predicted a {{outcome}}, final {{score}}",
+    "localOutcomeWin": "win",
+    "localOutcomeLoss": "loss"
   },
   "eloModel": {
     "source": "Elo model",
