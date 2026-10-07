@@ -15,6 +15,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch, usePoll } from '../../hooks/useFetch';
 import TeamLogo from '../../components/TeamLogo';
+import HockeyTechPlayerPopup from '../../components/HockeyTechPlayerPopup';
 import Scoreboard from '../../components/Scoreboard';
 import { SKELETON_CLASSES } from '../../utils/skeletonClasses';
 import { streakColor } from '../../utils/hockeyTechResults';
@@ -65,7 +66,6 @@ function teamAbbr(league, teamId) {
 }
 
 export default function HockeyTechLeagueView({ league }) {
-  const { PlayerPopup } = league;
   const { t } = useTranslation();
   const [tab, setTab] = useState('scoreboard');
   const [selected, setSelected] = useState(null);
@@ -110,7 +110,8 @@ export default function HockeyTechLeagueView({ league }) {
       </div>
 
       {selected && (
-        <PlayerPopup
+        <HockeyTechPlayerPopup
+          league={league}
           player={selected}
           seasonLabel={league.config.seasons.find(s => s.id === season)?.label || String(season)}
           season={season}

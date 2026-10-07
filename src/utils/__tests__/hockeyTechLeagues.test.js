@@ -7,16 +7,14 @@ import * as ahlApi from '../ahlApi.js'
 import * as echlApi from '../echlApi.js'
 import * as ahlConfig from '../ahlConfig.js'
 import * as echlConfig from '../echlConfig.js'
-import AHLPlayerPopup from '../../components/AHLPlayerPopup.jsx'
-import ECHLPlayerPopup from '../../components/ECHLPlayerPopup.jsx'
 
 const keys = o => Object.keys(o).sort()
 // Own keys plus getters (config.currentSeason is a getter).
 const allKeys = o => Object.getOwnPropertyNames(o).sort()
 
 const LEAGUES = [
-  { league: AHL, api: ahlApi, config: ahlConfig, code: 'AHL', Popup: AHLPlayerPopup },
-  { league: ECHL, api: echlApi, config: echlConfig, code: 'ECHL', Popup: ECHLPlayerPopup },
+  { league: AHL, api: ahlApi, config: ahlConfig, code: 'AHL' },
+  { league: ECHL, api: echlApi, config: echlConfig, code: 'ECHL' },
 ]
 
 describe('league object shape', () => {
@@ -49,7 +47,7 @@ describe('league object shape', () => {
   })
 })
 
-describe.each(LEAGUES)('$code', ({ league, api, config, code, Popup }) => {
+describe.each(LEAGUES)('$code', ({ league, api, config, code }) => {
   it('every api entry is a function', () => {
     for (const [name, fn] of Object.entries(league.api)) {
       expect(typeof fn, name).toBe('function')
@@ -98,15 +96,34 @@ describe.each(LEAGUES)('$code', ({ league, api, config, code, Popup }) => {
     for (const id of Object.keys(league.newsSources)) expect(id.endsWith(`-${league.key}`), id).toBe(true)
   })
 
-  it('PlayerPopup is the league\'s popup', () => {
-    expect(league.PlayerPopup).toBe(Popup)
+  // Views render HockeyTechPlayerPopup with `league` themselves; a popup
+  // here closed an import cycle with the AHL/ECHL popup wrappers.
+  it('holds no component', () => {
+    expect(league).not.toHaveProperty('PlayerPopup')
+    for (const [k, v] of Object.entries(league)) expect(typeof v, k).not.toBe('function')
+  })
+
+  it('has debug samples in development', () => {
+    expect(league.debugSamples.winTeamAbbr).toBeTypeOf('string')
   })
 })
 
-it('loads when a popup is imported before the league module', async () => {
+it('loads when a popup wrapper is imported before the league module', async () => {
   vi.resetModules()
   const { default: Popup } = await import('../../components/ECHLPlayerPopup.jsx')
   const { ECHL: fresh } = await import('../hockeyTechLeagues.js')
-  expect(fresh.PlayerPopup).toBe(Popup)
+  expect(Popup).toBeTypeOf('function')
   expect(fresh.api.fetchSchedule).toBeTypeOf('function')
+})
+
+it('leaves the debug samples out of a production build', async () => {
+  vi.resetModules()
+  vi.stubEnv('DEV', false)
+  try {
+    const fresh = await import('../hockeyTechLeagues.js')
+    expect(fresh.AHL.debugSamples).toBeNull()
+    expect(fresh.ECHL.debugSamples).toBeNull()
+  } finally {
+    vi.unstubAllEnvs()
+  }
 })

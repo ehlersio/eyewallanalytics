@@ -20,10 +20,8 @@ import {
   fetchPWHLPlayerShots, fetchPWHLPlayerLanding, fetchPWHLPlayerGameLog, fetchPWHLPlayerCareer,
   fetchPWHLPlayerPercentiles, fetchPWHLGoaliePercentiles,
 } from '../utils/pwhlApi';
-import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById } from '../utils/pwhlConfig';
+import { PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, getPWHLTeamById, getPWHLSeasonLabel } from '../utils/pwhlConfig';
 import * as stats from '../utils/pwhlPlayerStats';
-
-const SEASON_LABEL = '2025–26';
 
 // Just what the popup reads -- the PWHL views don't use the HockeyTech
 // league objects.
@@ -61,6 +59,9 @@ const PWHL = {
   },
 };
 
-export default function PWHLPlayerPopup({ seasonLabel = SEASON_LABEL, season = PWHL_CURRENT_SEASON, ...props }) {
+// Both default at render time: the live-resolved current season
+// (pwhlConfig.js updates it after load) and that season's label. The label
+// used to be the literal '2025–26' whatever the season.
+export default function PWHLPlayerPopup({ season = PWHL_CURRENT_SEASON, seasonLabel = getPWHLSeasonLabel(season), ...props }) {
   return <HockeyTechPlayerPopup league={PWHL} seasonLabel={seasonLabel} season={season} {...props} />;
 }
