@@ -101,3 +101,55 @@ LEAGUES.forEach((L) => {
     })
   })
 })
+
+// The "vs Player" entry (Phase 3 B4): the AHL/ECHL popup now offers the
+// player-vs-player comparison the NHL and PWHL popups have, same league
+// only, on box stats -- no radar or Possession/Advanced tab, since there
+// are no AHL/ECHL percentiles behind them. The search index is stubbed
+// with this league's two players and one from the other HockeyTech league.
+const RIVAL = { player_id: 7777, first_name: 'Ben', last_name: 'Rival', position: 'LW', jersey_number: 11 }
+
+LEAGUES.forEach((L) => {
+  describe(`${L.label} player popup — vs Player`, () => {
+    beforeEach(() => {
+      stubWorker(L)
+      const other = L.key === 'ahl' ? 'echl' : 'ahl'
+      cy.intercept('GET', '**/players-search-index*', [
+        { id: PLAYER.player_id, name: 'Alex Skater', team: L.team.abbr, position: 'C', sport: L.key },
+        { id: RIVAL.player_id, name: 'Ben Rival', team: L.team.abbr, position: 'LW', sport: L.key },
+        { id: 8888, name: 'Ben Elsewhere', team: 'XYZ', position: 'C', sport: other },
+      ])
+      // The comparison reads each player's current season (AHL 2026-27,
+      // ECHL 2025-26 until its opener), whatever its id.
+      cy.intercept('GET', `**/${L.key}/player/landing?id=${PLAYER.player_id}*`, {
+        ...PLAYER, team_id: L.team.teamId, gp: 40, goals: 15, assists: 20, points: 35, plus_minus: 8, shots: 110, pim: 12,
+      })
+      cy.intercept('GET', `**/${L.key}/player/landing?id=${RIVAL.player_id}*`, {
+        ...RIVAL, team_id: L.team.teamId, gp: 38, goals: 9, assists: 12, points: 21, plus_minus: -2, shots: 80, pim: 30,
+      })
+      cy.visit(`/${L.key}/players`, {
+        onBeforeLoad(win) {
+          win.localStorage.setItem('eyewall:sport', L.key)
+          win.localStorage.setItem(`eyewall:${L.key}_team`, JSON.stringify(L.team))
+        },
+      })
+      cy.contains(PLAYER.first_name, { timeout: 10000 }).click()
+    })
+
+    it('compares two players of the same league on their box stats', () => {
+      cy.get('.pce-toggle', { timeout: DATA_TIMEOUT }).should('contain.text', 'vs Player').click()
+      cy.get('.pce-input').should('have.attr', 'placeholder', `Search ${L.label} players…`).type('Ben')
+      // Same league only, and not the player himself.
+      cy.get('.pce-result').should('have.length', 1).and('contain', 'Ben Rival').click()
+      cy.get('.pcp-root', { timeout: DATA_TIMEOUT }).within(() => {
+        cy.contains('Alex Skater').should('exist')
+        cy.contains('Ben Rival').should('exist')
+        cy.get('.pcp-tab').should('have.length', 3).and('not.contain', 'Possession')
+        cy.get('.pcp-radar').should('not.exist')
+        cy.get('.pcp-player-block').eq(0).should('contain', '15').and('contain', '35')
+        cy.get('.pcp-player-block').eq(1).should('contain', '9').and('contain', '21')
+      })
+      cy.assertNoErrors()
+    })
+  })
+})

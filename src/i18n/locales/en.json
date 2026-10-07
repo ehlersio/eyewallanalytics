@@ -2305,6 +2305,7 @@
     "vs": "vs",
     "goalieMismatch": "Goalies and skaters use different stat sets and can't be compared directly. Pick two skaters or two goalies.",
     "positionMismatch": "Position mismatch: {{posA}} vs {{posB}} — stats below are still shown, but usage differs by position.",
+    "noStats": "No stats this season yet.",
     "possessionUnavailablePwhl": "Not available for PWHL yet — possession metrics (WAR/RAPM) need shift-level play-by-play data PWHL doesn't have until the league's tracking catches up (expected October).",
     "tabs": {
       "possession": "Possession",

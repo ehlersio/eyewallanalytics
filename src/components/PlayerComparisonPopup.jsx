@@ -48,6 +48,7 @@ import {
   RADAR_AXIS_ABBR as PWHL_RADAR_AXIS_ABBR,
   posLabel as pwhlPosLabel,
 } from '../utils/pwhlPlayerStats'
+import { HOCKEYTECH_LEAGUES } from '../utils/hockeyTechLeagues'
 import { StatTileGrid } from './StatTileGrid'
 import PercentileBar from './PercentileBar'
 import TeamLogo from './TeamLogo'
@@ -90,20 +91,28 @@ function posGroup(code) {
 
 function usePlayerComparisonData(sport, player) {
   const isPwhl = sport === 'pwhl'
+  // AHL/ECHL: the league object (utils/hockeyTechLeagues.js) -- its API,
+  // stat definitions and teams. Box stats only: no percentiles yet.
+  const ht = HOCKEYTECH_LEAGUES[sport] || null
   const id = player?.id
   const isGoalie = isGoalieCode(player?.position)
 
+  const isNhl = !isPwhl && !ht
   const { data: nhlStats, loading: nhlLoading } = useFetch(
-    () => (!isPwhl && id) ? getPlayerStats(id) : Promise.resolve(null),
-    [isPwhl, id]
+    () => (isNhl && id) ? getPlayerStats(id) : Promise.resolve(null),
+    [isNhl, id]
   )
   const { data: nhlSkaterAnalytics } = useFetch(
-    () => (!isPwhl && !isGoalie && id) ? getPlayerAnalytics() : Promise.resolve(null),
-    [isPwhl, isGoalie, id]
+    () => (isNhl && !isGoalie && id) ? getPlayerAnalytics() : Promise.resolve(null),
+    [isNhl, isGoalie, id]
   )
   const { data: nhlGoalieAnalytics } = useFetch(
-    () => (!isPwhl && isGoalie && id) ? getGoalieAnalytics() : Promise.resolve(null),
-    [isPwhl, isGoalie, id]
+    () => (isNhl && isGoalie && id) ? getGoalieAnalytics() : Promise.resolve(null),
+    [isNhl, isGoalie, id]
+  )
+  const { data: htLanding, loading: htLoading } = useFetch(
+    () => (ht && id) ? ht.api.fetchPlayerLanding(id, ht.config.currentSeason) : Promise.resolve(null),
+    [sport, id]
   )
   const { data: pwhlLanding, loading: pwhlLoading } = useFetch(
     () => (isPwhl && id) ? fetchPWHLPlayerLanding(id, PWHL_CURRENT_SEASON) : Promise.resolve(null),
@@ -125,12 +134,29 @@ function usePlayerComparisonData(sport, player) {
   // NHL rows only, a traded player's stints added up (nhlSeasonTotal).
   const seasonReg = nhlSeasonTotal(nhlStats?.seasonTotals, NHL_SEASON, 2)
     || latestNhlSeasonTotal(nhlStats?.seasonTotals, 2)
-  const edgeSeason = !isPwhl ? seasonReg?.season : null
+  const edgeSeason = isNhl ? seasonReg?.season : null
   const { data: edgeData } = useFetch(
     () => (edgeSeason && id) ? getPlayerEdge(isGoalie ? 'goalie' : 'skater', id, String(edgeSeason), 2).catch(() => null) : Promise.resolve(null),
     [edgeSeason, id, isGoalie]
   )
   const edge = edgeData?.status === 'ok' ? edgeData.data : null
+
+  if (ht) {
+    const p = { ...player, ...(htLanding || {}) }
+    const name = p.player_name || `${p.first_name || ''} ${p.last_name || ''}`.trim() || player?.name || ''
+    const team = ht.config.getTeamById(p.team_id) || ht.config.getTeamByAbbr(player?.team)
+    return {
+      loading: htLoading,
+      isGoalie,
+      name,
+      headshot: p.headshot || (id ? `https://assets.leaguestat.com/${ht.key}/${ht.headshotSize}/${id}.jpg` : null),
+      teamAbbr: team?.abbr || player?.team,
+      teamColor: team?.displayColor || '#4d80f0',
+      position: p.position || player?.position,
+      boxStats: p,
+      percentiles: null,
+    }
+  }
 
   if (isPwhl) {
     const p = { ...player, ...(pwhlLanding || {}) }
@@ -325,6 +351,7 @@ function AdvancedGoalieColumn({ percentiles }) {
 export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose }) {
   const { t } = useTranslation()
   const isPwhl = sport === 'pwhl'
+  const ht = HOCKEYTECH_LEAGUES[sport] || null
   const a = usePlayerComparisonData(sport, playerA)
   const b = usePlayerComparisonData(sport, playerB)
 
@@ -349,20 +376,30 @@ export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose
   // Tracking (NHL EDGE): NHL only, and only when at least one of the two
   // has EDGE data for their season -- never an empty tab
   const TRACKING_TAB = { key: 'tracking', label: t('playerComparisonPopup.tabs.tracking') }
-  const showTracking = !isPwhl && !!(a.edge || b.edge)
-  const tabs = [...(bothGoalie ? GOALIE_TABS : SKATER_TABS), ...(showTracking ? [TRACKING_TAB] : [])]
+  const showTracking = !isPwhl && !ht && !!(a.edge || b.edge)
+  // AHL/ECHL have box stats only: no Possession or Advanced tab (no
+  // percentile data behind them) -- never an empty tab.
+  const baseTabs = bothGoalie ? GOALIE_TABS : SKATER_TABS
+  const tabs = [
+    ...(ht ? baseTabs.filter(tabDef => tabDef.key !== 'possession' && tabDef.key !== 'advanced') : baseTabs),
+    ...(showTracking ? [TRACKING_TAB] : []),
+  ]
   const [tab, setTab] = useState(tabs[0].key)
   const activeTab = tabs.find(tabDef => tabDef.key === tab) ? tab : tabs[0].key
 
-  const defs      = bothGoalie
-    ? (isPwhl ? PWHL_GOALIE_STATS : NHL_GOALIE_STATS)
-    : (isPwhl ? PWHL_SKATER_STATS : NHL_SKATER_STATS)
-  const groupFn   = isPwhl ? pwhlGroupStats : nhlGroupStats
-  const pctMap    = isPwhl ? PWHL_STAT_PCT_MAP : NHL_STAT_PCT_MAP
+  const defs      = ht
+    ? (bothGoalie ? ht.stats.GOALIE_STATS : ht.stats.SKATER_STATS)
+    : bothGoalie
+      ? (isPwhl ? PWHL_GOALIE_STATS : NHL_GOALIE_STATS)
+      : (isPwhl ? PWHL_SKATER_STATS : NHL_SKATER_STATS)
+  const groupFn   = ht ? ht.stats.groupStats : isPwhl ? pwhlGroupStats : nhlGroupStats
+  const pctMap    = ht ? null : isPwhl ? PWHL_STAT_PCT_MAP : NHL_STAT_PCT_MAP
+  // AHL/ECHL stat groups are the PWHL's (Scoring, Shot Quality, Special
+  // Teams, Discipline).
   const tabGroups = bothGoalie
     ? GOALIE_TAB_GROUPS
-    : (isPwhl ? PWHL_SKATER_TAB_GROUPS : NHL_SKATER_TAB_GROUPS)
-  const posLabelFn = isPwhl ? pwhlPosLabel : nhlPosLabel
+    : (isPwhl || ht ? PWHL_SKATER_TAB_GROUPS : NHL_SKATER_TAB_GROUPS)
+  const posLabelFn = ht ? ht.stats.posLabel : isPwhl ? pwhlPosLabel : nhlPosLabel
 
   const groupsA = groupFn(defs, a.boxStats, a.isGoalie)
   const groupsB = groupFn(defs, b.boxStats, b.isGoalie)
@@ -370,7 +407,7 @@ export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose
   // (NHL goalies keep the separate PercentileBar "Advanced" tab instead;
   // PWHL goalies are hard-blocked before reaching this point) -- only pass
   // pctMap for skaters.
-  const showPct = !bothGoalie
+  const showPct = !bothGoalie && !ht
 
   // Sport-aware even for goalies now (was hardcoded to the NHL functions
   // for the bothGoalie branch regardless of sport -- harmless while PWHL
@@ -419,7 +456,10 @@ export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose
                 </div>
               )}
 
-              <ComparisonRadar axesA={radarAxesA} axesB={radarAxesB} colorA={a.teamColor} colorB={b.teamColor} abbrMap={abbrMap} />
+              {/* No radar without percentiles to draw (AHL/ECHL today). */}
+              {!(ht && !a.percentiles && !b.percentiles) && (
+                <ComparisonRadar axesA={radarAxesA} axesB={radarAxesB} colorA={a.teamColor} colorB={b.teamColor} abbrMap={abbrMap} />
+              )}
 
               <div className="pcp-tabbar" role="tablist">
                 {tabs.map(tabDef => (
@@ -459,12 +499,14 @@ export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose
                   {activeTab === 'possession' && <PossessionColumn sport={sport} percentiles={a.percentiles} />}
                   {activeTab === 'advanced' && bothGoalie && <AdvancedGoalieColumn percentiles={a.percentiles} />}
                   {activeTab !== 'possession' && activeTab !== 'advanced' && (
-                    <StatTileGrid
-                      groups={filterGroups(groupsA, tabGroups[activeTab] || [])}
-                      percentiles={showPct ? a.percentiles : null}
-                      showPercentiles={showPct}
-                      pctMap={pctMap}
-                    />
+                    filterGroups(groupsA, tabGroups[activeTab] || []).length
+                      ? <StatTileGrid
+                          groups={filterGroups(groupsA, tabGroups[activeTab] || [])}
+                          percentiles={showPct ? a.percentiles : null}
+                          showPercentiles={showPct}
+                          pctMap={pctMap}
+                        />
+                      : <div className={PP_NO_STATS_CLASSES}>{t('playerComparisonPopup.noStats')}</div>
                   )}
                 </div>
                 <div className="pcp-player-block">
@@ -472,12 +514,14 @@ export default function PlayerComparisonPopup({ sport, playerA, playerB, onClose
                   {activeTab === 'possession' && <PossessionColumn sport={sport} percentiles={b.percentiles} />}
                   {activeTab === 'advanced' && bothGoalie && <AdvancedGoalieColumn percentiles={b.percentiles} />}
                   {activeTab !== 'possession' && activeTab !== 'advanced' && (
-                    <StatTileGrid
-                      groups={filterGroups(groupsB, tabGroups[activeTab] || [])}
-                      percentiles={showPct ? b.percentiles : null}
-                      showPercentiles={showPct}
-                      pctMap={pctMap}
-                    />
+                    filterGroups(groupsB, tabGroups[activeTab] || []).length
+                      ? <StatTileGrid
+                          groups={filterGroups(groupsB, tabGroups[activeTab] || [])}
+                          percentiles={showPct ? b.percentiles : null}
+                          showPercentiles={showPct}
+                          pctMap={pctMap}
+                        />
+                      : <div className={PP_NO_STATS_CLASSES}>{t('playerComparisonPopup.noStats')}</div>
                   )}
                 </div>
               </div>

@@ -1,6 +1,6 @@
 // components/PlayerComparisonEntry.jsx (Session 91)
-// "vs Player" entry point mounted in PlayerPopup.jsx / PWHLPlayerPopup.jsx
-// headers. Deliberately NOT called "Compare" -- both popups already have a
+// "vs Player" entry point mounted in PlayerPopup.jsx (NHL) and
+// HockeyTechPlayerPopup.jsx (PWHL, AHL, ECHL) headers. Deliberately NOT called "Compare" -- both popups already have a
 // "🆚 Compare" tab meaning "compare this player's own past seasons"
 // (Session 64/70); a second same-word affordance with a different meaning
 // in the same popup would be genuinely confusing, not just redundant
@@ -88,7 +88,7 @@ export default function PlayerComparisonEntry({ sport, player }) {
             ref={inputRef}
             className="pce-input"
             type="text"
-            placeholder={t('playerComparisonEntry.searchPlaceholder', { league: sport === 'pwhl' ? 'PWHL' : 'NHL' })}
+            placeholder={t('playerComparisonEntry.searchPlaceholder', { league: sport.toUpperCase() })}
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Escape' && setOpen(false)}

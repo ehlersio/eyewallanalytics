@@ -9,8 +9,8 @@
 // card per selected season plus a per-game trend chart built from
 // /{league}/player-game-log.
 //
-// league.playerPopup (absent for AHL/ECHL, so none of these apply there --
-// all real data walls rather than scope choices):
+// league.playerPopup (AHL/ECHL set only comparisonEntry; the rest are real
+// data walls there rather than scope choices):
 //   percentiles        fetch league.api.fetchPlayerPercentiles/
 //                      fetchGoaliePercentiles; with HeaderPanel, the header
 //                      reflows around a radar + quick stats and a bio row
@@ -441,7 +441,8 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
               comparisonEntry={comparisonEntry}
             />
           )}
-          {!reflow && comparisonEntry}
+          {/* Clear of the absolutely placed close button. */}
+          {!reflow && comparisonEntry && <div className="shrink-0 self-start mr-9">{comparisonEntry}</div>}
           <button className={PP_CLOSE_CLASSES} onClick={onClose} aria-label={t('common.close')}>✕</button>
         </div>
 
