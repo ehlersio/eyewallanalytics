@@ -40,6 +40,7 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import { fetchComparisonSeasons } from '../utils/seasonClient';
+import { leagueNameVars } from '../utils/hockeyTechI18n';
 import { normalizeComparisonSeasons } from '../utils/seasonComparison';
 import { perGameValue, seasonRampColor, CHART_DASH_PATTERNS } from '../utils/seasonChart';
 import { formatDate } from '../utils/formatters';
@@ -171,8 +172,8 @@ function HeatMap({ league, playerId, season, isGoalie, teamId }) {
     return (
       <div className={PP_HEATMAP_EMPTY_CLASSES}>
         <div className={PP_HEATMAP_ICON_CLASSES}>🥅</div>
-        <div>{t(`${league.key}PlayerPopup.heatMap.goalieUnavailable`)}</div>
-        <div className={PP_HEATMAP_SUB_CLASSES}>{t(`${league.key}PlayerPopup.heatMap.goalieUnavailableSub`)}</div>
+        <div>{t('hockeyTechPlayerPopup.heatMap.goalieUnavailable')}</div>
+        <div className={PP_HEATMAP_SUB_CLASSES}>{t('hockeyTechPlayerPopup.heatMap.goalieUnavailableSub', leagueNameVars(t, league))}</div>
       </div>
     );
   }
@@ -492,7 +493,7 @@ export default function HockeyTechPlayerPopup({ league, player: initial, seasonL
                   <div>
                     <div className={PP_FORM_LABEL_CLASSES}>
                       {t('playerPopup.recentForm.label')}
-                      <InfoTip text={isGoalie ? t(popup.goalieFormLegendKey || `${league.key}PlayerPopup.recentForm.legendGoalie`) : t('playerPopup.recentForm.legendSkater')} position="above" />
+                      <InfoTip text={isGoalie ? t(popup.goalieFormLegendKey || 'hockeyTechPlayerPopup.recentForm.legendGoalie', leagueNameVars(t, league)) : t('playerPopup.recentForm.legendSkater')} position="above" />
                     </div>
                     <div className={PP_FORM_STRIP_CLASSES}>
                       {career.recentGames.map((g, i) => {

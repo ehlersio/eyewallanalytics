@@ -21,6 +21,7 @@ import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../../hooks/useFetch';
 import { useSport } from '../../utils/SportContext';
+import { leagueNameVars } from '../../utils/hockeyTechI18n';
 import { gameResultFor, currentStreak, pointsPct, streakColor } from '../../utils/hockeyTechResults';
 import { recentRecord } from '../../utils/teamTrends';
 import TeamLogo from '../../components/TeamLogo';
@@ -169,7 +170,7 @@ function teamTabs(league) {
   return ['Overview', 'Stats', 'Splits', 'Trends', ...(hasHistory ? ['History'] : [])];
 }
 function tabLabelKey(league, tabId) {
-  return tabId === 'History' ? 'teamView.tabs.history' : `${league.key}TeamView.tabs.${tabId.toLowerCase()}`;
+  return tabId === 'History' ? 'teamView.tabs.history' : `hockeyTechTeamView.tabs.${tabId.toLowerCase()}`;
 }
 
 export default function HockeyTechTeamView({ league }) {
@@ -223,7 +224,7 @@ export default function HockeyTechTeamView({ league }) {
     return (
       <div className={PAGE_CLASSES}>
         <div className="card" style={{ textAlign: 'center', padding: 32 }}>
-          <p style={{ color: 'var(--text-dim)' }}>{t(`${league.key}TeamView.noTeamSelected`)}</p>
+          <p style={{ color: 'var(--text-dim)' }}>{t('hockeyTechTeamView.noTeamSelected', leagueNameVars(t, league))}</p>
         </div>
       </div>
     );
@@ -264,14 +265,14 @@ export default function HockeyTechTeamView({ league }) {
           standings={standings} />
       )}
       {tab === 'Stats' && (
-        <StatsTab league={league} skaters={skaters} goalies={goalies} loading={pLoad} color={color} />
+        <StatsTab skaters={skaters} goalies={goalies} loading={pLoad} color={color} />
       )}
       {tab === 'Splits' && (
-        <SplitsTab league={league} schedule={schedule} poSchedule={poSchedule} teamId={teamId}
+        <SplitsTab schedule={schedule} poSchedule={poSchedule} teamId={teamId}
           loading={scLoad || poScLoad} inPlayoffs={inPlayoffs} />
       )}
       {tab === 'Trends' && (
-        <TrendsTab league={league} schedule={schedule} teamId={teamId} loading={scLoad} />
+        <TrendsTab schedule={schedule} teamId={teamId} loading={scLoad} />
       )}
       {tab === 'History' && <TeamHistorySections history={getTeamHistory(league.key, abbr)} league={league.key} />}
     </div>
@@ -356,12 +357,12 @@ function OverviewTab({ league, teamRow, skaters, goalies, schedule, teamId, abbr
           )}
           {teamRow && (
             <div className={RECORD_META_CLASSES}>
-              <span>{t(`${league.key}TeamView.overview.gfLabel`, { val: teamRow.goals_for??'—' })}</span>
+              <span>{t('hockeyTechTeamView.overview.gfLabel', { val: teamRow.goals_for??'—' })}</span>
               <span className={RECORD_META_SEP_CLASSES}>·</span>
-              <span>{t(`${league.key}TeamView.overview.gaLabel`, { val: teamRow.goals_against??'—' })}</span>
+              <span>{t('hockeyTechTeamView.overview.gaLabel', { val: teamRow.goals_against??'—' })}</span>
               {gd != null && (
                 <span className={streakChipClasses(gd >= 0)}>
-                  {t(`${league.key}TeamView.overview.diffSuffix`, { sign: gd >= 0 ? '+' : '', gd })}
+                  {t('hockeyTechTeamView.overview.diffSuffix', { sign: gd >= 0 ? '+' : '', gd })}
                 </span>
               )}
             </div>
@@ -371,7 +372,7 @@ function OverviewTab({ league, teamRow, skaters, goalies, schedule, teamId, abbr
 
       {last5.length > 0 && (
         <div className="card" style={{ marginTop: 10 }}>
-          <div className="sec-label" style={{ marginBottom: 8 }}>{t(`${league.key}TeamView.overview.last5Title`)}</div>
+          <div className="sec-label" style={{ marginBottom: 8 }}>{t('hockeyTechTeamView.overview.last5Title')}</div>
           <div style={{ display: 'flex', gap: 6 }}>
             {last5.map((g, i) => (
               <div key={i} style={{
@@ -414,16 +415,16 @@ function OverviewTab({ league, teamRow, skaters, goalies, schedule, teamId, abbr
 
       {topScorers.length > 0 && (
         <div className="card" style={{ marginTop: 10 }}>
-          <div className="sec-label" style={{ marginBottom: 8 }}>{t(`${league.key}TeamView.overview.pointsLeadersTitle`, { abbr })}</div>
+          <div className="sec-label" style={{ marginBottom: 8 }}>{t('hockeyTechTeamView.overview.pointsLeadersTitle', { abbr })}</div>
           {topScorers.map((p, i) => (
             <div key={p.player_id ?? i} className={ADV_STAT_ROW_CLASSES}>
               <span className={ADV_STAT_LABEL_CLASSES}>
-                {p.player_name || t(`${league.key}TeamView.overview.playerFallbackName`, { id: p.player_id })}
+                {p.player_name || t('hockeyTechTeamView.overview.playerFallbackName', { id: p.player_id })}
                 {p.position && <span className={ADV_STAT_NOTE_CLASSES}> · {p.position}</span>}
               </span>
               <span className={ADV_STAT_RIGHT_CLASSES}>
                 <span className={advStatValClasses()} style={{ color }}>
-                  {p.points ?? '—'} {t(`${league.key}TeamView.overview.ptsSuffix`)}
+                  {p.points ?? '—'} {t('hockeyTechTeamView.overview.ptsSuffix')}
                 </span>
                 <span className={ADV_STAT_AVG_CLASSES}>
                   {p.goals ?? 0}G {p.assists ?? 0}A
@@ -436,7 +437,7 @@ function OverviewTab({ league, teamRow, skaters, goalies, schedule, teamId, abbr
 
       {starter && (
         <div className="card" style={{ marginTop: 10 }}>
-          <div className="sec-label" style={{ marginBottom: 8 }}>{t(`${league.key}TeamView.overview.startingGoalieTitle`, { abbr })}</div>
+          <div className="sec-label" style={{ marginBottom: 8 }}>{t('hockeyTechTeamView.overview.startingGoalieTitle', { abbr })}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{
               width: 44, height: 44, borderRadius: 8,
@@ -445,7 +446,7 @@ function OverviewTab({ league, teamRow, skaters, goalies, schedule, teamId, abbr
             }}>🥅</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
-                {starter.player_name || t(`${league.key}TeamView.overview.playerFallbackName`, { id: starter.player_id })}
+                {starter.player_name || t('hockeyTechTeamView.overview.playerFallbackName', { id: starter.player_id })}
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
                 {starter.gp ?? 0} GP · {starter.wins ?? 0}W–{starter.losses ?? 0}L–{starter.ot_losses ?? 0}OTL
@@ -466,7 +467,7 @@ function OverviewTab({ league, teamRow, skaters, goalies, schedule, teamId, abbr
           </div>
           {starter.shutouts > 0 && (
             <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)', paddingLeft: 60 }}>
-              {t(`${league.key}TeamView.overview.shutoutNote`, { count: starter.shutouts })}
+              {t('hockeyTechTeamView.overview.shutoutNote', { count: starter.shutouts })}
             </div>
           )}
         </div>
@@ -476,7 +477,7 @@ function OverviewTab({ league, teamRow, skaters, goalies, schedule, teamId, abbr
 }
 
 // ── Stats tab ─────────────────────────────────────────────────────────────────
-function StatsTab({ league, skaters, goalies, loading, color }) {
+function StatsTab({ skaters, goalies, loading, color }) {
   const { t } = useTranslation();
   const [view, setView] = useState('skaters');
 
@@ -494,16 +495,16 @@ function StatsTab({ league, skaters, goalies, loading, color }) {
     <>
       {teamTotals && (
         <div className={METRICS_GRID_4_CLASSES} style={{ marginTop: 10 }}>
-          <MetCard label={t(`${league.key}TeamView.stats.metGoals`)}   value={teamTotals.goals}   sub={t(`${league.key}TeamView.stats.subTeamTotal`)} />
-          <MetCard label={t(`${league.key}TeamView.stats.metAssists`)} value={teamTotals.assists} sub={t(`${league.key}TeamView.stats.subTeamTotal`)} />
-          <MetCard label={t(`${league.key}TeamView.stats.metPoints`)}  value={teamTotals.points}  sub={t(`${league.key}TeamView.stats.subTeamTotal`)} color="green" />
-          <MetCard label={t(`${league.key}TeamView.stats.metPpg`)}     value={teamTotals.ppg}     sub={t(`${league.key}TeamView.stats.subPowerPlay`)} />
+          <MetCard label={t('hockeyTechTeamView.stats.metGoals')}   value={teamTotals.goals}   sub={t('hockeyTechTeamView.stats.subTeamTotal')} />
+          <MetCard label={t('hockeyTechTeamView.stats.metAssists')} value={teamTotals.assists} sub={t('hockeyTechTeamView.stats.subTeamTotal')} />
+          <MetCard label={t('hockeyTechTeamView.stats.metPoints')}  value={teamTotals.points}  sub={t('hockeyTechTeamView.stats.subTeamTotal')} color="green" />
+          <MetCard label={t('hockeyTechTeamView.stats.metPpg')}     value={teamTotals.ppg}     sub={t('hockeyTechTeamView.stats.subPowerPlay')} />
         </div>
       )}
 
       <div className={TABS_WRAP_CLASSES} style={{ marginTop: 8 }}>
-        <button className={tabClasses(view === 'skaters')} onClick={() => setView('skaters')}>{t(`${league.key}TeamView.stats.viewSkaters`)}</button>
-        <button className={tabClasses(view === 'goalies')} onClick={() => setView('goalies')}>{t(`${league.key}TeamView.stats.viewGoalies`)}</button>
+        <button className={tabClasses(view === 'skaters')} onClick={() => setView('skaters')}>{t('hockeyTechTeamView.stats.viewSkaters')}</button>
+        <button className={tabClasses(view === 'goalies')} onClick={() => setView('goalies')}>{t('hockeyTechTeamView.stats.viewGoalies')}</button>
       </div>
 
       {loading && (
@@ -517,7 +518,7 @@ function StatsTab({ league, skaters, goalies, loading, color }) {
       {!loading && view === 'skaters' && skaters.map((p, i) => (
         <div key={p.player_id ?? i} className={ADV_STAT_ROW_CLASSES}>
           <span className={ADV_STAT_LABEL_CLASSES}>
-            {p.player_name || t(`${league.key}TeamView.stats.playerFallbackShort`, { id: p.player_id })}
+            {p.player_name || t('hockeyTechTeamView.stats.playerFallbackShort', { id: p.player_id })}
             {p.position && <span className={ADV_STAT_NOTE_CLASSES}> {p.position}</span>}
           </span>
           <span className={ADV_STAT_RIGHT_CLASSES}>
@@ -532,7 +533,7 @@ function StatsTab({ league, skaters, goalies, loading, color }) {
       {!loading && view === 'goalies' && goalies.map((g, i) => (
         <div key={g.player_id ?? i} className={ADV_STAT_ROW_CLASSES}>
           <span className={ADV_STAT_LABEL_CLASSES}>
-            {g.player_name || t(`${league.key}TeamView.stats.playerFallbackShort`, { id: g.player_id })}
+            {g.player_name || t('hockeyTechTeamView.stats.playerFallbackShort', { id: g.player_id })}
           </span>
           <span className={ADV_STAT_RIGHT_CLASSES}>
             <span className={advStatValClasses()} style={{ color }}>
@@ -547,7 +548,7 @@ function StatsTab({ league, skaters, goalies, loading, color }) {
 }
 
 // ── Splits tab ────────────────────────────────────────────────────────────────
-function SplitsTab({ league, schedule, poSchedule, teamId, loading, inPlayoffs }) {
+function SplitsTab({ schedule, poSchedule, teamId, loading, inPlayoffs }) {
   const { t } = useTranslation();
   const [showPO, setShowPO] = React.useState(false);
 
@@ -620,7 +621,7 @@ function SplitsTab({ league, schedule, poSchedule, teamId, loading, inPlayoffs }
 
       {!splits ? (
         <div className="card" style={{ textAlign:'center', padding:32, color:'var(--text-dim)' }}>
-          {t(`${league.key}TeamView.splits.noDataYet`, { label: label.toLowerCase() })}
+          {t('hockeyTechTeamView.splits.noDataYet', { label: label.toLowerCase() })}
         </div>
       ) : (
         <div className="card">
@@ -654,7 +655,7 @@ function SplitsTab({ league, schedule, poSchedule, teamId, loading, inPlayoffs }
 }
 
 // ── Trends tab ────────────────────────────────────────────────────────────────
-export function TrendsTab({ league, schedule, teamId, loading }) {
+export function TrendsTab({ schedule, teamId, loading }) {
   const { t } = useTranslation();
   const gameLog = useMemo(() => {
     if (!schedule?.length || !teamId) return [];
@@ -667,14 +668,14 @@ export function TrendsTab({ league, schedule, teamId, loading }) {
   if (loading) return (
     <div className={`card ${EMPTY_STATE_CLASSES}`} style={{ marginTop: 10 }}>
       <div className={EMPTY_ICON_CLASSES}>📈</div>
-      <div className={EMPTY_TITLE_CLASSES}>{t(`${league.key}TeamView.trends.loadingTitle`)}</div>
+      <div className={EMPTY_TITLE_CLASSES}>{t('hockeyTechTeamView.trends.loadingTitle')}</div>
     </div>
   );
 
   if (!gameLog.length) return (
     <div className={`card ${EMPTY_STATE_CLASSES}`} style={{ marginTop: 10 }}>
       <div className={EMPTY_ICON_CLASSES}>📈</div>
-      <div className={EMPTY_TITLE_CLASSES}>{t(`${league.key}TeamView.trends.noDataTitle`)}</div>
+      <div className={EMPTY_TITLE_CLASSES}>{t('hockeyTechTeamView.trends.noDataTitle')}</div>
     </div>
   );
 
@@ -730,7 +731,7 @@ export function TrendsTab({ league, schedule, teamId, loading }) {
           {display.map((g, i) => (
             <div key={i}
               className={resultDotClasses(g.result === 'OTL' ? 'otl' : g.won ? 'w' : 'l')}
-              title={t(`${league.key}TeamView.trends.simpleDotTooltip`, { result: g.result, my: g.my, op: g.op })}>
+              title={t('hockeyTechTeamView.trends.simpleDotTooltip', { result: g.result, my: g.my, op: g.op })}>
               {g.result === 'OTL' ? 'O' : g.result}
             </div>
           ))}
@@ -738,14 +739,14 @@ export function TrendsTab({ league, schedule, teamId, loading }) {
       </div>
 
       <div className="card">
-        <div className="sec-label" style={{ marginBottom: 10 }}>{t(`${league.key}TeamView.trends.rollingWinPctTitle`)}</div>
+        <div className="sec-label" style={{ marginBottom: 10 }}>{t('hockeyTechTeamView.trends.rollingWinPctTitle')}</div>
         <div className={ROLLING_CHART_CLASSES}>
           {rollDisp.map((g, i) => (
             <div key={i} className={ROLLING_BAR_WRAP_CLASSES}>
               <div className={ROLLING_BAR_LABEL_CLASSES}>{g.w10pct}%</div>
               <div className={rollingBarClasses(g.w10pct)}
                 style={{ height: `${g.w10pct}%` }}
-                title={t(`${league.key}TeamView.trends.simpleBarTooltip`, { pct: g.w10pct })} />
+                title={t('hockeyTechTeamView.trends.simpleBarTooltip', { pct: g.w10pct })} />
               {i % 5 === 0 && <div className={ROLLING_LABEL_CLASSES}>{i+1}</div>}
             </div>
           ))}
@@ -755,7 +756,7 @@ export function TrendsTab({ league, schedule, teamId, loading }) {
           <span className={RL_HOT_CLASSES}>{t('team.legendHot')}</span>
           <span className={RL_OK_CLASSES}>{t('team.legendAverage')}</span>
           <span className={RL_COLD_CLASSES}>{t('team.legendCold')}</span>
-          <span style={{ color:'var(--text-dim)', marginLeft:'auto', fontSize:9 }}>{t(`${league.key}TeamView.trends.legendFootnoteShort`)}</span>
+          <span style={{ color:'var(--text-dim)', marginLeft:'auto', fontSize:9 }}>{t('hockeyTechTeamView.trends.legendFootnoteShort')}</span>
         </div>
       </div>
 
@@ -793,7 +794,7 @@ export function TrendsTab({ league, schedule, teamId, loading }) {
               const diff  = g.my - g.op;
               const absPx = Math.min(Math.abs(diff) * 12, 48);
               return (
-                <div key={i} className={GD_BAR_COL_CLASSES} title={t(`${league.key}TeamView.trends.simpleDotTooltip`, { result: g.result, my: g.my, op: g.op })}>
+                <div key={i} className={GD_BAR_COL_CLASSES} title={t('hockeyTechTeamView.trends.simpleDotTooltip', { result: g.result, my: g.my, op: g.op })}>
                   <div className={GD_TOP_CLASSES}>
                     {diff > 0 && (
                       <>
