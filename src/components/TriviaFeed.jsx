@@ -9,6 +9,8 @@ import { useSport } from '../utils/SportContext';
 import { useAuth } from '../utils/AuthContext';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { PWHL_TEAM_CONFIG } from '../utils/pwhlApi';
+import { AHL_TEAM_CONFIG } from '../utils/ahlApi';
+import { ECHL_TEAM_CONFIG } from '../utils/echlApi';
 import { getAnsweredMap, getStats, recordAnswer } from '../utils/triviaAnswers';
 import { capture } from '../utils/analytics';
 import { workerFetchInit } from '../utils/workerCache';
@@ -133,18 +135,24 @@ function TierCard({ tier, question, answered, userId, onAnswered, sportKey }) {
   );
 }
 
-export default function TriviaFeed() {
+// `sport` ('ahl' | 'echl') is set by the AHL/ECHL News view (contract C5:
+// trivia_questions.py --sport ahl|echl); without it the feed follows the
+// NHL/PWHL sport context, as before.
+const TEAM_BY_SPORT = { ahl: AHL_TEAM_CONFIG, echl: ECHL_TEAM_CONFIG };
+
+export default function TriviaFeed({ sport }) {
   const { t, i18n } = useTranslation();
-  const { isPWHL } = useSport();
+  const { isPWHL: ctxPWHL } = useSport();
+  const sportKey = sport || (ctxPWHL ? 'pwhl' : 'nhl');
+  const isPWHL = sportKey === 'pwhl';
   const { user } = useAuth();
   const [questions, setQuestions] = useState({ easy: null, medium: null, hard: null });
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
   const [answeredMap, setAnsweredMap] = useState(() => getAnsweredMap());
 
-  const activeTeam     = isPWHL ? PWHL_TEAM_CONFIG : TEAM_CONFIG;
+  const activeTeam     = TEAM_BY_SPORT[sportKey] || (isPWHL ? PWHL_TEAM_CONFIG : TEAM_CONFIG);
   const activeTeamAbbr = activeTeam?.abbr || TEAM_CONFIG.abbr;
-  const sportKey        = isPWHL ? 'pwhl' : 'nhl';
 
   const fetchQuestions = useCallback(async () => {
     if (!WORKER_URL) { setError(t('triviaFeed.error.workerNotConfigured')); setLoading(false); return; }

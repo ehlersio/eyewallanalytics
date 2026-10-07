@@ -11,6 +11,8 @@ import { useSport } from '../utils/SportContext';
 import TeamLogo from './TeamLogo';
 import PlayerPopup from './PlayerPopup';
 import PWHLPlayerPopup from './PWHLPlayerPopup';
+import HockeyTechPlayerPopup from './HockeyTechPlayerPopup';
+import { HOCKEYTECH_LEAGUES } from '../utils/hockeyTechLeagues';
 import { capture } from '../utils/analytics';
 import { formatDate, formatNumber } from '../utils/formatters';
 import { workerFetchInit } from '../utils/workerCache';
@@ -77,7 +79,7 @@ function renderDetailItems(item, t) {
       // countdown of uncertain OT length; now that it's confirmed elapsed
       // (pwhl_milestones.py, corrected 2026-07-04) the same formatElapsed()
       // conversion used for sh_goal applies here too.
-      const time = item.is_pwhl ? formatElapsed(d.goal_time_seconds?.[i]) : d.goal_times?.[i];
+      const time = isHockeyTechRow(item) ? formatElapsed(d.goal_time_seconds?.[i]) : d.goal_times?.[i];
       items.push(`P${p}${time ? ` ${time}` : ''}`);
     });
   } else if (item.milestone_type === 'hat_trick' && d.goal_count) {
@@ -90,8 +92,8 @@ function renderDetailItems(item, t) {
     // NHL's "sh_goal"), so this whole branch silently never matched PWHL
     // rows at all. Fixed together with the milestone_type rename in
     // pwhl_milestones.py.
-    const period = item.is_pwhl ? d.period_id : d.period;
-    const time   = item.is_pwhl ? formatElapsed(d.time_seconds) : d.time_in_period;
+    const period = isHockeyTechRow(item) ? d.period_id : d.period;
+    const time   = isHockeyTechRow(item) ? formatElapsed(d.time_seconds) : d.time_in_period;
     if (period) items.push(`P${period}${time ? ` ${time}` : ''}`);
   } else if (item.milestone_type?.startsWith('season_goals_') && d.season_goals != null) {
     items.push(t('milestonesFeed.detail.goalsThisSeason', { count: d.season_goals }));
@@ -196,7 +198,7 @@ function MilestoneCard({ item, onOpenPlayer }) {
           <span className={NEWS_CARD_TIME_CLASSES}>{formatGameDate(item.game_date)}</span>
         </div>
         <h3 className={MILESTONE_CARD_TITLE_CLASSES}>
-          <TeamLogo abbr={item.team} sport={item.is_pwhl ? 'pwhl' : 'nhl'} size={20} />
+          <TeamLogo abbr={item.team} sport={rowSport(item)} size={20} />
           {item.description}
         </h3>
         {item.opponent && (
@@ -215,9 +217,25 @@ function MilestoneCard({ item, onOpenPlayer }) {
   );
 }
 
-export default function MilestonesFeed() {
+// A row's league: AHL/ECHL rows (contract C5, hockeytech_milestones.py)
+// carry `sport`; NHL and PWHL rows are told apart by is_pwhl.
+function rowSport(item) {
+  if (item.sport === 'ahl' || item.sport === 'echl') return item.sport;
+  return item.is_pwhl ? 'pwhl' : 'nhl';
+}
+// PWHL/AHL/ECHL rows share the HockeyTech details shape (seconds, period_id).
+function isHockeyTechRow(item) {
+  return rowSport(item) !== 'nhl';
+}
+
+// `sport` ('ahl' | 'echl') is set by the AHL/ECHL News view; without it the
+// feed follows the NHL/PWHL sport context, as before.
+export default function MilestonesFeed({ sport }) {
   const { t } = useTranslation();
-  const { isPWHL } = useSport();
+  const { isPWHL: ctxPWHL } = useSport();
+  const sportKey = sport || (ctxPWHL ? 'pwhl' : 'nhl');
+  const isPWHL = sportKey === 'pwhl';
+  const htLeague = HOCKEYTECH_LEAGUES[sportKey] || null;
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState(null);
@@ -228,10 +246,9 @@ export default function MilestonesFeed() {
   const [popupError, setPopupError]     = useState(null);
 
   const fetchingRef = useRef(false);
-  const teamList = isPWHL ? PWHL_TEAMS : ALL_TEAMS;
-  const sportKey  = isPWHL ? 'pwhl' : 'nhl';
+  const teamList = htLeague ? htLeague.config.teams : isPWHL ? PWHL_TEAMS : ALL_TEAMS;
 
-  const fetchMilestones = useCallback(async (teamFilter, pwhl) => {
+  const fetchMilestones = useCallback(async (teamFilter, forSport) => {
     if (!WORKER_URL) { setError(t('triviaFeed.error.workerNotConfigured')); setLoading(false); return; }
     if (fetchingRef.current) return;
     fetchingRef.current = true;
@@ -239,7 +256,7 @@ export default function MilestonesFeed() {
     setError(null);
     try {
       const params = new URLSearchParams();
-      if (pwhl) params.set('sport', 'pwhl');
+      if (forSport !== 'nhl') params.set('sport', forSport);
       if (teamFilter && teamFilter !== 'all') params.set('team', teamFilter);
       const qs  = params.toString() ? `?${params.toString()}` : '';
       const res = await fetch(`${WORKER_URL}/milestones${qs}`, workerFetchInit());
@@ -257,9 +274,9 @@ export default function MilestonesFeed() {
   // Reset the team filter on sport switch — a team abbreviation selected
   // under one sport (e.g. "BOS") isn't guaranteed to mean the same team,
   // or exist at all, under the other.
-  useEffect(() => { setTeam('all'); }, [isPWHL]);
+  useEffect(() => { setTeam('all'); }, [sportKey]);
 
-  useEffect(() => { fetchMilestones(team, isPWHL); }, [team, isPWHL, fetchMilestones]);
+  useEffect(() => { fetchMilestones(team, sportKey); }, [team, sportKey, fetchMilestones]);
 
   // Open the sport-appropriate popup.
   // PWHL: PWHLPlayerPopup self-fetches identity + stats by id (GET
@@ -276,7 +293,7 @@ export default function MilestonesFeed() {
   // currentTeamAbbrev, not teamAbbrev — checked first below, with
   // teamAbbrev kept only as a defensive fallback.
   async function handleOpenPlayer(playerId) {
-    if (isPWHL) {
+    if (isPWHL || htLeague) {
       setPopupPlayer({ player_id: playerId });
       return;
     }
@@ -349,7 +366,7 @@ export default function MilestonesFeed() {
         <div className={`${NEWS_ERROR_CLASSES} card`}>
           <div className={NEWS_ERROR_ICON_CLASSES}>🏒</div>
           <div className={NEWS_ERROR_MSG_CLASSES}>{error}</div>
-          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={() => fetchMilestones(team, isPWHL)}>{t('triviaFeed.error.tryAgain')}</button>
+          <button className={NEWS_REFRESH_BTN_CLASSES} onClick={() => fetchMilestones(team, sportKey)}>{t('triviaFeed.error.tryAgain')}</button>
         </div>
       )}
 
@@ -373,7 +390,15 @@ export default function MilestonesFeed() {
       )}
 
       {popupPlayer && (
-        isPWHL ? (
+        htLeague ? (
+          <HockeyTechPlayerPopup
+            league={htLeague}
+            player={popupPlayer}
+            season={htLeague.config.currentSeason}
+            seasonLabel={htLeague.config.seasonLabel(htLeague.config.currentSeason)}
+            onClose={() => setPopupPlayer(null)}
+          />
+        ) : isPWHL ? (
           <PWHLPlayerPopup
             player={popupPlayer}
             onClose={() => setPopupPlayer(null)}
