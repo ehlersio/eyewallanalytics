@@ -186,6 +186,23 @@ LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter, newsSource
       assertNoLoadFailure()
     })
 
+    // HockeyTechTeamView: header, then every tab renders (Overview record,
+    // Stats rows, Splits/Trends cards) with no load failure.
+    it(`/${key}/team renders every ${team.abbr} tab`, () => {
+      // TeamPicker stores the whole team config, display name included.
+      visitAs(`/${key}/team`, key, { ...team, displayName: teamName })
+      cy.contains('h2', teamName, { timeout: DATA_TIMEOUT }).should('exist')
+      cy.get('.team-view').find(leagueLogo(key, team.abbr)).should('exist')
+      cy.get('.records-row', { timeout: DATA_TIMEOUT }).should('contain', 'pts')
+      cy.contains('.team-tab', 'Stats').click()
+      cy.get('.adv-stat-row', { timeout: DATA_TIMEOUT }).should('have.length.at.least', 1)
+      cy.contains('.team-tab', 'Splits').click()
+      cy.get('.team-view .card', { timeout: DATA_TIMEOUT }).should('have.length.at.least', 1)
+      cy.contains('.team-tab', 'Trends').click()
+      cy.get('.team-view .card', { timeout: DATA_TIMEOUT }).should('have.length.at.least', 1)
+      assertNoLoadFailure()
+    })
+
     it(`/${key}/news renders ${label} News`, () => {
       visitAs(`/${key}/news`, key, team)
       cy.contains(`${label} News`, { timeout: DATA_TIMEOUT }).should('be.visible')
