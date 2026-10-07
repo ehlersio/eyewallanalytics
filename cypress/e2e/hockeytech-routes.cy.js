@@ -21,6 +21,8 @@ const LEAGUES = [
     newsFooter: /TheAHL\.com/,
     newsSources: { 'official-ahl': 'TheAHL.com', 'hockeywriters-ahl': 'The Hockey Writers', 'osc-ahl': 'OurSports Central' },
     // A real game (Worker /ahl/preview and /ahl/prediction answer for it).
+    // A completed 2025-26 game for the prediction-outcome check.
+    final: { game_id: 1027785 },
     upcoming: { game_id: 1029113, season_id: 94, game_date: '2026-10-10', home_team_id: 319, away_team_id: 380, venue_name: 'Giant Center' },
   },
   {
@@ -31,6 +33,7 @@ const LEAGUES = [
     divisions: ['North', 'South', 'Central', 'Mountain'],
     newsFooter: /The Hockey Writers and OurSports Central/,
     newsSources: { 'hockeywriters-echl': 'The Hockey Writers', 'osc-echl': 'OurSports Central' },
+    final: { game_id: 24323 },
     upcoming: { game_id: 25494, season_id: 78, game_date: '2026-10-17', home_team_id: 74, away_team_id: 113, venue_name: 'Harding Mazzotti Arena' },
   },
 ]
@@ -56,7 +59,7 @@ const assertNoLoadFailure = () => {
   cy.assertNoErrors()
 }
 
-LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter, newsSources, upcoming }) => {
+LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter, newsSources, upcoming, final }) => {
   describe(`${label} routes smoke`, () => {
     it(`/${key}/league renders the Scoreboard, then ${label} standings by division`, () => {
       visitAs(`/${key}/league`, key, team)
@@ -112,6 +115,27 @@ LEAGUES.forEach(({ key, label, team, teamName, divisions, newsFooter, newsSource
       cy.get('.pbs-row').first().invoke('text').then(first => {
         cy.get('.pgs-toggle-btn').eq(1).click()
         cy.get('.pbs-row').first().invoke('text').should('not.eq', first)
+      })
+      assertNoLoadFailure()
+    })
+
+    // HockeyTechScheduleView fills in a saved prediction's outcome once its
+    // game is Final, in the league's own prediction store key.
+    it(`/${key}/schedule records a 2025-26 prediction's outcome`, () => {
+      const storeKey = `eyewall_${key}_predictions_v1`
+      cy.visit(`/${key}/schedule`, {
+        onBeforeLoad(win) {
+          win.localStorage.setItem('eyewall:sport', key)
+          win.localStorage.setItem(`eyewall:${key}_team`, JSON.stringify(team))
+          win.localStorage.setItem(storeKey, JSON.stringify([{ gameId: final.game_id, predictedTeamWin: true, predictedTeamScore: 3, predictedOppScore: 2 }]))
+        },
+      })
+      cy.contains('button', /^2025-26$/, { timeout: DATA_TIMEOUT }).click()
+      cy.window().its('localStorage').invoke('getItem', storeKey).should(raw => {
+        const [pred] = JSON.parse(raw)
+        expect(pred.teamActual, 'teamActual').to.be.a('number')
+        expect(pred.oppActual, 'oppActual').to.be.a('number')
+        expect(pred.correct).to.equal(pred.teamWon === true)
       })
       assertNoLoadFailure()
     })
