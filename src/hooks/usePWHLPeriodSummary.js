@@ -114,8 +114,9 @@ function shotFeet(e) {
 }
 
 // High danger as the NHL summaries count it (usePeriodSummary.js): within
-// 15 ft of either net.
-function isHighDanger(e) {
+// 15 ft of either net. Also the AHL/ECHL summaries' (hockeyTechSummary.js):
+// their /live shots carry the same 600x300 HockeyTech x/y.
+export function isHighDanger(e) {
   const f = shotFeet(e);
   if (!f) return false;
   return Math.sqrt((Math.abs(f.x) - 89) ** 2 + f.y ** 2) < 15;

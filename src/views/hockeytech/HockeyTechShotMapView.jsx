@@ -55,6 +55,11 @@ import { formatDate as formatDateIntl } from '../../utils/formatters';
 import {
   PuckDropPopup, GoalPopup, PenaltyPopup, WinPopup, useHockeyTechGameEvents,
 } from '../../components/hockeytech/HockeyTechGameEvents';
+import { useHockeyTechPeriodSummary, useHockeyTechGameSummary } from '../../hooks/useHockeyTechPeriodSummary';
+import HockeyTechPeriodSummary from '../../components/hockeytech/HockeyTechPeriodSummary';
+import { usePeriodSummaryContext } from '../../utils/PeriodSummaryContext';
+import { sameGame } from '../../utils/summaryList';
+import { rinkBtnClasses } from '../../utils/rinkBtnClasses';
 import { PAGE_CLASSES } from '../../utils/pageClasses';
 import { SKELETON_CLASSES } from '../../utils/skeletonClasses';
 
@@ -398,13 +403,66 @@ export default function HockeyTechShotMapView({ league }) {
     };
   }), [games, teamId]);
 
-  // A guest view's game when it isn't live and isn't among this season's
-  // finals (an older game's link): its /live answer says who played and
-  // that it's over, for the subtitle.
-  const { data: guestGameData } = useFetch(
-    () => isGuest && !isLive ? league.api.fetchLive(guestGameId) : Promise.resolve(null),
-    [isGuest, guestGameId, isLive]
+  // ── Period / game summaries (contract C8) ─────────────────────
+  // The game they're for: the live game; else the game that just ended
+  // while the page was open (until another game is picked); else the final
+  // on screen -- a guest view's game, or the picked / newest final.
+  const endedGameId = !isLive ? endedData?.gameId ?? null : null;
+  const summaryGameId = isLive ? liveGame.gameId
+    : isGuest ? guestGameId
+      : endedGameId != null && pickedGameId == null ? endedGameId
+        : viewGame?.game_id ?? null;
+  const summaryFromEnded = !isLive && endedData && sameGame(endedData.gameId, summaryGameId);
+  // A final's own /live (the whole game's play-by-play). Also the guest
+  // subtitle's source for an older game's link: who played, and that it's
+  // over.
+  const { data: finalGameData } = useFetch(
+    () => !isLive && summaryGameId && !summaryFromEnded ? league.api.fetchLive(summaryGameId) : Promise.resolve(null),
+    [isLive, summaryGameId, summaryFromEnded]
   );
+  const summaryData = isLive ? liveData : summaryFromEnded ? endedData : finalGameData;
+  const { summaries: periodSummaries, newSummary, dismissNewSummary, updateSummaryNarrative } =
+    useHockeyTechPeriodSummary({ league, liveData: summaryData, isLive, gameId: summaryGameId, teamId });
+  const { gameSummary, updateGameNarrative } =
+    useHockeyTechGameSummary({ league, liveData: summaryData, gameId: summaryGameId, teamId });
+
+  const [viewingSummaryPeriod, setViewingSummaryPeriod] = useState(null);
+  const viewingSummary = viewingSummaryPeriod === null ? null
+    : viewingSummaryPeriod === 'game' ? gameSummary
+      : periodSummaries.find(s => s.period === viewingSummaryPeriod) || null;
+  // The other team in the summaries' game.
+  const summaryOppId = summaryData && sameGame(summaryData.gameId, summaryGameId)
+    ? (summaryData.homeTeamId === teamId ? summaryData.awayTeamId : summaryData.homeTeamId) : null;
+  const summaryOppAbbr = league.config.getTeamById(summaryOppId)?.abbr || 'OPP';
+
+  // The bell's "latest game" rows and its open-a-summary taps, as on the
+  // NHL and PWHL pages -- not a guest view's: the bell is the followed
+  // team's (GuestGameView.jsx does the same).
+  const { setSummaries: setCtxSummaries, registerOpenHandler } = usePeriodSummaryContext();
+  useEffect(() => {
+    if (isGuest) return;
+    setCtxSummaries(gameSummary ? [gameSummary, ...periodSummaries] : periodSummaries);
+  }, [periodSummaries, gameSummary, setCtxSummaries, isGuest]);
+  useEffect(() => {
+    if (isGuest) return undefined;
+    registerOpenHandler(s => setViewingSummaryPeriod(s.isGameSummary ? 'game' : s.period));
+    return () => registerOpenHandler(null);
+  }, [registerOpenHandler, isGuest]);
+
+  // A period that ends while the game is watched opens its summary; the
+  // final's opens once when a watched game ends.
+  useEffect(() => {
+    if (newSummary) setViewingSummaryPeriod(newSummary.period);
+  }, [newSummary]);
+  const autoOpenedFinalRef = useRef(null);
+  useEffect(() => {
+    if (!summaryFromEnded || !gameSummary || !sameGame(gameSummary.gameId, endedGameId)) return;
+    if (autoOpenedFinalRef.current === endedGameId) return;
+    autoOpenedFinalRef.current = endedGameId;
+    setViewingSummaryPeriod('game');
+  }, [summaryFromEnded, gameSummary, endedGameId]);
+  // Another game's summaries: whatever was open closes.
+  useEffect(() => { setViewingSummaryPeriod(null); }, [summaryGameId]);
 
   const { data: gameShots, loading: gameShotsLoading } = useFetch(
     () => viewGameId ? league.api.fetchGameShots(viewGameId) : Promise.resolve(null),
@@ -431,7 +489,7 @@ export default function HockeyTechShotMapView({ league }) {
 
   let subtitle = t('hockeyTechShotMapView.subtitle');
   const guestLine = isGuest && !viewGame
-    ? guestGameLine(teamId, { liveGame, ended: endedData ?? guestGameData }) : null;
+    ? guestGameLine(teamId, { liveGame, ended: endedData ?? finalGameData }) : null;
   if (isGuest && !viewGame) {
     subtitle = guestLine ? t('hockeyTechShotMapView.guestSubtitle', {
       state: guestLine.state === 'final'
@@ -478,6 +536,25 @@ export default function HockeyTechShotMapView({ league }) {
             selected={selectedGameId === liveGame.gameId}
             onSelect={() => setSelectedGameId(liveGame.gameId)}
           />
+        </div>
+      )}
+
+      {(periodSummaries.length > 0 || gameSummary) && (
+        <div className="hockeytech-summary-buttons" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+          {periodSummaries.map(s => (
+            <button key={s.period} className={rinkBtnClasses({ active: false })}
+              style={{ fontSize: 11, padding: '3px 10px' }}
+              onClick={() => setViewingSummaryPeriod(s.period)}>
+              {t('hockeyTechShotMapView.periodSummary', { period: s.periodShort })}
+            </button>
+          ))}
+          {gameSummary && (
+            <button className={rinkBtnClasses({ active: false })}
+              style={{ fontSize: 11, padding: '3px 10px', fontWeight: 600 }}
+              onClick={() => setViewingSummaryPeriod('game')}>
+              {t('hockeyTechShotMapView.gameSummary')}
+            </button>
+          )}
         </div>
       )}
 
@@ -565,6 +642,22 @@ export default function HockeyTechShotMapView({ league }) {
       {goalPopup     && <GoalPopup     data={goalPopup}     onClose={clearGoalPopup}     />}
       {penaltyPopup  && <PenaltyPopup  data={penaltyPopup}  onClose={clearPenaltyPopup}  />}
       {winPopup      && <WinPopup      data={winPopup}      onClose={clearWinPopup}      />}
+
+      {/* ── Period / game summary popup ── */}
+      {viewingSummary && (
+        <HockeyTechPeriodSummary
+          league={league}
+          summary={viewingSummary}
+          teamId={teamId}
+          carAbbr={abbr}
+          oppAbbr={summaryOppAbbr}
+          onDismiss={() => { setViewingSummaryPeriod(null); dismissNewSummary(); }}
+          onNarrativeReady={(period, narrative) => {
+            if (viewingSummary.isGameSummary) updateGameNarrative(narrative);
+            else updateSummaryNarrative(period, narrative);
+          }}
+        />
+      )}
 
       {/* ── Debug popups ── */}
       {debugGoalPopup    && <GoalPopup     data={debugGoalPopup}    onClose={() => setDebugGoalPopup(null)}    />}

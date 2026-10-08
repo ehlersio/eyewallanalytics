@@ -35,3 +35,25 @@ export async function fetchCachedNarrative(key) {
     return { narrative: data.narrative, cardNarrative: data.cardNarrative || null };
   } catch { return null; }
 }
+
+// AHL/ECHL (eyewall-poller hockeytech.js /{league}/summary/narrative):
+// filed by team id, not abbr, and by language (':fr'). The period segment
+// is the Worker's narrativePeriodKey(): '1'-'3', then overtimes by their
+// label -- period 4 is 'OT', 5 '2OT', 6 '3OT' (so period=4 and period=OT
+// share a key) -- or 'game'. The shootout (7) has no narrative: null.
+export function hockeyTechNarrativePeriodKey(period) {
+  if (period === 'game') return 'game';
+  const s = String(period ?? '').trim().toUpperCase();
+  const ot = s.match(/^([2-9]?)OT$/);
+  if (ot) return `${ot[1]}OT`;
+  const n = Number(s);
+  if (!Number.isInteger(n) || n < 1 || n === 7 || n > 99) return null;
+  if (n <= 3) return String(n);
+  return n === 4 ? 'OT' : `${n - 3}OT`;
+}
+
+export function hockeyTechNarrativeCacheKey(leagueKey, period, gameId, teamId, locale = 'en') {
+  const periodKey = hockeyTechNarrativePeriodKey(period);
+  if (!leagueKey || !periodKey || !gameId || teamId == null) return null;
+  return `${leagueKey}:narrative:${periodKey}:${gameId}:${teamId}${locale === 'fr' ? ':fr' : ''}`;
+}

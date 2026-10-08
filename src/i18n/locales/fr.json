@@ -836,7 +836,9 @@
     "savePct": "% d'arrêts",
     "noShotsGame": "Les données de tirs de ce match ne sont pas encore disponibles. Elles sont habituellement ajoutées pendant la nuit.",
     "live": "En direct",
-    "guestSubtitle": "{{state}} · {{where}} {{opp}}"
+    "guestSubtitle": "{{state}} · {{where}} {{opp}}",
+    "periodSummary": "Résumé — {{period}}",
+    "gameSummary": "📊 Résumé du match"
   },
   "common": {
     "loading": "Chargement…",
@@ -1914,7 +1916,12 @@
       "fenwickForPct": "Fenwick pour% — {{abbr}}",
       "hits": "Mises en échec — {{abbr}}",
       "faceoffWinPct": "% mises en jeu gagnées",
-      "highDangerChances": "Occasions à haut danger"
+      "highDangerChances": "Occasions à haut danger",
+      "powerPlay": "AN — {{abbr}}",
+      "penaltyKill": "DÉS — {{abbr}}",
+      "ppGoals": "Buts en AN",
+      "penalties": "Pénalités",
+      "savePct": "% arrêts — {{abbr}}"
     },
     "ai": {
       "label": "EyeWall AI",
@@ -1950,8 +1957,15 @@
       "line1": "Sommaire — {{period}} | {{abbr}} {{car}}-{{opp}} {{oppAbbr}}",
       "line2": "CF% {{cf}} · Tirs {{carSog}}-{{oppSog}} · Buts {{carGoals}}-{{oppGoals}}",
       "line1Pwhl": "Sommaire — {{period}} | {{abbr}} {{car}}–{{opp}} {{oppAbbr}}",
-      "line2Pwhl": "CF% {{cf}} · Tirs {{carSog}}–{{oppSog}} · Buts {{carGoals}}–{{oppGoals}}"
-    }
+      "line2Pwhl": "CF% {{cf}} · Tirs {{carSog}}–{{oppSog}} · Buts {{carGoals}}–{{oppGoals}}",
+      "line2HockeyTech": "Tirs {{carSog}}–{{oppSog}} · Buts {{carGoals}}–{{oppGoals}}"
+    },
+    "goalies": {
+      "sectionLabel": "Gardiens",
+      "line": "{{saves}} arrêts sur {{shots}} tirs · {{ga}} BC",
+      "starSaves": "{{saves}} arr."
+    },
+    "scoringByPeriod": "Pointage par période"
   },
   "playerPopup": {
     "radar": {
@@ -2731,7 +2745,8 @@
     "rankingsNote": "Points, forme, différentiel, xG à 5 c. 5, unités spéciales",
     "scoreTitle": "{{team}} {{teamScore}}–{{oppScore}} {{opp}}",
     "statsNote": "Stats : LNH · EyeWall",
-    "pwhlStatsNote": "Stats : LPHF · EyeWall"
+    "pwhlStatsNote": "Stats : LPHF · EyeWall",
+    "hockeyTechStatsNote": "Stats : {{league}} · EyeWall"
   },
   "goalReplay": {
     "video": "Vidéo",
