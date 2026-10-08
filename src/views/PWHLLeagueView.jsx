@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useFetch, usePoll } from '../hooks/useFetch';
 import Scoreboard from '../components/Scoreboard';
 import {
-  fetchPWHLStandings, fetchPWHLLeaguePlayers, fetchPWHLToday,
+  fetchPWHLStandings, fetchPWHLLeaguePlayers, fetchPWHLToday, fetchPWHLPowerRankings,
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
 import {
@@ -26,6 +26,8 @@ import { summarizeStandings, seasonsWithGames, fallbackSeason, teamHasGames } fr
 import { workerFetchInit } from '../utils/workerCache';
 import { pwhlPredictionStore } from '../utils/pwhlPredictionStore';
 import LocalPredictionScorecard from '../components/LocalPredictionScorecard';
+import RankNarrativeCard from '../components/RankNarrativeCard';
+import { rankHistory } from '../utils/hockeyTechPowerRankings';
 
 // Tailwind migration (Session 97, Phase 3, sub-PR 1) -- only the small
 // PlayersView.css-owned pieces this file actually uses (.players-tabs/.tab,
@@ -486,6 +488,7 @@ export default function PWHLLeagueView() {
         )}
         {activeTab === 'rankings' && (
           <PowerRankingsPanel
+            season={season}
             standings={standings || []}
             loading={standLoading}
             myTeamId={myTeamId}
@@ -969,9 +972,17 @@ function LeadersPanel({ skaters, goalies, loading, season, seasonLabel }) {
 }
 
 // ── Power Rankings ────────────────────────────────────────────
-function PowerRankingsPanel({ standings, loading, myTeamId, myAbbr: _myAbbr, myColor }) {
+function PowerRankingsPanel({ season, standings, loading, myTeamId, myAbbr, myColor }) {
   const { t } = useTranslation();
   const [showHow, setShowHow] = useState(false);
+  // The followed team's EyeWall AI rankings narrative and rank trend, from
+  // the pipeline's nightly run for this season (contract C12). The table
+  // below is still ranked here, from today's standings; the card says
+  // which night it's from.
+  const { data: nightly } = useFetch(
+    () => myTeamId ? fetchPWHLPowerRankings(myTeamId, season) : Promise.resolve(null),
+    [myTeamId, season]
+  );
 
   // Weights — PWHL adapted (no xGF%, uses CF% instead; no roster WAR)
   const W = { pts: 0.35, l10: 0.20, gd: 0.20, cf: 0.15, sp: 0.10 };
@@ -1021,6 +1032,13 @@ function PowerRankingsPanel({ standings, loading, myTeamId, myAbbr: _myAbbr, myC
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+
+      <RankNarrativeCard
+        teamAbbr={myAbbr}
+        narrative={nightly?.narrative?.text ? { text: nightly.narrative.text, date: nightly.narrative.run_date } : null}
+        history={rankHistory(nightly?.history)}
+        primaryColor={myColor}
+      />
 
       {/* How it's calculated */}
       <div className="card" style={{ padding:0, overflow:'hidden' }}>

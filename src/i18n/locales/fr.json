@@ -815,7 +815,15 @@
   },
   "hockeyTechLeagueView": {
     "standingsEmpty": "Aucune donnée de classement disponible.",
-    "leadersEmpty": "Aucune donnée de meneurs disponible."
+    "leadersEmpty": "Aucune donnée de meneurs disponible.",
+    "rankings": {
+      "unavailable": "Le classement de puissance ne peut pas être chargé pour le moment. Réessayez plus tard.",
+      "asOf": "Classement du calcul de la nuit du {{date}}",
+      "shareCaption": "Classement de puissance {{team}} — #{{rank}} {{ofLeague}}",
+      "howCalculatedIntro": "Le classement de puissance {{ofLeague}} combine quatre facteurs en un score. Chacun est ramené de 0 à 1 dans la ligue (la meilleure équipe 1, la pire 0; une équipe sans la donnée est à 0,5), puis pondéré et additionné. Le classement est recalculé chaque nuit après les matchs.",
+      "componentPointsDesc": "Points de saison ÷ maximum possible (PJ × 2)",
+      "howCalculatedFootnote": "Aucun terme de tentatives de tir ni de buts attendus : les données {{ofLeague}} n'ont pas de tirs bloqués ou ratés. Source : classement et résultats {{ofLeague}}."
+    }
   },
   "hockeyTechShotMapView": {
     "fallbackNote": "Aucune donnée {{empty}} pour cette équipe — voici {{fallback}}.",
@@ -2741,12 +2749,13 @@
     "scoutingSubtitle": "Face-à-face, cette saison",
     "scoutingPlayoffSubtitle": "Face-à-face, ces séries",
     "rankingsTitle": "Classement de puissance",
-    "rankingsSubtitle": "{{rank}}e sur 32 · {{record}}",
+    "rankingsSubtitle": "{{rank}}e sur {{count}} · {{record}}",
     "rankingsNote": "Points, forme, différentiel, xG à 5 c. 5, unités spéciales",
     "scoreTitle": "{{team}} {{teamScore}}–{{oppScore}} {{opp}}",
     "statsNote": "Stats : LNH · EyeWall",
     "pwhlStatsNote": "Stats : LPHF · EyeWall",
-    "hockeyTechStatsNote": "Stats : {{league}} · EyeWall"
+    "hockeyTechStatsNote": "Stats : {{league}} · EyeWall",
+    "rankingsNoteHockeyTech": "Points, forme, différentiel, unités spéciales · {{league}}"
   },
   "goalReplay": {
     "video": "Vidéo",

@@ -262,6 +262,20 @@ export function createHockeyTechApi(key) {
      * homeTeamId, awayTeamId, homeScore, awayScore,
      * gameStatus: 'pre'|'live'|'final', events }. No goalieStats/
      * faceoffStats, unlike PWHL's (no faceoff data in these feeds). */
+    /** Power rankings (contract C12), the pipeline's nightly
+     * {league}_power_rankings: { latest: [{ team_id, rank, prior_rank,
+     * score, components }], narrative: { text, run_date } | null (the
+     * team's EyeWall AI write-up, in the app's language), history:
+     * [{ run_date, rank }] (the team's last 28 runs) }, plus
+     * `unavailable: true` when the Worker couldn't read the tables. Without
+     * `season`, the latest run's season. */
+    async fetchPowerRankings(team = teamId, { season = null } = {}) {
+      const qs = new URLSearchParams({ locale: i18n.language === 'fr' ? 'fr' : 'en' });
+      if (team) qs.set('teamId', team);
+      if (season) qs.set('season', season);
+      return workerFetch(`${base}/power-rankings?${qs}`);
+    },
+
     async fetchLive(gameId) {
       if (!gameId) return null;
       return workerFetch(`${base}/live/${gameId}`);

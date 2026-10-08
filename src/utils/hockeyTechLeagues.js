@@ -95,6 +95,7 @@ export const AHL = {
     fetchNews:                    ahlApi.fetchAHLNews,
     fetchPlayerPercentiles:       ahlApi.fetchAHLPlayerPercentiles,
     fetchGoaliePercentiles:       ahlApi.fetchAHLGoaliePercentiles,
+    fetchPowerRankings:           ahlApi.fetchAHLPowerRankings,
   },
   config: {
     teams:              ahlConfig.AHL_TEAMS,
@@ -181,6 +182,7 @@ export const ECHL = {
     fetchNews:                    echlApi.fetchECHLNews,
     fetchPlayerPercentiles:       echlApi.fetchECHLPlayerPercentiles,
     fetchGoaliePercentiles:       echlApi.fetchECHLGoaliePercentiles,
+    fetchPowerRankings:           echlApi.fetchECHLPowerRankings,
   },
   config: {
     teams:              echlConfig.ECHL_TEAMS,

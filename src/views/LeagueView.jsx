@@ -5,7 +5,6 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { capture } from '../utils/analytics';
 import { useFetch, usePoll } from '../hooks/useFetch';
-import Sparkline from '../components/Sparkline';
 import Scoreboard from '../components/Scoreboard';
 import {
   getStandings,
@@ -27,12 +26,10 @@ import PredictionScorecard from '../components/PredictionScorecard';
 import PlayerPopup from '../components/PlayerPopup';
 import { useShareCard } from '../hooks/useShareCard';
 import ShareButtons from '../components/ShareButtons';
-// PowerRankingsCanvas's shell -- shared by every share card.
-import ShareCardFrame, { ShareAiBlock, ShareSection } from '../components/ShareCardFrame';
-import { SHARE, FONT_DISPLAY, FONT_LABEL } from '../utils/shareCardTheme';
+import RankNarrativeCard from '../components/RankNarrativeCard';
+import PowerRankingsCanvas from '../components/PowerRankingsCanvas';
 import DraftTab from '../components/DraftTab';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
-import { NATIVE_ORIGIN } from '../utils/nativeOrigin';
 import { getEdgeLeaders } from '../utils/edgeApi';
 import { useUnits } from '../hooks/useUnits';
 import { formatNumber, formatPercent, formatDate } from '../utils/formatters';
@@ -417,21 +414,6 @@ const PR_MVMT_UP_CLASSES = 'text-[color:var(--green)]'
 const PR_MVMT_DOWN_CLASSES = 'text-[color:var(--red-bright)]'
 const PR_MVMT_FLAT_CLASSES = 'text-[color:var(--text-dim)]'
 
-const PR_NARRATIVE_CARD_CLASSES = 'pr-narrative-card p-[14px_16px]'
-const PR_NARRATIVE_LABEL_CLASSES = 'pr-narrative-label text-[11px] font-extrabold tracking-[0.1em] uppercase text-[color:var(--team-primary,var(--green))] mb-2'
-const PR_NARRATIVE_TEXT_CLASSES = 'text-[13px] leading-[1.6] text-[color:var(--text-muted)] m-[0_0_8px]'
-const PR_NARRATIVE_DATE_CLASSES = 'text-[11px] text-[color:var(--text-dim)]'
-const PR_NARRATIVE_CARD_TOP_CLASSES = 'flex gap-4 items-start max-[420px]:flex-col'
-const PR_NARRATIVE_CARD_TOP_FIRST_CHILD_CLASSES = 'flex-1 min-w-0'
-
-const PR_SPARKLINE_CLASSES = 'pr-sparkline shrink-0 w-[90px] flex flex-col gap-[3px] max-[420px]:w-full'
-const PR_SPARKLINE_HEADER_CLASSES = 'flex justify-between items-baseline'
-const PR_SPARKLINE_LABEL_CLASSES = 'text-[8px] font-semibold uppercase tracking-[0.06em] text-[color:var(--text-dim)]'
-const PR_SPARKLINE_TREND_CLASSES = 'text-[10px] font-bold [font-variant-numeric:tabular-nums]'
-const PR_SPARKLINE_PERIOD_CLASSES = 'text-[8px] font-normal text-[color:var(--text-dim)]'
-const PR_SPARKLINE_SVG_CLASSES = 'w-full h-auto [aspect-ratio:200/56] overflow-visible'
-const PR_SPARKLINE_DATES_CLASSES = 'flex justify-between text-[8px] text-[color:var(--text-dim)]'
-const PR_SPARKLINE_EMPTY_CLASSES = 'pr-sparkline-empty text-[10px] text-[color:var(--text-dim)] italic py-1'
 
 const PRIMARY = TEAM_CONFIG.abbr;
 
@@ -1361,59 +1343,6 @@ function MovementArrow({ current, prior }) {
   return              <span className={`${PR_MVMT_BASE_CLASSES} ${PR_MVMT_DOWN_CLASSES}`}>▼{Math.abs(diff)}</span>;
 }
 
-// ─── Rank Sparkline ───────────────────────────────────────────────────────────
-
-function RankSparkline({ history, primaryColor }) {
-  const { t } = useTranslation();
-  if (!history?.length) {
-    return (
-      <div className={PR_SPARKLINE_EMPTY_CLASSES}>
-        <span>{t('leagueView.rankings.sparklineEmpty')}</span>
-      </div>
-    );
-  }
-
-  // Single point: no trend to show, no line/area -- Sparkline centers a dot.
-  const single = history.length === 1;
-  const latest   = history[history.length - 1];
-  const earliest = history[0];
-  const diff     = single ? 0 : earliest.rank - latest.rank;
-
-  const trendColor = diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red-bright)' : 'var(--text-dim)';
-  const trendLabel = single ? null
-    : diff === 0 ? '—'
-    : diff > 0 ? `▲${diff}` : `▼${Math.abs(diff)}`;
-
-  const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-  return (
-    <div className={PR_SPARKLINE_CLASSES} style={{ minWidth: 140 }}>
-      <div className={PR_SPARKLINE_HEADER_CLASSES}>
-        <span className={PR_SPARKLINE_LABEL_CLASSES}>{t('leagueView.rankings.sparklineLabel')}</span>
-        {trendLabel && (
-          <span className={PR_SPARKLINE_TREND_CLASSES} style={{ color: trendColor }}>
-            {trendLabel}
-            <span className={PR_SPARKLINE_PERIOD_CLASSES}>{t('leagueView.rankings.sparklineDaysSuffix', { days: history.length })}</span>
-          </span>
-        )}
-      </div>
-      <Sparkline
-        className={PR_SPARKLINE_SVG_CLASSES}
-        points={history.map(r => ({ value: r.rank }))}
-        color={primaryColor}
-        width={240} height={80} padding={16}
-        invertY // lower rank number (better) plots higher on the chart
-        showEndpoints
-        formatEndpointLabel={v => `#${v}`}
-      />
-      <div className={PR_SPARKLINE_DATES_CLASSES}>
-        <span>{fmtDate(earliest.generated_date)}</span>
-        {!single && <span>{fmtDate(latest.generated_date)}</span>}
-      </div>
-    </div>
-  );
-}
-
 // ─── Rankings Panel ───────────────────────────────────────────────────────────
 
 function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, specialTeams, specialTeamsLoading, narrative, history }) {
@@ -1482,24 +1411,12 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, special
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
       {/* Narrative + sparkline card — shows when either exists */}
-      {(narrative?.narrative || history?.length) ? (
-        <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES} ${PR_NARRATIVE_CARD_CLASSES}`} style={{ marginTop: 4 }}>
-          <div className={PR_NARRATIVE_CARD_TOP_CLASSES}>
-            {narrative?.narrative && (
-              <div className={PR_NARRATIVE_CARD_TOP_FIRST_CHILD_CLASSES}>
-                <div className={PR_NARRATIVE_LABEL_CLASSES}>{t('leagueView.rankings.narrativeLabel', { team: PRIMARY })}</div>
-                <p className={PR_NARRATIVE_TEXT_CLASSES}>{narrative.narrative}</p>
-                {narrative.generated_date && (
-                  <span className={PR_NARRATIVE_DATE_CLASSES}>
-                    {t('leagueView.rankings.narrativeUpdated', { date: new Date(narrative.generated_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) })}
-                  </span>
-                )}
-              </div>
-            )}
-            <RankSparkline history={history} primaryColor={PRIMARY_COLOR} />
-          </div>
-        </div>
-      ) : null}
+      <RankNarrativeCard
+        teamAbbr={PRIMARY}
+        narrative={narrative?.narrative ? { text: narrative.narrative, date: narrative.generated_date } : null}
+        history={history?.map(r => ({ date: r.generated_date, rank: r.rank }))}
+        primaryColor={PRIMARY_COLOR}
+      />
 
       {/* Rankings table */}
       <div className={`${LV_DIV_CARD_BASE_CLASSES} ${LV_DIV_CARD_WIDE_CLASSES}`}>
@@ -1640,104 +1557,6 @@ function RankingsPanel({ standings, standingsLoading, xgData, xgLoading, special
     </div>
   );
 }
-
-// ─── Power Rankings Export Canvas (1080×1080, off-screen) ────────────────────
-
-// 1080×1350 rankings card, drawn in ShareCardFrame like every share card
-// (same look as the pipeline's Monday Instagram/Facebook rankings slides).
-export function PowerRankingsCanvas({ ranked, myTeam, priorRank, narrative, primaryColor }) {
-  const { t } = useTranslation();
-  const logoUrl = abbr => `${NATIVE_ORIGIN}/nhl-assets/logos/nhl/svg/${abbr}_dark.svg`;
-  const diff = priorRank != null ? priorRank - myTeam.rank : null;
-  const mvmtLabel = diff == null ? null : diff === 0 ? '—' : diff > 0 ? `▲${diff}` : `▼${Math.abs(diff)}`;
-  const mvmtColor = diff == null || diff === 0 ? SHARE.muted : diff > 0 ? '#4ade80' : '#f87171';
-
-  // Eight rows fit: the top 8, or the top 3 plus the team and its two
-  // neighbours either side when it's outside the top 8.
-  const inTop8 = myTeam.rank <= 8;
-  const displayRows = ranked.filter(r => (inTop8 ? r.rank <= 8 : r.rank <= 3 || Math.abs(r.rank - myTeam.rank) <= 2));
-  const record = `${myTeam.wins}–${myTeam.losses}–${myTeam.otLosses}`;
-  const COLS = '64px 110px 1fr 120px 120px 120px';
-  const cell = { fontFamily: FONT_LABEL, fontSize: 24, textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
-
-  return (
-    <ShareCardFrame
-      id="pr-export-canvas"
-      accent={primaryColor}
-      kicker={t('leagueView.rankings.snapshotBadge')}
-      title={t('shareCard.rankingsTitle')}
-      subtitle={t('shareCard.rankingsSubtitle', { rank: myTeam.rank, record })}
-      note={t('shareCard.rankingsNote')}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-        <img src={logoUrl(myTeam.abbr)} alt={myTeam.abbr} style={{ width: 110, height: 110, objectFit: 'contain' }}
-          onError={e => { e.target.style.display = 'none'; }} />
-        <div style={{ minWidth: 200 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
-            <span style={{ fontFamily: FONT_DISPLAY, fontSize: 120, lineHeight: 0.9, color: 'var(--team-canvas)' }}>#{myTeam.rank}</span>
-            {mvmtLabel && <span style={{ fontFamily: FONT_DISPLAY, fontSize: 40, color: mvmtColor }}>{mvmtLabel}</span>}
-          </div>
-        </div>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {[
-            { label: 'Pts%',  val: myTeam.ptsPct * 100,                                fmt: v => `${v.toFixed(1)}%`, rank: myTeam.leagueRanks?.pts },
-            { label: 'L10',   val: myTeam.l10PtsPct * 100,                             fmt: () => myTeam.l10,        rank: myTeam.leagueRanks?.l10 },
-            { label: 'xGF%',  val: myTeam.xgfPct != null ? myTeam.xgfPct * 100 : null, fmt: v => `${v.toFixed(1)}%`, rank: myTeam.leagueRanks?.xgf },
-            { label: 'GD/GP', val: myTeam.gdPG,                                        fmt: v => (v > 0 ? '+' : '') + v.toFixed(2), rank: myTeam.leagueRanks?.gd },
-            { label: 'SP%',   val: myTeam.spPct != null ? myTeam.spPct * 100 : null,                                 fmt: v => `${v.toFixed(1)}%`, rank: myTeam.leagueRanks?.sp },
-          ].map(({ label, val, fmt, rank }) => {
-            const barPct = rank != null ? ((32 - rank) / 31) * 100 : 50;
-            const barColor = rank != null && rank <= 10 ? '#4ade80' : rank != null && rank >= 23 ? '#f87171' : '#5b8fd4';
-            return (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ width: 72, fontFamily: FONT_LABEL, fontSize: 22, color: SHARE.muted }}>{label}</span>
-                <div style={{ flex: 1, height: 10, background: SHARE.bg3, borderRadius: 5, overflow: 'hidden' }}>
-                  <div style={{ width: `${barPct}%`, height: '100%', background: barColor }} />
-                </div>
-                <span style={{ ...cell, width: 96 }}>{val != null ? fmt(val) : '—'}</span>
-                <span style={{ ...cell, width: 52, color: SHARE.muted, fontSize: 20 }}>{rank != null ? `#${rank}` : ''}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <ShareAiBlock text={narrative} lines={3} />
-
-      <ShareSection label={t('leagueView.rankings.snapshotHeading')}>
-        <div style={{ display: 'grid', gridTemplateColumns: COLS, gap: 8, padding: '0 16px 6px' }}>
-          {['#', t('league.rankings.colTeam'), t('league.rankings.colRecord'), 'Pts%', 'xGF%', 'GD/GP'].map((h, i) => (
-            <span key={i} style={{ fontFamily: FONT_LABEL, fontSize: 20, color: SHARE.muted, textTransform: 'uppercase', textAlign: i <= 2 ? 'left' : 'right' }}>{h}</span>
-          ))}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {displayRows.map((r, i) => {
-            const isMe = r.abbr === myTeam.abbr;
-            const gap = i > 0 && r.rank - displayRows[i - 1].rank > 1;
-            return (
-              <React.Fragment key={r.abbr}>
-              {gap && <div style={{ textAlign: 'center', color: SHARE.muted, fontSize: 20, lineHeight: '10px' }}>…</div>}
-              <div style={{
-                display: 'grid', gridTemplateColumns: COLS, gap: 8, alignItems: 'center', padding: '2px 16px', borderRadius: 8,
-                background: isMe ? `${primaryColor}26` : SHARE.bg2, borderLeft: `6px solid ${isMe ? primaryColor : 'transparent'}`,
-              }}>
-                <span style={{ ...cell, textAlign: 'left', color: isMe ? 'var(--team-canvas)' : SHARE.muted }}>{r.rank}</span>
-                <span style={{ ...cell, textAlign: 'left', color: teamTextColor(r.abbr) ?? SHARE.text }}>{r.abbr}</span>
-                <span style={{ ...cell, textAlign: 'left', color: SHARE.muted }}>{r.wins}–{r.losses}–{r.otLosses}</span>
-                <span style={cell}>{(r.ptsPct * 100).toFixed(1)}%</span>
-                <span style={{ ...cell, color: r.xgfPct != null ? SHARE.text : SHARE.muted }}>{r.xgfPct != null ? `${(r.xgfPct * 100).toFixed(1)}%` : '—'}</span>
-                <span style={{ ...cell, color: r.gdPG > 0 ? '#4ade80' : r.gdPG < 0 ? '#f87171' : SHARE.muted }}>{r.gdPG > 0 ? '+' : ''}{r.gdPG.toFixed(2)}</span>
-              </div>
-              </React.Fragment>
-            );
-          })}
-        </div>
-      </ShareSection>
-    </ShareCardFrame>
-  );
-}
-
-
 
 // ─── Scroll-to-top button ─────────────────────────────────────────────────────
 // Appears after the user scrolls down 200px within the league-content area.

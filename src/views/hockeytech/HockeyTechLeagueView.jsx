@@ -6,11 +6,11 @@
 //
 // Scoreboard + Standings (grouped by division -- both leagues have real
 // division structure, unlike PWHL's flat table: league.config.divisionOrder)
-// + Leaders (goalie GP gate in utils/hockeyTechLeaders.js). No Bracket or
-// Power Rankings tabs -- both depend on infrastructure not built for
-// AHL/ECHL (playoff bracket data, AI-driven power rankings) -- see
-// AHL_BUILD_BRIEF.md's scope notes. Leader rows open the league's player
-// popup.
+// + Leaders (goalie GP gate in utils/hockeyTechLeaders.js) + Power rankings
+// (contract C12: the pipeline's nightly ranking with the followed team's
+// EyeWall AI narrative, HockeyTechPowerRankingsPanel -- offered only once
+// the route has rows, or with a note when the Worker couldn't read them).
+// Leader rows open the league's player popup.
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch, usePoll } from '../../hooks/useFetch';
@@ -19,6 +19,8 @@ import TeamLogo from '../../components/TeamLogo';
 import HockeyTechPlayerPopup from '../../components/HockeyTechPlayerPopup';
 import Scoreboard from '../../components/Scoreboard';
 import LocalPredictionScorecard from '../../components/LocalPredictionScorecard';
+import HockeyTechPowerRankingsPanel, { HockeyTechRankingsUnavailable } from '../../components/hockeytech/HockeyTechPowerRankingsPanel';
+import { rankingsState } from '../../utils/hockeyTechPowerRankings';
 import { SKELETON_CLASSES } from '../../utils/skeletonClasses';
 import { streakColor } from '../../utils/hockeyTechResults';
 import { qualifiedGoalies } from '../../utils/hockeyTechLeaders';
@@ -91,6 +93,11 @@ export default function HockeyTechLeagueView({ league }) {
   const { data: leagueData, loading: leadersLoading } = useFetch(() => league.api.fetchLeaguePlayers(season), [season]);
   // Polled (30s) only while the Scoreboard tab is active -- see NHL
   // LeagueView.jsx's identical guard for why.
+  // Read up front: whether there are rankings decides whether the tab is
+  // offered (no dead tab before the first nightly run).
+  const { data: rankings, loading: rankingsLoading } = useFetch(() => league.api.fetchPowerRankings(league.teamId), []);
+  const rankingsTab = rankingsState(rankings, rankingsLoading);
+  const showRankings = rankingsTab === 'rows' || rankingsTab === 'unavailable';
   const { data: todaysGames, loading: todaysGamesLoading, error: todaysGamesError }
     = usePoll(() => tab === 'scoreboard' ? league.api.fetchToday() : Promise.resolve(null), 30000, [tab]);
 
@@ -100,6 +107,9 @@ export default function HockeyTechLeagueView({ league }) {
         <button className={leagueTabClasses(tab === 'scoreboard')} onClick={() => setTab('scoreboard')}>{t('league.tabs.scoreboard')}</button>
         <button className={leagueTabClasses(tab === 'standings')} onClick={() => setTab('standings')}>{t('league.tabs.standings')}</button>
         <button className={leagueTabClasses(tab === 'leaders')} onClick={() => setTab('leaders')}>{t('league.tabs.leaders')}</button>
+        {showRankings && (
+          <button className={leagueTabClasses(tab === 'rankings')} onClick={() => setTab('rankings')}>{t('league.tabs.rankings')}</button>
+        )}
         <button className={leagueTabClasses(tab === 'scorecard')} onClick={() => setTab('scorecard')}>{t('scorecard.tabLabel')}</button>
       </div>
       <div className={LEAGUE_CONTENT_CLASSES}>
@@ -112,6 +122,8 @@ export default function HockeyTechLeagueView({ league }) {
         {tab === 'leaders' && (
           <LeadersPanel league={league} skaters={leagueData?.skaters || []} goalies={leagueData?.goalies || []} loading={leadersLoading} onSelect={setSelected} />
         )}
+        {tab === 'rankings' && rankingsTab === 'rows' && <HockeyTechPowerRankingsPanel league={league} data={rankings} />}
+        {tab === 'rankings' && rankingsTab === 'unavailable' && <HockeyTechRankingsUnavailable />}
         {tab === 'scorecard' && <LocalPredictionScorecard store={league.predictionStore} />}
       </div>
 

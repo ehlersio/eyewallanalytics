@@ -12,7 +12,7 @@ import { PredictionCanvas } from '../components/PredictionShareCanvas';
 import { PWHLPredictionCanvas } from '../components/PWHLPredictionShareCanvas';
 import PeriodSummaryShareCanvas from '../components/PeriodSummaryShareCanvas';
 import { ScoutingShareCanvas } from '../components/ScoutingTab';
-import { PowerRankingsCanvas } from './LeagueView';
+import PowerRankingsCanvas from '../components/PowerRankingsCanvas';
 import { SHARE_W, SHARE_H } from '../utils/shareCardTheme';
 
 const SCALE = 0.5;
