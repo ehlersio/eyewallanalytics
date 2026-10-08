@@ -815,7 +815,15 @@
   },
   "hockeyTechLeagueView": {
     "standingsEmpty": "No standings data available.",
-    "leadersEmpty": "No leader data available."
+    "leadersEmpty": "No leader data available.",
+    "rankings": {
+      "unavailable": "Power rankings can't be loaded right now. Try again later.",
+      "asOf": "Rankings from the nightly run of {{date}}",
+      "shareCaption": "{{team}} Power Rankings — #{{rank}} in the {{league}}",
+      "howCalculatedIntro": "{{league}} Power Rankings blend four factors into one score. Each is scaled 0–1 across the league (the best team 1, the worst 0; a team without the number sits at 0.5), then weighted and added up. The ranking is recalculated every night after games.",
+      "componentPointsDesc": "Season points ÷ the most possible (GP × 2)",
+      "howCalculatedFootnote": "No shot-attempt or expected-goals term: {{league}} data has no blocked or missed shots. Source: {{league}} standings and game results."
+    }
   },
   "hockeyTechShotMapView": {
     "fallbackNote": "No {{empty}} data for this team — showing {{fallback}}.",
@@ -2741,12 +2749,13 @@
     "scoutingSubtitle": "Head to head, this season",
     "scoutingPlayoffSubtitle": "Head to head, these playoffs",
     "rankingsTitle": "Power Rankings",
-    "rankingsSubtitle": "#{{rank}} of 32 · {{record}}",
+    "rankingsSubtitle": "#{{rank}} of {{count}} · {{record}}",
     "rankingsNote": "Points, form, goal diff, 5v5 xG, special teams",
     "scoreTitle": "{{team}} {{teamScore}}–{{oppScore}} {{opp}}",
     "statsNote": "Stats: NHL · EyeWall",
     "pwhlStatsNote": "Stats: PWHL · EyeWall",
-    "hockeyTechStatsNote": "Stats: {{league}} · EyeWall"
+    "hockeyTechStatsNote": "Stats: {{league}} · EyeWall",
+    "rankingsNoteHockeyTech": "Points, form, goal diff, special teams · {{league}}"
   },
   "goalReplay": {
     "video": "Video",

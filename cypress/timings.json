@@ -259,6 +259,10 @@
     {
       "spec": "cypress/e2e/hockeytech-period-summary.cy.js",
       "duration": 14500
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-power-rankings.cy.js",
+      "duration": 8000
     }
   ]
 }

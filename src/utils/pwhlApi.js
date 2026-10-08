@@ -47,6 +47,16 @@ export async function fetchPWHLStandings(season = PWHL_CURRENT_SEASON) {
   return workerFetch(`/pwhl/standings?season=${season}`);
 }
 
+/** Power rankings from the pipeline's nightly pwhl_power_rankings (contract
+ *  C12): the same shape as hockeyTechApi's fetchPowerRankings -- the team's
+ *  EyeWall AI narrative (app language) and rank history for `season`. */
+export async function fetchPWHLPowerRankings(teamId, season) {
+  const qs = new URLSearchParams({ locale: i18n.language === 'fr' ? 'fr' : 'en' });
+  if (teamId) qs.set('teamId', teamId);
+  if (season) qs.set('season', season);
+  return workerFetch(`/pwhl/power-rankings?${qs}`);
+}
+
 /** Fetch the league averages the Team page's Advanced tab compares against
  *  (regular season, from every team's real totals). Fields with no data are
  *  null; the whole thing is null when the season has no team rows. */
