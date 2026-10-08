@@ -23,6 +23,7 @@ import { finalSuffix } from '../utils/scoreboard';
 import { hockeyTechPenaltyParties } from '../utils/hockeyTechPenalty';
 import { pwhlEventsFromStoredPBP, pwhlSummaryPlayerNames } from '../utils/pwhlStoredPbp';
 import { sameGame, withSummary } from '../utils/summaryList';
+import { SHOOTOUT_PERIOD, isShootoutEvent } from '../utils/shootout';
 
 const WORKER_URL = typeof import.meta !== 'undefined'
   ? import.meta.env?.VITE_WORKER_URL
@@ -31,35 +32,43 @@ const WORKER_URL = typeof import.meta !== 'undefined'
 const SESSION_KEY      = 'eyewall_pwhl_period_summaries';
 const GAME_SUMMARY_KEY = 'eyewall_pwhl_game_summary';
 
+// The followed team's summaries keep the keys above; a guest game view
+// (guestTeamId set) keeps its own, per team, so watching a game from the
+// other side never overwrites or restores the followed team's.
+export const pwhlPeriodSummaryKey = (guestTeamId = null) =>
+  guestTeamId == null ? SESSION_KEY : `${SESSION_KEY}:guest:${guestTeamId}`;
+export const pwhlGameSummaryKey = (guestTeamId = null) =>
+  guestTeamId == null ? GAME_SUMMARY_KEY : `${GAME_SUMMARY_KEY}:guest:${guestTeamId}`;
+
 // ── Storage helpers ───────────────────────────────────────────
 
-function loadStored(gameId) {
+function loadStored(gameId, key = SESSION_KEY) {
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
+    const raw = sessionStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return parsed.gameId === String(gameId) ? parsed : null;
   } catch { return null; }
 }
 
-function saveStored(gameId, summaries) {
+function saveStored(gameId, summaries, key = SESSION_KEY) {
   try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ gameId: String(gameId), summaries }));
+    sessionStorage.setItem(key, JSON.stringify({ gameId: String(gameId), summaries }));
   } catch {}
 }
 
-function loadStoredGame(gameId) {
+function loadStoredGame(gameId, key = GAME_SUMMARY_KEY) {
   try {
-    const raw = sessionStorage.getItem(GAME_SUMMARY_KEY);
+    const raw = sessionStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return parsed.gameId === String(gameId) ? parsed.summary : null;
   } catch { return null; }
 }
 
-function saveStoredGame(gameId, summary) {
+function saveStoredGame(gameId, summary, key = GAME_SUMMARY_KEY) {
   try {
-    sessionStorage.setItem(GAME_SUMMARY_KEY, JSON.stringify({ gameId: String(gameId), summary }));
+    sessionStorage.setItem(key, JSON.stringify({ gameId: String(gameId), summary }));
   } catch {}
 }
 
@@ -88,8 +97,10 @@ async function fetchHTSummary(gameId) {
 
 // Regular-season period 5 is a shootout ('SO'); playoffs never have one
 // (full OT periods instead) — see usePeriodSummary.js's NHL equivalent,
-// which this mirrors.
+// which this mirrors. /pwhl/live's shootout attempts are period 7 (from
+// 2026-10-08, utils/shootout.js).
 function periodLabel(p, isPlayoff = false) {
+  if (p === SHOOTOUT_PERIOD) return 'SO';
   if (p <= 3) return `Period ${p}`;
   if (p === 4) return 'OT';
   if (isPlayoff) return `${p - 3}OT`;
@@ -97,6 +108,7 @@ function periodLabel(p, isPlayoff = false) {
 }
 
 function periodShort(p, isPlayoff = false) {
+  if (p === SHOOTOUT_PERIOD) return 'SO';
   if (p <= 3) return `P${p}`;
   if (p === 4) return 'OT';
   if (isPlayoff) return `${p - 3}OT`;
@@ -120,6 +132,11 @@ export function isHighDanger(e) {
   const f = shotFeet(e);
   if (!f) return false;
   return Math.sqrt((Math.abs(f.x) - 89) ** 2 + f.y ** 2) < 15;
+}
+
+// The periods played, in order -- the shootout's attempts make none.
+export function pwhlPlayedPeriods(events) {
+  return [...new Set((events || []).filter(e => !isShootoutEvent(e)).map(e => e.period).filter(Boolean))].sort((a, b) => a - b);
 }
 
 // Shot stats from PWHL events (live shape) for a period, or all when null.
@@ -290,8 +307,8 @@ export function buildPWHLSummary(period, events, teamId, htSummary, gameId, isPl
     awayScore = periodsToNow.reduce((s, p) => s + (p.stats?.visitingGoals || 0), 0);
   }
 
-  // Three stars — only on the final period
-  const maxPeriod  = Math.max(...events.map(e => e.period || 0), 0);
+  // Three stars — only on the final period (the shootout isn't one)
+  const maxPeriod  = Math.max(...events.filter(e => !isShootoutEvent(e)).map(e => e.period || 0), 0);
   const threeStars = period === maxPeriod
     ? (htSummary?.mvps || []).map(mvp => ({
         name:       { default: `${mvp.player?.info?.firstName || ''} ${mvp.player?.info?.lastName || ''}`.trim() },
@@ -344,7 +361,7 @@ export function buildPWHLGameSummary(events, teamId, htSummary, gameId) {
   const shots = computePWHLShotStats(events, teamId);
 
   // Per-period breakdown
-  const periods = [...new Set(events.map(e => e.period).filter(Boolean))].sort((a, b) => a - b);
+  const periods = pwhlPlayedPeriods(events);
   const periodStats = periods.map(p => {
     const ps = computePWHLShotStats(events, teamId, p);
     return { period: p, corsiForPct: ps.corsiForPct, carSOG: ps.carSOG, oppSOG: ps.oppSOG };
@@ -424,7 +441,8 @@ export function buildPWHLGameSummary(events, teamId, htSummary, gameId) {
 
 // ── Main hook: usePWHLPeriodSummary ──────────────────────────
 
-export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId, isPlayoff = false }) {
+export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId, isPlayoff = false, guestTeamId = null }) {
+  const storageKey = pwhlPeriodSummaryKey(guestTeamId);
   const [summaries,   setSummaries]   = useState([]);
   const [newSummary,  setNewSummary]  = useState(null);
 
@@ -439,7 +457,7 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
   // Restore from sessionStorage on gameId change
   useEffect(() => {
     if (!gameId) return;
-    const stored = loadStored(gameId);
+    const stored = loadStored(gameId, storageKey);
     if (stored?.summaries?.length) {
       setSummaries(stored.summaries);
       lastProcessedPeriod.current = Math.max(...stored.summaries.map(s => s.period));
@@ -451,7 +469,7 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
     buildingRef.current  = new Set();
     htSummaryRef.current = null;
     lastPeriodRef.current = 0;
-  }, [gameId]);
+  }, [gameId, storageKey]);
 
   const getHTSummary = useCallback(async () => {
     if (htSummaryRef.current) return htSummaryRef.current;
@@ -476,14 +494,14 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
 
       setSummaries(prev => {
         const next = withSummary(prev, summary, gameIdRef.current);
-        if (next !== prev) saveStored(gameId, next);
+        if (next !== prev) saveStored(gameId, next, storageKey);
         return next;
       });
       if (showAsNew) setNewSummary(summary);
     } finally {
       building.delete(period);
     }
-  }, [gameId, teamId, isPlayoff, getEvents, getHTSummary]);
+  }, [gameId, teamId, isPlayoff, getEvents, getHTSummary, storageKey]);
 
   // Live: detect period transitions
   useEffect(() => {
@@ -493,7 +511,8 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
     const currentPeriod = lastEvt?.period || 0;
     const gameStatus    = liveData.gameStatus || '';
 
-    // Build summary when period changes (new period = previous period ended)
+    // Build summary when period changes (new period = previous period ended;
+    // the shootout's first attempt ends overtime)
     if (currentPeriod > lastPeriodRef.current && lastPeriodRef.current > 0) {
       const prevPeriod = lastPeriodRef.current;
       if (prevPeriod > lastProcessedPeriod.current) {
@@ -502,8 +521,10 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
       }
     }
 
-    // Also build on intermission status
-    if (gameStatus === 'intermission' && currentPeriod > 0 && currentPeriod > lastProcessedPeriod.current) {
+    // Also build on intermission status (never for the shootout: it isn't
+    // a period)
+    if (gameStatus === 'intermission' && currentPeriod > 0 && !isShootoutEvent(lastEvt)
+      && currentPeriod > lastProcessedPeriod.current) {
       lastProcessedPeriod.current = currentPeriod;
       buildAndStore(currentPeriod, true);
     }
@@ -516,17 +537,17 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
     if (isLive || !gameId) return;
     const events = getEvents();
     if (!events.length) return;
-    const periods = [...new Set(events.map(e => e.period).filter(Boolean))].sort((a, b) => a - b);
+    const periods = pwhlPlayedPeriods(events);
     if (!periods.length) return;
 
-    const stored       = loadStored(gameId);
+    const stored       = loadStored(gameId, storageKey);
     const builtPeriods = new Set(stored?.summaries?.map(s => s.period) || []);
     periods.forEach(p => {
       if (!builtPeriods.has(p) && !buildingRef.current.has(p)) {
         buildAndStore(p, false);
       }
     });
-  }, [gameId, isLive, pbpData, buildAndStore, getEvents]);
+  }, [gameId, isLive, pbpData, buildAndStore, getEvents, storageKey]);
 
   const dismissNewSummary = useCallback(() => setNewSummary(null), []);
 
@@ -536,26 +557,27 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
       const next = prev.map(s =>
         s.period === period ? { ...s, aiNarrative: narrative, aiLoading: false } : s
       );
-      saveStored(gameId, next);
+      saveStored(gameId, next, storageKey);
       return next;
     });
     setNewSummary(prev =>
       prev?.period === period ? { ...prev, aiNarrative: narrative, aiLoading: false } : prev
     );
-  }, [gameId]);
+  }, [gameId, storageKey]);
 
   return { summaries, newSummary, dismissNewSummary, updateSummaryNarrative };
 }
 
 // ── Game summary hook ─────────────────────────────────────────
 
-export function usePWHLGameSummary({ liveData, pbpData, isLive, gameId, teamId }) {
+export function usePWHLGameSummary({ liveData, pbpData, isLive, gameId, teamId, guestTeamId = null }) {
+  const storageKey = pwhlGameSummaryKey(guestTeamId);
   const [gameSummary, setGameSummary] = useState(null);
   const builtRef = useRef(false);
 
   useEffect(() => {
     if (!gameId) { builtRef.current = false; setGameSummary(null); return; }
-    const stored = loadStoredGame(gameId);
+    const stored = loadStoredGame(gameId, storageKey);
     if (stored) {
       setGameSummary(stored);
       builtRef.current = true;
@@ -563,7 +585,7 @@ export function usePWHLGameSummary({ liveData, pbpData, isLive, gameId, teamId }
       setGameSummary(null);
       builtRef.current = false;
     }
-  }, [gameId]);
+  }, [gameId, storageKey]);
 
   useEffect(() => {
     if (!gameId || builtRef.current) return;
@@ -584,18 +606,18 @@ export function usePWHLGameSummary({ liveData, pbpData, isLive, gameId, teamId }
       const summary   = buildPWHLGameSummary(
         pwhlSummaryEvents({ isLive, liveData, pbpData, teamId, gameId, htSummary }), teamId, htSummary, gameId);
       setGameSummary(summary);
-      saveStoredGame(gameId, summary);
+      saveStoredGame(gameId, summary, storageKey);
     })();
-  }, [gameId, isLive, liveData, pbpData, teamId]);
+  }, [gameId, isLive, liveData, pbpData, teamId, storageKey]);
 
   const updateNarrative = useCallback((narrative) => {
     setGameSummary(prev => {
       if (!prev) return prev;
       const next = { ...prev, aiNarrative: narrative, aiLoading: false };
-      saveStoredGame(gameId, next);
+      saveStoredGame(gameId, next, storageKey);
       return next;
     });
-  }, [gameId]);
+  }, [gameId, storageKey]);
 
   return { gameSummary, updateGameNarrative: updateNarrative };
 }

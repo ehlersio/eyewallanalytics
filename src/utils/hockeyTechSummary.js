@@ -17,9 +17,10 @@
 // with isGoal, then a goal.
 
 import { finalSuffix } from './scoreboard';
+import { SHOOTOUT_PERIOD, isShootoutEvent } from './shootout';
 import { isHighDanger, pwhlSummaryPenalty } from '../hooks/usePWHLPeriodSummary';
 
-export const SHOOTOUT_PERIOD = 7;
+export { SHOOTOUT_PERIOD };
 
 // 'Period 2' / 'P2', 'OT', '2OT' (a playoff second overtime is period 5:
 // the shootout is 7, never 5).
@@ -33,7 +34,7 @@ export function htPeriodShort(p) {
   return p === 4 ? 'OT' : `${p - 3}OT`;
 }
 
-const isShootout = e => e?.eventType === 'shootout' || e?.period === SHOOTOUT_PERIOD;
+const isShootout = isShootoutEvent;
 
 // The periods played, in order, the shootout left out.
 export function summaryPeriods(events) {
