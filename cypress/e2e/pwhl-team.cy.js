@@ -272,7 +272,12 @@ describe('PWHL Team view — DET (expansion, no games played yet)', () => {
         .should('contain', 'No games yet').and('contain', 'DET')
       cy.get('.record-big').should('not.exist')
       cy.contains(/^0–0–0$/).should('not.exist')
-      cy.contains('0 pts').should('not.exist')
+      // The playoff-odds card (Wave D) may legitimately read "0 pts now" for a
+      // season with no games yet; any other "0 pts" would be a made-up record.
+      cy.get('body').then($body => {
+        const leaves = $body.find(':contains("0 pts")').filter((_, el) => el.children.length === 0)
+        leaves.each((_, el) => { expect(el.closest('.playoff-odds-now'), '0 pts outside the odds card').to.not.equal(null) })
+      })
     })
 
     it('does not show season stats, top scorers, or starting goalie sections', () => {
