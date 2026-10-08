@@ -73,6 +73,10 @@
       "duration": 20000
     },
     {
+      "spec": "cypress/e2e/hockeytech-shots-live.cy.js",
+      "duration": 8000
+    },
+    {
       "spec": "cypress/e2e/hockeytech-season-pickers.cy.js",
       "duration": 27000
     },
