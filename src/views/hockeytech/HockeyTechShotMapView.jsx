@@ -17,9 +17,13 @@
 //   - A lighter per-game view than PWHL's: game chips over the season
 //     tabs, opening on the last game played (2026-10), with that game's
 //     shots for both teams and cards computed from them -- no danger-zone
-//     drill popups or period/game AI summaries.
-//     The live pieces below (score chip, event popups, debug panel) are
-//     separate from it.
+//     drill popups.
+//   - A live game (its chip, picked automatically when the game starts)
+//     plots from its /live play-by-play, which carries every shot's and
+//     goal's coordinates (utils/hockeyTechLiveShots.js turns it into rows
+//     shaped like the stored ones, through the pipeline's transform). A
+//     final the nightly hasn't stored yet plots from its /live the same
+//     way; once the stored shots exist they win.
 // PP/PK summary numbers come straight from {league}_team_seasons (via
 // /{league}/team-season-summary), which the pipeline already populates from
 // HockeyTech's own special-teams view -- not derived from PBP here.
@@ -59,6 +63,7 @@ import { useHockeyTechPeriodSummary, useHockeyTechGameSummary } from '../../hook
 import HockeyTechPeriodSummary from '../../components/hockeytech/HockeyTechPeriodSummary';
 import { usePeriodSummaryContext } from '../../utils/PeriodSummaryContext';
 import { sameGame } from '../../utils/summaryList';
+import { liveShotRows } from '../../utils/hockeyTechLiveShots';
 import { rinkBtnClasses } from '../../utils/rinkBtnClasses';
 import { PAGE_CLASSES } from '../../utils/pageClasses';
 import { SKELETON_CLASSES } from '../../utils/skeletonClasses';
@@ -122,7 +127,7 @@ function adaptShot(row, playerMap) {
     isCanes: true,
     period: row.period_id,
     timeInPeriod: `${mm}:${ss}`,
-    shooterName: playerMap[row.shooter_id] || null,
+    shooterName: playerMap[row.shooter_id] || row.shooter_name || null,
     gameId: row.game_id,
     shotType: row.shot_type || null,
   };
@@ -146,7 +151,8 @@ function adaptOppShot(row) {
     isCanes: false,
     period: row.period_id,
     timeInPeriod: `${mm}:${ss}`,
-    shooterName: null,
+    // Only a live row names the shooter; stored rows have no names.
+    shooterName: row.shooter_name || null,
     gameId: row.game_id,
     shotType: row.shot_type || null,
   };
@@ -233,16 +239,16 @@ export default function HockeyTechShotMapView({ league }) {
 
   const isLive = liveGame?.status === 'live';
 
-  // Auto-select the live game when it starts
-  const [selectedGameId, setSelectedGameId] = useState(null);
+  // Open the live game when it starts (its chip; the season's finals stay a
+  // tap away).
   const autoSelectedRef = useRef(false);
   useEffect(() => {
     if (isLive && liveGame && !autoSelectedRef.current) {
-      setSelectedGameId(liveGame.gameId);
+      if (!isGuest) setPickedGameId(liveGame.gameId);
       autoSelectedRef.current = true;
     }
     if (!isLive) autoSelectedRef.current = false;
-  }, [isLive, liveGame]);
+  }, [isLive, liveGame, isGuest]);
 
   // The live game's play-by-play, read by the same poller.
   const liveData = isLive ? liveState.live : null;
@@ -381,12 +387,15 @@ export default function HockeyTechShotMapView({ league }) {
     .filter(g => g.game_state === 'Final')
     .sort((a, b) => (b.game_date || '').localeCompare(a.game_date || '') || b.game_id - a.game_id),
   [schedule]);
-  // A guest view stays on its game, final or not (its shots arrive with the
-  // nightly run; the rink says so until then).
+  // A guest view stays on its game, final or not.
   const viewGameId = isGuest ? guestGameId
     : pickedGameId === ALL_GAMES ? null : pickedGameId ?? games[0]?.game_id ?? null;
   const viewGame = games.find(g => g.game_id === viewGameId) || null;
-  const isGameView = isGuest || !!viewGame;
+  // The live game on screen, or the one that just ended there (not among
+  // the schedule's finals until game_log catches up).
+  const viewingLive = isLive && sameGame(liveGame.gameId, viewGameId);
+  const viewingEnded = !isLive && !!endedData && sameGame(endedData.gameId, viewGameId);
+  const isGameView = isGuest || !!viewGame || viewingLive || viewingEnded;
   const handleGameSelect = id => setPickedGameId(id === viewGameId ? ALL_GAMES : id);
   const handleAllGames = () => setPickedGameId(ALL_GAMES);
 
@@ -410,7 +419,7 @@ export default function HockeyTechShotMapView({ league }) {
   const endedGameId = !isLive ? endedData?.gameId ?? null : null;
   const summaryGameId = isLive ? liveGame.gameId
     : isGuest ? guestGameId
-      : endedGameId != null && pickedGameId == null ? endedGameId
+      : endedGameId != null && (pickedGameId == null || viewingEnded) ? endedGameId
         : viewGame?.game_id ?? null;
   const summaryFromEnded = !isLive && endedData && sameGame(endedData.gameId, summaryGameId);
   // A final's own /live (the whole game's play-by-play). Also the guest
@@ -464,10 +473,18 @@ export default function HockeyTechShotMapView({ league }) {
   // Another game's summaries: whatever was open closes.
   useEffect(() => { setViewingSummaryPeriod(null); }, [summaryGameId]);
 
-  const { data: gameShots, loading: gameShotsLoading } = useFetch(
+  const { data: storedGameShots, loading: storedLoading } = useFetch(
     () => viewGameId ? league.api.fetchGameShots(viewGameId) : Promise.resolve(null),
     [viewGameId]
   );
+  // The game's /live: polled while it's live, the ended game's snapshot,
+  // or a final's own (read for its summaries above).
+  const viewGameLive = [liveData, endedData, finalGameData]
+    .find(d => d && sameGame(d.gameId, viewGameId)) ?? null;
+  const liveRows = useMemo(() => liveShotRows(viewGameLive), [viewGameLive]);
+  // The stored shots once the nightly has them, else the live ones.
+  const gameShots = storedGameShots?.length ? storedGameShots : liveRows.length ? liveRows : storedGameShots;
+  const gameShotsLoading = storedLoading && !liveRows.length;
   const ourGameShots = useMemo(() => (gameShots || []).filter(r => r.team_id === teamId), [gameShots, teamId]);
   const oppGameShots = useMemo(() => (gameShots || []).filter(r => r.team_id !== teamId), [gameShots, teamId]);
   const countGoals = rows => rows.filter(r => r.event_type === 'goal').length;
@@ -488,9 +505,12 @@ export default function HockeyTechShotMapView({ league }) {
   const rinkLoading = isGameView ? gameShotsLoading : shotsLoading;
 
   let subtitle = t('hockeyTechShotMapView.subtitle');
-  const guestLine = isGuest && !viewGame
-    ? guestGameLine(teamId, { liveGame, ended: endedData ?? finalGameData }) : null;
-  if (isGuest && !viewGame) {
+  // A live game, or one that isn't among the finals on screen: a guest
+  // view's, or the followed team's just-ended game.
+  const offScheduleGame = viewingLive || (!viewGame && (isGuest || viewingEnded));
+  const guestLine = offScheduleGame
+    ? guestGameLine(teamId, { liveGame: viewingLive || isGuest ? liveGame : null, ended: endedData ?? finalGameData }) : null;
+  if (offScheduleGame) {
     subtitle = guestLine ? t('hockeyTechShotMapView.guestSubtitle', {
       state: guestLine.state === 'final'
         ? `${t('shotMapView.scoreBar.final')}${finalSuffix(guestLine.endedIn)}`
@@ -533,8 +553,8 @@ export default function HockeyTechShotMapView({ league }) {
           <LiveGameChip
             liveGame={liveGameChipData}
             sport={league.key}
-            selected={selectedGameId === liveGame.gameId}
-            onSelect={() => setSelectedGameId(liveGame.gameId)}
+            selected={viewingLive}
+            onSelect={() => { if (!isGuest) setPickedGameId(liveGame.gameId); }}
           />
         </div>
       )}
