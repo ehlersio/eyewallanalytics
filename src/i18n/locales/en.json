@@ -823,6 +823,14 @@
       "howCalculatedIntro": "{{league}} Power Rankings blend four factors into one score. Each is scaled 0–1 across the league (the best team 1, the worst 0; a team without the number sits at 0.5), then weighted and added up. The ranking is recalculated every night after games.",
       "componentPointsDesc": "Season points ÷ the most possible (GP × 2)",
       "howCalculatedFootnote": "No shot-attempt or expected-goals term: {{league}} data has no blocked or missed shots. Source: {{league}} standings and game results."
+    },
+    "bracket": {
+      "tbd": "TBD",
+      "projectedNote": "Seeded from the division standings as of {{date}}, by the league's published format. Matchups only: no games yet.",
+      "formatUnverified": "No projected bracket yet: the {{league}} hasn't published this season's playoff format. The bracket appears here once it does, or when the playoffs begin.",
+      "noGames": "No projected bracket yet: the {{league}} season hasn't started. It appears here once games have been played.",
+      "byes": "First-round byes: {{teams}}",
+      "bestOf": "Best-of by round: {{rounds}}"
     }
   },
   "hockeyTechShotMapView": {

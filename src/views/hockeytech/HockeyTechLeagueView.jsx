@@ -10,7 +10,10 @@
 // (contract C12: the pipeline's nightly ranking with the followed team's
 // EyeWall AI narrative, HockeyTechPowerRankingsPanel -- offered only once
 // the route has rows, or with a note when the Worker couldn't read them).
-// Leader rows open the league's player popup.
+// Leader rows open the league's player popup. Bracket (contract C11,
+// HockeyTechBracketPanel): this year's Calder/Kelly Cup bracket, or the
+// "if the playoffs started today" projection, or a note saying why there's
+// none.
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch, usePoll } from '../../hooks/useFetch';
@@ -21,6 +24,8 @@ import Scoreboard from '../../components/Scoreboard';
 import LocalPredictionScorecard from '../../components/LocalPredictionScorecard';
 import HockeyTechPowerRankingsPanel, { HockeyTechRankingsUnavailable } from '../../components/hockeytech/HockeyTechPowerRankingsPanel';
 import { rankingsState } from '../../utils/hockeyTechPowerRankings';
+import HockeyTechBracketPanel from '../../components/hockeytech/HockeyTechBracketPanel';
+import { bracketTabState, currentPlayoffSeason } from '../../utils/hockeyTechBracket';
 import { SKELETON_CLASSES } from '../../utils/skeletonClasses';
 import { streakColor } from '../../utils/hockeyTechResults';
 import { qualifiedGoalies } from '../../utils/hockeyTechLeaders';
@@ -98,6 +103,15 @@ export default function HockeyTechLeagueView({ league }) {
   const { data: rankings, loading: rankingsLoading } = useFetch(() => league.api.fetchPowerRankings(league.teamId), []);
   const rankingsTab = rankingsState(rankings, rankingsLoading);
   const showRankings = rankingsTab === 'rows' || rankingsTab === 'unavailable';
+  // The bracket (contract C11): this year's playoffs once they have series,
+  // else the standings projection, else a note for why there's none. Both
+  // read up front, since what they hold decides whether the tab is offered.
+  const playoffSeason = currentPlayoffSeason(league.config);
+  const { data: realBracket, loading: realBracketLoading } = useFetch(
+    () => playoffSeason ? league.api.fetchBracket(playoffSeason) : Promise.resolve(null), [playoffSeason]);
+  const { data: projectedBracket, loading: projectedLoading } = useFetch(() => league.api.fetchProjectedBracket(), []);
+  const bracket = bracketTabState(realBracket, projectedBracket, realBracketLoading || projectedLoading);
+  const showBracket = bracket.mode === 'real' || bracket.mode === 'projected' || bracket.mode === 'note';
   const { data: todaysGames, loading: todaysGamesLoading, error: todaysGamesError }
     = usePoll(() => tab === 'scoreboard' ? league.api.fetchToday() : Promise.resolve(null), 30000, [tab]);
 
@@ -106,6 +120,9 @@ export default function HockeyTechLeagueView({ league }) {
       <div className={LEAGUE_TABS_CLASSES}>
         <button className={leagueTabClasses(tab === 'scoreboard')} onClick={() => setTab('scoreboard')}>{t('league.tabs.scoreboard')}</button>
         <button className={leagueTabClasses(tab === 'standings')} onClick={() => setTab('standings')}>{t('league.tabs.standings')}</button>
+        {showBracket && (
+          <button className={leagueTabClasses(tab === 'bracket')} onClick={() => setTab('bracket')}>{t('league.tabs.bracket')}</button>
+        )}
         <button className={leagueTabClasses(tab === 'leaders')} onClick={() => setTab('leaders')}>{t('league.tabs.leaders')}</button>
         {showRankings && (
           <button className={leagueTabClasses(tab === 'rankings')} onClick={() => setTab('rankings')}>{t('league.tabs.rankings')}</button>
@@ -119,6 +136,7 @@ export default function HockeyTechLeagueView({ league }) {
         {tab === 'standings' && (
           <StandingsPanel league={league} standings={standings || []} loading={standLoading} myTeamId={league.teamId} />
         )}
+        {tab === 'bracket' && showBracket && <HockeyTechBracketPanel league={league} state={bracket} />}
         {tab === 'leaders' && (
           <LeadersPanel league={league} skaters={leagueData?.skaters || []} goalies={leagueData?.goalies || []} loading={leadersLoading} onSelect={setSelected} />
         )}

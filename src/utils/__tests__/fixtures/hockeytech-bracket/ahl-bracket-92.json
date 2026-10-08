@@ -1,0 +1,1422 @@
+{
+ "season": 92,
+ "format": {
+  "label": "2026 Calder Cup Playoffs",
+  "bestOf": [
+   3,
+   5,
+   5,
+   7,
+   7
+  ],
+  "source": "https://theahl.com/qualification-rules"
+ },
+ "rounds": [
+  {
+   "name": "First Round",
+   "bestOf": 3,
+   "series": [
+    {
+     "id": "A",
+     "name": "Atlantic Division First Round",
+     "top": {
+      "teamId": 384,
+      "seed": 3,
+      "wins": 1
+     },
+     "bottom": {
+      "teamId": 411,
+      "seed": 6,
+      "wins": 2
+     },
+     "status": "final",
+     "winnerTeamId": 411,
+     "games": [
+      {
+       "gameId": 1028986,
+       "date": "2026-04-22T19:00:00-04:00",
+       "home": 384,
+       "away": 411,
+       "homeScore": 8,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028987,
+       "date": "2026-04-24T19:00:00-04:00",
+       "home": 384,
+       "away": 411,
+       "homeScore": 2,
+       "awayScore": 5,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028988,
+       "date": "2026-04-25T19:00:00-04:00",
+       "home": 384,
+       "away": 411,
+       "homeScore": 1,
+       "awayScore": 2,
+       "status": "Final OT",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "B",
+     "name": "Atlantic Division First Round",
+     "top": {
+      "teamId": 317,
+      "seed": 4,
+      "wins": 0
+     },
+     "bottom": {
+      "teamId": 319,
+      "seed": 5,
+      "wins": 2
+     },
+     "status": "final",
+     "winnerTeamId": 319,
+     "games": [
+      {
+       "gameId": 1028989,
+       "date": "2026-04-21T19:00:00-04:00",
+       "home": 317,
+       "away": 319,
+       "homeScore": 0,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028990,
+       "date": "2026-04-23T19:00:00-04:00",
+       "home": 319,
+       "away": 317,
+       "homeScore": 5,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "C",
+     "name": "North Division First Round",
+     "top": {
+      "teamId": 335,
+      "seed": 4,
+      "wins": 2
+     },
+     "bottom": {
+      "teamId": 323,
+      "seed": 5,
+      "wins": 1
+     },
+     "status": "final",
+     "winnerTeamId": 335,
+     "games": [
+      {
+       "gameId": 1028992,
+       "date": "2026-04-22T19:00:00-04:00",
+       "home": 335,
+       "away": 323,
+       "homeScore": 5,
+       "awayScore": 0,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028993,
+       "date": "2026-04-24T19:05:00-04:00",
+       "home": 323,
+       "away": 335,
+       "homeScore": 4,
+       "awayScore": 0,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028994,
+       "date": "2026-04-26T16:00:00-04:00",
+       "home": 335,
+       "away": 323,
+       "homeScore": 4,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "D",
+     "name": "Central Division First Round",
+     "top": {
+      "teamId": 321,
+      "seed": 4,
+      "wins": 2
+     },
+     "bottom": {
+      "teamId": 327,
+      "seed": 5,
+      "wins": 1
+     },
+     "status": "final",
+     "winnerTeamId": 321,
+     "games": [
+      {
+       "gameId": 1028969,
+       "date": "2026-04-22T19:00:00-05:00",
+       "home": 321,
+       "away": 327,
+       "homeScore": 1,
+       "awayScore": 4,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028970,
+       "date": "2026-04-24T19:00:00-05:00",
+       "home": 321,
+       "away": 327,
+       "homeScore": 2,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028971,
+       "date": "2026-04-26T14:00:00-05:00",
+       "home": 321,
+       "away": 327,
+       "homeScore": 2,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "E",
+     "name": "Pacific Division First Round",
+     "top": {
+      "teamId": 419,
+      "seed": 2,
+      "wins": 2
+     },
+     "bottom": {
+      "teamId": 404,
+      "seed": 7,
+      "wins": 0
+     },
+     "status": "final",
+     "winnerTeamId": 419,
+     "games": [
+      {
+       "gameId": 1028972,
+       "date": "2026-04-22T19:05:00-06:00",
+       "home": 419,
+       "away": 404,
+       "homeScore": 3,
+       "awayScore": 0,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028973,
+       "date": "2026-04-24T19:05:00-06:00",
+       "home": 419,
+       "away": 404,
+       "homeScore": 6,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "F",
+     "name": "Pacific Division First Round",
+     "top": {
+      "teamId": 437,
+      "seed": 3,
+      "wins": 2
+     },
+     "bottom": {
+      "teamId": 405,
+      "seed": 6,
+      "wins": 0
+     },
+     "status": "final",
+     "winnerTeamId": 437,
+     "games": [
+      {
+       "gameId": 1028975,
+       "date": "2026-04-22T19:00:00-07:00",
+       "home": 437,
+       "away": 405,
+       "homeScore": 5,
+       "awayScore": 4,
+       "status": "Final OT",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028976,
+       "date": "2026-04-24T19:00:00-07:00",
+       "home": 437,
+       "away": 405,
+       "homeScore": 5,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "G",
+     "name": "Pacific Division First Round",
+     "top": {
+      "teamId": 445,
+      "seed": 4,
+      "wins": 2
+     },
+     "bottom": {
+      "teamId": 402,
+      "seed": 5,
+      "wins": 1
+     },
+     "status": "final",
+     "winnerTeamId": 445,
+     "games": [
+      {
+       "gameId": 1028983,
+       "date": "2026-04-23T19:10:00-07:00",
+       "home": 402,
+       "away": 445,
+       "homeScore": 6,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028984,
+       "date": "2026-04-25T18:00:00-07:00",
+       "home": 445,
+       "away": 402,
+       "homeScore": 5,
+       "awayScore": 4,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028985,
+       "date": "2026-04-26T17:00:00-07:00",
+       "home": 445,
+       "away": 402,
+       "homeScore": 6,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Division Semifinals",
+   "bestOf": 5,
+   "series": [
+    {
+     "id": "H",
+     "name": "Atlantic Division Semifinals",
+     "top": {
+      "teamId": 309,
+      "seed": 1,
+      "wins": 1
+     },
+     "bottom": {
+      "teamId": 411,
+      "seed": 6,
+      "wins": 3
+     },
+     "status": "final",
+     "winnerTeamId": 411,
+     "games": [
+      {
+       "gameId": 1029005,
+       "date": "2026-05-01T19:05:00-04:00",
+       "home": 309,
+       "away": 411,
+       "homeScore": 2,
+       "awayScore": 3,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029006,
+       "date": "2026-05-03T19:05:00-04:00",
+       "home": 309,
+       "away": 411,
+       "homeScore": 2,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029007,
+       "date": "2026-05-05T19:05:00-04:00",
+       "home": 411,
+       "away": 309,
+       "homeScore": 3,
+       "awayScore": 2,
+       "status": "Final OT",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029008,
+       "date": "2026-05-07T19:05:00-04:00",
+       "home": 411,
+       "away": 309,
+       "homeScore": 1,
+       "awayScore": 0,
+       "status": "Final OT",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "I",
+     "name": "Atlantic Division Semifinals",
+     "top": {
+      "teamId": 316,
+      "seed": 2,
+      "wins": 3
+     },
+     "bottom": {
+      "teamId": 319,
+      "seed": 5,
+      "wins": 1
+     },
+     "status": "final",
+     "winnerTeamId": 316,
+     "games": [
+      {
+       "gameId": 1029010,
+       "date": "2026-04-30T19:05:00-04:00",
+       "home": 316,
+       "away": 319,
+       "homeScore": 4,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029011,
+       "date": "2026-05-02T18:05:00-04:00",
+       "home": 316,
+       "away": 319,
+       "homeScore": 1,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029012,
+       "date": "2026-05-05T19:00:00-04:00",
+       "home": 319,
+       "away": 316,
+       "homeScore": 3,
+       "awayScore": 4,
+       "status": "Final OT",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029013,
+       "date": "2026-05-07T19:00:00-04:00",
+       "home": 319,
+       "away": 316,
+       "homeScore": 1,
+       "awayScore": 4,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "J",
+     "name": "North Division Semifinals",
+     "top": {
+      "teamId": 415,
+      "seed": 1,
+      "wins": 2
+     },
+     "bottom": {
+      "teamId": 335,
+      "seed": 4,
+      "wins": 3
+     },
+     "status": "final",
+     "winnerTeamId": 335,
+     "games": [
+      {
+       "gameId": 1029020,
+       "date": "2026-04-29T19:00:00-04:00",
+       "home": 415,
+       "away": 335,
+       "homeScore": 3,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029021,
+       "date": "2026-05-01T19:00:00-04:00",
+       "home": 415,
+       "away": 335,
+       "homeScore": 2,
+       "awayScore": 6,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029022,
+       "date": "2026-05-03T16:00:00-04:00",
+       "home": 335,
+       "away": 415,
+       "homeScore": 6,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029023,
+       "date": "2026-05-05T19:00:00-04:00",
+       "home": 335,
+       "away": 415,
+       "homeScore": 0,
+       "awayScore": 4,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029024,
+       "date": "2026-05-09T15:00:00-04:00",
+       "home": 415,
+       "away": 335,
+       "homeScore": 2,
+       "awayScore": 3,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "K",
+     "name": "North Division Semifinals",
+     "top": {
+      "teamId": 324,
+      "seed": 2,
+      "wins": 1
+     },
+     "bottom": {
+      "teamId": 373,
+      "seed": 3,
+      "wins": 3
+     },
+     "status": "final",
+     "winnerTeamId": 373,
+     "games": [
+      {
+       "gameId": 1028995,
+       "date": "2026-04-24T19:00:00-04:00",
+       "home": 373,
+       "away": 324,
+       "homeScore": 3,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028996,
+       "date": "2026-04-26T16:00:00-04:00",
+       "home": 373,
+       "away": 324,
+       "homeScore": 1,
+       "awayScore": 4,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028997,
+       "date": "2026-05-01T19:00:00-04:00",
+       "home": 324,
+       "away": 373,
+       "homeScore": 3,
+       "awayScore": 4,
+       "status": "Final OT",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028998,
+       "date": "2026-05-03T15:00:00-04:00",
+       "home": 324,
+       "away": 373,
+       "homeScore": 1,
+       "awayScore": 2,
+       "status": "Final 3OT",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "L",
+     "name": "Central Division Semifinals",
+     "top": {
+      "teamId": 328,
+      "seed": 1,
+      "wins": 3
+     },
+     "bottom": {
+      "teamId": 321,
+      "seed": 4,
+      "wins": 1
+     },
+     "status": "final",
+     "winnerTeamId": 328,
+     "games": [
+      {
+       "gameId": 1029015,
+       "date": "2026-05-02T14:00:00-05:00",
+       "home": 321,
+       "away": 328,
+       "homeScore": 1,
+       "awayScore": 0,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029016,
+       "date": "2026-05-03T14:00:00-05:00",
+       "home": 321,
+       "away": 328,
+       "homeScore": 0,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029017,
+       "date": "2026-05-06T19:00:00-04:00",
+       "home": 328,
+       "away": 321,
+       "homeScore": 4,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029018,
+       "date": "2026-05-08T19:00:00-04:00",
+       "home": 328,
+       "away": 321,
+       "homeScore": 5,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "M",
+     "name": "Central Division Semifinals",
+     "top": {
+      "teamId": 330,
+      "seed": 2,
+      "wins": 3
+     },
+     "bottom": {
+      "teamId": 380,
+      "seed": 3,
+      "wins": 2
+     },
+     "status": "final",
+     "winnerTeamId": 330,
+     "games": [
+      {
+       "gameId": 1028978,
+       "date": "2026-04-28T19:00:00-05:00",
+       "home": 380,
+       "away": 330,
+       "homeScore": 2,
+       "awayScore": 0,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028979,
+       "date": "2026-04-30T19:00:00-05:00",
+       "home": 380,
+       "away": 330,
+       "homeScore": 4,
+       "awayScore": 5,
+       "status": "Final OT",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028980,
+       "date": "2026-05-02T19:00:00-05:00",
+       "home": 330,
+       "away": 380,
+       "homeScore": 2,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028981,
+       "date": "2026-05-03T15:00:00-05:00",
+       "home": 330,
+       "away": 380,
+       "homeScore": 4,
+       "awayScore": 5,
+       "status": "Final OT",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1028982,
+       "date": "2026-05-05T19:00:00-05:00",
+       "home": 330,
+       "away": 380,
+       "homeScore": 6,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "N",
+     "name": "Pacific Division Semifinals",
+     "top": {
+      "teamId": 403,
+      "seed": 1,
+      "wins": 2
+     },
+     "bottom": {
+      "teamId": 445,
+      "seed": 4,
+      "wins": 3
+     },
+     "status": "final",
+     "winnerTeamId": 445,
+     "games": [
+      {
+       "gameId": 1029025,
+       "date": "2026-04-29T19:00:00-07:00",
+       "home": 403,
+       "away": 445,
+       "homeScore": 0,
+       "awayScore": 3,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029026,
+       "date": "2026-05-01T19:00:00-07:00",
+       "home": 403,
+       "away": 445,
+       "homeScore": 5,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029027,
+       "date": "2026-05-05T19:00:00-07:00",
+       "home": 445,
+       "away": 403,
+       "homeScore": 1,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029028,
+       "date": "2026-05-07T19:00:00-07:00",
+       "home": 445,
+       "away": 403,
+       "homeScore": 6,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029029,
+       "date": "2026-05-09T18:00:00-07:00",
+       "home": 403,
+       "away": 445,
+       "homeScore": 2,
+       "awayScore": 3,
+       "status": "Final 2OT",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "O",
+     "name": "Pacific Division Semifinals",
+     "top": {
+      "teamId": 419,
+      "seed": 2,
+      "wins": 3
+     },
+     "bottom": {
+      "teamId": 437,
+      "seed": 3,
+      "wins": 1
+     },
+     "status": "final",
+     "winnerTeamId": 419,
+     "games": [
+      {
+       "gameId": 1029000,
+       "date": "2026-05-01T19:00:00-07:00",
+       "home": 437,
+       "away": 419,
+       "homeScore": 0,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029001,
+       "date": "2026-05-04T19:00:00-07:00",
+       "home": 437,
+       "away": 419,
+       "homeScore": 4,
+       "awayScore": 3,
+       "status": "Final 2OT",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029002,
+       "date": "2026-05-06T19:05:00-06:00",
+       "home": 419,
+       "away": 437,
+       "homeScore": 4,
+       "awayScore": 0,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029003,
+       "date": "2026-05-09T18:05:00-06:00",
+       "home": 419,
+       "away": 437,
+       "homeScore": 6,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Division Finals",
+   "bestOf": 5,
+   "series": [
+    {
+     "id": "P",
+     "name": "Atlantic Division Finals",
+     "top": {
+      "teamId": 316,
+      "seed": 2,
+      "wins": 3
+     },
+     "bottom": {
+      "teamId": 411,
+      "seed": 6,
+      "wins": 2
+     },
+     "status": "final",
+     "winnerTeamId": 316,
+     "games": [
+      {
+       "gameId": 1029030,
+       "date": "2026-05-12T19:05:00-04:00",
+       "home": 316,
+       "away": 411,
+       "homeScore": 2,
+       "awayScore": 0,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029031,
+       "date": "2026-05-14T19:05:00-04:00",
+       "home": 316,
+       "away": 411,
+       "homeScore": 3,
+       "awayScore": 4,
+       "status": "Final OT",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029032,
+       "date": "2026-05-19T19:05:00-04:00",
+       "home": 411,
+       "away": 316,
+       "homeScore": 1,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029033,
+       "date": "2026-05-21T19:05:00-04:00",
+       "home": 411,
+       "away": 316,
+       "homeScore": 2,
+       "awayScore": 0,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029034,
+       "date": "2026-05-23T18:05:00-04:00",
+       "home": 316,
+       "away": 411,
+       "homeScore": 8,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "Q",
+     "name": "North Division Finals",
+     "top": {
+      "teamId": 373,
+      "seed": 3,
+      "wins": 2
+     },
+     "bottom": {
+      "teamId": 335,
+      "seed": 4,
+      "wins": 3
+     },
+     "status": "final",
+     "winnerTeamId": 335,
+     "games": [
+      {
+       "gameId": 1029040,
+       "date": "2026-05-14T19:00:00-04:00",
+       "home": 373,
+       "away": 335,
+       "homeScore": 2,
+       "awayScore": 5,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029041,
+       "date": "2026-05-16T19:00:00-04:00",
+       "home": 373,
+       "away": 335,
+       "homeScore": 3,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029042,
+       "date": "2026-05-20T19:00:00-04:00",
+       "home": 335,
+       "away": 373,
+       "homeScore": 0,
+       "awayScore": 4,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029043,
+       "date": "2026-05-22T19:00:00-04:00",
+       "home": 335,
+       "away": 373,
+       "homeScore": 5,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029044,
+       "date": "2026-05-24T15:00:00-04:00",
+       "home": 373,
+       "away": 335,
+       "homeScore": 2,
+       "awayScore": 3,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "R",
+     "name": "Central Division Finals",
+     "top": {
+      "teamId": 328,
+      "seed": 1,
+      "wins": 1
+     },
+     "bottom": {
+      "teamId": 330,
+      "seed": 2,
+      "wins": 3
+     },
+     "status": "final",
+     "winnerTeamId": 330,
+     "games": [
+      {
+       "gameId": 1029035,
+       "date": "2026-05-14T19:00:00-04:00",
+       "home": 328,
+       "away": 330,
+       "homeScore": 1,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029036,
+       "date": "2026-05-16T19:00:00-04:00",
+       "home": 328,
+       "away": 330,
+       "homeScore": 3,
+       "awayScore": 4,
+       "status": "Final OT",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029037,
+       "date": "2026-05-19T19:00:00-05:00",
+       "home": 330,
+       "away": 328,
+       "homeScore": 3,
+       "awayScore": 4,
+       "status": "Final OT",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029038,
+       "date": "2026-05-21T19:00:00-05:00",
+       "home": 330,
+       "away": 328,
+       "homeScore": 3,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "S",
+     "name": "Pacific Division Finals",
+     "top": {
+      "teamId": 419,
+      "seed": 2,
+      "wins": 3
+     },
+     "bottom": {
+      "teamId": 445,
+      "seed": 4,
+      "wins": 1
+     },
+     "status": "final",
+     "winnerTeamId": 419,
+     "games": [
+      {
+       "gameId": 1029045,
+       "date": "2026-05-13T19:00:00-07:00",
+       "home": 445,
+       "away": 419,
+       "homeScore": 0,
+       "awayScore": 3,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029046,
+       "date": "2026-05-15T19:00:00-07:00",
+       "home": 445,
+       "away": 419,
+       "homeScore": 4,
+       "awayScore": 0,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029047,
+       "date": "2026-05-17T18:05:00-06:00",
+       "home": 419,
+       "away": 445,
+       "homeScore": 4,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029048,
+       "date": "2026-05-20T19:05:00-06:00",
+       "home": 419,
+       "away": 445,
+       "homeScore": 3,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Conference Finals",
+   "bestOf": 7,
+   "series": [
+    {
+     "id": "T",
+     "name": "Eastern Conference Finals",
+     "top": {
+      "teamId": 316,
+      "seed": 2,
+      "wins": 2
+     },
+     "bottom": {
+      "teamId": 335,
+      "seed": 4,
+      "wins": 4
+     },
+     "status": "final",
+     "winnerTeamId": 335,
+     "games": [
+      {
+       "gameId": 1029057,
+       "date": "2026-05-27T19:05:00-04:00",
+       "home": 316,
+       "away": 335,
+       "homeScore": 2,
+       "awayScore": 4,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029058,
+       "date": "2026-05-29T19:05:00-04:00",
+       "home": 316,
+       "away": 335,
+       "homeScore": 1,
+       "awayScore": 2,
+       "status": "Final OT",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029059,
+       "date": "2026-06-01T19:00:00-04:00",
+       "home": 335,
+       "away": 316,
+       "homeScore": 3,
+       "awayScore": 5,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029060,
+       "date": "2026-06-03T19:00:00-04:00",
+       "home": 335,
+       "away": 316,
+       "homeScore": 3,
+       "awayScore": 4,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029061,
+       "date": "2026-06-05T19:00:00-04:00",
+       "home": 335,
+       "away": 316,
+       "homeScore": 5,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029062,
+       "date": "2026-06-07T18:05:00-04:00",
+       "home": 316,
+       "away": 335,
+       "homeScore": 1,
+       "awayScore": 2,
+       "status": "Final OT",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    },
+    {
+     "id": "U",
+     "name": "Western Conference Finals",
+     "top": {
+      "teamId": 419,
+      "seed": 2,
+      "wins": 3
+     },
+     "bottom": {
+      "teamId": 330,
+      "seed": 2,
+      "wins": 4
+     },
+     "status": "final",
+     "winnerTeamId": 330,
+     "games": [
+      {
+       "gameId": 1029050,
+       "date": "2026-05-28T19:05:00-06:00",
+       "home": 419,
+       "away": 330,
+       "homeScore": 2,
+       "awayScore": 3,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029051,
+       "date": "2026-05-30T18:05:00-06:00",
+       "home": 419,
+       "away": 330,
+       "homeScore": 5,
+       "awayScore": 2,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029052,
+       "date": "2026-06-02T19:00:00-05:00",
+       "home": 330,
+       "away": 419,
+       "homeScore": 2,
+       "awayScore": 3,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029053,
+       "date": "2026-06-03T19:00:00-05:00",
+       "home": 330,
+       "away": 419,
+       "homeScore": 2,
+       "awayScore": 1,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029054,
+       "date": "2026-06-05T19:00:00-05:00",
+       "home": 330,
+       "away": 419,
+       "homeScore": 3,
+       "awayScore": 7,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029055,
+       "date": "2026-06-07T18:05:00-06:00",
+       "home": 419,
+       "away": 330,
+       "homeScore": 2,
+       "awayScore": 3,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029056,
+       "date": "2026-06-08T19:05:00-06:00",
+       "home": 419,
+       "away": 330,
+       "homeScore": 3,
+       "awayScore": 4,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Calder Cup Finals",
+   "bestOf": 7,
+   "series": [
+    {
+     "id": "V",
+     "name": "2026 Calder Cup Finals",
+     "top": {
+      "teamId": 330,
+      "seed": 2,
+      "wins": 1
+     },
+     "bottom": {
+      "teamId": 335,
+      "seed": 4,
+      "wins": 4
+     },
+     "status": "final",
+     "winnerTeamId": 335,
+     "games": [
+      {
+       "gameId": 1029064,
+       "date": "2026-06-12T19:00:00-05:00",
+       "home": 330,
+       "away": 335,
+       "homeScore": 2,
+       "awayScore": 4,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029065,
+       "date": "2026-06-14T15:00:00-05:00",
+       "home": 330,
+       "away": 335,
+       "homeScore": 4,
+       "awayScore": 5,
+       "status": "Final OT",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029066,
+       "date": "2026-06-16T19:00:00-04:00",
+       "home": 335,
+       "away": 330,
+       "homeScore": 1,
+       "awayScore": 0,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029067,
+       "date": "2026-06-18T19:00:00-04:00",
+       "home": 335,
+       "away": 330,
+       "homeScore": 3,
+       "awayScore": 4,
+       "status": "Final OT",
+       "final": true,
+       "ifNecessary": false
+      },
+      {
+       "gameId": 1029068,
+       "date": "2026-06-19T19:00:00-04:00",
+       "home": 335,
+       "away": 330,
+       "homeScore": 4,
+       "awayScore": 3,
+       "status": "Final",
+       "final": true,
+       "ifNecessary": false
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "source": "feed"
+}

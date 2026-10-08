@@ -66,6 +66,8 @@ describe.each([['ahl'], ['echl']])('%s client', (key) => {
     await api.fetchPowerRankings(2)
     await api.fetchPowerRankings(2, { season: 3 })
     await api.fetchPlayoffOdds(2)
+    await api.fetchBracket(8)
+    await api.fetchProjectedBracket()
     const b = `https://worker.test/${key}`
     expect(urls()).toEqual([
       `${b}/league-players?season=1`,
@@ -93,6 +95,8 @@ describe.each([['ahl'], ['echl']])('%s client', (key) => {
       `${b}/power-rankings?locale=en&teamId=2`,
       `${b}/power-rankings?locale=en&teamId=2&season=3`,
       `${b}/playoff-odds?teamId=2`,
+      `${b}/bracket?season=8`,
+      `${b}/bracket/projected`,
     ])
   })
 
@@ -187,7 +191,7 @@ it('ahlApi.js/echlApi.js re-export the shared client under their old names', () 
   expect(echlApi.ECHL_TEAM_ID).toBeNull()
   for (const [mod, P] of [[ahlApi, 'AHL'], [echlApi, 'ECHL']]) {
     const fetches = Object.keys(mod).filter(k => k.startsWith('fetch'))
-    expect(fetches).toHaveLength(27)
+    expect(fetches).toHaveLength(29)
     for (const name of fetches) expect(typeof mod[name], name).toBe('function')
     expect(fetches.every(n => n.startsWith(`fetch${P}`))).toBe(true)
   }

@@ -288,6 +288,24 @@ export function createHockeyTechApi(key) {
       return workerFetch(`${base}/playoff-odds?teamId=${team}`);
     },
 
+    /** The playoff bracket (contract C11) for a playoff season, from
+     * HockeyTech's own bracket feed: { season, format: { label, bestOf,
+     * source } | null, rounds: [{ name, bestOf, series: [{ id, name, top:
+     * { teamId, seed, wins }, bottom, status, winnerTeamId, games }] }],
+     * source: 'feed' }; `rounds: []` before those playoffs start. */
+    async fetchBracket(playoffSeason) {
+      if (!playoffSeason) return null;
+      return workerFetch(`${base}/bracket?season=${playoffSeason}`);
+    },
+
+    /** "If the playoffs started today" from the live division standings
+     * and the season's verified format: the same shape (seeds, 0-0
+     * series) plus `byes`, or `rounds: []` with `reason`
+     * ('format-unverified' | 'no-games'). The latest regular season. */
+    async fetchProjectedBracket() {
+      return workerFetch(`${base}/bracket/projected`);
+    },
+
     async fetchLive(gameId) {
       if (!gameId) return null;
       return workerFetch(`${base}/live/${gameId}`);
