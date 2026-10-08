@@ -1,0 +1,637 @@
+// components/hockeytech/HockeyTechPeriodSummary.jsx
+// AHL/ECHL period and final summary popup (contract C8): the port of
+// PWHLPeriodSummary.jsx, parametrised by `league` (utils/hockeyTechLeagues.js),
+// without the blocked-shot/Corsi/Fenwick rows (these feeds log no blocked
+// shots) or hits/faceoffs (the box scores carry 0 for both). Keeps the score,
+// shots, high-danger shots, power play, goalie lines, goals, penalties,
+// scoring by period and the three stars, the EyeWall AI narrative
+// (/{league}/summary/narrative, read from the Worker's KV first) and the
+// share card (PeriodSummaryShareCanvas).
+//
+// Summaries come from utils/hockeyTechSummary.js (via
+// hooks/useHockeyTechPeriodSummary.js). The class constants and the goal
+// carousel / penalties pieces are PWHLPeriodSummary.jsx's, duplicated per
+// the per-file convention (see PeriodSummary.jsx's header).
+
+import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useShareCard } from '../../hooks/useShareCard';
+import ShareButtons from '../ShareButtons';
+import { summaryPenaltyLines } from '../../utils/penaltyText';
+import PeriodSummaryShareCanvas from '../PeriodSummaryShareCanvas';
+import { fetchCachedNarrative, hockeyTechNarrativeCacheKey, hockeyTechNarrativePeriodKey } from '../../utils/narrativeCache';
+import { hockeyTechNarrativePayload } from '../../utils/hockeyTechSummary';
+
+// ── Tailwind class constants -- POPUP HALF (Phase 4, sub-PR 5a) ──
+// Duplicated from PeriodSummary.jsx per established per-file convention.
+// See that file's header comment for the light-mode-overrides.css
+// reasoning -- identical here.
+
+const PS_OVERLAY_CLASSES = 'ps-overlay fixed inset-0 z-[600] [backdrop-filter:blur(4px)] flex items-center justify-center p-4 animate-[psOverlayIn_0.2s_ease] bg-[rgba(0,0,0,0.75)]';
+const PS_CARD_CLASSES = 'ps-card w-full max-w-[460px] max-h-[88vh] overflow-y-auto bg-[var(--bg1)] rounded-[20px] pb-[env(safe-area-inset-bottom,16px)] animate-[psCardIn_0.3s_cubic-bezier(0.34,1.3,0.64,1)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+
+const PS_HEADER_CLASSES = 'ps-header flex items-center justify-between pt-4 px-[18px] sticky top-0 bg-[var(--bg1)] z-[2]';
+const PS_PERIOD_BADGE_CLASSES = 'ps-period-badge text-[11px] font-extrabold tracking-[0.12em] uppercase text-[color:var(--red-bright)] bg-[rgba(var(--team-primary-rgb),0.12)] py-1 px-[10px] rounded-[20px]';
+const PS_BTN_ICON_CLASSES = 'ps-btn-icon bg-[var(--bg3)] border-none rounded-[8px] py-[6px] px-2 text-[14px] cursor-pointer text-[color:var(--text-muted)] [transition:background_0.15s,color_0.15s] hover:bg-[var(--bg2)] hover:text-[color:var(--text)]';
+
+const PS_SCORE_BANNER_CLASSES = 'ps-score-banner flex items-center justify-center gap-3 pt-[18px] px-[18px] pb-3 border-b-[0.5px] border-[var(--border)]';
+const PS_TEAM_SCORE_CLASSES = 'ps-team-score flex flex-col items-center gap-[2px] min-w-[60px]';
+const PS_TEAM_ABBR_BASE_CLASSES = 'ps-team-abbr text-[11px] font-bold tracking-[0.08em]';
+const PS_TEAM_ABBR_DEFAULT_CLASSES = 'text-[color:var(--text-muted)]';
+const PS_TEAM_ABBR_CAR_CLASSES = 'car text-[color:var(--red-bright)]';
+function psTeamAbbrClasses(isCar) {
+  return `${PS_TEAM_ABBR_BASE_CLASSES} ${isCar ? PS_TEAM_ABBR_CAR_CLASSES : PS_TEAM_ABBR_DEFAULT_CLASSES}`;
+}
+const PS_SCORE_NUM_CLASSES = 'ps-score-num text-[36px] font-extrabold text-[color:var(--text)] leading-none [font-variant-numeric:tabular-nums]';
+const PS_SCORE_DIVIDER_CLASSES = 'text-[20px] text-[color:var(--text-dim)] mt-2';
+const PS_TEAM_LOGO_CLASSES = 'ps-team-logo w-11 h-11 object-contain mb-1';
+
+const PS_STAT_GRID_CLASSES = 'ps-stat-grid grid grid-cols-3 gap-2 pt-[14px] px-[14px]';
+const PS_STAT_CELL_CLASSES = 'ps-stat-cell bg-[var(--bg2)] rounded-[10px] py-[10px] px-2 flex flex-col items-center gap-[2px]';
+const PS_STAT_VAL_BASE_CLASSES = 'text-[18px] font-extrabold [font-variant-numeric:tabular-nums]';
+const PS_STAT_VAL_DEFAULT_CLASSES = 'text-[color:var(--text)]';
+const PS_STAT_VAL_GOOD_CLASSES = 'good text-[color:var(--green)]';
+const PS_STAT_VAL_BAD_CLASSES = 'bad text-[color:var(--red-bright)]';
+function psStatValClasses(color) {
+  const variant = color === 'good' ? PS_STAT_VAL_GOOD_CLASSES : color === 'bad' ? PS_STAT_VAL_BAD_CLASSES : PS_STAT_VAL_DEFAULT_CLASSES;
+  return `${PS_STAT_VAL_BASE_CLASSES} ${variant}`;
+}
+const PS_STAT_LABEL_CLASSES = 'text-[9px] font-bold tracking-[0.1em] uppercase text-[color:var(--text-dim)]';
+
+const PS_SECTION_LABEL_CLASSES = 'ps-section-label text-[9px] font-bold tracking-[0.1em] uppercase text-[color:var(--text-dim)] pt-[14px] px-4 pb-[6px]';
+
+const PS_GOAL_CARD_CLASSES = 'ps-goal-card bg-[var(--bg2)] rounded-[12px] overflow-hidden';
+const PS_GOAL_INFO_CLASSES = 'flex items-center gap-[10px] py-[10px] px-3';
+const PS_GOAL_HEADSHOT_CLASSES = 'w-9 h-9 rounded-full object-cover border-[1.5px] border-[var(--border-2)] flex-shrink-0';
+const PS_GOAL_HEADSHOT_PLACEHOLDER_CLASSES = 'w-9 h-9 rounded-full bg-[var(--bg3)] flex-shrink-0 flex items-center justify-center text-[16px]';
+const PS_GOAL_TEXT_CLASSES = 'flex-1 min-w-0';
+const PS_GOAL_SCORER_BASE_CLASSES = 'ps-goal-scorer text-[13px] font-bold whitespace-nowrap overflow-hidden text-ellipsis';
+const PS_GOAL_SCORER_DEFAULT_CLASSES = 'text-[color:var(--text)]';
+const PS_GOAL_SCORER_CAR_CLASSES = 'car text-[color:var(--red-bright)]';
+function psGoalScorerClasses(isCar) {
+  return `${PS_GOAL_SCORER_BASE_CLASSES} ${isCar ? PS_GOAL_SCORER_CAR_CLASSES : PS_GOAL_SCORER_DEFAULT_CLASSES}`;
+}
+const PS_GOAL_META_CLASSES = 'text-[11px] text-[color:var(--text-muted)] mt-[1px]';
+const PS_STRENGTH_BADGE_BASE_CLASSES = 'text-[9px] font-bold tracking-[0.06em] py-[2px] px-[6px] rounded-[4px] uppercase flex-shrink-0';
+const PS_STRENGTH_BADGE_PP_CLASSES = 'bg-[rgba(240,160,48,0.15)] text-[color:var(--amber)]';
+const PS_STRENGTH_BADGE_SH_CLASSES = 'bg-[rgba(74,144,226,0.15)] text-[color:var(--blue-bright)]';
+const PS_STRENGTH_BADGE_EV_CLASSES = 'bg-[var(--bg3)] text-[color:var(--text-dim)]';
+// 'en' (empty net) fix -- see PeriodSummary.jsx's comment. This is the file
+// where the bug actually manifests (PWHL's strengthLabel() returns 'en',
+// NHL's never does).
+function psStrengthBadgeClasses(sl) {
+  const variant = sl === 'pp' ? PS_STRENGTH_BADGE_PP_CLASSES
+    : (sl === 'sh' || sl === 'en') ? PS_STRENGTH_BADGE_SH_CLASSES
+    : PS_STRENGTH_BADGE_EV_CLASSES;
+  return `${PS_STRENGTH_BADGE_BASE_CLASSES} ${variant}`;
+}
+
+const PS_PENALTIES_CLASSES = 'ps-penalties px-[14px] flex flex-col gap-1';
+const PS_PENALTY_ROW_CLASSES = 'ps-penalty-row flex items-center gap-2 py-2 px-[10px] bg-[var(--bg2)] rounded-[8px] text-[12px] text-[color:var(--text-muted)]';
+const PS_PENALTY_TEAM_BASE_CLASSES = 'ps-penalty-team text-[10px] font-bold py-[2px] px-[6px] rounded-[4px] flex-shrink-0';
+const PS_PENALTY_TEAM_CAR_CLASSES = 'car bg-[rgba(var(--team-primary-rgb),0.15)] text-[color:var(--red-bright)]';
+const PS_PENALTY_TEAM_OPP_CLASSES = 'opp bg-[var(--bg3)] text-[color:var(--text-dim)]';
+function psPenaltyTeamClasses(isCar) {
+  return `${PS_PENALTY_TEAM_BASE_CLASSES} ${isCar ? PS_PENALTY_TEAM_CAR_CLASSES : PS_PENALTY_TEAM_OPP_CLASSES}`;
+}
+const PS_PENALTY_INFO_CLASSES = 'flex flex-col gap-px flex-1 min-w-0';
+const PS_PENALTY_PLAYER_CLASSES = 'ps-penalty-player text-[12px] font-bold text-[color:var(--text)] whitespace-nowrap overflow-hidden text-ellipsis';
+const PS_PENALTY_TYPE_CLASSES = 'text-[11px] text-[color:var(--text-dim)]';
+const PS_PENALTIES_TOGGLE_CLASSES = 'ps-penalties-toggle w-full py-2 bg-[var(--btn-fill)] border-[0.5px] border-transparent rounded-[8px] text-[color:var(--text-dim)] text-[12px] font-semibold cursor-pointer [transition:background_0.15s,color_0.15s] mt-[2px] hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text-muted)]';
+
+const PS_NARRATIVE_CLASSES = 'ps-narrative mx-[14px] [background:linear-gradient(135deg,rgba(var(--team-primary-rgb),0.06),rgba(74,144,226,0.04))] border-[0.5px] border-[rgba(var(--team-primary-rgb),0.2)] rounded-[12px] p-[14px]';
+const PS_NARRATIVE_LABEL_CLASSES = 'text-[9px] font-bold tracking-[0.1em] uppercase text-[color:var(--red-bright)] mb-2 flex items-center gap-[6px]';
+const PS_NARRATIVE_TEXT_CLASSES = 'ps-narrative-text text-[13px] text-[color:var(--text-muted)] leading-[1.6]';
+const PS_NARRATIVE_LOADING_CLASSES = 'ps-narrative-loading flex items-center gap-2 text-[12px] text-[color:var(--text-dim)]';
+const PS_NARRATIVE_DOT_CLASSES = 'w-[6px] h-[6px] bg-[var(--red-bright)] rounded-full animate-[psDotPulse_1.2s_ease-in-out_infinite]';
+
+const PS_THREE_STARS_CLASSES = 'ps-three-stars px-[14px] flex gap-2';
+const PS_STAR_CARD_CLASSES = 'ps-star-card flex-1 bg-[var(--bg2)] rounded-[10px] py-[10px] px-2 flex flex-col items-center gap-1 text-center';
+const PS_STAR_RANK_CLASSES = 'text-[14px]';
+const PS_STAR_HEADSHOT_CLASSES = 'ps-star-headshot w-10 h-10 rounded-full object-cover border-[1.5px] border-[var(--border-2)]';
+const PS_STAR_NAME_CLASSES = 'ps-star-name text-[11px] font-bold text-[color:var(--text)]';
+const PS_STAR_TEAM_CLASSES = 'text-[10px] text-[color:var(--text-dim)]';
+
+const PS_SHARE_SECTION_CLASSES = 'ps-share-section py-3 px-[14px] pb-5 flex flex-col items-center gap-2';
+
+const PS_CAROUSEL_CLASSES = 'ps-carousel px-[14px]';
+const PS_CAROUSEL_NAV_CLASSES = 'ps-carousel-nav flex items-center justify-between mb-2';
+const PS_CAROUSEL_ARROW_CLASSES = 'ps-carousel-arrow bg-[var(--bg3)] border-none rounded-[8px] w-8 h-8 text-[18px] text-[color:var(--text-muted)] cursor-pointer flex items-center justify-center [transition:background_0.15s,color_0.15s] disabled:opacity-25 disabled:cursor-default enabled:hover:bg-[var(--bg2)] enabled:hover:text-[color:var(--text)]';
+const PS_CAROUSEL_DOTS_CLASSES = 'ps-carousel-dots flex gap-[6px] items-center';
+const PS_CAROUSEL_DOT_BASE_CLASSES = 'ps-carousel-dot w-2 h-2 rounded-full cursor-pointer [transition:transform_0.15s,background_0.15s]';
+const PS_CAROUSEL_DOT_VARIANTS = {
+  'car-inactive': 'car bg-[rgba(var(--team-primary-rgb),0.4)]',
+  'opp-inactive': 'opp bg-[rgba(255,255,255,0.15)]',
+  'car-active':   'active car scale-[1.4] bg-[var(--red-bright)]',
+  'opp-active':   'active opp scale-[1.4] bg-[rgba(255,255,255,0.5)]',
+};
+function psCarouselDotClasses(isCar, isActive) {
+  const key = `${isCar ? 'car' : 'opp'}-${isActive ? 'active' : 'inactive'}`;
+  return `${PS_CAROUSEL_DOT_BASE_CLASSES} ${PS_CAROUSEL_DOT_VARIANTS[key]}`;
+}
+const PS_CAROUSEL_COUNTER_CLASSES = 'ps-carousel-counter text-center text-[11px] text-[color:var(--text-dim)] mt-2 mb-1';
+
+const PS_PERIOD_BREAKDOWN_CLASSES = 'ps-period-breakdown px-[14px] flex flex-col gap-2';
+const PS_PERIOD_ROW_CLASSES = 'ps-period-row flex items-center gap-[10px]';
+const PS_PERIOD_ROW_LABEL_CLASSES = 'text-[11px] font-bold text-[color:var(--text-dim)] w-5 flex-shrink-0';
+const PS_PERIOD_ROW_BAR_WRAP_CLASSES = 'flex-1 h-[6px] bg-[var(--bg3)] rounded-[3px] overflow-hidden';
+const PS_PERIOD_ROW_BAR_BASE_CLASSES = 'h-full rounded-[3px] [transition:width_0.4s_ease]';
+const PS_PERIOD_ROW_BAR_GOOD_CLASSES = 'good bg-[var(--green)]';
+const PS_PERIOD_ROW_BAR_BAD_CLASSES = 'bad bg-[var(--red-bright)]';
+const PS_PERIOD_ROW_BAR_NEUTRAL_CLASSES = 'neutral bg-[var(--text-dim)]';
+function psPeriodRowBarClasses(pct) {
+  const variant = pct == null ? PS_PERIOD_ROW_BAR_NEUTRAL_CLASSES : pct >= 55 ? PS_PERIOD_ROW_BAR_GOOD_CLASSES : pct <= 45 ? PS_PERIOD_ROW_BAR_BAD_CLASSES : PS_PERIOD_ROW_BAR_NEUTRAL_CLASSES;
+  return `${PS_PERIOD_ROW_BAR_BASE_CLASSES} ${variant}`;
+}
+const PS_PERIOD_ROW_PCT_BASE_CLASSES = 'ps-period-row-pct text-[12px] font-bold w-[38px] text-right flex-shrink-0';
+const PS_PERIOD_ROW_PCT_DEFAULT_CLASSES = 'text-[color:var(--text-muted)]';
+const PS_PERIOD_ROW_PCT_GOOD_CLASSES = 'good text-[color:var(--green)]';
+const PS_PERIOD_ROW_PCT_BAD_CLASSES = 'bad text-[color:var(--red-bright)]';
+function psPeriodRowPctClasses(pct) {
+  const variant = pct == null ? PS_PERIOD_ROW_PCT_DEFAULT_CLASSES : pct >= 55 ? PS_PERIOD_ROW_PCT_GOOD_CLASSES : pct <= 45 ? PS_PERIOD_ROW_PCT_BAD_CLASSES : PS_PERIOD_ROW_PCT_DEFAULT_CLASSES;
+  return `${PS_PERIOD_ROW_PCT_BASE_CLASSES} ${variant}`;
+}
+const PS_PERIOD_ROW_SOG_CLASSES = 'text-[11px] text-[color:var(--text-dim)] w-[60px] text-right flex-shrink-0';
+
+const PS_HAT_TRICKS_CLASSES = 'flex flex-col items-center gap-[6px] my-[6px]';
+const PS_HAT_TRICK_CHIP_CLASSES = 'inline-flex items-center gap-[6px] [background:linear-gradient(90deg,var(--team-primary)_0%,color-mix(in_srgb,var(--team-primary)_60%,transparent)_100%)] text-white text-[13px] font-semibold py-[6px] px-[14px] rounded-[20px] tracking-[0.02em] whitespace-nowrap';
+
+
+function strengthLabel(s) {
+  if (!s) return 'ev';
+  const v = String(s).toLowerCase();
+  if (v === 'pp') return 'pp';
+  if (v === 'sh') return 'sh';
+  if (v === 'en') return 'en';
+  return 'ev';
+}
+
+
+// ── Hat trick detection ──────────────────────────────────────
+// Natural hat trick: 3 consecutive goals in the FULL game goals list
+// by the same player with no other goals in between (from either team).
+function detectHatTricks(goals) {
+  if (!goals?.length) return [];
+  const counts  = {};
+  const info    = {};
+  goals.forEach((g, idx) => {
+    const id = g.scorerId != null ? String(g.scorerId) : g.scorerName;
+    if (!id) return;
+    counts[id] = (counts[id] || 0) + 1;
+    if (!info[id]) info[id] = { scorerName: g.scorerName, isCar: g.isCar, indices: [] };
+    info[id].indices.push(idx);  // track actual array index, not indexOf()
+  });
+  return Object.entries(counts)
+    .filter(([, n]) => n >= 3)
+    .map(([id]) => {
+      const { scorerName, isCar, indices } = info[id];
+      // Natural: find any 3 consecutive hat trick goals where every goal
+      // between the first and third (inclusive) belongs to this scorer.
+      let isNatural = false;
+      for (let i = 0; i <= indices.length - 3; i++) {
+        const start = indices[i];
+        const end   = indices[i + 2];
+        const slice = goals.slice(start, end + 1);
+        const sliceId = (g) => g.scorerId != null ? String(g.scorerId) : g.scorerName;
+        if (slice.every(g => sliceId(g) === id)) {
+          isNatural = true;
+          break;
+        }
+      }
+      return { scorerName, isCar, isNatural };
+    });
+}
+
+function GoalCarousel({ goals, carAbbr }) {
+  const [idx, setIdx]   = useState(0);
+  const touchStartX     = useRef(null);
+
+  const prev = () => setIdx(i => Math.max(0, i - 1));
+  const next = () => setIdx(i => Math.min(goals.length - 1, i + 1));
+
+  const onTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
+  const onTouchEnd   = (e) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (dx > 50) prev();
+    else if (dx < -50) next();
+    touchStartX.current = null;
+  };
+
+  if (!goals.length) return null;
+  const g  = goals[idx];
+  const sl = strengthLabel(g.strength);
+
+  return (
+    <div className={PS_CAROUSEL_CLASSES} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className={PS_CAROUSEL_NAV_CLASSES}>
+        <button className={PS_CAROUSEL_ARROW_CLASSES} onClick={prev} disabled={idx === 0}>‹</button>
+        <div className={PS_CAROUSEL_DOTS_CLASSES}>
+          {goals.map((_, i) => (
+            <div key={i}
+              className={psCarouselDotClasses(goals[i].isCar, i === idx)}
+              onClick={() => setIdx(i)} />
+          ))}
+        </div>
+        <button className={PS_CAROUSEL_ARROW_CLASSES} onClick={next} disabled={idx === goals.length - 1}>›</button>
+      </div>
+
+      <div className={PS_GOAL_CARD_CLASSES}>
+        <div className={PS_GOAL_INFO_CLASSES}>
+          {g.scorerHeadshot ? (
+            <img className={PS_GOAL_HEADSHOT_CLASSES} src={g.scorerHeadshot} alt={g.scorerName || ''}
+              onError={e => { e.target.style.display = 'none'; }} />
+          ) : (
+            <div className={PS_GOAL_HEADSHOT_PLACEHOLDER_CLASSES}>🏒</div>
+          )}
+          <div className={PS_GOAL_TEXT_CLASSES}>
+            <div className={psGoalScorerClasses(g.isCar)}>
+              {g.scorerName || (g.isCar ? carAbbr : 'OPP')}
+            </div>
+            <div className={PS_GOAL_META_CLASSES}>
+              {g.time}
+              {g.assists?.length > 0 && (
+                <> · {g.assists.map(a => a.name?.default).filter(Boolean).join(', ')}</>
+              )}
+            </div>
+          </div>
+          {sl !== 'ev' && <div className={psStrengthBadgeClasses(sl)}>{sl.toUpperCase()}</div>}
+        </div>
+        {/* No video clips available for PWHL */}
+      </div>
+
+      <div className={PS_CAROUSEL_COUNTER_CLASSES}>{idx + 1} / {goals.length}</div>
+    </div>
+  );
+}
+
+// ── Penalties section ─────────────────────────────────────────
+
+const PENALTY_COLLAPSE_AT = 3;
+
+function PenaltiesSection({ penalties, carAbbr, oppAbbr }) {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? penalties : penalties.slice(0, PENALTY_COLLAPSE_AT);
+  const hasMore = penalties.length > PENALTY_COLLAPSE_AT;
+
+  return (
+    <>
+      <div className={PS_SECTION_LABEL_CLASSES}>{t('periodSummary.penalties.sectionLabel', { count: penalties.length })}</div>
+      <div className={PS_PENALTIES_CLASSES}>
+        {visible.map((p, i) => {
+          // HockeyTech's description is already readable -- see hockeyTechPenalty.js.
+          const { who, what } = summaryPenaltyLines(p, t, { typeIsText: true });
+          return (
+            <div key={i} className={PS_PENALTY_ROW_CLASSES}>
+              <span className={psPenaltyTeamClasses(p.isCar)}>
+                {p.isCar ? carAbbr : oppAbbr}
+              </span>
+              <div className={PS_PENALTY_INFO_CLASSES}>
+                <span className={PS_PENALTY_PLAYER_CLASSES}>{who}</span>
+                <span className={PS_PENALTY_TYPE_CLASSES}>{what}</span>
+              </div>
+              <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-dim)', flexShrink: 0 }}>
+                {p.time}
+              </span>
+            </div>
+          );
+        })}
+        {hasMore && (
+          <button className={PS_PENALTIES_TOGGLE_CLASSES} onClick={() => setExpanded(e => !e)}>
+            {expanded ? t('periodSummary.penalties.showLess') : t('periodSummary.penalties.showMore', { count: penalties.length - PENALTY_COLLAPSE_AT })}
+          </button>
+        )}
+      </div>
+    </>
+  );
+}
+
+
+const WORKER_URL = typeof import.meta !== 'undefined'
+  ? import.meta.env?.VITE_WORKER_URL
+  : null;
+
+// ── EyeWall AI narrative ──────────────────────────────────────
+
+// { narrative, cardNarrative } for this summary from the followed (or
+// guest) team's side: the Worker's KV copy when there is one (read through
+// the un-rate-limited /cache route), else generated. null on failure.
+async function generateNarrative({ league, summary, teamId, carAbbr, oppAbbr, locale }) {
+  const periodKey = hockeyTechNarrativePeriodKey(summary.period);
+  if (!WORKER_URL || !summary.gameId || teamId == null || !periodKey) return null;
+
+  const cached = await fetchCachedNarrative(hockeyTechNarrativeCacheKey(league.key, periodKey, summary.gameId, teamId, locale));
+  if (cached) return cached;
+
+  const payload = hockeyTechNarrativePayload(summary, {
+    carAbbr, oppAbbr,
+    carName: league.config.getTeamForDisplay(carAbbr)?.displayName,
+    oppName: league.config.getTeamForDisplay(oppAbbr)?.displayName,
+  });
+  try {
+    const res = await fetch(
+      `${WORKER_URL}/${league.key}/summary/narrative?gameId=${summary.gameId}&period=${periodKey}&teamId=${teamId}&locale=${locale === 'fr' ? 'fr' : 'en'}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
+    );
+    if (!res.ok) throw new Error(`Worker ${res.status}`);
+    const data = await res.json();
+    if (data.narrative) return { narrative: data.narrative, cardNarrative: data.cardNarrative || null };
+  } catch (e) {
+    console.warn(`[${league.label}] narrative Worker failed:`, e.message);
+  }
+  return null;
+}
+
+// ── Stat tiles ────────────────────────────────────────────────
+
+const pair = (a, b) => `${a ?? 0}–${b ?? 0}`;
+const pctOf = (num, den) => (den > 0 ? `${((num / den) * 100).toFixed(1)}%` : '—');
+const edge = (a, b) => (a > b ? 'good' : a < b ? 'bad' : '');
+
+// Six tiles, PWHL's grid: shots, high-danger shots, the power play (a
+// final: HockeyTech's own PP goals/opportunities; a period: power-play
+// goals), the penalty kill or penalties, and each side's save percentage
+// from its goalie lines (an empty-net goal against no one).
+function savePct(lines, isCar) {
+  const own = (lines || []).filter(l => l.isCar === isCar);
+  return pctOf(own.reduce((n, l) => n + l.saves, 0), own.reduce((n, l) => n + l.shots, 0));
+}
+
+export function hockeyTechSummaryStats(summary, carAbbr, oppAbbr, t) {
+  const carPens = (summary.penalties || []).filter(p => p.isCar).length;
+  const oppPens = (summary.penalties || []).length - carPens;
+  const pp = summary.powerPlay;
+  return [
+    { val: pair(summary.carSOG, summary.oppSOG), label: t('gameStatsPopup.teamStats.shotsOnGoal'), color: edge(summary.carSOG, summary.oppSOG) },
+    { val: pair(summary.carHDCF, summary.oppHDCF), label: t('periodSummary.stats.highDangerChances'), color: edge(summary.carHDCF, summary.oppHDCF) },
+    summary.isGameSummary
+      ? { val: pp ? `${pp.carGoals}/${pp.carOpps}` : '—', label: t('periodSummary.stats.powerPlay', { abbr: carAbbr }) }
+      : { val: pair(summary.carPPGoals, summary.oppPPGoals), label: t('periodSummary.stats.ppGoals') },
+    summary.isGameSummary
+      ? { val: pp ? `${pp.oppOpps - pp.oppGoals}/${pp.oppOpps}` : '—', label: t('periodSummary.stats.penaltyKill', { abbr: carAbbr }) }
+      : { val: pair(carPens, oppPens), label: t('periodSummary.stats.penalties') },
+    { val: savePct(summary.goalieLines, true), label: t('periodSummary.stats.savePct', { abbr: carAbbr }) },
+    { val: savePct(summary.goalieLines, false), label: t('periodSummary.stats.savePct', { abbr: oppAbbr }) },
+  ];
+}
+
+// ── Share canvas (1080×1350, off-screen -- PeriodSummaryShareCanvas) ──
+
+function ShareCanvas({ league, summary, carAbbr, oppAbbr, canvasRef, cardNarrative }) {
+  const { t } = useTranslation();
+  const carPens = summary.penalties.filter(p => p.isCar).length;
+  const oppPens = summary.penalties.filter(p => !p.isCar).length;
+  const insights = [
+    (carPens > 0 || oppPens > 0) && { text: t('periodSummary.penalties.insight', { abbr: carAbbr, carCount: carPens, oppCount: oppPens, oppAbbr }) },
+  ].filter(Boolean);
+  return (
+    <PeriodSummaryShareCanvas
+      canvasRef={canvasRef}
+      summary={summary}
+      carAbbr={carAbbr}
+      oppAbbr={oppAbbr}
+      carScore={summary.carScore}
+      oppScore={summary.oppScore}
+      carColor={league.config.getTeamForDisplay(carAbbr)?.displayColor}
+      oppColor={league.config.getTeamForDisplay(oppAbbr)?.displayColor}
+      stats={hockeyTechSummaryStats(summary, carAbbr, oppAbbr, t)}
+      hatTricks={detectHatTricks(summary.goals)}
+      strengthOf={g => strengthLabel(g.strength)}
+      insights={insights}
+      narrative={cardNarrative || summary.cardNarrative || summary.aiNarrative}
+      note={t('shareCard.hockeyTechStatsNote', { league: league.label })}
+    />
+  );
+}
+
+// ── Goalie lines ──────────────────────────────────────────────
+
+function GoaliesSection({ lines, carAbbr, oppAbbr }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <div className={PS_SECTION_LABEL_CLASSES}>{t('periodSummary.goalies.sectionLabel')}</div>
+      <div className={`${PS_PENALTIES_CLASSES} ps-goalie-lines`}>
+        {lines.map((g, i) => (
+          <div key={i} className={PS_PENALTY_ROW_CLASSES}>
+            <span className={psPenaltyTeamClasses(g.isCar)}>{g.isCar ? carAbbr : oppAbbr}</span>
+            <div className={PS_PENALTY_INFO_CLASSES}>
+              <span className={PS_PENALTY_PLAYER_CLASSES}>{g.name || '—'}</span>
+              <span className={PS_PENALTY_TYPE_CLASSES}>
+                {t('periodSummary.goalies.line', { saves: g.saves, shots: g.shots, ga: g.goalsAgainst })}
+              </span>
+            </div>
+            <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-dim)', flexShrink: 0 }}>
+              {pctOf(g.saves, g.shots)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────
+
+export default function HockeyTechPeriodSummary({
+  league,
+  summary,
+  onDismiss,
+  onNarrativeReady,
+  teamId,
+  carAbbr,
+  oppAbbr = 'OPP',
+}) {
+  const { t, i18n } = useTranslation();
+  const canvasRef = useRef(null);
+  const [canvasMounted, setCanvasMounted] = useState(false);
+  const [cardNarrative, setCardNarrative] = useState(summary?.cardNarrative || null);
+
+  const carScore = summary?.carScore;
+  const oppScore = summary?.oppScore;
+  const logoOf = abbr => league.config.logoUrl(league.config.getTeamForDisplay(abbr)?.teamId);
+  const carLogo = logoOf(carAbbr);
+  const oppLogo = logoOf(oppAbbr);
+
+  const xCaption = [
+    t('periodSummary.xCaption.line1Pwhl', { period: summary?.periodLabel, abbr: carAbbr, car: carScore ?? '–', opp: oppScore ?? '–', oppAbbr }),
+    t('periodSummary.xCaption.line2HockeyTech', { carSog: summary?.carSOG ?? 0, oppSog: summary?.oppSOG ?? 0, carGoals: summary?.carGoals ?? 0, oppGoals: summary?.oppGoals ?? 0 }),
+    summary?.aiNarrative || '',
+    `#${league.label} #EyeWallAnalytics`,
+  ].filter(Boolean).join('\n');
+
+  const { saving, sharing, handleNativeShare } = useShareCard({
+    canvasRef,
+    filename: `EyeWall-${league.label}-${carAbbr}-${summary?.periodShort?.replace('/', '-')}-Summary.png`,
+    xCaption,
+    mountCanvas: async () => {
+      if (!canvasMounted) {
+        setCanvasMounted(true);
+        await new Promise(r => setTimeout(r, 120));
+      }
+    },
+  });
+
+  // The narrative, once per summary shown.
+  useEffect(() => {
+    if (!summary || summary.aiNarrative) return;
+    let cancelled = false;
+    generateNarrative({ league, summary, teamId, carAbbr, oppAbbr, locale: i18n.language }).then(result => {
+      if (cancelled) return;
+      if (!result) { onNarrativeReady?.(summary.period, null); return; }
+      onNarrativeReady?.(summary.period, result.narrative);
+      if (result.cardNarrative) setCardNarrative(result.cardNarrative);
+    });
+    return () => { cancelled = true; };
+  }, [summary?.gameId, summary?.period]);
+
+  if (!summary) return null;
+
+  const stats = hockeyTechSummaryStats(summary, carAbbr, oppAbbr, t);
+  const hatTricks = detectHatTricks(summary.goals);
+
+  return (
+    <>
+      <div className={`${PS_OVERLAY_CLASSES} hockeytech-summary-overlay`} onClick={onDismiss}>
+        <div className={PS_CARD_CLASSES} onClick={e => e.stopPropagation()}>
+
+          <div className={PS_HEADER_CLASSES}>
+            <span className={PS_PERIOD_BADGE_CLASSES}>{t('periodSummary.header', { period: summary.periodShort })}</span>
+            <button className={PS_BTN_ICON_CLASSES} onClick={onDismiss} title={t('common.close')} aria-label={t('common.close')}>✕</button>
+          </div>
+
+          <div className={PS_SCORE_BANNER_CLASSES}>
+            <div className={PS_TEAM_SCORE_CLASSES}>
+              {carLogo && <img src={carLogo} alt={carAbbr} className={PS_TEAM_LOGO_CLASSES} onError={e => { e.target.style.display = 'none'; }} />}
+              <div className={psTeamAbbrClasses(true)}>{carAbbr}</div>
+              <div className={PS_SCORE_NUM_CLASSES}>{carScore ?? '–'}</div>
+            </div>
+            <div className={PS_SCORE_DIVIDER_CLASSES}>–</div>
+            <div className={PS_TEAM_SCORE_CLASSES}>
+              {oppLogo && <img src={oppLogo} alt={oppAbbr} className={PS_TEAM_LOGO_CLASSES} onError={e => { e.target.style.display = 'none'; }} />}
+              <div className={psTeamAbbrClasses(false)}>{oppAbbr}</div>
+              <div className={PS_SCORE_NUM_CLASSES}>{oppScore ?? '–'}</div>
+            </div>
+          </div>
+
+          <div className={PS_STAT_GRID_CLASSES}>
+            {stats.map((s, i) => (
+              <div key={i} className={PS_STAT_CELL_CLASSES}>
+                <div className={psStatValClasses(s.color)}>{s.val}</div>
+                <div className={PS_STAT_LABEL_CLASSES}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className={PS_SECTION_LABEL_CLASSES}>{t('periodSummary.ai.label')}</div>
+          <div className={PS_NARRATIVE_CLASSES}>
+            <div className={PS_NARRATIVE_LABEL_CLASSES}>{t('periodSummary.ai.periodAnalysis')}</div>
+            {summary.aiLoading && !summary.aiNarrative ? (
+              <div className={PS_NARRATIVE_LOADING_CLASSES}>
+                <div className={PS_NARRATIVE_DOT_CLASSES} />
+                {t('periodSummary.ai.generating')}
+              </div>
+            ) : (
+              <div className={`${PS_NARRATIVE_TEXT_CLASSES} ps-narrative-text`}>{summary.aiNarrative || t('periodSummary.ai.unavailable')}</div>
+            )}
+          </div>
+
+          {hatTricks.length > 0 && (
+            <div className={PS_HAT_TRICKS_CLASSES}>
+              {hatTricks.map((ht, i) => (
+                <div key={i} className={PS_HAT_TRICK_CHIP_CLASSES}>
+                  🎩 {ht.isNatural ? t('milestonesFeed.type.naturalHatTrick') : t('milestonesFeed.type.hatTrick')}
+                  {ht.scorerName ? ` — ${ht.scorerName}` : ''}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {summary.goals.length > 0 && (
+            <>
+              <div className={PS_SECTION_LABEL_CLASSES}>{t('periodSummary.goals.sectionLabel', { count: summary.goals.length })}</div>
+              <GoalCarousel goals={summary.goals} carAbbr={carAbbr} />
+            </>
+          )}
+
+          {summary.goalieLines?.length > 0 && (
+            <GoaliesSection lines={summary.goalieLines} carAbbr={carAbbr} oppAbbr={oppAbbr} />
+          )}
+
+          {summary.penalties.length > 0 && (
+            <PenaltiesSection penalties={summary.penalties} carAbbr={carAbbr} oppAbbr={oppAbbr} />
+          )}
+
+          {/* Scoring and shots by period -- the final only. The bar is the
+              team's share of the period's shots on goal. */}
+          {summary.isGameSummary && summary.periodStats?.length > 0 && (
+            <>
+              <div className={PS_SECTION_LABEL_CLASSES}>{t('periodSummary.scoringByPeriod')}</div>
+              <div className={`${PS_PERIOD_BREAKDOWN_CLASSES} ps-scoring-by-period`}>
+                {summary.periodStats.map(ps => {
+                  const total = ps.carSOG + ps.oppSOG;
+                  const share = total > 0 ? Math.round((ps.carSOG / total) * 100) : null;
+                  return (
+                    <div key={ps.period} className={PS_PERIOD_ROW_CLASSES}>
+                      <span className={PS_PERIOD_ROW_LABEL_CLASSES}>{ps.periodShort}</span>
+                      <span className={psPeriodRowPctClasses(null)}>{pair(ps.carGoals, ps.oppGoals)}</span>
+                      <div className={PS_PERIOD_ROW_BAR_WRAP_CLASSES}>
+                        <div className={psPeriodRowBarClasses(share)} style={{ width: `${share ?? 0}%` }} />
+                      </div>
+                      <span className={PS_PERIOD_ROW_SOG_CLASSES}>{t('periodSummary.sogSuffix', { car: ps.carSOG, opp: ps.oppSOG })}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {summary.isGameSummary && summary.threeStars?.length > 0 && (
+            <>
+              <div className={PS_SECTION_LABEL_CLASSES}>{t('periodSummary.threeStars')}</div>
+              <div className={PS_THREE_STARS_CLASSES}>
+                {summary.threeStars.slice(0, 3).map((s, i) => (
+                  <div key={i} className={PS_STAR_CARD_CLASSES}>
+                    <div className={PS_STAR_RANK_CLASSES}>{'⭐'.repeat(3 - i)}</div>
+                    {s.headshot ? (
+                      <img className={PS_STAR_HEADSHOT_CLASSES} src={s.headshot} alt={s.name?.default || ''}
+                        onError={e => { e.target.style.display = 'none'; }} />
+                    ) : (
+                      <div className={PS_STAR_HEADSHOT_CLASSES}
+                        style={{ background: 'var(--bg3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                        🏒
+                      </div>
+                    )}
+                    <div className={PS_STAR_NAME_CLASSES}>{s.name?.default || '—'}</div>
+                    <div className={PS_STAR_TEAM_CLASSES}>{s.teamAbbrev?.default || ''}</div>
+                    <div className={PS_STAR_TEAM_CLASSES} style={{ fontSize: 10 }}>
+                      {s.isGoalie
+                        ? t('periodSummary.goalies.starSaves', { saves: s.stats?.saves ?? '—' })
+                        : `${s.stats?.goals ?? 0}G ${s.stats?.assists ?? 0}A`}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          <div className={PS_SHARE_SECTION_CLASSES}>
+            <ShareButtons onNativeShare={handleNativeShare} saving={saving} sharing={sharing} />
+          </div>
+        </div>
+      </div>
+
+      {canvasMounted && (
+        <ShareCanvas
+          league={league}
+          summary={summary}
+          carAbbr={carAbbr}
+          oppAbbr={oppAbbr}
+          canvasRef={canvasRef}
+          cardNarrative={cardNarrative}
+        />
+      )}
+    </>
+  );
+}

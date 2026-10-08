@@ -5,7 +5,8 @@
 // push is on), with a dot on the bell while something's new since you
 // last looked. Settings keeps only settings.
 //
-// Summaries come from the game view (PeriodSummaryContext: NHL and PWHL);
+// Summaries come from the game view (PeriodSummaryContext: NHL, PWHL, AHL
+// and ECHL -- the followed team's, never a guest view's);
 // recent alerts from eyewall-poller, every league.
 //
 // Marker classes for Cypress: summary-bell (the button), summary-bell-dot,
@@ -27,6 +28,8 @@ import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import { useSport } from '../utils/SportContext';
 import { TEAM_CONFIG } from '../utils/teamConfig';
 import { PWHL_TEAM_CONFIG } from '../utils/pwhlApi';
+import { AHL_TEAM_ABBR } from '../utils/ahlApi';
+import { ECHL_TEAM_ABBR } from '../utils/echlApi';
 import { hasUnseen, loadSeen, markSeen, newestFirst, summaryKey } from '../utils/summarySeen';
 import { OPEN_SETTINGS_EVENT } from './SettingsMenu';
 import {
@@ -53,7 +56,7 @@ export default function NotificationsBell() {
   const { t } = useTranslation();
   const { i18n } = useTranslation();
   const navigate = useNavigate();
-  const { isPWHL } = useSport();
+  const { sport, isPWHL } = useSport();
   const { summaries, openSummary } = usePeriodSummaryContext();
   const triggerRef = useRef(null);
   const [seen, setSeen] = useState(loadSeen);
@@ -62,7 +65,10 @@ export default function NotificationsBell() {
   const [newAtOpen, setNewAtOpen] = useState(() => new Set());
   const { open, anchor, openSheet, closeSheet } = useSheet('bell', triggerRef);
 
-  const teamAbbr = isPWHL ? PWHL_TEAM_CONFIG?.abbr : TEAM_CONFIG.abbr;
+  const teamAbbr = isPWHL ? PWHL_TEAM_CONFIG?.abbr
+    : sport === 'ahl' ? AHL_TEAM_ABBR
+      : sport === 'echl' ? ECHL_TEAM_ABBR
+        : TEAM_CONFIG.abbr;
 
   // Recent alerts for the followed teams, primary first (that order also
   // picks the side of a game between two of them -- see dedupeAlerts).
@@ -128,11 +134,12 @@ export default function NotificationsBell() {
   // The game view opens it in place when it's on screen. From any other
   // page these rows used to do nothing (the view that holds the summaries
   // wasn't there to open them), so go to it: NHL by summary link, which
-  // also finds the game; PWHL's view opens the held summary as it mounts.
+  // also finds the game; the PWHL/AHL/ECHL views open the held summary as
+  // they mount.
   const handleOpenSummary = s => {
     closeSheet();
     if (openSummary(s)) return;
-    navigate(isPWHL ? '/pwhl/shots' : `/?summary=${s.isGameSummary ? 'game' : s.period}&game=${s.gameId}`);
+    navigate(sport === 'nhl' ? `/?summary=${s.isGameSummary ? 'game' : s.period}&game=${s.gameId}` : `/${sport}/shots`);
   };
 
   const handleAlertSettings = () => {

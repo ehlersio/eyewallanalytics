@@ -836,7 +836,9 @@
     "savePct": "Save %",
     "noShotsGame": "Shot data for this game isn't in yet. It's usually added overnight.",
     "live": "Live",
-    "guestSubtitle": "{{state}} · {{where}} {{opp}}"
+    "guestSubtitle": "{{state}} · {{where}} {{opp}}",
+    "periodSummary": "{{period}} Summary",
+    "gameSummary": "📊 Game Summary"
   },
   "common": {
     "loading": "Loading…",
@@ -1914,7 +1916,12 @@
       "fenwickForPct": "{{abbr}} Fenwick For%",
       "hits": "{{abbr}} Hits",
       "faceoffWinPct": "Faceoff Win%",
-      "highDangerChances": "High Danger Chances"
+      "highDangerChances": "High Danger Chances",
+      "powerPlay": "{{abbr}} PP",
+      "penaltyKill": "{{abbr}} PK",
+      "ppGoals": "PP Goals",
+      "penalties": "Penalties",
+      "savePct": "{{abbr}} SV%"
     },
     "ai": {
       "label": "EyeWall AI",
@@ -1950,8 +1957,15 @@
       "line1": "{{period}} Summary | {{abbr}} {{car}}-{{opp}} {{oppAbbr}}",
       "line2": "CF% {{cf}} · SOG {{carSog}}-{{oppSog}} · Goals {{carGoals}}-{{oppGoals}}",
       "line1Pwhl": "{{period}} Summary | {{abbr}} {{car}}–{{opp}} {{oppAbbr}}",
-      "line2Pwhl": "CF% {{cf}} · SOG {{carSog}}–{{oppSog}} · Goals {{carGoals}}–{{oppGoals}}"
-    }
+      "line2Pwhl": "CF% {{cf}} · SOG {{carSog}}–{{oppSog}} · Goals {{carGoals}}–{{oppGoals}}",
+      "line2HockeyTech": "SOG {{carSog}}–{{oppSog}} · Goals {{carGoals}}–{{oppGoals}}"
+    },
+    "goalies": {
+      "sectionLabel": "Goaltending",
+      "line": "{{saves}} saves on {{shots}} shots · {{ga}} GA",
+      "starSaves": "{{saves}} SV"
+    },
+    "scoringByPeriod": "Scoring by Period"
   },
   "playerPopup": {
     "radar": {
@@ -2731,7 +2745,8 @@
     "rankingsNote": "Points, form, goal diff, 5v5 xG, special teams",
     "scoreTitle": "{{team}} {{teamScore}}–{{oppScore}} {{opp}}",
     "statsNote": "Stats: NHL · EyeWall",
-    "pwhlStatsNote": "Stats: PWHL · EyeWall"
+    "pwhlStatsNote": "Stats: PWHL · EyeWall",
+    "hockeyTechStatsNote": "Stats: {{league}} · EyeWall"
   },
   "goalReplay": {
     "video": "Video",
