@@ -5,7 +5,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { useFetch } from '../hooks/useFetch';
 import {
   fetchPWHLStandings, fetchPWHLPlayers, fetchPWHLSchedule, fetchPWHLSalaries, fetchPWHLLeagueAverages,
-  fetchPWHLTeamSeasonsCompare,
+  fetchPWHLTeamSeasonsCompare, fetchPWHLPlayoffOdds,
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
 import { PWHL_PLAYOFF_SEASON_MAP, PWHL_REGULAR_SEASONS, PWHL_SEASON_LABEL, getPWHLSeasonLabel } from '../utils/pwhlConfig';
@@ -23,6 +23,7 @@ import { gameResultFor, currentStreak, streakColor } from '../utils/hockeyTechRe
 import { recentRecord } from '../utils/teamTrends';
 import { PAGE_CLASSES } from '../utils/pageClasses';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
+import LeaguePlayoffOddsCard from '../components/LeaguePlayoffOddsCard';
 // ShotMapView.css import removed (Phase 5, sub-PR 1) -- this file's only
 // dependency on it was .metrics-grid/.metrics-grid-4, now fully migrated
 // to METRICS_GRID_4_CLASSES below. ShotMapView.jsx/PWHLShotMapView.jsx
@@ -487,6 +488,15 @@ function OverviewTab({ teamRow, skaters, goalies, schedule, teamId, abbr, color,
       )}
 
       {/* Season stat grid — mirrors NHL overview-stat-grid */}
+      {/* Playoff odds (contract C10): the GP behind the early-season note
+          only when the odds are for the season on screen. */}
+      <LeaguePlayoffOddsCard
+        fetchOdds={() => fetchPWHLPlayoffOdds(teamId)}
+        deps={[teamId]}
+        leagueKey="pwhl"
+        gamesPlayedFor={seasonId => (seasonId === teamRow?.season_id ? teamRow.gp ?? null : null)}
+      />
+
       {teamRow && (
         <div className="card" style={{ marginTop: 10 }}>
           <div className="sec-label" style={{ marginBottom: 10 }}>{t('team.seasonStats')}</div>

@@ -28,6 +28,7 @@ import InfoTip from '../components/InfoTip'
 import TeamLogo from '../components/TeamLogo'
 import TeamComparisonPopup from '../components/TeamComparisonPopup'
 import Sparkline from '../components/Sparkline'
+import { formatOddsPct, PLAYOFF_ODDS_EARLY_GP } from '../utils/playoffOddsFormat'
 import TeamHistorySections from '../components/TeamHistorySections'
 import RankBadge from '../components/RankBadge'
 import { getTeamHistory } from '../utils/teamHistory'
@@ -503,15 +504,8 @@ export function OverviewTab({ stats, standLoading, statsLoading, poLoading, carS
 // odds lean mostly on last season's ratings (eyewall-pipeline's backtest
 // shows preseason odds barely beat a coin flip), so they're labeled early
 // season. A run that's stopped updating (season over) is labeled, not
-// hidden.
-const PLAYOFF_ODDS_EARLY_GP = 20
-
-function formatOddsPct(p) {
-  if (p == null) return '—'
-  if (p > 0 && p < 0.005) return '<1%'
-  if (p < 1 && p >= 0.995) return '>99%'
-  return `${Math.round(p * 100)}%`
-}
+// hidden. The 20-game threshold and the % formatting are in
+// utils/playoffOddsFormat.js, shared with the PWHL/AHL/ECHL card.
 
 // Signed percentage points, one decimal: 0.04 -> "+4.0"
 function formatOddsDelta(d) {

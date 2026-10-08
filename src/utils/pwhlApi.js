@@ -47,6 +47,13 @@ export async function fetchPWHLStandings(season = PWHL_CURRENT_SEASON) {
   return workerFetch(`/pwhl/standings?season=${season}`);
 }
 
+/** Playoff odds from the pipeline's nightly pwhl_playoff_odds (contract
+ *  C10): the same shape as hockeyTechApi's fetchPlayoffOdds. */
+export async function fetchPWHLPlayoffOdds(teamId) {
+  if (!teamId) return null;
+  return workerFetch(`/pwhl/playoff-odds?teamId=${teamId}`);
+}
+
 /** Power rankings from the pipeline's nightly pwhl_power_rankings (contract
  *  C12): the same shape as hockeyTechApi's fetchPowerRankings -- the team's
  *  EyeWall AI narrative (app language) and rank history for `season`. */

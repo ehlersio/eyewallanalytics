@@ -276,6 +276,18 @@ export function createHockeyTechApi(key) {
       return workerFetch(`${base}/power-rankings?${qs}`);
     },
 
+    /** Playoff odds (contract C10), the pipeline's nightly
+     * {league}_playoff_odds: { latest: { season_id, run_date,
+     * make_playoffs_pct, win_division_pct, proj_points_p10/p50/p90,
+     * current_points, games_remaining, sims, format } | null, history:
+     * [{ run_date, make_playoffs_pct, proj_points_p50 }], stale }. The
+     * percentages are 0-1 fractions, null when the league's format for the
+     * season isn't verified (format 'unverified'). */
+    async fetchPlayoffOdds(team = teamId) {
+      if (!team) return null;
+      return workerFetch(`${base}/playoff-odds?teamId=${team}`);
+    },
+
     async fetchLive(gameId) {
       if (!gameId) return null;
       return workerFetch(`${base}/live/${gameId}`);

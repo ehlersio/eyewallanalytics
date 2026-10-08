@@ -2515,7 +2515,11 @@
     "divisionRank": "{{rank}} sur {{of}} dans la {{division}}",
     "divisionCol": "Gagner div.",
     "playoffCol": "Séries",
-    "pointsCol": "Pts proj."
+    "pointsCol": "Pts proj.",
+    "infoTipLeague": "La fréquence à laquelle cette équipe se qualifie quand le reste de la saison régulière {{ofLeague}} est simulé des milliers de fois. Les chances de chaque match viennent des cotes Elo des deux équipes (les mêmes que les puces de probabilité du calendrier), avec un écart supplémentaire selon l'incertitude de ces cotes. La qualification suit le format publié par la ligue. Mis à jour chaque nuit.",
+    "formatUnverified": "Le format des séries {{ofLeague}} pour cette saison n'est pas encore confirmé : seuls les points projetés sont affichés.",
+    "nowLine": "{{points}} pts actuellement · {{left}} matchs à jouer",
+    "pointsTrendLabel": "Points projetés cette saison"
   },
   "injuryImpact": {
     "title": "Matchs perdus sur blessure",

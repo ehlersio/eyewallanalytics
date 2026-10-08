@@ -33,6 +33,7 @@ import RankBadge from '../../components/RankBadge'
 import { getTeamHistory } from '../../utils/teamHistory';
 import { PAGE_CLASSES } from '../../utils/pageClasses';
 import { SKELETON_CLASSES } from '../../utils/skeletonClasses';
+import LeaguePlayoffOddsCard from '../../components/LeaguePlayoffOddsCard';
 
 const METRICS_GRID_4_CLASSES = 'grid grid-cols-4 gap-2 mb-2'
 const VIEW_TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[20px] font-bold flex items-center gap-2 mb-[2px]'
@@ -396,6 +397,15 @@ function OverviewTab({ league, teamRow, skaters, goalies, schedule, teamId, abbr
           </div>
         </div>
       )}
+
+      {/* Playoff odds (contract C10): the GP behind the early-season note
+          only when the odds are for the season on screen. */}
+      <LeaguePlayoffOddsCard
+        fetchOdds={() => league.api.fetchPlayoffOdds(teamId)}
+        deps={[teamId]}
+        leagueKey={league.key}
+        gamesPlayedFor={seasonId => (seasonId === teamRow?.season_id ? teamRow.gp ?? null : null)}
+      />
 
       {teamRow && (
         <div className="card" style={{ marginTop: 10 }}>

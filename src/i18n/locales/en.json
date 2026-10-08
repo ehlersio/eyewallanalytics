@@ -2515,7 +2515,11 @@
     "divisionRank": "{{rank}} of {{of}} in the {{division}}",
     "divisionCol": "Win div.",
     "playoffCol": "Playoffs",
-    "pointsCol": "Proj. pts"
+    "pointsCol": "Proj. pts",
+    "infoTipLeague": "How often this team makes the playoffs when the rest of the {{league}} regular season is simulated thousands of times. Each game's odds come from the two teams' Elo ratings (the same ones behind the schedule's win-probability chips), with extra spread for how unsure those ratings are. Who makes it follows the league's published playoff format. Updated nightly.",
+    "formatUnverified": "The {{league}}'s playoff format for this season isn't confirmed yet, so only projected points are shown.",
+    "nowLine": "{{points}} pts now · {{left}} games left",
+    "pointsTrendLabel": "Projected points this season"
   },
   "injuryImpact": {
     "title": "Games lost to injury",
