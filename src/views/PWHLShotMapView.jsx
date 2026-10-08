@@ -1,9 +1,9 @@
 // views/PWHLShotMapView.jsx
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { hockeyTechTodayInterval } from '../utils/livePolling';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
-import { useFetch, usePoll } from '../hooks/useFetch';
+import { useFetch } from '../hooks/useFetch';
+import { useHockeyTechLiveGame } from '../hooks/useHockeyTechLiveGame';
 import { useTeamSeasonGames } from '../hooks/useTeamSeasonGames';
 import { useEndedGameSnapshot } from '../hooks/useEndedGameSnapshot';
 import { isHockeyTechFinal } from '../utils/gameWatch';
@@ -11,7 +11,7 @@ import { seasonsWithGames, teamHasGames, fallbackSeason } from '../utils/teamSea
 import { pwhlShotMapCounts, dropRepeatedLiveGoals, pwhlLiveClock } from '../utils/pwhlShotMapStats';
 import {
   fetchPWHLShots, fetchPWHLRoster, fetchPWHLSchedule, fetchPWHLPBP,
-  fetchPWHLToday, fetchPWHLLive, fetchPWHLTeamSeasonSummary,
+  fetchPWHLLive, fetchPWHLTeamSeasonSummary,
   pbpByType,
   PWHL_TEAM_CONFIG,
 } from '../utils/pwhlApi';
@@ -23,7 +23,7 @@ import {
 } from '../utils/pwhlConfig';
 import { usePWHLDevGame } from '../utils/PWHLDevGameContext';
 import { useLeagueGameTeam } from '../utils/GameTeamContext';
-import { SHOOTOUT_PERIOD } from '../utils/shootout';
+import { SHOOTOUT_PERIOD, isShootoutEvent } from '../utils/shootout';
 import {
   usePWHLGameEvents,
   PWHLGoalPopup, PWHLPenaltyPopup, PWHLWinPopup, PWHLPuckDropPopup,
@@ -1007,21 +1007,45 @@ function GoalieCard({ goalies, teamId, abbr, oppAbbr, color, oppColor }) {
 
 // The followed team, for useLeagueGameTeam: the view is written from one
 // team's side, the followed team's everywhere but inside a guest game
-// view's GameTeamProvider, where it's the guest team's (as the AHL/ECHL
-// HockeyTechShotMapView is). Nothing below reads the followed team any
-// other way.
+// view's GameTeamProvider (PWHLGuestGameView.jsx), where it's the guest
+// team's, pinned to the one game it was opened on: no season chips or game
+// chips, its summaries out of the bell (as the AHL/ECHL
+// HockeyTechShotMapView). Nothing below reads the followed team any other
+// way.
 const PWHL_FOLLOWED = { key: 'pwhl', team: PWHL_TEAM_CONFIG };
+
+// A final's score card from its own /pwhl/live answer (the guest view's
+// game when it isn't among the team's finals on screen): the official
+// score since the Worker's W13, and how it was decided.
+function finalFromLive(live, teamId) {
+  if (live?.gameStatus !== 'final' || teamId == null) return null;
+  const isHome = live.homeTeamId === teamId;
+  if (!isHome && live.awayTeamId !== teamId) return null;
+  const myScore  = isHome ? live.homeScore : live.awayScore;
+  const oppScore = isHome ? live.awayScore : live.homeScore;
+  const oppId    = isHome ? live.awayTeamId : live.homeTeamId;
+  const events   = live.events || [];
+  return {
+    isHome, myScore, oppScore, oppAbbr: getPWHLTeamById(oppId)?.abbr || String(oppId), won: myScore > oppScore,
+    ot: events.some(e => !isShootoutEvent(e) && e.period > 3),
+    shootout: events.some(isShootoutEvent),
+    homeTeamId: live.homeTeamId, awayTeamId: live.awayTeamId,
+  };
+}
 
 export default function PWHLShotMapView() {
   const { t } = useTranslation();
-  const { team, isGuest } = useLeagueGameTeam(PWHL_FOLLOWED);
+  const { team, isGuest, guestGameId } = useLeagueGameTeam(PWHL_FOLLOWED);
   const teamId = team?.teamId ? parseInt(team.teamId, 10) : null;
   const abbr   = team?.abbr || null;
   const color  = team?.displayColor || 'var(--text-dim)';
 
   const location = useLocation();
   const [season,         setSeason]   = useState(PWHL_CURRENT_SEASON);
-  const [selectedGameId, setSelected] = useState(location.state?.selectedGameId ?? null);
+  const [selectedGameIdState, setSelectedState] = useState(location.state?.selectedGameId ?? null);
+  // A guest view stays on its game.
+  const selectedGameId = isGuest ? guestGameId : selectedGameIdState;
+  const setSelected = useCallback(v => { if (!isGuest) setSelectedState(v); }, [isGuest]);
   const [drillStat,      setDrill]    = useState(null);
   const [viewingSummaryPeriod, setViewingSummaryPeriod] = useState(null);
 
@@ -1049,38 +1073,45 @@ export default function PWHLShotMapView() {
     return () => window.removeEventListener('eyewall:pwhl-season-updated', handleSeasonUpdate);
   }, []);
 
+  // A guest view opens on its game's season: the current one, or whichever
+  // season's schedule for the team has the game (a link to an older game).
+  // Found once; the season it settles on stays.
+  const { data: guestSeason } = useFetch(async () => {
+    if (!isGuest || !teamId || !guestGameId) return null;
+    const ids = [PWHL_CURRENT_SEASON, ...PWHL_SEASONS.map(s => s.id).filter(id => id !== PWHL_CURRENT_SEASON)];
+    for (const id of ids) {
+      const rows = await fetchPWHLSchedule(teamId, id).catch(() => null);
+      if (rows?.some(g => String(g.game_id) === String(guestGameId))) return id;
+    }
+    return null;
+  }, [isGuest, teamId, guestGameId]);
+  useEffect(() => {
+    if (guestSeason == null) return;
+    userPickedSeason.current = true;
+    setSeason(guestSeason);
+  }, [guestSeason]);
+
   // ── Dev replay injection ──────────────────────────────────────
   const devGame = usePWHLDevGame();
 
   // ── Live game detection ───────────────────────────────────────
-  // Detect dev route — suppress /pwhl/today polling entirely on /pwhl/dev
+  // Detect dev route — no live polling at all on /pwhl/dev
   const isDevRoute = location.pathname === '/pwhl/dev';
 
-  // Poll /pwhl/today every 60s (30s once live) to detect live games for the current team.
-  // Skip entirely in dev route or when dev game is injected.
-  const isLiveRef = useRef(false);
-  const liveInterval = useMemo(() => hockeyTechTodayInterval(isLiveRef), []);
-
-  // Always the live current season, not the one on screen: the view can
-  // open on an older season (see the season fallback below), and today's
-  // games are in the current one.
-  const { data: todayGames } = usePoll(
-    () => (isDevRoute || devGame) ? Promise.resolve(null) : fetchPWHLToday(),
-    liveInterval,
-    [!!devGame, isDevRoute]
-  );
-
-  // Find our team's game in progress today, if any
+  // The team's live game from the shared poller (utils/hockeyTechLiveStore.js,
+  // which the Topbar chip reads too): /pwhl/today every 60 s, and once a
+  // game is under way (a scheduled one used to read "LIVE 0-0") /today and
+  // its /pwhl/live every 30 s, at once on a push. Always the current
+  // season's /today, not the season on screen. Not in the dev replay, which
+  // injects its own game; a guest view follows only the game it was opened
+  // on.
+  const liveState = useHockeyTechLiveGame(isDevRoute || devGame ? null : 'pwhl', teamId);
   const liveGame = useMemo(() => {
     if (devGame) return devGame.liveGame;
-    if (!todayGames?.length || !teamId) return null;
-    // Only a game that's under way: the chip always reads "🔴 LIVE" with a
-    // score, so a scheduled game read "LIVE 0-0" until puck drop (AHL
-    // Chicago, 2026-10-04), and tapping it showed nothing.
-    return todayGames.find(g =>
-      (g.homeTeamId === teamId || g.awayTeamId === teamId) && g.status === 'live'
-    ) || null;
-  }, [todayGames, teamId, devGame]);
+    const g = liveState.game;
+    if (!g || (isGuest && String(g.gameId) !== String(guestGameId))) return null;
+    return g;
+  }, [liveState.game, devGame, isGuest, guestGameId]);
 
   // Normalized shape for the shared LiveGameChip (Session 77).
   const liveGameChipData = useMemo(() => {
@@ -1096,9 +1127,6 @@ export default function PWHLShotMapView() {
 
   const isLive = devGame ? devGame.liveGame?.status === 'live' : liveGame?.status === 'live';
 
-  // Keep ref in sync for interval calculation
-  useEffect(() => { isLiveRef.current = isLive; }, [isLive]);
-
   // Auto-select live game when it starts — don't override a manual selection
   // Skip in dev mode (dev replay controls the selection)
   const autoSelectedRef = useRef(false);
@@ -1111,15 +1139,11 @@ export default function PWHLShotMapView() {
     if (!isLive) autoSelectedRef.current = false;
   }, [isLive, liveGame, devGame]);
 
-  // Poll live PBP every 30s when a live game is selected.
-  // In dev mode, liveData comes from the injected context instead.
-  const { data: liveDataReal } = usePoll(
-    () => isLive && !devGame && selectedGameId === liveGame?.gameId
-      ? fetchPWHLLive(selectedGameId)
-      : Promise.resolve(null),
-    30_000,
-    [isLive, selectedGameId, liveGame?.gameId, !!devGame]
-  );
+  // The live game's play-by-play, read by the same poller, while it's the
+  // game on screen. In dev mode, liveData comes from the injected context
+  // instead.
+  const liveDataReal = isLive && !devGame && selectedGameId === liveGame?.gameId
+    && String(liveState.live?.gameId) === String(liveGame.gameId) ? liveState.live : null;
 
   const liveData = devGame ? devGame.liveData : liveDataReal;
 
@@ -1130,6 +1154,15 @@ export default function PWHLShotMapView() {
   const endedData = useEndedGameSnapshot(
     isLive && !devGame ? liveGame?.gameId : null, isLive, liveData, fetchPWHLLive, isHockeyTechFinal
   );
+
+  // A guest view's game once it's over: the snapshot of it ending while
+  // watched, else its own /pwhl/live (the score card's source while the
+  // team's schedule doesn't list it as final yet).
+  const { data: guestFinalFetched } = useFetch(
+    () => isGuest && !isLive && !endedData ? fetchPWHLLive(guestGameId) : Promise.resolve(null),
+    [isGuest, isLive, !!endedData, guestGameId]
+  );
+  const guestFinalLive = isGuest ? (endedData ?? guestFinalFetched) : null;
 
   // ── Derive situation from live events ─────────────────────────
   // Track goalie pull and PP from the most recent penalty/goalie_change events
@@ -1208,7 +1241,8 @@ export default function PWHLShotMapView() {
   }), [games, teamId]);
 
   const selectedGame = useMemo(() => games.find(g => g.game_id === selectedGameId) || null, [games, selectedGameId]);
-  const displayGame  = selectedGame || games[0] || null;
+  // A guest view shows only its own game.
+  const displayGame  = selectedGame || (isGuest ? null : games[0]) || null;
 
   // Is the selected/displayed game a playoffs game? PWHL regular-season
   // games can end in a shootout; playoff games never do (extra full OT
@@ -1244,7 +1278,8 @@ export default function PWHLShotMapView() {
     isLive,
     teamId,
     team?.abbr || '',
-    isPlayoff
+    isPlayoff,
+    isGuest ? teamId : null
   );
 
   // Clear popups on game change
@@ -1505,10 +1540,10 @@ export default function PWHLShotMapView() {
   // on its newest season with games instead of an all-zero map.
   const fallback = fallbackSeason(season, yearOptions, seasonCounts, { played: true });
   useEffect(() => {
-    if (userPickedSeason.current || !seasonCounts || isLive || fallback === season) return;
+    if (isGuest || userPickedSeason.current || !seasonCounts || isLive || fallback === season) return;
     setSeason(fallback);
     if (!userPickedGame.current) setSelected(null);
-  }, [fallback, season, seasonCounts, isLive]);
+  }, [fallback, season, seasonCounts, isLive, isGuest]);
 
   const handleSeasonTypeChange = type => {
     if (type === seasonType) return;
@@ -1571,6 +1606,9 @@ export default function PWHLShotMapView() {
         homeTeamId: liveGame.homeTeamId, awayTeamId: liveGame.awayTeamId,
       };
     }
+    // A guest view's final that isn't among the team's finals on screen
+    // (game_log not caught up yet): from the game's own /pwhl/live.
+    if (!displayGame && isGuest) return finalFromLive(guestFinalLive, teamId);
     // Completed game from schedule
     if (!displayGame || !teamId) return null;
     const isHome   = displayGame.home_team_id === teamId;
@@ -1583,7 +1621,7 @@ export default function PWHLShotMapView() {
       ot: displayGame.ot, shootout: displayGame.shootout,
       homeTeamId: displayGame.home_team_id, awayTeamId: displayGame.away_team_id,
     };
-  }, [displayGame, teamId, isLive, liveGame, selectedGameId]);
+  }, [displayGame, teamId, isLive, liveGame, selectedGameId, isGuest, guestFinalLive]);
 
   // ── Shot stats ────────────────────────────────────────────────
 
@@ -1978,14 +2016,14 @@ export default function PWHLShotMapView() {
           {/* Same responsive layout as ShotMapView's selector -- see the
               comment there. */}
           <div className="relative flex flex-col items-end gap-1.5 ml-auto max-[640px]:w-full max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:items-center max-[640px]:justify-end">
-            {showSeasonTypeToggle && <SeasonTypeToggle value={seasonType} onChange={handleSeasonTypeChange} />}
-            <SeasonChipRow seasons={yearOptions} selected={selectedYear} onSelect={handleYearSelect} className="max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:justify-end max-[640px]:items-center" />
+            {!isGuest && showSeasonTypeToggle && <SeasonTypeToggle value={seasonType} onChange={handleSeasonTypeChange} />}
+            {!isGuest && <SeasonChipRow seasons={yearOptions} selected={selectedYear} onSelect={handleYearSelect} className="max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:justify-end max-[640px]:items-center" />}
           </div>
         </div>
       </div>
 
       {/* ── Game selector ── */}
-      {(liveGame || games.length > 0) && (
+      {(liveGame || (!isGuest && games.length > 0)) && (
         <div style={{ display: 'flex', gap: 0, alignItems: 'center' }}>
           {liveGame && (
             <LiveGameChip
@@ -1995,7 +2033,7 @@ export default function PWHLShotMapView() {
               onSelect={() => { setSelected(liveGame.gameId); setDrill(null); }}
             />
           )}
-          {games.length > 0 && (
+          {!isGuest && games.length > 0 && (
             <GameChipsRow games={gameChipGames} sport="pwhl"
               selectedGameId={selectedGameId} onSelect={handleSelect} onAll={handleAll} />
           )}

@@ -189,6 +189,15 @@ describe('PWHL win popup (usePWHLGameEvents)', () => {
     expect(goals.seen.map(g => g.periodLabel)).not.toContain('OT4')
   })
 
+  it('keeps a guest view’s win apart from the followed team’s', async () => {
+    const MTL = pwhlShootout.awayTeamId
+    const useGuestMtl = (data, isLive) => usePWHLGameEvents(data, isLive, MTL, 'MTL', false, MTL)
+    const { wins } = await playHockeyTechGame(useGuestMtl, pwhlShootout)
+    expect(wins.seen).toHaveLength(1)
+    expect(sessionStorage.getItem(`pwhl_win_326:guest:${MTL}`)).toBe('1')
+    expect(sessionStorage.getItem('pwhl_win_326')).toBeNull()
+  })
+
   it('does not fire for the losing side', async () => {
     const usePwhlHome = (data, isLive) => usePWHLGameEvents(data, isLive, pwhlFinal.homeTeamId, 'HOM')
     const { wins } = await playHockeyTechGame(usePwhlHome, pwhlFinal)

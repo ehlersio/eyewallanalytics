@@ -1,5 +1,5 @@
 // components/GuestGameBar.jsx
-// The bar over a guest game view (GuestGameView.jsx for the NHL,
+// The bar over a guest game view (GuestGameView.jsx for the NHL, PWHLGuestGameView.jsx,
 // HockeyTechGuestGameView.jsx for the AHL/ECHL): which team the game is
 // being watched as, and the way back to the Scoreboard it was opened from.
 import { useTranslation } from 'react-i18next';

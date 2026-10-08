@@ -76,17 +76,3 @@ describe('Guest game links', () => {
     }
   })
 })
-
-describe('Other leagues’ Scoreboards', () => {
-  it('leave team rows untappable -- their game views don’t take a guest team', () => {
-    cy.setPWHLTeam('BOS')
-    cy.intercept('GET', '**/pwhl/today*', [
-      { gameId: 900, gameDate: '2026-09-23', homeTeamCode: 'BOS', awayTeamCode: 'MTL',
-        homeScore: 1, awayScore: 1, status: 'live', period: 2, clock: '10:00', inIntermission: false },
-    ]).as('pwhlToday')
-    cy.visit('/pwhl/league')
-    cy.wait('@pwhlToday')
-    cy.contains('LIVE').should('exist')
-    cy.get('.scoreboard-team-link').should('not.exist')
-  })
-})

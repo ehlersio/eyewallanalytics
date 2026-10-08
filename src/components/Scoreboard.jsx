@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import TeamLogo from './TeamLogo';
 import { getTeamByAbbr, TEAM_CONFIG } from '../utils/teamConfig';
-import { getPWHLTeamConfig } from '../utils/pwhlConfig';
+import { getPWHLTeamConfig, getPWHLStoredTeam } from '../utils/pwhlConfig';
 import { getAHLTeamConfig, getAHLStoredTeam } from '../utils/ahlConfig';
 import { getECHLTeamConfig, getECHLStoredTeam } from '../utils/echlConfig';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
@@ -119,6 +119,7 @@ function DayHeader({ games }) {
 // row opens its own view.
 const FAVORITE_ABBR = {
   nhl:  () => TEAM_CONFIG.abbr,
+  pwhl: () => getPWHLStoredTeam()?.abbr ?? null,
   ahl:  () => getAHLStoredTeam()?.abbr ?? null,
   echl: () => getECHLStoredTeam()?.abbr ?? null,
 };

@@ -253,6 +253,14 @@
       "duration": 4000
     },
     {
+      "spec": "cypress/e2e/pwhl-guest-game.cy.js",
+      "duration": 12000
+    },
+    {
+      "spec": "cypress/e2e/pwhl-guest-game-invariants.cy.js",
+      "duration": 8000
+    },
+    {
       "spec": "cypress/e2e/hockeytech-guest-game.cy.js",
       "duration": 9500
     },
