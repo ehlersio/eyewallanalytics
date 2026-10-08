@@ -277,6 +277,19 @@ export function pwhlEventKey(kind, gameId, guestTeamId = null) {
   return guestTeamId == null ? `pwhl_${kind}_${gameId}` : `pwhl_${kind}_${gameId}:guest:${guestTeamId}`;
 }
 
+// Goals per scorer among a game's /pwhl/live events, for the hat-trick
+// count: the team's goal events only (each goal also arrives as a shot
+// with isGoal, not counted).
+export function pwhlGoalsByScorer(events, teamId) {
+  const counts = {};
+  for (const ev of events || []) {
+    if (ev.eventType !== 'goal' || ev.teamId !== teamId || !ev.scoredBy?.id) continue;
+    const id = String(ev.scoredBy.id);
+    counts[id] = (counts[id] || 0) + 1;
+  }
+  return counts;
+}
+
 // ── usePWHLGameEvents hook ────────────────────────────────────
 /**
  * Watches liveData.events for new events and fires popups.
@@ -312,6 +325,11 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
   const shownPenalties = useRef(new Set(
     gameId ? JSON.parse(sessionStorage.getItem(pwhlEventKey('penalties', gameId, guestTeamId)) || '[]') : []
   ));
+  // Goals per scorer for hat tricks, per game: reset when the game changes
+  // and seeded from its events (they used to run on across games, kept on
+  // the shownGoals ref itself).
+  const scorerGoals = useRef({});
+  const countedFor  = useRef(null);
 
   // Track liveness (for catching the final OT event and the win) and reset
   // on game change, in one effect so a new game's reset can't land after
@@ -332,6 +350,8 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
     shownPenalties.current = new Set(
       gameId ? JSON.parse(sessionStorage.getItem(pwhlEventKey('penalties', gameId, guestTeamId)) || '[]') : []
     );
+    scorerGoals.current = {};
+    countedFor.current = null;
   }, [gameId, isLive, guestTeamId]);
 
   const events       = liveData?.events || [];
@@ -341,6 +361,15 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
   useEffect(() => {
     if (!eventsLength) return;
     if (!isLive && !watchRef.current.wasLive) return;
+
+    // This game's goals so far, by scorer: the events already seen (all of
+    // them on first load, or up to where a refresh left off) count toward
+    // a hat trick without popping up again.
+    if (countedFor.current !== gameId) {
+      countedFor.current = gameId;
+      const seen = lastEventIdx.current === -1 ? eventsLength : lastEventIdx.current + 1;
+      scorerGoals.current = pwhlGoalsByScorer(events.slice(0, seen), teamId);
+    }
 
     // On first load: skip existing events, watch only new ones
     if (lastEventIdx.current === -1) {
@@ -370,10 +399,7 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
 
           // Track goals per scorer for hat trick detection
           const scorerId = ev.scoredBy?.id ? String(ev.scoredBy.id) : '';
-          if (scorerId) {
-            if (!shownGoals._scorerGoals) shownGoals._scorerGoals = {};
-            shownGoals._scorerGoals[scorerId] = (shownGoals._scorerGoals[scorerId] || 0) + 1;
-          }
+          if (scorerId) scorerGoals.current[scorerId] = (scorerGoals.current[scorerId] || 0) + 1;
 
           const goalData = {
             scorer, assists,
@@ -387,7 +413,7 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
             teamColor:      null, // populated by PWHLShotMapView if needed
           };
 
-          if (scorerId && shownGoals._scorerGoals?.[scorerId] === 3) {
+          if (scorerId && scorerGoals.current[scorerId] === 3) {
             setHatTrickPopup(goalData);
           } else {
             setGoalPopup(goalData);
