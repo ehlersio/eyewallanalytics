@@ -37,6 +37,7 @@ import { AHL, ECHL } from '../../utils/hockeyTechLeagues.js'
 import ahlFinal from '../../utils/__tests__/fixtures/game-events-replay/ahl-1028925-live.json'
 import echlFinal from '../../utils/__tests__/fixtures/game-events-replay/echl-24296-live.json'
 import pwhlFinal from '../../utils/__tests__/fixtures/pwhl-game-233/live.json'
+import pwhlShootout from '../../utils/__tests__/fixtures/pwhl-game-326/live.json'
 import nhlGame from '../../utils/__tests__/fixtures/nhl-games/2025030132.json'
 import nhlOlderGame from '../../utils/__tests__/fixtures/nhl-games/2025020121.json'
 
@@ -175,6 +176,17 @@ describe('PWHL win popup (usePWHLGameEvents)', () => {
     expect(wins.seen).toHaveLength(1)
     expect(wins.seen[0].score).toMatch(/^AWY 3 – \S+ 2$/)
     expect(goals.seen.at(-1).periodLabel).toBe('OT')
+  })
+
+  // PWHL 326: MTL wins 2-1 at SEA in a shootout. /pwhl/live has sent the
+  // shootout attempts (period 7) and the official final score since the
+  // Worker's W13; no goal event carries the deciding shootout goal.
+  it('fires once for a shootout win watched live, from the final score', async () => {
+    const usePwhlMtl = (data, isLive) => usePWHLGameEvents(data, isLive, pwhlShootout.awayTeamId, 'MTL')
+    const { wins, goals } = await playHockeyTechGame(usePwhlMtl, pwhlShootout)
+    expect(wins.seen).toHaveLength(1)
+    expect(wins.seen[0].score).toBe('MTL 2 – SEA 1')
+    expect(goals.seen.map(g => g.periodLabel)).not.toContain('OT4')
   })
 
   it('does not fire for the losing side', async () => {

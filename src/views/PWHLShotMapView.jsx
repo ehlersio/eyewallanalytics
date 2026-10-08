@@ -8,12 +8,12 @@ import { useTeamSeasonGames } from '../hooks/useTeamSeasonGames';
 import { useEndedGameSnapshot } from '../hooks/useEndedGameSnapshot';
 import { isHockeyTechFinal } from '../utils/gameWatch';
 import { seasonsWithGames, teamHasGames, fallbackSeason } from '../utils/teamSeasons';
-import { pwhlShotMapCounts, dropRepeatedLiveGoals } from '../utils/pwhlShotMapStats';
+import { pwhlShotMapCounts, dropRepeatedLiveGoals, pwhlLiveClock } from '../utils/pwhlShotMapStats';
 import {
   fetchPWHLShots, fetchPWHLRoster, fetchPWHLSchedule, fetchPWHLPBP,
   fetchPWHLToday, fetchPWHLLive, fetchPWHLTeamSeasonSummary,
   pbpByType,
-  PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
+  PWHL_TEAM_CONFIG,
 } from '../utils/pwhlApi';
 import {
   PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, isPWHLPlayoffSeason,
@@ -22,6 +22,8 @@ import {
   getPWHLTeamById, getPWHLSeasonLabel,
 } from '../utils/pwhlConfig';
 import { usePWHLDevGame } from '../utils/PWHLDevGameContext';
+import { useLeagueGameTeam } from '../utils/GameTeamContext';
+import { SHOOTOUT_PERIOD } from '../utils/shootout';
 import {
   usePWHLGameEvents,
   PWHLGoalPopup, PWHLPenaltyPopup, PWHLWinPopup, PWHLPuckDropPopup,
@@ -1003,10 +1005,17 @@ function GoalieCard({ goalies, teamId, abbr, oppAbbr, color, oppColor }) {
 
 // ── Main view ─────────────────────────────────────────────────
 
+// The followed team, for useLeagueGameTeam: the view is written from one
+// team's side, the followed team's everywhere but inside a guest game
+// view's GameTeamProvider, where it's the guest team's (as the AHL/ECHL
+// HockeyTechShotMapView is). Nothing below reads the followed team any
+// other way.
+const PWHL_FOLLOWED = { key: 'pwhl', team: PWHL_TEAM_CONFIG };
+
 export default function PWHLShotMapView() {
   const { t } = useTranslation();
-  const team   = PWHL_TEAM_CONFIG;
-  const teamId = PWHL_TEAM_ID ? parseInt(PWHL_TEAM_ID, 10) : null;
+  const { team, isGuest } = useLeagueGameTeam(PWHL_FOLLOWED);
+  const teamId = team?.teamId ? parseInt(team.teamId, 10) : null;
   const abbr   = team?.abbr || null;
   const color  = team?.displayColor || 'var(--text-dim)';
 
@@ -1152,14 +1161,13 @@ export default function PWHLShotMapView() {
     return { ourPP, oppPP, ourEN, oppEN };
   }, [liveData, teamId]);
 
-  // Current period + clock from last live event (or dev override)
+  // Current period + clock from last live event (or dev override). A
+  // shootout attempt has no clock: "SO" alone.
   const liveClock = useMemo(() => {
     if (devGame?.liveGame?._period) {
       return { period: devGame.liveGame._period, time: devGame.liveGame._time };
     }
-    if (!liveData?.events?.length) return null;
-    const last = liveData.events[liveData.events.length - 1];
-    return { period: last.period, time: last.time };
+    return pwhlLiveClock(liveData?.events);
   }, [liveData, devGame]);
 
   // ── Schedule / selected game / playoff detection ──────────────
@@ -1216,6 +1224,7 @@ export default function PWHLShotMapView() {
   // ~10 places throughout this component.
   const pLabel = useCallback((n) => {
     if (!n) return '—';
+    if (n === SHOOTOUT_PERIOD) return 'SO'; // /pwhl/live's shootout attempts
     if (n <= 3) return `P${n}`;
     if (n === 4) return 'OT';
     if (isPlayoff) return `OT${n - 3}`;
@@ -1304,6 +1313,7 @@ export default function PWHLShotMapView() {
       gameId:   selectedGameId,
       teamId,
       isPlayoff,
+      guestTeamId: isGuest ? teamId : null,
     });
 
   const { gameSummary, updateGameNarrative } = usePWHLGameSummary({
@@ -1312,6 +1322,7 @@ export default function PWHLShotMapView() {
     isLive,
     gameId:   selectedGameId,
     teamId,
+    guestTeamId: isGuest ? teamId : null,
   });
 
   // Derive live summary so narrative updates reflect immediately
@@ -1319,16 +1330,19 @@ export default function PWHLShotMapView() {
     : viewingSummaryPeriod === 'game' ? gameSummary
     : periodSummaries.find(s => s.period === viewingSummaryPeriod) || null;
 
-  // Sync summaries to PeriodSummaryContext (shared with NHL bell)
+  // Sync summaries to PeriodSummaryContext (shared with NHL bell) -- the
+  // followed team's only: the bell isn't a guest view's.
   const { setSummaries: setCtxSummaries, registerOpenHandler } = usePeriodSummaryContext();
   useEffect(() => {
+    if (isGuest) return;
     const all = gameSummary ? [gameSummary, ...periodSummaries] : periodSummaries;
     setCtxSummaries(all);
-  }, [periodSummaries, gameSummary, setCtxSummaries]);
+  }, [periodSummaries, gameSummary, setCtxSummaries, isGuest]);
   useEffect(() => {
+    if (isGuest) return undefined;
     registerOpenHandler((s) => setViewingSummaryPeriod(s.isGameSummary ? 'game' : s.period));
     return () => registerOpenHandler(null);
-  }, [registerOpenHandler]);
+  }, [registerOpenHandler, isGuest]);
 
   // Auto-open game summary when live game goes final
   const wasLiveRef = useRef(false);

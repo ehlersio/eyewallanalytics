@@ -20,6 +20,7 @@ import { penaltyHeadline, penaltyServedBy } from '../utils/penaltyText';
 import { hockeyTechPenaltyParties } from '../utils/hockeyTechPenalty';
 import { getPWHLTeamById } from '../utils/pwhlConfig';
 import { NO_GAME, watchGame } from '../utils/gameWatch';
+import { SHOOTOUT_PERIOD, isShootoutEvent } from '../utils/shootout';
 import { HatTrickPopup as _HatTrickPopup } from './GameEvents'; // reuse hat trick popup
 
 // ── Tailwind class constants (Phase 4, sub-PR 2 -- GameEvents.css deleted) ──
@@ -256,9 +257,11 @@ function _cleanPenaltyDesc(raw, t) {
 
 // Regular-season period 5 is a shootout ('SO'); playoffs never have one
 // (full OT periods instead) — pass the current game's playoff status so
-// period 5+ labels correctly.
+// period 5+ labels correctly. /pwhl/live's shootout attempts are period 7
+// (from 2026-10-08, utils/shootout.js).
 function periodLabel(n, isPlayoff = false) {
   if (!n) return '—';
+  if (n === SHOOTOUT_PERIOD) return 'SO';
   if (n <= 3) return `P${n}`;
   if (n === 4) return 'OT';
   if (isPlayoff) return `OT${n - 3}`;
@@ -486,8 +489,10 @@ export function PWHLLiveInsights({ pbpEvents, ourShotEvents, oppShotEvents,
     const results = [];
     const events = pbpEvents || [];
 
-    // Current period from last event
-    const lastEv = events[events.length - 1];
+    // Current period from the last event of play (a shootout attempt
+    // isn't a period: "2 periods without a goal" in a shootout counted
+    // periods 5 and 6 that were never played)
+    const lastEv = events.findLast(e => !isShootoutEvent(e));
     const currentPeriod = lastEv?.period_id || 1;
 
     // ── Shot advantage by period ──────────────────────────────
