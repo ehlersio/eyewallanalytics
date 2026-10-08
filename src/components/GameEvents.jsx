@@ -259,6 +259,24 @@ export function WinPopup({ data, onClose }) {
 }
 
 // ── Hook ──────────────────────────────────────────────────────
+
+// Goals per scorer among a game's plays, for the hat-trick count: the
+// team's goals only, each counted for its current scorer. `ids` maps each
+// goal's eventId to that scorer (a review can move it).
+export function nhlGoalsByScorer(plays, teamId) {
+  const counts = {};
+  const ids = {};
+  for (const play of plays || []) {
+    const d = play.details || {};
+    if (play.typeDescKey !== 'goal' || d.eventOwnerTeamId !== teamId) continue;
+    const scorerId = String(d.scoringPlayerId || '');
+    if (!scorerId) continue;
+    counts[scorerId] = (counts[scorerId] || 0) + 1;
+    ids[play.eventId || `goal-${play.sortOrder}`] = scorerId;
+  }
+  return { counts, ids };
+}
+
 export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr, teamColor) {
   const { t } = useTranslation();
   // teamId: integer team ID (replaces hardcoded TEAM_CONFIG.teamId)
@@ -286,8 +304,11 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr
   const shownPenalties = useRef(new Set(
     gameId ? JSON.parse(sessionStorage.getItem(`penalties_${gameId}`) || '[]') : []
   ));
+  // Per game, reset when the game changes (they used to run on across
+  // games: two goals one night and one the next read as a hat trick).
   const scorerGoals = useRef({}); // { scorerId: goalCount } for hat trick tracking
   const goalScorerIds = useRef({}); // { eventId: scorerId } -- moves the count if a review changes the scorer
+  const countedFor = useRef(null); // the game scorerGoals counts
   // Which game we're on and whether we saw it live (so we catch the final
   // OT play and only celebrate a game watched live) -- utils/gameWatch.js.
   const watchRef     = useRef(NO_GAME);
@@ -314,6 +335,14 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr
     gameEndFired.current = false;
     puckDropFired.current = false;
     lastPlayIdx.current = parseInt(sessionStorage.getItem(`lastPlay_${gameId}`) || '-1', 10);
+    // The new game's own shown goals and penalties (eventIds are numbered
+    // per game, so the last game's could hide this one's), and its own
+    // goal counts (seeded from its plays below).
+    shownGoals.current = new Set(JSON.parse(sessionStorage.getItem(`goals_${gameId}`) || '[]'));
+    shownPenalties.current = new Set(JSON.parse(sessionStorage.getItem(`penalties_${gameId}`) || '[]'));
+    scorerGoals.current = {};
+    goalScorerIds.current = {};
+    countedFor.current = null;
   }, [gameId, isLive]);
 
   // Process new plays — runs when PBP updates regardless of isLive
@@ -324,6 +353,17 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr
     if (!isLive && !watchRef.current.wasLive) return;
 
     const plays = pbp.plays;
+
+    // This game's goals so far, by scorer: the plays already seen (all of
+    // them on first load, or up to where a refresh left off) count toward
+    // a hat trick without popping up again.
+    if (countedFor.current !== gameId) {
+      countedFor.current = gameId;
+      const seen = lastPlayIdx.current === -1 ? plays.length : lastPlayIdx.current + 1;
+      const { counts, ids } = nhlGoalsByScorer(plays.slice(0, seen), _teamId);
+      scorerGoals.current = counts;
+      goalScorerIds.current = ids;
+    }
 
     // On first load: skip existing plays, watch only new ones going forward
     if (lastPlayIdx.current === -1) {
