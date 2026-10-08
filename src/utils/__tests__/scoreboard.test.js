@@ -80,9 +80,18 @@ describe('teamRowHref', () => {
   it('offers nothing where there is nothing to follow', () => {
     expect(teamRowHref('nhl', { ...live, status: 'pre' }, 'BOS', 'CAR', nhl)).toBeNull();
     expect(teamRowHref('nhl', { ...live, status: 'final' }, 'BOS', 'CAR', nhl)).toBeNull();
-    expect(teamRowHref('pwhl', live, 'BOS', 'CAR', nhl)).toBeNull();
+    expect(teamRowHref('mlb', live, 'BOS', 'CAR', nhl)).toBeNull();
     expect(teamRowHref('nhl', live, 'ARI', 'CAR', nhl)).toBeNull();
     expect(teamRowHref('nhl', { status: 'live' }, 'BOS', 'CAR', nhl)).toBeNull();
+  });
+
+  it('opens PWHL games in the PWHL guest view, and the favorite’s row in its Shot Map', () => {
+    const pwhl = abbr => ['MTL', 'SEA', 'BOS'].includes(abbr);
+    const game = { gameId: 326, status: 'live' };
+    expect(teamRowHref('pwhl', game, 'SEA', 'MTL', pwhl)).toBe('/pwhl/game/326?as=SEA');
+    expect(teamRowHref('pwhl', game, 'MTL', 'MTL', pwhl)).toBe('/pwhl/shots');
+    expect(teamRowHref('pwhl', { ...game, status: 'final' }, 'SEA', 'MTL', pwhl)).toBeNull();
+    expect(teamRowHref('pwhl', game, 'XYZ', 'MTL', pwhl)).toBeNull();
   });
 
   it('opens AHL/ECHL games in their own guest view, and the favorite’s row in its Shot Map', () => {

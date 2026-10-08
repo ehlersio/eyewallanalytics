@@ -32,6 +32,7 @@ const LeagueView    = lazy(() => import('./views/LeagueView'));
 const GuestGameView = lazy(() => import('./views/GuestGameView'));
 
 const PWHLShotMapView  = lazy(() => import('./views/PWHLShotMapView'));
+const PWHLGuestGameView = lazy(() => import('./views/PWHLGuestGameView'));
 const PWHLLeagueView   = lazy(() => import('./views/PWHLLeagueView'));
 const PWHLScheduleView = lazy(() => import('./views/PWHLScheduleView'));
 const PWHLPlayersView  = lazy(() => import('./views/PWHLPlayersView'));
@@ -141,10 +142,11 @@ function PageTracker() {
     };
     capture('$pageview', {
       path:      location.pathname,
-      // /game/:gameId?as= (and the AHL/ECHL /{league}/game/:gameId) is one
+      // /game/:gameId?as= (and the PWHL/AHL/ECHL /{league}/game/:gameId) is one
       // route however many games it's opened on.
       page_name: names[location.pathname]
         || (location.pathname.startsWith('/game/') ? 'Guest Game'
+          : location.pathname.startsWith('/pwhl/game/') ? 'PWHL Guest Game'
           : location.pathname.startsWith('/ahl/game/') ? 'AHL Guest Game'
             : location.pathname.startsWith('/echl/game/') ? 'ECHL Guest Game'
               : location.pathname),
@@ -230,6 +232,7 @@ export default function App() {
                       <Route path="/admin/health" element={<AdminHealthView />} />
                       {/* PWHL routes */}
                       <Route path="/pwhl/shots"    element={<PWHLShotMapView />} />
+                      <Route path="/pwhl/game/:gameId" element={<PWHLGuestGameView />} />
                       <Route path="/pwhl/team"     element={<PWHLTeamView />} />
                       <Route path="/pwhl/league"   element={<PWHLLeagueView />} />
                       <Route path="/pwhl/players"  element={<PWHLPlayersView />} />

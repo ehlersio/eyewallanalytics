@@ -268,6 +268,15 @@ function periodLabel(n, isPlayoff = false) {
   return n === 5 ? 'SO' : `OT${n - 3}`;
 }
 
+// The sessionStorage key of a game's "already shown" flags (goals,
+// penalties, lastEvent, puckdrop, win). The followed team's keys are
+// per game as they always were; a guest game view's add the guest team, so
+// watching the followed team's opponent in the same game never marks the
+// followed team's win (or goals) as shown, or the other way round.
+export function pwhlEventKey(kind, gameId, guestTeamId = null) {
+  return guestTeamId == null ? `pwhl_${kind}_${gameId}` : `pwhl_${kind}_${gameId}:guest:${guestTeamId}`;
+}
+
 // ── usePWHLGameEvents hook ────────────────────────────────────
 /**
  * Watches liveData.events for new events and fires popups.
@@ -280,8 +289,10 @@ function periodLabel(n, isPlayoff = false) {
  * @param {number}  teamId       - our selected team ID (integer)
  * @param {string}  teamAbbr     - our team abbrev for win popup
  * @param {boolean} isPlayoff    - is the current game a playoffs game (period 5+ labeling)
+ * @param {number}  guestTeamId  - set in a guest game view: its "already shown"
+ *                                 flags are kept apart from the followed team's
  */
-export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff = false) {
+export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff = false, guestTeamId = null) {
   const { t } = useTranslation();
   const [goalPopup,     setGoalPopup]     = useState(null);
   const [hatTrickPopup, setHatTrickPopup] = useState(null);
@@ -296,10 +307,10 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
   const puckDropFired = useRef(false);
 
   const shownGoals = useRef(new Set(
-    gameId ? JSON.parse(sessionStorage.getItem(`pwhl_goals_${gameId}`) || '[]') : []
+    gameId ? JSON.parse(sessionStorage.getItem(pwhlEventKey('goals', gameId, guestTeamId)) || '[]') : []
   ));
   const shownPenalties = useRef(new Set(
-    gameId ? JSON.parse(sessionStorage.getItem(`pwhl_penalties_${gameId}`) || '[]') : []
+    gameId ? JSON.parse(sessionStorage.getItem(pwhlEventKey('penalties', gameId, guestTeamId)) || '[]') : []
   ));
 
   // Track liveness (for catching the final OT event and the win) and reset
@@ -313,15 +324,15 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
     gameEndFired.current = false;
     puckDropFired.current = false;
     lastEventIdx.current = gameId
-      ? parseInt(sessionStorage.getItem(`pwhl_lastEvent_${gameId}`) || '-1', 10)
+      ? parseInt(sessionStorage.getItem(pwhlEventKey('lastEvent', gameId, guestTeamId)) || '-1', 10)
       : -1;
     shownGoals.current = new Set(
-      gameId ? JSON.parse(sessionStorage.getItem(`pwhl_goals_${gameId}`) || '[]') : []
+      gameId ? JSON.parse(sessionStorage.getItem(pwhlEventKey('goals', gameId, guestTeamId)) || '[]') : []
     );
     shownPenalties.current = new Set(
-      gameId ? JSON.parse(sessionStorage.getItem(`pwhl_penalties_${gameId}`) || '[]') : []
+      gameId ? JSON.parse(sessionStorage.getItem(pwhlEventKey('penalties', gameId, guestTeamId)) || '[]') : []
     );
-  }, [gameId, isLive]);
+  }, [gameId, isLive, guestTeamId]);
 
   const events       = liveData?.events || [];
   const eventsLength = events.length;
@@ -339,7 +350,7 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
 
     const newEvents = events.slice(lastEventIdx.current + 1);
     lastEventIdx.current = eventsLength - 1;
-    if (gameId) sessionStorage.setItem(`pwhl_lastEvent_${gameId}`, String(lastEventIdx.current));
+    if (gameId) sessionStorage.setItem(pwhlEventKey('lastEvent', gameId, guestTeamId), String(lastEventIdx.current));
     if (!newEvents.length) return;
 
     for (const ev of newEvents) {
@@ -355,7 +366,7 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
         const goalSig = `${ev.period}-${ev.timeSeconds}-${scorer}`;
         if (!shownGoals.current.has(goalSig)) {
           shownGoals.current.add(goalSig);
-          if (gameId) sessionStorage.setItem(`pwhl_goals_${gameId}`, JSON.stringify([...shownGoals.current]));
+          if (gameId) sessionStorage.setItem(pwhlEventKey('goals', gameId, guestTeamId), JSON.stringify([...shownGoals.current]));
 
           // Track goals per scorer for hat trick detection
           const scorerId = ev.scoredBy?.id ? String(ev.scoredBy.id) : '';
@@ -390,7 +401,7 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
         const penId = `${ev.period}-${ev.timeSeconds}-${ev.takenBy?.id || 'bench'}`;
         if (!shownPenalties.current.has(penId)) {
           shownPenalties.current.add(penId);
-          if (gameId) sessionStorage.setItem(`pwhl_penalties_${gameId}`, JSON.stringify([...shownPenalties.current]));
+          if (gameId) sessionStorage.setItem(pwhlEventKey('penalties', gameId, guestTeamId), JSON.stringify([...shownPenalties.current]));
           // A bench penalty names no one -- see hockeyTechPenalty.js.
           const parties = hockeyTechPenaltyParties(ev);
           setPenaltyPopup({
@@ -406,25 +417,25 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
         }
       }
     }
-  }, [eventsLength, isLive, teamId, gameId, t]);
+  }, [eventsLength, isLive, teamId, gameId, t, guestTeamId]);
 
   // Puck drop — fires once when game goes live in P1
   useEffect(() => {
     if (!isLive || puckDropFired.current || !eventsLength) return;
     const firstEv = events[0];
     if ((firstEv?.period || 1) !== 1) return; // only at game start
-    const sessionKey = `pwhl_puckdrop_${gameId}`;
+    const sessionKey = pwhlEventKey('puckdrop', gameId, guestTeamId);
     if (gameId && sessionStorage.getItem(sessionKey)) return;
     puckDropFired.current = true;
     if (gameId) sessionStorage.setItem(sessionKey, '1');
     setPuckDropPopup({ gameId });
-  }, [isLive, eventsLength, gameId]);
+  }, [isLive, eventsLength, gameId, guestTeamId]);
 
   // Win detection
   useEffect(() => {
     if (!liveData || gameEndFired.current || !watchRef.current.wasLive) return;
     if (liveData.gameStatus !== 'final') return;
-    const sessionKey = `pwhl_win_${gameId}`;
+    const sessionKey = pwhlEventKey('win', gameId, guestTeamId);
     if (gameId && sessionStorage.getItem(sessionKey)) return;
 
     const isHome   = liveData.homeTeamId === teamId;
@@ -441,7 +452,7 @@ export function usePWHLGameEvents(liveData, isLive, teamId, teamAbbr, isPlayoff 
         score: `${teamAbbr} ${myScore} – ${oppAbbr} ${oppScore}`,
       });
     }
-  }, [liveData?.gameStatus, eventsLength, teamId, teamAbbr, gameId, isPlayoff]);
+  }, [liveData?.gameStatus, eventsLength, teamId, teamAbbr, gameId, isPlayoff, guestTeamId]);
 
   return {
     goalPopup,     clearGoalPopup:     () => setGoalPopup(null),

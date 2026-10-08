@@ -60,11 +60,11 @@ export function liveDetail(game, intermissionWord = 'INT') {
 }
 
 // Each league's game view: the favorite's own, and the guest view that
-// takes another team (GuestGameView.jsx for the NHL,
-// HockeyTechGuestGameView.jsx for the AHL/ECHL). The PWHL's game view
-// doesn't take a guest team yet.
+// takes another team (GuestGameView.jsx for the NHL, PWHLGuestGameView.jsx
+// for the PWHL, HockeyTechGuestGameView.jsx for the AHL/ECHL).
 const GAME_VIEWS = {
   nhl:  { own: '/',           guest: '/game' },
+  pwhl: { own: '/pwhl/shots', guest: '/pwhl/game' },
   ahl:  { own: '/ahl/shots',  guest: '/ahl/game' },
   echl: { own: '/echl/shots', guest: '/echl/game' },
 };
@@ -72,8 +72,7 @@ const GAME_VIEWS = {
 // Where a team's row goes: a live game opens in the game view from that
 // team's side without touching the favorite, and the favorite's own row
 // opens the favorite's own view. null -- a plain, untappable row -- for a
-// league whose game view doesn't take a guest team (PWHL) and for any game
-// that isn't live, where there'd be nothing to follow. `isLeagueTeam`
+// league without a game view here and for any game that isn't live, where there'd be nothing to follow. `isLeagueTeam`
 // guards against a code the league's team list doesn't know.
 export function teamRowHref(sport, game, code, favoriteAbbr, isLeagueTeam) {
   const views = GAME_VIEWS[sport];
