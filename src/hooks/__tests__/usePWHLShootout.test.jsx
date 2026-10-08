@@ -5,7 +5,7 @@
 // period: the summaries stop at OT, the score card says "SO", not "OT4".
 // Also: a guest game view's summaries live under their own keys.
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest'
 import { renderHook, resetSessionStorage } from '../../utils/__tests__/testHelpers/renderHook.jsx'
 import {
   usePWHLPeriodSummary, buildPWHLGameSummary, buildPWHLSummary, pwhlPlayedPeriods,
@@ -18,7 +18,15 @@ const SEA = 8, MTL = 3
 const upTo = (n, status = 'live') => ({ ...live, gameStatus: status, events: live.events.slice(0, n) })
 const firstOf = period => live.events.findIndex(e => e.period === period)
 
-beforeEach(() => resetSessionStorage())
+// The hook reads VITE_WORKER_URL at import. With a .env that sets it (every
+// developer checkout), it would try the real Worker for narratives and the
+// game summary and the summaries would never settle; CI and fresh worktrees
+// have no .env, which hid this. Answer every fetch with a fast 404 so the
+// test is the same everywhere.
+const fetchMock = vi.fn(async () => ({ ok: false, status: 404, json: async () => null, text: async () => '' }))
+beforeAll(() => vi.stubGlobal('fetch', fetchMock))
+afterAll(() => vi.unstubAllGlobals())
+beforeEach(() => { resetSessionStorage(); fetchMock.mockClear() })
 
 describe('PWHL 326 shootout, as /pwhl/live sends it', () => {
   it('is a real shootout payload: 12 attempts in period 7, final 1-2', () => {
