@@ -267,6 +267,10 @@
     {
       "spec": "cypress/e2e/hockeytech-playoff-odds.cy.js",
       "duration": 7000
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-bracket.cy.js",
+      "duration": 12000
     }
   ]
 }

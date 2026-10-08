@@ -97,6 +97,8 @@ export const AHL = {
     fetchGoaliePercentiles:       ahlApi.fetchAHLGoaliePercentiles,
     fetchPowerRankings:           ahlApi.fetchAHLPowerRankings,
     fetchPlayoffOdds:             ahlApi.fetchAHLPlayoffOdds,
+    fetchBracket:                 ahlApi.fetchAHLBracket,
+    fetchProjectedBracket:        ahlApi.fetchAHLProjectedBracket,
   },
   config: {
     teams:              ahlConfig.AHL_TEAMS,
@@ -185,6 +187,8 @@ export const ECHL = {
     fetchGoaliePercentiles:       echlApi.fetchECHLGoaliePercentiles,
     fetchPowerRankings:           echlApi.fetchECHLPowerRankings,
     fetchPlayoffOdds:             echlApi.fetchECHLPlayoffOdds,
+    fetchBracket:                 echlApi.fetchECHLBracket,
+    fetchProjectedBracket:        echlApi.fetchECHLProjectedBracket,
   },
   config: {
     teams:              echlConfig.ECHL_TEAMS,

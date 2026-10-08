@@ -37,5 +37,7 @@ export const fetchAHLPlayerPercentiles       = api.fetchPlayerPercentiles;
 export const fetchAHLGoaliePercentiles       = api.fetchGoaliePercentiles;
 export const fetchAHLPowerRankings           = api.fetchPowerRankings;
 export const fetchAHLPlayoffOdds             = api.fetchPlayoffOdds;
+export const fetchAHLBracket                 = api.fetchBracket;
+export const fetchAHLProjectedBracket        = api.fetchProjectedBracket;
 export const fetchAHLNews                   = api.fetchNews;
 export const fetchAHLLive                    = api.fetchLive;

@@ -823,6 +823,14 @@
       "howCalculatedIntro": "Le classement de puissance {{ofLeague}} combine quatre facteurs en un score. Chacun est ramené de 0 à 1 dans la ligue (la meilleure équipe 1, la pire 0; une équipe sans la donnée est à 0,5), puis pondéré et additionné. Le classement est recalculé chaque nuit après les matchs.",
       "componentPointsDesc": "Points de saison ÷ maximum possible (PJ × 2)",
       "howCalculatedFootnote": "Aucun terme de tentatives de tir ni de buts attendus : les données {{ofLeague}} n'ont pas de tirs bloqués ou ratés. Source : classement et résultats {{ofLeague}}."
+    },
+    "bracket": {
+      "tbd": "À déterminer",
+      "projectedNote": "Établi selon le classement des divisions au {{date}}, d'après le format publié par la ligue. Affrontements seulement : aucun match encore.",
+      "formatUnverified": "Aucun tableau projeté pour l'instant : le format des séries {{ofLeague}} pour cette saison n'est pas encore publié. Le tableau apparaîtra ici dès sa publication, ou au début des séries.",
+      "noGames": "Aucun tableau projeté pour l'instant : la saison {{ofLeague}} n'a pas commencé. Il apparaîtra ici une fois des matchs joués.",
+      "byes": "Exemptées du premier tour : {{teams}}",
+      "bestOf": "Nombre de matchs par tour : {{rounds}}"
     }
   },
   "hockeyTechShotMapView": {
