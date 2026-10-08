@@ -6,10 +6,16 @@
 // localStorage directly (rather than importing localeConfig.js) to avoid
 // a circular import between the two.
 
+//
+// English is bundled; French (another ~150 kB of strings) is loaded on
+// demand by the small backend below -- at start when the saved or browser
+// language is French (main.jsx waits for `i18nReady` before the first
+// render, so French users never see English flash), and on a switch
+// (i18n.changeLanguage('fr') resolves once it's loaded).
+
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import en from './locales/en.json';
-import fr from './locales/fr.json';
 
 const STORAGE_KEY = 'eyewall:locale';
 const VALID = ['en', 'fr'];
@@ -33,13 +39,32 @@ function initialLocale() {
   return VALID.includes(browserLang) ? browserLang : 'en';
 }
 
-i18n
+// Each language's strings: English from the bundle, French from its own
+// chunk.
+const LOADERS = {
+  en: () => Promise.resolve(en),
+  fr: () => import('./locales/fr.json').then(m => m.default),
+};
+
+export const lazyLocales = {
+  type: 'backend',
+  init() {},
+  read(language, namespace, callback) {
+    const load = LOADERS[language];
+    if (!load || namespace !== 'translation') { callback(null, {}); return; }
+    load().then(data => callback(null, data), err => callback(err, null));
+  },
+};
+
+export const i18nReady = i18n
+  .use(lazyLocales)
   .use(initReactI18next)
   .init({
     resources: {
       en: { translation: en },
-      fr: { translation: fr },
     },
+    // English is bundled above; anything else comes through lazyLocales.
+    partialBundledLanguages: true,
     lng: initialLocale(),
     fallbackLng: 'en',
     interpolation: {

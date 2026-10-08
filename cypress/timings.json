@@ -225,6 +225,10 @@
       "duration": 120078
     },
     {
+      "spec": "cypress/e2e/french-locale.cy.js",
+      "duration": 3000
+    },
+    {
       "spec": "cypress/e2e/theme.cy.js",
       "duration": 23896
     },
