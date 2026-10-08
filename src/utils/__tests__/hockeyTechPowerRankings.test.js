@@ -12,6 +12,8 @@ import {
   hockeyTechRankedRows, rankHistory, rankMovement, rankingWeightLabels, rankingsState,
 } from '../hockeyTechPowerRankings'
 import { AHL } from '../hockeyTechLeagues'
+import pwhlRoute from './fixtures/pwhl-power-rankings-8/route.json'
+import { getPWHLTeamById } from '../pwhlConfig'
 
 const abbrOf = id => AHL.config.getTeamById(id)?.abbr
 
@@ -65,5 +67,27 @@ describe('movement, history, weights and the tab', () => {
     expect(rankingsState({ latest: [], narrative: null, history: [] }, false)).toBe('empty')
     expect(rankingsState({ latest: [], narrative: null, history: [], unavailable: true }, false)).toBe('unavailable')
     expect(rankingsState(null, false)).toBe('empty')
+  })
+})
+
+// PWHL 2025-26's final standings ranked by the pipeline's own
+// compute_rankings() (hockeytech_power_rankings.py, PWHL weights with
+// Corsi), as /pwhl/power-rankings will answer once a nightly run is
+// written: fixtures/pwhl-power-rankings-8. PWHLLeagueView's table reads it.
+
+describe('hockeyTechRankedRows on PWHL rows', () => {
+  const rows = hockeyTechRankedRows(pwhlRoute.latest, id => getPWHLTeamById(id)?.abbr)
+
+  it('keeps the pipeline’s order, every team named', () => {
+    expect(rows.map(r => r.abbr)).toEqual(['MTL', 'BOS', 'MIN', 'OTT', 'TOR', 'NY', 'VAN', 'SEA'])
+    expect(rows.map(r => r.rank)).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
+  })
+
+  it('carries the PWHL’s Corsi and the W-L-OTL record', () => {
+    expect(rows[0]).toMatchObject({ wins: 22, losses: 6, otLosses: 2, cfPct: 0.5254, l10: '8-1-1' })
+  })
+
+  it('has no Corsi for AHL rows', () => {
+    expect(hockeyTechRankedRows([{ team_id: 1, rank: 1, components: { record: '1-0-0' } }], () => 'X')[0].cfPct).toBeNull()
   })
 })

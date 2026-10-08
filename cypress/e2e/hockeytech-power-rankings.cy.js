@@ -102,13 +102,25 @@ LEAGUES.forEach(({ key, label, team }) => {
   })
 })
 
-describe('PWHL League › Power Rankings: the EyeWall AI card', () => {
-  it('shows the followed team’s nightly narrative and rank trend over the table', () => {
+// PWHL: the route's rows are the pipeline's compute_rankings() on PWHL
+// 2025-26's final standings (src/utils/__tests__/fixtures/
+// pwhl-power-rankings-8), with prior ranks set here for the movement column.
+const PWHL_FIXTURE = 'src/utils/__tests__/fixtures/pwhl-power-rankings-8/route.json'
+// team_id -> the rank before: MTL (3) held 1st, BOS (1) up from 4th, MIN (2)
+// down from 2nd, ...
+const PWHL_PRIOR = { 3: 1, 1: 4, 2: 2, 5: 3, 6: 5, 4: 6, 9: 8, 8: 7 }
+
+describe('PWHL League › Power Rankings', () => {
+  const stubNightly = () => cy.readFile(PWHL_FIXTURE).then(route => {
     cy.intercept('GET', '**/pwhl/power-rankings*', {
-      latest: [{ team_id: 1, rank: 2, prior_rank: 4, score: 0.7, components: {} }],
+      latest: route.latest.map(r => ({ ...r, prior_rank: PWHL_PRIOR[r.team_id] })),
       narrative: { text: 'The Fleet climbed two places on goal differential.', run_date: '2026-12-10' },
       history: [{ run_date: '2026-12-09', rank: 4 }, { run_date: '2026-12-10', rank: 2 }],
     }).as('pwhlRankings')
+  })
+
+  it('shows the followed team’s nightly narrative and rank trend over the table', () => {
+    stubNightly()
     cy.setPWHLTeam('BOS')
     cy.visit('/pwhl/league')
     cy.contains('Power Rankings', { timeout: DATA_TIMEOUT }).click()
@@ -117,12 +129,37 @@ describe('PWHL League › Power Rankings: the EyeWall AI card', () => {
     cy.get('.pr-sparkline').should('contain', '▲2')
   })
 
-  it('shows no card before the first nightly run', () => {
+  it('ranks the table by the nightly run, with every team’s movement', () => {
+    stubNightly()
+    cy.setPWHLTeam('BOS')
+    cy.visit('/pwhl/league')
+    cy.contains('Power Rankings', { timeout: DATA_TIMEOUT }).click()
+    cy.wait('@pwhlRankings')
+    cy.get('.pwhl-rankings-nightly .pwhl-rankings-row').should('have.length', 8)
+    cy.get('.pwhl-rankings-nightly .pwhl-rankings-row').then($rows => {
+      const abbrs = [...$rows].map(r => r.querySelector('.pwhl-rankings-abbr').textContent.trim())
+      expect(abbrs).to.deep.equal(['MTL', 'BOS', 'MIN', 'OTT', 'TOR', 'NY', 'VAN', 'SEA'])
+    })
+    // Movement for every team: BOS ▲2, MIN ▼1, MTL unchanged.
+    cy.get('.pwhl-rankings-row').eq(0).find('.pr-mvmt').should('have.text', '—')
+    cy.get('.pwhl-rankings-row').eq(1).find('.pr-mvmt').should('have.text', '▲2')
+    cy.get('.pwhl-rankings-row').eq(2).find('.pr-mvmt').should('have.text', '▼1')
+    cy.get('.pwhl-rankings-row .pr-mvmt').should('have.length', 8)
+    // The nightly's record and Corsi: MTL 22-6-2, 52.5%.
+    cy.get('.pwhl-rankings-row').eq(0).should('contain', '22–6–2').and('contain', '52.5%')
+    cy.get('.pwhl-rankings-preview-label').should('not.exist')
+    cy.get('.pwhl-rankings-as-of').should('contain', 'Dec 10')
+  })
+
+  it('ranks from the standings, labelled Preview, before the first nightly run', () => {
     cy.intercept('GET', '**/pwhl/power-rankings*', { latest: [], narrative: null, history: [] }).as('pwhlRankings')
     cy.setPWHLTeam('BOS')
     cy.visit('/pwhl/league')
     cy.contains('Power Rankings', { timeout: DATA_TIMEOUT }).click()
     cy.wait('@pwhlRankings')
     cy.get('.pr-narrative-card').should('not.exist')
+    cy.get('.pwhl-rankings-preview-label', { timeout: DATA_TIMEOUT }).should('have.text', 'Preview')
+    cy.get('.pwhl-rankings-preview .pwhl-rankings-row').should('have.length.greaterThan', 0)
+    cy.get('.pwhl-rankings-preview .pr-mvmt').should('not.exist')
   })
 })

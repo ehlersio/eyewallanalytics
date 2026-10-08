@@ -388,7 +388,10 @@
       "componentCFDesc": "Part des tentatives de tir — indicateur de possession",
       "componentSPDesc": "Moyenne du % d'avantage numérique et du % de désavantage numérique",
       "tableHeading": "Classement de puissance",
-      "footerHint": "Composite de %Pts, 10 derniers, Diff/PJ, CF%, unités spéciales · Mis à jour avec le classement"
+      "footerHint": "Composite de %Pts, 10 derniers, Diff/PJ, CF%, unités spéciales · Mis à jour avec le classement",
+      "previewLabel": "Aperçu",
+      "previewNote": "Classement calculé ici à partir du classement de cette saison : le calcul de la nuit n'a pas encore été fait pour elle (il commence dès que chaque équipe a joué 3 matchs). Le tableau affiche le calcul de la nuit quand il existe.",
+      "nightlyFooter": "Calcul de la nuit : %Pts, 10 derniers, Diff/PJ, CF%, unités spéciales · Mouvement depuis le calcul précédent"
     },
     "tabs": {
       "bracket": "Tableau éliminatoire",

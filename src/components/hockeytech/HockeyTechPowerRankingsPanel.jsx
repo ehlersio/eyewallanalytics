@@ -15,10 +15,11 @@ import TeamLogo from '../TeamLogo';
 import ShareButtons from '../ShareButtons';
 import RankNarrativeCard, { formatDay } from '../RankNarrativeCard';
 import PowerRankingsCanvas from '../PowerRankingsCanvas';
+import RankMovement from '../RankMovement';
 import { useShareCard } from '../../hooks/useShareCard';
 import { leagueNameVars } from '../../utils/hockeyTechI18n';
 import {
-  hockeyTechRankedRows, rankHistory, rankMovement, rankingWeightLabels, HOCKEYTECH_RANKING_WEIGHTS,
+  hockeyTechRankedRows, rankHistory, rankingWeightLabels, HOCKEYTECH_RANKING_WEIGHTS,
 } from '../../utils/hockeyTechPowerRankings';
 
 const CARD_CLASSES = 'lv-div-card bg-[var(--bg1)] border-[0.5px] border-[var(--border)] rounded-[var(--radius)] overflow-hidden';
@@ -31,21 +32,12 @@ const RANK_CLASSES = 'pr-rank-num text-[13px] font-bold text-center';
 const TEAM_CLASSES = 'flex items-center gap-[6px] min-w-0';
 const ABBR_CLASSES = 'pr-abbr text-[13px] font-bold';
 const STAT_CLASSES = 'pr-col-stat text-right text-[12px] [font-variant-numeric:tabular-nums]';
-const MVMT_CLASSES = 'pr-mvmt text-center text-[10px] font-bold [font-variant-numeric:tabular-nums]';
 const HOW_TOGGLE_CLASSES = 'pr-how-toggle flex justify-between items-center w-full bg-transparent border-0 py-3 px-3 cursor-pointer text-[color:var(--text)] text-[13px] font-semibold';
 const HOW_BODY_CLASSES = 'pr-how-body px-3 pb-3 flex flex-col gap-[10px]';
 const HOW_TEXT_CLASSES = 'pr-how-text text-[12px] text-[color:var(--text-muted)] leading-[1.55] m-0';
 const HOW_ITEM_CLASSES = 'pr-how-item p-[10px_12px] bg-[rgba(255,255,255,0.03)] rounded-[6px] border border-[var(--border)] flex flex-col gap-1';
 const HOW_WEIGHT_CLASSES = 'pr-how-weight text-[11px] font-bold text-[color:var(--green)]';
 
-function Movement({ rank, priorRank }) {
-  const diff = rankMovement(rank, priorRank);
-  if (diff == null) return <span className={MVMT_CLASSES} />;
-  if (diff === 0) return <span className={`${MVMT_CLASSES} text-[color:var(--text-dim)]`}>—</span>;
-  return diff > 0
-    ? <span className={`${MVMT_CLASSES} text-[color:var(--green)]`}>▲{diff}</span>
-    : <span className={`${MVMT_CLASSES} text-[color:var(--red-bright)]`}>▼{Math.abs(diff)}</span>;
-}
 
 const pct = v => (v != null ? `${(v * 100).toFixed(1)}%` : '—');
 
@@ -120,7 +112,7 @@ export default function HockeyTechPowerRankingsPanel({ league, data }) {
             <div key={r.teamId} className={`${ROW_CLASSES}${isMe ? ' pr-row--you font-semibold' : ''}`}
               style={isMe ? { borderLeft: `3px solid ${myColor}`, background: `color-mix(in srgb, ${myColor} 8%, var(--bg1))` } : undefined}>
               <span className={RANK_CLASSES}>{r.rank}</span>
-              <Movement rank={r.rank} priorRank={r.priorRank} />
+              <RankMovement rank={r.rank} priorRank={r.priorRank} />
               <span className={TEAM_CLASSES}>
                 <TeamLogo abbr={r.abbr} sport={league.key} size={16} />
                 <span className={ABBR_CLASSES} style={{ color: display(r.abbr)?.displayColor ?? 'var(--text)' }}>{r.abbr}</span>
