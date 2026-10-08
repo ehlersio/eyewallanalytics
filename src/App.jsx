@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import Topbar from './components/Topbar'
 import BottomNav from './components/BottomNav'
-import ShotMapView from './views/ShotMapView'
 import { PeriodSummaryProvider } from './utils/PeriodSummaryContext'
 import { SportProvider, useSport } from './utils/SportContext'
 import { AuthProvider } from './utils/AuthContext'
@@ -24,6 +23,10 @@ import TourHost from './components/TourHost';
 import { saveTourState } from './utils/tour';
 
 // Lazy-load all non-initial routes — reduces initial bundle by ~64 KiB
+// The NHL Shot Map is the / route, but lazy like every other view: eager,
+// it (and everything only it uses) sat in the entry chunk that every
+// league's first load downloads.
+const ShotMapView   = lazy(() => import('./views/ShotMapView'));
 const ScheduleView  = lazy(() => import('./views/ScheduleView'));
 const PlayersView   = lazy(() => import('./views/PlayersView'));
 const TeamView      = lazy(() => import('./views/TeamView'));

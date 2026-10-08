@@ -74,6 +74,8 @@ export default defineConfig(() => {
   test: {
     environment: 'node',
     globals: true,
+    // French is loaded on demand in the app; tests get it up front.
+    setupFiles: ['src/i18n/testSetup.js'],
     include: ['src/**/*.test.js', 'src/**/*.test.jsx'],
     coverage: {
       reporter: ['text', 'html'],
