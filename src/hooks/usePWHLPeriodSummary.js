@@ -74,24 +74,42 @@ function saveStoredGame(gameId, summary, key = GAME_SUMMARY_KEY) {
 
 // ── HockeyTech gameSummary fetch ──────────────────────────────
 // Returns { periods, mvps, homeTeamStats, visitingTeamStats } or null.
-// In-memory cached per gameId to avoid re-fetching within a session.
-const summaryCache = {};
+// A final's answer never changes, so it's kept for the session (one
+// request however many periods ask at once). A live game's is read again
+// for each period, its goals and stars still coming, as
+// useHockeyTechPeriodSummary does: it used to be kept for the whole
+// session from the first period's read, so later periods' goal details and
+// the score through them came from that first answer. The live read asks
+// the browser to revalidate (ETag) rather than reuse its copy.
+const finalSummaries = new Map(); // gameId -> Promise<data|null>
 
-async function fetchHTSummary(gameId) {
-  if (!gameId) return null;
-  if (summaryCache[gameId]) return summaryCache[gameId];
+async function readHTSummary(gameId, live) {
   if (!WORKER_URL) return null;
   try {
-    const res = await fetch(`${WORKER_URL}/pwhl/summary?gameId=${gameId}`);
+    const res = await fetch(`${WORKER_URL}/pwhl/summary?gameId=${gameId}`, live ? { cache: 'no-cache' } : undefined);
     if (!res.ok) return null;
     const data = await res.json();
-    if (data?.periods) {
-      summaryCache[gameId] = data;
-      return data;
-    }
-  } catch {}
-  return null;
+    return data?.periods ? data : null;
+  } catch {
+    return null;
+  }
 }
+
+export async function fetchHTSummary(gameId, { final = true } = {}) {
+  if (!gameId) return null;
+  const key = String(gameId);
+  if (!final) return readHTSummary(gameId, true);
+  if (!finalSummaries.has(key)) {
+    const p = readHTSummary(gameId, false);
+    finalSummaries.set(key, p);
+    // A failed read isn't kept: the next ask tries again.
+    p.then(data => { if (!data && finalSummaries.get(key) === p) finalSummaries.delete(key); });
+  }
+  return finalSummaries.get(key);
+}
+
+// For tests.
+export function clearPWHLSummaryCache() { finalSummaries.clear(); }
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -448,7 +466,6 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
 
   const lastProcessedPeriod = useRef(0);
   const buildingRef         = useRef(new Set());
-  const htSummaryRef        = useRef(null);
   const lastPeriodRef       = useRef(0);
   // The game on screen now -- see withSummary.
   const gameIdRef           = useRef(gameId);
@@ -467,16 +484,15 @@ export function usePWHLPeriodSummary({ liveData, pbpData, isLive, gameId, teamId
     }
     setNewSummary(null);
     buildingRef.current  = new Set();
-    htSummaryRef.current = null;
     lastPeriodRef.current = 0;
   }, [gameId, storageKey]);
 
-  const getHTSummary = useCallback(async () => {
-    if (htSummaryRef.current) return htSummaryRef.current;
-    const data = await fetchHTSummary(gameId);
-    if (sameGame(gameIdRef.current, gameId)) htSummaryRef.current = data;
-    return data;
-  }, [gameId]);
+  // Read again for every period of a live game (until it's final), once
+  // for a final.
+  const final = !isLive || liveData?.gameStatus === 'final';
+  const getHTSummary = useCallback(
+    () => fetchHTSummary(gameId, { final }),
+    [gameId, final]);
 
   const getEvents = useCallback(
     (htSummary = null) => pwhlSummaryEvents({ isLive, liveData, pbpData, teamId, gameId, htSummary }),
@@ -602,7 +618,7 @@ export function usePWHLGameSummary({ liveData, pbpData, isLive, gameId, teamId, 
     builtRef.current = true;
 
     (async () => {
-      const htSummary = await fetchHTSummary(gameId);
+      const htSummary = await fetchHTSummary(gameId, { final: true });
       const summary   = buildPWHLGameSummary(
         pwhlSummaryEvents({ isLive, liveData, pbpData, teamId, gameId, htSummary }), teamId, htSummary, gameId);
       setGameSummary(summary);

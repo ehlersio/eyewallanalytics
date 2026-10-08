@@ -8,7 +8,9 @@
 //   gp, points, record 'W-L-OTL', pts_pct, l10 'W-L-OTL' | null,
 //   l10_pts_pct, gd_pg, pp_pct, pk_pct, special_teams (fractions),
 //   ranks { pts_pct, l10_pts_pct, gd_pg, special_teams, ... } (1 = best)
-// A component the league doesn't have is null, never filled in.
+//   PWHL rows also carry cf_pct (Corsi for %, a fraction).
+// A component the league doesn't have is null, never filled in. The PWHL
+// League view's table reads the same rows (PWHLLeagueView).
 
 // The pipeline's fixed weights for AHL/ECHL (its WEIGHTS: the PWHL's 35/20/
 // 20/10 with Corsi's 15 dropped, scaled to 100). Shown in "How is this
@@ -56,6 +58,7 @@ export function hockeyTechRankedRows(latest, abbrOf) {
         l10PtsPct: num(c.l10_pts_pct),
         gdPG:      num(c.gd_pg) ?? 0,
         spPct:     num(c.special_teams),
+        cfPct:     num(c.cf_pct), // the PWHL's only (null for AHL/ECHL)
         leagueRanks: { pts: ranks.pts_pct ?? null, l10: ranks.l10_pts_pct ?? null, gd: ranks.gd_pg ?? null, sp: ranks.special_teams ?? null },
       };
     });

@@ -388,7 +388,10 @@
       "componentCFDesc": "Shot attempt share — proxy for possession",
       "componentSPDesc": "Average of PP% and PK%",
       "tableHeading": "Power Rankings",
-      "footerHint": "Composite of Pts%, L10, GD/GP, CF%, Special Teams · Updates with standings"
+      "footerHint": "Composite of Pts%, L10, GD/GP, CF%, Special Teams · Updates with standings",
+      "previewLabel": "Preview",
+      "previewNote": "Ranked here from this season's standings: the nightly ranking hasn't run for it (it starts once every team has 3 games). The table shows the nightly ranking when there is one.",
+      "nightlyFooter": "Nightly ranking: Pts%, L10, GD/GP, CF%, Special Teams · Movement since the run before"
     },
     "tabs": {
       "bracket": "Playoff Bracket",

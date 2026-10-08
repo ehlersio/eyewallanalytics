@@ -26,8 +26,9 @@ import { summarizeStandings, seasonsWithGames, fallbackSeason, teamHasGames } fr
 import { workerFetchInit } from '../utils/workerCache';
 import { pwhlPredictionStore } from '../utils/pwhlPredictionStore';
 import LocalPredictionScorecard from '../components/LocalPredictionScorecard';
-import RankNarrativeCard from '../components/RankNarrativeCard';
-import { rankHistory } from '../utils/hockeyTechPowerRankings';
+import RankNarrativeCard, { formatDay } from '../components/RankNarrativeCard';
+import RankMovement from '../components/RankMovement';
+import { rankHistory, hockeyTechRankedRows } from '../utils/hockeyTechPowerRankings';
 
 // Tailwind migration (Session 97, Phase 3, sub-PR 1) -- only the small
 // PlayersView.css-owned pieces this file actually uses (.players-tabs/.tab,
@@ -975,11 +976,14 @@ function LeadersPanel({ skaters, goalies, loading, season, seasonLabel }) {
 function PowerRankingsPanel({ season, standings, loading, myTeamId, myAbbr, myColor }) {
   const { t } = useTranslation();
   const [showHow, setShowHow] = useState(false);
-  // The followed team's EyeWall AI rankings narrative and rank trend, from
-  // the pipeline's nightly run for this season (contract C12). The table
-  // below is still ranked here, from today's standings; the card says
-  // which night it's from.
-  const { data: nightly } = useFetch(
+  // The pipeline's nightly ranking for this season (contract C12): every
+  // team's rank, its movement since the run before and its components, and
+  // the followed team's EyeWall AI narrative and rank trend. The table shows
+  // those rows, so it and the narrative never disagree. Until the first
+  // run (every team needs 3 GP), or when the route answers nothing, the
+  // table is ranked here from today's standings with the same weights,
+  // labelled "Preview".
+  const { data: nightly, loading: nightlyLoading } = useFetch(
     () => myTeamId ? fetchPWHLPowerRankings(myTeamId, season) : Promise.resolve(null),
     [myTeamId, season]
   );
@@ -1026,8 +1030,28 @@ function PowerRankingsPanel({ season, standings, loading, myTeamId, myAbbr, myCo
     })).sort((a,b)=>b.score-a.score).map((t,i)=>({...t, rank:i+1}));
   }, [standings]);
 
-  if (loading) return <LoadingRows />;
-  if (!ranked.length) return <div className="lv-empty">{t('pwhlLeagueView.rankings.emptyState')}</div>;
+  const nightlyRows = useMemo(() => hockeyTechRankedRows(nightly?.latest, teamAbbr), [nightly]);
+  const fromNightly = nightlyRows.length > 0;
+  const history = rankHistory(nightly?.history);
+  const asOf = history.at(-1)?.date || nightly?.narrative?.run_date || null;
+  // One shape for the table either way. Records: the nightly's W-L-OTL
+  // (OT/SO wins among the wins), the preview's W-OTW-OTL-L from standings.
+  const rows = fromNightly
+    ? nightlyRows.map(r => ({
+        team_id: r.teamId, abbr: r.abbr, rank: r.rank, priorRank: r.priorRank,
+        record: `${r.wins}–${r.losses}–${r.otLosses}`, ptsPct: r.ptsPct, gdPG: r.gdPG,
+        cf: r.cfPct != null ? r.cfPct * 100 : null,
+      }))
+    : ranked.map(r => ({
+        team_id: r.team_id, abbr: r.abbr, rank: r.rank, priorRank: null,
+        record: `${r.wins}–${r.otw}–${r.otl}–${r.losses}`, ptsPct: r.ptsPct, gdPG: r.gdPG,
+        cf: r.corsi_for_pct != null ? Number(r.corsi_for_pct) : null,
+      }));
+  const grid = fromNightly ? '32px 24px 1fr 64px 52px 52px 52px' : '32px 1fr 64px 56px 56px 56px';
+  const headers = fromNightly ? ['#', '', 'Team', 'Record', 'Pts%', 'GD/GP', 'CF%'] : ['#', 'Team', 'Record', 'Pts%', 'GD/GP', 'CF%'];
+
+  if (loading || (nightlyLoading && !nightly)) return <LoadingRows />;
+  if (!rows.length) return <div className="lv-empty">{t('pwhlLeagueView.rankings.emptyState')}</div>;
 
 
   return (
@@ -1036,7 +1060,7 @@ function PowerRankingsPanel({ season, standings, loading, myTeamId, myAbbr, myCo
       <RankNarrativeCard
         teamAbbr={myAbbr}
         narrative={nightly?.narrative?.text ? { text: nightly.narrative.text, date: nightly.narrative.run_date } : null}
-        history={rankHistory(nightly?.history)}
+        history={history}
         primaryColor={myColor}
       />
 
@@ -1071,30 +1095,41 @@ function PowerRankingsPanel({ season, standings, loading, myTeamId, myAbbr, myCo
       </div>
 
       {/* Rankings table */}
-      <div className="card" style={{ padding:0, overflow:'hidden' }}>
+      <div className={`card pwhl-rankings-table ${fromNightly ? 'pwhl-rankings-nightly' : 'pwhl-rankings-preview'}`} style={{ padding:0, overflow:'hidden' }}>
         <div style={{ padding:'8px 12px 6px', borderBottom:'0.5px solid var(--border)', background:'var(--bg2)' }}>
           <span style={{ fontSize:11, fontWeight:700, color:'var(--text-dim)', letterSpacing:'0.06em', textTransform:'uppercase' }}>
             {t('pwhlLeagueView.rankings.tableHeading')}
           </span>
+          {!fromNightly && (
+            <span className="pwhl-rankings-preview-label" style={{ marginLeft:8, fontSize:10, fontWeight:700, padding:'1px 6px',
+              borderRadius:6, background:'var(--bg3)', color:'var(--text-muted)', letterSpacing:'0.04em', textTransform:'uppercase' }}>
+              {t('pwhlLeagueView.rankings.previewLabel')}
+            </span>
+          )}
+          {!fromNightly && (
+            <p style={{ margin:'4px 0 0', fontSize:11, color:'var(--text-dim)', lineHeight:1.4 }}>
+              {t('pwhlLeagueView.rankings.previewNote')}
+            </p>
+          )}
         </div>
         {/* Header -- h stays the literal English key for alignment logic,
             only the rendered text is translated. */}
-        <div style={{ display:'grid', gridTemplateColumns:'32px 1fr 64px 56px 56px 56px', gap:6,
+        <div style={{ display:'grid', gridTemplateColumns:grid, gap:6,
           padding:'6px 12px', borderBottom:'0.5px solid var(--border)' }}>
-          {['#','Team','Record','Pts%','GD/GP','CF%'].map(h => (
-            <span key={h} style={{ fontSize:9, fontWeight:700, letterSpacing:'0.06em',
+          {headers.map((h, i) => (
+            <span key={`${h}-${i}`} style={{ fontSize:9, fontWeight:700, letterSpacing:'0.06em',
               textTransform:'uppercase', color:'var(--text-dim)',
-              textAlign: h==='#'||h==='Team' ? 'left' : 'right' }}>
+              textAlign: h==='#'||h==='Team'||h==='' ? 'left' : 'right' }}>
               {h === 'Team' ? t('league.rankings.colTeam') : h === 'Record' ? t('league.rankings.colRecord') : h}
             </span>
           ))}
         </div>
-        {ranked.map(team => {
+        {rows.map(team => {
           const isMe = team.team_id === myTeamId;
           const color = teamColor(team.abbr);
           return (
-            <div key={team.team_id} style={{
-              display:'grid', gridTemplateColumns:'32px 1fr 64px 56px 56px 56px',
+            <div key={team.team_id} className="pwhl-rankings-row" style={{
+              display:'grid', gridTemplateColumns:grid,
               gap:6, padding:'6px 12px', alignItems:'center',
               borderBottom:'0.5px solid rgba(255,255,255,0.03)',
               background: isMe ? `color-mix(in srgb, ${myColor} 8%, transparent)` : 'transparent',
@@ -1105,13 +1140,14 @@ function PowerRankingsPanel({ season, standings, loading, myTeamId, myAbbr, myCo
                 textAlign:'center' }}>
                 {team.rank}
               </span>
+              {fromNightly && <RankMovement rank={team.rank} priorRank={team.priorRank} />}
               <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                 <TeamLogo abbr={team.abbr} sport="pwhl" size={18} color={color} />
-                <span style={{ fontSize:13, fontWeight:700, color }}>{team.abbr}</span>
+                <span className="pwhl-rankings-abbr" style={{ fontSize:13, fontWeight:700, color }}>{team.abbr}</span>
               </div>
               <span style={{ fontSize:11, color:'var(--text-muted)', textAlign:'right',
                 fontVariantNumeric:'tabular-nums' }}>
-                {team.wins}–{team.otw}–{team.otl}–{team.losses}
+                {team.record}
               </span>
               <span style={{ fontSize:11, color:'var(--text-muted)', textAlign:'right' }}>
                 {(team.ptsPct*100).toFixed(1)}%
@@ -1122,15 +1158,20 @@ function PowerRankingsPanel({ season, standings, loading, myTeamId, myAbbr, myCo
                 {team.gdPG > 0 ? '+' : ''}{team.gdPG.toFixed(2)}
               </span>
               <span style={{ fontSize:11, color:'var(--text-muted)', textAlign:'right' }}>
-                {team.corsi_for_pct != null ? `${Number(team.corsi_for_pct).toFixed(1)}%` : '—'}
+                {team.cf != null ? `${team.cf.toFixed(1)}%` : '—'}
               </span>
             </div>
           );
         })}
         <div className={SST_HINT_CLASSES} style={{ padding:'6px 0 8px' }}>
-          {t('pwhlLeagueView.rankings.footerHint')}
+          {fromNightly ? t('pwhlLeagueView.rankings.nightlyFooter') : t('pwhlLeagueView.rankings.footerHint')}
         </div>
       </div>
+      {fromNightly && asOf && (
+        <span className="pwhl-rankings-as-of" style={{ fontSize:11, color:'var(--text-dim)', padding:'0 4px' }}>
+          {t('hockeyTechLeagueView.rankings.asOf', { date: formatDay(asOf) })}
+        </span>
+      )}
     </div>
   );
 }
