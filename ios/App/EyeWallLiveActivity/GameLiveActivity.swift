@@ -18,36 +18,123 @@ private let live = Color(hex: "#ff4422")
 
 struct GameLiveActivity: Widget {
     var body: some WidgetConfiguration {
-        ActivityConfiguration(for: GameActivityAttributes.self) { context in
-            LockScreenView(attrs: context.attributes, state: context.state)
-                .activityBackgroundTint(background)
-                .activitySystemActionForegroundColor(.white)
-        } dynamicIsland: { context in
-            let a = context.attributes, s = context.state
-            return DynamicIsland {
-                DynamicIslandExpandedRegion(.leading) {
-                    TeamScore(abbr: a.awayAbbr, color: a.awayColor, score: s.awayScore, followed: a.followAbbr == a.awayAbbr)
-                }
-                DynamicIslandExpandedRegion(.trailing) {
-                    TeamScore(abbr: a.homeAbbr, color: a.homeColor, score: s.homeScore, followed: a.followAbbr == a.homeAbbr)
-                }
-                DynamicIslandExpandedRegion(.center) {
-                    GameStatus(state: s)
-                }
-                DynamicIslandExpandedRegion(.bottom) {
-                    if let event = s.lastEvent {
-                        Text(event).font(.caption).foregroundStyle(muted).lineLimit(1)
-                    }
-                }
-            } compactLeading: {
-                Text("\(a.awayAbbr) \(s.awayScore)").font(.caption.weight(.bold)).foregroundStyle(Color(hex: a.awayColor))
-            } compactTrailing: {
-                Text("\(s.homeScore) \(a.homeAbbr)").font(.caption.weight(.bold)).foregroundStyle(Color(hex: a.homeColor))
-            } minimal: {
-                Text("\(s.awayScore)–\(s.homeScore)").font(.caption2.weight(.bold))
-            }
-            .keylineTint(live)
+        gameActivityConfiguration().smallFamilyWhereAvailable()
+    }
+}
+
+extension WidgetConfiguration {
+    // iOS 18+: also the small layout, which iOS 26 shows in CarPlay and
+    // Apple Watch's Smart Stack. Without it CarPlay falls back to the
+    // Dynamic Island's compact views -- just the abbreviations and the
+    // score. (WidgetBundleBuilder can't branch on #available; an opaque
+    // return can, SE-0360.)
+    func smallFamilyWhereAvailable() -> some WidgetConfiguration {
+        if #available(iOS 18.0, *) {
+            return supplementalActivityFamilies([.small])
+        } else {
+            return self
         }
+    }
+}
+
+private func gameActivityConfiguration() -> some WidgetConfiguration {
+    ActivityConfiguration(for: GameActivityAttributes.self) { context in
+        Group {
+            if #available(iOS 18.0, *) {
+                FamilyView(attrs: context.attributes, state: context.state)
+            } else {
+                LockScreenView(attrs: context.attributes, state: context.state)
+            }
+        }
+        .activityBackgroundTint(background)
+        .activitySystemActionForegroundColor(.white)
+    } dynamicIsland: { context in
+        let a = context.attributes, s = context.state
+        return DynamicIsland {
+            DynamicIslandExpandedRegion(.leading) {
+                TeamScore(abbr: a.awayAbbr, color: a.awayColor, score: s.awayScore, followed: a.followAbbr == a.awayAbbr)
+            }
+            DynamicIslandExpandedRegion(.trailing) {
+                TeamScore(abbr: a.homeAbbr, color: a.homeColor, score: s.homeScore, followed: a.followAbbr == a.homeAbbr)
+            }
+            DynamicIslandExpandedRegion(.center) {
+                GameStatus(state: s)
+            }
+            DynamicIslandExpandedRegion(.bottom) {
+                if let event = s.lastEvent {
+                    Text(event).font(.caption).foregroundStyle(muted).lineLimit(1)
+                }
+            }
+        } compactLeading: {
+            Text("\(a.awayAbbr) \(s.awayScore)").font(.caption.weight(.bold)).foregroundStyle(Color(hex: a.awayColor))
+        } compactTrailing: {
+            Text("\(s.homeScore) \(a.homeAbbr)").font(.caption.weight(.bold)).foregroundStyle(Color(hex: a.homeColor))
+        } minimal: {
+            Text("\(s.awayScore)–\(s.homeScore)").font(.caption2.weight(.bold))
+        }
+        .keylineTint(live)
+    }
+}
+
+// The Lock Screen, or the small layout where iOS asks for it.
+@available(iOS 18.0, *)
+private struct FamilyView: View {
+    @Environment(\.activityFamily) private var family
+    let attrs: GameActivityAttributes
+    let state: GameActivityAttributes.ContentState
+
+    var body: some View {
+        if family == .small {
+            SmallView(attrs: attrs, state: state)
+        } else {
+            LockScreenView(attrs: attrs, state: state)
+        }
+    }
+}
+
+// CarPlay / Smart Stack: glanceable, three short lines -- the score, where
+// the game is, and the power play or shots.
+private struct SmallView: View {
+    let attrs: GameActivityAttributes
+    let state: GameActivityAttributes.ContentState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 6) {
+                side(attrs.awayAbbr, attrs.awayColor, state.awayScore)
+                Text("–").foregroundStyle(muted)
+                side(attrs.homeAbbr, attrs.homeColor, state.homeScore)
+            }
+            .font(.system(.headline, design: .rounded).weight(.heavy))
+            .monospacedDigit()
+            HStack(spacing: 6) {
+                Text(statusText).font(.caption.weight(.bold)).foregroundStyle(.white)
+                if let strength = state.strength {
+                    Text(strength).font(.caption2.weight(.bold)).foregroundStyle(live)
+                }
+            }
+            .lineLimit(1)
+            if let away = state.awaySog, let home = state.homeSog {
+                Text("SOG \(away)–\(home)").font(.caption2.monospacedDigit()).foregroundStyle(muted)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+    }
+
+    private func side(_ abbr: String, _ color: String, _ score: Int) -> some View {
+        HStack(spacing: 4) {
+            Text(abbr).foregroundStyle(Color(hex: color))
+            Text("\(score)").foregroundStyle(.white)
+        }
+    }
+
+    private var statusText: String {
+        if state.status == "final" {
+            return state.periodLabel == "OT" || state.periodLabel == "SO" ? "FINAL/\(state.periodLabel)" : "FINAL"
+        }
+        if state.inIntermission { return "\(state.periodLabel) INT" }
+        return state.clock.isEmpty ? state.periodLabel : "\(state.periodLabel) · \(state.clock)"
     }
 }
 

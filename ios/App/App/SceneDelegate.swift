@@ -106,6 +106,8 @@ struct GameActivityAttributes: ActivityAttributes {
         var status: String
         var lastEvent: String?
         var strength: String?
+        var homeSog: Int?
+        var awaySog: Int?
     }
 
     var gameId: Int
