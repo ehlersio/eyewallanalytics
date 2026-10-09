@@ -11,7 +11,7 @@
 //     found on page load). Fetches the server value once and reconciles:
 //     first sign-in with no server row yet uploads the local pick; a
 //     server value that already exists and differs from local wins and
-//     overwrites local (then reloads, same as every other team-switch path
+//     overwrites local (then loads that league's home page, same as every other team-switch path
 //     in this app — see teamConfig.js/pwhlConfig.js's module-level
 //     constants, which only re-initialize on a full reload).
 //
@@ -24,35 +24,33 @@ import { ALL_TEAMS } from './teamConfig';
 import { PWHL_TEAM_MAP } from './pwhlConfig';
 import { AHL_TEAM_MAP } from './ahlConfig';
 import { ECHL_TEAM_MAP } from './echlConfig';
+import { TOUR_ROOTS } from './tour';
 
 const UPSERT_TIMEOUT_MS = 5000;
 const FETCH_TIMEOUT_MS = 5000;
 
-// { sport, abbr } of the team this device is set to, or null.
-export function getLocalSelection() {
-  const sport = localStorage.getItem('eyewall:sport') || 'nhl';
+// Each league's storage key for its picked team (TeamPicker.jsx writes them).
+const TEAM_KEYS = { nhl: 'eyewall:team', pwhl: 'eyewall:pwhl_team', ahl: 'eyewall:ahl_team', echl: 'eyewall:echl_team' };
+
+// { sport, abbr } of the team this device has picked in one league, or
+// null. Every league keeps its own pick, so this can be set for a league
+// that isn't the primary's -- the team that league's pages run as.
+export function getLocalSelectionFor(sport) {
+  const key = TEAM_KEYS[sport];
+  if (!key) return null;
   try {
-    if (sport === 'pwhl') {
-      const raw = localStorage.getItem('eyewall:pwhl_team');
-      const team = raw ? JSON.parse(raw) : null;
-      return team?.abbr ? { sport: 'pwhl', abbr: team.abbr } : null;
-    }
-    if (sport === 'ahl') {
-      const raw = localStorage.getItem('eyewall:ahl_team');
-      const team = raw ? JSON.parse(raw) : null;
-      return team?.abbr ? { sport: 'ahl', abbr: team.abbr } : null;
-    }
-    if (sport === 'echl') {
-      const raw = localStorage.getItem('eyewall:echl_team');
-      const team = raw ? JSON.parse(raw) : null;
-      return team?.abbr ? { sport: 'echl', abbr: team.abbr } : null;
-    }
-    const raw = localStorage.getItem('eyewall:team');
+    const raw = localStorage.getItem(key);
     const team = raw ? JSON.parse(raw) : null;
-    return team?.abbr ? { sport: 'nhl', abbr: team.abbr } : null;
+    return team?.abbr ? { sport, abbr: team.abbr } : null;
   } catch {
     return null;
   }
+}
+
+// { sport, abbr } of the team this device is set to, or null.
+export function getLocalSelection() {
+  const sport = localStorage.getItem('eyewall:sport');
+  return getLocalSelectionFor(TEAM_KEYS[sport] ? sport : 'nhl');
 }
 
 // Mirrors TeamPicker.jsx's own write pattern exactly, so a server-wins
@@ -140,7 +138,11 @@ export async function syncFavoriteTeamOnSignIn(userId) {
       && local.sport === serverSelection.sport
       && local.abbr === serverSelection.abbr;
     if (!matchesLocal && applyLocalSelection(serverSelection)) {
-      window.location.reload();
+      // To that league's home page, not a reload of this one: the page
+      // under way may be another league's (the sport comes from the route,
+      // SportContext.jsx), and reloading it would show that league's pages
+      // under the restored team.
+      window.location.href = TOUR_ROOTS[serverSelection.sport] || '/';
     }
     return;
   }

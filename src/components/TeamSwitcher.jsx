@@ -21,7 +21,8 @@ import { getTodaysGames } from '../utils/nhlApi';
 import { getTeamByAbbr } from '../utils/teamConfig';
 import { teamRowHref } from '../utils/scoreboard';
 import { useAuth } from '../utils/AuthContext';
-import { getLocalSelection } from '../utils/favoriteTeamSync';
+import { useSport } from '../utils/SportContext';
+import { getLocalSelection, getLocalSelectionFor } from '../utils/favoriteTeamSync';
 import { FOLLOWED_CHANGED_EVENT, getFollowedTeams, LEAGUES, sameTeam, switchPrimaryTeam, teamFor } from '../utils/followedTeams';
 import { LeagueTeamLogo } from './SettingsTeams';
 import { OPEN_SETTINGS_EVENT } from './SettingsMenu';
@@ -43,7 +44,14 @@ export default function TeamSwitcher() {
   const [followed, setFollowed] = useState(getFollowedTeams);
   const [switching, setSwitching] = useState(null);
   const { open, anchor, openSheet, closeSheet } = useSheet('teams', triggerRef);
-  const primary = getLocalSelection();
+  // The team whose pages are on screen. The league comes from the route
+  // (SportContext.jsx), which can be another league than the primary's --
+  // a tapped notification, a link -- and that league's pages then run as
+  // its own pick, so show that, not the primary (2026-10-09: an AHL team's
+  // pages under the PWHL primary's logo).
+  const { sport } = useSport();
+  const stored = getLocalSelection();
+  const primary = stored?.sport === sport ? stored : (getLocalSelectionFor(sport) || stored);
   // Today's NHL games, fetched on open, for "Watch live".
   const [todaysGames, setTodaysGames] = useState(null);
   const canWatch = primary?.sport === 'nhl'

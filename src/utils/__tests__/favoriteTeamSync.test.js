@@ -14,7 +14,7 @@ vi.mock('../supabaseAuth', () => ({
 }));
 
 import { supabaseAuth } from '../supabaseAuth';
-import { upsertFavoriteTeam, syncFavoriteTeamOnSignIn, applyLocalSelection } from '../favoriteTeamSync.js';
+import { upsertFavoriteTeam, syncFavoriteTeamOnSignIn, applyLocalSelection, getLocalSelection, getLocalSelectionFor } from '../favoriteTeamSync.js';
 
 // Real abbrs from teamConfig.js/pwhlConfig.js — the module looks these up
 // for real (applyLocalSelection), so fabricated abbrs would silently no-op.
@@ -70,7 +70,7 @@ describe('syncFavoriteTeamOnSignIn', () => {
     expect(supabaseAuth.from).toHaveBeenCalledTimes(1); // only the fetch, no upsert
   });
 
-  it('server wins on a second device — applies the server value locally and reloads once', async () => {
+  it('server wins on a second device — applies the server value locally and opens its league', async () => {
     // Local (this "device") has TOR/pwhl; server already has CAR/nhl from
     // another device — the documented Phase 0/1 merge decision.
     localStorage.setItem('eyewall:sport', 'pwhl');
@@ -83,7 +83,24 @@ describe('syncFavoriteTeamOnSignIn', () => {
 
     expect(localStorage.getItem('eyewall:sport')).toBe('nhl');
     expect(JSON.parse(localStorage.getItem('eyewall:team')).abbr).toBe(NHL_ABBR);
-    expect(window.location.reload).toHaveBeenCalledTimes(1);
+    expect(window.location.href).toBe('/');
+  });
+
+  it('restores an AHL team on its own pages, not under the league being viewed (2026-10-09)', async () => {
+    // A primary switch the account never saved: the device moved to the
+    // AHL, the server still has the PWHL. Reloading the AHL page under way
+    // showed the AHL team's pages with the PWHL team's logo.
+    localStorage.setItem('eyewall:sport', 'ahl');
+    localStorage.setItem('eyewall:ahl_team', JSON.stringify({ abbr: 'CHI' }));
+    supabaseAuth.from.mockImplementationOnce(() =>
+      makeQueryBuilder({ data: { favorite_team: PWHL_ABBR, favorite_sport: 'pwhl' }, error: null })
+    );
+
+    await syncFavoriteTeamOnSignIn('user-a');
+
+    expect(localStorage.getItem('eyewall:sport')).toBe('pwhl');
+    expect(window.location.href).toBe('/pwhl/shots');
+    expect(window.location.reload).not.toHaveBeenCalled();
   });
 
   it('first sign-in, no server value yet — uploads the local pick, no reload', async () => {
@@ -161,5 +178,17 @@ describe('restored team matches a TeamPicker pick', () => {
   it('ignores an abbr the league does not have', async () => {
     expect(applyLocalSelection({ sport: 'ahl', abbr: 'NOPE' })).toBe(false);
     expect(localStorage.getItem('eyewall:ahl_team')).toBeNull();
+  });
+});
+
+describe('getLocalSelectionFor', () => {
+  it("reads each league's own pick, whatever the primary is", () => {
+    localStorage.setItem('eyewall:sport', 'pwhl');
+    localStorage.setItem('eyewall:pwhl_team', JSON.stringify({ abbr: 'MTL' }));
+    localStorage.setItem('eyewall:ahl_team', JSON.stringify({ abbr: 'CHI' }));
+    expect(getLocalSelection()).toEqual({ sport: 'pwhl', abbr: 'MTL' });
+    expect(getLocalSelectionFor('ahl')).toEqual({ sport: 'ahl', abbr: 'CHI' });
+    expect(getLocalSelectionFor('echl')).toBeNull();
+    expect(getLocalSelectionFor('mlb')).toBeNull();
   });
 });
