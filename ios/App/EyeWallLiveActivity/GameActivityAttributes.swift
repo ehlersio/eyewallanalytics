@@ -26,6 +26,9 @@ struct GameActivityAttributes: ActivityAttributes {
         var lastEvent: String?
         /// "CAR PP", "FLA PP 5v3", "EN" -- nil at even strength
         var strength: String?
+        /// Shots on goal; nil from a poller that doesn't send them yet
+        var homeSog: Int?
+        var awaySog: Int?
     }
 
     var gameId: Int
