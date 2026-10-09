@@ -164,6 +164,24 @@ describe('Top-bar team switcher', () => {
     cy.contains('.team-switcher-row', 'Minnesota Frost').should('contain', 'Current')
   })
 
+  // 2026-10-09: an AHL team's pages showed the PWHL primary's logo.
+  it('shows the team whose pages are on screen, not a primary from another league', () => {
+    cy.visit('/ahl/shots', {
+      onBeforeLoad: win => {
+        win.localStorage.setItem('eyewall:sport', 'pwhl')
+        win.localStorage.setItem('eyewall:pwhl_team', JSON.stringify({ abbr: 'MIN' }))
+        win.localStorage.setItem('eyewall:ahl_team', JSON.stringify({ abbr: 'CHI' }))
+        win.localStorage.setItem('eyewall:followed', JSON.stringify([
+          { sport: 'pwhl', abbr: 'MIN' }, { sport: 'ahl', abbr: 'CHI' },
+        ]))
+      },
+    })
+    cy.get('button.team-switcher').should('have.attr', 'aria-label').and('contain', 'Chicago Wolves')
+    cy.get('button.team-switcher').click()
+    cy.contains('.team-switcher-row', 'Chicago Wolves').should('contain', 'Current')
+    cy.contains('button.team-switcher-row', 'Minnesota Frost').should('exist')
+  })
+
   it('Manage teams opens Settings on Your teams', () => {
     cy.setTeam('CAR')
     cy.visit('/', { onBeforeLoad: followTwo })
