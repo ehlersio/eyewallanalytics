@@ -201,6 +201,8 @@ export default function SettingsMenu() {
   const alertLeague = (alertTeam?.sport || 'nhl').toUpperCase();
   const alertTeamName = (alertTeam && teamFor(alertTeam)?.displayName) || activeTeamName;
   const manyTeams = followed.length > 1;
+  // Every followed team's games start one (useLiveActivity.js), any league.
+  const followGamesLabel = manyTeams ? t('settings.followTeamsGames') : t('settings.followTeamGames', { team: activeTeamAbbr });
 
   const handleToggle = async () => {
     if (subscribed) {
@@ -282,7 +284,7 @@ export default function SettingsMenu() {
             <div className={ROW_CLASSES}>
               <span className={ICON_CLASSES} aria-hidden="true">🔒</span>
               <span className={ROW_TEXT_CLASSES}>
-                <span className={ROW_TITLE_CLASSES}>{t('settings.followTeamGames', { team: TEAM_CONFIG.abbr })}</span>
+                <span className={ROW_TITLE_CLASSES}>{followGamesLabel}</span>
                 <span className={ROW_SUB_CLASSES}>{t('settings.followTeamGamesDesc')}</span>
               </span>
               <Switch
@@ -290,7 +292,7 @@ export default function SettingsMenu() {
                 on={autoFollow}
                 onToggle={handleAutoFollowToggle}
                 disabled={autoFollowBusy}
-                label={t('settings.followTeamGames', { team: TEAM_CONFIG.abbr })}
+                label={followGamesLabel}
               />
             </div>
           )}

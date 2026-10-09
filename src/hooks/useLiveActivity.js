@@ -1,8 +1,10 @@
 /**
- * Lock Screen Live Activities for the favorite team's NHL games (iOS app).
+ * Lock Screen Live Activities for the followed teams' games, every league
+ * (iOS app). They also show in CarPlay and Apple Watch's Smart Stack.
  *
  * "Follow my team's games" (Settings) is the one control. With it on:
- *   - eyewall-poller STARTS the activity when the team's game goes live,
+ *   - eyewall-poller STARTS the activity when any followed team's game goes
+ *     live (2026-10: every followed team, any league, not just the primary),
  *     whether or not the app is open (ActivityKit push-to-start, iOS 17.2+).
  *     The native LiveActivityRegistrar (ios/App/App/SceneDelegate.swift)
  *     registers the start token and every activity's update token with the
@@ -16,9 +18,9 @@
  */
 import { useEffect } from 'react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
-import { getTeamByAbbr, TEAM_CONFIG } from '../utils/teamConfig';
-import { getSport } from '../utils/SportContext';
+import { getTeamByAbbr } from '../utils/teamConfig';
 import { getLocale } from '../utils/localeConfig';
+import { getFollowedTeams } from '../utils/followedTeams';
 
 const LiveGame = registerPlugin('LiveGame');
 const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
@@ -34,10 +36,10 @@ function periodLabel(pd, gameType) {
   return n === 4 ? 'OT' : `${n - 3}OT`;
 }
 
-// The setting only exists for an NHL favorite in the iOS app on 17.2+ with
-// Live Activities allowed -- anywhere else the Settings row isn't shown.
+// The setting only exists in the iOS app on 17.2+ with Live Activities
+// allowed -- anywhere else the Settings row isn't shown. Any league.
 export async function autoFollowSupported() {
-  if (!Capacitor.isNativePlatform() || getSport() !== 'nhl') return false;
+  if (!Capacitor.isNativePlatform()) return false;
   try {
     return (await LiveGame.autoFollowSupported()).supported === true;
   } catch {
@@ -53,16 +55,27 @@ export async function getAutoFollow() {
   }
 }
 
+// Every followed team, as eyewall-poller's /live-activity/start-token
+// takes them: "nhl:CAR", "ahl:CHI". `team` is for a poller from before
+// `teams`, which took NHL teams only.
+export const autoFollowTeams = (followed = getFollowedTeams()) =>
+  followed.map(t => `${t.sport}:${t.abbr}`);
+
 export async function setAutoFollow(enabled) {
+  const followed = getFollowedTeams();
   await LiveGame.setAutoFollow({
-    enabled, team: TEAM_CONFIG.abbr, locale: getLocale(), workerUrl: WORKER_URL,
+    enabled,
+    teams: autoFollowTeams(followed),
+    team: followed.find(t => t.sport === 'nhl')?.abbr || '',
+    locale: getLocale(),
+    workerUrl: WORKER_URL,
   });
   window.dispatchEvent(new window.CustomEvent(AUTO_FOLLOW_EVENT, { detail: enabled }));
 }
 
-// On every launch (and a language change): re-sends the current favorite
-// team and language with the setting, so the poller's registration follows
-// a team switch or a language toggle.
+// On every launch, a language change and a change to the followed teams:
+// re-sends the teams and language with the setting, so the poller's
+// registration follows them.
 export async function syncAutoFollow() {
   if (!(await autoFollowSupported())) return;
   const enabled = await getAutoFollow();

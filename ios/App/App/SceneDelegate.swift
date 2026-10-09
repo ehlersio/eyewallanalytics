@@ -116,6 +116,7 @@ struct GameActivityAttributes: ActivityAttributes {
     var homeColor: String
     var awayColor: String
     var followAbbr: String
+    var league: String?
 }
 
 // Reports Live Activity push tokens to eyewall-poller, natively.
@@ -124,9 +125,9 @@ struct GameActivityAttributes: ActivityAttributes {
 //   - each activity's update token -> POST /live-activity/register, so the
 //     poller can keep it current and end it at the final;
 //   - with "Follow my team's games" on (iOS 17.2+), the app's push-to-start
-//     token for the user's team -> POST /live-activity/start-token, so the
-//     poller can START an activity when that team's game goes live, whether
-//     or not the app is open.
+//     token for every followed team, any league -> POST
+//     /live-activity/start-token, so the poller can START an activity when
+//     one of their games goes live, whether or not the app is open.
 //
 // Native, not JS: a server-started activity is the reason iOS wakes the app
 // in the background, briefly, for exactly this -- the web view may never
@@ -139,7 +140,8 @@ final class LiveActivityRegistrar {
     private let defaults = UserDefaults.standard
     private enum Key {
         static let enabled = "la.autoFollow.enabled"
-        static let team = "la.autoFollow.team"
+        static let team = "la.autoFollow.team"      // NHL abbr, for a poller without `teams`
+        static let teams = "la.autoFollow.teams"    // ["nhl:CAR", "ahl:CHI", ...]
         static let locale = "la.autoFollow.locale"
         static let workerURL = "la.workerURL"
         static let startToken = "la.autoFollow.startToken"
@@ -151,6 +153,7 @@ final class LiveActivityRegistrar {
 
     var autoFollowEnabled: Bool { defaults.bool(forKey: Key.enabled) }
     var autoFollowTeam: String? { defaults.string(forKey: Key.team) }
+    var autoFollowTeams: [String] { defaults.stringArray(forKey: Key.teams) ?? [] }
 
     func start() {
         for activity in Activity<GameActivityAttributes>.activities { watch(activity) }
@@ -164,10 +167,11 @@ final class LiveActivityRegistrar {
     }
 
     // Saved for background launches, which have no JS to ask.
-    func configure(enabled: Bool, team: String, locale: String, workerURL: String) {
+    func configure(enabled: Bool, team: String, teams: [String], locale: String, workerURL: String) {
         let wasEnabled = autoFollowEnabled
         defaults.set(enabled, forKey: Key.enabled)
         defaults.set(team, forKey: Key.team)
+        defaults.set(teams, forKey: Key.teams)
         defaults.set(locale, forKey: Key.locale)
         defaults.set(workerURL, forKey: Key.workerURL)
         if enabled {
@@ -185,7 +189,11 @@ final class LiveActivityRegistrar {
         guard isNew else { return }
         Task {
             for await data in activity.pushTokenUpdates {
-                self.post("/live-activity/register", ["gameId": activity.attributes.gameId, "token": Self.hex(data)])
+                self.post("/live-activity/register", [
+                    "gameId": activity.attributes.gameId,
+                    "league": activity.attributes.league ?? "nhl",
+                    "token": Self.hex(data),
+                ])
             }
         }
     }
@@ -193,7 +201,10 @@ final class LiveActivityRegistrar {
     // The app may have started a game's activity itself (the user was in
     // the app at puck drop) and the poller started one too. Keep the first.
     private func dropDuplicate(of activity: Activity<GameActivityAttributes>) async {
-        let same = Activity<GameActivityAttributes>.activities.filter { $0.attributes.gameId == activity.attributes.gameId }
+        let same = Activity<GameActivityAttributes>.activities.filter {
+            $0.attributes.gameId == activity.attributes.gameId
+                && ($0.attributes.league ?? "nhl") == (activity.attributes.league ?? "nhl")
+        }
         if same.count > 1, same.first?.id != activity.id {
             await activity.end(nil, dismissalPolicy: .immediate)
         }
@@ -217,6 +228,7 @@ final class LiveActivityRegistrar {
         post("/live-activity/start-token", [
             "token": token,
             "team": autoFollowTeam ?? "",
+            "teams": autoFollowTeams,
             "enabled": enabled,
             "locale": defaults.string(forKey: Key.locale) ?? "en",
         ])
@@ -288,8 +300,11 @@ public class LiveGamePlugin: CAPPlugin, CAPBridgedPlugin {
             return call.reject("team and workerUrl are required")
         }
         let enabled = call.getBool("enabled") ?? false
+        // `teams` from a web build that has it ("nhl:CAR", "ahl:CHI"), else
+        // just the NHL team.
+        let teams = (call.getArray("teams") as? [String]) ?? (team.isEmpty ? [] : ["nhl:\(team)"])
         LiveActivityRegistrar.shared.configure(
-            enabled: enabled, team: team, locale: call.getString("locale") ?? "en", workerURL: workerURL
+            enabled: enabled, team: team, teams: teams, locale: call.getString("locale") ?? "en", workerURL: workerURL
         )
         if !enabled {
             // Turning it off ends what it started.
@@ -302,7 +317,10 @@ public class LiveGamePlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func activeGameIds(_ call: CAPPluginCall) {
         if #available(iOS 16.2, *) {
-            call.resolve(["gameIds": Activity<GameActivityAttributes>.activities.map { $0.attributes.gameId }])
+            // The NHL's (useLiveActivity.js starts only NHL games itself).
+            call.resolve(["gameIds": Activity<GameActivityAttributes>.activities
+                .filter { ($0.attributes.league ?? "nhl") == "nhl" }
+                .map { $0.attributes.gameId }])
         } else {
             call.resolve(["gameIds": []])
         }
@@ -316,7 +334,9 @@ public class LiveGamePlugin: CAPPlugin, CAPBridgedPlugin {
             return call.reject("gameId, homeAbbr, awayAbbr and state are required")
         }
         // One activity per game: re-following reuses it.
-        if let existing = Activity<GameActivityAttributes>.activities.first(where: { $0.attributes.gameId == gameId }) {
+        if let existing = Activity<GameActivityAttributes>.activities.first(where: {
+            $0.attributes.gameId == gameId && ($0.attributes.league ?? "nhl") == "nhl"
+        }) {
             LiveActivityRegistrar.shared.watch(existing)
             return call.resolve(["id": existing.id])
         }
@@ -324,7 +344,8 @@ public class LiveGamePlugin: CAPPlugin, CAPBridgedPlugin {
             gameId: gameId, homeAbbr: home, awayAbbr: away,
             homeColor: call.getString("homeColor") ?? "#e4e8f0",
             awayColor: call.getString("awayColor") ?? "#e4e8f0",
-            followAbbr: call.getString("followAbbr") ?? home
+            followAbbr: call.getString("followAbbr") ?? home,
+            league: "nhl"
         )
         let state = GameActivityAttributes.ContentState(
             homeScore: s["homeScore"] as? Int ?? 0,

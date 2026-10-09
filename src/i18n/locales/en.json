@@ -76,7 +76,8 @@
       "periodEndSub": "Tap it to open that period’s summary"
     },
     "followTeamGames": "Follow {{team}} games",
-    "followTeamGamesDesc": "The live score appears on your Lock Screen at puck drop, even when the app is closed.",
+    "followTeamsGames": "Follow your teams' games",
+    "followTeamGamesDesc": "The live score appears on your Lock Screen and in CarPlay at puck drop, even when the app is closed.",
     "alerts": "Alerts",
     "notifications": "Notifications",
     "notificationsSub": "{{team}} game alerts on this device",

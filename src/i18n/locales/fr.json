@@ -76,7 +76,8 @@
       "periodEndSub": "Touchez-la pour ouvrir le résumé de la période"
     },
     "followTeamGames": "Suivre les matchs de {{team}}",
-    "followTeamGamesDesc": "Le pointage en direct s'affiche sur votre écran verrouillé dès la mise au jeu, même quand l'app est fermée.",
+    "followTeamsGames": "Suivre les matchs de vos équipes",
+    "followTeamGamesDesc": "Le pointage en direct s'affiche sur votre écran verrouillé et dans CarPlay dès la mise au jeu, même quand l'app est fermée.",
     "alerts": "Alertes",
     "notifications": "Notifications",
     "notificationsSub": "Alertes des matchs de {{team}} sur cet appareil",
