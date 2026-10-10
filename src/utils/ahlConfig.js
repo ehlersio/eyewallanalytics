@@ -14,16 +14,14 @@
 //   shortName     — common short name / nickname
 //   primaryColor / displayColor
 //
-// AHL_PLACEHOLDER_COLOR is now used for exactly ONE team (Ontario Reign,
-// see below) rather than all 32 -- real per-team brand colors landed for
-// the other 31 in a follow-up pass. Sourced from each team's Wikipedia
+// Real per-team brand colors for all 32 teams (31 in a dedicated pass, plus
+// Ontario's interim silver below). Sourced from each team's Wikipedia
 // infobox "colours" field (first-listed = primary, per that template's own
 // convention), cross-checked against the raw wikitext for ambiguous
 // orderings. displayColor is lightened in HSL space (hue/saturation
 // preserved) where primaryColor fails WCAG AA on #101827 -- same method
 // PWHL's config uses, see that file's comment.
-const AHL_PLACEHOLDER_COLOR = '#6B7280'; // neutral slate, passes WCAG AA on #101827 (7.1:1)
-
+//
 // Five teams' Wikipedia-listed "primary" was a generic near-black/near-gray
 // infobox default carrying no real per-team signal -- Providence, Grand
 // Rapids, and San Diego all resolved to the *literal identical* #231F20,
@@ -35,12 +33,13 @@ const AHL_PLACEHOLDER_COLOR = '#6B7280'; // neutral slate, passes WCAG AA on #10
 // their own site's CSS): PRO #FBB337 (gold), LV #F58220 (orange), WBS
 // #FEC23D (gold), GR #E51636 (red), SD #FF4C00 (orange).
 //
-// Ontario Reign is the one team still on AHL_PLACEHOLDER_COLOR: their
-// "Inland Blue"/"Empire Gold" rebrand (announced June 2026) has no
-// published hex or Pantone spec anywhere checked (official press release,
-// Mayor's Manor, teamcolorcodes.com still shows the pre-rebrand
-// black/silver scheme) -- flagged as a real follow-up once ONT's new
-// branding is actually documented somewhere, not guessed at now.
+// Ontario Reign uses its pre-rebrand silver #A4A9AD (teamcolorcodes.com) as
+// an interim color: their "Inland Blue"/"Empire Gold" rebrand (announced
+// June 2026) has no published hex or Pantone spec anywhere checked, and
+// HockeyTech (assets.leaguestat.com/ahl/logos/403.png) still serves the old
+// black/silver logo the app shows, so the old palette matches what users
+// see. Switch to the new palette once its hex values are published AND
+// HockeyTech serves the new logo -- not guessed at before then.
 //
 // Contrast notes (WCAG AA on #101827, computed not eyeballed):
 //   HFD #00548E (2.25:1) -> #0084E0 (4.55:1)     HER #472A2B (1.38:1) -> #AC7374 (4.62:1)
@@ -58,7 +57,7 @@ const AHL_PLACEHOLDER_COLOR = '#6B7280'; // neutral slate, passes WCAG AA on #10
 //   CGY #CE0E2D (3.15:1) -> #F13755 (4.58:1)     CV  #001425 (1.05:1) -> #0082F1 (4.62:1)
 //   PRO #FBB337 (9.82:1) passes unchanged        LV  #F58220 (6.85:1) passes unchanged
 //   WBS #FEC23D (11.0:1) passes unchanged        SD  #FF4C00 (5.32:1) passes unchanged
-//   HSK #C3C7C9 (10.4:1) passes unchanged
+//   HSK #C3C7C9 (10.4:1) passes unchanged       ONT #A4A9AD (7.49:1) passes unchanged
 
 import { fetchSeasonsConfig, fetchLeagueSeasons } from './seasonClient';
 import { seasonsFromWorker, reverseSeasonMap } from './hockeyTechSeasons';
@@ -183,7 +182,7 @@ export const AHL_TEAMS = [
   { abbr: 'IA', teamId: 389, division: 'Central', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Iowa Wild', shortName: 'Wild', primaryColor: '#004F30', displayColor: '#00965B' },
   // ── Pacific ───────────────────────────────────────────────────────────────
   { abbr: 'BAK', teamId: 402, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Bakersfield Condors', shortName: 'Condors', primaryColor: '#00205B', displayColor: '#327AFF' },
-  { abbr: 'ONT', teamId: 403, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Ontario Reign', shortName: 'Reign', primaryColor: AHL_PLACEHOLDER_COLOR, displayColor: AHL_PLACEHOLDER_COLOR },
+  { abbr: 'ONT', teamId: 403, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Ontario Reign', shortName: 'Reign', primaryColor: '#A4A9AD', displayColor: '#A4A9AD' },
   { abbr: 'SD', teamId: 404, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'San Diego Gulls', shortName: 'Gulls', primaryColor: '#FF4C00', displayColor: '#FF4C00' },
   { abbr: 'SJ', teamId: 405, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'San Jose Barracuda', shortName: 'Barracuda', primaryColor: '#216B74', displayColor: '#2C909C' },
   { abbr: 'TUC', teamId: 412, division: 'Pacific', get season() { return AHL_CURRENT_SEASON; }, displayName: 'Tucson Roadrunners', shortName: 'Roadrunners', primaryColor: '#6F263D', displayColor: '#C96081' },

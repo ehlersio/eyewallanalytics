@@ -338,10 +338,9 @@ function PWHLTeamStep({ onBack, onSelect }) {
 // ── AHL team grid ─────────────────────────────────────────────────────────────
 // Uses AHL's own hosted team-logo CDN (ahlLogoUrl) rather than TeamLogo's
 // abbr-keyed local-asset lookup -- TeamLogo has no AHL branch (see that
-// component's own scope note) and adding 32 local logo files/mappings for
-// a placeholder-color pass isn't warranted yet (see ahlConfig.js's
-// AHL_PLACEHOLDER_COLOR comment) -- a plain <img> against the real logo
-// URL is simpler and already what theahl.com's own site does.
+// component's own scope note) and adding 32 local logo files/mappings
+// isn't warranted -- a plain <img> against the real logo URL is simpler
+// and already what theahl.com's own site does.
 function AHLTeamStep({ onBack, onSelect }) {
   const { t } = useTranslation();
   const [hovered, setHovered] = useState(null);
