@@ -14,14 +14,50 @@
 //   shortName     — common short name / nickname
 //   primaryColor / displayColor
 //
-// Foundation-pass scope (user's explicit choice): real per-team brand
-// colors are NOT researched here -- every team uses one shared neutral
-// placeholder, same convention AHL's own config still uses for its one
-// remaining un-researched team (Ontario Reign, see that file's comment).
-// "Real per-team ECHL colors" is an explicit follow-up, matching AHL's
-// own two-pass history (colors landed as a dedicated pass well after
-// AHL's initial display shipped, not as part of it).
-const ECHL_PLACEHOLDER_COLOR = '#6B7280'; // neutral slate, passes WCAG AA on #101827 (7.1:1)
+// Real per-team brand colors, same method as ahlConfig.js (see that file's
+// comment). primaryColor is the first-listed color in each team's
+// Wikipedia infobox "colours" field (first-listed = primary, per that
+// template's own convention), cross-checked against the raw wikitext.
+// displayColor is primaryColor lightened in HSL space (hue/saturation
+// preserved, smallest lightness step that clears 4.5:1) where it fails
+// WCAG AA on #101827, otherwise identical. All 32 teams (30 current + 2
+// historical) have a sourced color, so there is no placeholder left.
+//
+// Five teams use a different source, preferring the team's own site CSS
+// (its `--color-brand-*` theme variables) over teamcolorcodes.com:
+//   - Wikipedia lists plain black first (#000000, or IA's #231F20 -- the
+//     template's own default swatch for the bare word "black"), which
+//     carries no per-team signal and doesn't work as a UI accent anyway,
+//     so these use the team's real accent color instead:
+//       SAV #57BA47 (green, ghostpirateshockey.com --color-brand-primary)
+//       WHL #FCB514 (gold, wheelingnailers.com --color-brand-primary)
+//       KC  #F15F22 (orange, kcmavericks.com --color-brand-primary)
+//       IA  #FFD103 (yellow, iowaheartlanders.com --color-brand-secondary;
+//           its brand-primary is the same #231F20 black)
+//   - FLA: Wikipedia names "Kelly Green" first but gives no hex;
+//       #00703C is floridaeverblades.com's --color-brand-primary, and
+//       teamcolorcodes.com lists the same green.
+// TR's first-listed "metal grey" (#D0D2CE) is a real team color, not a
+// template default, so it stays -- same call as AHL's HSK silver.
+//
+// Contrast notes (WCAG AA on #101827, computed not eyeballed):
+//   ADK #CE0E2D (3.15:1) -> #F13352 (4.51:1)  GSO #462969 (1.51:1) -> #966EC6 (4.52:1)
+//   MNE #00354F (1.37:1) -> #0088CA (4.55:1)  NOR #001E69 (1.18:1) -> #4278FF (4.54:1)
+//   REA #5C3896 (2.08:1) -> #916FC9 (4.50:1)  WOR #002856 (1.22:1) -> #0A7CFF (4.52:1)
+//   ATL #612022 (1.47:1) -> #CA5F62 (4.50:1)  FLA #00703C (2.86:1) -> #00944F (4.53:1)
+//   GVL #011E41 (1.07:1) -> #147DFB (4.53:1)  JAX #223D79 (1.70:1) -> #597ED0 (4.50:1)
+//   ORL #522E91 (1.83:1) -> #926ED1 (4.55:1)  SC  #003468 (1.43:1) -> #007DFB (4.51:1)
+//   BLM #E11837 (3.71:1) -> #EA3E58 (4.51:1)  CIN #C31F39 (3.03:1) -> #E24860 (4.51:1)
+//   IND #B8292F (2.87:1) -> #D95358 (4.51:1)  KAL #E03A3E (4.10:1) -> #E24A4E (4.50:1)
+//   ALN #AA182C (2.43:1) -> #E5455B (4.51:1)  IDH #1A3E6E (1.66:1) -> #4381D3 (4.50:1)
+//   NM  #79171D (1.65:1) -> #DD4F57 (4.51:1)  RC  #CC2437 (3.28:1) -> #DF4C5C (4.51:1)
+//   TUL #11213A (1.10:1) -> #5181CC (4.54:1)  WIC #0055B8 (2.53:1) -> #0B7CFF (4.52:1)
+//   UTA #00483A (1.68:1) -> #009276 (4.55:1)
+//   TRE #508EC8 (5.11:1) passes unchanged     TR  #D0D2CE (11.67:1) passes unchanged
+//   SAV #57BA47 (7.21:1) passes unchanged     FW  #FF7800 (6.72:1) passes unchanged
+//   TOL #6799C8 (5.89:1) passes unchanged     WHL #FCB514 (9.95:1) passes unchanged
+//   KC  #F15F22 (5.41:1) passes unchanged     TAH #5395CE (5.55:1) passes unchanged
+//   IA  #FFD103 (12.16:1) passes unchanged
 
 import { fetchSeasonsConfig, fetchLeagueSeasons } from './seasonClient';
 import { seasonsFromWorker, reverseSeasonMap } from './hockeyTechSeasons';
@@ -109,39 +145,39 @@ export function applyECHLSeasons(rows) {
 // eyewall-pipeline's echl_stats.py TEAM_ID_MAP, which this mirrors.
 export const ECHL_TEAMS = [
   // ── North ─────────────────────────────────────────────────────────────────
-  { abbr: 'ADK', teamId: 74, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Adirondack Thunder', shortName: 'Thunder', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'GSO', teamId: 108, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Greensboro Gargoyles', shortName: 'Gargoyles', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'MNE', teamId: 82, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Maine Mariners', shortName: 'Mariners', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'NOR', teamId: 76, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Norfolk Admirals', shortName: 'Admirals', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'REA', teamId: 17, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Reading Royals', shortName: 'Royals', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'TRE', teamId: 113, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Trenton Ironhawks', shortName: 'Ironhawks', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'TR', teamId: 99, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Trois-Rivières Lions', shortName: 'Lions', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'WOR', teamId: 77, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Worcester Railers', shortName: 'Railers', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
+  { abbr: 'ADK', teamId: 74, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Adirondack Thunder', shortName: 'Thunder', primaryColor: '#CE0E2D', displayColor: '#F13352' },
+  { abbr: 'GSO', teamId: 108, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Greensboro Gargoyles', shortName: 'Gargoyles', primaryColor: '#462969', displayColor: '#966EC6' },
+  { abbr: 'MNE', teamId: 82, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Maine Mariners', shortName: 'Mariners', primaryColor: '#00354F', displayColor: '#0088CA' },
+  { abbr: 'NOR', teamId: 76, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Norfolk Admirals', shortName: 'Admirals', primaryColor: '#001E69', displayColor: '#4278FF' },
+  { abbr: 'REA', teamId: 17, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Reading Royals', shortName: 'Royals', primaryColor: '#5C3896', displayColor: '#916FC9' },
+  { abbr: 'TRE', teamId: 113, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Trenton Ironhawks', shortName: 'Ironhawks', primaryColor: '#508EC8', displayColor: '#508EC8' },
+  { abbr: 'TR', teamId: 99, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Trois-Rivières Lions', shortName: 'Lions', primaryColor: '#D0D2CE', displayColor: '#D0D2CE' },
+  { abbr: 'WOR', teamId: 77, division: 'North', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Worcester Railers', shortName: 'Railers', primaryColor: '#002856', displayColor: '#0A7CFF' },
   // ── South ─────────────────────────────────────────────────────────────────
-  { abbr: 'ATL', teamId: 10, division: 'South', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Atlanta Gladiators', shortName: 'Gladiators', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'FLA', teamId: 8, division: 'South', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Florida Everblades', shortName: 'Everblades', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'GVL', teamId: 52, division: 'South', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Greenville Swamp Rabbits', shortName: 'Swamp Rabbits', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'JAX', teamId: 79, division: 'South', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Jacksonville Icemen', shortName: 'Icemen', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'ORL', teamId: 61, division: 'South', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Orlando Solar Bears', shortName: 'Solar Bears', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'SAV', teamId: 102, division: 'South', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Savannah Ghost Pirates', shortName: 'Ghost Pirates', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'SC', teamId: 18, division: 'South', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'South Carolina Stingrays', shortName: 'Stingrays', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
+  { abbr: 'ATL', teamId: 10, division: 'South', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Atlanta Gladiators', shortName: 'Gladiators', primaryColor: '#612022', displayColor: '#CA5F62' },
+  { abbr: 'FLA', teamId: 8, division: 'South', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Florida Everblades', shortName: 'Everblades', primaryColor: '#00703C', displayColor: '#00944F' },
+  { abbr: 'GVL', teamId: 52, division: 'South', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Greenville Swamp Rabbits', shortName: 'Swamp Rabbits', primaryColor: '#011E41', displayColor: '#147DFB' },
+  { abbr: 'JAX', teamId: 79, division: 'South', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Jacksonville Icemen', shortName: 'Icemen', primaryColor: '#223D79', displayColor: '#597ED0' },
+  { abbr: 'ORL', teamId: 61, division: 'South', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Orlando Solar Bears', shortName: 'Solar Bears', primaryColor: '#522E91', displayColor: '#926ED1' },
+  { abbr: 'SAV', teamId: 102, division: 'South', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Savannah Ghost Pirates', shortName: 'Ghost Pirates', primaryColor: '#57BA47', displayColor: '#57BA47' },
+  { abbr: 'SC', teamId: 18, division: 'South', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'South Carolina Stingrays', shortName: 'Stingrays', primaryColor: '#003468', displayColor: '#007DFB' },
   // ── Central ───────────────────────────────────────────────────────────────
-  { abbr: 'BLM', teamId: 107, division: 'Central', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Bloomington Bison', shortName: 'Bison', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'CIN', teamId: 5, division: 'Central', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Cincinnati Cyclones', shortName: 'Cyclones', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'FW', teamId: 60, division: 'Central', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Fort Wayne Komets', shortName: 'Komets', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'IND', teamId: 65, division: 'Central', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Indy Fuel', shortName: 'Fuel', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'KAL', teamId: 50, division: 'Central', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Kalamazoo Wings', shortName: 'Wings', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'TOL', teamId: 21, division: 'Central', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Toledo Walleye', shortName: 'Walleye', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'WHL', teamId: 25, division: 'Central', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Wheeling Nailers', shortName: 'Nailers', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
+  { abbr: 'BLM', teamId: 107, division: 'Central', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Bloomington Bison', shortName: 'Bison', primaryColor: '#E11837', displayColor: '#EA3E58' },
+  { abbr: 'CIN', teamId: 5, division: 'Central', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Cincinnati Cyclones', shortName: 'Cyclones', primaryColor: '#C31F39', displayColor: '#E24860' },
+  { abbr: 'FW', teamId: 60, division: 'Central', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Fort Wayne Komets', shortName: 'Komets', primaryColor: '#FF7800', displayColor: '#FF7800' },
+  { abbr: 'IND', teamId: 65, division: 'Central', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Indy Fuel', shortName: 'Fuel', primaryColor: '#B8292F', displayColor: '#D95358' },
+  { abbr: 'KAL', teamId: 50, division: 'Central', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Kalamazoo Wings', shortName: 'Wings', primaryColor: '#E03A3E', displayColor: '#E24A4E' },
+  { abbr: 'TOL', teamId: 21, division: 'Central', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Toledo Walleye', shortName: 'Walleye', primaryColor: '#6799C8', displayColor: '#6799C8' },
+  { abbr: 'WHL', teamId: 25, division: 'Central', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Wheeling Nailers', shortName: 'Nailers', primaryColor: '#FCB514', displayColor: '#FCB514' },
   // ── Mountain ──────────────────────────────────────────────────────────────
-  { abbr: 'ALN', teamId: 66, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Allen Americans', shortName: 'Americans', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'IDH', teamId: 11, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Idaho Steelheads', shortName: 'Steelheads', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'KC', teamId: 68, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Kansas City Mavericks', shortName: 'Mavericks', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'NM', teamId: 114, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'New Mexico Goatheads', shortName: 'Goatheads', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'RC', teamId: 70, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Rapid City Rush', shortName: 'Rush', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'TAH', teamId: 106, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Tahoe Knight Monsters', shortName: 'Knight Monsters', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'TUL', teamId: 71, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Tulsa Oilers', shortName: 'Oilers', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
-  { abbr: 'WIC', teamId: 72, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Wichita Thunder', shortName: 'Thunder', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR },
+  { abbr: 'ALN', teamId: 66, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Allen Americans', shortName: 'Americans', primaryColor: '#AA182C', displayColor: '#E5455B' },
+  { abbr: 'IDH', teamId: 11, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Idaho Steelheads', shortName: 'Steelheads', primaryColor: '#1A3E6E', displayColor: '#4381D3' },
+  { abbr: 'KC', teamId: 68, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Kansas City Mavericks', shortName: 'Mavericks', primaryColor: '#F15F22', displayColor: '#F15F22' },
+  { abbr: 'NM', teamId: 114, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'New Mexico Goatheads', shortName: 'Goatheads', primaryColor: '#79171D', displayColor: '#DD4F57' },
+  { abbr: 'RC', teamId: 70, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Rapid City Rush', shortName: 'Rush', primaryColor: '#CC2437', displayColor: '#DF4C5C' },
+  { abbr: 'TAH', teamId: 106, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Tahoe Knight Monsters', shortName: 'Knight Monsters', primaryColor: '#5395CE', displayColor: '#5395CE' },
+  { abbr: 'TUL', teamId: 71, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Tulsa Oilers', shortName: 'Oilers', primaryColor: '#11213A', displayColor: '#5181CC' },
+  { abbr: 'WIC', teamId: 72, division: 'Mountain', get season() { return ECHL_CURRENT_SEASON; }, displayName: 'Wichita Thunder', shortName: 'Thunder', primaryColor: '#0055B8', displayColor: '#0B7CFF' },
 ];
 
 // 2025-26 teams not in 2026-27 -- they still appear in season 73/76 games,
@@ -149,8 +185,8 @@ export const ECHL_TEAMS = [
 // deliberately left out of ECHL_TEAMS so they never show up as a pickable
 // team. Same pattern as ahlConfig.js's AHL_HISTORICAL_TEAMS.
 export const ECHL_HISTORICAL_TEAMS = [
-  { abbr: 'IA', teamId: 98, division: 'Central', season: 73, displayName: 'Iowa Heartlanders', shortName: 'Heartlanders', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR, historical: true },
-  { abbr: 'UTA', teamId: 23, division: 'Mountain', season: 73, displayName: 'Utah Grizzlies', shortName: 'Grizzlies', primaryColor: ECHL_PLACEHOLDER_COLOR, displayColor: ECHL_PLACEHOLDER_COLOR, historical: true },
+  { abbr: 'IA', teamId: 98, division: 'Central', season: 73, displayName: 'Iowa Heartlanders', shortName: 'Heartlanders', primaryColor: '#FFD103', displayColor: '#FFD103', historical: true },
+  { abbr: 'UTA', teamId: 23, division: 'Mountain', season: 73, displayName: 'Utah Grizzlies', shortName: 'Grizzlies', primaryColor: '#00483A', displayColor: '#009276', historical: true },
 ];
 
 // ── Logos ─────────────────────────────────────────────────────────────────────
