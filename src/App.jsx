@@ -17,6 +17,7 @@ import FaceoffLoader from './components/FaceoffLoader'
 import { applyTeamTheme, themeTeam } from './utils/applyTeamTheme';
 import { getTheme, subscribeSystemTheme } from './utils/themeConfig';
 import { syncAutoFollow } from './hooks/useLiveActivity';
+import { FOLLOWED_CHANGED_EVENT } from './utils/followedTeams';
 import { recordAppOpen } from './utils/reviewPrompt';
 import { useNotificationTaps } from './hooks/useNotificationTaps';
 import TourHost from './components/TourHost';
@@ -169,10 +170,15 @@ export default function App() {
     return subscribeSystemTheme(mode => applyTeamTheme(themeTeam(TEAM_CONFIG), mode));
   }, []); // runs once on mount; full reload on team change means this always reflects current team  
 
-  // Lock Screen auto-follow: re-send the favorite team and language with the
-  // setting on every launch, so a team switch (always a full reload) moves
-  // the poller's registration with it. No-op off the iOS app.
-  useEffect(() => { syncAutoFollow().catch(() => {}); }, []);
+  // Lock Screen auto-follow: re-send the followed teams and language with
+  // the setting on every launch and whenever the followed teams change, so
+  // the poller's registration moves with them. No-op off the iOS app.
+  useEffect(() => {
+    const sync = () => { syncAutoFollow().catch(() => {}); };
+    sync();
+    window.addEventListener(FOLLOWED_CHANGED_EVENT, sync);
+    return () => window.removeEventListener(FOLLOWED_CHANGED_EVENT, sync);
+  }, []);
 
   // Counts toward "a regular" for the App Store rating ask (reviewPrompt.js).
   useEffect(() => { recordAppOpen(); }, []);

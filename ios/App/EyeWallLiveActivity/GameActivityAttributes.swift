@@ -39,4 +39,8 @@ struct GameActivityAttributes: ActivityAttributes {
     var awayColor: String
     /// The team the user follows
     var followAbbr: String
+    /// "nhl" | "pwhl" | "ahl" | "echl"; nil from a build or poller that
+    /// predates the other leagues, which is the NHL. Game ids are only
+    /// unique within a league.
+    var league: String?
 }
