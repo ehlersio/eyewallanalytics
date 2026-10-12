@@ -164,6 +164,27 @@ final class LiveActivityRegistrar {
             }
         }
         if autoFollowEnabled { observeStartToken() }
+        // Every return to the app re-sends each activity's current token, so
+        // one that never reached the poller (see post()) is fixed by opening
+        // the app, not only by the next launch.
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification, object: nil, queue: nil
+        ) { [weak self] _ in self?.resendTokens() }
+    }
+
+    private func resendTokens() {
+        for activity in Activity<GameActivityAttributes>.activities {
+            guard let data = activity.pushToken else { continue }
+            register(activity, token: data)
+        }
+    }
+
+    private func register(_ activity: Activity<GameActivityAttributes>, token data: Data) {
+        post("/live-activity/register", [
+            "gameId": activity.attributes.gameId,
+            "league": activity.attributes.league ?? "nhl",
+            "token": Self.hex(data),
+        ])
     }
 
     // Saved for background launches, which have no JS to ask.
@@ -189,11 +210,7 @@ final class LiveActivityRegistrar {
         guard isNew else { return }
         Task {
             for await data in activity.pushTokenUpdates {
-                self.post("/live-activity/register", [
-                    "gameId": activity.attributes.gameId,
-                    "league": activity.attributes.league ?? "nhl",
-                    "token": Self.hex(data),
-                ])
+                self.register(activity, token: data)
             }
         }
     }
@@ -234,6 +251,11 @@ final class LiveActivityRegistrar {
         ])
     }
 
+    // A server-started activity wakes the app in the background for only a
+    // few seconds, and a bare dataTask could be suspended before it went
+    // out: the poller never got the activity's update token, so it sat on
+    // its first frame all game (CAR-PHI, 2026-10-11). Background time keeps
+    // the app up until the request finishes, and a failed one is retried.
     private func post(_ path: String, _ body: [String: Any]) {
         guard let base = defaults.string(forKey: Key.workerURL), !base.isEmpty,
               let url = URL(string: base + path),
@@ -242,7 +264,28 @@ final class LiveActivityRegistrar {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = data
-        URLSession.shared.dataTask(with: request).resume()
+        request.timeoutInterval = 10
+        Task {
+            let background = await Self.beginBackgroundTime()
+            for delay: UInt64 in [0, 2, 5] {
+                if delay > 0 { try? await Task.sleep(nanoseconds: delay * 1_000_000_000) }
+                if let (_, response) = try? await URLSession.shared.data(for: request),
+                   let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) {
+                    break
+                }
+            }
+            await MainActor.run { UIApplication.shared.endBackgroundTask(background) }
+        }
+    }
+
+    @MainActor
+    private static func beginBackgroundTime() -> UIBackgroundTaskIdentifier {
+        var id = UIBackgroundTaskIdentifier.invalid
+        id = UIApplication.shared.beginBackgroundTask(withName: "LiveActivityToken") {
+            UIApplication.shared.endBackgroundTask(id)
+            id = .invalid
+        }
+        return id
     }
 
     private static func hex(_ data: Data) -> String {
