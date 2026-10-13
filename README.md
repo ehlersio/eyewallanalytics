@@ -284,7 +284,7 @@ canes-analytics-starter/
 │   └── support/e2e.js                  # Custom commands incl. cy.setPWHLTeam()
 ├── scripts/ios-version.mjs          # `npm run ios:version` (run by `npm run ios:release`, which also builds, `cap sync`s and opens Xcode) — copies package.json's version into the iOS project's MARKETING_VERSION and bumps its build number, for cutting an iOS build (see Versioning)
 └── .github/workflows/
-    ├── ci.yml                        # Every PR: lint, Vitest, build, then Cypress E2E in 3 parallel shards (one "e2e" result)
+    ├── ci.yml                        # Every PR: dependency review, npm audit of production deps (high+), lint, Vitest, build, then Cypress E2E in 3 parallel shards (one "e2e" result)
     └── version.yml                   # Every PR needs one semver:* label; on merge, bumps package.json, commits "Release vX.Y.Z (#PR)" and tags it
 ```
 
