@@ -14,6 +14,27 @@ const csp = headers.match(/^\s+Content-Security-Policy: (.+)$/m)?.[1] ?? '';
 const directive = (name) => csp.split(';').map(d => d.trim().split(/\s+/)).find(([n]) => n === name)?.slice(1) ?? [];
 const originOf = (src, re) => new URL(src.match(re)[1]).origin;
 
+// Bodies of the <script> elements without a src, in any letter case. A
+// scan, not a regex: index.html is our own file, and a tag-matching regex
+// is what CodeQL's js/bad-tag-filter rule (rightly) distrusts.
+function inlineScripts(html) {
+  const lower = html.toLowerCase();
+  const bodies = [];
+  let at = 0;
+  while ((at = lower.indexOf('<script', at)) !== -1) {
+    const tagEnd = lower.indexOf('>', at);
+    const next = lower[at + '<script'.length];
+    if (tagEnd === -1) break;
+    if (next !== '>' && !/\s/.test(next)) { at = tagEnd; continue; } // <scripttype>, not a script
+    const close = lower.indexOf('</script', tagEnd);
+    if (close === -1) break;
+    const attrs = lower.slice(at + '<script'.length, tagEnd);
+    if (!/(^|\s)src\s*=/.test(attrs)) bodies.push(html.slice(tagEnd + 1, close));
+    at = close + '</script'.length;
+  }
+  return bodies;
+}
+
 describe('Content-Security-Policy', () => {
   it('is enforced, not report-only', () => {
     expect(csp).toContain("default-src 'self'");
@@ -22,11 +43,7 @@ describe('Content-Security-Policy', () => {
 
   it('allows each inline <script> in index.html by hash, and nothing else inline', () => {
     const html = read('index.html');
-    // Any <script ...> opening tag in any case, up to its closing tag
-    // (</script > included); those with a src aren't inline.
-    const inline = [...html.matchAll(/<script(\s[^>]*)?>([\s\S]*?)<\/script\s*>/gi)]
-      .filter(m => !/\ssrc\s*=/i.test(m[1] ?? ''))
-      .map(m => m[2]);
+    const inline = inlineScripts(html);
     expect(inline.length).toBeGreaterThan(0);
     const scriptSrc = directive('script-src');
     for (const body of inline) {
