@@ -54,13 +54,14 @@ canes-analytics-starter/
 │   ├── manifest.json             # PWA manifest
 │   ├── fonts/share/              # Barlow TTFs (OFL) for exported share cards — the same files eyewall-pipeline's social_posts.py draws the Instagram/Facebook cards with; registered in index.css and embedded into the image by useShareCard.js
 │   ├── goal-horn.mp3
-│   ├── _headers                  # Cloudflare cache control headers
+│   ├── _headers                  # Cloudflare response headers: cache control, plus the security headers and Content-Security-Policy for every page (each CSP origin is explained in the file; securityHeaders.test.js keeps the inline-script hash and the app's API origins in sync)
 │   ├── eyewall-logo.svg/.png     # Faceoff-E mark, Night Rink colors (white E, red circle), transparent background — the dark-theme half of EyeWallLogo.jsx, and rendered directly by ShareCardFrame.jsx, the fixed-dark shell every share card is drawn in. Generated — see scripts/brand/
 │   ├── eyewall-logo-light.svg/.png # Same mark in Ice Rink colors (navy E) — the [data-theme="light"] half of EyeWallLogo.jsx's toggle. Generated
 │   ├── favicon.svg               # Follows prefers-color-scheme: Ice Rink in light, Night Rink in dark. Generated
 │   └── favicon-*.png / .ico / apple-touch-icon.png # Ice Rink tiles; favicon-512 doubles as og:image, favicon-512-solid is the padded maskable PWA icon. Generated
 ├── scripts/brand/                # `node scripts/brand/build-brand-assets.mjs` regenerates every rendering of the mark from src/brand/rinkMark.js: iOS app icon (light/dark/tinted), iOS launch splash (light/dark), favicons, PWA icons and the logo files above. macOS only — render-svg.swift rasterizes via AppKit, no extra dependency
 ├── functions/                    # Cloudflare Pages Functions (API proxy)
+│   ├── _lib/proxy.js             # Shared by all three: GET/HEAD only, query capped, same-host redirects only (the NHL's /now → dated URL), content-type allow-list, nosniff + script-proof CSP. Tested in pagesProxy.test.js
 │   ├── nhl-api/[[path]].js
 │   ├── nhl-stats/[[path]].js
 │   └── nhl-assets/[[path]].js
@@ -601,6 +602,8 @@ Same HockeyTech/LeagueStat vendor as AHL/PWHL. Started as a foundation + basic-d
 
 Optional, passwordless sign-in via Supabase Auth (`signInWithOtp`) — Session 90. **Fully additive**: the app behaves identically for anyone who never signs in. Two-step flow in the Settings drawer's new Account section (`AccountSection.jsx`): email entry → "check your email." Session persistence/refresh is handled entirely by `supabase-js` itself (`persistSession`/`autoRefreshToken` in `supabaseAuth.js`, backed by `localStorage`) — `AuthContext.jsx` just mirrors that state into React.
 
+**PKCE (2026-10):** `supabaseAuth.js` uses `flowType: 'pkce'`. The magic link comes back with a one-time `?code=` rather than the access/refresh tokens in the URL fragment; on the web `detectSessionInUrl` exchanges it and removes it from the address bar, and in the iOS app `authDeepLink.js` exchanges the `com.eyewallanalytics.app://login-callback?code=...` deep link (tokens in a deep link are ignored). The code only works with the verifier `signInWithOtp` stored in that browser's (or the app's WKWebView's) `localStorage`, so **the link must be opened where it was requested**; one opened in another browser or a mail app's in-app browser leaves the user signed out. PostHog's `before_send` (`posthogScrub.js`) strips fragments and `code`/token parameters from every URL property as a second line of defence.
+
 **The one deliberate exception to "this app only talks to the Worker":** `signInWithOtp`/session handling is inherently a browser-to-Supabase-Auth-endpoint flow — there's no Worker route to proxy it through, and the anon/publishable key is already safe to expose client-side by design. Every data read still goes through the Worker, unchanged.
 
 **Email delivery:** custom SMTP via Resend (configured in the Supabase dashboard — not something this repo's code touches). Supabase's default shared sender caps at 2 emails/hour, which doesn't survive real usage; Resend removes that ceiling.
@@ -793,7 +796,7 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (994 tests, 113 files)
+### Vitest (1060 tests, 124 files)
 ```bash
 npm test
 npm run test:watch
@@ -827,7 +830,7 @@ npm run cypress:visual            # diff current rendering against the committed
 
 | Spec | Coverage |
 |------|---------|
-| `auth.cy.js` | Sign-in flow — signed-out row, two-step email form, OTP request/error handling (intercepted), signed-in row (avatar/email/Synced badge, via an injected fake session), sign-out |
+| `auth.cy.js` | Sign-in flow — signed-out row, two-step email form, OTP request/error handling (intercepted; asserts the PKCE code challenge), the `?code=` return exchanged for a session (intercepted) and an implicit-flow `#access_token` link ignored, signed-in row (avatar/email/Synced badge, via an injected fake session), sign-out |
 | `trivia.cy.js` | Daily Trivia tab — three tier cards, team logo (not team name) on medium, answer/reveal flow, aggregate stats, empty state, PWHL smoke |
 | `read-state-badges.cy.js` | Unseen-content dots — News/Milestones/Trivia tab dots, BottomNav's combined dot, Trivia clearing only on answer vs. News/Milestones clearing on visit |
 | `navigation.cy.js` | NHL routes + PWHL 12-team smoke (all 7 PWHL routes) |

@@ -46,7 +46,10 @@ updates:
       - dependency-name: "react-router-dom"
         update-types: ["version-update:semver-major"]
 
-  # GitHub Actions
+  # GitHub Actions. Workflows pin every action to a full commit SHA with the
+  # version in a trailing comment (`uses: owner/action@<sha> # vX.Y.Z`), so a
+  # moved tag can't change what runs; Dependabot bumps the SHA and the comment
+  # together.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

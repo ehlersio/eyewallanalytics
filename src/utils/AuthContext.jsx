@@ -13,40 +13,11 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { supabaseAuth } from './supabaseAuth';
+import { NATIVE_AUTH_REDIRECT, applyAuthDeepLink } from './authDeepLink';
 import { syncFavoriteTeamOnSignIn } from './favoriteTeamSync';
 import { syncFollowedTeamsOnSignIn } from './followedTeams';
 import { syncTriviaAnswersOnSignIn } from './triviaAnswers';
 import { syncLocaleOnSignIn } from './localeSync';
-
-// Native magic-link return trip -------------------------------------------
-// window.location.origin resolves to capacitor://localhost inside Capacitor's
-// WKWebView, a scheme nothing outside the app (Mail, Supabase's own redirect)
-// can open, so the OTP email arrives but has nowhere to send the user back.
-// A custom URL scheme (registered in ios/App/App/Info.plist as
-// CFBundleURLTypes, matching PRODUCT_BUNDLE_IDENTIFIER) plus a
-// @capacitor/app 'appUrlOpen' listener replaces that round trip natively.
-//
-// This app uses supabase-js's default 'implicit' flow (never overridden in
-// supabaseAuth.js), so the tokens land in the callback URL's hash fragment,
-// e.g. com.eyewallanalytics.app://login-callback#access_token=...&refresh_token=...
-// -- same shape a browser tab would get, just handed to us directly instead
-// of appearing in window.location, so detectSessionInUrl never sees it and we
-// parse+apply it ourselves via the public setSession() API.
-const NATIVE_AUTH_REDIRECT = 'com.eyewallanalytics.app://login-callback';
-
-function applyAuthDeepLink(url) {
-  if (!url || !url.startsWith(NATIVE_AUTH_REDIRECT)) return;
-  const hashIndex = url.indexOf('#');
-  if (hashIndex === -1) return;
-  const params = new URLSearchParams(url.slice(hashIndex + 1));
-  const access_token  = params.get('access_token');
-  const refresh_token = params.get('refresh_token');
-  if (access_token && refresh_token) {
-    supabaseAuth.auth.setSession({ access_token, refresh_token });
-  } else if (params.get('error')) {
-    console.warn('[Auth] magic link error:', params.get('error_description') || params.get('error'));
-  }
-}
 
 const AuthContext = createContext({
   user: null,
@@ -85,7 +56,7 @@ export function AuthProvider({ children }) {
 
     let urlListenerHandle;
     if (Capacitor.isNativePlatform()) {
-      CapacitorApp.addListener('appUrlOpen', ({ url }) => applyAuthDeepLink(url))
+      CapacitorApp.addListener('appUrlOpen', ({ url }) => applyAuthDeepLink(url, supabaseAuth.auth))
         .then(handle => { urlListenerHandle = handle; });
     }
 

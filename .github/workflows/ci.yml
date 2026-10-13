@@ -17,10 +17,10 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -59,11 +59,11 @@ jobs:
     steps:
       # ── Checkout ────────────────────────────────────────────
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # ── Node setup with npm cache ───────────────────────────
       - name: Setup Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
           cache: npm
@@ -87,7 +87,7 @@ jobs:
 
       # ── Cypress e2e tests ───────────────────────────────────
       - name: E2E tests (Cypress)
-        uses: cypress-io/github-action@v7
+        uses: cypress-io/github-action@c541a95ea92d9239347a2355f2e895cd4b3f8060 # v7.4.6
         with:
           # Don't install — we already ran npm ci above
           install: false
@@ -120,7 +120,7 @@ jobs:
 
       # ── Upload HTML report ──────────────────────────────────
       - name: Upload test report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: cypress-report-${{ matrix.shard }}
@@ -132,7 +132,7 @@ jobs:
       # If a test fails, you'll see a screenshot of exactly what
       # the browser saw in the Actions run artifacts.
       - name: Upload failure screenshots
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: cypress-screenshots-${{ matrix.shard }}
@@ -144,7 +144,7 @@ jobs:
       # Full recordings of every test run — useful for debugging
       # flaky tests. Remove this step if you don't need videos.
       - name: Upload test videos
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: cypress-videos-${{ matrix.shard }}
