@@ -14,6 +14,22 @@ on:
       - 'LICENSE'
 
 jobs:
+  # Flags a PR that adds or upgrades to a dependency with a high/critical
+  # advisory (any dependency, dev included, since it reads the lockfile
+  # diff). No PR comment, so it needs only read access.
+  dependency-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: never
+
   check:
     runs-on: ubuntu-latest
     steps:
@@ -27,6 +43,14 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # Fail on a high/critical advisory in anything the site ships. .npmrc
+      # sets include=dev, which overrides --omit=dev and would pull the
+      # devDependencies (Cypress tooling, ~9 highs as of 2026-10) into the
+      # audit; --include=prod replaces it, so only production deps gate the
+      # build. (An empty --include= does the same but npm warns it's invalid.)
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --include=prod --audit-level=high
 
       - name: Lint
         run: npm run lint
