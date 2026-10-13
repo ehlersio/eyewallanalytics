@@ -34,7 +34,7 @@
     "@capacitor/core": "^8.5.2",
     "@capacitor/ios": "^8.5.2",
     "@capacitor/push-notifications": "^8.1.2",
-    "@supabase/supabase-js": "^2.117.2",
+    "@supabase/supabase-js": "^2.117.3",
     "date-fns": "^4.4.0",
     "driver.js": "^1.8.0",
     "fuse.js": "^7.5.0",
