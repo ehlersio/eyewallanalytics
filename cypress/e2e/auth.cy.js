@@ -8,8 +8,14 @@
 // supabaseAuth.js's storage key) — supabase-js's getSession() reads that
 // straight from storage without a network round-trip when expires_at is
 // in the future, so this stays fully offline and deterministic too.
+//
+// Sign-in uses the PKCE flow (supabaseAuth.js): the OTP request carries a
+// code challenge, the verifier stays in localStorage, and the magic link
+// comes back as /?code=... which supabase-js trades for a session at
+// /auth/v1/token?grant_type=pkce (also intercepted below).
 const SUPABASE_URL = 'https://mqgasjzywoibdgxjjkux.supabase.co';
 const AUTH_STORAGE_KEY = 'sb-mqgasjzywoibdgxjjkux-auth-token';
+const CODE_VERIFIER_KEY = `${AUTH_STORAGE_KEY}-code-verifier`;
 const TEST_EMAIL = 'trivia-fan@example.com';
 
 function openSettings() {
@@ -51,7 +57,15 @@ describe('Account section — signed out', () => {
     cy.get('.account-row-button').contains('Sign in to sync across devices').click();
     cy.get('.account-signin-input').type(TEST_EMAIL);
     cy.get('.account-signin-submit').click();
-    cy.wait('@otpRequest');
+    cy.wait('@otpRequest').its('request.body').should((body) => {
+      expect(body.email).to.eq(TEST_EMAIL);
+      expect(body.code_challenge).to.be.a('string').and.not.be.empty;
+      expect(body.code_challenge_method).to.eq('s256');
+    });
+    // The verifier that will redeem the link's code stays in this browser.
+    cy.window().then((win) => {
+      expect(win.localStorage.getItem(CODE_VERIFIER_KEY)).to.be.a('string').and.not.be.empty;
+    });
 
     // .notif-popup is a scrollable panel (overflow-y: auto) — the sent
     // state can render below the current scroll position within it.
@@ -89,6 +103,47 @@ describe('Account section — signed out', () => {
     cy.get('.account-row-button').contains('Sign in to sync across devices').click();
     cy.get('.account-signin-cancel').contains('Cancel').click();
     cy.get('.account-row-button').contains('Sign in to sync across devices').should('be.visible');
+  });
+});
+
+describe('Magic-link return', () => {
+  it('trades the ?code= for a session, signs in and takes the code out of the URL', () => {
+    cy.intercept('POST', `${SUPABASE_URL}/auth/v1/token?grant_type=pkce`, {
+      statusCode: 200,
+      body: fakeSession(),
+    }).as('pkceExchange');
+
+    cy.visit('/?code=cypress-auth-code', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('eyewall:team', JSON.stringify({ abbr: 'CAR' }));
+        // What signInWithOtp left behind (supabase-js stores it JSON-encoded).
+        win.localStorage.setItem(CODE_VERIFIER_KEY, JSON.stringify('cypress-code-verifier'));
+      },
+    });
+
+    cy.wait('@pkceExchange').its('request.body').should('deep.equal', {
+      auth_code: 'cypress-auth-code',
+      code_verifier: 'cypress-code-verifier',
+    });
+    cy.location('search').should('not.contain', 'code=');
+    cy.window().its('localStorage').invoke('getItem', CODE_VERIFIER_KEY).should('be.null');
+
+    openSettings();
+    cy.get('.account-badge').should('contain', 'Synced');
+    cy.contains('.account-row-label', TEST_EMAIL);
+  });
+
+  it('ignores tokens in the URL fragment (the old implicit-flow shape)', () => {
+    cy.visit('/#access_token=cypress-fake-access-token&refresh_token=cypress-fake-refresh-token&expires_in=3600&token_type=bearer&type=magiclink', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('eyewall:team', JSON.stringify({ abbr: 'CAR' }));
+      },
+    });
+    openSettings();
+    cy.get('.account-row-button').contains('Sign in to sync across devices').should('be.visible');
+    cy.window().then((win) => {
+      expect(win.localStorage.getItem(AUTH_STORAGE_KEY)).to.be.null;
+    });
   });
 });
 

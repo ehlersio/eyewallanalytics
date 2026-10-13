@@ -1,3 +1,33 @@
+# Cloudflare Pages response headers for the static site (not the Functions
+# under functions/, which set their own, and not the iOS app, which Capacitor
+# serves from capacitor://localhost).
+#
+# Content-Security-Policy, origin by origin:
+#   script-src  'self' = the Vite bundle. The sha256 is index.html's inline
+#               theme script; src/utils/__tests__/securityHeaders.test.js
+#               fails if the script changes without it. us-assets.i.posthog.com
+#               and us.i.posthog.com: posthog-js's remote config and lazy
+#               extensions (web vitals, dead clicks, exception capture).
+#   style-src   'unsafe-inline': Vite minifies index.html's inline <style>
+#               at build time (so a hash wouldn't survive a toolchain bump),
+#               and privacy.html / delete-account.html style inline.
+#               fonts.googleapis.com: the Barlow / DM Mono stylesheet.
+#   font-src    fonts.gstatic.com: the Google Fonts files; 'self': /fonts/share.
+#   img-src     https: -- news thumbnails and arena photos come from whatever
+#               host the feed names (publishers, upload.wikimedia.org,
+#               assets.nhle.com, assets.leaguestat.com, lscluster.hockeytech.com).
+#               data:/blob: for share-card rendering.
+#   connect-src the Worker (every data read), Supabase (auth + the user's own
+#               rows), PostHog, and the image hosts html-to-image fetches when
+#               it bakes a share card; data:/blob: for its data-URL round trips.
+#   frame-src   players.brightcove.net: NHL goal clips.
+#   media-src   'self': /goal-horn.mp3.  worker-src 'self': /sw.js.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-ImFza1VmytlfmhU681vJjrno4zTE4allHrKMbKaMh44=' https://us-assets.i.posthog.com https://us.i.posthog.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' data: blob: https://eyewall-poller.billowing-queen-bf23.workers.dev https://mqgasjzywoibdgxjjkux.supabase.co https://us.i.posthog.com https://us-assets.i.posthog.com https://assets.nhle.com https://assets.leaguestat.com https://lscluster.hockeytech.com; frame-src https://players.brightcove.net; media-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
 /index.html
   Cache-Control: no-cache
 /assets/*

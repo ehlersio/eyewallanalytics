@@ -9,6 +9,7 @@ import './tailwind.css'
 import App from './App.jsx'
 import { TEAM_CONFIG } from './utils/teamConfig'
 import { initCaptureMode } from './utils/captureMode'
+import { scrubAuthFromEvent } from './utils/posthogScrub'
 
 initCaptureMode()
 
@@ -23,6 +24,10 @@ if (import.meta.env.PROD) {
     // each would otherwise fetch its own script after load.
     disable_session_recording: true,
     disable_surveys:           true,
+    // A magic-link return URL must never reach PostHog: no #fragments, and
+    // no ?code= / token params in any URL property (utils/posthogScrub.js).
+    disable_capture_url_hashes: true,
+    before_send:                scrubAuthFromEvent,
   });
 
   // Tag every event with the environment so staging and prod can be filtered
