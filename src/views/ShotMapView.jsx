@@ -2734,7 +2734,10 @@ export default function ShotMapView() {
               <button className={debugBtnClasses('push')} onClick={async () => {
                 const url = import.meta.env.VITE_WORKER_URL;
                 if (!url) return;
-                const res = await fetch(`${url}/push/test?secret=eyewall-2026`).catch(() => null);
+                // Asked for each time, never stored in the repo or the bundle.
+                const secret = window.prompt('Worker POLL_SECRET');
+                if (!secret) return;
+                const res = await fetch(`${url}/push/test`, { headers: { 'X-Poll-Secret': secret } }).catch(() => null);
                 alert(res?.ok ? '✅ Push sent!' : '❌ Push failed');
               }}>📲 Test Push</button>
             </div>
