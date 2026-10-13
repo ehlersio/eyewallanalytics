@@ -13,6 +13,11 @@ on:
       - '.editorconfig'
       - 'LICENSE'
 
+# The default GITHUB_TOKEN is read-only at the repository level too; this
+# block makes that explicit per workflow (CodeQL actions/missing-workflow-permissions).
+permissions:
+  contents: read
+
 jobs:
   # Flags a PR that adds or upgrades to a dependency with a high/critical
   # advisory (any dependency, dev included, since it reads the lockfile
