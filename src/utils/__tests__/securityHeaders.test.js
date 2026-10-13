@@ -22,7 +22,11 @@ describe('Content-Security-Policy', () => {
 
   it('allows each inline <script> in index.html by hash, and nothing else inline', () => {
     const html = read('index.html');
-    const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
+    // Any <script ...> opening tag in any case, up to its closing tag
+    // (</script > included); those with a src aren't inline.
+    const inline = [...html.matchAll(/<script(\s[^>]*)?>([\s\S]*?)<\/script\s*>/gi)]
+      .filter(m => !/\ssrc\s*=/i.test(m[1] ?? ''))
+      .map(m => m[2]);
     expect(inline.length).toBeGreaterThan(0);
     const scriptSrc = directive('script-src');
     for (const body of inline) {
