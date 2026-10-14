@@ -1,6 +1,6 @@
 # eyewall-analytics
 
-React/Vite frontend for EyeWall Analytics, deployed on Cloudflare Pages at eyewallanalytics.com. Covers NHL (all 32 teams, user-selectable via `TeamPicker.jsx` — originally Carolina Hurricanes-only, expanded 2026-07), PWHL (all 12 teams), AHL and ECHL game analytics, standings, players, milestones, news. AHL and ECHL have no milestones, trivia or transactions.
+React/Vite frontend for EyeWall Analytics, deployed on Cloudflare Pages at eyewallanalytics.com. Covers NHL (all 32 teams, user-selectable via `TeamPicker.jsx` — originally Carolina Hurricanes-only, expanded 2026-07), PWHL (all 12 teams), AHL and ECHL game analytics, standings, players, milestones, news. AHL and ECHL have milestones and trivia (since 2026-10) but no transactions.
 
 ## Stack
 - React, Vite, Cloudflare Pages
