@@ -1967,7 +1967,7 @@ export default function PWHLShotMapView() {
               </>
             ) : (
               <>
-                <div className={SCORE_PERIOD_CLASSES}>{t('shotMapView.scoreBar.loadingTitle')}</div>
+                <div className={SCORE_PERIOD_CLASSES}>{seasonLabel}</div>
                 <div style={{ fontSize:10, color:'var(--text-dim)' }}>{t('pwhlShotMapView.scoreBar.historical')}</div>
               </>
             )}

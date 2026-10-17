@@ -7,15 +7,20 @@
 //
 // Each tick reads the league's /today (max-age=5 at the Worker). A game of
 // the team's that is live: its /live play-by-play is read too, for the
-// latest score and the period/clock of the last event (what the shot maps
-// show), and the next tick is in 30 s. Nothing live: the next tick is in
-// 60 s (hockeyTechTodayInterval's numbers). A push, or refresh() (the app
-// coming back into view), ticks at once.
+// latest score and the event popups, and the next tick is in 30 s. Nothing
+// live: the next tick is in 60 s (hockeyTechTodayInterval's numbers). A
+// push, or refresh() (the app coming back into view), ticks at once.
+//
+// The period, clock and intermission come from /today's row: the Worker
+// reads them off HockeyTech's scorebar (period, periodType, periodLabel,
+// clock, inIntermission; a snapshot up to 60 s old, not a running clock,
+// so nothing here ticks it). An older Worker sends none of those keys; the
+// clock then falls back to the period/time of the last /live event.
 //
 // State: { game, clock, live, checked } -- game is the /today row (null
-// when none), clock { period, time, shootout } from /live (null until
-// read), live the /live payload itself (the Shot Map's event popups read
-// its events; null until read).
+// when none), clock { period, time, shootout, label?, inIntermission? }
+// (null until known), live the /live payload itself (the Shot Map's event
+// popups read its events; null until read).
 
 import { HOCKEYTECH_TODAY_LIVE_MS, HOCKEYTECH_TODAY_IDLE_MS } from './livePolling';
 
@@ -49,14 +54,56 @@ export function chipScore(game, teamId) {
   };
 }
 
-// "P2", "OT", "2OT", "SO".
+// The clock from a /today row's scorebar fields: { period, time, shootout,
+// label, inIntermission }. null from an older Worker (none of the keys) or
+// when the row says neither the period nor the clock.
+const SCOREBAR_KEYS = ['period', 'periodType', 'periodLabel', 'clock', 'inIntermission'];
+export function scorebarClock(game) {
+  if (!game || !SCOREBAR_KEYS.some(k => game[k] !== undefined)) return null;
+  const label = typeof game.periodLabel === 'string' && game.periodLabel ? game.periodLabel : null;
+  const period = typeof game.period === 'number' && game.period > 0 ? game.period : null;
+  const time = game.clock || null;
+  const shootout = game.periodType === 'SO' || label === 'SO';
+  if (!period && !label && !time && !shootout) return null;
+  return { period, time, shootout, label, inIntermission: !!game.inIntermission };
+}
+
+// The clock's period number, from the Worker's label when it sent no
+// number ("2nd" -> 2, "OT" -> 4, "2OT" -> 5); null in a shootout or when
+// unknown.
+export function clockPeriodNumber(clock) {
+  if (!clock || clock.shootout) return null;
+  if (clock.period) return clock.period;
+  const m = /^(?:([1-3])(?:st|nd|rd)|(\d*)OT)$/.exec(clock.label || '');
+  if (!m) return null;
+  return m[1] ? Number(m[1]) : 3 + (m[2] ? Number(m[2]) : 1);
+}
+
+// "P2", "OT", "2OT", "SO" (or the Worker's label as it is, when it's none
+// of those).
 export function periodLabel(clock) {
-  if (!clock?.period) return null;
+  if (!clock) return null;
   if (clock.shootout) return 'SO';
-  const n = clock.period;
+  const n = clockPeriodNumber(clock);
+  if (!n) return clock.label || null;
   if (n <= 3) return `P${n}`;
   if (n === 4) return 'OT';
   return `${n - 3}OT`;
+}
+
+// The Topbar chip's period and time: "P2" + "07:58" in play; "2nd INT"
+// (or "OT INT", "2OT INT") and no time in an intermission; "SO" and no
+// time in a shootout.
+export function chipClock(clock) {
+  if (!clock) return { period: null, time: null };
+  if (clock.shootout) return { period: 'SO', time: null };
+  const label = periodLabel(clock);
+  if (clock.inIntermission) {
+    if (!label) return { period: null, time: null };
+    const ordinal = ['1st', '2nd', '3rd'][clockPeriodNumber(clock) - 1];
+    return { period: `${ordinal || label} INT`, time: null };
+  }
+  return { period: label, time: clock.time || null };
 }
 
 // apis: { [leagueKey]: { fetchToday(), fetchLive(gameId) } }
@@ -97,9 +144,12 @@ export function createHockeyTechLiveStore({
         const game = sameGame
           ? { ...found, homeScore: live.homeScore ?? found.homeScore, awayScore: live.awayScore ?? found.awayScore }
           : found;
+        // /today's scorebar clock; from an older Worker, the last event's.
         // A failed /live keeps the last clock of the same game.
         const wasSameGame = String(p.state.game?.gameId) === String(found.gameId);
-        const clock = (sameGame ? lastEventClock(live) : null) ?? (wasSameGame ? p.state.clock : null);
+        const clock = scorebarClock(found)
+          ?? (sameGame ? lastEventClock(live) : null)
+          ?? (wasSameGame ? p.state.clock : null);
         // ... and its last play-by-play.
         const liveData = sameGame ? live : (wasSameGame ? p.state.live : null);
         publish(p, { game, clock, live: liveData, checked: true });

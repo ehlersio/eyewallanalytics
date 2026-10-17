@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { getCarScore, getOppScore, getOpponent, withPbpScore } from '../utils/nhlApi';
 import { useLiveGame } from '../hooks/useLiveGame';
 import { useHockeyTechLiveGame } from '../hooks/useHockeyTechLiveGame';
-import { chipScore, periodLabel } from '../utils/hockeyTechLiveStore';
+import { chipScore, chipClock } from '../utils/hockeyTechLiveStore';
 import { AHL_TEAM_ID } from '../utils/ahlApi';
 import { ECHL_TEAM_ID } from '../utils/echlApi';
 import { AHL_TEAM_MAP } from '../utils/ahlConfig';
@@ -70,12 +70,13 @@ function hockeyTechTeamColor(sport, abbr) {
 }
 
 // What the HockeyTech live chip shows: the followed team's side of the
-// score, and the period and time of the latest event (null when there's
-// no live game).
+// score, and the period and clock ("P2 · 07:58", "2nd INT", "SO") from the
+// store's clock -- the Worker's scorebar, or the latest event's from an
+// older Worker (null when there's no live game).
 export function hockeyTechChip(state, teamId) {
   if (!state?.game) return null;
   const score = chipScore(state.game, teamId);
-  return { ...score, period: periodLabel(state.clock), time: state.clock?.time || null };
+  return { ...score, ...chipClock(state.clock) };
 }
 
 // Text of the hidden `.topbar-no-live` marker: the league on non-NHL routes,

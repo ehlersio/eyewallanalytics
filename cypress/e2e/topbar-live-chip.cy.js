@@ -1,9 +1,11 @@
 // cypress/e2e/topbar-live-chip.cy.js
 // The Topbar's live chip on PWHL/AHL/ECHL routes: the followed team's live
 // game from the shared HockeyTech poller (utils/hockeyTechLiveStore.js) --
-// score from the team's side, period and time of the last event -- and the
-// off-season marker back once the game is over. /today and /live are
-// stubbed: a stubbed game is live whatever the real schedule says.
+// score from the team's side, the period and clock of the Worker's scorebar
+// on /today ("2nd INT" in an intermission), or of the last event when
+// /today carries no scorebar fields (an older Worker) -- and the off-season
+// marker back once the game is over. /today and /live are stubbed: a
+// stubbed game is live whatever the real schedule says.
 
 const LEAGUES = [
   { key: 'pwhl', label: 'PWHL', team: { abbr: 'MTL', teamId: 3 }, opp: { id: 1, code: 'BOS' } },
@@ -41,6 +43,33 @@ LEAGUES.forEach(({ key, label, team, opp }) => {
       cy.window().then(win => win.dispatchEvent(new win.Event('eyewall:push-received')))
       cy.get('[data-testid="ht-live-chip"]', { timeout: DATA_TIMEOUT }).should('not.exist')
       cy.get('.topbar-no-live').should('have.text', label)
+      cy.assertNoErrors()
+    })
+
+    it(`shows the Worker's scorebar clock for ${team.abbr}, then the intermission`, () => {
+      const workerUrl = Cypress.expose('WORKER_URL')
+      let scorebar = { period: 2, periodType: 'REG', periodLabel: '2nd', clock: '07:58', inIntermission: false }
+      cy.intercept('GET', `${workerUrl}/${key}/today*`, req => req.reply([
+        { gameId: 777, gameDate: '2026-10-10', homeTeamId: opp.id, awayTeamId: team.teamId, homeTeamCode: opp.code, awayTeamCode: team.abbr, homeScore: 1, awayScore: 2, status: 'live', ...scorebar },
+      ])).as('today')
+      // The last event is older than the scorebar: the chip reads the scorebar.
+      cy.intercept('GET', `${workerUrl}/${key}/live/777`, {
+        gameId: 777, homeTeamId: opp.id, awayTeamId: team.teamId, homeScore: 1, awayScore: 3, gameStatus: 'live',
+        events: [{ eventType: 'goal', teamId: team.teamId, period: 2, time: '12:34', timeSeconds: 754 }],
+      })
+      cy.visit(`/${key}/team`, {
+        onBeforeLoad(win) {
+          win.localStorage.setItem('eyewall:sport', key)
+          win.localStorage.setItem(`eyewall:${key}_team`, JSON.stringify(team))
+        },
+      })
+      cy.get('[data-testid="ht-live-chip"]', { timeout: DATA_TIMEOUT })
+        .should('contain', 'P2 · 07:58').and('not.contain', '12:34')
+
+      cy.then(() => { scorebar = { ...scorebar, clock: '00:00', inIntermission: true } })
+      cy.window().then(win => win.dispatchEvent(new win.Event('eyewall:push-received')))
+      cy.get('[data-testid="ht-live-chip"]', { timeout: DATA_TIMEOUT })
+        .should('contain', '2nd INT').and('not.contain', '07:58').and('not.contain', '00:00')
       cy.assertNoErrors()
     })
   })

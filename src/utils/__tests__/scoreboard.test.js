@@ -46,6 +46,13 @@ describe('periodLabel', () => {
     expect(periodLabel({ period: 4 })).toBe('OT');  // PWHL has no periodType
     expect(periodLabel({})).toBeNull();
   });
+
+  it('prefers a HockeyTech row\'s own periodLabel', () => {
+    expect(periodLabel({ period: 5, periodType: 'OT', periodLabel: '2OT' })).toBe('2OT');
+    expect(periodLabel({ period: null, periodType: 'SO', periodLabel: 'SO' })).toBe('SO');
+    expect(periodLabel({ period: 2, periodType: 'REG', periodLabel: '' })).toBe('2nd');
+    expect(periodLabel({ period: 2, periodLabel: null })).toBe('2nd');
+  });
 });
 
 describe('liveDetail', () => {
@@ -55,6 +62,13 @@ describe('liveDetail', () => {
 
   it('marks an intermission instead of showing a stopped clock', () => {
     expect(liveDetail({ period: 1, clock: '18:00', inIntermission: true })).toBe('1st INT');
+  });
+
+  it('reads an AHL/ECHL row with the Worker\'s scorebar fields', () => {
+    const row = { status: 'live', period: 5, periodType: 'OT', periodLabel: '2OT', clock: '03:12', inIntermission: false };
+    expect(liveDetail(row)).toBe('2OT · 03:12');
+    expect(liveDetail({ ...row, period: 2, periodType: 'REG', periodLabel: '2nd', clock: '07:58' })).toBe('2nd · 07:58');
+    expect(liveDetail({ ...row, period: 2, periodType: 'REG', periodLabel: '2nd', clock: '00:00', inIntermission: true })).toBe('2nd INT');
   });
 
   it('degrades to the period alone, then to the feed status text', () => {

@@ -40,8 +40,11 @@ LEAGUES.forEach(({ key, label, team }) => {
   const live = (gameId, homeTeamId, awayTeamId, homeScore, awayScore) =>
     ({ gameId, homeTeamId, awayTeamId, homeScore, awayScore, gameStatus: 'live', events: [] })
 
-  const stubLive = () => {
-    cy.intercept('GET', `${workerUrl}/${key}/today*`, today).as('today')
+  // `scorebar`: the Worker's period/clock fields on the guest game's row;
+  // none (an older Worker) by default.
+  const stubLive = (scorebar = {}) => {
+    const rows = today.map(g => (g.gameId === guestGame.gameId ? { ...g, ...scorebar } : g))
+    cy.intercept('GET', `${workerUrl}/${key}/today*`, rows).as('today')
     cy.intercept('GET', `${workerUrl}/${key}/live/777`, live(777, team.teamId, 1, 0, 0))
     // /live's score is newer than /today's: the guest view shows this one.
     cy.intercept('GET', `${workerUrl}/${key}/live/${guestGame.gameId}`,
@@ -74,7 +77,8 @@ LEAGUES.forEach(({ key, label, team }) => {
         .should('contain', home.abbr).and('contain', '2–1')
       cy.get('#main-content').should('contain', `Live · at ${home.abbr}`)
       // The score card: both teams, the guest's side first, and the LIVE
-      // pill -- no period or clock, since this /live has no events yet.
+      // pill -- no period or clock, since this /live has no events yet and
+      // /today carries no scorebar fields (an older Worker).
       cy.get('.hockeytech-score-card').should('contain', away.abbr).and('contain', home.abbr).and('contain', '🔴 LIVE')
       cy.get('.hockeytech-score-card').invoke('text').should('match', new RegExp(`${away.abbr}.*2.*1.*${home.abbr}`))
       cy.get('.hockeytech-score-card').should('not.contain', ':')
@@ -103,6 +107,24 @@ LEAGUES.forEach(({ key, label, team }) => {
       cy.get('#main-content', { timeout: DATA_TIMEOUT }).should('contain', final.line)
       // The score card reads the final from the game's own /live.
       cy.get('.hockeytech-score-card').should('contain', final.guest).and('contain', 'Final').and('contain', final.where)
+      cy.assertNoErrors()
+    })
+
+    it('shows the Worker\'s scorebar period and clock on a live game\'s card', () => {
+      stubLive({ period: 2, periodType: 'REG', periodLabel: '2nd', clock: '07:58', inIntermission: false })
+      visitAs(`/${key}/game/${guestGame.gameId}?as=${away.abbr}`, key, team)
+      cy.wait('@guestLive', { timeout: DATA_TIMEOUT })
+      cy.get('.hockeytech-score-card', { timeout: DATA_TIMEOUT })
+        .should('contain', 'P2').and('contain', '07:58').and('contain', '🔴 LIVE')
+      cy.assertNoErrors()
+    })
+
+    it('shows the intermission, without a clock, on a live game\'s card', () => {
+      stubLive({ period: 2, periodType: 'REG', periodLabel: '2nd', clock: '00:00', inIntermission: true })
+      visitAs(`/${key}/game/${guestGame.gameId}?as=${away.abbr}`, key, team)
+      cy.wait('@guestLive', { timeout: DATA_TIMEOUT })
+      cy.get('.hockeytech-score-card', { timeout: DATA_TIMEOUT })
+        .should('contain', '2nd Intermission').and('contain', '🔴 LIVE').and('not.contain', '00:00')
       cy.assertNoErrors()
     })
 
