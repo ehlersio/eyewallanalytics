@@ -52,12 +52,21 @@ function echlSeasonLabel() {
 // Tailwind owns the visuals, these are pure test hooks now.
 const WRAP_CLASSES = 'relative';
 const TOGGLE_CLASSES = 'player-search-toggle flex items-center justify-center w-[32px] h-[32px] border-0 bg-transparent text-[color:var(--text)] text-[15px] cursor-pointer rounded-full hover:bg-[var(--bg3)]';
-const PANEL_CLASSES = 'player-search-panel absolute top-[calc(100%+8px)] right-0 w-[min(340px,88vw)] bg-[var(--bg2)] border-[0.5px] border-[var(--border-2)] rounded-[var(--radius)] shadow-[0_8px_24px_rgba(0,0,0,0.35)] p-2 z-[200]';
+// The panel hangs off the toggle on wide screens. On a phone that doesn't
+// fit: the toggle sits left of NotificationsBell/SettingsMenu, so a panel
+// right-aligned to it ran 34-45px off the left edge at 390px wide, clipping the
+// input. Up to 640px it's pinned to the viewport instead, just under the
+// Topbar's row, with a 16px gutter each side. `fixed` works here because no
+// ancestor (header, .app-shell, #root) sets a transform/filter that would
+// re-root it, and it stays inside wrapRef, so the outside-click check still
+// sees it. The max-height keeps it on screen on short (landscape) phones; the
+// results list is the part that gives up height and scrolls.
+const PANEL_CLASSES = 'player-search-panel absolute top-[calc(100%+8px)] right-0 w-[min(340px,88vw)] max-[640px]:fixed max-[640px]:top-[calc(env(safe-area-inset-top,0px)+var(--topbar-height)+8px)] max-[640px]:left-4 max-[640px]:right-4 max-[640px]:w-auto flex flex-col max-h-[calc(100dvh-var(--topbar-height)-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-24px)] bg-[var(--bg2)] border-[0.5px] border-[var(--border-2)] rounded-[var(--radius)] shadow-[0_8px_24px_rgba(0,0,0,0.35)] p-2 z-[200]';
 const INPUT_ROW_CLASSES = 'flex items-center gap-1.5';
 const INPUT_CLASSES = 'player-search-input flex-1 bg-[var(--bg1)] border-[0.5px] border-[var(--border-2)] rounded-[var(--radius-sm)] text-[color:var(--text)] font-[family-name:var(--font-body)] text-[14px] py-2 px-2.5 focus:outline-none focus:border-[var(--blue-bright)]';
 const CLOSE_CLASSES = 'border-0 bg-transparent text-[color:var(--text-dim)] text-[14px] cursor-pointer py-1 px-1.5';
 const STATUS_CLASSES = 'py-3 px-2 text-[color:var(--text-dim)] text-[13px] text-center';
-const RESULTS_CLASSES = 'mt-1.5 max-h-[320px] overflow-y-auto flex flex-col gap-0.5';
+const RESULTS_CLASSES = 'mt-1.5 max-h-[320px] min-h-0 overflow-y-auto flex flex-col gap-0.5';
 const RESULT_CLASSES = 'player-search-result flex items-center gap-2.5 w-full border-0 bg-transparent text-[color:var(--text)] p-2 rounded-[var(--radius-sm)] cursor-pointer text-left hover:bg-[var(--bg3)]';
 const PSR_NAME_CLASSES = 'flex-1 font-semibold text-[14px] whitespace-nowrap overflow-hidden text-ellipsis';
 const PSR_META_CLASSES = 'flex items-center gap-1.5 text-[11px] text-[color:var(--text-dim)]';
