@@ -17,10 +17,16 @@
 // AHL parity plan Phase 4 -- TeamComparisonPopup.jsx has 'ahl' and 'echl'
 // branches throughout (fetch functions, logo sport, team-option lists,
 // /config/seasons/comparison's entries).
+//
+// Like PWHLTeamView, it shows the current season unless the team hasn't
+// played a game in it yet (between a new season's flip and the team's
+// first game), then its newest regular season with games, labelled.
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../../hooks/useFetch';
 import { useLeagueSeasons } from '../../hooks/useLeagueSeasons';
+import { useTeamSeasonGames } from '../../hooks/useTeamSeasonGames';
+import { seasonsWithGames, fallbackSeason } from '../../utils/teamSeasons';
 import { useSport } from '../../utils/SportContext';
 import { leagueNameVars } from '../../utils/hockeyTechI18n';
 import { gameResultFor, currentStreak, pointsPct, streakColor } from '../../utils/hockeyTechResults';
@@ -46,6 +52,7 @@ function tabClasses(isActive) {
 }
 
 const VIEW_SUB_CLASSES = 'view-sub text-[12px] text-[color:var(--text-muted)] mb-3'
+const SEASON_NOTE_CLASSES = 'text-[11px] text-[color:var(--text-dim)] italic mt-[6px] mb-0'
 const TEAM_COMPARE_BTN_CLASSES = 'text-[11px] font-semibold text-[color:var(--text-muted)] bg-[var(--btn-fill)] border-[0.5px] border-transparent rounded-[var(--radius-sm)] py-[5px] px-[9px] cursor-pointer whitespace-nowrap [transition:background_0.15s,color_0.15s] hover:bg-[var(--btn-fill-hover)] hover:text-[color:var(--text)]'
 
 const TEAM_TABS_CLASSES = 'flex gap-1 mb-[14px] overflow-x-auto pb-[2px] border-b-[0.5px] border-[var(--border)]'
@@ -205,12 +212,24 @@ export default function HockeyTechTeamView({ league }) {
   // [currentSeason] would (that returns undefined when currentSeason is
   // ALREADY the playoffs id, silently re-fetching the same data twice).
   const { isPlayoffSeason, regularSeasonMap, playoffSeasonMap } = league.config;
-  const regSeasonId = isPlayoffSeason(currentSeason)
+  const currentRegSeasonId = isPlayoffSeason(currentSeason)
     ? (regularSeasonMap[currentSeason] ?? currentSeason)
     : currentSeason;
-  const poSeasonId = isPlayoffSeason(currentSeason)
-    ? currentSeason
-    : playoffSeasonMap[currentSeason];
+
+  // The season shown: the current regular season unless this team has
+  // played no game in it yet (every team between the season flip and its
+  // first game -- ECHL ADK's 2026-27 opened 2026-10-17), then its newest
+  // regular season with games -- same fallback as PWHLTeamView and the
+  // Players/Shot Map/Schedule views, labelled below. A team with no games
+  // in any season stays on the current one. regularSeasons is a live
+  // getter, read on every render.
+  const seasonCounts = useTeamSeasonGames(league.api.fetchSchedule, teamId, [currentRegSeasonId, ...league.config.regularSeasons.map(s => s.id)]);
+  const seasonOptions = seasonsWithGames(league.config.regularSeasons, seasonCounts, { played: true });
+  const regSeasonId = fallbackSeason(currentRegSeasonId, seasonOptions, seasonCounts, { played: true });
+  const resolving = !seasonCounts;
+  const poSeasonId = regSeasonId !== currentRegSeasonId
+    ? playoffSeasonMap[regSeasonId]
+    : isPlayoffSeason(currentSeason) ? currentSeason : playoffSeasonMap[currentSeason];
 
   const { data: standings, loading: sLoad } = useFetch(() => league.api.fetchStandings(regSeasonId), [regSeasonId]);
   const { data: players,   loading: pLoad } = useFetch(
@@ -238,8 +257,10 @@ export default function HockeyTechTeamView({ league }) {
     );
   }
 
-  const loading = sLoad || pLoad;
-  const seasonLabel = league.config.seasons.find(s => s.id === regSeasonId)?.label || `Season ${regSeasonId}`;
+  const loading = sLoad || pLoad || resolving;
+  const labelFor = id => league.config.seasons.find(s => s.id === id)?.label || `Season ${id}`;
+  const seasonLabel = labelFor(regSeasonId);
+  const showingPrevious = regSeasonId !== currentRegSeasonId;
 
   return (
     <div className={`${PAGE_CLASSES} team-view`}>
@@ -251,6 +272,11 @@ export default function HockeyTechTeamView({ league }) {
         <p className={VIEW_SUB_CLASSES} style={{ margin: 0 }}>{t('teamView.seasonSubtitle', { years: seasonLabel })}</p>
         <button className={TEAM_COMPARE_BTN_CLASSES} onClick={() => setCompareOpen(true)}>{t('team.compareSeasons')}</button>
       </div>
+      {showingPrevious && (
+        <p className={SEASON_NOTE_CLASSES} data-testid="hockeytech-team-season-note">
+          {t('hockeyTechTeamView.showingPrevious', { abbr, current: labelFor(currentRegSeasonId), fallback: seasonLabel })}
+        </p>
+      )}
 
       {compareOpen && (
         <TeamComparisonPopup
@@ -273,14 +299,14 @@ export default function HockeyTechTeamView({ league }) {
           standings={standings} />
       )}
       {tab === 'Stats' && (
-        <StatsTab skaters={skaters} goalies={goalies} loading={pLoad} color={color} />
+        <StatsTab skaters={skaters} goalies={goalies} loading={pLoad || resolving} color={color} />
       )}
       {tab === 'Splits' && (
         <SplitsTab schedule={schedule} poSchedule={poSchedule} teamId={teamId}
-          loading={scLoad || poScLoad} inPlayoffs={inPlayoffs} />
+          loading={scLoad || poScLoad || resolving} inPlayoffs={inPlayoffs} />
       )}
       {tab === 'Trends' && (
-        <TrendsTab schedule={schedule} teamId={teamId} loading={scLoad} />
+        <TrendsTab schedule={schedule} teamId={teamId} loading={scLoad || resolving} />
       )}
       {tab === 'History' && <TeamHistorySections history={getTeamHistory(league.key, abbr)} league={league.key} />}
     </div>
