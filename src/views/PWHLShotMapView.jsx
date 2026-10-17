@@ -43,6 +43,11 @@ import SeasonChipRow from '../components/SeasonChipRow';
 import SeasonTypeToggle from '../components/SeasonTypeToggle';
 import { rinkBtnClasses } from '../utils/rinkBtnClasses';
 import { PAGE_CLASSES } from '../utils/pageClasses';
+import {
+  SCORE_CARD_CLASSES, SCORE_INNER_CLASSES, SCORE_TEAM_WRAP_CLASSES, SCORE_TEAM_CLASSES,
+  scoreAbbrClasses, scoreNumClasses, SCORE_CENTER_CLASSES, SCORE_PERIOD_CLASSES,
+  SCORE_CLOCK_CLASSES, SCORE_STATE_CLASSES, PILL_RED_CLASSES,
+} from '../utils/scoreCardClasses';
 import { finalSuffix } from '../utils/scoreboard';
 import { penaltyHeadline, penaltyServedBy } from '../utils/penaltyText';
 import { hockeyTechRowPenaltyParties } from '../utils/hockeyTechPenalty';
@@ -67,7 +72,6 @@ import { hockeyTechRowPenaltyParties } from '../utils/hockeyTechPenalty';
 // literal and untouched: they're ShotMapView.css's own classes (out of
 // scope), and use !important so they win regardless of how .pp-indicator's
 // base becomes Tailwind utilities. Duplicated from ShotMapView.jsx.
-const SCORE_TEAM_WRAP_CLASSES = 'flex flex-col items-center gap-1';
 const PP_INDICATOR_BASE_CLASSES = 'text-[10px] font-bold py-0.5 px-2 rounded-[4px] animate-[ppPulse_1.5s_ease-in-out_infinite]';
 const CAR_PP_CLASSES = 'car-pp bg-[rgba(61,186,126,0.2)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.4)]';
 const OPP_PP_CLASSES = 'opp-pp bg-[rgba(240,160,48,0.2)] text-[color:var(--amber)] border-[0.5px] border-[rgba(240,160,48,0.3)]';
@@ -79,34 +83,9 @@ const OPP_PP_CLASSES = 'opp-pp bg-[rgba(240,160,48,0.2)] text-[color:var(--amber
 // constants aren't duplicated here. See ShotMapView.jsx's header comment
 // for the .log-badge / .goalie-stat-val property-race fixes and the
 // .team-primary-text unlayered-marker reasoning -- same fixes, same
-// reasoning, applied here too.
-const SCORE_CARD_CLASSES = 'score-card card mb-[10px]';
-// See ShotMapView.jsx's identical constant for why this wraps -- same
-// score-card-doesn't-fit-narrow-phones fix, confirmed on a real device.
-const SCORE_INNER_CLASSES = 'flex items-center justify-between gap-[10px] flex-wrap';
-const SCORE_TEAM_CLASSES = 'flex items-center gap-2';
-const scoreAbbrClasses = (variant) => {
-  const base = 'font-[family-name:var(--font-display)] text-[18px] font-bold tracking-[.04em]';
-  if (variant === 'team-primary') return `${base} team-primary-text`;
-  const color = variant === 'red' ? 'text-[color:var(--red-bright)]'
-    : variant === 'muted' ? 'text-[color:var(--text-muted)]' : '';
-  return `${base} ${color}`;
-};
-const scoreNumClasses = (variant) => {
-  const base = 'font-[family-name:var(--font-display)] text-[36px] font-bold leading-none';
-  if (variant === 'team-primary') return `${base} team-primary-text`;
-  const color = variant === 'red' ? 'text-[color:var(--red-bright)]'
-    : variant === 'muted' ? 'text-[color:var(--text-muted)]' : '';
-  return `${base} ${color}`;
-};
-const SCORE_CENTER_CLASSES = 'text-center';
-const SCORE_PERIOD_CLASSES = 'text-[11px] text-[color:var(--amber)] font-semibold uppercase tracking-[.06em]';
-const SCORE_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[22px] text-[color:var(--text)] leading-[1.2]';
-const SCORE_STATE_CLASSES = 'text-[10px] text-[color:var(--text-dim)]';
-// .pill/.pill-red (index.css, Phase 7b) -- shape + live-state color, this
-// file's only real consumer of either class (.pill-green/.pill-amber were
-// confirmed 100% dead app-wide during Phase 5 sub-PR 3's investigation).
-const PILL_RED_CLASSES = 'inline-flex items-center gap-[5px] py-[3px] px-[10px] rounded-[20px] text-[11px] font-medium bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[0.5px] border-[color:var(--red-border)]';
+// reasoning, applied here too. The score card's own classes (and .pill-red)
+// are shared with ShotMapView.jsx and HockeyTechShotMapView.jsx from
+// utils/scoreCardClasses.js.
 // .dual-bar/.fill-blue (index.css, Phase 7b) -- see ShotMapView.jsx's
 // identical comment for the full reasoning (marker kept for .dual-bar's
 // light-mode override, fill classes convert cleanly with no override or

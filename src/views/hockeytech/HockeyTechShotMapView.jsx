@@ -14,8 +14,8 @@
 //     event_type values).
 //   - No player popup wired here -- shot markers don't open a player
 //     profile on click.
-//   - A lighter per-game view than PWHL's: game chips over the season
-//     tabs, opening on the last game played (2026-10), with that game's
+//   - A lighter per-game view than PWHL's: game chips under the score
+//     card, opening on the last game played (2026-10), with that game's
 //     shots for both teams and cards computed from them -- no danger-zone
 //     drill popups.
 //   - A live game (its chip, picked automatically when the game starts)
@@ -30,8 +30,19 @@
 //
 // Whose side it's on: the league's followed team, or -- inside
 // HockeyTechGuestGameView's GameTeamProvider -- a guest team, with the view
-// pinned to the one game it was opened on (no season tabs or game chips,
+// pinned to the one game it was opened on (no season chips or game chips,
 // as in the NHL guest view). See useLeagueGameTeam (GameTeamContext.jsx).
+//
+// The score card (2026-10) is PWHLShotMapView's, from the data these
+// leagues have (utils/hockeyTechScoreCard.js): our side and theirs with the
+// score for the game on screen; in the middle, while live, the period and
+// clock of the last play-by-play event (hockeyTechLiveStore.js's `clock`,
+// what the Topbar chip shows -- /today and /live carry no running clock or
+// intermission, the Worker keeps the scorebar's for the Live Activity) and
+// the LIVE pill, for a final "Final[/OT|/SO]" and Win/Loss · Home/Away, and
+// for the season aggregate the season's name. The season chips sit in its
+// trailing column. No power-play / empty-net badges: nothing here tracks
+// the live situation.
 //
 // The live game comes from the shared poller in utils/hockeyTechLiveStore.js
 // (the Topbar chip reads the same one), for whichever team the view is on,
@@ -54,6 +65,15 @@ import { toHockeyRinkEvents } from '../../utils/hockeyRinkEvents';
 import TeamLogo from '../../components/TeamLogo';
 import { MetCard } from '../../components/StatBar';
 import GameChipsRow, { LiveGameChip } from '../../components/GameChipsRow';
+import SeasonChipRow from '../../components/SeasonChipRow';
+import { periodLabel } from '../../utils/hockeyTechLiveStore';
+import { scoreCardFromToday, scoreCardFromScheduleRow, scoreCardFromLive } from '../../utils/hockeyTechScoreCard';
+import {
+  SCORE_CARD_CLASSES, SCORE_INNER_CLASSES, SCORE_TEAM_WRAP_CLASSES, SCORE_TEAM_CLASSES,
+  scoreAbbrClasses, scoreNumClasses, SCORE_CENTER_CLASSES, SCORE_PERIOD_CLASSES,
+  SCORE_CLOCK_CLASSES, SCORE_STATE_CLASSES, PILL_RED_CLASSES,
+  SCORE_SELECTOR_COL_CLASSES, SCORE_SEASON_CHIPS_CLASSES,
+} from '../../utils/scoreCardClasses';
 import { finalSuffix } from '../../utils/scoreboard';
 import { formatDate as formatDateIntl } from '../../utils/formatters';
 import {
@@ -73,21 +93,12 @@ const VIEW_TITLE_CLASSES = 'font-[family-name:var(--font-display)] text-[20px] f
 const SUB_CLASSES = 'text-[12px] text-[color:var(--text-muted)]';
 const RINK_CARD_CLASSES = 'card mb-3 p-2';
 const METRICS_GRID_CLASSES = 'grid grid-cols-3 gap-2 mb-3';
-const TABS_WRAP_CLASSES = 'flex border-b-[0.5px] border-[var(--border)] mx-[-14px] mb-[14px] px-[14px]';
 const FALLBACK_NOTE_CLASSES = 'mb-2.5 py-2 px-3 rounded-[10px] bg-[var(--bg2)] border border-[var(--border)] text-[11px] leading-[1.45] text-[color:var(--text-dim)]';
-const TAB_BASE_CLASSES = 'flex-1 py-[10px] text-[13px] font-semibold bg-transparent border-0 border-b-2 cursor-pointer [transition:all_0.15s]';
-const TAB_INACTIVE_CLASSES = 'text-[color:var(--text-muted)] border-b-transparent';
-const TAB_ACTIVE_CLASSES = 'text-[color:var(--red-bright)] border-b-[var(--red-bright)]';
-function tabClasses(isActive) {
-  return `${TAB_BASE_CLASSES} ${isActive ? TAB_ACTIVE_CLASSES : TAB_INACTIVE_CLASSES}`;
-}
 
 // ── Debug panel (5 taps on the header, dev only) -- same mechanism as
-// PWHLShotMapView.jsx's score-card tap, adapted to this view's simpler
-// layout (no per-game score card exists here outside a real live game,
-// so the header title itself is the tap target). Lets goal/penalty/win/
-// puck-drop popups be verified without a live game -- none exists
-// until the 2026-27 season opener (2026-10-02).
+// PWHLShotMapView.jsx's score-card tap, on the header title here (the
+// score card under it holds the season chips, whose taps would count).
+// Lets goal/penalty/win/puck-drop popups be verified without a live game.
 const DEBUG_PANEL_CLASSES = 'debug-panel fixed left-1/2 -translate-x-1/2 bg-[var(--bg1)] border-[1.5px] border-[color:var(--red-bright)] rounded-[var(--radius)] p-[14px] w-[min(420px,94vw)] z-[999] shadow-[0_8px_32px_rgba(0,0,0,0.6)]';
 const DEBUG_PANEL_BOTTOM_STYLE = { bottom: 'calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 16px)' };
 const DEBUG_PANEL_HEADER_CLASSES = 'flex items-start justify-between mb-[10px]';
@@ -504,6 +515,31 @@ export default function HockeyTechShotMapView({ league }) {
   const shotsOnGoal = useMemo(() => (shots || []).length, [shots]);
   const rinkLoading = isGameView ? gameShotsLoading : shotsLoading;
 
+  // ── Score card ───────────────────────────────────────────────
+  // The game on screen from our side: the live game's /today row; a final
+  // from the schedule (it has ended_in); else a final known only from its
+  // /live (just ended here, or a guest view's game game_log hasn't got
+  // yet). null for the season aggregate, or while nothing says yet.
+  const scoreCard = useMemo(() => {
+    if (viewingLive) return scoreCardFromToday(liveGame, teamId);
+    if (viewGame) return scoreCardFromScheduleRow(viewGame, teamId);
+    if (viewingEnded) return scoreCardFromLive(endedData, teamId);
+    if (isGuest && finalGameData && sameGame(finalGameData.gameId, guestGameId)) {
+      return scoreCardFromLive(finalGameData, teamId);
+    }
+    return null;
+  }, [viewingLive, liveGame, viewGame, viewingEnded, endedData, isGuest, finalGameData, guestGameId, teamId]);
+
+  const ourTeam = league.config.getTeamById(teamId);
+  const ourColor = ourTeam?.displayColor || 'var(--text-dim)';
+  const oppTeam = scoreCard ? league.config.getTeamById(scoreCard.oppId) : null;
+  const oppAbbr = oppTeam?.abbr || scoreCard?.oppCode || '';
+  const oppColor = oppTeam?.displayColor || 'var(--text-dim)';
+  // The live game's period and the clock of its last event (none for a
+  // shootout attempt), only when /live has said.
+  const livePeriod = viewingLive ? periodLabel(liveState.clock) : null;
+  const liveClock = viewingLive && !liveState.clock?.shootout ? liveState.clock?.time || null : null;
+
   let subtitle = t('hockeyTechShotMapView.subtitle');
   // A live game, or one that isn't among the finals on screen: a guest
   // view's, or the followed team's just-ended game.
@@ -548,6 +584,74 @@ export default function HockeyTechShotMapView({ league }) {
         <p className={SUB_CLASSES}>{subtitle}</p>
       </div>
 
+      {/* ── Score card (PWHLShotMapView's) ── */}
+      <div className={`hockeytech-score-card ${SCORE_CARD_CLASSES}`}>
+        <div className={SCORE_INNER_CLASSES}>
+          <div className={SCORE_TEAM_WRAP_CLASSES}>
+            <div className={SCORE_TEAM_CLASSES}>
+              <TeamLogo abbr={abbr} sport={league.key} size={30} color={ourColor} />
+              <span className={scoreAbbrClasses()} style={{ color: ourColor }}>{abbr}</span>
+              {ourTeam?.shortName && (
+                <span className={scoreAbbrClasses()} style={{ color: 'var(--text-dim)', fontWeight: 400, fontSize: '0.75rem' }}>
+                  {ourTeam.shortName}
+                </span>
+              )}
+              {scoreCard && <span className={scoreNumClasses()} style={{ color: ourColor }}>{scoreCard.myScore}</span>}
+            </div>
+          </div>
+          <div className={SCORE_CENTER_CLASSES}>
+            {viewingLive ? (
+              <>
+                {livePeriod && <div className={SCORE_PERIOD_CLASSES}>{livePeriod}</div>}
+                {liveClock && (
+                  <div className={SCORE_CLOCK_CLASSES} style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
+                    {liveClock}
+                  </div>
+                )}
+                <div className={`${SCORE_STATE_CLASSES} ${PILL_RED_CLASSES}`} style={{ marginTop: 4 }}>
+                  {t('shotMapView.scoreBar.liveIndicator')}
+                </div>
+              </>
+            ) : scoreCard ? (
+              <>
+                <div className={SCORE_PERIOD_CLASSES}>{t('shotMapView.scoreBar.final')}{finalSuffix(scoreCard.endedIn)}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
+                  {scoreCard.won ? t('hockeyTechShotMapView.scoreBar.win') : t('hockeyTechShotMapView.scoreBar.loss')} · {scoreCard.isHome ? t('hockeyTechShotMapView.scoreBar.home') : t('hockeyTechShotMapView.scoreBar.away')}
+                </div>
+              </>
+            ) : !isGuest && !isGameView ? (
+              <>
+                <div className={SCORE_PERIOD_CLASSES}>{seasonLabel(season)}</div>
+                {/* Not while the schedule is still loading: the page then
+                    opens on the newest final, not the aggregate. */}
+                {(pickedGameId === ALL_GAMES || schedule) && (
+                  <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>{t('hockeyTechShotMapView.scoreBar.allGames')}</div>
+                )}
+              </>
+            ) : null}
+          </div>
+          {scoreCard ? (
+            <div className={SCORE_TEAM_WRAP_CLASSES}>
+              <div className={SCORE_TEAM_CLASSES}>
+                <span className={scoreNumClasses('muted')}>{scoreCard.oppScore}</span>
+                {oppAbbr && <span className={scoreAbbrClasses('muted')}>{oppAbbr}</span>}
+                {oppTeam?.shortName && (
+                  <span className={scoreAbbrClasses()} style={{ color: 'var(--text-dim)', fontWeight: 400, fontSize: '0.75rem' }}>
+                    {oppTeam.shortName}
+                  </span>
+                )}
+                {oppAbbr && <TeamLogo abbr={oppAbbr} sport={league.key} size={30} color={oppColor} />}
+              </div>
+            </div>
+          ) : <div style={{ width: 40 }} />}
+          {!isGuest && seasonOptions.length > 0 && (
+            <div className={SCORE_SELECTOR_COL_CLASSES}>
+              <SeasonChipRow seasons={seasonOptions} selected={season} onSelect={handleSeasonPick} className={SCORE_SEASON_CHIPS_CLASSES} />
+            </div>
+          )}
+        </div>
+      </div>
+
       {liveGame && (
         <div style={{ display: 'flex', marginBottom: 10 }}>
           <LiveGameChip
@@ -590,14 +694,6 @@ export default function HockeyTechShotMapView({ league }) {
       {!isGuest && games.length > 0 && (
         <GameChipsRow games={gameChipGames} sport={league.key}
           selectedGameId={viewGameId} onSelect={handleGameSelect} onAll={handleAllGames} />
-      )}
-
-      {!isGuest && (
-        <div className={TABS_WRAP_CLASSES} style={{ marginTop: 0 }}>
-          {seasonOptions.map(s => (
-            <button key={s.id} className={tabClasses(season === s.id)} onClick={() => handleSeasonPick(s.id)}>{s.label}</button>
-          ))}
-        </div>
       )}
 
       {isGameView ? (

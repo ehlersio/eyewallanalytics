@@ -5,8 +5,8 @@
 //
 // State: eyewall:tour = { done, invited, pending } on this device.
 // Every stop is found by selector when the tour starts; a stop that isn't
-// on screen (no live game yet, no second team to switch to, ECHL's page
-// without a score card) is left out, never pointed at empty space.
+// on screen (no live game yet, no second team to switch to) is left out,
+// never pointed at empty space.
 import { capture } from './analytics';
 
 const STORAGE_KEY = 'eyewall:tour';

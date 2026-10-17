@@ -858,7 +858,14 @@
     "live": "En direct",
     "guestSubtitle": "{{state}} · {{where}} {{opp}}",
     "periodSummary": "Résumé — {{period}}",
-    "gameSummary": "📊 Résumé du match"
+    "gameSummary": "📊 Résumé du match",
+    "scoreBar": {
+      "win": "✓ Victoire",
+      "loss": "✗ Défaite",
+      "home": "Domicile",
+      "away": "Visiteur",
+      "allGames": "Tous les matchs"
+    }
   },
   "common": {
     "loading": "Chargement…",

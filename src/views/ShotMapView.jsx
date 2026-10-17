@@ -49,6 +49,11 @@ import PeriodSummary from '../components/PeriodSummary';
 import { usePeriodSummary, useGameSummary } from '../hooks/usePeriodSummary';
 import { usePeriodSummaryContext } from '../utils/PeriodSummaryContext';
 import { PAGE_CLASSES } from '../utils/pageClasses';
+import {
+  SCORE_CARD_CLASSES, SCORE_INNER_CLASSES, SCORE_TEAM_WRAP_CLASSES, SCORE_TEAM_CLASSES,
+  scoreAbbrClasses, scoreNumClasses, SCORE_CENTER_CLASSES, SCORE_PERIOD_CLASSES,
+  SCORE_CLOCK_CLASSES, SCORE_STATE_CLASSES, PILL_RED_CLASSES,
+} from '../utils/scoreCardClasses';
 import FaceoffLoader from '../components/FaceoffLoader';
 import { finalSuffix } from '../utils/scoreboard';
 import { penaltyParties, penaltyHeadline, penaltyServedBy, penaltyDescription } from '../utils/penaltyText';
@@ -67,7 +72,6 @@ const WINDOW_MINS = 3; // rolling window for momentum calculation
 // and untouched: they're ShotMapView.css's own classes (out of scope), and
 // use !important so they win regardless of how .pp-indicator's base becomes
 // Tailwind utilities. Duplicated in PWHLShotMapView.jsx per convention.
-const SCORE_TEAM_WRAP_CLASSES = 'flex flex-col items-center gap-1';
 const PP_INDICATOR_BASE_CLASSES = 'text-[10px] font-bold py-0.5 px-2 rounded-[4px] animate-[ppPulse_1.5s_ease-in-out_infinite]';
 const CAR_PP_CLASSES = 'car-pp bg-[rgba(61,186,126,0.2)] text-[color:var(--green)] border-[0.5px] border-[rgba(61,186,126,0.4)]';
 const OPP_PP_CLASSES = 'opp-pp bg-[rgba(240,160,48,0.2)] text-[color:var(--amber)] border-[0.5px] border-[rgba(240,160,48,0.3)]';
@@ -103,39 +107,11 @@ const OPP_PP_CLASSES = 'opp-pp bg-[rgba(240,160,48,0.2)] text-[color:var(--amber
 // marker wherever used rather than reproduced as a Tailwind color utility
 // -- per the cascade-layers rule, a Tailwind color utility could never
 // safely override it, and it already provides the exact color needed.
-const SCORE_CARD_CLASSES = 'score-card card mb-[10px]';
-// flex-wrap (not the original single-line row): on narrow phones, CAR side +
-// center info + OPP side + the season-selector column don't all fit on one
-// line -- confirmed on a real device, the selector was getting clipped/
-// unreachable rather than just wrapping. Letting it wrap keeps every
-// control reachable; the season-selector column below gets `marginLeft:
-// auto` so it lands at the right edge of its own line when wrapped, same
-// position it already had via `justify-between` when there's room.
-const SCORE_INNER_CLASSES = 'flex items-center justify-between gap-[10px] flex-wrap';
-const SCORE_TEAM_CLASSES = 'flex items-center gap-2';
-const scoreAbbrClasses = (variant) => {
-  const base = 'font-[family-name:var(--font-display)] text-[18px] font-bold tracking-[.04em]';
-  if (variant === 'team-primary') return `${base} team-primary-text`;
-  const color = variant === 'red' ? 'text-[color:var(--red-bright)]'
-    : variant === 'muted' ? 'text-[color:var(--text-muted)]' : '';
-  return `${base} ${color}`;
-};
-const scoreNumClasses = (variant) => {
-  const base = 'font-[family-name:var(--font-display)] text-[36px] font-bold leading-none';
-  if (variant === 'team-primary') return `${base} team-primary-text`;
-  const color = variant === 'red' ? 'text-[color:var(--red-bright)]'
-    : variant === 'muted' ? 'text-[color:var(--text-muted)]' : '';
-  return `${base} ${color}`;
-};
-const SCORE_CENTER_CLASSES = 'text-center';
-const SCORE_PERIOD_CLASSES = 'text-[11px] text-[color:var(--amber)] font-semibold uppercase tracking-[.06em]';
-const SCORE_CLOCK_CLASSES = 'font-[family-name:var(--font-mono)] text-[22px] text-[color:var(--text)] leading-[1.2]';
-const SCORE_STATE_CLASSES = 'text-[10px] text-[color:var(--text-dim)]';
+// The score card's own classes (SCORE_*, scoreAbbrClasses/scoreNumClasses,
+// PILL_RED_CLASSES) live in utils/scoreCardClasses.js, shared with
+// PWHLShotMapView.jsx and HockeyTechShotMapView.jsx -- see that file for
+// why the inner row wraps.
 const OFFSEASON_NOTE_CLASSES = 'mb-2.5 py-2 px-3 rounded-[10px] bg-[var(--bg2)] border border-[var(--border)] text-[11px] leading-[1.45] text-[color:var(--text-dim)]';
-// .pill/.pill-red (index.css, Phase 7b) -- shape + live-state color, this
-// file's only real consumer of either class (.pill-green/.pill-amber were
-// confirmed 100% dead app-wide during Phase 5 sub-PR 3's investigation).
-const PILL_RED_CLASSES = 'inline-flex items-center gap-[5px] py-[3px] px-[10px] rounded-[20px] text-[11px] font-medium bg-[var(--red-dim)] text-[color:var(--red-bright)] border-[0.5px] border-[color:var(--red-border)]';
 // .dual-bar/.fill-blue (index.css, Phase 7b) -- "dual-bar" is kept as a
 // literal marker class (no properties of its own left) since index.css's
 // `[data-theme="light"] .dual-bar {...}` override still targets it by

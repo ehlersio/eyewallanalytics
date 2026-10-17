@@ -858,7 +858,14 @@
     "live": "Live",
     "guestSubtitle": "{{state}} · {{where}} {{opp}}",
     "periodSummary": "{{period}} Summary",
-    "gameSummary": "📊 Game Summary"
+    "gameSummary": "📊 Game Summary",
+    "scoreBar": {
+      "win": "✓ Win",
+      "loss": "✗ Loss",
+      "home": "Home",
+      "away": "Away",
+      "allGames": "All games"
+    }
   },
   "common": {
     "loading": "Loading…",
