@@ -51,6 +51,22 @@ describe('LocalPredictionScorecard', () => {
     expect(text).not.toContain('ROC') // not graded yet
     expect(text.indexOf('CLT')).toBeLessThan(text.indexOf('TEX')) // newest first
   })
+
+  it('shows each game on its own date, not the day before in US time zones', () => {
+    const tz = process.env.TZ
+    process.env.TZ = 'America/New_York'
+    try {
+      const store = createPredictionStore('ahl')
+      store.save({ gameId: 1, gameDate: '2026-10-16', opponent: 'REA', predictedTeamWin: true, predictedTeamScore: 3, predictedOppScore: 2 })
+      store.recordOutcome(1, 4, 2)
+      const text = textOf(<LocalPredictionScorecard store={store} />)
+      expect(text).toContain('Oct 16')
+      expect(text).not.toContain('Oct 15')
+    } finally {
+      if (tz === undefined) delete process.env.TZ
+      else process.env.TZ = tz
+    }
+  })
 })
 
 describe('prediction share card', () => {

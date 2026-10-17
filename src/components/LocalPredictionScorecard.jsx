@@ -8,7 +8,7 @@
 // Nothing graded yet: the NHL scorecard's empty state. Plain probabilities
 // and outcomes -- no betting framing.
 import { useTranslation } from 'react-i18next';
-import { formatDate } from '../utils/formatters';
+import { formatDateOnly } from '../utils/formatters';
 
 const RECENT_SHOWN = 5;
 const LABEL_CLASSES = 'text-[9px] uppercase tracking-[0.06em] text-[color:var(--text-dim)]';
@@ -55,7 +55,7 @@ export default function LocalPredictionScorecard({ store }) {
               <div key={p.gameId} className="scorecard-recent-item flex items-center justify-between gap-2 text-[11px] py-[2px]">
                 <span className="text-[color:var(--text-muted)] truncate">
                   {t('scorecard.localRecentItem', {
-                    date: p.gameDate ? formatDate(p.gameDate) : '—',
+                    date: formatDateOnly(p.gameDate) || '—',
                     opp: p.opponent || '—',
                     outcome: p.predictedTeamWin ? t('scorecard.localOutcomeWin') : t('scorecard.localOutcomeLoss'),
                     score: `${p.teamActual}–${p.oppActual}`,
