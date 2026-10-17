@@ -17,7 +17,7 @@ import {
   PWHL_CONFERENCES, pwhlUsesConferences, pwhlPlayoffFormat, rankPWHLConference,
   projectPWHLBracket, buildPWHLSeries, arrangePWHLConferenceBracket,
 } from '../utils/pwhlPlayoffs';
-import { formatDate } from '../utils/formatters';
+import { formatDate, formatDateOnly } from '../utils/formatters';
 import TeamLogo from '../components/TeamLogo';
 import PWHLPlayerPopup from '../components/PWHLPlayerPopup';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
@@ -878,7 +878,7 @@ function BracketPanel({ season, standings, poSeasonId, seasonLabel, myTeamId, my
                       return (
                         <div key={g.game_id} className={SERIES_MODAL_GAME_ROW_CLASSES}>
                           <span className={SERIES_MODAL_GAME_NUM_CLASSES}>G{gi+1}</span>
-                          <span className={SERIES_MODAL_GAME_DATE_CLASSES}>{g.game_date ? new Date(g.game_date+'T12:00:00Z').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—'}</span>
+                          <span className={SERIES_MODAL_GAME_DATE_CLASSES}>{formatDateOnly(g.game_date) || '—'}</span>
                           <div className={seriesModalTeamScoreClasses(true)}>
                             <span className={SERIES_MODAL_TEAM_ABBREV_CLASSES} style={{ color: homeColor }}>{homeAbbr}</span>
                             <span className={seriesModalScoreClasses(homeWon)}>{g.home_score}</span>
