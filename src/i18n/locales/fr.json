@@ -751,6 +751,7 @@
   },
   "hockeyTechTeamView": {
     "noTeamSelected": "Aucune équipe {{ofLeague}} sélectionnée.",
+    "showingPrevious": "{{abbr}} n'a pas encore joué de match en {{current}} — voici {{fallback}}.",
     "tabs": {
       "overview": "Aperçu",
       "stats": "Statistiques",
