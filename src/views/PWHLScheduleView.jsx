@@ -1,7 +1,7 @@
 // views/PWHLScheduleView.jsx
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatDate as formatDateIntl } from '../utils/formatters';
+import { formatDateOnly } from '../utils/formatters';
 import { PWHLCalendarView } from '../components/PWHLCalendarView';
 import { useNavigate } from 'react-router-dom';
 import { useFetch } from '../hooks/useFetch';
@@ -110,18 +110,14 @@ function formatDate(g) {
     // "Fri, Nov 21" → "Nov 21" — untranslatable API passthrough, see above
     return str.split(',').slice(1).join(',').trim();
   }
-  const d = new Date(str + 'T12:00:00Z');
-  if (isNaN(d)) return str;
-  return formatDateIntl(d, { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  return formatDateOnly(str) || str;
 }
 
 function dayOfWeek(g) {
   const str = _gameStr(g);
   if (!str) return '';
   if (str.includes(',')) return str.split(',')[0].trim(); // "Fri" — see formatDate's note
-  const d = new Date(str + 'T12:00:00Z');
-  if (isNaN(d)) return '';
-  return formatDateIntl(d, { weekday: 'short', timeZone: 'UTC' });
+  return formatDateOnly(str, { weekday: 'short' });
 }
 
 export default function PWHLScheduleView() {

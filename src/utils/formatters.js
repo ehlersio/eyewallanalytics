@@ -38,6 +38,19 @@ export function formatDate(date, options = { month: 'short', day: 'numeric' }) {
   return new Intl.DateTimeFormat(intlLocale(), options).format(d);
 }
 
+// A date-only "YYYY-MM-DD" string (a game_date: the local date the game is
+// played on) formatted for display. `new Date('2026-10-16')` is UTC
+// midnight, which is the evening of Oct 15 in every US time zone, so a
+// bare parse shows the day before (a Friday game read "Thu"). Parsing it
+// as noon UTC and formatting in UTC keeps the calendar date whatever the
+// viewer's time zone. Only the leading YYYY-MM-DD is read, so a full ISO
+// datetime gives the date as written in it. Returns '' when there's no date.
+export function formatDateOnly(dateStr, options = { month: 'short', day: 'numeric' }) {
+  const m = /^(\d{4}-\d{2}-\d{2})/.exec(String(dateStr ?? ''));
+  if (!m) return '';
+  return formatDate(new Date(`${m[1]}T12:00:00Z`), { ...options, timeZone: 'UTC' });
+}
+
 // French ordinals don't follow English's st/nd/rd/th pattern -- every
 // number but 1 just takes "e" (2e, 3e, 21e, 100e), with 1er/1re for one.
 // Intl.PluralRules' ordinal categories collapse to exactly that one/other

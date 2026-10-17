@@ -75,7 +75,7 @@ import {
   SCORE_SELECTOR_COL_CLASSES, SCORE_SEASON_CHIPS_CLASSES,
 } from '../../utils/scoreCardClasses';
 import { finalSuffix } from '../../utils/scoreboard';
-import { formatDate as formatDateIntl } from '../../utils/formatters';
+import { formatDateOnly } from '../../utils/formatters';
 import {
   PuckDropPopup, GoalPopup, PenaltyPopup, WinPopup, useHockeyTechGameEvents,
 } from '../../components/hockeytech/HockeyTechGameEvents';
@@ -170,9 +170,7 @@ function adaptOppShot(row) {
 }
 
 function shortDate(dateStr) {
-  const d = new Date(`${dateStr}T12:00:00Z`);
-  if (Number.isNaN(d.getTime())) return dateStr || '';
-  return formatDateIntl(d, { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  return formatDateOnly(dateStr) || dateStr || '';
 }
 
 const pct = (num, den) => (den > 0 ? `${((num / den) * 100).toFixed(1)}%` : '—');

@@ -20,7 +20,7 @@
 //     the League view already documents for its own Bracket tab.
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatDate as formatDateIntl } from '../../utils/formatters';
+import { formatDateOnly } from '../../utils/formatters';
 import { leagueNameVars } from '../../utils/hockeyTechI18n';
 import { useFetch } from '../../hooks/useFetch';
 import { useLeagueSeasons } from '../../hooks/useLeagueSeasons';
@@ -53,15 +53,13 @@ function vmBtnClasses(active) {
     : `${VM_BTN_BASE} bg-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text)]`;
 }
 
+// game_date is the date-only local game date ("2026-10-16"); see
+// formatDateOnly for why it isn't a bare new Date(dateStr).
 function dayOfWeek(dateStr) {
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return '';
-  return formatDateIntl(d, { weekday: 'short' });
+  return formatDateOnly(dateStr, { weekday: 'short' });
 }
 function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T12:00:00Z');
-  if (Number.isNaN(d.getTime())) return dateStr;
-  return formatDateIntl(d, { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  return formatDateOnly(dateStr) || dateStr;
 }
 
 export default function HockeyTechScheduleView({ league }) {
