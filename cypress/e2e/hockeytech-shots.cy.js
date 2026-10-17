@@ -11,6 +11,10 @@ LEAGUES.forEach(({ key, label, team }) => {
       visitAs(`/${key}/shots`, key, team)
       cy.contains('h2', 'Shot Map', { timeout: DATA_TIMEOUT })
         .find(leagueLogo(key, team.abbr)).should('exist')
+      // The score card opens the page with our team, and holds the season chips.
+      cy.get('.hockeytech-score-card').should('contain', team.abbr)
+        .find(leagueLogo(key, team.abbr)).should('exist')
+      cy.get('.hockeytech-score-card button', { timeout: DATA_TIMEOUT }).should('have.length.at.least', 1)
       cy.get('[data-tour="rink"]', { timeout: DATA_TIMEOUT }).should($rink => {
         const hasRink = $rink.find('svg').length > 0
         const noData = /No shot data|Shot data for this game isn't in yet/.test($rink.text())

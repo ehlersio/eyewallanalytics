@@ -22,6 +22,9 @@ const DOTS = '[data-tour="rink"] .rhr-svg circle[style*="cursor: pointer"]'
 
 // A team's shots and goals the rink can place: each goal once (the feed
 // sends it as a shot and a goal), shots without coordinates left out.
+// hockeyTechLiveStore.js's periodLabel() for a regulation/overtime event.
+const periodLabel = n => (n <= 3 ? `P${n}` : n === 4 ? 'OT' : `${n - 3}OT`)
+
 const plottable = (live, teamId) => live.events.filter(e => e.teamId === teamId &&
   (e.eventType === 'goal' || (e.eventType === 'shot' && !e.isGoal)) && e.x != null && e.y != null).length
 
@@ -57,6 +60,13 @@ LEAGUES.forEach(({ key, label, team }) => {
         // The live chip is picked and the page is on its game.
         cy.contains('#main-content button', '🔴 LIVE', { timeout: DATA_TIMEOUT }).should('exist')
         cy.get('#main-content').should('contain', `Live · vs ${fixture.away}`)
+        // The score card: both teams and scores, the LIVE pill, and the
+        // period and clock of the last play-by-play event.
+        const last = live.events[live.events.length - 1]
+        cy.get('.hockeytech-score-card').should('contain', team.abbr).and('contain', fixture.away)
+          .and('contain', '🔴 LIVE').and('contain', periodLabel(last.period)).and('contain', last.time)
+        cy.get('.hockeytech-score-card').invoke('text')
+          .should('match', new RegExp(`${team.abbr}.*${live.homeScore}.*${live.awayScore}.*${fixture.away}`))
         cy.get(DOTS, { timeout: DATA_TIMEOUT }).should('have.length', plottable(live, team.teamId))
         // The cards count the followed team's goals from the same rows.
         const ourGoals = live.events.filter(e => e.eventType === 'goal' && e.teamId === team.teamId).length

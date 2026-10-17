@@ -13,12 +13,12 @@ import { LEAGUES, visitAs } from '../support/hockeytech'
 const FIXTURES = {
   ahl: {
     guestGame: { gameId: 778, home: { abbr: 'CLT', teamId: 384 }, away: { abbr: 'TEX', teamId: 380 } },
-    final: { gameId: 1027785, guest: 'SYR', line: 'Final · at HER', homeIsFavorite: true },
+    final: { gameId: 1027785, guest: 'SYR', line: 'Final · at HER', where: 'Away', homeIsFavorite: true },
     seasonLabels: ['2026-27', '2025-26'],
   },
   echl: {
     guestGame: { gameId: 778, home: { abbr: 'FLA', teamId: 8 }, away: { abbr: 'ORL', teamId: 61 } },
-    final: { gameId: 24323, guest: 'WOR', line: 'Final · vs ADK', homeIsFavorite: false },
+    final: { gameId: 24323, guest: 'WOR', line: 'Final · vs ADK', where: 'Home', homeIsFavorite: false },
     seasonLabels: ['2026-27', '2025-26'],
   },
 }
@@ -73,7 +73,12 @@ LEAGUES.forEach(({ key, label, team }) => {
       cy.contains('#main-content button', '🔴 LIVE', { timeout: DATA_TIMEOUT })
         .should('contain', home.abbr).and('contain', '2–1')
       cy.get('#main-content').should('contain', `Live · at ${home.abbr}`)
-      // One game, not the guest's season: no season tabs or game chips.
+      // The score card: both teams, the guest's side first, and the LIVE
+      // pill -- no period or clock, since this /live has no events yet.
+      cy.get('.hockeytech-score-card').should('contain', away.abbr).and('contain', home.abbr).and('contain', '🔴 LIVE')
+      cy.get('.hockeytech-score-card').invoke('text').should('match', new RegExp(`${away.abbr}.*2.*1.*${home.abbr}`))
+      cy.get('.hockeytech-score-card').should('not.contain', ':')
+      // One game, not the guest's season: no season chips or game chips.
       seasonLabels.forEach(s => cy.contains('#main-content button', s).should('not.exist'))
       cy.get('[data-tour="rink"]', { timeout: DATA_TIMEOUT }).should('contain', "Shot data for this game isn't in yet")
       cy.window().then(win => {
@@ -96,6 +101,8 @@ LEAGUES.forEach(({ key, label, team }) => {
       cy.get('[data-tour="rink"] svg', { timeout: DATA_TIMEOUT }).should('exist')
       // An older season's game: the subtitle comes from the game itself.
       cy.get('#main-content', { timeout: DATA_TIMEOUT }).should('contain', final.line)
+      // The score card reads the final from the game's own /live.
+      cy.get('.hockeytech-score-card').should('contain', final.guest).and('contain', 'Final').and('contain', final.where)
       cy.assertNoErrors()
     })
 
