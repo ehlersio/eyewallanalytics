@@ -25,6 +25,11 @@ LEAGUES.forEach(({ key, label, team, teamName, upcoming, final }) => {
     // only where {league}_game_win_probs has a row, so one upcoming game is
     // given one and every other row's is removed. The browser cache is off
     // for the test: a cached schedule never reaches the intercept.
+    //
+    // The rows go back with res.send(), not by assigning res.body: Cypress
+    // merges an assigned body onto the real one, so a key dropped from a row
+    // comes back. Once the pipeline wrote real win probabilities for more
+    // than the next game (AHL HER, 2026-10-17), their chips showed up too.
     it(`/${key}/schedule shows the Elo win-probability chip only on games with a win probability`, () => {
       const workerUrl = Cypress.expose('WORKER_URL')
       if (Cypress.isBrowser({ family: 'chromium' })) {
@@ -34,17 +39,18 @@ LEAGUES.forEach(({ key, label, team, teamName, upcoming, final }) => {
         req.on('before:response', res => {
           if (!Array.isArray(res.body)) return
           let given = false
-          res.body = res.body.map(({ winProb: _drop, ...g }) => {
+          res.send(res.body.map(({ winProb: _drop, ...g }) => {
             if (given || g.game_state === 'Final') return g
             given = true
             const home = g.home_team_id === team.teamId
             return { ...g, winProb: { home: home ? 0.64 : 0.36, away: home ? 0.36 : 0.64, source: 'elo' } }
-          })
+          }))
         })
       })
       visitAs(`/${key}/schedule`, key, team)
       cy.contains('h2', 'Schedule', { timeout: DATA_TIMEOUT })
-      // The upcoming game is in 2026-27: the ECHL still opens on 2025-26.
+      // The upcoming games are in 2026-27, which may or may not be the
+      // season the tab opens on: pick it either way.
       cy.contains('button', /^2026-27$/, { timeout: DATA_TIMEOUT }).click()
       cy.get('#main-content', { timeout: DATA_TIMEOUT }).should($main => {
         expect($main.find('.card.cursor-pointer').length, 'game cards').to.be.greaterThan(0)
