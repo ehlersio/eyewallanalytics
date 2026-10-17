@@ -36,11 +36,11 @@
 // The score card (2026-10) is PWHLShotMapView's, from the data these
 // leagues have (utils/hockeyTechScoreCard.js): our side and theirs with the
 // score for the game on screen; in the middle, while live, the period and
-// clock of the last play-by-play event (hockeyTechLiveStore.js's `clock`,
-// what the Topbar chip shows -- /today and /live carry no running clock or
-// intermission, the Worker keeps the scorebar's for the Live Activity) and
-// the LIVE pill, for a final "Final[/OT|/SO]" and Win/Loss · Home/Away, and
-// for the season aggregate the season's name. The season chips sit in its
+// clock (hockeyTechLiveStore.js's `clock`, what the Topbar chip shows: the
+// Worker's scorebar snapshot from /today, or the last play-by-play event's
+// from an older Worker; "2nd Intermission" and no clock in an
+// intermission) and the LIVE pill, for a final "Final[/OT|/SO]" and
+// Win/Loss · Home/Away, and for the season aggregate the season's name. The season chips sit in its
 // trailing column. No power-play / empty-net badges: nothing here tracks
 // the live situation.
 //
@@ -66,7 +66,7 @@ import TeamLogo from '../../components/TeamLogo';
 import { MetCard } from '../../components/StatBar';
 import GameChipsRow, { LiveGameChip } from '../../components/GameChipsRow';
 import SeasonChipRow from '../../components/SeasonChipRow';
-import { periodLabel } from '../../utils/hockeyTechLiveStore';
+import { periodLabel, clockPeriodNumber } from '../../utils/hockeyTechLiveStore';
 import { scoreCardFromToday, scoreCardFromScheduleRow, scoreCardFromLive } from '../../utils/hockeyTechScoreCard';
 import {
   SCORE_CARD_CLASSES, SCORE_INNER_CLASSES, SCORE_TEAM_WRAP_CLASSES, SCORE_TEAM_CLASSES,
@@ -178,6 +178,18 @@ const pct = (num, den) => (den > 0 ? `${((num / den) * 100).toFixed(1)}%` : '—
 // pickedGameId for the season aggregate, as opposed to null, "nothing
 // picked", which opens the newest final.
 const ALL_GAMES = 'all';
+
+// A live game's intermission line, as the NHL Shot Map writes it: "2nd
+// Intermission", "OT1 Intermission"; the period label alone when the
+// period isn't known.
+function intermissionLine(t, clock) {
+  const n = clockPeriodNumber(clock);
+  if (n === 1) return t('shotMapView.scoreBar.intermission1st');
+  if (n === 2) return t('shotMapView.scoreBar.intermission2nd');
+  if (n === 3) return t('shotMapView.scoreBar.intermission3rd');
+  if (n >= 4) return t('shotMapView.scoreBar.intermissionOT', { n: n - 3 });
+  return periodLabel(clock);
+}
 
 export default function HockeyTechShotMapView({ league }) {
   const { t } = useTranslation();
@@ -533,10 +545,14 @@ export default function HockeyTechShotMapView({ league }) {
   const oppTeam = scoreCard ? league.config.getTeamById(scoreCard.oppId) : null;
   const oppAbbr = oppTeam?.abbr || scoreCard?.oppCode || '';
   const oppColor = oppTeam?.displayColor || 'var(--text-dim)';
-  // The live game's period and the clock of its last event (none for a
-  // shootout attempt), only when /live has said.
-  const livePeriod = viewingLive ? periodLabel(liveState.clock) : null;
-  const liveClock = viewingLive && !liveState.clock?.shootout ? liveState.clock?.time || null : null;
+  // The live game's period and clock (none for a shootout attempt), only
+  // when /today's scorebar or /live has said; in an intermission, which
+  // one, and no clock.
+  const liveIntermission = viewingLive && !!liveState.clock?.inIntermission && !liveState.clock?.shootout;
+  const livePeriod = !viewingLive ? null
+    : liveIntermission ? intermissionLine(t, liveState.clock)
+    : periodLabel(liveState.clock);
+  const liveClock = viewingLive && !liveIntermission && !liveState.clock?.shootout ? liveState.clock?.time || null : null;
 
   let subtitle = t('hockeyTechShotMapView.subtitle');
   // A live game, or one that isn't among the finals on screen: a guest

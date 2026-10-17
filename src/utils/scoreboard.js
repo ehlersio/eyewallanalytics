@@ -40,8 +40,11 @@ export function finalSuffix(endedIn) {
 }
 
 // Ordinal period label: 1 -> '1st'. OT/SO come through periodType instead,
-// so a 4th period in an OT game reads 'OT', not '4th'.
+// so a 4th period in an OT game reads 'OT', not '4th'. A HockeyTech row's
+// own periodLabel (the Worker's, from the league's scorebar) wins: '2OT'
+// rather than 'OT'.
 export function periodLabel(game) {
+  if (typeof game?.periodLabel === 'string' && game.periodLabel) return game.periodLabel;
   if (game?.periodType && game.periodType !== 'REG') return game.periodType;
   const n = game?.period;
   if (!n) return null;
@@ -51,7 +54,8 @@ export function periodLabel(game) {
 }
 
 // The line under a live game's badge: "2nd · 12:34", "2nd INT", or just
-// the period when the feed has no clock (every HockeyTech league).
+// the period when the feed has no clock (a HockeyTech row from an older
+// Worker).
 export function liveDetail(game, intermissionWord = 'INT') {
   const period = periodLabel(game);
   if (!period) return game?.statusDetail || null;

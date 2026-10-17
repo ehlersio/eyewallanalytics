@@ -39,6 +39,15 @@ describe('hockeyTechChip', () => {
       .toEqual({ myAbbr: 'MIN', oppAbbr: 'MTL', myScore: 2, oppScore: 1, period: 'P3', time: '8:15' })
   })
 
+  it('shows the Worker\'s scorebar clock, and the intermission without it', () => {
+    expect(hockeyTechChip({ game, clock: { period: 2, time: '07:58', shootout: false, label: '2nd', inIntermission: false } }, 3))
+      .toMatchObject({ myAbbr: 'MTL', period: 'P2', time: '07:58' })
+    expect(hockeyTechChip({ game, clock: { period: 2, time: '00:00', shootout: false, label: '2nd', inIntermission: true } }, 3))
+      .toMatchObject({ period: '2nd INT', time: null })
+    expect(hockeyTechChip({ game, clock: { period: null, time: null, shootout: true, label: 'SO', inIntermission: false } }, 3))
+      .toMatchObject({ period: 'SO', time: null })
+  })
+
   it('shows the score alone before any event', () => {
     expect(hockeyTechChip({ game, clock: null }, 3)).toMatchObject({ myAbbr: 'MTL', period: null, time: null })
   })
