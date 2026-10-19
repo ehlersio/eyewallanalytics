@@ -2863,7 +2863,8 @@
       "eyebrow": "Live games",
       "title": "Follow the game as it happens",
       "body": "A shot map that fills in shot by shot, momentum, live insights, and a replay button the moment a goal is tracked. Tap any Scoreboard game to watch it from either side.",
-      "alt": "A live game in EyeWall: the score, live insights and the shot map, with a button to replay the latest goal"
+      "alt": "A live game in EyeWall: the score, live insights and the shot map, with a button to replay the latest goal",
+      "clipAlt": "A replayed live game in EyeWall: the shot map fills in, a goal lands, and its tracking replay plays on the rink"
     },
     "replays": {
       "eyebrow": "Goal replays",
@@ -2873,7 +2874,10 @@
       "videoBody": "The league's own clip of the goal, right in the game view.",
       "trackingTitle": "Tracking",
       "trackingBody": "EyeWall's rendering of the same goal from player and puck tracking: every skater, the puck's path, the scorer ringed.",
-      "watchHero": "Watch one at the top of the page"
+      "watchHero": "Watch one at the top of the page",
+      "alt": "A goal in EyeWall: the league's video clip, then the switch to Tracking and the replay drawn from player and puck tracking",
+      "videoAlt": "A goal's popup on the Video tab: the league's clip of the goal, with the scorer, assists and shot details",
+      "trackingAlt": "The same goal on the Tracking tab: every skater and the puck at the moment it went in"
     },
     "lock": {
       "eyebrow": "Lock Screen & alerts",
@@ -2890,7 +2894,7 @@
       "tilePercentiles": "percentile categories",
       "tileAreas": "goalie shot areas",
       "tileLeagues": "leagues",
-      "alt": "A team's advanced stats: Corsi, Fenwick and shot rates per game with league percentiles",
+      "alt": "Two players compared on NHL tracking: top speed, bursts, distance, shot speed and zone time, with percentiles",
       "trackingAlt": "NHL player tracking leaders: fastest skaters and hardest shots"
     },
     "teams": {
@@ -2903,7 +2907,7 @@
       "eyebrow": "EyeWall AI",
       "title": "Recaps that never invent a stat",
       "body": "Period and game recaps, scouting notes and matchup breakdowns, written from the data on the page. Shareable summary and prediction cards.",
-      "alt": "A first-period summary: Corsi, shots, faceoffs and high-danger chances, with an EyeWall AI period analysis"
+      "alt": "A second-period summary: Corsi, shots, faceoffs and high-danger chances, with an EyeWall AI period analysis"
     },
     "scorecard": {
       "eyebrow": "The public scorecard",
@@ -2930,6 +2934,10 @@
       "language": "Language",
       "social": "EyeWall on social media",
       "disclaimer": "EyeWall Analytics is independent and not affiliated with, endorsed by, or sponsored by any league or team."
+    },
+    "leaguesBand": {
+      "pwhlAlt": "A PWHL shot map in EyeWall: every Minnesota Frost shot of a game, goals ringed",
+      "ahlAlt": "An AHL shot map in EyeWall: every Hershey Bears shot of a game, goals ringed"
     }
   }
 }

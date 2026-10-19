@@ -166,6 +166,15 @@
 [data-theme="light"] .eyewall-logo-dark  { display: none; }
 [data-theme="light"] .eyewall-logo-light { display: inline-block; }
 
+/* Landing page screenshots (components/landing/LandingMedia.jsx): each comes
+   as a dark and a light capture, both <img>s are in the page, and
+   [data-theme] shows one -- the same swap as the logos above, so it follows
+   the app's own theme choice (a <picture media> would only see the OS). */
+.landing-shot-dark  { display: block; }
+.landing-shot-light { display: none; }
+[data-theme="light"] .landing-shot-dark  { display: none; }
+[data-theme="light"] .landing-shot-light { display: block; }
+
 /* Faceoff mark colors for FaceoffRink.jsx (intro + loader): Night Rink in
    dark mode, Ice Rink in light. sheet/red/ink must match RINK_PALETTES in
    src/brand/rinkMark.js -- brandTokens.test.js checks they do. puck and

@@ -48,15 +48,21 @@
 
     <!-- Open Graph / link previews. Crawlers have no saved team, so they
          get the landing page (views/LandingView.jsx) and these tags. The
-         og:image is the app icon until a 1200x630 card replaces it. -->
+         card is drawn by landing-assets/tools/og.swift (see README,
+         "Landing page"); its name is fingerprinted like everything in
+         /landing/, so a new card is a new URL. -->
     <meta property="og:title"       content="EyeWall Analytics" />
     <meta property="og:description" content="Live shot maps, goal replays drawn from player tracking, Lock Screen scores and EyeWall AI recaps for the NHL, PWHL, AHL and ECHL. Free, no ads, in English and French." />
-    <meta property="og:image"       content="/favicon-512.png" />
+    <meta property="og:image"        content="https://eyewallanalytics.com/landing/og.52b6407e.png" />
+    <meta property="og:image:width"  content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt"    content="EyeWall Analytics: Every shot. Every goal. Every league you follow. A phone showing a live game with the shot map." />
     <meta property="og:type"        content="website" />
     <meta property="og:url"         content="https://eyewallanalytics.com/" />
     <meta property="og:site_name"   content="EyeWall Analytics" />
     <meta name="twitter:card"        content="summary_large_image" />
     <meta name="twitter:site"        content="@eyewallstats" />
+    <meta name="twitter:image"       content="https://eyewallanalytics.com/landing/og.52b6407e.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <!-- Preconnect to external origins for faster initial requests -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

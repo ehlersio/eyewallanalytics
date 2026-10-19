@@ -5,10 +5,12 @@ import { useTranslation } from 'react-i18next';
 import PhoneFrame from './PhoneFrame';
 import LandingMedia from './LandingMedia';
 import { EYEBROW_CLASSES } from './FeatureSection';
+import { prefersReducedMotion } from './useReveal';
 
 // One phone at ~60% of a phone's width, or two side by side, the second
-// set lower.
-export function Phones({ media }) {
+// set lower. Under prefers-reduced-motion a clip gives way to its stills.
+export function Phones({ media: all }) {
+  const media = prefersReducedMotion() ? all.flatMap(m => m.still || [m]) : all;
   if (media.length === 1) {
     return (
       <PhoneFrame className="w-[60vw] max-w-[300px]">
@@ -42,9 +44,10 @@ export function LockScreenMedia({ media, liveActivity }) {
   );
 }
 
-// Goal replays, two ways: the app's Video | Tracking switch, and what each
-// side shows. A recorded clip of the switch replaces this in the asset PR.
-export function TwoWaysMedia() {
+// Goal replays, two ways: what each side of the app's Video | Tracking
+// switch shows, under the section's copy (the clip beside it shows the
+// switch itself).
+export function TwoWaysCopy() {
   const { t } = useTranslation();
   const panel = (titleKey, bodyKey, on) => (
     <div className={`rounded-[var(--radius)] border p-4 ${on ? 'border-[var(--red-border)] bg-[var(--red-dim)]' : 'border-[var(--border-2)] bg-[var(--bg2)]'}`}>
@@ -53,11 +56,7 @@ export function TwoWaysMedia() {
     </div>
   );
   return (
-    <div className="landing-two-ways w-full max-w-[440px]">
-      <div className="mx-auto mb-4 flex w-max rounded-[20px] border border-[var(--border-2)] bg-[var(--bg2)] p-1 text-[13px] font-semibold" aria-hidden="true">
-        <span className="rounded-[16px] px-4 py-1.5 text-[color:var(--text-muted)]">{t('landing.replays.videoTitle')}</span>
-        <span className="rounded-[16px] bg-[var(--red-dim)] px-4 py-1.5 text-[color:var(--red-bright)]">{t('landing.replays.trackingTitle')}</span>
-      </div>
+    <div className="landing-two-ways mt-6 w-full max-w-[440px]">
       <div className="flex flex-col gap-3">
         {panel('landing.replays.videoTitle', 'landing.replays.videoBody', false)}
         {panel('landing.replays.trackingTitle', 'landing.replays.trackingBody', true)}

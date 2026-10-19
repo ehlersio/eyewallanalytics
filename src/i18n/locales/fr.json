@@ -2863,7 +2863,8 @@
       "eyebrow": "Matchs en direct",
       "title": "Suivez le match en temps réel",
       "body": "Une carte de tirs qui se remplit tir par tir, l'élan du match, des observations en direct et un bouton de reprise dès qu'un but est suivi. Touchez n'importe quel match du tableau pour le suivre du point de vue de l'une ou l'autre équipe.",
-      "alt": "Un match en direct dans EyeWall : le pointage, les observations en direct et la carte de tirs, avec un bouton pour revoir le dernier but"
+      "alt": "Un match en direct dans EyeWall : le pointage, les observations en direct et la carte de tirs, avec un bouton pour revoir le dernier but",
+      "clipAlt": "Un match en direct rejoué dans EyeWall : la carte de tirs se remplit, un but est marqué et sa reprise du suivi joue sur la patinoire"
     },
     "replays": {
       "eyebrow": "Reprises des buts",
@@ -2873,7 +2874,10 @@
       "videoBody": "La séquence officielle de la ligue, directement dans la vue du match.",
       "trackingTitle": "Suivi",
       "trackingBody": "Le rendu EyeWall du même but à partir du suivi des joueurs et de la rondelle : chaque patineur, la trajectoire de la rondelle, le marqueur encerclé.",
-      "watchHero": "En voir un en haut de la page"
+      "watchHero": "En voir un en haut de la page",
+      "alt": "Un but dans EyeWall : la séquence vidéo de la ligue, puis le passage à Suivi et la reprise tirée du suivi des joueurs et de la rondelle",
+      "videoAlt": "La fenêtre d'un but sur l'onglet Vidéo : la séquence de la ligue, avec le marqueur, les passes et les détails du tir",
+      "trackingAlt": "Le même but sur l'onglet Suivi : chaque patineur et la rondelle au moment du but"
     },
     "lock": {
       "eyebrow": "Écran verrouillé et alertes",
@@ -2890,7 +2894,7 @@
       "tilePercentiles": "catégories de centiles",
       "tileAreas": "zones de tir des gardiens",
       "tileLeagues": "ligues",
-      "alt": "Les statistiques avancées d'une équipe : Corsi, Fenwick et tirs par match avec les centiles de la ligue",
+      "alt": "Deux joueurs comparés selon le suivi de la LNH : vitesse de pointe, accélérations, distance, vitesse des tirs et temps de zone, avec les centiles",
       "trackingAlt": "Les meneurs du suivi des joueurs de la LNH : patineurs les plus rapides et tirs les plus puissants"
     },
     "teams": {
@@ -2903,7 +2907,7 @@
       "eyebrow": "EyeWall AI",
       "title": "Des résumés qui n'inventent jamais une statistique",
       "body": "Résumés de période et de match, notes de dépistage et analyses des affrontements, rédigés à partir des données de la page. Cartes de résumé et de prédiction à partager.",
-      "alt": "Un résumé de première période : Corsi, tirs, mises au jeu et chances de qualité, avec l'analyse de période d'EyeWall AI"
+      "alt": "Un résumé de deuxième période : Corsi, tirs, mises au jeu et chances de qualité, avec l'analyse de période d'EyeWall AI"
     },
     "scorecard": {
       "eyebrow": "Le bilan public",
@@ -2930,6 +2934,10 @@
       "language": "Langue",
       "social": "EyeWall sur les réseaux sociaux",
       "disclaimer": "EyeWall Analytics est indépendant et n'est affilié à aucune ligue ni équipe, ni approuvé ou commandité par elles."
+    },
+    "leaguesBand": {
+      "pwhlAlt": "Une carte de tirs de la LPHF dans EyeWall : chaque tir de la Frost du Minnesota pendant un match, buts encerclés",
+      "ahlAlt": "Une carte de tirs de la LAH dans EyeWall : chaque tir des Bears de Hershey pendant un match, buts encerclés"
     }
   }
 }

@@ -15,7 +15,7 @@ import LandingNav from '../components/landing/LandingNav';
 import LandingHero from '../components/landing/LandingHero';
 import LeaguesBand from '../components/landing/LeaguesBand';
 import FeatureSection from '../components/landing/FeatureSection';
-import { Phones, LockScreenMedia, TwoWaysMedia } from '../components/landing/FeatureMedia';
+import { Phones, LockScreenMedia, TwoWaysCopy } from '../components/landing/FeatureMedia';
 import StatTiles, { SHOT_AREA_COUNT } from '../components/landing/StatTiles';
 import ScorecardSection from '../components/landing/ScorecardSection';
 import GetItSection from '../components/landing/GetItSection';
@@ -24,7 +24,6 @@ import { FEATURE_SECTIONS } from '../components/landing/landingContent';
 import { trackLandingView } from '../components/landing/landingAnalytics';
 
 function mediaFor(section) {
-  if (section.key === 'replays') return <TwoWaysMedia />;
   if (section.liveActivity) return <LockScreenMedia media={section.media} liveActivity={section.liveActivity} />;
   return <Phones media={section.media} />;
 }
@@ -57,6 +56,7 @@ export default function LandingView() {
             bodyValues={section.key === 'advanced' ? { areas: SHOT_AREA_COUNT } : undefined}
             media={mediaFor(section)}
           >
+            {section.key === 'replays' && <TwoWaysCopy />}
             {section.key === 'advanced' && <StatTiles />}
             {section.key === 'lock' && (
               <p className="m-0 mt-4 text-[13px] text-[color:var(--text-dim)]">{t('landing.lock.note')}</p>

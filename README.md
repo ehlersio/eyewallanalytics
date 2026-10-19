@@ -61,11 +61,11 @@ eyewallanalytics/
 │   ├── privacy.html              # Privacy policy page (linked from the App Store listing)
 │   ├── delete-account.html       # How to delete your account (App Store / Play account-deletion link)
 │   ├── .well-known/assetlinks.json # Digital Asset Links for the Android TWA (com.eyewallanalytics.app)
-│   ├── _headers                  # Cloudflare response headers: cache control, plus the security headers and Content-Security-Policy for every page (each CSP origin is explained in the file; securityHeaders.test.js keeps the inline-script hash and the app's API origins in sync)
+│   ├── _headers                  # Cloudflare response headers: cache control, immutable caching for /assets/* and the fingerprinted /landing/*, plus the security headers and Content-Security-Policy for every page (each CSP origin is explained in the file; securityHeaders.test.js keeps the inline-script hash and the app's API origins in sync)
 │   ├── eyewall-logo.svg/.png     # Faceoff-E mark, Night Rink colors (white E, red circle), transparent background — the dark-theme half of EyeWallLogo.jsx, and rendered directly by ShareCardFrame.jsx, the fixed-dark shell every share card is drawn in. Generated — see scripts/brand/
 │   ├── eyewall-logo-light.svg/.png # Same mark in Ice Rink colors (navy E) — the [data-theme="light"] half of EyeWallLogo.jsx's toggle. Generated
 │   ├── favicon.svg               # Follows prefers-color-scheme: Ice Rink in light, Night Rink in dark. Generated
-│   └── favicon-*.png / .ico / apple-touch-icon.png # Ice Rink tiles; favicon-512 doubles as og:image, favicon-512-solid is the padded maskable PWA icon. Generated
+│   └── favicon-*.png / .ico / apple-touch-icon.png # Ice Rink tiles; favicon-512-solid is the padded maskable PWA icon. Generated
 ├── scripts/brand/                # `node scripts/brand/build-brand-assets.mjs` regenerates every rendering of the mark from src/brand/rinkMark.js: iOS app icon (light/dark/tinted), iOS launch splash (light/dark), favicons, PWA icons and the logo files above. macOS only — render-svg.swift rasterizes via AppKit, no extra dependency
 ├── functions/                    # Cloudflare Pages Functions (API proxy)
 │   ├── _lib/proxy.js             # Shared by all three: GET/HEAD only, query capped, same-host redirects only (the NHL's /now → dated URL), content-type allow-list, nosniff + script-proof CSP. Tested in pagesProxy.test.js
@@ -295,7 +295,7 @@ eyewallanalytics/
 │   │   │                               # (shared fixtures/helpers: cypress/support/hockeytech.js)
 │   │   ├── draft.cy.js                 # NHL draft board
 │   │   ├── TeamPicker.cy.js            # Sport + team picker — all 12 PWHL teams selectable with real colors (visits /app: / is the landing page with no team)
-│   │   ├── landing.cy.js               # Landing page: the / /welcome /app gate, both calls to action, the hero replay (+ bundled fallback), scorecard tiles, EN/FR, 375 px in both themes
+│   │   ├── landing.cy.js               # Landing page: the / /welcome /app gate, both calls to action, the hero replay (+ bundled fallback), scorecard tiles, EN/FR, the clips, reduced-motion stills, themed screenshots and fingerprinted media, 375 px in both themes
 │   │   ├── theme.cy.js                 # Light/dark mode
 │   │   ├── topbar-live-chip.cy.js      # PWHL/AHL/ECHL Topbar live chip: the followed team's stubbed live game (score from its side, period · time from /today's scorebar or the last event, `2nd INT` in an intermission), off-season marker once it ends
 │   │   ├── topnav-safe-area.cy.js      # Topbar safe-area regression (mobile viewports)
@@ -325,7 +325,15 @@ A marketing front door for strangers (2026-10). `views/LandingView.jsx`, lazy-lo
 
 Campaign parameters (`utm_*`, `fbclid`, `gclid`, `igsh`, `ref`) on `/` still get the landing; any other query parameter is app state and gets the app. Cloudflare Pages serves `index.html` for `/welcome` and `/app` (no `_redirects`; the SPA fallback applies).
 
-Sections live in `src/components/landing/`. Links, the hero goal and the feature media are in `landingContent.js`: each screenshot is a `{ type: 'image' }` entry, and swapping one for a recorded clip is one `{ type: 'video', src, poster }` line (`LandingMedia.jsx` draws both). The hero is `GoalTrackingReplay` playing Jaccob Slavin's OT winner (BOS @ CAR, 2026-04-07, game 2025021237, event 1113) from the Worker's `/nhl/goal-replay`, falling back to `public/landing/hero-replay.json`; its `loop` prop replays after a 4 s pause (`utils/replayLoop.js`, no loop under reduced motion). The scorecard tiles come live from `/scorecard` (`scorecardTiles.js`) and the section is left out if the fetch fails. Copy is `landing.*` in `en.json`/`fr.json`; the footer's EN / FR switch uses `setLocale()`. Analytics: `$pageview` with `page_name: 'Landing'` and `landing_cta { target: 'app_store' | 'web' | 'methodology' | 'social' }`. The screenshots in `public/landing/` are the App Store set, until a capture session replaces them.
+Sections live in `src/components/landing/`. Links, the hero goal and the feature media are in `landingContent.js`, and `LandingMedia.jsx` draws each entry. The hero is `GoalTrackingReplay` playing Jaccob Slavin's OT winner (BOS @ CAR, 2026-04-07, game 2025021237, event 1113) from the Worker's `/nhl/goal-replay`, falling back to the bundled `public/landing/hero-replay.<hash>.json`; its `loop` prop replays after a 4 s pause (`utils/replayLoop.js`, no loop under reduced motion). The scorecard tiles come live from `/scorecard` (`scorecardTiles.js`) and the section is left out if the fetch fails. Copy is `landing.*` in `en.json`/`fr.json`; the footer's EN / FR switch uses `setLocale()`. Analytics: `$pageview` with `page_name: 'Landing'` and `landing_cta { target: 'app_store' | 'web' | 'methodology' | 'social' }`.
+
+Media (captured 2026-10-19 in the iPhone 17 Pro Max simulator, logos on):
+
+- **Screenshots** (`{ type: 'image', src, srcLight }`): a dark and a light capture of each, 460x1000 JPEG. Both `<img>`s are in the page and `index.css`'s `.landing-shot-dark` / `.landing-shot-light` show the one for `[data-theme]` (like the header logo), so the app's own theme choice wins over the OS; the hidden one is lazy and never loads. Live game, goal popup (Video and Tracking tabs), the bell, tracking leaders, a player comparison, call-up watch, a period summary, and a PWHL and an AHL shot map under the league logos.
+- **Clips** (`{ type: 'video', src, poster, still }`): `live-rink` (12 s: the live rink filling in during a replayed BOS @ CAR, William Carrier's goal, then its tracking replay on the rink) and `replay-switch` (10.6 s: a goal's popup on the NHL video, the switch to Tracking, the replay). 720x1560 H.264, no audio, about 1.5-1.8 MB, `autoplay muted loop playsinline preload="none"` with a poster. Under `prefers-reduced-motion` the clip is replaced by its `still` screenshots. Dark theme only.
+- **Open Graph card**: `public/landing/og.<hash>.png` (1200x630), referenced by absolute URL from `index.html`'s `og:image` and `twitter:image`.
+
+Every file in `public/landing/` is named `<name>.<first 8 hex of its SHA-256>.<ext>` and `public/_headers` serves `/landing/*` as `immutable` for a year, so a changed file must get a new name. To recapture, follow `landing-assets/NOTES.md` in the workspace (next to this repo): the dev-only `/dev?game=…&capture=1` replay in the native app shell, `xcrun simctl` for stills and recordings, `tools/clip.swift` to cut clips and posters, `tools/og.swift` for the card, and `tools/publish.sh <repo>`, which copies the finals in under fingerprinted names and prints the hashes for `landingContent.js` and `index.html`. `landing.cy.js` fails if a referenced file is missing.
 
 ## Sport Selection & Theming
 
@@ -920,7 +928,7 @@ npm run cypress:visual            # diff current rendering against the committed
 | `pwhl-league.cy.js` | PWHL 7 tabs incl. Draft (72 picks) and Scorecard; standings/leaders scoped to established teams, expansion absence asserted |
 | `draft.cy.js` | NHL draft board |
 | `TeamPicker.cy.js` | Sport + team picker — all 12 PWHL teams selectable, real colors (at `/app`) |
-| `landing.cy.js` | Landing page routing (`/`, `/welcome`, `/app`, deep links with no team), calls to action, hero replay and its bundled fallback, scorecard tiles, French switch, no horizontal scroll at 375 px in dark and light |
+| `landing.cy.js` | Landing page routing (`/`, `/welcome`, `/app`, deep links with no team), calls to action, hero replay and its bundled fallback, scorecard tiles, French switch, the two clips (muted autoplay, posters), stills under reduced motion, dark/light screenshots following the theme, every `/landing/` file and the `og:image` existing under a fingerprinted name, no horizontal scroll at 375 px in dark and light |
 | `theme.cy.js` | Light/dark mode — following the device until a choice is saved, then the saved choice |
 | `topnav-safe-area.cy.js` | Topbar safe-area regression (mobile viewports) |
 | `viewports.cy.js` | 4 viewports × all views |

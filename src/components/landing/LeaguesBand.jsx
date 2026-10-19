@@ -1,8 +1,8 @@
 // src/components/landing/LeaguesBand.jsx
 // The four leagues and their team counts, from the same team lists the team
-// picker uses. Always on the dark Night Rink sheet: the league marks are
-// white-on-dark artwork (the team picker is dark in both themes for the
-// same reason).
+// picker uses, above a PWHL and an AHL shot map from the app. Always on the
+// dark Night Rink sheet: the league marks are white-on-dark artwork (the
+// team picker is dark in both themes for the same reason).
 
 import { useTranslation } from 'react-i18next';
 import { ALL_TEAMS } from '../../utils/teamConfig';
@@ -10,6 +10,8 @@ import { PWHL_TEAMS } from '../../utils/pwhlConfig';
 import { AHL_TEAMS } from '../../utils/ahlConfig';
 import { ECHL_TEAMS } from '../../utils/echlConfig';
 import { NATIVE_ORIGIN } from '../../utils/nativeOrigin';
+import { Phones } from './FeatureMedia';
+import { LEAGUE_SHOTS } from './landingContent';
 
 const LEAGUES = [
   { key: 'NHL', logo: `${NATIVE_ORIGIN}/nhl-assets/logos/nhl/svg/NHL_dark.svg`, count: ALL_TEAMS.length },
@@ -32,6 +34,9 @@ export default function LeaguesBand() {
           </li>
         ))}
       </ul>
+      <div className="mx-auto w-full max-w-[1120px] px-4 pb-12 md:px-8 md:pb-16">
+        <Phones media={LEAGUE_SHOTS} />
+      </div>
     </section>
   );
 }
