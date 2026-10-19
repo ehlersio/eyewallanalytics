@@ -10,7 +10,9 @@
 // cypress/support/e2e.js seeds eyewall:team before every test; the "no team"
 // cases take it out again in onBeforeLoad, the way TeamPicker.cy.js does.
 // The hero's replay (/nhl/goal-replay) and the scorecard are stubbed so the
-// page renders the same whatever the Worker is doing.
+// page renders the same whatever the Worker is doing. The media tests check
+// the clips' attributes, the reduced-motion stills, the theme's screenshots
+// and that every fingerprinted /landing/ file (and the og:image) exists.
 
 const noTeam = (extra) => (win) => {
   win.localStorage.removeItem('eyewall:team')
@@ -159,6 +161,66 @@ describe('Landing page fallbacks', () => {
     cy.wait('@scorecard')
     cy.get('.landing-get').should('exist')
     cy.get('.landing-scorecard').should('not.exist')
+  })
+})
+
+describe('Landing page media', () => {
+  beforeEach(stubLandingData)
+
+  it('autoplays the two clips muted and inline, each with a poster', () => {
+    cy.visit('/', { onBeforeLoad: noTeam() })
+    cy.get('video.landing-clip').should('have.length', 2).each($video => {
+      expect($video.prop('muted'), 'muted').to.equal(true)
+      expect($video.prop('autoplay'), 'autoplay').to.equal(true)
+      expect($video.prop('loop'), 'loop').to.equal(true)
+      expect($video.attr('playsinline'), 'playsinline').to.not.equal(undefined)
+      expect($video.attr('preload')).to.equal('none')
+      expect($video.attr('poster')).to.match(/^\/landing\/[a-z-]+\.[0-9a-f]{8}\.jpg$/)
+    })
+    cy.get('.landing-feature-live video.landing-clip').should('exist')
+    cy.get('.landing-feature-replays video.landing-clip').should('exist')
+  })
+
+  it('serves every landing file under a fingerprinted name that exists', () => {
+    cy.visit('/', { onBeforeLoad: noTeam() })
+    cy.get('.landing-view img[src^="/landing/"], .landing-view video').each($el => {
+      ;[$el.attr('src'), $el.attr('poster')].filter(Boolean).forEach(src => {
+        expect(src).to.match(/^\/landing\/[a-z-]+\.[0-9a-f]{8}\.(jpg|png|mp4)$/)
+        cy.request(src).its('status').should('eq', 200)
+      })
+    })
+    cy.get('meta[property="og:image"]').invoke('attr', 'content').then(url => {
+      expect(url).to.match(/^https:\/\/eyewallanalytics\.com\/landing\/og\.[0-9a-f]{8}\.png$/)
+      cy.request(new URL(url).pathname).its('status').should('eq', 200)
+    })
+  })
+
+  it('shows the stills instead of the clips under reduced motion', () => {
+    cy.visit('/', {
+      onBeforeLoad: noTeam(win => {
+        const real = win.matchMedia.bind(win)
+        win.matchMedia = query => (query.includes('prefers-reduced-motion')
+          ? { matches: true, media: query, onchange: null, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {}, dispatchEvent: () => false }
+          : real(query))
+      }),
+    })
+    cy.get('.landing-view').should('exist')
+    cy.get('video.landing-clip').should('not.exist')
+    cy.get('.landing-feature-live img.landing-shot-dark').should('have.length', 1)
+    cy.get('.landing-feature-replays img.landing-shot-dark').should('have.length', 2)
+  })
+
+  ;['dark', 'light'].forEach(scheme => {
+    const other = scheme === 'dark' ? 'light' : 'dark'
+    it(`shows the ${scheme} screenshots in the ${scheme} theme`, () => {
+      cy.visit('/', {
+        onBeforeLoad: noTeam(win => { win.__eyewallSystemScheme = scheme }),
+      })
+      cy.get('html').should('have.attr', 'data-theme', scheme)
+      cy.get(`.landing-feature-teams img.landing-shot-${scheme}`).scrollIntoView().should('be.visible')
+      cy.get(`.landing-feature-teams img.landing-shot-${other}`).should('not.be.visible')
+      cy.get(`.landing-leagues img.landing-shot-${scheme}`).should('have.length', 2)
+    })
   })
 })
 
