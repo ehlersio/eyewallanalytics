@@ -25,7 +25,9 @@ function pwhlTile(abbr) {
 
 describe('TeamPicker', () => {
   beforeEach(() => {
-    cy.visit('/', {
+    // /app, not /: with no team saved, / is the landing page now
+    // (utils/landingGate.js) and /app is the picker.
+    cy.visit('/app', {
       onBeforeLoad(win) {
         win.localStorage.clear()
       },
@@ -111,7 +113,7 @@ describe('TeamPicker', () => {
 // user got near-black text and a navy-E logo on a near-black panel.
 describe('Team picker in light mode', () => {
   beforeEach(() => {
-    cy.visit('/', {
+    cy.visit('/app', {
       onBeforeLoad(win) {
         win.localStorage.removeItem('eyewall:team')
         win.localStorage.setItem('eyewall:theme', 'light')

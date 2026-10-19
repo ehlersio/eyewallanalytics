@@ -11,12 +11,19 @@
 // the frame (goalReplayFrames.cameraFocus: the puck's recent path, taken
 // between frames too), so it pans smoothly and scrubbing never jumps. Every replay is turned so the goal
 // is in the right-hand net (goalReplayFrames.orient).
+//
+// `loop` (true for a 4 s pause, or a pause in ms) plays the goal again after
+// it ends on its own -- the landing page's hero. `onEnd` is called each time
+// playback reaches the end. Rules in utils/replayLoop.js: a viewer's pause
+// or scrub stops the loop until the next natural end, and nothing loops
+// under prefers-reduced-motion.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RinkMarkings, W, H } from 'react-hockey-rink';
 import { teamTextColor } from '../utils/teamConfig';
 import { replayWindow, sampleAt, puckTrail, cameraFocus, dotColours, inkFor } from '../utils/goalReplayFrames';
+import { loopDelay, createLoopTimer } from '../utils/replayLoop';
 
 const FT = W / 200; // svg units per foot
 // The rink's ice is light in both themes, so the puck, its trail and the
@@ -49,7 +56,7 @@ function cameraLeft(replay, frame) {
   return Math.min(100 - VIEW_FT, Math.max(-100, focus - VIEW_FT * 0.55));
 }
 
-export default function GoalTrackingReplay({ replay, scorerName, autoPlay = true }) {
+export default function GoalTrackingReplay({ replay, scorerName, autoPlay = true, loop, onEnd }) {
   const { t } = useTranslation();
   const { start, end } = useMemo(() => replayWindow(replay), [replay]);
   const [frame, setFrameState] = useState(start);
@@ -58,6 +65,21 @@ export default function GoalTrackingReplay({ replay, scorerName, autoPlay = true
   // The animation loop reads the current frame without re-subscribing.
   const frameRef = useRef(start);
   const setFrame = (v) => { frameRef.current = v; setFrameState(v); };
+  // The end-of-playback handler reads the latest loop/onEnd without
+  // restarting the animation loop when they change.
+  const [loopTimer] = useState(createLoopTimer);
+  const endRef = useRef(() => {});
+  useEffect(() => {
+    endRef.current = () => {
+      onEnd?.();
+      loopTimer.schedule(loopDelay(loop, prefersReducedMotion()), () => {
+        frameRef.current = start;
+        setFrameState(start);
+        setPlaying(true);
+      });
+    };
+  }, [onEnd, loop, start, loopTimer]);
+  useEffect(() => () => loopTimer.cancel(), [loopTimer]);
 
   useEffect(() => {
     if (!playing) return undefined;
@@ -69,7 +91,7 @@ export default function GoalTrackingReplay({ replay, scorerName, autoPlay = true
       const next = Math.min(end, frameRef.current + dt * replay.hz * (slow ? 0.5 : 1));
       frameRef.current = next;
       setFrameState(next);
-      if (next >= end) { setPlaying(false); return; }
+      if (next >= end) { setPlaying(false); endRef.current(); return; }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -93,10 +115,11 @@ export default function GoalTrackingReplay({ replay, scorerName, autoPlay = true
   const r = 2.6 * FT;
 
   const togglePlay = () => {
+    loopTimer.cancel();
     if (!playing && frameRef.current >= end) setFrame(start);
     setPlaying(p => !p);
   };
-  const restart = () => { setFrame(start); setPlaying(true); };
+  const restart = () => { loopTimer.cancel(); setFrame(start); setPlaying(true); };
   // The goal carousel around this changes goal on a horizontal swipe; a
   // drag on the scrubber mustn't reach it.
   const stop = (e) => e.stopPropagation();
@@ -164,7 +187,7 @@ export default function GoalTrackingReplay({ replay, scorerName, autoPlay = true
           className={SCRUBBER_CLASSES}
           min={start} max={end} step={0.1}
           value={frame}
-          onChange={(e) => { setPlaying(false); setFrame(Number(e.target.value)); }}
+          onChange={(e) => { loopTimer.cancel(); setPlaying(false); setFrame(Number(e.target.value)); }}
           aria-label={t('goalReplay.scrubber')}
         />
         <button type="button" className={CONTROL_BTN_CLASSES} onClick={() => setSlow(s => !s)} aria-pressed={slow} aria-label={t('goalReplay.speed')}>

@@ -26,7 +26,7 @@
         if (light) document.documentElement.setAttribute('data-theme', 'light');
       } catch (e) {}
     </script>
-    <meta name="description" content="EyeWall Analytics — NHL and PWHL advanced stats and analytics" />
+    <meta name="description" content="Live shot maps, goal replays drawn from player tracking, Lock Screen scores and EyeWall AI recaps for the NHL, PWHL, AHL and ECHL. Free, no ads, in English and French." />
 
     <!-- PWA manifest (enables Add to Home Screen + iOS push) -->
     <link rel="manifest" href="/manifest.json" />
@@ -46,11 +46,17 @@
     <link rel="icon" type="image/png" sizes="64x64"  href="/favicon-64.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png" />
 
-    <!-- Open Graph -->
+    <!-- Open Graph / link previews. Crawlers have no saved team, so they
+         get the landing page (views/LandingView.jsx) and these tags. The
+         og:image is the app icon until a 1200x630 card replaces it. -->
     <meta property="og:title"       content="EyeWall Analytics" />
-    <meta property="og:description" content="NHL and PWHL advanced stats and analytics" />
+    <meta property="og:description" content="Live shot maps, goal replays drawn from player tracking, Lock Screen scores and EyeWall AI recaps for the NHL, PWHL, AHL and ECHL. Free, no ads, in English and French." />
     <meta property="og:image"       content="/favicon-512.png" />
     <meta property="og:type"        content="website" />
+    <meta property="og:url"         content="https://eyewallanalytics.com/" />
+    <meta property="og:site_name"   content="EyeWall Analytics" />
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:site"        content="@eyewallstats" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <!-- Preconnect to external origins for faster initial requests -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
