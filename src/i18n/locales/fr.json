@@ -28,7 +28,8 @@
     "privacyText": "EyeWall utilise des analyses anonymes pour comprendre quelles fonctionnalités sont les plus utiles. Aucune donnée personnelle n'est vendue ou partagée. Lisez notre",
     "privacyPolicy": "Politique de confidentialité",
     "disclaimer": "EyeWall Analytics est un projet indépendant de partisans. Il n'est ni affilié à la LNH, à la LPHF, à la LAH, à l'ECHL ou à une équipe, ni approuvé ou commandité par elles. Les noms et logos des équipes appartiennent à leurs propriétaires respectifs.",
-    "version": "Version {{version}}"
+    "version": "Version {{version}}",
+    "whatIsEyewall": "Qu'est-ce qu'EyeWall?"
   },
   "search": {
     "toggleAriaLabel": "Rechercher des joueurs",
@@ -2830,5 +2831,105 @@
     "showFewer": "Afficher moins",
     "unavailable": "Les rappels à surveiller ne sont pas disponibles pour le moment.",
     "method": "Classés selon les points par match dans la LAH cette saison et la précédente (% d'arrêts pour les gardiens). Joueurs du club-école dont {{team}} détient les droits LNH ou qui ont fait la navette entre les deux clubs au cours de la dernière année. Pas une prédiction : les contrats et le ballottage ne sont pas pris en compte."
+  },
+  "landing": {
+    "nav": {
+      "aria": "Page d'accueil",
+      "features": "Fonctionnalités",
+      "leagues": "Ligues",
+      "ai": "EyeWall AI",
+      "howItWorks": "Comment ça marche",
+      "openInBrowser": "Ouvrir dans le navigateur"
+    },
+    "cta": {
+      "appStoreSmall": "Télécharger dans l'",
+      "appStoreBig": "App Store",
+      "appStoreAria": "Télécharger EyeWall Analytics dans l'App Store",
+      "web": "L'utiliser dans le navigateur",
+      "webShort": "Ouvrir dans le navigateur"
+    },
+    "hero": {
+      "title": "Chaque tir. Chaque but. Chaque ligue que vous suivez.",
+      "lede": "Cartes de tirs en direct, reprises de buts dessinées à partir du suivi des joueurs, pointage sur l'écran verrouillé et résumés par EyeWall AI, pour la LNH, la LPHF, la LAH et l'ECHL. Gratuit, sans publicité, en français et en anglais.",
+      "leagueChip": "{{league}} · {{count}} équipes",
+      "languages": "FR / EN",
+      "replayLabel": "Reprise du but · Suivi",
+      "replayGame": "BOS 5 – 6 CAR · Prol.",
+      "scorer": "Jaccob Slavin",
+      "caption": "Le but de Jaccob Slavin en prolongation, Bruins contre Hurricanes, le 7 avril 2026, dessiné à partir des données de suivi des joueurs et de la rondelle de la LNH.",
+      "loading": "Chargement de la reprise…"
+    },
+    "live": {
+      "eyebrow": "Matchs en direct",
+      "title": "Suivez le match en temps réel",
+      "body": "Une carte de tirs qui se remplit tir par tir, l'élan du match, des observations en direct et un bouton de reprise dès qu'un but est suivi. Touchez n'importe quel match du tableau pour le suivre du point de vue de l'une ou l'autre équipe.",
+      "alt": "Un match en direct dans EyeWall : le pointage, les observations en direct et la carte de tirs, avec un bouton pour revoir le dernier but"
+    },
+    "replays": {
+      "eyebrow": "Reprises des buts",
+      "title": "Les buts, de deux façons",
+      "body": "Chaque but de la LNH depuis 2023-2024, de deux façons, à un toucher d'écart.",
+      "videoTitle": "Vidéo",
+      "videoBody": "La séquence officielle de la ligue, directement dans la vue du match.",
+      "trackingTitle": "Suivi",
+      "trackingBody": "Le rendu EyeWall du même but à partir du suivi des joueurs et de la rondelle : chaque patineur, la trajectoire de la rondelle, le marqueur encerclé.",
+      "watchHero": "En voir un en haut de la page"
+    },
+    "lock": {
+      "eyebrow": "Écran verrouillé et alertes",
+      "title": "Sur votre écran verrouillé dès la mise au jeu",
+      "body": "Pointage, période et chrono, avantage numérique et tirs, pour chaque équipe que vous suivez, application fermée. Buts, fins de période et résultats finaux en alertes, réunis sous une seule cloche.",
+      "note": "Le pointage sur l'écran verrouillé est offert dans l'application iPhone.",
+      "liveActivityAlt": "Une activité en direct sur l'écran verrouillé : FLA 1, CAR 2, deuxième période, 7:58, avantage numérique de la Caroline à 5 contre 3, tirs 18 à 21",
+      "alt": "La cloche des notifications : résumés de période et de fin de match, et les dernières alertes de but et d'avantage numérique"
+    },
+    "advanced": {
+      "eyebrow": "Statistiques avancées",
+      "title": "Des chiffres qui veulent dire quelque chose",
+      "body": "Corsi, Fenwick, buts attendus, RAPM et WAR, avec centiles. Suivi des joueurs : vitesse de pointe, tir le plus puissant, temps par zone. Pourcentage d'arrêts des gardiens dans {{areas}} zones de tir. Présaison, saison régulière et séries gardées séparées.",
+      "tilePercentiles": "catégories de centiles",
+      "tileAreas": "zones de tir des gardiens",
+      "tileLeagues": "ligues",
+      "alt": "Les statistiques avancées d'une équipe : Corsi, Fenwick et tirs par match avec les centiles de la ligue",
+      "trackingAlt": "Les meneurs du suivi des joueurs de la LNH : patineurs les plus rapides et tirs les plus puissants"
+    },
+    "teams": {
+      "eyebrow": "Équipes, joueurs, séries",
+      "title": "Votre équipe, de fond en comble",
+      "body": "Comparaisons d'équipes et de joueurs face à face, chimie des trios, surveillance des rappels, impact des blessures, arbres d'échanges, un tableau des séries comme si elles commençaient aujourd'hui et des chances de participer aux séries simulées chaque nuit.",
+      "alt": "Surveillance des rappels : attaquants, défenseurs et gardiens du club-école classés selon leur état de préparation"
+    },
+    "ai": {
+      "eyebrow": "EyeWall AI",
+      "title": "Des résumés qui n'inventent jamais une statistique",
+      "body": "Résumés de période et de match, notes de dépistage et analyses des affrontements, rédigés à partir des données de la page. Cartes de résumé et de prédiction à partager.",
+      "alt": "Un résumé de première période : Corsi, tirs, mises au jeu et chances de qualité, avec l'analyse de période d'EyeWall AI"
+    },
+    "scorecard": {
+      "eyebrow": "Le bilan public",
+      "title": "Des prédictions évaluées en public",
+      "body": "Chaque prédiction est enregistrée avant le match et évaluée après, par rapport à une référence simple. Ce sont des chiffres en direct, les mêmes que dans l'onglet Bilan de l'application.",
+      "link": "Comment fonctionnent ces modèles",
+      "accuracy": "bons choix",
+      "brier": "Score de Brier, plus bas est meilleur",
+      "liveSample_one": "{{n}} évaluée, {{period}} jusqu'ici",
+      "liveSample_other": "{{n}} évaluées, {{period}} jusqu'ici",
+      "backtestSample_one": "Test rétrospectif, {{period}}, {{n}} évaluée",
+      "backtestSample_other": "Test rétrospectif, {{period}}, {{n}} évaluées",
+      "baseline": "Référence, {{name}} : {{value}}"
+    },
+    "get": {
+      "eyebrow": "L'obtenir",
+      "title": "Gratuit. Sans publicité. Sans connexion obligatoire.",
+      "body": "Connectez-vous avec un lien magique seulement si vous voulez synchroniser vos équipes et vos jeux-questionnaires entre vos appareils."
+    },
+    "footer": {
+      "howItWorks": "Comment ça marche",
+      "privacy": "Confidentialité",
+      "deleteAccount": "Supprimer le compte",
+      "language": "Langue",
+      "social": "EyeWall sur les réseaux sociaux",
+      "disclaimer": "EyeWall Analytics est indépendant et n'est affilié à aucune ligue ni équipe, ni approuvé ou commandité par elles."
+    }
   }
 }

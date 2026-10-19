@@ -28,7 +28,8 @@
     "privacyText": "EyeWall uses anonymous analytics to understand which features are most useful. No personal data is sold or shared. Read our",
     "privacyPolicy": "Privacy Policy",
     "disclaimer": "EyeWall Analytics is an independent fan project. It is not affiliated with, endorsed by, or sponsored by the NHL, PWHL, AHL, ECHL, or any team. Team names and logos belong to their respective owners.",
-    "version": "Version {{version}}"
+    "version": "Version {{version}}",
+    "whatIsEyewall": "What is EyeWall?"
   },
   "search": {
     "toggleAriaLabel": "Search players",
@@ -2830,5 +2831,105 @@
     "showFewer": "Show fewer",
     "unavailable": "Call-up watch is unavailable right now.",
     "method": "Ranked by AHL points per game this season and last (save % for goalies). Lists affiliate players who hold {{team}}'s NHL rights or moved between the clubs in the past year. Not a prediction: contracts and waivers aren't factored in."
+  },
+  "landing": {
+    "nav": {
+      "aria": "Landing page",
+      "features": "Features",
+      "leagues": "Leagues",
+      "ai": "EyeWall AI",
+      "howItWorks": "How it works",
+      "openInBrowser": "Open in browser"
+    },
+    "cta": {
+      "appStoreSmall": "Download on the",
+      "appStoreBig": "App Store",
+      "appStoreAria": "Download EyeWall Analytics on the App Store",
+      "web": "Use it in your browser",
+      "webShort": "Open in browser"
+    },
+    "hero": {
+      "title": "Every shot. Every goal. Every league you follow.",
+      "lede": "Live shot maps, goal replays drawn from player tracking, Lock Screen scores and recaps from EyeWall AI, for the NHL, PWHL, AHL and ECHL. Free, no ads, English and French.",
+      "leagueChip": "{{league}} · {{count}} teams",
+      "languages": "EN / FR",
+      "replayLabel": "Goal replay · Tracking",
+      "replayGame": "BOS 5 – 6 CAR · OT",
+      "scorer": "Jaccob Slavin",
+      "caption": "Jaccob Slavin's overtime winner, Bruins at Hurricanes, April 7, 2026, drawn from NHL player and puck tracking.",
+      "loading": "Loading the replay…"
+    },
+    "live": {
+      "eyebrow": "Live games",
+      "title": "Follow the game as it happens",
+      "body": "A shot map that fills in shot by shot, momentum, live insights, and a replay button the moment a goal is tracked. Tap any Scoreboard game to watch it from either side.",
+      "alt": "A live game in EyeWall: the score, live insights and the shot map, with a button to replay the latest goal"
+    },
+    "replays": {
+      "eyebrow": "Goal replays",
+      "title": "Goal replays, two ways",
+      "body": "Every NHL goal since 2023-24, two ways, one tap apart.",
+      "videoTitle": "Video",
+      "videoBody": "The league's own clip of the goal, right in the game view.",
+      "trackingTitle": "Tracking",
+      "trackingBody": "EyeWall's rendering of the same goal from player and puck tracking: every skater, the puck's path, the scorer ringed.",
+      "watchHero": "Watch one at the top of the page"
+    },
+    "lock": {
+      "eyebrow": "Lock Screen & alerts",
+      "title": "On your Lock Screen from puck drop",
+      "body": "Score, period and clock, power play and shots, for every team you follow, with the app closed. Goals, period ends and finals as alerts, kept in one bell.",
+      "note": "Lock Screen scores are in the iPhone app.",
+      "liveActivityAlt": "A Lock Screen Live Activity: FLA 1, CAR 2, second period, 7:58, Carolina power play 5 on 3, shots 18 to 21",
+      "alt": "The notifications bell: period and final summaries, and the latest goal and power-play alerts"
+    },
+    "advanced": {
+      "eyebrow": "Advanced stats",
+      "title": "Numbers that mean what they say",
+      "body": "Corsi, Fenwick, expected goals, RAPM and WAR, with percentiles. Player tracking: top speed, hardest shot, zone time. Goalie save % in {{areas}} shot areas. Preseason, regular season and playoffs kept apart.",
+      "tilePercentiles": "percentile categories",
+      "tileAreas": "goalie shot areas",
+      "tileLeagues": "leagues",
+      "alt": "A team's advanced stats: Corsi, Fenwick and shot rates per game with league percentiles",
+      "trackingAlt": "NHL player tracking leaders: fastest skaters and hardest shots"
+    },
+    "teams": {
+      "eyebrow": "Teams, players, playoffs",
+      "title": "Your team, inside out",
+      "body": "Head-to-head team and player comparisons, line chemistry, call-up watch, injury impact, trade trees, a bracket as if the playoffs started today, and playoff odds simulated nightly.",
+      "alt": "Call-up watch: the farm team's forwards, defence and goalies ranked by how ready they look"
+    },
+    "ai": {
+      "eyebrow": "EyeWall AI",
+      "title": "Recaps that never invent a stat",
+      "body": "Period and game recaps, scouting notes and matchup breakdowns, written from the data on the page. Shareable summary and prediction cards.",
+      "alt": "A first-period summary: Corsi, shots, faceoffs and high-danger chances, with an EyeWall AI period analysis"
+    },
+    "scorecard": {
+      "eyebrow": "The public scorecard",
+      "title": "Predictions, graded in public",
+      "body": "Every prediction is logged before the game and graded after it, against a simple baseline. These are live numbers, the same ones the app's Scorecard shows.",
+      "link": "How these models work",
+      "accuracy": "picked right",
+      "brier": "Brier score, lower is better",
+      "liveSample_one": "{{n}} graded, {{period}} so far",
+      "liveSample_other": "{{n}} graded, {{period}} so far",
+      "backtestSample_one": "Backtest, {{period}}, {{n}} graded",
+      "backtestSample_other": "Backtest, {{period}}, {{n}} graded",
+      "baseline": "Baseline, {{name}}: {{value}}"
+    },
+    "get": {
+      "eyebrow": "Get it",
+      "title": "Free. No ads. No sign-in required.",
+      "body": "Sign in with a magic link only if you want your teams and trivia synced across devices."
+    },
+    "footer": {
+      "howItWorks": "How it works",
+      "privacy": "Privacy",
+      "deleteAccount": "Delete account",
+      "language": "Language",
+      "social": "EyeWall on social media",
+      "disclaimer": "EyeWall Analytics is independent and not affiliated with, endorsed by, or sponsored by any league or team."
+    }
   }
 }

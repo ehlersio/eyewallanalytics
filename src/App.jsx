@@ -2,6 +2,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom'
+import { Capacitor } from '@capacitor/core'
 import Topbar from './components/Topbar'
 import BottomNav from './components/BottomNav'
 import { PeriodSummaryProvider } from './utils/PeriodSummaryContext'
@@ -22,6 +23,7 @@ import { recordAppOpen } from './utils/reviewPrompt';
 import { useNotificationTaps } from './hooks/useNotificationTaps';
 import TourHost from './components/TourHost';
 import { saveTourState } from './utils/tour';
+import { shouldShowLanding } from './utils/landingGate';
 
 // Lazy-load all non-initial routes — reduces initial bundle by ~64 KiB
 // The NHL Shot Map is the / route, but lazy like every other view: eager,
@@ -69,6 +71,9 @@ const ECHLGuestGameView = lazy(() => import('./views/ECHLGuestGameView'));
 // GET /admin/health to the app owner).
 const AdminHealthView = lazy(() => import('./views/AdminHealthView'));
 const MethodologyView = lazy(() => import('./views/MethodologyView'));
+// The marketing page (utils/landingGate.js says when). Lazy, so the entry
+// chunk -- the team picker's cold start -- doesn't carry it.
+const LandingView = lazy(() => import('./views/LandingView'));
 
 const DevReplayView = import.meta.env.DEV
   ? lazy(() => import('./views/DevReplayView'))
@@ -187,6 +192,24 @@ export default function App() {
   // After selection, reload so all modules re-initialize with the chosen team.
   const [needsTeam] = useState(() => !hasTeamConfig());
 
+  // The landing page renders outside the app shell (no Topbar, BottomNav or
+  // router): at /welcome for any web visitor, at / for a web visitor with
+  // no saved team. Never in the iOS app. See utils/landingGate.js.
+  const [showLanding] = useState(() => shouldShowLanding({
+    isNative: Capacitor.isNativePlatform(),
+    pathname: window.location.pathname,
+    search: window.location.search,
+    hasTeam: !needsTeam,
+  }));
+
+  if (showLanding) {
+    return (
+      <Suspense fallback={<div className="min-h-dvh bg-[var(--bg0)]" />}>
+        <LandingView />
+      </Suspense>
+    );
+  }
+
   // AuthProvider wraps both branches below — TeamPicker is the sole place
   // team selection gets written (first launch and "Change team" both route
   // through it), and it needs auth state to sync a signed-in user's pick
@@ -231,6 +254,10 @@ export default function App() {
                   <Suspense fallback={<ViewFallback />}>
                     <Routes>
                       <Route path="/"         element={<RootRoute />} />
+                      {/* The landing page's "Use it in your browser": with no
+                          team saved the picker above takes it; with one, the
+                          app. */}
+                      <Route path="/app"      element={<Navigate to="/" replace />} />
                       <Route path="/schedule" element={<ScheduleView />} />
                       <Route path="/players"  element={<PlayersView />} />
                       <Route path="/team"     element={<TeamView />} />

@@ -106,6 +106,7 @@ eyewallanalytics/
 │   │   ├── DevDraftView.jsx            # Dev-only draft simulator (/dev/draft)
 │   │   ├── DevShareCardsView.jsx       # Dev-only gallery of every share card with sample data (/dev/share-cards) — flags any card whose content overflows the frame; Export PNG runs the real share render path
 │   │   ├── AdminHealthView.jsx         # /admin/health (owner only; the Worker checks the session): per-league cron health, pipeline/Worker ops reports, news-feed health, and the "Send ops alerts to this device" button
+│   │   ├── LandingView.jsx             # The marketing landing page at /welcome (and / for web visitors with no saved team); rendered outside the app shell, lazy. Sections in components/landing/ (see "Landing page")
 │   │   ├── MethodologyView.jsx         # /methodology "How it works": how each published model predicts and how the scorecard grades them, data sources, nightly schedule, changelog
 │   │   └── hockeytech/                 # AHL/ECHL views shared by both leagues; each takes `league` (utils/hockeyTechLeagues.js) and the AHL*/ECHL* views above wrap them
 │   │       ├── HockeyTechLeagueView.jsx # Scoreboard + standings grouped by `league.config.divisionOrder` (AHL Atlantic/North/Central/Pacific, ECHL North/South/Central/Mountain) + Leaders (goalie gate in `utils/hockeyTechLeaders.js`; rows open the league's player popup) + Power rankings (contract C12, `components/hockeytech/HockeyTechPowerRankingsPanel`: the pipeline's nightly ranking from `/{league}/power-rankings` — rank, movement since the run before for every team, Pts%, L10, GD/GP; the followed team's EyeWall AI narrative and rank sparkline; "How is this calculated?" with the pipeline's fixed weights; share card). The tab is offered only once the route has rows, and shows a note when the Worker answers `unavailable`. Bracket (contract C11, `components/hockeytech/HockeyTechBracketPanel`, the PWHL bracket's look: a column per round, seeds and win dots, the followed team's series outlined, a series' games in a modal): this year's Calder/Kelly Cup bracket from HockeyTech's feed (`/{league}/bracket?season=<playoffs paired with the current season>`) once it has series, else "If the playoffs started today" from `/{league}/bracket/projected`, else a short note for its `reason` ('format-unverified', 'no-games'); no tab when neither has anything
@@ -293,7 +294,8 @@ eyewallanalytics/
 │   │   ├── hockeytech-shots.cy.js      # AHL + ECHL Shot Map: renders; wake lock + resume/push re-check; win popup once when a stubbed live game ends in a win; debug panel fires each event popup
 │   │   │                               # (shared fixtures/helpers: cypress/support/hockeytech.js)
 │   │   ├── draft.cy.js                 # NHL draft board
-│   │   ├── TeamPicker.cy.js            # Sport + team picker — all 12 PWHL teams selectable with real colors
+│   │   ├── TeamPicker.cy.js            # Sport + team picker — all 12 PWHL teams selectable with real colors (visits /app: / is the landing page with no team)
+│   │   ├── landing.cy.js               # Landing page: the / /welcome /app gate, both calls to action, the hero replay (+ bundled fallback), scorecard tiles, EN/FR, 375 px in both themes
 │   │   ├── theme.cy.js                 # Light/dark mode
 │   │   ├── topbar-live-chip.cy.js      # PWHL/AHL/ECHL Topbar live chip: the followed team's stubbed live game (score from its side, period · time from /today's scorebar or the last event, `2nd INT` in an intermission), off-season marker once it ends
 │   │   ├── topnav-safe-area.cy.js      # Topbar safe-area regression (mobile viewports)
@@ -307,6 +309,23 @@ eyewallanalytics/
 ```
 
 ---
+
+## Landing page
+
+A marketing front door for strangers (2026-10). `views/LandingView.jsx`, lazy-loaded so the entry chunk doesn't carry it, renders **outside the app shell** (no Topbar, BottomNav or router), so its links are plain `<a href>`s. Where it shows is decided once per load by `utils/landingGate.js` (Vitest: `landingGate.test.js`):
+
+| Visitor | Opens | Sees |
+|---|---|---|
+| Web, no saved team | `/` | The landing page |
+| Web, team saved | `/` | The app, as before |
+| Anyone on the web | `/welcome` | The landing page (linked from the About popup's "What is EyeWall?") |
+| No saved team | `/app` | The team picker; with a team saved, `/app` redirects to `/` |
+| No saved team | any other route (`/game/:id`, `/?summary=…`) | The team picker, then that route, as before |
+| iOS app | anything | Never the landing (`Capacitor.isNativePlatform()`) |
+
+Campaign parameters (`utm_*`, `fbclid`, `gclid`, `igsh`, `ref`) on `/` still get the landing; any other query parameter is app state and gets the app. Cloudflare Pages serves `index.html` for `/welcome` and `/app` (no `_redirects`; the SPA fallback applies).
+
+Sections live in `src/components/landing/`. Links, the hero goal and the feature media are in `landingContent.js`: each screenshot is a `{ type: 'image' }` entry, and swapping one for a recorded clip is one `{ type: 'video', src, poster }` line (`LandingMedia.jsx` draws both). The hero is `GoalTrackingReplay` playing Jaccob Slavin's OT winner (BOS @ CAR, 2026-04-07, game 2025021237, event 1113) from the Worker's `/nhl/goal-replay`, falling back to `public/landing/hero-replay.json`; its `loop` prop replays after a 4 s pause (`utils/replayLoop.js`, no loop under reduced motion). The scorecard tiles come live from `/scorecard` (`scorecardTiles.js`) and the section is left out if the fetch fails. Copy is `landing.*` in `en.json`/`fr.json`; the footer's EN / FR switch uses `setLocale()`. Analytics: `$pageview` with `page_name: 'Landing'` and `landing_cta { target: 'app_store' | 'web' | 'methodology' | 'social' }`. The screenshots in `public/landing/` are the App Store set, until a capture session replaces them.
 
 ## Sport Selection & Theming
 
@@ -834,7 +853,7 @@ IDs 2, 4, 7 are real preseason entries confirmed via HockeyTech's `bootstrap` re
 
 ## Testing
 
-### Vitest (1096 tests, 126 files)
+### Vitest (1121 tests, 129 files)
 ```bash
 npm test
 npm run test:watch
@@ -858,7 +877,7 @@ npm run cypress:visual            # diff current rendering against the committed
 ```
 48 baseline screenshots (`cypress/snapshots/base/`, committed) covering every NHL + PWHL route × mobile/desktop × dark/light. These routes hit the live Worker API with no fixture seeding, so a small amount of pixel drift between a baseline capture and a diff run is expected (real content changing, not a bug) — `errorThreshold: 1` (%) in `cypress/support/e2e.js` absorbs that noise; a real layout/spacing/color regression runs far higher and still fails. Intended workflow: capture a baseline immediately before a migration phase, diff immediately after.
 
-**72 spec files** (AHL/ECHL: `hockeytech-{league,schedule,players,team,news,shots,shots-live,guest-game,guest-game-invariants,period-summary,power-rankings,playoff-odds,bracket}.cy.js`, `ahl-team`, `echl-team`, `hockeytech-season-pickers`, `hockeytech-player-compare`):
+**73 spec files** (AHL/ECHL: `hockeytech-{league,schedule,players,team,news,shots,shots-live,guest-game,guest-game-invariants,period-summary,power-rankings,playoff-odds,bracket}.cy.js`, `ahl-team`, `echl-team`, `hockeytech-season-pickers`, `hockeytech-player-compare`):
 
 **Note (2026-08, Session 94):** `visual-regression.cy.js` added as part of Phase 0 of the full Tailwind migration (see `SESSION_94_FINDINGS_tailwind_migration.md`) — the parity-verification tooling that migration's later phases depend on.
 
@@ -900,7 +919,8 @@ npm run cypress:visual            # diff current rendering against the committed
 | `league.cy.js` | NHL 7 tabs |
 | `pwhl-league.cy.js` | PWHL 7 tabs incl. Draft (72 picks) and Scorecard; standings/leaders scoped to established teams, expansion absence asserted |
 | `draft.cy.js` | NHL draft board |
-| `TeamPicker.cy.js` | Sport + team picker — all 12 PWHL teams selectable, real colors |
+| `TeamPicker.cy.js` | Sport + team picker — all 12 PWHL teams selectable, real colors (at `/app`) |
+| `landing.cy.js` | Landing page routing (`/`, `/welcome`, `/app`, deep links with no team), calls to action, hero replay and its bundled fallback, scorecard tiles, French switch, no horizontal scroll at 375 px in dark and light |
 | `theme.cy.js` | Light/dark mode — following the device until a choice is saved, then the saved choice |
 | `topnav-safe-area.cy.js` | Topbar safe-area regression (mobile viewports) |
 | `viewports.cy.js` | 4 viewports × all views |
