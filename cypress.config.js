@@ -52,8 +52,6 @@ export default defineConfig({
     // after:run) don't overlap visual regression's (task).
     setupNodeEvents(on, config) {
       configureVisualRegression(on)
-      // TEMPORARY (flake diagnostics)
-      on('task', { diagLog(text) { console.log(text); return null } })
       cypressSplit(on, config)
       return config
     },
