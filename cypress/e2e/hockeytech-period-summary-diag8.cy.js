@@ -97,7 +97,7 @@ LEAGUES.filter(l => l.key === 'ahl').forEach(({ key, label }) => {
       win.addEventListener('click', e => log('click', e.isTrusted, (e.target.className || '').toString().slice(0, 60)), true)
     }
     afterEach(function () {
-      const lines = (window.top.__diag || []).filter(l => /ws |vite|unload|pagehide| load |overlay|PUSH|narrative|preflight|error|rejection|Failed|visibility/.test(l))
+      const lines = (window.top.__diag || []).filter(l => /ws |vite|unload|pagehide| load |overlay|PUSH|narrative|preflight|error|rejection|Failed|visibility|POST stub/.test(l))
       cy.task('diagLog', `[DIAG ${this.currentTest.title.slice(0, 12)}]\n` + lines.join('\n'))
     })
     beforeEach(() => {
@@ -129,6 +129,7 @@ LEAGUES.filter(l => l.key === 'ahl').forEach(({ key, label }) => {
         cy.intercept('GET', `${workerUrl}/cache/${key}*`, { statusCode: 404, body: {} })
         cy.intercept('POST', `${workerUrl}/${key}/summary/narrative*`, req => {
           narrativeCalls.push(req)
+          log('POST stub hit')
           req.reply({ narrative: NARRATIVE, cardNarrative: null })
         }).as('narrative')
       })
