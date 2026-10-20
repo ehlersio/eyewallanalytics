@@ -12,6 +12,7 @@
 // by tapping the Scoreboard -- in-app, no reload -- and recording starts
 // only once the followed team's page has settled.
 
+import { answerInPage } from '../support/answerInPage'
 import { LEAGUES } from '../support/hockeytech'
 
 const SUPABASE_URL = 'https://mqgasjzywoibdgxjjkux.supabase.co'
@@ -43,18 +44,18 @@ LEAGUES.forEach(({ key, label, team }) => {
     beforeEach(() => {
       recording = false
       writes = []
-      const record = req => { if (recording) writes.push(`${req.method} ${req.url}`) }
+      const record = call => { if (recording) writes.push(`${call.method} ${call.url}`) }
       const workerUrl = Cypress.expose('WORKER_URL')
 
       cy.intercept('GET', `${SUPABASE_URL}/rest/v1/user_preferences*`,
         [{ favorite_team: team.abbr, favorite_sport: key, locale: 'en' }])
-      cy.intercept({ url: `${SUPABASE_URL}/**`, method: /^(POST|PATCH|PUT|DELETE)$/ }, req => {
-        record(req)
-        req.reply({ statusCode: 201, body: {} })
-      })
-      for (const path of ['**/push/**', '**/live-activity/**']) {
-        cy.intercept({ url: path, method: 'POST' }, req => { record(req); req.reply({}) })
-      }
+      // Every write is answered in the page (answerInPage), and recorded once
+      // recording.
+      const account = { method: /^(POST|PATCH|PUT|DELETE)$/, url: /\.supabase\.co\//, reply: call => { record(call); return { statusCode: 201 } } }
+      answerInPage([
+        account,
+        { method: 'POST', url: /\/(push|live-activity)\//, reply: call => { record(call); return { statusCode: 200 } } },
+      ])
       cy.intercept('GET', `${workerUrl}/${key}/today*`, [
         { gameId: GUEST_GAME_ID, gameDate: '2026-10-10', homeTeamId: home.teamId, awayTeamId: away.teamId,
           homeTeamCode: home.abbr, awayTeamCode: away.abbr, homeScore: 1, awayScore: 1, status: 'live' },
@@ -77,6 +78,15 @@ LEAGUES.forEach(({ key, label, team }) => {
       // the followed team's page settling, not the guest visit.
       cy.window({ timeout: DATA_TIMEOUT }).its('localStorage')
         .invoke('getItem', 'eyewall:alerts-seen-at').should('not.be.null')
+      // The sign-in sync writes this device's followed teams to the account
+      // (the stubbed preferences have none) as the page loads, twice under
+      // StrictMode: part of the page settling too, so recording starts once
+      // it has gone quiet.
+      cy.wrap(account.calls, { timeout: DATA_TIMEOUT }).should(calls => {
+        const synced = calls.filter(c => c.body?.followed_teams)
+        expect(synced, 'followed_teams sync').not.to.be.empty
+        expect(Date.now() - synced.at(-1).at, 'ms since its last write').to.be.gte(250)
+      })
     })
 
     it('saves nothing on the device or to the account, and comes back to the same followed team', () => {
