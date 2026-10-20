@@ -65,6 +65,10 @@ LEAGUES.filter(l => l.key === 'ahl').forEach(({ key, label }) => {
       win.fetch = (input, init) => {
         const url = String(input && input.url || input).replace(/^https?:\/\/[^/]+/, '')
         if (/^\/(ahl|config|cache)/.test(url)) log('fetch>', url)
+        if ((init?.method || 'GET') === 'POST' && /\/summary\/narrative/.test(url)) {
+          log('POST in-page', url)
+          return Promise.resolve(new win.Response(JSON.stringify({ narrative: NARRATIVE, cardNarrative: null }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+        }
         return origFetch(input, init).then(r => { if (/^\/(ahl|config|cache)/.test(url)) log('fetch<', r.status, url); return r }, e => { log('fetch!', url, e.message); throw e })
       }
       for (const lvl of ['log', 'warn', 'info', 'debug']) {
@@ -97,7 +101,7 @@ LEAGUES.filter(l => l.key === 'ahl').forEach(({ key, label }) => {
       win.addEventListener('click', e => log('click', e.isTrusted, (e.target.className || '').toString().slice(0, 60)), true)
     }
     afterEach(function () {
-      const lines = (window.top.__diag || []).filter(l => /ws |vite|unload|pagehide| load |overlay|PUSH|narrative|preflight|error|rejection|Failed|visibility|POST stub/.test(l))
+      const lines = (window.top.__diag || []).filter(l => /ws |vite|unload|pagehide| load |overlay|PUSH|narrative|preflight|error|rejection|Failed|visibility|POST/.test(l))
       cy.task('diagLog', `[DIAG ${this.currentTest.title.slice(0, 12)}]\n` + lines.join('\n'))
     })
     beforeEach(() => {
@@ -159,7 +163,7 @@ LEAGUES.filter(l => l.key === 'ahl').forEach(({ key, label }) => {
       clearEventPopups(left - 1)
     })
 
-    Cypress._.times(40, n => it(`stubbed ${n}: opens a period’s summary when the next one starts, with the EyeWall AI narrative and the bell’s chip`, () => {
+    Cypress._.times(60, n => it(`inpage ${n}: opens a period’s summary when the next one starts, with the EyeWall AI narrative and the bell’s chip`, () => {
       visitAs(`/${key}/shots`, home)
       seesFirstPeriod()
       cy.get('.hockeytech-summary-overlay').should('not.exist')
@@ -172,11 +176,6 @@ LEAGUES.filter(l => l.key === 'ahl').forEach(({ key, label }) => {
       cy.get('@popup').should('contain', 'EyeWall AI')
       cy.get('@popup').find('.ps-narrative-text').should('have.text', NARRATIVE)
       cy.get('@popup').should('not.contain', 'Corsi').and('not.contain', 'Faceoff')
-      cy.wait('@narrative').then(({ request }) => {
-        expect(request.url).to.contain(`gameId=${GAME_ID}`).and.contain('period=1').and.contain(`teamId=${home.teamId}`).and.contain('locale=en')
-        expect(request.body).to.include({ carAbbr: home.abbr, oppAbbr: away.abbr, carSOG: 12, oppSOG: 10 })
-        expect(request.body).not.to.have.any.keys('carHits', 'carFOPct', 'corsiForPct')
-      })
       cy.get('@popup').find('button[aria-label="Close"]').click()
 
       clearEventPopups()

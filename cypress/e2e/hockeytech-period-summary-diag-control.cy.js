@@ -159,7 +159,7 @@ LEAGUES.filter(l => l.key === 'ahl').forEach(({ key, label }) => {
       clearEventPopups(left - 1)
     })
 
-    Cypress._.times(40, n => it(`control ${n}: opens a period’s summary when the next one starts, with the EyeWall AI narrative and the bell’s chip`, () => {
+    Cypress._.times(60, n => it(`control ${n}: opens a period’s summary when the next one starts, with the EyeWall AI narrative and the bell’s chip`, () => {
       visitAs(`/${key}/shots`, home)
       seesFirstPeriod()
       cy.get('.hockeytech-summary-overlay').should('not.exist')

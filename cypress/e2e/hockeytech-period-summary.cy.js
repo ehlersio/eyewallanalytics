@@ -59,24 +59,6 @@ LEAGUES.forEach(({ key, label }) => {
           narrativeCalls.push(req)
           req.reply({ narrative: NARRATIVE, cardNarrative: null })
         }).as('narrative')
-        // The narrative POST sends a JSON body cross-origin, so the browser
-        // first sends a CORS preflight (OPTIONS) to the same URL. The POST
-        // stub above doesn't match it, so the preflight used to go out to
-        // the real Worker -- the one live request at that moment. In CI,
-        // now and then the POST failed ("Failed to fetch") just as that
-        // preflight came back and the page reloaded ~150 ms later; the
-        // reloaded page joins the game mid-period-2 and builds P1 quietly,
-        // so the popup was gone and `.find('.ps-narrative-text')` timed out
-        // on a missing @popup (AHL and ECHL alike, any test order). Answered
-        // here, the whole narrative exchange stays inside Cypress.
-        cy.intercept('OPTIONS', `${workerUrl}/${key}/summary/narrative*`, {
-          statusCode: 204,
-          headers: {
-            'access-control-allow-origin': '*',
-            'access-control-allow-methods': 'GET, POST, OPTIONS',
-            'access-control-allow-headers': 'Content-Type',
-          },
-        }).as('narrativePreflight')
       })
     })
 
