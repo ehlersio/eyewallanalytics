@@ -7,7 +7,9 @@
 // localStorage in the same shape supabase-js persists (see
 // supabaseAuth.js's storage key) — supabase-js's getSession() reads that
 // straight from storage without a network round-trip when expires_at is
-// in the future, so this stays fully offline and deterministic too.
+// in the future, so this stays fully offline and deterministic too. Every
+// request to Supabase is answered in the page; one that reaches the network
+// instead fails the test (the beforeEach below).
 //
 // Sign-in uses the PKCE flow (supabaseAuth.js): the OTP request carries a
 // code challenge, the verifier stays in localStorage, and the magic link
@@ -24,6 +26,25 @@ import { answerInPage, firstCall } from '../support/answerInPage';
 const AUTH_STORAGE_KEY = 'sb-mqgasjzywoibdgxjjkux-auth-token';
 const CODE_VERIFIER_KEY = `${AUTH_STORAGE_KEY}-code-verifier`;
 const TEST_EMAIL = 'trivia-fan@example.com';
+
+// What a signed-in page asks Supabase besides the routes a test stubs. The
+// sign-in syncs' reads get what real Supabase gives this fake token (401,
+// PGRST301: not a JWT), so they give up without writing; sign-out's logout
+// succeeds.
+const signedInRoutes = () => ({
+  reads: {
+    method: 'GET',
+    url: /\.supabase\.co\/rest\/v1\//,
+    reply: { statusCode: 401, body: { code: 'PGRST301', details: null, hint: null, message: 'Expected 3 parts in JWT; got 1' } },
+  },
+  logout: { method: 'POST', url: /\.supabase\.co\/auth\/v1\/logout\b/, reply: { statusCode: 204 } },
+});
+
+beforeEach(() => {
+  cy.intercept({ url: /\.supabase\.co\// }, (req) => {
+    throw new Error(`${req.method} ${req.url} went to Supabase; auth.cy.js should answer it in the page`);
+  });
+});
 
 function openSettings() {
   cy.get('.notif-bell').click();
@@ -121,7 +142,7 @@ describe('Magic-link return', () => {
       url: /\.supabase\.co\/auth\/v1\/token\?grant_type=pkce$/,
       reply: { statusCode: 200, body: fakeSession() },
     };
-    answerInPage([pkce]);
+    answerInPage([pkce, signedInRoutes().reads]);
 
     cy.visit('/?code=cypress-auth-code', {
       onBeforeLoad(win) {
@@ -158,11 +179,13 @@ describe('Magic-link return', () => {
 });
 
 describe('Account section — signed in', () => {
-  let deleteRpc;
+  let deleteRpc, logout;
 
   beforeEach(() => {
     deleteRpc = { method: 'POST', url: /\.supabase\.co\/rest\/v1\/rpc\/delete_own_account\b/, reply: { statusCode: 204 } };
-    answerInPage([deleteRpc]);
+    const routes = signedInRoutes();
+    logout = routes.logout;
+    answerInPage([deleteRpc, routes.reads, logout]);
     cy.setTeam('CAR');
     cy.visit('/');
     cy.window().then((win) => {
@@ -180,6 +203,7 @@ describe('Account section — signed in', () => {
 
   it('signs out and reverts to the signed-out row, with no broken UI state elsewhere in Settings', () => {
     cy.contains('.account-row-button', 'Sign out').click();
+    firstCall(logout).its('url').should('contain', 'scope=global');
 
     cy.get('.account-row-button').contains('Sign in to sync across devices').should('be.visible');
     cy.window().then((win) => {

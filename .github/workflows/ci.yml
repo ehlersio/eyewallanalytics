@@ -114,6 +114,37 @@ jobs:
       - name: Wait for dev server
         run: npx wait-on http://localhost:5173 --timeout 30000
 
+      # ── Chrome ──────────────────────────────────────────────
+      # Chrome 155.0.8059.39 crashes its network service when Cypress's
+      # proxy answers a stubbed POST, dropping every connection mid-test
+      # (#546); some runner images shipped it in 2026-10. On a build listed
+      # here, the shard runs the current stable Chrome for Testing instead
+      # (and stops if that's listed too); otherwise the runner's own Chrome.
+      - name: Pick Chrome
+        id: chrome
+        env:
+          BAD_CHROME_BUILDS: 155.0.8059.39
+        run: |
+          version=$(google-chrome --version | grep -oE '[0-9]+(\.[0-9]+){3}')
+          echo "Runner Chrome: $version"
+          if [[ " $BAD_CHROME_BUILDS " != *" $version "* ]]; then
+            echo "browser=chrome" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "::warning::Runner Chrome $version is in BAD_CHROME_BUILDS (#546); using stable Chrome for Testing"
+          url=$(curl -fsSL https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json \
+            | jq -r '.channels.Stable.downloads.chrome[] | select(.platform == "linux64") | .url')
+          curl -fsSL "$url" -o "$RUNNER_TEMP/chrome-linux64.zip"
+          unzip -q "$RUNNER_TEMP/chrome-linux64.zip" -d "$RUNNER_TEMP"
+          chrome="$RUNNER_TEMP/chrome-linux64/chrome"
+          cft=$("$chrome" --version | grep -oE '[0-9]+(\.[0-9]+){3}')
+          echo "Chrome for Testing: $cft"
+          if [[ " $BAD_CHROME_BUILDS " == *" $cft "* ]]; then
+            echo "::error::Chrome for Testing $cft is in BAD_CHROME_BUILDS too"
+            exit 1
+          fi
+          echo "browser=$chrome" >> "$GITHUB_OUTPUT"
+
       # ── Cypress e2e tests ───────────────────────────────────
       - name: E2E tests (Cypress)
         uses: cypress-io/github-action@c541a95ea92d9239347a2355f2e895cd4b3f8060 # v7.4.6
@@ -124,7 +155,7 @@ jobs:
           start: ''
           wait-on: 'http://localhost:5173'
           wait-on-timeout: 30
-          browser: chrome
+          browser: ${{ steps.chrome.outputs.browser }}
           headless: true
           # Record to Cypress Cloud if CYPRESS_RECORD_KEY is set
           # (optional — remove this block if not using Cypress Cloud)
