@@ -24,12 +24,11 @@ const NARRATIVE = 'The home side outshot the visitors in a tight opening period.
 // The narrative POST (HockeyTechPeriodSummary.jsx's generateNarrative) is
 // answered inside the page by answerInPage, not by a cy.intercept stub.
 // As a cy.intercept stub it made the first test flake in CI (AHL and ECHL
-// alike, about 1 run in 100): the stubbed POST now and then failed, every
-// connection through Cypress's proxy dropped with it, Vite's HMR client
-// reloaded the page, and the reloaded page joins the game mid-period-2 and
-// builds P1 quietly (no popup), so `cy.get('@popup').find(...)` timed out
-// on a popup that was gone. 0 failures in 240 looped CI runs answered in
-// the page, against 5 in ~470 the old way (#545). See answerInPage.js.
+// alike): Chrome's network service crashed, every connection dropped,
+// Vite's HMR client reloaded the page, and the reloaded page joins the game
+// mid-period-2 and builds P1 quietly (no popup), so
+// `cy.get('@popup').find(...)` timed out on a popup that was gone (#545).
+// See answerInPage.js.
 
 // The AHL game with this league's team ids.
 function remap(value, ids, parentKey = null) {

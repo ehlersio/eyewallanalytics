@@ -2,20 +2,23 @@
 // Answers a spec's stubbed non-GET requests inside the page, instead of
 // with a cy.intercept stub. Use it for any stubbed POST/PUT/PATCH/DELETE.
 //
-// Why: in CI (Linux, Chrome, roughly 1 run in 100), a POST stubbed with
-// cy.intercept sometimes fails with "Failed to fetch", and in that same
-// millisecond every connection the page has through Cypress's proxy drops,
-// Vite's HMR WebSocket included (close 1006). Vite's client then reloads
-// the page ~150 ms later, and whatever the test asserts next finds a page
-// that has started over. In-page logging proved this for
-// hockeytech-period-summary.cy.js (#545: 5 failures in ~470 looped runs
-// with the cy.intercept stub, 0 in 240 answered in the page). The same
-// window shows up as auth.cy.js's "No request ever occurred" for its
-// stubbed OTP POST and as a "Failed to fetch dynamically imported module"
-// while hockeytech-guest-game-invariants.cy.js's stubbed user_preferences
-// POST was in flight. A request answered here never reaches the proxy.
-// It's a test-harness problem: there's no proxy or HMR socket in a real
-// browser.
+// Why: in CI, Chrome 155.0.8059.39 (on some GitHub runner images from
+// 2026-10-17) crashes its network service now and then while Cypress's
+// proxy answers a cy.intercept-stubbed POST. Chrome restarts the service,
+// and every connection the page had drops in that millisecond: the POST
+// fails ("Failed to fetch"), a module import() in flight fails, and Vite's
+// HMR WebSocket closes (1006), so Vite's client reloads the page ~150 ms
+// later and the test goes on against a page that has started over. That
+// was hockeytech-period-summary.cy.js's flake (#545), auth.cy.js's "No
+// request ever occurred" for its OTP POST, and a "Failed to fetch
+// dynamically imported module" in hockeytech-guest-game-invariants.cy.js.
+// A/B in CI (Chrome's stderr logged), the stubbed POST looped: on
+// 155.0.8059.39, 45 of 840 runs failed and each failure lined up with a
+// logged "Network service crashed"; answered in the page, 0 of 360 on the
+// same build. 155.0.8059.84 and 154 never crashed (0 of 1,200 runs, 960
+// of them stubbed).
+// A request answered here never reaches the proxy, so it can't trigger it,
+// whichever Chrome the runner has. Real users never go through the proxy.
 //
 // answerInPage(routes) wraps window.fetch in every page the current test
 // loads (cy.on('window:before:load'), so cy.reload and later cy.visit calls
@@ -25,9 +28,10 @@
 // returning one, read when the request is made (so a test may swap it), and
 // `calls` (created if missing) collects each request as
 // { method, url, headers, body, at }: headers lower-cased, body JSON-parsed
-// when it parses, `at` the Date.now() it was made. The app only sends through fetch, but each route also
-// gets a cy.intercept that fails the test if one of its requests reaches
-// the proxy anyway, so a stubbed request can never get to the real service.
+// when it parses, `at` the Date.now() it was made. The app only sends
+// through fetch, but each route also gets a cy.intercept that fails the
+// test if one of its requests reaches the proxy anyway, so a stubbed
+// request can never get to the real service.
 
 const NULL_BODY_STATUSES = [101, 204, 205, 304]
 

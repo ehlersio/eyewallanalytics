@@ -15,10 +15,10 @@
 // /auth/v1/token?grant_type=pkce (also stubbed below).
 //
 // Stubbed POSTs are answered inside the page by answerInPage, not by
-// cy.intercept: a cy.intercept-stubbed POST now and then drops every
-// connection through Cypress's proxy in CI and Vite reloads the page. That
-// is how "Use a different email" once failed with "No request ever
-// occurred" for the OTP POST. See cypress/support/answerInPage.js.
+// cy.intercept: on some CI Chrome builds a cy.intercept-stubbed POST now and
+// then crashes Chrome's network service and Vite reloads the page. That is
+// how "Use a different email" once failed with "No request ever occurred"
+// for the OTP POST. See cypress/support/answerInPage.js.
 import { answerInPage, firstCall } from '../support/answerInPage';
 
 const AUTH_STORAGE_KEY = 'sb-mqgasjzywoibdgxjjkux-auth-token';
