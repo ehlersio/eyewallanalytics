@@ -3,7 +3,7 @@
 // play-by-play (fixtures/nhl-games, see nhlGameMath.test.js), checked
 // against the NHL's own final score and shot totals.
 import { describe, it, expect } from 'vitest'
-import { buildSummary, buildGameSummary, scoreAfterPeriod } from '../../hooks/usePeriodSummary.js'
+import { buildSummary, buildGameSummary, scoreAfterPeriod, landingForGame } from '../../hooks/usePeriodSummary.js'
 import { withoutShootout } from '../gamePlays.js'
 
 import g2026020018 from './fixtures/nhl-games/2026020018.json'
@@ -115,5 +115,61 @@ describe('scoreAfterPeriod', () => {
       expect(scoreAfterPeriod(plays, n)).toEqual({ awayScore: last?.details.awayScore ?? 0, homeScore: last?.details.homeScore ?? 0 })
     }
     expect(scoreAfterPeriod(plays, 3)).toEqual({ awayScore: 5, homeScore: 2 })
+  })
+})
+
+// The landing another game's fetch left behind (BOS @ CAR 2025021237 built
+// its goals from CAR @ PHI 2026020025's on 2026-10-05: "O. Tippett" for
+// Svechnikov, "Michkov" for Stankoven, then repeated by the EyeWall AI
+// narrative). A landing names its game; one for another game is no landing.
+describe('landingForGame', () => {
+  const landing = { id: 2026020025, summary: { scoring: [] } }
+
+  it("keeps this game's landing, whether the id came as a number or a string", () => {
+    expect(landingForGame(landing, 2026020025)).toBe(landing)
+    expect(landingForGame(landing, '2026020025')).toBe(landing)
+  })
+
+  it("drops another game's landing", () => {
+    expect(landingForGame(landing, 2025021237)).toBeNull()
+  })
+
+  it('keeps a landing with no id, and has nothing for no landing', () => {
+    const anonymous = { summary: { scoring: [] } }
+    expect(landingForGame(anonymous, 2025021237)).toBe(anonymous)
+    expect(landingForGame(null, 2025021237)).toBeNull()
+    expect(landingForGame(undefined, 2025021237)).toBeNull()
+  })
+})
+
+describe("goals read another game's landing", () => {
+  // WSH @ CAR 2026020018, P1: Tuch, Hutson, Tuch (all WSH), the roster's
+  // own spellings. The stray landing lists CAR @ PHI 2026020025's goals.
+  const strayLanding = {
+    id: 2026020025,
+    summary: { scoring: [
+      { periodDescriptor: { number: 1 }, goals: [
+        { eventId: 57, name: { default: 'S. Aho' }, strength: 'ev', assists: [] },
+        { eventId: 221, name: { default: 'O. Tippett' }, strength: 'ev', assists: [] },
+      ] },
+      { periodDescriptor: { number: 2 }, goals: [{ eventId: 596, name: { default: 'M. Michkov' }, strength: 'ev', assists: [] }] },
+    ] },
+  }
+  const ownScorers = ['Alex Tuch', 'Cole Hutson', 'Alex Tuch']
+
+  it("names the period's scorers from the game's own roster, not the stray landing's", () => {
+    const s = buildSummary(1, g2026020018.pbp.plays, CAR, strayLanding, g2026020018.pbp, g2026020018.pbp.id)
+    expect(s.goals.map(g => g.scorerName)).toEqual(ownScorers)
+  })
+
+  it('does the same for the game summary', () => {
+    const s = buildGameSummary(g2026020018.pbp.plays, CAR, strayLanding, g2026020018.pbp, g2026020018.pbp.id)
+    expect(s.goals.slice(0, 3).map(g => g.scorerName)).toEqual(ownScorers)
+    expect(s.goals.map(g => g.scorerName)).not.toContain('O. Tippett')
+  })
+
+  it("and even for a landing claiming this game's id, when none of its goal ids is the game's", () => {
+    const s = buildSummary(1, g2026020018.pbp.plays, CAR, { ...strayLanding, id: 2026020018 }, g2026020018.pbp, g2026020018.pbp.id)
+    expect(s.goals.map(g => g.scorerName)).toEqual(ownScorers)
   })
 })

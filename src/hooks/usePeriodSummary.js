@@ -16,11 +16,29 @@ const GAME_SUMMARY_KEY = 'eyewall_game_summary';
 // games back to 2021. Position was used before, which is right only while
 // landing lists a period's goals in exactly the play-by-play's order and
 // neither feed omits one; when that slipped, a goal took another goal's
-// scorer, assists and video. Position stays as a fallback for a feed with
-// no ids at all, where it's the old behaviour rather than nothing.
+// scorer, assists and video. Position stays as a fallback only for a feed
+// with no ids at all, where it's the old behaviour rather than nothing. A
+// landing that has ids but none of this goal's gives nothing: on 2026-10-05
+// another game's landing (a stale fetch, see landingForGame) reached here,
+// and by position its first goals handed their scorers to this game's --
+// "O. Tippett" and "Michkov" for Svechnikov and Stankoven in BOS @ CAR
+// 2025021237, names the EyeWall AI narrative then repeated from KV.
 export function landingGoalPicker(landingGoals) {
-  const byId = new Map((landingGoals || []).filter(g => g?.eventId != null).map(g => [g.eventId, g]));
-  return (goal, index) => byId.get(goal?.eventId) ?? (landingGoals || [])[index];
+  const goals = Array.isArray(landingGoals) ? landingGoals : [];
+  const byId = new Map(goals.filter(g => g?.eventId != null).map(g => [g.eventId, g]));
+  if (byId.size) return goal => byId.get(goal?.eventId);
+  return (goal, index) => goals[index];
+}
+
+// `landingData` only if it is this game's. The NHL's landing names its game
+// (`id`); one fetched for the game shown before can land after the view has
+// moved on (usePeriodSummary's fetchLanding kept it until 2026-10-07), and
+// its goals would then be read as this game's. A landing with no id is
+// taken as given.
+export function landingForGame(landingData, gameId) {
+  if (!landingData) return null;
+  if (landingData.id != null && gameId != null && !sameGame(landingData.id, gameId)) return null;
+  return landingData;
 }
 
 // Stored per team as well as per game: a summary is written from one
@@ -158,6 +176,7 @@ function shotSummary(plays, carTeamId, tracked) {
 }
 
 export function buildSummary(period, allPlays, carTeamId, landingData, pbp, gameId, isPlayoff = false) {
+  landingData = landingForGame(landingData, gameId);
   // A shootout is no period of play (see gamePlays.js): no summary is
   // built for it, and its attempts count nowhere.
   const plays = withoutShootout(allPlays);
@@ -420,6 +439,7 @@ export function usePeriodSummary({ pbp, isLive, gameId, carTeamId, carAbbr, isPl
 // Built once when all periods are complete (completed games on load,
 // live games when gameState goes FINAL).
 export function buildGameSummary(allPlays, carTeamId, landingData, pbp, gameId) {
+  landingData = landingForGame(landingData, gameId);
   // Without the shootout: its attempts aren't shots or goals (the NHL
   // credits the winner one goal, no player any), and its goals carry the
   // tied pre-shootout score -- a Final/SO card read 'CAR 4 – COL 4' for a
