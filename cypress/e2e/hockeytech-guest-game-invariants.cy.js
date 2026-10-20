@@ -12,6 +12,7 @@
 // by tapping the Scoreboard -- in-app, no reload -- and recording starts
 // only once the followed team's page has settled.
 
+import { answerInPage } from '../support/answerInPage'
 import { LEAGUES } from '../support/hockeytech'
 
 const SUPABASE_URL = 'https://mqgasjzywoibdgxjjkux.supabase.co'
@@ -43,18 +44,18 @@ LEAGUES.forEach(({ key, label, team }) => {
     beforeEach(() => {
       recording = false
       writes = []
-      const record = req => { if (recording) writes.push(`${req.method} ${req.url}`) }
+      const record = call => { if (recording) writes.push(`${call.method} ${call.url}`) }
       const workerUrl = Cypress.expose('WORKER_URL')
 
       cy.intercept('GET', `${SUPABASE_URL}/rest/v1/user_preferences*`,
         [{ favorite_team: team.abbr, favorite_sport: key, locale: 'en' }])
-      cy.intercept({ url: `${SUPABASE_URL}/**`, method: /^(POST|PATCH|PUT|DELETE)$/ }, req => {
-        record(req)
-        req.reply({ statusCode: 201, body: {} })
-      })
-      for (const path of ['**/push/**', '**/live-activity/**']) {
-        cy.intercept({ url: path, method: 'POST' }, req => { record(req); req.reply({}) })
-      }
+      // Every write is answered in the page (answerInPage), and recorded once
+      // recording. The sign-in sync still upserts followed_teams as the page
+      // loads, before recording starts.
+      answerInPage([
+        { method: /^(POST|PATCH|PUT|DELETE)$/, url: /\.supabase\.co\//, reply: call => { record(call); return { statusCode: 201 } } },
+        { method: 'POST', url: /\/(push|live-activity)\//, reply: call => { record(call); return { statusCode: 200 } } },
+      ])
       cy.intercept('GET', `${workerUrl}/${key}/today*`, [
         { gameId: GUEST_GAME_ID, gameDate: '2026-10-10', homeTeamId: home.teamId, awayTeamId: away.teamId,
           homeTeamCode: home.abbr, awayTeamCode: away.abbr, homeScore: 1, awayScore: 1, status: 'live' },

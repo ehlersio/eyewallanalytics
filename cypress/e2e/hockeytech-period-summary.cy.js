@@ -8,8 +8,9 @@
 // at home, TRE away). /today says the game is live; /live grows a period
 // at a time and a push re-checks at once. The narrative route and the KV
 // /cache read are stubbed: no AI is called. The narrative POST is answered
-// inside the page, not by cy.intercept -- see answerNarrativeInPage.
+// inside the page, not by cy.intercept -- see answerInPage.
 
+import { answerInPage, firstCall } from '../support/answerInPage'
 import { LEAGUES } from '../support/hockeytech'
 
 const FIXTURES = 'src/utils/__tests__/fixtures/ahl-game-1029081'
@@ -21,34 +22,14 @@ const SIDES = {
 const NARRATIVE = 'The home side outshot the visitors in a tight opening period.'
 
 // The narrative POST (HockeyTechPeriodSummary.jsx's generateNarrative) is
-// answered by a fetch wrapper in the page, and each call is recorded as
-// { url, body } in `calls`.
-//
-// It used to be a cy.intercept stub, and that made the first test flake in
-// CI (AHL and ECHL alike, about 1 run in 100). Logging in the page showed
-// the same thing every time: the POST failed ("Failed to fetch") a few ms
-// after Cypress picked it up, and in that same millisecond Vite's HMR
-// WebSocket closed (1006). Every connection the page had through Cypress's
-// proxy dropped at once, so Vite's client logged "server connection lost",
-// pinged, and reloaded the page ~150 ms later. The reloaded page joins the
-// game mid-period-2 and builds P1 quietly (no popup), so
-// `cy.get('@popup').find(...)` timed out on a popup that was gone. It
-// happened whether the CORS preflight went to the real Worker or was
-// stubbed too, so the trigger is the stubbed POST in Cypress's proxy, not
-// the Worker. Answered in the page, the POST never reaches the proxy: 0
-// failures in 240 looped CI runs of this test, against 5 in ~470 the old
-// way (#545). The app is fine: there's no proxy or HMR socket outside the
-// test harness.
-function answerNarrativeInPage(win, calls) {
-  const fetch = win.fetch.bind(win)
-  win.fetch = (input, init = {}) => {
-    const url = String(input?.url ?? input)
-    if ((init.method || 'GET').toUpperCase() !== 'POST' || !/\/summary\/narrative\?/.test(url)) return fetch(input, init)
-    calls.push({ url, body: JSON.parse(init.body || 'null') })
-    const body = JSON.stringify({ narrative: NARRATIVE, cardNarrative: null })
-    return Promise.resolve(new win.Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } }))
-  }
-}
+// answered inside the page by answerInPage, not by a cy.intercept stub.
+// As a cy.intercept stub it made the first test flake in CI (AHL and ECHL
+// alike, about 1 run in 100): the stubbed POST now and then failed, every
+// connection through Cypress's proxy dropped with it, Vite's HMR client
+// reloaded the page, and the reloaded page joins the game mid-period-2 and
+// builds P1 quietly (no popup), so `cy.get('@popup').find(...)` timed out
+// on a popup that was gone. 0 failures in 240 looped CI runs answered in
+// the page, against 5 in ~470 the old way (#545). See answerInPage.js.
 
 // The AHL game with this league's team ids.
 function remap(value, ids, parentKey = null) {
@@ -66,7 +47,7 @@ LEAGUES.forEach(({ key, label }) => {
   const workerUrl = Cypress.expose('WORKER_URL')
 
   describe(`${label} period and final summaries`, () => {
-    let live, summary, period, status, narrativeCalls
+    let live, summary, period, status, narrative
 
     const today = () => [{
       gameId: GAME_ID, gameDate: '2026-10-10', homeTeamId: home.teamId, awayTeamId: away.teamId,
@@ -76,7 +57,11 @@ LEAGUES.forEach(({ key, label }) => {
     beforeEach(() => {
       period = 1
       status = 'live'
-      narrativeCalls = []
+      narrative = {
+        method: 'POST', url: /\/summary\/narrative\?/,
+        reply: { body: { narrative: NARRATIVE, cardNarrative: null } },
+      }
+      answerInPage([narrative])
       cy.readFile(`${FIXTURES}/live.json`).then(json => { live = remap(json, ids) })
       cy.readFile(`${FIXTURES}/summary.json`).then(json => { summary = remap(json, ids) })
       cy.then(() => {
@@ -93,11 +78,9 @@ LEAGUES.forEach(({ key, label }) => {
       onBeforeLoad(win) {
         win.localStorage.setItem('eyewall:sport', key)
         win.localStorage.setItem(`eyewall:${key}_team`, JSON.stringify(team))
-        answerNarrativeInPage(win, narrativeCalls)
       },
     })
-    // The first narrative POST, once the page has made it.
-    const narrativeRequest = () => cy.wrap(narrativeCalls).should('have.length.gte', 1).its(0)
+    const narrativeRequest = () => firstCall(narrative)
     const push = () => cy.window().then(win => win.dispatchEvent(new win.Event('eyewall:push-received')))
     // The page has the game live, on its first period: only then does the
     // next period's first event close it.
@@ -186,7 +169,7 @@ LEAGUES.forEach(({ key, label }) => {
       push()
       cy.wait('@cached')
       cy.get('.hockeytech-summary-overlay .ps-narrative-text', { timeout: DATA_TIMEOUT }).should('have.text', 'From the cache.')
-      cy.then(() => expect(narrativeCalls, 'narrative POSTs').to.have.length(0))
+      cy.then(() => expect(narrative.calls, 'narrative POSTs').to.have.length(0))
     })
   })
 })

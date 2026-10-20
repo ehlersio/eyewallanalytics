@@ -13,6 +13,8 @@
 // recording starts only once the favorite's page has settled, so any
 // write it catches came from the guest visit.
 
+import { answerInPage } from '../support/answerInPage'
+
 const SUPABASE_URL = 'https://mqgasjzywoibdgxjjkux.supabase.co'
 const AUTH_STORAGE_KEY = 'sb-mqgasjzywoibdgxjjkux-auth-token'
 const CAR_TEAM_ID = 12
@@ -43,17 +45,17 @@ describe('Watching as another team leaves the favorite alone', () => {
   beforeEach(() => {
     recording = false
     writes = []
-    const record = req => { if (recording) writes.push(`${req.method} ${req.url}`) }
+    const record = call => { if (recording) writes.push(`${call.method} ${call.url}`) }
 
     cy.intercept('GET', `${SUPABASE_URL}/rest/v1/user_preferences*`,
       [{ favorite_team: 'CAR', favorite_sport: 'nhl', locale: 'en' }])
-    cy.intercept({ url: `${SUPABASE_URL}/**`, method: /^(POST|PATCH|PUT|DELETE)$/ }, req => {
-      record(req)
-      req.reply({ statusCode: 201, body: {} })
-    })
-    for (const path of ['**/push/**', '**/live-activity/**']) {
-      cy.intercept({ url: path, method: 'POST' }, req => { record(req); req.reply({}) })
-    }
+    // Every write is answered in the page (answerInPage), and recorded once
+    // recording. The sign-in sync still upserts followed_teams as the page
+    // loads, before recording starts.
+    answerInPage([
+      { method: /^(POST|PATCH|PUT|DELETE)$/, url: /\.supabase\.co\//, reply: call => { record(call); return { statusCode: 201 } } },
+      { method: 'POST', url: /\/(push|live-activity)\//, reply: call => { record(call); return { statusCode: 200 } } },
+    ])
     cy.intercept('GET', '**/nhl/today', TODAY).as('today')
 
     cy.visit('/league', {

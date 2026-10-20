@@ -14,6 +14,8 @@
 // only once the followed team's page has settled. The guest game is the
 // saved real PWHL 212 (NY at OTT) replayed as live.
 
+import { answerInPage } from '../support/answerInPage'
+
 const SUPABASE_URL = 'https://mqgasjzywoibdgxjjkux.supabase.co'
 const AUTH_STORAGE_KEY = 'sb-mqgasjzywoibdgxjjkux-auth-token'
 const FOLLOWED = { abbr: 'MTL', teamId: 3 }
@@ -37,18 +39,18 @@ describe('PWHL: watching as another team leaves the followed team alone', () => 
   beforeEach(() => {
     recording = false
     writes = []
-    const record = req => { if (recording) writes.push(`${req.method} ${req.url}`) }
+    const record = call => { if (recording) writes.push(`${call.method} ${call.url}`) }
     const workerUrl = Cypress.expose('WORKER_URL')
 
     cy.intercept('GET', `${SUPABASE_URL}/rest/v1/user_preferences*`,
       [{ favorite_team: FOLLOWED.abbr, favorite_sport: 'pwhl', locale: 'en' }])
-    cy.intercept({ url: `${SUPABASE_URL}/**`, method: /^(POST|PATCH|PUT|DELETE)$/ }, req => {
-      record(req)
-      req.reply({ statusCode: 201, body: {} })
-    })
-    for (const path of ['**/push/**', '**/live-activity/**']) {
-      cy.intercept({ url: path, method: 'POST' }, req => { record(req); req.reply({}) })
-    }
+    // Every write is answered in the page (answerInPage), and recorded once
+    // recording. The sign-in sync still upserts followed_teams as the page
+    // loads, before recording starts.
+    answerInPage([
+      { method: /^(POST|PATCH|PUT|DELETE)$/, url: /\.supabase\.co\//, reply: call => { record(call); return { statusCode: 201 } } },
+      { method: 'POST', url: /\/(push|live-activity)\//, reply: call => { record(call); return { statusCode: 200 } } },
+    ])
     cy.intercept('GET', `${workerUrl}/pwhl/today*`, [
       { gameId: GUEST_GAME_ID, gameDate: '2026-10-10', homeTeamId: 5, awayTeamId: 4,
         homeTeamCode: 'OTT', awayTeamCode: 'NY', homeScore: 0, awayScore: 3, status: 'live' },
