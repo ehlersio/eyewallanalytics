@@ -104,8 +104,8 @@ LEAGUES.filter(l => l.key === 'ahl').forEach(({ key, label }) => {
       window.top.__diag = []
       cy.on('window:before:load', instrument)
       cy.intercept({ method: 'OPTIONS', url: /\/summary\/narrative/ }, req => {
-        log('preflight>', req.url.replace(/^https?:\/\/[^/]+/, ''))
-        req.on('response', res => log('preflight<', res.statusCode, 'acao=' + res.headers['access-control-allow-origin'], 'acam=' + res.headers['access-control-allow-methods'], 'acah=' + res.headers['access-control-allow-headers']))
+        log('preflight> STUBBED', req.url.replace(/^https?:\/\/[^/]+/, ''))
+        req.reply({ statusCode: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET, POST, OPTIONS', 'access-control-allow-headers': 'Content-Type' } })
       })
       cy.on('fail', err => {
         window.top.__diagFailed = true
@@ -159,7 +159,7 @@ LEAGUES.filter(l => l.key === 'ahl').forEach(({ key, label }) => {
       clearEventPopups(left - 1)
     })
 
-    Cypress._.times(40, n => it(`diag ${n}: opens a period’s summary when the next one starts, with the EyeWall AI narrative and the bell’s chip`, () => {
+    Cypress._.times(40, n => it(`stubbed ${n}: opens a period’s summary when the next one starts, with the EyeWall AI narrative and the bell’s chip`, () => {
       visitAs(`/${key}/shots`, home)
       seesFirstPeriod()
       cy.get('.hockeytech-summary-overlay').should('not.exist')
