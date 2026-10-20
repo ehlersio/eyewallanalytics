@@ -96,6 +96,10 @@ LEAGUES.filter(l => l.key === 'ahl').forEach(({ key, label }) => {
       win.document.addEventListener('visibilitychange', () => log('visibility', win.document.visibilityState))
       win.addEventListener('click', e => log('click', e.isTrusted, (e.target.className || '').toString().slice(0, 60)), true)
     }
+    afterEach(function () {
+      const lines = (window.top.__diag || []).filter(l => /ws |vite|unload|pagehide| load |overlay|PUSH|narrative|preflight|error|rejection|Failed|visibility/.test(l))
+      cy.task('diagLog', `[DIAG ${this.currentTest.title.slice(0, 12)}]\n` + lines.join('\n'))
+    })
     beforeEach(() => {
       window.top.__diag = []
       cy.on('window:before:load', instrument)
@@ -104,6 +108,7 @@ LEAGUES.filter(l => l.key === 'ahl').forEach(({ key, label }) => {
         req.on('response', res => log('preflight<', res.statusCode, 'acao=' + res.headers['access-control-allow-origin'], 'acam=' + res.headers['access-control-allow-methods'], 'acah=' + res.headers['access-control-allow-headers']))
       })
       cy.on('fail', err => {
+        window.top.__diagFailed = true
         err.message += '\n\nDIAG:\n' + (window.top.__diag || []).join('\n')
         throw err
       })
