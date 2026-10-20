@@ -67,6 +67,20 @@ LEAGUES.filter(l => l.key === 'ahl').forEach(({ key, label }) => {
         if (/^\/(ahl|config|cache)/.test(url)) log('fetch>', url)
         return origFetch(input, init).then(r => { if (/^\/(ahl|config|cache)/.test(url)) log('fetch<', r.status, url); return r }, e => { log('fetch!', url, e.message); throw e })
       }
+      for (const lvl of ['log', 'warn', 'info', 'debug']) {
+        const orig = win.console[lvl]
+        win.console[lvl] = (...a) => { const m = a.map(String).join(' '); if (/vite|narrative|Worker|fetch/i.test(m)) log('console.' + lvl, m.slice(0, 200)); return orig.apply(win.console, a) }
+      }
+      const OrigWS = win.WebSocket
+      win.WebSocket = function (...args) {
+        const ws = new OrigWS(...args)
+        log('ws open', String(args[0]).slice(0, 80))
+        ws.addEventListener('close', e => log('ws close', e.code, e.reason, e.wasClean))
+        ws.addEventListener('error', () => log('ws error'))
+        return ws
+      }
+      win.WebSocket.prototype = OrigWS.prototype
+      Object.assign(win.WebSocket, { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 })
       const origErr = win.console.error
       win.console.error = (...a) => { log('console.error', a.map(String).join(' ').slice(0, 300)); return origErr(...a) }
       const startObserver = () => {
@@ -85,6 +99,10 @@ LEAGUES.filter(l => l.key === 'ahl').forEach(({ key, label }) => {
     beforeEach(() => {
       window.top.__diag = []
       cy.on('window:before:load', instrument)
+      cy.intercept({ method: 'OPTIONS', url: /\/summary\/narrative/ }, req => {
+        log('preflight>', req.url.replace(/^https?:\/\/[^/]+/, ''))
+        req.on('response', res => log('preflight<', res.statusCode, 'acao=' + res.headers['access-control-allow-origin'], 'acam=' + res.headers['access-control-allow-methods'], 'acah=' + res.headers['access-control-allow-headers']))
+      })
       cy.on('fail', err => {
         err.message += '\n\nDIAG:\n' + (window.top.__diag || []).join('\n')
         throw err
