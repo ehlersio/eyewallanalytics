@@ -24,8 +24,8 @@
 // where `reply` is { statusCode, body, headers } or a function of the call
 // returning one, read when the request is made (so a test may swap it), and
 // `calls` (created if missing) collects each request as
-// { method, url, headers, body }: headers lower-cased, body JSON-parsed
-// when it parses. The app only sends through fetch, but each route also
+// { method, url, headers, body, at }: headers lower-cased, body JSON-parsed
+// when it parses, `at` the Date.now() it was made. The app only sends through fetch, but each route also
 // gets a cy.intercept that fails the test if one of its requests reaches
 // the proxy anyway, so a stubbed request can never get to the real service.
 
@@ -54,7 +54,7 @@ function wrapFetch(win, routes) {
     return request.text().then(text => {
       let body = text || null
       try { body = JSON.parse(text) } catch { /* not JSON: keep the text */ }
-      const call = { method, url, headers: Object.fromEntries(request.headers), body }
+      const call = { method, url, headers: Object.fromEntries(request.headers), body, at: Date.now() }
       route.calls.push(call)
       return respond(win, typeof route.reply === 'function' ? route.reply(call) : route.reply)
     })
