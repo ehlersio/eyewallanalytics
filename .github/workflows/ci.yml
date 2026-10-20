@@ -127,7 +127,7 @@ jobs:
         run: |
           version=$(google-chrome --version | grep -oE '[0-9]+(\.[0-9]+){3}')
           echo "Runner Chrome: $version"
-          if false && [[ " $BAD_CHROME_BUILDS " != *" $version "* ]]; then  # WIP: force Chrome for Testing
+          if [[ " $BAD_CHROME_BUILDS " != *" $version "* ]]; then
             echo "browser=chrome" >> "$GITHUB_OUTPUT"
             exit 0
           fi
