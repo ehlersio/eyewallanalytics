@@ -83,9 +83,20 @@ describe('landingGoalPicker', () => {
     expect(pbpGoals.map((g, i) => pick(g, i).name)).toEqual(['First', 'Second'])
   })
 
+  it("gives nothing, not the goal in the same position, when landing has ids and none is this goal's", () => {
+    // Another game's landing (BOS @ CAR 2025021237 read CAR @ PHI
+    // 2026020025's on 2026-10-05): its ids match nothing here, and by
+    // position its first goals credited Tippett and Michkov for Svechnikov
+    // and Stankoven.
+    const pick = landingGoalPicker([{ eventId: 57, name: 'S. Aho' }, { eventId: 221, name: 'O. Tippett' }])
+    expect(pbpGoals.map((g, i) => pick(g, i))).toEqual([undefined, undefined])
+  })
+
   it('survives empty or missing landing goals', () => {
     expect(landingGoalPicker([])(pbpGoals[0], 0)).toBeUndefined()
     expect(landingGoalPicker(null)(pbpGoals[0], 0)).toBeUndefined()
-    expect(landingGoalPicker([{ eventId: 59 }])(undefined, 0)).toEqual({ eventId: 59 })
+    // No goal to match an id for, and landing has ids: nothing, not the
+    // goal in that position.
+    expect(landingGoalPicker([{ eventId: 59 }])(undefined, 0)).toBeUndefined()
   })
 })

@@ -223,6 +223,12 @@ async function generateNarrative(summary, carAbbr, oppAbbr, isPlayoff = false, l
     oppSOG:         summary.oppSOG,
     carGoals:       summary.carGoals,
     oppGoals:       summary.oppGoals,
+    // The score after this period (null when the hook couldn't tell which
+    // side carAbbr is), so the Worker's prompt knows a period's 0-1 is not
+    // the game's result: P3 of BOS @ CAR 2025021237 (5-5 after it, 6-5 in
+    // OT) read "Boston ... secured the win" without it.
+    carScore:       summary.carScore ?? null,
+    oppScore:       summary.oppScore ?? null,
     carHits:        summary.carHits,
     carFOPct:       summary.carFOPct,
     carHDCF:        summary.carHDCF,
