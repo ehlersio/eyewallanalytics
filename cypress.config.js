@@ -52,6 +52,13 @@ export default defineConfig({
     // after:run) don't overlap visual regression's (task).
     setupNodeEvents(on, config) {
       configureVisualRegression(on)
+      // TEMPORARY (flake A/B diagnostics, do not merge)
+      on('task', { diagLog(text) { console.log(text); return null } })
+      on('before:browser:launch', (browser, launchOptions) => {
+        if (browser.family === 'chromium') launchOptions.args.push('--enable-logging=stderr', '--v=0')
+        console.log('[DIAG] browser', browser.name, browser.version, browser.path)
+        return launchOptions
+      })
       cypressSplit(on, config)
       return config
     },
