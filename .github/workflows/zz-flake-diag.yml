@@ -1,6 +1,6 @@
 # TEMPORARY (do not merge): A/B for the stubbed-POST e2e flake.
-# The old cy.intercept-stubbed narrative test looped on the runner's Chrome
-# (155) and on Chrome for Testing 154, plus the in-page version on 155,
+# The old cy.intercept-stubbed narrative test and the in-page version, looped
+# on pinned Chrome for Testing 155 builds,
 # with Chrome's stderr in the log (DEBUG=cypress:launcher:browsers).
 name: Flake diag
 
@@ -19,16 +19,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { chrome: '155', mode: control, n: 1 }
-          - { chrome: '155', mode: control, n: 2 }
-          - { chrome: '155', mode: control, n: 3 }
-          - { chrome: '155', mode: control, n: 4 }
-          - { chrome: '154', mode: control, n: 1 }
-          - { chrome: '154', mode: control, n: 2 }
-          - { chrome: '154', mode: control, n: 3 }
-          - { chrome: '154', mode: control, n: 4 }
-          - { chrome: '155', mode: inpage, n: 1 }
-          - { chrome: '155', mode: inpage, n: 2 }
+          - { chrome: '155.0.8059.39', mode: control, n: 1 }
+          - { chrome: '155.0.8059.39', mode: control, n: 2 }
+          - { chrome: '155.0.8059.39', mode: control, n: 3 }
+          - { chrome: '155.0.8059.84', mode: control, n: 1 }
+          - { chrome: '155.0.8059.84', mode: control, n: 2 }
+          - { chrome: '155.0.8059.84', mode: control, n: 3 }
+          - { chrome: '155.0.8059.84', mode: control, n: 4 }
+          - { chrome: '155.0.8059.39', mode: inpage, n: 1 }
+          - { chrome: '155.0.8059.39', mode: inpage, n: 2 }
+          - { chrome: '155.0.8059.39', mode: inpage, n: 3 }
     name: chrome ${{ matrix.chrome }} ${{ matrix.mode }} ${{ matrix.n }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -46,14 +46,9 @@ jobs:
       - name: Pick Chrome
         id: chrome
         run: |
-          if [ "${{ matrix.chrome }}" = "154" ]; then
-            out=$(npx -y @puppeteer/browsers install chrome@154 --path "$RUNNER_TEMP/cft" | tail -1)
-            echo "$out"
-            echo "browser=${out##* }" >> "$GITHUB_OUTPUT"
-          else
-            google-chrome --version
-            echo "browser=chrome" >> "$GITHUB_OUTPUT"
-          fi
+          out=$(npx -y @puppeteer/browsers install chrome@${{ matrix.chrome }} --path "$RUNNER_TEMP/cft" | tail -1)
+          echo "$out"
+          echo "browser=${out##* }" >> "$GITHUB_OUTPUT"
       - name: Loop
         run: npx cypress run --browser "${{ steps.chrome.outputs.browser }}" --spec cypress/e2e/zz-diag-ab.cy.js --expose DIAG_MODE=${{ matrix.mode }} 2>&1 | tee cypress-loop.log
         env:
