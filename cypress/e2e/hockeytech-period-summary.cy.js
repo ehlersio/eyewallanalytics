@@ -7,7 +7,8 @@
 // unit tests. ECHL plays the same game with its teams' ids swapped in (ADK
 // at home, TRE away). /today says the game is live; /live grows a period
 // at a time and a push re-checks at once. The narrative route and the KV
-// /cache read are stubbed: no AI is called.
+// /cache read are stubbed: no AI is called. The narrative POST is answered
+// inside the page, not by cy.intercept -- see answerNarrativeInPage.
 
 import { LEAGUES } from '../support/hockeytech'
 
@@ -18,6 +19,36 @@ const SIDES = {
   echl: { home: { abbr: 'ADK', teamId: 74 },  away: { abbr: 'TRE', teamId: 113 } },
 }
 const NARRATIVE = 'The home side outshot the visitors in a tight opening period.'
+
+// The narrative POST (HockeyTechPeriodSummary.jsx's generateNarrative) is
+// answered by a fetch wrapper in the page, and each call is recorded as
+// { url, body } in `calls`.
+//
+// It used to be a cy.intercept stub, and that made the first test flake in
+// CI (AHL and ECHL alike, about 1 run in 100). Logging in the page showed
+// the same thing every time: the POST failed ("Failed to fetch") a few ms
+// after Cypress picked it up, and in that same millisecond Vite's HMR
+// WebSocket closed (1006). Every connection the page had through Cypress's
+// proxy dropped at once, so Vite's client logged "server connection lost",
+// pinged, and reloaded the page ~150 ms later. The reloaded page joins the
+// game mid-period-2 and builds P1 quietly (no popup), so
+// `cy.get('@popup').find(...)` timed out on a popup that was gone. It
+// happened whether the CORS preflight went to the real Worker or was
+// stubbed too, so the trigger is the stubbed POST in Cypress's proxy, not
+// the Worker. Answered in the page, the POST never reaches the proxy: 0
+// failures in 240 looped CI runs of this test, against 5 in ~470 the old
+// way (#545). The app is fine: there's no proxy or HMR socket outside the
+// test harness.
+function answerNarrativeInPage(win, calls) {
+  const fetch = win.fetch.bind(win)
+  win.fetch = (input, init = {}) => {
+    const url = String(input?.url ?? input)
+    if ((init.method || 'GET').toUpperCase() !== 'POST' || !/\/summary\/narrative\?/.test(url)) return fetch(input, init)
+    calls.push({ url, body: JSON.parse(init.body || 'null') })
+    const body = JSON.stringify({ narrative: NARRATIVE, cardNarrative: null })
+    return Promise.resolve(new win.Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } }))
+  }
+}
 
 // The AHL game with this league's team ids.
 function remap(value, ids, parentKey = null) {
@@ -55,10 +86,6 @@ LEAGUES.forEach(({ key, label }) => {
         })).as('live')
         cy.intercept('GET', `${workerUrl}/${key}/summary?gameId=${GAME_ID}`, summary)
         cy.intercept('GET', `${workerUrl}/cache/${key}*`, { statusCode: 404, body: {} })
-        cy.intercept('POST', `${workerUrl}/${key}/summary/narrative*`, req => {
-          narrativeCalls.push(req)
-          req.reply({ narrative: NARRATIVE, cardNarrative: null })
-        }).as('narrative')
       })
     })
 
@@ -66,8 +93,11 @@ LEAGUES.forEach(({ key, label }) => {
       onBeforeLoad(win) {
         win.localStorage.setItem('eyewall:sport', key)
         win.localStorage.setItem(`eyewall:${key}_team`, JSON.stringify(team))
+        answerNarrativeInPage(win, narrativeCalls)
       },
     })
+    // The first narrative POST, once the page has made it.
+    const narrativeRequest = () => cy.wrap(narrativeCalls).should('have.length.gte', 1).its(0)
     const push = () => cy.window().then(win => win.dispatchEvent(new win.Event('eyewall:push-received')))
     // The page has the game live, on its first period: only then does the
     // next period's first event close it.
@@ -99,10 +129,10 @@ LEAGUES.forEach(({ key, label }) => {
       cy.get('@popup').should('contain', 'EyeWall AI')
       cy.get('@popup').find('.ps-narrative-text').should('have.text', NARRATIVE)
       cy.get('@popup').should('not.contain', 'Corsi').and('not.contain', 'Faceoff')
-      cy.wait('@narrative').then(({ request }) => {
-        expect(request.url).to.contain(`gameId=${GAME_ID}`).and.contain('period=1').and.contain(`teamId=${home.teamId}`).and.contain('locale=en')
-        expect(request.body).to.include({ carAbbr: home.abbr, oppAbbr: away.abbr, carSOG: 12, oppSOG: 10 })
-        expect(request.body).not.to.have.any.keys('carHits', 'carFOPct', 'corsiForPct')
+      narrativeRequest().then(({ url, body }) => {
+        expect(url).to.contain(`gameId=${GAME_ID}`).and.contain('period=1').and.contain(`teamId=${home.teamId}`).and.contain('locale=en')
+        expect(body).to.include({ carAbbr: home.abbr, oppAbbr: away.abbr, carSOG: 12, oppSOG: 10 })
+        expect(body).not.to.have.any.keys('carHits', 'carFOPct', 'corsiForPct')
       })
       cy.get('@popup').find('button[aria-label="Close"]').click()
 
@@ -136,7 +166,7 @@ LEAGUES.forEach(({ key, label }) => {
       cy.then(() => { period = 2 })
       push()
       cy.get('.hockeytech-summary-overlay', { timeout: DATA_TIMEOUT }).should('contain', 'P1 Summary').and('contain', '10–12')
-      cy.wait('@narrative').its('request.url').should('contain', `teamId=${away.teamId}`)
+      narrativeRequest().its('url').should('contain', `teamId=${away.teamId}`)
       cy.get('.hockeytech-summary-overlay').find('button[aria-label="Close"]').click()
       clearEventPopups()
       cy.get('button.summary-bell').click()
