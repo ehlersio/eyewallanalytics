@@ -897,7 +897,10 @@
       "coincidental": "{{skaters}} — Coïncidentes",
       "recentEvents": "Événements récents",
       "disabledReason": "Disponible une fois le match terminé.",
-      "liveIndicator": "🔴 EN DIRECT"
+      "liveIndicator": "🔴 EN DIRECT",
+      "shootoutScore": "TB {{car}}–{{opp}}",
+      "shootoutRound": "Manche {{round}}",
+      "shootoutTally": "TB {{car}}–{{opp}} · M{{round}}"
     },
     "metrics": {
       "shotsOnGoal": "Tirs au but",
@@ -982,7 +985,51 @@
       "penaltyDrawnBy": "provoquée par {{name}}",
       "penaltyMinutes": "{{count}} min",
       "offensiveZone": "zone offensive",
-      "defensiveZone": "zone défensive"
+      "defensiveZone": "zone défensive",
+      "shootoutRound": "TB M{{round}}",
+      "badgeShootoutGoal": "BUT EN TB",
+      "badgeSave": "ARRÊT",
+      "badgeMiss": "RATÉ",
+      "badgeNoShot": "PAS DE TIR"
+    },
+    "shootout": {
+      "title": "Tirs de barrage",
+      "statusFinal": "{{abbr}} l'emporte {{x}}–{{y}}",
+      "goalieInNet": "{{name}} dans le filet",
+      "vsGoalie": "contre {{name}}",
+      "gwg": "BG",
+      "nextShooter": "Prochain tireur",
+      "attemptLabel": "{{name}} : {{result}}",
+      "result": {
+        "goal": "But",
+        "save": "Arrêt",
+        "miss": "Raté",
+        "noShot": "Pas de tir"
+      },
+      "reasons": {
+        "wideLeft": "À gauche du filet",
+        "wideRight": "À droite du filet",
+        "highAndWideLeft": "Haut et à gauche du filet",
+        "highAndWideRight": "Haut et à droite du filet",
+        "overNet": "Par-dessus le filet",
+        "hitLeftPost": "Sur le poteau gauche",
+        "hitRightPost": "Sur le poteau droit",
+        "hitCrossbar": "Sur la barre",
+        "short": "Trop court",
+        "blocked": "Bloqué"
+      },
+      "reasonsShort": {
+        "wideLeft": "À gauche",
+        "wideRight": "À droite",
+        "highAndWideLeft": "Haut g.",
+        "highAndWideRight": "Haut d.",
+        "overNet": "Par-dessus",
+        "hitLeftPost": "Poteau g.",
+        "hitRightPost": "Poteau d.",
+        "hitCrossbar": "Barre",
+        "short": "Court",
+        "blocked": "Bloqué"
+      }
     },
     "ppAnalysis": {
       "emptyState": "Aucun avantage numérique pour {{abbr}} dans ce match.",
@@ -1214,7 +1261,9 @@
       "updateTitle": "MISE À JOUR DU BUT",
       "updateNote": "Changement au pointage — pas un nouveau but",
       "assistsLabel": "Aides : {{assists}}",
-      "periodTime": "{{period}} · {{time}}"
+      "periodTime": "{{period}} · {{time}}",
+      "shootoutTitle": "BUT EN TIRS DE BARRAGE !",
+      "shootoutLine": "Manche {{round}} · TB {{score}}"
     },
     "penalty": {
       "word1": "LES TRICHEURS",
