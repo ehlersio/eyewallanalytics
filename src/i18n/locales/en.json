@@ -897,7 +897,10 @@
       "coincidental": "{{skaters}} — Coincidental",
       "recentEvents": "Recent events",
       "disabledReason": "Available after the game ends.",
-      "liveIndicator": "🔴 LIVE"
+      "liveIndicator": "🔴 LIVE",
+      "shootoutScore": "SO {{car}}–{{opp}}",
+      "shootoutRound": "Rd {{round}}",
+      "shootoutTally": "SO {{car}}–{{opp}} · Rd {{round}}"
     },
     "metrics": {
       "shotsOnGoal": "Shots on goal",
@@ -982,7 +985,51 @@
       "penaltyDrawnBy": "drawn by {{name}}",
       "penaltyMinutes": "{{count}} min",
       "offensiveZone": "offensive zone",
-      "defensiveZone": "defensive zone"
+      "defensiveZone": "defensive zone",
+      "shootoutRound": "SO R{{round}}",
+      "badgeShootoutGoal": "SO GOAL",
+      "badgeSave": "SAVE",
+      "badgeMiss": "MISS",
+      "badgeNoShot": "NO SHOT"
+    },
+    "shootout": {
+      "title": "Shootout",
+      "statusFinal": "{{abbr}} wins {{x}}–{{y}}",
+      "goalieInNet": "{{name}} in net",
+      "vsGoalie": "vs {{name}}",
+      "gwg": "GWG",
+      "nextShooter": "Next shooter",
+      "attemptLabel": "{{name}}: {{result}}",
+      "result": {
+        "goal": "Goal",
+        "save": "Save",
+        "miss": "Miss",
+        "noShot": "No shot"
+      },
+      "reasons": {
+        "wideLeft": "Wide left",
+        "wideRight": "Wide right",
+        "highAndWideLeft": "High and wide left",
+        "highAndWideRight": "High and wide right",
+        "overNet": "Over the net",
+        "hitLeftPost": "Hit the left post",
+        "hitRightPost": "Hit the right post",
+        "hitCrossbar": "Hit the crossbar",
+        "short": "Short",
+        "blocked": "Blocked"
+      },
+      "reasonsShort": {
+        "wideLeft": "Wide L",
+        "wideRight": "Wide R",
+        "highAndWideLeft": "High L",
+        "highAndWideRight": "High R",
+        "overNet": "Over",
+        "hitLeftPost": "Post L",
+        "hitRightPost": "Post R",
+        "hitCrossbar": "Crossbar",
+        "short": "Short",
+        "blocked": "Blocked"
+      }
     },
     "ppAnalysis": {
       "emptyState": "No {{abbr}} power plays this game.",
@@ -1214,7 +1261,9 @@
       "updateTitle": "GOAL UPDATE",
       "updateNote": "Scoring change — not a new goal",
       "assistsLabel": "Assists: {{assists}}",
-      "periodTime": "{{period}} · {{time}}"
+      "periodTime": "{{period}} · {{time}}",
+      "shootoutTitle": "SHOOTOUT GOAL!",
+      "shootoutLine": "Round {{round}} · SO {{score}}"
     },
     "penalty": {
       "word1": "CHEATERS",

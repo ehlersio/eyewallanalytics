@@ -16,6 +16,7 @@ import { NHL_REGULAR_SEASONS, NHL_ARCHIVE_SEASONS, CURRENT_SEASON, teamTextColor
 import { HockeyRink } from 'react-hockey-rink';
 import { toHockeyRinkEvents } from '../utils/hockeyRinkEvents';
 import LiveEventRink from '../components/LiveEventRink';
+import ShootoutCard from '../components/ShootoutCard';
 import useLiveGoalReplay from '../hooks/useLiveGoalReplay';
 import GoalReplay from '../components/GoalReplay';
 import { goalReplayTarget } from '../utils/goalReplayTarget';
@@ -27,7 +28,8 @@ import { computeShotAttempts, computePDO, computePuckLuck, computeGSAx } from '.
 import { getGoalieAnalytics, getGameXG, getGameLogInsights, getSeasonShots, getSpecialTeamsUnits } from '../utils/supabaseClient';
 import { inferPPUnit, inferPKUnit } from '../utils/ppUnits';
 import { isValidSituationCode } from '../utils/situationCode';
-import { withoutShootout, formatElapsed, hasShotTracking, nhlPeriodLabel } from '../utils/gamePlays';
+import { withoutShootout, isShootoutPlay, formatElapsed, hasShotTracking, nhlPeriodLabel } from '../utils/gamePlays';
+import { shootoutSummary, shootoutScoreFor, missReasonLabel } from '../utils/nhlShootout';
 import { powerPlayOpportunities, powerPlayRecord, teamOnPowerPlay } from '../utils/powerPlays';
 import InfoTip from '../components/InfoTip';
 import { MetCard } from '../components/StatBar';
@@ -137,6 +139,12 @@ const FILL_BLUE_CLASSES = 'h-full bg-[var(--blue-bright)] [transition:width_0.4s
 // 700px breakpoint for consistency (side-by-side on desktop/tablet, stacked
 // on mobile), but its own column ratio (near-equal, not a fixed 260px sidebar).
 const LIVE_RINK_ROW_CLASSES = 'grid grid-cols-[1fr_1fr] gap-3 items-start max-[700px]:grid-cols-1 mb-2';
+// The score bar's lines in place of the clock during a shootout: the
+// shootout's tally ("SO 0–1") on the clock's mono face, the round under it.
+// One line ("SO 0–1 · Rd 3") was wider than the clock's slot on a phone
+// and wrapped the away team under the home team.
+const SCORE_SHOOTOUT_CLASSES = 'score-shootout font-[family-name:var(--font-mono)] text-[18px] text-[color:var(--text)] leading-[1.3] whitespace-nowrap';
+const SCORE_SHOOTOUT_ROUND_CLASSES = 'font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--text-muted)] leading-[1.3] whitespace-nowrap';
 
 const metricsGridClasses = (cols) => cols === 4
   ? 'grid grid-cols-4 gap-2 mb-2'
@@ -209,6 +217,13 @@ const LOG_BADGE_VARIANTS = {
   faceoff: 'bg-[rgba(148,163,184,0.15)] text-[color:var(--text-muted)]',
   give: 'bg-[rgba(255,68,34,0.10)] text-[color:var(--text-dim)]',
   take: 'bg-[rgba(61,186,126,0.10)] text-[color:var(--text-dim)]',
+  // Shootout attempts that weren't goals (a shootout goal takes goal's).
+  // A save is muted rather than shot's green: in a shootout it's the
+  // shooter failing, not a shot piling up. A miss and a lost puck amber,
+  // as on the shootout card.
+  save: 'bg-[rgba(148,163,184,0.15)] text-[color:var(--text-muted)]',
+  miss: 'bg-[rgba(240,160,48,0.15)] text-[color:var(--amber)]',
+  noShot: 'bg-[rgba(240,160,48,0.08)] text-[color:var(--amber)]',
 };
 const logBadgeClasses = (typeKey) =>
   `${LOG_BADGE_BASE} ${LOG_BADGE_VARIANTS[typeKey] || 'bg-[var(--bg3)] text-[color:var(--text-muted)]'}`;
@@ -839,6 +854,14 @@ export default function ShotMapView() {
     [team, gameTeamId]
   );
 
+  // The shootout, attempt by attempt (utils/nhlShootout.js): its card takes
+  // the live rink's place while it's on (every attempt is at center ice at
+  // 0:00, nothing for the rink to plot) and sits under the score bar after.
+  const shootout = useMemo(() => shootoutSummary(pbp), [pbp]);
+  const inShootout = shootout.isShootout;
+  // Its tally from the game team's side, for the score bar.
+  const shootoutScore = shootoutScoreFor(shootout, gameTeam.teamId);
+
   // PP/PK unit compositions for the unit chips and the per-opportunity
   // PP1/PP2 badges in the special-teams drill-downs. Keyed to
   // effectiveSeason, not CURRENT_SEASON: labelling last season's power plays
@@ -1118,6 +1141,10 @@ export default function ShotMapView() {
   // e.g. "1551" = 5v5 | "1541" = home PP (home 5, away 4)
   const currentSituation = useMemo(() => {
     if (!pbp?.plays?.length) return null;
+    // No strength in a shootout: its plays' codes aren't skater counts, so
+    // the last valid one is overtime's, and the bar said "3v3 — Coincidental"
+    // through the whole shootout.
+    if (pbp.periodDescriptor?.periodType === 'SO') return null;
     const plays = [...pbp.plays];
     for (let i = plays.length - 1; i >= 0; i--) {
       const sc = plays[i].situationCode;
@@ -2122,6 +2149,9 @@ export default function ShotMapView() {
                           if (n === 1) return t('shotMapView.scoreBar.intermission1st');
                           if (n === 2) return t('shotMapView.scoreBar.intermission2nd');
                           if (n === 3) return t('shotMapView.scoreBar.intermission3rd');
+                          // The break before a shootout is period 5 too, but
+                          // not a second overtime's intermission.
+                          if (pbp.periodDescriptor?.periodType === 'SO') return nhlPeriodLabel(n, gameIsPlayoff);
                           // OT intermissions: after OT1=period4, OT2=period5, etc.
                           return t('shotMapView.scoreBar.intermissionOT', { n: n - 3 });
                         })()}
@@ -2139,10 +2169,24 @@ export default function ShotMapView() {
                           return nhlPeriodLabel(n, gameIsPlayoff);
                         })()}
                       </div>
-                      <div className={SCORE_CLOCK_CLASSES}>
-                        {displayClock || pbp?.clock?.timeRemaining || '—'}
-                        {!clockRunning && <span className="text-[#fbbf24] text-[12px] ml-1">⏸</span>}
-                      </div>
+                      {pbp?.periodDescriptor?.periodType === 'SO' ? (
+                        // A shootout has no clock (it would sit at 00:00):
+                        // the shootout's own tally and round instead (round 1
+                        // before the first attempt, not round 0).
+                        <>
+                          <div className={SCORE_SHOOTOUT_CLASSES}>
+                            {t('shotMapView.scoreBar.shootoutScore', { car: shootoutScore.team, opp: shootoutScore.opp })}
+                          </div>
+                          <div className={SCORE_SHOOTOUT_ROUND_CLASSES}>
+                            {t('shotMapView.scoreBar.shootoutRound', { round: Math.max(1, shootout.round) })}
+                          </div>
+                        </>
+                      ) : (
+                        <div className={SCORE_CLOCK_CLASSES}>
+                          {displayClock || pbp?.clock?.timeRemaining || '—'}
+                          {!clockRunning && <span className="text-[#fbbf24] text-[12px] ml-1">⏸</span>}
+                        </div>
+                      )}
                     </>
                   )}
                   <div className={`${SCORE_STATE_CLASSES} ${PILL_RED_CLASSES}`} style={{marginTop:4}}>{t('shotMapView.scoreBar.liveIndicator')}</div>
@@ -2252,6 +2296,14 @@ export default function ShotMapView() {
           disabled={isLive} disabledReason={LIVE_SELECTOR_DISABLED_REASON} onDisabledTap={handleDisabledTap} />
       )}
 
+      {/* ── Shootout, once the game is over (live, it's in the rink's place below) ── */}
+      {!isLive && inShootout && activeGame && (
+        <div className="mb-[10px]">
+          <ShootoutCard pbp={pbp} teamId={gameTeam.teamId} teamAbbr={team.abbr}
+            oppAbbr={oppAbbr} oppColor={oppColor} isLive={false} />
+        </div>
+      )}
+
       {/* ── Live / Game Insights (below score) ── */}
       {pbp?.plays?.length > 0 && (
         <LiveInsights
@@ -2272,20 +2324,25 @@ export default function ShotMapView() {
       {/* ── Live rink + event ticker (Session 100) — live games only ── */}
       {isLive && pbp?.plays?.length > 0 && (
         <div className={LIVE_RINK_ROW_CLASSES}>
-          <LiveEventRink
-            plays={pbp.plays}
-            playerMap={buildPlayerMap(pbp)}
-            oppAbbr={oppAbbr}
-            oppColor={oppColor}
-            isLive={isLive}
-            inIntermission={!!pbp?.clock?.inIntermission}
-            displayClock={displayClock || pbp?.clock?.timeRemaining}
-            periodNumber={pbp?.periodDescriptor?.number}
-            goalReplay={liveGoalReplay}
-          />
+          {inShootout ? (
+            <ShootoutCard pbp={pbp} teamId={gameTeam.teamId} teamAbbr={team.abbr}
+              oppAbbr={oppAbbr} oppColor={oppColor} isLive={isLive} />
+          ) : (
+            <LiveEventRink
+              plays={pbp.plays}
+              playerMap={buildPlayerMap(pbp)}
+              oppAbbr={oppAbbr}
+              oppColor={oppColor}
+              isLive={isLive}
+              inIntermission={!!pbp?.clock?.inIntermission}
+              displayClock={displayClock || pbp?.clock?.timeRemaining}
+              periodNumber={pbp?.periodDescriptor?.number}
+              goalReplay={liveGoalReplay}
+            />
+          )}
           <div className="card">
             <div className="sec-label">{t('shotMapView.scoreBar.recentEvents')}</div>
-            <EventLog plays={pbp.plays} playerMap={buildPlayerMap(pbp)} />
+            <EventLog plays={pbp.plays} playerMap={buildPlayerMap(pbp)} shootout={shootout} />
           </div>
         </div>
       )}
@@ -2847,7 +2904,9 @@ function OnIcePanel({ car, opp, oppAbbr, situation }) {
 }
 
 // ── Event Log ─────────────────────────────────────────────────
-function EventLog({ plays, playerMap = {} }) {
+// `shootout` (shootoutSummary()) labels the shootout's rows by round and
+// result: every attempt is at 0:00, so "SO 00:00 SHOT" said nothing.
+export function EventLog({ plays, playerMap = {}, shootout = null }) {
   const { t } = useTranslation();
   const pName = id => {
     if (!id) return null;
@@ -2859,10 +2918,21 @@ function EventLog({ plays, playerMap = {} }) {
     return n === 4 ? 'OT' : n === 5 ? 'SO' : `P${n}`;
   };
 
+  const soAttempts = new Map((shootout?.attempts || []).map(a => [a.eventId, a]));
+  // Misses stay out of the log in regular play (there are dozens), but a
+  // shootout miss or lost puck is a whole attempt.
   const relevant = [...plays]
     .reverse()
-    .filter(p => ['goal','shot-on-goal','penalty','hit','blocked-shot','faceoff','giveaway','takeaway'].includes(p.typeDescKey))
+    .filter(p => ['goal','shot-on-goal','penalty','hit','blocked-shot','faceoff','giveaway','takeaway'].includes(p.typeDescKey)
+      || (isShootoutPlay(p) && ['missed-shot','failed-shot-attempt'].includes(p.typeDescKey) && soAttempts.has(p.eventId)))
     .slice(0, 12);
+
+  const soBadge = {
+    goal:   ['goal',   t('shotMapView.eventLog.badgeShootoutGoal')],
+    save:   ['save',   t('shotMapView.eventLog.badgeSave')],
+    miss:   ['miss',   t('shotMapView.eventLog.badgeMiss')],
+    noShot: ['noShot', t('shotMapView.eventLog.badgeNoShot')],
+  };
 
   const typeStyle = {
     'goal':         'goal',
@@ -2896,8 +2966,22 @@ function EventLog({ plays, playerMap = {} }) {
 
         let headline = null;
         let sub      = null;
+        let timeLabel  = `${per} ${time}`;
+        let badgeStyle = typeStyle[type];
+        let badgeLabel = typeLabel[type] || type;
+        const so = isShootoutPlay(p) ? soAttempts.get(p.eventId) : null;
 
-        if (type === 'goal') {
+        if (so) {
+          timeLabel = t('shotMapView.eventLog.shootoutRound', { round: so.round });
+          [badgeStyle, badgeLabel] = soBadge[so.result];
+          headline = so.shooterName || pName(so.shooterId) || '—';
+          if (so.result === 'goal' || so.result === 'save') {
+            const vs = so.goalieName ? t('shotMapView.shootout.vsGoalie', { name: so.goalieName }) : null;
+            sub = [so.shotType, vs].filter(Boolean).join(' · ') || null;
+          } else if (so.result === 'miss') {
+            sub = missReasonLabel(so.reason, t);
+          }
+        } else if (type === 'goal') {
           const scorer  = pName(d.scoringPlayerId);
           const a1      = pName(d.assist1PlayerId);
           const a2      = pName(d.assist2PlayerId);
@@ -2937,9 +3021,9 @@ function EventLog({ plays, playerMap = {} }) {
         return (
           <div key={i} className={LOG_ROW_CLASSES}>
             <div className={LOG_LEFT_CLASSES}>
-              <span className={LOG_TIME_CLASSES}>{per} {time}</span>
-              <span className={logBadgeClasses(typeStyle[type])}>
-                {typeLabel[type] || type}
+              <span className={LOG_TIME_CLASSES}>{timeLabel}</span>
+              <span className={logBadgeClasses(badgeStyle)}>
+                {badgeLabel}
               </span>
             </div>
             <div className={LOG_RIGHT_CLASSES}>

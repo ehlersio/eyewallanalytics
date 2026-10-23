@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { TEAM_CONFIG } from '../utils/nhlApi';
 import { classifyGoal, goalSignature, recordGoal } from '../utils/goalUpdates';
 import { penaltyParties, penaltyHeadline, penaltyServedBy, penaltyDescription } from '../utils/penaltyText';
-import { nhlPeriodLabel } from '../utils/gamePlays';
+import { nhlPeriodLabel, isShootoutPlay, withoutShootout } from '../utils/gamePlays';
+import { shootoutAttempts } from '../utils/nhlShootout';
 import { NO_GAME, watchGame } from '../utils/gameWatch';
 
 // ── Tailwind class constants (Phase 4, sub-PR 2 -- GameEvents.css deleted) ──
@@ -96,6 +97,9 @@ function playGoalHorn() {
 // `data.isUpdate`: the NHL corrected a goal already shown (assists added,
 // scorer changed). Same card, labelled as an update, and no horn -- the
 // horn is for the goal, once.
+// `data.isShootout`: a shootout goal. Horn and all, but titled as one, with
+// its round and the shootout's tally where the period and time would be
+// (it has no assists, and every attempt is at 0:00).
 export function GoalPopup({ data, onClose }) {
   const { t } = useTranslation();
   useEffect(() => {
@@ -112,18 +116,31 @@ export function GoalPopup({ data, onClose }) {
         {!data.isUpdate && <div className={GOAL_LIGHT_CLASSES}>🚨</div>}
         {data.isUpdate
           ? <div className={GOAL_UPDATE_WORD_CLASSES}>{t('gameEvents.goal.updateTitle')}</div>
-          : <div className={GOAL_WORD_CLASSES}>{t('gameEvents.goal.title')}</div>}
+          : data.isShootout
+            ? <div className={GOAL_UPDATE_WORD_CLASSES}>{t('gameEvents.goal.shootoutTitle')}</div>
+            : <div className={GOAL_WORD_CLASSES}>{t('gameEvents.goal.title')}</div>}
         {data.isUpdate && <div className={GOAL_UPDATE_NOTE_CLASSES}>{t('gameEvents.goal.updateNote')}</div>}
         {data.scorer && <div className={GOAL_SCORER_CLASSES}>{data.scorer}</div>}
-        {data.assists?.length > 0 && (
+        {!data.isShootout && data.assists?.length > 0 && (
           <div className={GOAL_ASSISTS_CLASSES}>{t('gameEvents.goal.assistsLabel', { assists: data.assists.join(', ') })}</div>
         )}
         {data.shotType && <div className={GOAL_SHOT_TYPE_CLASSES}>{data.shotType}</div>}
-        <div className={GOAL_PERIOD_CLASSES}>{data.time ? t('gameEvents.goal.periodTime', { period: data.period, time: data.time }) : data.period}</div>
+        <div className={GOAL_PERIOD_CLASSES}>{goalPopupLine(data, t)}</div>
         <div className={GAME_EVENT_DISMISS_CLASSES}>{t('gameEvents.dismissHint')}</div>
       </div>
     </div>
   );
+}
+
+// The popup's last line: "P2 · 12:34", "Round 3 · SO 1–1" for a shootout
+// goal (just "SO" if the attempt couldn't be read), or the period alone.
+export function goalPopupLine(data, t) {
+  if (data.isShootout) {
+    return data.round != null && data.soScore
+      ? t('gameEvents.goal.shootoutLine', { round: data.round, score: data.soScore })
+      : data.period;
+  }
+  return data.time ? t('gameEvents.goal.periodTime', { period: data.period, time: data.time }) : data.period;
 }
 
 // ── Penalty Popup ─────────────────────────────────────────────
@@ -262,11 +279,13 @@ export function WinPopup({ data, onClose }) {
 
 // Goals per scorer among a game's plays, for the hat-trick count: the
 // team's goals only, each counted for its current scorer. `ids` maps each
-// goal's eventId to that scorer (a review can move it).
+// goal's eventId to that scorer (a review can move it). Not shootout
+// goals: they're not goals on anyone's stat line, so two in the game and
+// one in the shootout is no hat trick.
 export function nhlGoalsByScorer(plays, teamId) {
   const counts = {};
   const ids = {};
-  for (const play of plays || []) {
+  for (const play of withoutShootout(plays)) {
     const d = play.details || {};
     if (play.typeDescKey !== 'goal' || d.eventOwnerTeamId !== teamId) continue;
     const scorerId = String(d.scoringPlayerId || '');
@@ -380,6 +399,38 @@ export function useGameEvents(pbp, isLive, playerMap, gameHome, teamId, teamAbbr
       const d   = play.details || {};
       const per = periodLabel(play.periodDescriptor?.number);
       const time = play.timeInPeriod || null;
+
+      // Favorite's shootout goal: its own popup (round and shootout tally,
+      // no assists), and none of the hat-trick counting below -- see
+      // nhlGoalsByScorer(). The feed doesn't correct these the way it does
+      // a goal's assists, so an eventId already shown is simply seen.
+      if (play.typeDescKey === 'goal' && isShootoutPlay(play) && d.eventOwnerTeamId === _teamId) {
+        const eventId = play.eventId || `goal-${play.sortOrder}`;
+        const prefix = `${eventId}:`;
+        if (![...shownGoals.current].some(sig => sig.startsWith(prefix))) {
+          const scorer = pName(d.scoringPlayerId);
+          shownGoals.current = recordGoal(shownGoals.current, eventId, goalSignature(eventId, scorer, []));
+          if (gameId) sessionStorage.setItem(`goals_${gameId}`, JSON.stringify([...shownGoals.current]));
+          // The tally after this goal, ours first. It needs both teams'
+          // ids to tell whose goals are whose; without them, no tally.
+          const attempt = shootoutAttempts(pbp).find(a => a.eventId === play.eventId);
+          const homeId = pbp.homeTeam?.id;
+          const known = attempt && homeId != null && pbp.awayTeam?.id != null;
+          const soScore = !known ? null : homeId === _teamId
+            ? `${attempt.homeGoals}–${attempt.awayGoals}`
+            : `${attempt.awayGoals}–${attempt.homeGoals}`;
+          setGoalPopup({
+            scorer: scorer || attempt?.shooterName || null,
+            shotType: d.shotType || null,
+            isShootout: true,
+            round: attempt?.round ?? null,
+            soScore,
+            period: 'SO',
+            time: null,
+          });
+        }
+        continue;
+      }
 
       // Favorite's goal. A new eventId is a new goal: horn and popup. The
       // same eventId back with different players (assists posted late, a
