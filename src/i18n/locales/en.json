@@ -216,7 +216,8 @@
       "bracket": "Playoff bracket",
       "leaders": "Leaders",
       "rankings": "Power rankings",
-      "draft": "Draft"
+      "draft": "Draft",
+      "cap": "Cap"
     },
     "scoreboard": {
       "empty": "No games scheduled",
@@ -261,6 +262,24 @@
       "moment": "{{date}} · {{away}} @ {{home}}",
       "source": "Player & puck tracking: NHL EDGE · season so far"
     }
+  },
+  "leagueCap": {
+    "title": "Contract commitments · {{season}}",
+    "infoLabel": "About this table",
+    "infoTip": "Every deal in the open nhl-contracts dataset that covers this season, added up for the team that signed it. That includes players in the minors or since traded, so a team's total runs above the roster cap hit on its Team page and is not cap space (retained salary, buyouts and LTIR aren't in the dataset). The bar is scaled to the league's largest total.",
+    "basisNote": "By signing team: a player traded mid-contract counts for the team that signed him. Not cap space.",
+    "provenance": "as of {{date}}",
+    "ceiling": "cap ceiling ${{amount}}M",
+    "coverage": "{{withFigure}} of {{count}} deals have a public figure",
+    "colRank": "Rank",
+    "colTeam": "Team",
+    "colDeals": "Deals",
+    "colCapHit": "Cap hit total",
+    "colUfa": "UFA",
+    "colRfa": "RFA",
+    "withFigure": "{{count}} w/ figure",
+    "expiringNote": "Expiring this summer across the league: {{ufa}} UFA · {{rfa}} RFA",
+    "arizonaNote": "includes deals signed as Arizona, which Utah took over"
   },
   "leagueView": {
     "tabsAriaLabel": "League sections",

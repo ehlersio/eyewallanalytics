@@ -153,14 +153,17 @@ describe('League page — CAR', () => {
 
   // ── Tab bar ──────────────────────────────────────────────────
 
-  it('renders all seven tab buttons, Scoreboard first', () => {
-    cy.get('.league-tab').should('have.length', 7)
+  // Seven fixed tabs; an eighth, Cap, joins once the Worker's
+  // /contracts/summary has data (league-cap.cy.js covers both cases).
+  it('renders the seven fixed tab buttons, Scoreboard first', () => {
+    cy.get('.league-tab').should('have.length.gte', 7)
     cy.get('.league-tab').eq(0).should('contain', 'Scoreboard')
     cy.get('.league-tab').eq(1).should('contain', 'Standings')
     cy.get('.league-tab').eq(2).should('contain', 'Playoff bracket')
     cy.get('.league-tab').eq(3).should('contain', 'Leaders')
     cy.get('.league-tab').eq(4).should('contain', 'Power rankings')
     cy.get('.league-tab').eq(5).should('contain', 'Scorecard')
+    cy.get('.league-tab').eq(6).should('contain', 'Draft')
   })
 
   it('Scoreboard tab is active by default', () => {
