@@ -216,7 +216,8 @@
       "bracket": "Tableau éliminatoire",
       "leaders": "Meneurs",
       "rankings": "Classement de puissance",
-      "draft": "Repêchage"
+      "draft": "Repêchage",
+      "cap": "Plafond"
     },
     "scoreboard": {
       "empty": "Aucun match prévu",
@@ -261,6 +262,24 @@
       "moment": "{{date}} · {{away}} @ {{home}}",
       "source": "Suivi des joueurs et de la rondelle : NHL EDGE · saison en cours"
     }
+  },
+  "leagueCap": {
+    "title": "Engagements contractuels · {{season}}",
+    "infoLabel": "À propos de ce tableau",
+    "infoTip": "Chaque contrat des données ouvertes nhl-contracts couvrant la saison, additionné pour l'équipe qui l'a signé. Cela inclut les joueurs dans les mineures ou échangés depuis, donc le total d'une équipe dépasse l'impact salarial de l'effectif de sa page Équipe et n'est pas l'espace sous le plafond (salaires retenus, rachats et LTIR absents des données). La barre est à l'échelle du plus grand total de la ligue.",
+    "basisNote": "Par équipe signataire : un joueur échangé en cours de contrat compte pour l'équipe qui l'a signé. Pas l'espace sous le plafond.",
+    "provenance": "au {{date}}",
+    "ceiling": "plafond salarial {{amount}} M$",
+    "coverage": "{{withFigure}} des {{count}} contrats ont un montant public",
+    "colRank": "Rang",
+    "colTeam": "Équipe",
+    "colDeals": "Contrats",
+    "colCapHit": "Impact salarial total",
+    "colUfa": "AGNC",
+    "colRfa": "AGC",
+    "withFigure": "{{count}} avec montant",
+    "expiringNote": "Expirent cet été dans la ligue : {{ufa}} AGNC · {{rfa}} AGC",
+    "arizonaNote": "inclut les contrats signés par l'Arizona, repris par l'Utah"
   },
   "leagueView": {
     "tabsAriaLabel": "Sections de la ligue",

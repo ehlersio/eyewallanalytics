@@ -1,0 +1,376 @@
+{
+ "season": "2026-27",
+ "basis": "signing_team",
+ "asOf": "2026-10-24T12:08:21+00:00",
+ "capLimits": {
+  "ceiling": 104000000,
+  "floor": 77000000,
+  "minSalary": 850000
+ },
+ "teams": [
+  {
+   "team": "BUF",
+   "contracts": 29,
+   "withFigure": 29,
+   "capHitTotal": 125416405,
+   "expiring": {
+    "ufa": 5,
+    "rfa": 9,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "NJD",
+   "contracts": 39,
+   "withFigure": 36,
+   "capHitTotal": 122460833,
+   "expiring": {
+    "ufa": 10,
+    "rfa": 10,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "STL",
+   "contracts": 46,
+   "withFigure": 38,
+   "capHitTotal": 115539083,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 22,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "TBL",
+   "contracts": 29,
+   "withFigure": 27,
+   "capHitTotal": 113055000,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 4,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "NYR",
+   "contracts": 45,
+   "withFigure": 33,
+   "capHitTotal": 112462167,
+   "expiring": {
+    "ufa": 12,
+    "rfa": 16,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "WPG",
+   "contracts": 34,
+   "withFigure": 31,
+   "capHitTotal": 109347612,
+   "expiring": {
+    "ufa": 4,
+    "rfa": 11,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "DAL",
+   "contracts": 43,
+   "withFigure": 33,
+   "capHitTotal": 106688250,
+   "expiring": {
+    "ufa": 13,
+    "rfa": 9,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "SEA",
+   "contracts": 42,
+   "withFigure": 40,
+   "capHitTotal": 104725356,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 12,
+    "unknown": 4
+   }
+  },
+  {
+   "team": "MIN",
+   "contracts": 36,
+   "withFigure": 32,
+   "capHitTotal": 103812083,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 14,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "MTL",
+   "contracts": 33,
+   "withFigure": 27,
+   "capHitTotal": 102151917,
+   "expiring": {
+    "ufa": 5,
+    "rfa": 14,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "COL",
+   "contracts": 27,
+   "withFigure": 21,
+   "capHitTotal": 101507500,
+   "expiring": {
+    "ufa": 8,
+    "rfa": 4,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "WSH",
+   "contracts": 39,
+   "withFigure": 34,
+   "capHitTotal": 100885833,
+   "expiring": {
+    "ufa": 10,
+    "rfa": 6,
+    "unknown": 4
+   }
+  },
+  {
+   "team": "PHI",
+   "contracts": 32,
+   "withFigure": 29,
+   "capHitTotal": 100790833,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 8,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "CAR",
+   "contracts": 34,
+   "withFigure": 30,
+   "capHitTotal": 100480563,
+   "expiring": {
+    "ufa": 8,
+    "rfa": 8,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "VGK",
+   "contracts": 34,
+   "withFigure": 30,
+   "capHitTotal": 99395607,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 12,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "TOR",
+   "contracts": 33,
+   "withFigure": 28,
+   "capHitTotal": 97815668,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 2,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "EDM",
+   "contracts": 32,
+   "withFigure": 30,
+   "capHitTotal": 97333667,
+   "expiring": {
+    "ufa": 10,
+    "rfa": 6,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "CBJ",
+   "contracts": 28,
+   "withFigure": 25,
+   "capHitTotal": 96635000,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 8,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "CHI",
+   "contracts": 35,
+   "withFigure": 35,
+   "capHitTotal": 96374000,
+   "expiring": {
+    "ufa": 7,
+    "rfa": 14,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "SJS",
+   "contracts": 28,
+   "withFigure": 23,
+   "capHitTotal": 95944166,
+   "expiring": {
+    "ufa": 3,
+    "rfa": 10,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "CGY",
+   "contracts": 29,
+   "withFigure": 25,
+   "capHitTotal": 95143833,
+   "expiring": {
+    "ufa": 5,
+    "rfa": 9,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "LAK",
+   "contracts": 24,
+   "withFigure": 22,
+   "capHitTotal": 92425000,
+   "expiring": {
+    "ufa": 7,
+    "rfa": 2,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "OTT",
+   "contracts": 38,
+   "withFigure": 27,
+   "capHitTotal": 92296964,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 13,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "NSH",
+   "contracts": 32,
+   "withFigure": 25,
+   "capHitTotal": 92189000,
+   "expiring": {
+    "ufa": 5,
+    "rfa": 11,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "FLA",
+   "contracts": 39,
+   "withFigure": 27,
+   "capHitTotal": 84795000,
+   "expiring": {
+    "ufa": 9,
+    "rfa": 8,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "UTA",
+   "contracts": 23,
+   "withFigure": 21,
+   "capHitTotal": 83348334,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 2,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "ANA",
+   "contracts": 32,
+   "withFigure": 23,
+   "capHitTotal": 82631500,
+   "expiring": {
+    "ufa": 4,
+    "rfa": 9,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "VAN",
+   "contracts": 19,
+   "withFigure": 17,
+   "capHitTotal": 78043333,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 2,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "PIT",
+   "contracts": 36,
+   "withFigure": 28,
+   "capHitTotal": 77805000,
+   "expiring": {
+    "ufa": 7,
+    "rfa": 7,
+    "unknown": 3
+   }
+  },
+  {
+   "team": "BOS",
+   "contracts": 21,
+   "withFigure": 18,
+   "capHitTotal": 76047500,
+   "expiring": {
+    "ufa": 4,
+    "rfa": 5,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "NYI",
+   "contracts": 29,
+   "withFigure": 20,
+   "capHitTotal": 70450000,
+   "expiring": {
+    "ufa": 10,
+    "rfa": 5,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "DET",
+   "contracts": 24,
+   "withFigure": 19,
+   "capHitTotal": 53621667,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 8,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "ARI",
+   "contracts": 2,
+   "withFigure": 1,
+   "capHitTotal": 7150000,
+   "expiring": {
+    "ufa": 1,
+    "rfa": 0,
+    "unknown": 0
+   }
+  }
+ ],
+ "unavailable": false
+}

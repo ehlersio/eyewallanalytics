@@ -17,6 +17,7 @@ import {
   getTodaysGames,
   getTeamSpecialTeams,
   TEAM_CONFIG,
+  getLeagueCapSummary,
 } from '../utils/nhlApi';
 import { getTeamSeasonData, getPowerRankingsNarrative, getPowerRankingsHistory } from '../utils/supabaseClient';
 import { teamTextColor } from '../utils/teamConfig';
@@ -29,6 +30,7 @@ import ShareButtons from '../components/ShareButtons';
 import RankNarrativeCard from '../components/RankNarrativeCard';
 import PowerRankingsCanvas from '../components/PowerRankingsCanvas';
 import DraftTab from '../components/DraftTab';
+import LeagueCapTable from '../components/LeagueCapTable';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 import { getEdgeLeaders } from '../utils/edgeApi';
 import { useUnits } from '../hooks/useUnits';
@@ -1596,7 +1598,10 @@ const TABS = [
   { id: 'leaders',    labelKey: 'league.tabs.leaders' },
   { id: 'rankings',   labelKey: 'league.tabs.rankings' },
   { id: 'scorecard',  labelKey: 'scorecard.tabLabel' },
-  { id: 'draft',      labelKey: 'league.tabs.draft' }
+  { id: 'draft',      labelKey: 'league.tabs.draft' },
+  // Offered only once the Worker's /contracts/summary has data (no dead
+  // options): see `tabs` in LeagueView.
+  { id: 'cap',        labelKey: 'league.tabs.cap' },
 ];
 
 export default function LeagueView() {
@@ -1623,6 +1628,12 @@ export default function LeagueView() {
 
   const { data: standings, loading: standingsLoading, error: standingsError }
     = useFetch(getStandings, []);
+
+  // League › Cap reads the open contracts dataset's league summary; the tab
+  // only exists when it has rows, so it never opens on an empty table.
+  const { data: capSummary } = useFetch(getLeagueCapSummary, []);
+  const hasCap = !!capSummary && !capSummary.unavailable && (capSummary.teams?.length || 0) > 0;
+  const tabs = useMemo(() => TABS.filter(tab => tab.id !== 'cap' || hasCap), [hasCap]);
 
   const { data: scoring, loading: scoringLoading, error: scoringError }
     = useFetch(() => getScoringLeaders(SEASON, 10, '2'), [SEASON]);
@@ -1671,7 +1682,7 @@ export default function LeagueView() {
   return (
     <div className={LEAGUE_VIEW_CLASSES}>
       <nav className={LEAGUE_TABS_CLASSES} role="tablist" aria-label={t('leagueView.tabsAriaLabel')}>
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             role="tab"
@@ -1731,6 +1742,8 @@ export default function LeagueView() {
           <ScrollTopButton />
           <DraftTab />
         </>}
+
+        {activeTab === 'cap' && hasCap && <LeagueCapTable summary={capSummary} />}
       </div>
     </div>
   );
