@@ -10,17 +10,19 @@
  *   inPlayoffs   {boolean} — controls section ordering; pass false from LeagueView
  *   standings    {array}   — for rank calculation; pass [] from LeagueView
  *   onClose      {fn}      — close handler
- *   isLeagueContext {bool} — when true, hides roster-scoped tabs (Heat Map, Scout)
- *                            and the contract panel (contract panel is further
- *                            gated to TEAM_CONFIG.abbr === 'CAR' — carContracts.js
- *                            only has real data for Carolina); keeps Stats + Analytics
+ *   isLeagueContext {bool} — when true, hides roster-scoped tabs (Heat Map, Scout);
+ *                            keeps Stats + Analytics. The contract panel shows in
+ *                            both contexts: it reads the Worker's
+ *                            /contracts/player/:id (the open nhl-contracts dataset,
+ *                            every NHL team) by playerId, and renders only when
+ *                            the dataset has a contract covering this season.
  */
 
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts'
 import { useFetch } from '../hooks/useFetch'
-import { getPlayerStats, getPlayerGameLog, fetchPlayerRankings, TEAM_CONFIG, GAME_TYPE, getTeamInjuries, buildInjuryIndex, getTeamScratches } from '../utils/nhlApi'
+import { getPlayerStats, getPlayerGameLog, fetchPlayerRankings, TEAM_CONFIG, GAME_TYPE, getTeamInjuries, buildInjuryIndex, getTeamScratches, getPlayerContract } from '../utils/nhlApi'
 import { InjuryBadge, InjuryDetailLine } from './InjuryBadge'
 import { ALL_TEAMS } from '../utils/teamConfig'
 import {
@@ -31,7 +33,8 @@ import {
   getScoutingBlurb,
   getResultsVsProcessNarrative,
 } from '../utils/supabaseClient'
-import { findContract, contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING } from '../utils/carContracts'
+import { contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING } from '../utils/contractValue'
+import { fmtCapHit, isReported } from '../utils/capTable'
 import { nhlSeasonLabel } from '../utils/seasonComparison'
 import { warTier, warPer82, WAR_TIER_MIN_GP } from '../utils/warTier'
 import { HockeyRink } from 'react-hockey-rink'
@@ -173,6 +176,11 @@ const PP_CONTRACT_ROW_CLASSES = 'grid grid-cols-3 gap-[10px_6px] mb-[10px]'
 const PP_CONTRACT_ITEM_CLASSES = 'flex flex-col items-center gap-[3px]'
 const PP_CONTRACT_LABEL_CLASSES = 'text-[9px] uppercase tracking-[0.08em] text-[color:var(--text-dim)] font-[family-name:var(--font-display)] font-semibold'
 const PP_CONTRACT_VAL_CLASSES = 'font-[family-name:var(--font-display)] text-[15px] font-bold text-[color:var(--text)]'
+const PP_CONTRACT_NA_CLASSES = 'text-[11px] font-normal italic text-[color:var(--text-dim)]'
+const PP_CONTRACT_MARK_CLASSES = 'ml-[2px] text-[11px] text-[color:var(--text-dim)]'
+const PP_CONTRACT_CLAUSES_CLASSES = 'flex items-center justify-center gap-2 flex-wrap mb-2 text-[11px] text-[color:var(--text-muted)]'
+const PP_CONTRACT_CLAUSE_CLASSES = 'bg-[var(--bg3)] py-[3px] px-2 rounded-lg'
+const PP_CONTRACT_PROVENANCE_CLASSES = 'text-[10px] text-[color:var(--text-dim)] mb-2'
 const PP_VALUE_ROW_CLASSES = 'flex items-center justify-center gap-2 flex-wrap'
 const PP_VALUE_BADGE_CLASSES = 'flex items-center gap-1 text-[11px] font-semibold py-1 px-3 rounded-xl border-[0.5px]'
 const PP_ADV_CHIP_CLASSES = 'pp-adv-chip flex items-center gap-[3px] text-[11px] text-[color:var(--text-muted)] bg-[var(--bg3)] py-[3px] px-2 rounded-lg'
@@ -990,6 +998,11 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
     [p.id, isGoalie, isLeagueContext]
   )
 
+  // The player's current contract from the Worker (null until it loads or
+  // when the dataset has none); drives the contract & value panel below.
+  const { data: contractData } = useFetch(() => getPlayerContract(p.id), [p.id])
+  const contract = contractData && !contractData.unavailable ? contractData.current : null
+
   const { data: mpAll } = useFetch(() => getPlayerAnalytics(), [])
   const mpData = mpAll?.[String(p.id)] || null
 
@@ -1196,12 +1209,6 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   }
 
   const bio      = stats || p
-  // carContracts.js only has real data for CAR — for any other selected team,
-  // findContract()'s last-name fallback can false-positive against CAR's roster
-  // (e.g. a shared surname), so gate on the selected team too, not just
-  // roster-vs-league context. Matches TeamView.jsx's Cap-tab guard.
-  const contract = (!isLeagueContext && TEAM_CONFIG.abbr === 'CAR')
-    ? findContract(p.id, p.lastName?.default) : null
 
   // Derive positionCode from stats if not on the player object (league context)
   const positionCode = p.positionCode || stats?.position || null
@@ -1419,40 +1426,65 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
           ]} />
         )}
 
-        {/* ── Contract & value panel — CAR context only ── */}
-        {!isLeagueContext && contract && (
-          <div className={PP_CONTRACT_CLASSES}>
+        {/* ── Contract & value panel (any NHL team, by playerId) ── */}
+        {contract && (
+          <div className={`${PP_CONTRACT_CLASSES} pp-contract`}>
             <div className={PP_CONTRACT_ROW_CLASSES}>
               <div className={PP_CONTRACT_ITEM_CLASSES}>
                 <div className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.capHit')}</div>
-                <div className={PP_CONTRACT_VAL_CLASSES}>${(contract.capHit / 1_000_000).toFixed(2)}M</div>
+                <div className={PP_CONTRACT_VAL_CLASSES}>{fmtCapHit(contract.capHit) ?? <span className={PP_CONTRACT_NA_CLASSES}>{t('playerPopup.contract.noFigure')}</span>}</div>
               </div>
               <div className={PP_CONTRACT_ITEM_CLASSES}>
                 <div className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.aavPerYear')}</div>
-                <div className={PP_CONTRACT_VAL_CLASSES}>${(contract.capHit / 1_000_000).toFixed(2)}M</div>
+                <div className={PP_CONTRACT_VAL_CLASSES}>{fmtCapHit(contract.aav) ?? <span className={PP_CONTRACT_NA_CLASSES}>{t('playerPopup.contract.noFigure')}</span>}</div>
               </div>
               <div className={PP_CONTRACT_ITEM_CLASSES}>
                 <div className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.expiresAfter')}</div>
-                <div className={PP_CONTRACT_VAL_CLASSES}>{contract.expiresAfter}</div>
+                <div className={PP_CONTRACT_VAL_CLASSES}>{contract.expiresAfter || '—'}</div>
               </div>
               <div className={PP_CONTRACT_ITEM_CLASSES}>
                 <div className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.status')}</div>
-                <div className={PP_CONTRACT_VAL_CLASSES}>{contract.type}{contract.note ? ` · ${contract.note}` : ''}</div>
+                <div className={PP_CONTRACT_VAL_CLASSES}>
+                  {contract.expiryType || '—'}
+                  {contract.expiryTypeDerived && <span className={PP_CONTRACT_MARK_CLASSES} title={t('playerPopup.contract.derivedTip')}>†</span>}
+                  {contract.contractType === 'ELC' ? ' · ELC' : ''}
+                </div>
               </div>
               <div className={PP_CONTRACT_ITEM_CLASSES}>
                 <div className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.yrsLeft')}</div>
-                <div className={PP_CONTRACT_VAL_CLASSES}>{contract.yearsLeft}</div>
+                <div className={PP_CONTRACT_VAL_CLASSES}>{contract.yearsLeft ?? '—'}</div>
               </div>
               <div className={PP_CONTRACT_ITEM_CLASSES}>
                 <div className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.pctOfCap')}</div>
-                <div className={PP_CONTRACT_VAL_CLASSES}>{((contract.capHit / CAP_CEILING) * 100).toFixed(1)}%</div>
+                <div className={PP_CONTRACT_VAL_CLASSES}>{contract.capHit != null && CAP_CEILING > 0 ? `${((contract.capHit / CAP_CEILING) * 100).toFixed(1)}%` : '—'}</div>
               </div>
+            </div>
+            {contract.clauses?.length > 0 && (
+              <div className={`${PP_CONTRACT_CLAUSES_CLASSES} pp-contract-clauses`}>
+                <span className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.clauses')}</span>
+                {contract.clauses.map((c, i) => {
+                  const kind = t(`playerPopup.contract.clauseKinds.${c.kind}`, { defaultValue: c.kind })
+                  const range = c.from && c.to && c.from !== c.to ? `${c.from}–${c.to}` : (c.from || c.to || null)
+                  const list = c.listSize != null ? t('playerPopup.contract.clauseList', { count: c.listSize }) : null
+                  return (
+                    <span key={i} className={PP_CONTRACT_CLAUSE_CLASSES} title={c.tier ? t('playerPopup.contract.tierLabel', { tier: c.tier }) : undefined}>
+                      <strong>{kind}</strong>{range ? ` ${range}` : ''}{list ? ` · ${list}` : ''}
+                      {isReported(c) && <span className={PP_CONTRACT_MARK_CLASSES} title={t('playerPopup.contract.reportedTip')}>≈</span>}
+                    </span>
+                  )
+                })}
+              </div>
+            )}
+            <div className={`${PP_CONTRACT_PROVENANCE_CLASSES} pp-contract-provenance`}>
+              {contract.official ? t('playerPopup.contract.official') : t('playerPopup.contract.reported')}
+              {contract.tier ? ` · ${t('playerPopup.contract.tierLabel', { tier: contract.tier })}` : ''}
+              {contract.expiryTypeDerived ? ` · † ${t('playerPopup.contract.derivedTip')}` : ''}
             </div>
             {(() => {
               const regStats = nhlSeasonTotal(stats?.seasonTotals, SEASON, 2)
               const pts   = regStats?.points ?? 0
               const gp    = regStats?.gamesPlayed ?? 0
-              const isELC = contract.note === 'ELC' || contract.capHit < 1_200_000
+              const isELC = contract.contractType === 'ELC'
               // WAR per 82 GP, so it sits on the same footing as points per
               // 82 -- null under WAR_TIER_MIN_GP games (points only, then).
               const war   = warPer82(mpData?.war, mpData?.gp)
@@ -1493,7 +1525,7 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                   {isGoalie && (() => {
                     const gsax   = goalieData?.gsax ?? null
                     const gGp    = goalieData?.gp ?? 0
-                    const isELC  = contract.note === 'ELC' || contract.capHit < 1_200_000
+                    const isELC  = contract.contractType === 'ELC'
                     const gScore = goalieContractValue(gsax, gGp, contract.capHit, isELC)
                     const gVl    = goalieValueLabel(gScore)
                     if (!gScore || !gVl) return isELC ? (

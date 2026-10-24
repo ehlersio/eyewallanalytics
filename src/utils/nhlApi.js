@@ -93,6 +93,51 @@ async function workerFetch(path) {
   }
 }
 
+// ─── CONTRACTS ────────────────────────────────────────
+// The Worker's /contracts routes over eyewall-pipeline's nhl_contracts*
+// tables (the open nhl-contracts dataset, github.com/ehlersio/nhl-contracts).
+// Every route answers for any NHL team. `season` is 'YYYY-YY'; omitted,
+// the Worker uses the live season. Each returns null when the Worker is
+// unreachable, and `{ unavailable: true }` when the dataset has nothing
+// for the team or player -- the Cap tab hides itself then.
+
+// { team, season, asOf, rosterKnown, rows, missing, summary, unavailable }.
+// rows: one per player, roster players first (cap hit descending), then
+// deals the team signed for players off its roster; summary.rosterCapHit
+// is the sum over roster players with a figure (NOT cap space: retained
+// salary, buyouts and LTIR are not in the dataset).
+export async function getTeamContracts(teamAbbr = TEAM_CONFIG.abbr, season = null) {
+  const qs = season ? `&season=${encodeURIComponent(season)}` : '';
+  return cached(`contracts:${teamAbbr}:${season || 'current'}`,
+    () => workerFetch(`/contracts?team=${encodeURIComponent(teamAbbr)}${qs}`), TTL.RANKINGS);
+}
+
+// { playerId, season, asOf, current, history, unavailable }: `current` is
+// the contract covering the season (null when none), `history` every
+// contract the dataset has, newest first, each with its season rows.
+export async function getPlayerContract(playerId, season = null) {
+  if (!playerId) return null;
+  const qs = season ? `?season=${encodeURIComponent(season)}` : '';
+  return cached(`contract:${playerId}:${season || 'current'}`,
+    () => workerFetch(`/contracts/player/${encodeURIComponent(playerId)}${qs}`), TTL.RANKINGS);
+}
+
+// { current: 'YYYY-YY', seasons: { 'YYYY-YY': { ceiling, floor, minSalary } } }
+// -- only seasons the league has announced. contractValue.js applies it.
+export async function getCapLimits() {
+  return workerFetch('/config/cap');
+}
+
+// { season, basis: 'signing_team', asOf, capLimits, teams: [{ team,
+// contracts, withFigure, capHitTotal, expiring }], unavailable }. Grouped
+// by the SIGNING team, so a player traded mid-contract counts for the team
+// that signed him.
+export async function getLeagueCapSummary(season = null) {
+  const qs = season ? `?season=${encodeURIComponent(season)}` : '';
+  return cached(`contracts:summary:${season || 'current'}`,
+    () => workerFetch(`/contracts/summary${qs}`), TTL.RANKINGS);
+}
+
 // ─── DRAFT ────────────────────────────────────────────
 
 // Fetch NHL Central Scouting rankings.

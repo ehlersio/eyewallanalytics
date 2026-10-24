@@ -578,7 +578,7 @@ export async function getGameSummary(gameId, team, locale = i18n.language) {
 // Returns the AI-generated scouting blurb for a player, or null if none exists.
 // French/English localization, Track B Phase B2 -- i18n.language rather than
 // a React hook, since this is a plain util outside component scope (same
-// singleton-import pattern as carContracts.js/nhlPlayerStats.js).
+// singleton-import pattern as contractValue.js/nhlPlayerStats.js).
 export async function getScoutingBlurb(playerId, season = currentSeason()) {
   const rows = await workerFetch(`/player-scouting?playerId=${playerId}&season=${season}&locale=${i18n.language}`).catch(() => []);
   if (!rows?.length) return null;
