@@ -6,7 +6,7 @@
 // Deliberately a static hand-maintained file, not a Supabase table fed by
 // the pipeline/poller — this data changes on the order of "once a season"
 // at most (most fields never change at all), so a live round trip would be
-// pure overhead. Same reasoning as carContracts.js.
+// pure overhead.
 //
 // Two kinds of fields, don't conflate them:
 //   - Frozen history (founded, championships, retiredNumbers, records) —

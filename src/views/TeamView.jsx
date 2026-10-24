@@ -8,19 +8,20 @@ import {
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
   getTeamSeasonRankings, TEAM_CONFIG, GAME_TYPE,
   getDraftOrder, getDraftPicks, getTeamInjuries, getTeamScratches, getDraftPickHistory,
-  getPlayoffOdds, getInjuryImpact, getCallupWatch,
+  getPlayoffOdds, getInjuryImpact, getCallupWatch, getTeamContracts, getRoster,
 } from '../utils/nhlApi'
 import { teamTextColor } from '../utils/teamConfig'
 import { InjuryBadge, InjuryDetailLine } from '../components/InjuryBadge'
 import { sortInjuries, parseLocalDate } from '../utils/injuryDetails'
 import { nhlSeasonLabel } from '../utils/seasonComparison'
-import { formatDate, formatOrdinal } from '../utils/formatters'
+import { formatDate, formatDateOnly, formatOrdinal } from '../utils/formatters'
 import { getPlayerEdge } from '../utils/edgeApi'
 import { formatEdgeMetric, presentEdgeMetrics, metricNumber, LOWER_IS_BETTER } from '../utils/edgeFormat'
 import { useUnits } from '../hooks/useUnits'
 import { EDGE_MIN_GP } from '../components/EdgeTrackingSection'
 import { getTeamGameLog as getDbTeamGameLog, getTeamXgTrend } from '../utils/supabaseClient'
-import { CONTRACTS, getCapSummary, CAP_CEILING, CURRENT_SEASON, CONTRACT_DATA_DATE } from '../utils/carContracts'
+import { CAP_CEILING } from '../utils/contractValue'
+import { buildCapTable, rosterNameMap, fmtCapHit, capHitPct } from '../utils/capTable'
 import { DraftPopup } from '../components/DraftTab'
 import { seasonPDO } from '../utils/advancedStats'
 import { isStandingsStale } from '../utils/standingsUtils'
@@ -226,8 +227,17 @@ const CAP_TYPE_BASE_CLASSES = 'text-[10px]'
 const CAP_TYPE_UFA_CLASSES = 'text-[color:var(--amber)]'
 const CAP_TYPE_RFA_CLASSES = 'text-[color:var(--green)]'
 function capTypeClasses(type) {
-  return `${CAP_TYPE_BASE_CLASSES} ${type === 'UFA' ? CAP_TYPE_UFA_CLASSES : CAP_TYPE_RFA_CLASSES}`
+  const color = type === 'UFA' ? CAP_TYPE_UFA_CLASSES : type === 'RFA' ? CAP_TYPE_RFA_CLASSES : 'text-[color:var(--text-dim)]'
+  return `${CAP_TYPE_BASE_CLASSES} ${color}`
 }
+const CAP_NO_FIGURE_CLASSES = 'relative text-[10px] italic text-[color:var(--text-dim)]'
+const CAP_MARK_CLASSES = 'ml-1 text-[10px] text-[color:var(--text-dim)]'
+const CAP_SECTION_CLASSES = 'flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.08em] text-[color:var(--text-dim)] pt-3 pb-[6px] border-b-[0.5px] border-[var(--border)]'
+const CAP_LEGEND_CLASSES = 'flex flex-wrap gap-3 text-[10px] text-[color:var(--text-dim)] mt-2'
+// Row markers: † = UFA/RFA derived from age, not stated; ≈ = reported figure
+// (dataset tier D/E), not from an official source.
+const CAP_DERIVED_MARK = '†'
+const CAP_REPORTED_MARK = '≈'
 const CAP_EXPIRES_CLASSES = 'text-[11px] font-[family-name:var(--font-mono)]'
 const CAP_EXPIRING_NOTE_CLASSES = 'mt-[10px] text-[11px] text-[color:var(--amber)] py-[6px] px-[10px] bg-[rgba(240,160,48,0.1)] rounded-[var(--radius-sm)]'
 
@@ -258,11 +268,14 @@ const EMPTY_SUB_CLASSES = 'empty-sub text-[12px] text-[color:var(--text-muted)]'
 // ids themselves stay untranslated since they're just state, never shown.
 // History tab only shows up for teams with data in teamHistory.js -- Phase 0
 // pilot covers CAR only, so every other team simply won't render the tab
-// (same pattern as Cap being CAR-only) until later phases fill more teams in.
+// until later phases fill more teams in. The Cap tab is offered once the
+// Worker's /contracts route has rows for the followed team (any of the 32;
+// hidden while it loads and when it answers `unavailable`), so it never
+// opens on an empty table.
 const TEAM_HAS_HISTORY = !!getTeamHistory('nhl', TEAM_CONFIG.abbr)
 
-const TABS = ['Overview', 'Advanced', 'Splits', 'Trends',
-  ...(TEAM_CONFIG.abbr === 'CAR' ? ['Cap'] : []),
+const tabsFor = (hasCap) => ['Overview', 'Advanced', 'Splits', 'Trends',
+  ...(hasCap ? ['Cap'] : []),
   'Picks',
   ...(TEAM_HAS_HISTORY ? ['History'] : []),
 ]
@@ -332,10 +345,11 @@ export default function TeamView() {
   // +1 win. We show a live indicator instead of adjusting.
   const { data: liveGame } = useFetch(getLiveGame)
 
-  // Cap data
-  const capSummary      = getCapSummary()
-  const capPct          = Math.round((capSummary.committed / CAP_CEILING) * 100)
-  const sortedContracts = [...CONTRACTS].sort((a, b) => b.capHit - a.capHit)
+  // Cap data: the Worker's /contracts for the followed team. The tab only
+  // exists when the dataset has rows for it (no dead options).
+  const { data: contracts } = useFetch(() => getTeamContracts(TEAM_CONFIG.abbr))
+  const hasCap = !!contracts && !contracts.unavailable && (contracts.rows?.length || 0) > 0
+  const TABS = tabsFor(hasCap)
 
   return (
     <div className={`${PAGE_CLASSES} team-view`}>
@@ -368,7 +382,7 @@ export default function TeamView() {
       {tab === 'Advanced'  && <AdvancedTab statsSeason={statsSeason} priorSeason={priorSeason} corsiReg={corsiReg} realtimeReg={realtimeReg} ppReg={ppReg} pkReg={pkReg} scoreState={scoreState} poAdv={poAdv} inPlayoffs={inPlayoffs} homeSplit={homeSplit} xgTrend={xgTrend} xgTrendPO={xgTrendPO} />}
       {tab === 'Splits'    && <SplitsTab priorSeason={priorSeason} homeSplit={homeSplit} homeSplitPO={homeSplitPO} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} ppReg={ppReg} pkReg={pkReg} corsiReg={corsiReg} />}
       {tab === 'Trends'    && <TrendsTab gameLogReg={gameLog} gameLogPO={gameLogPO} loading={gameLogLoading} />}
-      {tab === 'Cap'   && <CapTab capSummary={capSummary} capPct={capPct} sortedContracts={sortedContracts} />}
+      {tab === 'Cap'   && hasCap && <CapTab data={contracts} />}
       {tab === 'Picks' && <PicksTab />}
       {tab === 'History' && <TeamHistorySections history={getTeamHistory('nhl', TEAM_CONFIG.abbr)} league="nhl" />}
     </div>
@@ -1787,55 +1801,114 @@ export function TrendsTab({ gameLogReg, gameLogPO, loading }) {
 }
 
 // ── Cap tab ───────────────────────────────────────────────────
-function CapTab({ capSummary, capPct, sortedContracts }) {
+// Renders a GET /contracts payload (see capTable.js for the shaping):
+// roster players first, then roster players with no public figure, then
+// the deals the team signed for players off its roster. The bar is the
+// ROSTER CAP HIT against the ceiling, not cap space: the dataset has no
+// retained salary, buyouts or LTIR, so space is not computable.
+function CapTab({ data }) {
   const { t } = useTranslation()
+  // Dataset names can carry a prefix ("Hurricanes.Andrei Svechnikov"); the
+  // roster's own name wins for roster rows.
+  const { data: roster } = useFetch(getRoster)
+  const rosterNames = useMemo(() => rosterNameMap(roster), [roster])
+  const cap = useMemo(() => buildCapTable(data, rosterNames, CAP_CEILING), [data, rosterNames])
+  const asOf = cap.asOf ? formatDateOnly(cap.asOf, { month: 'short', day: 'numeric', year: 'numeric' }) : null
+  const expiryLabel = (row) => {
+    const type = row.expiryType || '—'
+    const parts = [type + (row.expiryTypeDerived ? CAP_DERIVED_MARK : '')]
+    if (row.contractType === 'ELC') parts.push('ELC')
+    return parts.join(' · ')
+  }
+
+  const renderRow = (c) => {
+    const barPct = capHitPct(c.capHit, cap.ceiling) ?? 0
+    return (
+      <div key={c.contractKey || c.playerId} className={capRowClasses(c.expiring)} data-player-id={c.playerId}>
+        <span className={CAP_NAME_CLASSES}>
+          {c.displayName}
+          {c.reported && <span className={CAP_MARK_CLASSES} title={t('teamView.cap.reportedLegend')}>{CAP_REPORTED_MARK}</span>}
+        </span>
+        <span className={CAP_POS_CLASSES}>{c.position || '—'}</span>
+        <div className={CAP_HIT_CELL_CLASSES}>
+          {c.capHit != null && <div className={CAP_HIT_BAR_CLASSES} style={{ width: `${Math.min(barPct * 3, 100)}%` }} />}
+          {c.capHit != null
+            ? <span className={CAP_HIT_VAL_CLASSES}>{fmtCapHit(c.capHit)}</span>
+            : <span className={CAP_NO_FIGURE_CLASSES}>{t('teamView.cap.noPublicFigure')}</span>}
+        </div>
+        <span className={capTypeClasses(c.expiryType)}>{expiryLabel(c)}</span>
+        <span className={CAP_EXPIRES_CLASSES} style={{ color: c.expiring ? 'var(--amber)' : 'var(--text-dim)' }}>
+          {c.expiresAfter || '—'}
+        </span>
+      </div>
+    )
+  }
+
   return (
-    <div className="card" style={{ marginTop: 4 }}>
-      <div className="sec-label" style={{ marginBottom: 10 }}>{t('teamView.cap.title', { season: CURRENT_SEASON })}</div>
+    <div className="card cap-tab" style={{ marginTop: 4 }}>
+      <div className="sec-label" style={{ marginBottom: 10 }}>{t('teamView.cap.title', { season: cap.season || '' })}</div>
       <div className={CAP_BAR_WRAP_CLASSES}>
-        <div className={CAP_BAR_FILL_CLASSES} style={{ width: `${capPct}%` }} />
+        <div className={CAP_BAR_FILL_CLASSES} style={{ width: `${Math.min(cap.capPct ?? 0, 100)}%` }} />
         <div className={CAP_BAR_TRACK_CLASSES} />
       </div>
       <div className={CAP_BAR_LABELS_CLASSES}>
-        <span className={CAP_COMMITTED_CLASSES}>{t('teamView.cap.committed', { amount: (capSummary.committed/1_000_000).toFixed(1) })}</span>
-        <span style={{ color: capSummary.space < 5_000_000 ? 'var(--red-bright)' : 'var(--green)' }}>
-          {t('teamView.cap.capSpace', { amount: (capSummary.space/1_000_000).toFixed(1) })}
+        <span className={`${CAP_COMMITTED_CLASSES} cap-roster-hit`}>
+          {t('teamView.cap.rosterCapHit', { amount: (cap.rosterCapHit / 1_000_000).toFixed(1) })}
+          <InfoTip label={t('teamView.cap.rosterCapHitLabel')} text={t('teamView.cap.rosterCapHitTip')} />
         </span>
+        {cap.ceiling != null && (
+          <span className={CAP_COMMITTED_CLASSES}>{t('teamView.cap.ceilingLabel', { amount: (cap.ceiling / 1_000_000).toFixed(1) })}</span>
+        )}
       </div>
-      <div className={CAP_CEILING_LABEL_CLASSES}>{t('teamView.cap.ceilingLabel', { amount: (CAP_CEILING/1_000_000).toFixed(1) })}</div>
-      <div className={CAP_DATA_DATE_CLASSES}>{t('teamView.cap.dataAsOf', { date: CONTRACT_DATA_DATE })}</div>
+      <div className={CAP_CEILING_LABEL_CLASSES}>
+        {t('teamView.cap.coverage', { withFigure: cap.rosterWithFigure, count: cap.rosterCount })}
+      </div>
+      <div className={`${CAP_DATA_DATE_CLASSES} cap-provenance`}>
+        {asOf ? t('teamView.cap.provenance', { date: asOf, official: cap.provenance.official, reported: cap.provenance.reported })
+              : t('teamView.cap.provenanceNoDate', { official: cap.provenance.official, reported: cap.provenance.reported })}
+      </div>
       <div className={CAP_TABLE_CLASSES}>
         <div className={CAP_TABLE_HEADER_CLASSES}>
           <span>{t('teamView.cap.colPlayer')}</span><span>{t('teamView.cap.colPos')}</span><span>{t('teamView.cap.colCapHit')}</span>
           <span>{t('teamView.cap.colType')}</span><span>{t('teamView.cap.colExpires')}</span>
         </div>
-        {sortedContracts.map((c, i) => {
-          const barPct = Math.round((c.capHit / CAP_CEILING) * 100)
-          const isExpiring = c.yearsLeft === 0
-          return (
-            <div key={i} className={capRowClasses(isExpiring)}>
-              <span className={CAP_NAME_CLASSES}>{c.name}</span>
-              <span className={CAP_POS_CLASSES}>{c.pos}</span>
-              <div className={CAP_HIT_CELL_CLASSES}>
-                <div className={CAP_HIT_BAR_CLASSES} style={{ width: `${Math.min(barPct * 3, 100)}%` }} />
-                <span className={CAP_HIT_VAL_CLASSES}>${(c.capHit/1_000_000).toFixed(2)}M</span>
-              </div>
-              <span className={capTypeClasses(c.type)}>
-                {c.type}{c.note ? ` · ${c.note}` : ''}
-              </span>
-              <span className={CAP_EXPIRES_CLASSES} style={{ color: isExpiring ? 'var(--amber)' : 'var(--text-dim)' }}>
-                {c.expiresAfter}
-              </span>
+        {cap.rosterRows.map(renderRow)}
+        {cap.missing.map(m => (
+          <div key={`missing-${m.playerId}`} className={`${CAP_ROW_BASE_CLASSES} cap-row-missing`} data-player-id={m.playerId}>
+            <span className={CAP_NAME_CLASSES}>{rosterNames.get(Number(m.playerId)) || m.name}</span>
+            <span className={CAP_POS_CLASSES}>{m.position || '—'}</span>
+            <div className={CAP_HIT_CELL_CLASSES}>
+              <span className={CAP_NO_FIGURE_CLASSES}>{t('teamView.cap.noPublicFigure')}</span>
             </div>
-          )
-        })}
+            <span className={CAP_TYPE_BASE_CLASSES} style={{ color: 'var(--text-dim)' }}>
+              {m.gap === 'no_contract' ? t('teamView.cap.gapNoContract') : t('teamView.cap.gapNoMoney')}
+            </span>
+            <span className={CAP_EXPIRES_CLASSES} style={{ color: 'var(--text-dim)' }}>—</span>
+          </div>
+        ))}
+        {cap.offRosterRows.length > 0 && (
+          <>
+            <div className={`${CAP_SECTION_CLASSES} cap-off-roster`}>
+              {t('teamView.cap.offRoster', { count: cap.offRosterRows.length })}
+              <InfoTip label={t('teamView.cap.offRosterLabel')} text={t('teamView.cap.offRosterTip')} />
+            </div>
+            {cap.offRosterRows.map(renderRow)}
+          </>
+        )}
       </div>
-      {capSummary.expiring.length > 0 && (
-        <div className={CAP_EXPIRING_NOTE_CLASSES}>
+      {(cap.hasDerived || cap.hasReported) && (
+        <div className={CAP_LEGEND_CLASSES}>
+          {cap.hasDerived && <span>{CAP_DERIVED_MARK} {t('teamView.cap.derivedLegend')}</span>}
+          {cap.hasReported && <span>{CAP_REPORTED_MARK} {t('teamView.cap.reportedLegend')}</span>}
+        </div>
+      )}
+      {cap.expiringTotal > 0 && (
+        <div className={`${CAP_EXPIRING_NOTE_CLASSES} cap-expiring`}>
           {t('teamView.cap.expiringNote', {
-            ufaPart: t('teamView.cap.ufaCount', { count: capSummary.ufa.length }),
-            rfaPart: t('teamView.cap.rfaCount', { count: capSummary.rfa.length }),
+            ufaPart: t('teamView.cap.ufaCount', { count: cap.expiring.ufa }),
+            rfaPart: t('teamView.cap.rfaCount', { count: cap.expiring.rfa }),
           })}
+          {cap.expiring.unknown > 0 && ` · ${t('teamView.cap.unknownCount', { count: cap.expiring.unknown })}`}
         </div>
       )}
     </div>

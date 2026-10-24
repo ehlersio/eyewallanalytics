@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import i18n from '../../i18n/index.js'
 import { warPer82, warTier, WAR_TIER_MIN_GP } from '../warTier'
-import { contractValue, WAR_SCALE } from '../carContracts'
+import { contractValue, WAR_SCALE } from '../contractValue'
 import { SkaterWarCard } from '../../components/PlayerPopup.jsx'
 
 const en = i18n.getFixedT('en')

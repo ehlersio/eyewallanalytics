@@ -18,9 +18,10 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       ['Overview', 'Advanced', 'Splits', 'Trends'].forEach(tab =>
         cy.contains(tab).should('be.visible')
       )
-      // Cap and Picks tabs only available for teams with salary data
+      // The Cap tab appears once the Worker's /contracts has rows for the
+      // team (every team here does; cap-tab.cy.js covers the hidden case).
+      cy.contains('button', /^Cap$/, { timeout: DATA_TIMEOUT }).should('be.visible')
       if (teamAbbr === 'CAR') {
-        cy.contains('Cap').should('be.visible')
         cy.contains('Picks').should('be.visible')
       }
       // History tab now covers all 32 NHL teams (Phase 1) -- always expected
@@ -239,26 +240,30 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
       })
     })
 
-    // Cap & Picks only runs for teams with salary data
-    if (teamAbbr === 'CAR') {
-      describe('Cap tab', () => {
-        beforeEach(() => cy.contains('Cap').click())
-
-        it('renders salary cap bar', () => {
-          cy.contains(/cap/i, { timeout: DATA_TIMEOUT }).should('exist')
-          cy.contains(/\$\d+M|\d+M/).should('exist')
-        })
-
-        it('renders contract table with player names', () => {
-          cy.team('CAR').then(t => {
-            cy.contains(t.skater, { timeout: DATA_TIMEOUT }).should('exist')
-            cy.contains(/UFA|RFA/).should('exist')
-            cy.contains(/\$\d+\.\d+M/).should('exist')
-          })
-        })
-
+    // Live /contracts for every team (stubbed payloads: cap-tab.cy.js).
+    describe('Cap tab', () => {
+      beforeEach(() => {
+        cy.contains('button', /^Cap$/, { timeout: DATA_TIMEOUT }).click()
+        cy.get('.cap-tab', { timeout: DATA_TIMEOUT }).should('exist')
       })
 
+      it('renders the roster cap hit bar against the ceiling', () => {
+        cy.contains('.cap-roster-hit', /\$\d+\.\d+M roster cap hit/).should('exist')
+        cy.contains(/Cap ceiling: \$\d+\.\d+M/).should('exist')
+        cy.get('.cap-provenance').invoke('text').should('match', /\d+ official \/ \d+ reported/)
+      })
+
+      it('renders the contract table with player names', () => {
+        cy.team(teamAbbr).then(t => {
+          cy.contains('.cap-row', t.skater).should('exist')
+        })
+        cy.contains('.cap-row', /UFA|RFA/).should('exist')
+        cy.contains('.cap-row', /\$\d+\.\d+M/).should('exist')
+      })
+    })
+
+    // Picks only runs for teams with draft data
+    if (teamAbbr === 'CAR') {
       describe('Picks tab', () => {
         beforeEach(() => cy.contains('Picks').click())
 
