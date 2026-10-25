@@ -41,7 +41,7 @@ Users pick a league (NHL, PWHL, AHL or ECHL) and a team on first launch, and can
 | Analytics Data | MoneyPuck.com CSV (fetched nightly by pipeline) |
 | PWHL Data | HockeyTech API (stats, PBP, schedules), PWHLPA PDF (salaries) |
 | Draft Data | NHL Central Scouting API + NHL API (live picks) + Tankathon; PWHL static (2025, 2026) |
-| User Analytics | PostHog (anonymous event tracking, cookieless; session recording and surveys off) |
+| User Analytics | PostHog (anonymous event tracking, cookieless; session recording and surveys off). On the web, also Cloudflare Web Analytics (cookieless page views): Pages injects its beacon while Web Analytics is on in the Pages project settings, so `public/_headers`' CSP allows `static.cloudflareinsights.com` (script) and `cloudflareinsights.com` (reports); turning it off there (dashboard only) is the alternative |
 | Cap Data | NHL contracts for all 32 teams from the open [nhl-contracts](https://github.com/ehlersio/nhl-contracts) dataset (CC0; club releases, NHL.com, ESPN, with reported figures marked), mirrored nightly into Supabase by `eyewall-pipeline` and served by the Worker's `/contracts*` and `/config/cap` routes; PWHL salaries from PWHLPA PDF |
 | Accessibility | WCAG 2.1 AA compliant (Section 508) |
 | Testing | Vitest (unit tests), Cypress (E2E), GitHub Actions CI |

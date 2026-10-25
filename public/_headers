@@ -8,6 +8,11 @@
 #               fails if the script changes without it. us-assets.i.posthog.com
 #               and us.i.posthog.com: posthog-js's remote config and lazy
 #               extensions (web vitals, dead clicks, exception capture).
+#               static.cloudflareinsights.com: the Cloudflare Web Analytics
+#               beacon, which Pages injects itself while Web Analytics is on
+#               in the Pages project settings (cookieless; posts to
+#               cloudflareinsights.com, below). Turning Web Analytics off
+#               there (dashboard only) is the alternative to these two.
 #   style-src   'unsafe-inline': Vite minifies index.html's inline <style>
 #               at build time (so a hash wouldn't survive a toolchain bump),
 #               and privacy.html / delete-account.html style inline.
@@ -20,6 +25,7 @@
 #   connect-src the Worker (every data read), Supabase (auth + the user's own
 #               rows), PostHog, and the image hosts html-to-image fetches when
 #               it bakes a share card; data:/blob: for its data-URL round trips.
+#               cloudflareinsights.com: the Web Analytics beacon's reports.
 #   frame-src   players.brightcove.net: NHL goal clips.
 #   media-src   'self': /goal-horn.mp3.  worker-src 'self': /sw.js.
 /*
@@ -27,7 +33,7 @@
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-ImFza1VmytlfmhU681vJjrno4zTE4allHrKMbKaMh44=' https://us-assets.i.posthog.com https://us.i.posthog.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' data: blob: https://eyewall-poller.billowing-queen-bf23.workers.dev https://mqgasjzywoibdgxjjkux.supabase.co https://us.i.posthog.com https://us-assets.i.posthog.com https://assets.nhle.com https://assets.leaguestat.com https://lscluster.hockeytech.com; frame-src https://players.brightcove.net; media-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-ImFza1VmytlfmhU681vJjrno4zTE4allHrKMbKaMh44=' https://us-assets.i.posthog.com https://us.i.posthog.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' data: blob: https://eyewall-poller.billowing-queen-bf23.workers.dev https://mqgasjzywoibdgxjjkux.supabase.co https://us.i.posthog.com https://us-assets.i.posthog.com https://assets.nhle.com https://assets.leaguestat.com https://lscluster.hockeytech.com https://cloudflareinsights.com; frame-src https://players.brightcove.net; media-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
 /index.html
   Cache-Control: no-cache
 /assets/*
