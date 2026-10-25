@@ -294,6 +294,15 @@
     "notRated": "Non notés : {{noFigure}} sans montant public, {{elc}} en contrat de recrue, {{underMinGp}} sous {{minGp}} matchs ({{minGpGoalies}} pour les gardiens)."
   },
   "leagueCap": {
+    "roster": {
+      "title": "Impact salarial de l'effectif · {{season}}",
+      "basisNote": "Par effectif actuel : le même chiffre que chaque page Équipe, pour les 32 équipes. Pas l'espace sous le plafond.",
+      "infoTip": "Les impacts salariaux des joueurs de l'effectif actuel de la LNH de chaque équipe, peu importe qui les a signés, selon les données ouvertes nhl-contracts : le chiffre de l'onglet Plafond de la page Équipe. La barre est la part du plafond salarial. Ce n'est pas l'espace sous le plafond : salaires retenus, rachats, LTIR et dépassements de bonis ne figurent pas dans les données.",
+      "coverage": "{{withFigure}} des {{count}} joueurs d'effectif ont un montant public",
+      "colDeals": "Effectif",
+      "colCapHit": "Impact de l'effectif",
+      "offRosterNote": "{{count}} joueurs signés sans effectif de la LNH (mineures, prêts) ne sont pas comptés"
+    },
     "title": "Engagements contractuels · {{season}}",
     "infoLabel": "À propos de ce tableau",
     "infoTip": "Chaque contrat des données ouvertes nhl-contracts couvrant la saison, additionné pour l'équipe qui l'a signé. Cela inclut les joueurs dans les mineures ou échangés depuis, donc le total d'une équipe dépasse l'impact salarial de l'effectif de sa page Équipe et n'est pas l'espace sous le plafond (salaires retenus, rachats et LTIR absents des données). La barre est à l'échelle du plus grand total de la ligue.",

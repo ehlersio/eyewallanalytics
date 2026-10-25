@@ -17,7 +17,7 @@ import {
   getTodaysGames,
   getTeamSpecialTeams,
   TEAM_CONFIG,
-  getLeagueCapSummary,
+  getLeagueCapTableSummary,
   getLeagueContractPlayers, getLeagueSkaterSummary,
 } from '../utils/nhlApi';
 import { getTeamSeasonData, getPowerRankingsNarrative, getPowerRankingsHistory } from '../utils/supabaseClient';
@@ -1635,7 +1635,7 @@ export default function LeagueView() {
 
   // League › Cap reads the open contracts dataset's league summary; the tab
   // only exists when it has rows, so it never opens on an empty table.
-  const { data: capSummary } = useFetch(getLeagueCapSummary, []);
+  const { data: capSummary } = useFetch(getLeagueCapTableSummary, []);
   const hasCap = !!capSummary && !capSummary.unavailable && (capSummary.teams?.length || 0) > 0;
   const tabs = useMemo(() => TABS.filter(tab => tab.id !== 'cap' || hasCap), [hasCap]);
 

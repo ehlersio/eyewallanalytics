@@ -83,6 +83,45 @@ describe('buildLeagueCapTable', () => {
   })
 })
 
+describe('buildLeagueCapTable (roster basis)', () => {
+  const rosterSummary = {
+    season: '2026-27', basis: 'roster', asOf: '2026-10-24T12:08:21+00:00', teamsKnown: 32,
+    capLimits: { ceiling: 104_000_000, floor: 77_000_000, minSalary: 850_000 },
+    teams: [
+      { team: 'NJD', rosterCount: 23, rosterWithFigure: 22, rosterCapHit: 103_350_000, offRosterCount: 16, expiring: { ufa: 7, rfa: 2, unknown: 0 } },
+      { team: 'CAR', rosterCount: 24, rosterWithFigure: 22, rosterCapHit: 87_333_063, offRosterCount: 9, expiring: { ufa: 8, rfa: 0, unknown: 0 } },
+      { team: 'ANA', rosterCount: 24, rosterWithFigure: 16, rosterCapHit: 66_567_500, offRosterCount: 7, expiring: { ufa: 2, rfa: 6, unknown: 0 } },
+    ],
+    unavailable: false,
+  }
+
+  it('reads the roster fields into the table shape and says which basis it is', () => {
+    const t = buildLeagueCapTable(rosterSummary)
+    expect(t.basis).toBe('roster')
+    expect(t.teamsKnown).toBe(32)
+    expect(t.rows.map(r => r.team)).toEqual(['NJD', 'CAR', 'ANA'])
+    expect(t.rows[1]).toMatchObject({ contracts: 24, withFigure: 22, capHitTotal: 87_333_063, offRoster: 9, expiring: { ufa: 8, rfa: 0, unknown: 0 } })
+    expect(t.totals).toMatchObject({ contracts: 71, withFigure: 60, offRoster: 32, expiring: { ufa: 17, rfa: 8, unknown: 0 } })
+  })
+
+  it('scales the bar to the ceiling on the roster basis, to the largest total on the signing basis', () => {
+    const roster = buildLeagueCapTable(rosterSummary)
+    expect(roster.rows.map(r => r.barPct)).toEqual([99, 84, 64])
+    expect(roster.rows.map(r => r.pctOfCeiling)).toEqual([99, 84, 64])
+    const signing = buildLeagueCapTable(summary)
+    expect(signing.basis).toBe('signing_team')
+    expect(signing.rows[0].barPct).toBe(100)
+    expect(signing.rows[0].barPct).toBe(signing.rows[0].pctOfMax)
+  })
+
+  it('caps a roster bar at 100 when a total is over the ceiling, and treats an unknown basis as signing team', () => {
+    const over = buildLeagueCapTable({ ...rosterSummary, teams: [{ ...rosterSummary.teams[0], rosterCapHit: 110_000_000 }] })
+    expect(over.rows[0].pctOfCeiling).toBe(106)
+    expect(over.rows[0].barPct).toBe(100)
+    expect(buildLeagueCapTable({ ...summary, basis: undefined }).basis).toBe('signing_team')
+  })
+})
+
 describe('fmtCapTotal', () => {
   it('formats to one decimal in millions', () => {
     expect(fmtCapTotal(125_416_405)).toBe('$125.4M')

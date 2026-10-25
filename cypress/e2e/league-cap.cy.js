@@ -3,15 +3,50 @@
 // /contracts/summary (stubbed with the real 2026-10-24 payload), and the
 // hidden-tab case when the route answers `unavailable` (no dead options).
 
-const SUMMARY = { method: 'GET', url: /\/contracts\/summary(\?|$)/ }
+// The two bases of /contracts/summary: the roster basis (eyewall-poller
+// #236) is what the table shows; the signing-team basis is the fallback
+// when the roster one is unavailable.
+const SUMMARY = { method: 'GET', url: /\/contracts\/summary(\?(?!.*basis=roster)|$)/ }
+const ROSTER_SUMMARY = { method: 'GET', url: /\/contracts\/summary\?.*basis=roster/ }
+const ROSTER_UNAVAILABLE = { season: '2026-27', basis: 'roster', asOf: null, capLimits: null, teamsKnown: 0, teams: [], unavailable: true }
 
 describe('League › Cap', () => {
-  it('lists every team by cap hit total with Arizona folded into Utah', () => {
+  it('shows every team\'s roster cap hit against the ceiling (the Team page\'s number)', () => {
+    cy.intercept(ROSTER_SUMMARY, { fixture: 'contracts-summary-roster-2026-27.json' }).as('roster')
     cy.intercept(SUMMARY, { fixture: 'contracts-summary-2026-27.json' }).as('summary')
     cy.visit('/league')
+    cy.wait('@roster')
+    cy.get('.league-tab').contains(/^Cap$/, { timeout: DATA_TIMEOUT }).click()
+    cy.get('.league-cap[data-basis="roster"]', { timeout: DATA_TIMEOUT }).should('exist')
+    cy.contains('.league-cap .sec-label', 'Roster cap hit · 2026-27')
+    cy.contains('.league-cap', 'By current roster')
+    cy.contains('.league-cap', 'Not cap space.')
+    cy.get('.league-cap-table th').should('contain', 'Roster').and('contain', 'Roster cap hit')
+    cy.fixture('contracts-summary-roster-2026-27').then(f => {
+      cy.get('.league-cap-row').should('have.length', f.teams.length)
+      const top = f.teams[0]
+      cy.get('.league-cap-row').first().should('contain', top.team).and('contain', `$${(top.rosterCapHit / 1e6).toFixed(1)}M`)
+        .and('contain', `${top.rosterCount}`)
+      // the bar is the share of the ceiling
+      cy.get('.league-cap-row').first().find('.league-cap-bar').invoke('attr', 'style')
+        .should('contain', `width: ${Math.round(top.rosterCapHit / f.capLimits.ceiling * 100)}%`)
+      const car = f.teams.find(t => t.team === 'CAR')
+      cy.get('.league-cap-row[data-team="CAR"]').should('contain', `$${(car.rosterCapHit / 1e6).toFixed(1)}M`)
+      const off = f.teams.reduce((n, t) => n + t.offRosterCount, 0)
+      cy.contains('.league-cap', `${off} signed players on no NHL roster`)
+    })
+    // the signing-team summary was not needed for the table
+    cy.get('@summary.all').should('have.length', 0)
+  })
+
+  it('falls back to commitments by signing team when the roster basis is unavailable, with Arizona folded into Utah', () => {
+    cy.intercept(ROSTER_SUMMARY, ROSTER_UNAVAILABLE).as('roster')
+    cy.intercept(SUMMARY, { fixture: 'contracts-summary-2026-27.json' }).as('summary')
+    cy.visit('/league')
+    cy.wait('@roster')
     cy.wait('@summary')
     cy.get('.league-tab').contains(/^Cap$/, { timeout: DATA_TIMEOUT }).click()
-    cy.get('.league-cap', { timeout: DATA_TIMEOUT }).should('exist')
+    cy.get('.league-cap[data-basis="signing_team"]', { timeout: DATA_TIMEOUT }).should('exist')
 
     cy.contains('.league-cap .sec-label', 'Contract commitments · 2026-27')
     // Says what it is and what it is not; no "cap space" figure anywhere.
@@ -41,7 +76,7 @@ describe('League › Cap', () => {
   // 6 goalies) so the scores are deterministic.
   describe('contract-value leaderboard', () => {
     beforeEach(() => {
-      cy.intercept(SUMMARY, { fixture: 'contracts-summary-2026-27.json' }).as('summary')
+      cy.intercept(ROSTER_SUMMARY, { fixture: 'contracts-summary-roster-2026-27.json' }).as('summary')
       cy.intercept({ method: 'GET', url: /\/contracts\/players(\?|$)/ }, { fixture: 'contracts-players-2026-27.json' }).as('players')
       cy.intercept({ method: 'GET', url: /\/skater\/summary\?/ }, { fixture: 'skater-summary-2026-27.json' }).as('skaters')
       cy.intercept({ method: 'GET', url: /\/player-analytics\?/ }, { fixture: 'player-analytics-2026-27.json' }).as('analytics')
@@ -95,9 +130,11 @@ describe('League › Cap', () => {
     })
   })
 
-  it('hides the Cap tab when the summary is unavailable', () => {
+  it('hides the Cap tab when both summaries are unavailable', () => {
+    cy.intercept(ROSTER_SUMMARY, ROSTER_UNAVAILABLE).as('roster')
     cy.intercept(SUMMARY, { season: '2026-27', basis: 'signing_team', asOf: null, capLimits: null, teams: [], unavailable: true }).as('summary')
     cy.visit('/league')
+    cy.wait('@roster')
     cy.wait('@summary')
     cy.get('.league-tab').contains('Draft').should('be.visible')
     cy.get('.league-tab').contains(/^Cap$/).should('not.exist')

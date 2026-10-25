@@ -35,7 +35,7 @@ const TEAM_CELL_CLASSES = 'flex items-center gap-[6px] font-medium text-[color:v
 const TD_NUM_CLASSES = 'py-[5px] px-1 text-right font-[family-name:var(--font-mono)] text-[color:var(--text-muted)] whitespace-nowrap'
 const TD_HIT_CLASSES = 'py-[5px] px-1 text-right whitespace-nowrap min-w-[84px] max-[480px]:min-w-[72px]'
 const HIT_CELL_CLASSES = 'relative flex items-center justify-end'
-const HIT_BAR_CLASSES = 'absolute right-0 top-1/2 -translate-y-1/2 h-5 bg-[rgba(204,34,0,0.18)] rounded-[3px]'
+const HIT_BAR_CLASSES = 'league-cap-bar absolute right-0 top-1/2 -translate-y-1/2 h-5 bg-[rgba(204,34,0,0.18)] rounded-[3px]'
 const HIT_VAL_CLASSES = 'relative font-[family-name:var(--font-mono)] text-[12px] font-semibold text-[color:var(--text)]'
 // The "(n w/ figure)" aside is dropped under 480px so six columns fit a phone.
 const SUB_CLASSES = 'text-[10px] text-[color:var(--text-dim)] max-[480px]:hidden'
@@ -48,18 +48,20 @@ export default function LeagueCapTable({ summary }) {
   if (table.unavailable) return null
   const asOf = table.asOf ? formatDateOnly(table.asOf, { month: 'short', day: 'numeric', year: 'numeric' }) : null
   const hasArizona = table.rows.some(r => r.includesArizona)
+  const roster = table.basis === 'roster'
+  const k = roster ? 'leagueCap.roster' : 'leagueCap'
 
   return (
-    <div className={WRAP_CLASSES}>
+    <div className={`${WRAP_CLASSES} league-cap--${table.basis}`} data-basis={table.basis}>
       <div className={TITLE_ROW_CLASSES}>
-        <span className="sec-label">{t('leagueCap.title', { season: table.season || '' })}</span>
-        <InfoTip label={t('leagueCap.infoLabel')} text={t('leagueCap.infoTip')} />
+        <span className="sec-label">{t(`${k}.title`, { season: table.season || '' })}</span>
+        <InfoTip label={t('leagueCap.infoLabel')} text={t(`${k}.infoTip`)} />
       </div>
-      <div className={NOTE_CLASSES}>{t('leagueCap.basisNote')}</div>
+      <div className={NOTE_CLASSES}>{t(`${k}.basisNote`)}</div>
       <div className={PROVENANCE_CLASSES}>
         {asOf ? t('leagueCap.provenance', { date: asOf }) : ''}
         {table.ceiling != null && (asOf ? ' · ' : '') + t('leagueCap.ceiling', { amount: (table.ceiling / 1_000_000).toFixed(1) })}
-        {' · '}{t('leagueCap.coverage', { withFigure: table.totals.withFigure, count: table.totals.contracts })}
+        {' · '}{t(`${k}.coverage`, { withFigure: table.totals.withFigure, count: table.totals.contracts })}
       </div>
       <div className={SCROLL_CLASSES}>
       <table className={TABLE_CLASSES} aria-label={t('leagueCap.title', { season: table.season || '' })}>
@@ -67,8 +69,8 @@ export default function LeagueCapTable({ summary }) {
           <tr>
             <th className={TH_BASE_CLASSES} aria-label={t('leagueCap.colRank')}>#</th>
             <th className={TH_LEFT_CLASSES}>{t('leagueCap.colTeam')}</th>
-            <th className={TH_RIGHT_CLASSES}>{t('leagueCap.colDeals')}</th>
-            <th className={TH_RIGHT_CLASSES}>{t('leagueCap.colCapHit')}</th>
+            <th className={TH_RIGHT_CLASSES}>{t(`${k}.colDeals`)}</th>
+            <th className={TH_RIGHT_CLASSES}>{t(`${k}.colCapHit`)}</th>
             <th className={TH_RIGHT_CLASSES}>{t('leagueCap.colUfa')}</th>
             <th className={TH_RIGHT_CLASSES}>{t('leagueCap.colRfa')}</th>
           </tr>
@@ -90,7 +92,7 @@ export default function LeagueCapTable({ summary }) {
               </td>
               <td className={TD_HIT_CLASSES}>
                 <div className={HIT_CELL_CLASSES}>
-                  <div className={HIT_BAR_CLASSES} style={{ width: `${r.pctOfMax}%` }} />
+                  <div className={HIT_BAR_CLASSES} style={{ width: `${r.barPct}%` }} />
                   <span className={HIT_VAL_CLASSES}>{fmtCapTotal(r.capHitTotal)}</span>
                 </div>
               </td>
@@ -103,6 +105,7 @@ export default function LeagueCapTable({ summary }) {
       </div>
       <div className={FOOT_CLASSES}>
         <span>{t('leagueCap.expiringNote', { ufa: table.totals.expiring.ufa, rfa: table.totals.expiring.rfa })}</span>
+        {roster && table.totals.offRoster > 0 && <span>{t('leagueCap.roster.offRosterNote', { count: table.totals.offRoster })}</span>}
         {hasArizona && <span>* {t('leagueCap.arizonaNote')}</span>}
       </div>
     </div>

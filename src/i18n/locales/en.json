@@ -294,6 +294,15 @@
     "notRated": "Not rated: {{noFigure}} without a public figure, {{elc}} on entry-level deals, {{underMinGp}} under {{minGp}} games ({{minGpGoalies}} for goalies)."
   },
   "leagueCap": {
+    "roster": {
+      "title": "Roster cap hit · {{season}}",
+      "basisNote": "By current roster: the same number as each Team page, for all 32 teams. Not cap space.",
+      "infoTip": "Each team's cap hits for the players on its NHL roster today, whoever signed them, from the open nhl-contracts dataset: the figure the Team page's Cap tab shows. The bar is the share of the cap ceiling. Not cap space: retained salary, buyouts, LTIR and bonus overages aren't in the dataset, so space can't be computed.",
+      "coverage": "{{withFigure}} of {{count}} roster players have a public figure",
+      "colDeals": "Roster",
+      "colCapHit": "Roster cap hit",
+      "offRosterNote": "{{count}} signed players on no NHL roster (minors, loans) are not counted"
+    },
     "title": "Contract commitments · {{season}}",
     "infoLabel": "About this table",
     "infoTip": "Every deal in the open nhl-contracts dataset that covers this season, added up for the team that signed it. That includes players in the minors or since traded, so a team's total runs above the roster cap hit on its Team page and is not cap space (retained salary, buyouts and LTIR aren't in the dataset). The bar is scaled to the league's largest total.",
