@@ -263,6 +263,26 @@
       "source": "Suivi des joueurs et de la rondelle : NHL EDGE · saison en cours"
     }
   },
+  "leagueValue": {
+    "title": "Valeur des contrats · {{season}}",
+    "infoLabel": "À propos du score de valeur du contrat",
+    "infoTipSkaters": "Le score de la fiche joueur, pour tous les patineurs à la fois : 60 % de points par million d'impact salarial (projetés sur 82 matchs) + 40 % de WAR par million (WAR par 82 matchs, mis à l'échelle). La WAR entre dans le score à partir de {{warGp}} matchs joués ; avant, le score ne compte que les points. Les impacts salariaux viennent des données ouvertes nhl-contracts ; ≈ marque un montant rapporté. Les contrats de recrue et les impacts sous 1,2 M$ ne sont pas notés, ni les joueurs sans montant public. Échelle : ≥8,0 Exceptionnelle · ≥5,0 Excellente · ≥3,0 Bonne · ≥1,8 Correcte · ≥1,0 Sous la moyenne · <1,0 Surpayé.",
+    "infoTipGoalies": "Buts sauvés au-dessus de l'attendu (GSAX) par million d'impact salarial, pour tous les gardiens à la fois. La GSAX tient compte de la qualité et du volume des tirs. Les contrats de recrue et les impacts sous 1,2 M$ ne sont pas notés. Échelle : ≥4,0 Exceptionnelle · ≥2,0 Excellente · ≥0,0 Correcte · ≥-2,0 Sous la moyenne · <-2,0 Surpayé.",
+    "noteSkaters": "{{rated}} patineurs notés, au moins {{minGp}} matchs joués cette saison. Pas un classement de joueurs : le score compare la production à l'impact salarial.",
+    "noteGoalies": "{{rated}} gardiens notés, au moins {{minGp}} matchs joués cette saison. Pas un classement de gardiens : le score compare les arrêts au-dessus de l'attendu à l'impact salarial.",
+    "skaters": "Patineurs",
+    "goalies": "Gardiens",
+    "colRank": "Rang",
+    "colPlayer": "Joueur",
+    "colGp": "MJ",
+    "colPts": "Pts",
+    "colGsax": "GSAX",
+    "colCapHit": "Impact",
+    "colScore": "Valeur",
+    "showAll": "Voir les {{count}}",
+    "showTop": "Voir le top {{count}}",
+    "notRated": "Non notés : {{noFigure}} sans montant public, {{elc}} en contrat de recrue, {{underMinGp}} sous {{minGp}} matchs ({{minGpGoalies}} pour les gardiens)."
+  },
   "leagueCap": {
     "title": "Engagements contractuels · {{season}}",
     "infoLabel": "À propos de ce tableau",
