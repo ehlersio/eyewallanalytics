@@ -123,6 +123,39 @@ describe('buildCapTable', () => {
   })
 })
 
+describe('dead cap and the estimate', () => {
+  const withDead = {
+    ...payload,
+    deadCapKnown: true,
+    deadCap: [
+      { team: 'CAR', kind: 'retained', playerName: 'Traded Out', playerId: 8470000, counterparty: 'TOR', season: '2026-27', capHit: 1_500_000, pct: 50, tier: 'D', flags: [] },
+      { team: 'CAR', kind: 'buyout', playerName: 'Bought Out', playerId: null, counterparty: null, season: '2026-27', capHit: 1_100_000, pct: null, tier: 'E', flags: [] },
+    ],
+    summary: { ...payload.summary, deadCap: { total: 2_600_000, retained: 1_500_000, buyouts: 1_100_000, count: 2 }, capSpaceEstimate: 104_000_000 - 20_625_000 - 2_600_000, estimateNotes: ['no_ltir', 'no_bonus_overages', 'no_recapture', 'partial_coverage'] },
+  }
+
+  it('passes the Worker estimate, its notes and the rows through when the table was known', () => {
+    const cap = buildCapTable(withDead)
+    expect(cap.deadCapKnown).toBe(true)
+    expect(cap.deadCap).toEqual({ total: 2_600_000, retained: 1_500_000, buyouts: 1_100_000, count: 2 })
+    expect(cap.deadCapRows.map(r => r.kind)).toEqual(['retained', 'buyout'])
+    expect(cap.estimate).toBe(80_775_000)
+    expect(cap.estimateNotes).toContain('no_ltir')
+  })
+
+  it('shows nothing when the Worker could not read the table, or before it existed', () => {
+    const unknown = buildCapTable({ ...withDead, deadCapKnown: false, deadCap: [], summary: { ...withDead.summary, deadCap: null, capSpaceEstimate: null, estimateNotes: null } })
+    expect(unknown).toMatchObject({ deadCapKnown: false, deadCap: null, deadCapRows: [], estimate: null, estimateNotes: [] })
+    const old = buildCapTable(payload) // a payload from before eyewall-poller #237
+    expect(old).toMatchObject({ deadCapKnown: false, estimate: null })
+  })
+
+  it('keeps a negative estimate (over the ceiling before LTIR relief)', () => {
+    const cap = buildCapTable({ ...withDead, summary: { ...withDead.summary, capSpaceEstimate: -1_200_000 } })
+    expect(cap.estimate).toBe(-1_200_000)
+  })
+})
+
 describe('formatting helpers', () => {
   it('fmtCapHit', () => {
     expect(fmtCapHit(9_750_000)).toBe('$9.75M')

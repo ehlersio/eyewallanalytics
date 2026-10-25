@@ -28,6 +28,10 @@ function mergeEntry(into, entry) {
   into.withFigure += entry.withFigure || 0;
   into.capHitTotal += entry.capHitTotal || 0;
   into.offRoster += entry.offRoster || 0;
+  // The Worker's dead cap and cap-space estimate (roster basis, eyewall-poller
+  // #237); kept as given, null when unknown.
+  if (entry.deadCap != null) into.deadCap = (into.deadCap || 0) + entry.deadCap;
+  if (entry.estimate != null) into.estimate = (into.estimate || 0) + entry.estimate;
   for (const k of ['ufa', 'rfa', 'unknown']) into.expiring[k] += entry.expiring?.[k] || 0;
   return into;
 }
@@ -54,12 +58,13 @@ export function buildLeagueCapTable(summary, fallbackCeiling = null) {
   for (const raw of entries) {
     if (!raw?.team) continue;
     const entry = basis === 'roster'
-      ? { team: raw.team, contracts: raw.rosterCount, withFigure: raw.rosterWithFigure, capHitTotal: raw.rosterCapHit, offRoster: raw.offRosterCount, expiring: raw.expiring }
+      ? { team: raw.team, contracts: raw.rosterCount, withFigure: raw.rosterWithFigure, capHitTotal: raw.rosterCapHit, offRoster: raw.offRosterCount, expiring: raw.expiring,
+          deadCap: raw.deadCap ?? null, estimate: raw.capSpaceEstimate ?? null }
       : raw;
     const code = FOLD_INTO[entry.team] || entry.team;
     if (code !== entry.team) folded.add(code);
     if (!byTeam.has(code)) {
-      byTeam.set(code, { team: code, contracts: 0, withFigure: 0, capHitTotal: 0, offRoster: 0, expiring: emptyExpiring() });
+      byTeam.set(code, { team: code, contracts: 0, withFigure: 0, capHitTotal: 0, offRoster: 0, expiring: emptyExpiring(), deadCap: null, estimate: null });
     }
     mergeEntry(byTeam.get(code), entry);
   }
@@ -98,6 +103,9 @@ export function buildLeagueCapTable(summary, fallbackCeiling = null) {
     asOf: summary?.asOf || null,
     basis,
     teamsKnown: summary?.teamsKnown ?? null,
+    // The estimate column is offered only when the Worker had the dead-cap table.
+    hasEstimates: basis === 'roster' && summary?.deadCapKnown === true && rows.some(r => r.estimate != null),
+    estimateNotes: Array.isArray(summary?.estimateNotes) ? summary.estimateNotes : [],
     ceiling,
     rows,
     maxTotal,

@@ -114,6 +114,28 @@ describe('buildLeagueCapTable (roster basis)', () => {
     expect(signing.rows[0].barPct).toBe(signing.rows[0].pctOfMax)
   })
 
+  it('offers the estimate column only when the Worker knew the dead-cap table', () => {
+    const t0 = buildLeagueCapTable(rosterSummary)
+    expect(t0.hasEstimates).toBe(false)
+    expect(t0.rows[0].estimate).toBeNull()
+    const withEst = {
+      ...rosterSummary, deadCapKnown: true, estimateNotes: ['no_ltir'],
+      teams: rosterSummary.teams.map((t, i) => ({ ...t, deadCap: [650_000, 0, 2_000_000][i], capSpaceEstimate: 104_000_000 - t.rosterCapHit - [650_000, 0, 2_000_000][i] })),
+    }
+    const t1 = buildLeagueCapTable(withEst)
+    expect(t1.hasEstimates).toBe(true)
+    expect(t1.estimateNotes).toEqual(['no_ltir'])
+    expect(t1.rows.map(r => [r.team, r.deadCap, r.estimate])).toEqual([
+      ['NJD', 650_000, 0], ['CAR', 0, 104_000_000 - 87_333_063], ['ANA', 2_000_000, 104_000_000 - 66_567_500 - 2_000_000],
+    ])
+    // known table but a team without a figure: its estimate stays null, the column still shows
+    const partial = buildLeagueCapTable({ ...withEst, teams: withEst.teams.map((t, i) => i === 1 ? { ...t, deadCap: null, capSpaceEstimate: null } : t) })
+    expect(partial.hasEstimates).toBe(true)
+    expect(partial.rows[1].estimate).toBeNull()
+    // the signing-team basis never has one
+    expect(buildLeagueCapTable({ ...summary, deadCapKnown: true }).hasEstimates).toBe(false)
+  })
+
   it('caps a roster bar at 100 when a total is over the ceiling, and treats an unknown basis as signing team', () => {
     const over = buildLeagueCapTable({ ...rosterSummary, teams: [{ ...rosterSummary.teams[0], rosterCapHit: 110_000_000 }] })
     expect(over.rows[0].pctOfCeiling).toBe(106)
