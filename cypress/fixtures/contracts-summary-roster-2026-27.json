@@ -1,0 +1,398 @@
+{
+ "season": "2026-27",
+ "basis": "roster",
+ "asOf": "2026-10-24T12:08:21+00:00",
+ "capLimits": {
+  "ceiling": 104000000,
+  "floor": 77000000,
+  "minSalary": 850000
+ },
+ "teamsKnown": 32,
+ "teams": [
+  {
+   "team": "NJD",
+   "rosterCount": 23,
+   "rosterWithFigure": 22,
+   "rosterCapHit": 103350000,
+   "offRosterCount": 16,
+   "expiring": {
+    "ufa": 7,
+    "rfa": 2,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "WSH",
+   "rosterCount": 26,
+   "rosterWithFigure": 24,
+   "rosterCapHit": 101712500,
+   "offRosterCount": 14,
+   "expiring": {
+    "ufa": 3,
+    "rfa": 2,
+    "unknown": 1
+   }
+  },
+  {
+   "team": "MTL",
+   "rosterCount": 25,
+   "rosterWithFigure": 22,
+   "rosterCapHit": 98716667,
+   "offRosterCount": 9,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 7,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "MIN",
+   "rosterCount": 27,
+   "rosterWithFigure": 21,
+   "rosterCapHit": 98568750,
+   "offRosterCount": 10,
+   "expiring": {
+    "ufa": 8,
+    "rfa": 3,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "CBJ",
+   "rosterCount": 24,
+   "rosterWithFigure": 23,
+   "rosterCapHit": 96605000,
+   "offRosterCount": 8,
+   "expiring": {
+    "ufa": 5,
+    "rfa": 4,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "TBL",
+   "rosterCount": 24,
+   "rosterWithFigure": 20,
+   "rosterCapHit": 96583334,
+   "offRosterCount": 7,
+   "expiring": {
+    "ufa": 4,
+    "rfa": 2,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "DAL",
+   "rosterCount": 25,
+   "rosterWithFigure": 22,
+   "rosterCapHit": 96337000,
+   "offRosterCount": 19,
+   "expiring": {
+    "ufa": 11,
+    "rfa": 0,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "BUF",
+   "rosterCount": 27,
+   "rosterWithFigure": 22,
+   "rosterCapHit": 93532238,
+   "offRosterCount": 3,
+   "expiring": {
+    "ufa": 5,
+    "rfa": 5,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "PHI",
+   "rosterCount": 28,
+   "rosterWithFigure": 26,
+   "rosterCapHit": 91890833,
+   "offRosterCount": 3,
+   "expiring": {
+    "ufa": 4,
+    "rfa": 6,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "VGK",
+   "rosterCount": 24,
+   "rosterWithFigure": 20,
+   "rosterCapHit": 90162830,
+   "offRosterCount": 10,
+   "expiring": {
+    "ufa": 5,
+    "rfa": 4,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "FLA",
+   "rosterCount": 26,
+   "rosterWithFigure": 18,
+   "rosterCapHit": 88718214,
+   "offRosterCount": 11,
+   "expiring": {
+    "ufa": 5,
+    "rfa": 1,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "LAK",
+   "rosterCount": 25,
+   "rosterWithFigure": 21,
+   "rosterCapHit": 88675000,
+   "offRosterCount": 0,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 2,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "NYR",
+   "rosterCount": 27,
+   "rosterWithFigure": 18,
+   "rosterCapHit": 88106667,
+   "offRosterCount": 14,
+   "expiring": {
+    "ufa": 5,
+    "rfa": 8,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "SEA",
+   "rosterCount": 26,
+   "rosterWithFigure": 25,
+   "rosterCapHit": 87533691,
+   "offRosterCount": 17,
+   "expiring": {
+    "ufa": 5,
+    "rfa": 5,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "NSH",
+   "rosterCount": 24,
+   "rosterWithFigure": 20,
+   "rosterCapHit": 87423167,
+   "offRosterCount": 11,
+   "expiring": {
+    "ufa": 4,
+    "rfa": 7,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "CAR",
+   "rosterCount": 24,
+   "rosterWithFigure": 22,
+   "rosterCapHit": 87333063,
+   "offRosterCount": 9,
+   "expiring": {
+    "ufa": 8,
+    "rfa": 0,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "STL",
+   "rosterCount": 26,
+   "rosterWithFigure": 23,
+   "rosterCapHit": 87013333,
+   "offRosterCount": 18,
+   "expiring": {
+    "ufa": 5,
+    "rfa": 11,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "OTT",
+   "rosterCount": 25,
+   "rosterWithFigure": 20,
+   "rosterCapHit": 86825000,
+   "offRosterCount": 16,
+   "expiring": {
+    "ufa": 9,
+    "rfa": 2,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "WPG",
+   "rosterCount": 25,
+   "rosterWithFigure": 22,
+   "rosterCapHit": 86571667,
+   "offRosterCount": 11,
+   "expiring": {
+    "ufa": 5,
+    "rfa": 3,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "COL",
+   "rosterCount": 23,
+   "rosterWithFigure": 16,
+   "rosterCapHit": 86375000,
+   "offRosterCount": 4,
+   "expiring": {
+    "ufa": 5,
+    "rfa": 2,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "TOR",
+   "rosterCount": 27,
+   "rosterWithFigure": 23,
+   "rosterCapHit": 86240667,
+   "offRosterCount": 2,
+   "expiring": {
+    "ufa": 5,
+    "rfa": 2,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "EDM",
+   "rosterCount": 29,
+   "rosterWithFigure": 24,
+   "rosterCapHit": 84874167,
+   "offRosterCount": 5,
+   "expiring": {
+    "ufa": 8,
+    "rfa": 3,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "CHI",
+   "rosterCount": 24,
+   "rosterWithFigure": 21,
+   "rosterCapHit": 83157333,
+   "offRosterCount": 14,
+   "expiring": {
+    "ufa": 5,
+    "rfa": 5,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "BOS",
+   "rosterCount": 23,
+   "rosterWithFigure": 19,
+   "rosterCapHit": 82954167,
+   "offRosterCount": 3,
+   "expiring": {
+    "ufa": 3,
+    "rfa": 4,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "UTA",
+   "rosterCount": 24,
+   "rosterWithFigure": 21,
+   "rosterCapHit": 81186667,
+   "offRosterCount": 1,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 1,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "CGY",
+   "rosterCount": 25,
+   "rosterWithFigure": 21,
+   "rosterCapHit": 79503833,
+   "offRosterCount": 6,
+   "expiring": {
+    "ufa": 4,
+    "rfa": 6,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "PIT",
+   "rosterCount": 28,
+   "rosterWithFigure": 20,
+   "rosterCapHit": 79475000,
+   "offRosterCount": 18,
+   "expiring": {
+    "ufa": 8,
+    "rfa": 2,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "SJS",
+   "rosterCount": 23,
+   "rosterWithFigure": 16,
+   "rosterCapHit": 70961667,
+   "offRosterCount": 7,
+   "expiring": {
+    "ufa": 2,
+    "rfa": 5,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "NYI",
+   "rosterCount": 24,
+   "rosterWithFigure": 18,
+   "rosterCapHit": 69325000,
+   "offRosterCount": 6,
+   "expiring": {
+    "ufa": 8,
+    "rfa": 4,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "VAN",
+   "rosterCount": 24,
+   "rosterWithFigure": 16,
+   "rosterCapHit": 67517500,
+   "offRosterCount": 0,
+   "expiring": {
+    "ufa": 6,
+    "rfa": 4,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "DET",
+   "rosterCount": 25,
+   "rosterWithFigure": 20,
+   "rosterCapHit": 67050000,
+   "offRosterCount": 3,
+   "expiring": {
+    "ufa": 7,
+    "rfa": 6,
+    "unknown": 0
+   }
+  },
+  {
+   "team": "ANA",
+   "rosterCount": 24,
+   "rosterWithFigure": 16,
+   "rosterCapHit": 66567500,
+   "offRosterCount": 7,
+   "expiring": {
+    "ufa": 2,
+    "rfa": 6,
+    "unknown": 0
+   }
+  }
+ ],
+ "unavailable": false
+}

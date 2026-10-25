@@ -144,10 +144,25 @@ export async function getCapLimits() {
 // contracts, withFigure, capHitTotal, expiring }], unavailable }. Grouped
 // by the SIGNING team, so a player traded mid-contract counts for the team
 // that signed him.
-export async function getLeagueCapSummary(season = null) {
-  const qs = season ? `?season=${encodeURIComponent(season)}` : '';
-  return cached(`contracts:summary:${season || 'current'}`,
+// `basis` 'roster' asks for each team's ROSTER cap hit instead (the Team
+// page's number; teams: [{ team, rosterCount, rosterWithFigure,
+// rosterCapHit, offRosterCount, expiring }], plus teamsKnown).
+export async function getLeagueCapSummary(season = null, basis = 'signing_team') {
+  const params = new URLSearchParams();
+  if (season) params.set('season', season);
+  if (basis === 'roster') params.set('basis', 'roster');
+  const qs = params.toString() ? `?${params}` : '';
+  return cached(`contracts:summary:${basis}:${season || 'current'}`,
     () => workerFetch(`/contracts/summary${qs}`), TTL.RANKINGS);
+}
+
+// The League › Cap table's summary: the roster basis when the Worker has
+// it with every roster known, else the signing-team basis (the only one
+// before eyewall-poller #236, and the fallback on a roster outage).
+export async function getLeagueCapTableSummary(season = null) {
+  const roster = await getLeagueCapSummary(season, 'roster');
+  if (roster && !roster.unavailable && (roster.teams?.length || 0) > 0) return roster;
+  return getLeagueCapSummary(season);
 }
 
 // ─── DRAFT ────────────────────────────────────────────

@@ -27,24 +27,39 @@ function mergeEntry(into, entry) {
   into.contracts += entry.contracts || 0;
   into.withFigure += entry.withFigure || 0;
   into.capHitTotal += entry.capHitTotal || 0;
+  into.offRoster += entry.offRoster || 0;
   for (const k of ['ufa', 'rfa', 'unknown']) into.expiring[k] += entry.expiring?.[k] || 0;
   return into;
 }
 
 // summary -> { season, asOf, basis, ceiling, rows, maxTotal, totals, unavailable }
 // rows: [{ team, name, shortName, known, contracts, withFigure, capHitTotal,
-//          expiring, pctOfMax, pctOfCeiling, includesArizona, rank }], cap hit
-// total descending; ties keep the Worker's order.
+//          offRoster, expiring, pctOfMax, pctOfCeiling, includesArizona, rank }],
+// cap hit total descending; ties keep the Worker's order.
+//
+// Two bases (the Worker's `basis`): 'signing_team' (the default before
+// eyewall-poller #236) sums the deals each team signed, and the bar is
+// scaled to the largest total because several run above the ceiling;
+// 'roster' sums each team's current NHL roster, the Team page's number,
+// and the bar is the share of the ceiling (`barPct`), which is the
+// comparison that basis supports. The roster rows carry rosterCount as
+// `contracts`, rosterWithFigure as `withFigure`, rosterCapHit as
+// `capHitTotal` and offRosterCount as `offRoster`, so the table reads one
+// shape; `basis` says which.
 export function buildLeagueCapTable(summary, fallbackCeiling = null) {
   const entries = Array.isArray(summary?.teams) ? summary.teams : [];
+  const basis = summary?.basis === 'roster' ? 'roster' : 'signing_team';
   const byTeam = new Map();
   const folded = new Set();
-  for (const entry of entries) {
-    if (!entry?.team) continue;
+  for (const raw of entries) {
+    if (!raw?.team) continue;
+    const entry = basis === 'roster'
+      ? { team: raw.team, contracts: raw.rosterCount, withFigure: raw.rosterWithFigure, capHitTotal: raw.rosterCapHit, offRoster: raw.offRosterCount, expiring: raw.expiring }
+      : raw;
     const code = FOLD_INTO[entry.team] || entry.team;
     if (code !== entry.team) folded.add(code);
     if (!byTeam.has(code)) {
-      byTeam.set(code, { team: code, contracts: 0, withFigure: 0, capHitTotal: 0, expiring: emptyExpiring() });
+      byTeam.set(code, { team: code, contracts: 0, withFigure: 0, capHitTotal: 0, offRoster: 0, expiring: emptyExpiring() });
     }
     mergeEntry(byTeam.get(code), entry);
   }
@@ -65,21 +80,24 @@ export function buildLeagueCapTable(summary, fallbackCeiling = null) {
         pctOfCeiling: ceiling > 0 ? Math.round((r.capHitTotal / ceiling) * 100) : null,
         includesArizona: folded.has(r.team),
       };
-    });
+    })
+    .map(r => ({ ...r, barPct: basis === 'roster' && r.pctOfCeiling != null ? Math.min(r.pctOfCeiling, 100) : r.pctOfMax }));
 
   const totals = rows.reduce((acc, r) => {
     acc.contracts += r.contracts;
     acc.withFigure += r.withFigure;
+    acc.offRoster += r.offRoster;
     acc.expiring.ufa += r.expiring.ufa;
     acc.expiring.rfa += r.expiring.rfa;
     acc.expiring.unknown += r.expiring.unknown;
     return acc;
-  }, { contracts: 0, withFigure: 0, expiring: emptyExpiring() });
+  }, { contracts: 0, withFigure: 0, offRoster: 0, expiring: emptyExpiring() });
 
   return {
     season: summary?.season || null,
     asOf: summary?.asOf || null,
-    basis: summary?.basis || null,
+    basis,
+    teamsKnown: summary?.teamsKnown ?? null,
     ceiling,
     rows,
     maxTotal,
