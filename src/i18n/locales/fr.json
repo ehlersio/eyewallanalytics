@@ -263,6 +263,16 @@
       "source": "Suivi des joueurs et de la rondelle : NHL EDGE · saison en cours"
     }
   },
+  "capChip": {
+    "elc": "Recrue",
+    "twoWay": "deux volets",
+    "oneWay": "un volet",
+    "now": "aujourd'hui {{capHit}}",
+    "titleCapHit": "Impact salarial {{capHit}} cette saison",
+    "thru": "jusqu'en {{season}}",
+    "twoWayTip": "Contrat à deux volets : salaire plus bas dans les mineures",
+    "oneWayTip": "Contrat à un volet : même salaire dans la LNH et les mineures"
+  },
   "leagueValue": {
     "title": "Valeur des contrats · {{season}}",
     "infoLabel": "À propos du score de valeur du contrat",

@@ -263,6 +263,16 @@
       "source": "Player & puck tracking: NHL EDGE · season so far"
     }
   },
+  "capChip": {
+    "elc": "ELC",
+    "twoWay": "two-way",
+    "oneWay": "one-way",
+    "now": "now {{capHit}}",
+    "titleCapHit": "Cap hit {{capHit}} this season",
+    "thru": "through {{season}}",
+    "twoWayTip": "Two-way deal: a lower salary in the minors",
+    "oneWayTip": "One-way deal: the same salary in the NHL and the minors"
+  },
   "leagueValue": {
     "title": "Contract value · {{season}}",
     "infoLabel": "About the contract-value score",

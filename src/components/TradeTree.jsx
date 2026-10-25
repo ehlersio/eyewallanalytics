@@ -14,6 +14,9 @@ import { formatDate } from '../utils/formatters';
 import { capture, trackFeature } from '../utils/analytics';
 import TeamLogo from './TeamLogo';
 import PlayerPopup from './PlayerPopup';
+import CapHitChip from './CapHitChip';
+import { useContractIndex } from '../hooks/useContractIndex';
+import { capFacts } from '../utils/capAnnotations';
 
 const K = 'transactionsFeed.nhl.tree';
 const MUTED = 'text-[color:var(--text-muted)]';
@@ -26,6 +29,11 @@ const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
 // A name with an NHL player id (a traded player, or the player a pick
 // became) opens that player's card; names without one stay plain text.
 const OpenPlayerContext = createContext(null);
+// The league contract index (utils/capAnnotations.js) for the "now $X"
+// note after a traded player: his current deal today, not the one he was
+// traded on. Empty until /contracts/players answers; a player it doesn't
+// know gets no note.
+const ContractsContext = createContext(new Map());
 
 function treeDate(dateStr) {
   if (!dateStr) return '';
@@ -79,6 +87,7 @@ function AssetItem({ asset, tree, path }) {
   const outcome = pickOutcome(asset, t);
   const next = asset.next ? tree.trades[asset.next] : null;
   const openPlayer = useContext(OpenPlayerContext);
+  const contracts = useContext(ContractsContext);
   const playerId = asset.type === 'player' ? asset.playerId : null;
   const draftedId = asset.pick?.draftedId;
   return (
@@ -90,6 +99,7 @@ function AssetItem({ asset, tree, path }) {
       ) : (
         <span>{assetLabel(asset, t)}</span>
       )}
+      {playerId && <CapHitChip facts={capFacts(contracts, playerId)} variant="inline" now />}
       {outcome && (
         <span className={`${MUTED} text-[12px]`}>
           {' · '}
@@ -125,6 +135,7 @@ export default function TradeTree({ txId }) {
   const { t } = useTranslation();
   const [state, setState] = useState({ loading: true, data: null });
   const [popupPlayer, setPopupPlayer] = useState(null);
+  const contracts = useContractIndex(!!state.data?.found);
 
   // The same lookup MilestonesFeed uses: the Worker's /player/landing, mapped
   // to PlayerPopup's player shape. A failed lookup just leaves the tree as is.
@@ -180,6 +191,7 @@ export default function TradeTree({ txId }) {
   const originLines = (tree.origins || []).flatMap(o => o.assets.map(a => ({ o, a })));
   return (
     <OpenPlayerContext.Provider value={openPlayer}>
+    <ContractsContext.Provider value={contracts}>
     <div className="trade-tree mt-2 pt-2 border-t border-[var(--border-2)] flex flex-col gap-2.5">
       {root.sides.map(side => (
         <section key={side.team} className="tree-side">
@@ -213,6 +225,7 @@ export default function TradeTree({ txId }) {
         />
       )}
     </div>
+    </ContractsContext.Provider>
     </OpenPlayerContext.Provider>
   );
 }
