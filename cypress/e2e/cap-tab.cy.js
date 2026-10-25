@@ -164,6 +164,39 @@ describe('Player popup contract panel', () => {
     })
   })
 
+  it('shows the year-by-year rows of the exact contract on demand, the current season marked', () => {
+    cy.intercept({ method: 'GET', url: /\/contracts\/player\/8478427(\?|$)/ }, { fixture: 'contract-player-aho.json' }).as('contract')
+    cy.setTeam('CAR')
+    openSkater('Aho')
+    cy.wait('@contract')
+    cy.get('.pp-contract', { timeout: DATA_TIMEOUT }).within(() => {
+      cy.get('.pp-contract-years-table').should('not.exist')
+      // 8 seasons on the CAR deal; the name-matched Islanders Aho rows in the history must not leak in
+      cy.get('.pp-contract-years-toggle').should('contain', 'Year by year (8 seasons)').click()
+      cy.get('.pp-contract-year').should('have.length', 8)
+      cy.get('.pp-contract-year').first().should('have.attr', 'data-season', '2024-25')
+      cy.get('.pp-contract-year--now').should('have.length', 1).and('have.attr', 'data-season', '2026-27')
+        .and('contain', '$9.75M').and('contain', '$7.00M').and('contain', '$2.00M').and('contain', 'No-move')
+      cy.get('.pp-contract-year').should('not.contain', '$0.78M')
+      cy.get('.pp-contract-years-note').should('not.exist')
+      cy.get('.pp-contract-years-toggle').should('contain', 'Hide year by year').click()
+      cy.get('.pp-contract-years-table').should('not.exist')
+    })
+  })
+
+  it('falls back to the reported row\'s breakdown when the official row has none, and says so', () => {
+    cy.intercept({ method: 'GET', url: /\/contracts\/player\/8476958(\?|$)/ }, { fixture: 'contract-player-slavin.json' }).as('contract')
+    cy.setTeam('CAR')
+    openSkater('Slavin')
+    cy.wait('@contract')
+    cy.get('.pp-contract', { timeout: DATA_TIMEOUT }).within(() => {
+      cy.get('.pp-contract-years-toggle').should('contain', 'Year by year (5 seasons)').click()
+      cy.get('.pp-contract-year').should('have.length', 5)
+      cy.get('.pp-contract-year--now').should('have.attr', 'data-season', '2026-27').and('contain', '$6.40M').and('contain', '$1.00M').and('contain', '$5.00M')
+      cy.get('.pp-contract-years-note').should('contain', 'reported row (tier E')
+    })
+  })
+
   it('marks an age-derived expiry status', () => {
     cy.intercept({ method: 'GET', url: /\/contracts\/player\/8476958(\?|$)/ }, { fixture: 'contract-player-slavin.json' }).as('contract')
     cy.setTeam('CAR')

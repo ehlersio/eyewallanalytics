@@ -35,6 +35,7 @@ import {
 } from '../utils/supabaseClient'
 import { contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING } from '../utils/contractValue'
 import { fmtCapHit, isReported } from '../utils/capTable'
+import { contractSeasons } from '../utils/contractHistory'
 import { nhlSeasonLabel } from '../utils/seasonComparison'
 import { warTier, warPer82, WAR_TIER_MIN_GP } from '../utils/warTier'
 import { HockeyRink } from 'react-hockey-rink'
@@ -181,6 +182,12 @@ const PP_CONTRACT_MARK_CLASSES = 'ml-[2px] text-[11px] text-[color:var(--text-di
 const PP_CONTRACT_CLAUSES_CLASSES = 'flex items-center justify-center gap-2 flex-wrap mb-2 text-[11px] text-[color:var(--text-muted)]'
 const PP_CONTRACT_CLAUSE_CLASSES = 'bg-[var(--bg3)] py-[3px] px-2 rounded-lg'
 const PP_CONTRACT_PROVENANCE_CLASSES = 'text-[10px] text-[color:var(--text-dim)] mb-2'
+const PP_YEARS_TOGGLE_CLASSES = 'pp-contract-years-toggle text-[11px] text-[color:var(--text-muted)] underline underline-offset-2 bg-transparent border-0 p-0 cursor-pointer mb-2'
+const PP_YEARS_TABLE_CLASSES = 'pp-contract-years-table w-full border-collapse text-[11px] mb-1'
+const PP_YEARS_TH_CLASSES = 'text-[9px] uppercase tracking-[0.06em] text-[color:var(--text-dim)] font-semibold py-1 px-1 border-b-[0.5px] border-[var(--border)] text-right whitespace-nowrap'
+const PP_YEARS_TH_LEFT_CLASSES = `${PP_YEARS_TH_CLASSES} text-left`
+const PP_YEARS_TD_CLASSES = 'py-[3px] px-1 text-right font-[family-name:var(--font-mono)] text-[color:var(--text-muted)] whitespace-nowrap border-b-[0.5px] border-[rgba(255,255,255,0.04)]'
+const PP_YEARS_TD_LEFT_CLASSES = `${PP_YEARS_TD_CLASSES} text-left font-[family-name:var(--font-display)]`
 const PP_VALUE_ROW_CLASSES = 'flex items-center justify-center gap-2 flex-wrap'
 const PP_VALUE_BADGE_CLASSES = 'flex items-center gap-1 text-[11px] font-semibold py-1 px-3 rounded-xl border-[0.5px]'
 const PP_ADV_CHIP_CLASSES = 'pp-adv-chip flex items-center gap-[3px] text-[11px] text-[color:var(--text-muted)] bg-[var(--bg3)] py-[3px] px-2 rounded-lg'
@@ -1002,6 +1009,10 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   // when the dataset has none); drives the contract & value panel below.
   const { data: contractData } = useFetch(() => getPlayerContract(p.id), [p.id])
   const contract = contractData && !contractData.unavailable ? contractData.current : null
+  // Year-by-year rows under the contract (collapsed by default; the popup
+  // is long enough). See utils/contractHistory.js for which row they come from.
+  const contractYears = useMemo(() => contractSeasons(contractData), [contractData])
+  const [yearsOpen, setYearsOpen] = useState(false)
 
   const { data: mpAll } = useFetch(() => getPlayerAnalytics(), [])
   const mpData = mpAll?.[String(p.id)] || null
@@ -1480,6 +1491,53 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
               {contract.tier ? ` · ${t('playerPopup.contract.tierLabel', { tier: contract.tier })}` : ''}
               {contract.expiryTypeDerived ? ` · † ${t('playerPopup.contract.derivedTip')}` : ''}
             </div>
+            {contractYears.seasons.length > 0 && (
+              <div className="pp-contract-years mb-2">
+                <button type="button" className={PP_YEARS_TOGGLE_CLASSES} aria-expanded={yearsOpen} onClick={() => setYearsOpen(o => !o)}>
+                  {yearsOpen
+                    ? t('playerPopup.contract.hideYears')
+                    : t('playerPopup.contract.showYears', { count: contractYears.seasons.length })}
+                </button>
+                {yearsOpen && (
+                  <>
+                    <table className={PP_YEARS_TABLE_CLASSES}>
+                      <thead>
+                        <tr>
+                          <th className={PP_YEARS_TH_LEFT_CLASSES}>{t('playerPopup.contract.colSeason')}</th>
+                          <th className={PP_YEARS_TH_CLASSES}>{t('playerPopup.contract.capHit')}</th>
+                          <th className={PP_YEARS_TH_CLASSES}>{t('playerPopup.contract.colSalary')}</th>
+                          <th className={PP_YEARS_TH_CLASSES}>{t('playerPopup.contract.colSigningBonus')}</th>
+                          <th className={PP_YEARS_TH_CLASSES}>{t('playerPopup.contract.colClause')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {contractYears.seasons.map(s => {
+                          const isNow = s.season === contractData?.season
+                          return (
+                            <tr key={s.season} className={`pp-contract-year${isNow ? ' pp-contract-year--now' : ''}`} data-season={s.season}>
+                              <td className={`${PP_YEARS_TD_LEFT_CLASSES}${isNow ? ' font-bold text-[color:var(--text)]' : ''}`}>
+                                {s.season}
+                                {s.twoWay && <span className={PP_CONTRACT_MARK_CLASSES} title={t('playerPopup.contract.twoWayTip')}>{t('playerPopup.contract.twoWay')}</span>}
+                                {s.reported && <span className={PP_CONTRACT_MARK_CLASSES} title={t('playerPopup.contract.reportedTip')}>≈</span>}
+                              </td>
+                              <td className={`${PP_YEARS_TD_CLASSES}${isNow ? ' font-bold text-[color:var(--text)]' : ''}`}>{fmtCapHit(s.capHit) ?? '—'}</td>
+                              <td className={PP_YEARS_TD_CLASSES}>{fmtCapHit(s.baseSalary) ?? '—'}</td>
+                              <td className={PP_YEARS_TD_CLASSES}>{s.signingBonus ? fmtCapHit(s.signingBonus) : '—'}</td>
+                              <td className={PP_YEARS_TD_CLASSES}>{s.clause ? t(`playerPopup.contract.clauseKinds.${s.clause}`, { defaultValue: s.clause }) : '—'}</td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                    {contractYears.source === 'alternate' && (
+                      <div className={`${PP_CONTRACT_PROVENANCE_CLASSES} pp-contract-years-note`}>
+                        {t('playerPopup.contract.yearsFromReported', { tier: contractYears.tier || '—' })}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
             {(() => {
               const regStats = nhlSeasonTotal(stats?.seasonTotals, SEASON, 2)
               const pts   = regStats?.points ?? 0
