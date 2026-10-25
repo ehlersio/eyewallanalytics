@@ -155,6 +155,13 @@ describe('NHL Transactions tab', () => {
 
   it('opens the player card from a name in the tree', () => {
     cy.intercept('GET', '**/trades/tree?tx=1', TREE).as('tree')
+    // Carlson's current deal from the contracts dataset: the tree says what
+    // he costs today ("now"), not what he was traded on. Masters (no NHL
+    // id) and the drafted prospect get no note.
+    cy.intercept({ method: 'GET', url: /\/contracts\/players(\?|$)/ }, {
+      season: '2026-27', basis: 'roster', asOf: null, capLimits: null, teamsKnown: 32, unavailable: false,
+      players: [{ playerId: 8474590, contractKey: 'k', name: 'John Carlson', team: 'TBL', currentTeam: 'TBL', capHit: 3_500_000, oneWay: true, contractType: 'standard', expiresAfter: '2027-28', yearsLeft: 1, tier: 'B' }],
+    }).as('contracts')
     cy.intercept('GET', '**/player/landing?id=8474590', {
       playerId: 8474590, firstName: { default: 'John' }, lastName: { default: 'Carlson' },
       position: 'D', currentTeamAbbrev: 'CAR', headshot: '', sweaterNumber: 74, shootsCatches: 'R',
@@ -166,6 +173,10 @@ describe('NHL Transactions tab', () => {
     // Only Carlson has an NHL id in the fixture; Kyle Masters stays plain text
     cy.get('.trade-tree .tree-player-btn').should('have.length', 1)
     cy.get('.trade-tree').contains('D Kyle Masters').should('not.match', 'button')
+    cy.wait('@contracts')
+    cy.get('.trade-tree .tree-asset').contains('D John Carlson').parent().find('.cap-hit-inline')
+      .should('contain', 'one-way · now $3.50M').and('have.attr', 'title').and('match', /through 2027-28/)
+    cy.get('.trade-tree .cap-hit-inline').should('have.length', 1)
     cy.get('.trade-tree .tree-player-btn').contains('D John Carlson').click()
     cy.wait('@landing')
     cy.get('.popup-backdrop', { timeout: 10000 }).should('exist')

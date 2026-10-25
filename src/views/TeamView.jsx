@@ -23,6 +23,9 @@ import { getTeamGameLog as getDbTeamGameLog, getTeamXgTrend } from '../utils/sup
 import { CAP_CEILING } from '../utils/contractValue'
 import { buildCapTable, rosterNameMap, rosterIndex, fmtCapHit, capHitPct } from '../utils/capTable'
 import FreeAgentClass from '../components/FreeAgentClass'
+import CapHitChip from '../components/CapHitChip'
+import { useContractIndex } from '../hooks/useContractIndex'
+import { capFacts } from '../utils/capAnnotations'
 import { DraftPopup } from '../components/DraftTab'
 import { seasonPDO } from '../utils/advancedStats'
 import { isStandingsStale } from '../utils/standingsUtils'
@@ -747,8 +750,11 @@ function callupRecentLine(c, t) {
   return parts.join(' · ')
 }
 
-function CallupCandidate({ c }) {
+function CallupCandidate({ c, contracts }) {
   const { t } = useTranslation()
+  // The prospect's NHL deal when the dataset has it (one-way / two-way, ELC,
+  // cap hit); nothing is shown for a prospect it doesn't know.
+  const facts = capFacts(contracts, c.nhlPlayerId)
   return (
     <div className="callup-candidate flex flex-col gap-[2px] py-[6px] border-b-[0.5px] border-b-[color:var(--border)] last:border-b-0">
       <div className="flex items-baseline gap-2 flex-wrap">
@@ -759,6 +765,7 @@ function CallupCandidate({ c }) {
       <div className="text-[11px] text-[color:var(--text-dim)]">{callupRecentLine(c, t)}</div>
       <div className="flex flex-wrap gap-1 mt-[2px]">
         {!c.ranked && <span className="callup-chip text-[9px] py-px px-1.5 rounded-[3px] bg-[var(--bg3)] text-[color:var(--text-dim)]">{t('callupWatch.underGames', { n: 5 })}</span>}
+        <CapHitChip facts={facts} />
         {c.holdsRights && <span className="callup-chip text-[9px] py-px px-1.5 rounded-[3px] bg-[var(--bg3)] text-[color:var(--text-muted)]">{t('callupWatch.rights')}</span>}
         {c.recalls.length > 0 && (
           <span className="callup-chip text-[9px] py-px px-1.5 rounded-[3px] bg-[var(--bg3)] text-[color:var(--text-muted)]" title={c.recalls.map(r => `${r.date}: ${r.description}`).join('\n')}>
@@ -775,7 +782,7 @@ function CallupCandidate({ c }) {
   )
 }
 
-function CallupGroup({ group, data, teamAbbr, ahlAbbr }) {
+function CallupGroup({ group, data, teamAbbr, ahlAbbr, contracts }) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const shown = expanded ? data.candidates : data.candidates.slice(0, CALLUP_SHOWN)
@@ -788,14 +795,17 @@ function CallupGroup({ group, data, teamAbbr, ahlAbbr }) {
             <>
               {t('callupWatch.out')}{' '}
               {data.out.map((o, i) => (
-                <span key={`${o.name}-${i}`}>{i > 0 && ', '}{o.name}<InjuryBadge status={o.status} /></span>
+                <span key={`${o.name}-${i}`}>{i > 0 && ', '}{o.name}<InjuryBadge status={o.status} /><CapHitChip facts={capFacts(contracts, o.playerId)} variant="inline" /></span>
               ))}
             </>
           )}
         </span>
       </div>
       {data.upNow.length > 0 && (
-        <div className="callup-up text-[11px] text-[color:var(--text-dim)] mt-[2px]">{t('callupWatch.upNow', { team: teamAbbr, names: data.upNow.map(u => u.name).join(', ') })}</div>
+        <div className="callup-up text-[11px] text-[color:var(--text-dim)] mt-[2px]">
+          {t('callupWatch.upNow', { team: teamAbbr, names: data.upNow.map(u => u.name).join(', ') })}
+          {data.upNow.map(u => <CapHitChip key={u.ahlPlayerId ?? u.nhlPlayerId} facts={capFacts(contracts, u.nhlPlayerId)} variant="inline" />)}
+        </div>
       )}
       {data.hurt.length > 0 && (
         <div className="callup-hurt text-[11px] text-[color:var(--text-dim)] mt-[2px]">{t('callupWatch.hurt', { team: ahlAbbr, names: data.hurt.map(h => h.name).join(', ') })}</div>
@@ -804,7 +814,7 @@ function CallupGroup({ group, data, teamAbbr, ahlAbbr }) {
         <div className="text-[12px] text-[color:var(--text-dim)] py-1">{t('callupWatch.noCandidates')}</div>
       ) : (
         <div className="flex flex-col">
-          {shown.map(c => <CallupCandidate key={c.ahlPlayerId} c={c} />)}
+          {shown.map(c => <CallupCandidate key={c.ahlPlayerId} c={c} contracts={contracts} />)}
         </div>
       )}
       {data.candidates.length > CALLUP_SHOWN && (
@@ -826,6 +836,9 @@ function CallupWatchCard() {
     [teamAbbr, ahlTeam?.teamId]
   )
   const viewRef = useFeatureViewed('callup_watch')
+  // Contract facts for the chips (one league-wide payload, shared with the
+  // Cap tab); only fetched once the card has something to annotate.
+  const contracts = useContractIndex(!!data?.groups)
   if (!ahlTeam) return null
 
   // Busiest group first: the position with the most players out.
@@ -846,7 +859,7 @@ function CallupWatchCard() {
         <div className="text-[12px] text-[color:var(--text-dim)] py-1">{t('callupWatch.unavailable')}</div>
       ) : (
         <>
-          {groups.map(g => <CallupGroup key={g} group={g} data={data.groups[g]} teamAbbr={teamAbbr} ahlAbbr={ahlTeam.abbr} />)}
+          {groups.map(g => <CallupGroup key={g} group={g} data={data.groups[g]} teamAbbr={teamAbbr} ahlAbbr={ahlTeam.abbr}  contracts={contracts} />)}
           {data.unplaced?.length > 0 && (
             <div className="callup-unplaced text-[11px] text-[color:var(--text-dim)] mt-2">{t('callupWatch.unplaced', { names: data.unplaced.map(u => u.name).join(', ') })}</div>
           )}
