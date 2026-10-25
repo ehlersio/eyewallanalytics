@@ -263,6 +263,26 @@
       "source": "Player & puck tracking: NHL EDGE · season so far"
     }
   },
+  "leagueValue": {
+    "title": "Contract value · {{season}}",
+    "infoLabel": "About the contract-value score",
+    "infoTipSkaters": "The player popup's score, for every skater at once: 60% points per $1M of cap hit (projected to 82 games) + 40% WAR per $1M (WAR per 82 games, scaled). WAR joins a player's score from {{warGp}} games played; before that the score is points only. Cap hits come from the open nhl-contracts dataset; ≈ marks a reported figure. Entry-level deals and cap hits under $1.2M are not scored, and neither is anyone without a public figure. Scale: ≥8.0 Exceptional · ≥5.0 Great · ≥3.0 Good · ≥1.8 Fair · ≥1.0 Below average · <1.0 Overpaid.",
+    "infoTipGoalies": "Goals saved above expected (GSAX) per $1M of cap hit, for every goalie at once. GSAX accounts for shot quality and volume. Entry-level deals and cap hits under $1.2M are not scored. Scale: ≥4.0 Exceptional · ≥2.0 Great · ≥0.0 Fair · ≥-2.0 Below average · <-2.0 Overpaid.",
+    "noteSkaters": "{{rated}} skaters rated, at least {{minGp}} games played this season. Not a ranking of players: a score compares production with cap hit.",
+    "noteGoalies": "{{rated}} goalies rated, at least {{minGp}} games played this season. Not a ranking of goalies: a score compares saves above expected with cap hit.",
+    "skaters": "Skaters",
+    "goalies": "Goalies",
+    "colRank": "Rank",
+    "colPlayer": "Player",
+    "colGp": "GP",
+    "colPts": "Pts",
+    "colGsax": "GSAX",
+    "colCapHit": "Cap hit",
+    "colScore": "Value",
+    "showAll": "Show all {{count}}",
+    "showTop": "Show top {{count}}",
+    "notRated": "Not rated: {{noFigure}} without a public figure, {{elc}} on entry-level deals, {{underMinGp}} under {{minGp}} games ({{minGpGoalies}} for goalies)."
+  },
   "leagueCap": {
     "title": "Contract commitments · {{season}}",
     "infoLabel": "About this table",

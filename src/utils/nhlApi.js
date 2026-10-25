@@ -122,6 +122,18 @@ export async function getPlayerContract(playerId, season = null) {
     () => workerFetch(`/contracts/player/${encodeURIComponent(playerId)}${qs}`), TTL.RANKINGS);
 }
 
+// { season, basis: 'roster', asOf, capLimits, teamsKnown, players, unavailable }:
+// every NHL player's contract for the season in one payload (the League
+// page's contract-value leaderboard), one row per player who has a deal
+// covering the season or is on a roster today, same shape as a /contracts
+// row minus clauses plus `currentTeam` / `position` / `onRoster` from the
+// 32 rosters; roster players with no row carry nulls. Cap hit descending.
+export async function getLeagueContractPlayers(season = null) {
+  const qs = season ? `?season=${encodeURIComponent(season)}` : '';
+  return cached(`contracts:players:${season || 'current'}`,
+    () => workerFetch(`/contracts/players${qs}`), TTL.RANKINGS);
+}
+
 // { current: 'YYYY-YY', seasons: { 'YYYY-YY': { ceiling, floor, minSalary } } }
 // -- only seasons the league has announced. contractValue.js applies it.
 export async function getCapLimits() {
@@ -1135,6 +1147,17 @@ export async function getPlayerGameLog(playerId, season, gameTypeId = GAME_TYPE.
 }
 async function _getPlayerGameLog(playerId, season, gameTypeId) {
   return await nhlFetch(`${BASE}/player/${playerId}/game-log/${season}/${gameTypeId}`);
+}
+
+// Every NHL skater's season totals (NHL stats API skater/summary, ~700
+// rows: playerId, skaterFullName, lastName, teamAbbrevs, positionCode,
+// gamesPlayed, points, goals, assists, timeOnIcePerGame...), memoized.
+// The League page's contract-value leaderboard joins it to /contracts/players.
+export async function getLeagueSkaterSummary(gameTypeId = GAME_TYPE.REGULAR) {
+  return cached(`skater-summary:${TEAM_CONFIG.season}:${gameTypeId}`, async () => {
+    const data = await fetchSkaterLeaders(gameTypeId);
+    return Array.isArray(data?.data) ? data.data : [];
+  }, TTL.RANKINGS);
 }
 
 // Fetch league-wide skater stats sorted by points.

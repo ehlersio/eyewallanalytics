@@ -18,6 +18,7 @@ import {
   getTeamSpecialTeams,
   TEAM_CONFIG,
   getLeagueCapSummary,
+  getLeagueContractPlayers, getLeagueSkaterSummary,
 } from '../utils/nhlApi';
 import { getTeamSeasonData, getPowerRankingsNarrative, getPowerRankingsHistory } from '../utils/supabaseClient';
 import { teamTextColor } from '../utils/teamConfig';
@@ -31,6 +32,9 @@ import RankNarrativeCard from '../components/RankNarrativeCard';
 import PowerRankingsCanvas from '../components/PowerRankingsCanvas';
 import DraftTab from '../components/DraftTab';
 import LeagueCapTable from '../components/LeagueCapTable';
+import ContractValueBoard from '../components/ContractValueBoard';
+import { buildValueBoard } from '../utils/valueBoard';
+import { getPlayerAnalytics, getGoalieAnalytics } from '../utils/supabaseClient';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
 import { getEdgeLeaders } from '../utils/edgeApi';
 import { useUnits } from '../hooks/useUnits';
@@ -1635,6 +1639,20 @@ export default function LeagueView() {
   const hasCap = !!capSummary && !capSummary.unavailable && (capSummary.teams?.length || 0) > 0;
   const tabs = useMemo(() => TABS.filter(tab => tab.id !== 'cap' || hasCap), [hasCap]);
 
+  // The contract-value leaderboard under the Cap table: four league-wide
+  // payloads, fetched only while the Cap tab is open (the first two are
+  // the heavy ones), joined in utils/valueBoard.js.
+  const onCap = activeTab === 'cap';
+  const { data: capPlayers }  = useFetch(() => onCap ? getLeagueContractPlayers() : Promise.resolve(null), [onCap]);
+  const { data: skaterStats } = useFetch(() => onCap ? getLeagueSkaterSummary() : Promise.resolve(null), [onCap]);
+  const { data: skaterAnalytics } = useFetch(() => onCap ? getPlayerAnalytics() : Promise.resolve(null), [onCap]);
+  const { data: goalieAnalytics } = useFetch(() => onCap ? getGoalieAnalytics() : Promise.resolve(null), [onCap]);
+  const valueBoard = useMemo(
+    () => (capPlayers && skaterStats) ? buildValueBoard({ contracts: capPlayers, skaters: skaterStats, analytics: skaterAnalytics, goalies: goalieAnalytics }) : null,
+    [capPlayers, skaterStats, skaterAnalytics, goalieAnalytics]
+  );
+  const [valuePlayer, setValuePlayer] = useState(null);
+
   const { data: scoring, loading: scoringLoading, error: scoringError }
     = useFetch(() => getScoringLeaders(SEASON, 10, '2'), [SEASON]);
 
@@ -1743,7 +1761,15 @@ export default function LeagueView() {
           <DraftTab />
         </>}
 
-        {activeTab === 'cap' && hasCap && <LeagueCapTable summary={capSummary} />}
+        {activeTab === 'cap' && hasCap && (
+          <>
+            <LeagueCapTable summary={capSummary} />
+            <ContractValueBoard board={valueBoard} onPlayerClick={setValuePlayer} />
+            {valuePlayer && (
+              <PlayerPopup player={valuePlayer} inPlayoffs={false} standings={standingsEntries} isLeagueContext={true} onClose={() => setValuePlayer(null)} />
+            )}
+          </>
+        )}
       </div>
     </div>
   );

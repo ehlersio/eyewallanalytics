@@ -36,6 +36,65 @@ describe('League › Cap', () => {
     cy.contains('.league-cap', 'includes deals signed as Arizona')
   })
 
+  // The contract-value leaderboard under the team table: stubbed with
+  // trimmed real 2026-10-24 payloads (40 contract rows, 34 skater lines,
+  // 6 goalies) so the scores are deterministic.
+  describe('contract-value leaderboard', () => {
+    beforeEach(() => {
+      cy.intercept(SUMMARY, { fixture: 'contracts-summary-2026-27.json' }).as('summary')
+      cy.intercept({ method: 'GET', url: /\/contracts\/players(\?|$)/ }, { fixture: 'contracts-players-2026-27.json' }).as('players')
+      cy.intercept({ method: 'GET', url: /\/skater\/summary\?/ }, { fixture: 'skater-summary-2026-27.json' }).as('skaters')
+      cy.intercept({ method: 'GET', url: /\/player-analytics\?/ }, { fixture: 'player-analytics-2026-27.json' }).as('analytics')
+      cy.intercept({ method: 'GET', url: /\/goalie-analytics\?/ }, { fixture: 'goalie-analytics-2026-27.json' }).as('goalies')
+      cy.visit('/league')
+      cy.wait('@summary')
+      cy.get('.league-tab').contains(/^Cap$/, { timeout: DATA_TIMEOUT }).click()
+      cy.wait(['@players', '@skaters'])
+      cy.get('.league-value', { timeout: DATA_TIMEOUT }).should('exist')
+    })
+
+    it('scores every rated skater, best value first, with the popup\'s labels', () => {
+      cy.fixture('contracts-players-2026-27').then(players => {
+        cy.fixture('skater-summary-2026-27').then(sk => {
+          const capById = Object.fromEntries(players.players.map(p => [p.playerId, p]))
+          const rated = sk.data.filter(s => s.gamesPlayed >= 10 && capById[s.playerId]?.capHit >= 1_200_000 && capById[s.playerId]?.contractType !== 'ELC')
+          cy.contains('.league-value', `${rated.length} skaters rated, at least 10 games played`)
+          cy.get('.league-value-row').should('have.length', Math.min(25, rated.length))
+          // best points per $M in the fixture is first
+          const best = rated.map(s => ({ s, v: (s.points / s.gamesPlayed * 82) / (capById[s.playerId].capHit / 1e6) })).sort((a, b) => b.v - a.v)[0]
+          cy.get('.league-value-row').first().should('contain', best.s.skaterFullName).and('contain', `${best.s.points}`)
+          cy.get('.league-value-row').first().find('td').last().invoke('text').should('match', /Exceptional|Great|Good|Fair|Below|Overpaid/)
+          // ELC and no-figure players are never rated, and the footer says so
+          cy.get('.league-value').should('not.contain', 'Easton Cowan').and('not.contain', 'Leon Draisaitl')
+          cy.contains('.league-value', /Not rated: \d+ without a public figure, \d+ on entry-level deals, \d+ under 10 games/)
+        })
+      })
+      cy.get('.league-value').should('not.contain', 'cap space')
+    })
+
+    it('switches to goalies (GSAX per $M, 5-game minimum) and opens the player popup from a row', () => {
+      cy.get('.league-value-seg').contains('Goalies').click()
+      cy.contains('.league-value', /\d+ goalies rated, at least 5 games played/)
+      cy.get('.league-value-table th').should('contain', 'GSAX')
+      cy.get('.league-value-row').should('have.length.gte', 3)
+      cy.get('.league-value-row').first().invoke('text').should('match', /[+-]?\d+\.\d/)
+      // a row opens the popup in league context
+      cy.get('.league-value-seg').contains('Skaters').click()
+      cy.get('.league-value-row').first().click()
+      cy.get('.pp-tab', { timeout: DATA_TIMEOUT }).should('exist')
+      cy.get('.pp-tab').contains('Heat Map').should('not.exist')
+    })
+
+    it('shows all rows on demand', () => {
+      cy.get('.league-value-more').then($b => {
+        if (!$b.length) return
+        cy.wrap($b).should('contain', 'Show all').click()
+        cy.get('.league-value-row').should('have.length.gt', 25)
+        cy.get('.league-value-more').should('contain', 'Show top 25')
+      })
+    })
+  })
+
   it('hides the Cap tab when the summary is unavailable', () => {
     cy.intercept(SUMMARY, { season: '2026-27', basis: 'signing_team', asOf: null, capLimits: null, teams: [], unavailable: true }).as('summary')
     cy.visit('/league')
