@@ -546,7 +546,7 @@ Added 2026-08 as the 4th league. Brought to full 6-phase parity with AHL in the 
 Key features:
 - Live shot map with momentum, insights, PP/PK drill-downs
 - Period summaries with AI narrative, goals carousel, share export
-- Team page (Overview, Advanced, Splits, Trends, Cap — every team the contracts dataset has rows for: roster cap hit against the ceiling, the coming summer's free-agent class (UFA/RFA, roster and system), each deal's cap hit, UFA/RFA and expiry, official vs reported provenance — Picks, and History, from teamHistory.js)
+- Team page (Overview, Advanced, Splits, Trends, Cap — every team the contracts dataset has rows for: roster cap hit against the ceiling, an estimated space before LTIR once the Worker has the dataset's dead cap (retained salary, buyouts), the coming summer's free-agent class (UFA/RFA, roster and system), each deal's cap hit, UFA/RFA and expiry, official vs reported provenance — Picks, and History, from teamHistory.js)
 - League page (Scoreboard — the default tab in all 4 leagues — Standings, Bracket, Leaders, Power Rankings, Scorecard, Draft, and for the NHL a Cap tab: every team's roster cap hit against the ceiling (the Team page's number; commitments by signing team until the Worker has the roster basis), and a contract-value leaderboard scoring every skater and goalie's cap hit against production, from the contracts dataset)
 - Player analytics (WAR, RAPM, GSAX, heat maps)
 - Players page: Roster / Stats / Prospects tabs, historical-season picker on the Roster tab (`GET /v1/roster/{team}/{season}`) alongside the live current roster

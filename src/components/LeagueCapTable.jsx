@@ -73,6 +73,11 @@ export default function LeagueCapTable({ summary }) {
             <th className={TH_RIGHT_CLASSES}>{t(`${k}.colCapHit`)}</th>
             <th className={TH_RIGHT_CLASSES}>{t('leagueCap.colUfa')}</th>
             <th className={TH_RIGHT_CLASSES}>{t('leagueCap.colRfa')}</th>
+            {table.hasEstimates && (
+              <th className={`${TH_RIGHT_CLASSES} league-cap-est-head`}>
+                <span className="inline-flex items-center gap-1">{t('leagueCap.roster.colEstimate')}<InfoTip label={t('leagueCap.roster.estimateLabel')} text={t('leagueCap.roster.estimateTip')} /></span>
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -98,6 +103,11 @@ export default function LeagueCapTable({ summary }) {
               </td>
               <td className={TD_NUM_CLASSES}>{r.expiring.ufa}</td>
               <td className={TD_NUM_CLASSES}>{r.expiring.rfa}</td>
+              {table.hasEstimates && (
+                <td className={`${TD_NUM_CLASSES} league-cap-est`} style={r.estimate != null && r.estimate < 0 ? { color: 'var(--red-bright)' } : undefined}>
+                  {r.estimate != null ? `${r.estimate < 0 ? '-' : ''}$${(Math.abs(r.estimate) / 1e6).toFixed(1)}M` : '—'}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

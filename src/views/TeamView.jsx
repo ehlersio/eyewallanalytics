@@ -242,6 +242,12 @@ const CAP_LEGEND_CLASSES = 'flex flex-wrap gap-3 text-[10px] text-[color:var(--t
 // (dataset tier D/E), not from an official source.
 const CAP_DERIVED_MARK = '†'
 const CAP_REPORTED_MARK = '≈'
+const CAP_ESTIMATE_CLASSES = 'flex items-center gap-1 text-[12px] font-semibold mb-1'
+const CAP_DEAD_TOGGLE_CLASSES = 'cap-dead-toggle ml-2 text-[10px] text-[color:var(--text-muted)] underline underline-offset-2 bg-transparent border-0 p-0 cursor-pointer'
+const CAP_DEAD_ROW_CLASSES = 'grid grid-cols-[1fr_auto_90px] gap-[6px] items-center py-[3px] border-b-[0.5px] border-[rgba(255,255,255,0.04)] text-[12px]'
+// "+$13.4M" / "-$1.2M" for the estimate line (a negative estimate is a team
+// over the ceiling before LTIR relief, which the dataset cannot see).
+const fmtSignedM = (n) => `${n < 0 ? '-' : ''}$${(Math.abs(n) / 1_000_000).toFixed(1)}M`
 const CAP_EXPIRES_CLASSES = 'text-[11px] font-[family-name:var(--font-mono)]'
 const CAP_EXPIRING_NOTE_CLASSES = 'mt-[10px] text-[11px] text-[color:var(--amber)] py-[6px] px-[10px] bg-[rgba(240,160,48,0.1)] rounded-[var(--radius-sm)]'
 
@@ -1828,6 +1834,7 @@ function CapTab({ data }) {
   const rosterNames = useMemo(() => rosterNameMap(roster), [roster])
   const rosterInfo  = useMemo(() => rosterIndex(roster), [roster])
   const cap = useMemo(() => buildCapTable(data, rosterNames, CAP_CEILING), [data, rosterNames])
+  const [deadOpen, setDeadOpen] = useState(false)
   const asOf = cap.asOf ? formatDateOnly(cap.asOf, { month: 'short', day: 'numeric', year: 'numeric' }) : null
   const expiryLabel = (row) => {
     const type = row.expiryType || '—'
@@ -1878,6 +1885,44 @@ function CapTab({ data }) {
       <div className={CAP_CEILING_LABEL_CLASSES}>
         {t('teamView.cap.coverage', { withFigure: cap.rosterWithFigure, count: cap.rosterCount })}
       </div>
+      {cap.estimate != null && (
+        <div className={`${CAP_ESTIMATE_CLASSES} cap-estimate`} style={{ color: cap.estimate < 0 ? 'var(--red-bright)' : 'var(--green)' }}>
+          {t('teamView.cap.estimate', { amount: fmtSignedM(cap.estimate) })}
+          <InfoTip label={t('teamView.cap.estimateLabel')} text={t('teamView.cap.estimateTip')} />
+        </div>
+      )}
+      {cap.deadCap && cap.deadCap.count > 0 && (
+        <div className={`${CAP_CEILING_LABEL_CLASSES} cap-dead-cap`}>
+          {t('teamView.cap.deadCapLine', {
+            total: (cap.deadCap.total / 1_000_000).toFixed(2),
+            retained: (cap.deadCap.retained / 1_000_000).toFixed(2),
+            buyouts: (cap.deadCap.buyouts / 1_000_000).toFixed(2),
+          })}
+          {cap.deadCapRows.length > 0 && (
+            <button type="button" className={CAP_DEAD_TOGGLE_CLASSES} aria-expanded={deadOpen} onClick={() => setDeadOpen(o => !o)}>
+              {deadOpen ? t('teamView.cap.deadCapHide') : t('teamView.cap.deadCapShow', { count: cap.deadCapRows.length })}
+            </button>
+          )}
+        </div>
+      )}
+      {deadOpen && cap.deadCapRows.length > 0 && (
+        <div className="cap-dead-rows mb-2">
+          {cap.deadCapRows.map((d, i) => (
+            <div key={`${d.kind}-${d.playerId ?? d.playerName}-${i}`} className={`${CAP_DEAD_ROW_CLASSES} cap-dead-row`} data-kind={d.kind}>
+              <span className={CAP_NAME_CLASSES}>
+                {d.playerName}
+                {['D', 'E'].includes(d.tier) && <span className={CAP_MARK_CLASSES} title={t('teamView.cap.reportedLegend')}>{CAP_REPORTED_MARK}</span>}
+              </span>
+              <span className={CAP_TYPE_BASE_CLASSES} style={{ color: 'var(--text-dim)' }}>
+                {d.kind === 'retained'
+                  ? t('teamView.cap.deadRetained', { pct: d.pct != null ? `${d.pct}% ` : '', team: d.counterparty || '' }).trim()
+                  : t('teamView.cap.deadBuyout')}
+              </span>
+              <span className={CAP_HIT_VAL_CLASSES}>{d.capHit != null ? fmtCapHit(d.capHit) : t('teamView.cap.noPublicFigure')}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className={`${CAP_DATA_DATE_CLASSES} cap-provenance`}>
         {asOf ? t('teamView.cap.provenance', { date: asOf, official: cap.provenance.official, reported: cap.provenance.reported })
               : t('teamView.cap.provenanceNoDate', { official: cap.provenance.official, reported: cap.provenance.reported })}

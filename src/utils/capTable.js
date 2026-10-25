@@ -96,6 +96,12 @@ export function buildCapTable(data, rosterNames = null, fallbackCeiling = CAP_CE
     rfa: summary.expiring?.rfa ?? 0,
     unknown: summary.expiring?.unknown ?? 0,
   };
+  // Dead cap and the Worker's cap-space ESTIMATE (eyewall-poller #237):
+  // ceiling - roster cap hit - retained salary and buyouts the dataset
+  // knows. Null until the Worker has the table (`deadCapKnown`), and never
+  // called cap space: LTIR, bonus overages and recapture are not in it.
+  const deadCapKnown = data?.deadCapKnown === true && !!summary.deadCap;
+  const deadCapRows = deadCapKnown && Array.isArray(data?.deadCap) ? data.deadCap : [];
 
   return {
     season: data?.season || null,
@@ -113,5 +119,10 @@ export function buildCapTable(data, rosterNames = null, fallbackCeiling = CAP_CE
     expiringTotal: expiring.ufa + expiring.rfa + expiring.unknown,
     hasDerived: shaped.some(r => r.expiryTypeDerived),
     hasReported: shaped.some(r => r.reported),
+    deadCapKnown,
+    deadCap: deadCapKnown ? summary.deadCap : null,
+    deadCapRows,
+    estimate: deadCapKnown ? (summary.capSpaceEstimate ?? null) : null,
+    estimateNotes: deadCapKnown && Array.isArray(summary.estimateNotes) ? summary.estimateNotes : [],
   };
 }

@@ -35,8 +35,30 @@ describe('League › Cap', () => {
       const off = f.teams.reduce((n, t) => n + t.offRosterCount, 0)
       cy.contains('.league-cap', `${off} signed players on no NHL roster`)
     })
+    // no estimate column before the Worker knows the dead-cap table
+    cy.get('.league-cap-est-head').should('not.exist')
     // the signing-team summary was not needed for the table
     cy.get('@summary.all').should('have.length', 0)
+  })
+
+  it('adds an estimated-space column once the Worker knows the dead-cap table', () => {
+    cy.fixture('contracts-summary-roster-2026-27').then(f => {
+      const body = {
+        ...f, deadCapKnown: true, estimateNotes: ['no_ltir', 'no_bonus_overages', 'no_recapture', 'partial_coverage'],
+        teams: f.teams.map(t => ({ ...t, deadCap: t.team === 'CAR' ? 1_100_000 : 0, capSpaceEstimate: f.capLimits.ceiling - t.rosterCapHit - (t.team === 'CAR' ? 1_100_000 : 0) })),
+      }
+      cy.intercept(ROSTER_SUMMARY, body).as('roster')
+    })
+    cy.visit('/league')
+    cy.wait('@roster')
+    cy.get('.league-tab').contains(/^Cap$/, { timeout: DATA_TIMEOUT }).click()
+    cy.get('.league-cap[data-basis="roster"]', { timeout: DATA_TIMEOUT }).should('exist')
+    cy.get('.league-cap-est-head').should('contain', 'Est. space')
+    cy.fixture('contracts-summary-roster-2026-27').then(f => {
+      const car = f.teams.find(t => t.team === 'CAR')
+      const est = (f.capLimits.ceiling - car.rosterCapHit - 1_100_000) / 1e6
+      cy.get('.league-cap-row[data-team="CAR"] .league-cap-est').should('contain', `$${est.toFixed(1)}M`)
+    })
   })
 
   it('falls back to commitments by signing team when the roster basis is unavailable, with Arizona folded into Utah', () => {

@@ -105,6 +105,50 @@ describe('Cap tab (any NHL team)', () => {
     })
   })
 
+  // Dead cap and the estimate arrive with eyewall-poller #237 (fields the
+  // CAR fixture, captured before it, lacks): added here on top of the real
+  // payload, as the Worker shapes them.
+  it('CAR: shows the Worker\'s estimate before LTIR and the dead-cap charges once the table is known', () => {
+    cy.fixture('contracts-car-2026-27').then(f => {
+      const deadCap = [
+        { team: 'CAR', kind: 'retained', playerName: 'Traded Winger', playerId: 8470000, counterparty: 'TOR', season: '2026-27', capHit: 1_500_000, pct: 50, contractKey: null, eventDate: '2026-03-05', tier: 'D', flags: [] },
+        { team: 'CAR', kind: 'buyout', playerName: 'Bought Out', playerId: null, counterparty: null, season: '2026-27', capHit: 1_100_000, pct: null, contractKey: null, eventDate: null, tier: 'E', flags: [] },
+      ]
+      const body = {
+        ...f, deadCap, deadCapKnown: true,
+        summary: { ...f.summary, deadCap: { total: 2_600_000, retained: 1_500_000, buyouts: 1_100_000, count: 2 },
+          capSpaceEstimate: f.summary.capLimits.ceiling - f.summary.rosterCapHit - 2_600_000,
+          estimateNotes: ['no_ltir', 'no_bonus_overages', 'no_recapture', 'partial_coverage'] },
+      }
+      cy.intercept(contractsFor('CAR'), body).as('contracts')
+    })
+    cy.intercept(rosterFor('CAR'), CAR_ROSTER)
+    cy.setTeam('CAR')
+    cy.visit('/team')
+    cy.wait('@contracts')
+    openCapTab()
+    // 104.0 - 88.16 - 2.6 = 13.2
+    cy.contains('.cap-estimate', 'Estimated space before LTIR: $13.2M')
+    cy.contains('.cap-dead-cap', 'Dead cap $2.60M: $1.50M retained · $1.10M buyouts')
+    cy.get('.cap-dead-row').should('not.exist')
+    cy.get('.cap-dead-toggle').should('contain', 'Show 2 charges').click()
+    cy.get('.cap-dead-row').should('have.length', 2)
+    cy.get('.cap-dead-row[data-kind="retained"]').should('contain', 'Traded Winger').and('contain', 'retained 50% for TOR').and('contain', '$1.50M')
+    cy.get('.cap-dead-row[data-kind="buyout"]').should('contain', 'Bought Out').and('contain', 'buyout').and('contain', '$1.10M')
+    cy.get('.cap-tab').should('not.contain', 'cap space')
+  })
+
+  it('CAR: no estimate line while the Worker has no dead-cap table', () => {
+    cy.intercept(contractsFor('CAR'), { fixture: 'contracts-car-2026-27.json' }).as('contracts')
+    cy.intercept(rosterFor('CAR'), CAR_ROSTER)
+    cy.setTeam('CAR')
+    cy.visit('/team')
+    cy.wait('@contracts')
+    openCapTab()
+    cy.get('.cap-estimate').should('not.exist')
+    cy.get('.cap-dead-cap').should('not.exist')
+  })
+
   it('TOR: the same tab for another team, with reported figures marked', () => {
     cy.intercept(contractsFor('TOR'), { fixture: 'contracts-tor-2026-27.json' }).as('contracts')
     cy.setTeam('TOR')
