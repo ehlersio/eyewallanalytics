@@ -4,7 +4,7 @@
 // fallback, and never a name-matched stranger's deal.
 
 import { describe, it, expect } from 'vitest'
-import { contractSeasons } from '../contractHistory'
+import { contractSeasons, boughtOutNote } from '../contractHistory'
 
 const season = (s, capHit, over = {}) => ({
   season: s, capHit, aav: capHit, baseSalary: capHit, signingBonus: 0, performanceBonus: 0,
@@ -109,5 +109,45 @@ describe('contractSeasons', () => {
     expect(contractSeasons(null).seasons).toEqual([])
     expect(contractSeasons({ current: null, history: [] }).source).toBeNull()
     expect(contractSeasons({ unavailable: true }).seasons).toEqual([])
+  })
+})
+
+describe('boughtOutNote', () => {
+  // Aho's CAR deal bought out after 2024-25: the dataset ends it there and
+  // keeps the signed end, so nothing is `current` in 2026-27.
+  const bought = (over = {}) => ({
+    ...entry('sebastian aho|CAR|2023-07', 'CAR', 'C', '2024-25', '2024-25', []),
+    boughtOut: true, endSeasonSigned: '2031-32', ...over,
+  })
+  const payload = (history, over = {}) => ({ season: '2026-27', current: null, history, ...over })
+
+  it('finds the bought-out deal that would have covered this season', () => {
+    const history = [
+      entry('sebastian aho|PIT|2024-07', 'PIT', 'C', '2024-25', '2025-26', []),
+      bought(),
+      entry('sebastian aho|CAR|2019-07', 'CAR', 'E', '2019-20', '2023-24', []),
+    ]
+    expect(boughtOutNote(payload(history))).toEqual({ team: 'CAR', endSeason: '2024-25', endSeasonSigned: '2031-32', reported: false })
+  })
+
+  it('returns null when the bought-out deal would not have covered this season', () => {
+    expect(boughtOutNote(payload([bought({ endSeasonSigned: '2025-26' })]))).toBeNull()
+    expect(boughtOutNote(payload([bought({ startSeason: '2027-28', expiresAfter: '2027-28' })]))).toBeNull()
+    // not bought out: an ordinary expired deal says nothing
+    expect(boughtOutNote(payload([bought({ boughtOut: false })]))).toBeNull()
+  })
+
+  it('returns null without history, without a payload, or with a current contract', () => {
+    expect(boughtOutNote(payload([]))).toBeNull()
+    expect(boughtOutNote(payload(undefined))).toBeNull()
+    expect(boughtOutNote(null)).toBeNull()
+    expect(boughtOutNote(payload([bought()], { current: { contractKey: 'x|NYR|2026-07', team: 'NYR' } }))).toBeNull()
+  })
+
+  it('flags a reported (tier D/E) row and prefers the better tier for the same deal', () => {
+    expect(boughtOutNote(payload([bought({ tier: 'E' })])).reported).toBe(true)
+    expect(boughtOutNote(payload([bought({ tier: 'D' })])).reported).toBe(true)
+    const both = [bought({ contractKey: 'sebastian aho|CAR|2023-07', tier: 'E' }), bought({ contractKey: '8478427|CAR|2023-07', tier: 'B' })]
+    expect(boughtOutNote(payload(both)).reported).toBe(false)
   })
 })

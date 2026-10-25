@@ -80,3 +80,35 @@ export function contractSeasons(payload) {
   const alt = alternates[0].h;
   return { seasons: alt.seasons.map(shapeSeason), source: 'alternate', contractKey: alt.contractKey, tier: alt.tier || null };
 }
+
+// ─── Bought-out note ─────────────────────────────────────────
+// The dataset ends a bought-out contract at its last PAID season (the
+// row's end season, `expiresAfter` in the Worker's shape) and keeps the
+// signed end in `endSeasonSigned`, flagged `boughtOut: true`. Such a deal
+// stops covering the current season, so `current` is null and the popup
+// would show no contract at all. This picks the bought-out deal that
+// would still have run this season, so the popup can say why instead.
+//
+// payload -> { team, endSeason, endSeasonSigned, reported } | null
+// Only when `current` is null; the best tier wins, then the latest start.
+const endSeasonOf = (row) => row?.expiresAfter ?? row?.endSeason ?? row?.end_season ?? null;
+
+export function boughtOutNote(payload) {
+  if (!payload || payload.current) return null;
+  const season = payload.season || null;
+  const history = Array.isArray(payload.history) ? payload.history : [];
+  if (!season || !history.length) return null;
+  const hits = history
+    .filter(h => h?.boughtOut === true && h.endSeasonSigned && h.startSeason
+      && h.startSeason <= season && season <= h.endSeasonSigned)
+    .sort((a, b) => (tierRank(a.tier) - tierRank(b.tier))
+      || String(b.startSeason).localeCompare(String(a.startSeason)));
+  if (!hits.length) return null;
+  const row = hits[0];
+  return {
+    team: row.team || null,
+    endSeason: endSeasonOf(row),
+    endSeasonSigned: row.endSeasonSigned,
+    reported: isReported(row),
+  };
+}

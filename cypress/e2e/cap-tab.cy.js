@@ -264,4 +264,22 @@ describe('Player popup contract panel', () => {
     cy.get('.pp-body', { timeout: DATA_TIMEOUT }).should('exist')
     cy.get('.pp-contract').should('not.exist')
   })
+
+  it('explains a bought-out deal instead of showing no contract', () => {
+    // The dataset ends a bought-out deal at its last paid season, so nothing
+    // covers 2026-27 and `current` is null; the signed end stays on the row.
+    cy.fixture('contract-player-aho.json').then((aho) => {
+      const history = aho.history.map((h, i) => (i === 1
+        ? { ...h, team: 'CAR', boughtOut: true, expiresAfter: '2024-25', endSeasonSigned: '2031-32', yearsLeft: 0, isCurrent: false }
+        : h))
+      cy.intercept({ method: 'GET', url: /\/contracts\/player\/8478427(\?|$)/ }, { ...aho, current: null, history }).as('contract')
+    })
+    cy.setTeam('CAR')
+    openSkater('Aho')
+    cy.wait('@contract')
+    cy.get('.pp-contract-bought-out', { timeout: DATA_TIMEOUT })
+      .should('contain', 'Bought out by CAR · paid through 2024-25 · signed through 2031-32')
+      .and('not.contain', '≈')
+    cy.get('.pp-contract').should('not.exist')
+  })
 })

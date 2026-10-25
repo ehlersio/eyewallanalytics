@@ -15,7 +15,9 @@
  *                            both contexts: it reads the Worker's
  *                            /contracts/player/:id (the open nhl-contracts dataset,
  *                            every NHL team) by playerId, and renders only when
- *                            the dataset has a contract covering this season.
+ *                            the dataset has a contract covering this season. A
+ *                            player whose deal was bought out (so none covers it)
+ *                            gets a one-line "Bought out by ..." note instead.
  */
 
 import { useState, useMemo } from 'react'
@@ -35,7 +37,7 @@ import {
 } from '../utils/supabaseClient'
 import { contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING } from '../utils/contractValue'
 import { fmtCapHit, isReported } from '../utils/capTable'
-import { contractSeasons } from '../utils/contractHistory'
+import { contractSeasons, boughtOutNote } from '../utils/contractHistory'
 import { nhlSeasonLabel } from '../utils/seasonComparison'
 import { warTier, warPer82, WAR_TIER_MIN_GP } from '../utils/warTier'
 import { HockeyRink } from 'react-hockey-rink'
@@ -182,6 +184,7 @@ const PP_CONTRACT_MARK_CLASSES = 'ml-[2px] text-[11px] text-[color:var(--text-di
 const PP_CONTRACT_CLAUSES_CLASSES = 'flex items-center justify-center gap-2 flex-wrap mb-2 text-[11px] text-[color:var(--text-muted)]'
 const PP_CONTRACT_CLAUSE_CLASSES = 'bg-[var(--bg3)] py-[3px] px-2 rounded-lg'
 const PP_CONTRACT_PROVENANCE_CLASSES = 'text-[10px] text-[color:var(--text-dim)] mb-2'
+const PP_CONTRACT_BOUGHT_OUT_CLASSES = 'py-2 px-4 bg-[var(--bg2)] border-b-[0.5px] border-[var(--border)] text-center text-[11px] text-[color:var(--text-muted)]'
 const PP_YEARS_TOGGLE_CLASSES = 'pp-contract-years-toggle text-[11px] text-[color:var(--text-muted)] underline underline-offset-2 bg-transparent border-0 p-0 cursor-pointer mb-2'
 const PP_YEARS_TABLE_CLASSES = 'pp-contract-years-table w-full border-collapse text-[11px] mb-1'
 const PP_YEARS_TH_CLASSES = 'text-[9px] uppercase tracking-[0.06em] text-[color:var(--text-dim)] font-semibold py-1 px-1 border-b-[0.5px] border-[var(--border)] text-right whitespace-nowrap'
@@ -1012,6 +1015,13 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
   // Year-by-year rows under the contract (collapsed by default; the popup
   // is long enough). See utils/contractHistory.js for which row they come from.
   const contractYears = useMemo(() => contractSeasons(contractData), [contractData])
+  // No current contract because the deal was bought out (the dataset ends
+  // it at the last paid season): a one-line note instead of the panel, so
+  // the missing contract doesn't read as a data gap.
+  const boughtOut = useMemo(
+    () => (contractData && !contractData.unavailable ? boughtOutNote(contractData) : null),
+    [contractData],
+  )
   const [yearsOpen, setYearsOpen] = useState(false)
 
   const { data: mpAll } = useFetch(() => getPlayerAnalytics(), [])
@@ -1437,6 +1447,13 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
           ]} />
         )}
 
+        {!contract && boughtOut && (
+          <div className={`${PP_CONTRACT_BOUGHT_OUT_CLASSES} pp-contract-bought-out`}>
+            {t('playerPopup.contract.boughtOutNote', { team: boughtOut.team || '—', end: boughtOut.endSeason || '—', signed: boughtOut.endSeasonSigned })}
+            {boughtOut.reported && <span className={PP_CONTRACT_MARK_CLASSES} title={t('playerPopup.contract.reportedTip')}>≈</span>}
+          </div>
+        )}
+
         {/* ── Contract & value panel (any NHL team, by playerId) ── */}
         {contract && (
           <div className={`${PP_CONTRACT_CLASSES} pp-contract`}>
@@ -1456,8 +1473,8 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
               <div className={PP_CONTRACT_ITEM_CLASSES}>
                 <div className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.status')}</div>
                 <div className={PP_CONTRACT_VAL_CLASSES}>
-                  {contract.expiryType || '—'}
-                  {contract.expiryTypeDerived && <span className={PP_CONTRACT_MARK_CLASSES} title={t('playerPopup.contract.derivedTip')}>†</span>}
+                  {contract.boughtOut ? t('playerPopup.contract.boughtOut') : (contract.expiryType || '—')}
+                  {!contract.boughtOut && contract.expiryTypeDerived && <span className={PP_CONTRACT_MARK_CLASSES} title={t('playerPopup.contract.derivedTip')}>†</span>}
                   {contract.contractType === 'ELC' ? ' · ELC' : ''}
                 </div>
               </div>
@@ -1489,7 +1506,8 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
             <div className={`${PP_CONTRACT_PROVENANCE_CLASSES} pp-contract-provenance`}>
               {contract.official ? t('playerPopup.contract.official') : t('playerPopup.contract.reported')}
               {contract.tier ? ` · ${t('playerPopup.contract.tierLabel', { tier: contract.tier })}` : ''}
-              {contract.expiryTypeDerived ? ` · † ${t('playerPopup.contract.derivedTip')}` : ''}
+              {contract.expiryTypeDerived && !contract.boughtOut ? ` · † ${t('playerPopup.contract.derivedTip')}` : ''}
+              {contract.boughtOut ? ` · ${t('playerPopup.contract.boughtOutThrough', { season: contract.expiresAfter || '—', signed: contract.endSeasonSigned || '—' })}` : ''}
             </div>
             {contractYears.seasons.length > 0 && (
               <div className="pp-contract-years mb-2">
