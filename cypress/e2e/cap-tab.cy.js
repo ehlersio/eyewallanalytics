@@ -11,9 +11,16 @@ const rosterFor    = (team) => ({ method: 'GET', url: new RegExp(`/roster\\?team
 // A roster the Cap tab reads names from (dataset names can carry a prefix:
 // "Hurricanes.Andrei Svechnikov"); the Worker's /roster shape.
 const CAR_ROSTER = {
-  forwards: [{ id: 8480830, firstName: { default: 'Andrei' }, lastName: { default: 'Svechnikov' }, positionCode: 'L' }],
+  forwards: [
+    { id: 8480830, firstName: { default: 'Andrei' }, lastName: { default: 'Svechnikov' }, positionCode: 'L' },
+    // birthDate feeds the free-agent class's age column
+    { id: 8473533, firstName: { default: 'Jordan' }, lastName: { default: 'Staal' }, positionCode: 'C', birthDate: '1988-09-10' },
+  ],
   defensemen: [], goalies: [],
 }
+
+// Pinned so Staal's age in the free-agent class is stable (CI is UTC).
+const NOW = new Date('2026-10-24T12:00:00')
 
 const UNAVAILABLE = (team) => ({
   team, season: '2026-27', asOf: null, rosterKnown: true, rows: [], missing: [],
@@ -65,6 +72,37 @@ describe('Cap tab (any NHL team)', () => {
     cy.contains('.cap-off-roster', '9 deals signed by the team, players off the roster')
     cy.contains('.cap-row', 'Mike Reilly').should('exist')
     cy.contains('.cap-expiring', '8 UFAs and 1 RFA expiring this summer')
+  })
+
+  it('CAR: the free-agent class above the table, UFA and RFA, roster first then the system', () => {
+    cy.intercept(contractsFor('CAR'), { fixture: 'contracts-car-2026-27.json' }).as('contracts')
+    cy.intercept(rosterFor('CAR'), CAR_ROSTER)
+    cy.clock(NOW.getTime(), ['Date'])
+    cy.setTeam('CAR')
+    cy.visit('/team')
+    cy.wait('@contracts')
+    openCapTab()
+
+    cy.get('.cap-fa-class', { timeout: DATA_TIMEOUT }).within(() => {
+      cy.contains('Free-agent class · summer 2027')
+      cy.contains('9 on the roster · 7 in the system')
+      // UFA: 9 roster deals end after 2026-27, 8 UFA + 1 RFA (summary.expiring)
+      cy.get('.cap-fa-group-ufa').should('contain', 'UFA').and('contain', '(8)')
+      cy.get('.cap-fa-group-ufa .cap-fa-row').should('have.length', 8)
+      cy.get('.cap-fa-group-ufa .cap-fa-row').first().should('contain', 'Shayne Gostisbehere').and('contain', '$3.20M')
+      // age and position from the roster; † for an age-derived status
+      cy.get('.cap-fa-group-ufa .cap-fa-row[data-player-id="8473533"]').should('contain', 'C · 38 yrs')
+      cy.get('.cap-fa-group-ufa .cap-fa-row[data-player-id="8476921"]').should('contain', '†')
+      cy.get('.cap-fa-group-ufa .cap-fa-row[data-player-id="8480291"]').should('contain', 'no public figure')
+      cy.get('.cap-fa-group-ufa .cap-fa-system').should('not.exist')
+      // RFA: one on the roster, seven in the system
+      cy.get('.cap-fa-group-rfa').should('contain', '(8)')
+      cy.get('.cap-fa-group-rfa .cap-fa-row').first().should('contain', 'Felix Unger Sörum')
+      cy.get('.cap-fa-group-rfa .cap-fa-system').should('contain', 'In the system')
+      cy.get('.cap-fa-group-rfa .cap-fa-system ~ .cap-fa-row').should('have.length', 7).first().should('contain', 'Bradly Nadeau')
+      cy.get('.cap-fa-group-unknown').should('not.exist')
+      cy.contains('.cap-fa-next', 'Summer 2028 on the roster: 3 UFAs · 0 RFAs')
+    })
   })
 
   it('TOR: the same tab for another team, with reported figures marked', () => {
