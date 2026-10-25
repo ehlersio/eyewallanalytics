@@ -19,11 +19,15 @@ describe('NHL player comparison', () => {
     cy.get('.player-search-toggle').click()
     cy.get('.player-search-input').type('mcdavid')
     cy.contains('.player-search-result', 'Connor McDavid', { timeout: DATA_TIMEOUT }).click()
-    cy.get('.player-popup', { timeout: 10000 }).should('exist')
+    cy.get('.player-popup', { timeout: DATA_TIMEOUT }).should('exist')
     // Wait for the header's own async data (percentiles/box stats) to
     // settle before touching "vs Player" -- clicking while that's still
     // resolving raced Cypress's click against the resulting re-render.
-    cy.contains('Goals', { timeout: 10000 }).should('exist')
+    // Every wait in this file is on live Worker/NHL data, so it uses
+    // DATA_TIMEOUT (cypress/support/e2e.js), the suite's one ceiling, not
+    // a fixed 10s: the app's own fetch budget plus a retry is longer than
+    // that, and a slow-but-successful load failed this hook in CI (#555).
+    cy.contains('Goals', { timeout: DATA_TIMEOUT }).should('exist')
     // PlayerPopup.jsx's showHeaderReflow flips true once percentiles
     // resolve, at which point .pce-toggle (rendered inline pre-reflow)
     // unmounts and remounts inside SkaterHeaderPanel's .pp-quickstats-col
@@ -36,7 +40,7 @@ describe('NHL player comparison', () => {
     // executing" error, or a plain "element never found"). Waiting on the
     // actual post-reflow DOM location instead of guessing a duration
     // eliminates the race rather than just narrowing its window.
-    cy.get('.pp-quickstats-col .pce-toggle', { timeout: 10000 }).should('exist')
+    cy.get('.pp-quickstats-col .pce-toggle', { timeout: DATA_TIMEOUT }).should('exist')
   })
 
   it('shows a "vs Player" entry point distinct from the existing season-over-season Compare tab', () => {
@@ -53,7 +57,7 @@ describe('NHL player comparison', () => {
     // .pp-radar-wrap has a 50-130px flex range (PlayersView.css) -- the
     // "vs Player" button used to sit inline in the same flex row and ate
     // into that range. It now stacks under the quickstats grid instead.
-    cy.get('.pp-radar-wrap', { timeout: 10000 }).should(($radar) => {
+    cy.get('.pp-radar-wrap', { timeout: DATA_TIMEOUT }).should(($radar) => {
       expect($radar.width()).to.be.greaterThan(60)
     })
     cy.get('.pp-quickstats-col .pce-toggle').should('exist')
@@ -138,24 +142,24 @@ describe('NHL player comparison', () => {
     cy.get('.pce-input').type('matthews')
     cy.contains('.pce-result', 'Auston Matthews', { timeout: DATA_TIMEOUT }).click()
 
-    cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
+    cy.get('.pcp-backdrop', { timeout: DATA_TIMEOUT }).should('exist')
     cy.contains('Connor McDavid').should('exist')
     cy.contains('Auston Matthews').should('exist')
-    cy.get('.pcp-radar svg', { timeout: 10000 }).should('exist')
+    cy.get('.pcp-radar svg', { timeout: DATA_TIMEOUT }).should('exist')
 
     ;['Scoring', 'Possession', 'Physical', 'Special Teams'].forEach((tab) => {
       cy.get('.pcp-tab').contains(tab).click()
       cy.get('.pcp-tab').contains(tab).should('have.class', 'pcp-tab-active')
     })
     cy.get('.pcp-tab').contains('Scoring').click()
-    cy.get('.stat-tile', { timeout: 10000 }).should('have.length.greaterThan', 0)
+    cy.get('.stat-tile', { timeout: DATA_TIMEOUT }).should('have.length.greaterThan', 0)
   })
 
   it('tab clicks land on the comparison popup, not the bottom nav underneath (regression)', () => {
     cy.get('.pce-toggle').click()
     cy.get('.pce-input').type('matthews')
     cy.contains('.pce-result', 'Auston Matthews', { timeout: DATA_TIMEOUT }).click()
-    cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
+    cy.get('.pcp-backdrop', { timeout: DATA_TIMEOUT }).should('exist')
 
     cy.url().then((urlBefore) => {
       cy.get('.pcp-tab').contains('Physical').click()
@@ -172,7 +176,7 @@ describe('NHL player comparison', () => {
     cy.get('.pce-toggle').click()
     cy.get('.pce-input').type('matthews')
     cy.contains('.pce-result', 'Auston Matthews', { timeout: DATA_TIMEOUT }).click()
-    cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
+    cy.get('.pcp-backdrop', { timeout: DATA_TIMEOUT }).should('exist')
 
     cy.get('.pcp-backdrop .pp-close').click()
     cy.get('.pcp-backdrop').should('not.exist')
@@ -185,7 +189,7 @@ describe('NHL player comparison', () => {
     cy.get('.pce-input').type('shesterkin')
     cy.contains('.pce-result', 'Igor Shesterkin', { timeout: DATA_TIMEOUT }).click()
 
-    cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
+    cy.get('.pcp-backdrop', { timeout: DATA_TIMEOUT }).should('exist')
     cy.contains(/different stat sets and can.t be compared/i).should('exist')
     cy.get('.pcp-tab').should('not.exist')
     cy.get('.pcp-radar').should('not.exist')
@@ -196,10 +200,10 @@ describe('NHL player comparison', () => {
     cy.get('.pce-input').type('makar')
     cy.contains('.pce-result', 'Cale Makar', { timeout: DATA_TIMEOUT }).click()
 
-    cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
+    cy.get('.pcp-backdrop', { timeout: DATA_TIMEOUT }).should('exist')
     cy.contains(/Position mismatch/i).should('exist')
     // Non-blocking — stats still render below the badge.
-    cy.get('.pcp-radar', { timeout: 10000 }).should('exist')
+    cy.get('.pcp-radar', { timeout: DATA_TIMEOUT }).should('exist')
     cy.get('.pcp-tab').should('have.length.greaterThan', 0)
   })
 })
@@ -211,8 +215,8 @@ describe('NHL goalie comparison', () => {
     cy.get('.player-search-toggle').click()
     cy.get('.player-search-input').type('shesterkin')
     cy.contains('.player-search-result', 'Igor Shesterkin', { timeout: DATA_TIMEOUT }).click()
-    cy.get('.player-popup', { timeout: 10000 }).should('exist')
-    cy.contains(/GP|Record/i, { timeout: 10000 }).should('exist')
+    cy.get('.player-popup', { timeout: DATA_TIMEOUT }).should('exist')
+    cy.contains(/GP|Record/i, { timeout: DATA_TIMEOUT }).should('exist')
     // Same async header-reflow race as the NHL skater describe block above
     // and the PWHL describe block below -- PlayerPopup.jsx's
     // showHeaderReflow flips true once goalieData.percentiles resolves, at
@@ -225,7 +229,7 @@ describe('NHL goalie comparison', () => {
     // exact same root cause. A fixed cy.wait(500), tried first, turned out
     // not to be reliable either -- see the skater block's comment above for
     // why this waits on the real post-reflow DOM location instead.
-    cy.get('.pp-quickstats-col .pce-toggle', { timeout: 10000 }).should('exist')
+    cy.get('.pp-quickstats-col .pce-toggle', { timeout: DATA_TIMEOUT }).should('exist')
   })
 
   it('compares two goalies with their own Record/Performance/Advanced tabs, not the skater tab set', () => {
@@ -233,7 +237,7 @@ describe('NHL goalie comparison', () => {
     cy.get('.pce-input').type('hellebuyck')
     cy.contains('.pce-result', 'Connor Hellebuyck', { timeout: DATA_TIMEOUT }).click()
 
-    cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
+    cy.get('.pcp-backdrop', { timeout: DATA_TIMEOUT }).should('exist')
     cy.contains('Igor Shesterkin').should('exist')
     cy.contains('Connor Hellebuyck').should('exist')
 
@@ -243,7 +247,7 @@ describe('NHL goalie comparison', () => {
     cy.get('.pcp-tab').contains('Scoring').should('not.exist')
 
     cy.get('.pcp-tab').contains('Record').click()
-    cy.get('.stat-tile', { timeout: 10000 }).should('have.length.greaterThan', 0)
+    cy.get('.stat-tile', { timeout: DATA_TIMEOUT }).should('have.length.greaterThan', 0)
   })
 })
 
@@ -258,8 +262,8 @@ describe('PWHL player comparison', () => {
     cy.get('.pc-last', { timeout: DATA_TIMEOUT }).first().invoke('text').then((lastName) => {
       cy.contains('.player-card', lastName).click()
     })
-    cy.get('.player-popup', { timeout: 10000 }).should('exist')
-    cy.contains('Goals', { timeout: 10000 }).should('exist')
+    cy.get('.player-popup', { timeout: DATA_TIMEOUT }).should('exist')
+    cy.contains('Goals', { timeout: DATA_TIMEOUT }).should('exist')
     // Same race as the NHL describe block above, different trigger: PWHL's
     // header has no Recharts radar, but PWHLHeaderPanel (the 2x2 percentile
     // tile grid) only mounts once the async /pwhl/player/percentiles fetch
@@ -271,7 +275,7 @@ describe('PWHL player comparison', () => {
     // reliable either -- see the NHL skater block's comment above for why
     // this waits on the real post-reflow DOM location (.pp-quickstats-col)
     // instead of guessing a duration.
-    cy.get('.pp-quickstats-col .pce-toggle', { timeout: 10000 }).should('exist')
+    cy.get('.pp-quickstats-col .pce-toggle', { timeout: DATA_TIMEOUT }).should('exist')
   })
 
   it('opens a same-league (PWHL) scoped search panel', () => {
@@ -294,8 +298,8 @@ describe('PWHL player comparison', () => {
         return
       }
       cy.wrap($results).first().click()
-      cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
-      cy.get('.pcp-radar svg', { timeout: 10000 }).should('exist')
+      cy.get('.pcp-backdrop', { timeout: DATA_TIMEOUT }).should('exist')
+      cy.get('.pcp-radar svg', { timeout: DATA_TIMEOUT }).should('exist')
       ;['Scoring', 'Possession', 'Physical', 'Special Teams'].forEach((tab) => {
         cy.get('.pcp-tab').contains(tab).should('exist')
       })
@@ -311,7 +315,7 @@ describe('PWHL player comparison', () => {
         return
       }
       cy.wrap($results).first().click()
-      cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
+      cy.get('.pcp-backdrop', { timeout: DATA_TIMEOUT }).should('exist')
       cy.get('.pcp-tab').contains('Possession').click()
       cy.contains(/WAR\/RAPM|not available for PWHL/i).should('exist')
     })
@@ -331,8 +335,8 @@ describe('PWHL goalie comparison', () => {
     // so these are hardcoded real names, same convention player-search.cy.js
     // already uses for McDavid/Poulin/Crosby.
     cy.contains('.player-card', 'Frankel', { timeout: DATA_TIMEOUT }).click()
-    cy.get('.player-popup', { timeout: 10000 }).should('exist')
-    cy.contains('GP', { timeout: 10000 }).should('exist')
+    cy.get('.player-popup', { timeout: DATA_TIMEOUT }).should('exist')
+    cy.contains('GP', { timeout: DATA_TIMEOUT }).should('exist')
     // Same header-reflow race as the other three describe blocks in this
     // file (see the NHL skater block's comment for the full story) -- this
     // fourth block was missed entirely when the other three were fixed,
@@ -340,7 +344,7 @@ describe('PWHL goalie comparison', () => {
     // than sharing one with "PWHL player comparison" above. Found live
     // when this exact test failed with the exact same signature
     // (.pce-input never found) right after the other three were fixed.
-    cy.get('.pp-quickstats-col .pce-toggle', { timeout: 10000 }).should('exist')
+    cy.get('.pp-quickstats-col .pce-toggle', { timeout: DATA_TIMEOUT }).should('exist')
   })
 
   // Regression: PWHL goalie-vs-goalie was hard-blocked ("percentile
@@ -354,7 +358,7 @@ describe('PWHL goalie comparison', () => {
     cy.get('.pce-input').type('thiele')
     cy.contains('.pce-result', 'Thiele', { timeout: DATA_TIMEOUT }).click()
 
-    cy.get('.pcp-backdrop', { timeout: 10000 }).should('exist')
+    cy.get('.pcp-backdrop', { timeout: DATA_TIMEOUT }).should('exist')
     cy.contains('Frankel').should('exist')
     cy.contains('Thiele').should('exist')
     cy.contains(/PWHL goalie comparison isn.t available yet/i).should('not.exist')
@@ -363,12 +367,12 @@ describe('PWHL goalie comparison', () => {
       cy.get('.pcp-tab').contains(tab).should('exist')
     })
     cy.get('.pcp-tab').contains('Scoring').should('not.exist')
-    cy.get('.pcp-radar svg', { timeout: 10000 }).should('exist')
+    cy.get('.pcp-radar svg', { timeout: DATA_TIMEOUT }).should('exist')
 
     cy.get('.pcp-tab').contains('Record').click()
-    cy.get('.stat-tile', { timeout: 10000 }).should('have.length.greaterThan', 0)
+    cy.get('.stat-tile', { timeout: DATA_TIMEOUT }).should('have.length.greaterThan', 0)
 
     cy.get('.pcp-tab').contains('Advanced').click()
-    cy.get('.pcp-pct-col', { timeout: 10000 }).should('have.length.greaterThan', 0)
+    cy.get('.pcp-pct-col', { timeout: DATA_TIMEOUT }).should('have.length.greaterThan', 0)
   })
 })
