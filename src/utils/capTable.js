@@ -43,6 +43,24 @@ export function rosterNameMap(roster) {
   return map;
 }
 
+// getRoster()'s payload -> Map of playerId -> { name, birthDate, position },
+// for the free-agent class (ages) and anything else that wants more than
+// the name. rosterNameMap() above stays the cheap name-only view.
+export function rosterIndex(roster) {
+  const map = new Map();
+  const players = roster?.all
+    || [...(roster?.forwards || []), ...(roster?.defensemen || []), ...(roster?.goalies || [])];
+  for (const p of players) {
+    if (!p?.id) continue;
+    map.set(Number(p.id), {
+      name: [p.firstName?.default, p.lastName?.default].filter(Boolean).join(' ') || null,
+      birthDate: p.birthDate || null,
+      position: p.positionCode || null,
+    });
+  }
+  return map;
+}
+
 export function displayName(row, rosterNames = null) {
   return (row.onRoster && rosterNames?.get(Number(row.playerId))) || row.name || '';
 }

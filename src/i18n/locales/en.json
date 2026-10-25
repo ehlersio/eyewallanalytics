@@ -600,6 +600,18 @@
       "unknownCount_other": "{{count}} with status unknown",
       "expiringNote": "⚠ {{ufaPart}} and {{rfaPart}} expiring this summer"
     },
+    "faClass": {
+      "title": "Free-agent class · summer {{year}}",
+      "count": "{{roster}} on the roster · {{system}} in the system",
+      "infoLabel": "About the free-agent class",
+      "infoTip": "Every deal that ends after this season, from the open nhl-contracts dataset. UFA or RFA is the dataset's status: stated by a source, or (†) derived from the player's age under the CBA rule. 'In the system' lists players the team signed who aren't on its NHL roster today (minors, loans). Cap hit is this season's; ages come from the NHL roster. Nothing here projects a qualifying offer or a new contract.",
+      "ufa": "UFA",
+      "rfa": "RFA",
+      "unknown": "Status unknown",
+      "inSystem": "In the system",
+      "age": "{{age}} yrs",
+      "nextSummer": "Summer {{year}} on the roster: {{ufaPart}} · {{rfaPart}}"
+    },
     "picks": {
       "draftTitle": "2026 NHL Draft",
       "noPicksFound": "No confirmed picks found for {{abbr}}.",

@@ -21,7 +21,8 @@ import { useUnits } from '../hooks/useUnits'
 import { EDGE_MIN_GP } from '../components/EdgeTrackingSection'
 import { getTeamGameLog as getDbTeamGameLog, getTeamXgTrend } from '../utils/supabaseClient'
 import { CAP_CEILING } from '../utils/contractValue'
-import { buildCapTable, rosterNameMap, fmtCapHit, capHitPct } from '../utils/capTable'
+import { buildCapTable, rosterNameMap, rosterIndex, fmtCapHit, capHitPct } from '../utils/capTable'
+import FreeAgentClass from '../components/FreeAgentClass'
 import { DraftPopup } from '../components/DraftTab'
 import { seasonPDO } from '../utils/advancedStats'
 import { isStandingsStale } from '../utils/standingsUtils'
@@ -1812,6 +1813,7 @@ function CapTab({ data }) {
   // roster's own name wins for roster rows.
   const { data: roster } = useFetch(getRoster)
   const rosterNames = useMemo(() => rosterNameMap(roster), [roster])
+  const rosterInfo  = useMemo(() => rosterIndex(roster), [roster])
   const cap = useMemo(() => buildCapTable(data, rosterNames, CAP_CEILING), [data, rosterNames])
   const asOf = cap.asOf ? formatDateOnly(cap.asOf, { month: 'short', day: 'numeric', year: 'numeric' }) : null
   const expiryLabel = (row) => {
@@ -1867,6 +1869,7 @@ function CapTab({ data }) {
         {asOf ? t('teamView.cap.provenance', { date: asOf, official: cap.provenance.official, reported: cap.provenance.reported })
               : t('teamView.cap.provenanceNoDate', { official: cap.provenance.official, reported: cap.provenance.reported })}
       </div>
+      <FreeAgentClass data={data} rosterIndex={rosterInfo} />
       <div className={CAP_TABLE_CLASSES}>
         <div className={CAP_TABLE_HEADER_CLASSES}>
           <span>{t('teamView.cap.colPlayer')}</span><span>{t('teamView.cap.colPos')}</span><span>{t('teamView.cap.colCapHit')}</span>

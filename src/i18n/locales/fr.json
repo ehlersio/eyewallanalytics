@@ -600,6 +600,18 @@
       "unknownCount_other": "{{count}} au statut inconnu",
       "expiringNote": "⚠ {{ufaPart}} et {{rfaPart}} dont le contrat expire cet été"
     },
+    "faClass": {
+      "title": "Cuvée d'agents libres · été {{year}}",
+      "count": "{{roster}} dans l'effectif · {{system}} dans l'organisation",
+      "infoLabel": "À propos de la cuvée d'agents libres",
+      "infoTip": "Chaque contrat qui se termine après cette saison, selon les données ouvertes nhl-contracts. Le statut AGNC ou AGC est celui des données : indiqué par une source, ou (†) déduit de l'âge du joueur selon la règle de la convention collective. « Dans l'organisation » liste les joueurs signés par l'équipe mais absents de son effectif de la LNH aujourd'hui (mineures, prêts). L'impact salarial est celui de la saison ; l'âge vient de l'effectif de la LNH. Rien ici ne projette une offre qualificative ni un nouveau contrat.",
+      "ufa": "AGNC",
+      "rfa": "AGC",
+      "unknown": "Statut inconnu",
+      "inSystem": "Dans l'organisation",
+      "age": "{{age}} ans",
+      "nextSummer": "Été {{year}} dans l'effectif : {{ufaPart}} · {{rfaPart}}"
+    },
     "picks": {
       "draftTitle": "Repêchage LNH 2026",
       "noPicksFound": "Aucun choix confirmé trouvé pour {{abbr}}.",
