@@ -1,7 +1,7 @@
 // cypress/e2e/hockeytech-player-compare.cy.js
 // AHL/ECHL player popup Compare tab (season-over-season stat cards + a
 // per-game trend chart). Every Worker call the popup makes is stubbed --
-// roster, landing, career, game log, and the season list -- so the spec
+// roster, landing, career, game log, percentiles and the season list -- so the spec
 // doesn't depend on which seasons have data yet or on which Worker
 // version is deployed.
 
@@ -55,6 +55,15 @@ function stubWorker(L) {
   cy.intercept('GET', `**/${L.key}/player-game-log?*`, (req) => {
     req.reply({ skaters: gameLog(seasonOf(req) === L.playoffs.seasonId ? 8 : 40), goalies: [] })
   }).as('gameLog')
+  // Unranked by default, so no radar. This route went to the live Worker
+  // until 2026-10-26, when the AHL percentile backfill started ranking
+  // PLAYER's real id: the radar then arrived mid-test and re-laid out the
+  // header, detaching the vs Player button under cy.click(). The radar
+  // block below registers its own answer after this one, and Cypress
+  // matches the newest intercept first.
+  const unranked = { goals: { pct: null }, a1: { pct: null }, penalties: { pct: null }, finishing: { pct: null } }
+  cy.intercept('GET', `**/${L.key}/player/percentiles?*`, { player_id: PLAYER.player_id, rateBasis: 'perGP', percentiles: unranked })
+  cy.intercept('GET', `**/${L.key}/goalie/percentiles?*`, { player_id: PLAYER.player_id, rateBasis: 'perGP', percentiles: {} })
 }
 
 LEAGUES.forEach((L) => {
