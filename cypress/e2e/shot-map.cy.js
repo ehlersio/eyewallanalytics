@@ -387,7 +387,11 @@ describe('Shot Map — season/game history selector', () => {
 // regular-season "82 GP" hits/penalties/FO/PP/PK. Real data, no stubs:
 // CAR's finished 2025-26 playoffs don't change.
 describe('Shot Map — "All" follows the selected season and game type', () => {
-  const card = label => cy.contains('div', new RegExp(`^${label}$`, 'i'), { timeout: DATA_TIMEOUT }).parent()
+  // The label renders before its value loads, so the label lookup returns
+  // at once and the assertion chained after it retries .parent(), which has
+  // its own timeout. Without DATA_TIMEOUT there it kept the 10 s default and
+  // read "Hits—season" on a slow runner (#552's CI, 2026-10-24).
+  const card = label => cy.contains('div', new RegExp(`^${label}$`, 'i'), { timeout: DATA_TIMEOUT }).parent({ timeout: DATA_TIMEOUT })
 
   beforeEach(function () {
     cy.visit('/')
