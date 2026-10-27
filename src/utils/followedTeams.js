@@ -9,7 +9,7 @@
 // primary, so existing users start out following just their team.
 //
 // Signed in, it syncs to user_preferences.followed_teams (jsonb; see
-// eyewall-pipeline's docs/followed_teams_column.sql). Two devices'
+// eyewall-pipeline's docs/sql/followed_teams_column.sql). Two devices'
 // lists are merged on sign-in rather than one overwriting the other, so
 // a team followed on the phone isn't lost when signing in on the web.
 import { supabaseAuth } from './supabaseAuth';

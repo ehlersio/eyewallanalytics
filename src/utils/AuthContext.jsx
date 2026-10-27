@@ -92,7 +92,7 @@ export function AuthProvider({ children }) {
 
   // Permanent, immediate account deletion (App Store Guideline 5.1.1(v)).
   // delete_own_account() is a security-definer Postgres function scoped to
-  // auth.uid() (eyewall-pipeline's docs/delete_own_account_rpc.sql);
+  // auth.uid() (eyewall-pipeline's docs/sql/delete_own_account_rpc.sql);
   // user_preferences/trivia_answers cascade from auth.users. The session is
   // then cleared locally only -- the user it belonged to no longer exists,
   // so there's nothing server-side left to revoke. Local-only settings

@@ -4,7 +4,7 @@ Reply for App Store Connect, also pasted into **App Review Information → Notes
 
 > ⚠️ The reply describes the fixes on branch `app-store-review-fixes` (eyewall-analytics) and
 > `delete-own-account-rpc` (eyewall-pipeline). Before sending it:
-> 1. Run `eyewall-pipeline/docs/delete_own_account_rpc.sql` in the Supabase SQL editor.
+> 1. Run `eyewall-pipeline/docs/sql/delete_own_account_rpc.sql` in the Supabase SQL editor.
 > 2. Merge + deploy the app branch, then `npm run build && npx cap sync ios`, archive in Xcode, and upload a new build.
 > 3. Record the screen recording on that new build and attach it.
 

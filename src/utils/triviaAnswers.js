@@ -4,7 +4,7 @@
 // posture as favorite-team was before Phase 1's sync layer existed.
 //
 // Signed-in users: synced to trivia_answers (RLS-scoped exactly like
-// user_preferences — see docs/session92_trivia_tables.sql). Deliberately
+// user_preferences — see docs/sql/session92_trivia_tables.sql). Deliberately
 // NOT Phase 1's "server wins on a second device" rule — that rule fits a
 // single overwritable value (favorite team); answer history is an
 // append-only log, and overwriting local with server on a second device
