@@ -2,291 +2,303 @@
   "durations": [
     {
       "spec": "cypress/e2e/TeamPicker.cy.js",
-      "duration": 19134
+      "duration": 6600
     },
     {
       "spec": "cypress/e2e/admin-health.cy.js",
-      "duration": 3200
+      "duration": 2000
     },
     {
       "spec": "cypress/e2e/ahl-team.cy.js",
-      "duration": 10132
+      "duration": 7000
     },
     {
       "spec": "cypress/e2e/auth.cy.js",
-      "duration": 20321
+      "duration": 12800
+    },
+    {
+      "spec": "cypress/e2e/cap-tab.cy.js",
+      "duration": 10600
     },
     {
       "spec": "cypress/e2e/draft.cy.js",
-      "duration": 56059
+      "duration": 45800
     },
     {
       "spec": "cypress/e2e/echl-team.cy.js",
-      "duration": 9198
+      "duration": 6600
     },
     {
       "spec": "cypress/e2e/edge-tracking.cy.js",
-      "duration": 8033
+      "duration": 16000
     },
     {
       "spec": "cypress/e2e/followed-teams.cy.js",
-      "duration": 20561
-    },
-    {
-      "spec": "cypress/e2e/goal-replay.cy.js",
-      "duration": 20189
-    },
-    {
-      "spec": "cypress/e2e/guest-game-invariants.cy.js",
-      "duration": 6447
-    },
-    {
-      "spec": "cypress/e2e/guest-game.cy.js",
-      "duration": 10343
-    },
-    {
-      "spec": "cypress/e2e/hockeytech-player-compare.cy.js",
-      "duration": 9751
-    },
-    {
-      "spec": "cypress/e2e/hockeytech-league.cy.js",
-      "duration": 4000
-    },
-    {
-      "spec": "cypress/e2e/hockeytech-schedule.cy.js",
-      "duration": 20000
-    },
-    {
-      "spec": "cypress/e2e/hockeytech-players.cy.js",
-      "duration": 3000
-    },
-    {
-      "spec": "cypress/e2e/hockeytech-team.cy.js",
-      "duration": 3000
-    },
-    {
-      "spec": "cypress/e2e/hockeytech-news.cy.js",
-      "duration": 3000
-    },
-    {
-      "spec": "cypress/e2e/hockeytech-shots.cy.js",
-      "duration": 20000
-    },
-    {
-      "spec": "cypress/e2e/hockeytech-shots-live.cy.js",
-      "duration": 8000
-    },
-    {
-      "spec": "cypress/e2e/hockeytech-season-pickers.cy.js",
-      "duration": 27000
-    },
-    {
-      "spec": "cypress/e2e/league-scorecard.cy.js",
-      "duration": 6892
-    },
-    {
-      "spec": "cypress/e2e/league.cy.js",
-      "duration": 96802
-    },
-    {
-      "spec": "cypress/e2e/live-goal-replay.cy.js",
-      "duration": 6199
-    },
-    {
-      "spec": "cypress/e2e/methodology.cy.js",
-      "duration": 5697
-    },
-    {
-      "spec": "cypress/e2e/milestones.cy.js",
-      "duration": 16361
-    },
-    {
-      "spec": "cypress/e2e/navigation.cy.js",
-      "duration": 87152
-    },
-    {
-      "spec": "cypress/e2e/news.cy.js",
-      "duration": 18002
-    },
-    {
-      "spec": "cypress/e2e/nhl-transactions.cy.js",
-      "duration": 12949
-    },
-    {
-      "spec": "cypress/e2e/no-live-games.cy.js",
-      "duration": 1505
-    },
-    {
-      "spec": "cypress/e2e/period-summary.cy.js",
-      "duration": 95069
-    },
-    {
-      "spec": "cypress/e2e/player-comparison.cy.js",
-      "duration": 34832
-    },
-    {
-      "spec": "cypress/e2e/player-search.cy.js",
-      "duration": 23971
-    },
-    {
-      "spec": "cypress/e2e/players.cy.js",
-      "duration": 144446
-    },
-    {
-      "spec": "cypress/e2e/playoff-analytics.cy.js",
-      "duration": 5817
-    },
-    {
-      "spec": "cypress/e2e/probable-starters.cy.js",
-      "duration": 8431
-    },
-    {
-      "spec": "cypress/e2e/projected-lines.cy.js",
-      "duration": 6447
-    },
-    {
-      "spec": "cypress/e2e/pwhl-dev.cy.js",
-      "duration": 28550
-    },
-    {
-      "spec": "cypress/e2e/pwhl-league-2026-27.cy.js",
-      "duration": 5200
-    },
-    {
-      "spec": "cypress/e2e/pwhl-league.cy.js",
-      "duration": 33778
-    },
-    {
-      "spec": "cypress/e2e/pwhl-news.cy.js",
-      "duration": 14841
-    },
-    {
-      "spec": "cypress/e2e/pwhl-players.cy.js",
-      "duration": 92991
-    },
-    {
-      "spec": "cypress/e2e/pwhl-schedule.cy.js",
-      "duration": 37491
-    },
-    {
-      "spec": "cypress/e2e/pwhl-shot-map.cy.js",
-      "duration": 46356
-    },
-    {
-      "spec": "cypress/e2e/pwhl-shots-live.cy.js",
-      "duration": 33766
-    },
-    {
-      "spec": "cypress/e2e/pwhl-team.cy.js",
-      "duration": 142510
-    },
-    {
-      "spec": "cypress/e2e/pwhl-upcoming-season.cy.js",
-      "duration": 7100
-    },
-    {
-      "spec": "cypress/e2e/read-state-badges.cy.js",
-      "duration": 18440
-    },
-    {
-      "spec": "cypress/e2e/schedule.cy.js",
-      "duration": 112231
-    },
-    {
-      "spec": "cypress/e2e/shot-map.cy.js",
-      "duration": 72452
-    },
-    {
-      "spec": "cypress/e2e/summary-link.cy.js",
-      "duration": 9037
-    },
-    {
-      "spec": "cypress/e2e/team-callup-watch.cy.js",
-      "duration": 6000
-    },
-    {
-      "spec": "cypress/e2e/team-injury-impact.cy.js",
-      "duration": 9941
-    },
-    {
-      "spec": "cypress/e2e/team-pick-history.cy.js",
-      "duration": 8997
-    },
-    {
-      "spec": "cypress/e2e/team-playoff-odds.cy.js",
-      "duration": 13075
-    },
-    {
-      "spec": "cypress/e2e/team-scratches.cy.js",
-      "duration": 7037
-    },
-    {
-      "spec": "cypress/e2e/team.cy.js",
-      "duration": 120078
+      "duration": 13400
     },
     {
       "spec": "cypress/e2e/french-locale.cy.js",
-      "duration": 3000
+      "duration": 2200
+    },
+    {
+      "spec": "cypress/e2e/goal-replay.cy.js",
+      "duration": 18600
+    },
+    {
+      "spec": "cypress/e2e/guest-game-invariants.cy.js",
+      "duration": 3600
+    },
+    {
+      "spec": "cypress/e2e/guest-game.cy.js",
+      "duration": 9000
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-bracket.cy.js",
+      "duration": 6400
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-guest-game-invariants.cy.js",
+      "duration": 6600
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-guest-game.cy.js",
+      "duration": 19800
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-league.cy.js",
+      "duration": 11000
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-news.cy.js",
+      "duration": 9200
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-period-summary.cy.js",
+      "duration": 16400
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-player-compare.cy.js",
+      "duration": 11600
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-players.cy.js",
+      "duration": 2800
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-playoff-odds.cy.js",
+      "duration": 8600
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-power-rankings.cy.js",
+      "duration": 9000
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-schedule.cy.js",
+      "duration": 19000
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-season-pickers.cy.js",
+      "duration": 13200
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-shots-live.cy.js",
+      "duration": 6800
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-shots.cy.js",
+      "duration": 18800
+    },
+    {
+      "spec": "cypress/e2e/hockeytech-team.cy.js",
+      "duration": 5800
+    },
+    {
+      "spec": "cypress/e2e/landing.cy.js",
+      "duration": 17000
+    },
+    {
+      "spec": "cypress/e2e/league-cap.cy.js",
+      "duration": 6000
+    },
+    {
+      "spec": "cypress/e2e/league-scorecard.cy.js",
+      "duration": 5000
+    },
+    {
+      "spec": "cypress/e2e/league.cy.js",
+      "duration": 91400
+    },
+    {
+      "spec": "cypress/e2e/live-goal-replay.cy.js",
+      "duration": 3400
+    },
+    {
+      "spec": "cypress/e2e/methodology.cy.js",
+      "duration": 2800
+    },
+    {
+      "spec": "cypress/e2e/milestones.cy.js",
+      "duration": 16200
+    },
+    {
+      "spec": "cypress/e2e/navigation.cy.js",
+      "duration": 64800
+    },
+    {
+      "spec": "cypress/e2e/news.cy.js",
+      "duration": 13400
+    },
+    {
+      "spec": "cypress/e2e/nhl-transactions.cy.js",
+      "duration": 9600
+    },
+    {
+      "spec": "cypress/e2e/no-live-games.cy.js",
+      "duration": 0
+    },
+    {
+      "spec": "cypress/e2e/period-summary.cy.js",
+      "duration": 96400
+    },
+    {
+      "spec": "cypress/e2e/player-comparison.cy.js",
+      "duration": 30000
+    },
+    {
+      "spec": "cypress/e2e/player-search.cy.js",
+      "duration": 19400
+    },
+    {
+      "spec": "cypress/e2e/players.cy.js",
+      "duration": 144800
+    },
+    {
+      "spec": "cypress/e2e/playoff-analytics.cy.js",
+      "duration": 4200
+    },
+    {
+      "spec": "cypress/e2e/probable-starters.cy.js",
+      "duration": 5800
+    },
+    {
+      "spec": "cypress/e2e/projected-lines.cy.js",
+      "duration": 4000
+    },
+    {
+      "spec": "cypress/e2e/pwhl-dev.cy.js",
+      "duration": 97400
+    },
+    {
+      "spec": "cypress/e2e/pwhl-guest-game-invariants.cy.js",
+      "duration": 9600
+    },
+    {
+      "spec": "cypress/e2e/pwhl-guest-game.cy.js",
+      "duration": 14200
+    },
+    {
+      "spec": "cypress/e2e/pwhl-league-2026-27.cy.js",
+      "duration": 3800
+    },
+    {
+      "spec": "cypress/e2e/pwhl-league.cy.js",
+      "duration": 31600
+    },
+    {
+      "spec": "cypress/e2e/pwhl-news.cy.js",
+      "duration": 13400
+    },
+    {
+      "spec": "cypress/e2e/pwhl-players.cy.js",
+      "duration": 79200
+    },
+    {
+      "spec": "cypress/e2e/pwhl-schedule.cy.js",
+      "duration": 30800
+    },
+    {
+      "spec": "cypress/e2e/pwhl-shot-map.cy.js",
+      "duration": 56600
+    },
+    {
+      "spec": "cypress/e2e/pwhl-shots-live.cy.js",
+      "duration": 27600
+    },
+    {
+      "spec": "cypress/e2e/pwhl-team.cy.js",
+      "duration": 144400
+    },
+    {
+      "spec": "cypress/e2e/pwhl-upcoming-season.cy.js",
+      "duration": 4600
+    },
+    {
+      "spec": "cypress/e2e/read-state-badges.cy.js",
+      "duration": 11000
+    },
+    {
+      "spec": "cypress/e2e/schedule.cy.js",
+      "duration": 77200
+    },
+    {
+      "spec": "cypress/e2e/shot-map.cy.js",
+      "duration": 78400
+    },
+    {
+      "spec": "cypress/e2e/summary-link.cy.js",
+      "duration": 6400
+    },
+    {
+      "spec": "cypress/e2e/team-callup-watch.cy.js",
+      "duration": 6200
+    },
+    {
+      "spec": "cypress/e2e/team-injury-impact.cy.js",
+      "duration": 6800
+    },
+    {
+      "spec": "cypress/e2e/team-pick-history.cy.js",
+      "duration": 6000
+    },
+    {
+      "spec": "cypress/e2e/team-playoff-odds.cy.js",
+      "duration": 11000
+    },
+    {
+      "spec": "cypress/e2e/team-scratches.cy.js",
+      "duration": 5200
+    },
+    {
+      "spec": "cypress/e2e/team.cy.js",
+      "duration": 114200
     },
     {
       "spec": "cypress/e2e/theme.cy.js",
-      "duration": 23896
-    },
-    {
-      "spec": "cypress/e2e/topnav-safe-area.cy.js",
-      "duration": 6768
-    },
-    {
-      "spec": "cypress/e2e/tour.cy.js",
-      "duration": 15990
-    },
-    {
-      "spec": "cypress/e2e/trivia.cy.js",
-      "duration": 10053
-    },
-    {
-      "spec": "cypress/e2e/viewports.cy.js",
-      "duration": 70130
-    },
-    {
-      "spec": "cypress/e2e/visual-regression.cy.js",
-      "duration": 60000
+      "duration": 16200
     },
     {
       "spec": "cypress/e2e/topbar-live-chip.cy.js",
       "duration": 4000
     },
     {
-      "spec": "cypress/e2e/pwhl-guest-game.cy.js",
-      "duration": 12000
+      "spec": "cypress/e2e/topnav-safe-area.cy.js",
+      "duration": 3000
     },
     {
-      "spec": "cypress/e2e/pwhl-guest-game-invariants.cy.js",
-      "duration": 8000
+      "spec": "cypress/e2e/tour.cy.js",
+      "duration": 14600
     },
     {
-      "spec": "cypress/e2e/hockeytech-guest-game.cy.js",
-      "duration": 9500
+      "spec": "cypress/e2e/trivia.cy.js",
+      "duration": 7800
     },
     {
-      "spec": "cypress/e2e/hockeytech-guest-game-invariants.cy.js",
-      "duration": 4500
+      "spec": "cypress/e2e/viewports.cy.js",
+      "duration": 62800
     },
     {
-      "spec": "cypress/e2e/hockeytech-period-summary.cy.js",
-      "duration": 14500
-    },
-    {
-      "spec": "cypress/e2e/hockeytech-power-rankings.cy.js",
-      "duration": 8000
-    },
-    {
-      "spec": "cypress/e2e/hockeytech-playoff-odds.cy.js",
-      "duration": 7000
-    },
-    {
-      "spec": "cypress/e2e/hockeytech-bracket.cy.js",
-      "duration": 12000
+      "spec": "cypress/e2e/visual-regression.cy.js",
+      "duration": 55800
     }
   ]
 }
