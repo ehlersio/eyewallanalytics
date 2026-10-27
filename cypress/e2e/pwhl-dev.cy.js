@@ -2,16 +2,20 @@
 // Tests for the PWHL dev replay view (/pwhl/dev)
 // Only runs in dev builds — skipped in CI unless DEV=true
 
+function visitDevReplay() {
+  cy.setPWHLTeam('MTL')
+  cy.visit('/pwhl/dev', {
+    onBeforeLoad(win) {
+      win.localStorage.setItem('eyewall:sport', 'pwhl')
+      win.localStorage.setItem('eyewall:pwhl_team', JSON.stringify({ abbr: 'MTL', teamId: 3 }))
+    },
+  })
+  cy.get('.topbar', { timeout: 10000 }).should('exist')
+}
+
 describe('PWHL Dev Replay View', () => {
   beforeEach(() => {
-    cy.setPWHLTeam('MTL')
-    cy.visit('/pwhl/dev', {
-      onBeforeLoad(win) {
-        win.localStorage.setItem('eyewall:sport', 'pwhl')
-        win.localStorage.setItem('eyewall:pwhl_team', JSON.stringify({ abbr: 'MTL', teamId: 3 }))
-      },
-    })
-    cy.get('.topbar', { timeout: 10000 }).should('exist')
+    visitDevReplay()
   })
 
   it('loads without crashing', () => {
@@ -84,84 +88,96 @@ describe('PWHL Dev Replay View', () => {
     cy.get('.dev-shotmap .score-card', { timeout: 6000 }).should('exist')
     cy.assertNoErrors()
   })
+})
 
-  describe('Debug panel inside dev replay', () => {
-    beforeEach(() => {
-      // Load a game first. The score card is on screen before the game is
-      // (the view renders with no game), so wait for the scrubber -- it only
-      // shows once the game has loaded. Tapping while it was still loading
-      // raced the load's re-renders and now and then left the panel shut.
-      cy.get('.dev-game-btn', { timeout: 10000 }).first().click()
-      cy.get('.dev-scrubber', { timeout: 15000 }).should('exist')
-      cy.get('.dev-shotmap .score-card').should('exist')
-      // 5 taps to open debug panel
-      Cypress._.times(5, () => {
-        cy.get('.dev-shotmap .score-card').click()
-      })
-      cy.get('.debug-panel', { timeout: 6000 }).should('exist')
+// The debug panel's tests share one page: loading a real game takes ~7 s and
+// each test only presses one button, so loading it before every test cost
+// over a minute. testIsolation: false keeps the page, and the open panel,
+// from one test to the next, so order matters here: every popup is dismissed
+// (and gone) before the next test presses a button, and the panel is closed
+// last.
+describe('PWHL Dev Replay View: debug panel', { testIsolation: false }, () => {
+  before(() => {
+    visitDevReplay()
+    // Load a game first. The score card is on screen before the game is
+    // (the view renders with no game), so wait for the scrubber -- it only
+    // shows once the game has loaded. Tapping while it was still loading
+    // raced the load's re-renders and now and then left the panel shut.
+    cy.get('.dev-game-btn', { timeout: 10000 }).first().click()
+    cy.get('.dev-scrubber', { timeout: 15000 }).should('exist')
+    cy.get('.dev-shotmap .score-card').should('exist')
+    // 5 taps to open debug panel
+    Cypress._.times(5, () => {
+      cy.get('.dev-shotmap .score-card').click()
     })
+    cy.get('.debug-panel', { timeout: 6000 }).should('exist')
+  })
 
-    it('debug panel opens on 5 taps', () => {
-      cy.contains('PWHL Event Debug').should('exist')
-    })
+  it('debug panel opens on 5 taps', () => {
+    cy.contains('PWHL Event Debug').should('exist')
+  })
 
-    it('Goal popup fires', () => {
-      cy.contains('🚨 Goal').click()
-      cy.get('.goal-popup', { timeout: 4000 }).should('exist')
-      cy.contains('GOAL!').should('exist')
-      cy.contains('tap to dismiss').click({ force: true })
-      cy.get('.goal-popup').should('not.exist')
-    })
+  it('Goal popup fires', () => {
+    cy.contains('🚨 Goal').click()
+    cy.get('.goal-popup', { timeout: 4000 }).should('exist')
+    cy.contains('GOAL!').should('exist')
+    cy.contains('tap to dismiss').click({ force: true })
+    cy.get('.goal-popup').should('not.exist')
+  })
 
-    it('Hat Trick popup fires', () => {
-      cy.contains('🧢 Hat Trick').click()
-      cy.get('.hat-trick-popup', { timeout: 4000 }).should('exist')
-      cy.contains('HAT TRICK!').should('exist')
-      cy.contains('tap to dismiss').click({ force: true })
-      cy.get('.hat-trick-popup').should('not.exist')
-    })
+  it('Hat Trick popup fires', () => {
+    cy.contains('🧢 Hat Trick').click()
+    cy.get('.hat-trick-popup', { timeout: 4000 }).should('exist')
+    cy.contains('HAT TRICK!').should('exist')
+    cy.contains('tap to dismiss').click({ force: true })
+    cy.get('.hat-trick-popup').should('not.exist')
+  })
 
-    it('Puck Drop popup fires', () => {
-      cy.contains('🏒 Puck Drop').click()
-      cy.get('.puck-drop-popup', { timeout: 4000 }).should('exist')
-      cy.contains('PUCK DROP').should('exist')
-      cy.contains('tap to dismiss').click({ force: true })
-    })
+  it('Puck Drop popup fires', () => {
+    cy.contains('🏒 Puck Drop').click()
+    cy.get('.puck-drop-popup', { timeout: 4000 }).should('exist')
+    cy.contains('PUCK DROP').should('exist')
+    cy.contains('tap to dismiss').click({ force: true })
+    cy.get('.puck-drop-popup').should('not.exist')
+  })
 
-    it('PP Alert popup fires', () => {
-      cy.contains('⚡ PP Alert').click()
-      cy.get('.penalty-popup', { timeout: 4000 }).should('exist')
-      cy.contains('POWER').should('exist')
-      cy.contains('tap to dismiss').click({ force: true })
-    })
+  it('PP Alert popup fires', () => {
+    cy.contains('⚡ PP Alert').click()
+    cy.get('.penalty-popup', { timeout: 4000 }).should('exist')
+    cy.contains('POWER').should('exist')
+    cy.contains('tap to dismiss').click({ force: true })
+    cy.get('.penalty-popup').should('not.exist')
+  })
 
-    it('Win popup fires', () => {
-      cy.contains('🏆 Win').click()
-      cy.get('.win-popup', { timeout: 4000 }).should('exist')
-      cy.contains('WIN!').should('exist')
-      cy.contains('tap to dismiss').click({ force: true })
-    })
+  it('Win popup fires', () => {
+    cy.contains('🏆 Win').click()
+    cy.get('.win-popup', { timeout: 4000 }).should('exist')
+    cy.contains('WIN!').should('exist')
+    cy.contains('tap to dismiss').click({ force: true })
+    cy.get('.win-popup').should('not.exist')
+  })
 
-    it('Our PP situation chip appears', () => {
-      cy.contains('🟢 Our PP').click()
-      cy.get('.car-pp', { timeout: 4000 }).should('exist')
-      cy.contains('Power Play').should('exist')
-    })
+  // Each situation button replaces the last one and clears itself after
+  // 15 s, well past these 4 s waits.
+  it('Our PP situation chip appears', () => {
+    cy.contains('🟢 Our PP').click()
+    cy.get('.car-pp', { timeout: 4000 }).should('exist')
+    cy.contains('Power Play').should('exist')
+  })
 
-    it('Opp PP situation chip appears', () => {
-      cy.contains('🟡 Opp PP').click()
-      cy.get('.opp-pp', { timeout: 4000 }).should('exist')
-    })
+  it('Opp PP situation chip appears', () => {
+    cy.contains('🟡 Opp PP').click()
+    cy.get('.opp-pp', { timeout: 4000 }).should('exist')
+  })
 
-    it('Our EN chip appears', () => {
-      cy.contains('🥅 Our EN').click()
-      cy.get('.car-en', { timeout: 4000 }).should('exist')
-      cy.contains('Empty Net').should('exist')
-    })
+  it('Our EN chip appears', () => {
+    cy.contains('🥅 Our EN').click()
+    cy.get('.car-en', { timeout: 4000 }).should('exist')
+    cy.contains('Empty Net').should('exist')
+  })
 
-    it('debug panel closes on ✕', () => {
-      cy.get('.debug-close-btn').click()
-      cy.get('.debug-panel').should('not.exist')
-    })
+  it('debug panel closes on ✕', () => {
+    cy.get('.debug-close-btn').click()
+    cy.get('.debug-panel').should('not.exist')
   })
 })
