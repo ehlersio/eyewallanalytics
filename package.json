@@ -46,7 +46,7 @@
     "react-dom": "^18.3.1",
     "react-hockey-rink": "^0.3.0",
     "react-i18next": "^17.0.15",
-    "react-router-dom": "^7.18.4",
+    "react-router-dom": "^7.18.5",
     "react-swipeable": "^7.0.2",
     "recharts": "^3.10.1"
   },
