@@ -2243,8 +2243,8 @@
       },
       "skater": {
         "gpAndGameScore": "{{gp}} GP · Game Score {{score}}",
-        "rapmCaption": "5v5 RAPM (beta) + PP/PK/finishing components",
-        "warTip": "Wins Above Replacement (beta). EV component uses 5v5 RAPM — ridge regression across 3 seasons of league-wide shift and shot data, controlling for teammates and opponents. PP/PK and finishing components are xGoals-based from MoneyPuck. RAPM is 5v5 only; special teams remain approximate. Zone-start adjustment in development — defensive defensemen may be slightly undervalued in current model. Validated periodically vs Evolving Hockey public RAPM. WAR adds up over the season, so the label beside it rates WAR per 82 games played, and only from {{count}} games played.",
+        "rapmCaption": "5v5 RAPM (beta) + penalties and finishing",
+        "warTip": "Wins Above Replacement (beta). EV component uses 5v5 RAPM — ridge regression across 3 seasons of league-wide shift and shot data, controlling for teammates and opponents. Penalties (minutes drawn minus minutes taken) and finishing (goals minus expected goals) come from MoneyPuck. There is no power-play or penalty-kill component yet. Zone-start adjustment in development — defensive defensemen may be slightly undervalued in current model. Validated periodically vs Evolving Hockey public RAPM. WAR adds up over the season, so the label beside it rates WAR per 82 games played, and only from {{count}} games played.",
         "tipEvXgfPct": "On-ice expected goals for % at 5-on-5. The share of total shot quality generated while this player is on the ice — above 50% means the team outshoots opponents in quality with him on the ice. Team metric, not individual.",
         "tipXgf60": "Individual expected goals generated per 60 minutes — the shot quality this player personally produces, based on shot location and type. Measures how dangerous their own shots are, independent of linemates.",
         "tipXga60": "On-ice expected goals against per 60 minutes at 5-on-5. Measures how many quality chances opponents generate while this player is on the ice — lower is better. Team metric reflecting the full line's defensive performance.",
@@ -2267,7 +2267,7 @@
         "barFinishing": "Finishing",
         "barFirstAssists": "1st Assists",
         "barPenalties": "Penalties",
-        "barCompetition": "Competition",
+        "barCompetition": "Team Without Player",
         "barTeammates": "Teammates"
       },
       "playoffs": {

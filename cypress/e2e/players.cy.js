@@ -139,7 +139,7 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
         cy.get('.pp-tab').contains('Analytics').click()
         cy.skipIfEither('.pp-heatmap-empty', '.pa-wrap', { timeout: 10000 })
         cy.contains(/Power Play/i, { timeout: DATA_TIMEOUT }).should('exist')
-        cy.contains(/Competition/i).should('exist')
+        cy.contains(/Team Without Player/i).should('exist')
       })
 
       it('Heat Map tab renders rink', function () {
