@@ -307,7 +307,7 @@ function filterGroups(groups, names) {
   return groups.filter(g => names.includes(g.group))
 }
 
-// NHL skaters' "Possession" tab: EV Offence/EV Defence/Competition/
+// NHL skaters' "Possession" tab: EV Offence/EV Defence/Team Without Player/
 // Teammates -- the 4 WAR/RAPM percentile categories that feed
 // computeRadarAxes but have no StatTile counterpart (STAT_PCT_MAP
 // deliberately excludes them, see nhlPlayerStats.js). PWHL has no
