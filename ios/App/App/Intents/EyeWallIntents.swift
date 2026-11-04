@@ -131,8 +131,9 @@ struct GetPlayoffChancesIntent: AppIntent {
 
 // MARK: - Siri phrases
 
-// Every phrase has to name the app; "EyeWall" works as well as the full
-// name (INAlternativeAppNames in Info.plist).
+// Every phrase has to name the app; "EyeWall" and "Eye Wall" work as well
+// as the full name (INAlternativeAppNames in Info.plist). The two-word
+// spelling is there because Siri sometimes hears the one-word name as "Iowa".
 @available(iOS 17.0, *)
 struct EyeWallShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {

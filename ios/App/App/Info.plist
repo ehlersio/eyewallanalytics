@@ -91,6 +91,10 @@
 			<key>INAlternativeAppNamePronunciationHint</key>
 			<string>eye wall</string>
 		</dict>
+		<dict>
+			<key>INAlternativeAppName</key>
+			<string>Eye Wall</string>
+		</dict>
 	</array>
 </dict>
 </plist>
