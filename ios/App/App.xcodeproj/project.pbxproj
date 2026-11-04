@@ -75,6 +75,7 @@
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		36C1A8443062C564002724DB /* EyeWallLiveActivity */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (36C1A8583062C566002724DB /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = EyeWallLiveActivity; sourceTree = "<group>"; };
+		E7AB51A12F00000000000001 /* Intents */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Intents; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -131,6 +132,7 @@
 			isa = PBXGroup;
 			children = (
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
+				E7AB51A12F00000000000001 /* Intents */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
@@ -183,6 +185,9 @@
 			dependencies = (
 				36C1A8533062C566002724DB /* PBXTargetDependency */,
 			);
+			fileSystemSynchronizedGroups = (
+				E7AB51A12F00000000000001 /* Intents */,
+			);
 			name = App;
 			packageProductDependencies = (
 				4D22ABE82AF431CB00220026 /* CapApp-SPM */,
@@ -217,6 +222,7 @@
 			knownRegions = (
 				en,
 				Base,
+				fr,
 			);
 			mainGroup = 504EC2FB1FED79650016851F;
 			packageReferences = (

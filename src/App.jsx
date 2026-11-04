@@ -18,6 +18,7 @@ import FaceoffLoader from './components/FaceoffLoader'
 import { applyTeamTheme, themeTeam } from './utils/applyTeamTheme';
 import { getTheme, subscribeSystemTheme } from './utils/themeConfig';
 import { syncAutoFollow } from './hooks/useLiveActivity';
+import { syncIntentContext } from './utils/siriIntents';
 import { FOLLOWED_CHANGED_EVENT } from './utils/followedTeams';
 import { recordAppOpen } from './utils/reviewPrompt';
 import { useNotificationTaps } from './hooks/useNotificationTaps';
@@ -177,9 +178,13 @@ export default function App() {
 
   // Lock Screen auto-follow: re-send the followed teams and language with
   // the setting on every launch and whenever the followed teams change, so
-  // the poller's registration moves with them. No-op off the iOS app.
+  // the poller's registration moves with them. Siri / Shortcuts get the
+  // followed teams too (their default team). No-op off the iOS app.
   useEffect(() => {
-    const sync = () => { syncAutoFollow().catch(() => {}); };
+    const sync = () => {
+      syncAutoFollow().catch(() => {});
+      syncIntentContext().catch(() => {});
+    };
     sync();
     window.addEventListener(FOLLOWED_CHANGED_EVENT, sync);
     return () => window.removeEventListener(FOLLOWED_CHANGED_EVENT, sync);

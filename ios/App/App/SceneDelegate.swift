@@ -32,6 +32,7 @@ class AppViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(KeepAwakePlugin())
         bridge?.registerPluginInstance(LiveGamePlugin())
         bridge?.registerPluginInstance(AppReviewPlugin())
+        bridge?.registerPluginInstance(AppIntentsPlugin())
     }
 }
 
