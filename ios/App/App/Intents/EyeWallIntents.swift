@@ -96,69 +96,110 @@ struct TeamQuery: EntityStringQuery {
 
 // MARK: - Intents
 
+/// The preview build's teamName parameter. Siri AI picks a TeamEntity from
+/// a list and only reads its start, so it answered "Iowa Wild" with the
+/// user's AHL team; given the name as text, TeamCatalog.match finds the team.
+/// nil in release builds, which have only the team parameter.
 @available(iOS 16.0, *)
-struct GetScoreIntent: AppIntent {
+private protocol SpokenTeam {
+    var spokenTeam: String? { get }
+}
+
+@available(iOS 16.0, *)
+struct GetScoreIntent: AppIntent, SpokenTeam {
     static let title: LocalizedStringResource = "Get Score"
     static let description = IntentDescription("Today's score for a team, or its next game when it isn't playing today.")
 
     @Parameter(title: "Team", description: "The team to ask about, in any league EyeWall covers. Leave it empty for the user's primary team.")
     var team: TeamEntity?
 
+    #if SIRI_AI_PREVIEW
+    @Parameter(title: "Team Name", description: "The team's name exactly as the user said it, such as Iowa Wild, Habs or Toronto Sceptres. Leave it empty for the user's primary team.")
+    var teamName: String?
+    #endif
+
     static var parameterSummary: some ParameterSummary { Summary("Get the score for \(\.$team)") }
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
-        let text = try await IntentAnswers.score(IntentContext.resolve(team?.id))
+        let text = try await IntentAnswers.score(IntentContext.resolve(team?.id, name: spokenTeam))
         return .result(value: text, dialog: IntentDialog(stringLiteral: text))
     }
 }
 
 @available(iOS 16.0, *)
-struct GetNextGameIntent: AppIntent {
+struct GetNextGameIntent: AppIntent, SpokenTeam {
     static let title: LocalizedStringResource = "Get Next Game"
     static let description = IntentDescription("When a team plays next, and who against.")
 
     @Parameter(title: "Team", description: "The team to ask about, in any league EyeWall covers. Leave it empty for the user's primary team.")
     var team: TeamEntity?
 
+    #if SIRI_AI_PREVIEW
+    @Parameter(title: "Team Name", description: "The team's name exactly as the user said it, such as Iowa Wild, Habs or Toronto Sceptres. Leave it empty for the user's primary team.")
+    var teamName: String?
+    #endif
+
     static var parameterSummary: some ParameterSummary { Summary("Get the next game for \(\.$team)") }
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
-        let text = try await IntentAnswers.nextGame(IntentContext.resolve(team?.id))
+        let text = try await IntentAnswers.nextGame(IntentContext.resolve(team?.id, name: spokenTeam))
         return .result(value: text, dialog: IntentDialog(stringLiteral: text))
     }
 }
 
 @available(iOS 16.0, *)
-struct GetRecordIntent: AppIntent {
+struct GetRecordIntent: AppIntent, SpokenTeam {
     static let title: LocalizedStringResource = "Get Team Record"
     static let description = IntentDescription("A team's record and points this season, and its place in the division for NHL teams.")
 
     @Parameter(title: "Team", description: "The team to ask about, in any league EyeWall covers. Leave it empty for the user's primary team.")
     var team: TeamEntity?
 
+    #if SIRI_AI_PREVIEW
+    @Parameter(title: "Team Name", description: "The team's name exactly as the user said it, such as Iowa Wild, Habs or Toronto Sceptres. Leave it empty for the user's primary team.")
+    var teamName: String?
+    #endif
+
     static var parameterSummary: some ParameterSummary { Summary("Get the record for \(\.$team)") }
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
-        let text = try await IntentAnswers.record(IntentContext.resolve(team?.id))
+        let text = try await IntentAnswers.record(IntentContext.resolve(team?.id, name: spokenTeam))
         return .result(value: text, dialog: IntentDialog(stringLiteral: text))
     }
 }
 
 @available(iOS 16.0, *)
-struct GetPlayoffChancesIntent: AppIntent {
+struct GetPlayoffChancesIntent: AppIntent, SpokenTeam {
     static let title: LocalizedStringResource = "Get Playoff Chances"
     static let description = IntentDescription("How often a team makes the playoffs in EyeWall's 10,000 simulations of the season, and its projected points.")
 
     @Parameter(title: "Team", description: "The team to ask about, in any league EyeWall covers. Leave it empty for the user's primary team.")
     var team: TeamEntity?
 
+    #if SIRI_AI_PREVIEW
+    @Parameter(title: "Team Name", description: "The team's name exactly as the user said it, such as Iowa Wild, Habs or Toronto Sceptres. Leave it empty for the user's primary team.")
+    var teamName: String?
+    #endif
+
     static var parameterSummary: some ParameterSummary { Summary("Get the playoff chances for \(\.$team)") }
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
-        let text = try await IntentAnswers.playoffChances(IntentContext.resolve(team?.id))
+        let text = try await IntentAnswers.playoffChances(IntentContext.resolve(team?.id, name: spokenTeam))
         return .result(value: text, dialog: IntentDialog(stringLiteral: text))
     }
 }
+
+@available(iOS 16.0, *)
+extension SpokenTeam {
+    fileprivate var spokenTeam: String? { nil }
+}
+
+#if SIRI_AI_PREVIEW
+extension GetScoreIntent { fileprivate var spokenTeam: String? { teamName } }
+extension GetNextGameIntent { fileprivate var spokenTeam: String? { teamName } }
+extension GetRecordIntent { fileprivate var spokenTeam: String? { teamName } }
+extension GetPlayoffChancesIntent { fileprivate var spokenTeam: String? { teamName } }
+#endif
 
 // MARK: - Siri phrases
 
@@ -167,6 +208,51 @@ struct GetPlayoffChancesIntent: AppIntent {
 // spelling is there because Siri sometimes hears the one-word name as "Iowa".
 @available(iOS 17.0, *)
 struct EyeWallShortcuts: AppShortcutsProvider {
+    #if SIRI_AI_PREVIEW
+    // No phrases naming a team: App Shortcuts match those against the
+    // followed teams only, so "What are the Iowa Wild's playoff chances"
+    // ran with the user's AHL team before Siri AI saw the request (the
+    // skill never loaded). Without them Siri AI resolves the team itself,
+    // through Spotlight (TeamIndex).
+    static var appShortcuts: [AppShortcut] {
+        AppShortcut(
+            intent: GetScoreIntent(),
+            phrases: [
+                "What's the score in \(.applicationName)",
+                "\(.applicationName) score",
+            ],
+            shortTitle: "Score",
+            systemImageName: "sportscourt"
+        )
+        AppShortcut(
+            intent: GetNextGameIntent(),
+            phrases: [
+                "When is the next game in \(.applicationName)",
+                "\(.applicationName) next game",
+            ],
+            shortTitle: "Next Game",
+            systemImageName: "calendar"
+        )
+        AppShortcut(
+            intent: GetRecordIntent(),
+            phrases: [
+                "What's our record in \(.applicationName)",
+                "\(.applicationName) standings",
+            ],
+            shortTitle: "Record",
+            systemImageName: "list.number"
+        )
+        AppShortcut(
+            intent: GetPlayoffChancesIntent(),
+            phrases: [
+                "What are our playoff chances in \(.applicationName)",
+                "\(.applicationName) playoff chances",
+            ],
+            shortTitle: "Playoff Chances",
+            systemImageName: "chart.line.uptrend.xyaxis"
+        )
+    }
+    #else
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: GetScoreIntent(),
@@ -210,4 +296,5 @@ struct EyeWallShortcuts: AppShortcutsProvider {
             systemImageName: "chart.line.uptrend.xyaxis"
         )
     }
+    #endif
 }

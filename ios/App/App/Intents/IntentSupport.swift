@@ -31,6 +31,13 @@ struct IntentTeam: Codable, Hashable {
     let shortName: String
 
     var leagueLabel: String { league.uppercased() }
+
+    /// What an answer calls the team: the short name ("Canes"), or the full
+    /// name when another team shares it ("Iowa Wild", not "Wild", which is
+    /// also Minnesota).
+    var spokenName: String {
+        TeamCatalog.sharedShortNames.contains(shortName) ? name : shortName
+    }
 }
 
 enum TeamCatalog {
@@ -41,12 +48,81 @@ enum TeamCatalog {
         return teams
     }()
 
+    static let sharedShortNames: Set<String> = {
+        var counts: [String: Int] = [:]
+        for team in all { counts[team.shortName, default: 0] += 1 }
+        return Set(counts.filter { $0.value > 1 }.keys)
+    }()
+
     static let byId: [String: IntentTeam] = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
     static func team(league: String, abbr: String) -> IntentTeam? { byId["\(league):\(abbr)"] }
 
     static func team(league: String, teamId: Int) -> IntentTeam? {
         all.first { $0.league == league && $0.teamId == teamId }
+    }
+}
+
+// MARK: - Teams by name
+
+extension TeamCatalog {
+    /// Fan nicknames that aren't part of a team's name.
+    static let nicknames: [String: String] = [
+        "canes": "nhl:CAR", "habs": "nhl:MTL", "leafs": "nhl:TOR", "sens": "nhl:OTT",
+        "pens": "nhl:PIT", "bolts": "nhl:TBL", "caps": "nhl:WSH", "avs": "nhl:COL",
+        "hawks": "nhl:CHI", "isles": "nhl:NYI", "jackets": "nhl:CBJ", "preds": "nhl:NSH",
+        "knights": "nhl:VGK", "wings": "nhl:DET", "blueshirts": "nhl:NYR",
+    ]
+
+    private static let leagueWords = ["nhl": "nhl", "lnh": "nhl", "pwhl": "pwhl", "lphf": "pwhl",
+                                      "ahl": "ahl", "lah": "ahl", "echl": "echl"]
+
+    /// The team a spoken name means: "Iowa Wild", "Habs", "the Toronto
+    /// Sceptres", "AHL Bruins". A full name or a city with a short name
+    /// decides it; a bare short name or city that several teams share goes to
+    /// a followed team, then the NHL team, then the first in the list. nil
+    /// when nothing matches.
+    static func match(_ spoken: String, followed: [IntentTeam] = []) -> IntentTeam? {
+        var words = normalize(spoken).split(separator: " ").map(String.init)
+        words.removeAll { ["the", "le", "la", "les"].contains($0) }
+        let league = words.compactMap { leagueWords[$0] }.first
+        words.removeAll { leagueWords[$0] != nil }
+        let query = words.joined(separator: " ")
+        guard !query.isEmpty else { return nil }
+
+        let pool = all.filter { league == nil || $0.league == league }
+        if let id = nicknames[query], let team = byId[id], league == nil || team.league == league { return team }
+
+        func city(_ team: IntentTeam) -> String {
+            let name = normalize(team.name), short = normalize(team.shortName)
+            return name.hasSuffix(short) ? String(name.dropLast(short.count)).trimmingCharacters(in: .whitespaces) : name
+        }
+        let tiers: [(IntentTeam) -> Bool] = [
+            { normalize($0.name) == query },
+            { query.contains(normalize($0.name)) },
+            { normalize($0.shortName) == query || city($0) == query || $0.abbr.lowercased() == query },
+            { normalize($0.name).contains(query) },
+        ]
+        for tier in tiers {
+            let candidates = pool.filter(tier)
+            if candidates.isEmpty { continue }
+            return candidates.first { followed.contains($0) }
+                ?? candidates.first { $0.league == "nhl" }
+                ?? candidates.first
+        }
+        return nil
+    }
+
+    /// Lowercased, accents and apostrophes off: "Montréal" -> "montreal",
+    /// "Iowa Wild's" -> "iowa wild".
+    static func normalize(_ text: String) -> String {
+        let folded = text.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "en_US"))
+            .replacingOccurrences(of: "’", with: "'")
+            .replacingOccurrences(of: "'s ", with: " ")
+        var out = folded.hasSuffix("'s") ? String(folded.dropLast(2)) : folded
+        out = out.replacingOccurrences(of: "'", with: "")
+        let kept = out.map { $0.isLetter || $0.isNumber ? $0 : " " }
+        return String(kept).split(separator: " ").joined(separator: " ")
     }
 }
 
@@ -78,9 +154,20 @@ enum IntentContext {
         [workerURLKey, laWorkerURLKey].lazy.compactMap { defaults.string(forKey: $0) }.first { !$0.isEmpty }
     }
 
-    /// The team asked about, else the primary followed team.
+    /// Spoken names that mean the primary team.
+    private static let selfReferences: Set<String> = ["my team", "our team", "my", "our", "us", "we", "mine", "ours", "mon equipe", "notre equipe"]
+
+    /// The team asked about (a spoken name first, then a picked team), else
+    /// the primary followed team.
     @available(iOS 16.0, *)
-    static func resolve(_ id: String?) throws -> IntentTeam {
+    static func resolve(_ id: String?, name: String? = nil) throws -> IntentTeam {
+        if let name = name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty,
+           !selfReferences.contains(TeamCatalog.normalize(name)) {
+            // A name that matches nothing is a team EyeWall doesn't cover
+            // (college, junior, Europe), not a request for the primary team.
+            guard let team = TeamCatalog.match(name, followed: followedTeams) else { throw IntentFailure.unknownTeam(name) }
+            return team
+        }
         if let id, let team = TeamCatalog.byId[id] { return team }
         guard let team = followedTeams.first else { throw IntentFailure.noTeam }
         return team
@@ -95,12 +182,15 @@ enum IntentFailure: Error, CustomLocalizedStringResourceConvertible {
     case notSetUp
     /// The Worker didn't answer, or answered with something unreadable.
     case unavailable
+    /// A spoken team name that matches no team in the four leagues.
+    case unknownTeam(String)
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
         case .noTeam: return "Open EyeWall and pick a team first."
         case .notSetUp: return "Open EyeWall once, then try again."
         case .unavailable: return "EyeWall couldn't load that right now. Try again in a minute."
+        case .unknownTeam(let name): return "EyeWall doesn't know a team called \(name). It covers the NHL, PWHL, AHL and ECHL."
         }
     }
 }

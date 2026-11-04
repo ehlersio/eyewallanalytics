@@ -22,6 +22,7 @@
 
 #if SIRI_AI_PREVIEW
 import AppIntents
+import CoreSpotlight
 
 @available(iOS 27.3, *)
 extension GetScoreIntent: ToolIntent {}
@@ -35,13 +36,74 @@ extension GetRecordIntent: ToolIntent {}
 @available(iOS 27.3, *)
 extension GetPlayoffChancesIntent: ToolIntent {}
 
-/// Siri finds entities through Spotlight or, failing that, an enumerable
-/// query. All 106 teams, followed ones first. Only here: in Shortcuts on the
-/// release SDK this would list every team as a suggestion.
+// No EnumerableEntityQuery: given all 106 teams, Siri picked from the start
+// of the list (followed teams, then the NHL) and answered "Iowa Wild" with
+// the user's AHL team. With Spotlight (below) it searches for the team.
+
+// MARK: - Spotlight
+
+/// Every team in Spotlight, so Siri can find one the user doesn't follow.
+/// Without it Siri only saw the followed teams (suggestedEntities) and
+/// answered "Iowa Wild" with the user's AHL team, or with no EyeWall data
+/// at all. The title comes from displayRepresentation (the full name).
 @available(iOS 27.3, *)
-extension TeamQuery: EnumerableEntityQuery {
-    func allEntities() async throws -> [TeamEntity] {
-        try await entities(matching: "")
+extension TeamEntity: IndexedEntity {
+    var attributeSet: CSSearchableItemAttributeSet {
+        let attributes = CSSearchableItemAttributeSet()
+        attributes.keywords = TeamIndex.keywords(team)
+        attributes.contentDescription = "\(team.leagueLabel) hockey team"
+        return attributes
     }
+}
+
+@available(iOS 27.3, *)
+extension TeamQuery: IndexedEntityQuery {
+    func reindexEntities(for identifiers: [TeamEntity.ID], indexDescription: CSSearchableIndexDescription) async throws {
+        try await TeamIndex.index.indexAppEntities(identifiers.compactMap { TeamCatalog.byId[$0] }.map(TeamEntity.init))
+    }
+
+    func reindexAllEntities(indexDescription: CSSearchableIndexDescription) async throws {
+        try await TeamIndex.indexAll()
+    }
+}
+
+@available(iOS 27.3, *)
+enum TeamIndex {
+    static let index = CSSearchableIndex(name: "EyeWall_Teams")
+
+    /// Called from AppIntentsPlugin.setContext on every launch. Re-indexing
+    /// an identifier updates its entry; the team list only changes with an
+    /// app update.
+    static func indexAll() async throws {
+        try await index.indexAppEntities(TeamCatalog.all.map(TeamEntity.init))
+    }
+
+    /// The short name, city, abbreviation and league in both languages:
+    /// "Iowa Wild" -> Wild, Iowa, IA, AHL, LAH.
+    static func keywords(_ team: IntentTeam) -> [String] {
+        var words = [team.shortName, team.abbr, team.leagueLabel]
+        if team.name.hasSuffix(team.shortName) {
+            let city = team.name.dropLast(team.shortName.count).trimmingCharacters(in: .whitespaces)
+            if !city.isEmpty { words.append(city) }
+        }
+        switch team.league {
+        case "nhl": words.append("LNH")
+        case "pwhl": words.append("LPHF")
+        case "ahl": words.append("LAH")
+        default: break
+        }
+        return words
+    }
+}
+
+/// Opens EyeWall from a team's Spotlight result.
+@available(iOS 27.3, *)
+struct OpenTeamIntent: OpenIntent {
+    static let title: LocalizedStringResource = "Open Team"
+
+    @Parameter(title: "Team")
+    var target: TeamEntity
+
+    func perform() async throws -> some IntentResult { .result() }
 }
 #endif

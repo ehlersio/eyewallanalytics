@@ -71,7 +71,7 @@ enum IntentAnswers {
     static func score(_ team: IntentTeam) async throws -> String {
         if let game = try await todayGame(team) { return describeToday(game, for: team) }
         let next = try await nextGame(team)
-        return L10n.t("No \(team.shortName) game today. ", "Pas de match des \(team.shortName) aujourd'hui. ") + next
+        return L10n.t("No \(team.spokenName) game today. ", "Pas de match des \(team.spokenName) aujourd'hui. ") + next
     }
 
     static func todayGame(_ team: IntentTeam) async throws -> JSONObject? {
@@ -100,7 +100,7 @@ enum IntentAnswers {
                                 code: game.string(isHome ? "awayTeamCode" : "homeTeamCode"))
         let us = game.int(isHome ? "homeScore" : "awayScore") ?? 0
         let them = game.int(isHome ? "awayScore" : "homeScore") ?? 0
-        let me = team.shortName
+        let me = team.spokenName
 
         switch game.string("status") {
         case "live":
@@ -189,15 +189,15 @@ enum IntentAnswers {
 
     private static func nextSentence(_ team: IntentTeam, opponent: String, isHome: Bool, day: String, at time: String?) -> String {
         let matchup = isHome
-            ? L10n.t("the \(team.shortName) host the \(opponent)", "les \(team.shortName) reçoivent les \(opponent)")
-            : L10n.t("the \(team.shortName) visit the \(opponent)", "les \(team.shortName) visitent les \(opponent)")
+            ? L10n.t("the \(team.spokenName) host the \(opponent)", "les \(team.spokenName) reçoivent les \(opponent)")
+            : L10n.t("the \(team.spokenName) visit the \(opponent)", "les \(team.spokenName) visitent les \(opponent)")
         let when = time.map { L10n.t("\(day) at \($0)", "\(day) à \($0)") } ?? day
         return L10n.t("Next game: \(matchup) \(when).", "Prochain match : \(matchup) \(when).")
     }
 
     private static func noUpcoming(_ team: IntentTeam) -> String {
-        L10n.t("The \(team.shortName) have no upcoming games on the schedule.",
-               "Aucun match des \(team.shortName) n'est prévu au calendrier.")
+        L10n.t("The \(team.spokenName) have no upcoming games on the schedule.",
+               "Aucun match des \(team.spokenName) n'est prévu au calendrier.")
     }
 
     // MARK: Record
@@ -213,8 +213,8 @@ enum IntentAnswers {
             let pts = row.int("points") ?? 0
             let rowSeason = row.int("seasonId").map(String.init) ?? row.string("seasonId")
             let label = rowSeason != nil && rowSeason != seasons.nhl ? " (\(seasonLabel(rowSeason!)))" : ""
-            var text = L10n.t("\(team.shortName)\(label): \(rec). \(pts) points in \(gp) games",
-                              "\(team.shortName)\(label) : \(rec). \(pts) points en \(gp) matchs")
+            var text = L10n.t("\(team.spokenName)\(label): \(rec). \(pts) points in \(gp) games",
+                              "\(team.spokenName)\(label) : \(rec). \(pts) points en \(gp) matchs")
             if let place = row.int("divisionSequence"), let division = row.string("divisionName") ?? row.localized("divisionName") {
                 text += L10n.t(", \(L10n.ordinal(place)) in the \(division) Division", ", \(L10n.ordinal(place)) de la division \(division)")
             }
@@ -230,8 +230,8 @@ enum IntentAnswers {
                               otLosses: row.int("ot_losses") ?? 0, shootoutLosses: row.int("shootout_losses"))
         let pts = row.int("points") ?? 0
         let label = team.league == "pwhl" ? seasons.pwhlStartYear.map { " (\($0)–\(String(($0 + 1) % 100)))" } ?? "" : ""
-        return L10n.t("\(team.shortName)\(label): \(rec). \(pts) points in \(gp) games.",
-                      "\(team.shortName)\(label) : \(rec). \(pts) points en \(gp) matchs.")
+        return L10n.t("\(team.spokenName)\(label): \(rec). \(pts) points in \(gp) games.",
+                      "\(team.spokenName)\(label) : \(rec). \(pts) points en \(gp) matchs.")
     }
 
     /// "11 wins, 4 losses, 1 overtime loss". Siri reads the answer aloud, and
@@ -241,12 +241,16 @@ enum IntentAnswers {
         func count(_ n: Int, _ en: String, _ enPlural: String, _ fr: String, _ frPlural: String) -> String {
             L10n.t("\(n) \(n == 1 ? en : enPlural)", "\(n) \(n <= 1 ? fr : frPlural)")
         }
+        // Wins and losses always; overtime and shootout losses only when
+        // there are some ("5 wins and 6 losses", not "..., 0 overtime losses").
         var parts = [
             count(wins, "win", "wins", "victoire", "victoires"),
             count(losses, "loss", "losses", "défaite", "défaites"),
-            count(otLosses, "overtime loss", "overtime losses", "défaite en prolongation", "défaites en prolongation"),
         ]
-        if let shootoutLosses {
+        if otLosses > 0 {
+            parts.append(count(otLosses, "overtime loss", "overtime losses", "défaite en prolongation", "défaites en prolongation"))
+        }
+        if let shootoutLosses, shootoutLosses > 0 {
             parts.append(count(shootoutLosses, "shootout loss", "shootout losses", "défaite en tirs de barrage", "défaites en tirs de barrage"))
         }
         let last = parts.removeLast()
@@ -276,13 +280,13 @@ enum IntentAnswers {
     }
 
     private static func noRecord(_ team: IntentTeam) -> String {
-        L10n.t("EyeWall has no standings for the \(team.shortName) right now.",
-               "EyeWall n'a pas de classement pour les \(team.shortName) pour l'instant.")
+        L10n.t("EyeWall has no standings for the \(team.spokenName) right now.",
+               "EyeWall n'a pas de classement pour les \(team.spokenName) pour l'instant.")
     }
 
     private static func notPlayed(_ team: IntentTeam) -> String {
-        L10n.t("The \(team.shortName) haven't played a game yet this season.",
-               "Les \(team.shortName) n'ont pas encore joué cette saison.")
+        L10n.t("The \(team.spokenName) haven't played a game yet this season.",
+               "Les \(team.spokenName) n'ont pas encore joué cette saison.")
     }
 
     // MARK: Playoff chances
@@ -292,8 +296,8 @@ enum IntentAnswers {
             ? "/playoff-odds?team=\(team.abbr)"
             : "/\(team.league)/playoff-odds?teamId=\(team.teamId)"
         guard let odds = try await Worker.object(path), let latest = odds.object("latest") else {
-            return L10n.t("EyeWall hasn't run a season simulation for the \(team.shortName) yet.",
-                          "EyeWall n'a pas encore simulé la saison des \(team.shortName).")
+            return L10n.t("EyeWall hasn't run a season simulation for the \(team.spokenName) yet.",
+                          "EyeWall n'a pas encore simulé la saison des \(team.spokenName).")
         }
         let nhl = team.league == "nhl"
         let pct = latest.double(nhl ? "playoff_pct" : "make_playoffs_pct")
@@ -306,14 +310,14 @@ enum IntentAnswers {
         if let pct {
             let simsText = sims.map { L10n.t("\(L10n.number($0)) simulations", "\(L10n.number($0)) simulations") }
                 ?? L10n.t("its simulations", "ses simulations")
-            parts.append(L10n.t("The \(team.shortName) make the playoffs in \(L10n.percent(pct)) of EyeWall's \(simsText) of the season.",
-                                "Les \(team.shortName) font les séries dans \(L10n.percent(pct)) des \(simsText) de la saison par EyeWall."))
+            parts.append(L10n.t("The \(team.spokenName) make the playoffs in \(L10n.percent(pct)) of EyeWall's \(simsText) of the season.",
+                                "Les \(team.spokenName) font les séries dans \(L10n.percent(pct)) des \(simsText) de la saison par EyeWall."))
         } else if latest.string("format") == "unverified" {
-            parts.append(L10n.t("The \(team.leagueLabel) hasn't published this season's playoff format, so EyeWall has no playoff probability for the \(team.shortName) yet.",
-                                "\(L10n.frenchLeague(team.league)) n'a pas publié le format des séries de cette saison, donc EyeWall n'a pas encore de probabilité de séries pour les \(team.shortName)."))
+            parts.append(L10n.t("The \(team.leagueLabel) hasn't published this season's playoff format, so EyeWall has no playoff probability for the \(team.spokenName) yet.",
+                                "\(L10n.frenchLeague(team.league)) n'a pas publié le format des séries de cette saison, donc EyeWall n'a pas encore de probabilité de séries pour les \(team.spokenName)."))
         } else {
-            parts.append(L10n.t("EyeWall has no playoff probability for the \(team.shortName) yet.",
-                                "EyeWall n'a pas encore de probabilité de séries pour les \(team.shortName)."))
+            parts.append(L10n.t("EyeWall has no playoff probability for the \(team.spokenName) yet.",
+                                "EyeWall n'a pas encore de probabilité de séries pour les \(team.spokenName)."))
         }
         if let proj {
             let range = (low != nil && high != nil) ? L10n.t(" (\(low!) to \(high!))", " (de \(low!) à \(high!))") : ""
@@ -328,8 +332,8 @@ enum IntentAnswers {
     // MARK: Formatting
 
     private static func teamName(league: String, id: Int?, code: String?, fallback: String? = nil) -> String {
-        if let id, let team = TeamCatalog.team(league: league, teamId: id) { return team.shortName }
-        if let code, let team = TeamCatalog.team(league: league, abbr: code) { return team.shortName }
+        if let id, let team = TeamCatalog.team(league: league, teamId: id) { return team.spokenName }
+        if let code, let team = TeamCatalog.team(league: league, abbr: code) { return team.spokenName }
         return fallback ?? code ?? L10n.t("their opponent", "leur adversaire")
     }
 
