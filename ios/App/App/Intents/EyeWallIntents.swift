@@ -8,8 +8,10 @@
 //  in EyeWallShortcuts below (French in fr.lproj/AppShortcuts.strings).
 //
 //  Plain App Intents on the release SDK. Apple's Siri AI (developer preview
-//  in iOS 27.3, App Store submissions from spring 2027) builds on these same
-//  intents with @AppIntent(.tool) and descriptions once it can ship.
+//  in iOS 27.3, App Store submissions from spring 2027) uses these same
+//  intents as tools: SiriAIPreview.swift marks them, only in the SiriPreview
+//  build configuration (SIRI_AI_PREVIEW). Siri picks a tool and fills its
+//  team from the titles and descriptions here, so keep them accurate.
 //
 
 import AppIntents
@@ -25,9 +27,31 @@ struct TeamEntity: AppEntity {
     let id: String
     let team: IntentTeam
 
+    // What Siri and Shortcuts can read about a team, to tell teams apart.
+    // Property descriptions need the iOS 27.3 SDK, so only the SiriPreview
+    // build (deployment target 27.3) has them.
+    #if SIRI_AI_PREVIEW
+    @Property(title: "Name", description: "The team's full name, such as Carolina Hurricanes.")
+    var name: String
+    @Property(title: "Short Name", description: "The short name fans use for the team, such as Canes.")
+    var shortName: String
+    @Property(title: "League", description: "The team's league: NHL, PWHL, AHL or ECHL.")
+    var league: String
+    #else
+    @Property(title: "Name")
+    var name: String
+    @Property(title: "Short Name")
+    var shortName: String
+    @Property(title: "League")
+    var league: String
+    #endif
+
     init(_ team: IntentTeam) {
         id = team.id
         self.team = team
+        name = team.name
+        shortName = team.shortName
+        league = team.leagueLabel
     }
 
     var displayRepresentation: DisplayRepresentation {
@@ -70,7 +94,7 @@ struct GetScoreIntent: AppIntent {
     static let title: LocalizedStringResource = "Get Score"
     static let description = IntentDescription("Today's score for a team, or its next game when it isn't playing today.")
 
-    @Parameter(title: "Team")
+    @Parameter(title: "Team", description: "The team to ask about, in any league EyeWall covers. Leave it empty for the user's primary team.")
     var team: TeamEntity?
 
     static var parameterSummary: some ParameterSummary { Summary("Get the score for \(\.$team)") }
@@ -86,7 +110,7 @@ struct GetNextGameIntent: AppIntent {
     static let title: LocalizedStringResource = "Get Next Game"
     static let description = IntentDescription("When a team plays next, and who against.")
 
-    @Parameter(title: "Team")
+    @Parameter(title: "Team", description: "The team to ask about, in any league EyeWall covers. Leave it empty for the user's primary team.")
     var team: TeamEntity?
 
     static var parameterSummary: some ParameterSummary { Summary("Get the next game for \(\.$team)") }
@@ -102,7 +126,7 @@ struct GetRecordIntent: AppIntent {
     static let title: LocalizedStringResource = "Get Team Record"
     static let description = IntentDescription("A team's record and points this season, and its place in the division for NHL teams.")
 
-    @Parameter(title: "Team")
+    @Parameter(title: "Team", description: "The team to ask about, in any league EyeWall covers. Leave it empty for the user's primary team.")
     var team: TeamEntity?
 
     static var parameterSummary: some ParameterSummary { Summary("Get the record for \(\.$team)") }
@@ -116,9 +140,9 @@ struct GetRecordIntent: AppIntent {
 @available(iOS 16.0, *)
 struct GetPlayoffChancesIntent: AppIntent {
     static let title: LocalizedStringResource = "Get Playoff Chances"
-    static let description = IntentDescription("How often a team makes the playoffs in EyeWall's simulations of the rest of the season, and its projected points.")
+    static let description = IntentDescription("How often a team makes the playoffs in EyeWall's 10,000 simulations of the season, and its projected points.")
 
-    @Parameter(title: "Team")
+    @Parameter(title: "Team", description: "The team to ask about, in any league EyeWall covers. Leave it empty for the user's primary team.")
     var team: TeamEntity?
 
     static var parameterSummary: some ParameterSummary { Summary("Get the playoff chances for \(\.$team)") }

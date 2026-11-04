@@ -1,6 +1,13 @@
 /* Siri / Shortcuts intents (EyeWallIntents.swift, IntentSupport.swift). */
 
 "Team" = "Équipe";
+"Name" = "Nom";
+"The team's full name, such as Carolina Hurricanes." = "Le nom complet de l'équipe, par exemple Hurricanes de la Caroline.";
+"Short Name" = "Nom court";
+"The short name fans use for the team, such as Canes." = "Le nom court que les partisans donnent à l'équipe, par exemple Canes.";
+"League" = "Ligue";
+"The team's league: NHL, PWHL, AHL or ECHL." = "La ligue de l'équipe : LNH, LPHF, LAH ou ECHL.";
+"The team to ask about, in any league EyeWall covers. Leave it empty for the user's primary team." = "L'équipe visée, dans n'importe quelle ligue couverte par EyeWall. Laissez vide pour l'équipe principale de l'utilisateur.";
 
 "Get Score" = "Obtenir le pointage";
 "Today's score for a team, or its next game when it isn't playing today." = "Le pointage du jour d'une équipe, ou son prochain match si elle ne joue pas aujourd'hui.";
@@ -15,7 +22,7 @@
 "Get the record for ${team}" = "Obtenir la fiche de ${team}";
 
 "Get Playoff Chances" = "Obtenir les chances de séries";
-"How often a team makes the playoffs in EyeWall's simulations of the rest of the season, and its projected points." = "À quelle fréquence une équipe fait les séries dans les simulations du reste de la saison par EyeWall, et ses points projetés.";
+"How often a team makes the playoffs in EyeWall's 10,000 simulations of the season, and its projected points." = "À quelle fréquence une équipe fait les séries dans les 10 000 simulations de la saison par EyeWall, et ses points projetés.";
 "Get the playoff chances for ${team}" = "Obtenir les chances de séries de ${team}";
 
 "Score" = "Pointage";
