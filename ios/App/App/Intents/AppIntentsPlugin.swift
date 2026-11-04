@@ -25,6 +25,9 @@ public class AppIntentsPlugin: CAPPlugin, CAPBridgedPlugin {
         // The followed teams are the ones Siri hears in "What's the
         // Hurricanes score"; tell it they may have changed.
         if #available(iOS 17.0, *) { EyeWallShortcuts.updateAppShortcutParameters() }
+        #if SIRI_AI_PREVIEW
+        Task { try? await TeamIndex.indexAll() }
+        #endif
         call.resolve()
     }
 }

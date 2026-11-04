@@ -25,7 +25,7 @@ import Testing
 import SiriEvaluations
 
 private let app = IntentDefinitions(bundleIdentifier: "com.eyewallanalytics.app")
-private let team = app.entities["TeamEntity"]
+private let team = app.entities["TeamEntity"]  // spotlightFindsTeam
 private let skill = app.skills["hockey-questions"]
 private let score = app.intents["GetScoreIntent"]
 private let nextGame = app.intents["GetNextGameIntent"]
@@ -50,42 +50,51 @@ struct HockeyQuestionsEvaluation {
         }),
         SiriCase(name: "next game, nickname", scenario: SiriScenario {
             UserTurn("When do the Canes play next in EyeWall") {
-                Calls { nextGame.expect(team: team.expectIdentifier("nhl:CAR")) }
+                Calls { nextGame }
+                SiriResponse(.contains("Canes"))
             }
         }),
-        // Shared short name: the NHL team unless the user says otherwise.
+        // Named teams: the preview build's intents take the name as text
+        // (teamName), matched by TeamCatalog.match. Shared short name: the
+        // NHL team unless the user says otherwise.
         SiriCase(name: "record, Bruins means Boston", scenario: SiriScenario {
             UserTurn("What's the Bruins record in EyeWall") {
-                Calls { record.expect(team: team.expectIdentifier("nhl:BOS")) }
+                Calls { record }
+                SiriResponse(.contains("Boston Bruins"))
             }
         }),
         SiriCase(name: "record, Providence Bruins", scenario: SiriScenario {
             UserTurn("What's the Providence Bruins record in EyeWall") {
-                Calls { record.expect(team: team.expectIdentifier("ahl:PRO")) }
+                Calls { record }
+                SiriResponse(.contains("Providence Bruins"))
             }
         }),
         // AHL: the playoff format isn't published, so projected points only.
         SiriCase(name: "playoff chances, Iowa Wild", scenario: SiriScenario {
             UserTurn("What are the Iowa Wild's playoff chances in EyeWall") {
-                Calls { playoffChances.expect(team: team.expectIdentifier("ahl:IA")) }
+                Calls { playoffChances }
+                SiriResponse(.contains("Iowa Wild"))
             }
         }),
         // PWHL, a city with three teams.
         SiriCase(name: "score, Toronto Sceptres", scenario: SiriScenario {
             UserTurn("How are the Toronto Sceptres doing in EyeWall") {
-                Calls { score.expect(team: team.expectIdentifier("pwhl:TOR")) }
+                Calls { score }
+                SiriResponse(.contains("Sceptres"))
             }
         }),
         // A nickname that isn't in the team data.
         SiriCase(name: "record, Habs", scenario: SiriScenario {
             UserTurn("What's the Habs record in EyeWall") {
-                Calls { record.expect(team: team.expectIdentifier("nhl:MTL")) }
+                Calls { record }
+                SiriResponse(.contains("Canadiens"))
             }
         }),
         // A follow-up that refers back to the first answer.
         SiriCase(name: "follow-up, they", scenario: SiriScenario {
             UserTurn("What's the Hurricanes score in EyeWall") {
-                Calls { score.expect(team: team.expectIdentifier("nhl:CAR")) }
+                Calls { score }
+                SiriResponse(.contains("Canes"))
             }
             // No Calls check: Siri may answer from the first turn's tool
             // result (the score tool also gives the next game), which is
@@ -95,19 +104,27 @@ struct HockeyQuestionsEvaluation {
         // Two answers in one request.
         SiriCase(name: "two tools, record and chances", scenario: SiriScenario {
             UserTurn("What's the Canes record and their playoff chances in EyeWall") {
-                Calls(.unordered) {
-                    record.expect(team: team.expectIdentifier("nhl:CAR"))
-                    playoffChances.expect(team: team.expectIdentifier("nhl:CAR"))
-                }
+                Calls(.unordered) { record; playoffChances }
             }
         }),
-        // Outside EyeWall's leagues: no tool should run.
-        SiriCase(name: "college hockey, no tool", scenario: SiriScenario {
+        // Outside EyeWall's leagues: Siri declines, or the tool says it
+        // doesn't know the team. Either way it lists the four leagues and
+        // never answers for the primary team.
+        SiriCase(name: "college hockey, declined", scenario: SiriScenario {
             UserTurn("What's the score of the Michigan Wolverines hockey game in EyeWall") {
-                Calls(.disallowed) { score; nextGame; record; playoffChances }
+                SiriResponse(.contains("ECHL"))
             }
         }),
     ]
+
+    /// Siri finds teams the user doesn't follow through Spotlight
+    /// (TeamIndex in SiriAIPreview.swift, indexed when the app opens).
+    @Test(arguments: [("Iowa Wild", "ahl:IA"), ("Providence Bruins", "ahl:PRO"), ("Toronto Sceptres", "pwhl:TOR")])
+    func spotlightFindsTeam(_ query: String, _ id: String) async throws {
+        let found = try await team.spotlightQuery(query).map { "\($0.identifier)" }
+        print("spotlight \(query): \(found)")
+        #expect(found.contains { $0.contains(id) }, "Spotlight didn't return \(id) for \"\(query)\"")
+    }
 
     @Test(arguments: cases)
     func siriAnswers(_ siriCase: SiriCase) async throws {

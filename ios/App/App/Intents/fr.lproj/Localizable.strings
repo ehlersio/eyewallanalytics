@@ -1,6 +1,7 @@
 /* Siri / Shortcuts intents (EyeWallIntents.swift, IntentSupport.swift). */
 
 "Team" = "Équipe";
+"Open Team" = "Ouvrir l'équipe";
 "Name" = "Nom";
 "The team's full name, such as Carolina Hurricanes." = "Le nom complet de l'équipe, par exemple Hurricanes de la Caroline.";
 "Short Name" = "Nom court";
@@ -33,3 +34,4 @@
 "Open EyeWall and pick a team first." = "Ouvrez EyeWall et choisissez d'abord une équipe.";
 "Open EyeWall once, then try again." = "Ouvrez EyeWall une fois, puis réessayez.";
 "EyeWall couldn't load that right now. Try again in a minute." = "EyeWall n'a pas pu charger cette information. Réessayez dans une minute.";
+"EyeWall doesn't know a team called %@. It covers the NHL, PWHL, AHL and ECHL." = "EyeWall ne connaît aucune équipe nommée %@. EyeWall couvre la LNH, la LPHF, la LAH et l'ECHL.";
