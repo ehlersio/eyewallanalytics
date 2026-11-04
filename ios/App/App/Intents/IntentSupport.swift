@@ -64,7 +64,9 @@ enum IntentContext {
 
     static func save(teams: [String], workerURL: String) {
         defaults.set(teams, forKey: teamsKey)
-        defaults.set(workerURL, forKey: workerURLKey)
+        // A web build without VITE_WORKER_URL sends "": keep the last good URL
+        // (or LiveActivityRegistrar's) rather than saving "" over it.
+        if !workerURL.isEmpty { defaults.set(workerURL, forKey: workerURLKey) }
     }
 
     static var followedTeams: [IntentTeam] {
@@ -73,8 +75,7 @@ enum IntentContext {
     }
 
     static var workerURL: String? {
-        let url = defaults.string(forKey: workerURLKey) ?? defaults.string(forKey: laWorkerURLKey)
-        return url?.isEmpty == false ? url : nil
+        [workerURLKey, laWorkerURLKey].lazy.compactMap { defaults.string(forKey: $0) }.first { !$0.isEmpty }
     }
 
     /// The team asked about, else the primary followed team.

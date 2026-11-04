@@ -55,7 +55,14 @@ struct TeamEntity: AppEntity {
     }
 
     var displayRepresentation: DisplayRepresentation {
+        #if SIRI_AI_PREVIEW
+        // Siri AI picks teams by title, and short names repeat across leagues
+        // (Bruins, Wild, Penguins...): it took "Providence Bruins" for Boston.
+        // The full name as the title, the short name as a synonym.
+        DisplayRepresentation(title: "\(team.name)", subtitle: "\(team.leagueLabel)", synonyms: ["\(team.shortName)"])
+        #else
         DisplayRepresentation(title: "\(team.shortName)", subtitle: "\(team.leagueLabel) · \(team.name)")
+        #endif
     }
 }
 
