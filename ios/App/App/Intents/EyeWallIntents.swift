@@ -2,7 +2,7 @@
 //  EyeWallIntents.swift
 //  App
 //
-//  Siri and Shortcuts: the score, next game, record and playoff chances of
+//  Siri and Shortcuts: the score, goals, next game, record and playoff chances of
 //  any team in the app, the primary followed team when none is named.
 //  Answers come from IntentAnswers.swift; the phrases Siri listens for are
 //  in EyeWallShortcuts below (French in fr.lproj/AppShortcuts.strings).
@@ -190,6 +190,27 @@ struct GetPlayoffChancesIntent: AppIntent, SpokenTeam {
 }
 
 @available(iOS 16.0, *)
+struct GetGoalsIntent: AppIntent, SpokenTeam {
+    static let title: LocalizedStringResource = "Get Goals"
+    static let description = IntentDescription("Who scored in a team's game today, or in its last game: the latest goal with its assists, then every scorer.")
+
+    @Parameter(title: "Team", description: "The team to ask about, in any league EyeWall covers. Leave it empty for the user's primary team.")
+    var team: TeamEntity?
+
+    #if SIRI_AI_PREVIEW
+    @Parameter(title: "Team Name", description: "The team's name exactly as the user said it, such as Iowa Wild, Habs or Toronto Sceptres. Leave it empty for the user's primary team.")
+    var teamName: String?
+    #endif
+
+    static var parameterSummary: some ParameterSummary { Summary("Get the goals for \(\.$team)") }
+
+    func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
+        let text = try await IntentAnswers.goals(IntentContext.resolve(team?.id, name: spokenTeam))
+        return .result(value: text, dialog: IntentDialog(stringLiteral: text))
+    }
+}
+
+@available(iOS 16.0, *)
 extension SpokenTeam {
     fileprivate var spokenTeam: String? { nil }
 }
@@ -199,6 +220,7 @@ extension GetScoreIntent { fileprivate var spokenTeam: String? { teamName } }
 extension GetNextGameIntent { fileprivate var spokenTeam: String? { teamName } }
 extension GetRecordIntent { fileprivate var spokenTeam: String? { teamName } }
 extension GetPlayoffChancesIntent { fileprivate var spokenTeam: String? { teamName } }
+extension GetGoalsIntent { fileprivate var spokenTeam: String? { teamName } }
 #endif
 
 // MARK: - Siri phrases
@@ -223,6 +245,15 @@ struct EyeWallShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Score",
             systemImageName: "sportscourt"
+        )
+        AppShortcut(
+            intent: GetGoalsIntent(),
+            phrases: [
+                "Who scored in \(.applicationName)",
+                "\(.applicationName) goals",
+            ],
+            shortTitle: "Goals",
+            systemImageName: "hockey.puck"
         )
         AppShortcut(
             intent: GetNextGameIntent(),
@@ -264,6 +295,16 @@ struct EyeWallShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Score",
             systemImageName: "sportscourt"
+        )
+        AppShortcut(
+            intent: GetGoalsIntent(),
+            phrases: [
+                "Who scored in \(.applicationName)",
+                "\(.applicationName) goals",
+                "Who scored for the \(\.$team) in \(.applicationName)",
+            ],
+            shortTitle: "Goals",
+            systemImageName: "hockey.puck"
         )
         AppShortcut(
             intent: GetNextGameIntent(),

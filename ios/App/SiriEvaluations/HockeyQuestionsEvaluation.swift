@@ -31,6 +31,7 @@ private let score = app.intents["GetScoreIntent"]
 private let nextGame = app.intents["GetNextGameIntent"]
 private let record = app.intents["GetRecordIntent"]
 private let playoffChances = app.intents["GetPlayoffChancesIntent"]
+private let goals = app.intents["GetGoalsIntent"]
 
 struct SiriCase: Sendable, CustomTestStringConvertible {
     let name: String
@@ -52,6 +53,20 @@ struct HockeyQuestionsEvaluation {
             UserTurn("When do the Canes play next in EyeWall") {
                 Calls { nextGame }
                 SiriResponse(.contains("Canes"))
+            }
+        }),
+        // Who scored: today's game or the last one. Every answer that found a
+        // game names a goal or says there are none.
+        SiriCase(name: "who scored, my team", scenario: SiriScenario {
+            UserTurn("Who scored in EyeWall") {
+                Calls { goals }
+                Loads(.preferred) { skill }
+            }
+        }),
+        SiriCase(name: "who scored, Iowa Wild", scenario: SiriScenario {
+            UserTurn("Who scored for the Iowa Wild in EyeWall") {
+                Calls { goals }
+                SiriResponse(.contains("Iowa Wild"))
             }
         }),
         // Named teams: the preview build's intents take the name as text
