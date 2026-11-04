@@ -208,12 +208,13 @@ enum IntentAnswers {
             guard let row = try await nhlStandingsRow(team, season: seasons.nhl) else { return noRecord(team) }
             let gp = row.int("gamesPlayed") ?? 0
             guard gp > 0 else { return notPlayed(team) }
-            let rec = "\(row.int("wins") ?? 0)-\(row.int("losses") ?? 0)-\(row.int("otLosses") ?? 0)"
+            let rec = recordWords(wins: row.int("wins") ?? 0, losses: row.int("losses") ?? 0,
+                                  otLosses: row.int("otLosses") ?? 0, shootoutLosses: nil)
             let pts = row.int("points") ?? 0
             let rowSeason = row.int("seasonId").map(String.init) ?? row.string("seasonId")
             let label = rowSeason != nil && rowSeason != seasons.nhl ? " (\(seasonLabel(rowSeason!)))" : ""
-            var text = L10n.t("\(team.shortName)\(label): \(rec), \(pts) points in \(gp) games",
-                              "\(team.shortName)\(label) : \(rec), \(pts) points en \(gp) matchs")
+            var text = L10n.t("\(team.shortName)\(label): \(rec). \(pts) points in \(gp) games",
+                              "\(team.shortName)\(label) : \(rec). \(pts) points en \(gp) matchs")
             if let place = row.int("divisionSequence"), let division = row.string("divisionName") ?? row.localized("divisionName") {
                 text += L10n.t(", \(L10n.ordinal(place)) in the \(division) Division", ", \(L10n.ordinal(place)) de la division \(division)")
             }
@@ -225,12 +226,31 @@ enum IntentAnswers {
         guard let row = rows.first(where: { $0.int("team_id") == team.teamId }) else { return noRecord(team) }
         let gp = row.int("gp") ?? 0
         guard gp > 0 else { return notPlayed(team) }
-        var rec = "\(row.int("wins") ?? 0)-\(row.int("losses") ?? 0)-\(row.int("ot_losses") ?? 0)"
-        if let sol = row.int("shootout_losses") { rec += "-\(sol)" }
+        let rec = recordWords(wins: row.int("wins") ?? 0, losses: row.int("losses") ?? 0,
+                              otLosses: row.int("ot_losses") ?? 0, shootoutLosses: row.int("shootout_losses"))
         let pts = row.int("points") ?? 0
         let label = team.league == "pwhl" ? seasons.pwhlStartYear.map { " (\($0)–\(String(($0 + 1) % 100)))" } ?? "" : ""
-        return L10n.t("\(team.shortName)\(label): \(rec), \(pts) points in \(gp) games.",
-                      "\(team.shortName)\(label) : \(rec), \(pts) points en \(gp) matchs.")
+        return L10n.t("\(team.shortName)\(label): \(rec). \(pts) points in \(gp) games.",
+                      "\(team.shortName)\(label) : \(rec). \(pts) points en \(gp) matchs.")
+    }
+
+    /// "11 wins, 4 losses, 1 overtime loss". Siri reads the answer aloud, and
+    /// "11-4-1" comes out as "11 to 4 to 1".
+    static func recordWords(wins: Int, losses: Int, otLosses: Int, shootoutLosses: Int?) -> String {
+        // English: singular for 1 only. French: singular for 0 and 1.
+        func count(_ n: Int, _ en: String, _ enPlural: String, _ fr: String, _ frPlural: String) -> String {
+            L10n.t("\(n) \(n == 1 ? en : enPlural)", "\(n) \(n <= 1 ? fr : frPlural)")
+        }
+        var parts = [
+            count(wins, "win", "wins", "victoire", "victoires"),
+            count(losses, "loss", "losses", "défaite", "défaites"),
+            count(otLosses, "overtime loss", "overtime losses", "défaite en prolongation", "défaites en prolongation"),
+        ]
+        if let shootoutLosses {
+            parts.append(count(shootoutLosses, "shootout loss", "shootout losses", "défaite en tirs de barrage", "défaites en tirs de barrage"))
+        }
+        let last = parts.removeLast()
+        return parts.joined(separator: ", ") + L10n.t(" and ", " et ") + last
     }
 
     /// The Worker's standings, else the NHL's own through the site's proxy
