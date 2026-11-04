@@ -83,5 +83,14 @@
 	<true/>
 	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
 	<true/>
+	<key>INAlternativeAppNames</key>
+	<array>
+		<dict>
+			<key>INAlternativeAppName</key>
+			<string>EyeWall</string>
+			<key>INAlternativeAppNamePronunciationHint</key>
+			<string>eye wall</string>
+		</dict>
+	</array>
 </dict>
 </plist>

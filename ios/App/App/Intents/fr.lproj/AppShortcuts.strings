@@ -1,0 +1,18 @@
+/* Siri phrases (EyeWallShortcuts in EyeWallIntents.swift). Every phrase names the app. */
+
+"What's the score in ${applicationName}" = "Quel est le pointage dans ${applicationName}";
+"${applicationName} score" = "Pointage ${applicationName}";
+"What's the ${team} score in ${applicationName}" = "Quel est le pointage des ${team} dans ${applicationName}";
+"How are the ${team} doing in ${applicationName}" = "Comment vont les ${team} dans ${applicationName}";
+
+"When is the next game in ${applicationName}" = "C'est quand le prochain match dans ${applicationName}";
+"${applicationName} next game" = "Prochain match ${applicationName}";
+"When do the ${team} play next in ${applicationName}" = "Quand jouent les ${team} dans ${applicationName}";
+
+"What's our record in ${applicationName}" = "Quelle est notre fiche dans ${applicationName}";
+"${applicationName} standings" = "Classement ${applicationName}";
+"What's the ${team} record in ${applicationName}" = "Quelle est la fiche des ${team} dans ${applicationName}";
+
+"What are our playoff chances in ${applicationName}" = "Quelles sont nos chances de séries dans ${applicationName}";
+"${applicationName} playoff chances" = "Chances de séries ${applicationName}";
+"What are the ${team} playoff chances in ${applicationName}" = "Quelles sont les chances de séries des ${team} dans ${applicationName}";

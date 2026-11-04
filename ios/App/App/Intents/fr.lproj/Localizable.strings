@@ -1,0 +1,28 @@
+/* Siri / Shortcuts intents (EyeWallIntents.swift, IntentSupport.swift). */
+
+"Team" = "Équipe";
+
+"Get Score" = "Obtenir le pointage";
+"Today's score for a team, or its next game when it isn't playing today." = "Le pointage du jour d'une équipe, ou son prochain match si elle ne joue pas aujourd'hui.";
+"Get the score for ${team}" = "Obtenir le pointage de ${team}";
+
+"Get Next Game" = "Obtenir le prochain match";
+"When a team plays next, and who against." = "Quand une équipe joue son prochain match, et contre qui.";
+"Get the next game for ${team}" = "Obtenir le prochain match de ${team}";
+
+"Get Team Record" = "Obtenir la fiche de l'équipe";
+"A team's record and points this season, and its place in the division for NHL teams." = "La fiche et les points d'une équipe cette saison, et son rang dans la division pour les équipes de la LNH.";
+"Get the record for ${team}" = "Obtenir la fiche de ${team}";
+
+"Get Playoff Chances" = "Obtenir les chances de séries";
+"How often a team makes the playoffs in EyeWall's simulations of the rest of the season, and its projected points." = "À quelle fréquence une équipe fait les séries dans les simulations du reste de la saison par EyeWall, et ses points projetés.";
+"Get the playoff chances for ${team}" = "Obtenir les chances de séries de ${team}";
+
+"Score" = "Pointage";
+"Next Game" = "Prochain match";
+"Record" = "Fiche";
+"Playoff Chances" = "Chances de séries";
+
+"Open EyeWall and pick a team first." = "Ouvrez EyeWall et choisissez d'abord une équipe.";
+"Open EyeWall once, then try again." = "Ouvrez EyeWall une fois, puis réessayez.";
+"EyeWall couldn't load that right now. Try again in a minute." = "EyeWall n'a pas pu charger cette information. Réessayez dans une minute.";

@@ -1,0 +1,850 @@
+[
+  {
+    "id": "nhl:BOS",
+    "league": "nhl",
+    "abbr": "BOS",
+    "teamId": 6,
+    "name": "Boston Bruins",
+    "shortName": "Bruins"
+  },
+  {
+    "id": "nhl:BUF",
+    "league": "nhl",
+    "abbr": "BUF",
+    "teamId": 7,
+    "name": "Buffalo Sabres",
+    "shortName": "Sabres"
+  },
+  {
+    "id": "nhl:DET",
+    "league": "nhl",
+    "abbr": "DET",
+    "teamId": 17,
+    "name": "Detroit Red Wings",
+    "shortName": "Red Wings"
+  },
+  {
+    "id": "nhl:FLA",
+    "league": "nhl",
+    "abbr": "FLA",
+    "teamId": 13,
+    "name": "Florida Panthers",
+    "shortName": "Panthers"
+  },
+  {
+    "id": "nhl:MTL",
+    "league": "nhl",
+    "abbr": "MTL",
+    "teamId": 8,
+    "name": "Montréal Canadiens",
+    "shortName": "Canadiens"
+  },
+  {
+    "id": "nhl:OTT",
+    "league": "nhl",
+    "abbr": "OTT",
+    "teamId": 9,
+    "name": "Ottawa Senators",
+    "shortName": "Senators"
+  },
+  {
+    "id": "nhl:TBL",
+    "league": "nhl",
+    "abbr": "TBL",
+    "teamId": 14,
+    "name": "Tampa Bay Lightning",
+    "shortName": "Lightning"
+  },
+  {
+    "id": "nhl:TOR",
+    "league": "nhl",
+    "abbr": "TOR",
+    "teamId": 10,
+    "name": "Toronto Maple Leafs",
+    "shortName": "Maple Leafs"
+  },
+  {
+    "id": "nhl:CAR",
+    "league": "nhl",
+    "abbr": "CAR",
+    "teamId": 12,
+    "name": "Carolina Hurricanes",
+    "shortName": "Canes"
+  },
+  {
+    "id": "nhl:CBJ",
+    "league": "nhl",
+    "abbr": "CBJ",
+    "teamId": 29,
+    "name": "Columbus Blue Jackets",
+    "shortName": "Blue Jackets"
+  },
+  {
+    "id": "nhl:NJD",
+    "league": "nhl",
+    "abbr": "NJD",
+    "teamId": 1,
+    "name": "New Jersey Devils",
+    "shortName": "Devils"
+  },
+  {
+    "id": "nhl:NYI",
+    "league": "nhl",
+    "abbr": "NYI",
+    "teamId": 2,
+    "name": "New York Islanders",
+    "shortName": "Islanders"
+  },
+  {
+    "id": "nhl:NYR",
+    "league": "nhl",
+    "abbr": "NYR",
+    "teamId": 3,
+    "name": "New York Rangers",
+    "shortName": "Rangers"
+  },
+  {
+    "id": "nhl:PHI",
+    "league": "nhl",
+    "abbr": "PHI",
+    "teamId": 4,
+    "name": "Philadelphia Flyers",
+    "shortName": "Flyers"
+  },
+  {
+    "id": "nhl:PIT",
+    "league": "nhl",
+    "abbr": "PIT",
+    "teamId": 5,
+    "name": "Pittsburgh Penguins",
+    "shortName": "Penguins"
+  },
+  {
+    "id": "nhl:WSH",
+    "league": "nhl",
+    "abbr": "WSH",
+    "teamId": 15,
+    "name": "Washington Capitals",
+    "shortName": "Capitals"
+  },
+  {
+    "id": "nhl:CHI",
+    "league": "nhl",
+    "abbr": "CHI",
+    "teamId": 16,
+    "name": "Chicago Blackhawks",
+    "shortName": "Blackhawks"
+  },
+  {
+    "id": "nhl:COL",
+    "league": "nhl",
+    "abbr": "COL",
+    "teamId": 21,
+    "name": "Colorado Avalanche",
+    "shortName": "Avalanche"
+  },
+  {
+    "id": "nhl:DAL",
+    "league": "nhl",
+    "abbr": "DAL",
+    "teamId": 25,
+    "name": "Dallas Stars",
+    "shortName": "Stars"
+  },
+  {
+    "id": "nhl:MIN",
+    "league": "nhl",
+    "abbr": "MIN",
+    "teamId": 30,
+    "name": "Minnesota Wild",
+    "shortName": "Wild"
+  },
+  {
+    "id": "nhl:NSH",
+    "league": "nhl",
+    "abbr": "NSH",
+    "teamId": 18,
+    "name": "Nashville Predators",
+    "shortName": "Predators"
+  },
+  {
+    "id": "nhl:STL",
+    "league": "nhl",
+    "abbr": "STL",
+    "teamId": 19,
+    "name": "St. Louis Blues",
+    "shortName": "Blues"
+  },
+  {
+    "id": "nhl:UTA",
+    "league": "nhl",
+    "abbr": "UTA",
+    "teamId": 68,
+    "name": "Utah Mammoth",
+    "shortName": "Mammoth"
+  },
+  {
+    "id": "nhl:WPG",
+    "league": "nhl",
+    "abbr": "WPG",
+    "teamId": 52,
+    "name": "Winnipeg Jets",
+    "shortName": "Jets"
+  },
+  {
+    "id": "nhl:ANA",
+    "league": "nhl",
+    "abbr": "ANA",
+    "teamId": 24,
+    "name": "Anaheim Ducks",
+    "shortName": "Ducks"
+  },
+  {
+    "id": "nhl:CGY",
+    "league": "nhl",
+    "abbr": "CGY",
+    "teamId": 20,
+    "name": "Calgary Flames",
+    "shortName": "Flames"
+  },
+  {
+    "id": "nhl:EDM",
+    "league": "nhl",
+    "abbr": "EDM",
+    "teamId": 22,
+    "name": "Edmonton Oilers",
+    "shortName": "Oilers"
+  },
+  {
+    "id": "nhl:LAK",
+    "league": "nhl",
+    "abbr": "LAK",
+    "teamId": 26,
+    "name": "Los Angeles Kings",
+    "shortName": "Kings"
+  },
+  {
+    "id": "nhl:SJS",
+    "league": "nhl",
+    "abbr": "SJS",
+    "teamId": 28,
+    "name": "San Jose Sharks",
+    "shortName": "Sharks"
+  },
+  {
+    "id": "nhl:SEA",
+    "league": "nhl",
+    "abbr": "SEA",
+    "teamId": 55,
+    "name": "Seattle Kraken",
+    "shortName": "Kraken"
+  },
+  {
+    "id": "nhl:VAN",
+    "league": "nhl",
+    "abbr": "VAN",
+    "teamId": 23,
+    "name": "Vancouver Canucks",
+    "shortName": "Canucks"
+  },
+  {
+    "id": "nhl:VGK",
+    "league": "nhl",
+    "abbr": "VGK",
+    "teamId": 54,
+    "name": "Vegas Golden Knights",
+    "shortName": "Golden Knights"
+  },
+  {
+    "id": "pwhl:BOS",
+    "league": "pwhl",
+    "abbr": "BOS",
+    "teamId": 1,
+    "name": "Boston Fleet",
+    "shortName": "Fleet"
+  },
+  {
+    "id": "pwhl:MIN",
+    "league": "pwhl",
+    "abbr": "MIN",
+    "teamId": 2,
+    "name": "Minnesota Frost",
+    "shortName": "Frost"
+  },
+  {
+    "id": "pwhl:MTL",
+    "league": "pwhl",
+    "abbr": "MTL",
+    "teamId": 3,
+    "name": "Montréal Victoire",
+    "shortName": "Victoire"
+  },
+  {
+    "id": "pwhl:NY",
+    "league": "pwhl",
+    "abbr": "NY",
+    "teamId": 4,
+    "name": "New York Sirens",
+    "shortName": "Sirens"
+  },
+  {
+    "id": "pwhl:OTT",
+    "league": "pwhl",
+    "abbr": "OTT",
+    "teamId": 5,
+    "name": "Ottawa Charge",
+    "shortName": "Charge"
+  },
+  {
+    "id": "pwhl:TOR",
+    "league": "pwhl",
+    "abbr": "TOR",
+    "teamId": 6,
+    "name": "Toronto Sceptres",
+    "shortName": "Sceptres"
+  },
+  {
+    "id": "pwhl:SEA",
+    "league": "pwhl",
+    "abbr": "SEA",
+    "teamId": 8,
+    "name": "Seattle Torrent",
+    "shortName": "Torrent"
+  },
+  {
+    "id": "pwhl:VAN",
+    "league": "pwhl",
+    "abbr": "VAN",
+    "teamId": 9,
+    "name": "Vancouver Goldeneyes",
+    "shortName": "Goldeneyes"
+  },
+  {
+    "id": "pwhl:DET",
+    "league": "pwhl",
+    "abbr": "DET",
+    "teamId": 10,
+    "name": "PWHL Detroit",
+    "shortName": "Detroit"
+  },
+  {
+    "id": "pwhl:HAM",
+    "league": "pwhl",
+    "abbr": "HAM",
+    "teamId": 11,
+    "name": "PWHL Hamilton",
+    "shortName": "Hamilton"
+  },
+  {
+    "id": "pwhl:LV",
+    "league": "pwhl",
+    "abbr": "LV",
+    "teamId": 12,
+    "name": "PWHL Las Vegas",
+    "shortName": "Las Vegas"
+  },
+  {
+    "id": "pwhl:SJS",
+    "league": "pwhl",
+    "abbr": "SJS",
+    "teamId": 13,
+    "name": "PWHL San Jose",
+    "shortName": "San Jose"
+  },
+  {
+    "id": "ahl:HFD",
+    "league": "ahl",
+    "abbr": "HFD",
+    "teamId": 307,
+    "name": "Hartford Wolf Pack",
+    "shortName": "Wolf Pack"
+  },
+  {
+    "id": "ahl:PRO",
+    "league": "ahl",
+    "abbr": "PRO",
+    "teamId": 309,
+    "name": "Providence Bruins",
+    "shortName": "Bruins"
+  },
+  {
+    "id": "ahl:LV",
+    "league": "ahl",
+    "abbr": "LV",
+    "teamId": 313,
+    "name": "Lehigh Valley Phantoms",
+    "shortName": "Phantoms"
+  },
+  {
+    "id": "ahl:WBS",
+    "league": "ahl",
+    "abbr": "WBS",
+    "teamId": 316,
+    "name": "Wilkes-Barre/Scranton Penguins",
+    "shortName": "Penguins"
+  },
+  {
+    "id": "ahl:HER",
+    "league": "ahl",
+    "abbr": "HER",
+    "teamId": 319,
+    "name": "Hershey Bears",
+    "shortName": "Bears"
+  },
+  {
+    "id": "ahl:CLT",
+    "league": "ahl",
+    "abbr": "CLT",
+    "teamId": 384,
+    "name": "Charlotte Checkers",
+    "shortName": "Checkers"
+  },
+  {
+    "id": "ahl:SPR",
+    "league": "ahl",
+    "abbr": "SPR",
+    "teamId": 411,
+    "name": "Springfield Thunderbirds",
+    "shortName": "Thunderbirds"
+  },
+  {
+    "id": "ahl:ROC",
+    "league": "ahl",
+    "abbr": "ROC",
+    "teamId": 323,
+    "name": "Rochester Americans",
+    "shortName": "Americans"
+  },
+  {
+    "id": "ahl:SYR",
+    "league": "ahl",
+    "abbr": "SYR",
+    "teamId": 324,
+    "name": "Syracuse Crunch",
+    "shortName": "Crunch"
+  },
+  {
+    "id": "ahl:TOR",
+    "league": "ahl",
+    "abbr": "TOR",
+    "teamId": 335,
+    "name": "Toronto Marlies",
+    "shortName": "Marlies"
+  },
+  {
+    "id": "ahl:CLE",
+    "league": "ahl",
+    "abbr": "CLE",
+    "teamId": 373,
+    "name": "Cleveland Monsters",
+    "shortName": "Monsters"
+  },
+  {
+    "id": "ahl:UTC",
+    "league": "ahl",
+    "abbr": "UTC",
+    "teamId": 390,
+    "name": "Utica Comets",
+    "shortName": "Comets"
+  },
+  {
+    "id": "ahl:BEL",
+    "league": "ahl",
+    "abbr": "BEL",
+    "teamId": 413,
+    "name": "Belleville Senators",
+    "shortName": "Senators"
+  },
+  {
+    "id": "ahl:LAV",
+    "league": "ahl",
+    "abbr": "LAV",
+    "teamId": 415,
+    "name": "Laval Rocket",
+    "shortName": "Rocket"
+  },
+  {
+    "id": "ahl:HAM",
+    "league": "ahl",
+    "abbr": "HAM",
+    "teamId": 457,
+    "name": "Hamilton Hammers",
+    "shortName": "Hammers"
+  },
+  {
+    "id": "ahl:MB",
+    "league": "ahl",
+    "abbr": "MB",
+    "teamId": 321,
+    "name": "Manitoba Moose",
+    "shortName": "Moose"
+  },
+  {
+    "id": "ahl:MIL",
+    "league": "ahl",
+    "abbr": "MIL",
+    "teamId": 327,
+    "name": "Milwaukee Admirals",
+    "shortName": "Admirals"
+  },
+  {
+    "id": "ahl:GR",
+    "league": "ahl",
+    "abbr": "GR",
+    "teamId": 328,
+    "name": "Grand Rapids Griffins",
+    "shortName": "Griffins"
+  },
+  {
+    "id": "ahl:CHI",
+    "league": "ahl",
+    "abbr": "CHI",
+    "teamId": 330,
+    "name": "Chicago Wolves",
+    "shortName": "Wolves"
+  },
+  {
+    "id": "ahl:RFD",
+    "league": "ahl",
+    "abbr": "RFD",
+    "teamId": 372,
+    "name": "Rockford IceHogs",
+    "shortName": "IceHogs"
+  },
+  {
+    "id": "ahl:TEX",
+    "league": "ahl",
+    "abbr": "TEX",
+    "teamId": 380,
+    "name": "Texas Stars",
+    "shortName": "Stars"
+  },
+  {
+    "id": "ahl:IA",
+    "league": "ahl",
+    "abbr": "IA",
+    "teamId": 389,
+    "name": "Iowa Wild",
+    "shortName": "Wild"
+  },
+  {
+    "id": "ahl:BAK",
+    "league": "ahl",
+    "abbr": "BAK",
+    "teamId": 402,
+    "name": "Bakersfield Condors",
+    "shortName": "Condors"
+  },
+  {
+    "id": "ahl:ONT",
+    "league": "ahl",
+    "abbr": "ONT",
+    "teamId": 403,
+    "name": "Ontario Reign",
+    "shortName": "Reign"
+  },
+  {
+    "id": "ahl:SD",
+    "league": "ahl",
+    "abbr": "SD",
+    "teamId": 404,
+    "name": "San Diego Gulls",
+    "shortName": "Gulls"
+  },
+  {
+    "id": "ahl:SJ",
+    "league": "ahl",
+    "abbr": "SJ",
+    "teamId": 405,
+    "name": "San Jose Barracuda",
+    "shortName": "Barracuda"
+  },
+  {
+    "id": "ahl:TUC",
+    "league": "ahl",
+    "abbr": "TUC",
+    "teamId": 412,
+    "name": "Tucson Roadrunners",
+    "shortName": "Roadrunners"
+  },
+  {
+    "id": "ahl:COL",
+    "league": "ahl",
+    "abbr": "COL",
+    "teamId": 419,
+    "name": "Colorado Eagles",
+    "shortName": "Eagles"
+  },
+  {
+    "id": "ahl:HSK",
+    "league": "ahl",
+    "abbr": "HSK",
+    "teamId": 437,
+    "name": "Henderson Silver Knights",
+    "shortName": "Silver Knights"
+  },
+  {
+    "id": "ahl:ABB",
+    "league": "ahl",
+    "abbr": "ABB",
+    "teamId": 440,
+    "name": "Abbotsford Canucks",
+    "shortName": "Canucks"
+  },
+  {
+    "id": "ahl:CGY",
+    "league": "ahl",
+    "abbr": "CGY",
+    "teamId": 444,
+    "name": "Calgary Wranglers",
+    "shortName": "Wranglers"
+  },
+  {
+    "id": "ahl:CV",
+    "league": "ahl",
+    "abbr": "CV",
+    "teamId": 445,
+    "name": "Coachella Valley Firebirds",
+    "shortName": "Firebirds"
+  },
+  {
+    "id": "echl:ADK",
+    "league": "echl",
+    "abbr": "ADK",
+    "teamId": 74,
+    "name": "Adirondack Thunder",
+    "shortName": "Thunder"
+  },
+  {
+    "id": "echl:GSO",
+    "league": "echl",
+    "abbr": "GSO",
+    "teamId": 108,
+    "name": "Greensboro Gargoyles",
+    "shortName": "Gargoyles"
+  },
+  {
+    "id": "echl:MNE",
+    "league": "echl",
+    "abbr": "MNE",
+    "teamId": 82,
+    "name": "Maine Mariners",
+    "shortName": "Mariners"
+  },
+  {
+    "id": "echl:NOR",
+    "league": "echl",
+    "abbr": "NOR",
+    "teamId": 76,
+    "name": "Norfolk Admirals",
+    "shortName": "Admirals"
+  },
+  {
+    "id": "echl:REA",
+    "league": "echl",
+    "abbr": "REA",
+    "teamId": 17,
+    "name": "Reading Royals",
+    "shortName": "Royals"
+  },
+  {
+    "id": "echl:TRE",
+    "league": "echl",
+    "abbr": "TRE",
+    "teamId": 113,
+    "name": "Trenton Ironhawks",
+    "shortName": "Ironhawks"
+  },
+  {
+    "id": "echl:TR",
+    "league": "echl",
+    "abbr": "TR",
+    "teamId": 99,
+    "name": "Trois-Rivières Lions",
+    "shortName": "Lions"
+  },
+  {
+    "id": "echl:WOR",
+    "league": "echl",
+    "abbr": "WOR",
+    "teamId": 77,
+    "name": "Worcester Railers",
+    "shortName": "Railers"
+  },
+  {
+    "id": "echl:ATL",
+    "league": "echl",
+    "abbr": "ATL",
+    "teamId": 10,
+    "name": "Atlanta Gladiators",
+    "shortName": "Gladiators"
+  },
+  {
+    "id": "echl:FLA",
+    "league": "echl",
+    "abbr": "FLA",
+    "teamId": 8,
+    "name": "Florida Everblades",
+    "shortName": "Everblades"
+  },
+  {
+    "id": "echl:GVL",
+    "league": "echl",
+    "abbr": "GVL",
+    "teamId": 52,
+    "name": "Greenville Swamp Rabbits",
+    "shortName": "Swamp Rabbits"
+  },
+  {
+    "id": "echl:JAX",
+    "league": "echl",
+    "abbr": "JAX",
+    "teamId": 79,
+    "name": "Jacksonville Icemen",
+    "shortName": "Icemen"
+  },
+  {
+    "id": "echl:ORL",
+    "league": "echl",
+    "abbr": "ORL",
+    "teamId": 61,
+    "name": "Orlando Solar Bears",
+    "shortName": "Solar Bears"
+  },
+  {
+    "id": "echl:SAV",
+    "league": "echl",
+    "abbr": "SAV",
+    "teamId": 102,
+    "name": "Savannah Ghost Pirates",
+    "shortName": "Ghost Pirates"
+  },
+  {
+    "id": "echl:SC",
+    "league": "echl",
+    "abbr": "SC",
+    "teamId": 18,
+    "name": "South Carolina Stingrays",
+    "shortName": "Stingrays"
+  },
+  {
+    "id": "echl:BLM",
+    "league": "echl",
+    "abbr": "BLM",
+    "teamId": 107,
+    "name": "Bloomington Bison",
+    "shortName": "Bison"
+  },
+  {
+    "id": "echl:CIN",
+    "league": "echl",
+    "abbr": "CIN",
+    "teamId": 5,
+    "name": "Cincinnati Cyclones",
+    "shortName": "Cyclones"
+  },
+  {
+    "id": "echl:FW",
+    "league": "echl",
+    "abbr": "FW",
+    "teamId": 60,
+    "name": "Fort Wayne Komets",
+    "shortName": "Komets"
+  },
+  {
+    "id": "echl:IND",
+    "league": "echl",
+    "abbr": "IND",
+    "teamId": 65,
+    "name": "Indy Fuel",
+    "shortName": "Fuel"
+  },
+  {
+    "id": "echl:KAL",
+    "league": "echl",
+    "abbr": "KAL",
+    "teamId": 50,
+    "name": "Kalamazoo Wings",
+    "shortName": "Wings"
+  },
+  {
+    "id": "echl:TOL",
+    "league": "echl",
+    "abbr": "TOL",
+    "teamId": 21,
+    "name": "Toledo Walleye",
+    "shortName": "Walleye"
+  },
+  {
+    "id": "echl:WHL",
+    "league": "echl",
+    "abbr": "WHL",
+    "teamId": 25,
+    "name": "Wheeling Nailers",
+    "shortName": "Nailers"
+  },
+  {
+    "id": "echl:ALN",
+    "league": "echl",
+    "abbr": "ALN",
+    "teamId": 66,
+    "name": "Allen Americans",
+    "shortName": "Americans"
+  },
+  {
+    "id": "echl:IDH",
+    "league": "echl",
+    "abbr": "IDH",
+    "teamId": 11,
+    "name": "Idaho Steelheads",
+    "shortName": "Steelheads"
+  },
+  {
+    "id": "echl:KC",
+    "league": "echl",
+    "abbr": "KC",
+    "teamId": 68,
+    "name": "Kansas City Mavericks",
+    "shortName": "Mavericks"
+  },
+  {
+    "id": "echl:NM",
+    "league": "echl",
+    "abbr": "NM",
+    "teamId": 114,
+    "name": "New Mexico Goatheads",
+    "shortName": "Goatheads"
+  },
+  {
+    "id": "echl:RC",
+    "league": "echl",
+    "abbr": "RC",
+    "teamId": 70,
+    "name": "Rapid City Rush",
+    "shortName": "Rush"
+  },
+  {
+    "id": "echl:TAH",
+    "league": "echl",
+    "abbr": "TAH",
+    "teamId": 106,
+    "name": "Tahoe Knight Monsters",
+    "shortName": "Knight Monsters"
+  },
+  {
+    "id": "echl:TUL",
+    "league": "echl",
+    "abbr": "TUL",
+    "teamId": 71,
+    "name": "Tulsa Oilers",
+    "shortName": "Oilers"
+  },
+  {
+    "id": "echl:WIC",
+    "league": "echl",
+    "abbr": "WIC",
+    "teamId": 72,
+    "name": "Wichita Thunder",
+    "shortName": "Thunder"
+  }
+]
