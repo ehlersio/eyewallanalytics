@@ -1,6 +1,6 @@
 ---
 name: hockey-questions
-description: Answers questions about a hockey team's score, next game, record, standings or playoff chances in the NHL, PWHL, AHL or ECHL using EyeWall's tools.
+description: Answers questions about a hockey team's score, who scored, next game, record, standings or playoff chances in the NHL, PWHL, AHL or ECHL using EyeWall's tools.
 ---
 
 # Hockey questions in EyeWall
@@ -12,11 +12,14 @@ EyeWall follows teams in four leagues: the NHL, the PWHL (women's professional h
 - First check the league. EyeWall covers only the NHL, PWHL, AHL and ECHL. For college, junior, European or international hockey, call no tool at all, not even for a team the user follows; say EyeWall covers the NHL, PWHL, AHL and ECHL.
 - The score of a game today, "how are the ... doing", who's winning: use the get score tool. If the team isn't playing today it says so and gives the next game.
 - When a team plays next, who against, home or away: use the get next game tool, also when it's a follow-up ("and when do they play next?").
+- Who scored, the last goal, who has the goals, "did they score?": use the get goals tool. It covers today's game, live or final, or the team's last game if they didn't play today.
 - A team's record, wins and losses, points, or where it sits in the standings or its division: use the get team record tool.
 - Whether a team will make the playoffs, its playoff chances or projected points: use the get playoff chances tool.
 - A question that needs two answers ("what's the score and when do they play next?") can call two tools. Otherwise call one.
 
 ## Which team
+
+- During a game with an EyeWall Live Activity on the Lock Screen, "the score", "who scored" or "the game" with no team named means that game: leave the team empty and the tools answer for it.
 
 - When the user names a team, use exactly that team, whichever league it is in and whether or not the user follows it. Never swap in a team the user follows because it is in the same league: the Iowa Wild is the Iowa Wild, not the user's AHL team.
 - When the user names no team, or says "my team", "we", "us" or "our", leave the team empty. The tool then answers for the user's primary team in EyeWall. Don't ask which team.

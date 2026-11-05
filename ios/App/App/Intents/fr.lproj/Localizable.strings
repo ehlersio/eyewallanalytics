@@ -14,6 +14,10 @@
 "Today's score for a team, or its next game when it isn't playing today." = "Le pointage du jour d'une équipe, ou son prochain match si elle ne joue pas aujourd'hui.";
 "Get the score for ${team}" = "Obtenir le pointage de ${team}";
 
+"Get Goals" = "Obtenir les buts";
+"Who scored in a team's game today, or in its last game: the latest goal with its assists, then every scorer." = "Qui a marqué dans le match du jour d'une équipe, ou dans son dernier match : le dernier but et ses passes, puis tous les marqueurs.";
+"Get the goals for ${team}" = "Obtenir les buts de ${team}";
+
 "Get Next Game" = "Obtenir le prochain match";
 "When a team plays next, and who against." = "Quand une équipe joue son prochain match, et contre qui.";
 "Get the next game for ${team}" = "Obtenir le prochain match de ${team}";
@@ -27,6 +31,7 @@
 "Get the playoff chances for ${team}" = "Obtenir les chances de séries de ${team}";
 
 "Score" = "Pointage";
+"Goals" = "Buts";
 "Next Game" = "Prochain match";
 "Record" = "Fiche";
 "Playoff Chances" = "Chances de séries";

@@ -5,6 +5,10 @@
 "What's the ${team} score in ${applicationName}" = "Quel est le pointage des ${team} dans ${applicationName}";
 "How are the ${team} doing in ${applicationName}" = "Comment vont les ${team} dans ${applicationName}";
 
+"Who scored in ${applicationName}" = "Qui a marqué dans ${applicationName}";
+"${applicationName} goals" = "Buts ${applicationName}";
+"Who scored for the ${team} in ${applicationName}" = "Qui a marqué pour les ${team} dans ${applicationName}";
+
 "When is the next game in ${applicationName}" = "C'est quand le prochain match dans ${applicationName}";
 "${applicationName} next game" = "Prochain match ${applicationName}";
 "When do the ${team} play next in ${applicationName}" = "Quand jouent les ${team} dans ${applicationName}";

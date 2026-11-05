@@ -2,7 +2,7 @@
 //  SiriAIPreview.swift
 //  App
 //
-//  Apple's Siri AI developer preview (iOS 27.3 beta): makes the four
+//  Apple's Siri AI developer preview (iOS 27.3 beta): makes the five
 //  EyeWall intents tools Siri can call, and lets Siri list every team.
 //
 //  Compiled only in the SiriPreview build configuration (the "App Siri
@@ -35,6 +35,9 @@ extension GetRecordIntent: ToolIntent {}
 
 @available(iOS 27.3, *)
 extension GetPlayoffChancesIntent: ToolIntent {}
+
+@available(iOS 27.3, *)
+extension GetGoalsIntent: ToolIntent {}
 
 // No EnumerableEntityQuery: given all 106 teams, Siri picked from the start
 // of the list (followed teams, then the NHL) and answered "Iowa Wild" with

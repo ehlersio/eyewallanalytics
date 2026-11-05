@@ -13,6 +13,9 @@
 //  src/utils/__tests__/siriIntents.test.js (UPDATE_IOS_TEAMS=1).
 //
 
+#if os(iOS)
+import ActivityKit
+#endif
 import Foundation
 
 // MARK: - Teams
@@ -169,9 +172,27 @@ enum IntentContext {
             return team
         }
         if let id, let team = TeamCatalog.byId[id] { return team }
+        #if os(iOS)
+        if #available(iOS 16.2, *), let team = liveActivityTeam { return team }
+        #endif
         guard let team = followedTeams.first else { throw IntentFailure.noTeam }
         return team
     }
+
+    /// The team of a game on the Lock Screen right now: with a Live Activity
+    /// up, Siri takes "what's the score?" without the app name, and the
+    /// question is about that game, not the primary team. The first active
+    /// one if there are several, preferring a followed team's game.
+    #if os(iOS)
+    @available(iOS 16.2, *)
+    static var liveActivityTeam: IntentTeam? {
+        let teams = Activity<GameActivityAttributes>.activities
+            .filter { $0.activityState == .active && $0.content.state.status != "final" }
+            .compactMap { TeamCatalog.team(league: $0.attributes.league ?? "nhl", abbr: $0.attributes.followAbbr) }
+        let followed = followedTeams
+        return teams.first { followed.contains($0) } ?? teams.first
+    }
+    #endif
 }
 
 @available(iOS 16.0, *)

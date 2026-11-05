@@ -200,6 +200,160 @@ enum IntentAnswers {
                "Aucun match des \(team.spokenName) n'est prévu au calendrier.")
     }
 
+    // MARK: Goals
+
+    /// Who scored: the last goal in detail, then every scorer by team. Today's
+    /// game (live or final), else the team's most recent game.
+    static func goals(_ team: IntentTeam) async throws -> String {
+        let today = try await todayGame(team)
+        if let today, today.string("status") == "pre" {
+            return describeToday(today, for: team) + L10n.t(" No goals yet.", " Aucun but pour l'instant.")
+        }
+        let game: GameRef
+        if let today, let id = today.int("gameId") {
+            game = GameRef(id: id, label: nil, final: today.string("status") == "final")
+        } else if let last = try await lastGame(team) {
+            game = last
+        } else {
+            return L10n.t("The \(team.spokenName) haven't played a game yet this season.",
+                          "Les \(team.spokenName) n'ont pas encore joué cette saison.")
+        }
+
+        let feed = team.league == "nhl" ? try await nhlGoals(game.id) : try await hockeyTechGoals(team.league, game.id)
+        guard let feed else { throw IntentFailure.unavailable }
+        let prefix = game.label.map { L10n.t("Last game, \($0). ", "Dernier match, \($0). ") }
+            ?? (game.final ? L10n.t("Final. ", "Final. ") : "")
+        let home = teamName(league: team.league, id: feed.homeId, code: feed.homeCode)
+        let away = teamName(league: team.league, id: feed.awayId, code: feed.awayCode)
+        let scoreLine = L10n.t("\(away) \(feed.awayScore), \(home) \(feed.homeScore)", "\(away) \(feed.awayScore), \(home) \(feed.homeScore)")
+        guard let last = feed.goals.last else {
+            return prefix + L10n.t("No goals yet. \(scoreLine).", "Aucun but pour l'instant. \(scoreLine).")
+        }
+
+        func scorerTeam(_ goal: Goal) -> String { goal.isHome ? home : away }
+        var kind = ""
+        if last.emptyNet { kind = L10n.t(", into an empty net", ", dans un filet désert") }
+        else if last.penaltyShot { kind = L10n.t(", on a penalty shot", ", sur un tir de pénalité") }
+        else if last.powerPlay { kind = L10n.t(", on the power play", ", en avantage numérique") }
+        else if last.shortHanded { kind = L10n.t(", shorthanded", ", en désavantage numérique") }
+        let when: String
+        if last.period > 3, let name = periodName(number: last.period, type: "OT", label: nil) {
+            // "at 3:13 of overtime", "at 4:02 of the 2nd overtime"
+            when = last.period > 4 ? L10n.t(" at \(last.time) of the \(name)", " à \(last.time) de la \(name)")
+                                   : L10n.t(" at \(last.time) of overtime", " à \(last.time) de la prolongation")
+        } else if let name = periodName(number: last.period, type: "REG", label: nil) {
+            when = L10n.t(" at \(last.time) of the \(name)", " à \(last.time) de la \(name)")
+        } else {
+            when = ""
+        }
+        let assisted: String
+        switch last.assists.count {
+        case 0: assisted = L10n.t(", unassisted", ", sans aide")
+        case 1: assisted = L10n.t(", from \(last.assists[0])", ", aidé de \(last.assists[0])")
+        default: assisted = L10n.t(", from \(last.assists[0]) and \(last.assists[1])", ", aidé de \(last.assists[0]) et \(last.assists[1])")
+        }
+        var text = prefix + L10n.t("Last goal: \(last.scorer) for the \(scorerTeam(last))\(kind)\(when)\(assisted). ",
+                                   "Dernier but : \(last.scorer) pour les \(scorerTeam(last))\(kind)\(when)\(assisted). ")
+        text += scoreLine + "."
+
+        // Scorers by team, in order: "Predators goals: Perbix, Josi and Edstrom."
+        guard feed.goals.count > 1 else { return text }
+        for (name, goals) in [(away, feed.goals.filter { !$0.isHome }), (home, feed.goals.filter { $0.isHome })] where !goals.isEmpty {
+            // Each scorer once, in order of their first goal: "Lindauer twice and Leyh".
+            var order: [String] = [], counts: [String: Int] = [:]
+            for name in goals.map(\.scorerLastName) {
+                if counts[name] == nil { order.append(name) }
+                counts[name, default: 0] += 1
+            }
+            let names = order.map { name -> String in
+                switch counts[name] ?? 1 {
+                case 1: return name
+                case 2: return L10n.t("\(name) twice", "\(name) deux fois")
+                case let n: return L10n.t("\(name) \(n) times", "\(name) \(n) fois")
+                }
+            }
+            let list = names.count > 1 ? names.dropLast().joined(separator: ", ") + L10n.t(" and ", " et ") + names.last! : names[0]
+            text += L10n.t(" \(name) goals: \(list).", " Buts des \(name) : \(list).")
+        }
+        return text
+    }
+
+    private struct GameRef { let id: Int; let label: String?; var final = true }
+
+    private struct Goal {
+        let scorer: String, scorerLastName: String, assists: [String]
+        let period: Int, time: String, isHome: Bool
+        let powerPlay: Bool, shortHanded: Bool, emptyNet: Bool, penaltyShot: Bool
+    }
+
+    private struct GoalFeed {
+        let homeId: Int?, awayId: Int?, homeCode: String?, awayCode: String?
+        let homeScore: Int, awayScore: Int, goals: [Goal]
+    }
+
+    /// The team's most recent finished game, labelled with its day.
+    private static func lastGame(_ team: IntentTeam) async throws -> GameRef? {
+        let seasons = try await Seasons.load()
+        if team.league == "nhl" {
+            guard let season = seasons.nhl else { throw IntentFailure.unavailable }
+            let rows = try await Worker.rows("/schedule?team=\(team.abbr)&season=\(season)")
+            guard let game = rows.filter({ ["OFF", "FINAL"].contains($0.string("gameState") ?? "") })
+                .max(by: { ($0.string("startTimeUTC") ?? "") < ($1.string("startTimeUTC") ?? "") }),
+                  let id = game.int("id") else { return nil }
+            return GameRef(id: id, label: game.string("startTimeUTC").flatMap(parseISO).map { day($0) })
+        }
+        let rows = try await Worker.rows("/\(team.league)/schedule?teamId=\(team.teamId)&season=\(try seasons.current(team.league))")
+        guard let game = rows.filter(isFinal).max(by: { ($0.string("game_date") ?? "") < ($1.string("game_date") ?? "") }),
+              let id = game.int("game_id") else { return nil }
+        return GameRef(id: id, label: game.string("game_date").flatMap(parseDay).map { day($0, utc: true) })
+    }
+
+    /// The NHL's game landing (through the site's proxy): summary.scoring.
+    private static func nhlGoals(_ gameId: Int) async throws -> GoalFeed? {
+        guard let url = URL(string: "\(Worker.siteOrigin)/nhl-api/v1/gamecenter/\(gameId)/landing"),
+              let landing = try await Worker.fetch(url) as? JSONObject else { return nil }
+        let homeCode = landing.object("homeTeam")?.string("abbrev"), awayCode = landing.object("awayTeam")?.string("abbrev")
+        var goals: [Goal] = []
+        for period in (landing.object("summary")?["scoring"] as? [JSONObject]) ?? [] {
+            let descriptor = period.object("periodDescriptor")
+            guard descriptor?.string("periodType") != "SO" else { continue }
+            for goal in (period["goals"] as? [JSONObject]) ?? [] {
+                let first = goal.localized("firstName") ?? "", last = goal.localized("lastName") ?? ""
+                let assists = ((goal["assists"] as? [JSONObject]) ?? []).map {
+                    "\($0.localized("firstName") ?? "") \($0.localized("lastName") ?? "")".trimmingCharacters(in: .whitespaces)
+                }
+                let modifier = goal.string("goalModifier")
+                goals.append(Goal(scorer: "\(first) \(last)".trimmingCharacters(in: .whitespaces), scorerLastName: last, assists: assists,
+                                  period: descriptor?.int("number") ?? 0, time: trimClock(goal.string("timeInPeriod") ?? ""),
+                                  isHome: goal.bool("isHome"),
+                                  powerPlay: goal.string("strength") == "pp", shortHanded: goal.string("strength") == "sh",
+                                  emptyNet: modifier == "empty-net", penaltyShot: modifier == "penalty-shot"))
+            }
+        }
+        return GoalFeed(homeId: nil, awayId: nil, homeCode: homeCode, awayCode: awayCode,
+                        homeScore: landing.object("homeTeam")?.int("score") ?? 0, awayScore: landing.object("awayTeam")?.int("score") ?? 0,
+                        goals: goals)
+    }
+
+    /// The Worker's normalized play-by-play for PWHL/AHL/ECHL games.
+    private static func hockeyTechGoals(_ league: String, _ gameId: Int) async throws -> GoalFeed? {
+        guard let live = try await Worker.object("/\(league)/live/\(gameId)") else { return nil }
+        let homeId = live.int("homeTeamId")
+        func person(_ p: JSONObject?) -> String {
+            "\(p?.string("firstName") ?? "") \(p?.string("lastName") ?? "")".trimmingCharacters(in: .whitespaces)
+        }
+        let goals = ((live["events"] as? [JSONObject]) ?? []).filter { $0.string("eventType") == "goal" }.map { event in
+            Goal(scorer: person(event.object("scoredBy")), scorerLastName: event.object("scoredBy")?.string("lastName") ?? "",
+                 assists: ((event["assists"] as? [JSONObject]) ?? []).map(person),
+                 period: event.int("period") ?? 0, time: trimClock(event.string("time") ?? ""),
+                 isHome: event.int("teamId") == homeId,
+                 powerPlay: event.bool("isPowerPlay"), shortHanded: event.bool("isShortHanded"),
+                 emptyNet: event.bool("isEmptyNet"), penaltyShot: event.bool("isPenaltyShot"))
+        }
+        return GoalFeed(homeId: homeId, awayId: live.int("awayTeamId"), homeCode: nil, awayCode: nil,
+                        homeScore: live.int("homeScore") ?? 0, awayScore: live.int("awayScore") ?? 0, goals: goals)
+    }
+
     // MARK: Record
 
     static func record(_ team: IntentTeam) async throws -> String {
