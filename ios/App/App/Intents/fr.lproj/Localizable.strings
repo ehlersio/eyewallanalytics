@@ -30,11 +30,21 @@
 "How often a team makes the playoffs in EyeWall's 10,000 simulations of the season, and its projected points." = "À quelle fréquence une équipe fait les séries dans les 10 000 simulations de la saison par EyeWall, et ses points projetés.";
 "Get the playoff chances for ${team}" = "Obtenir les chances de séries de ${team}";
 
+"Get Game Recap" = "Obtenir le résumé du match";
+"How a team's last game went: the EyeWall AI recap of it, or the final score and scorers when there's no recap." = "Comment s'est passé le dernier match d'une équipe : son résumé par EyeWall AI, ou le pointage final et les marqueurs quand il n'y a pas de résumé.";
+"Get the game recap for ${team}" = "Obtenir le résumé du match de ${team}";
+
+"Get Power Ranking" = "Obtenir le classement de puissance";
+"Where a team sits in EyeWall's power rankings, how it moved since the previous ranking, and the EyeWall AI write-up." = "Le rang d'une équipe au classement de puissance d'EyeWall, son mouvement depuis le classement précédent, et l'analyse d'EyeWall AI.";
+"Get the power ranking for ${team}" = "Obtenir le classement de puissance de ${team}";
+
 "Score" = "Pointage";
 "Goals" = "Buts";
 "Next Game" = "Prochain match";
 "Record" = "Fiche";
 "Playoff Chances" = "Chances de séries";
+"Game Recap" = "Résumé du match";
+"Power Ranking" = "Classement de puissance";
 
 "Open EyeWall and pick a team first." = "Ouvrez EyeWall et choisissez d'abord une équipe.";
 "Open EyeWall once, then try again." = "Ouvrez EyeWall une fois, puis réessayez.";

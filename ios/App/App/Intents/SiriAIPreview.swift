@@ -39,6 +39,12 @@ extension GetPlayoffChancesIntent: ToolIntent {}
 @available(iOS 27.3, *)
 extension GetGoalsIntent: ToolIntent {}
 
+@available(iOS 27.3, *)
+extension GetRecapIntent: ToolIntent {}
+
+@available(iOS 27.3, *)
+extension GetPowerRankingIntent: ToolIntent {}
+
 // No EnumerableEntityQuery: given all 106 teams, Siri picked from the start
 // of the list (followed teams, then the NHL) and answered "Iowa Wild" with
 // the user's AHL team. With Spotlight (below) it searches for the team.
@@ -84,7 +90,7 @@ enum TeamIndex {
     /// The short name, city, abbreviation and league in both languages:
     /// "Iowa Wild" -> Wild, Iowa, IA, AHL, LAH.
     static func keywords(_ team: IntentTeam) -> [String] {
-        var words = [team.shortName, team.abbr, team.leagueLabel]
+        var words = [team.shortName, team.abbr, team.leagueLabel] + TeamCatalog.soundAlikes(of: team)
         if team.name.hasSuffix(team.shortName) {
             let city = team.name.dropLast(team.shortName.count).trimmingCharacters(in: .whitespaces)
             if !city.isEmpty { words.append(city) }

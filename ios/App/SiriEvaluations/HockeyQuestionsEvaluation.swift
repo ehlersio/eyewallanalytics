@@ -32,6 +32,8 @@ private let nextGame = app.intents["GetNextGameIntent"]
 private let record = app.intents["GetRecordIntent"]
 private let playoffChances = app.intents["GetPlayoffChancesIntent"]
 private let goals = app.intents["GetGoalsIntent"]
+private let recap = app.intents["GetRecapIntent"]
+private let powerRanking = app.intents["GetPowerRankingIntent"]
 
 struct SiriCase: Sendable, CustomTestStringConvertible {
     let name: String
@@ -69,6 +71,32 @@ struct HockeyQuestionsEvaluation {
                 SiriResponse(.contains("Iowa Wild"))
             }
         }),
+        // The game recap: EyeWall AI's, or the score and scorers without one.
+        SiriCase(name: "recap, my team", scenario: SiriScenario {
+            UserTurn("How did we play last game in EyeWall") {
+                Calls { recap }
+                Loads(.preferred) { skill }
+            }
+        }),
+        SiriCase(name: "recap, Iowa Wild", scenario: SiriScenario {
+            UserTurn("How did the Iowa Wild play in their last game in EyeWall") {
+                Calls { recap }
+                SiriResponse(.contains("Iowa Wild"))
+            }
+        }),
+        // Power rankings, not the standings.
+        SiriCase(name: "power ranking, Canes", scenario: SiriScenario {
+            UserTurn("Where are the Canes in the EyeWall power rankings") {
+                Calls { powerRanking }
+                SiriResponse(.contains("Canes"))
+            }
+        }),
+        SiriCase(name: "power ranking, Bruins means Boston", scenario: SiriScenario {
+            UserTurn("Are the Bruins moving up in EyeWall's power rankings") {
+                Calls { powerRanking }
+                SiriResponse(.contains("Bruins"))
+            }
+        }),
         // Named teams: the preview build's intents take the name as text
         // (teamName), matched by TeamCatalog.match. Shared short name: the
         // NHL team unless the user says otherwise.
@@ -95,6 +123,15 @@ struct HockeyQuestionsEvaluation {
         SiriCase(name: "score, Toronto Sceptres", scenario: SiriScenario {
             UserTurn("How are the Toronto Sceptres doing in EyeWall") {
                 Calls { score }
+                SiriResponse(.contains("Sceptres"))
+            }
+        }),
+        // Speech recognition hears "Sceptres" as "Spectres": typed here as
+        // Siri transcribed it. Without "in EyeWall" Siri answered from its own
+        // knowledge (2026-11-05), so there's no case for that.
+        SiriCase(name: "record, Spectres means Sceptres", scenario: SiriScenario {
+            UserTurn("What's the Toronto Spectres record in EyeWall") {
+                Calls { record }
                 SiriResponse(.contains("Sceptres"))
             }
         }),
