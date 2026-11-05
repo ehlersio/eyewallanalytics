@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
-import EyeWallLogo from './EyeWallLogo';
+import BrandLogo from './BrandLogo';
 import { IconInstagram, IconX, IconReddit, IconFacebook } from './SocialIcons';
 
 // Tips inside a digital app have to go through In-App Purchase on iOS (App
@@ -102,7 +102,7 @@ export default function AboutPopup({ isLive = false }) {
         aria-label={t('about.triggerAriaLabel')}
         aria-expanded={open}
       >
-        <EyeWallLogo alt="" className={TOPBAR_LOGOIMG_CLASSES} width="36" height="36" />
+        <BrandLogo alt="" className={TOPBAR_LOGOIMG_CLASSES} width="36" height="36" />
         {!isLive && (
           <div>
             <div className={TOPBAR_NAME_CLASSES}>EyeWall Analytics</div>
@@ -116,7 +116,7 @@ export default function AboutPopup({ isLive = false }) {
           <button className={CLOSE_CLASSES} onClick={() => setOpen(false)} aria-label={t('common.close')}>✕</button>
 
           <div className={LOGO_ROW_CLASSES}>
-            <EyeWallLogo alt="EyeWall Analytics" width="48" height="48" />
+            <BrandLogo alt="EyeWall Analytics" width="48" height="48" />
             <div>
               <div className={TITLE_CLASSES}>EyeWall Analytics</div>
               <div className={SUBTITLE_CLASSES}>{t('about.tagline')}</div>

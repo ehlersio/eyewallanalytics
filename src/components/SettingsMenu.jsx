@@ -22,6 +22,7 @@ import { PWHL_TEAM_CONFIG } from '../utils/pwhlApi';
 import { AHL_TEAM_CONFIG } from '../utils/ahlApi';
 import { ECHL_TEAM_CONFIG } from '../utils/echlApi';
 import { getSavedTheme, getTheme, setTheme, clearTheme } from '../utils/themeConfig';
+import { holidayThemesOn, setHolidayThemesOn } from '../utils/holidayThemeConfig';
 import { getLocale, setLocale } from '../utils/localeConfig';
 import { setUnits } from '../utils/unitsConfig';
 import { useUnits } from '../hooks/useUnits';
@@ -133,6 +134,7 @@ export default function SettingsMenu() {
   const activeTeamName          = activeTeam?.displayName || TEAM_CONFIG.displayName;
   // 'dark' | 'light' | 'system' -- system: nothing saved, following the device.
   const [themeChoice, setThemeChoice] = useState(() => getSavedTheme() ?? 'system');
+  const [holidayThemes, setHolidayThemes] = useState(holidayThemesOn);
   const [locale, setLocaleState] = useState(getLocale);
   const units = useUnits();
   // Each followed team's alert choices on this device (utils/alertTeams.js),
@@ -177,6 +179,11 @@ export default function SettingsMenu() {
     window.addEventListener(OPEN_SETTINGS_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_SETTINGS_EVENT, onOpen);
   }, [openSheet]);
+
+  const handleHolidayThemesToggle = () => {
+    setHolidayThemesOn(!holidayThemes);
+    setHolidayThemes(!holidayThemes);
+  };
 
   const handleThemeChange = choice => {
     if (choice === 'system') clearTheme();
@@ -310,6 +317,19 @@ export default function SettingsMenu() {
                 { value: 'light', label: t('settings.themeLight'), className: 'settings-theme-light' },
                 { value: 'system', label: t('settings.themeSystem'), className: 'settings-theme-system' },
               ]}
+            />
+          </div>
+          <div className={ROW_CLASSES}>
+            <span className={ICON_CLASSES} aria-hidden="true">🎉</span>
+            <span className={ROW_TEXT_CLASSES}>
+              <span className={ROW_TITLE_CLASSES}>{t('settings.holidayThemes')}</span>
+              <span className={ROW_SUB_CLASSES}>{t('settings.holidayThemesDesc')}</span>
+            </span>
+            <Switch
+              className="settings-holiday-themes"
+              on={holidayThemes}
+              onToggle={handleHolidayThemesToggle}
+              label={t('settings.holidayThemes')}
             />
           </div>
           <div className={`${ROW_CLASSES} flex-col items-stretch gap-2`}>

@@ -6,7 +6,7 @@ import en from '../../i18n/locales/en.json'
 import fr from '../../i18n/locales/fr.json'
 import { HOLIDAYS } from '../introHolidays'
 import { THEMES } from '../introThemes'
-import { DECOR_SHAPES, PARTICLE_POOL, PHONE_BOUNDS, rand, screenBounds } from '../holidayDecor'
+import { DECOR_SHAPES, PARTICLE_POOL, PHONE_BOUNDS, markAccents, rand, screenBounds } from '../holidayDecor'
 import { MARK } from '../rinkMark'
 
 const FULL_LETTER = { spine: 1, top: 1, bottom: 1, middle: 1 }
@@ -94,6 +94,28 @@ describe('introThemes', () => {
     expect(memorial.frameAt(1500).decor.dot.s).toBe(0)
     expect(memorial.frameAt(memorial.durationMs * 0.95).decor.dot.s).toBeGreaterThan(8)
     expect(THEMES['canada-day'].frameAt(500).decor.dot.s).toBe(0)
+  })
+})
+
+describe('markAccents', () => {
+  it('gives every holiday a logo accent drawn from known shapes', () => {
+    for (const name of Object.keys(THEMES)) {
+      const accents = markAccents(name)
+      expect(accents.length, name).toBeGreaterThan(0)
+      for (const a of accents) expect(DECOR_SHAPES[a.kind], `${name}: ${a.kind}`).toBeDefined()
+    }
+    expect(markAccents('default')).toEqual([])
+  })
+
+  it('ends the intro on the logo the top bar shows', () => {
+    // A holiday whose intro blooms something on the dot keeps it in the logo.
+    for (const name of ['memorial-day', 'canada-day', 'thanksgiving-us', 'halloween']) {
+      const theme = THEMES[name]
+      const last = theme.frameAt(theme.durationMs).decor.dot
+      const accent = markAccents(name).find(a => a.onDot)
+      expect(accent.kind).toBe(last.kind)
+      expect(accent.s).toBeCloseTo(last.s, 6)
+    }
   })
 })
 

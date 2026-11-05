@@ -20,6 +20,19 @@ export const DECOR_SHAPES = {
   snow: [['circle', { r: 1 }]],
   confetti: [['rect', { x: -1, y: -0.5, width: 2, height: 1, rx: 0.15 }]],
   spark: [['circle', { r: 1 }]],
+  star: [['polygon', {
+    points: Array.from({ length: 10 }, (_, i) => {
+      const r = i % 2 ? 0.42 : 1;
+      const a = -Math.PI / 2 + (i * Math.PI) / 5;
+      return `${(Math.cos(a) * r).toFixed(3)},${(Math.sin(a) * r).toFixed(3)}`;
+    }).join(' '),
+  }]],
+  // Upright, its brim centered on (0, 0).
+  santaHat: [
+    ['path', { d: 'M-0.72,0.1 Q-0.1,-1.3 1.08,-0.82 L0.72,0.1Z', fill: '#D6203A' }],
+    ['rect', { x: -0.86, y: -0.1, width: 1.72, height: 0.38, rx: 0.19, fill: '#FFFFFF' }],
+    ['circle', { cx: 1.12, cy: -0.82, r: 0.25, fill: '#FFFFFF' }],
+  ],
   heart: [['path', { d: 'M0,0.75 C-1.4,-0.2 -0.7,-1.25 0,-0.4 C0.7,-1.25 1.4,-0.2 0,0.75Z' }]],
   leaf: [
     ['path', { d: 'M0,-1.3 C1,-0.7 1,0.7 0,1.3 C-1,0.7 -1,-0.7 0,-1.3Z' }],
@@ -216,6 +229,29 @@ function fireworks(ms, b) {
 // How far an overlay on the faceoff dot (maple leaf, poppy) has bloomed:
 // with the dot as it grows back, 2650-3000 on the 3300-unit timeline.
 const bloom = (ms, baseMs) => easeOut(seg(ms, baseMs * (2650 / 3300), baseMs * (3000 / 3300)));
+
+// The finished mark's accent for each holiday -- what the top bar logo
+// (HolidayMark.jsx) shows all day. `onDot` accents replace the faceoff dot;
+// the rest sit on the mark beside it. Dot overlays match the intro's last
+// frame, so the intro hands over to the same logo.
+const dotAccent = (kind, s, extra = {}) => ({ kind, x: MARK.center, y: MARK.center, s, onDot: true, ...extra });
+const MARK_ACCENTS = {
+  'new-year': [dotAccent('star', 9, { fill: GOLD })],
+  valentines: [dotAccent('heart', 11, { fill: RED })],
+  'st-patricks': [dotAccent('shamrock', 10, { fill: GREENS[0] })],
+  'memorial-day': [dotAccent('poppy', 9, { fill: RED })],
+  'canada-day': [dotAccent('maple', 10, { fill: RED })],
+  'independence-day': [dotAccent('star', 9, { fill: '#FFFFFF', stroke: RED, strokeWidth: 0.16 })],
+  thanksgiving: [dotAccent('leaf', 9, { fill: AUTUMN[0], rot: 35 })],
+  halloween: [dotAccent('jackOLantern', 9)],
+  'veterans-day': [dotAccent('star', 9, { fill: '#FFFFFF', stroke: RED, strokeWidth: 0.16 })],
+  'thanksgiving-us': [dotAccent('turkey', 13)],
+  christmas: [{ kind: 'santaHat', x: 42, y: 30, s: 9, rot: -12 }],
+};
+MARK_ACCENTS['boxing-day'] = MARK_ACCENTS.christmas;
+export function markAccents(holiday) {
+  return MARK_ACCENTS[holiday] ?? [];
+}
 
 // Each holiday's decoration. Functions take elapsed ms and { baseMs, totalMs,
 // bounds }: `baseMs` is the faceoff's own length, `totalMs` the whole intro
