@@ -2482,7 +2482,21 @@
   "app": {
     "skipToMainContent": "Skip to main content",
     "mainContentAriaLabel": "Main content",
-    "introAriaLabel": "Faceoff animation"
+    "introAriaLabel": "Faceoff animation",
+    "introTagline": {
+      "newYear": "Happy New Year!",
+      "valentines": "Happy Valentine's Day!",
+      "stPatricks": "Happy St. Patrick's Day!",
+      "memorialDay": "Honoring those who gave all.",
+      "canadaDay": "Happy Canada Day!",
+      "independenceDay": "Happy Fourth of July!",
+      "thanksgiving": "Happy Thanksgiving!",
+      "thanksgivingUs": "Happy Thanksgiving!",
+      "halloween": "Happy Halloween!",
+      "veteransDay": "Thank you to all who served.",
+      "christmas": "Merry Christmas!",
+      "boxingDay": "Happy holidays!"
+    }
   },
   "seasonOverlayChart": {
     "defaultMetricLabel": "Value",

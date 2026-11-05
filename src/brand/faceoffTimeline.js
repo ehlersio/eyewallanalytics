@@ -12,6 +12,10 @@
 // the E builds back around it -- ending on exactly the static mark.
 //
 // Loader: just the stick battle, looping, for loading states.
+//
+// Veterans Day (US, Nov 11): the same open and close, but nobody battles for
+// the puck. The ref skates in and salutes, then drops the puck, and the two
+// centers answer with a stick tap before clearing out.
 
 import { MARK } from './rinkMark.js';
 
@@ -36,12 +40,16 @@ const lerp = (a, b, k) => a + (b - a) * k;
 
 // Polyline points for a stick held by a player at (x, y), pointing at
 // `angle` degrees (0 = toward +x), with the blade hooked 90° off the shaft.
-export function stickPoints(x, y, angle) {
+// `lift` (0-1) raises the stick off the ice; seen from above that shows as
+// the stick getting shorter.
+const LIFT_SHORTENING = 0.18;
+export function stickPoints(x, y, angle, lift = 0) {
   const r = (angle * Math.PI) / 180;
-  const tipX = x + Math.cos(r) * STICK_LENGTH;
-  const tipY = y + Math.sin(r) * STICK_LENGTH;
-  const bladeX = tipX + Math.cos(r + Math.PI / 2) * BLADE_LENGTH;
-  const bladeY = tipY + Math.sin(r + Math.PI / 2) * BLADE_LENGTH;
+  const k = 1 - LIFT_SHORTENING * lift;
+  const tipX = x + Math.cos(r) * STICK_LENGTH * k;
+  const tipY = y + Math.sin(r) * STICK_LENGTH * k;
+  const bladeX = tipX + Math.cos(r + Math.PI / 2) * BLADE_LENGTH * k;
+  const bladeY = tipY + Math.sin(r + Math.PI / 2) * BLADE_LENGTH * k;
   return [[x, y], [tipX, tipY], [bladeX, bladeY]];
 }
 
@@ -134,5 +142,121 @@ export function loaderFrame(ms) {
     ref: null,
     puck: { x: c + 2 * Math.sin(s / 38), y: c, r: PUCK_R, isDot: false },
     letter: null,
+  };
+}
+
+// --- Veterans Day ---------------------------------------------------------
+
+// Longer than the regular intro to fit the salute and the stick taps.
+export const VETERANS_DURATION_MS = 3600;
+
+// On the 3300-unit timeline: the ref's arm goes up and comes down, the puck
+// drops, the ref leaves, then three stick taps.
+const SALUTE = { up: [900, 1000], down: [1260, 1360] };
+const DROP_AT = 1420;
+const REF_LEAVES_AT = 1650;
+const TAPS = { start: 1680, end: 2160, count: 3 };
+const RIPPLE_UNITS = 240;
+const RIPPLE_MAX_R = 4;
+
+// Stick lift (0-1) and the latest ripple, if one is still showing. Blades
+// land at the end of each tap; the ripple stays where the blade landed.
+function tapState(t) {
+  const period = (TAPS.end - TAPS.start) / TAPS.count;
+  const lift = t >= TAPS.start && t < TAPS.end
+    ? Math.sin(Math.PI * (((t - TAPS.start) % period) / period))
+    : 0;
+  const landed = Math.min(TAPS.count, Math.floor((t - TAPS.start) / period));
+  const landedAt = TAPS.start + landed * period;
+  const age = landed >= 1 ? t - landedAt : Infinity;
+  const ripple = age < RIPPLE_UNITS
+    ? { landedAt, r: lerp(0.6, RIPPLE_MAX_R, easeOut(age / RIPPLE_UNITS)), opacity: 1 - age / RIPPLE_UNITS }
+    : null;
+  return { lift, ripple };
+}
+
+// How far the ref's salute is raised, 0-1.
+function saluteAmount(t) {
+  if (t < SALUTE.down[0]) return easeOut(seg(t, ...SALUTE.up));
+  return 1 - easeIn(seg(t, ...SALUTE.down));
+}
+
+const homeXAt = t => (t < 2200
+  ? lerp(-OFFSTAGE, HOME_FACEOFF_X, easeOut(seg(t, 0, 500)))
+  : lerp(HOME_FACEOFF_X, -OFFSTAGE, easeIn(seg(t, 2200, 2650))));
+const awayXAt = t => (t < 2200
+  ? lerp(100 + OFFSTAGE, AWAY_FACEOFF_X, easeOut(seg(t, 100, 600)))
+  : lerp(AWAY_FACEOFF_X, 100 + OFFSTAGE, easeIn(seg(t, 2200, 2650))));
+
+export function veteransFrame(ms) {
+  const t = clamp01(ms / VETERANS_DURATION_MS) * TIMELINE_UNITS;
+  const c = MARK.center;
+  const homeX = homeXAt(t);
+  const awayX = awayXAt(t);
+  const tap = tapState(t);
+
+  const refY = t < REF_LEAVES_AT
+    ? lerp(-12, 33, easeOut(seg(t, 300, 850)))
+    : lerp(33, -12, easeIn(seg(t, REF_LEAVES_AT, REF_LEAVES_AT + 350)));
+
+  let puckR;
+  let puckIsDot;
+  let puckY = c;
+  if (t < 300) {
+    puckR = lerp(MARK.dot.r, 0, easeIn(seg(t, 0, 300)));
+    puckIsDot = true;
+  } else if (t < DROP_AT) {
+    puckR = 0;
+    puckIsDot = false;
+  } else {
+    puckR = lerp(PUCK_R, MARK.dot.r, easeOut(seg(t, 2650, 3000)));
+    puckIsDot = t >= 2650;
+    if (t < DROP_AT + 220) puckY = lerp(40, c, easeIn(seg(t, DROP_AT, DROP_AT + 220)));
+  }
+
+  const ripple = side => {
+    if (!tap.ripple) return null;
+    const x = side === 'home' ? homeXAt(tap.ripple.landedAt) : awayXAt(tap.ripple.landedAt);
+    const [bx, by] = stickPoints(x, c, side === 'home' ? 0 : 180)[2];
+    return { x: bx, y: by, r: tap.ripple.r, opacity: tap.ripple.opacity };
+  };
+  return {
+    home: { x: homeX, y: c, stick: stickPoints(homeX, c, 0, tap.lift) },
+    away: { x: awayX, y: c, stick: stickPoints(awayX, c, 180, tap.lift) },
+    ref: { x: c, y: refY, salute: saluteAmount(t) },
+    ripples: [ripple('home'), ripple('away')],
+    puck: { x: c, y: puckY, r: puckR, isDot: puckIsDot },
+    letter: letterFrame(t),
+  };
+}
+
+// --- Memorial Day ---------------------------------------------------------
+//
+// A moment of silence at center ice: the ref and both centers skate in and
+// stand still -- no puck drop, no battle -- then clear out, and the faceoff
+// dot comes back (holidayDecor.js blooms a poppy over it) as the E builds.
+
+export const MEMORIAL_DURATION_MS = 3600;
+
+export function memorialFrame(ms) {
+  const t = clamp01(ms / MEMORIAL_DURATION_MS) * TIMELINE_UNITS;
+  const c = MARK.center;
+  const homeX = homeXAt(t);
+  const awayX = awayXAt(t);
+  const refY = t < 1900
+    ? lerp(-12, 33, easeOut(seg(t, 300, 850)))
+    : lerp(33, -12, easeIn(seg(t, 1900, 2250)));
+
+  let puckR = 0;
+  if (t < 300) puckR = lerp(MARK.dot.r, 0, easeIn(seg(t, 0, 300)));
+  else if (t >= 2650) puckR = lerp(0, MARK.dot.r, easeOut(seg(t, 2650, 3000)));
+
+  return {
+    home: { x: homeX, y: c, stick: stickPoints(homeX, c, 0) },
+    away: { x: awayX, y: c, stick: stickPoints(awayX, c, 180) },
+    ref: { x: c, y: refY, salute: 0 },
+    ripples: [null, null],
+    puck: { x: c, y: c, r: puckR, isDot: true },
+    letter: letterFrame(t),
   };
 }
