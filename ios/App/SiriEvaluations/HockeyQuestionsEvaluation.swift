@@ -126,6 +126,15 @@ struct HockeyQuestionsEvaluation {
                 SiriResponse(.contains("Sceptres"))
             }
         }),
+        // Speech recognition hears "Sceptres" as "Spectres": typed here as
+        // Siri transcribed it. Without "in EyeWall" Siri answered from its own
+        // knowledge (2026-11-05), so there's no case for that.
+        SiriCase(name: "record, Spectres means Sceptres", scenario: SiriScenario {
+            UserTurn("What's the Toronto Spectres record in EyeWall") {
+                Calls { record }
+                SiriResponse(.contains("Sceptres"))
+            }
+        }),
         // A nickname that isn't in the team data.
         SiriCase(name: "record, Habs", scenario: SiriScenario {
             UserTurn("What's the Habs record in EyeWall") {

@@ -1,6 +1,6 @@
 ---
 name: hockey-questions
-description: Answers questions about a hockey team's score, who scored, how its last game went, next game, record, standings, power ranking or playoff chances in the NHL, PWHL, AHL or ECHL using EyeWall's tools.
+description: Answers questions about a hockey team's score, who scored, how its last game went, next game, record, standings, power ranking or playoff chances in the NHL, PWHL, AHL or ECHL using EyeWall's tools, including PWHL teams whose names speech recognition mishears, such as the Toronto Sceptres heard as Spectres or Specters.
 ---
 
 # Hockey questions in EyeWall
@@ -27,6 +27,7 @@ EyeWall follows teams in four leagues: the NHL, the PWHL (women's professional h
 - When the user names no team, or says "my team", "we", "us" or "our", leave the team empty. The tool then answers for the user's primary team in EyeWall. Don't ask which team.
 - A city alone can mean teams in more than one league. Toronto has the Maple Leafs (NHL), the Sceptres (PWHL) and the Marlies (AHL); Boston, Montréal, Ottawa, Minnesota, Seattle and Vancouver each have an NHL and a PWHL team; Chicago, Colorado and Calgary have an NHL and an AHL team; San Jose has the Sharks (NHL), the Barracuda (AHL) and PWHL San Jose; Detroit and Las Vegas have an NHL team and a PWHL expansion team. If the user follows one of them, pick that one. If not, prefer the NHL team, and say which team you answered for.
 - Some short names belong to two teams. If the user gives the city or league ("Providence Bruins", "Iowa Wild", "AHL Bruins"), that decides it. Only a bare short name is ambiguous: an NHL team and its AHL affiliate share a name (Bruins and Providence Bruins, Penguins and Wilkes-Barre/Scranton Penguins, Senators and Belleville Senators, Stars and Texas Stars, Wild and Iowa Wild, Canucks and Abbotsford Canucks), as do Oilers (Edmonton, NHL; Tulsa, ECHL), Americans (Rochester, AHL; Allen, ECHL), Admirals (Milwaukee, AHL; Norfolk, ECHL) and Thunder (Adirondack and Wichita, both ECHL). Use the city or league if the user gave one, then a team the user follows, then the NHL team. For Americans, Admirals and Thunder, ask which city if neither helps.
+- Speech recognition mishears some team names. "Spectres", "Specters", "Scepters" or "sectors", especially with Toronto, mean the Toronto Sceptres (PWHL), never a basketball or other team. "Montréal Victory" means the Montréal Victoire (PWHL). Pass the name as the user said it; the tools understand these spellings.
 - Nicknames are fine: "Canes" is the Carolina Hurricanes, "Habs" the Montréal Canadiens, "Leafs" the Toronto Maple Leafs.
 - The four 2026-27 PWHL expansion teams have no names yet; they are PWHL Detroit, PWHL Hamilton, PWHL Las Vegas and PWHL San Jose.
 

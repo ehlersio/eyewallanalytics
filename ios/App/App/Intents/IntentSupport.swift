@@ -77,6 +77,24 @@ extension TeamCatalog {
         "knights": "nhl:VGK", "wings": "nhl:DET", "blueshirts": "nhl:NYR",
     ]
 
+    /// Words Siri's speech recognition puts in place of a team's name:
+    /// "Sceptres" comes back as "Spectres", "Specters" or "sectors" (heard
+    /// on a phone, 2026-11-05), and "Scepters" is the American spelling.
+    /// Each is read as the real word before matching. "Victory" for the
+    /// Victoire is a guess at the same problem.
+    static let soundAlikes: [String: String] = [
+        "spectres": "sceptres", "specters": "sceptres", "spectre": "sceptres", "specter": "sceptres",
+        "scepters": "sceptres", "scepter": "sceptres", "sceptre": "sceptres", "sectors": "sceptres",
+        "victory": "victoire",
+    ]
+
+    /// The misheard spellings of a team's short name, for Spotlight and
+    /// Siri's synonyms: ["Spectres", "Specters", ...] for the Sceptres.
+    static func soundAlikes(of team: IntentTeam) -> [String] {
+        let short = normalize(team.shortName)
+        return soundAlikes.filter { $0.value == short }.keys.sorted().map { $0.prefix(1).uppercased() + $0.dropFirst() }
+    }
+
     private static let leagueWords = ["nhl": "nhl", "lnh": "nhl", "pwhl": "pwhl", "lphf": "pwhl",
                                       "ahl": "ahl", "lah": "ahl", "echl": "echl"]
 
@@ -86,7 +104,7 @@ extension TeamCatalog {
     /// a followed team, then the NHL team, then the first in the list. nil
     /// when nothing matches.
     static func match(_ spoken: String, followed: [IntentTeam] = []) -> IntentTeam? {
-        var words = normalize(spoken).split(separator: " ").map(String.init)
+        var words = normalize(spoken).split(separator: " ").map { soundAlikes[String($0)] ?? String($0) }
         words.removeAll { ["the", "le", "la", "les"].contains($0) }
         let league = words.compactMap { leagueWords[$0] }.first
         words.removeAll { leagueWords[$0] != nil }

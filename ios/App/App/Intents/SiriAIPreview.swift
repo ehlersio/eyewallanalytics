@@ -90,7 +90,7 @@ enum TeamIndex {
     /// The short name, city, abbreviation and league in both languages:
     /// "Iowa Wild" -> Wild, Iowa, IA, AHL, LAH.
     static func keywords(_ team: IntentTeam) -> [String] {
-        var words = [team.shortName, team.abbr, team.leagueLabel]
+        var words = [team.shortName, team.abbr, team.leagueLabel] + TeamCatalog.soundAlikes(of: team)
         if team.name.hasSuffix(team.shortName) {
             let city = team.name.dropLast(team.shortName.count).trimmingCharacters(in: .whitespaces)
             if !city.isEmpty { words.append(city) }
