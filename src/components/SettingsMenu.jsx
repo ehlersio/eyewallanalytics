@@ -22,7 +22,7 @@ import { PWHL_TEAM_CONFIG } from '../utils/pwhlApi';
 import { AHL_TEAM_CONFIG } from '../utils/ahlApi';
 import { ECHL_TEAM_CONFIG } from '../utils/echlApi';
 import { getSavedTheme, getTheme, setTheme, clearTheme } from '../utils/themeConfig';
-import { holidayThemesOn, setHolidayThemesOn } from '../utils/holidayThemeConfig';
+import { PINNABLE_THEMES, pinnedTheme, setPinnedTheme, setThemeMode, themeMode } from '../utils/holidayThemeConfig';
 import { getLocale, setLocale } from '../utils/localeConfig';
 import { setUnits } from '../utils/unitsConfig';
 import { useUnits } from '../hooks/useUnits';
@@ -36,6 +36,9 @@ import {
   ROW_SUB_CLASSES, ROW_TEXT_CLASSES, ROW_TITLE_CLASSES, ROW_VALUE_CLASSES, SECTIONS_CLASSES, SECTION_LABEL_CLASSES,
   Section, Segments, Sheet, Switch, TITLE_CLASSES, useSheet,
 } from './SheetParts';
+
+// A plain <select>, styled like TeamOpponentPicker's.
+const PICKER_CLASSES = 'shrink-0 bg-[var(--btn-fill)] border-[0.5px] border-transparent rounded-[var(--radius-sm)] py-1.5 px-2.5 font-[family-name:var(--font-body)] text-[13px] font-semibold text-[color:var(--text)] cursor-pointer hover:bg-[var(--btn-fill-hover)]';
 import { AddTeamScreen, LeagueTeamLogo, TeamsScreen, TeamsSection } from './SettingsTeams';
 import { alertSettingsFor, lastSynced, loadAlertTeams, saveAlertSettings, setLastSynced, subscriptionTeams } from '../utils/alertTeams';
 import { FOLLOWED_CHANGED_EVENT, getFollowedTeams, sameTeam, teamFor } from '../utils/followedTeams';
@@ -134,7 +137,8 @@ export default function SettingsMenu() {
   const activeTeamName          = activeTeam?.displayName || TEAM_CONFIG.displayName;
   // 'dark' | 'light' | 'system' -- system: nothing saved, following the device.
   const [themeChoice, setThemeChoice] = useState(() => getSavedTheme() ?? 'system');
-  const [holidayThemes, setHolidayThemes] = useState(holidayThemesOn);
+  const [holidayMode, setHolidayMode] = useState(themeMode);
+  const [pinned, setPinned] = useState(pinnedTheme);
   const [locale, setLocaleState] = useState(getLocale);
   const units = useUnits();
   // Each followed team's alert choices on this device (utils/alertTeams.js),
@@ -180,9 +184,13 @@ export default function SettingsMenu() {
     return () => window.removeEventListener(OPEN_SETTINGS_EVENT, onOpen);
   }, [openSheet]);
 
-  const handleHolidayThemesToggle = () => {
-    setHolidayThemesOn(!holidayThemes);
-    setHolidayThemes(!holidayThemes);
+  const handleHolidayModeChange = mode => {
+    setThemeMode(mode);
+    setHolidayMode(mode);
+  };
+  const handlePinnedChange = name => {
+    setPinnedTheme(name || null);
+    setPinned(name || null);
   };
 
   const handleThemeChange = choice => {
@@ -319,19 +327,40 @@ export default function SettingsMenu() {
               ]}
             />
           </div>
-          <div className={ROW_CLASSES}>
-            <span className={ICON_CLASSES} aria-hidden="true">🎉</span>
+          <div className={`${ROW_CLASSES} flex-col items-stretch gap-2`}>
             <span className={ROW_TEXT_CLASSES}>
               <span className={ROW_TITLE_CLASSES}>{t('settings.holidayThemes')}</span>
               <span className={ROW_SUB_CLASSES}>{t('settings.holidayThemesDesc')}</span>
             </span>
-            <Switch
-              className="settings-holiday-themes"
-              on={holidayThemes}
-              onToggle={handleHolidayThemesToggle}
+            <Segments
               label={t('settings.holidayThemes')}
+              value={holidayMode}
+              onChange={handleHolidayModeChange}
+              options={[
+                { value: 'off', label: t('settings.holidayThemesOff'), className: 'settings-holiday-themes-off' },
+                { value: 'holidays', label: t('settings.holidayThemesHolidays'), className: 'settings-holiday-themes-holidays' },
+                { value: 'all', label: t('settings.holidayThemesAll'), className: 'settings-holiday-themes-all' },
+              ]}
             />
           </div>
+          {holidayMode !== 'off' && (
+            <label className={`${ROW_CLASSES} items-center gap-3`}>
+              <span className={ROW_TEXT_CLASSES}>
+                <span className={ROW_TITLE_CLASSES}>{t('settings.pinnedTheme')}</span>
+                <span className={ROW_SUB_CLASSES}>{t('settings.pinnedThemeDesc')}</span>
+              </span>
+              <select
+                className={`settings-pinned-theme ${PICKER_CLASSES}`}
+                value={pinned ?? ''}
+                onChange={e => handlePinnedChange(e.target.value)}
+              >
+                <option value="">{t('settings.pinnedThemeNone')}</option>
+                {PINNABLE_THEMES.map(name => (
+                  <option key={name} value={name}>{t(`settings.themeNames.${name}`)}</option>
+                ))}
+              </select>
+            </label>
+          )}
           <div className={`${ROW_CLASSES} flex-col items-stretch gap-2`}>
             <span className={ROW_TITLE_CLASSES}>{t('settings.language')}</span>
             <Segments

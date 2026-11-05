@@ -260,3 +260,49 @@ export function memorialFrame(ms) {
     letter: letterFrame(t),
   };
 }
+
+// --- Off-season -----------------------------------------------------------
+//
+// No game to face off in: the E clears, the Zamboni (the same top-down
+// sprite as LiveEventRink's intermission, /zamboni/east/frame-N.png) drives
+// across center ice leaving a strip of fresh, glossy ice, and the E and dot
+// build back behind it.
+
+export const OFFSEASON_DURATION_MS = 2800;
+export const ZAMBONI_FRAMES = 9;
+const ZAMBONI_SIZE = 30;          // drawn size in mark units
+const ZAMBONI_FRAME_UNITS = 70;   // timeline units per sprite frame
+
+export function offseasonFrame(ms) {
+  const t = clamp01(ms / OFFSEASON_DURATION_MS) * TIMELINE_UNITS;
+  const c = MARK.center;
+  const zamboniX = lerp(-ZAMBONI_SIZE, 100 + ZAMBONI_SIZE, seg(t, 300, 2400));
+  const driving = t >= 300 && t < 2400;
+  let puckR = 0;
+  if (t < 300) puckR = lerp(MARK.dot.r, 0, easeIn(seg(t, 0, 300)));
+  else if (t >= 2650) puckR = lerp(0, MARK.dot.r, easeOut(seg(t, 2650, 3000)));
+  return {
+    // Nobody on the ice.
+    home: { x: -OFFSTAGE, y: c, stick: stickPoints(-OFFSTAGE, c, 0) },
+    away: { x: 100 + OFFSTAGE, y: c, stick: stickPoints(100 + OFFSTAGE, c, 180) },
+    ref: null,
+    ripples: [null, null],
+    puck: { x: c, y: c, r: puckR, isDot: true },
+    letter: letterFrame(t),
+    zamboni: {
+      x: zamboniX,
+      y: c,
+      size: ZAMBONI_SIZE,
+      frame: Math.floor(t / ZAMBONI_FRAME_UNITS) % ZAMBONI_FRAMES,
+      opacity: driving ? 1 : 0,
+      // The fresh ice behind it: from the left edge to its back bumper,
+      // shining while it's laid down and fading once it's gone by.
+      trail: {
+        x0: -ZAMBONI_SIZE,
+        x1: zamboniX - ZAMBONI_SIZE * 0.35,
+        height: 22,
+        opacity: 0.14 * (1 - seg(t, 2400, 3100)),
+      },
+    },
+  };
+}

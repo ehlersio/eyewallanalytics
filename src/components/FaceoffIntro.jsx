@@ -11,29 +11,29 @@
 // with prefers-reduced-motion or under Cypress. Web visitors don't get it by
 // default -- add ?intro=1 to the URL to force it on any platform.
 //
-// Holidays (src/brand/introHolidays.js) swap in their own version for the
-// day (src/brand/introThemes.js), ending on the "EyeWall Analytics" wordmark with a short line under the
-// mark. To preview one any day, add &theme=<name> to ?intro=1 (for example
-// ?intro=1&theme=veterans-day); in dev builds &introAt=<ms> also freezes the
-// intro on that frame.
+// Holidays and seasons (src/brand/introHolidays.js, as Settings allows) swap
+// in their own version (src/brand/introThemes.js); a holiday's ends on the
+// "EyeWall Analytics" wordmark with a line for the day. To preview one any
+// day, add &theme=<name> to ?intro=1 (for example ?intro=1&theme=veterans-day);
+// in dev builds &introAt=<ms> also freezes the intro on that frame.
 
 import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useTranslation } from 'react-i18next';
 import FaceoffRink, { prefersReducedMotion } from './FaceoffRink';
 import HolidayParticles from './HolidayParticles';
-import { currentHoliday } from '../hooks/useHoliday';
-import { DEFAULT_THEME, THEMES } from '../brand/introThemes';
+import { currentDayTheme } from '../hooks/useDayTheme';
+import { ALL_THEMES, DEFAULT_THEME } from '../brand/introThemes';
 
 const PLAYED_KEY = 'eyewall:intro-played';
 const FADE_MS = 300;
 // FaceoffRink's size; HolidayParticles lines its effects up with it.
 const MARK_SIZE = 190;
 
-// Today's holiday version (a ?theme= preview wins; none when holiday themes
-// are off in Settings), else the regular intro.
+// Today's holiday or season version, as Settings allows (a ?theme= preview
+// wins), else the regular intro.
 function pickTheme() {
-  return THEMES[currentHoliday()] || DEFAULT_THEME;
+  return ALL_THEMES[currentDayTheme()] || DEFAULT_THEME;
 }
 
 function shouldPlay() {
@@ -87,7 +87,7 @@ export default function FaceoffIntro() {
       onClick={skip} role="presentation" data-testid="faceoff-intro">
       <div className="relative">
         <FaceoffRink frameAt={THEME.frameAt} durationMs={THEME.durationMs} freezeAt={FREEZE_AT} size={MARK_SIZE}
-          decor={THEME.tagline ? THEME.name : null} vars={THEME.vars}
+          decor={THEME.decor ? THEME.name : null} vars={THEME.vars}
           onDone={() => setPhase(p => (p === 'playing' ? 'held' : p))} title={t('app.introAriaLabel')} />
         {THEME.tagline && (
           <div className="faceoff-wordmark absolute left-1/2 top-full mt-5 whitespace-nowrap text-center"

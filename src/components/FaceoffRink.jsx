@@ -19,6 +19,7 @@
 // puck, the ref's costume. Full-screen effects are HolidayParticles.jsx.
 
 import { useEffect, useId, useRef } from 'react';
+import { ZAMBONI_FRAMES } from '../brand/faceoffTimeline';
 import { MARK } from '../brand/rinkMark';
 import { DECOR, DECOR_SHAPES } from '../brand/holidayDecor';
 
@@ -68,6 +69,24 @@ function applyDecor(nodes, f) {
   }
 }
 
+const zamboniSrc = frame => `/zamboni/east/frame-${frame}.png`;
+
+function applyZamboni(nodes, z) {
+  if (!nodes.zamboni) return;
+  nodes.zamboni.setAttribute('opacity', z ? String(z.opacity) : '0');
+  nodes.zamboniTrail.setAttribute('opacity', z ? z.trail.opacity.toFixed(3) : '0');
+  if (!z) return;
+  const half = z.size / 2;
+  nodes.zamboni.setAttribute('x', fmt(z.x - half));
+  nodes.zamboni.setAttribute('y', fmt(z.y - half));
+  nodes.zamboni.setAttribute('href', zamboniSrc(z.frame));
+  const { x0, x1, height } = z.trail;
+  nodes.zamboniTrail.setAttribute('x', fmt(x0));
+  nodes.zamboniTrail.setAttribute('width', fmt(Math.max(0, x1 - x0)));
+  nodes.zamboniTrail.setAttribute('y', fmt(z.y - height / 2));
+  nodes.zamboniTrail.setAttribute('height', fmt(height));
+}
+
 function applyFrame(nodes, f) {
   for (const side of ['home', 'away']) {
     const opacity = edgeOpacity(f[side].x);
@@ -115,6 +134,7 @@ function applyFrame(nodes, f) {
     nodes.middle.setAttribute('width', (E.middle.w * s.middle).toFixed(2));
   }
   applyDecor(nodes, f);
+  applyZamboni(nodes, f.zamboni);
 }
 
 export default function FaceoffRink({
@@ -165,6 +185,13 @@ export default function FaceoffRink({
   const set = key => el => { if (el) nodes.current[key] = el; };
   const refLook = decor ? DECOR[decor]?.ref : null;
   const salutes = decor === 'veterans-day';
+  const zamboni = decor === 'off-season';
+
+  // Load every Zamboni frame up front, so none flickers in mid-drive.
+  useEffect(() => {
+    if (!zamboni || typeof window === 'undefined' || !window.Image) return;
+    for (let i = 0; i < ZAMBONI_FRAMES; i++) new window.Image().src = zamboniSrc(i);
+  }, [zamboni]);
   const bar = key => {
     const b = E[key];
     return <rect key={key} ref={set(key)} x={b.x} y={b.y} width={b.w} height={b.h}
@@ -184,6 +211,7 @@ export default function FaceoffRink({
         </defs>
       )}
       {sheet && <rect width="100" height="100" style={{ fill: 'var(--brand-sheet)' }} />}
+      {zamboni && <rect ref={set('zamboniTrail')} rx="3" opacity="0" style={{ fill: 'var(--holiday-snow)' }} />}
       <g fill="none" strokeWidth={ring.stroke} style={{ stroke: 'var(--brand-red)' }}>
         <circle cx={C} cy={C} r={ring.r} />
         {hashes.ys.flatMap(y => [
@@ -206,6 +234,7 @@ export default function FaceoffRink({
         style={{ fill: 'var(--brand-away)', stroke: 'var(--brand-sheet)' }} />
       <circle ref={set('puck')} cx={C} cy={C} r={dot.r} style={{ fill: 'var(--brand-red)' }} />
       {decor && <use ref={set('puckOverlay')} opacity="0" />}
+      {zamboni && <image ref={set('zamboni')} width="30" height="30" opacity="0" style={{ imageRendering: 'pixelated' }} />}
       {decor && <use ref={set('dotOverlay')} opacity="0" style={{ fill: 'var(--brand-red)' }} />}
       {showRef && (
         <g ref={set('ref')} transform="translate(50 -20)">

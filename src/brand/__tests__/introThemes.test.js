@@ -5,7 +5,9 @@ import { describe, it, expect } from 'vitest'
 import en from '../../i18n/locales/en.json'
 import fr from '../../i18n/locales/fr.json'
 import { HOLIDAYS } from '../introHolidays'
-import { THEMES } from '../introThemes'
+import { SEASON_THEMES, THEMES } from '../introThemes'
+
+const ALL_THEMES = Object.values({ ...THEMES, ...SEASON_THEMES }).map(t => [t.name, t])
 import { DECOR_SHAPES, PARTICLE_POOL, PHONE_BOUNDS, markAccents, rand, screenBounds } from '../holidayDecor'
 import { MARK } from '../rinkMark'
 
@@ -27,7 +29,13 @@ describe('introThemes', () => {
     expect(typeof lookup(fr, theme.tagline)).toBe('string')
   })
 
-  it.each(Object.values(THEMES).map(t => [t.name, t]))('%s starts and ends on the plain mark', (_, theme) => {
+  it.each(Object.values(SEASON_THEMES).map(t => [t.name, t]))('season %s has no greeting and no extra hold', (_, theme) => {
+    expect(theme.tagline).toBeNull()
+    expect(theme.holdMs).toBe(250)
+    expect(theme.durationMs).toBeLessThanOrEqual(2800)
+  })
+
+  it.each(ALL_THEMES)('%s starts and ends on the plain mark', (_, theme) => {
     // It starts on exactly the launch splash's mark; a holiday's dot overlay
     // (poppy, maple leaf...) stays on the finished mark until it fades out.
     expect(theme.frameAt(0).decor?.dot?.s ?? 0).toBe(0)
@@ -44,7 +52,7 @@ describe('introThemes', () => {
     }
   })
 
-  it.each(Object.values(THEMES).map(t => [t.name, t]))('%s fits the particle pool and draws known shapes', (_, theme) => {
+  it.each(ALL_THEMES)('%s fits the particle pool and draws known shapes', (_, theme) => {
     for (let ms = 0; ms <= theme.durationMs; ms += 50) {
       for (const bounds of Object.values(SCREENS)) {
         const particles = theme.particlesAt?.(ms, bounds) ?? []
@@ -99,7 +107,7 @@ describe('introThemes', () => {
 
 describe('markAccents', () => {
   it('gives every holiday a logo accent drawn from known shapes', () => {
-    for (const name of Object.keys(THEMES)) {
+    for (const name of [...Object.keys(THEMES), ...Object.keys(SEASON_THEMES)]) {
       const accents = markAccents(name)
       expect(accents.length, name).toBeGreaterThan(0)
       for (const a of accents) expect(DECOR_SHAPES[a.kind], `${name}: ${a.kind}`).toBeDefined()

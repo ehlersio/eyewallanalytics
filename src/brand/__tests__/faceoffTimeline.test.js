@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest'
 import {
   INTRO_DURATION_MS, introFrame, loaderFrame, stickPoints,
   VETERANS_DURATION_MS, veteransFrame, MEMORIAL_DURATION_MS, memorialFrame,
+  OFFSEASON_DURATION_MS, offseasonFrame, ZAMBONI_FRAMES,
 } from '../faceoffTimeline'
 import { MARK } from '../rinkMark'
 
@@ -132,6 +133,36 @@ describe('memorialFrame', () => {
       expect(f.letter).toEqual(FULL_LETTER)
       expect(f.puck).toMatchObject({ x: MARK.center, y: MARK.center, r: MARK.dot.r, isDot: true })
       expect(f.ref.y).toBeLessThan(0)
+    }
+  })
+})
+
+describe('offseasonFrame', () => {
+  const at = units => offseasonFrame(OFFSEASON_DURATION_MS * (units / 3300))
+
+  it('starts and ends on the finished mark, with no Zamboni showing', () => {
+    for (const ms of [0, OFFSEASON_DURATION_MS]) {
+      const f = offseasonFrame(ms)
+      expect(f.letter).toEqual(FULL_LETTER)
+      expect(f.puck).toMatchObject({ r: MARK.dot.r, isDot: true })
+      expect(f.zamboni.opacity).toBe(0)
+    }
+    expect(offseasonFrame(OFFSEASON_DURATION_MS).zamboni.trail.opacity).toBe(0)
+  })
+
+  it('drives the Zamboni left to right across an empty rink, laying fresh ice behind it', () => {
+    const early = at(800)
+    const late = at(1900)
+    expect(early.zamboni.opacity).toBe(1)
+    expect(late.zamboni.x).toBeGreaterThan(early.zamboni.x)
+    expect(late.zamboni.trail.x1).toBeGreaterThan(early.zamboni.trail.x1)
+    expect(early.home.x).toBeLessThan(0)
+    expect(early.ref).toBeNull()
+    expect(early.puck.r).toBe(0)
+    for (let units = 300; units < 2400; units += 37) {
+      const { frame } = at(units).zamboni
+      expect(frame).toBeGreaterThanOrEqual(0)
+      expect(frame).toBeLessThan(ZAMBONI_FRAMES)
     }
   })
 })
