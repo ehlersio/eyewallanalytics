@@ -255,6 +255,23 @@ struct GetPowerRankingIntent: AppIntent, SpokenTeam {
 }
 
 @available(iOS 16.0, *)
+struct GetPlayerStatsIntent: AppIntent {
+    static let title: LocalizedStringResource = "Get Player Stats"
+    static let description = IntentDescription("A player's season so far in the NHL, PWHL, AHL or ECHL: goals, assists and points, or a goalie's record, save percentage and goals-against average, and an NHL skater's last game.")
+
+    @Parameter(title: "Player", description: "The player's name as the user said it, such as Seth Jarvis, Poulin or Kochetkov.",
+               requestValueDialog: IntentDialog("Which player?"))
+    var playerName: String
+
+    static var parameterSummary: some ParameterSummary { Summary("Get the stats for \(\.$playerName)") }
+
+    func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
+        let text = try await IntentAnswers.playerStats(playerName, followed: IntentContext.followedTeams)
+        return .result(value: text, dialog: IntentDialog(stringLiteral: text))
+    }
+}
+
+@available(iOS 16.0, *)
 extension SpokenTeam {
     fileprivate var spokenTeam: String? { nil }
 }
@@ -346,6 +363,15 @@ struct EyeWallShortcuts: AppShortcutsProvider {
             shortTitle: "Power Ranking",
             systemImageName: "trophy"
         )
+        AppShortcut(
+            intent: GetPlayerStatsIntent(),
+            phrases: [
+                "How's a player doing in \(.applicationName)",
+                "\(.applicationName) player stats",
+            ],
+            shortTitle: "Player Stats",
+            systemImageName: "person.crop.circle"
+        )
     }
     #else
     static var appShortcuts: [AppShortcut] {
@@ -419,6 +445,15 @@ struct EyeWallShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Power Ranking",
             systemImageName: "trophy"
+        )
+        AppShortcut(
+            intent: GetPlayerStatsIntent(),
+            phrases: [
+                "How's a player doing in \(.applicationName)",
+                "\(.applicationName) player stats",
+            ],
+            shortTitle: "Player Stats",
+            systemImageName: "person.crop.circle"
         )
     }
     #endif

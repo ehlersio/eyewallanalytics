@@ -34,6 +34,7 @@ private let playoffChances = app.intents["GetPlayoffChancesIntent"]
 private let goals = app.intents["GetGoalsIntent"]
 private let recap = app.intents["GetRecapIntent"]
 private let powerRanking = app.intents["GetPowerRankingIntent"]
+private let playerStats = app.intents["GetPlayerStatsIntent"]
 
 struct SiriCase: Sendable, CustomTestStringConvertible {
     let name: String
@@ -95,6 +96,26 @@ struct HockeyQuestionsEvaluation {
             UserTurn("Are the Bruins moving up in EyeWall's power rankings") {
                 Calls { powerRanking }
                 SiriResponse(.contains("Bruins"))
+            }
+        }),
+        // Players: found by name in the Worker's player index.
+        SiriCase(name: "player, full name", scenario: SiriScenario {
+            UserTurn("How's Seth Jarvis doing this season in EyeWall") {
+                Calls { playerStats }
+                SiriResponse(.contains("Jarvis"))
+            }
+        }),
+        // A goalie, by last name only (listed in the NHL and the AHL).
+        SiriCase(name: "player, goalie by last name", scenario: SiriScenario {
+            UserTurn("What's Kochetkov's save percentage in EyeWall") {
+                Calls { playerStats }
+                SiriResponse(.contains("Kochetkov"))
+            }
+        }),
+        SiriCase(name: "player, PWHL", scenario: SiriScenario {
+            UserTurn("How many points does Marie-Philip Poulin have in EyeWall") {
+                Calls { playerStats }
+                SiriResponse(.contains("Poulin"))
             }
         }),
         // Named teams: the preview build's intents take the name as text

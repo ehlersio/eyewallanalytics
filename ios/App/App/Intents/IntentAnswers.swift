@@ -558,7 +558,7 @@ enum IntentAnswers {
                "EyeWall n'a pas de classement pour les \(team.spokenName) pour l'instant.")
     }
 
-    private static func notPlayed(_ team: IntentTeam) -> String {
+    static func notPlayed(_ team: IntentTeam) -> String {
         L10n.t("The \(team.spokenName) haven't played a game yet this season.",
                "Les \(team.spokenName) n'ont pas encore joué cette saison.")
     }
@@ -605,7 +605,7 @@ enum IntentAnswers {
 
     // MARK: Formatting
 
-    private static func teamName(league: String, id: Int?, code: String?, fallback: String? = nil) -> String {
+    static func teamName(league: String, id: Int?, code: String?, fallback: String? = nil) -> String {
         if let id, let team = TeamCatalog.team(league: league, teamId: id) { return team.spokenName }
         if let code, let team = TeamCatalog.team(league: league, abbr: code) { return team.spokenName }
         return fallback ?? code ?? L10n.t("their opponent", "leur adversaire")
@@ -643,13 +643,13 @@ enum IntentAnswers {
         return hasZone ? trimmed : L10n.t("\(trimmed) local time", "\(trimmed) heure locale")
     }
 
-    private static func parseISO(_ s: String) -> Date? {
+    static func parseISO(_ s: String) -> Date? {
         let f = ISO8601DateFormatter()
         return f.date(from: s)
     }
 
     /// "2026-11-06" as midnight UTC.
-    private static func parseDay(_ s: String) -> Date? {
+    static func parseDay(_ s: String) -> Date? {
         let f = DateFormatter()
         f.calendar = Calendar(identifier: .gregorian)
         f.timeZone = TimeZone(identifier: "UTC")
@@ -675,7 +675,7 @@ enum IntentAnswers {
 
     /// "today", "tomorrow" or "Thursday, November 6". `utc` for a bare
     /// calendar date (parseDay), which must not shift with the time zone.
-    private static func day(_ date: Date, utc: Bool = false) -> String {
+    static func day(_ date: Date, utc: Bool = false) -> String {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = utc ? TimeZone(identifier: "UTC")! : .current
         let todayString = localDateString(Date())
@@ -694,7 +694,7 @@ enum IntentAnswers {
     }
 
     /// "20262027" -> "2026–27"
-    private static func seasonLabel(_ id: String) -> String {
+    static func seasonLabel(_ id: String) -> String {
         guard id.count == 8 else { return id }
         return "\(id.prefix(4))–\(id.suffix(2))"
     }
