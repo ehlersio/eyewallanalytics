@@ -22,7 +22,7 @@ import { Capacitor } from '@capacitor/core';
 import { useTranslation } from 'react-i18next';
 import FaceoffRink, { prefersReducedMotion } from './FaceoffRink';
 import HolidayParticles from './HolidayParticles';
-import { deviceRegion, introHoliday } from '../brand/introHolidays';
+import { currentHoliday } from '../hooks/useHoliday';
 import { DEFAULT_THEME, THEMES } from '../brand/introThemes';
 
 const PLAYED_KEY = 'eyewall:intro-played';
@@ -30,12 +30,10 @@ const FADE_MS = 300;
 // FaceoffRink's size; HolidayParticles lines its effects up with it.
 const MARK_SIZE = 190;
 
-// A ?theme= preview wins; otherwise today's holiday, if there is one.
+// Today's holiday version (a ?theme= preview wins; none when holiday themes
+// are off in Settings), else the regular intro.
 function pickTheme() {
-  if (typeof window === 'undefined') return DEFAULT_THEME;
-  const preview = new URLSearchParams(window.location.search).get('theme');
-  const name = preview || introHoliday(new Date(), deviceRegion());
-  return THEMES[name] || DEFAULT_THEME;
+  return THEMES[currentHoliday()] || DEFAULT_THEME;
 }
 
 function shouldPlay() {

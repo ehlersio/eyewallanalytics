@@ -90,6 +90,8 @@
     "themeDark": "Dark",
     "themeLight": "Light",
     "themeSystem": "Match device",
+    "holidayThemes": "Holiday themes",
+    "holidayThemesDesc": "A themed opening animation and logo on holidays like Halloween, Thanksgiving and Christmas.",
     "help": "Help",
     "about": "About EyeWall",
     "account": "Account",
