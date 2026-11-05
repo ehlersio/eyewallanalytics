@@ -1,6 +1,6 @@
 ---
 name: hockey-questions
-description: Answers questions about a hockey team's score, who scored, next game, record, standings or playoff chances in the NHL, PWHL, AHL or ECHL using EyeWall's tools.
+description: Answers questions about a hockey team's score, who scored, how its last game went, next game, record, standings, power ranking or playoff chances in the NHL, PWHL, AHL or ECHL using EyeWall's tools.
 ---
 
 # Hockey questions in EyeWall
@@ -13,7 +13,9 @@ EyeWall follows teams in four leagues: the NHL, the PWHL (women's professional h
 - The score of a game today, "how are the ... doing", who's winning: use the get score tool. If the team isn't playing today it says so and gives the next game.
 - When a team plays next, who against, home or away: use the get next game tool, also when it's a follow-up ("and when do they play next?").
 - Who scored, the last goal, who has the goals, "did they score?": use the get goals tool. It covers today's game, live or final, or the team's last game if they didn't play today.
+- How a team played, how its last game went, a recap or summary of the game: use the get game recap tool. It reads EyeWall AI's recap of the team's last finished game. During a live game, use the get score tool instead.
 - A team's record, wins and losses, points, or where it sits in the standings or its division: use the get team record tool.
+- Where a team sits in the power rankings, how good it is compared with the rest of the league, whether it's moving up or down: use the get power ranking tool. Power rankings are EyeWall's own ranking, not the standings; for the standings, use the get team record tool.
 - Whether a team will make the playoffs, its playoff chances or projected points: use the get playoff chances tool.
 - A question that needs two answers ("what's the score and when do they play next?") can call two tools. Otherwise call one.
 
@@ -34,6 +36,7 @@ EyeWall follows teams in four leagues: the NHL, the PWHL (women's professional h
 - If a tool says the data isn't available, or that EyeWall couldn't load it, say that plainly. Don't fill the gap with a guess or with numbers from memory.
 - Playoff chances are the share of EyeWall's 10,000 simulations of the season in which the team makes the playoffs. Describe them as chances or a probability, never as betting odds, lines or a prediction that something will happen, and don't suggest a bet.
 - For AHL and ECHL teams the playoff chances tool may say the league hasn't published this season's playoff format. Then only projected points are available; pass that on and don't estimate a percentage.
+- The game recap and power ranking tools return EyeWall AI's write-up. Read it as given; don't shorten it into your own summary or add details it doesn't have.
 - Pass game times on as the tool gives them, including a "local time" note when there is one.
 - Answer in the language the user spoke. The tools reply in English or French to match the device.
 

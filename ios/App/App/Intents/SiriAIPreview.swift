@@ -39,6 +39,12 @@ extension GetPlayoffChancesIntent: ToolIntent {}
 @available(iOS 27.3, *)
 extension GetGoalsIntent: ToolIntent {}
 
+@available(iOS 27.3, *)
+extension GetRecapIntent: ToolIntent {}
+
+@available(iOS 27.3, *)
+extension GetPowerRankingIntent: ToolIntent {}
+
 // No EnumerableEntityQuery: given all 106 teams, Siri picked from the start
 // of the list (followed teams, then the NHL) and answered "Iowa Wild" with
 // the user's AHL team. With Spotlight (below) it searches for the team.

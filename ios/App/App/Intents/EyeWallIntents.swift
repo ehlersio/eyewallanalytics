@@ -211,6 +211,48 @@ struct GetGoalsIntent: AppIntent, SpokenTeam {
 }
 
 @available(iOS 16.0, *)
+struct GetRecapIntent: AppIntent, SpokenTeam {
+    static let title: LocalizedStringResource = "Get Game Recap"
+    static let description = IntentDescription("How a team's last game went: the EyeWall AI recap of it, or the final score and scorers when there's no recap.")
+
+    @Parameter(title: "Team", description: "The team to ask about, in any league EyeWall covers. Leave it empty for the user's primary team.")
+    var team: TeamEntity?
+
+    #if SIRI_AI_PREVIEW
+    @Parameter(title: "Team Name", description: "The team's name exactly as the user said it, such as Iowa Wild, Habs or Toronto Sceptres. Leave it empty for the user's primary team.")
+    var teamName: String?
+    #endif
+
+    static var parameterSummary: some ParameterSummary { Summary("Get the game recap for \(\.$team)") }
+
+    func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
+        let text = try await IntentAnswers.recap(IntentContext.resolve(team?.id, name: spokenTeam))
+        return .result(value: text, dialog: IntentDialog(stringLiteral: text))
+    }
+}
+
+@available(iOS 16.0, *)
+struct GetPowerRankingIntent: AppIntent, SpokenTeam {
+    static let title: LocalizedStringResource = "Get Power Ranking"
+    static let description = IntentDescription("Where a team sits in EyeWall's power rankings, how it moved since the previous ranking, and the EyeWall AI write-up.")
+
+    @Parameter(title: "Team", description: "The team to ask about, in any league EyeWall covers. Leave it empty for the user's primary team.")
+    var team: TeamEntity?
+
+    #if SIRI_AI_PREVIEW
+    @Parameter(title: "Team Name", description: "The team's name exactly as the user said it, such as Iowa Wild, Habs or Toronto Sceptres. Leave it empty for the user's primary team.")
+    var teamName: String?
+    #endif
+
+    static var parameterSummary: some ParameterSummary { Summary("Get the power ranking for \(\.$team)") }
+
+    func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
+        let text = try await IntentAnswers.powerRanking(IntentContext.resolve(team?.id, name: spokenTeam))
+        return .result(value: text, dialog: IntentDialog(stringLiteral: text))
+    }
+}
+
+@available(iOS 16.0, *)
 extension SpokenTeam {
     fileprivate var spokenTeam: String? { nil }
 }
@@ -221,6 +263,8 @@ extension GetNextGameIntent { fileprivate var spokenTeam: String? { teamName } }
 extension GetRecordIntent { fileprivate var spokenTeam: String? { teamName } }
 extension GetPlayoffChancesIntent { fileprivate var spokenTeam: String? { teamName } }
 extension GetGoalsIntent { fileprivate var spokenTeam: String? { teamName } }
+extension GetRecapIntent { fileprivate var spokenTeam: String? { teamName } }
+extension GetPowerRankingIntent { fileprivate var spokenTeam: String? { teamName } }
 #endif
 
 // MARK: - Siri phrases
@@ -282,6 +326,24 @@ struct EyeWallShortcuts: AppShortcutsProvider {
             shortTitle: "Playoff Chances",
             systemImageName: "chart.line.uptrend.xyaxis"
         )
+        AppShortcut(
+            intent: GetRecapIntent(),
+            phrases: [
+                "How did we play in \(.applicationName)",
+                "\(.applicationName) game recap",
+            ],
+            shortTitle: "Game Recap",
+            systemImageName: "text.quote"
+        )
+        AppShortcut(
+            intent: GetPowerRankingIntent(),
+            phrases: [
+                "Where are we in the \(.applicationName) power rankings",
+                "\(.applicationName) power rankings",
+            ],
+            shortTitle: "Power Ranking",
+            systemImageName: "trophy"
+        )
     }
     #else
     static var appShortcuts: [AppShortcut] {
@@ -335,6 +397,26 @@ struct EyeWallShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Playoff Chances",
             systemImageName: "chart.line.uptrend.xyaxis"
+        )
+        AppShortcut(
+            intent: GetRecapIntent(),
+            phrases: [
+                "How did we play in \(.applicationName)",
+                "\(.applicationName) game recap",
+                "How did the \(\.$team) play in \(.applicationName)",
+            ],
+            shortTitle: "Game Recap",
+            systemImageName: "text.quote"
+        )
+        AppShortcut(
+            intent: GetPowerRankingIntent(),
+            phrases: [
+                "Where are we in the \(.applicationName) power rankings",
+                "\(.applicationName) power rankings",
+                "Where are the \(\.$team) in the \(.applicationName) power rankings",
+            ],
+            shortTitle: "Power Ranking",
+            systemImageName: "trophy"
         )
     }
     #endif

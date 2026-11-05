@@ -10,6 +10,9 @@
 //    record    /cache/standings (NHL; the site's /nhl-api proxy when the
 //              Worker's copy is missing or another season's), /{league}/standings?season=
 //    playoffs  /playoff-odds?team=, /{league}/playoff-odds?teamId=
+//    goals     /nhl-api/v1/gamecenter/{id}/landing (NHL), /{league}/live/{id}
+//    recap     /cache/narrative:game:{id}:{abbr} and the other leagues' keys
+//    ranking   /power-rankings?team=&season=, /{league}/power-rankings?teamId=
 //
 //  Every number comes from one of those responses. When a route has nothing,
 //  the answer says so rather than filling in a figure.
@@ -215,10 +218,12 @@ enum IntentAnswers {
         } else if let last = try await lastGame(team) {
             game = last
         } else {
-            return L10n.t("The \(team.spokenName) haven't played a game yet this season.",
-                          "Les \(team.spokenName) n'ont pas encore joué cette saison.")
+            return notPlayed(team)
         }
+        return try await goals(team, in: game)
+    }
 
+    private static func goals(_ team: IntentTeam, in game: GameRef) async throws -> String {
         let feed = team.league == "nhl" ? try await nhlGoals(game.id) : try await hockeyTechGoals(team.league, game.id)
         guard let feed else { throw IntentFailure.unavailable }
         let prefix = game.label.map { L10n.t("Last game, \($0). ", "Dernier match, \($0). ") }
@@ -352,6 +357,121 @@ enum IntentAnswers {
         }
         return GoalFeed(homeId: homeId, awayId: live.int("awayTeamId"), homeCode: nil, awayCode: nil,
                         homeScore: live.int("homeScore") ?? 0, awayScore: live.int("awayScore") ?? 0, goals: goals)
+    }
+
+    // MARK: Recap
+
+    /// The EyeWall AI recap of the team's last finished game: the one the
+    /// app's game summary shows, read back from the Worker's KV (/cache/),
+    /// never generated here. Only games someone followed in the app have
+    /// one, so without it the answer is the final score and the scorers.
+    /// NHL and PWHL recaps are written in English only: in French those
+    /// games get the score and scorers.
+    static func recap(_ team: IntentTeam) async throws -> String {
+        let today = try await todayGame(team)
+        if let today, today.string("status") == "live" {
+            return describeToday(today, for: team)
+                + L10n.t(" EyeWall AI writes its recap after the final.", " EyeWall AI écrit son résumé après le match.")
+        }
+        let game: GameRef
+        if let today, today.string("status") == "final", let id = today.int("gameId") {
+            game = GameRef(id: id, label: nil)
+        } else if let last = try await lastGame(team) {
+            game = last
+        } else {
+            return notPlayed(team)
+        }
+        if let text = await cachedRecap(team, gameId: game.id) {
+            let prefix = game.label.map { L10n.t("Last game, \($0). ", "Dernier match, \($0). ") } ?? L10n.t("Final. ", "Final. ")
+            return prefix + spokenRecords(text)
+        }
+        let note = L10n.isFrench && ["nhl", "pwhl"].contains(team.league)
+            ? "EyeWall AI écrit ses résumés de la \(team.league == "nhl" ? "LNH" : "LPHF") en anglais seulement. "
+            : L10n.t("EyeWall AI has no recap of that game for the \(team.spokenName). ",
+                     "EyeWall AI n'a pas de résumé de ce match pour les \(team.spokenName). ")
+        return note + (try await goals(team, in: game))
+    }
+
+    /// The game recap the Worker filed for this team (narrativeCache.js's keys).
+    private static func cachedRecap(_ team: IntentTeam, gameId: Int) async -> String? {
+        // NHL and PWHL recaps are English only.
+        if L10n.isFrench && ["nhl", "pwhl"].contains(team.league) { return nil }
+        let key: String
+        switch team.league {
+        case "nhl": key = "narrative:game:\(gameId):\(team.abbr.uppercased())"
+        case "pwhl": key = "pwhl:narrative:game:\(gameId):\(team.abbr.uppercased())"
+        default: key = "\(team.league):narrative:game:\(gameId):\(team.teamId)\(L10n.isFrench ? ":fr" : "")"
+        }
+        guard let encoded = key.addingPercentEncoding(withAllowedCharacters: .alphanumerics),
+              let cached = try? await Worker.object("/cache/\(encoded)"),
+              let text = cached.string("narrative"), !text.isEmpty else { return nil }
+        return text
+    }
+
+    // MARK: Power ranking
+
+    /// EyeWall's power ranking: the rank, the move since the previous run,
+    /// and the EyeWall AI write-up that goes with it (the League tab's).
+    static func powerRanking(_ team: IntentTeam) async throws -> String {
+        let rank: Int, prior: Int?, of: Int?, text: String?
+        if team.league == "nhl" {
+            let season = try await Seasons.load().nhl
+            guard let season, let row = try await Worker.rows("/power-rankings?team=\(team.abbr)&season=\(season)&limit=1").first,
+                  let r = row.int("rank") else { return noRanking(team) }
+            // NHL write-ups are English only.
+            rank = r; prior = row.int("prior_rank"); of = TeamCatalog.all.filter { $0.league == "nhl" }.count
+            text = L10n.isFrench ? nil : row.string("narrative")
+        } else {
+            let locale = L10n.isFrench ? "fr" : "en"
+            guard let data = try await Worker.object("/\(team.league)/power-rankings?teamId=\(team.teamId)&locale=\(locale)"),
+                  let latest = data["latest"] as? [JSONObject],
+                  let row = latest.first(where: { $0.int("team_id") == team.teamId }),
+                  let r = row.int("rank") else { return noRanking(team) }
+            rank = r; prior = row.int("prior_rank"); of = latest.count
+            text = data.object("narrative")?.string("text")
+        }
+        let ofText = of.map { L10n.t(" of \($0)", " sur \($0)") } ?? ""
+        var sentence = L10n.t("The \(team.spokenName) are \(L10n.ordinal(rank))\(ofText) in EyeWall's power rankings",
+                              "Les \(team.spokenName) sont au \(L10n.ordinal(rank)) rang\(ofText) du classement de puissance d'EyeWall")
+        if let prior, prior != rank {
+            sentence += prior > rank ? L10n.t(", up from \(L10n.ordinal(prior))", ", en hausse du \(L10n.ordinal(prior)) rang")
+                                     : L10n.t(", down from \(L10n.ordinal(prior))", ", en baisse du \(L10n.ordinal(prior)) rang")
+        } else if prior != nil {
+            sentence += L10n.t(", unchanged", ", sans changement")
+        }
+        sentence += "."
+        if let text, !text.isEmpty { sentence += " " + spokenRecords(text) }
+        return sentence
+    }
+
+    private static func noRanking(_ team: IntentTeam) -> String {
+        L10n.t("EyeWall hasn't ranked the \(team.spokenName) yet this season.",
+               "EyeWall n'a pas encore classé les \(team.spokenName) cette saison.")
+    }
+
+    /// EyeWall AI's text writes records as "7-2-1", which Siri reads as
+    /// "7 to 2 to 1": spell out every three-number record. In English, "a
+    /// 5-5-1 record" becomes "a record of 5 wins, 5 losses and 1 overtime
+    /// loss" (French already writes "une fiche de 5-5-1").
+    static func spokenRecords(_ text: String) -> String {
+        let record = #"(?<![\d.\-])(\d{1,2})-(\d{1,2})-(\d{1,2})(?![\d\-])"#
+        var out = text
+        if !L10n.isFrench {
+            // "an 8-1-2 start" -> "a start of ...": the article goes with the new first word.
+            for (articles, template) in [("an", "a $5 of $2-$3-$4"), ("a|the|its|their", "$1 $5 of $2-$3-$4")] {
+                guard let regex = try? NSRegularExpression(pattern: #"\b("# + articles + #")\s+"# + record + #"\s+(record|start|mark|run|stretch)\b"#,
+                                                           options: .caseInsensitive) else { continue }
+                out = regex.stringByReplacingMatches(in: out, range: NSRange(out.startIndex..., in: out), withTemplate: template)
+            }
+        }
+        guard let regex = try? NSRegularExpression(pattern: record) else { return out }
+        let source = out as NSString
+        for match in regex.matches(in: out, range: NSRange(location: 0, length: source.length)).reversed() {
+            let n = (1...3).map { Int(source.substring(with: match.range(at: $0))) ?? 0 }
+            out = (out as NSString).replacingCharacters(in: match.range,
+                                                         with: recordWords(wins: n[0], losses: n[1], otLosses: n[2], shootoutLosses: nil))
+        }
+        return out
     }
 
     // MARK: Record

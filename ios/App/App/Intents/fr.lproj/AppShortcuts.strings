@@ -20,3 +20,11 @@
 "What are our playoff chances in ${applicationName}" = "Quelles sont nos chances de séries dans ${applicationName}";
 "${applicationName} playoff chances" = "Chances de séries ${applicationName}";
 "What are the ${team} playoff chances in ${applicationName}" = "Quelles sont les chances de séries des ${team} dans ${applicationName}";
+
+"How did we play in ${applicationName}" = "Comment on a joué dans ${applicationName}";
+"${applicationName} game recap" = "Résumé du match ${applicationName}";
+"How did the ${team} play in ${applicationName}" = "Comment ont joué les ${team} dans ${applicationName}";
+
+"Where are we in the ${applicationName} power rankings" = "Où en est-on au classement de puissance ${applicationName}";
+"${applicationName} power rankings" = "Classement de puissance ${applicationName}";
+"Where are the ${team} in the ${applicationName} power rankings" = "Où sont les ${team} au classement de puissance ${applicationName}";
