@@ -38,6 +38,13 @@
 "Where a team sits in EyeWall's power rankings, how it moved since the previous ranking, and the EyeWall AI write-up." = "Le rang d'une équipe au classement de puissance d'EyeWall, son mouvement depuis le classement précédent, et l'analyse d'EyeWall AI.";
 "Get the power ranking for ${team}" = "Obtenir le classement de puissance de ${team}";
 
+"Get Player Stats" = "Obtenir les statistiques d'un joueur";
+"A player's season so far in the NHL, PWHL, AHL or ECHL: goals, assists and points, or a goalie's record, save percentage and goals-against average, and an NHL skater's last game." = "La saison d'un joueur jusqu'ici dans la LNH, la LPHF, la LAH ou l'ECHL : buts, passes et points, ou la fiche, le taux d'arrêts et la moyenne de buts alloués d'un gardien, et le dernier match d'un patineur de la LNH.";
+"Player" = "Joueur";
+"The player's name as the user said it, such as Seth Jarvis, Poulin or Kochetkov." = "Le nom du joueur tel que l'utilisateur l'a dit, par exemple Seth Jarvis, Poulin ou Kochetkov.";
+"Which player?" = "Quel joueur?";
+"Get the stats for ${playerName}" = "Obtenir les statistiques de ${playerName}";
+
 "Score" = "Pointage";
 "Goals" = "Buts";
 "Next Game" = "Prochain match";
@@ -45,6 +52,7 @@
 "Playoff Chances" = "Chances de séries";
 "Game Recap" = "Résumé du match";
 "Power Ranking" = "Classement de puissance";
+"Player Stats" = "Statistiques de joueur";
 
 "Open EyeWall and pick a team first." = "Ouvrez EyeWall et choisissez d'abord une équipe.";
 "Open EyeWall once, then try again." = "Ouvrez EyeWall une fois, puis réessayez.";

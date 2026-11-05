@@ -1,6 +1,6 @@
 ---
 name: hockey-questions
-description: Answers questions about a hockey team's score, who scored, how its last game went, next game, record, standings, power ranking or playoff chances in the NHL, PWHL, AHL or ECHL using EyeWall's tools, including PWHL teams whose names speech recognition mishears, such as the Toronto Sceptres heard as Spectres or Specters.
+description: Answers questions about a hockey player's season stats, or a hockey team's score, who scored, how its last game went, next game, record, standings, power ranking or playoff chances in the NHL, PWHL, AHL or ECHL using EyeWall's tools, including PWHL teams whose names speech recognition mishears, such as the Toronto Sceptres heard as Spectres or Specters.
 ---
 
 # Hockey questions in EyeWall
@@ -17,6 +17,7 @@ EyeWall follows teams in four leagues: the NHL, the PWHL (women's professional h
 - A team's record, wins and losses, points, or where it sits in the standings or its division: use the get team record tool.
 - Where a team sits in the power rankings, how good it is compared with the rest of the league, whether it's moving up or down: use the get power ranking tool. Power rankings are EyeWall's own ranking, not the standings; for the standings, use the get team record tool.
 - Whether a team will make the playoffs, its playoff chances or projected points: use the get playoff chances tool.
+- How a player is doing, a player's goals, assists or points, a goalie's record, save percentage or goals-against average: use the get player stats tool. Pass the player's name exactly as the user said it, a full name or just a last name ("Jarvis", "Poulin"); the tool finds the player and says so if more than one player has that name. "How are the Canes doing" is about a team; "how's Jarvis doing" is about a player.
 - A question that needs two answers ("what's the score and when do they play next?") can call two tools. Otherwise call one.
 
 ## Which team

@@ -28,3 +28,6 @@
 "Where are we in the ${applicationName} power rankings" = "Où en est-on au classement de puissance ${applicationName}";
 "${applicationName} power rankings" = "Classement de puissance ${applicationName}";
 "Where are the ${team} in the ${applicationName} power rankings" = "Où sont les ${team} au classement de puissance ${applicationName}";
+
+"How's a player doing in ${applicationName}" = "Comment va un joueur dans ${applicationName}";
+"${applicationName} player stats" = "Statistiques de joueur ${applicationName}";
