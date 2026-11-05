@@ -27,6 +27,27 @@ export const DECOR_SHAPES = {
       return `${(Math.cos(a) * r).toFixed(3)},${(Math.sin(a) * r).toFixed(3)}`;
     }).join(' '),
   }]],
+  // A summer sun: disc and eight rays, in the accent's fill/stroke color.
+  sun: [
+    ['circle', { r: 0.5 }],
+    ['path', {
+      d: Array.from({ length: 8 }, (_, i) => {
+        const a = (i * Math.PI) / 4;
+        const p = r => `${(Math.cos(a) * r).toFixed(3)},${(Math.sin(a) * r).toFixed(3)}`;
+        return `M${p(0.68)} L${p(1)}`;
+      }).join(' '),
+      fill: 'none', strokeWidth: 0.14, strokeLinecap: 'round',
+    }],
+  ],
+  // Six arms, each with a V near its tip; drawn in the accent's stroke color.
+  snowflake: [['path', {
+    d: [0, 60, 120, 180, 240, 300].map(deg => {
+      const a = (deg * Math.PI) / 180;
+      const at = (r, da = 0) => `${(Math.cos(a + da) * r).toFixed(3)},${(Math.sin(a + da) * r).toFixed(3)}`;
+      return `M0,0 L${at(1)} M${at(0.6)} L${at(0.85, 0.35)} M${at(0.6)} L${at(0.85, -0.35)}`;
+    }).join(' '),
+    fill: 'none', strokeWidth: 0.16, strokeLinecap: 'round',
+  }]],
   // Upright, its brim centered on (0, 0).
   santaHat: [
     ['path', { d: 'M-0.72,0.1 Q-0.1,-1.3 1.08,-0.82 L0.72,0.1Z', fill: '#D6203A' }],
@@ -249,6 +270,12 @@ const MARK_ACCENTS = {
   christmas: [{ kind: 'santaHat', x: 42, y: 30, s: 9, rot: -12 }],
 };
 MARK_ACCENTS['boxing-day'] = MARK_ACCENTS.christmas;
+// Seasons (introHolidays.js SEASONS).
+MARK_ACCENTS.fall = MARK_ACCENTS.thanksgiving;
+MARK_ACCENTS.spooky = MARK_ACCENTS.halloween;
+MARK_ACCENTS.winter = [dotAccent('snowflake', 9, { stroke: '#5FA8E8' })];
+MARK_ACCENTS['christmas-season'] = MARK_ACCENTS.christmas;
+MARK_ACCENTS['off-season'] = [dotAccent('sun', 8, { fill: GOLD, stroke: GOLD })];
 export function markAccents(holiday) {
   return MARK_ACCENTS[holiday] ?? [];
 }
@@ -264,6 +291,9 @@ export function markAccents(holiday) {
 // dot, puck and ref belong to the mark, so FaceoffRink.jsx draws them.
 const leaves = count => (ms, { totalMs, bounds }) => falling(ms, totalMs, bounds, {
   kind: 'leaf', count, colors: AUTUMN, speed: [40, 70], size: [2.8, 4], sway: 7, spin: 90,
+});
+const snow = count => (ms, { totalMs, bounds }) => falling(ms, totalMs, bounds, {
+  kind: 'snow', count, colors: [SNOW], speed: [30, 55], size: [0.8, 1.7], sway: 4, spin: 0,
 });
 
 export const DECOR = {
@@ -304,10 +334,17 @@ export const DECOR = {
     ref: 'ghost',
     dot: (ms, { baseMs }) => ({ kind: 'jackOLantern', s: 9 * bloom(ms, baseMs) }),
   },
-  christmas: {
-    particles: (ms, { totalMs, bounds }) => falling(ms, totalMs, bounds, { kind: 'snow', count: 40, colors: [SNOW],
-      speed: [30, 55], size: [0.8, 1.7], sway: 4, spin: 0 }),
-    ref: 'santa',
+  christmas: { particles: snow(40), ref: 'santa' },
+  // Seasons: quieter than the holidays -- fewer particles, no greeting.
+  fall: { particles: leaves(12) },
+  spooky: {
+    puck: 'pumpkin',
+    ref: 'ghost',
+    dot: (ms, { baseMs }) => ({ kind: 'jackOLantern', s: 9 * bloom(ms, baseMs) }),
   },
+  winter: { particles: snow(20) },
+  'christmas-season': { particles: snow(28), ref: 'santa' },
+  // The Zamboni itself is part of the off-season timeline (offseasonFrame).
+  'off-season': {},
 };
 DECOR['boxing-day'] = DECOR.christmas;

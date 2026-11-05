@@ -14,6 +14,7 @@ import {
   INTRO_DURATION_MS, introFrame,
   VETERANS_DURATION_MS, veteransFrame,
   MEMORIAL_DURATION_MS, memorialFrame,
+  OFFSEASON_DURATION_MS, offseasonFrame,
 } from './faceoffTimeline.js';
 import { DECOR, PHONE_BOUNDS } from './holidayDecor.js';
 
@@ -27,7 +28,7 @@ export const DEFAULT_THEME = {
 
 const camel = name => name.replace(/-(\w)/g, (_, c) => c.toUpperCase());
 
-function holiday(name, { base = introFrame, baseMs = INTRO_DURATION_MS, tailMs = 1000, holdMs = 300, vars } = {}) {
+function holiday(name, { base = introFrame, baseMs = INTRO_DURATION_MS, tailMs = 1000, holdMs = 300, vars, greeting = true } = {}) {
   const decor = DECOR[name] ?? {};
   const totalMs = baseMs + tailMs;
   const ctx = { baseMs, totalMs };
@@ -44,7 +45,9 @@ function holiday(name, { base = introFrame, baseMs = INTRO_DURATION_MS, tailMs =
     holdMs,
     letterAtMs: Math.round(baseMs * LETTER_BUILD_FRACTION),
     vars,
-    tagline: `app.introTagline.${camel(name)}`,
+    decor: true,
+    // The wordmark and the day's line; seasons go without.
+    tagline: greeting ? `app.introTagline.${camel(name)}` : null,
   };
 }
 
@@ -65,3 +68,17 @@ export const THEMES = {
   christmas: holiday('christmas'),
   'boxing-day': holiday('boxing-day'),
 };
+
+// Seasons (introHolidays.js SEASONS): the regular intro's length and hold,
+// a lighter decoration, no greeting.
+const season = { tailMs: 0, holdMs: 250, greeting: false };
+export const SEASON_THEMES = {
+  fall: holiday('fall', season),
+  spooky: holiday('spooky', { ...season, vars: { '--brand-away': '#E8772E' } }),
+  winter: holiday('winter', season),
+  'christmas-season': holiday('christmas-season', season),
+  'off-season': holiday('off-season', { ...season, base: offseasonFrame, baseMs: OFFSEASON_DURATION_MS }),
+};
+
+// Holidays and seasons together, by name.
+export const ALL_THEMES = { ...THEMES, ...SEASON_THEMES };

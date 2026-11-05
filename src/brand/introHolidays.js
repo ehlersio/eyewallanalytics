@@ -80,3 +80,28 @@ export function nextHolidayDate(holiday, from = new Date()) {
   }
   return null;
 }
+
+// --- Seasons --------------------------------------------------------------
+//
+// Longer windows with a quieter version of the intro (no greeting) and a
+// logo accent (hooks/useDayTheme.js).
+// A holiday on the same day wins; a short season (Halloween week, the run-up
+// to Christmas) wins over a long one (fall, winter). In first-match order.
+
+const monthDay = d => d.getMonth() * 100 + d.getDate();
+const between = (m1, d1, m2, d2) => d => monthDay(d) >= m1 * 100 + d1 && monthDay(d) <= m2 * 100 + d2;
+
+export const SEASONS = [
+  { theme: 'spooky', label: 'Halloween week', window: 'Oct 24–30', matches: between(9, 24, 9, 30) },
+  { theme: 'christmas-season', label: 'Christmas season', window: 'Dec 18–23', matches: between(11, 18, 11, 23) },
+  { theme: 'fall', label: 'Fall', window: 'Sep 22–Nov 30', matches: between(8, 22, 10, 30) },
+  // From free agency (Jul 1) until fall: no hockey to face off in.
+  { theme: 'off-season', label: 'Off-season', window: 'Jul 1–Sep 21', matches: between(6, 1, 8, 21) },
+  { theme: 'winter', label: 'Winter', window: 'Dec 1–Feb 28/29',
+    matches: d => between(11, 1, 11, 31)(d) || between(0, 1, 1, 29)(d) },
+];
+
+// Season theme name for this local date, or null.
+export function introSeason(date) {
+  return SEASONS.find(s => s.matches(date))?.theme ?? null;
+}

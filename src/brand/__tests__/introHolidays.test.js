@@ -1,7 +1,7 @@
 // Holiday intros are picked from the device's local date and region.
 
 import { describe, it, expect } from 'vitest'
-import { HOLIDAYS, deviceRegion, introHoliday, lastWeekday, nextHolidayDate, nthWeekday } from '../introHolidays'
+import { HOLIDAYS, deviceRegion, introHoliday, introSeason, lastWeekday, nextHolidayDate, nthWeekday } from '../introHolidays'
 
 const d = (y, m, day) => new Date(y, m - 1, day, 12)
 
@@ -74,5 +74,28 @@ describe('deviceRegion', () => {
     expect(deviceRegion({ languages: ['en'], language: 'en' })).toBeNull()
     expect(deviceRegion({ languages: ['not a tag'], language: 'x' })).toBeNull()
     expect(deviceRegion(null)).toBeNull()
+  })
+})
+
+describe('introSeason', () => {
+  it.each([
+    [d(2026, 9, 21), 'off-season'],
+    [d(2026, 9, 22), 'fall'],
+    [d(2026, 10, 23), 'fall'],
+    [d(2026, 10, 24), 'spooky'],
+    [d(2026, 10, 30), 'spooky'],
+    [d(2026, 11, 30), 'fall'],
+    [d(2026, 12, 1), 'winter'],
+    [d(2026, 12, 18), 'christmas-season'],
+    [d(2026, 12, 23), 'christmas-season'],
+    [d(2026, 12, 27), 'winter'],
+    [d(2027, 2, 28), 'winter'],
+    [d(2028, 2, 29), 'winter'],
+    [d(2027, 3, 1), null],
+    [d(2027, 6, 30), null],
+    [d(2027, 7, 1), 'off-season'],
+    [d(2027, 9, 21), 'off-season'],
+  ])('%s → %s', (date, season) => {
+    expect(introSeason(date)).toBe(season)
   })
 })
