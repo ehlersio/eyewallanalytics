@@ -185,6 +185,7 @@
   --brand-ink: #FFFFFF;
   --brand-puck: #E8F1F8;
   --brand-away: #7FA3C7;
+  --holiday-snow: #FFFFFF;
 }
 [data-theme="light"] {
   --brand-sheet: #F3F7FA;
@@ -192,6 +193,7 @@
   --brand-ink: #0B1426;
   --brand-puck: #0B1426;
   --brand-away: #7A8699;
+  --holiday-snow: #9DB8D3;
 }
 
 @layer base {
@@ -527,6 +529,11 @@
   animation: fade-in 0.15s ease;
 }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes faceoff-wordmark-in {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.faceoff-wordmark { animation: faceoff-wordmark-in 500ms ease-out both; }
 
 @media (min-width: 560px) {
   .popup-backdrop { align-items: center; padding: 16px; }

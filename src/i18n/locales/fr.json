@@ -2482,7 +2482,21 @@
   "app": {
     "skipToMainContent": "Passer au contenu principal",
     "mainContentAriaLabel": "Contenu principal",
-    "introAriaLabel": "Animation de mise au jeu"
+    "introAriaLabel": "Animation de mise au jeu",
+    "introTagline": {
+      "newYear": "Bonne année!",
+      "valentines": "Joyeuse Saint-Valentin!",
+      "stPatricks": "Joyeuse Saint-Patrick!",
+      "memorialDay": "En hommage à celles et ceux qui ont tout donné.",
+      "canadaDay": "Bonne fête du Canada!",
+      "independenceDay": "Joyeux 4 juillet!",
+      "thanksgiving": "Joyeuse Action de grâce!",
+      "thanksgivingUs": "Joyeuse Action de grâce!",
+      "halloween": "Joyeuse Halloween!",
+      "veteransDay": "Merci à toutes celles et ceux qui ont servi.",
+      "christmas": "Joyeux Noël!",
+      "boxingDay": "Joyeuses fêtes!"
+    }
   },
   "seasonOverlayChart": {
     "defaultMetricLabel": "Valeur",
