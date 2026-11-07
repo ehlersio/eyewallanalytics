@@ -781,7 +781,8 @@
         "G_1B": "Backup goalie"
       },
       "shootsL": "shoots L",
-      "shootsR": "shoots R"
+      "shootsR": "shoots R",
+      "basisNextSeason": "{{season}} signed roster, slotted by last season's ice time"
     }
   },
   "pwhlTeamView": {
@@ -2544,7 +2545,7 @@
     "tradeFit": {
       "title": "Trade fit",
       "methodLabel": "How trade fit works",
-      "methodTip": "A fit, not a prediction: it says which teams would have a use for this player if he were traded, not whether he will be. Each team is checked three ways. Need: would he upgrade a lineup slot at his position, either one ranked in the league's bottom third or the top slot where he'd rate above their average (ratings are WAR per 82, GSAx per 60 for goalies). Window: a player on an expiring contract fits teams with playoff odds of 50% or more; one signed beyond this season fits any team. Cap: his cap hit against the team's estimated space, with the selling team keeping up to 50% if it has a retention slot left. Space is an estimate with no LTIR data, so teams near the cap can look tighter than they are. Strong means need and window both fit, Possible one of them, Long shot neither; needing salary back drops a team one tier. No-trade lists aren't public, so they never change the order.",
+      "methodTip": "A fit, not a prediction: it says which teams would have a use for this player if he were traded, not whether he will be. Each team is checked three ways. Need: would he upgrade a lineup slot at his position, either one ranked in the league's bottom third or the top slot where he'd rate above their average (ratings are WAR per 82, GSAx per 60 for goalies). Window: a player on an expiring contract fits teams with playoff odds of 50% or more; one signed beyond this season fits any team. Cap: his cap hit against the team's estimated space, with the selling team keeping up to 50% if it has a retention slot left. Space is an estimate with no LTIR data, so teams near the cap can look tighter than they are. Strong means need and window both fit, Possible one of them, Long shot neither; needing salary back drops a team one tier. No-trade lists aren't public, so they never change the order. From the day after the trade deadline the fit is for next season: next season's signed rosters, its cap once the ceiling is known, and next season's playoff odds (top 16 by Elo until they exist). Until June 30, players whose contracts are ending get a rights-only fit.",
       "summary": "Strong fit with {{strong}} teams · possible with {{possible}} · long shot for {{longShot}}",
       "rating": "WAR per 82: {{value}}",
       "ratingGoalie": "GSAx per 60: {{value}}",
@@ -2583,9 +2584,19 @@
         "handRightShot_one": "Their top four has {{count}} right shot",
         "handRightShot_other": "Their top four has {{count}} right shots",
         "capMissing_one": "{{count}} roster cap hit isn't public, so space may be lower",
-        "capMissing_other": "{{count}} roster cap hits aren't public, so space may be lower"
+        "capMissing_other": "{{count}} roster cap hits aren't public, so space may be lower",
+        "windowContenderElo": "Top 16 by Elo heading into {{season}} (#{{rank}}): a rental fits",
+        "windowNotContenderElo": "#{{rank}} by Elo heading into {{season}}: outside the top 16 a rental needs",
+        "windowRights": "Rights only: the new team could sign him before July 1",
+        "capFitsSeason": "Fits under the {{season}} cap (est. {{space}} space)",
+        "capFitsRetainedSeason": "Fits the {{season}} cap if the seller keeps 50% (est. {{space}} space)",
+        "capNeedsSalarySeason": "Would need to send salary back for {{season}} (est. {{space}} space)",
+        "capUnannounced": "The {{season}} cap ceiling isn't in the cap data yet",
+        "capRights": "Est. {{season}} space {{space}}; his next contract isn't signed"
       },
-      "tapHint": "Tap a team to see why."
+      "tapHint": "Tap a team to see why.",
+      "offseasonNote": "Offseason fit for {{season}}: next season's signed rosters, cap and contenders. Trades made after the deadline are for next season.",
+      "rights": "pending {{type}}: rights only until June 30"
     },
     "candidacy": {
       "title": "Candidate signals",
@@ -3026,7 +3037,7 @@
         "title": "Trade fit and candidate signals",
         "body": [
           "Neither is a prediction of a trade. Trade fit asks which teams would have a use for a player if he were moved; candidate signals ask how many of the things that came before past deadline trades he has. Both are NHL only, and both show tiers with their reasons, never a percentage for a player.",
-          "Trade fit checks each of the other 31 teams three ways. Need: he'd upgrade a lineup slot at his position that ranks in the league's bottom third, or the top slot where he'd rate above its average (WAR per 82, GSAx per 60 for goalies; this season's at 20+ games, else last season's). Window: a player on an expiring contract fits only teams with playoff odds of 50% or more; one signed beyond this season fits any team. Cap: his cap hit against the team's estimated space, with the seller keeping up to 50% if it has a retention slot left. Need and window both met is a strong fit, one is possible, neither a long shot; needing salary back drops a team one tier. It runs nightly until the trade deadline.",
+          "Trade fit checks each of the other 31 teams three ways. Need: he'd upgrade a lineup slot at his position that ranks in the league's bottom third, or the top slot where he'd rate above its average (WAR per 82, GSAx per 60 for goalies; this season's at 20+ games, else last season's). Window: a player on an expiring contract fits only teams with playoff odds of 50% or more; one signed beyond this season fits any team. Cap: his cap hit against the team's estimated space, with the seller keeping up to 50% if it has a retention slot left. Need and window both met is a strong fit, one is possible, neither a long shot; needing salary back drops a team one tier. In season it runs nightly through the trade deadline. From the day after, the fit is for next season: next season's signed rosters (slotted by this season's ice time), its cap once the ceiling is known, and next season's playoff odds, or the top 16 by Elo until those exist. There's no trade freeze after the deadline (a player acquired then just can't play in that spring's playoffs), so a trade then is a trade for next season. Until June 30, players whose contracts are ending get a rights-only fit, at best possible.",
           "Candidate signals come from a logistic regression fit on the 2023-24, 2024-25 and 2025-26 seasons. For every skater with 10+ games and goalie with 5+ on Jan 1, Feb 1 and two weeks before the deadline, it asks whether he was traded before that season's deadline, using only what was known that day: contract years left and UFA/RFA, cap hit, no-move or no-trade clause, points per game or save percentage, ice time over his last 10 games against his season, his team's points percentage against the 8th team in its conference, age, position and days to the deadline. Trades are read from the NHL's own game logs (a switch of team) and the trade list behind the trade trees, with waiver claims left out.",
           "Each season was predicted by a model fit only on the other two. The model beat a flat rate (Brier 0.0622 against 0.0655) and the rule \"expiring contract on a team outside a playoff spot\" (0.0629), but only slightly ahead of that rule, and its top tenth predicted 28.0% when 22.6% were traded: outside the ±5-point bar set before the test. So no percentage is shown. Instead, the model's top tenth is labeled \"Several signals\" (22.6% traded before the deadline in the test) and the next two tenths \"Some signals\" (10.1%). A tier is shown only with at least one signal: an expiring contract, a team outside a playoff spot, or ice time down 10% or more. Shown from Jan 1 to the trade deadline, rebuilt nightly.",
           "What weighs most in the model: a higher cap hit (more often moved), being a goalie (less often), more points per game (less often), more years left (less often), an expiring contract on a team outside a playoff spot (more often), and a full no-move or no-trade clause (less often).",
@@ -3068,7 +3079,8 @@
       "injuryImpact": "Injury impact added: man-games and WAR lost per team, counted from the 2026-27 season.",
       "elo": "Game winners switch to Elo (FiveThirtyEight's NHL settings), replacing a hand-weighted formula that backtested worse.",
       "tradeSources": "Trades ESPN's feed is missing are added from Wikipedia's cited NHL transactions lists, and ESPN's early dates (January 2021 to June 2024) are corrected where a cited trade matches, or marked unconfirmed.",
-      "tradeCandidacy": "Added trade fit (which teams a player fits, in tiers with reasons) and candidate signals with League › Cap's Deadline board: tiers from a model tested on 2023-24 to 2025-26, shown from Jan 1 to the trade deadline. Each tiered player also gets an EyeWall AI paragraph written only from his signals and best trade fits."
+      "tradeCandidacy": "Added trade fit (which teams a player fits, in tiers with reasons) and candidate signals with League › Cap's Deadline board: tiers from a model tested on 2023-24 to 2025-26, shown from Jan 1 to the trade deadline. Each tiered player also gets an EyeWall AI paragraph written only from his signals and best trade fits.",
+      "tradeFitOffseason": "Trade fit runs year-round: from the day after the deadline it fits players to next season's rosters, cap and contenders, with rights-only fits for pending free agents until June 30."
     }
   },
   "scorecard": {

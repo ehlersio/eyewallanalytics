@@ -14,6 +14,18 @@ export function hasTradeFit(data) {
   return !!data && !data.unavailable && !!data.player && Array.isArray(data.teams) && data.teams.length > 0
 }
 
+// 20272028 -> '2027-28'; null without a season.
+export function seasonLabel(season) {
+  const y = Math.floor(Number(season) / 10000)
+  return Number.isFinite(y) && y > 0 ? `${y}-${String(y + 1).slice(2)}` : null
+}
+
+// Offseason fit (trade fit Phase 2b): from the day after the deadline the fit
+// is for next season, player.season.
+export function isOffseason(data) {
+  return data?.player?.phase === 'offseason'
+}
+
 // −$5.21M / $3.00M; null without a number.
 export function fmtMoney(amount) {
   if (amount == null || !Number.isFinite(Number(amount))) return null
@@ -33,8 +45,9 @@ function capNote(reason, base) {
 }
 
 // One reason -> { key, params, note? } for t(). `slotLabel(slot)` translates
-// a team_needs slot name. Unknown codes return null (skipped, not shown raw).
-export function reasonKey(reason, slotLabel = s => s) {
+// a team_needs slot name; `season` is the fit's ('2027-28'), for offseason
+// reasons that name it. Unknown codes return null (skipped, not shown raw).
+export function reasonKey(reason, slotLabel = s => s, season = null) {
   if (!reason || typeof reason.code !== 'string') return null
   const base = 'playerPopup.tradeFit.reasons.'
   const withNote = out => {
@@ -53,19 +66,32 @@ export function reasonKey(reason, slotLabel = s => s) {
     case 'window_term':
       return { key: base + 'windowTerm', params: { season: reason.expires_after || '—' } }
     case 'window_rental_contender':
-      return { key: base + 'windowContender', params: { pct: pct(reason.pct) } }
+      return reason.basis === 'elo'
+        ? { key: base + 'windowContenderElo', params: { rank: reason.elo_rank, season: season || '—' } }
+        : { key: base + 'windowContender', params: { pct: pct(reason.pct) } }
     case 'window_rental_not':
-      return { key: base + 'windowNotContender', params: { pct: pct(reason.pct) } }
+      return reason.basis === 'elo'
+        ? { key: base + 'windowNotContenderElo', params: { rank: reason.elo_rank, season: season || '—' } }
+        : { key: base + 'windowNotContender', params: { pct: pct(reason.pct) } }
+    case 'window_rights':
+      return { key: base + 'windowRights', params: {} }
     case 'window_odds_unknown':
       return { key: base + 'windowOddsUnknown', params: {} }
     case 'cap_fits':
-      return withNote({ key: base + 'capFits', params: { space: fmtMoney(reason.space) } })
     case 'cap_fits_retained':
-      return withNote({ key: base + 'capFitsRetained', params: { space: fmtMoney(reason.space) } })
-    case 'cap_needs_salary':
-      return withNote({ key: base + 'capNeedsSalary', params: { space: fmtMoney(reason.space) } })
+    case 'cap_needs_salary': {
+      // offseason cap reasons name next season's cap
+      const name = { cap_fits: 'capFits', cap_fits_retained: 'capFitsRetained', cap_needs_salary: 'capNeedsSalary' }[reason.code]
+      return withNote(reason.season
+        ? { key: base + name + 'Season', params: { space: fmtMoney(reason.space), season: reason.season } }
+        : { key: base + name, params: { space: fmtMoney(reason.space) } })
+    }
     case 'cap_unknown':
       return { key: base + 'capUnknown', params: {} }
+    case 'cap_unannounced':
+      return { key: base + 'capUnannounced', params: { season: reason.season || season || '—' } }
+    case 'cap_rights':
+      return withNote({ key: base + 'capRights', params: { space: fmtMoney(reason.space), season: reason.season || season || '—' } })
     case 'hand_right_shot':
       return { key: base + 'handRightShot', params: { count: reason.right_shots ?? 0 } }
     default:

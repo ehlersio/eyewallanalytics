@@ -1,0 +1,788 @@
+{
+ "player": {
+  "id": 8478413,
+  "season": 20272028,
+  "team": "CHI",
+  "name": "Jordan Greenway",
+  "position": "L",
+  "shoots": "L",
+  "rating": 0.0922,
+  "ratingBasis": "last_season",
+  "gamesPlayed": 15,
+  "capHit": null,
+  "yearsLeft": null,
+  "expiresAfter": "2026-27",
+  "expiryType": "UFA",
+  "expiryTypeDerived": true,
+  "rental": false,
+  "clause": {
+   "kind": "M-NTC",
+   "listSize": 5
+  },
+  "phase": "offseason",
+  "rights": true
+ },
+ "teams": [
+  {
+   "team": "LAK",
+   "tier": "possible",
+   "rank": 1,
+   "slot": "F_BOT6_W",
+   "gap": 0.2883,
+   "needMet": true,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_upgrade",
+     "slot": "F_BOT6_W",
+     "gap": 0.2883,
+     "slot_need": true
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "VAN",
+   "tier": "possible",
+   "rank": 2,
+   "slot": "F_TOP6_W",
+   "gap": 0.2754,
+   "needMet": true,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_upgrade",
+     "slot": "F_TOP6_W",
+     "gap": 0.2754,
+     "slot_need": true
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "TBL",
+   "tier": "possible",
+   "rank": 3,
+   "slot": "F_TOP6_W",
+   "gap": 0.2106,
+   "needMet": true,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_upgrade",
+     "slot": "F_TOP6_W",
+     "gap": 0.2106,
+     "slot_need": true
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "ANA",
+   "tier": "possible",
+   "rank": 4,
+   "slot": "F_BOT6_W",
+   "gap": 0.1939,
+   "needMet": true,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_upgrade",
+     "slot": "F_BOT6_W",
+     "gap": 0.1939,
+     "slot_need": true
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "EDM",
+   "tier": "possible",
+   "rank": 5,
+   "slot": "F_TOP6_W",
+   "gap": 0.1233,
+   "needMet": true,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_upgrade",
+     "slot": "F_TOP6_W",
+     "gap": 0.1233,
+     "slot_need": true
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "NJD",
+   "tier": "possible",
+   "rank": 6,
+   "slot": "F_TOP6_W",
+   "gap": 0.1103,
+   "needMet": true,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_upgrade",
+     "slot": "F_TOP6_W",
+     "gap": 0.1103,
+     "slot_need": true
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "STL",
+   "tier": "possible",
+   "rank": 7,
+   "slot": "F_TOP6_W",
+   "gap": 0.0901,
+   "needMet": true,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_upgrade",
+     "slot": "F_TOP6_W",
+     "gap": 0.0901,
+     "slot_need": true
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "VGK",
+   "tier": "long_shot",
+   "rank": 8,
+   "slot": "F_TOP6_W",
+   "gap": 0.0876,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_depth",
+     "slot": "F_TOP6_W",
+     "gap": 0.0876
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "UTA",
+   "tier": "long_shot",
+   "rank": 9,
+   "slot": "F_TOP6_W",
+   "gap": 0.0232,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_depth",
+     "slot": "F_TOP6_W",
+     "gap": 0.0232
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "BOS",
+   "tier": "long_shot",
+   "rank": 10,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "BUF",
+   "tier": "long_shot",
+   "rank": 11,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "CAR",
+   "tier": "long_shot",
+   "rank": 12,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "CBJ",
+   "tier": "long_shot",
+   "rank": 13,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "CGY",
+   "tier": "long_shot",
+   "rank": 14,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "COL",
+   "tier": "long_shot",
+   "rank": 15,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "DAL",
+   "tier": "long_shot",
+   "rank": 16,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "DET",
+   "tier": "long_shot",
+   "rank": 17,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "FLA",
+   "tier": "long_shot",
+   "rank": 18,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "MIN",
+   "tier": "long_shot",
+   "rank": 19,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "MTL",
+   "tier": "long_shot",
+   "rank": 20,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "NSH",
+   "tier": "long_shot",
+   "rank": 21,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "NYI",
+   "tier": "long_shot",
+   "rank": 22,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "NYR",
+   "tier": "long_shot",
+   "rank": 23,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "OTT",
+   "tier": "long_shot",
+   "rank": 24,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "PHI",
+   "tier": "long_shot",
+   "rank": 25,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "PIT",
+   "tier": "long_shot",
+   "rank": 26,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "SEA",
+   "tier": "long_shot",
+   "rank": 27,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "SJS",
+   "tier": "long_shot",
+   "rank": 28,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "TOR",
+   "tier": "long_shot",
+   "rank": 29,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "WPG",
+   "tier": "long_shot",
+   "rank": 30,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  },
+  {
+   "team": "WSH",
+   "tier": "long_shot",
+   "rank": 31,
+   "slot": null,
+   "gap": null,
+   "needMet": false,
+   "windowMet": false,
+   "capState": "unknown",
+   "reasons": [
+    {
+     "code": "need_none",
+     "slot": "F_BOT6_W"
+    },
+    {
+     "code": "window_rights",
+     "expiry_type": "UFA"
+    },
+    {
+     "code": "cap_unannounced",
+     "season": "2027-28"
+    }
+   ]
+  }
+ ],
+ "generatedAt": "2026-11-07T18:49:56.321747+00:00"
+}

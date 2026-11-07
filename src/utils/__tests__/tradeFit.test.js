@@ -2,7 +2,7 @@
 // the top-5 cut and the tier counts.
 
 import { describe, it, expect } from 'vitest'
-import { hasTradeFit, fmtMoney, reasonKey, clauseKey, visibleTeams, tierCounts, TOP_N } from '../tradeFit'
+import { hasTradeFit, fmtMoney, reasonKey, clauseKey, visibleTeams, tierCounts, TOP_N, seasonLabel, isOffseason } from '../tradeFit'
 
 const K = 'playerPopup.tradeFit.reasons.'
 
@@ -78,5 +78,30 @@ describe('visibleTeams / tierCounts', () => {
   it('counts tiers', () => {
     expect(tierCounts(teams)).toEqual({ strong: 3, possible: 3, long_shot: 2 })
     expect(tierCounts(null)).toEqual({ strong: 0, possible: 0, long_shot: 0 })
+  })
+})
+
+describe('offseason (Phase 2b)', () => {
+  it('labels seasons and reads the phase', () => {
+    expect(seasonLabel(20272028)).toBe('2027-28')
+    expect(seasonLabel(null)).toBeNull()
+    expect(isOffseason({ player: { phase: 'offseason' } })).toBe(true)
+    expect(isOffseason({ player: { phase: 'in_season' } })).toBe(false)
+    expect(isOffseason(null)).toBe(false)
+  })
+
+  it('words Elo contenders, rights and next season\'s cap', () => {
+    expect(reasonKey({ code: 'window_rental_contender', basis: 'elo', elo_rank: 4 }, s => s, '2027-28'))
+      .toEqual({ key: K + 'windowContenderElo', params: { rank: 4, season: '2027-28' } })
+    expect(reasonKey({ code: 'window_rental_not', basis: 'elo', elo_rank: 20 }, s => s, '2027-28').key).toBe(K + 'windowNotContenderElo')
+    expect(reasonKey({ code: 'window_rental_contender', pct: 0.7 }).key).toBe(K + 'windowContender') // odds still word as odds
+    expect(reasonKey({ code: 'window_rights', expiry_type: 'UFA' })).toEqual({ key: K + 'windowRights', params: {} })
+    expect(reasonKey({ code: 'cap_unannounced', season: '2027-28' })).toEqual({ key: K + 'capUnannounced', params: { season: '2027-28' } })
+    expect(reasonKey({ code: 'cap_fits', space: 5e6, season: '2027-28' }))
+      .toEqual({ key: K + 'capFitsSeason', params: { space: '$5.00M', season: '2027-28' } })
+    expect(reasonKey({ code: 'cap_needs_salary', space: -1e6, season: '2027-28', known: 18, roster: 20 }))
+      .toMatchObject({ key: K + 'capNeedsSalarySeason', note: { key: K + 'capMissing', params: { count: 2 } } })
+    expect(reasonKey({ code: 'cap_rights', space: 4e6, season: '2027-28' }).key).toBe(K + 'capRights')
+    expect(reasonKey({ code: 'cap_fits', space: 5e6 }).key).toBe(K + 'capFits') // in season, unchanged
   })
 })
