@@ -48,6 +48,7 @@ describe('Methodology page', () => {
     cy.get('#game-winners').should('contain', 'Tested and not adopted')
     cy.get('#trade-candidacy').should('contain', 'Brier 0.0622 against 0.0655')
       .and('contain', '"Several signals" (22.6% traded before the deadline in the test)')
+    cy.get('#trade-candidacy').should('contain', 'The EyeWall AI paragraph in a player')
     cy.get('#trade-candidacy .method-limits li').should('have.length.at.least', 4)
     cy.get('.method-changelog li').should('have.length.at.least', 9)
       .first().should('contain', 'Deadline board')

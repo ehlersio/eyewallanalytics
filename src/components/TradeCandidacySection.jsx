@@ -5,7 +5,9 @@
 // behind the tiers didn't calibrate well enough for one, so the method note
 // quotes each tier's backtest rate as a group fact. Renders nothing unless
 // the player is tiered with at least one signal, which only happens from
-// Jan 1 to the trade deadline (no dead options).
+// Jan 1 to the trade deadline (no dead options). Under the clause, the
+// player's EyeWall AI paragraph (ai_trade_candidacy.py, written from these
+// signals, the clause and his best trade fits only), when there is one.
 
 import React from 'react'
 import { useTranslation } from 'react-i18next'
@@ -25,6 +27,10 @@ const TIER_ROW_CLASSES = 'flex items-center gap-2 flex-wrap'
 const TIER_CLASSES = 'trade-candidacy-tier inline-flex items-center text-[11px] font-semibold py-[2px] px-2 rounded-xl border-[0.5px]'
 const SIGNALS_CLASSES = 'trade-candidacy-signals list-disc pl-5 m-0 mt-2 flex flex-col gap-[2px]'
 const SIGNAL_CLASSES = 'trade-candidacy-signal text-[12px] text-[color:var(--text)] leading-snug'
+const AI_CLASSES = 'trade-candidacy-ai mt-3 bg-[var(--bg2)] rounded-[10px] py-[10px] px-3 border-[0.5px] border-[var(--border)]'
+const AI_LABEL_CLASSES = 'trade-candidacy-ai-label text-[10px] font-bold uppercase tracking-[0.07em] text-[color:var(--red-bright)] mb-1'
+const AI_TEXT_CLASSES = 'trade-candidacy-ai-text text-[13px] leading-[1.55] text-[color:var(--text)]'
+const AI_NOTE_CLASSES = 'trade-candidacy-ai-note text-[10px] text-[color:var(--text-dim)] mt-[6px]'
 
 export function fmtDay(iso) {
   if (!iso) return null
@@ -41,6 +47,7 @@ export function TradeCandidacyBody({ data }) {
   const color = TIER_COLORS[player.tier]
   const clause = clauseKey(player.clause)
   const conference = c => t(`playerPopup.candidacy.conferences.${c}`, { defaultValue: c })
+  const ai = typeof data.ai?.text === 'string' && data.ai.text.trim() ? data.ai : null
   return (
     <div className={SECTION_CLASSES} data-tier={player.tier}>
       <div className={HEAD_CLASSES}>
@@ -69,11 +76,22 @@ export function TradeCandidacyBody({ data }) {
         })}
       </ul>
       <div className={`${NOTE_CLASSES} trade-candidacy-clause mt-2`}>{t(clause.key, clause.params)}</div>
+      {ai && (
+        <div className={AI_CLASSES}>
+          <div className={AI_LABEL_CLASSES}>⚡ {t('playerPopup.candidacy.aiLabel')}</div>
+          <div className={AI_TEXT_CLASSES}>{ai.text}</div>
+          <div className={AI_NOTE_CLASSES}>
+            {t('playerPopup.candidacy.aiNote')}
+            {fmtDay(ai.generatedAt?.slice(0, 10)) && ` · ${fmtDay(ai.generatedAt.slice(0, 10))}`}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 export default function TradeCandidacySection({ playerId }) {
-  const { data } = useFetch(() => getTradeCandidacy(playerId), [playerId])
+  const { i18n } = useTranslation()
+  const { data } = useFetch(() => getTradeCandidacy(playerId, i18n.language), [playerId, i18n.language])
   return <TradeCandidacyBody data={data} />
 }
