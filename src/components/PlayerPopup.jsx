@@ -37,7 +37,7 @@ import {
 } from '../utils/supabaseClient'
 import { contractValue, pointsPer60, valueLabel, goalieContractValue, goalieValueLabel, CAP_CEILING } from '../utils/contractValue'
 import { fmtCapHit, isReported } from '../utils/capTable'
-import { contractSeasons, boughtOutNote } from '../utils/contractHistory'
+import { contractSeasons, boughtOutNote, clauseNoneLabel } from '../utils/contractHistory'
 import { nhlSeasonLabel } from '../utils/seasonComparison'
 import { warTier, warPer82, WAR_TIER_MIN_GP } from '../utils/warTier'
 import { HockeyRink } from 'react-hockey-rink'
@@ -1489,6 +1489,15 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                 <div className={PP_CONTRACT_VAL_CLASSES}>{contract.capHit != null && CAP_CEILING > 0 ? `${((contract.capHit / CAP_CEILING) * 100).toFixed(1)}%` : '—'}</div>
               </div>
             </div>
+            {!(contract.clauses?.length > 0) && clauseNoneLabel(contract.clauseStatus) && (() => {
+              const none = clauseNoneLabel(contract.clauseStatus)
+              return (
+                <div className={`${PP_CONTRACT_CLAUSES_CLASSES} pp-contract-clauses`} data-clause-status={contract.clauseStatus.status}>
+                  <span className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.clauses')}</span>
+                  <span className={PP_CONTRACT_CLAUSE_CLASSES} title={t(none.tip)}>{t(none.label)}</span>
+                </div>
+              )
+            })()}
             {contract.clauses?.length > 0 && (
               <div className={`${PP_CONTRACT_CLAUSES_CLASSES} pp-contract-clauses`}>
                 <span className={PP_CONTRACT_LABEL_CLASSES}>{t('playerPopup.contract.clauses')}</span>
@@ -1543,7 +1552,13 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
                               <td className={`${PP_YEARS_TD_CLASSES}${isNow ? ' font-bold text-[color:var(--text)]' : ''}`}>{fmtCapHit(s.capHit) ?? '—'}</td>
                               <td className={PP_YEARS_TD_CLASSES}>{fmtCapHit(s.baseSalary) ?? '—'}</td>
                               <td className={PP_YEARS_TD_CLASSES}>{s.signingBonus ? fmtCapHit(s.signingBonus) : '—'}</td>
-                              <td className={PP_YEARS_TD_CLASSES}>{s.clause ? t(`playerPopup.contract.clauseKinds.${s.clause}`, { defaultValue: s.clause }) : '—'}</td>
+                              <td className={PP_YEARS_TD_CLASSES}>
+                                {s.clause
+                                  ? t(`playerPopup.contract.clauseKinds.${s.clause}`, { defaultValue: s.clause })
+                                  : clauseNoneLabel(s.clauseStatus)
+                                    ? <span title={t(clauseNoneLabel(s.clauseStatus).tip)}>{t(clauseNoneLabel(s.clauseStatus).label)}</span>
+                                    : '—'}
+                              </td>
                             </tr>
                           )
                         })}

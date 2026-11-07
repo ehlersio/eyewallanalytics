@@ -241,6 +241,20 @@ describe('Player popup contract panel', () => {
     })
   })
 
+  it('says "None" for a clause the sources rule out, on the summary and the year rows', () => {
+    // Kochetkov's 2022 extension was on CapFriendly with a blank Clause column
+    cy.intercept({ method: 'GET', url: /\/contracts\/player\/8481611(\?|$)/ }, { fixture: 'contract-player-kochetkov.json' }).as('contract')
+    cy.setTeam('CAR')
+    openSkater('Kochetkov')
+    cy.wait('@contract')
+    cy.get('.pp-contract', { timeout: DATA_TIMEOUT }).within(() => {
+      cy.get('.pp-contract-clauses').should('have.attr', 'data-clause-status', 'none').and('contain', 'Clauses').and('contain', 'None')
+      cy.get('.pp-contract-years-toggle').should('contain', 'Year by year (4 seasons)').click()
+      cy.get('.pp-contract-year--now').should('have.attr', 'data-season', '2026-27').and('contain', 'None')
+      cy.get('.pp-contract-year--now span[title="No trade clause in effect this season"]').should('exist')
+    })
+  })
+
   it('marks an age-derived expiry status', () => {
     cy.intercept({ method: 'GET', url: /\/contracts\/player\/8476958(\?|$)/ }, { fixture: 'contract-player-slavin.json' }).as('contract')
     cy.setTeam('CAR')

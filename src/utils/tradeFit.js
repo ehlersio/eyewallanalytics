@@ -99,11 +99,18 @@ export function reasonKey(reason, slotLabel = s => s, season = null) {
   }
 }
 
-// The player's clause -> { key, params }. No clause on record is its own
-// line: the dataset can't tell "none" from "not reported".
-export function clauseKey(clause) {
+// The player's clause (+ the Worker's clauseStatus for the season) ->
+// { key, params }. Without a clause the status says what that means: 'none'
+// (a source said so, CapFriendly showed a blank, or he's too young for the
+// CBA to allow one: 'ineligible'), 'none_likely' (PuckPedia's breakdown names
+// none) or unknown ("no trade clause on record", which may still exist).
+export function clauseKey(clause, status = null) {
   const base = 'playerPopup.tradeFit.clause.'
-  if (!clause) return { key: base + 'none', params: {} }
+  if (!clause) {
+    if (status?.status === 'none') return { key: base + (status.basis === 'ineligible' ? 'noneIneligible' : 'noneKnown'), params: {} }
+    if (status?.status === 'none_likely') return { key: base + 'noneLikely', params: {} }
+    return { key: base + 'none', params: {} }
+  }
   if (clause.kind === 'NMC' || clause.kind === 'M-NMC') return { key: base + 'nmc', params: {} }
   if (clause.kind === 'NTC') return { key: base + 'ntc', params: {} }
   if (clause.kind === 'M-NTC') {

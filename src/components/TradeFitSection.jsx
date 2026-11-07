@@ -46,7 +46,7 @@ export function TradeFitBody({ data, initialOpen = null }) {
   const offseason = isOffseason(data)
   const season = seasonLabel(player.season)
   const counts = tierCounts(teams)
-  const clause = clauseKey(player.clause)
+  const clause = clauseKey(player.clause, player.clauseStatus)
   const rating = `${player.rating > 0 ? '+' : player.rating < 0 ? '−' : ''}${Math.abs(player.rating).toFixed(2)}`
   return (
     <div className={SECTION_CLASSES}>
