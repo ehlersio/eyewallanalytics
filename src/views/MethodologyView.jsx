@@ -10,7 +10,7 @@
 // Settings quoted in the text were checked against eyewall-pipeline's code
 // on METHOD_CHECKED (elo.py, win_probs.py, playoff_odds.py,
 // starting_goalie.py / goalie_model.py, prediction_scorecard.py,
-// injury_impact.py, trade_parse.py / trade_trees.py). The backtest numbers
+// injury_impact.py, trade_parse.py / trade_trees.py / wiki_trades.py). The backtest numbers
 // are not typed in -- they come live from the Worker's /scorecard, the
 // same data the scorecard shows. When a model changes, update its section
 // and add a CHANGELOG entry.
@@ -42,6 +42,8 @@ const SECTIONS = [
 // Dated method changes, newest first (dates from eyewall-pipeline's merge
 // history). Add one whenever a model's method or settings change.
 const CHANGELOG = [
+  // eyewall-pipeline wiki_trades.py (Wikipedia's cited trade lists)
+  { date: '2026-11-06', key: 'tradeSources' },
   // Not a model change: a tested adjustment that wasn't adopted
   // (eyewall-pipeline docs/lineup_adjustment_backtest_results.md).
   { date: '2026-09-14', key: 'lineupTest' },

@@ -16,6 +16,14 @@
 // Both share FeedShell (header + loading/error/empty states), which keeps
 // the PWHL markup exactly as it was.
 //
+// ESPN's feed leaves out whole trades and, for entries it dates Jan 2021 -
+// Jun 2024, runs about 5 days early. eyewall-pipeline's wiki_trades.py adds
+// the missing trades from Wikipedia's cited season lists and corrects the
+// dates it can source; the Worker passes `source`, `sourceUrl` and
+// `dateStatus` on those sides / moves, shown by ProvenanceNote: where a
+// Wikipedia-sourced side came from, a corrected date's citation, or that an
+// ESPN date is unconfirmed.
+//
 // NHL trades (paired, or a single trade entry whose other half ESPN never
 // posted) have a "Trade tree" toggle that opens TradeTree.jsx inline: what
 // each side got and where every asset went next.
@@ -24,6 +32,7 @@ import { useTranslation } from 'react-i18next';
 import { fetchPWHLTransactions } from '../utils/pwhlApi';
 import { getTransactions, TEAM_CONFIG } from '../utils/nhlApi';
 import { formatDate } from '../utils/formatters';
+import { sourceHost } from '../utils/sourceHost';
 import { capture, trackFeature } from '../utils/analytics';
 import TeamLogo from './TeamLogo';
 import TradeTree from './TradeTree';
@@ -200,6 +209,36 @@ function CategoryBadge({ category }) {
   );
 }
 
+const PROVENANCE_CLASSES = 'tx-provenance text-[11px] leading-[1.4] text-[color:var(--text-dim)] m-0';
+const SOURCE_LINK_CLASSES = 'underline underline-offset-2 text-inherit';
+
+function SourceLink({ url }) {
+  const { t } = useTranslation();
+  const host = sourceHost(url);
+  if (!host) return null;
+  return (
+    <a className={SOURCE_LINK_CLASSES} href={url} target="_blank" rel="noopener noreferrer">
+      {t('transactionsFeed.nhl.provenance.cites', { host })}
+    </a>
+  );
+}
+
+// One line under a side or move, only when the Worker says something.
+function ProvenanceNote({ source, sourceUrl, dateStatus }) {
+  const { t } = useTranslation();
+  let text = null;
+  if (source === 'wikipedia') text = t('transactionsFeed.nhl.provenance.wikipedia');
+  else if (dateStatus === 'corrected') text = t('transactionsFeed.nhl.provenance.corrected');
+  else if (dateStatus === 'espn_early') text = t('transactionsFeed.nhl.provenance.espnEarly');
+  if (!text) return null;
+  const link = source === 'wikipedia' || dateStatus === 'corrected' ? sourceUrl : null;
+  return (
+    <p className={PROVENANCE_CLASSES}>
+      {text}{link && sourceHost(link) && <> · <SourceLink url={link} /></>}
+    </p>
+  );
+}
+
 const TREE_BTN_CLASSES = 'tx-tree-btn self-start text-[12px] font-semibold text-[color:var(--text)] underline underline-offset-2 bg-transparent border-0 p-0 mt-1 cursor-pointer';
 
 // `txId`: any nhl_transactions row id in the trade (the Worker's
@@ -235,6 +274,7 @@ function NHLMoveRow({ item }) {
           <TeamLogo abbr={item.team} size={16} /> {item.team}
         </div>
         <p className={TX_DESC_CLASSES}>{item.description}</p>
+        <ProvenanceNote {...item} />
         {item.categories?.includes('trade') && <TradeTreeToggle txId={item.id} />}
       </div>
     </article>
@@ -257,10 +297,15 @@ function NHLTradeRow({ item }) {
           <TeamLogo abbr={b} size={16} /> {b}
         </div>
         {item.sides.map(s => (
-          <p key={s.team} className={TX_DESC_CLASSES}>
-            <span className="font-semibold text-[color:var(--text)]">{s.team}:</span> {s.description}
-          </p>
+          <div key={s.team}>
+            <p className={TX_DESC_CLASSES}>
+              <span className="font-semibold text-[color:var(--text)]">{s.team}:</span> {s.description}
+            </p>
+            {/* an unconfirmed date is said once for the pair, below */}
+            <ProvenanceNote {...s} dateStatus={s.dateStatus === 'espn_early' ? null : s.dateStatus} />
+          </div>
         ))}
+        {item.dateStatus === 'espn_early' && <ProvenanceNote dateStatus="espn_early" />}
         <TradeTreeToggle txId={item.ids?.[0]} />
       </div>
     </article>

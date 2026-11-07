@@ -1832,7 +1832,7 @@
       "scopeTeam": "{{team}}",
       "scopeLeague": "League",
       "tradeAriaLabel": "Trade between {{a}} and {{b}}",
-      "source": "Source: ESPN · refreshed nightly",
+      "source": "Source: ESPN, plus Wikipedia’s cited trade lists for trades ESPN is missing · refreshed nightly",
       "tree": {
         "open": "Trade tree",
         "close": "Hide trade tree",
@@ -1847,7 +1847,7 @@
         "origins": "How they got here",
         "originLine": "{{asset}} — to {{to}} from {{from}}, {{date}}",
         "truncated": "Some later trades aren't shown.",
-        "source": "Built from ESPN's trade text; picks matched to NHL draft records.",
+        "source": "Built from ESPN’s trade text and Wikipedia’s cited trade lists; picks matched to NHL draft records.",
         "rights": "rights",
         "futureConsiderations": "Future considerations",
         "cash": "Cash",
@@ -1861,7 +1861,9 @@
           "future": "not drafted yet",
           "not_traced": "not traced",
           "several_possible": "can't tell which pick"
-        }
+        },
+        "dateUnconfirmed": "Date unconfirmed (ESPN’s dates from Jan 2021 to Jun 2024 run about 5 days early)",
+        "cites": "Source: {{host}}"
       },
       "category": {
         "trade": "Trade",
@@ -1874,6 +1876,12 @@
         "suspension": "Suspension",
         "staff": "Staff",
         "other": "Move"
+      },
+      "provenance": {
+        "wikipedia": "Not in ESPN’s feed · from Wikipedia’s trade list",
+        "corrected": "Date corrected (ESPN listed it on a different day)",
+        "espnEarly": "Date unconfirmed: ESPN’s dates from Jan 2021 to Jun 2024 run about 5 days early",
+        "cites": "source: {{host}}"
       }
     }
   },
@@ -2865,13 +2873,15 @@
         "body": [
           "Not a prediction: a record of each trade and where every asset went next.",
           "ESPN's transactions feed has no structured trade data — each team posts its side as a sentence. That text is parsed into players, draft picks, rights and future considerations; anything that can't be recognized is shown as written rather than guessed. The two teams' entries are paired when they name each other within two days.",
+          "ESPN's feed leaves out some trades entirely, and for entries it dates January 2021 to June 2024 its dates run about five days early. So each night the trades are also read from Wikipedia's season-by-season NHL transactions lists, using only rows that cite a source (usually the NHL.com or team story). A trade ESPN is missing is added from that list, with the citation linked; when a listed trade matches ESPN's entry but ESPN's date differs, the date is corrected and linked to its source. Other ESPN dates from that window are marked unconfirmed rather than shifted.",
           "Picks are matched to the NHL's own draft records: the pick whose ownership chain passes directly between the two teams in the stated year and round, or ESPN's own pick number when it's given. Picks that can't be matched are labeled: not drafted yet, not traced (often a conditional pick that was deferred or never conveyed), or can't tell which.",
           "Each asset links to the next trade its new team sent it on in; following those links is what makes the tree. Players are matched to the NHL's player list since 2014-15, so their names open their player card; a name shared by two players is left unmatched.",
           "Covers trades since January 2015, rebuilt every night."
         ],
         "limits": [
           "About 3% of assets in older entries are worded in ways that aren't recognized.",
-          "A trade ESPN never posted can't appear, and when only one team posted, that team's wording is all there is."
+          "A trade neither ESPN nor Wikipedia's list has can't appear. Wikipedia's list is edited by volunteers; only rows with a cited source are used.",
+          "Waiver claims and other moves ESPN missed aren't filled in, and their dates from January 2021 to June 2024 stay unconfirmed."
         ]
       },
       "data": {
@@ -2882,7 +2892,7 @@
         "items": [
           "NHL API — schedules, results, standings, rosters, box scores and shift charts.",
           "NHL records — every draft pick and who owned it before it was used.",
-          "ESPN — injury reports and transactions.",
+          "ESPN — injury reports and transactions; Wikipedia's NHL transactions lists (cited rows only) for trades ESPN is missing and to correct its trade dates.",
           "MoneyPuck — player season data used for WAR."
         ]
       },
@@ -2900,7 +2910,8 @@
       "startingGoalies": "Starting-goalie probabilities added, fit on 2023-24 to 2025-26 starts.",
       "playoffOdds": "Playoff odds added: 10,000 simulated seasons, rating uncertainty tuned on 2023-24 to 2025-26, and a 22.1% overtime rate pooled across those seasons.",
       "injuryImpact": "Injury impact added: man-games and WAR lost per team, counted from the 2026-27 season.",
-      "elo": "Game winners switch to Elo (FiveThirtyEight's NHL settings), replacing a hand-weighted formula that backtested worse."
+      "elo": "Game winners switch to Elo (FiveThirtyEight's NHL settings), replacing a hand-weighted formula that backtested worse.",
+      "tradeSources": "Trades ESPN's feed is missing are added from Wikipedia's cited NHL transactions lists, and ESPN's early dates (January 2021 to June 2024) are corrected where a cited trade matches, or marked unconfirmed."
     }
   },
   "scorecard": {

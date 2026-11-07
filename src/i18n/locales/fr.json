@@ -1832,7 +1832,7 @@
       "scopeTeam": "{{team}}",
       "scopeLeague": "Ligue",
       "tradeAriaLabel": "Échange entre {{a}} et {{b}}",
-      "source": "Source : ESPN · mis à jour chaque nuit",
+      "source": "Source : ESPN, et les listes de transactions sourcées de Wikipédia pour celles qui manquent chez ESPN · mis à jour chaque nuit",
       "tree": {
         "open": "Arbre de l'échange",
         "close": "Masquer l'arbre",
@@ -1847,7 +1847,7 @@
         "origins": "D'où ils venaient",
         "originLine": "{{asset}} — à {{to}} de {{from}}, {{date}}",
         "truncated": "Certains échanges subséquents ne sont pas affichés.",
-        "source": "Tiré du texte des transactions d'ESPN; choix associés aux registres du repêchage de la LNH.",
+        "source": "Tiré du texte des transactions d’ESPN et des listes sourcées de Wikipédia; choix associés aux registres du repêchage de la LNH.",
         "rights": "droits",
         "futureConsiderations": "Considérations futures",
         "cash": "Argent",
@@ -1861,7 +1861,9 @@
           "future": "pas encore repêché",
           "not_traced": "non retracé",
           "several_possible": "impossible de savoir lequel"
-        }
+        },
+        "dateUnconfirmed": "Date non confirmée (de janvier 2021 à juin 2024, les dates d’ESPN ont environ 5 jours d’avance)",
+        "cites": "Source : {{host}}"
       },
       "category": {
         "trade": "Échange",
@@ -1874,6 +1876,12 @@
         "suspension": "Suspension",
         "staff": "Personnel",
         "other": "Mouvement"
+      },
+      "provenance": {
+        "wikipedia": "Absente du fil d’ESPN · tirée de la liste de Wikipédia",
+        "corrected": "Date corrigée (ESPN l’indiquait un autre jour)",
+        "espnEarly": "Date non confirmée : de janvier 2021 à juin 2024, les dates d’ESPN ont environ 5 jours d’avance",
+        "cites": "source : {{host}}"
       }
     }
   },
@@ -2865,13 +2873,15 @@
         "body": [
           "Pas une prédiction : un historique de chaque échange et de l'endroit où chaque élément est allé ensuite.",
           "Le fil des transactions d'ESPN n'a pas de données structurées sur les échanges — chaque équipe publie sa version en une phrase. Ce texte est analysé en joueurs, choix au repêchage, droits et considérations futures; ce qui ne peut pas être reconnu est affiché tel quel plutôt que deviné. Les publications des deux équipes sont jumelées quand elles se nomment l'une l'autre à deux jours ou moins d'intervalle.",
+          "Le fil d’ESPN omet certains échanges, et de janvier 2021 à juin 2024 ses dates ont environ cinq jours d’avance. Chaque nuit, les échanges sont donc aussi lus dans les listes de transactions de la LNH de Wikipédia, saison par saison, en n’utilisant que les lignes qui citent une source (habituellement l’article de NHL.com ou de l’équipe). Un échange absent chez ESPN est ajouté à partir de cette liste, avec un lien vers la source; quand un échange de la liste correspond à la publication d’ESPN mais que la date diffère, la date est corrigée et reliée à sa source. Les autres dates d’ESPN de cette période sont indiquées comme non confirmées plutôt que décalées.",
           "Les choix sont associés aux registres du repêchage de la LNH : le choix dont la chaîne de propriété passe directement entre les deux équipes, dans l'année et la ronde indiquées, ou le numéro de choix d'ESPN quand il est donné. Les choix qui ne peuvent pas être associés sont indiqués : pas encore repêché, non retracé (souvent un choix conditionnel reporté ou jamais transféré), ou impossible de savoir lequel.",
           "Chaque élément est relié au prochain échange où sa nouvelle équipe l'a cédé; suivre ces liens forme l'arbre. Les joueurs sont associés à la liste des joueurs de la LNH depuis 2014-2015, pour que leur nom ouvre leur fiche; un nom partagé par deux joueurs reste sans association.",
           "Couvre les échanges depuis janvier 2015, reconstruits chaque nuit."
         ],
         "limits": [
           "Environ 3 % des éléments des publications plus anciennes sont formulés de façon non reconnue.",
-          "Un échange qu'ESPN n'a jamais publié ne peut pas apparaître, et quand une seule équipe l'a publié, sa formulation est tout ce qu'on a."
+          "Un échange absent à la fois chez ESPN et dans la liste de Wikipédia ne peut pas apparaître. La liste de Wikipédia est rédigée par des bénévoles; seules les lignes avec une source citée sont utilisées.",
+          "Les réclamations au ballottage et autres mouvements manquants chez ESPN ne sont pas ajoutés, et leurs dates de janvier 2021 à juin 2024 restent non confirmées."
         ]
       },
       "data": {
@@ -2882,7 +2892,7 @@
         "items": [
           "API de la LNH — calendriers, résultats, classements, effectifs, sommaires et feuilles de présences.",
           "Registres de la LNH — chaque choix au repêchage et ses propriétaires avant son utilisation.",
-          "ESPN — rapports des blessures et transactions.",
+          "ESPN — rapports de blessures et transactions; listes de transactions de la LNH de Wikipédia (lignes sourcées seulement) pour les échanges absents chez ESPN et pour corriger les dates d’échanges.",
           "MoneyPuck — données saisonnières des joueurs utilisées pour le WAR."
         ]
       },
@@ -2900,7 +2910,8 @@
       "startingGoalies": "Ajout des probabilités de gardiens partants, ajustées sur les départs de 2023-2024 à 2025-2026.",
       "playoffOdds": "Ajout des chances de participer aux séries : 10 000 saisons simulées, incertitude des cotes ajustée sur 2023-2024 à 2025-2026, et un taux de prolongation de 22,1 % combiné sur ces saisons.",
       "injuryImpact": "Ajout de l'impact des blessures : matchs-joueurs et WAR perdus par équipe, comptés à partir de la saison 2026-2027.",
-      "elo": "Les gagnants des matchs passent à Elo (paramètres LNH de FiveThirtyEight), en remplacement d'une formule pondérée à la main qui faisait moins bien en rétro-analyse."
+      "elo": "Les gagnants des matchs passent à Elo (paramètres LNH de FiveThirtyEight), en remplacement d'une formule pondérée à la main qui faisait moins bien en rétro-analyse.",
+      "tradeSources": "Les échanges absents du fil d’ESPN sont ajoutés à partir des listes de transactions sourcées de Wikipédia, et les dates en avance d’ESPN (janvier 2021 à juin 2024) sont corrigées quand un échange sourcé correspond, ou indiquées comme non confirmées."
     }
   },
   "scorecard": {

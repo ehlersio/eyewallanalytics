@@ -46,8 +46,10 @@ describe('Methodology page', () => {
     cy.get('#starting-goalies .method-backtest').should('contain', '73.9%')
     cy.get('#playoff-odds .method-limits li').should('have.length.at.least', 2)
     cy.get('#game-winners').should('contain', 'Tested and not adopted')
-    cy.get('.method-changelog li').should('have.length.at.least', 7)
-      .first().should('contain', 'not adopted')
+    cy.get('.method-changelog li').should('have.length.at.least', 8)
+      .first().should('contain', 'Wikipedia')
+    cy.get('.method-changelog').should('contain', 'not adopted')
+    cy.get('#trade-trees').should('contain', 'cite a source').and('contain', 'unconfirmed')
   })
 
   it('says so when the scorecard data is unavailable', () => {
