@@ -15,7 +15,11 @@
     "expiryType": "UFA",
     "expiryTypeDerived": false,
     "rental": true,
-    "clause": null
+    "clause": null,
+    "clauseStatus": {
+      "status": "none",
+      "basis": "capfriendly_2024"
+    }
   },
   "teams": [
     {

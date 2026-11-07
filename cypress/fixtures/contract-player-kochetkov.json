@@ -1,0 +1,271 @@
+{
+  "playerId": 8481611,
+  "season": "2026-27",
+  "asOf": "2026-11-07T06:06:49+00:00",
+  "current": {
+    "contractKey": "8481611|CAR|2022-11",
+    "playerId": 8481611,
+    "name": "Pyotr Kochetkov",
+    "team": "CAR",
+    "capHit": 2000000,
+    "capHitSource": "season",
+    "capHitTier": "E",
+    "aav": 2000000,
+    "totalValue": 8000000,
+    "termYears": 4,
+    "startSeason": "2023-24",
+    "expiresAfter": "2026-27",
+    "yearsLeft": 0,
+    "isCurrent": true,
+    "expiryType": "UFA",
+    "expiryTypeDerived": false,
+    "expiryStatus": "UFA",
+    "contractType": "extension",
+    "oneWay": true,
+    "signedAt": "2022-11-23",
+    "tier": "C",
+    "official": true,
+    "sources": 3,
+    "conflicts": null,
+    "boughtOut": false,
+    "endSeasonSigned": null,
+    "clauses": [],
+    "clauseStatus": {
+      "status": "none",
+      "basis": "capfriendly_2024"
+    }
+  },
+  "history": [
+    {
+      "contractKey": "8481611|CAR|2026-09",
+      "playerId": 8481611,
+      "name": "Pyotr Kochetkov",
+      "team": "CAR",
+      "capHit": 3950000,
+      "capHitSource": "aav",
+      "capHitTier": "A",
+      "aav": 3950000,
+      "totalValue": 7900000,
+      "termYears": 2,
+      "startSeason": "2027-28",
+      "expiresAfter": "2028-29",
+      "yearsLeft": 2,
+      "isCurrent": false,
+      "expiryType": "UFA",
+      "expiryTypeDerived": true,
+      "expiryStatus": null,
+      "contractType": "extension",
+      "oneWay": null,
+      "signedAt": "2026-09-25",
+      "tier": "A",
+      "official": true,
+      "sources": 3,
+      "conflicts": null,
+      "boughtOut": false,
+      "endSeasonSigned": null,
+      "clauses": [],
+      "seasons": [
+        {
+          "season": "2027-28",
+          "capHit": null,
+          "aav": null,
+          "baseSalary": 2400000,
+          "signingBonus": 1500000,
+          "performanceBonus": null,
+          "totalSalary": 3900000,
+          "minorsSalary": null,
+          "oneWay": null,
+          "clause": null,
+          "tier": "A",
+          "clauseStatus": {
+            "status": "unknown",
+            "basis": null
+          }
+        },
+        {
+          "season": "2028-29",
+          "capHit": null,
+          "aav": null,
+          "baseSalary": 3000000,
+          "signingBonus": 1000000,
+          "performanceBonus": null,
+          "totalSalary": 4000000,
+          "minorsSalary": null,
+          "oneWay": null,
+          "clause": null,
+          "tier": "A",
+          "clauseStatus": {
+            "status": "unknown",
+            "basis": null
+          }
+        }
+      ]
+    },
+    {
+      "contractKey": "8481611|CAR|2022-11",
+      "playerId": 8481611,
+      "name": "Pyotr Kochetkov",
+      "team": "CAR",
+      "capHit": 2000000,
+      "capHitSource": "contract",
+      "capHitTier": "C",
+      "aav": 2000000,
+      "totalValue": 8000000,
+      "termYears": 4,
+      "startSeason": "2023-24",
+      "expiresAfter": "2026-27",
+      "yearsLeft": 0,
+      "isCurrent": true,
+      "expiryType": "UFA",
+      "expiryTypeDerived": false,
+      "expiryStatus": "UFA",
+      "contractType": "extension",
+      "oneWay": true,
+      "signedAt": "2022-11-23",
+      "tier": "C",
+      "official": true,
+      "sources": 3,
+      "conflicts": null,
+      "boughtOut": false,
+      "endSeasonSigned": null,
+      "clauses": [],
+      "seasons": [
+        {
+          "season": "2023-24",
+          "capHit": 2000000,
+          "aav": 2000000,
+          "baseSalary": 1500000,
+          "signingBonus": 500000,
+          "performanceBonus": 0,
+          "totalSalary": 2000000,
+          "minorsSalary": 2000000,
+          "oneWay": true,
+          "clause": null,
+          "tier": "E",
+          "clauseStatus": {
+            "status": "none",
+            "basis": "capfriendly_2024"
+          }
+        },
+        {
+          "season": "2024-25",
+          "capHit": 2000000,
+          "aav": 2000000,
+          "baseSalary": 1750000,
+          "signingBonus": 0,
+          "performanceBonus": 0,
+          "totalSalary": 1750000,
+          "minorsSalary": 1750000,
+          "oneWay": true,
+          "clause": null,
+          "tier": "E",
+          "clauseStatus": {
+            "status": "none",
+            "basis": "capfriendly_2024"
+          }
+        },
+        {
+          "season": "2025-26",
+          "capHit": 2000000,
+          "aav": 2000000,
+          "baseSalary": 1750000,
+          "signingBonus": 0,
+          "performanceBonus": 0,
+          "totalSalary": 1750000,
+          "minorsSalary": 1750000,
+          "oneWay": true,
+          "clause": null,
+          "tier": "E",
+          "clauseStatus": {
+            "status": "none",
+            "basis": "capfriendly_2024"
+          }
+        },
+        {
+          "season": "2026-27",
+          "capHit": 2000000,
+          "aav": 2000000,
+          "baseSalary": 2500000,
+          "signingBonus": 0,
+          "performanceBonus": 0,
+          "totalSalary": 2500000,
+          "minorsSalary": 2500000,
+          "oneWay": true,
+          "clause": null,
+          "tier": "E",
+          "clauseStatus": {
+            "status": "none",
+            "basis": "capfriendly_2024"
+          }
+        }
+      ]
+    },
+    {
+      "contractKey": "8481611|CAR|2021-04",
+      "playerId": 8481611,
+      "name": "Pyotr Kochetkov",
+      "team": "CAR",
+      "capHit": 842500,
+      "capHitSource": "contract",
+      "capHitTier": "E",
+      "aav": 925000,
+      "totalValue": 1850000,
+      "termYears": 2,
+      "startSeason": "2021-22",
+      "expiresAfter": "2022-23",
+      "yearsLeft": 0,
+      "isCurrent": false,
+      "expiryType": "RFA",
+      "expiryTypeDerived": false,
+      "expiryStatus": "RFA (Arb)",
+      "contractType": "ELC",
+      "oneWay": false,
+      "signedAt": "2021-04-30",
+      "tier": "E",
+      "official": false,
+      "sources": 1,
+      "conflicts": null,
+      "boughtOut": false,
+      "endSeasonSigned": null,
+      "clauses": [],
+      "seasons": [
+        {
+          "season": "2021-22",
+          "capHit": 842500,
+          "aav": 925000,
+          "baseSalary": 750000,
+          "signingBonus": 92500,
+          "performanceBonus": 82500,
+          "totalSalary": 842500,
+          "minorsSalary": 70000,
+          "oneWay": false,
+          "clause": null,
+          "tier": "E",
+          "clauseStatus": {
+            "status": "none",
+            "basis": "capfriendly_2024"
+          }
+        },
+        {
+          "season": "2022-23",
+          "capHit": 842500,
+          "aav": 925000,
+          "baseSalary": 750000,
+          "signingBonus": 92500,
+          "performanceBonus": 82500,
+          "totalSalary": 842500,
+          "minorsSalary": 70000,
+          "oneWay": false,
+          "clause": null,
+          "tier": "E",
+          "clauseStatus": {
+            "status": "none",
+            "basis": "capfriendly_2024"
+          }
+        }
+      ]
+    }
+  ],
+  "clauseStatusKnown": true,
+  "unavailable": false
+}

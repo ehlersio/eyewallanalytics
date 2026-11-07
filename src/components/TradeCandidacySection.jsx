@@ -45,7 +45,7 @@ export function TradeCandidacyBody({ data }) {
   if (!hasCandidacy(data)) return null
   const { player } = data
   const color = TIER_COLORS[player.tier]
-  const clause = clauseKey(player.clause)
+  const clause = clauseKey(player.clause, player.clauseStatus)
   const conference = c => t(`playerPopup.candidacy.conferences.${c}`, { defaultValue: c })
   const ai = typeof data.ai?.text === 'string' && data.ai.text.trim() ? data.ai : null
   return (

@@ -66,6 +66,17 @@ describe('clauseKey', () => {
     expect(clauseKey({ kind: 'M-NTC', listSize: 10 })).toEqual({ key: C + 'mntcSized', params: { count: 10 } })
     expect(clauseKey({ kind: 'M-NTC', listSize: null }).key).toBe(C + 'mntc')
   })
+
+  it('without a clause, the clause status says whether none is known, likely or not reported', () => {
+    expect(clauseKey(null, { status: 'none', basis: 'capfriendly_2024' }).key).toBe(C + 'noneKnown')
+    expect(clauseKey(null, { status: 'none', basis: 'stated' }).key).toBe(C + 'noneKnown')
+    expect(clauseKey(null, { status: 'none', basis: 'ineligible' }).key).toBe(C + 'noneIneligible')
+    expect(clauseKey(null, { status: 'none_likely', basis: 'breakdown_without_clause' }).key).toBe(C + 'noneLikely')
+    expect(clauseKey(null, { status: 'unknown', basis: null }).key).toBe(C + 'none')
+    expect(clauseKey(null, { status: 'clause', basis: 'source' }).key).toBe(C + 'none') // a clause the fit row didn't carry
+    expect(clauseKey(null, null).key).toBe(C + 'none')
+    expect(clauseKey({ kind: 'NMC' }, { status: 'none', basis: 'stated' }).key).toBe(C + 'nmc') // a stated clause wins
+  })
 })
 
 describe('visibleTeams / tierCounts', () => {

@@ -4,7 +4,8 @@
 // fallback, and never a name-matched stranger's deal.
 
 import { describe, it, expect } from 'vitest'
-import { contractSeasons, boughtOutNote } from '../contractHistory'
+import { contractSeasons, boughtOutNote, clauseNoneLabel } from '../contractHistory'
+import kochetkov from '../../../cypress/fixtures/contract-player-kochetkov.json'
 
 const season = (s, capHit, over = {}) => ({
   season: s, capHit, aav: capHit, baseSalary: capHit, signingBonus: 0, performanceBonus: 0,
@@ -149,5 +150,25 @@ describe('boughtOutNote', () => {
     expect(boughtOutNote(payload([bought({ tier: 'D' })])).reported).toBe(true)
     const both = [bought({ contractKey: 'sebastian aho|CAR|2023-07', tier: 'E' }), bought({ contractKey: '8478427|CAR|2023-07', tier: 'B' })]
     expect(boughtOutNote(payload(both)).reported).toBe(false)
+  })
+})
+
+
+// Kochetkov's /contracts/player payload (built with the Worker's
+// buildPlayerContracts over live Supabase and the pipeline's clause status
+// rows, 2026-11-07): his 2022 extension was on CapFriendly with no clause.
+describe('clause status', () => {
+  it('season rows carry it, and known or likely none gets a label', () => {
+    const { seasons } = contractSeasons(kochetkov)
+    expect(seasons.map(s => s.season)).toEqual(['2023-24', '2024-25', '2025-26', '2026-27'])
+    expect(seasons.every(s => s.clauseStatus?.status === 'none')).toBe(true)
+    expect(clauseNoneLabel(seasons[3].clauseStatus)).toEqual({
+      label: 'playerPopup.contract.clauseNone', tip: 'playerPopup.contract.clauseNoneTip',
+    })
+    expect(clauseNoneLabel({ status: 'none', basis: 'ineligible' }).tip).toBe('playerPopup.contract.clauseNoneIneligibleTip')
+    expect(clauseNoneLabel({ status: 'none_likely', basis: 'breakdown_without_clause' }).label).toBe('playerPopup.contract.clauseNoneLikely')
+    expect(clauseNoneLabel({ status: 'unknown' })).toBeNull()
+    expect(clauseNoneLabel({ status: 'clause', basis: 'source' })).toBeNull()
+    expect(clauseNoneLabel(null)).toBeNull()
   })
 })

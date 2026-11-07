@@ -2501,7 +2501,12 @@
       "tierGood": "Bonne valeur",
       "tierFair": "Valeur correcte",
       "tierBelowAvg": "Sous la moyenne",
-      "tierOverpaid": "Surpayé"
+      "tierOverpaid": "Surpayé",
+      "clauseNone": "Aucune",
+      "clauseNoneLikely": "Aucune rapportée",
+      "clauseNoneTip": "Aucune clause d'échange en vigueur cette saison",
+      "clauseNoneIneligibleTip": "Pas encore admissible à l'autonomie complète : la convention collective ne permet une clause qu'à partir de là",
+      "clauseNoneLikelyTip": "La ventilation du contrat de PuckPedia ne mentionne aucune clause"
     },
     "tabs": {
       "stats": "📊 Stats",
@@ -2565,7 +2570,10 @@
         "ntc": "Clause de non-échange complète : il devrait approuver tout échange.",
         "mntc": "Clause de non-échange partielle : certaines équipes peuvent être exclues (la liste n'est pas publique).",
         "mntcSized_one": "Clause de non-échange partielle : {{count}} équipe peut être exclue (la liste n'est pas publique).",
-        "mntcSized_other": "Clause de non-échange partielle : jusqu'à {{count}} équipes peuvent être exclues (la liste n'est pas publique)."
+        "mntcSized_other": "Clause de non-échange partielle : jusqu'à {{count}} équipes peuvent être exclues (la liste n'est pas publique).",
+        "noneKnown": "Aucune clause d'échange : il n'a aucune protection contre un échange.",
+        "noneIneligible": "Aucune clause d'échange : il n'est pas encore admissible à l'autonomie complète, et la convention collective n'en permet pas avant.",
+        "noneLikely": "Aucune clause d'échange rapportée (la ventilation du contrat de PuckPedia n'en mentionne aucune)."
       },
       "reasons": {
         "needSlotNeed": "{{slot}} dans le tiers inférieur de la ligue : il dépasserait leur plus faible de {{gap}}",

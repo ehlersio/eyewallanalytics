@@ -34,6 +34,18 @@ function signingSuffix(contractKey) {
   return i >= 0 ? String(contractKey).slice(i) : null;
 }
 
+// A season's clauseStatus (Worker, nhl_contract_clause_status) -> the i18n
+// keys for "no clause" when it's known ('none') or likely ('none_likely'), or
+// null: a clause, unknown, or no status (the popup then shows nothing / '—').
+export function clauseNoneLabel(status) {
+  const base = 'playerPopup.contract.'
+  if (status?.status === 'none') {
+    return { label: base + 'clauseNone', tip: base + (status.basis === 'ineligible' ? 'clauseNoneIneligibleTip' : 'clauseNoneTip') }
+  }
+  if (status?.status === 'none_likely') return { label: base + 'clauseNoneLikely', tip: base + 'clauseNoneLikelyTip' }
+  return null
+}
+
 function shapeSeason(s) {
   return {
     season: s.season,
@@ -45,6 +57,7 @@ function shapeSeason(s) {
     minorsSalary: s.minorsSalary ?? null,
     twoWay: s.oneWay === false,
     clause: s.clause || null,
+    clauseStatus: s.clauseStatus || null,
     tier: s.tier || null,
     reported: isReported(s),
   };

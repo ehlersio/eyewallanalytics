@@ -58,12 +58,28 @@ describe('TradeFitBody', () => {
     expect(textOf(html)).toContain('expiring contract')
     expect(textOf(html)).toContain('GSAx per 60')
     expect(textOf(html)).toMatch(/\d+% playoff odds: a rental fits/)
-    expect(textOf(html)).toContain('No trade clause on record')
+    // his clause status for 2026-27: none (a blank cell on his CapFriendly page)
+    expect(textOf(html)).toContain('No trade clause: he has no trade protection.')
+    expect(textOf(html)).not.toContain('No trade clause on record')
+  })
+
+  it('words likely, ineligible and unknown "no clause" apart', () => {
+    const withStatus = clauseStatus => ({ ...kochetkov, player: { ...kochetkov.player, clauseStatus } })
+    const text = s => textOf(renderToStaticMarkup(<TradeFitBody data={withStatus(s)} />))
+    expect(text({ status: 'none_likely', basis: 'breakdown_without_clause' })).toContain("No trade clause reported (PuckPedia's contract breakdown lists none).")
+    expect(text({ status: 'none', basis: 'ineligible' })).toContain("he isn't UFA-eligible yet, so the CBA doesn't allow one")
+    expect(text({ status: 'unknown', basis: null })).toContain('No trade clause on record')
+    expect(text(null)).toContain('No trade clause on record')
   })
 
   it('renders nothing without a fit', () => {
     expect(renderToStaticMarkup(<TradeFitBody data={{ player: null, teams: [] }} />)).toBe('')
     expect(renderToStaticMarkup(<TradeFitBody data={null} />)).toBe('')
+  })
+
+  it('words a known "no clause" in French', async () => {
+    await i18n.changeLanguage('fr')
+    expect(textOf(renderToStaticMarkup(<TradeFitBody data={kochetkov} />))).toContain("Aucune clause d'échange : il n'a aucune protection contre un échange.")
   })
 
   it('renders in French', async () => {

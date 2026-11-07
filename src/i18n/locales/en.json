@@ -2501,7 +2501,12 @@
       "tierGood": "Good value",
       "tierFair": "Fair value",
       "tierBelowAvg": "Below average",
-      "tierOverpaid": "Overpaid"
+      "tierOverpaid": "Overpaid",
+      "clauseNone": "None",
+      "clauseNoneLikely": "None reported",
+      "clauseNoneTip": "No trade clause in effect this season",
+      "clauseNoneIneligibleTip": "Not UFA-eligible yet: the CBA only allows a clause in UFA years",
+      "clauseNoneLikelyTip": "PuckPedia's contract breakdown lists no clause"
     },
     "tabs": {
       "stats": "📊 Stats",
@@ -2565,7 +2570,10 @@
         "ntc": "Full no-trade clause: he'd have to approve any trade.",
         "mntc": "Modified no-trade clause: some teams may be blocked (the list isn't public).",
         "mntcSized_one": "Modified no-trade clause: {{count}} team may be blocked (the list isn't public).",
-        "mntcSized_other": "Modified no-trade clause: up to {{count}} teams may be blocked (the list isn't public)."
+        "mntcSized_other": "Modified no-trade clause: up to {{count}} teams may be blocked (the list isn't public).",
+        "noneKnown": "No trade clause: he has no trade protection.",
+        "noneIneligible": "No trade clause: he isn't UFA-eligible yet, so the CBA doesn't allow one.",
+        "noneLikely": "No trade clause reported (PuckPedia's contract breakdown lists none)."
       },
       "reasons": {
         "needSlotNeed": "{{slot}} rank in the league's bottom third: he'd be {{gap}} over their weakest",
