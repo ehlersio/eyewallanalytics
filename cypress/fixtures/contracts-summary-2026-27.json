@@ -4,7 +4,7 @@
  "asOf": "2026-10-24T12:08:21+00:00",
  "capLimits": {
   "ceiling": 104000000,
-  "floor": 77000000,
+  "floor": 76900000,
   "minSalary": 850000
  },
  "teams": [

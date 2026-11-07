@@ -17,7 +17,7 @@ import { getCapLimits } from './nhlApi';
 
 export let CAP_SEASON  = '2026-27';
 export let CAP_CEILING = 104_000_000;
-export let CAP_FLOOR   =  77_000_000;
+export let CAP_FLOOR   =  76_900_000;
 export let MIN_SALARY  =    850_000;
 
 export function capLimits() {

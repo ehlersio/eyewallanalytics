@@ -1259,7 +1259,7 @@
   "offRosterCount": 9,
   "capLimits": {
    "ceiling": 104000000,
-   "floor": 77000000,
+   "floor": 76900000,
    "minSalary": 850000
   },
   "expiring": {

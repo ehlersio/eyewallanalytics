@@ -32,7 +32,7 @@ const payload = {
   missing: [{ playerId: 8482093, name: 'Seth Jarvis', position: 'RW', gap: 'no_money', status: 'signed' }],
   summary: {
     rosterCapHit: 20_625_000, rosterCount: 5, rosterWithFigure: 3, rosterWithoutFigure: 2, offRosterCount: 1,
-    capLimits: { ceiling: 104_000_000, floor: 77_000_000, minSalary: 850_000 },
+    capLimits: { ceiling: 104_000_000, floor: 76_900_000, minSalary: 850_000 },
     expiring: { ufa: 1, rfa: 1, unknown: 0 },
   },
   unavailable: false,
@@ -172,12 +172,12 @@ describe('formatting helpers', () => {
 
 describe('cap limits (contractValue.js)', () => {
   it('seeds 2026-27 and applies a /config/cap payload for the current season only', () => {
-    expect(capLimits()).toEqual({ season: '2026-27', ceiling: 104_000_000, floor: 77_000_000, minSalary: 850_000 })
+    expect(capLimits()).toEqual({ season: '2026-27', ceiling: 104_000_000, floor: 76_900_000, minSalary: 850_000 })
     expect(CAP_CEILING).toBe(104_000_000)
-    expect(CAP_FLOOR).toBe(77_000_000)
+    expect(CAP_FLOOR).toBe(76_900_000)
     expect(MIN_SALARY).toBe(850_000)
     // same values: no change
-    expect(applyCapConfig({ current: '2026-27', seasons: { '2026-27': { ceiling: 104_000_000, floor: 77_000_000, minSalary: 850_000 } } })).toBe(false)
+    expect(applyCapConfig({ current: '2026-27', seasons: { '2026-27': { ceiling: 104_000_000, floor: 76_900_000, minSalary: 850_000 } } })).toBe(false)
     // incomplete or missing: keep the seed
     expect(applyCapConfig(null)).toBe(false)
     expect(applyCapConfig({ current: '2027-28', seasons: {} })).toBe(false)
@@ -187,7 +187,7 @@ describe('cap limits (contractValue.js)', () => {
     expect(applyCapConfig({ current: '2027-28', seasons: { '2027-28': { ceiling: 113_500_000, floor: 84_000_000, minSalary: 850_000 } } })).toBe(true)
     expect(capLimits()).toEqual({ season: '2027-28', ceiling: 113_500_000, floor: 84_000_000, minSalary: 850_000 })
     // restore for the other tests in this file
-    applyCapConfig({ current: '2026-27', seasons: { '2026-27': { ceiling: 104_000_000, floor: 77_000_000, minSalary: 850_000 } } })
+    applyCapConfig({ current: '2026-27', seasons: { '2026-27': { ceiling: 104_000_000, floor: 76_900_000, minSalary: 850_000 } } })
   })
 })
 
