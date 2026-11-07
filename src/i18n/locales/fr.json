@@ -2511,7 +2511,53 @@
         "longRangeSavePctg": "% arrêts, longue dist."
       }
     },
-    "combinedTeams": "{{label}} ({{teams}}, cumulé)"
+    "combinedTeams": "{{label}} ({{teams}}, cumulé)",
+    "tradeFit": {
+      "title": "Intérêt des équipes",
+      "methodLabel": "Comment l'intérêt est évalué",
+      "methodTip": "Une évaluation, pas une prédiction : elle indique quelles équipes auraient une place pour ce joueur s'il était échangé, pas s'il le sera. Chaque équipe est examinée de trois façons. Besoin : améliorerait-il un poste à sa position, soit un poste classé dans le tiers inférieur de la ligue, soit le poste du haut où il dépasserait leur moyenne (notes : WAR par 82, BSAA par 60 pour les gardiens). Moment : un joueur en fin de contrat convient aux équipes avec au moins 50 % de chances de séries; un joueur sous contrat au-delà de cette saison convient à toutes. Plafond : son coût contre l'espace estimé de l'équipe, l'équipe vendeuse pouvant retenir jusqu'à 50 % s'il lui reste une place de rétention. L'espace est une estimation sans données de LTIR, donc les équipes près du plafond peuvent paraître plus serrées. Fort : besoin et moment correspondent; possible : l'un des deux; improbable : aucun. Devoir renvoyer du salaire fait descendre une équipe d'un niveau. Les listes de non-échange ne sont pas publiques et ne changent jamais l'ordre.",
+      "summary": "Intérêt fort pour {{strong}} équipes · possible pour {{possible}} · improbable pour {{longShot}}",
+      "rating": "WAR par 82 : {{value}}",
+      "ratingGoalie": "BSAA par 60 : {{value}}",
+      "lastSeason": "(saison dernière)",
+      "rental": "contrat échéant ({{type}})",
+      "term": "sous contrat jusqu'en {{season}}",
+      "tiers": {
+        "strong": "Intérêt fort",
+        "possible": "Intérêt possible",
+        "long_shot": "Improbable"
+      },
+      "showAll": "Voir les {{count}} équipes",
+      "showFewer": "Voir moins",
+      "clause": {
+        "none": "Aucune clause d'échange connue (les données sont incomplètes, il peut en exister une).",
+        "nmc": "Clause de non-mouvement : il devrait approuver tout échange.",
+        "ntc": "Clause de non-échange complète : il devrait approuver tout échange.",
+        "mntc": "Clause de non-échange partielle : certaines équipes peuvent être exclues (la liste n'est pas publique).",
+        "mntcSized_one": "Clause de non-échange partielle : {{count}} équipe peut être exclue (la liste n'est pas publique).",
+        "mntcSized_other": "Clause de non-échange partielle : jusqu'à {{count}} équipes peuvent être exclues (la liste n'est pas publique)."
+      },
+      "reasons": {
+        "needSlotNeed": "{{slot}} dans le tiers inférieur de la ligue : il dépasserait leur plus faible de {{gap}}",
+        "needAboveAverage": "{{slot}} : il dépasserait leur moyenne, {{gap}} de plus que leur plus faible",
+        "needDepth": "{{slot}} : un ajout de profondeur, {{gap}} de plus que leur plus faible",
+        "needNone": "N'améliorerait pas leur alignement à sa position",
+        "needUnrated": "Leur alignement à sa position n'est pas encore évalué",
+        "windowTerm": "Sous contrat jusqu'en {{season}} : convient à tout calendrier",
+        "windowContender": "{{pct}} de chances de séries : un joueur de location convient",
+        "windowNotContender": "{{pct}} de chances de séries : sous la barre de 50 % pour un joueur de location",
+        "windowOddsUnknown": "Pas encore de chances de séries",
+        "capFits": "Entre sous le plafond (espace est. {{space}})",
+        "capFitsRetained": "Entre si le vendeur retient 50 % (espace est. {{space}})",
+        "capNeedsSalary": "Devrait renvoyer du salaire (espace est. {{space}})",
+        "capUnknown": "Espace sous le plafond inconnu",
+        "handRightShot_one": "Leur top 4 compte {{count}} tir à droite",
+        "handRightShot_other": "Leur top 4 compte {{count}} tirs à droite",
+        "capMissing_one": "{{count}} salaire de l'effectif n'est pas public, l'espace peut être moindre",
+        "capMissing_other": "{{count}} salaires de l'effectif ne sont pas publics, l'espace peut être moindre"
+      },
+      "tapHint": "Touchez une équipe pour voir pourquoi."
+    }
   },
   "percentileBar": {
     "naFallback": "Données {{label}} non disponibles — le joueur n'a peut-être pas assez de temps de glace dans cette situation pour générer un centile fiable.",

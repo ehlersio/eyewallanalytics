@@ -1,0 +1,900 @@
+{
+  "player": {
+    "id": 8481611,
+    "season": 20262027,
+    "team": "CAR",
+    "name": "Pyotr Kochetkov",
+    "position": "G",
+    "shoots": "L",
+    "rating": 0.734,
+    "ratingBasis": "season",
+    "gamesPlayed": 11,
+    "capHit": 2000000,
+    "yearsLeft": 0,
+    "expiresAfter": "2026-27",
+    "expiryType": "UFA",
+    "expiryTypeDerived": false,
+    "rental": true,
+    "clause": null
+  },
+  "teams": [
+    {
+      "team": "UTA",
+      "tier": "strong",
+      "rank": 1,
+      "slot": "G_1A",
+      "gap": 1.507,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 1.507,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.6993
+        },
+        {
+          "code": "cap_fits",
+          "space": 6220833,
+          "known": 23,
+          "roster": 24
+        }
+      ]
+    },
+    {
+      "team": "OTT",
+      "tier": "strong",
+      "rank": 2,
+      "slot": "G_1A",
+      "gap": 1.117,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 1.117,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.6328
+        },
+        {
+          "code": "cap_fits",
+          "space": 4987500,
+          "known": 22,
+          "roster": 24
+        }
+      ]
+    },
+    {
+      "team": "COL",
+      "tier": "strong",
+      "rank": 3,
+      "slot": "G_1A",
+      "gap": 0.946,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.946,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.8712
+        },
+        {
+          "code": "cap_fits",
+          "space": 5972500,
+          "known": 21,
+          "roster": 22
+        }
+      ]
+    },
+    {
+      "team": "TBL",
+      "tier": "strong",
+      "rank": 4,
+      "slot": "G_1A",
+      "gap": 0.888,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.888,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.8611
+        },
+        {
+          "code": "cap_fits",
+          "space": 3891666,
+          "known": 23,
+          "roster": 24
+        }
+      ]
+    },
+    {
+      "team": "SEA",
+      "tier": "strong",
+      "rank": 5,
+      "slot": "G_1A",
+      "gap": 0.677,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.677,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.507
+        },
+        {
+          "code": "cap_fits",
+          "space": 14536309,
+          "known": 27,
+          "roster": 27
+        }
+      ]
+    },
+    {
+      "team": "MTL",
+      "tier": "strong",
+      "rank": 6,
+      "slot": "G_1A",
+      "gap": 0.451,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.451,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.7397
+        },
+        {
+          "code": "cap_fits",
+          "space": 4318333,
+          "known": 23,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "BOS",
+      "tier": "strong",
+      "rank": 7,
+      "slot": "G_1A",
+      "gap": 0.24,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.24,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.7752
+        },
+        {
+          "code": "cap_fits",
+          "space": 8926333,
+          "known": 23,
+          "roster": 23
+        }
+      ]
+    },
+    {
+      "team": "DET",
+      "tier": "possible",
+      "rank": 8,
+      "slot": "G_1A",
+      "gap": 1.461,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 1.461,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.182
+        },
+        {
+          "code": "cap_fits",
+          "space": 25700000,
+          "known": 24,
+          "roster": 26
+        }
+      ]
+    },
+    {
+      "team": "CBJ",
+      "tier": "possible",
+      "rank": 9,
+      "slot": "G_1A",
+      "gap": 1.282,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 1.282,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.3274
+        },
+        {
+          "code": "cap_fits",
+          "space": 3745000,
+          "known": 22,
+          "roster": 23
+        }
+      ]
+    },
+    {
+      "team": "BUF",
+      "tier": "possible",
+      "rank": 10,
+      "slot": "G_1A",
+      "gap": 1.128,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 1.128,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.5702
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": -2276683,
+          "known": 25,
+          "roster": 26
+        }
+      ]
+    },
+    {
+      "team": "VAN",
+      "tier": "possible",
+      "rank": 11,
+      "slot": "G_1A",
+      "gap": 1.076,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 1.076,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.0063
+        },
+        {
+          "code": "cap_fits",
+          "space": 16399166,
+          "known": 21,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "EDM",
+      "tier": "possible",
+      "rank": 12,
+      "slot": "G_1A",
+      "gap": 1.03,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 1.03,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.8916
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": -224167,
+          "known": 28,
+          "roster": 29
+        }
+      ]
+    },
+    {
+      "team": "LAK",
+      "tier": "possible",
+      "rank": 13,
+      "slot": "G_1A",
+      "gap": 0.995,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.995,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.3665
+        },
+        {
+          "code": "cap_fits",
+          "space": 13175000,
+          "known": 22,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "PIT",
+      "tier": "possible",
+      "rank": 14,
+      "slot": "G_1A",
+      "gap": 0.956,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.956,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.1828
+        },
+        {
+          "code": "cap_fits",
+          "space": 12225000,
+          "known": 23,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "CGY",
+      "tier": "possible",
+      "rank": 15,
+      "slot": "G_1A",
+      "gap": 0.928,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.928,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.2864
+        },
+        {
+          "code": "cap_fits",
+          "space": 16521167,
+          "known": 26,
+          "roster": 26
+        }
+      ]
+    },
+    {
+      "team": "WPG",
+      "tier": "possible",
+      "rank": 16,
+      "slot": "G_1A",
+      "gap": 0.838,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.838,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.2898
+        },
+        {
+          "code": "cap_fits",
+          "space": 8865000,
+          "known": 24,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "TOR",
+      "tier": "possible",
+      "rank": 17,
+      "slot": "G_1A",
+      "gap": 0.81,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.81,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.2506
+        },
+        {
+          "code": "cap_fits",
+          "space": 10129333,
+          "known": 25,
+          "roster": 28
+        }
+      ]
+    },
+    {
+      "team": "WSH",
+      "tier": "possible",
+      "rank": 18,
+      "slot": "G_1A",
+      "gap": 0.783,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.783,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.6243
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": 260833,
+          "known": 24,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "CHI",
+      "tier": "possible",
+      "rank": 19,
+      "slot": "G_1A",
+      "gap": 0.743,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.743,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.0116
+        },
+        {
+          "code": "cap_fits",
+          "space": 14534667,
+          "known": 24,
+          "roster": 24
+        }
+      ]
+    },
+    {
+      "team": "NJD",
+      "tier": "possible",
+      "rank": 20,
+      "slot": "G_1A",
+      "gap": 0.691,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.691,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.6319
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": 650000,
+          "known": 22,
+          "roster": 22
+        }
+      ]
+    },
+    {
+      "team": "VGK",
+      "tier": "possible",
+      "rank": 21,
+      "slot": "G_1A",
+      "gap": 0.657,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.657,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.8394
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": -3875830,
+          "known": 22,
+          "roster": 22
+        }
+      ]
+    },
+    {
+      "team": "SJS",
+      "tier": "possible",
+      "rank": 22,
+      "slot": "G_1A",
+      "gap": 0.638,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.638,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.1224
+        },
+        {
+          "code": "cap_fits",
+          "space": 22615833,
+          "known": 19,
+          "roster": 24
+        }
+      ]
+    },
+    {
+      "team": "NYR",
+      "tier": "possible",
+      "rank": 23,
+      "slot": "G_1A",
+      "gap": 0.63,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits_retained",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.63,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.3738
+        },
+        {
+          "code": "cap_fits_retained",
+          "space": 1700833,
+          "known": 23,
+          "roster": 26
+        }
+      ]
+    },
+    {
+      "team": "PHI",
+      "tier": "possible",
+      "rank": 24,
+      "slot": "G_1A",
+      "gap": 0.561,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.561,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.0872
+        },
+        {
+          "code": "cap_fits",
+          "space": 13646667,
+          "known": 23,
+          "roster": 24
+        }
+      ]
+    },
+    {
+      "team": "STL",
+      "tier": "possible",
+      "rank": 25,
+      "slot": "G_1A",
+      "gap": 0.385,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.385,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.4749
+        },
+        {
+          "code": "cap_fits",
+          "space": 9061667,
+          "known": 25,
+          "roster": 26
+        }
+      ]
+    },
+    {
+      "team": "NSH",
+      "tier": "possible",
+      "rank": 26,
+      "slot": "G_1A",
+      "gap": 0.377,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.377,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.4611
+        },
+        {
+          "code": "cap_fits",
+          "space": 10209610,
+          "known": 23,
+          "roster": 24
+        }
+      ]
+    },
+    {
+      "team": "NYI",
+      "tier": "possible",
+      "rank": 27,
+      "slot": "G_1A",
+      "gap": 0.36,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.36,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.3183
+        },
+        {
+          "code": "cap_fits",
+          "space": 16450000,
+          "known": 24,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "DAL",
+      "tier": "possible",
+      "rank": 28,
+      "slot": "G_1A",
+      "gap": 0.181,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.181,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.8369
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": -587000,
+          "known": 23,
+          "roster": 24
+        }
+      ]
+    },
+    {
+      "team": "MIN",
+      "tier": "possible",
+      "rank": 29,
+      "slot": "G_1A",
+      "gap": 0.044,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.044,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.9188
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": -2809166,
+          "known": 26,
+          "roster": 27
+        }
+      ]
+    },
+    {
+      "team": "FLA",
+      "tier": "long_shot",
+      "rank": 30,
+      "slot": "G_1A",
+      "gap": 1.167,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 1.167,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.483
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": -5213214,
+          "known": 24,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "ANA",
+      "tier": "long_shot",
+      "rank": 31,
+      "slot": "G_1A",
+      "gap": 0.931,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "G_1A",
+          "gap": 0.931,
+          "slot_need": false
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.4168
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": -3201667,
+          "known": 24,
+          "roster": 27
+        }
+      ]
+    }
+  ],
+  "generatedAt": "2026-11-07T08:00:00+00:00"
+}

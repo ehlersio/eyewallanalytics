@@ -2511,7 +2511,53 @@
         "longRangeSavePctg": "Long-range SV%"
       }
     },
-    "combinedTeams": "{{label}} ({{teams}} combined)"
+    "combinedTeams": "{{label}} ({{teams}} combined)",
+    "tradeFit": {
+      "title": "Trade fit",
+      "methodLabel": "How trade fit works",
+      "methodTip": "A fit, not a prediction: it says which teams would have a use for this player if he were traded, not whether he will be. Each team is checked three ways. Need: would he upgrade a lineup slot at his position, either one ranked in the league's bottom third or the top slot where he'd rate above their average (ratings are WAR per 82, GSAx per 60 for goalies). Window: a player on an expiring contract fits teams with playoff odds of 50% or more; one signed beyond this season fits any team. Cap: his cap hit against the team's estimated space, with the selling team keeping up to 50% if it has a retention slot left. Space is an estimate with no LTIR data, so teams near the cap can look tighter than they are. Strong means need and window both fit, Possible one of them, Long shot neither; needing salary back drops a team one tier. No-trade lists aren't public, so they never change the order.",
+      "summary": "Strong fit with {{strong}} teams · possible with {{possible}} · long shot for {{longShot}}",
+      "rating": "WAR per 82: {{value}}",
+      "ratingGoalie": "GSAx per 60: {{value}}",
+      "lastSeason": "(last season)",
+      "rental": "expiring contract ({{type}})",
+      "term": "signed through {{season}}",
+      "tiers": {
+        "strong": "Strong fit",
+        "possible": "Possible fit",
+        "long_shot": "Long shot"
+      },
+      "showAll": "Show all {{count}} teams",
+      "showFewer": "Show fewer",
+      "clause": {
+        "none": "No trade clause on record (clause data is incomplete, so one may exist).",
+        "nmc": "No-move clause: he'd have to approve any trade.",
+        "ntc": "Full no-trade clause: he'd have to approve any trade.",
+        "mntc": "Modified no-trade clause: some teams may be blocked (the list isn't public).",
+        "mntcSized_one": "Modified no-trade clause: {{count}} team may be blocked (the list isn't public).",
+        "mntcSized_other": "Modified no-trade clause: up to {{count}} teams may be blocked (the list isn't public)."
+      },
+      "reasons": {
+        "needSlotNeed": "{{slot}} rank in the league's bottom third: he'd be {{gap}} over their weakest",
+        "needAboveAverage": "{{slot}}: he'd rate above their average, {{gap}} over their weakest",
+        "needDepth": "{{slot}}: a depth upgrade, {{gap}} over their weakest",
+        "needNone": "Wouldn't upgrade their lineup at his position",
+        "needUnrated": "Their lineup at his position isn't rated yet",
+        "windowTerm": "Signed through {{season}}: fits any timeline",
+        "windowContender": "{{pct}} playoff odds: a rental fits",
+        "windowNotContender": "{{pct}} playoff odds: under the 50% bar for a rental",
+        "windowOddsUnknown": "No playoff odds yet",
+        "capFits": "Fits under the cap (est. {{space}} space)",
+        "capFitsRetained": "Fits if the seller keeps 50% (est. {{space}} space)",
+        "capNeedsSalary": "Would need to send salary back (est. {{space}} space)",
+        "capUnknown": "Cap space unknown",
+        "handRightShot_one": "Their top four has {{count}} right shot",
+        "handRightShot_other": "Their top four has {{count}} right shots",
+        "capMissing_one": "{{count}} roster cap hit isn't public, so space may be lower",
+        "capMissing_other": "{{count}} roster cap hits aren't public, so space may be lower"
+      },
+      "tapHint": "Tap a team to see why."
+    }
   },
   "percentileBar": {
     "naFallback": "{{label}} data unavailable — player may not have enough ice time in this situation to generate a reliable percentile.",
