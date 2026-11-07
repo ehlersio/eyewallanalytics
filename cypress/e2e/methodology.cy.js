@@ -26,7 +26,7 @@ const SCORECARD = {
 
 const TITLES = [
   'Ground rules', 'Game winners', 'Starting goalies', 'Playoff odds', 'How the scorecard grades',
-  'Injury impact', 'Trade trees', 'Data and schedule', 'Changelog',
+  'Injury impact', 'Trade trees', 'Trade fit and candidate signals', 'Data and schedule', 'Changelog',
 ]
 
 describe('Methodology page', () => {
@@ -46,8 +46,12 @@ describe('Methodology page', () => {
     cy.get('#starting-goalies .method-backtest').should('contain', '73.9%')
     cy.get('#playoff-odds .method-limits li').should('have.length.at.least', 2)
     cy.get('#game-winners').should('contain', 'Tested and not adopted')
-    cy.get('.method-changelog li').should('have.length.at.least', 8)
-      .first().should('contain', 'Wikipedia')
+    cy.get('#trade-candidacy').should('contain', 'Brier 0.0622 against 0.0655')
+      .and('contain', '"Several signals" (22.6% traded before the deadline in the test)')
+    cy.get('#trade-candidacy .method-limits li').should('have.length.at.least', 4)
+    cy.get('.method-changelog li').should('have.length.at.least', 9)
+      .first().should('contain', 'Deadline board')
+    cy.get('.method-changelog li').eq(1).should('contain', 'Wikipedia')
     cy.get('.method-changelog').should('contain', 'not adopted')
     cy.get('#trade-trees').should('contain', 'cite a source').and('contain', 'unconfirmed')
   })

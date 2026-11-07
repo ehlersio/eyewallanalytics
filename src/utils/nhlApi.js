@@ -1031,6 +1031,27 @@ export async function getTradeFit(playerId) {
   return workerFetch(`/trade-fit?player=${encodeURIComponent(playerId)}`);
 }
 
+// A player's candidate signals and tier -- the Worker's /trade-candidacy
+// (eyewall-pipeline's nightly trade_candidacy.py, Jan 1 to the deadline):
+// { player: { tier: 'several'|'some', rank, signals: [{ code, ... }], clause,
+// ... }, asOf, deadline, generatedAt }. player null (untiered, or outside the
+// window) or `unavailable` -> the popup's Candidate signals section is
+// hidden (utils/tradeCandidacy.js hasCandidacy). Returns null on any Worker
+// failure.
+export async function getTradeCandidacy(playerId) {
+  return workerFetch(`/trade-candidacy?player=${encodeURIComponent(playerId)}`);
+}
+
+// League › Cap's Deadline board -- the Worker's /trade-candidacy/board:
+// { players: [... as above, ranked], asOf, deadline, generatedAt, fitTeam }.
+// With `fitTeam` each player carries `fit`, that team's trade fit tier for
+// him (or null). No players (outside Jan 1 - deadline) or `unavailable` ->
+// the board isn't shown (hasBoard). Returns null on any Worker failure.
+export async function getCandidacyBoard(fitTeam) {
+  const q = fitTeam ? `?fit=${encodeURIComponent(fitTeam)}` : '';
+  return workerFetch(`/trade-candidacy/board${q}`);
+}
+
 // The public prediction scorecard -- the Worker's /scorecard route, backed by
 // eyewall-pipeline's nightly prediction_scorecard.py. Returns { models:
 // { game_winner | starting_goalie | playoff_odds: { live, backtest } },

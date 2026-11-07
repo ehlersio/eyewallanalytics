@@ -1,0 +1,37 @@
+{
+ "player": {
+  "id": 8478413,
+  "season": 20262027,
+  "team": "CHI",
+  "name": "Jordan Greenway",
+  "position": "L",
+  "gamesPlayed": 15,
+  "tier": "several",
+  "rank": 1,
+  "signals": [
+   {
+    "code": "expiring",
+    "expiry_type": "UFA",
+    "derived": true
+   },
+   {
+    "code": "outside_playoffs",
+    "conference": "W",
+    "conference_rank": 15,
+    "line": 8
+   }
+  ],
+  "capHit": 4000000,
+  "yearsLeft": 0,
+  "expiryType": "UFA",
+  "expiryTypeDerived": true,
+  "extended": false,
+  "clause": {
+   "kind": "M-NTC",
+   "listSize": 5
+  }
+ },
+ "asOf": "2027-01-01",
+ "deadline": "2027-03-01",
+ "generatedAt": "2026-11-07T14:32:37.049279+00:00"
+}

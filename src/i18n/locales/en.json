@@ -308,6 +308,35 @@
     "showTop": "Show top {{count}}",
     "notRated": "Not rated: {{noFigure}} without a public figure, {{elc}} on entry-level deals, {{underMinGp}} under {{minGp}} games ({{minGpGoalies}} for goalies)."
   },
+  "deadlineBoard": {
+    "title": "Deadline board",
+    "infoLabel": "About the Deadline board",
+    "infoTip": "Players with candidate signals, ranked by the model behind them. Not a prediction: tested on seasons it wasn't fit on, {{several}} of players in the \"Several signals\" group and {{some}} in \"Some signals\" were traded before the deadline. The model's own number isn't shown because it wasn't accurate enough at the top of the scale. The fit filter keeps players your team is a strong or possible trade fit for. Tap a player for his signals and clause.",
+    "note_one": "{{count}} player with candidate signals · as of {{date}} · deadline {{deadline}}",
+    "note_other": "{{count}} players with candidate signals · as of {{date}} · deadline {{deadline}}",
+    "groups": {
+      "all": "All",
+      "forwards": "Forwards",
+      "defense": "Defense",
+      "goalies": "Goalies"
+    },
+    "fitsTeam": "Fits {{team}}",
+    "colRank": "Rank",
+    "colPlayer": "Player",
+    "colTier": "Tier",
+    "colSignals": "Signals",
+    "colCapHit": "Cap hit",
+    "showAll": "Show all {{count}}",
+    "showTop": "Show top {{count}}",
+    "foot": "Tiers, not chances. Players without a public cap hit aren't tiered.",
+    "signals": {
+      "expiring": "Expiring",
+      "expiringUfa": "Expiring UFA",
+      "expiringRfa": "Expiring RFA",
+      "outsidePlayoffs": "Outside playoffs",
+      "toiDown": "Ice time −{{pct}}"
+    }
+  },
   "leagueCap": {
     "roster": {
       "title": "Roster cap hit · {{season}}",
@@ -2557,6 +2586,28 @@
         "capMissing_other": "{{count}} roster cap hits aren't public, so space may be lower"
       },
       "tapHint": "Tap a team to see why."
+    },
+    "candidacy": {
+      "title": "Candidate signals",
+      "methodLabel": "How candidate signals work",
+      "methodTip": "Not a prediction. These are signals that came before past deadline trades: a contract ending this season, a team outside a playoff spot, falling ice time, along with cap hit, scoring, age and position, weighed by a model fit on the 2023-24 to 2025-26 seasons. Tested on seasons it wasn't fit on, {{several}} of players in the \"Several signals\" group and {{some}} in \"Some signals\" were traded before the deadline, so most players with these signals stay. The model's own number isn't shown: it wasn't accurate enough at the top of the scale. A player gets a tier only with at least one signal and a public cap hit. No-trade lists aren't public. Shown from Jan 1 until the trade deadline.",
+      "tiers": {
+        "several": "Several signals",
+        "some": "Some signals"
+      },
+      "asOf": "As of {{date}} · trade deadline {{deadline}}",
+      "conferences": {
+        "E": "East",
+        "W": "West"
+      },
+      "signals": {
+        "expiring": "Contract ends this season",
+        "expiringUfa": "Contract ends this season (UFA)",
+        "expiringRfa": "Contract ends this season (RFA)",
+        "derived": "UFA/RFA estimated from age",
+        "outsidePlayoffs": "Team is {{rank}}th in the {{conference}}, outside a playoff spot (top {{line}} by points %)",
+        "toiDown": "Ice time down {{pct}}: {{recent}} a game over his last 10, {{season}} on the season"
+      }
     }
   },
   "percentileBar": {
@@ -2969,6 +3020,23 @@
           "Waiver claims and other moves ESPN missed aren't filled in, and their dates from January 2021 to June 2024 stay unconfirmed."
         ]
       },
+      "tradeCandidacy": {
+        "title": "Trade fit and candidate signals",
+        "body": [
+          "Neither is a prediction of a trade. Trade fit asks which teams would have a use for a player if he were moved; candidate signals ask how many of the things that came before past deadline trades he has. Both are NHL only, and both show tiers with their reasons, never a percentage for a player.",
+          "Trade fit checks each of the other 31 teams three ways. Need: he'd upgrade a lineup slot at his position that ranks in the league's bottom third, or the top slot where he'd rate above its average (WAR per 82, GSAx per 60 for goalies; this season's at 20+ games, else last season's). Window: a player on an expiring contract fits only teams with playoff odds of 50% or more; one signed beyond this season fits any team. Cap: his cap hit against the team's estimated space, with the seller keeping up to 50% if it has a retention slot left. Need and window both met is a strong fit, one is possible, neither a long shot; needing salary back drops a team one tier. It runs nightly until the trade deadline.",
+          "Candidate signals come from a logistic regression fit on the 2023-24, 2024-25 and 2025-26 seasons. For every skater with 10+ games and goalie with 5+ on Jan 1, Feb 1 and two weeks before the deadline, it asks whether he was traded before that season's deadline, using only what was known that day: contract years left and UFA/RFA, cap hit, no-move or no-trade clause, points per game or save percentage, ice time over his last 10 games against his season, his team's points percentage against the 8th team in its conference, age, position and days to the deadline. Trades are read from the NHL's own game logs (a switch of team) and the trade list behind the trade trees, with waiver claims left out.",
+          "Each season was predicted by a model fit only on the other two. The model beat a flat rate (Brier 0.0622 against 0.0655) and the rule \"expiring contract on a team outside a playoff spot\" (0.0629), but only slightly ahead of that rule, and its top tenth predicted 28.0% when 22.6% were traded: outside the ±5-point bar set before the test. So no percentage is shown. Instead, the model's top tenth is labeled \"Several signals\" (22.6% traded before the deadline in the test) and the next two tenths \"Some signals\" (10.1%). A tier is shown only with at least one signal: an expiring contract, a team outside a playoff spot, or ice time down 10% or more. Shown from Jan 1 to the trade deadline, rebuilt nightly.",
+          "What weighs most in the model: a higher cap hit (more often moved), being a goalie (less often), more points per game (less often), more years left (less often), an expiring contract on a team outside a playoff spot (more often), and a full no-move or no-trade clause (less often)."
+        ],
+        "limits": [
+          "Cap space has no LTIR data, so contenders using LTIR look tighter than they are.",
+          "No-trade lists aren't public, and a missing clause can mean one wasn't reported, so clauses never reorder teams.",
+          "Rumors, injuries, GM history and prospects pushing for a spot aren't used.",
+          "Contracts come from an open dataset with gaps. A player without a public cap hit gets no tier, because the model reads a missing cap hit as a signal.",
+          "Contract data before 2023-24 is thinner, and older seasons favor players still active in 2024, so only three seasons were used to fit and test the model."
+        ]
+      },
       "data": {
         "title": "Data and schedule",
         "body": [
@@ -2996,7 +3064,8 @@
       "playoffOdds": "Playoff odds added: 10,000 simulated seasons, rating uncertainty tuned on 2023-24 to 2025-26, and a 22.1% overtime rate pooled across those seasons.",
       "injuryImpact": "Injury impact added: man-games and WAR lost per team, counted from the 2026-27 season.",
       "elo": "Game winners switch to Elo (FiveThirtyEight's NHL settings), replacing a hand-weighted formula that backtested worse.",
-      "tradeSources": "Trades ESPN's feed is missing are added from Wikipedia's cited NHL transactions lists, and ESPN's early dates (January 2021 to June 2024) are corrected where a cited trade matches, or marked unconfirmed."
+      "tradeSources": "Trades ESPN's feed is missing are added from Wikipedia's cited NHL transactions lists, and ESPN's early dates (January 2021 to June 2024) are corrected where a cited trade matches, or marked unconfirmed.",
+      "tradeCandidacy": "Added trade fit (which teams a player fits, in tiers with reasons) and candidate signals with League › Cap's Deadline board: tiers from a model tested on 2023-24 to 2025-26, shown from Jan 1 to the trade deadline."
     }
   },
   "scorecard": {

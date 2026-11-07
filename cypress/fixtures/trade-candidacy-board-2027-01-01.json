@@ -1,0 +1,3801 @@
+{
+ "players": [
+  {
+   "id": 8478413,
+   "season": 20262027,
+   "team": "CHI",
+   "name": "Jordan Greenway",
+   "position": "L",
+   "gamesPlayed": 15,
+   "tier": "several",
+   "rank": 1,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 4000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 5
+   }
+  },
+  {
+   "id": 8474013,
+   "season": 20262027,
+   "team": "CHI",
+   "name": "Ian Cole",
+   "position": "D",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 2,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 4000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8475848,
+   "season": 20262027,
+   "team": "VAN",
+   "name": "Brendan Gallagher",
+   "position": "R",
+   "gamesPlayed": 15,
+   "tier": "several",
+   "rank": 3,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 6500000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "NMC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8475799,
+   "season": 20262027,
+   "team": "WPG",
+   "name": "Nino Niederreiter",
+   "position": "R",
+   "gamesPlayed": 10,
+   "tier": "several",
+   "rank": 4,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 4000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8482055,
+   "season": 20262027,
+   "team": "VAN",
+   "name": "Drew O'Connor",
+   "position": "L",
+   "gamesPlayed": 18,
+   "tier": "several",
+   "rank": 5,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 2500000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8476882,
+   "season": 20262027,
+   "team": "CHI",
+   "name": "Teuvo Teravainen",
+   "position": "C",
+   "gamesPlayed": 14,
+   "tier": "several",
+   "rank": 6,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 5400000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 8
+   }
+  },
+  {
+   "id": 8476624,
+   "season": 20262027,
+   "team": "SJS",
+   "name": "Barclay Goodrow",
+   "position": "C",
+   "gamesPlayed": 18,
+   "tier": "several",
+   "rank": 7,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 14,
+     "line": 8
+    }
+   ],
+   "capHit": 3641667,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8476458,
+   "season": 20262027,
+   "team": "CGY",
+   "name": "Ryan Strome",
+   "position": "C",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 8,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 5000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8481032,
+   "season": 20262027,
+   "team": "VAN",
+   "name": "Paul Cotter",
+   "position": "L",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 9,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 2150000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8473986,
+   "season": 20262027,
+   "team": "ANA",
+   "name": "Alex Killorn",
+   "position": "L",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 10,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 9,
+     "line": 8
+    }
+   ],
+   "capHit": 6250000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 15
+   }
+  },
+  {
+   "id": 8477429,
+   "season": 20262027,
+   "team": "DET",
+   "name": "Andrew Copp",
+   "position": "C",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 11,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 5625000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8474563,
+   "season": 20262027,
+   "team": "LAK",
+   "name": "Drew Doughty",
+   "position": "D",
+   "gamesPlayed": 13,
+   "tier": "several",
+   "rank": 12,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 11000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8471214,
+   "season": 20262027,
+   "team": "WSH",
+   "name": "Alex Ovechkin",
+   "position": "L",
+   "gamesPlayed": 14,
+   "tier": "several",
+   "rank": 13,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 9,
+     "line": 8
+    }
+   ],
+   "capHit": 4250000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8475151,
+   "season": 20262027,
+   "team": "NYI",
+   "name": "Kyle Palmieri",
+   "position": "C",
+   "gamesPlayed": 15,
+   "tier": "several",
+   "rank": 14,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 4750000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 16
+   }
+  },
+  {
+   "id": 8475231,
+   "season": 20262027,
+   "team": "NYI",
+   "name": "Casey Cizikas",
+   "position": "C",
+   "gamesPlayed": 15,
+   "tier": "several",
+   "rank": 15,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 2500000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8480459,
+   "season": 20262027,
+   "team": "STL",
+   "name": "Pius Suter",
+   "position": "C",
+   "gamesPlayed": 16,
+   "tier": "several",
+   "rank": 16,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 10,
+     "line": 8
+    }
+   ],
+   "capHit": 4125000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8478443,
+   "season": 20262027,
+   "team": "STL",
+   "name": "Brandon Carlo",
+   "position": "D",
+   "gamesPlayed": 16,
+   "tier": "several",
+   "rank": 17,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 10,
+     "line": 8
+    }
+   ],
+   "capHit": 4100000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8481716,
+   "season": 20262027,
+   "team": "CBJ",
+   "name": "Dmitri Voronkov",
+   "position": "L",
+   "gamesPlayed": 10,
+   "tier": "several",
+   "rank": 18,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 14,
+     "line": 8
+    }
+   ],
+   "capHit": 4175000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8476412,
+   "season": 20262027,
+   "team": "STL",
+   "name": "Jordan Binnington",
+   "position": "G",
+   "gamesPlayed": 5,
+   "tier": "several",
+   "rank": 19,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 10,
+     "line": 8
+    }
+   ],
+   "capHit": 6000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8478046,
+   "season": 20262027,
+   "team": "CBJ",
+   "name": "Danton Heinen",
+   "position": "L",
+   "gamesPlayed": 10,
+   "tier": "several",
+   "rank": 20,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 14,
+     "line": 8
+    }
+   ],
+   "capHit": 1000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8476434,
+   "season": 20262027,
+   "team": "DET",
+   "name": "John Gibson",
+   "position": "G",
+   "gamesPlayed": 11,
+   "tier": "several",
+   "rank": 21,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 6400000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8481122,
+   "season": 20262027,
+   "team": "PHI",
+   "name": "Simon Benoit",
+   "position": "D",
+   "gamesPlayed": 13,
+   "tier": "several",
+   "rank": 22,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 1350000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8479398,
+   "season": 20262027,
+   "team": "PIT",
+   "name": "Samuel Girard",
+   "position": "D",
+   "gamesPlayed": 13,
+   "tier": "several",
+   "rank": 23,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 5000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 9
+   }
+  },
+  {
+   "id": 8482079,
+   "season": 20262027,
+   "team": "VAN",
+   "name": "Marco Rossi",
+   "position": "C",
+   "gamesPlayed": 16,
+   "tier": "several",
+   "rank": 24,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 5000000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8475790,
+   "season": 20262027,
+   "team": "CBJ",
+   "name": "Erik Gudbranson",
+   "position": "D",
+   "gamesPlayed": 12,
+   "tier": "several",
+   "rank": 25,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 14,
+     "line": 8
+    }
+   ],
+   "capHit": 1750000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8480289,
+   "season": 20262027,
+   "team": "WPG",
+   "name": "Morgan Barron",
+   "position": "C",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 26,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 1850000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8478463,
+   "season": 20262027,
+   "team": "WSH",
+   "name": "Anthony Beauvillier",
+   "position": "R",
+   "gamesPlayed": 14,
+   "tier": "several",
+   "rank": 27,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 9,
+     "line": 8
+    }
+   ],
+   "capHit": 2750000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8475753,
+   "season": 20262027,
+   "team": "DET",
+   "name": "Justin Faulk",
+   "position": "D",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 28,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 6500000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 15
+   }
+  },
+  {
+   "id": 8474568,
+   "season": 20262027,
+   "team": "VAN",
+   "name": "Luke Schenn",
+   "position": "D",
+   "gamesPlayed": 10,
+   "tier": "several",
+   "rank": 29,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 2250000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": {
+    "kind": "NMC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8476292,
+   "season": 20262027,
+   "team": "NYI",
+   "name": "Ondrej Palat",
+   "position": "L",
+   "gamesPlayed": 15,
+   "tier": "several",
+   "rank": 30,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 6000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "NMC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8477479,
+   "season": 20262027,
+   "team": "CHI",
+   "name": "Tyler Bertuzzi",
+   "position": "L",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 31,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 5500000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8480028,
+   "season": 20262027,
+   "team": "CGY",
+   "name": "Morgan Frost",
+   "position": "C",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 32,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 4375000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 8
+   }
+  },
+  {
+   "id": 8475311,
+   "season": 20262027,
+   "team": "LAK",
+   "name": "Darcy Kuemper",
+   "position": "G",
+   "gamesPlayed": 9,
+   "tier": "several",
+   "rank": 33,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 5250000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8482073,
+   "season": 20262027,
+   "team": "NYR",
+   "name": "Braden Schneider",
+   "position": "D",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 34,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 10,
+     "line": 8
+    }
+   ],
+   "capHit": 5500000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8478569,
+   "season": 20262027,
+   "team": "PHI",
+   "name": "Noel Acciari",
+   "position": "C",
+   "gamesPlayed": 18,
+   "tier": "several",
+   "rank": 35,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 2800000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8483395,
+   "season": 20262027,
+   "team": "VAN",
+   "name": "Arshdeep Bains",
+   "position": "L",
+   "gamesPlayed": 13,
+   "tier": "several",
+   "rank": 36,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 775000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8471215,
+   "season": 20262027,
+   "team": "PIT",
+   "name": "Evgeni Malkin",
+   "position": "C",
+   "gamesPlayed": 14,
+   "tier": "several",
+   "rank": 37,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 5500000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": {
+    "kind": "NMC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8483450,
+   "season": 20262027,
+   "team": "CHI",
+   "name": "Ryan Greene",
+   "position": "C",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 38,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 950000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8476467,
+   "season": 20262027,
+   "team": "VAN",
+   "name": "Jamie Oleksiak",
+   "position": "D",
+   "gamesPlayed": 16,
+   "tier": "several",
+   "rank": 39,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 5000000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 12
+   }
+  },
+  {
+   "id": 8482475,
+   "season": 20262027,
+   "team": "PIT",
+   "name": "Egor Chinakhov",
+   "position": "R",
+   "gamesPlayed": 12,
+   "tier": "several",
+   "rank": 40,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 6250000,
+   "yearsLeft": 2,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8474578,
+   "season": 20262027,
+   "team": "PIT",
+   "name": "Erik Karlsson",
+   "position": "D",
+   "gamesPlayed": 16,
+   "tier": "several",
+   "rank": 41,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 11500000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "NMC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8483499,
+   "season": 20262027,
+   "team": "VAN",
+   "name": "Liam Ohgren",
+   "position": "L",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 42,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 950000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8482062,
+   "season": 20262027,
+   "team": "CHI",
+   "name": "Cole Smith",
+   "position": "R",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 43,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 3000000,
+   "yearsLeft": 2,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 10
+   }
+  },
+  {
+   "id": 8478474,
+   "season": 20262027,
+   "team": "UTA",
+   "name": "Lawson Crouse",
+   "position": "L",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 44,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 4300000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8477987,
+   "season": 20262027,
+   "team": "CHI",
+   "name": "Ryan Donato",
+   "position": "C",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 45,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 4000000,
+   "yearsLeft": 2,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8483471,
+   "season": 20262027,
+   "team": "WPG",
+   "name": "Brad Lambert",
+   "position": "C",
+   "gamesPlayed": 11,
+   "tier": "several",
+   "rank": 46,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 950000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8477903,
+   "season": 20262027,
+   "team": "FLA",
+   "name": "Garnet Hathaway",
+   "position": "R",
+   "gamesPlayed": 16,
+   "tier": "several",
+   "rank": 47,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 2400000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8474141,
+   "season": 20262027,
+   "team": "CHI",
+   "name": "Patrick Kane",
+   "position": "R",
+   "gamesPlayed": 15,
+   "tier": "several",
+   "rank": 48,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 8000000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "NMC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8480220,
+   "season": 20262027,
+   "team": "PHI",
+   "name": "Noah Cates",
+   "position": "L",
+   "gamesPlayed": 18,
+   "tier": "several",
+   "rank": 49,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 4000000,
+   "yearsLeft": 2,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8482176,
+   "season": 20262027,
+   "team": "CHI",
+   "name": "Wyatt Kaiser",
+   "position": "D",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 50,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 1700000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8479675,
+   "season": 20262027,
+   "team": "LAK",
+   "name": "Trevor Moore",
+   "position": "L",
+   "gamesPlayed": 14,
+   "tier": "several",
+   "rank": 51,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 4200000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8481601,
+   "season": 20262027,
+   "team": "NYI",
+   "name": "Simon Holmstrom",
+   "position": "R",
+   "gamesPlayed": 15,
+   "tier": "several",
+   "rank": 52,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 3625000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8475794,
+   "season": 20262027,
+   "team": "DAL",
+   "name": "Tyler Seguin",
+   "position": "C",
+   "gamesPlayed": 16,
+   "tier": "several",
+   "rank": 53,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 9850000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "NMC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8484783,
+   "season": 20262027,
+   "team": "CHI",
+   "name": "Artyom Levshunov",
+   "position": "D",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 54,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 975000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8482157,
+   "season": 20262027,
+   "team": "NYR",
+   "name": "Will Cuylle",
+   "position": "L",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 55,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 10,
+     "line": 8
+    }
+   ],
+   "capHit": 3900000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8480113,
+   "season": 20262027,
+   "team": "WPG",
+   "name": "Alex Iafallo",
+   "position": "L",
+   "gamesPlayed": 17,
+   "tier": "several",
+   "rank": 56,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 3670000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8476483,
+   "season": 20262027,
+   "team": "PIT",
+   "name": "Rickard Rakell",
+   "position": "R",
+   "gamesPlayed": 16,
+   "tier": "some",
+   "rank": 57,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 5000000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8481568,
+   "season": 20262027,
+   "team": "CHI",
+   "name": "Alex Vlasic",
+   "position": "D",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 58,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 4600000,
+   "yearsLeft": 3,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8478831,
+   "season": 20262027,
+   "team": "UTA",
+   "name": "Kevin Stenlund",
+   "position": "C",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 59,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    }
+   ],
+   "capHit": 2750000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8476372,
+   "season": 20262027,
+   "team": "PHI",
+   "name": "Nick Seeler",
+   "position": "D",
+   "gamesPlayed": 18,
+   "tier": "some",
+   "rank": 60,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 2700000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8476979,
+   "season": 20262027,
+   "team": "LAK",
+   "name": "Erik Gustafsson",
+   "position": "D",
+   "gamesPlayed": 12,
+   "tier": "some",
+   "rank": 61,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 1000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8483506,
+   "season": 20262027,
+   "team": "CHI",
+   "name": "Sam Rinzel",
+   "position": "D",
+   "gamesPlayed": 16,
+   "tier": "some",
+   "rank": 62,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 942000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8478024,
+   "season": 20262027,
+   "team": "ANA",
+   "name": "Ville Husso",
+   "position": "G",
+   "gamesPlayed": 6,
+   "tier": "some",
+   "rank": 63,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 9,
+     "line": 8
+    }
+   ],
+   "capHit": 2200000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8477998,
+   "season": 20262027,
+   "team": "OTT",
+   "name": "Warren Foegele",
+   "position": "L",
+   "gamesPlayed": 13,
+   "tier": "some",
+   "rank": 64,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 3500000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8481668,
+   "season": 20262027,
+   "team": "PIT",
+   "name": "Arturs Silovs",
+   "position": "G",
+   "gamesPlayed": 11,
+   "tier": "some",
+   "rank": 65,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 2800000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8479378,
+   "season": 20262027,
+   "team": "NYI",
+   "name": "Logan Stanley",
+   "position": "D",
+   "gamesPlayed": 15,
+   "tier": "some",
+   "rank": 66,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 1500000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8479992,
+   "season": 20262027,
+   "team": "DET",
+   "name": "Michael Rasmussen",
+   "position": "C",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 67,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 3200000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8476479,
+   "season": 20262027,
+   "team": "MTL",
+   "name": "Phillip Danault",
+   "position": "C",
+   "gamesPlayed": 16,
+   "tier": "some",
+   "rank": 68,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 5500000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 10
+   }
+  },
+  {
+   "id": 8483609,
+   "season": 20262027,
+   "team": "CGY",
+   "name": "Adam Klapka",
+   "position": "R",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 69,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 1250000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8481533,
+   "season": 20262027,
+   "team": "PHI",
+   "name": "Trevor Zegras",
+   "position": "C",
+   "gamesPlayed": 18,
+   "tier": "some",
+   "rank": 70,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 9125000,
+   "yearsLeft": 3,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8476461,
+   "season": 20262027,
+   "team": "PHI",
+   "name": "Sean Couturier",
+   "position": "C",
+   "gamesPlayed": 18,
+   "tier": "some",
+   "rank": 71,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 7750000,
+   "yearsLeft": 3,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "NMC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8478462,
+   "season": 20262027,
+   "team": "COL",
+   "name": "Nicolas Roy",
+   "position": "C",
+   "gamesPlayed": 11,
+   "tier": "some",
+   "rank": 72,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 3000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8479525,
+   "season": 20262027,
+   "team": "NSH",
+   "name": "Ross Colton",
+   "position": "C",
+   "gamesPlayed": 16,
+   "tier": "some",
+   "rank": 73,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 4000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8477451,
+   "season": 20262027,
+   "team": "MIN",
+   "name": "Ryan Hartman",
+   "position": "R",
+   "gamesPlayed": 18,
+   "tier": "some",
+   "rank": 74,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 4000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8484166,
+   "season": 20262027,
+   "team": "CBJ",
+   "name": "Adam Fantilli",
+   "position": "C",
+   "gamesPlayed": 15,
+   "tier": "some",
+   "rank": 75,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 14,
+     "line": 8
+    }
+   ],
+   "capHit": 13750000,
+   "yearsLeft": 5,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8480015,
+   "season": 20262027,
+   "team": "PHI",
+   "name": "Owen Tippett",
+   "position": "R",
+   "gamesPlayed": 12,
+   "tier": "some",
+   "rank": 76,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 6200000,
+   "yearsLeft": 5,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8484142,
+   "season": 20262027,
+   "team": "PHI",
+   "name": "Denver Barkey",
+   "position": "C",
+   "gamesPlayed": 15,
+   "tier": "some",
+   "rank": 77,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 913333,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8480947,
+   "season": 20262027,
+   "team": "VAN",
+   "name": "Kevin Lankinen",
+   "position": "G",
+   "gamesPlayed": 9,
+   "tier": "some",
+   "rank": 78,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 4500000,
+   "yearsLeft": 3,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "NMC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8481582,
+   "season": 20262027,
+   "team": "PIT",
+   "name": "Nick Robertson",
+   "position": "L",
+   "gamesPlayed": 16,
+   "tier": "some",
+   "rank": 79,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 3250000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8475208,
+   "season": 20262027,
+   "team": "LAK",
+   "name": "Brian Dumoulin",
+   "position": "D",
+   "gamesPlayed": 14,
+   "tier": "some",
+   "rank": 80,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 4000000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 10
+   }
+  },
+  {
+   "id": 8476925,
+   "season": 20262027,
+   "team": "TOR",
+   "name": "Colton Sissons",
+   "position": "C",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 81,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 12,
+     "line": 8
+    }
+   ],
+   "capHit": 4250000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 10
+   }
+  },
+  {
+   "id": 8481068,
+   "season": 20262027,
+   "team": "CGY",
+   "name": "Yegor Sharangovich",
+   "position": "C",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 82,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 5750000,
+   "yearsLeft": 3,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8484160,
+   "season": 20262027,
+   "team": "DET",
+   "name": "Nate Danielson",
+   "position": "C",
+   "gamesPlayed": 13,
+   "tier": "some",
+   "rank": 83,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 950000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8476331,
+   "season": 20262027,
+   "team": "WPG",
+   "name": "Dylan DeMelo",
+   "position": "D",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 84,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 4900000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8478542,
+   "season": 20262027,
+   "team": "NJD",
+   "name": "Evan Rodrigues",
+   "position": "C",
+   "gamesPlayed": 16,
+   "tier": "some",
+   "rank": 85,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 3000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8476399,
+   "season": 20262027,
+   "team": "MIN",
+   "name": "Blake Coleman",
+   "position": "L",
+   "gamesPlayed": 18,
+   "tier": "some",
+   "rank": 86,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 4900000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 10
+   }
+  },
+  {
+   "id": 8479999,
+   "season": 20262027,
+   "team": "BOS",
+   "name": "Casey Mittelstadt",
+   "position": "C",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 87,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 5750000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8481607,
+   "season": 20262027,
+   "team": "DET",
+   "name": "Albert Johansson",
+   "position": "D",
+   "gamesPlayed": 11,
+   "tier": "some",
+   "rank": 88,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 1125000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8476441,
+   "season": 20262027,
+   "team": "LAK",
+   "name": "Joel Edmundson",
+   "position": "D",
+   "gamesPlayed": 14,
+   "tier": "some",
+   "rank": 89,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 3850000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 10
+   }
+  },
+  {
+   "id": 8473575,
+   "season": 20262027,
+   "team": "NYI",
+   "name": "Semyon Varlamov",
+   "position": "G",
+   "gamesPlayed": 5,
+   "tier": "some",
+   "rank": 90,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 2750000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 16
+   }
+  },
+  {
+   "id": 8484234,
+   "season": 20262027,
+   "team": "CGY",
+   "name": "Aydar Suniev",
+   "position": "L",
+   "gamesPlayed": 14,
+   "tier": "some",
+   "rank": 91,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 923000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8480727,
+   "season": 20262027,
+   "team": "CGY",
+   "name": "Zach Whitecloud",
+   "position": "D",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 92,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 2750000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8480049,
+   "season": 20262027,
+   "team": "WPG",
+   "name": "Dylan Samberg",
+   "position": "D",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 93,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 5750000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 6
+   }
+  },
+  {
+   "id": 8484144,
+   "season": 20262027,
+   "team": "CHI",
+   "name": "Connor Bedard",
+   "position": "C",
+   "gamesPlayed": 11,
+   "tier": "some",
+   "rank": 94,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 15000000,
+   "yearsLeft": 4,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8478020,
+   "season": 20262027,
+   "team": "OTT",
+   "name": "Michael Amadio",
+   "position": "R",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 95,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 2600000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8483476,
+   "season": 20262027,
+   "team": "VAN",
+   "name": "Jonathan Lekkerimaki",
+   "position": "R",
+   "gamesPlayed": 18,
+   "tier": "some",
+   "rank": 96,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 950000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8484164,
+   "season": 20262027,
+   "team": "STL",
+   "name": "Dalibor Dvorsky",
+   "position": "R",
+   "gamesPlayed": 16,
+   "tier": "some",
+   "rank": 97,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 10,
+     "line": 8
+    }
+   ],
+   "capHit": 950000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8474574,
+   "season": 20262027,
+   "team": "DAL",
+   "name": "Tyler Myers",
+   "position": "D",
+   "gamesPlayed": 16,
+   "tier": "some",
+   "rank": 98,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 3000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 12
+   }
+  },
+  {
+   "id": 8482165,
+   "season": 20262027,
+   "team": "CGY",
+   "name": "Yan Kuznetsov",
+   "position": "D",
+   "gamesPlayed": 16,
+   "tier": "some",
+   "rank": 99,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 812500,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8481523,
+   "season": 20262027,
+   "team": "MTL",
+   "name": "Kirby Dach",
+   "position": "C",
+   "gamesPlayed": 14,
+   "tier": "some",
+   "rank": 100,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 3600000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8482245,
+   "season": 20262027,
+   "team": "OTT",
+   "name": "Artem Zub",
+   "position": "D",
+   "gamesPlayed": 10,
+   "tier": "some",
+   "rank": 101,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 4600000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8474716,
+   "season": 20262027,
+   "team": "MIN",
+   "name": "Jared Spurgeon",
+   "position": "D",
+   "gamesPlayed": 10,
+   "tier": "some",
+   "rank": 102,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 7575000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8478136,
+   "season": 20262027,
+   "team": "CGY",
+   "name": "Jacob Middleton",
+   "position": "D",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 103,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 4350000,
+   "yearsLeft": 2,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8482142,
+   "season": 20262027,
+   "team": "PHI",
+   "name": "Jamie Drysdale",
+   "position": "D",
+   "gamesPlayed": 18,
+   "tier": "some",
+   "rank": 104,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 6500000,
+   "yearsLeft": 3,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8478407,
+   "season": 20262027,
+   "team": "SEA",
+   "name": "Vince Dunn",
+   "position": "D",
+   "gamesPlayed": 15,
+   "tier": "some",
+   "rank": 105,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 7350000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 16
+   }
+  },
+  {
+   "id": 8476419,
+   "season": 20262027,
+   "team": "NYI",
+   "name": "Jean-Gabriel Pageau",
+   "position": "C",
+   "gamesPlayed": 15,
+   "tier": "some",
+   "rank": 106,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 4850000,
+   "yearsLeft": 2,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8477456,
+   "season": 20262027,
+   "team": "DET",
+   "name": "J.T. Compher",
+   "position": "L",
+   "gamesPlayed": 10,
+   "tier": "some",
+   "rank": 107,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 5100000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8476917,
+   "season": 20262027,
+   "team": "NYI",
+   "name": "Adam Pelech",
+   "position": "D",
+   "gamesPlayed": 15,
+   "tier": "some",
+   "rank": 108,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 5750000,
+   "yearsLeft": 2,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 16
+   }
+  },
+  {
+   "id": 8482859,
+   "season": 20262027,
+   "team": "SJS",
+   "name": "Zack Ostapchuk",
+   "position": "C",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 109,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 14,
+     "line": 8
+    }
+   ],
+   "capHit": 2350000,
+   "yearsLeft": 3,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8483532,
+   "season": 20262027,
+   "team": "WPG",
+   "name": "Clay Stevenson",
+   "position": "G",
+   "gamesPlayed": 5,
+   "tier": "some",
+   "rank": 110,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 775000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8480014,
+   "season": 20262027,
+   "team": "WPG",
+   "name": "Gabriel Vilardi",
+   "position": "C",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 111,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 7500000,
+   "yearsLeft": 4,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8483493,
+   "season": 20262027,
+   "team": "CHI",
+   "name": "Frank Nazar",
+   "position": "C",
+   "gamesPlayed": 15,
+   "tier": "some",
+   "rank": 112,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 6590000,
+   "yearsLeft": 6,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8480043,
+   "season": 20262027,
+   "team": "WSH",
+   "name": "Timothy Liljegren",
+   "position": "D",
+   "gamesPlayed": 14,
+   "tier": "some",
+   "rank": 113,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 9,
+     "line": 8
+    }
+   ],
+   "capHit": 3250000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8475171,
+   "season": 20262027,
+   "team": "TOR",
+   "name": "Oliver Ekman-Larsson",
+   "position": "D",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 114,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 12,
+     "line": 8
+    }
+   ],
+   "capHit": 3500000,
+   "yearsLeft": 2,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8477407,
+   "season": 20262027,
+   "team": "NYI",
+   "name": "Anthony Duclair",
+   "position": "L",
+   "gamesPlayed": 15,
+   "tier": "some",
+   "rank": 115,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 3500000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 16
+   }
+  },
+  {
+   "id": 8471724,
+   "season": 20262027,
+   "team": "PIT",
+   "name": "Kris Letang",
+   "position": "D",
+   "gamesPlayed": 16,
+   "tier": "some",
+   "rank": 116,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 6100000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "NMC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8476927,
+   "season": 20262027,
+   "team": "TOR",
+   "name": "Teddy Blueger",
+   "position": "C",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 117,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 12,
+     "line": 8
+    }
+   ],
+   "capHit": 2500000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8476981,
+   "season": 20262027,
+   "team": "MTL",
+   "name": "Josh Anderson",
+   "position": "R",
+   "gamesPlayed": 16,
+   "tier": "some",
+   "rank": 118,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 5500000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8475170,
+   "season": 20262027,
+   "team": "NYI",
+   "name": "Brayden Schenn",
+   "position": "C",
+   "gamesPlayed": 15,
+   "tier": "some",
+   "rank": 119,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 6500000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 15
+   }
+  },
+  {
+   "id": 8480434,
+   "season": 20262027,
+   "team": "NYR",
+   "name": "Sean Durzi",
+   "position": "D",
+   "gamesPlayed": 14,
+   "tier": "some",
+   "rank": 120,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 10,
+     "line": 8
+    }
+   ],
+   "capHit": 6000000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8477498,
+   "season": 20262027,
+   "team": "SJS",
+   "name": "Darnell Nurse",
+   "position": "D",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 121,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 14,
+     "line": 8
+    }
+   ],
+   "capHit": 9250000,
+   "yearsLeft": 3,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "NMC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8482705,
+   "season": 20262027,
+   "team": "CBJ",
+   "name": "Cole Sillinger",
+   "position": "C",
+   "gamesPlayed": 15,
+   "tier": "some",
+   "rank": 122,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 14,
+     "line": 8
+    }
+   ],
+   "capHit": 4625000,
+   "yearsLeft": 2,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8484227,
+   "season": 20262027,
+   "team": "SJS",
+   "name": "Will Smith",
+   "position": "C",
+   "gamesPlayed": 18,
+   "tier": "some",
+   "rank": 123,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 14,
+     "line": 8
+    }
+   ],
+   "capHit": 950000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8484387,
+   "season": 20262027,
+   "team": "PHI",
+   "name": "Matvei Michkov",
+   "position": "R",
+   "gamesPlayed": 18,
+   "tier": "some",
+   "rank": 124,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 950000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8475726,
+   "season": 20262027,
+   "team": "SJS",
+   "name": "Tyler Toffoli",
+   "position": "C",
+   "gamesPlayed": 18,
+   "tier": "some",
+   "rank": 125,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 14,
+     "line": 8
+    }
+   ],
+   "capHit": 6000000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "NTC",
+    "listSize": 15
+   }
+  },
+  {
+   "id": 8484148,
+   "season": 20262027,
+   "team": "PHI",
+   "name": "Oliver Bonk",
+   "position": "D",
+   "gamesPlayed": 12,
+   "tier": "some",
+   "rank": 126,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 16,
+     "line": 8
+    }
+   ],
+   "capHit": 950000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8482118,
+   "season": 20262027,
+   "team": "ANA",
+   "name": "Sam Colangelo",
+   "position": "R",
+   "gamesPlayed": 13,
+   "tier": "some",
+   "rank": 127,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": true
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 9,
+     "line": 8
+    }
+   ],
+   "capHit": 850000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8477950,
+   "season": 20262027,
+   "team": "NYI",
+   "name": "Tony DeAngelo",
+   "position": "D",
+   "gamesPlayed": 15,
+   "tier": "some",
+   "rank": 128,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 11,
+     "line": 8
+    }
+   ],
+   "capHit": 4500000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 3
+   }
+  },
+  {
+   "id": 8484790,
+   "season": 20262027,
+   "team": "STL",
+   "name": "Adam Jiricek",
+   "position": "D",
+   "gamesPlayed": 16,
+   "tier": "some",
+   "rank": 129,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "RFA",
+     "derived": false
+    },
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 10,
+     "line": 8
+    }
+   ],
+   "capHit": 950000,
+   "yearsLeft": 0,
+   "expiryType": "RFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8477501,
+   "season": 20262027,
+   "team": "CBJ",
+   "name": "Valeri Nichushkin",
+   "position": "R",
+   "gamesPlayed": 15,
+   "tier": "some",
+   "rank": 130,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 14,
+     "line": 8
+    }
+   ],
+   "capHit": 6125000,
+   "yearsLeft": 3,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8475184,
+   "season": 20262027,
+   "team": "MTL",
+   "name": "Chris Kreider",
+   "position": "L",
+   "gamesPlayed": 16,
+   "tier": "some",
+   "rank": 131,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 6500000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "NMC",
+    "listSize": null
+   }
+  },
+  {
+   "id": 8480326,
+   "season": 20262027,
+   "team": "DET",
+   "name": "Sheldon Dries",
+   "position": "C",
+   "gamesPlayed": 11,
+   "tier": "some",
+   "rank": 132,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "E",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 875000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8475158,
+   "season": 20262027,
+   "team": "NSH",
+   "name": "Ryan O'Reilly",
+   "position": "C",
+   "gamesPlayed": 16,
+   "tier": "some",
+   "rank": 133,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 4500000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8475831,
+   "season": 20262027,
+   "team": "SEA",
+   "name": "Philipp Grubauer",
+   "position": "G",
+   "gamesPlayed": 9,
+   "tier": "some",
+   "rank": 134,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": false
+    }
+   ],
+   "capHit": 5900000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": {
+    "kind": "M-NTC",
+    "listSize": 10
+   }
+  },
+  {
+   "id": 8482155,
+   "season": 20262027,
+   "team": "LAK",
+   "name": "Alex Laferriere",
+   "position": "R",
+   "gamesPlayed": 14,
+   "tier": "some",
+   "rank": 135,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 4100000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8482726,
+   "season": 20262027,
+   "team": "LAK",
+   "name": "Samuel Helenius",
+   "position": "C",
+   "gamesPlayed": 11,
+   "tier": "some",
+   "rank": 136,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 13,
+     "line": 8
+    }
+   ],
+   "capHit": 875000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8481641,
+   "season": 20262027,
+   "team": "DAL",
+   "name": "Joel Kiviranta",
+   "position": "L",
+   "gamesPlayed": 12,
+   "tier": "some",
+   "rank": 137,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    }
+   ],
+   "capHit": 1000000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8475809,
+   "season": 20262027,
+   "team": "COL",
+   "name": "Scott Wedgewood",
+   "position": "G",
+   "gamesPlayed": 5,
+   "tier": "some",
+   "rank": 138,
+   "signals": [
+    {
+     "code": "expiring",
+     "expiry_type": "UFA",
+     "derived": true
+    }
+   ],
+   "capHit": 2500000,
+   "yearsLeft": 0,
+   "expiryType": "UFA",
+   "expiryTypeDerived": true,
+   "extended": false,
+   "clause": null
+  },
+  {
+   "id": 8485391,
+   "season": 20262027,
+   "team": "CHI",
+   "name": "Anton Frondell",
+   "position": "C",
+   "gamesPlayed": 17,
+   "tier": "some",
+   "rank": 139,
+   "signals": [
+    {
+     "code": "outside_playoffs",
+     "conference": "W",
+     "conference_rank": 15,
+     "line": 8
+    }
+   ],
+   "capHit": 975000,
+   "yearsLeft": 1,
+   "expiryType": null,
+   "expiryTypeDerived": false,
+   "extended": false,
+   "clause": null
+  }
+ ],
+ "asOf": "2027-01-01",
+ "deadline": "2027-03-01",
+ "generatedAt": "2026-11-07T14:32:37.049279+00:00",
+ "fitTeam": null
+}

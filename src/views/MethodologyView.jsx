@@ -10,7 +10,10 @@
 // Settings quoted in the text were checked against eyewall-pipeline's code
 // on METHOD_CHECKED (elo.py, win_probs.py, playoff_odds.py,
 // starting_goalie.py / goalie_model.py, prediction_scorecard.py,
-// injury_impact.py, trade_parse.py / trade_trees.py / wiki_trades.py). The backtest numbers
+// injury_impact.py, trade_parse.py / trade_trees.py / wiki_trades.py). The
+// trade fit and candidacy section was checked on 2026-11-07 against
+// trade_fit.py, trade_candidacy.py and docs/trade_candidacy_backtest_results.md
+// (its numbers are typed in: no route serves them). The backtest numbers
 // are not typed in -- they come live from the Worker's /scorecard, the
 // same data the scorecard shows. When a model changes, update its section
 // and add a CHANGELOG entry.
@@ -35,6 +38,7 @@ const SECTIONS = [
   { id: 'grading', key: 'grading' },
   { id: 'injury-impact', key: 'injuryImpact' },
   { id: 'trade-trees', key: 'tradeTrees' },
+  { id: 'trade-candidacy', key: 'tradeCandidacy' },
   { id: 'data', key: 'data' },
   { id: 'changelog', key: 'changelog' },
 ];
@@ -42,6 +46,8 @@ const SECTIONS = [
 // Dated method changes, newest first (dates from eyewall-pipeline's merge
 // history). Add one whenever a model's method or settings change.
 const CHANGELOG = [
+  // eyewall-pipeline trade_fit.py + trade_candidacy.py (Phases 2 and 4)
+  { date: '2026-11-07', key: 'tradeCandidacy' },
   // eyewall-pipeline wiki_trades.py (Wikipedia's cited trade lists)
   { date: '2026-11-06', key: 'tradeSources' },
   // Not a model change: a tested adjustment that wasn't adopted
