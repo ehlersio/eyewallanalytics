@@ -1,0 +1,331 @@
+{
+  "team": "STL",
+  "season": 20262027,
+  "basis": "last_game",
+  "basisGameId": 2026020254,
+  "generatedAt": "2026-11-06T08:00:00+00:00",
+  "slots": [
+    {
+      "slot": "F_TOP6_C",
+      "players": [
+        {
+          "id": 8480023,
+          "name": "Robert Thomas",
+          "pos": "C",
+          "shoots": "R",
+          "rating": 1.3402,
+          "ratingBasis": "last_season",
+          "gp": 16,
+          "filled": false
+        },
+        {
+          "id": 8482745,
+          "name": "Mason McTavish",
+          "pos": "C",
+          "shoots": "L",
+          "rating": 0.0503,
+          "ratingBasis": "last_season",
+          "gp": 16,
+          "filled": false
+        },
+        {
+          "id": 8483463,
+          "name": "Aleksanteri Kaskimaki",
+          "pos": "C",
+          "shoots": "L",
+          "rating": null,
+          "ratingBasis": null,
+          "gp": 7,
+          "filled": false
+        }
+      ],
+      "nPlayers": 3,
+      "nRated": 2,
+      "strength": 0.6952,
+      "weakestId": 8482745,
+      "weakestRating": 0.0503,
+      "leagueRank": 10,
+      "leagueTeams": 31,
+      "need": false,
+      "rightShots": null,
+      "basis": "last_game"
+    },
+    {
+      "slot": "F_TOP6_W",
+      "players": [
+        {
+          "id": 8482077,
+          "name": "Dylan Holloway",
+          "pos": "L",
+          "shoots": "L",
+          "rating": 1.0868,
+          "ratingBasis": "last_season",
+          "gp": 16,
+          "filled": false
+        },
+        {
+          "id": 8483516,
+          "name": "Jimmy Snuggerud",
+          "pos": "R",
+          "shoots": "R",
+          "rating": 0.5799,
+          "ratingBasis": "last_season",
+          "gp": 16,
+          "filled": false
+        },
+        {
+          "id": 8481580,
+          "name": "Connor McMichael",
+          "pos": "L",
+          "shoots": "L",
+          "rating": 0.0021,
+          "ratingBasis": "last_season",
+          "gp": 16,
+          "filled": false
+        }
+      ],
+      "nPlayers": 3,
+      "nRated": 3,
+      "strength": 0.5563,
+      "weakestId": 8481580,
+      "weakestRating": 0.0021,
+      "leagueRank": 22,
+      "leagueTeams": 29,
+      "need": true,
+      "rightShots": null,
+      "basis": "last_game"
+    },
+    {
+      "slot": "F_BOT6_C",
+      "players": [
+        {
+          "id": 8480459,
+          "name": "Pius Suter",
+          "pos": "C",
+          "shoots": "L",
+          "rating": 0.4882,
+          "ratingBasis": "last_season",
+          "gp": 16,
+          "filled": false
+        }
+      ],
+      "nPlayers": 1,
+      "nRated": 1,
+      "strength": 0.4882,
+      "weakestId": 8480459,
+      "weakestRating": 0.4882,
+      "leagueRank": 12,
+      "leagueTeams": 29,
+      "need": false,
+      "rightShots": null,
+      "basis": "last_game"
+    },
+    {
+      "slot": "F_BOT6_W",
+      "players": [
+        {
+          "id": 8477402,
+          "name": "Pavel Buchnevich",
+          "pos": "L",
+          "shoots": "L",
+          "rating": 0.6135,
+          "ratingBasis": "last_season",
+          "gp": 15,
+          "filled": false
+        },
+        {
+          "id": 8482089,
+          "name": "Jake Neighbours",
+          "pos": "L",
+          "shoots": "L",
+          "rating": 0.4623,
+          "ratingBasis": "last_season",
+          "gp": 16,
+          "filled": false
+        },
+        {
+          "id": 8484164,
+          "name": "Dalibor Dvorsky",
+          "pos": "R",
+          "shoots": "L",
+          "rating": 0.3857,
+          "ratingBasis": "last_season",
+          "gp": 16,
+          "filled": false
+        },
+        {
+          "id": 8477527,
+          "name": "Ross Johnston",
+          "pos": "L",
+          "shoots": "L",
+          "rating": 0.0529,
+          "ratingBasis": "last_season",
+          "gp": 8,
+          "filled": false
+        },
+        {
+          "id": 8480281,
+          "name": "Alexey Toropchenko",
+          "pos": "R",
+          "shoots": "L",
+          "rating": 0.1653,
+          "ratingBasis": "last_season",
+          "gp": 6,
+          "filled": false
+        }
+      ],
+      "nPlayers": 5,
+      "nRated": 5,
+      "strength": 0.3359,
+      "weakestId": 8477527,
+      "weakestRating": 0.0529,
+      "leagueRank": 21,
+      "leagueTeams": 23,
+      "need": true,
+      "rightShots": null,
+      "basis": "last_game"
+    },
+    {
+      "slot": "D_TOP4",
+      "players": [
+        {
+          "id": 8478443,
+          "name": "Brandon Carlo",
+          "pos": "D",
+          "shoots": "R",
+          "rating": -0.3369,
+          "ratingBasis": "last_season",
+          "gp": 16,
+          "filled": false
+        },
+        {
+          "id": 8481598,
+          "name": "Philip Broberg",
+          "pos": "D",
+          "shoots": "L",
+          "rating": 0.5669,
+          "ratingBasis": "last_season",
+          "gp": 16,
+          "filled": false
+        },
+        {
+          "id": 8476892,
+          "name": "Colton Parayko",
+          "pos": "D",
+          "shoots": "R",
+          "rating": 0.3376,
+          "ratingBasis": "last_season",
+          "gp": 14,
+          "filled": false
+        },
+        {
+          "id": 8482111,
+          "name": "Justin Barron",
+          "pos": "D",
+          "shoots": "R",
+          "rating": 0.1798,
+          "ratingBasis": "last_season",
+          "gp": 13,
+          "filled": false
+        }
+      ],
+      "nPlayers": 4,
+      "nRated": 4,
+      "strength": 0.1868,
+      "weakestId": 8478443,
+      "weakestRating": -0.3369,
+      "leagueRank": 32,
+      "leagueTeams": 32,
+      "need": true,
+      "rightShots": 3,
+      "basis": "last_game"
+    },
+    {
+      "slot": "D_BOT2",
+      "players": [
+        {
+          "id": 8475764,
+          "name": "Cam Fowler",
+          "pos": "D",
+          "shoots": "L",
+          "rating": 0.496,
+          "ratingBasis": "last_season",
+          "gp": 16,
+          "filled": false
+        },
+        {
+          "id": 8484790,
+          "name": "Adam Jiricek",
+          "pos": "D",
+          "shoots": "R",
+          "rating": null,
+          "ratingBasis": null,
+          "gp": 16,
+          "filled": false
+        }
+      ],
+      "nPlayers": 2,
+      "nRated": 1,
+      "strength": null,
+      "weakestId": 8475764,
+      "weakestRating": 0.496,
+      "leagueRank": null,
+      "leagueTeams": 16,
+      "need": false,
+      "rightShots": null,
+      "basis": "last_game"
+    },
+    {
+      "slot": "G_1A",
+      "players": [
+        {
+          "id": 8480981,
+          "name": "Joel Hofer",
+          "pos": "G",
+          "shoots": "L",
+          "rating": 0.349,
+          "ratingBasis": "season",
+          "gp": 11,
+          "filled": false,
+          "gamesStarted": 11
+        }
+      ],
+      "nPlayers": 1,
+      "nRated": 1,
+      "strength": 0.349,
+      "weakestId": 8480981,
+      "weakestRating": 0.349,
+      "leagueRank": 7,
+      "leagueTeams": 32,
+      "need": false,
+      "rightShots": null,
+      "basis": "goalie_starts"
+    },
+    {
+      "slot": "G_1B",
+      "players": [
+        {
+          "id": 8476412,
+          "name": "Jordan Binnington",
+          "pos": "G",
+          "shoots": "L",
+          "rating": -0.715,
+          "ratingBasis": "last_season",
+          "gp": 5,
+          "filled": false,
+          "gamesStarted": 5
+        }
+      ],
+      "nPlayers": 1,
+      "nRated": 1,
+      "strength": -0.715,
+      "weakestId": 8476412,
+      "weakestRating": -0.715,
+      "leagueRank": 26,
+      "leagueTeams": 26,
+      "need": true,
+      "rightShots": null,
+      "basis": "goalie_starts"
+    }
+  ]
+}

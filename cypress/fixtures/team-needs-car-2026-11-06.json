@@ -1,0 +1,331 @@
+{
+  "team": "CAR",
+  "season": 20262027,
+  "basis": "last_game",
+  "basisGameId": 2026020255,
+  "generatedAt": "2026-11-06T08:00:00+00:00",
+  "slots": [
+    {
+      "slot": "F_TOP6_C",
+      "players": [
+        {
+          "id": 8478427,
+          "name": "Sebastian Aho",
+          "pos": "C",
+          "shoots": "L",
+          "rating": 0.6851,
+          "ratingBasis": "last_season",
+          "gp": 18,
+          "filled": false
+        },
+        {
+          "id": 8482702,
+          "name": "Logan Stankoven",
+          "pos": "C",
+          "shoots": "R",
+          "rating": 0.658,
+          "ratingBasis": "last_season",
+          "gp": 18,
+          "filled": false
+        }
+      ],
+      "nPlayers": 2,
+      "nRated": 2,
+      "strength": 0.6715,
+      "weakestId": 8482702,
+      "weakestRating": 0.658,
+      "leagueRank": 12,
+      "leagueTeams": 31,
+      "need": false,
+      "rightShots": null,
+      "basis": "last_game"
+    },
+    {
+      "slot": "F_TOP6_W",
+      "players": [
+        {
+          "id": 8477478,
+          "name": "William Carrier",
+          "pos": "L",
+          "shoots": "L",
+          "rating": 0.5271,
+          "ratingBasis": "last_season",
+          "gp": 18,
+          "filled": false
+        },
+        {
+          "id": 8480830,
+          "name": "Andrei Svechnikov",
+          "pos": "R",
+          "shoots": "L",
+          "rating": 0.5605,
+          "ratingBasis": "last_season",
+          "gp": 18,
+          "filled": false
+        },
+        {
+          "id": 8477940,
+          "name": "Nikolaj Ehlers",
+          "pos": "L",
+          "shoots": "L",
+          "rating": 1.166,
+          "ratingBasis": "last_season",
+          "gp": 18,
+          "filled": false
+        },
+        {
+          "id": 8482809,
+          "name": "Jackson Blake",
+          "pos": "R",
+          "shoots": "R",
+          "rating": 0.409,
+          "ratingBasis": "last_season",
+          "gp": 18,
+          "filled": false
+        }
+      ],
+      "nPlayers": 4,
+      "nRated": 4,
+      "strength": 0.6657,
+      "weakestId": 8482809,
+      "weakestRating": 0.409,
+      "leagueRank": 15,
+      "leagueTeams": 29,
+      "need": false,
+      "rightShots": null,
+      "basis": "last_game"
+    },
+    {
+      "slot": "F_BOT6_C",
+      "players": [
+        {
+          "id": 8480829,
+          "name": "Jesperi Kotkaniemi",
+          "pos": "C",
+          "shoots": "L",
+          "rating": 0.2909,
+          "ratingBasis": "last_season",
+          "gp": 16,
+          "filled": false
+        }
+      ],
+      "nPlayers": 1,
+      "nRated": 1,
+      "strength": 0.2909,
+      "weakestId": 8480829,
+      "weakestRating": 0.2909,
+      "leagueRank": 19,
+      "leagueTeams": 29,
+      "need": false,
+      "rightShots": null,
+      "basis": "last_game"
+    },
+    {
+      "slot": "F_BOT6_W",
+      "players": [
+        {
+          "id": 8475791,
+          "name": "Taylor Hall",
+          "pos": "L",
+          "shoots": "L",
+          "rating": 0.7052,
+          "ratingBasis": "last_season",
+          "gp": 9,
+          "filled": false
+        },
+        {
+          "id": 8476873,
+          "name": "Mark Jankowski",
+          "pos": "L",
+          "shoots": "L",
+          "rating": 0.5547,
+          "ratingBasis": "last_season",
+          "gp": 14,
+          "filled": false
+        },
+        {
+          "id": 8482093,
+          "name": "Seth Jarvis",
+          "pos": "R",
+          "shoots": "R",
+          "rating": 0.8188,
+          "ratingBasis": "last_season",
+          "gp": 7,
+          "filled": false
+        },
+        {
+          "id": 8476921,
+          "name": "Jordan Martinook",
+          "pos": "L",
+          "shoots": "L",
+          "rating": 0.4654,
+          "ratingBasis": "last_season",
+          "gp": 18,
+          "filled": false
+        },
+        {
+          "id": 8480762,
+          "name": "Eric Robinson",
+          "pos": "L",
+          "shoots": "L",
+          "rating": 0.6597,
+          "ratingBasis": "last_season",
+          "gp": 18,
+          "filled": false
+        }
+      ],
+      "nPlayers": 5,
+      "nRated": 5,
+      "strength": 0.6408,
+      "weakestId": 8476921,
+      "weakestRating": 0.4654,
+      "leagueRank": 6,
+      "leagueTeams": 23,
+      "need": false,
+      "rightShots": null,
+      "basis": "last_game"
+    },
+    {
+      "slot": "D_TOP4",
+      "players": [
+        {
+          "id": 8476958,
+          "name": "Jaccob Slavin",
+          "pos": "D",
+          "shoots": "L",
+          "rating": 0.4962,
+          "ratingBasis": "last_season",
+          "gp": 18,
+          "filled": false
+        },
+        {
+          "id": 8478970,
+          "name": "Jalen Chatfield",
+          "pos": "D",
+          "shoots": "R",
+          "rating": 0.2847,
+          "ratingBasis": "last_season",
+          "gp": 18,
+          "filled": false
+        },
+        {
+          "id": 8480336,
+          "name": "Sean Walker",
+          "pos": "D",
+          "shoots": "R",
+          "rating": 0.5649,
+          "ratingBasis": "last_season",
+          "gp": 18,
+          "filled": false
+        },
+        {
+          "id": 8480817,
+          "name": "K'Andre Miller",
+          "pos": "D",
+          "shoots": "L",
+          "rating": 0.5136,
+          "ratingBasis": "last_season",
+          "gp": 18,
+          "filled": false
+        }
+      ],
+      "nPlayers": 4,
+      "nRated": 4,
+      "strength": 0.4649,
+      "weakestId": 8478970,
+      "weakestRating": 0.2847,
+      "leagueRank": 15,
+      "leagueTeams": 32,
+      "need": false,
+      "rightShots": 2,
+      "basis": "last_game"
+    },
+    {
+      "slot": "D_BOT2",
+      "players": [
+        {
+          "id": 8476906,
+          "name": "Shayne Gostisbehere",
+          "pos": "D",
+          "shoots": "L",
+          "rating": 1.0511,
+          "ratingBasis": "last_season",
+          "gp": 18,
+          "filled": false
+        },
+        {
+          "id": 8479976,
+          "name": "Juuso Välimäki",
+          "pos": "D",
+          "shoots": "L",
+          "rating": null,
+          "ratingBasis": null,
+          "gp": 8,
+          "filled": false
+        }
+      ],
+      "nPlayers": 2,
+      "nRated": 1,
+      "strength": null,
+      "weakestId": 8476906,
+      "weakestRating": 1.0511,
+      "leagueRank": null,
+      "leagueTeams": 16,
+      "need": false,
+      "rightShots": null,
+      "basis": "last_game"
+    },
+    {
+      "slot": "G_1A",
+      "players": [
+        {
+          "id": 8481611,
+          "name": "Pyotr Kochetkov",
+          "pos": "G",
+          "shoots": "L",
+          "rating": 0.734,
+          "ratingBasis": "season",
+          "gp": 11,
+          "filled": false,
+          "gamesStarted": 11
+        }
+      ],
+      "nPlayers": 1,
+      "nRated": 1,
+      "strength": 0.734,
+      "weakestId": 8481611,
+      "weakestRating": 0.734,
+      "leagueRank": 1,
+      "leagueTeams": 32,
+      "need": false,
+      "rightShots": null,
+      "basis": "goalie_starts"
+    },
+    {
+      "slot": "G_1B",
+      "players": [
+        {
+          "id": 8483548,
+          "name": "Brandon Bussi",
+          "pos": "G",
+          "shoots": "R",
+          "rating": -0.044,
+          "ratingBasis": "last_season",
+          "gp": 7,
+          "filled": false,
+          "gamesStarted": 7
+        }
+      ],
+      "nPlayers": 1,
+      "nRated": 1,
+      "strength": -0.044,
+      "weakestId": 8483548,
+      "weakestRating": -0.044,
+      "leagueRank": 10,
+      "leagueTeams": 26,
+      "need": false,
+      "rightShots": null,
+      "basis": "goalie_starts"
+    }
+  ]
+}

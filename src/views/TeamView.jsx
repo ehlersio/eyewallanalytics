@@ -8,7 +8,7 @@ import {
   getTeamHomeSplit, getTeamPlayoffStats, getTeamGameLog, getLiveGame,
   getTeamSeasonRankings, TEAM_CONFIG, GAME_TYPE,
   getDraftOrder, getDraftPicks, getTeamInjuries, getTeamScratches, getDraftPickHistory,
-  getPlayoffOdds, getInjuryImpact, getCallupWatch, getTeamContracts, getRoster,
+  getPlayoffOdds, getInjuryImpact, getCallupWatch, getTeamContracts, getRoster, getTeamNeeds,
 } from '../utils/nhlApi'
 import { teamTextColor } from '../utils/teamConfig'
 import { InjuryBadge, InjuryDetailLine } from '../components/InjuryBadge'
@@ -23,6 +23,8 @@ import { getTeamGameLog as getDbTeamGameLog, getTeamXgTrend } from '../utils/sup
 import { CAP_CEILING } from '../utils/contractValue'
 import { buildCapTable, rosterNameMap, rosterIndex, fmtCapHit, capHitPct } from '../utils/capTable'
 import FreeAgentClass from '../components/FreeAgentClass'
+import TeamNeedsTab from '../components/TeamNeedsTab'
+import { hasTeamNeeds } from '../utils/teamNeeds'
 import CapHitChip from '../components/CapHitChip'
 import { useContractIndex } from '../hooks/useContractIndex'
 import { capFacts } from '../utils/capAnnotations'
@@ -281,11 +283,14 @@ const EMPTY_SUB_CLASSES = 'empty-sub text-[12px] text-[color:var(--text-muted)]'
 // until later phases fill more teams in. The Cap tab is offered once the
 // Worker's /contracts route has rows for the followed team (any of the 32;
 // hidden while it loads and when it answers `unavailable`), so it never
-// opens on an empty table.
+// opens on an empty table. The Needs tab works the same way off the
+// Worker's /team-needs: offered only when it returns slots (in season, once
+// the pipeline has a projection), never as an empty tab.
 const TEAM_HAS_HISTORY = !!getTeamHistory('nhl', TEAM_CONFIG.abbr)
 
-const tabsFor = (hasCap) => ['Overview', 'Advanced', 'Splits', 'Trends',
+const tabsFor = (hasCap, hasNeeds = false) => ['Overview', 'Advanced', 'Splits', 'Trends',
   ...(hasCap ? ['Cap'] : []),
+  ...(hasNeeds ? ['Needs'] : []),
   'Picks',
   ...(TEAM_HAS_HISTORY ? ['History'] : []),
 ]
@@ -295,6 +300,7 @@ const TAB_LABEL_KEYS = {
   Splits:   'teamView.tabs.splits',
   Trends:   'teamView.tabs.trends',
   Cap:      'teamView.tabs.cap',
+  Needs:    'teamView.tabs.needs',
   Picks:    'teamView.tabs.picks',
   History:  'teamView.tabs.history',
 }
@@ -359,7 +365,9 @@ export default function TeamView() {
   // exists when the dataset has rows for it (no dead options).
   const { data: contracts } = useFetch(() => getTeamContracts(TEAM_CONFIG.abbr))
   const hasCap = !!contracts && !contracts.unavailable && (contracts.rows?.length || 0) > 0
-  const TABS = tabsFor(hasCap)
+  const { data: needs } = useFetch(() => getTeamNeeds(TEAM_CONFIG.abbr))
+  const hasNeeds = hasTeamNeeds(needs)
+  const TABS = tabsFor(hasCap, hasNeeds)
 
   return (
     <div className={`${PAGE_CLASSES} team-view`}>
@@ -393,6 +401,7 @@ export default function TeamView() {
       {tab === 'Splits'    && <SplitsTab priorSeason={priorSeason} homeSplit={homeSplit} homeSplitPO={homeSplitPO} stats={stats} playoffSummary={playoffSummary} inPlayoffs={inPlayoffs} ppReg={ppReg} pkReg={pkReg} corsiReg={corsiReg} />}
       {tab === 'Trends'    && <TrendsTab gameLogReg={gameLog} gameLogPO={gameLogPO} loading={gameLogLoading} />}
       {tab === 'Cap'   && hasCap && <CapTab data={contracts} />}
+      {tab === 'Needs' && hasNeeds && <TeamNeedsTab data={needs} />}
       {tab === 'Picks' && <PicksTab />}
       {tab === 'History' && <TeamHistorySections history={getTeamHistory('nhl', TEAM_CONFIG.abbr)} league="nhl" />}
     </div>
