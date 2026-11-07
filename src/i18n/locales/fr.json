@@ -534,7 +534,8 @@
       "trends": "Tendances",
       "cap": "Plafond",
       "picks": "Choix",
-      "history": "Histoire"
+      "history": "Histoire",
+      "needs": "Besoins"
     },
     "seasonSubtitle": "saison {{years}}",
     "history": {
@@ -714,6 +715,44 @@
         "topShotSpeed": "Tir le plus fort"
       },
       "tooFewGames": "Suivi des joueurs et de la rondelle. Rangs et moyennes après {{count}} matchs joués."
+    },
+    "needs": {
+      "title": "Postes de l'alignement",
+      "methodLabel": "Comment les postes sont évalués",
+      "methodTip": "Les postes viennent des trios projetés pour le prochain match : trios 1–2 et 3–4 répartis entre centres et ailiers selon la position, paires de défense 1–2 et 3e paire, et les deux gardiens avec le plus de départs cette saison. Les patineurs sont évalués par leur WAR par 82 matchs, les gardiens par leurs buts sauvés au-dessus des attentes par 60 minutes. Un joueur utilise sa note de cette saison dès 20 matchs (gardiens : 10), sinon celle de la saison dernière, sinon il n'est pas évalué. La force d'un poste est la moyenne de ses joueurs évalués, affichée seulement si au moins les deux tiers le sont, et elle est classée face à chaque équipe dont le poste est évalué. Le tiers inférieur est marqué comme un besoin.",
+      "summary": "Les plus faibles de la ligue : {{slots}}",
+      "summaryNone": "Aucun poste ne se classe dans le tiers inférieur de la ligue.",
+      "basisLastGame": "Alignement tiré des trios projetés pour le prochain match",
+      "basisPreseason": "Alignement tiré des trios projetés du camp",
+      "asOf": "au {{date}}",
+      "rank": "Rang {{rank}} sur {{teams}}",
+      "needFlag": "tiers inférieur",
+      "notRanked": "non classé",
+      "strength": "WAR moyen par 82 : {{value}}",
+      "strengthGoalie": "BSAA par 60 : {{value}}",
+      "tooFewRated": "Trop peu de joueurs évalués pour classer ({{rated}} sur {{count}})",
+      "rightShots_one": "{{count}} tir à droite",
+      "rightShots_other": "{{count}} tirs à droite",
+      "filled": "remplaçant",
+      "lastSeason": "saison dernière",
+      "unrated": "non évalué",
+      "groups": {
+        "forwards": "Attaquants",
+        "defense": "Défense",
+        "goalies": "Gardiens"
+      },
+      "slots": {
+        "F_TOP6_C": "Centres du top 6",
+        "F_TOP6_W": "Ailiers du top 6",
+        "F_BOT6_C": "Centres du bas de l'alignement",
+        "F_BOT6_W": "Ailiers du bas de l'alignement",
+        "D_TOP4": "Top 4 en défense",
+        "D_BOT2": "3e paire",
+        "G_1A": "Gardien partant",
+        "G_1B": "Gardien auxiliaire"
+      },
+      "shootsL": "tire à gauche",
+      "shootsR": "tire à droite"
     }
   },
   "pwhlTeamView": {

@@ -1011,6 +1011,16 @@ export async function getProjectedLines(teamAbbr = TEAM_CONFIG.abbr) {
   return workerFetch(`/projected-lines?team=${encodeURIComponent(teamAbbr)}`);
 }
 
+// A team's lineup slots rated and ranked league-wide -- the Worker's
+// /team-needs (eyewall-pipeline's nightly team_needs.py): { team, season,
+// basis, basisGameId, generatedAt, slots: [{ slot, players, strength,
+// leagueRank, leagueTeams, need, rightShots, ... }] }. No slots (offseason,
+// before the first projection) or `unavailable` -> the Needs tab is hidden
+// (utils/teamNeeds.js hasTeamNeeds). Returns null on any Worker failure.
+export async function getTeamNeeds(teamAbbr = TEAM_CONFIG.abbr) {
+  return workerFetch(`/team-needs?team=${encodeURIComponent(teamAbbr)}`);
+}
+
 // The public prediction scorecard -- the Worker's /scorecard route, backed by
 // eyewall-pipeline's nightly prediction_scorecard.py. Returns { models:
 // { game_winner | starting_goalie | playoff_odds: { live, backtest } },

@@ -534,7 +534,8 @@
       "trends": "Trends",
       "cap": "Cap",
       "picks": "Picks",
-      "history": "History"
+      "history": "History",
+      "needs": "Needs"
     },
     "seasonSubtitle": "{{years}} season",
     "history": {
@@ -714,6 +715,44 @@
         "topShotSpeed": "Hardest shot"
       },
       "tooFewGames": "Player and puck tracking. Ranks and averages after {{count}} games played."
+    },
+    "needs": {
+      "title": "Lineup slots",
+      "methodLabel": "How slots are rated",
+      "methodTip": "Slots come from the projected lines for the next game: forward lines 1–2 and 3–4 split into centers and wingers by roster position, D pairs 1–2 and pair 3, and the two goalies with the most starts this season. Skaters are rated by WAR per 82 games, goalies by goals saved above expected per 60 minutes. A player uses this season's rating once he has 20 games (goalies 10), otherwise last season's, otherwise he's unrated. A slot's strength is the average of its rated players, shown only when at least two-thirds are rated, and it's ranked against every team with a rated slot. The bottom third is marked as a need.",
+      "summary": "Weakest against the league: {{slots}}",
+      "summaryNone": "No slot ranks in the league's bottom third.",
+      "basisLastGame": "Lineup from the projected lines for the next game",
+      "basisPreseason": "Lineup from preseason projected lines",
+      "asOf": "as of {{date}}",
+      "rank": "Rank {{rank}} of {{teams}}",
+      "needFlag": "bottom third",
+      "notRanked": "not ranked",
+      "strength": "Average WAR per 82: {{value}}",
+      "strengthGoalie": "GSAx per 60: {{value}}",
+      "tooFewRated": "Too few rated players to rank ({{rated}} of {{count}})",
+      "rightShots_one": "{{count}} right shot",
+      "rightShots_other": "{{count}} right shots",
+      "filled": "fill-in",
+      "lastSeason": "last season",
+      "unrated": "unrated",
+      "groups": {
+        "forwards": "Forwards",
+        "defense": "Defense",
+        "goalies": "Goalies"
+      },
+      "slots": {
+        "F_TOP6_C": "Top-6 centers",
+        "F_TOP6_W": "Top-6 wingers",
+        "F_BOT6_C": "Bottom-6 centers",
+        "F_BOT6_W": "Bottom-6 wingers",
+        "D_TOP4": "Top-4 defense",
+        "D_BOT2": "Third pair",
+        "G_1A": "Starting goalie",
+        "G_1B": "Backup goalie"
+      },
+      "shootsL": "shoots L",
+      "shootsR": "shoots R"
     }
   },
   "pwhlTeamView": {
