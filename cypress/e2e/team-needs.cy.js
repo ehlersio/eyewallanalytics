@@ -47,6 +47,16 @@ describe('Needs tab (any NHL team)', () => {
       .and('contain', 'last season')
   })
 
+  it("CAR in the offseason: next season's signed roster (Phase 2b)", () => {
+    cy.intercept(needsFor('CAR'), { fixture: 'team-needs-car-next-season-2027-28.json' }).as('needs')
+    cy.setTeam('CAR')
+    cy.visit('/team')
+    cy.wait('@needs')
+    openNeedsTab()
+    cy.contains('.needs-basis', "2027-28 signed roster, slotted by last season's ice time")
+    cy.get('.needs-slot[data-slot="F_TOP6_C"]').should('contain', 'Sebastian Aho')
+  })
+
   it('hides the tab when there are no slots (offseason) or the route is unavailable', () => {
     cy.intercept(needsFor('CAR'), { team: 'CAR', season: null, basis: null, basisGameId: null, generatedAt: null, slots: [] }).as('empty')
     cy.setTeam('CAR')

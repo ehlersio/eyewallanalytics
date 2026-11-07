@@ -14,6 +14,8 @@ import i18n from '../../i18n/index.js'
 import { TradeFitBody } from '../TradeFitSection.jsx'
 import aho from '../../../cypress/fixtures/trade-fit-aho-2026-11-07.json'
 import kochetkov from '../../../cypress/fixtures/trade-fit-kochetkov-2026-11-07.json'
+import ahoOff from '../../../cypress/fixtures/trade-fit-offseason-aho-2027-03-02.json'
+import greenwayOff from '../../../cypress/fixtures/trade-fit-offseason-greenway-2027-03-02.json'
 
 const textOf = html => html.replace(/<[^>]+>/g, ' ').replace(/&#x27;/g, "'").replace(/\s+/g, ' ').trim()
 const rowOf = (html, team) => {
@@ -70,5 +72,38 @@ describe('TradeFitBody', () => {
     expect(text).toContain('Intérêt fort pour 11 équipes')
     expect(text).toContain('Clause de non-mouvement')
     expect(text).toContain('Voir les 31 équipes')
+  })
+})
+
+// Phase 2b: the pipeline's dry run as of 2027-03-02 (the day after the
+// deadline), shaped by the Worker's summarizeTradeFit.
+describe('TradeFitBody offseason', () => {
+  it('says the fit is for next season and names its cap', () => {
+    const html = renderToStaticMarkup(<TradeFitBody data={ahoOff} initialOpen={ahoOff.teams[0].team} />)
+    const text = textOf(html)
+    expect(html).toContain('data-phase="offseason"')
+    expect(text).toContain("Offseason fit for 2027-28: next season's signed rosters, cap and contenders.")
+    expect(rowOf(html, ahoOff.teams[0].team)).toContain("The 2027-28 cap ceiling isn't in the cap data yet")
+    expect(text).toContain('signed through')
+  })
+
+  it("a pending UFA's rights-only fit", () => {
+    const html = renderToStaticMarkup(<TradeFitBody data={greenwayOff} initialOpen={greenwayOff.teams[0].team} />)
+    const text = textOf(html)
+    expect(text).toContain('pending UFA: rights only until June 30')
+    expect(text).not.toContain('expiring contract')
+    expect(rowOf(html, greenwayOff.teams[0].team)).toContain('Rights only: the new team could sign him before July 1')
+    expect(greenwayOff.teams.every(t => t.tier !== 'strong')).toBe(true) // rights fits top out at possible
+  })
+
+  it('an in-season payload shows no phase note', () => {
+    expect(renderToStaticMarkup(<TradeFitBody data={aho} />)).not.toContain('trade-fit-phase')
+  })
+
+  it('in French', async () => {
+    await i18n.changeLanguage('fr')
+    const text = textOf(renderToStaticMarkup(<TradeFitBody data={greenwayOff} />))
+    expect(text).toContain('Intérêt hors saison pour 2027-28')
+    expect(text).toContain("UFA imminent : droits seulement jusqu'au 30 juin")
   })
 })

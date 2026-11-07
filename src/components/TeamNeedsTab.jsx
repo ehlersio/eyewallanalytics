@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import InfoTip from './InfoTip'
 import { formatDateOnly } from '../utils/formatters'
 import { fmtRating, groupSlots, isGoalieSlot, needSlots, rankTone } from '../utils/teamNeeds'
+import { seasonLabel } from '../utils/tradeFit'
 
 const TONE_COLORS = { need: 'var(--red-bright)', top: 'var(--green)', mid: 'var(--text-muted)' }
 
@@ -91,7 +92,9 @@ export default function TeamNeedsTab({ data }) {
           : t('teamView.needs.summaryNone')}
       </div>
       <div className={`${NOTE_CLASSES} needs-basis`} style={{ marginTop: 2 }}>
-        {t(data?.basis === 'preseason' ? 'teamView.needs.basisPreseason' : 'teamView.needs.basisLastGame')}
+        {data?.basis === 'next_season_roster'
+          ? t('teamView.needs.basisNextSeason', { season: seasonLabel(data.season) || '—' })
+          : t(data?.basis === 'preseason' ? 'teamView.needs.basisPreseason' : 'teamView.needs.basisLastGame')}
         {asOf && <> · {t('teamView.needs.asOf', { date: asOf })}</>}
       </div>
       {groups.map(g => (

@@ -14,6 +14,7 @@ import i18n from '../../i18n/index.js'
 import TeamNeedsTab from '../TeamNeedsTab.jsx'
 import stl from '../../../cypress/fixtures/team-needs-stl-2026-11-06.json'
 import car from '../../../cypress/fixtures/team-needs-car-2026-11-06.json'
+import carNext from '../../../cypress/fixtures/team-needs-car-next-season-2027-28.json'
 
 const textOf = html => html.replace(/<[^>]+>/g, ' ').replace(/&#x27;/g, "'").replace(/\s+/g, ' ').trim()
 const slotHtml = (html, slot) => {
@@ -63,5 +64,18 @@ describe('TeamNeedsTab', () => {
     expect(text).toContain('Rang 32 sur 32 · tiers inférieur')
     expect(text).toContain('Les plus faibles de la ligue : Top 4 en défense')
     expect(text).toContain('saison dernière')
+  })
+})
+
+describe('TeamNeedsTab offseason (Phase 2b)', () => {
+  it("names next season's signed roster as the basis", () => {
+    const text = textOf(renderToStaticMarkup(<TeamNeedsTab data={carNext} />))
+    expect(text).toContain("2027-28 signed roster, slotted by last season's ice time")
+    expect(text).not.toContain('projected lines')
+  })
+
+  it('in French', async () => {
+    await i18n.changeLanguage('fr')
+    expect(textOf(renderToStaticMarkup(<TeamNeedsTab data={carNext} />))).toContain('Effectif 2027-28 sous contrat')
   })
 })

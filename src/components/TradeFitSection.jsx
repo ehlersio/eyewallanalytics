@@ -3,7 +3,10 @@
 // (eyewall-pipeline trade_fit.py). Phase 2 of the trade fit scope. A fit,
 // not a prediction: tiers and reasons, never a percentage for the fit.
 // Renders nothing until the route returns the player and teams (no dead
-// options): players outside the population and the offseason show no section.
+// options): players outside the population show no section. From the day
+// after the deadline the fit is for next season (Phase 2b, player.phase
+// 'offseason'): a note says so, and a pending UFA/RFA's line reads "rights
+// only" (player.rights) instead of a contract and cap hit.
 
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -12,7 +15,7 @@ import { getTradeFit } from '../utils/nhlApi'
 import { ALL_TEAMS } from '../utils/teamConfig'
 import TeamLogo from './TeamLogo'
 import InfoTip from './InfoTip'
-import { clauseKey, fmtMoney, hasTradeFit, reasonKey, tierCounts, visibleTeams } from '../utils/tradeFit'
+import { clauseKey, fmtMoney, hasTradeFit, isOffseason, reasonKey, seasonLabel, tierCounts, visibleTeams } from '../utils/tradeFit'
 
 const TIER_COLORS = { strong: 'var(--green)', possible: 'var(--amber)', long_shot: 'var(--text-dim)' }
 
@@ -40,6 +43,8 @@ export function TradeFitBody({ data, initialOpen = null }) {
   if (!hasTradeFit(data)) return null
   const { player, teams } = data
   const slotLabel = s => (s ? t(`teamView.needs.slots.${s}`) : '')
+  const offseason = isOffseason(data)
+  const season = seasonLabel(player.season)
   const counts = tierCounts(teams)
   const clause = clauseKey(player.clause)
   const rating = `${player.rating > 0 ? '+' : player.rating < 0 ? '−' : ''}${Math.abs(player.rating).toFixed(2)}`
@@ -49,6 +54,11 @@ export function TradeFitBody({ data, initialOpen = null }) {
         {t('playerPopup.tradeFit.title')}
         <InfoTip label={t('playerPopup.tradeFit.methodLabel')} text={t('playerPopup.tradeFit.methodTip')} />
       </div>
+      {offseason && (
+        <div className={`${NOTE_CLASSES} trade-fit-phase`} data-phase="offseason">
+          {t('playerPopup.tradeFit.offseasonNote', { season: season || '—' })}
+        </div>
+      )}
       <div className={`${NOTE_CLASSES} trade-fit-summary`}>
         {t('playerPopup.tradeFit.summary', { strong: counts.strong, possible: counts.possible, longShot: counts.long_shot })}
       </div>
@@ -56,9 +66,11 @@ export function TradeFitBody({ data, initialOpen = null }) {
         {t(player.position === 'G' ? 'playerPopup.tradeFit.ratingGoalie' : 'playerPopup.tradeFit.rating', { value: rating })}
         {player.ratingBasis === 'last_season' && <> {t('playerPopup.tradeFit.lastSeason')}</>}
         {' · '}
-        {player.rental
-          ? t('playerPopup.tradeFit.rental', { type: player.expiryType || '—' })
-          : t('playerPopup.tradeFit.term', { season: player.expiresAfter || '—' })}
+        {player.rights
+          ? t('playerPopup.tradeFit.rights', { type: player.expiryType || '—' })
+          : player.rental
+            ? t('playerPopup.tradeFit.rental', { type: player.expiryType || '—' })
+            : t('playerPopup.tradeFit.term', { season: player.expiresAfter || '—' })}
         {player.capHit != null && <> · {fmtMoney(player.capHit)}</>}
       </div>
       <div className={`${NOTE_CLASSES} trade-fit-clause`}>{t(clause.key, clause.params)}</div>
@@ -80,7 +92,7 @@ export function TradeFitBody({ data, initialOpen = null }) {
             {open === team.team && (
               <div className={REASONS_CLASSES}>
                 {team.reasons.map((r, i) => {
-                  const k = reasonKey(r, slotLabel)
+                  const k = reasonKey(r, slotLabel, season)
                   return k
                     ? <div key={i} className={REASON_CLASSES}>{t(k.key, k.params)}{k.note && <> · {t(k.note.key, k.note.params)}</>}</div>
                     : null
