@@ -27,6 +27,7 @@ const WORKER_URL = import.meta.env.VITE_WORKER_URL || null;
 export { TEAM_CONFIG, ALL_TEAMS, getTeamConfig, setTeamConfig, hasTeamConfig } from './teamConfig'
 import { TEAM_CONFIG, ALL_TEAMS, findTeamSummaryRow } from './teamConfig'
 import { fetchWithRetry } from './retryFetch';
+import i18n from '../i18n';
 
 
 // gameType values from NHL API:
@@ -1034,12 +1035,14 @@ export async function getTradeFit(playerId) {
 // A player's candidate signals and tier -- the Worker's /trade-candidacy
 // (eyewall-pipeline's nightly trade_candidacy.py, Jan 1 to the deadline):
 // { player: { tier: 'several'|'some', rank, signals: [{ code, ... }], clause,
-// ... }, asOf, deadline, generatedAt }. player null (untiered, or outside the
+// ... }, ai, asOf, deadline, generatedAt }. ai is the EyeWall AI paragraph in
+// the app's language ({ text, generatedAt }, ai_trade_candidacy.py) or null. player null (untiered, or outside the
 // window) or `unavailable` -> the popup's Candidate signals section is
 // hidden (utils/tradeCandidacy.js hasCandidacy). Returns null on any Worker
 // failure.
-export async function getTradeCandidacy(playerId) {
-  return workerFetch(`/trade-candidacy?player=${encodeURIComponent(playerId)}`);
+export async function getTradeCandidacy(playerId, locale = i18n.language) {
+  const lang = locale === 'fr' ? 'fr' : 'en';
+  return workerFetch(`/trade-candidacy?player=${encodeURIComponent(playerId)}&locale=${lang}`);
 }
 
 // League › Cap's Deadline board -- the Worker's /trade-candidacy/board:
