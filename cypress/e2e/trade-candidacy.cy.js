@@ -43,6 +43,30 @@ describe('Player popup Candidate signals', () => {
     cy.get('.trade-candidacy .trade-candidacy-tier').invoke('text').should('not.match', /%/)
   })
 
+  it('Greenway: the EyeWall AI paragraph, in the app language', () => {
+    cy.intercept(candidacyFor(8478413), { fixture: 'trade-candidacy-greenway-2027-01-01.json' }).as('cand')
+    cy.setTeam('CHI')
+    openSkater('Greenway')
+    cy.wait('@cand').its('request.url').should('match', /locale=en/)
+    cy.fixture('trade-candidacy-greenway-2027-01-01').then(f => {
+      cy.get('.trade-candidacy-ai', { timeout: DATA_TIMEOUT }).within(() => {
+        cy.contains('.trade-candidacy-ai-label', 'EyeWall AI')
+        cy.get('.trade-candidacy-ai-text').should('have.text', f.ai.text)
+        cy.contains('.trade-candidacy-ai-note', 'Not a prediction. · Nov 7')
+      })
+      cy.get('.trade-candidacy-ai-text').invoke('text').should('not.match', /%|odds|rumou?r|will be traded/i)
+    })
+  })
+
+  it('Rakell: no paragraph, no EyeWall AI block', () => {
+    cy.intercept(candidacyFor(8476483), { fixture: 'trade-candidacy-rakell-2027-01-01.json' }).as('cand')
+    cy.setTeam('PIT')
+    openSkater('Rakell')
+    cy.wait('@cand')
+    cy.get('.trade-candidacy', { timeout: DATA_TIMEOUT }).should('have.attr', 'data-tier', 'some')
+    cy.get('.trade-candidacy-ai').should('not.exist')
+  })
+
   it('shows no section for an untiered player or outside Jan 1 - deadline', () => {
     cy.intercept(candidacyFor(8478427), { player: null, asOf: null, deadline: null, generatedAt: null }).as('cand')
     cy.setTeam('CAR')

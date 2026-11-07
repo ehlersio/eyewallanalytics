@@ -47,6 +47,22 @@ describe('TradeCandidacyBody', () => {
       .toContain('Ice time down 12%: 17:03 a game over his last 10, 19:26 on the season')
   })
 
+  it('shows the EyeWall AI paragraph under the clause, labeled and dated', () => {
+    const html = renderToStaticMarkup(<TradeCandidacyBody data={greenway} />)
+    const text = textOf(html)
+    expect(text).toContain(`⚡ EyeWall AI ${greenway.ai.text}`)
+    expect(text).toContain('Written only from these signals and his best trade fits. Not a prediction. · Nov 7')
+    expect(html.indexOf('trade-candidacy-clause')).toBeLessThan(html.indexOf('trade-candidacy-ai'))
+  })
+
+  it('hides the paragraph when there is none', () => {
+    expect(renderToStaticMarkup(<TradeCandidacyBody data={rakell} />)).not.toContain('trade-candidacy-ai')
+    const blank = { ...greenway, ai: { text: '   ', generatedAt: null } }
+    expect(renderToStaticMarkup(<TradeCandidacyBody data={blank} />)).not.toContain('trade-candidacy-ai')
+    const { ai: _ai, ...older } = greenway // a Worker from before the paragraph
+    expect(renderToStaticMarkup(<TradeCandidacyBody data={older} />)).not.toContain('trade-candidacy-ai')
+  })
+
   it('renders nothing for an untiered player or outside the window', () => {
     expect(renderToStaticMarkup(<TradeCandidacyBody data={{ player: null }} />)).toBe('')
     expect(renderToStaticMarkup(<TradeCandidacyBody data={null} />)).toBe('')
@@ -58,6 +74,15 @@ describe('TradeCandidacyBody', () => {
     expect(text).toContain('Signaux de transaction')
     expect(text).toContain('Plusieurs signaux')
     expect(text).toContain("Équipe 15e dans l'Ouest, hors des séries")
+  })
+
+  it('the paragraph in French', async () => {
+    await i18n.changeLanguage('fr')
+    // Real ai_trade_candidacy.py output for the same facts, locale fr.
+    const fr = { ...greenway, ai: { text: "Jordan Greenway présente plusieurs signaux : son contrat se termine cette saison et, selon une estimation fondée sur son âge, il deviendrait joueur autonome sans compensation.", generatedAt: '2026-11-07T15:58:00+00:00' } }
+    const text = textOf(renderToStaticMarkup(<TradeCandidacyBody data={fr} />))
+    expect(text).toContain(`⚡ EyeWall AI ${fr.ai.text}`)
+    expect(text).toContain('Rédigé uniquement à partir de ces signaux')
   })
 })
 
