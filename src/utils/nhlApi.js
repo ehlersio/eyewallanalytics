@@ -1021,6 +1021,16 @@ export async function getTeamNeeds(teamAbbr = TEAM_CONFIG.abbr) {
   return workerFetch(`/team-needs?team=${encodeURIComponent(teamAbbr)}`);
 }
 
+// Which of the other 31 teams a player fits -- the Worker's /trade-fit
+// (eyewall-pipeline's nightly trade_fit.py): { player, teams: [{ team, tier,
+// rank, slot, gap, needMet, windowMet, capState, reasons }], generatedAt }.
+// player null (outside the population, or out of season) or `unavailable`
+// -> the popup's Trade fit section is hidden (utils/tradeFit.js
+// hasTradeFit). Returns null on any Worker failure.
+export async function getTradeFit(playerId) {
+  return workerFetch(`/trade-fit?player=${encodeURIComponent(playerId)}`);
+}
+
 // The public prediction scorecard -- the Worker's /scorecard route, backed by
 // eyewall-pipeline's nightly prediction_scorecard.py. Returns { models:
 // { game_winner | starting_goalie | playoff_odds: { live, backtest } },

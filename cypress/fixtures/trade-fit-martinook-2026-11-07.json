@@ -1,0 +1,878 @@
+{
+  "player": {
+    "id": 8476921,
+    "season": 20262027,
+    "team": "CAR",
+    "name": "Jordan Martinook",
+    "position": "L",
+    "shoots": "L",
+    "rating": 0.4654,
+    "ratingBasis": "last_season",
+    "gamesPlayed": 18,
+    "capHit": 3050000,
+    "yearsLeft": 0,
+    "expiresAfter": "2026-27",
+    "expiryType": "UFA",
+    "expiryTypeDerived": true,
+    "rental": true,
+    "clause": null
+  },
+  "teams": [
+    {
+      "team": "UTA",
+      "tier": "strong",
+      "rank": 1,
+      "slot": "F_TOP6_W",
+      "gap": 0.3964,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "F_TOP6_W",
+          "gap": 0.3964,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.6993
+        },
+        {
+          "code": "cap_fits",
+          "space": 6220833,
+          "known": 23,
+          "roster": 24
+        }
+      ]
+    },
+    {
+      "team": "BOS",
+      "tier": "strong",
+      "rank": 2,
+      "slot": "F_BOT6_W",
+      "gap": 0.328,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "F_BOT6_W",
+          "gap": 0.328,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.7752
+        },
+        {
+          "code": "cap_fits",
+          "space": 8926333,
+          "known": 23,
+          "roster": 23
+        }
+      ]
+    },
+    {
+      "team": "COL",
+      "tier": "strong",
+      "rank": 3,
+      "slot": "F_TOP6_W",
+      "gap": 0.2905,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "F_TOP6_W",
+          "gap": 0.2905,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.8712
+        },
+        {
+          "code": "cap_fits",
+          "space": 5972500,
+          "known": 21,
+          "roster": 22
+        }
+      ]
+    },
+    {
+      "team": "VAN",
+      "tier": "possible",
+      "rank": 4,
+      "slot": "F_TOP6_W",
+      "gap": 0.6486,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "F_TOP6_W",
+          "gap": 0.6486,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.0063
+        },
+        {
+          "code": "cap_fits",
+          "space": 16399166,
+          "known": 21,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "NJD",
+      "tier": "possible",
+      "rank": 5,
+      "slot": "F_TOP6_W",
+      "gap": 0.4835,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "F_TOP6_W",
+          "gap": 0.4835,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.6319
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": 650000,
+          "known": 22,
+          "roster": 22
+        }
+      ]
+    },
+    {
+      "team": "STL",
+      "tier": "possible",
+      "rank": 6,
+      "slot": "F_TOP6_W",
+      "gap": 0.4633,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "F_TOP6_W",
+          "gap": 0.4633,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.4749
+        },
+        {
+          "code": "cap_fits",
+          "space": 9061667,
+          "known": 25,
+          "roster": 26
+        }
+      ]
+    },
+    {
+      "team": "VGK",
+      "tier": "possible",
+      "rank": 7,
+      "slot": "F_BOT6_W",
+      "gap": 0.4608,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "F_BOT6_W",
+          "gap": 0.4608,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.8394
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": -3875830,
+          "known": 22,
+          "roster": 22
+        }
+      ]
+    },
+    {
+      "team": "MTL",
+      "tier": "possible",
+      "rank": 8,
+      "slot": "F_TOP6_W",
+      "gap": 0.3254,
+      "needMet": false,
+      "windowMet": true,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_depth",
+          "slot": "F_TOP6_W",
+          "gap": 0.3254
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.7397
+        },
+        {
+          "code": "cap_fits",
+          "space": 4318333,
+          "known": 23,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "CGY",
+      "tier": "possible",
+      "rank": 9,
+      "slot": "F_TOP6_W",
+      "gap": 0.2573,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "F_TOP6_W",
+          "gap": 0.2573,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.2864
+        },
+        {
+          "code": "cap_fits",
+          "space": 16521167,
+          "known": 26,
+          "roster": 26
+        }
+      ]
+    },
+    {
+      "team": "CHI",
+      "tier": "possible",
+      "rank": 10,
+      "slot": "F_BOT6_W",
+      "gap": 0.2298,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "F_BOT6_W",
+          "gap": 0.2298,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.0116
+        },
+        {
+          "code": "cap_fits",
+          "space": 14534667,
+          "known": 24,
+          "roster": 24
+        }
+      ]
+    },
+    {
+      "team": "NYI",
+      "tier": "possible",
+      "rank": 11,
+      "slot": "F_TOP6_W",
+      "gap": 0.2225,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "F_TOP6_W",
+          "gap": 0.2225,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.3183
+        },
+        {
+          "code": "cap_fits",
+          "space": 16450000,
+          "known": 24,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "SEA",
+      "tier": "possible",
+      "rank": 12,
+      "slot": "F_BOT6_W",
+      "gap": 0.1363,
+      "needMet": false,
+      "windowMet": true,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_depth",
+          "slot": "F_BOT6_W",
+          "gap": 0.1363
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.507
+        },
+        {
+          "code": "cap_fits",
+          "space": 14536309,
+          "known": 27,
+          "roster": 27
+        }
+      ]
+    },
+    {
+      "team": "DET",
+      "tier": "possible",
+      "rank": 13,
+      "slot": "F_BOT6_W",
+      "gap": 0.0914,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "F_BOT6_W",
+          "gap": 0.0914,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.182
+        },
+        {
+          "code": "cap_fits",
+          "space": 25700000,
+          "known": 24,
+          "roster": 26
+        }
+      ]
+    },
+    {
+      "team": "CBJ",
+      "tier": "possible",
+      "rank": 14,
+      "slot": "F_TOP6_W",
+      "gap": 0.0627,
+      "needMet": true,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "F_TOP6_W",
+          "gap": 0.0627,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.3274
+        },
+        {
+          "code": "cap_fits",
+          "space": 3745000,
+          "known": 22,
+          "roster": 23
+        }
+      ]
+    },
+    {
+      "team": "BUF",
+      "tier": "possible",
+      "rank": 15,
+      "slot": "F_TOP6_W",
+      "gap": 0.0564,
+      "needMet": true,
+      "windowMet": true,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_upgrade",
+          "slot": "F_TOP6_W",
+          "gap": 0.0564,
+          "slot_need": true
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.5702
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": -2276683,
+          "known": 25,
+          "roster": 26
+        }
+      ]
+    },
+    {
+      "team": "TBL",
+      "tier": "possible",
+      "rank": 16,
+      "slot": null,
+      "gap": null,
+      "needMet": false,
+      "windowMet": true,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_none",
+          "slot": "F_BOT6_W"
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.8611
+        },
+        {
+          "code": "cap_fits",
+          "space": 3891666,
+          "known": 23,
+          "roster": 24
+        }
+      ]
+    },
+    {
+      "team": "OTT",
+      "tier": "possible",
+      "rank": 17,
+      "slot": null,
+      "gap": null,
+      "needMet": false,
+      "windowMet": true,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_none",
+          "slot": "F_BOT6_W"
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.6328
+        },
+        {
+          "code": "cap_fits",
+          "space": 4987500,
+          "known": 22,
+          "roster": 24
+        }
+      ]
+    },
+    {
+      "team": "LAK",
+      "tier": "long_shot",
+      "rank": 18,
+      "slot": "F_BOT6_W",
+      "gap": 0.2771,
+      "needMet": false,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_depth",
+          "slot": "F_BOT6_W",
+          "gap": 0.2771
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.3665
+        },
+        {
+          "code": "cap_fits",
+          "space": 13175000,
+          "known": 22,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "PIT",
+      "tier": "long_shot",
+      "rank": 19,
+      "slot": "F_BOT6_W",
+      "gap": 0.2299,
+      "needMet": false,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_depth",
+          "slot": "F_BOT6_W",
+          "gap": 0.2299
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.1828
+        },
+        {
+          "code": "cap_fits",
+          "space": 12225000,
+          "known": 23,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "WSH",
+      "tier": "long_shot",
+      "rank": 20,
+      "slot": "F_BOT6_W",
+      "gap": 0.1874,
+      "needMet": false,
+      "windowMet": true,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_depth",
+          "slot": "F_BOT6_W",
+          "gap": 0.1874
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.6243
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": 260833,
+          "known": 24,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "TOR",
+      "tier": "long_shot",
+      "rank": 21,
+      "slot": "F_TOP6_W",
+      "gap": 0.1728,
+      "needMet": false,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_depth",
+          "slot": "F_TOP6_W",
+          "gap": 0.1728
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.2506
+        },
+        {
+          "code": "cap_fits",
+          "space": 10129333,
+          "known": 25,
+          "roster": 28
+        }
+      ]
+    },
+    {
+      "team": "ANA",
+      "tier": "long_shot",
+      "rank": 22,
+      "slot": "F_TOP6_W",
+      "gap": 0.1654,
+      "needMet": false,
+      "windowMet": false,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_depth",
+          "slot": "F_TOP6_W",
+          "gap": 0.1654
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.4168
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": -3201667,
+          "known": 24,
+          "roster": 27
+        }
+      ]
+    },
+    {
+      "team": "DAL",
+      "tier": "long_shot",
+      "rank": 23,
+      "slot": "F_TOP6_W",
+      "gap": 0.1451,
+      "needMet": false,
+      "windowMet": true,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_depth",
+          "slot": "F_TOP6_W",
+          "gap": 0.1451
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.8369
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": -587000,
+          "known": 23,
+          "roster": 24
+        }
+      ]
+    },
+    {
+      "team": "NYR",
+      "tier": "long_shot",
+      "rank": 24,
+      "slot": "F_TOP6_W",
+      "gap": 0.1341,
+      "needMet": false,
+      "windowMet": false,
+      "capState": "fits_retained",
+      "reasons": [
+        {
+          "code": "need_depth",
+          "slot": "F_TOP6_W",
+          "gap": 0.1341
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.3738
+        },
+        {
+          "code": "cap_fits_retained",
+          "space": 1700833,
+          "known": 23,
+          "roster": 26
+        }
+      ]
+    },
+    {
+      "team": "FLA",
+      "tier": "long_shot",
+      "rank": 25,
+      "slot": "F_BOT6_W",
+      "gap": 0.1169,
+      "needMet": false,
+      "windowMet": false,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_depth",
+          "slot": "F_BOT6_W",
+          "gap": 0.1169
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.483
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": -5213214,
+          "known": 24,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "WPG",
+      "tier": "long_shot",
+      "rank": 26,
+      "slot": "F_TOP6_W",
+      "gap": 0.1094,
+      "needMet": false,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_depth",
+          "slot": "F_TOP6_W",
+          "gap": 0.1094
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.2898
+        },
+        {
+          "code": "cap_fits",
+          "space": 8865000,
+          "known": 24,
+          "roster": 25
+        }
+      ]
+    },
+    {
+      "team": "MIN",
+      "tier": "long_shot",
+      "rank": 27,
+      "slot": "F_TOP6_W",
+      "gap": 0.0647,
+      "needMet": false,
+      "windowMet": true,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_depth",
+          "slot": "F_TOP6_W",
+          "gap": 0.0647
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.9188
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": -2809166,
+          "known": 26,
+          "roster": 27
+        }
+      ]
+    },
+    {
+      "team": "PHI",
+      "tier": "long_shot",
+      "rank": 28,
+      "slot": "F_TOP6_W",
+      "gap": 0.0574,
+      "needMet": false,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_depth",
+          "slot": "F_TOP6_W",
+          "gap": 0.0574
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.0872
+        },
+        {
+          "code": "cap_fits",
+          "space": 13646667,
+          "known": 23,
+          "roster": 24
+        }
+      ]
+    },
+    {
+      "team": "EDM",
+      "tier": "long_shot",
+      "rank": 29,
+      "slot": "F_BOT6_W",
+      "gap": 0.0039,
+      "needMet": false,
+      "windowMet": true,
+      "capState": "needs_salary",
+      "reasons": [
+        {
+          "code": "need_depth",
+          "slot": "F_BOT6_W",
+          "gap": 0.0039
+        },
+        {
+          "code": "window_rental_contender",
+          "pct": 0.8916
+        },
+        {
+          "code": "cap_needs_salary",
+          "retention_left": 3,
+          "space": -224167,
+          "known": 28,
+          "roster": 29
+        }
+      ]
+    },
+    {
+      "team": "NSH",
+      "tier": "long_shot",
+      "rank": 30,
+      "slot": null,
+      "gap": null,
+      "needMet": false,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_none",
+          "slot": "F_BOT6_W"
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.4611
+        },
+        {
+          "code": "cap_fits",
+          "space": 10209610,
+          "known": 23,
+          "roster": 24
+        }
+      ]
+    },
+    {
+      "team": "SJS",
+      "tier": "long_shot",
+      "rank": 31,
+      "slot": null,
+      "gap": null,
+      "needMet": false,
+      "windowMet": false,
+      "capState": "fits",
+      "reasons": [
+        {
+          "code": "need_none",
+          "slot": "F_BOT6_W"
+        },
+        {
+          "code": "window_rental_not",
+          "pct": 0.1224
+        },
+        {
+          "code": "cap_fits",
+          "space": 22615833,
+          "known": 19,
+          "roster": 24
+        }
+      ]
+    }
+  ],
+  "generatedAt": "2026-11-07T08:00:00+00:00"
+}

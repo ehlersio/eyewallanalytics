@@ -62,6 +62,7 @@ import {
 import { SKELETON_CLASSES } from '../utils/skeletonClasses'
 import { formatDate } from '../utils/formatters'
 import PlayerRankBanner from './PlayerRankBanner'
+import TradeFitSection from './TradeFitSection'
 // Tailwind migration (Session 97, Phase 3, sub-PR 2 + sub-PR 3). Most of
 // this file's classes were migrated in sub-PR 2. The remaining shell
 // classes -- player-popup, pp-header, pp-header-reflow, pp-close, pp-body,
@@ -1623,6 +1624,9 @@ export default function PlayerPopup({ player: p, inPlayoffs, standings, onClose,
             })()}
           </div>
         )}
+
+        {/* ── Trade fit (which teams he'd fit, tiers + reasons; hidden without data) ── */}
+        <TradeFitSection playerId={p.id} />
 
         {/* ── Tab toggle ── */}
         <div className={PP_TABS_CLASSES}>
