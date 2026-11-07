@@ -3,8 +3,9 @@
 // (TransactionsFeed.jsx): what each team received, and for every asset that
 // was traded again, what its new team got back for it -- recursively, as far
 // as the Worker's /trades/tree route walked. eyewall-pipeline's
-// trade_trees.py builds the links nightly from ESPN's trade text and the
-// NHL's own draft records: picks show the player they became once drafted,
+// trade_trees.py builds the links nightly from ESPN's trade text (plus the
+// trades wiki_trades.py adds from Wikipedia's cited lists) and the NHL's own
+// draft records: picks show the player they became once drafted,
 // and a pick that can't be traced is labeled, never guessed. "How they got
 // here" lists the earlier trades that brought in what this trade sent out.
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
@@ -17,6 +18,7 @@ import PlayerPopup from './PlayerPopup';
 import CapHitChip from './CapHitChip';
 import { useContractIndex } from '../hooks/useContractIndex';
 import { capFacts } from '../utils/capAnnotations';
+import { sourceHost } from '../utils/sourceHost';
 
 const K = 'transactionsFeed.nhl.tree';
 const MUTED = 'text-[color:var(--text-muted)]';
@@ -214,6 +216,16 @@ export default function TradeTree({ txId }) {
         </section>
       )}
       {tree.truncated && <div className={`text-[11px] italic ${DIM}`}>{t(`${K}.truncated`)}</div>}
+      {root.dateStatus === 'espn_early' && (
+        <div className={`tree-date-unconfirmed text-[11px] ${DIM}`}>{t(`${K}.dateUnconfirmed`)}</div>
+      )}
+      {sourceHost(root.sourceUrl) && (
+        <div className={`tree-cites text-[11px] ${DIM}`}>
+          <a className="underline underline-offset-2 text-inherit" href={root.sourceUrl} target="_blank" rel="noopener noreferrer">
+            {t(`${K}.cites`, { host: sourceHost(root.sourceUrl) })}
+          </a>
+        </div>
+      )}
       <div className={`text-[10px] italic ${DIM}`}>{t(`${K}.source`)}</div>
       {popupPlayer && (
         <PlayerPopup

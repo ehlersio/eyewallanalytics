@@ -210,6 +210,49 @@ describe('NHL Transactions tab', () => {
     cy.get('.trade-tree').should('exist')
   })
 
+  it('says where a Wikipedia-sourced side came from, and when an ESPN date is unconfirmed', () => {
+    // eyewall-pipeline's wiki_trades.py: ESPN posted only Carolina's half;
+    // Anaheim's comes from Wikipedia's cited list. The waiver is from ESPN's
+    // early-date window (Jan 2021 - Jun 2024).
+    const KANE_URL = 'https://www.nhl.com/news/patrick-kane-traded-to-new-york-rangers-from-chicago-blackhawks-341625462'
+    cy.intercept('GET', '**/transactions?team=*', {
+      scope: 'team', team: 'CAR', items: [
+        { ...TEAM_FEED.items[1], sides: [
+          { ...TEAM_FEED.items[1].sides[0], dateStatus: 'corrected', sourceUrl: 'https://www.sportsnet.ca/nhl/article/x/' },
+          { team: 'ANA', description: 'Acquired Kyle Masters from the Carolina Hurricanes for John Carlson.', source: 'wikipedia', sourceUrl: KANE_URL },
+        ] },
+        { kind: 'move', id: 9, date: '2023-02-23', team: 'CAR', category: 'waivers', categories: ['waivers'], counterparties: [],
+          description: 'Placed D Some Guy on waivers.', dateStatus: 'espn_early' },
+      ],
+    }).as('sourcedFeed')
+    cy.intercept('GET', '**/trades/tree?tx=1', { ...TREE, trades: {
+      ...TREE.trades, [ROOT]: { ...TREE.trades[ROOT], dateStatus: 'espn_early', sourceUrl: KANE_URL },
+    } }).as('sourcedTree')
+    openTransactionsTab()
+    cy.wait('@sourcedFeed')
+    cy.contains('Wikipedia').should('exist')
+    cy.get('.tx-trade .tx-provenance').should('have.length', 2)
+    cy.get('.tx-trade .tx-provenance').eq(1).should('contain', 'from Wikipedia').find('a')
+      .should('have.attr', 'href', KANE_URL).and('contain', 'nhl.com')
+    cy.get('.tx-trade .tx-provenance').eq(0).should('contain', 'Date corrected').find('a').should('contain', 'sportsnet.ca')
+    cy.get('.tx-move .tx-provenance').should('contain', 'Date unconfirmed').find('a').should('not.exist')
+    cy.get('.tx-trade .tx-tree-btn').click()
+    cy.wait('@sourcedTree')
+    cy.get('.trade-tree .tree-date-unconfirmed').should('contain', 'Date unconfirmed')
+    cy.get('.trade-tree .tree-cites a').should('have.attr', 'href', KANE_URL).and('contain', 'nhl.com')
+  })
+
+  it('shows no source notes on plain ESPN rows', () => {
+    cy.intercept('GET', '**/trades/tree?tx=1', TREE).as('tree')
+    openTransactionsTab()
+    cy.wait('@teamFeed')
+    cy.get('.tx-provenance').should('not.exist')
+    cy.get('.tx-trade .tx-tree-btn').click()
+    cy.wait('@tree')
+    cy.get('.trade-tree .tree-date-unconfirmed').should('not.exist')
+    cy.get('.trade-tree .tree-cites').should('not.exist')
+  })
+
   it('shows the error state when the Worker is unavailable', () => {
     cy.intercept('GET', '**/transactions?team=*', { statusCode: 502, body: {} }).as('failedFeed')
     openTransactionsTab()
