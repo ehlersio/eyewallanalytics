@@ -1,0 +1,32 @@
+{
+ "player": {
+  "id": 8476483,
+  "season": 20262027,
+  "team": "PIT",
+  "name": "Rickard Rakell",
+  "position": "R",
+  "gamesPlayed": 16,
+  "tier": "some",
+  "rank": 57,
+  "signals": [
+   {
+    "code": "outside_playoffs",
+    "conference": "E",
+    "conference_rank": 15,
+    "line": 8
+   }
+  ],
+  "capHit": 5000000,
+  "yearsLeft": 1,
+  "expiryType": null,
+  "expiryTypeDerived": false,
+  "extended": false,
+  "clause": {
+   "kind": "M-NTC",
+   "listSize": null
+  }
+ },
+ "asOf": "2027-01-01",
+ "deadline": "2027-03-01",
+ "generatedAt": "2026-11-07T14:32:37.049279+00:00"
+}

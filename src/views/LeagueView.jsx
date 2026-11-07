@@ -18,7 +18,7 @@ import {
   getTeamSpecialTeams,
   TEAM_CONFIG,
   getLeagueCapTableSummary,
-  getLeagueContractPlayers, getLeagueSkaterSummary,
+  getLeagueContractPlayers, getLeagueSkaterSummary, getCandidacyBoard,
 } from '../utils/nhlApi';
 import { getTeamSeasonData, getPowerRankingsNarrative, getPowerRankingsHistory } from '../utils/supabaseClient';
 import { teamTextColor } from '../utils/teamConfig';
@@ -33,6 +33,7 @@ import PowerRankingsCanvas from '../components/PowerRankingsCanvas';
 import DraftTab from '../components/DraftTab';
 import LeagueCapTable from '../components/LeagueCapTable';
 import ContractValueBoard from '../components/ContractValueBoard';
+import DeadlineBoard from '../components/DeadlineBoard';
 import { buildValueBoard } from '../utils/valueBoard';
 import { getPlayerAnalytics, getGoalieAnalytics } from '../utils/supabaseClient';
 import { SKELETON_CLASSES } from '../utils/skeletonClasses';
@@ -1652,6 +1653,9 @@ export default function LeagueView() {
     [capPlayers, skaterStats, skaterAnalytics, goalieAnalytics]
   );
   const [valuePlayer, setValuePlayer] = useState(null);
+  // The Deadline board (Jan 1 to the trade deadline; no players otherwise,
+  // and then it isn't shown), with the selected team's fit for its filter.
+  const { data: deadlineBoard } = useFetch(() => onCap ? getCandidacyBoard(TEAM_CONFIG.abbr) : Promise.resolve(null), [onCap]);
 
   const { data: scoring, loading: scoringLoading, error: scoringError }
     = useFetch(() => getScoringLeaders(SEASON, 10, '2'), [SEASON]);
@@ -1764,6 +1768,7 @@ export default function LeagueView() {
         {activeTab === 'cap' && hasCap && (
           <>
             <LeagueCapTable summary={capSummary} />
+            <DeadlineBoard board={deadlineBoard} onPlayerClick={setValuePlayer} />
             <ContractValueBoard board={valueBoard} onPlayerClick={setValuePlayer} />
             {valuePlayer && (
               <PlayerPopup player={valuePlayer} inPlayoffs={false} standings={standingsEntries} isLeagueContext={true} onClose={() => setValuePlayer(null)} />

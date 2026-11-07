@@ -308,6 +308,35 @@
     "showTop": "Voir le top {{count}}",
     "notRated": "Non notés : {{noFigure}} sans montant public, {{elc}} en contrat de recrue, {{underMinGp}} sous {{minGp}} matchs ({{minGpGoalies}} pour les gardiens)."
   },
+  "deadlineBoard": {
+    "title": "Tableau de la date limite",
+    "infoLabel": "À propos du tableau de la date limite",
+    "infoTip": "Les joueurs qui présentent des signaux de transaction, classés par le modèle qui les pondère. Ce n'est pas une prédiction : testé sur des saisons qui n'ont pas servi à l'ajuster, {{several}} des joueurs du groupe « Plusieurs signaux » et {{some}} du groupe « Quelques signaux » ont été échangés avant la date limite. Le chiffre du modèle n'est pas affiché, car il n'était pas assez précis dans le haut de l'échelle. Le filtre d'ajustement garde les joueurs pour qui votre équipe est un bon ou un possible preneur. Touchez un joueur pour voir ses signaux et sa clause.",
+    "note_one": "{{count}} joueur avec des signaux · au {{date}} · date limite : {{deadline}}",
+    "note_other": "{{count}} joueurs avec des signaux · au {{date}} · date limite : {{deadline}}",
+    "groups": {
+      "all": "Tous",
+      "forwards": "Attaquants",
+      "defense": "Défenseurs",
+      "goalies": "Gardiens"
+    },
+    "fitsTeam": "Convient à {{team}}",
+    "colRank": "Rang",
+    "colPlayer": "Joueur",
+    "colTier": "Niveau",
+    "colSignals": "Signaux",
+    "colCapHit": "Salaire",
+    "showAll": "Voir les {{count}}",
+    "showTop": "Voir les {{count}} premiers",
+    "foot": "Des niveaux, pas des chances. Les joueurs sans salaire public ne sont pas classés.",
+    "signals": {
+      "expiring": "Contrat à échéance",
+      "expiringUfa": "JAS à échéance",
+      "expiringRfa": "JAC à échéance",
+      "outsidePlayoffs": "Hors des séries",
+      "toiDown": "Temps de glace −{{pct}}"
+    }
+  },
   "leagueCap": {
     "roster": {
       "title": "Impact salarial de l'effectif · {{season}}",
@@ -2557,6 +2586,28 @@
         "capMissing_other": "{{count}} salaires de l'effectif ne sont pas publics, l'espace peut être moindre"
       },
       "tapHint": "Touchez une équipe pour voir pourquoi."
+    },
+    "candidacy": {
+      "title": "Signaux de transaction",
+      "methodLabel": "Comment fonctionnent les signaux",
+      "methodTip": "Ce n'est pas une prédiction. Ce sont des signaux qui ont précédé les transactions des dernières dates limites : un contrat qui se termine cette saison, une équipe hors des séries, un temps de glace en baisse, avec le salaire, la production, l'âge et la position, pondérés par un modèle ajusté sur les saisons 2023-24 à 2025-26. Testé sur des saisons qui n'ont pas servi à l'ajuster, {{several}} des joueurs du groupe « Plusieurs signaux » et {{some}} du groupe « Quelques signaux » ont été échangés avant la date limite : la plupart des joueurs qui présentent ces signaux restent. Le chiffre du modèle n'est pas affiché, car il n'était pas assez précis dans le haut de l'échelle. Un joueur n'est classé que s'il présente au moins un signal et que son salaire est public. Les listes de non-échange ne sont pas publiques. Affiché du 1er janvier à la date limite des transactions.",
+      "tiers": {
+        "several": "Plusieurs signaux",
+        "some": "Quelques signaux"
+      },
+      "asOf": "Au {{date}} · date limite des transactions : {{deadline}}",
+      "conferences": {
+        "E": "l'Est",
+        "W": "l'Ouest"
+      },
+      "signals": {
+        "expiring": "Contrat qui se termine cette saison",
+        "expiringUfa": "Contrat qui se termine cette saison (JAS)",
+        "expiringRfa": "Contrat qui se termine cette saison (JAC)",
+        "derived": "JAS/JAC estimé selon l'âge",
+        "outsidePlayoffs": "Équipe {{rank}}e dans {{conference}}, hors des séries (top {{line}} au % de points)",
+        "toiDown": "Temps de glace en baisse de {{pct}} : {{recent}} par match à ses 10 derniers, {{season}} sur la saison"
+      }
     }
   },
   "percentileBar": {
@@ -2969,6 +3020,23 @@
           "Les réclamations au ballottage et autres mouvements manquants chez ESPN ne sont pas ajoutés, et leurs dates de janvier 2021 à juin 2024 restent non confirmées."
         ]
       },
+      "tradeCandidacy": {
+        "title": "Ajustement et signaux de transaction",
+        "body": [
+          "Ni l'un ni l'autre ne prédit une transaction. L'ajustement indique quelles équipes auraient l'usage d'un joueur s'il était échangé ; les signaux indiquent combien de facteurs ayant précédé les transactions des dernières dates limites il présente. Les deux couvrent la LNH seulement et affichent des niveaux avec leurs raisons, jamais un pourcentage pour un joueur.",
+          "L'ajustement évalue chacune des 31 autres équipes de trois façons. Besoin : il améliorerait un poste à sa position classé dans le dernier tiers de la ligue, ou le premier poste s'il y dépasse la moyenne (WAR par 82 matchs, GSAx par 60 minutes pour les gardiens ; cette saison à 20 matchs et plus, sinon la saison précédente). Fenêtre : un joueur dont le contrat se termine convient seulement aux équipes ayant au moins 50 % de chances de faire les séries ; un joueur sous contrat au-delà de cette saison convient à toutes. Plafond : son salaire comparé à l'espace estimé de l'équipe, le vendeur pouvant retenir jusqu'à 50 % s'il lui reste une place de rétention. Besoin et fenêtre remplis : bon ajustement ; un des deux : possible ; aucun : peu probable. Devoir renvoyer du salaire fait descendre une équipe d'un niveau. Calculé chaque nuit jusqu'à la date limite.",
+          "Les signaux viennent d'une régression logistique ajustée sur les saisons 2023-24, 2024-25 et 2025-26. Pour chaque patineur ayant 10 matchs et plus et chaque gardien ayant 5 matchs et plus au 1er janvier, au 1er février et deux semaines avant la date limite, elle demande s'il a été échangé avant la date limite de cette saison, avec seulement ce qu'on savait ce jour-là : années de contrat restantes et statut JAS/JAC, salaire, clause de non-mouvement ou de non-échange, points par match ou pourcentage d'arrêts, temps de glace à ses 10 derniers matchs comparé à sa saison, pourcentage de points de son équipe comparé à la 8e équipe de sa conférence, âge, position et jours avant la date limite. Les transactions viennent des feuilles de match de la LNH (un changement d'équipe) et de la liste qui alimente les arbres de transactions, sans les réclamations au ballottage.",
+          "Chaque saison a été prédite par un modèle ajusté seulement sur les deux autres. Le modèle a battu un taux fixe (Brier 0,0622 contre 0,0655) et la règle « contrat à échéance dans une équipe hors des séries » (0,0629), mais de peu, et son dixième supérieur prédisait 28,0 % quand 22,6 % ont été échangés : hors de la marge de ±5 points fixée avant le test. Aucun pourcentage n'est donc affiché. Le dixième supérieur du modèle est plutôt marqué « Plusieurs signaux » (22,6 % échangés avant la date limite dans le test) et les deux dixièmes suivants « Quelques signaux » (10,1 %). Un niveau n'est affiché qu'avec au moins un signal : un contrat à échéance, une équipe hors des séries ou un temps de glace en baisse de 10 % ou plus. Affiché du 1er janvier à la date limite, recalculé chaque nuit.",
+          "Ce qui pèse le plus dans le modèle : un salaire plus élevé (échangé plus souvent), être gardien (moins souvent), plus de points par match (moins souvent), plus d'années de contrat (moins souvent), un contrat à échéance dans une équipe hors des séries (plus souvent) et une clause complète de non-mouvement ou de non-échange (moins souvent)."
+        ],
+        "limits": [
+          "L'espace sous le plafond n'inclut pas la LTIR : les aspirants qui l'utilisent semblent plus serrés qu'ils ne le sont.",
+          "Les listes de non-échange ne sont pas publiques et une clause absente peut simplement ne pas avoir été rapportée : les clauses ne changent jamais l'ordre des équipes.",
+          "Les rumeurs, les blessures, l'historique des DG et les espoirs qui poussent pour un poste ne sont pas utilisés.",
+          "Les contrats viennent d'un jeu de données ouvert incomplet. Un joueur sans salaire public n'est pas classé, car le modèle lit un salaire manquant comme un signal.",
+          "Les données de contrat avant 2023-24 sont plus minces et les saisons plus anciennes favorisent les joueurs encore actifs en 2024 : seules trois saisons ont servi à ajuster et tester le modèle."
+        ]
+      },
       "data": {
         "title": "Données et horaire",
         "body": [
@@ -2996,7 +3064,8 @@
       "playoffOdds": "Ajout des chances de participer aux séries : 10 000 saisons simulées, incertitude des cotes ajustée sur 2023-2024 à 2025-2026, et un taux de prolongation de 22,1 % combiné sur ces saisons.",
       "injuryImpact": "Ajout de l'impact des blessures : matchs-joueurs et WAR perdus par équipe, comptés à partir de la saison 2026-2027.",
       "elo": "Les gagnants des matchs passent à Elo (paramètres LNH de FiveThirtyEight), en remplacement d'une formule pondérée à la main qui faisait moins bien en rétro-analyse.",
-      "tradeSources": "Les échanges absents du fil d’ESPN sont ajoutés à partir des listes de transactions sourcées de Wikipédia, et les dates en avance d’ESPN (janvier 2021 à juin 2024) sont corrigées quand un échange sourcé correspond, ou indiquées comme non confirmées."
+      "tradeSources": "Les échanges absents du fil d’ESPN sont ajoutés à partir des listes de transactions sourcées de Wikipédia, et les dates en avance d’ESPN (janvier 2021 à juin 2024) sont corrigées quand un échange sourcé correspond, ou indiquées comme non confirmées.",
+      "tradeCandidacy": "Ajout de l'ajustement de transaction (les équipes auxquelles un joueur convient, par niveaux avec raisons) et des signaux de transaction avec le tableau de la date limite dans Ligue › Plafond : des niveaux tirés d'un modèle testé sur 2023-24 à 2025-26, affichés du 1er janvier à la date limite."
     }
   },
   "scorecard": {
