@@ -11,7 +11,7 @@ const team = (code, capHitTotal, over = {}) => ({
 
 const summary = {
   season: '2026-27', basis: 'signing_team', asOf: '2026-10-24T12:08:21+00:00',
-  capLimits: { ceiling: 104_000_000, floor: 77_000_000, minSalary: 850_000 },
+  capLimits: { ceiling: 104_000_000, floor: 76_900_000, minSalary: 850_000 },
   teams: [
     team('BUF', 125_416_405, { contracts: 29, withFigure: 29, expiring: { ufa: 5, rfa: 9, unknown: 0 } }),
     team('UTA', 83_348_334, { contracts: 23, withFigure: 21, expiring: { ufa: 6, rfa: 2, unknown: 0 } }),
@@ -86,7 +86,7 @@ describe('buildLeagueCapTable', () => {
 describe('buildLeagueCapTable (roster basis)', () => {
   const rosterSummary = {
     season: '2026-27', basis: 'roster', asOf: '2026-10-24T12:08:21+00:00', teamsKnown: 32,
-    capLimits: { ceiling: 104_000_000, floor: 77_000_000, minSalary: 850_000 },
+    capLimits: { ceiling: 104_000_000, floor: 76_900_000, minSalary: 850_000 },
     teams: [
       { team: 'NJD', rosterCount: 23, rosterWithFigure: 22, rosterCapHit: 103_350_000, offRosterCount: 16, expiring: { ufa: 7, rfa: 2, unknown: 0 } },
       { team: 'CAR', rosterCount: 24, rosterWithFigure: 22, rosterCapHit: 87_333_063, offRosterCount: 9, expiring: { ufa: 8, rfa: 0, unknown: 0 } },
