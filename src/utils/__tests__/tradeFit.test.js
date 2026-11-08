@@ -38,6 +38,7 @@ describe('reasonKey', () => {
     expect(reasonKey({ code: 'window_odds_unknown' }).key).toBe(K + 'windowOddsUnknown')
     expect(reasonKey({ code: 'cap_fits', space: 12_500_000 }).params).toEqual({ space: '$12.50M' })
     expect(reasonKey({ code: 'cap_fits_retained', space: 2_000_000 }).key).toBe(K + 'capFitsRetained')
+    expect(reasonKey({ code: 'cap_fits_ltir', space: 1_000_000, ltir_max: 7_000_000 })).toEqual({ key: K + 'capFitsLtir', params: { space: '$1.00M', relief: '$7.00M' } })
     expect(reasonKey({ code: 'cap_needs_salary', space: -1_000_000 }).params).toEqual({ space: '−$1.00M' })
     expect(reasonKey({ code: 'cap_unknown' }).key).toBe(K + 'capUnknown')
     expect(reasonKey({ code: 'hand_right_shot', right_shots: 1 })).toEqual({ key: K + 'handRightShot', params: { count: 1 } })

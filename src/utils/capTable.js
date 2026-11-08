@@ -102,6 +102,12 @@ export function buildCapTable(data, rosterNames = null, fallbackCeiling = CAP_CE
   // called cap space: LTIR, bonus overages and recapture are not in it.
   const deadCapKnown = data?.deadCapKnown === true && !!summary.deadCap;
   const deadCapRows = deadCapKnown && Array.isArray(data?.deadCap) ? data.deadCap : [];
+  // LTIR (eyewall-poller #257): the team's active long-term IR players, their
+  // cap hits (the most relief LTIR could give) and the relief PuckPedia
+  // stated. Null until the Worker has the table; never added to the estimate,
+  // since real relief is the cap hit minus the space when he was placed.
+  const ltir = summary.ltir && Array.isArray(summary.ltir.players) ? summary.ltir : null;
+  const ltirPlayers = ltir ? ltir.players.map(p => ({ ...p, displayName: rosterNames?.get(Number(p.playerId)) || p.name })) : [];
 
   return {
     season: data?.season || null,
@@ -124,5 +130,10 @@ export function buildCapTable(data, rosterNames = null, fallbackCeiling = CAP_CE
     deadCapRows,
     estimate: deadCapKnown ? (summary.capSpaceEstimate ?? null) : null,
     estimateNotes: deadCapKnown && Array.isArray(summary.estimateNotes) ? summary.estimateNotes : [],
+    ltirKnown: ltir != null,
+    ltirPlayers,
+    // "up to $Y more in LTIR relief": only with a figure to show
+    ltirRelief: ltir && ltir.capHitTotal > 0 ? ltir.capHitTotal : null,
+    ltirStated: ltir && ltir.statedRelief != null ? { amount: ltir.statedRelief, date: ltir.statedAt || null } : null,
   };
 }
