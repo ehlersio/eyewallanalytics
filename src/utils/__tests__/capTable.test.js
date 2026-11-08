@@ -150,6 +150,30 @@ describe('dead cap and the estimate', () => {
     expect(old).toMatchObject({ deadCapKnown: false, estimate: null })
   })
 
+  it('passes LTIR through: players, the most relief, and the stated relief; never into the estimate', () => {
+    const ltir = {
+      players: [
+        { playerId: 8478427, name: 'Hurricanes.Sebastian Aho', capHit: 9_750_000, since: '2026-10-12', firstSeen: '2026-10-12', onRoster: true, statedRelief: 3_850_000, statedAt: '2026-10-12', conflicts: [] },
+        { playerId: 8470001, name: 'Off Roster', capHit: null, since: null, firstSeen: '2026-11-08', onRoster: false, statedRelief: null, statedAt: null, conflicts: ['espn_not_listed'] },
+      ],
+      capHitTotal: 9_750_000, statedRelief: 3_850_000, statedAt: '2026-10-12', offRosterCapHit: 0,
+    }
+    const names = new Map([[8478427, 'Sebastian Aho']])
+    const cap = buildCapTable({ ...withDead, summary: { ...withDead.summary, ltir, estimateNotes: ['no_bonus_overages'] } }, names)
+    expect(cap.ltirKnown).toBe(true)
+    expect(cap.ltirPlayers.map(p => p.displayName)).toEqual(['Sebastian Aho', 'Off Roster'])
+    expect(cap.ltirRelief).toBe(9_750_000)
+    expect(cap.ltirStated).toEqual({ amount: 3_850_000, date: '2026-10-12' })
+    expect(cap.estimate).toBe(80_775_000) // unchanged by the relief
+  })
+
+  it('no LTIR line without a figure, and nothing before the Worker had the table', () => {
+    const empty = buildCapTable({ ...withDead, summary: { ...withDead.summary, ltir: { players: [], capHitTotal: null, statedRelief: null, statedAt: null, offRosterCapHit: 0 } } })
+    expect(empty).toMatchObject({ ltirKnown: true, ltirPlayers: [], ltirRelief: null, ltirStated: null })
+    const before = buildCapTable(withDead)
+    expect(before).toMatchObject({ ltirKnown: false, ltirPlayers: [], ltirRelief: null, ltirStated: null })
+  })
+
   it('keeps a negative estimate (over the ceiling before LTIR relief)', () => {
     const cap = buildCapTable({ ...withDead, summary: { ...withDead.summary, capSpaceEstimate: -1_200_000 } })
     expect(cap.estimate).toBe(-1_200_000)

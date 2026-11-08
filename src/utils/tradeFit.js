@@ -86,6 +86,9 @@ export function reasonKey(reason, slotLabel = s => s, season = null) {
         ? { key: base + name + 'Season', params: { space: fmtMoney(reason.space), season: reason.season } }
         : { key: base + name, params: { space: fmtMoney(reason.space) } })
     }
+    case 'cap_fits_ltir':
+      // fits only if the buyer's LTIR relief covers it: at most its LTIR cap hits
+      return withNote({ key: base + 'capFitsLtir', params: { space: fmtMoney(reason.space), relief: fmtMoney(reason.ltir_max) } })
     case 'cap_unknown':
       return { key: base + 'capUnknown', params: {} }
     case 'cap_unannounced':

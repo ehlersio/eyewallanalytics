@@ -138,6 +138,60 @@ describe('Cap tab (any NHL team)', () => {
     cy.get('.cap-tab').should('not.contain', 'cap space')
   })
 
+  // LTIR arrives with eyewall-poller #257: the team's LTIR players and the
+  // most relief they could give, shown beside the estimate, never added in.
+  it('CAR: the LTIR list and "up to" relief beside the estimate once the Worker has LTIR', () => {
+    cy.fixture('contracts-car-2026-27').then(f => {
+      const ltir = {
+        players: [
+          { playerId: 8470001, name: 'Injured Center', capHit: 3_850_000, since: '2026-10-12', firstSeen: '2026-10-12', onRoster: false, statedRelief: 3_850_000, statedAt: '2026-10-12', conflicts: [] },
+          { playerId: 8470002, name: 'Listed Winger', capHit: 1_000_000, since: null, firstSeen: '2026-11-08', onRoster: true, statedRelief: null, statedAt: null, conflicts: ['espn_not_listed'] },
+        ],
+        capHitTotal: 4_850_000, statedRelief: 3_850_000, statedAt: '2026-10-12', offRosterCapHit: 3_850_000,
+      }
+      const body = {
+        ...f, deadCap: [], deadCapKnown: true,
+        summary: { ...f.summary, deadCap: { total: 0, retained: 0, buyouts: 0, count: 0 },
+          capSpaceEstimate: f.summary.capLimits.ceiling - f.summary.rosterCapHit - 3_850_000,
+          estimateNotes: ['no_bonus_overages', 'no_recapture', 'partial_coverage'], ltir },
+      }
+      cy.intercept(contractsFor('CAR'), body).as('contracts')
+    })
+    cy.intercept(rosterFor('CAR'), CAR_ROSTER)
+    cy.setTeam('CAR')
+    cy.visit('/team')
+    cy.wait('@contracts')
+    openCapTab()
+    // 104.0 - 88.16 - 3.85 = 12.0
+    cy.contains('.cap-estimate', 'Estimated space before LTIR: $12.0M · up to $4.85M more in LTIR relief')
+    cy.contains('.cap-ltir-line', 'LTIR: 2 players · $3.85M relief reported 2026-10-12')
+    cy.get('.cap-ltir-row').should('have.length', 2)
+    cy.get('.cap-ltir-row').first().should('contain', 'Injured Center').and('contain', 'since 2026-10-12').and('contain', '$3.85M')
+    cy.get('.cap-ltir-row').eq(1).should('contain', 'Listed Winger').and('contain', 'on LTIR as of 2026-11-08')
+    cy.get('.cap-ltir-row').eq(1).find('.cap-ltir-conflict').should('exist')
+    cy.get('.cap-ltir-note').should('contain', 'sources disagree')
+  })
+
+  it('CAR: no LTIR section when the team has nobody on LTIR', () => {
+    cy.fixture('contracts-car-2026-27').then(f => {
+      const body = {
+        ...f, deadCap: [], deadCapKnown: true,
+        summary: { ...f.summary, deadCap: { total: 0, retained: 0, buyouts: 0, count: 0 },
+          capSpaceEstimate: f.summary.capLimits.ceiling - f.summary.rosterCapHit,
+          estimateNotes: ['no_bonus_overages', 'no_recapture', 'partial_coverage'],
+          ltir: { players: [], capHitTotal: null, statedRelief: null, statedAt: null, offRosterCapHit: 0 } },
+      }
+      cy.intercept(contractsFor('CAR'), body).as('contracts')
+    })
+    cy.intercept(rosterFor('CAR'), CAR_ROSTER)
+    cy.setTeam('CAR')
+    cy.visit('/team')
+    cy.wait('@contracts')
+    openCapTab()
+    cy.contains('.cap-estimate', 'Estimated space before LTIR: $15.8M').should('not.contain', 'LTIR relief')
+    cy.get('.cap-ltir').should('not.exist')
+  })
+
   it('CAR: no estimate line while the Worker has no dead-cap table', () => {
     cy.intercept(contractsFor('CAR'), { fixture: 'contracts-car-2026-27.json' }).as('contracts')
     cy.intercept(rosterFor('CAR'), CAR_ROSTER)

@@ -46,6 +46,8 @@ const SECTIONS = [
 // Dated method changes, newest first (dates from eyewall-pipeline's merge
 // history). Add one whenever a model's method or settings change.
 const CHANGELOG = [
+  // nhl-contracts ltir.* -> eyewall-pipeline nhl_ltir + trade_fit.py fits_ltir
+  { date: '2026-11-08', key: 'ltir' },
   // eyewall-pipeline trade_calendar.py + trade_fit.py offseason (Phase 2b)
   { date: '2026-11-07', key: 'tradeFitOffseason' },
   // eyewall-pipeline trade_fit.py + trade_candidacy.py (Phases 2 and 4)

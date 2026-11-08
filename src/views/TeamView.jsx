@@ -250,6 +250,8 @@ const CAP_DEAD_ROW_CLASSES = 'grid grid-cols-[1fr_auto_90px] gap-[6px] items-cen
 // "+$13.4M" / "-$1.2M" for the estimate line (a negative estimate is a team
 // over the ceiling before LTIR relief, which the dataset cannot see).
 const fmtSignedM = (n) => `${n < 0 ? '-' : ''}$${(Math.abs(n) / 1_000_000).toFixed(1)}M`
+const fmtM = (n) => `$${(n / 1_000_000).toFixed(2)}M`
+const CAP_LTIR_NOTE_CLASSES = 'cap-ltir-note text-[10px] text-[color:var(--text-dim)] mt-1'
 const CAP_EXPIRES_CLASSES = 'text-[11px] font-[family-name:var(--font-mono)]'
 const CAP_EXPIRING_NOTE_CLASSES = 'mt-[10px] text-[11px] text-[color:var(--amber)] py-[6px] px-[10px] bg-[rgba(240,160,48,0.1)] rounded-[var(--radius-sm)]'
 
@@ -1833,8 +1835,9 @@ export function TrendsTab({ gameLogReg, gameLogPO, loading }) {
 // Renders a GET /contracts payload (see capTable.js for the shaping):
 // roster players first, then roster players with no public figure, then
 // the deals the team signed for players off its roster. The bar is the
-// ROSTER CAP HIT against the ceiling, not cap space: the dataset has no
-// retained salary, buyouts or LTIR, so space is not computable.
+// ROSTER CAP HIT against the ceiling, not cap space; the estimate line is
+// ceiling - roster cap hit - dead cap, with LTIR relief beside it as a
+// range ("up to"), never added in, and the team's LTIR players listed.
 function CapTab({ data }) {
   const { t } = useTranslation()
   // Dataset names can carry a prefix ("Hurricanes.Andrei Svechnikov"); the
@@ -1896,7 +1899,9 @@ function CapTab({ data }) {
       </div>
       {cap.estimate != null && (
         <div className={`${CAP_ESTIMATE_CLASSES} cap-estimate`} style={{ color: cap.estimate < 0 ? 'var(--red-bright)' : 'var(--green)' }}>
-          {t('teamView.cap.estimate', { amount: fmtSignedM(cap.estimate) })}
+          {cap.ltirRelief != null
+            ? t('teamView.cap.estimateWithLtir', { amount: fmtSignedM(cap.estimate), relief: fmtM(cap.ltirRelief) })
+            : t('teamView.cap.estimate', { amount: fmtSignedM(cap.estimate) })}
           <InfoTip label={t('teamView.cap.estimateLabel')} text={t('teamView.cap.estimateTip')} />
         </div>
       )}
@@ -1930,6 +1935,32 @@ function CapTab({ data }) {
               <span className={CAP_HIT_VAL_CLASSES}>{d.capHit != null ? fmtCapHit(d.capHit) : t('teamView.cap.noPublicFigure')}</span>
             </div>
           ))}
+        </div>
+      )}
+      {cap.ltirPlayers.length > 0 && (
+        <div className="cap-ltir mb-2">
+          <div className={`${CAP_CEILING_LABEL_CLASSES} cap-ltir-line flex items-center gap-1`}>
+            <span>
+              {t('teamView.cap.ltirLine', { count: cap.ltirPlayers.length })}
+              {cap.ltirStated && ` · ${t('teamView.cap.ltirStated', { amount: fmtM(cap.ltirStated.amount), date: cap.ltirStated.date || '' })}`}
+            </span>
+            <InfoTip label={t('teamView.cap.ltirLabel')} text={t('teamView.cap.ltirTip')} />
+          </div>
+          {cap.ltirPlayers.map(p => (
+            <div key={`ltir-${p.playerId ?? p.name}`} className={`${CAP_DEAD_ROW_CLASSES} cap-ltir-row`} data-player-id={p.playerId ?? undefined}>
+              <span className={CAP_NAME_CLASSES}>
+                {p.displayName}
+                {p.conflicts?.length > 0 && <span className={`${CAP_MARK_CLASSES} cap-ltir-conflict`} title={t('teamView.cap.ltirConflict')}>≠</span>}
+              </span>
+              <span className={CAP_TYPE_BASE_CLASSES} style={{ color: 'var(--text-dim)' }}>
+                {p.since ? t('teamView.cap.ltirSince', { date: p.since }) : t('teamView.cap.ltirListed', { date: p.firstSeen || '' })}
+              </span>
+              <span className={CAP_HIT_VAL_CLASSES}>{p.capHit != null ? fmtCapHit(p.capHit) : t('teamView.cap.noPublicFigure')}</span>
+            </div>
+          ))}
+          {cap.ltirPlayers.some(p => p.conflicts?.length > 0) && (
+            <div className={CAP_LTIR_NOTE_CLASSES}>{t('teamView.cap.ltirConflictNote')}</div>
+          )}
         </div>
       )}
       <div className={`${CAP_DATA_DATE_CLASSES} cap-provenance`}>
