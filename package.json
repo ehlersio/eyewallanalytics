@@ -51,7 +51,7 @@
     "recharts": "^3.10.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.5.2",
+    "@capacitor/cli": "^8.6.0",
     "@eslint/js": "^9.39.5",
     "@tailwindcss/vite": "^4.3.3",
     "@types/react": "^18.3.3",
