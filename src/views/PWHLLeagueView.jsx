@@ -9,7 +9,7 @@ import {
   PWHL_TEAM_CONFIG, PWHL_TEAM_ID,
 } from '../utils/pwhlApi';
 import {
-  PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, PWHL_TEAMS, getPWHLTeamById,
+  PWHL_CURRENT_SEASON, PWHL_TEAM_MAP, PWHL_TEAMS, getPWHLTeamById, getPWHLTeamConfig,
   PWHL_REGULAR_SEASONS as SEASONS,
   PWHL_PLAYOFF_SEASON_MAP as PLAYOFF_SEASON, getPWHLSeasonLabel,
 } from '../utils/pwhlConfig';
@@ -1192,9 +1192,9 @@ const DRAFT_2026 = [
   // Round 1
   { pick:1,  round:1, team:'Vancouver Goldeneyes',                 teamAbbr:'VAN', player:'Caroline "KK" Harvey', pos:'D', prev:'University of Wisconsin (NCAA)',        nat:'USA' },
   { pick:2,  round:1, team:'Seattle Torrent',                      teamAbbr:'SEA', player:'Abbey Murphy',          pos:'F', prev:'University of Minnesota (NCAA)',         nat:'USA' },
-  { pick:3,  round:1, team:'PWHL Las Vegas (via DET)',             teamAbbr:'LAS', player:'Tessa Janecke',         pos:'F', prev:'Penn State University (NCAA)',           nat:'USA' },
+  { pick:3,  round:1, team:'PWHL Las Vegas (via DET)',             teamAbbr:'LV',  player:'Tessa Janecke',         pos:'F', prev:'Penn State University (NCAA)',           nat:'USA' },
   { pick:4,  round:1, team:'PWHL San Jose',                        teamAbbr:'SJS', player:'Laila Edwards',         pos:'D', prev:'University of Wisconsin (NCAA)',         nat:'USA' },
-  { pick:5,  round:1, team:'PWHL Las Vegas',                       teamAbbr:'LAS', player:'Lacey Eden',            pos:'F', prev:'University of Wisconsin (NCAA)',         nat:'USA' },
+  { pick:5,  round:1, team:'PWHL Las Vegas',                       teamAbbr:'LV',  player:'Lacey Eden',            pos:'F', prev:'University of Wisconsin (NCAA)',         nat:'USA' },
   { pick:6,  round:1, team:'PWHL Hamilton',                        teamAbbr:'HAM', player:'Nelli Laitinen',        pos:'D', prev:'University of Minnesota (NCAA)',         nat:'FIN' },
   { pick:7,  round:1, team:'New York Sirens',                      teamAbbr:'NY',  player:'Emma Peschel',          pos:'D', prev:'Ohio State University (NCAA)',           nat:'USA' },
   { pick:8,  round:1, team:'Toronto Sceptres',                     teamAbbr:'TOR', player:'Kirsten Simms',         pos:'F', prev:'University of Wisconsin (NCAA)',         nat:'USA' },
@@ -1203,7 +1203,7 @@ const DRAFT_2026 = [
   { pick:11, round:1, team:'Ottawa Charge',                        teamAbbr:'OTT', player:'Vivian Jungels',        pos:'D', prev:'University of Wisconsin (NCAA)',         nat:'USA' },
   { pick:12, round:1, team:'Montréal Victoire',                    teamAbbr:'MTL', player:'Petra Nieminen',        pos:'F', prev:'Luleå (SDHL)',                          nat:'FIN' },
   // Round 2
-  { pick:13, round:2, team:'PWHL Las Vegas (via VAN)',             teamAbbr:'LAS', player:'Issy Wunder',           pos:'F', prev:'Princeton University (NCAA)',           nat:'CAN' },
+  { pick:13, round:2, team:'PWHL Las Vegas (via VAN)',             teamAbbr:'LV',  player:'Issy Wunder',           pos:'F', prev:'Princeton University (NCAA)',           nat:'CAN' },
   { pick:14, round:2, team:'Seattle Torrent',                      teamAbbr:'SEA', player:'Sydney Morrow',         pos:'D', prev:'University of Minnesota (NCAA)',         nat:'USA' },
   { pick:15, round:2, team:'PWHL Detroit',                         teamAbbr:'DET', player:'Andrea Brändli',        pos:'G', prev:'Frölunda HC (SDHL)',                    nat:'SUI' },
   { pick:16, round:2, team:'PWHL San Jose',                        teamAbbr:'SJS', player:'Sloane Matthews',       pos:'F', prev:'Ohio State University (NCAA)',           nat:'USA' },
@@ -1220,7 +1220,7 @@ const DRAFT_2026 = [
   { pick:26, round:3, team:'Seattle Torrent',                      teamAbbr:'SEA', player:'Emerson Jarvis',        pos:'F', prev:'Quinnipiac University (NCAA)',           nat:'CAN' },
   { pick:27, round:3, team:'Boston Fleet (via DET)',               teamAbbr:'BOS', player:'Leah Stecker',          pos:'D', prev:'Penn State University (NCAA)',           nat:'USA' },
   { pick:28, round:3, team:'PWHL San Jose',                        teamAbbr:'SJS', player:'Tia Chan',              pos:'G', prev:'University of Connecticut (NCAA)',       nat:'CAN' },
-  { pick:29, round:3, team:'PWHL Las Vegas',                       teamAbbr:'LAS', player:'Josefin Bouveng',       pos:'F', prev:'University of Minnesota (NCAA)',         nat:'SWE' },
+  { pick:29, round:3, team:'PWHL Las Vegas',                       teamAbbr:'LV',  player:'Josefin Bouveng',       pos:'F', prev:'University of Minnesota (NCAA)',         nat:'SWE' },
   // Round 3 cont.
   { pick:30, round:3, team:'PWHL Hamilton',                        teamAbbr:'HAM', player:'Elyssa Biederman',     pos:'F', prev:'Colgate University (NCAA)',              nat:'USA' },
   { pick:31, round:3, team:'New York Sirens',                      teamAbbr:'NY',  player:'Carina DiAntonio',     pos:'F', prev:'Yale University (NCAA)',                 nat:'CAN' },
@@ -1234,7 +1234,7 @@ const DRAFT_2026 = [
   { pick:38, round:4, team:'Seattle Torrent',                      teamAbbr:'SEA', player:'Grace Elliott',        pos:'F', prev:'Univ. of British Columbia (U Sports)',  nat:'CAN' },
   { pick:39, round:4, team:'PWHL Detroit',                         teamAbbr:'DET', player:'Kyla Josifovic',       pos:'F', prev:'University of Connecticut (NCAA)',       nat:'CAN' },
   { pick:40, round:4, team:'PWHL San Jose',                        teamAbbr:'SJS', player:'Lily Shannon',         pos:'F', prev:'Northeastern University (NCAA)',         nat:'USA' },
-  { pick:41, round:4, team:'PWHL Las Vegas',                       teamAbbr:'LAS', player:'Saskia Maurer',        pos:'G', prev:'SC Bern (SWHL)',                        nat:'SUI' },
+  { pick:41, round:4, team:'PWHL Las Vegas',                       teamAbbr:'LV',  player:'Saskia Maurer',        pos:'G', prev:'SC Bern (SWHL)',                        nat:'SUI' },
   { pick:42, round:4, team:'PWHL Hamilton',                        teamAbbr:'HAM', player:'Megan Woodworth',      pos:'F', prev:'University of Connecticut (NCAA)',       nat:'CAN' },
   { pick:43, round:4, team:'New York Sirens',                      teamAbbr:'NY',  player:'Katelyn Roberts',      pos:'F', prev:'Penn State University (NCAA)',           nat:'USA' },
   { pick:44, round:4, team:'Toronto Sceptres',                     teamAbbr:'TOR', player:'Jane Kuehl',           pos:'F', prev:'Princeton University (NCAA)',            nat:'USA' },
@@ -1243,11 +1243,11 @@ const DRAFT_2026 = [
   { pick:47, round:4, team:'Ottawa Charge',                        teamAbbr:'OTT', player:'Tory Mariano',         pos:'D', prev:'Northeastern University (NCAA)',         nat:'USA' },
   { pick:48, round:4, team:'Montréal Victoire',                    teamAbbr:'MTL', player:'Hailey MacLeod',       pos:'G', prev:'Ohio State University (NCAA)',           nat:'CAN' },
   // Round 5
-  { pick:49, round:5, team:'PWHL Las Vegas (via Vancouver)',       teamAbbr:'LAS', player:'Kendall Butze',        pos:'D', prev:'Penn State University (NCAA)',           nat:'USA' },
+  { pick:49, round:5, team:'PWHL Las Vegas (via Vancouver)',       teamAbbr:'LV',  player:'Kendall Butze',        pos:'D', prev:'Penn State University (NCAA)',           nat:'USA' },
   { pick:50, round:5, team:'Seattle Torrent',                      teamAbbr:'SEA', player:'Gracie Gilkyson',      pos:'D', prev:'Yale University (NCAA)',                 nat:'CAN' },
   { pick:51, round:5, team:'PWHL Detroit',                         teamAbbr:'DET', player:'Sena Catterall',       pos:'F', prev:'Clarkson University (NCAA)',             nat:'CAN' },
   { pick:52, round:5, team:'PWHL San Jose',                        teamAbbr:'SJS', player:'McKenna Van Gelder',   pos:'F', prev:'Cornell University (NCAA)',              nat:'CAN' },
-  { pick:53, round:5, team:'PWHL Las Vegas',                       teamAbbr:'LAS', player:'Alexis Petford',       pos:'F', prev:'Colgate University (NCAA)',              nat:'CAN' },
+  { pick:53, round:5, team:'PWHL Las Vegas',                       teamAbbr:'LV',  player:'Alexis Petford',       pos:'F', prev:'Colgate University (NCAA)',              nat:'CAN' },
   { pick:54, round:5, team:'PWHL Hamilton',                        teamAbbr:'HAM', player:'Emma-Sofie Nordström', pos:'G', prev:'St. Lawrence University (NCAA)',         nat:'DEN' },
   { pick:55, round:5, team:'New York Sirens',                      teamAbbr:'NY',  player:'Grace Wolfe',          pos:'D', prev:'St. Cloud State University (NCAA)',      nat:'USA' },
   { pick:56, round:5, team:'Toronto Sceptres',                     teamAbbr:'TOR', player:"Emerson O'Leary",     pos:'F', prev:'Princeton University (NCAA)',            nat:'USA' },
@@ -1260,7 +1260,7 @@ const DRAFT_2026 = [
   { pick:62, round:6, team:'Seattle Torrent',                      teamAbbr:'SEA', player:'Gabriella Durante',    pos:'G', prev:'Real Torino (Italy)',                   nat:'CAN' },
   { pick:63, round:6, team:'PWHL Detroit',                         teamAbbr:'DET', player:'Georgia Schiff',       pos:'F', prev:'Cornell University (NCAA)',              nat:'USA' },
   { pick:64, round:6, team:'PWHL San Jose',                        teamAbbr:'SJS', player:'Reichen Kirchmair',    pos:'F', prev:'Providence College (NCAA)',              nat:'CAN' },
-  { pick:65, round:6, team:'PWHL Las Vegas',                       teamAbbr:'LAS', player:'Sydney Healey',        pos:'F', prev:'Boston University (NCAA)',               nat:'CAN' },
+  { pick:65, round:6, team:'PWHL Las Vegas',                       teamAbbr:'LV',  player:'Sydney Healey',        pos:'F', prev:'Boston University (NCAA)',               nat:'CAN' },
   { pick:66, round:6, team:'PWHL Hamilton',                        teamAbbr:'HAM', player:'Mya Vaslet',           pos:'F', prev:'Penn State University (NCAA)',           nat:'CAN' },
   { pick:67, round:6, team:'New York Sirens',                      teamAbbr:'NY',  player:'Naomi Boucher',        pos:'F', prev:'Yale University (NCAA)',                 nat:'CAN' },
   { pick:68, round:6, team:'Toronto Sceptres',                     teamAbbr:'TOR', player:'Alyssa Regalado',      pos:'D', prev:'Cornell University (NCAA)',              nat:'CAN' },
@@ -1321,11 +1321,9 @@ const DRAFT_2025 = [
   { pick:48, round:6, team:'PWHL Vancouver',             teamAbbr:'VAN', player:'Chanreet Bassi',        pos:'F', prev:'Univ. of British Columbia (U Sports)',         nat:'CAN' },
 ];
 
-const PWHL_ABBR_COLOR = {
-  BOS:'#00285E',MIN:'#154734',MTL:'#862633',NY:'#003D7C',
-  OTT:'#C8102E',TOR:'#00205B',SEA:'#005C8A',VAN:'#C8A951',
-  LAS:'#B8960C',DET:'#CF0A2C',SJS:'#006D75',HAM:'#5C2D91',
-};
+// Each team's own displayColor (pwhlConfig.js), not a second hand-kept list:
+// the old one keyed Las Vegas as 'LAS' and gave HAM/SJS colors they don't use.
+const pwhlAbbrColor = (abbr) => getPWHLTeamConfig(abbr)?.displayColor;
 
 const DRAFT_COL_LABEL_KEYS = {
   Pick: 'pwhlLeagueView.draft.colPick',
@@ -1401,7 +1399,7 @@ function DraftPanel({ season }) {
             </thead>
             <tbody>
               {filtered.map((p, i) => {
-                const color = PWHL_ABBR_COLOR[p.teamAbbr] || 'var(--text-dim)';
+                const color = pwhlAbbrColor(p.teamAbbr) || 'var(--text-dim)';
                 return (
                   <tr key={p.pick} className={`lv-row${i%2===0?' even':''}`}>
                     <td className={lvTdClasses()} style={{ textAlign:'center', fontWeight:700, color:'var(--text-muted)' }}>{p.pick}</td>

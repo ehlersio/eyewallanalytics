@@ -106,6 +106,9 @@ extension TeamCatalog {
     static func match(_ spoken: String, followed: [IntentTeam] = []) -> IntentTeam? {
         var words = normalize(spoken).split(separator: " ").map { soundAlikes[String($0)] ?? String($0) }
         words.removeAll { ["the", "le", "la", "les"].contains($0) }
+        // Both Vegas teams are named "Vegas ..." (Golden Knights, Vanguards),
+        // but people say "Las Vegas": drop the "las" so the city still matches.
+        if let i = words.firstIndex(of: "vegas"), i > 0, words[i - 1] == "las" { words.remove(at: i - 1) }
         let league = words.compactMap { leagueWords[$0] }.first
         words.removeAll { leagueWords[$0] != nil }
         let query = words.joined(separator: " ")

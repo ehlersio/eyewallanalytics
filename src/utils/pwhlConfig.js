@@ -311,16 +311,19 @@ export const PWHL_TEAMS = [
   // Colors are real (pulled from each team's own *_colors.css design
   // tokens). comingSoon flipped to false 2026-07-05 — real roster data
   // confirmed live in HockeyTech for all four (direct per-team roster
-  // fetches, not just the bootstrap team list). Logos are still temporary
-  // placeholders (no permanent team identity/logo revealed yet) — expected
-  // to update once each team's real branding drops, likely this fall.
+  // fetches, not just the bootstrap team list). Names and logos are the
+  // permanent identities the league revealed 2026-11-10 (thepwhl.com); they
+  // replaced the "PWHL <City>" placeholders. The colors didn't change: each
+  // team's *_colors.css tokens were the same hexes before and after. The
+  // abbreviations stay DET/HAM/LV/SJS (HockeyTech's own codes for LV and SJS
+  // are VGS and SJ, mapped in the Worker and the pipeline).
   {
     abbr: 'DET',
     conference: 'West',
     teamId: 10,
     get season() { return PWHL_CURRENT_SEASON; },
-    displayName: 'PWHL Detroit',
-    shortName: 'Detroit',
+    displayName: 'Detroit Clutch',
+    shortName: 'Clutch',
     // Real hex from detroit_colors.css's "primary1"/interactive-accent
     // token. Worth knowing: Detroit's own announcement named black-and-
     // silver as primary with red as an accent, but this red is what the
@@ -338,8 +341,8 @@ export const PWHL_TEAMS = [
     conference: 'East',
     teamId: 11,
     get season() { return PWHL_CURRENT_SEASON; },
-    displayName: 'PWHL Hamilton',
-    shortName: 'Hamilton',
+    displayName: 'Hamilton Havoc',
+    shortName: 'Havoc',
     // Real hex pulled from hamilton_colors.css (site design tokens), not
     // guessed from press-release color names. #64111d is the file's own
     // "surface-1"/primary token — the same role primaryColor plays for
@@ -358,8 +361,8 @@ export const PWHL_TEAMS = [
     conference: 'West',
     teamId: 12,
     get season() { return PWHL_CURRENT_SEASON; },
-    displayName: 'PWHL Las Vegas',
-    shortName: 'Las Vegas',
+    displayName: 'Vegas Vanguards',
+    shortName: 'Vanguards',
     // Real hex from lasvegas_colors.css's "primary1" token — matches the
     // announced "green and gold" (gold #FFB81C shows up as a secondary
     // underline/highlight accent in the file, not used here since this
@@ -375,8 +378,8 @@ export const PWHL_TEAMS = [
     conference: 'West',
     teamId: 13,
     get season() { return PWHL_CURRENT_SEASON; },
-    displayName: 'PWHL San Jose',
-    shortName: 'San Jose',
+    displayName: 'San Jose Sea Lions',
+    shortName: 'Sea Lions',
     // Real hex from sanjose_colors.css's "primary1" token — matches the
     // announced "orange, blue, white" (orange #F69245 shows up as a
     // secondary underline/highlight accent in the file, not used here
@@ -391,7 +394,8 @@ export const PWHL_TEAMS = [
 
 // ── Logo map ──────────────────────────────────────────────────────────────────
 // Files saved to public/ — filenames don't follow a consistent pattern so we
-// map explicitly. Four teams have .webp logos; the rest are .svg.
+// map explicitly. SEA/VAN are .webp, the four 2026-27 expansion teams .png
+// (the league's primary logos, 2026-11-10, scaled to 256 px), the rest .svg.
 // Usage: `/pwhl-logos/${PWHL_LOGO_FILES[abbr]}`
 export const PWHL_LOGO_FILES = {
   BOS: 'pwhl-bos.svg',
@@ -402,10 +406,10 @@ export const PWHL_LOGO_FILES = {
   TOR: 'pwhl-tor.svg',
   SEA: 'pwhl-sea.webp',
   VAN: 'pwhl-van.webp',
-  DET: 'pwhl-det.webp',
-  HAM: 'pwhl-ham.svg',
-  LV:  'pwhl-lv.webp',
-  SJS: 'pwhl-sj.svg',
+  DET: 'pwhl-det.png',
+  HAM: 'pwhl-ham.png',
+  LV:  'pwhl-lv.png',
+  SJS: 'pwhl-sj.png',
 };
 
 export function pwhlLogoUrl(abbr) {

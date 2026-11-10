@@ -85,7 +85,7 @@ Manual override exists on the Worker side (`config:season:nhl:override` / `confi
 
 This same team-ID map is independently duplicated in `eyewall-poller`'s `pwhl.js` and `eyewall-pipeline`'s `pwhl_stats.py`/`pwhl_salaries.py`. A future expansion wave needs all of these touched — confirm via grep, don't assume from memory.
 
-Expansion team logos and permanent names are still placeholders — no official branding revealed yet, expected fall 2026.
+Expansion team names and logos are the permanent ones revealed 2026-11-10 (Detroit Clutch, Hamilton Havoc, Vegas Vanguards, San Jose Sea Lions; `public/pwhl-logos/pwhl-{det,ham,lv,sj}.png`). HockeyTech kept the "PWHL <City>" names for a while after the reveal, so a feed-supplied name can still lag the config.
 
 Conferences (2026-27): each team's `conference` ('East'/'West') is hand-set in `pwhlConfig.js` from the league's 2026-10-02 announcement -- HockeyTech's standings still return one 12-team "PWHL" group. `utils/pwhlPlayoffs.js` holds the per-season playoff format (season 11 on: top 4 per conference, best-of-3 quarterfinals). If HockeyTech starts sending conference groupings, check they agree with the map.
 
