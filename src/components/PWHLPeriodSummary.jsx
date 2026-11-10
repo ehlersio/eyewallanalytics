@@ -171,10 +171,10 @@ const PWHL_TEAM_NAMES = {
   TOR: 'Toronto Sceptres',
   SEA: 'Seattle Torrent',
   VAN: 'Vancouver Goldeneyes',
-  DET: 'PWHL Detroit',
-  HAM: 'PWHL Hamilton',
-  LV:  'PWHL Las Vegas',
-  SJS: 'PWHL San Jose',
+  DET: 'Detroit Clutch',
+  HAM: 'Hamilton Havoc',
+  LV:  'Vegas Vanguards',
+  SJS: 'San Jose Sea Lions',
 };
 const pwhlTeamName = (abbr) => PWHL_TEAM_NAMES[abbr] || abbr;
 

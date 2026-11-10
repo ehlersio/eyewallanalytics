@@ -324,32 +324,32 @@
     "league": "pwhl",
     "abbr": "DET",
     "teamId": 10,
-    "name": "PWHL Detroit",
-    "shortName": "Detroit"
+    "name": "Detroit Clutch",
+    "shortName": "Clutch"
   },
   {
     "id": "pwhl:HAM",
     "league": "pwhl",
     "abbr": "HAM",
     "teamId": 11,
-    "name": "PWHL Hamilton",
-    "shortName": "Hamilton"
+    "name": "Hamilton Havoc",
+    "shortName": "Havoc"
   },
   {
     "id": "pwhl:LV",
     "league": "pwhl",
     "abbr": "LV",
     "teamId": 12,
-    "name": "PWHL Las Vegas",
-    "shortName": "Las Vegas"
+    "name": "Vegas Vanguards",
+    "shortName": "Vanguards"
   },
   {
     "id": "pwhl:SJS",
     "league": "pwhl",
     "abbr": "SJS",
     "teamId": 13,
-    "name": "PWHL San Jose",
-    "shortName": "San Jose"
+    "name": "San Jose Sea Lions",
+    "shortName": "Sea Lions"
   },
   {
     "id": "ahl:HFD",

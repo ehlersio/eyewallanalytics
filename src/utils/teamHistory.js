@@ -1891,6 +1891,8 @@ export const TEAM_HISTORY = {
     // VERIFIED HONEST: no fabricated permanent names, captains, or records for
     // teams that haven't played a game yet -- agent explicitly flagged these as
     // unknown rather than guessing, which is exactly right for this content.
+    // The permanent names/logos (revealed 2026-11-10) were added from the
+    // league's own announcement and each team's identity story on thepwhl.com.
 
     DET: {
       founded: {
@@ -1914,7 +1916,8 @@ export const TEAM_HISTORY = {
       ],
       facts: [
         'Awarded May 6, 2026 as the PWHL\'s ninth franchise and the first of the 2026-27 expansion wave (Hamilton, Las Vegas, and San Jose followed within two weeks).',
-        'As of September 1, 2026, the franchise plays under the placeholder name "PWHL Detroit" — no permanent nickname or logo has been revealed yet.',
+        'Named the Detroit Clutch on November 10, 2026, replacing the placeholder "PWHL Detroit". The name means both the part that sets a car in motion and rising to the occasion; the round logo nods to a wheel, a clutch plate and a vinyl record (Motown). Colors: motor black, clutch chrome, hot white and racing red.',
+        'The team wears city-branded jerseys in its first season (2026-27); the Clutch logo goes on redesigned jerseys from its second season.',
         "Forward Hilary Knight first signed an Expansion Foundational Offer with Las Vegas, then was traded to Detroit once the PWHL's trade freeze lifted in June 2026 (Las Vegas received Detroit's 2026 first-round draft pick in return).",
         'A March 2026 PWHL "Takeover Tour" exhibition game at Little Caesars Arena — before Detroit had its own franchise — drew a reported 15,938 fans, called a record crowd for a professional women\'s hockey game at that building.',
       ],
@@ -1953,7 +1956,8 @@ export const TEAM_HISTORY = {
       ],
       facts: [
         'Awarded May 13, 2026 (the same day as Las Vegas) — the first PWHL franchise based in a market without an NHL team. TD Coliseum reopened in November 2025 after a $300M renovation.',
-        'As of September 1, 2026, the franchise plays under the placeholder name "PWHL Hamilton" — no permanent nickname or logo has been revealed yet. Not to be confused with the AHL\'s Hamilton Hammers, a separate franchise also new to the same building in 2026.',
+        'Named the Hamilton Havoc on November 10, 2026, replacing the placeholder "PWHL Hamilton" — a name for a city where nature and steel-mill industry meet. The logo is a peregrine falcon, Hamilton\'s official city bird, with hockey-stick wings and riveted detailing. Colors: rusted metal, molten steel, falcon ivory and flame orange. Not to be confused with the AHL\'s Hamilton Hammers, a separate franchise also new to the same building in 2026.',
+        'The team wears city-branded jerseys in its first season (2026-27); the Havoc logo goes on redesigned jerseys from its second season.',
         "Team colors (gold, maroon, cream) nod to Hamilton's hockey and football history — gold for the old Hamilton Tigers NHL club and the CFL's Tiger-Cats, maroon for the city's steelworking ('Steeltown') identity.",
         'Brianne Jenner became the franchise\'s first player signing on June 5, 2026.',
       ],
@@ -1987,7 +1991,8 @@ export const TEAM_HISTORY = {
       ],
       facts: [
         "Awarded May 13, 2026 (the same day as Hamilton) — unlike the other three 2026-27 expansion markets, Las Vegas never hosted a PWHL \"Takeover Tour\" exhibition game before being awarded a team.",
-        'As of September 1, 2026, the franchise plays under the placeholder name "PWHL Las Vegas" — no permanent nickname or logo has been revealed yet.',
+        'Named the Vegas Vanguards on November 10, 2026, replacing the placeholder "PWHL Las Vegas" — a nod to the pioneers of the American West and the Mojave Desert. The logo is a Mojave kit fox whose angular silhouette forms a "V", under a star from the "Welcome to Fabulous Las Vegas" sign. Colors: cactus green, desert gold, fox ivory and midnight navy.',
+        'The team wears city-branded jerseys in its first season (2026-27); the Vanguards logo goes on redesigned jerseys from its second season.',
         "Forward Hilary Knight signed with Las Vegas first as part of a planned sign-and-trade — she moved to Detroit once the PWHL's trade freeze lifted in June 2026, with Las Vegas receiving Detroit's 2026 first-round pick (used on Tessa Janecke) in return.",
         "League officials pointed to the Vegas Golden Knights' effect on local youth hockey — a steep rise in girls' and women's participation in Southern Nevada — as a factor in choosing the market.",
       ],
@@ -2021,7 +2026,8 @@ export const TEAM_HISTORY = {
       ],
       facts: [
         'Awarded May 19, 2026, last of the four 2026-27 expansion teams, bringing the PWHL to 12 franchises — the first PWHL team in California.',
-        'As of September 1, 2026, the franchise plays under the placeholder name "PWHL San Jose" — no permanent nickname has been revealed. San Jose\'s mayor has publicly lobbied for "Hammerheads," but that is an unconfirmed rumor, not an announced name.',
+        'Named the San Jose Sea Lions on November 10, 2026, replacing the placeholder "PWHL San Jose" (the mayor had lobbied for "Hammerheads"). The name draws on the Bay Area coastline; the round logo shows a sea lion rising from the waves. Colors: coastal blue, sunset orange, tidal navy and sea mist.',
+        'The team wears city-branded jerseys in its first season (2026-27); the Sea Lions logo goes on redesigned jerseys from its second season.',
         'Troy Ryan holds both the general manager and head coach roles simultaneously — the first person in PWHL history to do so for one team. He previously spent six years as head coach of Canada\'s national women\'s team (2022 Olympic gold, 2026 Olympic silver) and three seasons coaching the Toronto Sceptres.',
       ],
       currentInfo: {
@@ -3114,7 +3120,7 @@ export const TEAM_HISTORY = {
       facts: [
         "Brand new for 2026-27: relocated from Bridgeport, CT after 25 seasons, becoming the Hamilton Hammers — a name honoring the city's steel industry, with subtle puck details worked into the hammer-head logo as a nod to the Islanders' own logo.",
         'A true expansion franchise founded in 2001, not a relocation of any earlier team.',
-        'Hamilton, ON is also home to PWHL Hamilton, a brand-new 2026-27 PWHL expansion team playing in the same building (TD Coliseum) — the two are completely unrelated franchises in different leagues.',
+        'Hamilton, ON is also home to the Hamilton Havoc, a brand-new 2026-27 PWHL expansion team playing in the same building (TD Coliseum) — the two are completely unrelated franchises in different leagues.',
       ],
       currentInfo: {
         owner: 'Jon Ledecky (co-owner of the New York Islanders)',
