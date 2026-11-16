@@ -3330,6 +3330,7 @@
     },
     "footer": {
       "howItWorks": "How it works",
+      "api": "Public API",
       "privacy": "Privacy",
       "deleteAccount": "Delete account",
       "language": "Language",

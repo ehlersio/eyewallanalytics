@@ -3,7 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import { IconInstagram, IconX, IconFacebook } from '../SocialIcons';
 import { setLocale } from '../../utils/localeConfig';
-import { SOCIAL_LINKS, METHODOLOGY_PATH, PRIVACY_PATH, DELETE_ACCOUNT_PATH } from './landingContent';
+import { SOCIAL_LINKS, METHODOLOGY_PATH, PRIVACY_PATH, DELETE_ACCOUNT_PATH, API_DOCS_URL } from './landingContent';
 import { trackLandingCta } from './landingAnalytics';
 
 const ICONS = { instagram: IconInstagram, x: IconX, facebook: IconFacebook };
@@ -25,6 +25,9 @@ export default function LandingFooter() {
           <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="EyeWall Analytics">
             <a href={METHODOLOGY_PATH} className={LINK_CLASSES} onClick={() => trackLandingCta('methodology', { placement: 'footer' })}>
               {t('landing.footer.howItWorks')}
+            </a>
+            <a href={API_DOCS_URL} className={LINK_CLASSES} onClick={() => trackLandingCta('api', { placement: 'footer' })}>
+              {t('landing.footer.api')}
             </a>
             <a href={PRIVACY_PATH} className={LINK_CLASSES}>{t('landing.footer.privacy')}</a>
             <a href={DELETE_ACCOUNT_PATH} className={LINK_CLASSES}>{t('landing.footer.deleteAccount')}</a>
