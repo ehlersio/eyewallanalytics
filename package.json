@@ -72,7 +72,7 @@
     "mochawesome": "^8.1.1",
     "mochawesome-merge": "^5.1.1",
     "mochawesome-report-generator": "^6.3.2",
-    "tailwindcss": "^4.3.3",
+    "tailwindcss": "^4.3.5",
     "vite": "^8.3.6",
     "vitest": "^5.0.0"
   }
