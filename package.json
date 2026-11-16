@@ -58,7 +58,7 @@
     "@tailwindcss/vite": "^4.3.5",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^6.2.1",
+    "@vitejs/plugin-react": "^6.3.0",
     "@vitest/coverage-v8": "^5.1.0",
     "cross-env": "^10.1.0",
     "cypress": "^16.3.0",
@@ -73,7 +73,7 @@
     "mochawesome-merge": "^5.1.1",
     "mochawesome-report-generator": "^6.3.2",
     "tailwindcss": "^4.3.5",
-    "vite": "^8.3.6",
+    "vite": "^8.3.8",
     "vitest": "^5.0.0"
   }
 }
