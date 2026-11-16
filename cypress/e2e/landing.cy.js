@@ -129,10 +129,11 @@ describe('Landing page content', () => {
     cy.get('.landing-scorecard a[href="/methodology"]').should('exist')
   })
 
-  it('links the footer to the methodology, privacy and delete-account pages', () => {
+  it('links the footer to the methodology, public API, privacy and delete-account pages', () => {
     cy.get('.landing-footer a[href="/methodology"]').should('exist')
     cy.get('.landing-footer a[href="/privacy.html"]').should('exist')
     cy.get('.landing-footer a[href="/delete-account.html"]').should('exist')
+    cy.get('.landing-footer a[href="https://api.eyewallanalytics.com/docs"]').should('contain', 'Public API')
     cy.get('.landing-footer a[href="https://www.instagram.com/eyewallanalytics"]').should('exist')
   })
 

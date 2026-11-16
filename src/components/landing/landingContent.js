@@ -20,6 +20,8 @@ export { APP_STORE_URL };
 export const WEB_APP_PATH = '/app';
 export const METHODOLOGY_PATH = '/methodology';
 export const PRIVACY_PATH = '/privacy.html';
+// The public API's docs (ehlersio/eyewall-api): EyeWall's models for other apps.
+export const API_DOCS_URL = 'https://api.eyewallanalytics.com/docs';
 export const DELETE_ACCOUNT_PATH = '/delete-account.html';
 
 // The hero's goal: Jaccob Slavin's overtime winner, BOS @ CAR, 2026-04-07
