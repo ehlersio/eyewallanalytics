@@ -275,7 +275,13 @@ export default function PWHLTeamView() {
   const tabs = TABS.filter(id => id !== 'Salaries' || salaryOffered);
   const activeTab = tabs.includes(tab) ? tab : 'Overview';
 
-  const teamRow = useMemo(() => standings?.find(r => r.team_id === teamId) || null, [standings, teamId]);
+  // A row with 0 GP counts as no row: before a season's opener every team
+  // has one (season 11, 2026-11-20: all twelve at 0 GP), and a 0–0–0 record
+  // read off it would say the team has played.
+  const teamRow = useMemo(() => {
+    const row = standings?.find(r => r.team_id === teamId) || null;
+    return row && (row.gp ?? 0) > 0 ? row : null;
+  }, [standings, teamId]);
   const skaters = useMemo(() => players?.skaters || [], [players]);
   const goalies = useMemo(() => players?.goalies || [], [players]);
 
@@ -666,6 +672,9 @@ function SplitsTab({ schedule, poSchedule, teamId, abbr: _abbr, color: _color, l
   function calcSplits(sched) {
     if (!sched?.length || !teamId) return null;
     const final = sched.filter(g => g.game_state === 'Final');
+    // Scheduled games but none played (before an opener): no splits, not a
+    // 0-0 home/away table.
+    if (!final.length) return null;
     function calc(games) {
       let w=0, otw=0, otl=0, l=0, gf=0, ga=0;
       for (const g of games) {

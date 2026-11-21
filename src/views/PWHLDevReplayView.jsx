@@ -12,7 +12,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { fetchPWHLLive, fetchPWHLSchedule, PWHL_TEAM_ID } from '../utils/pwhlApi';
 import { PWHLDevGameContext } from '../utils/PWHLDevGameContext';
-import { PWHL_CURRENT_SEASON, getPWHLTeamById } from '../utils/pwhlConfig';
+import { PWHL_CURRENT_SEASON, PWHL_REGULAR_SEASONS, getPWHLTeamById } from '../utils/pwhlConfig';
 import PWHLShotMapView from './PWHLShotMapView';
 
 // Tailwind migration (Session 97, Phase 4, sub-PR 1) -- see DevReplayView.jsx
@@ -207,16 +207,27 @@ function PWHLDevReplayViewInner() {
   useEffect(() => {
     const selectedTeamId = PWHL_TEAM_ID ? parseInt(PWHL_TEAM_ID, 10) : null;
     if (!selectedTeamId) return;
-    fetchPWHLSchedule(selectedTeamId, PWHL_CURRENT_SEASON)
-      .then(games => {
-        if (!Array.isArray(games)) return;
+    // The current season, then the regular seasons newest first: a season
+    // before its opener (season 11 from 2026-11-20, 14 days ahead) has no
+    // finished games, and the quick-pick would show nothing.
+    const seasons = [PWHL_CURRENT_SEASON, ...PWHL_REGULAR_SEASONS.map(s => s.id).filter(id => id !== PWHL_CURRENT_SEASON)];
+    let cancelled = false;
+    (async () => {
+      for (const seasonId of seasons) {
+        const games = await fetchPWHLSchedule(selectedTeamId, seasonId).catch(() => null);
+        if (cancelled) return;
+        if (!Array.isArray(games)) continue;
         const completed = games
           .filter(g => g.game_state === 'Final')
           .sort((a, b) => b.game_id - a.game_id)
           .slice(0, 8);
-        setRecentGames(completed);
-      })
-      .catch(() => {});
+        if (completed.length) {
+          setRecentGames(completed);
+          return;
+        }
+      }
+    })();
+    return () => { cancelled = true; };
   }, [seasonVersion]);
 
   const loadGame = async (id) => {

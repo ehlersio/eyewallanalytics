@@ -115,9 +115,12 @@ describe('PWHL Schedule', () => {
   // ── Game stats popup (Session 50) ──────────────────────────────────────────
   // PWHLGameStatsPopup replaced the old lightweight PWHLGamePopup at this
   // click point -- covers the box-score table/toggle/CTA that popup didn't
-  // have. Relies on a completed game existing in the default (regular
-  // season) tab; BOS's 2025-26 regular season has plenty.
+  // have. Needs a completed game: picks 2025-26 (BOS has plenty) rather than
+  // the default season, which before an opener has none (season 11 became
+  // current 2026-11-20, two weeks ahead of its first game).
   describe('Game stats popup', () => {
+    beforeEach(() => cy.contains('2025-26', { timeout: DATA_TIMEOUT }).click())
+
     it('opens on a completed game click and shows the score header', () => {
       cy.get('.result-card.clickable', { timeout: DATA_TIMEOUT }).first().click()
       cy.get('.pgs-card', { timeout: DATA_TIMEOUT }).should('be.visible')

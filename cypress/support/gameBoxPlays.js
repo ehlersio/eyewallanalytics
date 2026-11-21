@@ -32,6 +32,14 @@ export function withGameBoxPlays(urlGlob) {
   }).as('gameBox')
 }
 
+// Turns the browser's HTTP cache off until restoreHttpCache(): a request
+// served from it never reaches cy.intercept.
+export function disableHttpCache() {
+  if (Cypress.isBrowser({ family: 'chromium' })) {
+    cy.wrap(Cypress.automation('remote:debugger:protocol', { command: 'Network.setCacheDisabled', params: { cacheDisabled: true } }))
+  }
+}
+
 export function restoreHttpCache() {
   if (Cypress.isBrowser({ family: 'chromium' })) {
     cy.wrap(Cypress.automation('remote:debugger:protocol', { command: 'Network.setCacheDisabled', params: { cacheDisabled: false } }))

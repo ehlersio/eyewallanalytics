@@ -2,6 +2,7 @@
 // League › Cap: every team's contract commitments from the Worker's
 // /contracts/summary (stubbed with the real 2026-10-24 payload), and the
 // hidden-tab case when the route answers `unavailable` (no dead options).
+import { disableHttpCache, restoreHttpCache } from '../support/gameBoxPlays'
 
 // The two bases of /contracts/summary: the roster basis (eyewall-poller
 // #236) is what the table shows; the signing-team basis is the fallback
@@ -97,7 +98,12 @@ describe('League › Cap', () => {
   // trimmed real 2026-10-24 payloads (40 contract rows, 34 skater lines,
   // 6 goalies) so the scores are deterministic.
   describe('contract-value leaderboard', () => {
+    // Earlier tests load the real skater summary; from the browser's HTTP
+    // cache it never reaches the intercepts below (PR #615's CI: "No request
+    // ever occurred" for @skaters).
+    afterEach(() => restoreHttpCache())
     beforeEach(() => {
+      disableHttpCache()
       cy.intercept(ROSTER_SUMMARY, { fixture: 'contracts-summary-roster-2026-27.json' }).as('summary')
       cy.intercept({ method: 'GET', url: /\/contracts\/players(\?|$)/ }, { fixture: 'contracts-players-2026-27.json' }).as('players')
       cy.intercept({ method: 'GET', url: /\/skater\/summary\?/ }, { fixture: 'skater-summary-2026-27.json' }).as('skaters')
