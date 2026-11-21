@@ -50,38 +50,37 @@ describe('warTier', () => {
   it('has no tier under 20 GP', () => {
     expect(warTier(0.349, 3)).toBeNull()
     expect(warTier(-0.3, 1)).toBeNull()
-    // 0.2 WAR in 11 GP would pace at 1.49 per 82, an "MVP candidate".
+    // 0.2 WAR in 11 GP would pace at 1.49 per 82, a "Top player".
     expect(warTier(0.2, 11)).toBeNull()
     expect(warTier(0.3, 19)).toBeNull()
   })
 
   it('tiers by WAR per 82 games and reports that pace', () => {
-    // 0.25 WAR in 20 GP = +1.025 per 82: Top player, where the raw 0.25
-    // would read only "Solid contributor" against the full-season cut-offs.
-    const t = warTier(0.25, 20)
+    // 0.26 WAR in 20 GP = +1.066 per 82: Top player, where the raw 0.26
+    // would read only "Replacement level" against the full-season cut-offs.
+    const t = warTier(0.26, 20)
     expect(t.key).toBe('tierTop')
-    expect(t.pace).toBeCloseTo(1.025)
-    expect(warTier(0.3, 20).key).toBe('tierMvp')                // 1.23 per 82
-    expect(warTier(0.05, 20).key).toBe('tierSolid')             // 0.205 per 82
-    expect(warTier(0.02, 20).key).toBe('tierReplacement')       // 0.082 per 82
+    expect(t.pace).toBeCloseTo(1.066)
+    expect(warTier(0.42, 20).key).toBe('tierMvp')               // 1.722 per 82
+    expect(warTier(0.1, 20).key).toBe('tierSolid')              // 0.41 per 82
+    expect(warTier(0.05, 20).key).toBe('tierReplacement')       // 0.205 per 82
     expect(warTier(-0.2, 20).key).toBe('tierBelowReplacement')  // -0.82 per 82
   })
 
   it('reads a full season as is, with no pace', () => {
-    // A real 2025-26 row from the Worker: 1.046 WAR in 82 GP.
-    expect(warTier(1.046, 82)).toEqual({ key: 'tierTop', color: '#4ade80', pace: null })
-    expect(warTier(0.3, 84).key).toBe('tierSolid')
+    expect(warTier(1.2, 82)).toEqual({ key: 'tierTop', color: '#4ade80', pace: null })
+    expect(warTier(0.4, 84).key).toBe('tierSolid')
   })
 
-  it('has replacement level at 0 and the cut-offs at 0.2, 0.7 and 1.2', () => {
+  it('has replacement level at 0 and the cut-offs at 0.35, 1.05 and 1.7', () => {
     expect(warTier(-0.001, 82).key).toBe('tierBelowReplacement')
     expect(warTier(0, 82).key).toBe('tierReplacement')
-    expect(warTier(0.199, 82).key).toBe('tierReplacement')
-    expect(warTier(0.2, 82).key).toBe('tierSolid')
-    expect(warTier(0.699, 82).key).toBe('tierSolid')
-    expect(warTier(0.7, 82).key).toBe('tierTop')
-    expect(warTier(1.199, 82).key).toBe('tierTop')
-    expect(warTier(1.2, 82).key).toBe('tierMvp')
+    expect(warTier(0.349, 82).key).toBe('tierReplacement')
+    expect(warTier(0.35, 82).key).toBe('tierSolid')
+    expect(warTier(1.049, 82).key).toBe('tierSolid')
+    expect(warTier(1.05, 82).key).toBe('tierTop')
+    expect(warTier(1.699, 82).key).toBe('tierTop')
+    expect(warTier(1.7, 82).key).toBe('tierMvp')
   })
 })
 
@@ -91,9 +90,9 @@ describe('contract value WAR', () => {
     expect(contractValue(8, 15, 5_000_000, false, warPer82(0.2, 15)).method).toBe('points')
     const blended = contractValue(10, 20, 5_000_000, false, warPer82(0.25, 20))
     expect(blended.method).toBe('blended')
-    // 41 pts per 82 / $5M = 8.2; 1.025 WAR per 82 / $5M x 18 = 3.69
-    expect(WAR_SCALE).toBe(18)
-    expect(blended.score).toBeCloseTo(8.2 * 0.6 + 3.69 * 0.4, 1)
+    // 41 pts per 82 / $5M = 8.2; 1.025 WAR per 82 / $5M x 12.7 = 2.6035
+    expect(WAR_SCALE).toBe(12.7)
+    expect(blended.score).toBeCloseTo(8.2 * 0.6 + 2.6035 * 0.4, 1)
   })
 })
 
@@ -109,14 +108,14 @@ describe('SkaterWarCard', () => {
   })
 
   it('shows the tier and the per-82 pace once rated', () => {
-    const html = card({ war: 0.25, gp: 20 })
-    expect(html).toContain('+0.25')
+    const html = card({ war: 0.26, gp: 20 })
+    expect(html).toContain('+0.26')
     expect(html).toContain(en('playerPopup.analytics.skater.tierTop'))
-    expect(html).toContain(en('playerPopup.analytics.skater.warPace', { value: '+1.03' }))
+    expect(html).toContain(en('playerPopup.analytics.skater.warPace', { value: '+1.07' }))
   })
 
   it('shows no pace for a full season', () => {
-    const html = card({ war: 1.046, gp: 82 })
+    const html = card({ war: 1.2, gp: 82 })
     expect(html).toContain(en('playerPopup.analytics.skater.tierTop'))
     expect(html).not.toContain('pa-war-pace')
   })

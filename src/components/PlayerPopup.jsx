@@ -649,7 +649,10 @@ export function SkaterWarCard({ war, gp, gameScore }) {
 function PlayoffSkaterAnalytics({ po, regularRapm, seasonLabel }) {
   const { t } = useTranslation()
   const { war, rapm, rapmToiMin, gp, gameScore } = po
-  const warColor = war == null ? 'var(--text-dim)' : war >= 0.2 ? '#4ade80' : war >= 0 ? '#fbbf24' : '#f87171'
+  // Green for about the top 8% of playoff skaters: 0.26 on the stint RAPM's
+  // WAR (eyewall-pipeline #281; 2023-24..2025-26 playoffs), the share 0.2
+  // held before.
+  const warColor = war == null ? 'var(--text-dim)' : war >= 0.26 ? '#4ade80' : war >= 0 ? '#fbbf24' : '#f87171'
   const diff = rapm != null && regularRapm != null ? rapm - regularRapm : null
   return (
     <>

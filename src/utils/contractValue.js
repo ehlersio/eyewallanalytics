@@ -63,13 +63,12 @@ if (typeof window !== 'undefined') refreshCapLimits();
 // nonsensical vs market-rate deals.
 //
 // WAR scaling: WAR/$M is multiplied by WAR_SCALE to bring it onto the
-// same axis as points/$M. The scale was 6 when a top skater's season
-// was taken to be 2-4 WAR; in the current model (eyewall-pipeline#191)
-// the same players post about 0.7-1.2 (see TIERS in warTier.js: Top
-// player 2 -> 0.7, MVP candidate 4 -> 1.2), roughly a third, so the
-// scale is 18 and WAR keeps its intended weight in the blend. A
-// player with 1.0 WAR on a $4M deal scores 4.5 on this axis, as a
-// 3.0-WAR player did at the old scale.
+// same axis as points/$M. It was 6 when a top skater's season was taken to
+// be 2-4 WAR, then 18 for eyewall-pipeline#191's WAR (about a third the
+// size). The stint RAPM (eyewall-pipeline #281, 2026-11-20) widened WAR
+// again: over 2023-24..2025-26, skaters with 60+ GP went from a standard
+// deviation of 0.323 to 0.459, so the scale is 18 x 0.323 / 0.459 = 12.7
+// and WAR keeps the same weight in the blend.
 //
 // Blended scale (market-rate skaters):
 //   >= 8.0  → Exceptional value
@@ -78,7 +77,7 @@ if (typeof window !== 'undefined') refreshCapLimits();
 //   >= 1.8  → Fair value
 //   >= 1.0  → Below average
 //    < 1.0  → Overpaid
-export const WAR_SCALE = 18;
+export const WAR_SCALE = 12.7;
 
 export function contractValue(points, gamesPlayed, capHit, isELC, war = null) {
   if (!capHit || !gamesPlayed) return null;
