@@ -60,9 +60,9 @@ describe('buildValueBoard', () => {
   it('blends WAR per 82 at 20+ GP, like the popup', () => {
     const b = buildValueBoard({ contracts, skaters, analytics, goalies })
     const two = b.skaters.find(r => r.playerId === 2)
-    // 41 pts/82 pace on $4.1M = 10 pts/$M; WAR 0.5 over 20 GP -> 2.05 per 82 -> /4.1M*18 = 9 ; 0.6*10 + 0.4*9 = 9.6
+    // 41 pts/82 pace on $4.1M = 10 pts/$M; WAR 0.5 over 20 GP -> 2.05 per 82 -> /4.1M*12.7 = 6.35 ; 0.6*10 + 0.4*6.35 = 8.54
     expect(two.method).toBe('blended')
-    expect(two.score).toBe(9.6)
+    expect(two.score).toBe(8.5)
     expect(two.war).toBe(0.5)
   })
 

@@ -21,7 +21,8 @@ export function hasTeamNeeds(data) {
 }
 
 // +0.42 / −0.10 / null. Two decimals for both scales: WAR per 82 runs about
-// −0.5..+1.8, GSAx per 60 about −0.6..+0.8.
+// −0.35..+1.87 (1st-99th percentile, 20+ GP, 2023-24..2025-26, stint RAPM),
+// GSAx per 60 about −0.6..+0.8.
 export function fmtRating(rating) {
   if (rating == null || !Number.isFinite(Number(rating))) return null
   const v = Number(rating)
