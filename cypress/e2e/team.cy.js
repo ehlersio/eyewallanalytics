@@ -1,4 +1,5 @@
 // cypress/e2e/team.cy.js
+import { disableHttpCache, restoreHttpCache } from '../support/gameBoxPlays'
 
 const WORKER_URL = Cypress.expose('VITE_WORKER_URL') || 'https://eyewall-poller.billowing-queen-bf23.workers.dev'
 
@@ -59,11 +60,17 @@ FULL_TEST_TEAMS.forEach(teamAbbr => {
 
     describe('Advanced tab', () => {
       beforeEach(() => cy.contains('Advanced').click())
+      afterEach(() => restoreHttpCache())  // undoes the averages test's disableHttpCache
 
       // League averages come from every team's NHL season totals (stubbed
       // here with the real 2025-26 reports), not a hardcoded table: 2025-26
       // was 27.8 shots, 3.08 goals per team-game, .889 SV%, 21.1% PP.
       it('compares with league averages computed from every team\'s totals', () => {
+        // beforeEach already loaded the real reports; without this the
+        // reload can take them from the browser's HTTP cache, which never
+        // reaches the intercepts below (VGK and CHI failed that way once the
+        // real numbers were 2026-27's, 2026-11-20).
+        disableHttpCache()
         cy.fixture('league-team-reports.json').then(r => {
           ;['summary', 'realtime', 'powerplay', 'penaltykill'].forEach(name => {
             cy.intercept({ method: 'GET', url: new RegExp(`/team/${name}\\?.*limit=50`) }, r[name])

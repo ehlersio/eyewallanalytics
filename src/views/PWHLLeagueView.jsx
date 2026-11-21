@@ -1335,9 +1335,21 @@ const DRAFT_COL_LABEL_KEYS = {
   Nat: 'pwhlLeagueView.draft.colNationality',
 };
 
+const DRAFT_YEARS = [2026, 2025]; // newest first; the tables above
+
+// The draft held after `season` (a 2025-26 season's is the 2026 draft), or
+// the newest one listed when that draft hasn't happened (2026-27 -> 2026).
+// Was `season === 8 ? 2026 : 2025`, which opened the 2025 draft once season
+// 11 became current.
+function defaultDraftYear(season) {
+  const start = parseInt(String(getPWHLSeasonLabel(season)).slice(0, 4), 10);
+  if (!Number.isFinite(start)) return DRAFT_YEARS[0];
+  return DRAFT_YEARS.find(y => y <= start + 1) ?? DRAFT_YEARS[DRAFT_YEARS.length - 1];
+}
+
 function DraftPanel({ season }) {
   const { t } = useTranslation();
-  const [draftYear, setDraftYear] = useState(season === 8 ? 2026 : 2025);
+  const [draftYear, setDraftYear] = useState(() => defaultDraftYear(season));
   const [filter, setFilter]       = useState('all');
   const [roundFilter, setRound]   = useState(0); // 0 = all rounds
 
@@ -1356,7 +1368,7 @@ function DraftPanel({ season }) {
 
       {/* Draft year picker */}
       <div className={TABS_WRAP_CLASSES} style={{ marginBottom:0 }}>
-        {[2026, 2025].map(y => (
+        {DRAFT_YEARS.map(y => (
           <button key={y} className={tabClasses(draftYear === y)}
             onClick={() => setDraftYear(y)}>{t('pwhlLeagueView.draft.yearPicker', { year: y })}</button>
         ))}
