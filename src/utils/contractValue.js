@@ -67,8 +67,10 @@ if (typeof window !== 'undefined') refreshCapLimits();
 // be 2-4 WAR, then 18 for eyewall-pipeline#191's WAR (about a third the
 // size). The stint RAPM (eyewall-pipeline #281, 2026-11-20) widened WAR
 // again: over 2023-24..2025-26, skaters with 60+ GP went from a standard
-// deviation of 0.323 to 0.459, so the scale is 18 x 0.323 / 0.459 = 12.7
-// and WAR keeps the same weight in the blend.
+// deviation of 0.323 to 0.459, so the scale became 18 x 0.323 / 0.459 = 12.7.
+// WAR's measured weights (#283, 2026-11-21) narrowed it to 0.425, so the
+// scale is 12.7 x 0.459 / 0.425 = 13.7 and WAR keeps the same weight in the
+// blend.
 //
 // Blended scale (market-rate skaters):
 //   >= 8.0  → Exceptional value
@@ -77,7 +79,7 @@ if (typeof window !== 'undefined') refreshCapLimits();
 //   >= 1.8  → Fair value
 //   >= 1.0  → Below average
 //    < 1.0  → Overpaid
-export const WAR_SCALE = 12.7;
+export const WAR_SCALE = 13.7;
 
 export function contractValue(points, gamesPlayed, capHit, isELC, war = null) {
   if (!capHit || !gamesPlayed) return null;

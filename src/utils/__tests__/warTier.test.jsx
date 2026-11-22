@@ -72,13 +72,13 @@ describe('warTier', () => {
     expect(warTier(0.4, 84).key).toBe('tierSolid')
   })
 
-  it('has replacement level at 0 and the cut-offs at 0.35, 1.05 and 1.7', () => {
+  it('has replacement level at 0 and the cut-offs at 0.36, 1.0 and 1.7', () => {
     expect(warTier(-0.001, 82).key).toBe('tierBelowReplacement')
     expect(warTier(0, 82).key).toBe('tierReplacement')
-    expect(warTier(0.349, 82).key).toBe('tierReplacement')
-    expect(warTier(0.35, 82).key).toBe('tierSolid')
-    expect(warTier(1.049, 82).key).toBe('tierSolid')
-    expect(warTier(1.05, 82).key).toBe('tierTop')
+    expect(warTier(0.359, 82).key).toBe('tierReplacement')
+    expect(warTier(0.36, 82).key).toBe('tierSolid')
+    expect(warTier(0.999, 82).key).toBe('tierSolid')
+    expect(warTier(1.0, 82).key).toBe('tierTop')
     expect(warTier(1.699, 82).key).toBe('tierTop')
     expect(warTier(1.7, 82).key).toBe('tierMvp')
   })
@@ -90,9 +90,9 @@ describe('contract value WAR', () => {
     expect(contractValue(8, 15, 5_000_000, false, warPer82(0.2, 15)).method).toBe('points')
     const blended = contractValue(10, 20, 5_000_000, false, warPer82(0.25, 20))
     expect(blended.method).toBe('blended')
-    // 41 pts per 82 / $5M = 8.2; 1.025 WAR per 82 / $5M x 12.7 = 2.6035
-    expect(WAR_SCALE).toBe(12.7)
-    expect(blended.score).toBeCloseTo(8.2 * 0.6 + 2.6035 * 0.4, 1)
+    // 41 pts per 82 / $5M = 8.2; 1.025 WAR per 82 / $5M x 13.7 = 2.8085
+    expect(WAR_SCALE).toBe(13.7)
+    expect(blended.score).toBeCloseTo(8.2 * 0.6 + 2.8085 * 0.4, 1)
   })
 })
 
