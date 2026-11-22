@@ -217,10 +217,10 @@ describe('cap limits (contractValue.js)', () => {
 
 describe('contract value helpers (moved from carContracts.js)', () => {
   it('contractValue blends points and WAR, or uses points only', () => {
-    expect(WAR_SCALE).toBe(12.7)
+    expect(WAR_SCALE).toBe(13.7)
     expect(contractValue(82, 82, 8_200_000, false)).toEqual({ score: 10, method: 'points' })
-    // 10 pts/$M x 0.6 + (1.0 WAR / $4.1M x 12.7 = 3.10) x 0.4 = 7.24
-    expect(contractValue(41, 82, 4_100_000, false, 1.0)).toEqual({ score: 7.2, method: 'blended' })
+    // 10 pts/$M x 0.6 + (1.0 WAR / $4.1M x 13.7 = 3.34) x 0.4 = 7.34
+    expect(contractValue(41, 82, 4_100_000, false, 1.0)).toEqual({ score: 7.3, method: 'blended' })
     expect(contractValue(41, 82, 4_100_000, true)).toBeNull()      // ELC excluded
     expect(contractValue(41, 82, 1_000_000, false)).toBeNull()     // under the $1.2M floor
     expect(contractValue(41, 0, 4_100_000, false)).toBeNull()

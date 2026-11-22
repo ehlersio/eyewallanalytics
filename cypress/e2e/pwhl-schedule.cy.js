@@ -119,7 +119,10 @@ describe('PWHL Schedule', () => {
   // the default season, which before an opener has none (season 11 became
   // current 2026-11-20, two weeks ahead of its first game).
   describe('Game stats popup', () => {
-    beforeEach(() => cy.contains('2025-26', { timeout: DATA_TIMEOUT }).click())
+    // The season picker's own button, exactly: a bare cy.contains('2025-26')
+    // can land on other text before the picker has rendered, and the page
+    // then stays on a season with nothing played.
+    beforeEach(() => cy.contains('button', /^2025-26$/, { timeout: DATA_TIMEOUT }).click())
 
     it('opens on a completed game click and shows the score header', () => {
       cy.get('.result-card.clickable', { timeout: DATA_TIMEOUT }).first().click()
